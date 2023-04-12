@@ -1,0 +1,11 @@
+﻿https://docs.microsoft.com/en-us/ef/core/cli/dotnet
+
+dotnet tool install --global dotnet-ef --version="5.0"
+
+dotnet ef migrations add Init --context StickyRiceDbContext -o Migrations/StickyRiceDb
+
+dotnet ef migrations script --context StickyRiceDbContext
+
+dotnet ef dbcontext script --context StickyRiceDbContext
+
+dotnet ef database update --context StickyRiceDbContext

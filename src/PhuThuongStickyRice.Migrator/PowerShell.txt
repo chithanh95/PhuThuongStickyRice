@@ -1,0 +1,13 @@
+﻿https://docs.microsoft.com/en-us/ef/core/cli/powershell
+
+Add-Migration -Context StickyRiceDbContext Init -OutputDir Migrations/StickyRiceDb
+
+Remove-Migration -Context StickyRiceDbContext
+Remove-Migration -Context StickyRiceDbContext -Force
+Remove-Migration -Context MiniProfilerDbContext
+
+Update-Database -Context StickyRiceDbContext
+
+Script-DbContext -Context StickyRiceDbContext
+
+Script-Migration -Context StickyRiceDbContext

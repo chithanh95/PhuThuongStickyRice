@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <AnalysisModeSecurity>All</AnalysisModeSecurity>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ApprovalTests" Version="5.8.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
+    <PackageReference Include="NJsonSchema" Version="10.8.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="3.2.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="WebAPI\ProductsControllerTests.Test.approved.txt">
+      <ParentFile>$([System.String]::Copy('%(FileName)').Split('.')[0])</ParentFile>
+      <ParentExtension>$(ProjectExt.Replace('proj', ''))</ParentExtension>
+      <DependentUpon>ProductsControllerTests.cs</DependentUpon>
+    </None>
+    <None Update="WebAPI\FilesControllerTests.Test.approved.txt">
+      <ParentFile>$([System.String]::Copy('%(FileName)').Split('.')[0])</ParentFile>
+      <ParentExtension>$(ProjectExt.Replace('proj', ''))</ParentExtension>
+      <DependentUpon>FilesControllerTests.cs</DependentUpon>
+    </None>
+    <None Update="WebAPI\RolesControllerTests.Test.approved.txt">
+      <ParentFile>$([System.String]::Copy('%(FileName)').Split('.')[0])</ParentFile>
+      <ParentExtension>$(ProjectExt.Replace('proj', ''))</ParentExtension>
+      <DependentUpon>RolesControllerTests.cs</DependentUpon>
+    </None>
+    <None Update="WebAPI\RolesControllerTests.UserModelTest.approved.txt">
+      <ParentFile>$([System.String]::Copy('%(FileName)').Split('.')[0])</ParentFile>
+      <ParentExtension>$(ProjectExt.Replace('proj', ''))</ParentExtension>
+      <DependentUpon>RolesControllerTests.cs</DependentUpon>
+    </None>
+    <None Update="WebAPI\UsersControllerTests.Test.approved.txt">
+      <DependentUpon>UsersControllerTests.cs</DependentUpon>
+    </None>
+  </ItemGroup>
+
+</Project>

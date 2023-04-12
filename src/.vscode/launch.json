@@ -1,0 +1,180 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "PhuThuongStickyRice.BackgroundServer",
+            "type": "coreclr",
+            "request": "launch",
+            //"preLaunchTask": "build",
+            "program": "${workspaceFolder}/PhuThuongStickyRice.BackgroundServer/bin/Debug/net6.0/PhuThuongStickyRice.BackgroundServer.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/PhuThuongStickyRice.BackgroundServer",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            },
+        },
+        {
+            "name": "PhuThuongStickyRice.GraphQL",
+            "type": "coreclr",
+            "request": "launch",
+            //"preLaunchTask": "build",
+            "program": "${workspaceFolder}/PhuThuongStickyRice.GraphQL/bin/Debug/net6.0/PhuThuongStickyRice.GraphQL.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/PhuThuongStickyRice.GraphQL",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:44392/"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
+            "name": "PhuThuongStickyRice.Migrator",
+            "type": "coreclr",
+            "request": "launch",
+            //"preLaunchTask": "build",
+            "program": "${workspaceFolder}/PhuThuongStickyRice.Migrator/bin/Debug/net6.0/PhuThuongStickyRice.Migrator.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/PhuThuongStickyRice.Migrator",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:44380/"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
+            "name": "PhuThuongStickyRice.WebAPI",
+            "type": "coreclr",
+            "request": "launch",
+            //"preLaunchTask": "build",
+            "program": "${workspaceFolder}/PhuThuongStickyRice.WebAPI/bin/Debug/net6.0/PhuThuongStickyRice.WebAPI.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/PhuThuongStickyRice.WebAPI",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:44312/"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
+            "name": "PhuThuongStickyRice.BlazorServerSide",
+            "type": "coreclr",
+            "request": "launch",
+            //"preLaunchTask": "build",
+            "program": "${workspaceFolder}/PhuThuongStickyRice.BlazorServerSide/bin/Debug/net6.0/PhuThuongStickyRice.BlazorServerSide.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/PhuThuongStickyRice.BlazorServerSide",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:44331/"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
+            "name": "PhuThuongStickyRice.BlazorWebAssembly",
+            "type": "coreclr",
+            "request": "launch",
+            //"preLaunchTask": "build",
+            "program": "${workspaceFolder}/PhuThuongStickyRice.BlazorWebAssembly/bin/Debug/net6.0/PhuThuongStickyRice.BlazorWebAssembly.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/PhuThuongStickyRice.BlazorWebAssembly",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:44348/"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
+            "name": "PhuThuongStickyRice.IdentityServer",
+            "type": "coreclr",
+            "request": "launch",
+            //"preLaunchTask": "build",
+            "program": "${workspaceFolder}/PhuThuongStickyRice.IdentityServer/bin/Debug/net6.0/PhuThuongStickyRice.IdentityServer.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/PhuThuongStickyRice.IdentityServer",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:44367/"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
+            "name": "PhuThuongStickyRice.WebMVC",
+            "type": "coreclr",
+            "request": "launch",
+            //"preLaunchTask": "build",
+            "program": "${workspaceFolder}/PhuThuongStickyRice.WebMVC/bin/Debug/net6.0/PhuThuongStickyRice.WebMVC.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/PhuThuongStickyRice.WebMVC",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:44364/"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "PhuThuongStickyRice.Monolith",
+            "configurations": ["PhuThuongStickyRice.BackgroundServer", "PhuThuongStickyRice.GraphQL", "PhuThuongStickyRice.Migrator", "PhuThuongStickyRice.WebAPI","PhuThuongStickyRice.BlazorServerSide","PhuThuongStickyRice.BlazorWebAssembly","PhuThuongStickyRice.IdentityServer","PhuThuongStickyRice.WebMVC"]
+        }
+    ]
+}

@@ -1,0 +1,25 @@
+version: "3.6"
+services:
+    migrator:
+        volumes:
+            - D:\\PhuThuongStickyRice.Monolith\\Logs\\Migrator:/PhuThuongStickyRice.Monolith/logs
+    identityserver:
+        volumes:
+            - D:\\PhuThuongStickyRice.Monolith\\Logs\\IdentityServer:/PhuThuongStickyRice.IdentityServer/logs
+    webapi:
+        volumes:
+            - D:\\PhuThuongStickyRice.Monolith\\Logs\\WebAPI:/PhuThuongStickyRice.Monolith/logs
+            - D:\\PhuThuongStickyRice.Monolith\\Files:/files
+    webmvc:
+        volumes:
+            - D:\\PhuThuongStickyRice.Monolith\\Files:/files
+            - D:\\PhuThuongStickyRice.Monolith\\Logs\\WebMVC:/PhuThuongStickyRice.Monolith/logs
+    blazor:
+        volumes:
+            - D:\\PhuThuongStickyRice.Monolith\\Logs\\BlazorServerSide:/PhuThuongStickyRice.Monolith/logs
+    backgroundserver:
+        volumes:
+            - D:\\PhuThuongStickyRice.Monolith\\Logs\\BackgroundServer:/PhuThuongStickyRice.Monolith/logs
+    graphql:
+        volumes:
+            - D:\\PhuThuongStickyRice.Monolith\\Logs\\GraphQL:/PhuThuongStickyRice.Monolith/logs
