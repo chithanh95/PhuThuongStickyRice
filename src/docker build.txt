@@ -1,0 +1,70 @@
+docker build -t PhuThuongStickyRice.webmvc .
+docker build -t PhuThuongStickyRice.webmvc:1.0.0 .
+docker run -d -p 8080:80 --name PhuThuongStickyRice.webmvc PhuThuongStickyRice.webmvc
+docker run -d -p 8081:80 --name PhuThuongStickyRice.webapi PhuThuongStickyRice.webapi
+docker run -d -p 8082:80 --name PhuThuongStickyRice.identityserver PhuThuongStickyRice.identityserver
+
+docker build -f "PhuThuongStickyRice.BackgroundServer\Dockerfile" -t PhuThuongStickyRice.backgroundserver .
+docker build -f "PhuThuongStickyRice.Migrator\Dockerfile" -t PhuThuongStickyRice.migrator .
+docker build -f "PhuThuongStickyRice.WebAPI\Dockerfile" -t PhuThuongStickyRice.webapi .
+docker build -f "PhuThuongStickyRice.GraphQL\Dockerfile" -t PhuThuongStickyRice.graphql .
+docker build -f "PhuThuongStickyRice.BlazorServerSide\Dockerfile" -t PhuThuongStickyRice.blazor .
+docker build -f "PhuThuongStickyRice.IdentityServer\Dockerfile" -t PhuThuongStickyRice.identityserver .
+docker build -f "PhuThuongStickyRice.WebMVC\Dockerfile" -t PhuThuongStickyRice.webmvc .
+
+docker tag PhuThuongStickyRice.backgroundserver phongnguyend/PhuThuongStickyRice.backgroundserver
+docker tag PhuThuongStickyRice.migrator phongnguyend/PhuThuongStickyRice.migrator
+docker tag PhuThuongStickyRice.webapi phongnguyend/PhuThuongStickyRice.webapi
+docker tag PhuThuongStickyRice.graphql phongnguyend/PhuThuongStickyRice.graphql
+docker tag PhuThuongStickyRice.blazor phongnguyend/PhuThuongStickyRice.blazor
+docker tag PhuThuongStickyRice.identityserver phongnguyend/PhuThuongStickyRice.identityserver
+docker tag PhuThuongStickyRice.webmvc phongnguyend/PhuThuongStickyRice.webmvc
+
+docker push phongnguyend/PhuThuongStickyRice.backgroundserver
+docker push phongnguyend/PhuThuongStickyRice.migrator
+docker push phongnguyend/PhuThuongStickyRice.webapi
+docker push phongnguyend/PhuThuongStickyRice.graphql
+docker push phongnguyend/PhuThuongStickyRice.blazor
+docker push phongnguyend/PhuThuongStickyRice.identityserver
+docker push phongnguyend/PhuThuongStickyRice.webmvc
+
+
+docker-compose build
+docker-compose up
+
+docker-compose build blazorserverside
+
+docker-compose up webmvc
+docker-compose up blazorserverside
+
+docker --version
+docker version
+
+docker images
+docker image ls
+docker rmi -f xxx
+
+docker ps
+docker ps -a
+docker start
+docker stop
+docker rm xxx
+
+docker tag PhuThuongStickyRice.web acr.azurecr.io/PhuThuongStickyRice.web
+docker push acr.azurecr.io/PhuThuongStickyRice.web
+
+docker run -d --name rabbitmq -p 5672:5672 -p 5673:5673 -p 15672:15672 rabbitmq:3-management
+
+
+- Make sure Line Ending for these files is Unix (LF):
+  | Project  | File |
+  | -------- | ---- |
+  | PhuThuongStickyRice.Migrator | [docker-entrypoint.sh](/src/PhuThuongStickyRice.Projects/PhuThuongStickyRice.Migrator/docker-entrypoint.sh) |
+  | PhuThuongStickyRice.BackgroundServer | [docker-entrypoint.sh](/src/PhuThuongStickyRice.Projects/PhuThuongStickyRice.BackgroundServer/docker-entrypoint.sh) |
+  | PhuThuongStickyRice.WebMVC | [docker-entrypoint.sh](/src/PhuThuongStickyRice.Projects/PhuThuongStickyRice.WebMVC/docker-entrypoint.sh) |
+  
+  Otherwise you might encounter:
+  ```
+  exec user process caused "no such file or directory"
+  ```
+  Tip: Open Notepad++ -> Edit -> EOL Conversion -> Unix (LF)
