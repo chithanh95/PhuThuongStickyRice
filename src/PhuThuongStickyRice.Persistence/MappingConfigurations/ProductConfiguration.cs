@@ -14,23 +14,23 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.Id).HasDefaultValueSql("newsequentialid()");
 
             // Seed
-            builder.HasData(new List<Product>
-            {
-                new Product
-                {
-                    Id = Guid.Parse("6672E891-0D94-4620-B38A-DBC5B02DA9F7"),
-                    Code = "TEST",
-                    Name = "Test",
-                    Description = "Description"
-                },
-                new Product
-                {
-                    Id = Guid.Parse("CC9D7ECA-6428-4E6D-B40B-2C8D93AB7347"),
-                    Code = "PD001",
-                    Name = "Iphone X",
-                    Description = "Iphone X"
-                }
-            });
+            //builder.HasData(new List<Product>
+            //{
+            //    new Product
+            //    {
+            //        Id = Guid.Parse("6672E891-0D94-4620-B38A-DBC5B02DA9F7"),
+            //        Code = "TEST",
+            //        Name = "Test",
+            //        Description = "Description"
+            //    },
+            //    new Product
+            //    {
+            //        Id = Guid.Parse("CC9D7ECA-6428-4E6D-B40B-2C8D93AB7347"),
+            //        Code = "PD001",
+            //        Name = "Iphone X",
+            //        Description = "Iphone X"
+            //    }
+            //});
         }
     }
 }
