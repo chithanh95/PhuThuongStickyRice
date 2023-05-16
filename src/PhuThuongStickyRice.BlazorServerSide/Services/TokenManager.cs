@@ -1,8 +1,8 @@
-﻿using PhuThuongStickyRice.Blazor.Modules.Core.Services;
-using PhuThuongStickyRice.BlazorServerSide.ConfigurationOptions;
-using IdentityModel.Client;
+﻿using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using PhuThuongStickyRice.Blazor.Modules.Core.Services;
+using PhuThuongStickyRice.BlazorServerSide.ConfigurationOptions;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;

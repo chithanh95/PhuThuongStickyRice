@@ -21,7 +21,7 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
             return new ProductModel
             {
                 Id = entity.Id,
-                Code = entity.Code,
+                //Code = entity.Code,
                 Name = entity.Name,
                 Description = entity.Description,
             };
@@ -32,7 +32,7 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
             return new Product
             {
                 Id = model.Id,
-                Code = model.Code,
+                //Code = model.Code,
                 Name = model.Name,
                 Description = model.Description,
             };

@@ -1,8 +1,8 @@
-﻿using PhuThuongStickyRice.Infrastructure.Logging;
+﻿using Microsoft.Extensions.Options;
+using PhuThuongStickyRice.Infrastructure.Logging;
 using PhuThuongStickyRice.Infrastructure.MessageBrokers;
 using PhuThuongStickyRice.Infrastructure.Notification;
 using PhuThuongStickyRice.Infrastructure.Storages;
-using Microsoft.Extensions.Options;
 
 namespace PhuThuongStickyRice.BackgroundServer.ConfigurationOptions
 {

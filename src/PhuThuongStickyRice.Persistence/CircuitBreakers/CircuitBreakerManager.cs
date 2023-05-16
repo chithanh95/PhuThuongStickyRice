@@ -1,6 +1,6 @@
-﻿using PhuThuongStickyRice.CrossCuttingConcerns.CircuitBreakers;
+﻿using Microsoft.EntityFrameworkCore;
+using PhuThuongStickyRice.CrossCuttingConcerns.CircuitBreakers;
 using PhuThuongStickyRice.CrossCuttingConcerns.OS;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 

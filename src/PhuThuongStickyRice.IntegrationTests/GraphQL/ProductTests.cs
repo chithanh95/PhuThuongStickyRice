@@ -1,4 +1,4 @@
-using PhuThuongStickyRice.Domain.Entities;
+﻿using PhuThuongStickyRice.Domain.Entities;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -79,7 +79,7 @@ namespace PhuThuongStickyRice.IntegrationTests.GraphQL
                         description
                     }
                 }",
-                Variables = new { product = new { product.Code, product.Name, product.Description } },
+                Variables = new { product = new { /*product.Code,*/ product.Name, product.Description } },
             };
             var response = await _client.SendQueryAsync<ProductResponse>(query);
             return response.Data.CreateProduct;
@@ -126,14 +126,14 @@ namespace PhuThuongStickyRice.IntegrationTests.GraphQL
             var product = new Product
             {
                 Name = "Test",
-                Code = "TEST",
+                //Code = "TEST",
                 Description = "Description",
             };
 
             Product createdProduct = await CreateProduct(product);
             Assert.True(product.Id != createdProduct.Id);
             Assert.Equal(product.Name, createdProduct.Name);
-            Assert.Equal(product.Code, createdProduct.Code);
+            //Assert.Equal(product.Code, createdProduct.Code);
             Assert.Equal(product.Description, createdProduct.Description);
 
             var products = await GetProducts();
@@ -142,7 +142,7 @@ namespace PhuThuongStickyRice.IntegrationTests.GraphQL
             var refreshedProduct = await GetProductById(createdProduct.Id);
             Assert.Equal(refreshedProduct.Id, createdProduct.Id);
             Assert.Equal(refreshedProduct.Name, createdProduct.Name);
-            Assert.Equal(refreshedProduct.Code, createdProduct.Code);
+            //Assert.Equal(refreshedProduct.Code, createdProduct.Code);
             Assert.Equal(refreshedProduct.Description, createdProduct.Description);
 
             await DeleteProduct(createdProduct.Id);

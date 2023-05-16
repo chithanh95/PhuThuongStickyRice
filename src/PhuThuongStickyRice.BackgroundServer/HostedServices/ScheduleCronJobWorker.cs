@@ -1,7 +1,7 @@
-﻿using PhuThuongStickyRice.Domain.Notification;
-using PhuThuongStickyRice.Infrastructure.HostedServices;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using PhuThuongStickyRice.Domain.Notification;
+using PhuThuongStickyRice.Infrastructure.HostedServices;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

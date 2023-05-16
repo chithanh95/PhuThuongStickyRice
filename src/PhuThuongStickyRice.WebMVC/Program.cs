@@ -1,11 +1,11 @@
-﻿using PhuThuongStickyRice.Infrastructure.Configuration;
-using PhuThuongStickyRice.Infrastructure.HealthChecks;
-using PhuThuongStickyRice.Infrastructure.Logging;
-using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
-using Microsoft.AspNetCore;
+﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using PhuThuongStickyRice.Infrastructure.Configuration;
+using PhuThuongStickyRice.Infrastructure.HealthChecks;
+using PhuThuongStickyRice.Infrastructure.Logging;
+using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
 
 namespace PhuThuongStickyRice.WebMVC
 {

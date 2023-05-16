@@ -1,7 +1,6 @@
-﻿using PhuThuongStickyRice.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
+using PhuThuongStickyRice.Domain.Entities;
 
 namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 {

@@ -1,7 +1,7 @@
-﻿using PhuThuongStickyRice.CrossCuttingConcerns.Locks;
-using PhuThuongStickyRice.CrossCuttingConcerns.OS;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using PhuThuongStickyRice.CrossCuttingConcerns.Locks;
+using PhuThuongStickyRice.CrossCuttingConcerns.OS;
 using System;
 using System.Data;
 

@@ -1,6 +1,6 @@
-﻿using PhuThuongStickyRice.CrossCuttingConcerns.Locks;
-using EntityFrameworkCore.SqlServer.SimpleBulks.Extensions;
+﻿using EntityFrameworkCore.SqlServer.SimpleBulks.Extensions;
 using Microsoft.Data.SqlClient;
+using PhuThuongStickyRice.CrossCuttingConcerns.Locks;
 using System;
 using System.Data;
 

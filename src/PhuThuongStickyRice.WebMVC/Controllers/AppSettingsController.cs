@@ -1,6 +1,6 @@
-﻿using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
 
 namespace PhuThuongStickyRice.WebMVC.Controllers
 {

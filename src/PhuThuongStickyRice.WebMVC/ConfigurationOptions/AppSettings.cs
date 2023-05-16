@@ -1,11 +1,11 @@
-﻿using PhuThuongStickyRice.Infrastructure.Caching;
+﻿using Microsoft.Extensions.Options;
+using PhuThuongStickyRice.Infrastructure.Caching;
 using PhuThuongStickyRice.Infrastructure.Configuration;
 using PhuThuongStickyRice.Infrastructure.Interceptors;
 using PhuThuongStickyRice.Infrastructure.Logging;
 using PhuThuongStickyRice.Infrastructure.MessageBrokers;
 using PhuThuongStickyRice.Infrastructure.Monitoring;
 using PhuThuongStickyRice.Infrastructure.Storages;
-using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.WebMVC.ConfigurationOptions

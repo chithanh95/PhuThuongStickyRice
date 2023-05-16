@@ -1,4 +1,4 @@
-using PhuThuongStickyRice.Application.AuditLogEntries.DTOs;
+﻿using PhuThuongStickyRice.Application.AuditLogEntries.DTOs;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using PhuThuongStickyRice.Domain.Entities;
 using Polly;
@@ -102,13 +102,13 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             var product = new Product
             {
                 Name = "Test",
-                Code = "TEST",
+                //Code = "TEST",
                 Description = "Description",
             };
             Product createdProduct = await CreateProductAsync(product);
             Assert.True(product.Id != createdProduct.Id);
             Assert.Equal(product.Name, createdProduct.Name);
-            Assert.Equal(product.Code, createdProduct.Code);
+            //Assert.Equal(product.Code, createdProduct.Code);
             Assert.Equal(product.Description, createdProduct.Description);
 
             var auditLogs = await GetAuditLogsAsync(createdProduct.Id);
@@ -123,7 +123,7 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             var refreshedProduct = await GetProductByIdAsync(createdProduct.Id);
             Assert.Equal(refreshedProduct.Id, createdProduct.Id);
             Assert.Equal(refreshedProduct.Name, createdProduct.Name);
-            Assert.Equal(refreshedProduct.Code, createdProduct.Code);
+            //Assert.Equal(refreshedProduct.Code, createdProduct.Code);
             Assert.Equal(refreshedProduct.Description, createdProduct.Description);
 
             // PUT
@@ -131,7 +131,7 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             var updatedProduct = await UpdateProductAsync(refreshedProduct.Id, refreshedProduct);
             Assert.Equal(refreshedProduct.Id, updatedProduct.Id);
             Assert.Equal("Test' 2,2 \"a\"", updatedProduct.Name);
-            Assert.Equal(refreshedProduct.Code, updatedProduct.Code);
+            //Assert.Equal(refreshedProduct.Code, updatedProduct.Code);
             Assert.Equal(refreshedProduct.Description, updatedProduct.Description);
 
             auditLogs = await GetAuditLogsAsync(createdProduct.Id);

@@ -25,7 +25,7 @@ namespace PhuThuongStickyRice.GraphQL
             var productService = GetProductService(configuration, httpContext);
             var createdProduct = productService.CreateProduct(new Product
             {
-                Code = product.Code,
+                //Code = product.Code,
                 Name = product.Name,
                 Description = product.Description
             });

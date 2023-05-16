@@ -97,7 +97,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             var product = await _dispatcher.DispatchAsync(new GetProductQuery { Id = id, ThrowNotFoundIfNull = true });
 
-            product.Code = model.Code;
+            //product.Code = model.Code;
             product.Name = model.Name;
             product.Description = model.Description;
 

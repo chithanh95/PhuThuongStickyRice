@@ -1,5 +1,5 @@
-﻿using PhuThuongStickyRice.CrossCuttingConcerns.Locks;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
+using PhuThuongStickyRice.CrossCuttingConcerns.Locks;
 using System;
 using System.Data;
 

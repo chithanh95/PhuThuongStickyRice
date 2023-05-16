@@ -1,8 +1,8 @@
-﻿using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
-using PhuThuongStickyRice.WebMVC.Hubs;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
+using PhuThuongStickyRice.WebMVC.Hubs;
 
 namespace PhuThuongStickyRice.WebMVC.Configurations
 {

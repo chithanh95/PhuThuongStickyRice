@@ -1,8 +1,8 @@
-﻿using PhuThuongStickyRice.Application.EventLogs;
-using PhuThuongStickyRice.CrossCuttingConcerns.CircuitBreakers;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PhuThuongStickyRice.Application.EventLogs;
+using PhuThuongStickyRice.CrossCuttingConcerns.CircuitBreakers;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

@@ -1,6 +1,6 @@
-﻿using PhuThuongStickyRice.Persistence.CircuitBreakers;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PhuThuongStickyRice.Persistence.CircuitBreakers;
 
 namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 {

@@ -1,13 +1,13 @@
-﻿using System;
-using System.IO;
-using System.Net;
-using System.Net.Mime;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Mvc;
 using PhuThuongStickyRice.Application;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Infrastructure.Storages;
 using PhuThuongStickyRice.WebMVC.Models.File;
-using Microsoft.AspNetCore.Mvc;
+using System;
+using System.IO;
+using System.Net;
+using System.Net.Mime;
+using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.WebMVC.Controllers
 {

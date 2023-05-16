@@ -1,8 +1,7 @@
-﻿using PhuThuongStickyRice.Application.FileEntries.DTOs;
-using PhuThuongStickyRice.Domain.Infrastructure.MessageBrokers;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
+using PhuThuongStickyRice.Application.FileEntries.DTOs;
+using PhuThuongStickyRice.Domain.Infrastructure.MessageBrokers;
 using System.Threading;
 using System.Threading.Tasks;
 

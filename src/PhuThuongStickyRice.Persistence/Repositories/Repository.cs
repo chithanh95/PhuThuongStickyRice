@@ -1,11 +1,11 @@
-﻿using PhuThuongStickyRice.CrossCuttingConcerns.OS;
-using PhuThuongStickyRice.Domain.Entities;
-using PhuThuongStickyRice.Domain.Repositories;
-using EntityFrameworkCore.SqlServer.SimpleBulks.BulkDelete;
+﻿using EntityFrameworkCore.SqlServer.SimpleBulks.BulkDelete;
 using EntityFrameworkCore.SqlServer.SimpleBulks.BulkInsert;
 using EntityFrameworkCore.SqlServer.SimpleBulks.BulkMerge;
 using EntityFrameworkCore.SqlServer.SimpleBulks.BulkUpdate;
 using Microsoft.EntityFrameworkCore;
+using PhuThuongStickyRice.CrossCuttingConcerns.OS;
+using PhuThuongStickyRice.Domain.Entities;
+using PhuThuongStickyRice.Domain.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;

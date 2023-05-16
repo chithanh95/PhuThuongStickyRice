@@ -1,7 +1,7 @@
-﻿using PhuThuongStickyRice.CrossCuttingConcerns.OS;
+﻿using Microsoft.EntityFrameworkCore;
+using PhuThuongStickyRice.CrossCuttingConcerns.OS;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 

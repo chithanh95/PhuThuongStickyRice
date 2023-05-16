@@ -1,9 +1,9 @@
-﻿using PhuThuongStickyRice.Domain.Repositories;
-using PhuThuongStickyRice.Persistence.Locks;
-using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using PhuThuongStickyRice.Domain.Repositories;
+using PhuThuongStickyRice.Persistence.Locks;
 using System;
 using System.Data;
 using System.Reflection;

@@ -1,12 +1,12 @@
-﻿using PhuThuongStickyRice.Application.FileEntries.DTOs;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using PhuThuongStickyRice.Application.FileEntries.DTOs;
 using PhuThuongStickyRice.BackgroundServer.ConfigurationOptions;
 using PhuThuongStickyRice.BackgroundServer.HostedServices;
 using PhuThuongStickyRice.BackgroundServer.Identity;
 using PhuThuongStickyRice.Domain.Identity;
 using PhuThuongStickyRice.Infrastructure.Logging;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using System;
 
 namespace PhuThuongStickyRice.BackgroundServer

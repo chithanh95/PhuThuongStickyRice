@@ -1,8 +1,8 @@
-﻿using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;

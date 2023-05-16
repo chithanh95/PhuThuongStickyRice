@@ -1,4 +1,6 @@
-﻿using PhuThuongStickyRice.CrossCuttingConcerns.CircuitBreakers;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
+using PhuThuongStickyRice.CrossCuttingConcerns.CircuitBreakers;
 using PhuThuongStickyRice.CrossCuttingConcerns.Locks;
 using PhuThuongStickyRice.CrossCuttingConcerns.Tenants;
 using PhuThuongStickyRice.Domain.Repositories;
@@ -6,8 +8,6 @@ using PhuThuongStickyRice.Persistence;
 using PhuThuongStickyRice.Persistence.CircuitBreakers;
 using PhuThuongStickyRice.Persistence.Locks;
 using PhuThuongStickyRice.Persistence.Repositories;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.EntityFrameworkCore;
 using System;
 
 namespace Microsoft.Extensions.DependencyInjection
