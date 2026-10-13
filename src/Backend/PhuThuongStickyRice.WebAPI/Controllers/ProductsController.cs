@@ -60,7 +60,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _productCsvReader = productCsvReader;
         }
 
-        [Authorize(AuthorizationPolicyNames.GetProductsPolicy)]
+        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
             [FromQuery] string searchTerm = null, [FromQuery] string status = null,
@@ -77,7 +77,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(paged.ToModels());
         }
 
-        [Authorize(AuthorizationPolicyNames.GetProductPolicy)]
+        [AllowAnonymous]
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

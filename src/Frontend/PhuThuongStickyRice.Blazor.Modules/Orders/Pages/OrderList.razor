@@ -1,0 +1,207 @@
+@page "/orders"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Orders.Models
+@using PhuThuongStickyRice.Blazor.Modules.Orders.Services
+@inject OrderService OrderService
+
+<h3>Quản lý đơn hàng</h3>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="form-row">
+            <div class="col-md-4">
+                <input class="form-control" placeholder="Tìm mã đơn / tên / SĐT..."
+                       @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchChanged" />
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" @bind="_statusFilter" @bind:after="() => LoadOrders(1)">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Pending">Chờ xác nhận</option>
+                    <option value="Confirmed">Đã xác nhận</option>
+                    <option value="Preparing">Đang chuẩn bị</option>
+                    <option value="Delivering">Đang giao</option>
+                    <option value="Completed">Hoàn thành</option>
+                    <option value="Cancelled">Đã hủy</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_paged == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Địa chỉ</th>
+                            <th class="text-right">Tổng tiền</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày đặt</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in _paged.Items)
+                        {
+                            <tr @key="order.Id">
+                                <td>
+                                    <a href="javascript:void(0)" @onclick="() => ToggleDetail(order)">
+                                        <strong>@order.OrderNumber</strong>
+                                    </a>
+                                </td>
+                                <td>@order.CustomerName<br /><small class="text-muted">@order.CustomerPhone</small></td>
+                                <td><small>@order.CustomerAddress</small></td>
+                                <td class="text-right"><strong>@FormatPrice(order.TotalAmount)</strong></td>
+                                <td>@StatusBadge(order.Status)</td>
+                                <td>@order.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                <td class="text-right">@NextStatusButtons(order)</td>
+                            </tr>
+                            @if (_expandedOrderId == order.Id)
+                            {
+                                <tr>
+                                    <td colspan="7" class="bg-light">
+                                        <strong>Chi tiết đơn @order.OrderNumber</strong>
+                                        @if (!string.IsNullOrWhiteSpace(order.Notes))
+                                        {
+                                            <div><em>Ghi chú: @order.Notes</em></div>
+                                        }
+                                        <table class="table table-sm mt-2 mb-0">
+                                            <thead>
+                                                <tr><th>Món</th><th class="text-right">Đơn giá</th><th class="text-right">SL</th><th class="text-right">Thành tiền</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var line in order.Lines)
+                                                {
+                                                    <tr>
+                                                        <td>@line.ProductName</td>
+                                                        <td class="text-right">@FormatPrice(line.UnitPrice)</td>
+                                                        <td class="text-right">@line.Quantity</td>
+                                                        <td class="text-right">@FormatPrice(line.LineTotal)</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <span>Tổng: @_paged.TotalItems đơn</span>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_page <= 1)" @onclick="() => LoadOrders(_page - 1)">Trước</button>
+                    <span class="mx-2">Trang @_page</span>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => LoadOrders(_page + 1)">Sau</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private PagedResult<OrderModel> _paged;
+    private int _page = 1;
+    private string _searchTerm;
+    private string _statusFilter;
+    private Guid? _expandedOrderId;
+    private System.Threading.Timer _searchTimer;
+
+    private static readonly string[] Statuses =
+        { "Pending", "Confirmed", "Preparing", "Delivering", "Completed", "Cancelled" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders(1);
+    }
+
+    private async Task LoadOrders(int page)
+    {
+        _page = page < 1 ? 1 : page;
+        _paged = await OrderService.GetOrdersAsync(_page, 20, _searchTerm, _statusFilter);
+    }
+
+    private void OnSearchChanged()
+    {
+        _searchTimer?.Dispose();
+        _searchTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () => await LoadOrders(1));
+        }, null, 500, System.Threading.Timeout.Infinite);
+    }
+
+    private void ToggleDetail(OrderModel order)
+    {
+        _expandedOrderId = _expandedOrderId == order.Id ? null : order.Id;
+    }
+
+    private async Task ChangeStatus(OrderModel order, string status)
+    {
+        await OrderService.UpdateStatusAsync(order.Id, status);
+        await LoadOrders(_page);
+    }
+
+    private RenderFragment NextStatusButtons(OrderModel order) => builder =>
+    {
+        var next = order.Status switch
+        {
+            "Pending" => new[] { "Confirmed", "Cancelled" },
+            "Confirmed" => new[] { "Preparing", "Cancelled" },
+            "Preparing" => new[] { "Delivering", "Cancelled" },
+            "Delivering" => new[] { "Completed", "Cancelled" },
+            _ => System.Array.Empty<string>()
+        };
+
+        var seq = 0;
+        foreach (var s in next)
+        {
+            var status = s;
+            var css = status == "Cancelled" ? "btn btn-sm btn-outline-danger mr-1" : "btn btn-sm btn-outline-primary mr-1";
+            builder.OpenElement(seq++, "button");
+            builder.AddAttribute(seq++, "class", css);
+            builder.AddAttribute(seq++, "onclick", Microsoft.AspNetCore.Components.EventCallback.Factory.Create(this, () => ChangeStatus(order, status)));
+            builder.AddContent(seq++, ButtonLabel(status));
+            builder.CloseElement();
+        }
+    };
+
+    private static string ButtonLabel(string status) => status switch
+    {
+        "Confirmed" => "Xác nhận",
+        "Preparing" => "Chuẩn bị",
+        "Delivering" => "Giao hàng",
+        "Completed" => "Hoàn thành",
+        "Cancelled" => "Hủy",
+        _ => status
+    };
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    private static RenderFragment StatusBadge(string status) => builder =>
+    {
+        var css = status switch
+        {
+            "Pending" => "badge badge-warning",
+            "Confirmed" => "badge badge-info",
+            "Preparing" => "badge badge-primary",
+            "Delivering" => "badge badge-secondary",
+            "Completed" => "badge badge-success",
+            "Cancelled" => "badge badge-danger",
+            _ => "badge badge-light"
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", css);
+        builder.AddContent(2, status);
+        builder.CloseElement();
+    };
+}

@@ -1,0 +1,128 @@
+@page "/checkout"
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Models
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@inject ShopService ShopService
+@inject CartState CartState
+@inject NavigationManager Navigation
+
+<h3>Đặt hàng</h3>
+
+@if (_placedOrder != null)
+{
+    <div class="alert alert-success">
+        <h4>Đặt hàng thành công!</h4>
+        <p>Mã đơn hàng của bạn: <strong>@_placedOrder.OrderNumber</strong></p>
+        <p>Tổng tiền: <strong>@FormatPrice(_placedOrder.TotalAmount)</strong></p>
+        <p>Chúng tôi sẽ liên hệ với bạn qua số <strong>@_placedOrder.CustomerPhone</strong> để xác nhận.</p>
+        <a class="btn btn-primary" href="/shop">Tiếp tục mua hàng</a>
+    </div>
+}
+else if (CartState.Items.Count == 0)
+{
+    <div class="alert alert-info">
+        Giỏ hàng đang trống. <a href="/shop">Xem các món xôi</a>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Thông tin giao hàng</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Họ tên *</label>
+                        <input class="form-control" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
+                    </div>
+                    <div class="form-group">
+                        <label>Số điện thoại *</label>
+                        <input class="form-control" @bind="_order.CustomerPhone" placeholder="0901234567" />
+                    </div>
+                    <div class="form-group">
+                        <label>Địa chỉ giao hàng *</label>
+                        <textarea class="form-control" @bind="_order.CustomerAddress" rows="3"
+                                  placeholder="Số nhà, đường, phường..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Ghi chú</label>
+                        <textarea class="form-control" @bind="_order.Notes" rows="2"
+                                  placeholder="Ví dụ: giao giờ hành chính..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Đơn hàng của bạn</div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tbody>
+                            @foreach (var item in CartState.Items)
+                            {
+                                <tr @key="item.ProductId">
+                                    <td>@item.ProductName <span class="text-muted">× @item.Quantity</span></td>
+                                    <td class="text-right">@FormatPrice(item.LineTotal)</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td><strong>Tổng cộng</strong></td>
+                                <td class="text-right"><strong class="text-danger">@FormatPrice(CartState.TotalAmount)</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <button class="btn btn-success btn-block btn-lg" @onclick="PlaceOrder" disabled="@_submitting">
+                        @(_submitting ? "Đang xử lý..." : "Xác nhận đặt hàng")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly CreateOrderModel _order = new CreateOrderModel();
+    private PlacedOrderModel _placedOrder;
+    private bool _submitting;
+    private string _error;
+
+    private async Task PlaceOrder()
+    {
+        _error = null;
+
+        if (string.IsNullOrWhiteSpace(_order.CustomerName)
+            || string.IsNullOrWhiteSpace(_order.CustomerPhone)
+            || string.IsNullOrWhiteSpace(_order.CustomerAddress))
+        {
+            _error = "Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ giao hàng.";
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            _order.Lines = CartState.Items
+                .Select(x => new CreateOrderLineModel { ProductId = x.ProductId, Quantity = x.Quantity })
+                .ToList();
+
+            _placedOrder = await ShopService.CreateOrderAsync(_order);
+            CartState.Clear();
+        }
+        catch (Exception)
+        {
+            _error = "Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin và thử lại.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+}

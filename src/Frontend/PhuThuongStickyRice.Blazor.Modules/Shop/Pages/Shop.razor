@@ -1,0 +1,104 @@
+@page "/shop"
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Models
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@inject ShopService ShopService
+@inject CartState CartState
+@inject NavigationManager Navigation
+
+<div class="jumbotron jumbotron-fluid bg-warning text-dark rounded p-4 mb-4">
+    <div class="container">
+        <h1 class="display-5">Xôi Làng Nghề Phú Thượng</h1>
+        <p class="lead">Xôi dẻo thơm chuẩn vị làng nghề — đặt hàng online, giao tận nơi.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (_products == null)
+{
+    <p><em>Đang tải sản phẩm...</em></p>
+}
+else if (_products.Count == 0)
+{
+    <div class="alert alert-info">Hiện chưa có sản phẩm nào. Vui lòng quay lại sau.</div>
+}
+else
+{
+    <div class="row">
+        @foreach (var product in _products)
+        {
+            <div class="col-md-4 mb-4" @key="product.Id">
+                <div class="card h-100">
+                    <img class="card-img-top" src="@ProductImage(product.Code)" alt="@product.Name" style="height: 200px; object-fit: cover;" />
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">@product.Name</h5>
+                        <p class="card-text text-muted small flex-grow-1">@product.Description</p>
+                        <p class="card-text">
+                            <strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(product.Price)</strong>
+                        </p>
+                        <div class="d-flex align-items-center">
+                            <input type="number" min="1" max="99" class="form-control mr-2" style="width: 80px;"
+                                   @bind="_quantities[product.Id]" />
+                            <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)">
+                                Thêm vào giỏ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<ShopProductModel> _products;
+    private Dictionary<Guid, int> _quantities = new Dictionary<Guid, int>();
+    private string _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var paged = await ShopService.GetProductsAsync();
+            _products = paged.Items ?? new List<ShopProductModel>();
+            foreach (var p in _products)
+            {
+                _quantities[p.Id] = 1;
+            }
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được danh sách sản phẩm. Vui lòng thử lại sau.";
+            _products = new List<ShopProductModel>();
+        }
+    }
+
+    private void AddToCart(ShopProductModel product)
+    {
+        var qty = _quantities.TryGetValue(product.Id, out var q) && q > 0 ? q : 1;
+        CartState.Add(product, qty);
+        Navigation.NavigateTo("/cart");
+    }
+
+    private static string ProductImage(string code)
+    {
+        var slug = (code ?? "").ToLowerInvariant()
+            .Replace("xoi-", "xoi-")
+            .Replace("_", "-");
+        var file = slug switch
+        {
+            "xoi-gac" => "xoi-gac.svg",
+            "xoi-do" => "xoi-do.svg",
+            "xoi-xeo" => "xoi-xeo.svg",
+            "xoi-vo" => "xoi-vo.svg",
+            "xoi-ns" => "xoi-ngu-sac.svg",
+            "xoi-ngu-sac" => "xoi-ngu-sac.svg",
+            _ => "xoi-gac.svg"
+        };
+        return $"_content/PhuThuongStickyRice.Blazor.Modules/images/{file}";
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+}
