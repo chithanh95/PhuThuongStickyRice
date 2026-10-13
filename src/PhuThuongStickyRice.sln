@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32516.85
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Persistence", "PhuThuongStickyRice.Persistence\PhuThuongStickyRice.Persistence.csproj", "{BA1D8E3E-555F-4C20-B6A0-55C146BFBCC7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Persistence", "Backend\PhuThuongStickyRice.Persistence\PhuThuongStickyRice.Persistence.csproj", "{BA1D8E3E-555F-4C20-B6A0-55C146BFBCC7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Infrastructure", "PhuThuongStickyRice.Infrastructure\PhuThuongStickyRice.Infrastructure.csproj", "{FC4133A1-7A82-4AFB-9962-BA84A96B89BC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Infrastructure", "Backend\PhuThuongStickyRice.Infrastructure\PhuThuongStickyRice.Infrastructure.csproj", "{FC4133A1-7A82-4AFB-9962-BA84A96B89BC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.CrossCuttingConcerns", "PhuThuongStickyRice.CrossCuttingConcerns\PhuThuongStickyRice.CrossCuttingConcerns.csproj", "{6ABD715C-9A22-4BCA-AA78-7D2563410923}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.CrossCuttingConcerns", "Backend\PhuThuongStickyRice.CrossCuttingConcerns\PhuThuongStickyRice.CrossCuttingConcerns.csproj", "{6ABD715C-9A22-4BCA-AA78-7D2563410923}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.WebAPI", "PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj", "{F1C3F330-D7DE-4181-8ED9-66E6C620D5CD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.WebAPI", "Backend\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj", "{F1C3F330-D7DE-4181-8ED9-66E6C620D5CD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.WebMVC", "PhuThuongStickyRice.WebMVC\PhuThuongStickyRice.WebMVC.csproj", "{CFDF9CC8-0B83-4FF0-AC76-36AA6E8DB565}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.WebMVC", "Frontend\PhuThuongStickyRice.WebMVC\PhuThuongStickyRice.WebMVC.csproj", "{CFDF9CC8-0B83-4FF0-AC76-36AA6E8DB565}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Presentations", "Presentations", "{C6061573-0203-4860-AD42-4C6C2CF55110}"
 EndProject
@@ -21,37 +21,37 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CrossCuttingConcerns", "Cro
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{BBD032E9-D75E-4CD8-A23A-7234480435BE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Migrator", "PhuThuongStickyRice.Migrator\PhuThuongStickyRice.Migrator.csproj", "{95943383-5C81-45B6-8876-4789C00A9255}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Migrator", "Backend\PhuThuongStickyRice.Migrator\PhuThuongStickyRice.Migrator.csproj", "{95943383-5C81-45B6-8876-4789C00A9255}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{60BC7A82-187C-43E2-8C37-DE610700A7FA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.GraphQL", "PhuThuongStickyRice.GraphQL\PhuThuongStickyRice.GraphQL.csproj", "{FDBA0506-A4E7-405B-918D-66A195F16C95}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.GraphQL", "Backend\PhuThuongStickyRice.GraphQL\PhuThuongStickyRice.GraphQL.csproj", "{FDBA0506-A4E7-405B-918D-66A195F16C95}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.BackgroundServer", "PhuThuongStickyRice.BackgroundServer\PhuThuongStickyRice.BackgroundServer.csproj", "{72E42908-63F6-4981-9023-6018C66604D8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.BackgroundServer", "Backend\PhuThuongStickyRice.BackgroundServer\PhuThuongStickyRice.BackgroundServer.csproj", "{72E42908-63F6-4981-9023-6018C66604D8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BackEnds", "BackEnds", "{62A1AB08-A2DB-404F-B073-0F89CA780F45}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UIs", "UIs", "{4B31AB94-7016-4C77-951E-84792D6EBEAC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Domain", "PhuThuongStickyRice.Domain\PhuThuongStickyRice.Domain.csproj", "{54A5828A-61D6-4AF1-89D2-14CF7E336E43}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Domain", "Backend\PhuThuongStickyRice.Domain\PhuThuongStickyRice.Domain.csproj", "{54A5828A-61D6-4AF1-89D2-14CF7E336E43}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Application", "PhuThuongStickyRice.Application\PhuThuongStickyRice.Application.csproj", "{F6B99AB6-E840-402B-BE48-B463F0C98104}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Application", "Backend\PhuThuongStickyRice.Application\PhuThuongStickyRice.Application.csproj", "{F6B99AB6-E840-402B-BE48-B463F0C98104}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.UnitTests", "PhuThuongStickyRice.UnitTests\PhuThuongStickyRice.UnitTests.csproj", "{D1373C88-A7F9-404A-A39C-31F2C894EA11}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.UnitTests", "..\tests\PhuThuongStickyRice.UnitTests\PhuThuongStickyRice.UnitTests.csproj", "{D1373C88-A7F9-404A-A39C-31F2C894EA11}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.IntegrationTests", "PhuThuongStickyRice.IntegrationTests\PhuThuongStickyRice.IntegrationTests.csproj", "{A9444B01-1964-4C99-AD57-5A2DF28F702C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.IntegrationTests", "..\tests\PhuThuongStickyRice.IntegrationTests\PhuThuongStickyRice.IntegrationTests.csproj", "{A9444B01-1964-4C99-AD57-5A2DF28F702C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.EndToEndTests", "PhuThuongStickyRice.EndToEndTests\PhuThuongStickyRice.EndToEndTests.csproj", "{6F1668FE-3E12-422B-814B-4AA79AF7B775}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.EndToEndTests", "..\tests\PhuThuongStickyRice.EndToEndTests\PhuThuongStickyRice.EndToEndTests.csproj", "{6F1668FE-3E12-422B-814B-4AA79AF7B775}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.BlazorWebAssembly", "PhuThuongStickyRice.BlazorWebAssembly\PhuThuongStickyRice.BlazorWebAssembly.csproj", "{3C4830C0-9866-463A-9820-903EEFA28331}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.BlazorWebAssembly", "Frontend\PhuThuongStickyRice.BlazorWebAssembly\PhuThuongStickyRice.BlazorWebAssembly.csproj", "{3C4830C0-9866-463A-9820-903EEFA28331}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Blazor.Modules", "PhuThuongStickyRice.Blazor.Modules\PhuThuongStickyRice.Blazor.Modules.csproj", "{6EB5F523-5274-421D-9483-CAF86BD149AA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Blazor.Modules", "Frontend\PhuThuongStickyRice.Blazor.Modules\PhuThuongStickyRice.Blazor.Modules.csproj", "{6EB5F523-5274-421D-9483-CAF86BD149AA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.BlazorServerSide", "PhuThuongStickyRice.BlazorServerSide\PhuThuongStickyRice.BlazorServerSide.csproj", "{C2646CBE-029A-47EA-809E-57C9EE3ABD9B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.BlazorServerSide", "Frontend\PhuThuongStickyRice.BlazorServerSide\PhuThuongStickyRice.BlazorServerSide.csproj", "{C2646CBE-029A-47EA-809E-57C9EE3ABD9B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.ContractTests", "PhuThuongStickyRice.ContractTests\PhuThuongStickyRice.ContractTests.csproj", "{65832FF6-24CE-4DAA-BEB6-EBFE76FC46F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.ContractTests", "..\tests\PhuThuongStickyRice.ContractTests\PhuThuongStickyRice.ContractTests.csproj", "{65832FF6-24CE-4DAA-BEB6-EBFE76FC46F0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.ArchTests", "PhuThuongStickyRice.ArchTests\PhuThuongStickyRice.ArchTests.csproj", "{16D3179E-608B-43A9-8254-B3834E0917FC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.ArchTests", "..\tests\PhuThuongStickyRice.ArchTests\PhuThuongStickyRice.ArchTests.csproj", "{16D3179E-608B-43A9-8254-B3834E0917FC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

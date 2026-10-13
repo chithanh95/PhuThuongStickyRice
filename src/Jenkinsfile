@@ -14,7 +14,7 @@ pipeline {
         sh 'dotnet --info'
 		echo "BUILD_NUMBER: ${BUILD_NUMBER}"
 		echo "VERSION: ${VERSION}"
-        dir('src/Monolith') {
+        dir('src') {
           sh 'dotnet clean'
           sh "dotnet build -p:Version=${VERSION} --configuration Release"
         }
@@ -22,7 +22,7 @@ pipeline {
     }
     stage('Publish') {
       steps {
-        dir('src/Monolith') {
+        dir('src') {
           sh "dotnet publish -p:Version=${VERSION} PhuThuongStickyRice.BackgroundServer/*.csproj --configuration Release"
           sh "dotnet publish -p:Version=${VERSION} PhuThuongStickyRice.GraphQL/*.csproj --configuration Release"
           sh "dotnet publish -p:Version=${VERSION} PhuThuongStickyRice.Migrator/*.csproj --configuration Release"

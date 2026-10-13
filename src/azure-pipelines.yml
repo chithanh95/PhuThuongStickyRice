@@ -8,7 +8,7 @@ trigger:
     - main
   paths:
     include:
-    - src/Monolith
+    - src
 
 resources:
 - repo: self
@@ -16,7 +16,7 @@ resources:
 variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryEndpoint: 'PhuThuongStickyRice'
-  dockerComposeFile: 'src/Monolith/docker-compose.yml'
+  dockerComposeFile: 'src/docker-compose.yml'
   tag: '$(Build.BuildId)'
   
   # Agent VM image name
@@ -41,7 +41,7 @@ stages:
     - task: DotNetCoreCLI@2
       inputs:
         command: 'build'
-        projects: 'src/Monolith/PhuThuongStickyRice.Monolith.sln'
+        projects: 'src/PhuThuongStickyRice.sln'
     - task: SonarCloudAnalyze@1
     - task: SonarCloudPublish@1
       inputs:
@@ -58,10 +58,10 @@ stages:
     - task: DotNetCoreCLI@2
       inputs:
         command: 'build'
-        projects: 'src/Monolith/PhuThuongStickyRice.Monolith.sln'
+        projects: 'src/PhuThuongStickyRice.sln'
     - task: WhiteSource Bolt@20
       inputs:
-        cwd: 'src/Monolith/'
+        cwd: 'src/'
 
 - stage: DotNetBuild
   displayName: .Net Build
@@ -75,12 +75,12 @@ stages:
         displayName: Use .Net 6.0.x
         inputs:
           packageType: 'sdk'
-          version: '6.0.x'
+          version: '10.0.x'
       - task: DotNetCoreCLI@2
         displayName: dotnet restore
         inputs:
           command: 'restore'
-          projects: 'src/Monolith/PhuThuongStickyRice.Monolith.sln'
+          projects: 'src/PhuThuongStickyRice.sln'
           feedsToUse: 'select'
       - task: DotNetCoreCLI@2
         displayName: dotnet list package --vulnerable
@@ -88,21 +88,21 @@ stages:
           command: 'custom'
           custom: 'list'
           arguments: 'package --vulnerable'
-          workingDirectory: 'src/Monolith'
+          workingDirectory: 'src'
       - task: DotNetCoreCLI@2
         displayName: Build
         inputs:
           command: 'build'
           arguments: '--configuration Release'
-          workingDirectory: 'src/Monolith'
+          workingDirectory: 'src'
       - task: DotNetCoreCLI@2
         displayName: Test
         inputs:
           command: 'test'
           projects: |
-            src/Monolith/PhuThuongStickyRice.ArchTests/*.csproj
-            src/Monolith/PhuThuongStickyRice.ContractTests/*.csproj
-            src/Monolith/PhuThuongStickyRice.UnitTests/*.csproj
+            tests/PhuThuongStickyRice.ArchTests/*.csproj
+            tests/PhuThuongStickyRice.ContractTests/*.csproj
+            tests/PhuThuongStickyRice.UnitTests/*.csproj
           arguments: '/p:CollectCoverage=true /p:CoverletOutputFormat=cobertura'
       - task: reportgenerator@4
         displayName: Generate Test Report
@@ -121,14 +121,14 @@ stages:
           command: 'publish'
           publishWebProjects: false
           projects: |
-            src/Monolith/PhuThuongStickyRice.BackgroundServer/*.csproj
-            src/Monolith/PhuThuongStickyRice.GraphQL/*.csproj
-            src/Monolith/PhuThuongStickyRice.Migrator/*.csproj
-            src/Monolith/PhuThuongStickyRice.WebAPI/*.csproj
-            src/Monolith/PhuThuongStickyRice.IdentityServer/*.csproj
-            src/Monolith/PhuThuongStickyRice.WebMVC/*.csproj
-            src/Monolith/PhuThuongStickyRice.BlazorServerSide/*.csproj
-            src/Monolith/PhuThuongStickyRice.BlazorWebAssembly/*.csproj
+            src/Backend/PhuThuongStickyRice.BackgroundServer/*.csproj
+            src/Backend/PhuThuongStickyRice.GraphQL/*.csproj
+            src/Backend/PhuThuongStickyRice.Migrator/*.csproj
+            src/Backend/PhuThuongStickyRice.WebAPI/*.csproj
+            src/PhuThuongStickyRice.IdentityServer/*.csproj
+            src/Frontend/PhuThuongStickyRice.WebMVC/*.csproj
+            src/Frontend/PhuThuongStickyRice.BlazorServerSide/*.csproj
+            src/PhuThuongStickyRice.BlazorWebAssembly/*.csproj
           arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)'
       - task: PublishBuildArtifacts@1
         inputs:
@@ -181,28 +181,28 @@ stages:
       displayName: dotnet restore
       inputs:
         command: 'restore'
-        projects: 'src/Monolith/PhuThuongStickyRice.Monolith.sln'
+        projects: 'src/PhuThuongStickyRice.sln'
         feedsToUse: 'select'
     - task: DotNetCoreCLI@2
       displayName: dotnet build
       inputs:
         command: 'build'
         arguments: '--configuration Release'
-        workingDirectory: 'src/Monolith'
+        workingDirectory: 'src'
     - task: DotNetCoreCLI@2
       displayName: dotnet publish
       inputs:
         command: 'publish'
         publishWebProjects: false
         projects: |
-          src/Monolith/PhuThuongStickyRice.BackgroundServer/*.csproj
-          src/Monolith/PhuThuongStickyRice.GraphQL/*.csproj
-          src/Monolith/PhuThuongStickyRice.Migrator/*.csproj
-          src/Monolith/PhuThuongStickyRice.WebAPI/*.csproj
-          src/Monolith/PhuThuongStickyRice.IdentityServer/*.csproj
-          src/Monolith/PhuThuongStickyRice.WebMVC/*.csproj
-          src/Monolith/PhuThuongStickyRice.BlazorServerSide/*.csproj
-          src/Monolith/PhuThuongStickyRice.BlazorWebAssembly/*.csproj
+          src/Backend/PhuThuongStickyRice.BackgroundServer/*.csproj
+          src/Backend/PhuThuongStickyRice.GraphQL/*.csproj
+          src/Backend/PhuThuongStickyRice.Migrator/*.csproj
+          src/Backend/PhuThuongStickyRice.WebAPI/*.csproj
+          src/PhuThuongStickyRice.IdentityServer/*.csproj
+          src/Frontend/PhuThuongStickyRice.WebMVC/*.csproj
+          src/Frontend/PhuThuongStickyRice.BlazorServerSide/*.csproj
+          src/PhuThuongStickyRice.BlazorWebAssembly/*.csproj
         arguments: '--configuration Release -p:Version=1.0.0-$(Build.BuildNumber) --output $(Build.ArtifactStagingDirectory)'
         zipAfterPublish: false
 

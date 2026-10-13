@@ -40,7 +40,7 @@ services:
         image: PhuThuongStickyRice.migrator
         build:
           context: .
-          dockerfile: ./PhuThuongStickyRice.Migrator/Dockerfile
+          dockerfile: ./Backend/PhuThuongStickyRice.Migrator/Dockerfile
         depends_on:
           - db
         environment:
@@ -68,7 +68,7 @@ services:
         image: PhuThuongStickyRice.webapi
         build:
           context: .
-          dockerfile: ./PhuThuongStickyRice.WebAPI/Dockerfile
+          dockerfile: ./Backend/PhuThuongStickyRice.WebAPI/Dockerfile
         ports:
             - "9002:80"
         depends_on:
@@ -95,7 +95,7 @@ services:
         image: PhuThuongStickyRice.webmvc
         build:
           context: .
-          dockerfile: ./PhuThuongStickyRice.WebMVC/Dockerfile
+          dockerfile: ./Frontend/PhuThuongStickyRice.WebMVC/Dockerfile
         ports:
             - "9003:80"
         depends_on:
@@ -134,7 +134,7 @@ services:
         image: PhuThuongStickyRice.blazor
         build:
           context: .
-          dockerfile: ./PhuThuongStickyRice.BlazorServerSide/Dockerfile
+          dockerfile: ./Frontend/PhuThuongStickyRice.BlazorServerSide/Dockerfile
         ports:
             - "9008:80"
         depends_on:
@@ -153,7 +153,7 @@ services:
         image: PhuThuongStickyRice.backgroundserver
         build:
           context: .
-          dockerfile: ./PhuThuongStickyRice.BackgroundServer/Dockerfile
+          dockerfile: ./Backend/PhuThuongStickyRice.BackgroundServer/Dockerfile
         ports:
             - "9004:80"
         depends_on:
@@ -183,7 +183,7 @@ services:
         image: PhuThuongStickyRice.graphql
         build:
           context: .
-          dockerfile: ./PhuThuongStickyRice.GraphQL/Dockerfile
+          dockerfile: ./Backend/PhuThuongStickyRice.GraphQL/Dockerfile
         ports:
             - "9006:80"
         depends_on:
