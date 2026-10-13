@@ -1,4 +1,4 @@
-using PhuThuongStickyRice.Domain.Entities;
+using PhuThuongStickyRice.IntegrationTests.Models;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -22,7 +22,7 @@ namespace PhuThuongStickyRice.IntegrationTests.GraphQL
             _client = new GraphQLHttpClient(AppSettings.GraphQL.Endpoint, new NewtonsoftJsonSerializer());
         }
 
-        private async Task<List<Product>> GetProducts()
+        private async Task<List<ProductApiModel>> GetProducts()
         {
             var query = new GraphQLRequest
             {
@@ -43,7 +43,7 @@ namespace PhuThuongStickyRice.IntegrationTests.GraphQL
             return response.Data.Products;
         }
 
-        private async Task<Product> GetProductById(Guid id)
+        private async Task<ProductApiModel> GetProductById(Guid id)
         {
             var query = new GraphQLRequest
             {
@@ -64,7 +64,7 @@ namespace PhuThuongStickyRice.IntegrationTests.GraphQL
             return response.Data.Product;
         }
 
-        private async Task<Product> CreateProduct(Product product)
+        private async Task<ProductApiModel> CreateProduct(ProductApiModel product)
         {
             var query = new GraphQLRequest
             {
@@ -123,14 +123,14 @@ namespace PhuThuongStickyRice.IntegrationTests.GraphQL
             var token = tokenResponse.AccessToken;
             _client.HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var product = new Product
+            var product = new ProductApiModel
             {
                 Name = "Test",
                 Code = "TEST",
                 Description = "Description",
             };
 
-            Product createdProduct = await CreateProduct(product);
+            ProductApiModel createdProduct = await CreateProduct(product);
             Assert.True(product.Id != createdProduct.Id);
             Assert.Equal(product.Name, createdProduct.Name);
             Assert.Equal(product.Code, createdProduct.Code);
@@ -152,11 +152,11 @@ namespace PhuThuongStickyRice.IntegrationTests.GraphQL
 
     public class ProductResponse
     {
-        public List<Product> Products { get; set; }
+        public List<ProductApiModel> Products { get; set; }
 
-        public Product Product { get; set; }
+        public ProductApiModel Product { get; set; }
 
-        public Product CreateProduct { get; set; }
+        public ProductApiModel CreateProduct { get; set; }
 
         public bool? DeleteProduct { get; set; }
     }

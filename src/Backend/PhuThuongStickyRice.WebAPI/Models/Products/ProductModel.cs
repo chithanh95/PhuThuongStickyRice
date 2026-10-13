@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace PhuThuongStickyRice.WebAPI.Models.Products
 {
@@ -11,5 +11,11 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
         public string Name { get; set; }
 
         public string Description { get; set; }
+
+        public decimal Price { get; set; }
+
+        public string Currency { get; set; }
+
+        public string Status { get; set; }
     }
 }

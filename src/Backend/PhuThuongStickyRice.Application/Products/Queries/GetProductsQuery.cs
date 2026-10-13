@@ -1,5 +1,6 @@
-﻿using PhuThuongStickyRice.Application.Decorators.AuditLog;
-using PhuThuongStickyRice.Application.Decorators.DatabaseRetry;
+using MediatR;
+using PhuThuongStickyRice.Application.Common.DTOs;
+using PhuThuongStickyRice.Application.Products.DTOs;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using System;
@@ -10,24 +11,61 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application.Products.Queries
 {
-    public class GetProductsQuery : IQuery<List<Product>>
+    public sealed class GetProductsQuery : IRequest<Paged<ProductDto>>
     {
+        public int Page { get; set; } = 1;
+
+        public int PageSize { get; set; } = 20;
+
+        public string SearchTerm { get; set; }
+
+        public string Status { get; set; }
     }
 
-    [AuditLog]
-    [DatabaseRetry]
-    internal class GetProductsQueryHandler : IQueryHandler<GetProductsQuery, List<Product>>
+    internal sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, Paged<ProductDto>>
     {
-        private readonly IRepository<Product, Guid> _productRepository;
+        private readonly IProductRepository _products;
 
-        public GetProductsQueryHandler(IRepository<Product, Guid> productRepository)
+        public GetProductsQueryHandler(IProductRepository products)
         {
-            _productRepository = productRepository;
+            _products = products;
         }
 
-        public async Task<List<Product>> HandleAsync(GetProductsQuery query, CancellationToken cancellationToken = default)
+        public async Task<Paged<ProductDto>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
         {
-            return await _productRepository.ToListAsync(_productRepository.GetAll());
+            var page = request.Page < 1 ? 1 : request.Page;
+            var pageSize = request.PageSize < 1 ? 20 : request.PageSize;
+
+            IQueryable<Product> query = _products.GetAll().OrderBy(x => x.Name);
+
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var term = request.SearchTerm.Trim();
+                query = query.Where(x => x.Name.Contains(term) || x.Code.Value.Contains(term));
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Status)
+                && Enum.TryParse<ProductStatus>(request.Status, ignoreCase: true, out var status))
+            {
+                query = query.Where(x => x.Status == status);
+            }
+
+            var totalItems = await _products.CountAsync(query, cancellationToken);
+
+            var items = await _products.ToListAsync(
+                query.Skip((page - 1) * pageSize).Take(pageSize));
+
+            var dtos = new List<ProductDto>();
+            foreach (var item in items)
+            {
+                dtos.Add(item.ToDto());
+            }
+
+            return new Paged<ProductDto>
+            {
+                TotalItems = totalItems,
+                Items = dtos
+            };
         }
     }
 }

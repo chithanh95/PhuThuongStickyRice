@@ -1,5 +1,5 @@
-﻿using PhuThuongStickyRice.Domain.Entities;
-using PhuThuongStickyRice.GraphQL.DownstreamServices;
+﻿using PhuThuongStickyRice.GraphQL.DownstreamServices;
+using PhuThuongStickyRice.GraphQL.Models;
 using GraphQL;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -12,13 +12,13 @@ namespace PhuThuongStickyRice.GraphQL
 {
     public class PhuThuongStickyRiceQuery
     {
-        public static Task<Product> Product([FromServices] IConfiguration configuration, [FromServices] IHttpContextAccessor httpContext, [Id] string id)
+        public static Task<ProductModel> Product([FromServices] IConfiguration configuration, [FromServices] IHttpContextAccessor httpContext, [Id] string id)
         {
             var productService = GetProductService(configuration, httpContext);
             return productService.GetProductById(Guid.Parse(id));
         }
 
-        public static Task<List<Product>> Products([FromServices] IConfiguration configuration, [FromServices] IHttpContextAccessor httpContext)
+        public static Task<List<ProductModel>> Products([FromServices] IConfiguration configuration, [FromServices] IHttpContextAccessor httpContext)
         {
             var productService = GetProductService(configuration, httpContext);
             return productService.GetProducts();

@@ -86,6 +86,11 @@ namespace PhuThuongStickyRice.Persistence.Repositories
             return query.ToListAsync();
         }
 
+        public Task<long> CountAsync<T1>(IQueryable<T1> query, CancellationToken cancellationToken = default)
+        {
+            return query.LongCountAsync(cancellationToken);
+        }
+
         public void BulkInsert(IEnumerable<T> entities)
         {
             _dbContext.BulkInsert(entities);

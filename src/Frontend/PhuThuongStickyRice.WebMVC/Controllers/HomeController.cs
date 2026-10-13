@@ -1,8 +1,7 @@
-﻿using PhuThuongStickyRice.Application;
+﻿using MediatR;
+using PhuThuongStickyRice.Application.Products.DTOs;
 using PhuThuongStickyRice.Application.Products.Queries;
-using PhuThuongStickyRice.Application.Products.Services;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
-using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
 using PhuThuongStickyRice.WebMVC.Hubs;
 using PhuThuongStickyRice.WebMVC.Models;
@@ -31,25 +30,22 @@ namespace PhuThuongStickyRice.WebMVC.Controllers
     public class HomeController : Controller
     {
         private readonly IDistributedCache _distributedCache;
-        private readonly IProductService _productService;
+        private readonly IMediator _mediator;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly Dispatcher _dispatcher;
         private readonly ILogger _logger;
         private readonly IHubContext<SimulatedLongRunningTaskHub> _hubContext;
         private readonly AppSettings _appSettings;
 
         public HomeController(IDistributedCache distributedCache,
-            IProductService productService,
+            IMediator mediator,
             IHttpClientFactory httpClientFactory,
-            Dispatcher dispatcher,
             ILogger<HomeController> logger,
             IOptionsSnapshot<AppSettings> appSettings,
             IHubContext<SimulatedLongRunningTaskHub> hubContext)
         {
             _distributedCache = distributedCache;
-            _productService = productService;
+            _mediator = mediator;
             _httpClientFactory = httpClientFactory;
-            _dispatcher = dispatcher;
             _logger = logger;
             _hubContext = hubContext;
             _appSettings = appSettings.Value;
@@ -67,11 +63,8 @@ namespace PhuThuongStickyRice.WebMVC.Controllers
 
             if (User.Identity.IsAuthenticated)
             {
-                var products1 = await _dispatcher.DispatchAsync(new GetProductsQuery());
-                var products2 = await _productService.GetAsync();
-                var addingProduct = new Product { Name = "Test" };
-                await _productService.AddAsync(addingProduct);
-                await _productService.DeleteAsync(addingProduct);
+                var products = await _mediator.Send(new GetProductsQuery { Page = 1, PageSize = 5 });
+                _logger.LogInformation("Found {TotalItems} products via MediatR", products.TotalItems);
             }
 
             var accessToken = await HttpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken);
@@ -82,7 +75,7 @@ namespace PhuThuongStickyRice.WebMVC.Controllers
 
                 httpClient.SetBearerToken(accessToken);
                 var response = await httpClient.GetAsync($"{_appSettings.ResourceServer.Endpoint}/api/products");
-                var product3 = await response.Content.ReadAs<List<Product>>();
+                var product3 = await response.Content.ReadAs<List<ProductDto>>();
             }
 
             var cachedValue = _distributedCache.GetString("Test");

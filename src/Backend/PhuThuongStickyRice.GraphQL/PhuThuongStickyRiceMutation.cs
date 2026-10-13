@@ -1,5 +1,5 @@
-﻿using PhuThuongStickyRice.Domain.Entities;
-using PhuThuongStickyRice.GraphQL.DownstreamServices;
+﻿using PhuThuongStickyRice.GraphQL.DownstreamServices;
+using PhuThuongStickyRice.GraphQL.Models;
 using GraphQL;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -16,18 +16,24 @@ namespace PhuThuongStickyRice.GraphQL
         public string Name { get; set; }
 
         public string Description { get; set; }
+
+        public decimal Price { get; set; }
+
+        public string Currency { get; set; }
     }
 
     public class PhuThuongStickyRiceMutation
     {
-        public static Task<Product> CreateProduct([FromServices] IConfiguration configuration, [FromServices] IHttpContextAccessor httpContext, ProductInput product)
+        public static Task<ProductModel> CreateProduct([FromServices] IConfiguration configuration, [FromServices] IHttpContextAccessor httpContext, ProductInput product)
         {
             var productService = GetProductService(configuration, httpContext);
-            var createdProduct = productService.CreateProduct(new Product
+            var createdProduct = productService.CreateProduct(new ProductModel
             {
                 Code = product.Code,
                 Name = product.Name,
-                Description = product.Description
+                Description = product.Description,
+                Price = product.Price,
+                Currency = product.Currency,
             });
             return createdProduct;
         }

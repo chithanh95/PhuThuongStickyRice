@@ -1,6 +1,6 @@
 using PhuThuongStickyRice.Application.AuditLogEntries.DTOs;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
-using PhuThuongStickyRice.Domain.Entities;
+using PhuThuongStickyRice.IntegrationTests.Models;
 using Polly;
 using System;
 using System.Collections.Generic;
@@ -23,33 +23,33 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             _httpClient.DefaultRequestHeaders.Clear();
         }
 
-        private async Task<List<Product>> GetProductsAsync()
+        private async Task<List<ProductApiModel>> GetProductsAsync()
         {
-            var products = await GetAsync<List<Product>>("api/products");
-            return products;
+            var paged = await GetAsync<PagedApiModel<ProductApiModel>>("api/products");
+            return paged.Items;
         }
 
-        private async Task<Product> GetProductByIdAsync(Guid id)
+        private async Task<ProductApiModel> GetProductByIdAsync(Guid id)
         {
-            var product = await GetAsync<Product>($"api/products/{id}");
+            var product = await GetAsync<ProductApiModel>($"api/products/{id}");
             return product;
         }
 
-        private async Task<Product> CreateProductAsync(Product product)
+        private async Task<ProductApiModel> CreateProductAsync(ProductApiModel product)
         {
             var policy = Policy.Handle<Exception>().RetryAsync(5);
 
             return await policy.ExecuteAsync(async () =>
              {
-                 var createdProduct = await PostAsync<Product>("api/products", product);
+                 var createdProduct = await PostAsync<ProductApiModel>("api/products", product);
                  return createdProduct;
              });
 
         }
 
-        private async Task<Product> UpdateProductAsync(Guid id, Product product)
+        private async Task<ProductApiModel> UpdateProductAsync(Guid id, ProductApiModel product)
         {
-            var updatedProduct = await PutAsync<Product>($"api/products/{id}", product);
+            var updatedProduct = await PutAsync<ProductApiModel>($"api/products/{id}", product);
             return updatedProduct;
         }
 
@@ -78,7 +78,7 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             await response.Content.CopyToAsync(fileStream);
         }
 
-        private async Task<List<Product>> ImportCsvAsync(string filePath)
+        private async Task<List<ProductApiModel>> ImportCsvAsync(string filePath)
         {
             using var form = new MultipartFormDataContent();
             using var fileContent = new ByteArrayContent(File.ReadAllBytes(filePath));
@@ -89,7 +89,7 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             var response = await _httpClient.PostAsync($"api/products/ImportCsv", form);
             response.EnsureSuccessStatusCode();
 
-            var products = await response.Content.ReadAs<List<Product>>();
+            var products = await response.Content.ReadAs<List<ProductApiModel>>();
             return products;
         }
 
@@ -99,13 +99,13 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             await GetTokenAsync();
 
             // POST
-            var product = new Product
+            var product = new ProductApiModel
             {
                 Name = "Test",
                 Code = "TEST",
                 Description = "Description",
             };
-            Product createdProduct = await CreateProductAsync(product);
+            ProductApiModel createdProduct = await CreateProductAsync(product);
             Assert.True(product.Id != createdProduct.Id);
             Assert.Equal(product.Name, createdProduct.Name);
             Assert.Equal(product.Code, createdProduct.Code);

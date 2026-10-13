@@ -29,6 +29,8 @@ namespace PhuThuongStickyRice.Domain.Repositories
 
         Task<List<T>> ToListAsync<T>(IQueryable<T> query);
 
+        Task<long> CountAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default);
+
         void BulkInsert(IEnumerable<TEntity> entities);
 
         void BulkInsert(IEnumerable<TEntity> entities, Expression<Func<TEntity, object>> columnNamesSelector);

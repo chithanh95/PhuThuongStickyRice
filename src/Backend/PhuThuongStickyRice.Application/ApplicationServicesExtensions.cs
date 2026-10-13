@@ -1,7 +1,6 @@
 ﻿using PhuThuongStickyRice.Application;
 using PhuThuongStickyRice.Application.EmailMessages.Services;
 using PhuThuongStickyRice.Application.EventLogs;
-using PhuThuongStickyRice.Application.Products.Services;
 using PhuThuongStickyRice.Application.SmsMessages.Services;
 using PhuThuongStickyRice.Application.Users.Services;
 using PhuThuongStickyRice.Domain.Entities;
@@ -18,11 +17,12 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             DomainEvents.RegisterHandlers(Assembly.GetExecutingAssembly(), services);
 
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+
             services
                 .AddScoped<IDomainEvents, DomainEvents>()
                 .AddScoped(typeof(ICrudService<>), typeof(CrudService<>))
                 .AddScoped<IUserService, UserService>()
-                .AddScoped<IProductService, ProductService>()
                 .AddScoped<EmailMessageService>()
                 .AddScoped<SmsMessageService>()
                 .AddScoped<PublishEventService>();
@@ -36,7 +36,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
 
                 configureInterceptor(typeof(IUserService), typeof(UserService), ServiceLifetime.Scoped);
-                configureInterceptor(typeof(IProductService), typeof(ProductService), ServiceLifetime.Scoped);
             }
 
             return services;
