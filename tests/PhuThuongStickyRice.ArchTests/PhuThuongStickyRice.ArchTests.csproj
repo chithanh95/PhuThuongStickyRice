@@ -22,11 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PhuThuongStickyRice.Application\PhuThuongStickyRice.Application.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.Domain\PhuThuongStickyRice.Domain.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.Infrastructure\PhuThuongStickyRice.Infrastructure.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.Persistence\PhuThuongStickyRice.Persistence.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PhuThuongStickyRice.Application\PhuThuongStickyRice.Application.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PhuThuongStickyRice.Domain\PhuThuongStickyRice.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PhuThuongStickyRice.Infrastructure\PhuThuongStickyRice.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PhuThuongStickyRice.Persistence\PhuThuongStickyRice.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" />
   </ItemGroup>
 
 </Project>

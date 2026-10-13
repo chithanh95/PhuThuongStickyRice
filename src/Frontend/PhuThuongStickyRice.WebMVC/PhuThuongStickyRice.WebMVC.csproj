@@ -27,11 +27,11 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\PhuThuongStickyRice.Application\PhuThuongStickyRice.Application.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.CrossCuttingConcerns\PhuThuongStickyRice.CrossCuttingConcerns.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.Domain\PhuThuongStickyRice.Domain.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.Infrastructure\PhuThuongStickyRice.Infrastructure.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.Persistence\PhuThuongStickyRice.Persistence.csproj" />
+    <ProjectReference Include="..\..\Backend\PhuThuongStickyRice.Application\PhuThuongStickyRice.Application.csproj" />
+    <ProjectReference Include="..\..\Backend\PhuThuongStickyRice.CrossCuttingConcerns\PhuThuongStickyRice.CrossCuttingConcerns.csproj" />
+    <ProjectReference Include="..\..\Backend\PhuThuongStickyRice.Domain\PhuThuongStickyRice.Domain.csproj" />
+    <ProjectReference Include="..\..\Backend\PhuThuongStickyRice.Infrastructure\PhuThuongStickyRice.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Backend\PhuThuongStickyRice.Persistence\PhuThuongStickyRice.Persistence.csproj" />
   </ItemGroup>
 
 

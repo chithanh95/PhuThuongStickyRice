@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

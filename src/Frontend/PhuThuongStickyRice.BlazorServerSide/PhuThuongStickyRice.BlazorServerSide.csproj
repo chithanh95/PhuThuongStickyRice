@@ -18,9 +18,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PhuThuongStickyRice.Blazor.Modules\PhuThuongStickyRice.Blazor.Modules.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.CrossCuttingConcerns\PhuThuongStickyRice.CrossCuttingConcerns.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.Domain\PhuThuongStickyRice.Domain.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.Infrastructure\PhuThuongStickyRice.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Backend\PhuThuongStickyRice.CrossCuttingConcerns\PhuThuongStickyRice.CrossCuttingConcerns.csproj" />
+    <ProjectReference Include="..\..\Backend\PhuThuongStickyRice.Domain\PhuThuongStickyRice.Domain.csproj" />
+    <ProjectReference Include="..\..\Backend\PhuThuongStickyRice.Infrastructure\PhuThuongStickyRice.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -42,8 +42,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PhuThuongStickyRice.CrossCuttingConcerns\PhuThuongStickyRice.CrossCuttingConcerns.csproj" />
-    <ProjectReference Include="..\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PhuThuongStickyRice.CrossCuttingConcerns\PhuThuongStickyRice.CrossCuttingConcerns.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" />
   </ItemGroup>
 
 </Project>
