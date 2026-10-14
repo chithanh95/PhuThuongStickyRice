@@ -1,5 +1,4 @@
 ﻿using PhuThuongStickyRice.Blazor.Modules.Core.Components;
-using PhuThuongStickyRice.Blazor.Modules.Products.Components;
 using PhuThuongStickyRice.Blazor.Modules.Products.Models;
 using PhuThuongStickyRice.Blazor.Modules.Products.Services;
 using Microsoft.AspNetCore.Components;
@@ -28,8 +27,6 @@ namespace PhuThuongStickyRice.Blazor.Modules.Products.Pages
         [Inject]
         public ILogger<List> Logger { get; set; }
 
-        protected AuditLogsDialog AuditLogsDialog { get; set; }
-
         protected ConfirmDialog DeleteDialog { get; set; }
 
         public List<ProductModel> Products { get; set; }
@@ -50,12 +47,6 @@ namespace PhuThuongStickyRice.Blazor.Modules.Products.Pages
         {
             var authenticationState = await AuthenticationStateTask;
             NavManager.NavigateTo($"/products/edit/{product.Id}");
-        }
-
-        protected async Task ViewAuditLogs(ProductModel product)
-        {
-            var logs = await ProductService.GetAuditLogsAsync(product.Id);
-            AuditLogsDialog.Show(logs);
         }
 
         protected void DeleteProduct(ProductModel product)

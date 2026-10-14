@@ -1,7 +1,5 @@
 ﻿using PhuThuongStickyRice.Infrastructure.Logging;
-using PhuThuongStickyRice.Infrastructure.MessageBrokers;
 using PhuThuongStickyRice.Infrastructure.Notification;
-using PhuThuongStickyRice.Infrastructure.Storages;
 using Microsoft.Extensions.Options;
 
 namespace PhuThuongStickyRice.BackgroundServer.ConfigurationOptions
@@ -15,10 +13,6 @@ namespace PhuThuongStickyRice.BackgroundServer.ConfigurationOptions
         public string AllowedHosts { get; set; }
 
         public string CurrentUrl { get; set; }
-
-        public StorageOptions Storage { get; set; }
-
-        public MessageBrokerOptions MessageBroker { get; set; }
 
         public NotificationOptions Notification { get; set; }
 

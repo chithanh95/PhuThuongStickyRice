@@ -1,6 +1,5 @@
 ﻿using PhuThuongStickyRice.Domain.Notification;
 using System;
-using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Domain.Entities
 {
@@ -31,7 +30,5 @@ namespace PhuThuongStickyRice.Domain.Entities
         public DateTimeOffset? SentDateTime { get; set; }
 
         public Guid? CopyFromId { get; set; }
-
-        public ICollection<EmailMessageAttachment> EmailMessageAttachments { get; set; }
     }
 }

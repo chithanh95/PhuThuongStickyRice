@@ -1,6 +1,5 @@
 ﻿@page "/products"
 @attribute [Authorize]
-@using PhuThuongStickyRice.Blazor.Modules.Products.Components
 
 <div class="card">
     <div class="card-header">
@@ -49,7 +48,6 @@
                                 <td>@product.Description</td>
                                 <td>
                                     <button @onclick="(()=> EditProduct(product))" class="btn btn-primary" title="Edit">Edit</button>
-                                    <button @onclick="(()=> ViewAuditLogs(product))" class="btn btn-secondary" title="View Audit Logs">View Audit Logs</button>
                                     <button @onclick="(()=> DeleteProduct(product))" class="btn btn-danger" title="Delete">Delete</button>
                                 </td>
                             </tr>
@@ -61,7 +59,6 @@
     </div>
 </div>
 
-<AuditLogsDialog @ref="AuditLogsDialog"></AuditLogsDialog>
 <ConfirmDialog @ref="DeleteDialog" Title="Delete Product" YesText="Yes" NoText="No" ConfirmEventCallback="ConfirmedDeleteProduct">
     <Message>
         Are you sure you want to delete product: <strong>@DeletingProduct.Name</strong>

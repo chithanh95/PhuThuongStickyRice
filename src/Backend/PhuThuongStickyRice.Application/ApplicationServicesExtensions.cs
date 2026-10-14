@@ -1,8 +1,5 @@
 ﻿using PhuThuongStickyRice.Application;
 using PhuThuongStickyRice.Application.EmailMessages.Services;
-using PhuThuongStickyRice.Application.EventLogs;
-using PhuThuongStickyRice.Application.SmsMessages.Services;
-using PhuThuongStickyRice.Application.Users.Services;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Events;
 using System;
@@ -20,10 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services
                 .AddScoped<IDomainEvents, DomainEvents>()
                 .AddScoped(typeof(ICrudService<>), typeof(CrudService<>))
-                .AddScoped<IUserService, UserService>()
-                .AddScoped<EmailMessageService>()
-                .AddScoped<SmsMessageService>()
-                .AddScoped<PublishEventService>();
+                .AddScoped<EmailMessageService>();
 
             if (configureInterceptor != null)
             {
@@ -32,8 +26,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     configureInterceptor(typeof(ICrudService<>).MakeGenericType(type), typeof(CrudService<>).MakeGenericType(type), ServiceLifetime.Scoped);
                 }
-
-                configureInterceptor(typeof(IUserService), typeof(UserService), ServiceLifetime.Scoped);
             }
 
             return services;
@@ -47,11 +39,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             foreach (var type in assemblyTypes)
             {
-                // Skip open-generic handler definitions (e.g. AddEntityCommandHandler<T>,
-                // AuditLogCommandDecorator<T>). MS DI tolerates registering their
-                // open-generic interfaces with factories, but Autofac rejects it.
-                // The closed versions are registered by the loop below, and the
-                // decorators are instantiated by HandlerFactory via reflection.
+                // Skip open-generic handler definitions (e.g. AddEntityCommandHandler<T>).
+                // MS DI tolerates registering their open-generic interfaces with factories,
+                // but Autofac rejects it. The closed versions are registered by the loop below.
                 if (type.IsGenericTypeDefinition)
                 {
                     continue;

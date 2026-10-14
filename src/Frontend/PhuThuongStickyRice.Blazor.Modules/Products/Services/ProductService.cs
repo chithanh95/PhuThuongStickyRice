@@ -43,12 +43,6 @@ namespace PhuThuongStickyRice.Blazor.Modules.Products.Services
             await DeleteAsync($"api/products/{id}");
         }
 
-        public async Task<List<ProductAuditLogModel>> GetAuditLogsAsync(Guid id)
-        {
-            var auditLogs = await GetAsync<List<ProductAuditLogModel>>($"api/products/{id}/auditlogs");
-            return auditLogs;
-        }
-
         public string GetExportPdfUrl()
         {
             return $"{_httpClient.BaseAddress.AbsoluteUri.Trim('/')}/api/products/ExportAsPdf";

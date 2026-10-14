@@ -1,5 +1,3 @@
-using PhuThuongStickyRice.Application;
-using PhuThuongStickyRice.Application.AuditLogEntries.Queries;
 using PhuThuongStickyRice.Application.Products;
 using PhuThuongStickyRice.Application.Products.DTOs;
 using PhuThuongStickyRice.Application.Products.Exceptions;
@@ -20,7 +18,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,7 +31,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly IProductAppService _productAppService;
-        private readonly Dispatcher _dispatcher;
         private readonly ILogger _logger;
         private readonly IHtmlGenerator _htmlGenerator;
         private readonly IPdfConverter _pdfConverter;
@@ -42,7 +38,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly ICsvReader<ProductModel> _productCsvReader;
 
         public ProductsController(IProductAppService productAppService,
-            Dispatcher dispatcher,
             ILogger<ProductsController> logger,
             IHtmlGenerator htmlGenerator,
             IPdfConverter pdfConverter,
@@ -50,7 +45,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             ICsvReader<ProductModel> productCsvReader)
         {
             _productAppService = productAppService;
-            _dispatcher = dispatcher;
             _logger = logger;
             _htmlGenerator = htmlGenerator;
             _pdfConverter = pdfConverter;
@@ -169,42 +163,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
-        [Authorize(AuthorizationPolicyNames.GetProductAuditLogsPolicy)]
-        [HttpGet("{id}/auditlogs")]
-        public async Task<ActionResult> GetAuditLogs(Guid id, CancellationToken cancellationToken = default)
-        {
-            // NOTE: audit log reads still go through the legacy Dispatcher; it will be
-            // migrated to an ABP Application Service together with the AuditLogEntries feature.
-            var logs = await _dispatcher.DispatchAsync(new GetAuditEntriesQuery { ObjectId = id.ToString() }, cancellationToken);
-
-            var entries = new List<object>();
-            ProductSnapshot previous = null;
-            foreach (var log in logs.OrderBy(x => x.CreatedDateTime))
-            {
-                var data = ProductSnapshot.FromJson(log.Log);
-                var highLight = new Dictionary<string, bool>
-                {
-                    ["Code"] = previous != null && data.Code != previous.Code,
-                    ["Name"] = previous != null && data.Name != previous.Name,
-                    ["Description"] = previous != null && data.Description != previous.Description,
-                };
-
-                entries.Add(new
-                {
-                    log.Id,
-                    log.UserName,
-                    Action = log.Action.Replace("_PRODUCT", string.Empty),
-                    log.CreatedDateTime,
-                    data,
-                    highLight,
-                });
-
-                previous = data;
-            }
-
-            return Ok(entries.OrderByDescending(x => ((dynamic)x).CreatedDateTime));
-        }
-
         [HttpGet("exportaspdf")]
         public async Task<IActionResult> ExportAsPdf(CancellationToken cancellationToken = default)
         {
@@ -253,73 +211,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 Currency = x.Currency,
                 Status = x.Status
             }).ToList();
-        }
-
-        /// <summary>
-        /// Tolerant snapshot of a product audit entry. Handles both the legacy flat
-        /// JSON shape and the new shape where Code/Price are value objects.
-        /// </summary>
-        private sealed class ProductSnapshot
-        {
-            public string Code { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
-
-            public static ProductSnapshot FromJson(string json)
-            {
-                var snapshot = new ProductSnapshot();
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    return snapshot;
-                }
-
-                try
-                {
-                    using var doc = JsonDocument.Parse(json);
-                    var root = doc.RootElement;
-                    snapshot.Code = GetString(root, "Code");
-                    snapshot.Name = GetString(root, "Name");
-                    snapshot.Description = GetString(root, "Description");
-                }
-                catch (JsonException)
-                {
-                    // keep empty snapshot
-                }
-
-                return snapshot;
-            }
-
-            private static string GetString(JsonElement root, string propertyName)
-            {
-                if (!TryGetPropertyCaseInsensitive(root, propertyName, out var prop))
-                {
-                    return null;
-                }
-
-                if (prop.ValueKind == JsonValueKind.Object
-                    && prop.TryGetProperty("Value", out var nested)
-                    && nested.ValueKind == JsonValueKind.String)
-                {
-                    return nested.GetString();
-                }
-
-                return prop.ValueKind == JsonValueKind.String ? prop.GetString() : null;
-            }
-
-            private static bool TryGetPropertyCaseInsensitive(JsonElement root, string propertyName, out JsonElement value)
-            {
-                foreach (var prop in root.EnumerateObject())
-                {
-                    if (string.Equals(prop.Name, propertyName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        value = prop.Value;
-                        return true;
-                    }
-                }
-
-                value = default;
-                return false;
-            }
         }
     }
 }

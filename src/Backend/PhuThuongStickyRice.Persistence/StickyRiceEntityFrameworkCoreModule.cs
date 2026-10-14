@@ -59,12 +59,11 @@ namespace PhuThuongStickyRice.Persistence
             context.Services.AddScoped<IOrderRepository, OrderRepository>();
 
             // Template repositories + template IUnitOfWork for the legacy
-            // Dispatcher/CrudService paths (Users, Roles, Files, AuditLogs, ...).
+            // Dispatcher/CrudService paths.
             context.Services.AddScoped(typeof(IUnitOfWork), sp => sp.GetRequiredService<StickyRiceDbContext>());
             context.Services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
             context.Services.AddScoped(typeof(IAuditLogEntryRepository), typeof(AuditLogEntryRepository));
             context.Services.AddScoped(typeof(IEmailMessageRepository), typeof(EmailMessageRepository));
-            context.Services.AddScoped(typeof(ISmsMessageRepository), typeof(SmsMessageRepository));
             context.Services.AddScoped(typeof(IUserRepository), typeof(UserRepository));
             context.Services.AddScoped(typeof(IRoleRepository), typeof(RoleRepository));
 

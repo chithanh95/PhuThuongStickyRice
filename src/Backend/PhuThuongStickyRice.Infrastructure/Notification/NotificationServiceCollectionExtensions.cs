@@ -1,4 +1,4 @@
-﻿using PhuThuongStickyRice.Infrastructure.Notification;
+using PhuThuongStickyRice.Infrastructure.Notification;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -7,8 +7,6 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddNotificationServices(this IServiceCollection services, NotificationOptions options)
         {
             services.AddEmailNotification(options.Email);
-
-            services.AddSmsNotification(options.Sms);
 
             return services;
         }

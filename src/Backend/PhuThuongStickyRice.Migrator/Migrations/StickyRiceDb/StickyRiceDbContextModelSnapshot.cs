@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PhuThuongStickyRice.Persistence;
+using Volo.Abp.EntityFrameworkCore;
 
 #nullable disable
 
@@ -18,7 +19,8 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("_Abp_DatabaseProvider", EfCoreDatabaseProvider.SqlServer)
+                .HasAnnotation("ProductVersion", "10.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -75,51 +77,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.HasKey("Id");
 
                     b.ToTable("AuditLogEntries", (string)null);
-                });
-
-            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.ConfigurationEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("newsequentialid()");
-
-                    b.Property<DateTimeOffset>("CreatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsSensitive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Key")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<DateTimeOffset?>("UpdatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ConfigurationEntries", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("8a051aa5-bcd1-ea11-b098-ac728981bd15"),
-                            CreatedDateTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            IsSensitive = false,
-                            Key = "SecurityHeaders:Test-Read-From-SqlServer",
-                            Value = "this-is-read-from-sqlserver"
-                        });
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CustomMigrationHistory", b =>
@@ -208,145 +165,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.HasKey("Id");
 
                     b.ToTable("EmailMessages", (string)null);
-                });
-
-            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.EmailMessageAttachment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("newsequentialid()");
-
-                    b.Property<DateTimeOffset>("CreatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid>("EmailMessageId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("FileEntryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<DateTimeOffset?>("UpdatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmailMessageId");
-
-                    b.HasIndex("FileEntryId");
-
-                    b.ToTable("EmailMessageAttachments", (string)null);
-                });
-
-            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.FileEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("newsequentialid()");
-
-                    b.Property<DateTimeOffset>("CreatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Encrypted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("EncryptionIV")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EncryptionKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FileLocation")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FileName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<long>("Size")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTimeOffset?>("UpdatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset>("UploadedTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("FileEntries", (string)null);
-                });
-
-            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.LocalizationEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("newsequentialid()");
-
-                    b.Property<DateTimeOffset>("CreatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Culture")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<DateTimeOffset?>("UpdatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("LocalizationEntries", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("29a4aacb-4ddf-4f85-aced-c5283a8bdd7f"),
-                            CreatedDateTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Culture = "en-US",
-                            Name = "Test",
-                            Value = "Test"
-                        },
-                        new
-                        {
-                            Id = new Guid("5a262d8a-b0d9-45d3-8c0e-18b2c882b9fe"),
-                            CreatedDateTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Culture = "vi-VN",
-                            Name = "Test",
-                            Value = "Kiem Tra"
-                        });
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Lock", b =>
@@ -704,56 +522,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("RoleClaims", (string)null);
                 });
 
-            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.SmsMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("newsequentialid()");
-
-                    b.Property<int>("AttemptCount")
-                        .HasColumnType("int");
-
-                    b.Property<Guid?>("CopyFromId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("ExpiredDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Log")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MaxAttemptCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset?>("NextAttemptDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<DateTimeOffset?>("SentDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("UpdatedDateTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SmsMessages", (string)null);
-                });
-
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -993,25 +761,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("CircuitBreakerLogs", (string)null);
                 });
 
-            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.EmailMessageAttachment", b =>
-                {
-                    b.HasOne("PhuThuongStickyRice.Domain.Entities.EmailMessage", "EmailMessage")
-                        .WithMany("EmailMessageAttachments")
-                        .HasForeignKey("EmailMessageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhuThuongStickyRice.Domain.Entities.FileEntry", "FileEntry")
-                        .WithMany()
-                        .HasForeignKey("FileEntryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("EmailMessage");
-
-                    b.Navigation("FileEntry");
-                });
-
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.OrderLine", b =>
                 {
                     b.HasOne("PhuThuongStickyRice.Domain.Entities.Order", null)
@@ -1087,11 +836,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasForeignKey("CircuitBreakerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.EmailMessage", b =>
-                {
-                    b.Navigation("EmailMessageAttachments");
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Order", b =>

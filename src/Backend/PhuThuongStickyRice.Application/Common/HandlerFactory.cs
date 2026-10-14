@@ -1,5 +1,4 @@
-﻿using PhuThuongStickyRice.Application.Decorators;
-using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
+﻿using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +13,6 @@ namespace PhuThuongStickyRice.Application
         public HandlerFactory(Type type)
         {
             AddHandlerFactory(type);
-            AddDecoratedFactories(type);
         }
 
         public object Create(IServiceProvider provider, Type handlerInterfaceType)
@@ -26,27 +24,6 @@ namespace PhuThuongStickyRice.Application
             }
 
             return currentHandler;
-        }
-
-        private void AddDecoratedFactories(Type type)
-        {
-            var attributes = type.GetCustomAttributes(inherit: false);
-
-            for (var i = attributes.Length - 1; i >= 0; i--)
-            {
-                var attribute = attributes[i];
-                var attributeType = attribute.GetType();
-                Type decoratorHandlerType = null;
-                var hasDecoratorHandler = (type.HasInterface(typeof(ICommandHandler<>)) && Mappings.AttributeToCommandHandler.TryGetValue(attributeType, out decoratorHandlerType))
-                || (type.HasInterface(typeof(IQueryHandler<,>)) && Mappings.AttributeToQueryHandler.TryGetValue(attributeType, out decoratorHandlerType));
-
-                if (!hasDecoratorHandler)
-                {
-                    continue;
-                }
-
-                AddHandlerFactory(decoratorHandlerType, attribute);
-            }
         }
 
         private void AddHandlerFactory(Type handlerType, object attribute = null)

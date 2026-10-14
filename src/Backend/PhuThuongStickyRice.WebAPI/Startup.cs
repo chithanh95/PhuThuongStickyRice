@@ -1,17 +1,12 @@
 ﻿using PhuThuongStickyRice.CrossCuttingConcerns.Csv;
-using PhuThuongStickyRice.CrossCuttingConcerns.Excel;
-using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Identity;
 using PhuThuongStickyRice.Infrastructure.Csv;
-using PhuThuongStickyRice.Infrastructure.Excel.ClosedXML;
 using PhuThuongStickyRice.Infrastructure.Identity;
-using PhuThuongStickyRice.Infrastructure.Localization;
 using PhuThuongStickyRice.Infrastructure.Monitoring;
 using PhuThuongStickyRice.Infrastructure.Web.Filters;
 using PhuThuongStickyRice.Persistence;
 using PhuThuongStickyRice.WebAPI.Authorization;
 using PhuThuongStickyRice.WebAPI.ConfigurationOptions;
-using PhuThuongStickyRice.WebAPI.Hubs;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using PhuThuongStickyRice.WebAPI.Tenants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -62,20 +57,12 @@ namespace PhuThuongStickyRice.WebAPI
             {
             });
 
-            services.AddSignalR();
-
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowedOrigins", builder => builder
                     .WithOrigins(AppSettings.CORS.AllowedOrigins)
                     .AllowAnyMethod()
                     .AllowAnyHeader());
-
-                options.AddPolicy("SignalRHubs", builder => builder
-                    .WithOrigins(AppSettings.CORS.AllowedOrigins)
-                    .AllowAnyHeader()
-                    .WithMethods("GET", "POST")
-                    .AllowCredentials());
 
                 options.AddPolicy("AllowAnyOrigin", builder => builder
                     .AllowAnyOrigin()
@@ -135,7 +122,6 @@ namespace PhuThuongStickyRice.WebAPI
             services.AddRateLimiter(options =>
             {
                 options.AddPolicy<string, DefaultRateLimiterPolicy>(RateLimiterPolicyNames.DefaultPolicy);
-                options.AddPolicy<string, GetAuditLogsRateLimiterPolicy>(RateLimiterPolicyNames.GetAuditLogsPolicy);
             });
 
             services.AddSwaggerGen(setupAction =>
@@ -220,20 +206,14 @@ namespace PhuThuongStickyRice.WebAPI
                 });
             });
 
-            services.AddCaches(AppSettings.Caching);
-
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<ICurrentUser, CurrentWebUser>();
 
-            services.AddStorageManager(AppSettings.Storage);
             services.AddHtmlGenerator();
             services.AddDinkToPdfConverter();
-            services.AddPhuThuongStickyRiceLocalization();
 
             services.AddScoped(typeof(ICsvReader<>), typeof(CsvReader<>));
             services.AddScoped(typeof(ICsvWriter<>), typeof(CsvWriter<>));
-            services.AddScoped<IExcelReader<List<ConfigurationEntry>>, ConfigurationEntryExcelReader>();
-            services.AddScoped<IExcelWriter<List<ConfigurationEntry>>, ConfigurationEntryExcelWriter>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -289,7 +269,6 @@ namespace PhuThuongStickyRice.WebAPI
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHub<NotificationHub>("/hubs/notification").RequireCors("SignalRHubs");
             });
         }
     }

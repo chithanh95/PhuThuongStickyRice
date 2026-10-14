@@ -1,4 +1,3 @@
-using PhuThuongStickyRice.Application.AuditLogEntries.DTOs;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using PhuThuongStickyRice.IntegrationTests.Models;
 using Polly;
@@ -58,12 +57,6 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             await DeleteAsync($"api/products/{id}");
         }
 
-        public async Task<List<AuditLogEntryDTO>> GetAuditLogsAsync(Guid id)
-        {
-            var auditLogs = await GetAsync<List<AuditLogEntryDTO>>($"api/products/{id}/auditlogs");
-            return auditLogs;
-        }
-
         private async Task ExportAsPdfAsync(string path, string fileName)
         {
             using var response = await _httpClient.GetAsync($"api/products/ExportAsPdf");
@@ -111,10 +104,6 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             Assert.Equal(product.Code, createdProduct.Code);
             Assert.Equal(product.Description, createdProduct.Description);
 
-            var auditLogs = await GetAuditLogsAsync(createdProduct.Id);
-            Assert.Single(auditLogs);
-            Assert.Contains(auditLogs, x => x.Action == "CREATED");
-
             // GET
             var products = await GetProductsAsync();
             Assert.True(products.Count > 0);
@@ -133,11 +122,6 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             Assert.Equal("Test' 2,2 \"a\"", updatedProduct.Name);
             Assert.Equal(refreshedProduct.Code, updatedProduct.Code);
             Assert.Equal(refreshedProduct.Description, updatedProduct.Description);
-
-            auditLogs = await GetAuditLogsAsync(createdProduct.Id);
-            Assert.Equal(2, auditLogs.Count);
-            Assert.Single(auditLogs, x => x.Action == "CREATED");
-            Assert.Equal(1, auditLogs.Count(x => x.Action == "UPDATED"));
 
             // EXPORT PDF
             var path = Path.Combine(AppSettings.DownloadsFolder, "Practical.CleanArchitecture", Guid.NewGuid().ToString());

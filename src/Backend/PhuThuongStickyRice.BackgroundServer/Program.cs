@@ -1,5 +1,4 @@
-﻿using PhuThuongStickyRice.Application.FileEntries.DTOs;
-using PhuThuongStickyRice.BackgroundServer.ConfigurationOptions;
+﻿using PhuThuongStickyRice.BackgroundServer.ConfigurationOptions;
 using PhuThuongStickyRice.BackgroundServer.HostedServices;
 using PhuThuongStickyRice.BackgroundServer.Identity;
 using PhuThuongStickyRice.Domain.Identity;
@@ -50,21 +49,9 @@ namespace PhuThuongStickyRice.BackgroundServer
                         .AddDomainServices()
                         .AddApplicationServices();
 
-                services.AddMessageBusSender<FileUploadedEvent>(appSettings.MessageBroker);
-                services.AddMessageBusSender<FileDeletedEvent>(appSettings.MessageBroker);
-
-                services.AddMessageBusReceiver<FileUploadedEvent>(appSettings.MessageBroker);
-                services.AddMessageBusReceiver<FileDeletedEvent>(appSettings.MessageBroker);
-
                 services.AddNotificationServices(appSettings.Notification);
 
-                services.AddWebNotification<SendTaskStatusMessage>(appSettings.Notification.Web);
-
-                services.AddHostedService<MessageBusReceiver>();
-                services.AddHostedService<PublishEventWorker>();
                 services.AddHostedService<SendEmailWorker>();
-                services.AddHostedService<SendSmsWorker>();
-                services.AddHostedService<ScheduleCronJobWorker>();
             });
     }
 }

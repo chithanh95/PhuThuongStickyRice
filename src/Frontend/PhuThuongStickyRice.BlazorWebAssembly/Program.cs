@@ -1,12 +1,8 @@
-using PhuThuongStickyRice.Blazor.Modules.AuditLogs.Services;
 using PhuThuongStickyRice.Blazor.Modules.Core.Services;
 using PhuThuongStickyRice.Blazor.Modules.Dashboard.Services;
-using PhuThuongStickyRice.Blazor.Modules.Files.Services;
 using PhuThuongStickyRice.Blazor.Modules.Orders.Services;
 using PhuThuongStickyRice.Blazor.Modules.Products.Services;
-using PhuThuongStickyRice.Blazor.Modules.Settings.Services;
 using PhuThuongStickyRice.Blazor.Modules.Shop.Services;
-using PhuThuongStickyRice.Blazor.Modules.Users.Services;
 using PhuThuongStickyRice.BlazorWebAssembly.ConfigurationOptions;
 using PhuThuongStickyRice.BlazorWebAssembly.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -47,36 +43,6 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
             builder.Services.AddScoped<ITokenManager, TokenManager>();
 
-            builder.Services.AddHttpClient<FileService, FileService>(client =>
-            {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            })
-            .AddHttpMessageHandler(sp =>
-            {
-                var handler = sp.GetService<AuthorizationMessageHandler>()
-                .ConfigureHandler(
-                    authorizedUrls: new[] { appSettings.ResourceServer.Endpoint }
-                 );
-                return handler;
-            });
-
-            builder.Services.AddHttpClient<ConfigurationEntryService, ConfigurationEntryService>(client =>
-            {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            })
-            .AddHttpMessageHandler(sp =>
-            {
-                var handler = sp.GetService<AuthorizationMessageHandler>()
-                .ConfigureHandler(
-                    authorizedUrls: new[] { appSettings.ResourceServer.Endpoint }
-                 );
-                return handler;
-            });
-
             builder.Services.AddHttpClient<ProductService, ProductService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
@@ -92,37 +58,6 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
                 return handler;
             });
 
-            builder.Services.AddHttpClient<UserService, UserService>(client =>
-            {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            })
-                .AddHttpMessageHandler(sp =>
-            {
-                var handler = sp.GetService<AuthorizationMessageHandler>()
-                .ConfigureHandler(
-                    authorizedUrls: new[] { appSettings.ResourceServer.Endpoint }
-                 );
-                return handler;
-            });
-
-            builder.Services.AddHttpClient<AuditLogService, AuditLogService>(client =>
-            {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            })
-            .AddHttpMessageHandler(sp =>
-            {
-                var handler = sp.GetService<AuthorizationMessageHandler>()
-                .ConfigureHandler(
-                    authorizedUrls: new[] { appSettings.ResourceServer.Endpoint }
-                    );
-                return handler;
-            });
-
-            // Storefront (public, no login required)
             builder.Services.AddHttpClient<ShopService, ShopService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);

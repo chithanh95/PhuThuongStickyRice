@@ -32,24 +32,6 @@
       <ParentExtension>$(ProjectExt.Replace('proj', ''))</ParentExtension>
       <DependentUpon>ProductsControllerTests.cs</DependentUpon>
     </None>
-    <None Update="WebAPI\FilesControllerTests.Test.approved.txt">
-      <ParentFile>$([System.String]::Copy('%(FileName)').Split('.')[0])</ParentFile>
-      <ParentExtension>$(ProjectExt.Replace('proj', ''))</ParentExtension>
-      <DependentUpon>FilesControllerTests.cs</DependentUpon>
-    </None>
-    <None Update="WebAPI\RolesControllerTests.Test.approved.txt">
-      <ParentFile>$([System.String]::Copy('%(FileName)').Split('.')[0])</ParentFile>
-      <ParentExtension>$(ProjectExt.Replace('proj', ''))</ParentExtension>
-      <DependentUpon>RolesControllerTests.cs</DependentUpon>
-    </None>
-    <None Update="WebAPI\RolesControllerTests.UserModelTest.approved.txt">
-      <ParentFile>$([System.String]::Copy('%(FileName)').Split('.')[0])</ParentFile>
-      <ParentExtension>$(ProjectExt.Replace('proj', ''))</ParentExtension>
-      <DependentUpon>RolesControllerTests.cs</DependentUpon>
-    </None>
-    <None Update="WebAPI\UsersControllerTests.Test.approved.txt">
-      <DependentUpon>UsersControllerTests.cs</DependentUpon>
-    </None>
   </ItemGroup>
 
 </Project>
