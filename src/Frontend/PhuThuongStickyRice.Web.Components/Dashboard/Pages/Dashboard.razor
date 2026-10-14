@@ -226,39 +226,35 @@ else
 {
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h6 class="card-title">Tổng đơn hàng</h6>
-                    <h2 class="card-text">@_stats.TotalOrders</h2>
-                    <small>Chờ xác nhận: @_stats.PendingOrders</small>
-                </div>
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Tổng đơn hàng</p>
+                <h2 class="lx-mini-value">@_stats.TotalOrders</h2>
+                <span class="lx-mini-foot">Chờ xác nhận: @_stats.PendingOrders</span>
+                <span class="lx-mini-icon"><span class="oi oi-cart" aria-hidden="true"></span></span>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h6 class="card-title">Doanh thu</h6>
-                    <h2 class="card-text">@FormatPrice(_stats.TotalRevenue)</h2>
-                    <small>Không tính đơn đã hủy</small>
-                </div>
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Doanh thu</p>
+                <h2 class="lx-mini-value">@FormatPrice(_stats.TotalRevenue)</h2>
+                <span class="lx-mini-foot">Không tính đơn đã hủy</span>
+                <span class="lx-mini-icon"><span class="oi oi-dollar" aria-hidden="true"></span></span>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h6 class="card-title">Món xôi đã bán</h6>
-                    <h2 class="card-text">@_stats.TotalProductsSold</h2>
-                    <small>@_stats.TotalProducts món đang kinh doanh</small>
-                </div>
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Món xôi đã bán</p>
+                <h2 class="lx-mini-value">@_stats.TotalProductsSold</h2>
+                <span class="lx-mini-foot">@_stats.TotalProducts món đang kinh doanh</span>
+                <span class="lx-mini-icon"><span class="oi oi-tag" aria-hidden="true"></span></span>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="card text-white bg-warning">
-                <div class="card-body">
-                    <h6 class="card-title">Đơn chờ xử lý</h6>
-                    <h2 class="card-text">@_stats.PendingOrders</h2>
-                    <small><a href="/orders?status=Pending" class="text-white"><u>Xem ngay</u></a></small>
-                </div>
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Đơn chờ xử lý</p>
+                <h2 class="lx-mini-value">@_stats.PendingOrders</h2>
+                <span class="lx-mini-foot"><a href="/orders?status=Pending" class="text-white"><u>Xem ngay</u></a></span>
+                <span class="lx-mini-icon"><span class="oi oi-clock" aria-hidden="true"></span></span>
             </div>
         </div>
     </div>
