@@ -32,6 +32,29 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// counter. Throws DomainException when the code cannot be applied.
         /// </summary>
         Task<decimal> ApplyAsync(string code, decimal subtotal);
+
+        /// <summary>
+        /// Order creation with an owner phone (single-use spin/birthday
+        /// codes are tied to a phone). Throws when the code cannot be applied.
+        /// </summary>
+        Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone);
+
+        /// <summary>
+        /// Public: checks a code against a cart subtotal for a given phone.
+        /// </summary>
+        Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string customerPhone);
+
+        /// <summary>
+        /// Creates a system-generated single-use code (lucky spin, birthday
+        /// voucher). Internal — called from other application services.
+        /// </summary>
+        Task<DiscountCodeDto> CreateGeneratedAsync(CreateGeneratedDiscountDto dto);
+
+        /// <summary>
+        /// Internal: true when a usable code with the given prefix already
+        /// exists for the phone (prevents duplicate spin/birthday codes).
+        /// </summary>
+        Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone);
     }
 
     public class DiscountAppService : ApplicationService, IDiscountAppService
@@ -113,12 +136,18 @@ namespace PhuThuongStickyRice.Application.Discounts
         [AllowAnonymous]
         public async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input)
         {
+            return await ValidateAsync(input, null);
+        }
+
+        [AllowAnonymous]
+        public async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string customerPhone)
+        {
             var code = NormalizeCode(input.Code);
             var queryable = await _discounts.GetQueryableAsync();
             var entity = await _asyncExecuter.FirstOrDefaultAsync(
                 queryable.Where(x => x.Code == code));
 
-            var (valid, message) = CheckUsable(entity, input.Subtotal);
+            var (valid, message) = CheckUsable(entity, input.Subtotal, customerPhone);
             return new ValidateDiscountResultDto
             {
                 Valid = valid,
@@ -134,12 +163,17 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         public async Task<decimal> ApplyAsync(string code, decimal subtotal)
         {
+            return await ApplyAsync(code, subtotal, null);
+        }
+
+        public async Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone)
+        {
             var normalized = NormalizeCode(code);
             var queryable = await _discounts.GetQueryableAsync();
             var entity = await _asyncExecuter.FirstOrDefaultAsync(
                 queryable.Where(x => x.Code == normalized));
 
-            var (valid, message) = CheckUsable(entity, subtotal);
+            var (valid, message) = CheckUsable(entity, subtotal, customerPhone);
             if (!valid)
             {
                 throw new Domain.Exceptions.DomainException(message);
@@ -151,7 +185,54 @@ namespace PhuThuongStickyRice.Application.Discounts
             return amount;
         }
 
-        private static (bool Valid, string Message) CheckUsable(DiscountCode entity, decimal subtotal)
+        public async Task<DiscountCodeDto> CreateGeneratedAsync(CreateGeneratedDiscountDto dto)
+        {
+            if (!dto.DiscountPercent.HasValue && !dto.DiscountAmount.HasValue)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Phải nhập phần trăm giảm hoặc số tiền giảm.");
+            }
+
+            var code = await GenerateUniqueCodeAsync(
+                string.IsNullOrWhiteSpace(dto.Prefix) ? "VOUCHER" : dto.Prefix.Trim().ToUpperInvariant());
+
+            var entity = new DiscountCode
+            {
+                Code = code,
+                DiscountPercent = dto.DiscountPercent,
+                DiscountAmount = dto.DiscountAmount,
+                MinOrderAmount = Math.Max(0, dto.MinOrderAmount),
+                ExpiresAt = dto.ExpiresAt,
+                MaxUses = 1,
+                UsedCount = 0,
+                IsActive = true,
+                OwnerPhone = string.IsNullOrWhiteSpace(dto.OwnerPhone) ? null : dto.OwnerPhone.Trim()
+            };
+            await _discounts.InsertAsync(entity, autoSave: true);
+            return MapToDto(entity);
+        }
+
+        public async Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone)
+        {
+            if (string.IsNullOrWhiteSpace(codePrefix) || string.IsNullOrWhiteSpace(ownerPhone))
+            {
+                return false;
+            }
+
+            var prefix = codePrefix.Trim().ToUpperInvariant();
+            var queryable = await _discounts.GetQueryableAsync();
+            var existing = await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x =>
+                    x.Code.StartsWith(prefix)
+                    && x.OwnerPhone == ownerPhone
+                    && x.IsActive
+                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > DateTime.UtcNow)
+                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value)));
+            return existing != null;
+        }
+
+        private static (bool Valid, string Message) CheckUsable(
+            DiscountCode entity, decimal subtotal, string customerPhone = null)
         {
             if (entity == null)
             {
@@ -173,12 +254,61 @@ namespace PhuThuongStickyRice.Application.Discounts
                 return (false, "Mã giảm giá đã hết lượt sử dụng.");
             }
 
+            if (!string.IsNullOrWhiteSpace(entity.OwnerPhone)
+                && !PhonesEqual(entity.OwnerPhone, customerPhone))
+            {
+                return (false, "Mã giảm giá này không dành cho số điện thoại của bạn.");
+            }
+
             if (subtotal < entity.MinOrderAmount)
             {
                 return (false, $"Mã này áp dụng cho đơn từ {entity.MinOrderAmount:N0} ₫ trở lên.");
             }
 
             return (true, "Áp dụng mã giảm giá thành công.");
+        }
+
+        /// <summary>Phone equality tolerant of formatting (digits compared, last 9).</summary>
+        private static bool PhonesEqual(string a, string b)
+        {
+            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+            {
+                return false;
+            }
+
+            var da = new string(a.Where(char.IsDigit).ToArray());
+            var db = new string(b.Where(char.IsDigit).ToArray());
+            if (da.Length < 9 || db.Length < 9)
+            {
+                return string.Equals(da, db, StringComparison.Ordinal);
+            }
+
+            return string.Equals(
+                da.Substring(da.Length - 9),
+                db.Substring(db.Length - 9),
+                StringComparison.Ordinal);
+        }
+
+        private async Task<string> GenerateUniqueCodeAsync(string prefix)
+        {
+            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            var random = new Random();
+
+            for (var attempt = 0; attempt < 10; attempt++)
+            {
+                var code = prefix + "-" + new string(
+                    Enumerable.Range(0, 6).Select(_ => chars[random.Next(chars.Length)]).ToArray());
+
+                var queryable = await _discounts.GetQueryableAsync();
+                var exists = await _asyncExecuter.FirstOrDefaultAsync(
+                    queryable.Where(x => x.Code == code));
+                if (exists == null)
+                {
+                    return code;
+                }
+            }
+
+            return prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
         }
 
         private static decimal ComputeDiscount(DiscountCode entity, decimal subtotal)
@@ -239,7 +369,8 @@ namespace PhuThuongStickyRice.Application.Discounts
                 ExpiresAt = entity.ExpiresAt,
                 MaxUses = entity.MaxUses,
                 UsedCount = entity.UsedCount,
-                IsActive = entity.IsActive
+                IsActive = entity.IsActive,
+                OwnerPhone = entity.OwnerPhone
             };
         }
     }

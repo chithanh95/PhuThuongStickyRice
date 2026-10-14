@@ -19,6 +19,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int CustomerAddressMaxLength = 500;
         public const int NotesMaxLength = 1000;
         public const int DiscountCodeMaxLength = 50;
+        public const int TaxCodeMaxLength = 30;
+        public const int CompanyNameMaxLength = 300;
+        public const int RecipientNameMaxLength = 200;
+        public const int RecipientPhoneMaxLength = 30;
+        public const int GiftMessageMaxLength = 1000;
+        public const int ReferralCodeMaxLength = 20;
 
         public string OrderNumber { get; private set; }
 
@@ -50,11 +56,48 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Delivery fee charged on this order (0 when free shipping or pickup).</summary>
         public Money DeliveryFee { get; private set; }
 
+        /// <summary>Gift packaging fee (0 when not a gift).</summary>
+        public Money GiftFee { get; private set; }
+
         /// <summary>Discount code applied by the customer, if any.</summary>
         public string DiscountCode { get; private set; }
 
         /// <summary>Discount amount subtracted from the subtotal (0 when none).</summary>
         public Money DiscountAmount { get; private set; }
+
+        /// <summary>Loyalty-points discount in VND (0 when none).</summary>
+        public Money LoyaltyDiscount { get; private set; }
+
+        /// <summary>Points redeemed for this order.</summary>
+        public int LoyaltyPointsRedeemed { get; private set; }
+
+        /// <summary>Membership-tier discount in VND (0 when none).</summary>
+        public Money TierDiscount { get; private set; }
+
+        /// <summary>Referrer's referral code used at checkout, if any.</summary>
+        public string ReferralCodeUsed { get; private set; }
+
+        /// <summary>Optional VAT invoice tax code.</summary>
+        public string TaxCode { get; private set; }
+
+        /// <summary>Optional VAT invoice company name.</summary>
+        public string CompanyName { get; private set; }
+
+        /// <summary>True when the order total reached the deposit threshold on bank transfer.</summary>
+        public bool RequiresDeposit { get; private set; }
+
+        /// <summary>Recipient (when ordering for someone else).</summary>
+        public string RecipientName { get; private set; }
+
+        public string RecipientPhone { get; private set; }
+
+        /// <summary>Gift packaging requested.</summary>
+        public bool IsGift { get; private set; }
+
+        public string GiftMessage { get; private set; }
+
+        /// <summary>Customer already used the post-checkout lucky spin for this order.</summary>
+        public bool LuckySpinUsed { get; private set; }
 
         public DateTime CreatedAt { get; private set; }
 
@@ -79,7 +122,19 @@ namespace PhuThuongStickyRice.Domain.Entities
             Money deliveryFee,
             string discountCode,
             Money discountAmount,
-            FulfillmentMethod fulfillmentMethod)
+            FulfillmentMethod fulfillmentMethod,
+            Money giftFee = null,
+            string taxCode = null,
+            string companyName = null,
+            string recipientName = null,
+            string recipientPhone = null,
+            bool isGift = false,
+            string giftMessage = null,
+            bool requiresDeposit = false,
+            Money loyaltyDiscount = null,
+            int loyaltyPointsRedeemed = 0,
+            Money tierDiscount = null,
+            string referralCodeUsed = null)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
@@ -96,17 +151,34 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             var currency = lines.First().LineTotal.Currency;
             var subtotal = lines.Sum(x => x.LineTotal.Amount);
-            var discount = Math.Max(0, discountAmount?.Amount ?? 0);
             var fee = Math.Max(0, deliveryFee?.Amount ?? 0);
-            if (discount > subtotal)
-            {
-                discount = subtotal;
-            }
+            var gift = Math.Max(0, giftFee?.Amount ?? 0);
+
+            // Discounts are applied in priority order and never exceed the
+            // remaining subtotal, so the total can never go negative.
+            var remaining = subtotal;
+            var discount = Math.Min(Math.Max(0, discountAmount?.Amount ?? 0), remaining);
+            remaining -= discount;
+            var loyalty = Math.Min(Math.Max(0, loyaltyDiscount?.Amount ?? 0), remaining);
+            remaining -= loyalty;
+            var tier = Math.Min(Math.Max(0, tierDiscount?.Amount ?? 0), remaining);
 
             DeliveryFee = Money.Of(fee, currency);
+            GiftFee = Money.Of(gift, currency);
             DiscountCode = string.IsNullOrWhiteSpace(discountCode) ? null : discountCode.Trim();
             DiscountAmount = Money.Of(discount, currency);
-            TotalAmount = Money.Of(subtotal - discount + fee, currency);
+            LoyaltyDiscount = Money.Of(loyalty, currency);
+            LoyaltyPointsRedeemed = loyaltyPointsRedeemed;
+            TierDiscount = Money.Of(tier, currency);
+            ReferralCodeUsed = string.IsNullOrWhiteSpace(referralCodeUsed) ? null : referralCodeUsed.Trim().ToUpperInvariant();
+            TaxCode = string.IsNullOrWhiteSpace(taxCode) ? null : taxCode.Trim();
+            CompanyName = string.IsNullOrWhiteSpace(companyName) ? null : companyName.Trim();
+            RequiresDeposit = requiresDeposit;
+            RecipientName = string.IsNullOrWhiteSpace(recipientName) ? null : recipientName.Trim();
+            RecipientPhone = string.IsNullOrWhiteSpace(recipientPhone) ? null : recipientPhone.Trim();
+            IsGift = isGift;
+            GiftMessage = string.IsNullOrWhiteSpace(giftMessage) ? null : giftMessage.Trim();
+            TotalAmount = Money.Of(subtotal - discount - loyalty - tier + fee + gift, currency);
         }
 
         public static Order Create(
@@ -122,7 +194,19 @@ namespace PhuThuongStickyRice.Domain.Entities
             Money deliveryFee = null,
             string discountCode = null,
             Money discountAmount = null,
-            FulfillmentMethod fulfillmentMethod = FulfillmentMethod.Delivery)
+            FulfillmentMethod fulfillmentMethod = FulfillmentMethod.Delivery,
+            Money giftFee = null,
+            string taxCode = null,
+            string companyName = null,
+            string recipientName = null,
+            string recipientPhone = null,
+            bool isGift = false,
+            string giftMessage = null,
+            bool requiresDeposit = false,
+            Money loyaltyDiscount = null,
+            int loyaltyPointsRedeemed = 0,
+            Money tierDiscount = null,
+            string referralCodeUsed = null)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -208,7 +292,86 @@ namespace PhuThuongStickyRice.Domain.Entities
                 deliveryFee,
                 discountCode,
                 discountAmount,
-                fulfillmentMethod);
+                fulfillmentMethod,
+                giftFee,
+                taxCode,
+                companyName,
+                recipientName,
+                recipientPhone,
+                isGift,
+                giftMessage,
+                requiresDeposit,
+                loyaltyDiscount,
+                loyaltyPointsRedeemed,
+                tierDiscount,
+                referralCodeUsed);
+        }
+
+        /// <summary>
+        /// Marks the post-checkout lucky spin as used. Only one spin per order.
+        /// </summary>
+        public void MarkLuckySpinUsed()
+        {
+            LuckySpinUsed = true;
+        }
+
+        /// <summary>
+        /// Customer edits quantities of a still-Pending order (track-order
+        /// "Sửa đơn"). Totals are recalculated server-side; discounts already
+        /// applied stay as fixed amounts.
+        /// </summary>
+        public void UpdateLineQuantities(IEnumerable<(Guid LineId, int Quantity)> updates)
+        {
+            if (Status != OrderStatus.Pending)
+            {
+                throw new DomainException("Chỉ đơn hàng đang chờ xác nhận mới được sửa.");
+            }
+
+            var map = (updates ?? Enumerable.Empty<(Guid, int)>())
+                .GroupBy(x => x.Item1)
+                .ToDictionary(g => g.Key, g => g.Last().Item2);
+
+            if (map.Count == 0)
+            {
+                throw new DomainException("Không có thay đổi nào.");
+            }
+
+            foreach (var line in _lines)
+            {
+                if (!map.TryGetValue(line.Id, out var quantity))
+                {
+                    continue;
+                }
+
+                if (quantity < 0)
+                {
+                    throw new DomainException("Số lượng không hợp lệ.");
+                }
+
+                line.SetQuantity(quantity);
+            }
+
+            _lines.RemoveAll(x => x.Quantity == 0);
+
+            if (_lines.Count == 0)
+            {
+                throw new DomainException("Đơn hàng phải có ít nhất một món.");
+            }
+
+            RecalculateTotals();
+        }
+
+        private void RecalculateTotals()
+        {
+            var currency = TotalAmount.Currency;
+            var subtotal = _lines.Sum(x => x.LineTotal.Amount);
+            var discount = Math.Min(DiscountAmount.Amount, subtotal);
+            var loyalty = Math.Min(LoyaltyDiscount.Amount, subtotal - discount);
+            var tier = Math.Min(TierDiscount.Amount, subtotal - discount - loyalty);
+            DiscountAmount = Money.Of(discount, currency);
+            LoyaltyDiscount = Money.Of(loyalty, currency);
+            TierDiscount = Money.Of(tier, currency);
+            TotalAmount = Money.Of(subtotal - discount - loyalty - tier + DeliveryFee.Amount + GiftFee.Amount, currency);
         }
 
         /// <summary>

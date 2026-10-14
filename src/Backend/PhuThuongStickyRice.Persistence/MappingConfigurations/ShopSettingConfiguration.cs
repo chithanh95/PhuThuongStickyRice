@@ -15,6 +15,18 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.FreeShipThreshold).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.MinOrderAmount).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.EstimatedDeliveryMinutes).IsRequired();
+            builder.Property(x => x.BankTransferExpiryMinutes).IsRequired();
+            builder.Property(x => x.PointsPerVnd).HasPrecision(18, 2).IsRequired();
+            builder.Property(x => x.PointsRedeemUnit).IsRequired();
+            builder.Property(x => x.PointsRedeemValue).HasPrecision(18, 2).IsRequired();
+            builder.Property(x => x.ReferralBonusPoints).IsRequired();
+            builder.Property(x => x.DepositThreshold).HasPrecision(18, 2).IsRequired();
+            builder.Property(x => x.DepositPercent).HasPrecision(5, 2).IsRequired();
+            builder.Property(x => x.GiftFee).HasPrecision(18, 2).IsRequired();
+            builder.Property(x => x.TierSilverMin).HasPrecision(18, 2).IsRequired();
+            builder.Property(x => x.TierSilverDiscount).HasPrecision(5, 2).IsRequired();
+            builder.Property(x => x.TierGoldMin).HasPrecision(18, 2).IsRequired();
+            builder.Property(x => x.TierGoldDiscount).HasPrecision(5, 2).IsRequired();
         }
     }
 }

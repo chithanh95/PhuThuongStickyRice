@@ -59,6 +59,14 @@ else
                                     <a href="javascript:void(0)" @onclick="() => ToggleDetail(order)">
                                         <strong>@order.OrderNumber</strong>
                                     </a>
+                                    @if (order.RequiresDeposit)
+                                    {
+                                        <span class="badge badge-warning ml-1" title="Đơn chuyển khoản cần đặt cọc">Cần cọc</span>
+                                    }
+                                    @if (order.IsGift)
+                                    {
+                                        <span class="badge badge-info ml-1" title="Gói quà">🎁</span>
+                                    }
                                 </td>
                                 <td>@order.CustomerName<br /><small class="text-muted">@order.CustomerPhone</small></td>
                                 <td><small>@order.CustomerAddress</small></td>
@@ -83,6 +91,37 @@ else
                                         @if (!string.IsNullOrWhiteSpace(order.Notes))
                                         {
                                             <div><em>Ghi chú: @order.Notes</em></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(order.RecipientName))
+                                        {
+                                            <div>Người nhận: <strong>@order.RecipientName</strong> — @order.RecipientPhone</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(order.TaxCode))
+                                        {
+                                            <div>Hóa đơn VAT: @order.CompanyName (MST: @order.TaxCode)</div>
+                                        }
+                                        @if (order.IsGift)
+                                        {
+                                            <div>🎁 Gói quà@(!string.IsNullOrWhiteSpace(order.GiftMessage) ? $": {order.GiftMessage}" : "")</div>
+                                        }
+                                        @if (order.RequiresDeposit)
+                                        {
+                                            <div><span class="badge badge-warning">Cần đặt cọc — xác nhận qua nút “Đã thanh toán” sau khi nhận cọc</span></div>
+                                        }
+                                        @if (order.LoyaltyDiscount > 0 || order.TierDiscount > 0)
+                                        {
+                                            <div class="text-success">
+                                                <small>
+                                                    @if (order.TierDiscount > 0)
+                                                    {
+                                                        <span>Ưu đãi hạng: −@FormatPrice(order.TierDiscount) </span>
+                                                    }
+                                                    @if (order.LoyaltyDiscount > 0)
+                                                    {
+                                                        <span>Đổi @order.LoyaltyPointsRedeemed điểm: −@FormatPrice(order.LoyaltyDiscount)</span>
+                                                    }
+                                                </small>
+                                            </div>
                                         }
                                         <table class="table table-sm mt-2 mb-0">
                                             <thead>

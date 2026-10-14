@@ -56,5 +56,13 @@ namespace PhuThuongStickyRice.Blazor.Modules.Landing.Models
         public string MenuImage3Url { get; set; }
 
         public string FooterBackgroundUrl { get; set; }
+
+        public string VideoTitle { get; set; }
+
+        public string VideoUrl { get; set; }
+
+        public string MapEmbedUrl { get; set; }
+
+        public string ReviewsEmbedHtml { get; set; }
     }
 }

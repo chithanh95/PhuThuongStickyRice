@@ -1,0 +1,58 @@
+/* Lucky spin wheel (Wave 2, item 64). */
+.spin-wheel-wrap {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 0 auto;
+}
+
+.spin-wheel {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 6px solid #7b2d26;
+    position: relative;
+    background: conic-gradient(
+        #f6c453 0deg 60deg,
+        #e8845f 60deg 120deg,
+        #f6c453 120deg 180deg,
+        #e8845f 180deg 240deg,
+        #f6c453 240deg 300deg,
+        #e8845f 300deg 360deg);
+    transition: transform 4s cubic-bezier(0.15, 0.85, 0.25, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.spin-pointer {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 30px;
+    line-height: 1;
+    color: #7b2d26;
+    z-index: 2;
+}
+
+.spin-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-weight: 700;
+    font-size: 13px;
+    color: #5a1f1a;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+@media (max-width: 576px) {
+    .spin-wheel-wrap,
+    .spin-wheel {
+        width: 180px;
+        height: 180px;
+    }
+
+    .spin-label {
+        font-size: 11px;
+    }
+}

@@ -166,6 +166,32 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         /// <summary>"Delivery" (default) or "Pickup".</summary>
         public string FulfillmentMethod { get; set; } = "Delivery";
 
+        /// <summary>Optional VAT invoice tax code.</summary>
+        public string TaxCode { get; set; }
+
+        /// <summary>Optional VAT invoice company name.</summary>
+        public string CompanyName { get; set; }
+
+        /// <summary>Recipient name when ordering for someone else.</summary>
+        public string RecipientName { get; set; }
+
+        /// <summary>Recipient phone when ordering for someone else.</summary>
+        public string RecipientPhone { get; set; }
+
+        /// <summary>Gift packaging requested.</summary>
+        public bool IsGift { get; set; }
+
+        public string GiftMessage { get; set; }
+
+        /// <summary>Loyalty points the customer wants to redeem.</summary>
+        public int RedeemPoints { get; set; }
+
+        /// <summary>Referrer's referral code, if any.</summary>
+        public string ReferralCode { get; set; }
+
+        /// <summary>Optional birthday (updates the loyalty profile).</summary>
+        public DateTime? DateOfBirth { get; set; }
+
         public List<CreateOrderLineModel> Lines { get; set; } = new List<CreateOrderLineModel>();
     }
 
@@ -192,6 +218,30 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public string DiscountCode { get; set; }
 
         public decimal DiscountAmount { get; set; }
+
+        public decimal LoyaltyDiscount { get; set; }
+
+        public int LoyaltyPointsRedeemed { get; set; }
+
+        public decimal TierDiscount { get; set; }
+
+        public string TaxCode { get; set; }
+
+        public string CompanyName { get; set; }
+
+        public bool RequiresDeposit { get; set; }
+
+        public string RecipientName { get; set; }
+
+        public string RecipientPhone { get; set; }
+
+        public bool IsGift { get; set; }
+
+        public string GiftMessage { get; set; }
+
+        public decimal GiftFee { get; set; }
+
+        public bool LuckySpinUsed { get; set; }
 
         public string Status { get; set; }
 
@@ -265,6 +315,8 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
     public class TrackedOrderLineModel
     {
+        public Guid Id { get; set; }
+
         public Guid ProductId { get; set; }
 
         public string ProductName { get; set; }
@@ -323,6 +375,32 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         public decimal DiscountAmount { get; set; }
 
+        public decimal LoyaltyDiscount { get; set; }
+
+        public int LoyaltyPointsRedeemed { get; set; }
+
+        public decimal TierDiscount { get; set; }
+
+        public string ReferralCodeUsed { get; set; }
+
+        public string TaxCode { get; set; }
+
+        public string CompanyName { get; set; }
+
+        public bool RequiresDeposit { get; set; }
+
+        public string RecipientName { get; set; }
+
+        public string RecipientPhone { get; set; }
+
+        public bool IsGift { get; set; }
+
+        public string GiftMessage { get; set; }
+
+        public decimal GiftFee { get; set; }
+
+        public bool LuckySpinUsed { get; set; }
+
         public List<TrackedOrderLineModel> Lines { get; set; } = new List<TrackedOrderLineModel>();
     }
 
@@ -336,6 +414,30 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public decimal MinOrderAmount { get; set; }
 
         public int EstimatedDeliveryMinutes { get; set; }
+
+        public int BankTransferExpiryMinutes { get; set; }
+
+        public decimal PointsPerVnd { get; set; }
+
+        public int PointsRedeemUnit { get; set; }
+
+        public decimal PointsRedeemValue { get; set; }
+
+        public int ReferralBonusPoints { get; set; }
+
+        public decimal DepositThreshold { get; set; }
+
+        public decimal DepositPercent { get; set; }
+
+        public decimal GiftFee { get; set; }
+
+        public decimal TierSilverMin { get; set; }
+
+        public decimal TierSilverDiscount { get; set; }
+
+        public decimal TierGoldMin { get; set; }
+
+        public decimal TierGoldDiscount { get; set; }
     }
 
     /// <summary>Result of GET api/dashboard/today-sold.</summary>

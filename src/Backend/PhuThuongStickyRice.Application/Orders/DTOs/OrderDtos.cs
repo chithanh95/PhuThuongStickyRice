@@ -7,6 +7,8 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 {
     public class OrderLineDto
     {
+        public Guid Id { get; set; }
+
         public Guid ProductId { get; set; }
 
         public string ProductName { get; set; }
@@ -61,6 +63,37 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string DiscountCode { get; set; }
 
         public decimal DiscountAmount { get; set; }
+
+        /// <summary>Loyalty-points discount in VND.</summary>
+        public decimal LoyaltyDiscount { get; set; }
+
+        public int LoyaltyPointsRedeemed { get; set; }
+
+        /// <summary>Membership-tier discount in VND.</summary>
+        public decimal TierDiscount { get; set; }
+
+        public string ReferralCodeUsed { get; set; }
+
+        /// <summary>Optional VAT invoice tax code.</summary>
+        public string TaxCode { get; set; }
+
+        /// <summary>Optional VAT invoice company name.</summary>
+        public string CompanyName { get; set; }
+
+        /// <summary>True when a bank-transfer deposit is required.</summary>
+        public bool RequiresDeposit { get; set; }
+
+        public string RecipientName { get; set; }
+
+        public string RecipientPhone { get; set; }
+
+        public bool IsGift { get; set; }
+
+        public string GiftMessage { get; set; }
+
+        public decimal GiftFee { get; set; }
+
+        public bool LuckySpinUsed { get; set; }
 
         public DateTime CreatedAt { get; set; }
 
@@ -119,7 +152,129 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>"Delivery" (default) or "Pickup". Pickup orders have no delivery fee and no address.</summary>
         public string FulfillmentMethod { get; set; }
 
+        /// <summary>Optional VAT invoice tax code.</summary>
+        [StringLength(30)]
+        public string TaxCode { get; set; }
+
+        /// <summary>Optional VAT invoice company name.</summary>
+        [StringLength(300)]
+        public string CompanyName { get; set; }
+
+        /// <summary>Recipient name when ordering for someone else.</summary>
+        [StringLength(200)]
+        public string RecipientName { get; set; }
+
+        /// <summary>Recipient phone when ordering for someone else.</summary>
+        [StringLength(30)]
+        public string RecipientPhone { get; set; }
+
+        /// <summary>Gift packaging requested.</summary>
+        public bool IsGift { get; set; }
+
+        [StringLength(1000)]
+        public string GiftMessage { get; set; }
+
+        /// <summary>Loyalty points the customer wants to redeem.</summary>
+        [Range(0, int.MaxValue)]
+        public int RedeemPoints { get; set; }
+
+        /// <summary>Referrer's referral code, if any.</summary>
+        [StringLength(20)]
+        public string ReferralCode { get; set; }
+
+        /// <summary>Optional birthday (updates the loyalty profile).</summary>
+        public DateTime? DateOfBirth { get; set; }
+
         public List<CreateOrderLineDto> Lines { get; set; } = new List<CreateOrderLineDto>();
+    }
+
+    /// <summary>Customer self-service: cancel a Pending order.</summary>
+    public class CancelOrderByCustomerInput
+    {
+        [Required]
+        public string OrderNumber { get; set; }
+
+        [Required]
+        public string CustomerPhone { get; set; }
+    }
+
+    public class UpdateOrderLineQtyDto
+    {
+        [Required]
+        public Guid LineId { get; set; }
+
+        /// <summary>New quantity. 0 removes the line.</summary>
+        [Range(0, 100)]
+        public int Quantity { get; set; }
+    }
+
+    /// <summary>Customer self-service: edit quantities of a Pending order.</summary>
+    public class UpdateOrderLinesInput
+    {
+        [Required]
+        public string OrderNumber { get; set; }
+
+        [Required]
+        public string CustomerPhone { get; set; }
+
+        [Required]
+        public List<UpdateOrderLineQtyDto> Lines { get; set; } = new List<UpdateOrderLineQtyDto>();
+    }
+
+    /// <summary>Post-delivery survey for a completed order.</summary>
+    public class SubmitReviewInput
+    {
+        [Required]
+        public string OrderNumber { get; set; }
+
+        [Required]
+        public string CustomerPhone { get; set; }
+
+        [Range(1, 5)]
+        public int Rating { get; set; }
+
+        [StringLength(1000)]
+        public string Comment { get; set; }
+    }
+
+    public class OrderReviewDto
+    {
+        public Guid Id { get; set; }
+
+        public Guid OrderId { get; set; }
+
+        public string OrderNumber { get; set; }
+
+        public string CustomerPhone { get; set; }
+
+        public int Rating { get; set; }
+
+        public string Comment { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>Lucky-spin request after checkout.</summary>
+    public class SpinInput
+    {
+        [Required]
+        public Guid OrderId { get; set; }
+
+        [Required]
+        public string CustomerPhone { get; set; }
+    }
+
+    public class SpinResultDto
+    {
+        /// <summary>Segment key: Percent5, Percent10, Percent15, FreeShip, Cash20k, Miss.</summary>
+        public string Segment { get; set; }
+
+        public string PrizeLabel { get; set; }
+
+        /// <summary>Generated single-use code; null when the segment is "Miss".</summary>
+        public string Code { get; set; }
+
+        public DateTime? ExpiresAt { get; set; }
     }
 
     /// <summary>

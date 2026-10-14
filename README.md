@@ -42,7 +42,13 @@ tests/
 ### Web bán hàng (public)
 - `/shop` — danh sách món xôi (Xôi gấc, Xôi đỗ, Xôi xéo, Xôi vò, Xôi ngũ sắc), thêm vào giỏ
 - `/cart` — giỏ hàng: tăng/giảm số lượng, xóa món
-- `/checkout` — nhập tên/SĐT/địa chỉ → đặt hàng, nhận mã đơn (vd `PX-20261014-4821`)
+- `/checkout` — nhập tên/SĐT/địa chỉ → đặt hàng, nhận mã đơn (vd `PX-20261014-4821`);
+  hóa đơn VAT (tùy chọn), gói quà, đặt cho người khác, đổi điểm tích lũy, mã giới thiệu,
+  vòng quay may mắn sau khi đặt thành công
+- `/track-order` — tra cứu đơn: tự hủy đơn (khi đang chờ), sửa số lượng, đánh giá sao khi đã giao,
+  xem điểm tích lũy + hạng thành viên, lưu ngày sinh
+- `/dat-dinh-ky` — đăng ký giao xôi mỗi ngày (tự tạo đơn COD mỗi sáng)
+- `/faq` — câu hỏi thường gặp (có tìm kiếm); `/ho-tro` — gửi yêu cầu hỗ trợ
 
 ### Web admin (đăng nhập)
 - `/dashboard` — thẻ thống kê: tổng đơn, doanh thu, món đã bán, đơn chờ xử lý;
@@ -51,6 +57,12 @@ tests/
 - `/orders` — tìm kiếm/lọc đơn, xem chi tiết, chuyển trạng thái
   (`Pending → Confirmed → Preparing → Delivering → Completed`, hoặc `Cancelled`)
 - `/products` — thêm/sửa/xóa món, đổi giá, kích hoạt/ngừng bán
+- `/admin/loyalty` — điểm tích lũy, điều chỉnh điểm, sinh nhật sắp tới (voucher tự động)
+- `/admin/danh-gia` — đánh giá sao của khách; `/admin/ho-tro` — yêu cầu hỗ trợ (trả lời/đổi trạng thái)
+- `/admin/faq` — quản lý câu hỏi thường gặp; `/admin/dinh-ky` — đăng ký giao định kỳ (tạm dừng/kích hoạt)
+- `/admin/integrations` — trạng thái + test tích hợp Zalo OA
+- `/admin/shop-settings` — phí ship, ngưỡng miễn ship, đơn tối thiểu, hết hạn chuyển khoản,
+  đặt cọc, điểm tích lũy, hạng thành viên (Đồng/Bạc/Vàng), phí gói quà
 
 ### API chính
 | Method | Endpoint | Mô tả |
@@ -79,6 +91,38 @@ tests/
    cd ../../../Frontend/PhuThuongStickyRice.BlazorWebAssembly
    dotnet run
    ```
+
+## Zalo OA (gửi hóa đơn điện tử qua Zalo)
+
+Tích hợp hiện ở chế độ **stub**: khi chưa cấu hình, mỗi lần đặt hàng service chỉ ghi log
+`[Zalo OA stub] would send Zalo message...` — không gọi API thật, không làm hỏng checkout.
+
+Các bước bật gửi tin nhắn thật:
+
+1. Tạo Official Account tại `https://oa.zalo.me` và chờ duyệt.
+2. Vào OA → *Cài đặt → Thông tin OA* để lấy **OA ID**.
+3. Tạo ứng dụng tại `https://developers.zalo.me`, liên kết với OA, lấy **access token**
+   (token hết hạn định kỳ — cần cơ chế refresh, xem tài liệu Zalo).
+4. Điền vào `appsettings.json` của WebAPI:
+   ```json
+   "ZaloOa": { "AccessToken": "<token-thật>", "OaId": "<oa-id-thật>" }
+   ```
+5. Restart WebAPI. Vào `/admin/integrations` bấm **Gửi test** để kiểm tra.
+6. Để gửi thật, implement thêm trong `ZaloNotificationService.SendTextMessageAsync`
+   (Zalo định danh người nhận bằng `userId`, không phải SĐT — cần map SĐT → userId qua API
+   `GET /v2.0/oa/getfollowers` hoặc ZNS template theo tài liệu
+   `https://developers.zalo.me/docs/api/official-api`).
+
+## Background workers (WebAPI)
+
+- `OrderAutoCancelWorker` — mỗi 5 phút hủy đơn chuyển khoản `Pending`+`Unpaid` quá
+  `ShopSetting.BankTransferExpiryMinutes` (mặc định 30 phút).
+- `BirthdayVoucherWorker` — mỗi 24h tạo voucher sinh nhật giảm 20% (dùng 1 lần, HSD 30 ngày,
+  gắn với SĐT) cho tài khoản có sinh nhật hôm nay.
+- `SubscriptionOrderWorker` — mỗi 6h tạo đơn COD cho các đăng ký định kỳ đến hạn
+  (chống trùng bằng `LastOrderDate`).
+- Các worker mới chỉ được kiểm tra biên dịch (compile) trong môi trường dev —
+  cần kiểm tra lại hành vi runtime khi deploy lên IIS (ở đó có SQL Server thật).
 
 ## Ghi chú
 

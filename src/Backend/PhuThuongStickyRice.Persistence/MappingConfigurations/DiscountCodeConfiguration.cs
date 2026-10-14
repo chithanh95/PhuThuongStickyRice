@@ -21,6 +21,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.MinOrderAmount).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.UsedCount).IsRequired();
             builder.Property(x => x.IsActive).IsRequired();
+
+            builder.Property(x => x.OwnerPhone).HasMaxLength(30);
         }
     }
 }

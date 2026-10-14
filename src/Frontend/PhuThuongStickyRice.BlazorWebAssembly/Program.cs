@@ -110,6 +110,14 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Wave 2: loyalty, spin, support, FAQ, subscriptions, reviews, integrations.
+            builder.Services.AddHttpClient<Wave2Service, Wave2Service>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Toast notifications.
             builder.Services.AddScoped<ToastService>();
 

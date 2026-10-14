@@ -1,0 +1,94 @@
+@page "/ho-tro"
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Models
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@inject Wave2Service Wave2Service
+
+<h3>Hỗ trợ khách hàng</h3>
+<p class="text-muted">Gửi yêu cầu hỗ trợ, shop sẽ liên hệ lại với bạn sớm nhất.</p>
+
+@if (_sent)
+{
+    <div class="alert alert-success">
+        <strong>Đã gửi yêu cầu hỗ trợ!</strong> Shop sẽ liên hệ lại qua số <strong>@_ticket.Phone</strong> sớm nhất.
+    </div>
+    <button class="btn btn-outline-primary" @onclick="Reset">Gửi yêu cầu khác</button>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Họ tên *</label>
+                    <input class="form-control" @bind="_model.Name" placeholder="Nguyễn Văn A" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Số điện thoại *</label>
+                    <input class="form-control" @bind="_model.Phone" placeholder="0901234567" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Mã đơn hàng <small class="text-muted">(nếu có)</small></label>
+                <input class="form-control" @bind="_model.OrderNumber" placeholder="PX-20261014-0001" />
+            </div>
+            <div class="form-group">
+                <label>Nội dung cần hỗ trợ *</label>
+                <textarea class="form-control" rows="5" @bind="_model.Message"
+                          placeholder="Mô tả vấn đề bạn gặp phải..."></textarea>
+            </div>
+            <button class="btn btn-primary" @onclick="Submit" disabled="@_submitting">
+                @(_submitting ? "Đang gửi..." : "Gửi yêu cầu")
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly CreateSupportTicketModel _model = new CreateSupportTicketModel();
+    private SupportTicketModel _ticket;
+    private bool _sent;
+    private bool _submitting;
+    private string _error;
+
+    private async Task Submit()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_model.Name)
+            || string.IsNullOrWhiteSpace(_model.Phone)
+            || string.IsNullOrWhiteSpace(_model.Message))
+        {
+            _error = "Vui lòng nhập đầy đủ họ tên, số điện thoại và nội dung.";
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            _ticket = await Wave2Service.CreateTicketAsync(_model);
+            _sent = true;
+        }
+        catch (Exception)
+        {
+            _error = "Không gửi được yêu cầu. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void Reset()
+    {
+        _sent = false;
+        _ticket = null;
+        _model.Name = null;
+        _model.Phone = null;
+        _model.OrderNumber = null;
+        _model.Message = null;
+    }
+}

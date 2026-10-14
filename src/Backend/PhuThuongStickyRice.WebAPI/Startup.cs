@@ -6,6 +6,7 @@ using PhuThuongStickyRice.Infrastructure.Monitoring;
 using PhuThuongStickyRice.Infrastructure.Web.Filters;
 using PhuThuongStickyRice.Persistence;
 using PhuThuongStickyRice.Application.Orders.Payments;
+using PhuThuongStickyRice.Application.Zalo;
 using PhuThuongStickyRice.WebAPI.Authorization;
 using PhuThuongStickyRice.WebAPI.Services;
 using PhuThuongStickyRice.WebAPI.ConfigurationOptions;
@@ -90,6 +91,9 @@ namespace PhuThuongStickyRice.WebAPI
             services.AddSingleton(sp => sp.GetRequiredService<IOptions<JwtOptions>>().Value);
             services.AddSingleton(sp => sp.GetRequiredService<IOptions<MoMoOptions>>().Value);
             services.AddSingleton(sp => sp.GetRequiredService<IOptions<BankTransferOptions>>().Value);
+            services.Configure<ZaloOaOptions>(Configuration.GetSection("ZaloOa"));
+            services.AddSingleton(sp => sp.GetRequiredService<IOptions<ZaloOaOptions>>().Value);
+            services.AddTransient<IZaloNotificationService, ZaloNotificationService>();
             services.AddScoped<JwtTokenService>();
             services.AddHttpClient<IMoMoPaymentService, MoMoPaymentService>();
             services.AddHostedService<AdminSeedHostedService>();

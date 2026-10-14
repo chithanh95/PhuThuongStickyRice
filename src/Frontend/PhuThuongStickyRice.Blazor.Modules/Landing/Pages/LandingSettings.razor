@@ -184,6 +184,44 @@ else
         </div>
     </div>
 
+    <div class="card mb-3">
+        <div class="card-header">Video giới thiệu</div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>Tiêu đề video</label>
+                <input class="form-control" @bind="_model.VideoTitle" placeholder="VD: Xôi Phú Thượng — hương vị làng nghề" />
+            </div>
+            <div class="form-group mb-0">
+                <label>Link YouTube</label>
+                <input class="form-control" @bind="_model.VideoUrl" placeholder="https://www.youtube.com/watch?v=..." />
+                <small class="form-text text-muted">Dán link watch hoặc link chia sẻ youtu.be — trang chủ tự chuyển thành video nhúng. Để trống để ẩn.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Bản đồ</div>
+        <div class="card-body">
+            <div class="form-group mb-0">
+                <label>Link nhúng Google Maps</label>
+                <input class="form-control" @bind="_model.MapEmbedUrl" placeholder="https://www.google.com/maps/embed?pb=..." />
+                <small class="form-text text-muted">Lấy từ Google Maps → Chia sẻ → Nhúng bản đồ → copy thuộc tính <code>src</code> của iframe. Để trống để ẩn.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Đánh giá nhúng <span class="badge badge-warning">HTML tin cậy</span></div>
+        <div class="card-body">
+            <div class="form-group mb-0">
+                <label>Mã HTML widget đánh giá</label>
+                <textarea class="form-control" rows="4" @bind="_model.ReviewsEmbedHtml"
+                          placeholder="<script ...>...</script>"></textarea>
+                <small class="form-text text-muted">Chỉ dành cho admin — đoạn HTML này được render nguyên văn trên trang chủ (VD: widget Google reviews). Để trống để ẩn.</small>
+            </div>
+        </div>
+    </div>
+
     <button class="btn btn-primary btn-lg" @onclick="SaveAsync" disabled="@_saving">
         @(_saving ? "Đang lưu..." : "Lưu thay đổi")
     </button>

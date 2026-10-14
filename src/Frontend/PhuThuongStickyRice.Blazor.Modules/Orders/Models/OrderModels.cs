@@ -59,6 +59,30 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Models
 
         public decimal DiscountAmount { get; set; }
 
+        public decimal LoyaltyDiscount { get; set; }
+
+        public int LoyaltyPointsRedeemed { get; set; }
+
+        public decimal TierDiscount { get; set; }
+
+        public string ReferralCodeUsed { get; set; }
+
+        public string TaxCode { get; set; }
+
+        public string CompanyName { get; set; }
+
+        public bool RequiresDeposit { get; set; }
+
+        public string RecipientName { get; set; }
+
+        public string RecipientPhone { get; set; }
+
+        public bool IsGift { get; set; }
+
+        public string GiftMessage { get; set; }
+
+        public decimal GiftFee { get; set; }
+
         public List<OrderLineModel> Lines { get; set; } = new List<OrderLineModel>();
     }
 

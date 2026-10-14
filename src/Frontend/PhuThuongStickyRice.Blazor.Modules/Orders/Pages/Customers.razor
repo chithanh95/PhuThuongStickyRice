@@ -6,6 +6,7 @@
 @using PhuThuongStickyRice.Blazor.Modules.Admin.Models
 @inject OrderService OrderService
 @inject NavigationManager Navigation
+@inject PhuThuongStickyRice.Blazor.Modules.Shop.Services.ShopSettingsService ShopSettingsService
 
 <h3>Khách hàng</h3>
 <p class="text-muted">Tổng hợp theo số điện thoại (không tính đơn đã hủy).</p>
@@ -41,6 +42,7 @@ else
                             <th>SĐT</th>
                             <th class="text-right">Số đơn</th>
                             <th class="text-right">Tổng chi tiêu</th>
+                            <th>Hạng</th>
                             <th>Đơn gần nhất</th>
                             <th></th>
                         </tr>
@@ -53,6 +55,7 @@ else
                                 <td><strong>@c.CustomerPhone</strong></td>
                                 <td class="text-right">@c.OrderCount</td>
                                 <td class="text-right"><strong class="text-success">@FormatPrice(c.TotalSpent)</strong></td>
+                                <td><span class="badge badge-info">@TierOf(c.TotalSpent)</span></td>
                                 <td>@c.LastOrderAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                                 <td class="text-right">
                                     <a class="btn btn-sm btn-outline-primary"
@@ -71,10 +74,35 @@ else
     private List<CustomerModel> _customers;
     private string _searchTerm;
     private Timer _searchTimer;
+    private PhuThuongStickyRice.Blazor.Modules.Shop.Models.ShopSettingModel _settings
+        = new PhuThuongStickyRice.Blazor.Modules.Shop.Models.ShopSettingModel();
 
     protected override async Task OnInitializedAsync()
     {
+        try
+        {
+            _settings = await ShopSettingsService.GetAsync()
+                ?? new PhuThuongStickyRice.Blazor.Modules.Shop.Models.ShopSettingModel();
+        }
+        catch (Exception)
+        {
+            // Tier column falls back to default thresholds.
+        }
+
         await LoadAsync();
+    }
+
+    /// <summary>Membership tier from lifetime spend (same rule as the backend).</summary>
+    private string TierOf(decimal totalSpent)
+    {
+        var goldMin = _settings.TierGoldMin > 0 ? _settings.TierGoldMin : 5000000;
+        var silverMin = _settings.TierSilverMin > 0 ? _settings.TierSilverMin : 1000000;
+        if (totalSpent > goldMin)
+        {
+            return "Vàng";
+        }
+
+        return totalSpent >= silverMin ? "Bạc" : "Đồng";
     }
 
     private async Task LoadAsync()

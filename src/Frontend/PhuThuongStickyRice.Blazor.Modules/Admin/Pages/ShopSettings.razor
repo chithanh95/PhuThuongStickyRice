@@ -44,6 +44,73 @@ else
                 <input type="number" min="0" max="600" step="5" class="form-control" @bind="_model.EstimatedDeliveryMinutes" />
                 <small class="form-text text-muted">Hiển thị ở trang đặt hàng, VD: 45 → “Dự kiến giao trong 30–45 phút”. Đặt 0 để ẩn.</small>
             </div>
+
+            <h5 class="mt-4">Chuyển khoản & đặt cọc</h5>
+            <div class="form-group">
+                <label>Tự động hủy đơn chuyển khoản chưa thanh toán sau (phút)</label>
+                <input type="number" min="1" max="10080" class="form-control" @bind="_model.BankTransferExpiryMinutes" />
+                <small class="form-text text-muted">Mặc định 30 phút. Worker chạy mỗi 5 phút.</small>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Ngưỡng yêu cầu đặt cọc (₫)</label>
+                    <input type="number" min="0" step="10000" class="form-control" @bind="_model.DepositThreshold" />
+                    <small class="form-text text-muted">Đơn chuyển khoản từ mức này phải đặt cọc. Đặt 0 để tắt.</small>
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Tỷ lệ đặt cọc (%)</label>
+                    <input type="number" min="0" max="100" class="form-control" @bind="_model.DepositPercent" />
+                </div>
+            </div>
+
+            <h5 class="mt-4">Điểm tích lũy</h5>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>₫ chi tiêu / 1 điểm</label>
+                    <input type="number" min="1" step="1000" class="form-control" @bind="_model.PointsPerVnd" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Điểm cho 1 lần đổi</label>
+                    <input type="number" min="1" class="form-control" @bind="_model.PointsRedeemUnit" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>₫ giảm / 1 lần đổi</label>
+                    <input type="number" min="0" step="1000" class="form-control" @bind="_model.PointsRedeemValue" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Điểm thưởng giới thiệu (cho cả người giới thiệu và người mua)</label>
+                <input type="number" min="0" class="form-control" @bind="_model.ReferralBonusPoints" />
+                <small class="form-text text-muted">Thưởng khi đơn đầu tiên có mã giới thiệu được hoàn thành.</small>
+            </div>
+
+            <h5 class="mt-4">Hạng thành viên</h5>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>Chi tiêu hạng Bạc (₫)</label>
+                    <input type="number" min="0" step="100000" class="form-control" @bind="_model.TierSilverMin" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Giảm giá hạng Bạc (%)</label>
+                    <input type="number" min="0" max="100" class="form-control" @bind="_model.TierSilverDiscount" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Chi tiêu hạng Vàng (₫)</label>
+                    <input type="number" min="0" step="100000" class="form-control" @bind="_model.TierGoldMin" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Giảm giá hạng Vàng (%)</label>
+                    <input type="number" min="0" max="100" class="form-control" @bind="_model.TierGoldDiscount" />
+                </div>
+            </div>
+            <small class="form-text text-muted mb-3">Hạng Đồng: dưới ngưỡng Bạc (không giảm giá).</small>
+
+            <h5 class="mt-4">Gói quà</h5>
+            <div class="form-group">
+                <label>Phí gói quà (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_model.GiftFee" />
+            </div>
+
             <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
                 @(_saving ? "Đang lưu..." : "Lưu thay đổi")
             </button>

@@ -77,8 +77,56 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                     .IsRequired();
             });
 
+            builder.ComplexProperty(x => x.LoyaltyDiscount, loyaltyBuilder =>
+            {
+                loyaltyBuilder.Property(x => x.Amount)
+                    .HasColumnName("LoyaltyDiscount")
+                    .HasPrecision(18, 2)
+                    .IsRequired();
+                loyaltyBuilder.Property(x => x.Currency)
+                    .HasColumnName("LoyaltyDiscountCurrency")
+                    .HasMaxLength(3)
+                    .IsRequired();
+            });
+
+            builder.ComplexProperty(x => x.TierDiscount, tierBuilder =>
+            {
+                tierBuilder.Property(x => x.Amount)
+                    .HasColumnName("TierDiscount")
+                    .HasPrecision(18, 2)
+                    .IsRequired();
+                tierBuilder.Property(x => x.Currency)
+                    .HasColumnName("TierDiscountCurrency")
+                    .HasMaxLength(3)
+                    .IsRequired();
+            });
+
+            builder.ComplexProperty(x => x.GiftFee, giftBuilder =>
+            {
+                giftBuilder.Property(x => x.Amount)
+                    .HasColumnName("GiftFee")
+                    .HasPrecision(18, 2)
+                    .IsRequired();
+                giftBuilder.Property(x => x.Currency)
+                    .HasColumnName("GiftFeeCurrency")
+                    .HasMaxLength(3)
+                    .IsRequired();
+            });
+
+            builder.Property(x => x.LoyaltyPointsRedeemed).IsRequired();
+            builder.Property(x => x.RequiresDeposit).IsRequired();
+            builder.Property(x => x.IsGift).IsRequired();
+            builder.Property(x => x.LuckySpinUsed).IsRequired();
+
             builder.Property(x => x.DiscountCode)
                 .HasMaxLength(Order.DiscountCodeMaxLength);
+
+            builder.Property(x => x.TaxCode).HasMaxLength(Order.TaxCodeMaxLength);
+            builder.Property(x => x.CompanyName).HasMaxLength(Order.CompanyNameMaxLength);
+            builder.Property(x => x.RecipientName).HasMaxLength(Order.RecipientNameMaxLength);
+            builder.Property(x => x.RecipientPhone).HasMaxLength(Order.RecipientPhoneMaxLength);
+            builder.Property(x => x.GiftMessage).HasMaxLength(Order.GiftMessageMaxLength);
+            builder.Property(x => x.ReferralCodeUsed).HasMaxLength(Order.ReferralCodeMaxLength);
 
             builder.HasMany(x => x.Lines)
                 .WithOne()

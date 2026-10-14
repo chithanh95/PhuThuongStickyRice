@@ -84,7 +84,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             try
             {
-                return Ok(await _discountAppService.ValidateAsync(input));
+                return Ok(await _discountAppService.ValidateAsync(input, input.CustomerPhone));
             }
             catch (DomainException ex)
             {

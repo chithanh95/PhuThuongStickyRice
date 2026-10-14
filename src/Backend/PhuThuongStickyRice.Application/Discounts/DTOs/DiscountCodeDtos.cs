@@ -30,6 +30,29 @@ namespace PhuThuongStickyRice.Application.Discounts.DTOs
         public int UsedCount { get; set; }
 
         public bool IsActive { get; set; }
+
+        /// <summary>Phone the code is tied to (lucky-spin / birthday vouchers).</summary>
+        public string OwnerPhone { get; set; }
+    }
+
+    /// <summary>
+    /// Internal: creates a system-generated single-use code (lucky spin,
+    /// birthday voucher). Called from other application services, not exposed
+    /// directly as an API.
+    /// </summary>
+    public class CreateGeneratedDiscountDto
+    {
+        public string Prefix { get; set; }
+
+        public decimal? DiscountPercent { get; set; }
+
+        public decimal? DiscountAmount { get; set; }
+
+        public decimal MinOrderAmount { get; set; }
+
+        public DateTime? ExpiresAt { get; set; }
+
+        public string OwnerPhone { get; set; }
     }
 
     public class CreateDiscountCodeDto
@@ -62,6 +85,12 @@ namespace PhuThuongStickyRice.Application.Discounts.DTOs
 
         [Range(0, double.MaxValue)]
         public decimal Subtotal { get; set; }
+
+        /// <summary>
+        /// Optional: required when the code is tied to a phone (lucky-spin /
+        /// birthday vouchers).
+        /// </summary>
+        public string CustomerPhone { get; set; }
     }
 
     public class ValidateDiscountResultDto

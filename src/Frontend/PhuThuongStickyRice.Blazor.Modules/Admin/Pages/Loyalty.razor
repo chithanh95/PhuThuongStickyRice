@@ -1,0 +1,182 @@
+@page "/admin/loyalty"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Models
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@inject Wave2Service Wave2Service
+
+<h3>Khách hàng thân thiết</h3>
+
+<div class="card mb-3">
+    <div class="card-header">🎂 Sinh nhật sắp tới (7 ngày)</div>
+    <div class="card-body p-2">
+        @if (_birthdays == null)
+        {
+            <p class="mb-0"><em>Đang tải...</em></p>
+        }
+        else if (_birthdays.Count == 0)
+        {
+            <p class="mb-0 text-muted">Không có sinh nhật nào trong 7 ngày tới.</p>
+        }
+        else
+        {
+            <table class="table table-sm mb-0">
+                <thead><tr><th>SĐT</th><th>Ngày sinh</th><th>Điểm</th><th>Hạng</th></tr></thead>
+                <tbody>
+                    @foreach (var b in _birthdays)
+                    {
+                        <tr>
+                            <td>@b.Phone</td>
+                            <td>@b.DateOfBirth?.ToString("dd/MM")</td>
+                            <td>@b.Points</td>
+                            <td><span class="badge badge-info">@b.Tier</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <small class="text-muted">Worker tự tạo voucher sinh nhật 20% mỗi sáng cho các tài khoản này.</small>
+        }
+    </div>
+</div>
+
+<div class="input-group mb-3" style="max-width: 400px;">
+    <input class="form-control" @bind="_searchTerm" placeholder="Tìm theo số điện thoại..." />
+    <div class="input-group-append">
+        <button class="btn btn-outline-secondary" @onclick="Load">Tìm</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@if (_accounts == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_accounts.Count == 0)
+{
+    <div class="alert alert-info">Chưa có tài khoản tích điểm nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr><th>SĐT</th><th>Điểm</th><th>Đã tích lũy</th><th>Chi tiêu</th><th>Hạng</th><th>Mã giới thiệu</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var a in _accounts)
+                {
+                    <tr>
+                        <td>@a.Phone</td>
+                        <td><strong>@a.Points</strong></td>
+                        <td>@a.TotalEarned</td>
+                        <td>@FormatPrice(a.TotalSpent)</td>
+                        <td><span class="badge badge-info">@a.Tier</span></td>
+                        <td><code>@a.ReferralCode</code></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenAdjust(a)">Điều chỉnh điểm</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (_adjusting != null)
+{
+    <div class="card mt-3">
+        <div class="card-header">Điều chỉnh điểm — @_adjusting.Phone</div>
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>Điểm (+/-)</label>
+                    <input type="number" class="form-control" @bind="_delta" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Lý do</label>
+                    <input class="form-control" @bind="_reason" placeholder="VD: bù điểm đơn PX-..." />
+                </div>
+                <div class="form-group col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary" @onclick="ApplyAdjust" disabled="@_adjusting2">Lưu</button>
+                    <button class="btn btn-outline-secondary ml-2" @onclick="() => _adjusting = null">Đóng</button>
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(_adjustError))
+            {
+                <div class="alert alert-danger mb-0">@_adjustError</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<LoyaltyAccountModel> _accounts;
+    private List<LoyaltyAccountModel> _birthdays;
+    private string _searchTerm;
+    private string _error;
+    private LoyaltyAccountModel _adjusting;
+    private int _delta;
+    private string _reason;
+    private bool _adjusting2;
+    private string _adjustError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        try
+        {
+            _birthdays = await Wave2Service.GetUpcomingBirthdaysAsync(7);
+        }
+        catch (Exception)
+        {
+            _birthdays = new List<LoyaltyAccountModel>();
+        }
+    }
+
+    private async Task Load()
+    {
+        _error = null;
+        try
+        {
+            _accounts = await Wave2Service.GetLoyaltyListAsync(_searchTerm);
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được danh sách.";
+            _accounts = new List<LoyaltyAccountModel>();
+        }
+    }
+
+    private void OpenAdjust(LoyaltyAccountModel account)
+    {
+        _adjusting = account;
+        _delta = 0;
+        _reason = null;
+        _adjustError = null;
+    }
+
+    private async Task ApplyAdjust()
+    {
+        _adjustError = null;
+        _adjusting2 = true;
+        try
+        {
+            await Wave2Service.AdjustPointsAsync(_adjusting.Phone, _delta, _reason);
+            _adjusting = null;
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            _adjustError = ex.Message.Contains("âm") ? ex.Message : "Không lưu được. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _adjusting2 = false;
+        }
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+}

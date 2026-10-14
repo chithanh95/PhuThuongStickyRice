@@ -37,6 +37,20 @@
                 {
                     <tr><td><strong>Ghi chú:</strong></td><td colspan="3">@_order.Notes</td></tr>
                 }
+                @if (!string.IsNullOrWhiteSpace(_order.RecipientName))
+                {
+                    <tr><td><strong>Người nhận:</strong></td><td>@_order.RecipientName</td>
+                        <td><strong>SĐT nhận:</strong></td><td>@_order.RecipientPhone</td></tr>
+                }
+                @if (!string.IsNullOrWhiteSpace(_order.TaxCode))
+                {
+                    <tr><td><strong>Công ty:</strong></td><td>@_order.CompanyName</td>
+                        <td><strong>MST:</strong></td><td>@_order.TaxCode</td></tr>
+                }
+                @if (_order.IsGift)
+                {
+                    <tr><td><strong>Gói quà:</strong></td><td colspan="3">Có@(!string.IsNullOrWhiteSpace(_order.GiftMessage) ? $" — {_order.GiftMessage}" : "")</td></tr>
+                }
                 <tr><td><strong>Thanh toán:</strong></td><td>@PaymentLabel(_order.PaymentMethod)</td>
                     <td><strong>Trạng thái:</strong></td><td>@_order.PaymentStatus</td></tr>
             </table>
@@ -67,6 +81,21 @@
                     {
                         <tr><td colspan="4" class="r">Giảm giá @(!string.IsNullOrWhiteSpace(_order.DiscountCode) ? $"({_order.DiscountCode})" : "")</td>
                             <td class="r">−@FormatPrice(_order.DiscountAmount)</td></tr>
+                    }
+                    @if (_order.TierDiscount > 0)
+                    {
+                        <tr><td colspan="4" class="r">Ưu đãi hạng thành viên</td>
+                            <td class="r">−@FormatPrice(_order.TierDiscount)</td></tr>
+                    }
+                    @if (_order.LoyaltyDiscount > 0)
+                    {
+                        <tr><td colspan="4" class="r">Đổi @_order.LoyaltyPointsRedeemed điểm</td>
+                            <td class="r">−@FormatPrice(_order.LoyaltyDiscount)</td></tr>
+                    }
+                    @if (_order.GiftFee > 0)
+                    {
+                        <tr><td colspan="4" class="r">Phí gói quà</td>
+                            <td class="r">+@FormatPrice(_order.GiftFee)</td></tr>
                     }
                     <tr><td colspan="4" class="r">Phí giao hàng</td>
                         <td class="r">@(_order.DeliveryFee > 0 ? FormatPrice(_order.DeliveryFee) : "Miễn phí")</td></tr>

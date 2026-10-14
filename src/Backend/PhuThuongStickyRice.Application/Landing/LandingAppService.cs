@@ -56,7 +56,9 @@ namespace PhuThuongStickyRice.Application.Landing
                     dto.FooterButtonText,
                     dto.HeroImageUrl, dto.BannerImageUrl,
                     dto.MenuImage1Url, dto.MenuImage2Url, dto.MenuImage3Url,
-                    dto.FooterBackgroundUrl);
+                    dto.FooterBackgroundUrl,
+                    dto.VideoTitle, dto.VideoUrl,
+                    dto.MapEmbedUrl, dto.ReviewsEmbedHtml);
                 await _contentRepository.InsertAsync(entity, autoSave: true);
             }
             else
@@ -70,7 +72,9 @@ namespace PhuThuongStickyRice.Application.Landing
                     dto.FooterButtonText,
                     dto.HeroImageUrl, dto.BannerImageUrl,
                     dto.MenuImage1Url, dto.MenuImage2Url, dto.MenuImage3Url,
-                    dto.FooterBackgroundUrl);
+                    dto.FooterBackgroundUrl,
+                    dto.VideoTitle, dto.VideoUrl,
+                    dto.MapEmbedUrl, dto.ReviewsEmbedHtml);
                 await _contentRepository.UpdateAsync(entity, autoSave: true);
             }
 
@@ -108,7 +112,11 @@ namespace PhuThuongStickyRice.Application.Landing
                 MenuImage1Url = entity.MenuImage1Url,
                 MenuImage2Url = entity.MenuImage2Url,
                 MenuImage3Url = entity.MenuImage3Url,
-                FooterBackgroundUrl = entity.FooterBackgroundUrl
+                FooterBackgroundUrl = entity.FooterBackgroundUrl,
+                VideoTitle = entity.VideoTitle,
+                VideoUrl = entity.VideoUrl,
+                MapEmbedUrl = entity.MapEmbedUrl,
+                ReviewsEmbedHtml = entity.ReviewsEmbedHtml
             };
         }
 

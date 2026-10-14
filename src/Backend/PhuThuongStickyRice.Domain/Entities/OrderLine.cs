@@ -122,5 +122,20 @@ namespace PhuThuongStickyRice.Domain.Entities
                 toppingsExtra,
                 isCombo);
         }
+
+        /// <summary>
+        /// Quantity edit by the customer on a Pending order (0 = remove line).
+        /// Called from the Order aggregate root only.
+        /// </summary>
+        internal void SetQuantity(int quantity)
+        {
+            if (quantity < 0)
+            {
+                throw new DomainException("Order line quantity cannot be negative.");
+            }
+
+            Quantity = quantity;
+            LineTotal = Money.Of(UnitPrice.Amount * quantity, UnitPrice.Currency);
+        }
     }
 }

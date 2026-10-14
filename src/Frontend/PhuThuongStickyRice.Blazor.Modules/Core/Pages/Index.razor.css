@@ -398,3 +398,52 @@
         border-bottom: none;
     }
 }
+
+/* Wave 2: landing video / map / reviews embeds. */
+.lp-video {
+    padding: 3rem 1.5rem;
+    background: #fffdf7;
+}
+
+.lp-video .lp-panel-title {
+    margin-bottom: 1.5rem;
+}
+
+.lp-video-frame {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+    padding-bottom: 56.25%; /* 16:9 */
+    height: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.lp-video-frame iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.lp-reviews {
+    padding: 3rem 1.5rem;
+    background: #faf6ec;
+    overflow: hidden;
+}
+
+.lp-map {
+    margin-top: 1.5rem;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.lp-map iframe {
+    display: block;
+    width: 100%;
+    height: 280px;
+    border: 0;
+}

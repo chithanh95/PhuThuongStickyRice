@@ -56,5 +56,17 @@ namespace PhuThuongStickyRice.Application.Landing.DTOs
         public string MenuImage3Url { get; set; }
 
         public string FooterBackgroundUrl { get; set; }
+
+        /// <summary>YouTube video title shown above the embed.</summary>
+        public string VideoTitle { get; set; }
+
+        /// <summary>YouTube watch/share URL; rendered as an embed.</summary>
+        public string VideoUrl { get; set; }
+
+        /// <summary>Google Maps embed URL rendered as an iframe.</summary>
+        public string MapEmbedUrl { get; set; }
+
+        /// <summary>Trusted raw HTML snippet (reviews widget). Admin-only.</summary>
+        public string ReviewsEmbedHtml { get; set; }
     }
 }

@@ -22,6 +22,10 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int ContactPhoneMaxLength = 100;
         public const int ContactEmailMaxLength = 254;
         public const int ImageUrlMaxLength = 500;
+        public const int VideoTitleMaxLength = 200;
+        public const int VideoUrlMaxLength = 500;
+        public const int MapEmbedUrlMaxLength = 1000;
+        public const int ReviewsEmbedHtmlMaxLength = 8000;
 
         public string HeroTitle { get; private set; }
 
@@ -68,6 +72,21 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public string FooterBackgroundUrl { get; private set; }
 
+        /// <summary>YouTube video title shown above the embed.</summary>
+        public string VideoTitle { get; private set; }
+
+        /// <summary>YouTube watch/share URL; rendered as an embed.</summary>
+        public string VideoUrl { get; private set; }
+
+        /// <summary>Google Maps embed URL rendered as an iframe in the contact section.</summary>
+        public string MapEmbedUrl { get; private set; }
+
+        /// <summary>
+        /// Trusted raw HTML snippet (e.g. Google reviews widget). Admin-only
+        /// field; rendered unencoded on the landing page.
+        /// </summary>
+        public string ReviewsEmbedHtml { get; private set; }
+
         protected LandingPageContent()
         {
         }
@@ -81,7 +100,9 @@ namespace PhuThuongStickyRice.Domain.Entities
             string footerButtonText,
             string heroImageUrl = null, string bannerImageUrl = null,
             string menuImage1Url = null, string menuImage2Url = null, string menuImage3Url = null,
-            string footerBackgroundUrl = null)
+            string footerBackgroundUrl = null,
+            string videoTitle = null, string videoUrl = null,
+            string mapEmbedUrl = null, string reviewsEmbedHtml = null)
         {
             var content = new LandingPageContent();
             content.Update(
@@ -93,7 +114,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 footerButtonText,
                 heroImageUrl, bannerImageUrl,
                 menuImage1Url, menuImage2Url, menuImage3Url,
-                footerBackgroundUrl);
+                footerBackgroundUrl,
+                videoTitle, videoUrl,
+                mapEmbedUrl, reviewsEmbedHtml);
             return content;
         }
 
@@ -106,8 +129,14 @@ namespace PhuThuongStickyRice.Domain.Entities
             string footerButtonText,
             string heroImageUrl = null, string bannerImageUrl = null,
             string menuImage1Url = null, string menuImage2Url = null, string menuImage3Url = null,
-            string footerBackgroundUrl = null)
+            string footerBackgroundUrl = null,
+            string videoTitle = null, string videoUrl = null,
+            string mapEmbedUrl = null, string reviewsEmbedHtml = null)
         {
+            VideoTitle = videoTitle;
+            VideoUrl = videoUrl;
+            MapEmbedUrl = mapEmbedUrl;
+            ReviewsEmbedHtml = reviewsEmbedHtml;
             HeroTitle = heroTitle;
             HeroTagline = heroTagline;
             HeroButtonText = heroButtonText;

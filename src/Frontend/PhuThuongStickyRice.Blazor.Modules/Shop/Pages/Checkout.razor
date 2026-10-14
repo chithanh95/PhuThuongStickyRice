@@ -10,6 +10,7 @@
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
 @inject DiscountService DiscountService
+@inject Wave2Service Wave2Service
 @inject CartState CartState
 @inject NavigationManager Navigation
 
@@ -28,6 +29,48 @@
                     <tr>
                         <td>Giảm giá @(!string.IsNullOrWhiteSpace(_placedOrder.DiscountCode) ? $"({_placedOrder.DiscountCode})" : "")</td>
                         <td class="text-right text-success">−@FormatPrice(_placedOrder.DiscountAmount)</td>
+                    </tr>
+                }
+                @if (_placedOrder.TierDiscount > 0)
+                {
+                    <tr>
+                        <td>Ưu đãi hạng thành viên</td>
+                        <td class="text-right text-success">−@FormatPrice(_placedOrder.TierDiscount)</td>
+                    </tr>
+                }
+                @if (_placedOrder.LoyaltyDiscount > 0)
+                {
+                    <tr>
+                        <td>Đổi @_placedOrder.LoyaltyPointsRedeemed điểm</td>
+                        <td class="text-right text-success">−@FormatPrice(_placedOrder.LoyaltyDiscount)</td>
+                    </tr>
+                }
+                @if (_placedOrder.GiftFee > 0)
+                {
+                    <tr>
+                        <td>🎁 Phí gói quà</td>
+                        <td class="text-right">+@FormatPrice(_placedOrder.GiftFee)</td>
+                    </tr>
+                }
+                @if (!string.IsNullOrWhiteSpace(_placedOrder.TaxCode))
+                {
+                    <tr>
+                        <td>Hóa đơn VAT</td>
+                        <td class="text-right"><small>@_placedOrder.CompanyName<br />MST: @_placedOrder.TaxCode</small></td>
+                    </tr>
+                }
+                @if (!string.IsNullOrWhiteSpace(_placedOrder.RecipientName))
+                {
+                    <tr>
+                        <td>Người nhận</td>
+                        <td class="text-right"><small>@_placedOrder.RecipientName<br />@_placedOrder.RecipientPhone</small></td>
+                    </tr>
+                }
+                @if (_placedOrder.RequiresDeposit)
+                {
+                    <tr>
+                        <td>💰 Cần đặt cọc (@_shopSettings.DepositPercent%)</td>
+                        <td class="text-right"><strong class="text-warning">@FormatPrice(_placedOrder.TotalAmount * _shopSettings.DepositPercent / 100)</strong></td>
                     </tr>
                 }
                 @if (_placedOrder.FulfillmentMethod == "Pickup")
@@ -54,6 +97,51 @@
             <a class="btn btn-primary btn-sm ml-2" href="/shop">Tiếp tục mua hàng</a>
         </p>
     </div>
+
+    @if (!_placedOrder.LuckySpinUsed)
+    {
+        <div class="card mb-3">
+            <div class="card-header">🎡 Quay may mắn — nhận voucher cho đơn tiếp theo</div>
+            <div class="card-body text-center">
+                <div class="spin-wheel-wrap">
+                    <div class="spin-pointer">▼</div>
+                    <div class="spin-wheel" style="@_wheelStyle">
+                        @for (var i = 0; i < _spinSegments.Length; i++)
+                        {
+                            <span class="spin-label" style="@SpinLabelStyle(i)">@_spinSegments[i]</span>
+                        }
+                    </div>
+                </div>
+                @if (_spinResult == null)
+                {
+                    <button class="btn btn-warning mt-3" @onclick="DoSpin" disabled="@_spinning">
+                        @(_spinning ? "Đang quay..." : "🎡 Quay ngay")
+                    </button>
+                    @if (!string.IsNullOrEmpty(_spinError))
+                    {
+                        <div class="alert alert-danger mt-2">@_spinError</div>
+                    }
+                }
+                else
+                {
+                    <div class="alert @(_spinResult.Code == null ? "alert-secondary" : "alert-success") mt-3">
+                        <strong>@_spinResult.PrizeLabel</strong>
+                        @if (_spinResult.Code != null)
+                        {
+                            <div class="mt-2">
+                                Mã voucher của bạn:
+                                <strong class="h5 text-danger">@_spinResult.Code</strong>
+                                <small class="d-block text-muted">
+                                    HSD: @_spinResult.ExpiresAt?.ToLocalTime().ToString("dd/MM/yyyy") —
+                                    dùng 1 lần cho số @_placedOrder.CustomerPhone
+                                </small>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
 
     @if (_placedOrder.PaymentMethod == "Cod")
     {
@@ -255,6 +343,77 @@ else
                         <textarea class="form-control" @bind="_order.Notes" rows="2"
                                   placeholder="Ví dụ: giao giờ hành chính..."></textarea>
                     </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="recipient-toggle"
+                               @bind="_orderForSomeoneElse" />
+                        <label class="form-check-label" for="recipient-toggle">Người nhận khác người đặt</label>
+                    </div>
+                    @if (_orderForSomeoneElse)
+                    {
+                        <div class="form-group">
+                            <label>Tên người nhận *</label>
+                            <input class="form-control @FieldClass(_recipientNameError)" @bind="_order.RecipientName"
+                                   placeholder="Tên người nhận hàng" />
+                            @if (!string.IsNullOrEmpty(_recipientNameError))
+                            {
+                                <small class="text-danger">@_recipientNameError</small>
+                            }
+                        </div>
+                        <div class="form-group">
+                            <label>SĐT người nhận *</label>
+                            <input class="form-control @FieldClass(_recipientPhoneError)" @bind="_order.RecipientPhone"
+                                   placeholder="0901234567" />
+                            @if (!string.IsNullOrEmpty(_recipientPhoneError))
+                            {
+                                <small class="text-danger">@_recipientPhoneError</small>
+                            }
+                        </div>
+                    }
+                    <div class="card mb-2">
+                        <div class="card-header p-2">
+                            <button type="button" class="btn btn-link btn-sm p-0" @onclick="() => _showVat = !_showVat">
+                                @(_showVat ? "▾" : "▸") Cần hóa đơn VAT
+                            </button>
+                        </div>
+                        @if (_showVat)
+                        {
+                            <div class="card-body p-2">
+                                <div class="form-group mb-2">
+                                    <label>Mã số thuế *</label>
+                                    <input class="form-control @FieldClass(_taxCodeError)" @bind="_order.TaxCode"
+                                           placeholder="0101234567" />
+                                    @if (!string.IsNullOrEmpty(_taxCodeError))
+                                    {
+                                        <small class="text-danger">@_taxCodeError</small>
+                                    }
+                                </div>
+                                <div class="form-group mb-1">
+                                    <label>Tên công ty *</label>
+                                    <input class="form-control @FieldClass(_companyNameError)" @bind="_order.CompanyName"
+                                           placeholder="Công ty TNHH ..." />
+                                    @if (!string.IsNullOrEmpty(_companyNameError))
+                                    {
+                                        <small class="text-danger">@_companyNameError</small>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="gift-toggle"
+                               @bind="_order.IsGift" />
+                        <label class="form-check-label" for="gift-toggle">
+                            🎁 Gói quà (+@FormatPrice(_shopSettings.GiftFee))
+                        </label>
+                    </div>
+                    @if (_order.IsGift)
+                    {
+                        <div class="form-group">
+                            <label>Lời nhắn trên thiệp</label>
+                            <textarea class="form-control" @bind="_order.GiftMessage" rows="2"
+                                      placeholder="Ví dụ: Chúc mừng sinh nhật!"></textarea>
+                        </div>
+                    }
                     <div class="form-group">
                         <label>Phương thức thanh toán *</label>
                         <div class="form-check">
@@ -314,6 +473,27 @@ else
                                     <td class="text-right text-success">−@FormatPrice(_discountAmount)</td>
                                 </tr>
                             }
+                            @if (_tierDiscountPreview > 0)
+                            {
+                                <tr>
+                                    <td class="text-success">Ưu đãi hạng @_loyalty.Tier (@_loyalty.TierDiscountPercent%)</td>
+                                    <td class="text-right text-success">−@FormatPrice(_tierDiscountPreview)</td>
+                                </tr>
+                            }
+                            @if (_redeemDiscountPreview > 0)
+                            {
+                                <tr>
+                                    <td class="text-success">Đổi @_redeemPoints điểm</td>
+                                    <td class="text-right text-success">−@FormatPrice(_redeemDiscountPreview)</td>
+                                </tr>
+                            }
+                            @if (_giftFeePreview > 0)
+                            {
+                                <tr>
+                                    <td class="text-muted">🎁 Phí gói quà</td>
+                                    <td class="text-right text-muted">+@FormatPrice(_giftFeePreview)</td>
+                                </tr>
+                            }
                             <tr>
                                 <td class="text-muted">
                                     Phí giao hàng
@@ -362,6 +542,55 @@ else
                         }
                     </div>
 
+                    @if (_loyalty != null)
+                    {
+                        <div class="alert alert-light border py-2">
+                            <small>
+                                ⭐ Bạn có <strong>@_loyalty.Points điểm</strong>
+                                <span class="badge badge-info ml-1">Hạng @_loyalty.Tier</span>
+                                @if (!string.IsNullOrWhiteSpace(_loyalty.ReferralCode))
+                                {
+                                    <span class="d-block mt-1">
+                                        Mã giới thiệu của bạn: <strong>@_loyalty.ReferralCode</strong>
+                                        <small class="text-muted">(bạn bè dùng mã này, cả hai cùng được +@_shopSettings.ReferralBonusPoints điểm)</small>
+                                    </span>
+                                }
+                            </small>
+                            @if (_loyalty.Points >= _shopSettings.PointsRedeemUnit && _shopSettings.PointsRedeemUnit > 0)
+                            {
+                                <div class="input-group input-group-sm mt-2">
+                                    <input type="number" class="form-control" @bind="_redeemPointsInput"
+                                           min="0" max="@_loyalty.Points" step="@_shopSettings.PointsRedeemUnit"
+                                           placeholder="Số điểm muốn đổi" />
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-success" @onclick="ApplyRedeem">Đổi điểm</button>
+                                    </div>
+                                </div>
+                                <small class="text-muted">@_shopSettings.PointsRedeemUnit điểm = @FormatPrice(_shopSettings.PointsRedeemValue)</small>
+                                @if (!string.IsNullOrEmpty(_redeemMessage))
+                                {
+                                    <small class="d-block @(_redeemDiscountPreview > 0 ? "text-success" : "text-danger")">@_redeemMessage</small>
+                                }
+                            }
+                        </div>
+                    }
+
+                    <div class="form-group">
+                        <label>Mã giới thiệu <small class="text-muted">(nếu có)</small></label>
+                        <input class="form-control" @bind="_order.ReferralCode" placeholder="VD: PT-AB12CD" />
+                    </div>
+
+                    @if (_depositPreview > 0)
+                    {
+                        <div class="alert alert-warning py-2">
+                            <small>
+                                💰 Đơn chuyển khoản từ @FormatPrice(_shopSettings.DepositThreshold) cần đặt cọc trước:
+                                <strong>@FormatPrice(_depositPreview)</strong> (@_shopSettings.DepositPercent%).
+                                Shop sẽ liên hệ xác nhận cọc.
+                            </small>
+                        </div>
+                    }
+
                     <button class="btn btn-success btn-block btn-lg" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked)">
                         @(_submitting ? "Đang xử lý..." : "Xác nhận đặt hàng")
                     </button>
@@ -390,6 +619,28 @@ else
     private string _phoneError;
     private string _emailError;
     private string _addressError;
+    private string _recipientNameError;
+    private string _recipientPhoneError;
+    private string _taxCodeError;
+    private string _companyNameError;
+
+    // Recipient / VAT / gift.
+    private bool _orderForSomeoneElse;
+    private bool _showVat;
+
+    // Loyalty.
+    private LoyaltyAccountModel _loyalty;
+    private int _redeemPointsInput;
+    private int _redeemPoints;
+    private string _redeemMessage;
+
+    // Lucky spin.
+    private static readonly string[] _spinSegments = { "5%", "10%", "15%", "Miễn ship", "20k", "May mắn" };
+    private static readonly string[] _spinSegmentKeys = { "Percent5", "Percent10", "Percent15", "FreeShip", "Cash20k", "Miss" };
+    private string _wheelStyle = string.Empty;
+    private SpinResultModel _spinResult;
+    private bool _spinning;
+    private string _spinError;
 
     // Address auto-fill from phone history.
     private LastOrderInfoModel _addressSuggestion;
@@ -432,7 +683,49 @@ else
         }
     }
 
-    private decimal _grandTotal => Math.Max(0, _subtotal - _discountAmount + _fee);
+    private decimal _grandTotal => Math.Max(0,
+        _subtotal - _discountAmount - _tierDiscountPreview - _redeemDiscountPreview + _fee + _giftFeePreview);
+
+    /// <summary>Membership-tier discount preview (auto-applied for recognized phones).</summary>
+    private decimal _tierDiscountPreview =>
+        _loyalty != null && _loyalty.TotalSpent > 0 && _loyalty.TierDiscountPercent > 0
+            ? Math.Round((_subtotal - _discountAmount) * _loyalty.TierDiscountPercent / 100, 0)
+            : 0;
+
+    /// <summary>Loyalty-points redemption preview.</summary>
+    private decimal _redeemDiscountPreview
+    {
+        get
+        {
+            var unit = _shopSettings.PointsRedeemUnit;
+            var value = _shopSettings.PointsRedeemValue;
+            if (_redeemPoints <= 0 || unit <= 0 || value <= 0)
+            {
+                return 0;
+            }
+
+            return (_redeemPoints / unit) * value;
+        }
+    }
+
+    private decimal _giftFeePreview => _order.IsGift ? Math.Max(0, _shopSettings.GiftFee) : 0;
+
+    /// <summary>Deposit preview for large bank-transfer orders.</summary>
+    private decimal _depositPreview
+    {
+        get
+        {
+            if (_order.PaymentMethod != "BankTransfer" || _shopSettings.DepositThreshold <= 0)
+            {
+                return 0;
+            }
+
+            var total = _grandTotal;
+            return total >= _shopSettings.DepositThreshold
+                ? Math.Round(total * _shopSettings.DepositPercent / 100, 0)
+                : 0;
+        }
+    }
 
     /// <summary>"Dự kiến giao trong 30–45 phút" from the shop setting.</summary>
     private string _etaText
@@ -524,6 +817,19 @@ else
         {
             // Best effort only — the form works fine without the suggestion.
         }
+
+        // Loyalty summary (points, tier, referral code) for the phone.
+        try
+        {
+            _loyalty = await Wave2Service.GetLoyaltyByPhoneAsync(phone);
+            _redeemPoints = 0;
+            _redeemPointsInput = 0;
+            _redeemMessage = null;
+        }
+        catch (Exception)
+        {
+            _loyalty = null;
+        }
     }
 
     private void UseSuggestedAddress()
@@ -563,7 +869,7 @@ else
         _applyingDiscount = true;
         try
         {
-            var result = await DiscountService.ValidateAsync(code, _subtotal);
+            var result = await DiscountService.ValidateAsync(code, _subtotal, _order.CustomerPhone);
             if (result.Valid)
             {
                 _discountAmount = result.DiscountAmount;
@@ -590,6 +896,39 @@ else
         }
     }
 
+    private void ApplyRedeem()
+    {
+        _redeemMessage = null;
+        var unit = _shopSettings.PointsRedeemUnit;
+        var balance = _loyalty?.Points ?? 0;
+
+        if (unit <= 0 || balance < unit)
+        {
+            _redeemPoints = 0;
+            _redeemMessage = "Bạn chưa đủ điểm để đổi.";
+            return;
+        }
+
+        var requested = _redeemPointsInput;
+        if (requested < unit)
+        {
+            _redeemPoints = 0;
+            _redeemMessage = $"Cần ít nhất {unit} điểm để đổi.";
+            return;
+        }
+
+        if (requested > balance)
+        {
+            _redeemPoints = 0;
+            _redeemMessage = $"Bạn chỉ có {balance} điểm.";
+            return;
+        }
+
+        // Round down to whole steps.
+        _redeemPoints = (requested / unit) * unit;
+        _redeemMessage = $"Đổi {_redeemPoints} điểm → giảm {FormatPrice(_redeemDiscountPreview)}.";
+    }
+
     private bool ValidateFields()
     {
         _nameError = string.IsNullOrWhiteSpace(_order.CustomerName) ? "Vui lòng nhập họ tên." : null;
@@ -600,8 +939,22 @@ else
         _addressError = _fulfillment == "Delivery" && string.IsNullOrWhiteSpace(_order.CustomerAddress)
             ? "Vui lòng nhập địa chỉ giao hàng."
             : null;
+        _recipientNameError = _orderForSomeoneElse && string.IsNullOrWhiteSpace(_order.RecipientName)
+            ? "Vui lòng nhập tên người nhận."
+            : null;
+        _recipientPhoneError = _orderForSomeoneElse && !IsValidPhone(_order.RecipientPhone)
+            ? "SĐT người nhận không đúng định dạng."
+            : null;
+        _taxCodeError = _showVat && string.IsNullOrWhiteSpace(_order.TaxCode)
+            ? "Vui lòng nhập mã số thuế."
+            : null;
+        _companyNameError = _showVat && string.IsNullOrWhiteSpace(_order.CompanyName)
+            ? "Vui lòng nhập tên công ty."
+            : null;
 
-        return _nameError == null && _phoneError == null && _emailError == null && _addressError == null;
+        return _nameError == null && _phoneError == null && _emailError == null && _addressError == null
+            && _recipientNameError == null && _recipientPhoneError == null
+            && _taxCodeError == null && _companyNameError == null;
     }
 
     private async Task PlaceOrder()
@@ -625,9 +978,27 @@ else
         {
             _order.DiscountCode = _appliedCode;
             _order.FulfillmentMethod = _fulfillment;
+            _order.RedeemPoints = _redeemPoints;
             if (_fulfillment == "Pickup")
             {
                 _order.CustomerAddress = null;
+            }
+
+            if (!_orderForSomeoneElse)
+            {
+                _order.RecipientName = null;
+                _order.RecipientPhone = null;
+            }
+
+            if (!_showVat)
+            {
+                _order.TaxCode = null;
+                _order.CompanyName = null;
+            }
+
+            if (!_order.IsGift)
+            {
+                _order.GiftMessage = null;
             }
 
             _order.Lines = CartState.Items
@@ -727,6 +1098,45 @@ else
 
         var dot = email.LastIndexOf('.');
         return dot > at + 1 && dot < email.Length - 1 && !email.Contains(" ");
+    }
+
+    /// <summary>Positions a wheel label at the center of its 60° segment, text kept upright.</summary>
+    private static string SpinLabelStyle(int index)
+    {
+        var angle = index * 60 + 30;
+        return $"transform: translate(-50%, -50%) rotate({angle}deg) translateY(-70px) rotate(-{angle}deg);";
+    }
+
+    private async Task DoSpin()
+    {
+        _spinError = null;
+        _spinning = true;
+        try
+        {
+            var result = await Wave2Service.SpinAsync(_placedOrder.Id, _placedOrder.CustomerPhone);
+            _spinResult = result;
+            _placedOrder.LuckySpinUsed = true;
+
+            var index = Array.IndexOf(_spinSegmentKeys, result.Segment);
+            if (index < 0)
+            {
+                index = _spinSegmentKeys.Length - 1;
+            }
+
+            // 6 full turns + land the pointer on the middle of the segment.
+            var target = 6 * 360 + (360 - (index * 60 + 30));
+            _wheelStyle = $"transform: rotate({target}deg);";
+        }
+        catch (Exception ex)
+        {
+            _spinError = ex.Message.Contains("đã được sử dụng")
+                ? ex.Message
+                : "Không quay được lúc này. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _spinning = false;
+        }
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";

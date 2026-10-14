@@ -48,6 +48,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 PaymentMethod = model.PaymentMethod,
                 DiscountCode = model.DiscountCode,
                 FulfillmentMethod = model.FulfillmentMethod,
+                TaxCode = model.TaxCode,
+                CompanyName = model.CompanyName,
+                RecipientName = model.RecipientName,
+                RecipientPhone = model.RecipientPhone,
+                IsGift = model.IsGift,
+                GiftMessage = model.GiftMessage,
+                RedeemPoints = model.RedeemPoints,
+                ReferralCode = model.ReferralCode,
+                DateOfBirth = model.DateOfBirth,
                 Lines = model.Lines
                     .Select(x => new CreateOrderLineDto
                     {
@@ -202,6 +211,122 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             try
             {
                 var result = await _orderAppService.CreateMoMoPaymentAsync(id);
+                return Ok(result);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Customer self-service: cancel a Pending order. The order number +
+        /// phone in the body must match the order.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("track/cancel")]
+        public async Task<ActionResult> CancelByCustomer(
+            [FromBody] CancelOrderRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.CancelByCustomerAsync(new CancelOrderByCustomerInput
+                {
+                    OrderNumber = model?.OrderNumber,
+                    CustomerPhone = model?.CustomerPhone
+                });
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Customer self-service: edit quantities of a Pending order.
+        /// Totals are recalculated server-side.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPut("track/lines")]
+        public async Task<ActionResult> UpdateLinesByCustomer(
+            [FromBody] UpdateOrderLinesRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.UpdateLinesByCustomerAsync(new UpdateOrderLinesInput
+                {
+                    OrderNumber = model?.OrderNumber,
+                    CustomerPhone = model?.CustomerPhone,
+                    Lines = model?.Lines
+                        .Select(x => new UpdateOrderLineQtyDto
+                        {
+                            LineId = x.LineId,
+                            Quantity = x.Quantity
+                        })
+                        .ToList() ?? new System.Collections.Generic.List<UpdateOrderLineQtyDto>()
+                });
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Public: submit a star rating for a completed order.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("track/review")]
+        public async Task<ActionResult> SubmitReview(
+            [FromBody] SubmitReviewRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var review = await _orderAppService.SubmitReviewAsync(new SubmitReviewInput
+                {
+                    OrderNumber = model?.OrderNumber,
+                    CustomerPhone = model?.CustomerPhone,
+                    Rating = model?.Rating ?? 0,
+                    Comment = model?.Comment
+                });
+                return Ok(review);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>Admin: order reviews, newest first.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("reviews")]
+        public async Task<ActionResult> GetReviews(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _orderAppService.GetReviewsAsync());
+        }
+
+        /// <summary>
+        /// Public: post-checkout lucky spin. One spin per order; a winning
+        /// segment generates a real single-use voucher tied to the phone.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("spin")]
+        public async Task<ActionResult> Spin(
+            [FromBody] SpinRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var result = await _orderAppService.SpinAsync(new SpinInput
+                {
+                    OrderId = model?.OrderId ?? Guid.Empty,
+                    CustomerPhone = model?.CustomerPhone
+                });
                 return Ok(result);
             }
             catch (DomainException ex)

@@ -34,10 +34,10 @@ namespace PhuThuongStickyRice.Blazor.Modules.Admin.Services
             await DeleteAsync($"api/discounts/{id}");
         }
 
-        public async Task<ValidateDiscountResultModel> ValidateAsync(string code, decimal subtotal)
+        public async Task<ValidateDiscountResultModel> ValidateAsync(string code, decimal subtotal, string customerPhone = null)
         {
             return await PostAsync<ValidateDiscountResultModel>("api/discounts/validate",
-                new { Code = code, Subtotal = subtotal });
+                new { Code = code, Subtotal = subtotal, CustomerPhone = customerPhone });
         }
     }
 }

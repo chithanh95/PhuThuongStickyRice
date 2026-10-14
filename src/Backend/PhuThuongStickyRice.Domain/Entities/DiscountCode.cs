@@ -28,5 +28,11 @@ namespace PhuThuongStickyRice.Domain.Entities
         public int UsedCount { get; set; }
 
         public bool IsActive { get; set; }
+
+        /// <summary>
+        /// Optional phone the code is tied to (lucky-spin / birthday vouchers).
+        /// When set, only this phone may redeem the code.
+        /// </summary>
+        public string OwnerPhone { get; set; }
     }
 }

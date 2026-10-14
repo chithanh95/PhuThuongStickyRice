@@ -130,6 +130,30 @@
     </div>
 </section>
 
+<!-- 5b. VIDEO -->
+@if (!string.IsNullOrWhiteSpace(VideoEmbedUrl))
+{
+    <section class="lp-video">
+        @if (!string.IsNullOrWhiteSpace(_content.VideoTitle))
+        {
+            <h2 class="lp-panel-title text-center">@_content.VideoTitle</h2>
+        }
+        <div class="lp-video-frame">
+            <iframe src="@VideoEmbedUrl" title="@_content.VideoTitle"
+                    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+        </div>
+    </section>
+}
+
+<!-- 5c. REVIEWS -->
+@if (!string.IsNullOrWhiteSpace(_content.ReviewsEmbedHtml))
+{
+    <section class="lp-reviews">
+        @((MarkupString)_content.ReviewsEmbedHtml)
+    </section>
+}
+
 <!-- 6. FOOTER -->
 <footer class="lp-footer">
     <div class="row no-gutters">
@@ -150,6 +174,13 @@
                 }
             </ul>
             <a href="/shop" class="lp-cta lp-cta-cream">@_content.FooterButtonText</a>
+            @if (!string.IsNullOrWhiteSpace(_content.MapEmbedUrl))
+            {
+                <div class="lp-map">
+                    <iframe src="@_content.MapEmbedUrl" title="Bản đồ" frameborder="0"
+                            allowfullscreen loading="lazy"></iframe>
+                </div>
+            }
         </div>
         <div class="col-md-6">
             <div class="row no-gutters">
@@ -174,6 +205,45 @@
     private LandingContentModel _content = new LandingContentModel();
     private List<ShopProductModel> _quickProducts;
     private long _todaySold;
+
+    /// <summary>
+    /// Converts a YouTube watch/share URL to an embed URL.
+    /// Returns null when no video is configured.
+    /// </summary>
+    private string VideoEmbedUrl
+    {
+        get
+        {
+            var url = (_content.VideoUrl ?? "").Trim();
+            if (string.IsNullOrEmpty(url))
+            {
+                return null;
+            }
+
+            if (url.Contains("/embed/"))
+            {
+                return url;
+            }
+
+            // youtu.be/VIDEO_ID
+            var shortIdx = url.IndexOf("youtu.be/", StringComparison.OrdinalIgnoreCase);
+            if (shortIdx >= 0)
+            {
+                var id = url.Substring(shortIdx + "youtu.be/".Length).Split('?', '&')[0];
+                return $"https://www.youtube.com/embed/{id}";
+            }
+
+            // youtube.com/watch?v=VIDEO_ID
+            var vIdx = url.IndexOf("v=", StringComparison.OrdinalIgnoreCase);
+            if (vIdx >= 0)
+            {
+                var id = url.Substring(vIdx + 2).Split('?', '&')[0];
+                return $"https://www.youtube.com/embed/{id}";
+            }
+
+            return null;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
