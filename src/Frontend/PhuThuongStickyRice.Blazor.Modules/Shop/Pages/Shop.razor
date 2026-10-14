@@ -44,9 +44,24 @@
     </div>
 </div>
 
+@if (_loadFailed)
+{
+    @* Wave 6d (item 38): friendly full-page error, PWA offline.html look. *@
+    <div class="card" style="background: #f5ebcd; border: none;">
+        <div class="card-body text-center py-5">
+            <div style="font-size: 4rem;">😞</div>
+            <h2 style="font-family: Georgia, serif; color: #7a1b2e;">Không kết nối được tới máy chủ</h2>
+            <p class="mb-4" style="color: #4a2b1a;">Kiểm tra mạng rồi thử lại.</p>
+            <button class="btn" style="background: #7a1b2e; color: #fff; padding: 12px 28px; border-radius: 6px;" @onclick="RetryLoad">Thử lại</button>
+        </div>
+    </div>
+}
+else
+{
 @if (!string.IsNullOrEmpty(_error))
 {
     <div class="alert alert-danger">@_error</div>
+}
 }
 
 @if (_combos != null && _combos.Count > 0)
@@ -185,7 +200,7 @@ else
                 <div class="col-6 col-md-4 mb-4" @key="product.Id">
                     <div class="card h-100">
                         <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name">
-                            <img class="card-img-top" src="@ProductImage(product.Code)" alt="@product.Name" style="height: 200px; object-fit: cover;" />
+                            <img class="card-img-top" src="@ProductImage(product.Code)" alt="@product.Name" loading="lazy" style="height: 200px; object-fit: cover;" />
                         </a>
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title">
@@ -262,7 +277,7 @@ else
                     </button>
                 </div>
                 <div class="modal-body">
-                    <img src="@ProductImage(_quickView.Code)" alt="@_quickView.Name"
+                    <img src="@ProductImage(_quickView.Code)" alt="@_quickView.Name" loading="lazy"
                          class="img-fluid rounded mb-3" style="max-height: 300px; width: 100%; object-fit: cover;" />
                     <p class="text-muted">@_quickView.Description</p>
                     @* Wave 6b (item 26): "★ 4.8 (12)" — hidden when no reviews. *@
@@ -341,6 +356,7 @@ else
     </div>
     <div class="modal-backdrop fade show"></div>
 }
+} @* /_loadFailed else *@
 
 @code {
     private List<ShopProductModel> _products;
@@ -353,6 +369,9 @@ else
     private Dictionary<Guid, int> _quantities = new Dictionary<Guid, int>();
     private Dictionary<Guid, Guid?> _cardSizes = new Dictionary<Guid, Guid?>();
     private string _error;
+
+    // Wave 6d (item 38): initial product load failed → full-page error state.
+    private bool _loadFailed;
 
     // Filters.
     private string _categoryFilter;
@@ -449,14 +468,26 @@ else
 
         try
         {
+            // Wave 6d (item 38): products are the critical load — their
+            // failure gets the full-page error state with a retry button.
+            try
+            {
+                var paged = await ShopService.GetProductsAsync();
+                _products = paged.Items ?? new List<ShopProductModel>();
+            }
+            catch (Exception)
+            {
+                _loadFailed = true;
+                _products = new List<ShopProductModel>();
+            }
+
             var branchesTask = Wave4Service.GetActiveBranchesAsync();
-            var pagedTask = ShopService.GetProductsAsync();
             var combosTask = ShopService.GetCombosAsync();
             var toppingsTask = ShopService.GetToppingsAsync();
             var todaySoldTask = ShopService.GetTodaySoldAsync();
             var bestSellersTask = ShopService.GetBestSellerIdsAsync();
 
-            await Task.WhenAll(branchesTask, pagedTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
+            await Task.WhenAll(branchesTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
 
             // Wave 6b (item 26): rating aggregates are fail-soft — the shop
             // hides the stars when the call fails.
@@ -473,7 +504,6 @@ else
             }
 
             _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.BranchModel>();
-            _products = pagedTask.Result.Items ?? new List<ShopProductModel>();
             _combos = combosTask.Result ?? new List<ComboModel>();
             _toppings = toppingsTask.Result ?? new List<ToppingModel>();
             _todaySold = todaySoldTask.Result;
@@ -519,9 +549,17 @@ else
         }
         catch (Exception)
         {
-            _error = "Không tải được danh sách sản phẩm. Vui lòng thử lại sau.";
-            _products = new List<ShopProductModel>();
+            // Non-critical extras (combos, toppings, best-sellers) failed;
+            // products have their own _loadFailed flag (item 38).
+            _error = "Một số thông tin bổ sung không tải được. Vui lòng thử lại sau.";
+            _products ??= new List<ShopProductModel>();
         }
+    }
+
+    /// <summary>Wave 6d (item 38): full reload after a failed initial load.</summary>
+    private void RetryLoad()
+    {
+        Navigation.NavigateTo("/shop", forceLoad: true);
     }
 
     /// <summary>

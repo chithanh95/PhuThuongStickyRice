@@ -1,0 +1,101 @@
+@page "/doi-mat-khau"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Core.Services
+@inject AuthService AuthService
+@inject ToastService Toasts
+@inject NavigationManager Navigation
+
+<h3>Đổi mật khẩu</h3>
+<p class="text-muted">Đổi mật khẩu đăng nhập của bạn. Mật khẩu mới tối thiểu 6 ký tự.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="card">
+    <div class="card-body" style="max-width: 420px;">
+        <div class="form-group">
+            <label for="cp-current">Mật khẩu hiện tại</label>
+            <input id="cp-current" type="password" class="form-control" @bind="_currentPassword" autocomplete="current-password" />
+            @if (!string.IsNullOrEmpty(_currentError))
+            {
+                <small class="text-danger">@_currentError</small>
+            }
+        </div>
+        <div class="form-group">
+            <label for="cp-new">Mật khẩu mới</label>
+            <input id="cp-new" type="password" class="form-control" @bind="_newPassword" autocomplete="new-password" />
+            @if (!string.IsNullOrEmpty(_newError))
+            {
+                <small class="text-danger">@_newError</small>
+            }
+        </div>
+        <div class="form-group">
+            <label for="cp-confirm">Nhập lại mật khẩu mới</label>
+            <input id="cp-confirm" type="password" class="form-control" @bind="_confirmPassword" autocomplete="new-password" />
+            @if (!string.IsNullOrEmpty(_confirmError))
+            {
+                <small class="text-danger">@_confirmError</small>
+            }
+        </div>
+        <button class="btn btn-primary" @onclick="ChangeAsync" disabled="@_saving">
+            @(_saving ? "Đang đổi..." : "Đổi mật khẩu")
+        </button>
+    </div>
+</div>
+
+@code {
+    private string _currentPassword;
+    private string _newPassword;
+    private string _confirmPassword;
+    private string _currentError;
+    private string _newError;
+    private string _confirmError;
+    private string _error;
+    private bool _saving;
+
+    private bool Validate()
+    {
+        _currentError = string.IsNullOrWhiteSpace(_currentPassword)
+            ? "Vui lòng nhập mật khẩu hiện tại." : null;
+        _newError = string.IsNullOrWhiteSpace(_newPassword)
+            ? "Vui lòng nhập mật khẩu mới."
+            : _newPassword.Length < 6
+                ? "Mật khẩu mới phải tối thiểu 6 ký tự." : null;
+        _confirmError = _confirmPassword != _newPassword
+            ? "Mật khẩu nhập lại không khớp." : null;
+
+        return _currentError == null && _newError == null && _confirmError == null;
+    }
+
+    private async Task ChangeAsync()
+    {
+        _error = null;
+
+        if (!Validate())
+        {
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            await AuthService.ChangePasswordAsync(_currentPassword, _newPassword);
+            Toasts.Show("Đổi mật khẩu thành công. ✅");
+            Navigation.NavigateTo("/dashboard");
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Đổi mật khẩu thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

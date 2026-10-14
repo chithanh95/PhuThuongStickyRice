@@ -194,5 +194,14 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
 
         /// <summary>When false, checkout is blocked. Default true.</summary>
         public bool AcceptingOrders { get; set; } = true;
+
+        // ---- Wave 6d (item 39): anti-spam ----
+
+        /// <summary>
+        /// Max non-cancelled orders per phone per day (Vietnam day).
+        /// 0 = unlimited. Default 10.
+        /// </summary>
+        [Range(0, 1000)]
+        public int MaxOrdersPerPhonePerDay { get; set; } = 10;
     }
 }

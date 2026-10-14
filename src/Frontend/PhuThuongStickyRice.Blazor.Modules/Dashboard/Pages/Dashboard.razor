@@ -128,6 +128,41 @@
     </div>
 </div>
 
+@* Wave 6d (item 36): today vs yesterday comparison card. *@
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">📊 Hôm nay vs hôm qua</h6>
+                @if (_todayVsYesterday == null)
+                {
+                    <small class="text-muted">Đang tải...</small>
+                }
+                else
+                {
+                    <div class="row text-center">
+                        <div class="col-6 col-md-3 mb-2">
+                            <div class="h5 mb-0">@FormatPrice(_todayVsYesterday.TodayRevenue)</div>
+                            <small class="text-muted">Doanh thu hôm nay<br />Hôm qua: @FormatPrice(_todayVsYesterday.YesterdayRevenue)</small>
+                            <div class="mt-1">@DeltaBadge(_todayVsYesterday.RevenueDeltaPercent)</div>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <div class="h5 mb-0">@_todayVsYesterday.TodayOrders đơn</div>
+                            <small class="text-muted">Đơn hàng hôm nay<br />Hôm qua: @_todayVsYesterday.YesterdayOrders đơn</small>
+                            <div class="mt-1">@DeltaBadge(_todayVsYesterday.OrdersDeltaPercent)</div>
+                        </div>
+                        <div class="col-12 col-md-6 mb-2 d-flex align-items-center">
+                            <small class="text-muted">
+                                Đơn đã hủy không được tính. Ngày theo giờ Việt Nam (UTC+7).
+                            </small>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row mb-3">
     @if (_corporateDue != null && _corporateDue.Count > 0)
     {
@@ -384,6 +419,9 @@ else
     private IngredientForecastModel _forecast;
     private List<TopProductModel> _topProducts;
     private NewReturningCustomersModel _newReturning;
+
+    // Wave 6d (item 36): today-vs-yesterday comparison card.
+    private TodayVsYesterdayModel _todayVsYesterday;
     private bool _autoRefresh = true;
     private bool _refreshing;
     private DateTime _lastUpdated = DateTime.Now;
@@ -445,6 +483,16 @@ else
 
             // Wave 5 widgets: daily target, source stats, corporate due, forecast.
             await LoadWave5WidgetsAsync();
+
+            // Wave 6d (item 36): today-vs-yesterday card (fail-soft).
+            try
+            {
+                _todayVsYesterday = await DashboardService.GetTodayVsYesterdayAsync();
+            }
+            catch (Exception)
+            {
+                _todayVsYesterday = null;
+            }
         }
         catch (Exception)
         {
@@ -637,6 +685,18 @@ else
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    /// <summary>
+    /// Wave 6d (item 36): signed delta badge, green ▲ when up, red ▼ when down.
+    /// </summary>
+    private static RenderFragment DeltaBadge(double delta) => builder =>
+    {
+        var up = delta >= 0;
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", up ? "badge badge-success" : "badge badge-danger");
+        builder.AddContent(2, $"{(up ? "▲" : "▼")} {Math.Abs(delta):0.#}%");
+        builder.CloseElement();
+    };
 
     private static RenderFragment StatusBadge(string status) => builder =>
     {

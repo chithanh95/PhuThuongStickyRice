@@ -65,6 +65,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.Hotline).HasMaxLength(30);
             builder.Property(x => x.ZaloPhone).HasMaxLength(30);
             builder.Property(x => x.AcceptingOrders).IsRequired();
+
+            // Wave 6d (item 39): anti-spam per-phone daily cap.
+            builder.Property(x => x.MaxOrdersPerPhonePerDay).IsRequired();
         }
     }
 }

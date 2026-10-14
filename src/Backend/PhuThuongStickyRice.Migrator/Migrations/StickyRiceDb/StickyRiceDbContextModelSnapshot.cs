@@ -2296,6 +2296,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<bool>("MaintenanceMode")
                         .HasColumnType("bit");
 
+                    b.Property<int>("MaxOrdersPerPhonePerDay")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("MinOrderAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");

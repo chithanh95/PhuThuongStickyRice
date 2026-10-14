@@ -138,6 +138,18 @@ namespace PhuThuongStickyRice.Blazor.Modules.Admin.Models
         public decimal Revenue { get; set; }
     }
 
+    // ---------- Wave 6d (item 36): today vs yesterday ----------
+
+    public class TodayVsYesterdayModel
+    {
+        public decimal TodayRevenue { get; set; }
+        public decimal YesterdayRevenue { get; set; }
+        public long TodayOrders { get; set; }
+        public long YesterdayOrders { get; set; }
+        public double RevenueDeltaPercent { get; set; }
+        public double OrdersDeltaPercent { get; set; }
+    }
+
     // ---------- MoMo reconciliation (item 128) ----------
 
     public class MoMoOrderModel

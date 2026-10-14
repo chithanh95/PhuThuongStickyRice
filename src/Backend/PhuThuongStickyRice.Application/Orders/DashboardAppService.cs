@@ -47,6 +47,12 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Item 133: orders + revenue grouped by order source over a range.
         /// </summary>
         Task<List<SourceStatDto>> GetSourceStatsAsync(DateTime? from = null, DateTime? to = null);
+
+        /// <summary>
+        /// Wave 6d (item 36): today's vs yesterday's revenue and order count
+        /// (Vietnam day boundaries), with delta percents.
+        /// </summary>
+        Task<TodayVsYesterdayDto> GetTodayVsYesterdayAsync();
     }
 
     public class DashboardAppService : ApplicationService, IDashboardAppService
@@ -241,6 +247,49 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var products = await GetTopProductsAsync(null, null, top < 1 ? 100 : top);
             return products.Select(x => x.ProductId).ToList();
+        }
+
+        /// <summary>
+        /// Wave 6d (item 36): today's vs yesterday's revenue + order count
+        /// using Vietnam day boundaries (CreatedAt is UTC).
+        /// </summary>
+        public async Task<TodayVsYesterdayDto> GetTodayVsYesterdayAsync()
+        {
+            var todayVn = Wave5.VietnamTime.Today();
+            var startUtc = todayVn.AddHours(-7); // VN 00:00 today → UTC
+            var yesterdayStartUtc = startUtc.AddDays(-1);
+            var endUtc = startUtc.AddDays(1);
+
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var billable = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled);
+
+            var todayQ = billable.Where(x => x.CreatedAt >= startUtc && x.CreatedAt < endUtc);
+            var yesterdayQ = billable.Where(x => x.CreatedAt >= yesterdayStartUtc && x.CreatedAt < startUtc);
+
+            var todayRevenue = await _asyncExecuter.SumAsync(todayQ.Select(x => x.TotalAmount.Amount));
+            var yesterdayRevenue = await _asyncExecuter.SumAsync(yesterdayQ.Select(x => x.TotalAmount.Amount));
+            var todayOrders = await _asyncExecuter.LongCountAsync(todayQ);
+            var yesterdayOrders = await _asyncExecuter.LongCountAsync(yesterdayQ);
+
+            return new TodayVsYesterdayDto
+            {
+                TodayRevenue = todayRevenue,
+                YesterdayRevenue = yesterdayRevenue,
+                TodayOrders = todayOrders,
+                YesterdayOrders = yesterdayOrders,
+                RevenueDeltaPercent = DeltaPercent(todayRevenue, yesterdayRevenue),
+                OrdersDeltaPercent = DeltaPercent(todayOrders, yesterdayOrders)
+            };
+        }
+
+        private static double DeltaPercent(decimal today, decimal yesterday)
+        {
+            if (yesterday == 0)
+            {
+                return today > 0 ? 100 : 0;
+            }
+
+            return (double)(today - yesterday) / (double)yesterday * 100;
         }
 
         public async Task<long> GetTodaySoldCountAsync()

@@ -248,3 +248,53 @@ interop.compressImageFromInput = function (elementId, maxDim, quality) {
         reader.readAsArrayBuffer(blob);
     }
 };
+
+/**
+ * Wave 6d (item 40): client-side error reporting. window.onerror and
+ * unhandledrejection are throttled to max 1 POST per 30s per page and
+ * sent to POST api/system/client-errors (anonymous, server rate-limited).
+ * Entries are written to AppLogs with Source="client-js".
+ * Never logs request bodies — only the message, page URL, stack and UA.
+ */
+(function () {
+    var lastReportAt = 0;
+    var THROTTLE_MS = 30000;
+
+    function report(message, pageUrl, stack) {
+        var now = Date.now();
+        if (now - lastReportAt < THROTTLE_MS) {
+            return;
+        }
+        lastReportAt = now;
+
+        try {
+            var payload = {
+                Message: String(message || 'Unknown JS error').substring(0, 2000),
+                PageUrl: String(pageUrl || location.href).substring(0, 500),
+                StackTrace: stack ? String(stack).substring(0, 4000) : null,
+                UserAgent: (navigator.userAgent || '').substring(0, 300)
+            };
+            fetch('api/system/client-errors', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                keepalive: true
+            }).catch(function () { /* reporting must never break the page */ });
+        } catch (e) {
+            // Reporting must never break the page.
+        }
+    }
+
+    window.addEventListener('error', function (event) {
+        var err = event.error;
+        report(event.message || (err && err.message) || 'JS error',
+            location.href, err && err.stack);
+    });
+
+    window.addEventListener('unhandledrejection', function (event) {
+        var reason = event.reason;
+        var msg = (reason && reason.message) ? reason.message : String(reason);
+        report(msg || 'Unhandled promise rejection', location.href,
+            reason && reason.stack);
+    });
+})();

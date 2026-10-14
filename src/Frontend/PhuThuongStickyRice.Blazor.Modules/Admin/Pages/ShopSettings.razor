@@ -64,6 +64,13 @@ else
             </div>
             <small class="form-text text-muted mb-3">Ngoài giờ này khách không thể đặt đơn, kể cả khi đang bật "Nhận đơn hàng". Giờ Việt Nam (UTC+7).</small>
 
+            <h5 class="mt-4">Chống spam (mục 39)</h5>
+            <div class="form-group">
+                <label>Số đơn tối đa / SĐT / ngày</label>
+                <input type="number" min="0" max="1000" class="form-control" @bind="_model.MaxOrdersPerPhonePerDay" />
+                <small class="form-text text-muted">Mặc định 10. Đặt 0 = không giới hạn. Đơn đã hủy không tính. Ngày theo giờ Việt Nam.</small>
+            </div>
+
             <h5 class="mt-4">Nút gọi/Zalo trên di động (mục 27)</h5>
             <div class="form-row">
                 <div class="form-group col-md-6">
@@ -284,6 +291,11 @@ else
         if (_model.EstimatedDeliveryMinutes < 0)
         {
             _model.EstimatedDeliveryMinutes = 0;
+        }
+
+        if (_model.MaxOrdersPerPhonePerDay < 0)
+        {
+            _model.MaxOrdersPerPhonePerDay = 0;
         }
 
         _saving = true;

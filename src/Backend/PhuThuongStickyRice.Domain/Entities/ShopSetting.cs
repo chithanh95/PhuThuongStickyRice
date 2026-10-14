@@ -188,6 +188,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public bool AcceptingOrders { get; set; }
 
+        /// <summary>
+        /// Wave 6d (item 39): max non-cancelled orders per phone per day
+        /// (Vietnam day). 0 = unlimited. Default 10.
+        /// </summary>
+        public int MaxOrdersPerPhonePerDay { get; set; }
+
         // ---- Wave 5 (items 121/124/139) ----
 
         /// <summary>Loyalty points awarded per daily check-in. Default 5.</summary>
@@ -253,7 +259,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 CloseTime = "10:30",
                 Hotline = null,
                 ZaloPhone = null,
-                AcceptingOrders = true
+                AcceptingOrders = true,
+                MaxOrdersPerPhonePerDay = 10
             };
         }
     }

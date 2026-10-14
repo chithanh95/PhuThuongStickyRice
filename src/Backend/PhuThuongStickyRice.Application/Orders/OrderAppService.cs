@@ -225,6 +225,10 @@ namespace PhuThuongStickyRice.Application.Orders
                     "Số điện thoại này tạm thời không thể đặt hàng.");
             }
 
+            // Wave 6d (item 39): anti-spam — cap non-cancelled orders per
+            // phone per Vietnam day. Checked before anything is created.
+            await EnsurePhoneDailyLimitAsync(shopSetting.MaxOrdersPerPhonePerDay, input.CustomerPhone);
+
             // Item 96: reCAPTCHA v3, verified server-side when configured.
             if (!await _recaptcha.VerifyAsync(input.RecaptchaToken))
             {
@@ -1482,6 +1486,36 @@ namespace PhuThuongStickyRice.Application.Orders
         /// country code (e.g. +84 vs 0). Both sides are reduced to digits,
         /// then the last 9 digits are compared.
         /// </summary>
+        /// <summary>
+        /// Wave 6d (item 39): counts today's non-cancelled orders for the
+        /// phone (Vietnam day) and rejects when the per-day cap is reached.
+        /// 0 = unlimited. Phone comparison is tolerant (last 9 digits) via
+        /// <see cref="PhonesMatch"/>.
+        /// </summary>
+        private async Task EnsurePhoneDailyLimitAsync(int maxPerDay, string customerPhone)
+        {
+            if (maxPerDay <= 0 || string.IsNullOrWhiteSpace(customerPhone))
+            {
+                return;
+            }
+
+            var startOfTodayUtc = Wave5.VietnamTime.Today().AddHours(-7); // VN 00:00 → UTC
+
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var phonesToday = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Status != OrderStatus.Cancelled
+                        && x.CreatedAt >= startOfTodayUtc)
+                    .Select(x => x.CustomerPhone));
+
+            var count = phonesToday.Count(p => PhonesMatch(p, customerPhone));
+            if (count >= maxPerDay)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    $"Số điện thoại này đã đặt tối đa {maxPerDay} đơn hôm nay. Vui lòng liên hệ quán để đặt thêm.");
+            }
+        }
+
         internal static bool PhonesMatch(string orderPhone, string givenPhone)
         {
             if (string.IsNullOrWhiteSpace(orderPhone) || string.IsNullOrWhiteSpace(givenPhone))

@@ -118,6 +118,8 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.Hotline = TrimOrNull(dto.Hotline);
             entity.ZaloPhone = TrimOrNull(dto.ZaloPhone);
             entity.AcceptingOrders = dto.AcceptingOrders;
+            // Wave 6d (item 39): 0 = unlimited, otherwise cap at 1000.
+            entity.MaxOrdersPerPhonePerDay = Math.Min(1000, Math.Max(0, dto.MaxOrdersPerPhonePerDay));
             await _settings.UpdateAsync(entity, autoSave: true);
 
             return MapToDto(entity);
@@ -248,7 +250,9 @@ namespace PhuThuongStickyRice.Application.Shop
                 // AcceptingOrders = true for pre-existing rows.
                 Hotline = entity.Hotline,
                 ZaloPhone = entity.ZaloPhone,
-                AcceptingOrders = entity.AcceptingOrders
+                AcceptingOrders = entity.AcceptingOrders,
+                // Wave 6d (item 39): backfilled to 10 for pre-existing rows.
+                MaxOrdersPerPhonePerDay = entity.MaxOrdersPerPhonePerDay
             };
         }
     }

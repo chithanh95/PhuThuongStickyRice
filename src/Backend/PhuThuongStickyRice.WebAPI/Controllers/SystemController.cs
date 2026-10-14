@@ -1,4 +1,5 @@
 using PhuThuongStickyRice.Application.Shop;
+using PhuThuongStickyRice.Application.Wave4;
 using PhuThuongStickyRice.Application.Wave4.DTOs;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
@@ -27,15 +28,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IShopSettingAppService _shopSettings;
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _configuration;
+        private readonly IAppLogWriter _appLogWriter;
 
         public SystemController(
             IShopSettingAppService shopSettings,
             IWebHostEnvironment env,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IAppLogWriter appLogWriter)
         {
             _shopSettings = shopSettings;
             _env = env;
             _configuration = configuration;
+            _appLogWriter = appLogWriter;
         }
 
         /// <summary>
@@ -53,6 +57,53 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 MaintenanceMode = settings.MaintenanceMode,
                 MaintenanceMessage = settings.MaintenanceMessage
             });
+        }
+
+        /// <summary>
+        /// Wave 6d (item 40): anonymous client-side error reporting. The WASM
+        /// app's interop.js throttles to max 1 POST per 30s per page and this
+        /// endpoint is rate-limited by the default policy. Entries go to
+        /// AppLogs with Source="client-js". Request bodies are never logged.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("client-errors")]
+        public async Task<ActionResult> ReportClientError(
+            [FromBody] ClientErrorRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.Message))
+            {
+                return BadRequest("Message is required.");
+            }
+
+            var message = model.Message.Length > 2000
+                ? model.Message.Substring(0, 2000)
+                : model.Message;
+
+            var stack = string.IsNullOrWhiteSpace(model.StackTrace)
+                ? null
+                : (model.StackTrace.Length > 4000
+                    ? model.StackTrace.Substring(0, 4000)
+                    : model.StackTrace);
+
+            var text = $"[client-js] {message}";
+            if (!string.IsNullOrWhiteSpace(model.PageUrl))
+            {
+                text += $"\nTrang: {model.PageUrl}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.UserAgent))
+            {
+                text += $"\nUA: {model.UserAgent}";
+            }
+
+            if (stack != null)
+            {
+                text += $"\nStack:\n{stack}";
+            }
+
+            await _appLogWriter.WriteAsync("Error", "client-js", text);
+            return Ok();
         }
 
         /// <summary>
@@ -142,5 +193,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return null;
             }
         }
+    }
+
+    /// <summary>Wave 6d (item 40): client-side JS error report payload.</summary>
+    public sealed class ClientErrorRequestModel
+    {
+        public string Message { get; set; }
+
+        public string PageUrl { get; set; }
+
+        public string StackTrace { get; set; }
+
+        public string UserAgent { get; set; }
     }
 }

@@ -314,6 +314,22 @@ namespace PhuThuongStickyRice.Application.Wave5.DTOs
         public decimal Revenue { get; set; }
     }
 
+    // ---------- Wave 6d (item 36): today vs yesterday ----------
+
+    public class TodayVsYesterdayDto
+    {
+        public decimal TodayRevenue { get; set; }
+        public decimal YesterdayRevenue { get; set; }
+        public long TodayOrders { get; set; }
+        public long YesterdayOrders { get; set; }
+
+        /// <summary>Revenue delta %, signed. Null-safe: 100 when yesterday = 0 and today > 0.</summary>
+        public double RevenueDeltaPercent { get; set; }
+
+        /// <summary>Order-count delta %, signed.</summary>
+        public double OrdersDeltaPercent { get; set; }
+    }
+
     // ---------- MoMo reconciliation (item 128) ----------
 
     public class MoMoOrderDto

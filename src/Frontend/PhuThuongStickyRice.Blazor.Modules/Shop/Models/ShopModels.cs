@@ -551,6 +551,12 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         /// <summary>Wave 6b (item 30): when false, checkout is blocked.</summary>
         public bool AcceptingOrders { get; set; } = true;
+
+        /// <summary>
+        /// Wave 6d (item 39): max non-cancelled orders per phone per day
+        /// (Vietnam day). 0 = unlimited. Default 10.
+        /// </summary>
+        public int MaxOrdersPerPhonePerDay { get; set; } = 10;
     }
 
     /// <summary>Result of GET api/dashboard/today-sold.</summary>

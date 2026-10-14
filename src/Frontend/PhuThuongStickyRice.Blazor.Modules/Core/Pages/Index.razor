@@ -16,6 +16,23 @@
 @inject ToastService Toasts
 @inject PhuThuongStickyRice.Blazor.Modules.Admin.Services.Wave4Service Wave4Service
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+@* Wave 6d (item 38): friendly full-page error when the initial API load
+   fails, reusing the PWA offline.html visual language. *@
+@if (_loadFailed)
+{
+    <div class="card" style="background: #f5ebcd; border: none;">
+        <div class="card-body text-center py-5">
+            <div style="font-size: 4rem;">😞</div>
+            <h2 style="font-family: Georgia, serif; color: #7a1b2e;">Không kết nối được tới máy chủ</h2>
+            <p class="mb-4" style="color: #4a2b1a;">Kiểm tra mạng rồi thử lại.</p>
+            <button class="btn" style="background: #7a1b2e; color: #fff; padding: 12px 28px; border-radius: 6px;" @onclick="RetryLoad">Thử lại</button>
+        </div>
+    </div>
+}
+else
+{
 
 <!-- 0. FLASH BANNER (item 94) -->
 @if (!_bannerDismissed && _content.FlashBannerActive && !string.IsNullOrWhiteSpace(_content.FlashBannerText))
@@ -40,7 +57,7 @@
             <a href="/shop" class="lp-cta lp-cta-outline">@_content.HeroButtonText</a>
         </div>
         <div class="col-md-5 text-center">
-            <img src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg")"
+            <img loading="lazy" src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg")"
                  alt="Xôi Phú Thượng" class="lp-hero-img" />
         </div>
     </div>
@@ -48,7 +65,7 @@
 
 <!-- 2. PHOTO BANNER -->
 <div class="lp-banner">
-    <img src="@Img(_content.BannerImageUrl, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg")"
+    <img loading="lazy" src="@Img(_content.BannerImageUrl, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg")"
          alt="Xôi ngũ sắc" class="lp-banner-img" />
 </div>
 
@@ -71,17 +88,17 @@
     </div>
     <div class="row no-gutters">
         <div class="col-md-4 col-12 lp-menu-item">
-            <img src="@Img(_content.MenuImage1Url, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg")"
+            <img loading="lazy" src="@Img(_content.MenuImage1Url, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg")"
                  alt="@_content.MenuLabel1" />
             <span class="lp-oval lp-oval-light">@_content.MenuLabel1</span>
         </div>
         <div class="col-md-4 col-12 lp-menu-item">
-            <img src="@Img(_content.MenuImage2Url, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-xeo.svg")"
+            <img loading="lazy" src="@Img(_content.MenuImage2Url, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-xeo.svg")"
                  alt="@_content.MenuLabel2" />
             <span class="lp-oval lp-oval-light">@_content.MenuLabel2</span>
         </div>
         <div class="col-md-4 col-12 lp-menu-item">
-            <img src="@Img(_content.MenuImage3Url, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg")"
+            <img loading="lazy" src="@Img(_content.MenuImage3Url, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg")"
                  alt="@_content.MenuLabel3" />
             <span class="lp-oval lp-oval-light">@_content.MenuLabel3</span>
         </div>
@@ -114,7 +131,7 @@
             @foreach (var product in _quickProducts)
             {
                 <div class="lp-quick-card" @key="product.Id">
-                    <img src="@ProductImage(product.Code)" alt="@product.Name" />
+                    <img loading="lazy" src="@ProductImage(product.Code)" alt="@product.Name" />
                     <div class="lp-quick-name">@product.Name</div>
                     <div class="lp-quick-price">@FormatPrice(product.Price)</div>
                     <button class="lp-cta lp-cta-maroon lp-quick-btn" @onclick="() => QuickAdd(product)">
@@ -143,7 +160,7 @@
                     <div class="lp-news-item" @key="item.Id">
                         @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
                         {
-                            <img src="@Img(item.ImageUrl, null)" alt="@item.Title" class="img-fluid mb-2" style="border-radius: 8px;" />
+                            <img loading="lazy" src="@Img(item.ImageUrl, null)" alt="@item.Title" class="img-fluid mb-2" style="border-radius: 8px;" />
                         }
                         <h3 class="lp-news-item-title">@item.Title</h3>
                         <p class="lp-news-item-body">@item.Body</p>
@@ -224,7 +241,7 @@
             <button type="button" class="lp-popup-close" aria-label="Đóng" @onclick="DismissPopup">×</button>
             @if (!string.IsNullOrWhiteSpace(_content.PopupImageUrl))
             {
-                <img src="@Img(_content.PopupImageUrl, null)" alt="@_content.PopupTitle" class="lp-popup-img" />
+                <img loading="lazy" src="@Img(_content.PopupImageUrl, null)" alt="@_content.PopupTitle" class="lp-popup-img" />
             }
             <h3 class="lp-popup-title">@_content.PopupTitle</h3>
             <p class="lp-popup-body">@_content.PopupBody</p>
@@ -264,16 +281,16 @@
         <div class="col-md-6">
             <div class="row no-gutters">
                 <div class="col-6 lp-footer-img">
-                    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-do.svg" alt="Xôi đỗ" />
+                    <img loading="lazy" src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-do.svg" alt="Xôi đỗ" />
                 </div>
                 <div class="col-6 lp-footer-img">
-                    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-vo.svg" alt="Xôi vò" />
+                    <img loading="lazy" src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-vo.svg" alt="Xôi vò" />
                 </div>
                 <div class="col-6 lp-footer-img">
-                    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-xeo.svg" alt="Xôi xéo" />
+                    <img loading="lazy" src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-xeo.svg" alt="Xôi xéo" />
                 </div>
                 <div class="col-6 lp-footer-img">
-                    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg" alt="Xôi gấc" />
+                    <img loading="lazy" src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg" alt="Xôi gấc" />
                 </div>
             </div>
         </div>
@@ -290,11 +307,21 @@
         </div>
     }
 </footer>
+} @* /_loadFailed else *@
 
 @code {
     private LandingContentModel _content = new LandingContentModel();
     private List<ShopProductModel> _quickProducts;
     private long _todaySold;
+
+    // Wave 6d (item 38): initial API load failed → full-page error state.
+    private bool _loadFailed;
+
+    /// <summary>Wave 6d (item 38): full reload after a failed initial load.</summary>
+    private void RetryLoad()
+    {
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
 
     // Item 93: news CMS articles (latest 3 published).
     private List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.ArticleModel> _articles;
@@ -392,6 +419,8 @@
         }
         catch (Exception)
         {
+            // Wave 6d (item 38): landing content is the critical load.
+            _loadFailed = true;
             _content = new LandingContentModel();
         }
 
@@ -434,6 +463,8 @@
         }
         catch (Exception)
         {
+            // Wave 6d (item 38): quick-order strip needs products.
+            _loadFailed = true;
             _quickProducts = new List<ShopProductModel>();
         }
 

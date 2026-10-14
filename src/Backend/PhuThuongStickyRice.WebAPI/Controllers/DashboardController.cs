@@ -99,6 +99,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Wave 6d (item 36): today's vs yesterday's revenue and order count
+        /// (Vietnam day boundaries), with delta percents.
+        /// </summary>
+        [HttpGet("today-vs-yesterday")]
+        public async Task<ActionResult> GetTodayVsYesterday(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _dashboardAppService.GetTodayVsYesterdayAsync());
+        }
+
+        /// <summary>
         /// Item 122: corporate clients whose standing order falls on today's
         /// weekday (admin converts to a real order manually).
         /// </summary>

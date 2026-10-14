@@ -32,6 +32,13 @@ namespace PhuThuongStickyRice.Blazor.Modules.Dashboard.Services
                 BuildUrl("api/dashboard/customers/new-vs-returning", from, to));
         }
 
+        /// <summary>Wave 6d (item 36): today's vs yesterday's revenue and orders.</summary>
+        public async Task<TodayVsYesterdayModel> GetTodayVsYesterdayAsync()
+        {
+            return await GetAsync<TodayVsYesterdayModel>(
+                "api/dashboard/today-vs-yesterday?_=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        }
+
         private static string BuildUrl(string baseUrl, DateTime? from, DateTime? to)
         {
             var url = baseUrl + "?_=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds();
