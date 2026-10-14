@@ -83,12 +83,16 @@ UPDATE ShopSettings SET
     TierGoldDiscount = 5
 WHERE BankTransferExpiryMinutes = 0");
 
+            // Base Entity.CreatedDateTime is non-nullable with no SQL default,
+            // so the seed rows must set it explicitly.
+            var seedDate = new DateTimeOffset(2026, 10, 14, 12, 0, 0, TimeSpan.Zero);
+
             for (var i = 0; i < Faqs.Length; i++)
             {
                 migrationBuilder.InsertData(
                     table: "FaqItems",
-                    columns: new[] { "Id", "Question", "Answer", "SortOrder", "IsActive" },
-                    values: new object[] { Faqs[i].Id, Faqs[i].Question, Faqs[i].Answer, i + 1, true });
+                    columns: new[] { "Id", "Question", "Answer", "SortOrder", "IsActive", "CreatedDateTime" },
+                    values: new object[] { Faqs[i].Id, Faqs[i].Question, Faqs[i].Answer, i + 1, true, seedDate });
             }
         }
 

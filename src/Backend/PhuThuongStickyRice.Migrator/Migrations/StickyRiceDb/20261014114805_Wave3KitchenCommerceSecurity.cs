@@ -359,26 +359,26 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             var seedDate = new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc);
             migrationBuilder.InsertData(
                 table: "Articles",
-                columns: new[] { "Id", "Title", "Body", "ImageUrl", "PublishedAt", "IsPublished" },
+                columns: new[] { "Id", "Title", "Body", "ImageUrl", "PublishedAt", "IsPublished", "CreatedDateTime" },
                 values: new object[,]
                 {
                     {
                         new Guid("e1b2c3d4-0001-4000-8000-000000000001"),
                         "Món ăn sáng được yêu thích nhất tuần",
                         "Xôi gấc của quán lọt top món ăn sáng được đặt nhiều nhất khu vực Tây Hồ trên ứng dụng đặt món, với hàng trăm đánh giá 5 sao từ thực khách. (Nguồn: ShopeeFood)",
-                        null, seedDate, true
+                        null, seedDate, true, new DateTimeOffset(seedDate)
                     },
                     {
                         new Guid("e1b2c3d4-0002-4000-8000-000000000002"),
                         "Giữ trọn nghề nấu xôi trăm năm",
                         "Từ đời bà, đời mẹ đến nay, gia đình vẫn giữ đúng công thức làng nghề Phú Thượng: nếp ngon, đồ hai lần lửa, hành phi tự làm mỗi sáng. (Chủ quán chia sẻ)",
-                        null, seedDate, true
+                        null, seedDate, true, new DateTimeOffset(seedDate)
                     },
                     {
                         new Guid("e1b2c3d4-0003-4000-8000-000000000003"),
                         "Khách quen hơn 5 năm vẫn quay lại",
                         "\"Xôi dẻo, đậu xanh bùi, hành phi giòn — ăn sáng ở đây thành thói quen của cả nhà tôi rồi. Gói nào cũng nóng hổi, đầy đặn.\" (Chị Lan Anh, khách hàng)",
-                        null, seedDate, true
+                        null, seedDate, true, new DateTimeOffset(seedDate)
                     }
                 });
         }
