@@ -23,7 +23,11 @@ namespace PhuThuongStickyRice.Blazor.Modules.Admin.Models
 
         public bool IsActive { get; set; } = true;
 
+        /// <summary>0 = Discount (giảm giá), 1 = Freeship (miễn phí ship).</summary>
+        public int VoucherType { get; set; }
+
         public string DisplayValue =>
+            VoucherType == 1 ? "🚚 Miễn phí ship" :
             DiscountPercent.HasValue ? $"Giảm {DiscountPercent.Value:N0}%" :
             DiscountAmount.HasValue ? $"Giảm {DiscountAmount.Value:N0} ₫" : "—";
     }
@@ -35,6 +39,8 @@ namespace PhuThuongStickyRice.Blazor.Modules.Admin.Models
         public string Message { get; set; }
 
         public decimal DiscountAmount { get; set; }
+
+        public bool IsFreeship { get; set; }
     }
 
     public class AuditLogEntryModel

@@ -1,0 +1,256 @@
+using PhuThuongStickyRice.Application.Shop;
+using PhuThuongStickyRice.Domain.Entities;
+using PhuThuongStickyRice.Domain.Repositories;
+using PhuThuongStickyRice.Persistence;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Volo.Abp.BackgroundWorkers;
+using Volo.Abp.Domain.Repositories;
+using Volo.Abp.Linq;
+using Volo.Abp.Threading;
+
+namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
+{
+    /// <summary>
+    /// Health checks every 5 minutes (item 103): database connectivity,
+    /// uploads-disk free space, and the recent error-log rate. On failure
+    /// sends a Telegram message (bot token + chat id in ShopSetting, empty
+    /// = disabled) and/or queues an <see cref="EmailMessage"/> to the owner
+    /// email. Alerts are rate-limited to once per hour per check.
+    ///
+    /// NOTE: this catches app-level problems only. True external uptime
+    /// monitoring (UptimeRobot, Better Stack, ...) is still recommended —
+    /// if the whole server is down, this worker is down with it.
+    /// Compile-verified only (no SQL Server in this sandbox).
+    /// </summary>
+    public class SystemHealthWorker : AsyncPeriodicBackgroundWorkerBase
+    {
+        private const long LowDiskBytes = 500L * 1024 * 1024; // 500 MB
+        private static readonly TimeSpan AlertCooldown = TimeSpan.FromHours(1);
+
+        private readonly IHttpClientFactory _httpClientFactory;
+
+        private DateTime _lastDbAlert = DateTime.MinValue;
+        private DateTime _lastDiskAlert = DateTime.MinValue;
+        private DateTime _lastErrorRateAlert = DateTime.MinValue;
+
+        public SystemHealthWorker(
+            AbpAsyncTimer timer,
+            IServiceScopeFactory serviceScopeFactory,
+            IHttpClientFactory httpClientFactory)
+            : base(timer, serviceScopeFactory)
+        {
+            _httpClientFactory = httpClientFactory;
+            Timer.Period = 5 * 60 * 1000; // 5 minutes
+            Timer.RunOnStart = false;
+        }
+
+        protected override async Task DoWorkAsync(
+            PeriodicBackgroundWorkerContext workerContext)
+        {
+            var provider = workerContext.ServiceProvider;
+
+            ShopSettingDtoSafe settings;
+            try
+            {
+                var shopSettings = provider.GetRequiredService<IShopSettingAppService>();
+                var dto = await shopSettings.GetAsync();
+                settings = new ShopSettingDtoSafe
+                {
+                    HealthAlertsEnabled = dto.HealthAlertsEnabled,
+                    ErrorRateThreshold = dto.ErrorRateThreshold,
+                    TelegramBotToken = dto.TelegramBotToken,
+                    TelegramChatId = dto.TelegramChatId,
+                    OwnerReportEmail = dto.OwnerReportEmail
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "SystemHealthWorker: could not read shop settings.");
+                return;
+            }
+
+            // 1. Database connectivity.
+            var dbOk = await CheckDatabaseAsync(provider);
+            if (!dbOk)
+            {
+                _lastDbAlert = await AlertAsync(provider, settings, "db", _lastDbAlert,
+                    "🚨 *Xôi Phú Thượng — health alert*\nKhông kết nối được database.");
+            }
+
+            // 2. Uploads disk space.
+            var freeBytes = GetUploadsDriveFreeBytes(provider);
+            if (freeBytes.HasValue && freeBytes.Value < LowDiskBytes)
+            {
+                _lastDiskAlert = await AlertAsync(provider, settings, "disk", _lastDiskAlert,
+                    $"🚨 *Xôi Phú Thượng — health alert*\nỔ đĩa uploads sắp đầy: còn {freeBytes.Value / 1024 / 1024} MB trống.");
+            }
+
+            // 3. Recent error-log rate.
+            var recentErrors = await CountRecentErrorsAsync(provider);
+            if (recentErrors > settings.ErrorRateThreshold)
+            {
+                _lastErrorRateAlert = await AlertAsync(provider, settings, "errors", _lastErrorRateAlert,
+                    $"🚨 *Xôi Phú Thượng — health alert*\n{recentErrors} lỗi trong 1 giờ qua (ngưỡng {settings.ErrorRateThreshold}). Xem /admin/nhat-ky-he-thong.");
+            }
+
+            if (dbOk && recentErrors <= settings.ErrorRateThreshold)
+            {
+                Logger.LogDebug("SystemHealthWorker: all checks passed.");
+            }
+        }
+
+        private async Task<bool> CheckDatabaseAsync(IServiceProvider provider)
+        {
+            try
+            {
+                var db = provider.GetRequiredService<StickyRiceDbContext>();
+                return await db.Database.CanConnectAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "SystemHealthWorker: database check failed.");
+                return false;
+            }
+        }
+
+        private long? GetUploadsDriveFreeBytes(IServiceProvider provider)
+        {
+            try
+            {
+                var env = provider.GetService<IWebHostEnvironment>();
+                var root = env?.WebRootPath ?? Path.Combine(AppContext.BaseDirectory, "wwwroot");
+                var uploads = Path.Combine(root, "uploads");
+                Directory.CreateDirectory(uploads);
+                var drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(uploads)));
+                return drive.AvailableFreeSpace;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "SystemHealthWorker: disk check failed.");
+                return null;
+            }
+        }
+
+        private async Task<int> CountRecentErrorsAsync(IServiceProvider provider)
+        {
+            try
+            {
+                var logs = provider.GetRequiredService<Volo.Abp.Domain.Repositories.IRepository<AppLog, Guid>>();
+                var executer = provider.GetRequiredService<IAsyncQueryableExecuter>();
+                var since = DateTime.UtcNow.AddHours(-1);
+                var queryable = await logs.GetQueryableAsync();
+                return (int)await executer.LongCountAsync(queryable.Where(x =>
+                    x.At >= since && (x.Level == "Error" || x.Level == "Critical")));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "SystemHealthWorker: error-rate check failed.");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Returns the new "last alert" timestamp (unchanged when the
+        /// cooldown suppressed the alert).
+        /// </summary>
+        private async Task<DateTime> AlertAsync(
+            IServiceProvider provider, ShopSettingDtoSafe settings,
+            string check, DateTime lastAlert, string message)
+        {
+            if (DateTime.UtcNow - lastAlert < AlertCooldown)
+            {
+                return lastAlert;
+            }
+
+            lastAlert = DateTime.UtcNow;
+
+            if (!settings.HealthAlertsEnabled)
+            {
+                Logger.LogWarning("SystemHealthWorker [{Check}]: {Message} (alerts disabled — logged only).", check, message);
+                return lastAlert;
+            }
+
+            var sent = false;
+
+            // Telegram.
+            if (!string.IsNullOrWhiteSpace(settings.TelegramBotToken)
+                && !string.IsNullOrWhiteSpace(settings.TelegramChatId))
+            {
+                sent |= await SendTelegramAsync(settings.TelegramBotToken, settings.TelegramChatId, message);
+            }
+
+            // Email via the existing EmailMessage queue.
+            if (!string.IsNullOrWhiteSpace(settings.OwnerReportEmail))
+            {
+                try
+                {
+                    var queue = provider.GetRequiredService<IEmailMessageRepository>();
+                    await queue.AddAsync(new EmailMessage
+                    {
+                        From = "noreply@xoiphuthuong.vn",
+                        Tos = settings.OwnerReportEmail,
+                        Subject = "[Xôi Phú Thượng] Cảnh báo hệ thống",
+                        Body = message.Replace("*", string.Empty)
+                    });
+                    await queue.UnitOfWork.SaveChangesAsync();
+                    sent = true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "SystemHealthWorker: could not queue alert email.");
+                }
+            }
+
+            if (!sent)
+            {
+                Logger.LogWarning("SystemHealthWorker [{Check}]: {Message} (no alert channel configured).", check, message);
+            }
+
+            return lastAlert;
+        }
+
+        private async Task<bool> SendTelegramAsync(string botToken, string chatId, string text)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient("Telegram");
+                client.Timeout = TimeSpan.FromSeconds(10);
+                var payload = JsonSerializer.Serialize(new
+                {
+                    chat_id = chatId,
+                    text,
+                    parse_mode = "Markdown"
+                });
+                using var response = await client.PostAsync(
+                    $"https://api.telegram.org/bot{botToken}/sendMessage",
+                    new StringContent(payload, Encoding.UTF8, "application/json"));
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "SystemHealthWorker: Telegram send failed.");
+                return false;
+            }
+        }
+
+        /// <summary>Tiny local copy — avoids pulling the full DTO graph into the worker.</summary>
+        private sealed class ShopSettingDtoSafe
+        {
+            public bool HealthAlertsEnabled { get; set; }
+            public int ErrorRateThreshold { get; set; }
+            public string TelegramBotToken { get; set; }
+            public string TelegramChatId { get; set; }
+            public string OwnerReportEmail { get; set; }
+        }
+    }
+}

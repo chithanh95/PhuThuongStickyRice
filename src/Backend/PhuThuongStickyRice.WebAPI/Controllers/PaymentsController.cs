@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Orders.Payments;
+using PhuThuongStickyRice.Application.Wave4;
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
@@ -20,29 +21,35 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [ApiController]
     public class PaymentsController : ControllerBase
     {
-        private readonly BankTransferOptions _bankTransfer;
+        private readonly IPaymentConfigProvider _paymentConfig;
         private readonly IMoMoPaymentService _momo;
 
         public PaymentsController(
-            BankTransferOptions bankTransfer,
+            IPaymentConfigProvider paymentConfig,
             IMoMoPaymentService momo)
         {
-            _bankTransfer = bankTransfer;
+            _paymentConfig = paymentConfig;
             _momo = momo;
         }
 
-        /// <summary>Public bank-transfer details shown at checkout (account info + VietQR).</summary>
+        /// <summary>
+        /// Public bank-transfer details shown at checkout (account info + VietQR).
+        /// Item 106: admin-editable at /admin/thanh-toan (ShopSetting), falling
+        /// back to appsettings.
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("bank-transfer-info")]
-        public ActionResult<BankTransferInfoDto> GetBankTransferInfo()
+        public async Task<ActionResult<BankTransferInfoDto>> GetBankTransferInfo(
+            CancellationToken cancellationToken = default)
         {
+            var bankTransfer = await _paymentConfig.GetBankTransferAsync();
             return Ok(new BankTransferInfoDto
             {
-                BankName = _bankTransfer.BankName,
-                BankId = _bankTransfer.BankId,
-                AccountNumber = _bankTransfer.AccountNumber,
-                AccountName = _bankTransfer.AccountName,
-                QrTemplate = _bankTransfer.QrTemplate
+                BankName = bankTransfer.BankName,
+                BankId = bankTransfer.BankId,
+                AccountNumber = bankTransfer.AccountNumber,
+                AccountName = bankTransfer.AccountName,
+                QrTemplate = bankTransfer.QrTemplate
             });
         }
 

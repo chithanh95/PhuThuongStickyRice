@@ -33,6 +33,9 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
 
         public DateTime? AvailableFrom { get; set; }
 
+        /// <summary>Item 109: branch the product belongs to (null = all branches).</summary>
+        public Guid? BranchId { get; set; }
+
         public DateTime? AvailableTo { get; set; }
     }
 }

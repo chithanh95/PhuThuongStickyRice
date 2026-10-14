@@ -31,6 +31,11 @@ namespace PhuThuongStickyRice.WebAPI
             await context.AddBackgroundWorkerAsync<SubscriptionOrderWorker>();
             // Item 85: weekly (Mon 7:00) + monthly (1st 7:00) owner reports.
             await context.AddBackgroundWorkerAsync<OwnerReportWorker>();
+            // Wave 4: system health alerts (5 min), orphan image cleanup
+            // (weekly), image cloud backup (hourly).
+            await context.AddBackgroundWorkerAsync<SystemHealthWorker>();
+            await context.AddBackgroundWorkerAsync<OrphanImageCleanupWorker>();
+            await context.AddBackgroundWorkerAsync<ImageBackupWorker>();
         }
     }
 }

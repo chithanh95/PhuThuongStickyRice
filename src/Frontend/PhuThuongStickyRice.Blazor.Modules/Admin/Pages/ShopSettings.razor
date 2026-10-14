@@ -145,6 +145,55 @@ else
                 <small class="form-text text-muted">Dùng để tạo mã QR bàn — VD: https://phuthuong.vn/shop?ban=5.</small>
             </div>
 
+            <h5 class="mt-4">Bảo trì &amp; giám sát (mục 103, 111, 113, 114)</h5>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="set-maintenance" @bind="_model.MaintenanceMode" />
+                <label class="form-check-label" for="set-maintenance">
+                    <strong>Chế độ bảo trì</strong> — trang công khai hiển thị trang bảo trì (/login, /admin/*, /bep vẫn hoạt động)
+                </label>
+            </div>
+            <div class="form-group">
+                <label>Thông báo bảo trì</label>
+                <input class="form-control" @bind="_model.MaintenanceMessage" />
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Telegram bot token <small class="text-muted">(để trống = tắt cảnh báo Telegram)</small></label>
+                    <input type="password" class="form-control" @bind="_model.TelegramBotToken" autocomplete="off" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Telegram chat id</label>
+                    <input class="form-control" @bind="_model.TelegramChatId" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Ngưỡng lỗi/giờ để cảnh báo</label>
+                    <input type="number" min="1" class="form-control" @bind="_model.ErrorRateThreshold" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Ngưỡng cảnh báo uploads (MB)</label>
+                    <input type="number" min="1" class="form-control" @bind="_model.UploadsSizeWarningMb" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Nhà cung cấp sao lưu ảnh</label>
+                    <input class="form-control" @bind="_model.ImageBackupProvider" placeholder="None" />
+                    <small class="form-text text-muted">"None" = không sao lưu. Xem README để thêm S3.</small>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Cấu hình JSON cho sao lưu ảnh</label>
+                <input class="form-control" @bind="_model.ImageBackupSettingsJson" placeholder='{"connectionString": "..."}' />
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="set-health" @bind="_model.HealthAlertsEnabled" />
+                <label class="form-check-label" for="set-health">Gửi cảnh báo sức khỏe (Telegram/email). Tắt = chỉ ghi log.</label>
+            </div>
+            <p class="small text-muted">
+                Cấu hình thanh toán (ngân hàng, MoMo — mục 106) nằm ở trang
+                <a href="/admin/thanh-toan">Thanh toán</a>.
+            </p>
+
             <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
                 @(_saving ? "Đang lưu..." : "Lưu thay đổi")
             </button>

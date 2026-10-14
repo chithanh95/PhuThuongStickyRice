@@ -23,6 +23,13 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.AvailableFrom);
             builder.Property(x => x.AvailableTo);
 
+            // Multi-branch foundation (item 109): null = all branches.
+            builder.Property(x => x.BranchId);
+            builder.HasOne<Branch>()
+                .WithMany()
+                .HasForeignKey(x => x.BranchId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.Property(x => x.Status)
                 .HasConversion<int>()
                 .IsRequired();

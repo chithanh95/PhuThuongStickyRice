@@ -42,5 +42,10 @@ namespace PhuThuongStickyRice.Blazor.Modules.Products.Models
         public DateTime? AvailableFrom { get; set; }
 
         public DateTime? AvailableTo { get; set; }
+
+        /// <summary>Item 109: optional branch this product belongs to; null = all branches.</summary>
+        public Guid? BranchId { get; set; }
+
+        public string BranchName { get; set; }
     }
 }

@@ -39,6 +39,9 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
 
         public List<ProductSizeOptionDto> Sizes { get; set; } = new List<ProductSizeOptionDto>();
 
+        /// <summary>Branch the product belongs to (null = all branches).</summary>
+        public Guid? BranchId { get; set; }
+
         public DateTimeOffset CreatedDateTime { get; set; }
     }
 
@@ -86,6 +89,9 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         public DateTime? AvailableFrom { get; set; }
 
         public DateTime? AvailableTo { get; set; }
+
+        /// <summary>Branch the product belongs to (null = all branches).</summary>
+        public Guid? BranchId { get; set; }
     }
 
     public class GetProductsInput : PagedAndSortedResultRequestDto
@@ -93,6 +99,10 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         public string SearchTerm { get; set; }
 
         public string Status { get; set; }
+
+        /// <summary>Optional branch filter (item 109): products of this
+        /// branch plus branch-less (global) products.</summary>
+        public Guid? BranchId { get; set; }
     }
 
     public class ProductSizeOptionDto : EntityDto<Guid>

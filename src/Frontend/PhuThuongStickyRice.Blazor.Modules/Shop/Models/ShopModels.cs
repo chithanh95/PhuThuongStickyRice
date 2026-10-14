@@ -198,6 +198,9 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         /// <summary>Idempotency key for the checkout attempt.</summary>
         public string IdempotencyKey { get; set; }
 
+        /// <summary>Item 109: optional branch id.</summary>
+        public Guid? BranchId { get; set; }
+
         /// <summary>reCAPTCHA v3 token (verified when reCAPTCHA is enabled).</summary>
         public string RecaptchaToken { get; set; }
 
@@ -462,6 +465,38 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public string RecaptchaSecretKey { get; set; }
 
         public string WebBaseUrl { get; set; }
+
+        public bool MaintenanceMode { get; set; }
+
+        public string MaintenanceMessage { get; set; }
+
+        public string TelegramBotToken { get; set; }
+
+        public string TelegramChatId { get; set; }
+
+        public bool HealthAlertsEnabled { get; set; }
+
+        public int ErrorRateThreshold { get; set; }
+
+        public int UploadsSizeWarningMb { get; set; }
+
+        public string BankName { get; set; }
+
+        public string BankId { get; set; }
+
+        public string BankAccountNumber { get; set; }
+
+        public string BankAccountName { get; set; }
+
+        public string BankQrTemplate { get; set; }
+
+        public string MoMoPartnerCode { get; set; }
+
+        public string MoMoEndpoint { get; set; }
+
+        public string ImageBackupProvider { get; set; }
+
+        public string ImageBackupSettingsJson { get; set; }
     }
 
     /// <summary>Result of GET api/dashboard/today-sold.</summary>

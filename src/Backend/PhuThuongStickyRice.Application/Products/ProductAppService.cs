@@ -41,22 +41,43 @@ namespace PhuThuongStickyRice.Application.Products
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IObjectMapper _objectMapper;
         private readonly Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> _sizeOptions;
+        private readonly IProductCatalogCache _catalogCache;
 
         public ProductAppService(
             IProductRepository products,
             IDomainEvents domainEvents,
             IAsyncQueryableExecuter asyncExecuter,
             IObjectMapper objectMapper,
-            Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> sizeOptions)
+            Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> sizeOptions,
+            IProductCatalogCache catalogCache)
         {
             _products = products;
             _domainEvents = domainEvents;
             _asyncExecuter = asyncExecuter;
             _objectMapper = objectMapper;
             _sizeOptions = sizeOptions;
+            _catalogCache = catalogCache;
         }
 
         public async Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input)
+        {
+            // Item 101: the public shop path (status=Active) is served from a
+            // 5-minute in-memory cache. The admin list (no status filter)
+            // always hits the database.
+            var isPublicPath = string.Equals(input.Status, "Active", StringComparison.OrdinalIgnoreCase);
+            if (!isPublicPath)
+            {
+                return await QueryListAsync(input);
+            }
+
+            var cacheKey = "products:active:"
+                + (input.SearchTerm ?? string.Empty).Trim().ToLowerInvariant() + ":"
+                + (input.BranchId?.ToString() ?? "all") + ":"
+                + input.SkipCount + ":" + input.MaxResultCount;
+            return await _catalogCache.GetOrAddAsync(cacheKey, () => QueryListAsync(input));
+        }
+
+        private async Task<PagedResultDto<ProductDto>> QueryListAsync(GetProductsInput input)
         {
             var queryable = await _products.GetQueryableAsync();
             System.Linq.IQueryable<Product> query = queryable.OrderBy(x => x.Name);
@@ -82,6 +103,14 @@ namespace PhuThuongStickyRice.Application.Products
                         (x.AvailableFrom == null || x.AvailableFrom.Value.Date <= today)
                         && (x.AvailableTo == null || x.AvailableTo.Value.Date >= today));
                 }
+            }
+
+            // Item 109: branch filter — products of the branch plus
+            // branch-less (global) products.
+            if (input.BranchId.HasValue)
+            {
+                var branchId = input.BranchId.Value;
+                query = query.Where(x => x.BranchId == null || x.BranchId == branchId);
             }
 
             var totalCount = await _asyncExecuter.LongCountAsync(query);
@@ -112,6 +141,7 @@ namespace PhuThuongStickyRice.Application.Products
 
             var product = Product.Create(code, input.Name, Money.Of(input.Price, input.Currency ?? "VND"), input.Description);
             product.ChangeCostPrice(input.CostPrice);
+            product.ChangeBranch(input.BranchId);
             product.UpdateCatalogInfo(
                 input.Tags, input.Category, input.AllergenInfo,
                 input.IsNew, input.IsSignature,
@@ -119,6 +149,7 @@ namespace PhuThuongStickyRice.Application.Products
 
             await _products.InsertAsync(product);
             await _domainEvents.DispatchAsync(new EntityCreatedEvent<Product>(product, DateTime.UtcNow));
+            _catalogCache.Invalidate();
 
             return _objectMapper.Map<Product, ProductDto>(product);
         }
@@ -141,6 +172,8 @@ namespace PhuThuongStickyRice.Application.Products
                 input.IsNew, input.IsSignature,
                 input.AvailableFrom, input.AvailableTo);
 
+            product.ChangeBranch(input.BranchId);
+
             if (!string.IsNullOrWhiteSpace(input.Status)
                 && Enum.TryParse<ProductStatus>(input.Status, ignoreCase: true, out var status)
                 && status != product.Status)
@@ -150,6 +183,7 @@ namespace PhuThuongStickyRice.Application.Products
 
             await _products.UpdateAsync(product);
             await _domainEvents.DispatchAsync(new EntityUpdatedEvent<Product>(product, DateTime.UtcNow));
+            _catalogCache.Invalidate();
 
             return _objectMapper.Map<Product, ProductDto>(product);
         }
@@ -173,6 +207,7 @@ namespace PhuThuongStickyRice.Application.Products
 
             await _products.UpdateAsync(product);
             await _domainEvents.DispatchAsync(new EntityUpdatedEvent<Product>(product, DateTime.UtcNow));
+            _catalogCache.Invalidate();
 
             return _objectMapper.Map<Product, ProductDto>(product);
         }
@@ -201,6 +236,7 @@ namespace PhuThuongStickyRice.Application.Products
 
             await _products.DeleteAsync(product);
             await _domainEvents.DispatchAsync(new EntityDeletedEvent<Product>(product, DateTime.UtcNow));
+            _catalogCache.Invalidate();
         }
 
         private async Task<Product> FindOrThrowAsync(Guid id)

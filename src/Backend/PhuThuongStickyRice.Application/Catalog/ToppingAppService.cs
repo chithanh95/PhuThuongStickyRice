@@ -31,13 +31,16 @@ namespace PhuThuongStickyRice.Application.Catalog
     {
         private readonly IRepository<Topping, Guid> _toppings;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public ToppingAppService(
             IRepository<Topping, Guid> toppings,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _toppings = toppings;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         [AllowAnonymous]
@@ -78,6 +81,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             };
 
             await _toppings.InsertAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
@@ -92,6 +96,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             entity.IsActive = dto.IsActive;
 
             await _toppings.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
@@ -99,6 +104,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         public async Task DeleteAsync(Guid id)
         {
             await _toppings.DeleteAsync(id);
+            _catalogCache.Invalidate();
         }
 
         private static ToppingDto MapToDto(Topping entity)

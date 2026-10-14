@@ -135,6 +135,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .HasForeignKey(x => x.ShipperId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // Multi-branch foundation (item 109).
+            builder.Property(x => x.BranchId);
+            builder.HasOne<Branch>()
+                .WithMany()
+                .HasForeignKey(x => x.BranchId)
+                .OnDelete(DeleteBehavior.SetNull);
+            builder.Property(x => x.BranchName).HasMaxLength(Branch.NameMaxLength);
+
             // Checkout idempotency: same key retried within 24h returns the
             // existing order. NULLs stay distinct under a unique index.
             builder.Property(x => x.IdempotencyKey).HasMaxLength(Order.IdempotencyKeyMaxLength);

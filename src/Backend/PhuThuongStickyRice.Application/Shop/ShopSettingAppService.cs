@@ -76,9 +76,38 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.WebBaseUrl = string.IsNullOrWhiteSpace(dto.WebBaseUrl)
                 ? null
                 : dto.WebBaseUrl.Trim().TrimEnd('/');
+            entity.MaintenanceMode = dto.MaintenanceMode;
+            entity.MaintenanceMessage = string.IsNullOrWhiteSpace(dto.MaintenanceMessage)
+                ? "Cửa hàng đang bảo trì, vui lòng quay lại sau."
+                : dto.MaintenanceMessage.Trim();
+            entity.TelegramBotToken = string.IsNullOrWhiteSpace(dto.TelegramBotToken)
+                ? null
+                : dto.TelegramBotToken.Trim();
+            entity.TelegramChatId = string.IsNullOrWhiteSpace(dto.TelegramChatId)
+                ? null
+                : dto.TelegramChatId.Trim();
+            entity.HealthAlertsEnabled = dto.HealthAlertsEnabled;
+            entity.ErrorRateThreshold = dto.ErrorRateThreshold < 1 ? 20 : dto.ErrorRateThreshold;
+            entity.UploadsSizeWarningMb = dto.UploadsSizeWarningMb < 1 ? 500 : dto.UploadsSizeWarningMb;
+            entity.BankName = TrimOrNull(dto.BankName);
+            entity.BankId = TrimOrNull(dto.BankId);
+            entity.BankAccountNumber = TrimOrNull(dto.BankAccountNumber);
+            entity.BankAccountName = TrimOrNull(dto.BankAccountName);
+            entity.BankQrTemplate = TrimOrNull(dto.BankQrTemplate);
+            entity.MoMoPartnerCode = TrimOrNull(dto.MoMoPartnerCode);
+            entity.MoMoEndpoint = TrimOrNull(dto.MoMoEndpoint);
+            entity.ImageBackupProvider = string.IsNullOrWhiteSpace(dto.ImageBackupProvider)
+                ? "None"
+                : dto.ImageBackupProvider.Trim();
+            entity.ImageBackupSettingsJson = TrimOrNull(dto.ImageBackupSettingsJson);
             await _settings.UpdateAsync(entity, autoSave: true);
 
             return MapToDto(entity);
+        }
+
+        private static string TrimOrNull(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
         private async Task<ShopSetting> GetSingleAsync()
@@ -113,7 +142,27 @@ namespace PhuThuongStickyRice.Application.Shop
                 UnconfirmedAlertMinutes = entity.UnconfirmedAlertMinutes < 1 ? 15 : entity.UnconfirmedAlertMinutes,
                 RecaptchaSiteKey = entity.RecaptchaSiteKey,
                 RecaptchaSecretKey = entity.RecaptchaSecretKey,
-                WebBaseUrl = entity.WebBaseUrl
+                WebBaseUrl = entity.WebBaseUrl,
+                MaintenanceMode = entity.MaintenanceMode,
+                MaintenanceMessage = string.IsNullOrWhiteSpace(entity.MaintenanceMessage)
+                    ? "Cửa hàng đang bảo trì, vui lòng quay lại sau."
+                    : entity.MaintenanceMessage,
+                TelegramBotToken = entity.TelegramBotToken,
+                TelegramChatId = entity.TelegramChatId,
+                HealthAlertsEnabled = entity.HealthAlertsEnabled,
+                ErrorRateThreshold = entity.ErrorRateThreshold < 1 ? 20 : entity.ErrorRateThreshold,
+                UploadsSizeWarningMb = entity.UploadsSizeWarningMb < 1 ? 500 : entity.UploadsSizeWarningMb,
+                BankName = entity.BankName,
+                BankId = entity.BankId,
+                BankAccountNumber = entity.BankAccountNumber,
+                BankAccountName = entity.BankAccountName,
+                BankQrTemplate = entity.BankQrTemplate,
+                MoMoPartnerCode = entity.MoMoPartnerCode,
+                MoMoEndpoint = entity.MoMoEndpoint,
+                ImageBackupProvider = string.IsNullOrWhiteSpace(entity.ImageBackupProvider)
+                    ? "None"
+                    : entity.ImageBackupProvider,
+                ImageBackupSettingsJson = entity.ImageBackupSettingsJson
             };
         }
     }

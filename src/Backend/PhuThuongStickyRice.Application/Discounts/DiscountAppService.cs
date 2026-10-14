@@ -28,6 +28,12 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input);
 
         /// <summary>
+        /// True when the code is a usable freeship voucher (item 120).
+        /// Used by order creation to zero the delivery fee.
+        /// </summary>
+        Task<bool> IsFreeshipAsync(string code, decimal subtotal, string customerPhone);
+
+        /// <summary>
         /// Order creation: returns the discount amount and bumps the usage
         /// counter. Throws DomainException when the code cannot be applied.
         /// </summary>
@@ -102,7 +108,8 @@ namespace PhuThuongStickyRice.Application.Discounts
                 ExpiresAt = dto.ExpiresAt,
                 MaxUses = dto.MaxUses,
                 UsedCount = 0,
-                IsActive = dto.IsActive
+                IsActive = dto.IsActive,
+                VoucherType = dto.VoucherType
             };
             await _discounts.InsertAsync(entity, autoSave: true);
             return MapToDto(entity);
@@ -123,6 +130,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             entity.ExpiresAt = dto.ExpiresAt;
             entity.MaxUses = dto.MaxUses;
             entity.IsActive = dto.IsActive;
+            entity.VoucherType = dto.VoucherType;
             await _discounts.UpdateAsync(entity, autoSave: true);
             return MapToDto(entity);
         }
@@ -151,9 +159,28 @@ namespace PhuThuongStickyRice.Application.Discounts
             return new ValidateDiscountResultDto
             {
                 Valid = valid,
-                Message = message,
-                DiscountAmount = valid ? ComputeDiscount(entity, input.Subtotal) : 0
+                Message = valid && entity.VoucherType == VoucherType.Freeship
+                    ? "Áp dụng miễn phí ship thành công."
+                    : message,
+                DiscountAmount = valid ? ComputeDiscount(entity, input.Subtotal) : 0,
+                IsFreeship = valid && entity.VoucherType == VoucherType.Freeship
             };
+        }
+
+        public async Task<bool> IsFreeshipAsync(string code, decimal subtotal, string customerPhone)
+        {
+            var normalized = NormalizeCode(code);
+            var queryable = await _discounts.GetQueryableAsync();
+            var entity = await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x => x.Code == normalized));
+
+            if (entity == null || entity.VoucherType != VoucherType.Freeship)
+            {
+                return false;
+            }
+
+            var (valid, _) = CheckUsable(entity, subtotal, customerPhone);
+            return valid;
         }
 
         /// <summary>
@@ -313,6 +340,13 @@ namespace PhuThuongStickyRice.Application.Discounts
 
         private static decimal ComputeDiscount(DiscountCode entity, decimal subtotal)
         {
+            // Freeship vouchers give 0 VND discount — the benefit is the
+            // zeroed delivery fee at checkout (item 120).
+            if (entity.VoucherType == VoucherType.Freeship)
+            {
+                return 0;
+            }
+
             decimal amount;
             if (entity.DiscountPercent.HasValue)
             {
@@ -329,6 +363,13 @@ namespace PhuThuongStickyRice.Application.Discounts
 
         private static void EnsureValueProvided(CreateDiscountCodeDto dto)
         {
+            // Freeship vouchers carry no monetary value — the benefit is the
+            // zeroed delivery fee, so no percent/amount is required.
+            if (dto.VoucherType == VoucherType.Freeship)
+            {
+                return;
+            }
+
             if (!dto.DiscountPercent.HasValue && !dto.DiscountAmount.HasValue)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -370,7 +411,8 @@ namespace PhuThuongStickyRice.Application.Discounts
                 MaxUses = entity.MaxUses,
                 UsedCount = entity.UsedCount,
                 IsActive = entity.IsActive,
-                OwnerPhone = entity.OwnerPhone
+                OwnerPhone = entity.OwnerPhone,
+                VoucherType = entity.VoucherType
             };
         }
     }

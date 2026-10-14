@@ -8,9 +8,18 @@
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Services
 @inject ShopService ShopService
+@inject PhuThuongStickyRice.Blazor.Modules.Admin.Services.Wave4Service Wave4Service
 @inject IJSRuntime JSRuntime
 
 <h3>🗳️ Bình chọn món mới</h3>
+
+@* Item 105: dish-voting is feature-flagged. *@
+@if (_votingChecked && !_votingEnabled)
+{
+    <div class="alert alert-info">Tính năng bình chọn món mới hiện đang tạm tắt. Quay lại sau nhé!</div>
+}
+else
+{
 <p class="text-muted">
     Bạn muốn shop bán thêm món nào? Bình chọn cho món bạn thích nhất —
     món được bình chọn nhiều nhất sẽ lên thực đơn!
@@ -72,6 +81,7 @@ else
     </div>
     <p class="text-muted"><small>Mỗi trình duyệt được bình chọn 1 món. Cảm ơn bạn đã góp ý thực đơn!</small></p>
 }
+}
 
 @code {
     private const string VoteStorageKey = "phuthuong.dish-votes.v1";
@@ -82,8 +92,30 @@ else
     private string _error;
     private string _success;
 
+    // Item 105: dish-voting feature flag.
+    private bool _votingChecked;
+    private bool _votingEnabled = true;
+
     protected override async Task OnInitializedAsync()
     {
+        try
+        {
+            var flags = await Wave4Service.GetFeatureFlagMapAsync();
+            _votingEnabled = flags == null || !flags.TryGetValue("dish-voting", out var on) || on;
+        }
+        catch (Exception)
+        {
+        }
+        finally
+        {
+            _votingChecked = true;
+        }
+
+        if (!_votingEnabled)
+        {
+            return;
+        }
+
         try
         {
             _candidates = await ShopService.GetDishCandidatesAsync();

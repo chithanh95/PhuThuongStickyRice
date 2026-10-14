@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
@@ -103,7 +104,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IObjectMapper _objectMapper;
         private readonly IEmailMessageRepository _emailMessages;
-        private readonly BankTransferOptions _bankTransfer;
+        private readonly Wave4.IPaymentConfigProvider _paymentConfig;
         private readonly IMoMoPaymentService _momo;
         private readonly IShopSettingAppService _shopSettings;
         private readonly IDiscountAppService _discounts;
@@ -118,6 +119,8 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IRecaptchaService _recaptcha;
         private readonly IRewardRuleAppService _rewardRules;
         private readonly Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> _shippers;
+        private readonly Wave4.IWebhookDispatcher _webhooks;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> _branches;
 
         public OrderAppService(
             IOrderRepository orders,
@@ -125,7 +128,7 @@ namespace PhuThuongStickyRice.Application.Orders
             IAsyncQueryableExecuter asyncExecuter,
             IObjectMapper objectMapper,
             IEmailMessageRepository emailMessages,
-            BankTransferOptions bankTransfer,
+            Wave4.IPaymentConfigProvider paymentConfig,
             IMoMoPaymentService momo,
             IShopSettingAppService shopSettings,
             IDiscountAppService discounts,
@@ -139,14 +142,16 @@ namespace PhuThuongStickyRice.Application.Orders
             IPromotionAppService promotions,
             IRecaptchaService recaptcha,
             IRewardRuleAppService rewardRules,
-            Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> shippers)
+            Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> shippers,
+            Wave4.IWebhookDispatcher webhooks,
+            Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> branches)
         {
             _orders = orders;
             _products = products;
             _asyncExecuter = asyncExecuter;
             _objectMapper = objectMapper;
             _emailMessages = emailMessages;
-            _bankTransfer = bankTransfer;
+            _paymentConfig = paymentConfig;
             _momo = momo;
             _shopSettings = shopSettings;
             _discounts = discounts;
@@ -161,6 +166,8 @@ namespace PhuThuongStickyRice.Application.Orders
             _recaptcha = recaptcha;
             _rewardRules = rewardRules;
             _shippers = shippers;
+            _webhooks = webhooks;
+            _branches = branches;
         }
 
         public async Task<OrderDto> CreateAsync(CreateOrderDto input)
@@ -340,6 +347,13 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Minimum order amount (shop setting).
             var shopSetting = await _shopSettings.GetAsync();
+
+            // Item 105: feature flags for the checkout extras (UI hides them
+            // too; the backend is the real gate).
+            var flags = LazyServiceProvider.LazyGetRequiredService<Wave4.IFeatureFlagAppService>();
+            var giftWrapEnabled = await flags.IsEnabledAsync(FeatureFlag.GiftWrap);
+            var referralsEnabled = await flags.IsEnabledAsync(FeatureFlag.Referrals);
+
             if (shopSetting.MinOrderAmount > 0 && subtotal < shopSetting.MinOrderAmount)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -351,11 +365,17 @@ namespace PhuThuongStickyRice.Application.Orders
             // applies to the subtotal remaining after the happy-hour promotion.
             decimal discountValue = 0;
             string appliedCode = null;
+            bool isFreeship = false;
             if (!string.IsNullOrWhiteSpace(input.DiscountCode))
             {
                 discountValue = await _discounts.ApplyAsync(
                     input.DiscountCode, subtotal - promotionDiscount, input.CustomerPhone);
                 appliedCode = input.DiscountCode.Trim().ToUpperInvariant();
+
+                // Item 120: freeship vouchers zero the delivery fee instead
+                // of reducing the subtotal.
+                isFreeship = await _discounts.IsFreeshipAsync(
+                    input.DiscountCode, subtotal - promotionDiscount, input.CustomerPhone);
             }
 
             // Loyalty account (created on first order) + tier discount.
@@ -377,10 +397,12 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // Referral code: must exist and must not be the buyer's own.
+            // Item 105: referrals are feature-flagged.
             string referralCodeUsed = null;
-            if (!string.IsNullOrWhiteSpace(input.ReferralCode))
+            var referralCode = referralsEnabled ? input.ReferralCode : null;
+            if (!string.IsNullOrWhiteSpace(referralCode))
             {
-                var referrer = await _loyalty.FindByReferralCodeAsync(input.ReferralCode);
+                var referrer = await _loyalty.FindByReferralCodeAsync(referralCode);
                 if (referrer == null)
                 {
                     throw new Domain.Exceptions.DomainException("Mã giới thiệu không tồn tại.");
@@ -420,14 +442,17 @@ namespace PhuThuongStickyRice.Application.Orders
                     "Vui lòng nhập đầy đủ tên và số điện thoại người nhận.");
             }
 
+            var isGift = giftWrapEnabled && input.IsGift;
+
             // Gift packaging.
-            var giftFeeValue = input.IsGift ? Math.Max(0, shopSetting.GiftFee) : 0;
+            var giftFeeValue = isGift ? Math.Max(0, shopSetting.GiftFee) : 0;
 
             // Delivery fee: free when (subtotal - discount) reaches the
-            // threshold; always 0 for self-pickup orders.
+            // threshold; always 0 for self-pickup orders; always 0 when a
+            // freeship voucher is applied (item 120).
             decimal feeValue = 0;
             var isPickup = fulfillment == FulfillmentMethod.Pickup;
-            if (!isPickup && shopSetting.DeliveryFee > 0)
+            if (!isPickup && shopSetting.DeliveryFee > 0 && !isFreeship)
             {
                 var afterDiscount = subtotal - promotionDiscount - discountValue;
                 var freeShip = shopSetting.FreeShipThreshold > 0 && afterDiscount >= shopSetting.FreeShipThreshold;
@@ -440,6 +465,21 @@ namespace PhuThuongStickyRice.Application.Orders
             var requiresDeposit = paymentMethod == PaymentMethod.BankTransfer
                 && shopSetting.DepositThreshold > 0
                 && totalBeforeDeposit >= shopSetting.DepositThreshold;
+
+            // Item 109: branch (nullable). Only active branches are
+            // accepted; the branch name is denormalized onto the order.
+            Guid? branchId = input.BranchId;
+            string branchName = null;
+            if (branchId.HasValue)
+            {
+                var branch = await _branches.FindAsync(branchId.Value);
+                if (branch == null || !branch.IsActive)
+                {
+                    throw new Domain.Exceptions.DomainException("Chi nhánh không tồn tại hoặc đã ngừng hoạt động.");
+                }
+
+                branchName = branch.Name;
+            }
 
             var order = Order.Create(
                 orderNumber,
@@ -459,7 +499,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 companyName,
                 recipientName,
                 recipientPhone,
-                input.IsGift,
+                isGift,
                 input.GiftMessage,
                 requiresDeposit,
                 Money.Of(loyaltyValue, currency),
@@ -468,9 +508,22 @@ namespace PhuThuongStickyRice.Application.Orders
                 referralCodeUsed,
                 idempotencyKey,
                 promotionName,
-                promotionDiscount);
+                promotionDiscount,
+                branchId,
+                branchName);
 
             await _orders.InsertAsync(order);
+
+            // Item 110: fire the OrderCreated webhook (fire-and-log — a
+            // failing endpoint never breaks the order flow).
+            await FireWebhookSafelyAsync(WebhookEndpoint.EventOrderCreated, new
+            {
+                order.OrderNumber,
+                status = order.Status.ToString(),
+                total = order.TotalAmount.Amount,
+                phone = order.CustomerPhone,
+                branchName
+            });
 
             // Zalo OA e-receipt (stub: logs "would send" until configured).
             await _zalo.SendOrderReceiptAsync(
@@ -482,7 +535,8 @@ namespace PhuThuongStickyRice.Application.Orders
             // the current Fake/test provider nothing is actually delivered.
             if (!string.IsNullOrWhiteSpace(order.CustomerEmail))
             {
-                var (subject, body) = OrderConfirmationEmailComposer.Compose(order, _bankTransfer);
+                var bankTransfer = await _paymentConfig.GetBankTransferAsync();
+                var (subject, body) = OrderConfirmationEmailComposer.Compose(order, bankTransfer);
                 await _emailMessages.AddAsync(new EmailMessage
                 {
                     From = OrderConfirmationEmailComposer.FromAddress,
@@ -604,7 +658,33 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var updatedDto = _objectMapper.Map<Order, OrderDto>(order);
             await FillShipperNamesAsync(new[] { updatedDto });
+
+            // Item 110: fire the OrderStatusChanged webhook (fire-and-log).
+            await FireWebhookSafelyAsync(WebhookEndpoint.EventOrderStatusChanged, new
+            {
+                order.OrderNumber,
+                status = order.Status.ToString(),
+                total = order.TotalAmount.Amount,
+                phone = order.CustomerPhone,
+                branchName = order.BranchName
+            });
+
             return updatedDto;
+        }
+
+        /// <summary>
+        /// Webhook dispatch must never break the order flow: log and continue.
+        /// </summary>
+        private async Task FireWebhookSafelyAsync(string eventName, object payload)
+        {
+            try
+            {
+                await _webhooks.DispatchAsync(eventName, payload);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Webhook dispatch failed for event {Event}.", eventName);
+            }
         }
 
         /// <summary>Item 82: admin assigns (or unassigns) a delivery shipper.</summary>
@@ -801,6 +881,14 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public async Task<SpinResultDto> SpinAsync(SpinInput input)
         {
+            // Item 105: feature-flagged. The frontend hides the wheel, but
+            // the backend is the real gate.
+            var flags = LazyServiceProvider.LazyGetRequiredService<Wave4.IFeatureFlagAppService>();
+            if (!await flags.IsEnabledAsync(FeatureFlag.LuckySpin))
+            {
+                throw new Domain.Exceptions.DomainException("Vòng quay may mắn hiện đang tắt.");
+            }
+
             var order = await _orders.FindAsync(input.OrderId);
             if (order == null || !PhonesMatch(order.CustomerPhone, input.CustomerPhone))
             {

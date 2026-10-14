@@ -6,10 +6,13 @@
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Services
 @using PhuThuongStickyRice.Blazor.Modules.Core.Services
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
 @inject ShopService ShopService
+@inject Wave4Service Wave4Service
 @inject CartState CartState
 @inject ToastService Toasts
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 <div class="jumbotron jumbotron-fluid bg-warning text-dark rounded p-4 mb-4">
     <div class="container">
@@ -77,9 +80,22 @@
 }
 else
 {
-    <!-- Filters: categories + dietary tags + sort -->
+    <!-- Filters: categories + dietary tags + sort + branch -->
     <div class="card mb-4">
         <div class="card-body py-3">
+            @if (_branches != null && _branches.Count > 0)
+            {
+                <div class="mb-2">
+                    <span class="text-muted small mr-2">Chi nhánh:</span>
+                    <div class="btn-group btn-group-sm flex-wrap" role="group">
+                        <button class="btn @BranchChipClass(null)" @onclick="() => SetBranch(null)">Tất cả</button>
+                        @foreach (var b in _branches)
+                        {
+                            <button class="btn @BranchChipClass(b.Id)" @onclick="() => SetBranch(b.Id)">@b.Name</button>
+                        }
+                    </div>
+                </div>
+            }
             <div class="mb-2">
                 <span class="text-muted small mr-2">Danh mục:</span>
                 <div class="btn-group btn-group-sm flex-wrap" role="group">
@@ -110,6 +126,31 @@ else
             </div>
         </div>
     </div>
+
+    @* Item 118: time-based suggestions — pure client-side by hour. *@
+    @if (_suggestions.Count > 0)
+    {
+        <h4 class="mb-3">@_suggestionTitle</h4>
+        <div class="row">
+            @foreach (var product in _suggestions)
+            {
+                <div class="col-6 col-md-4 mb-4" @key="product.Id">
+                    <div class="card h-100 border-info">
+                        <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name">
+                            <img class="card-img-top" src="@ProductImage(product.Code)" alt="@product.Name" loading="lazy" />
+                        </a>
+                        <div class="card-body py-2">
+                            <a href="javascript:void(0)" class="text-dark" @onclick="() => OpenQuickView(product)"><strong>@product.Name</strong></a>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <strong class="text-danger">@FormatPrice(product.Price)</strong>
+                                <button class="btn btn-sm btn-warning" @onclick="() => AddToCart(product)">+ Thêm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 
     @if (_filtered.Count == 0)
     {
@@ -245,11 +286,19 @@ else
                     </div>
                 </div>
                 <div class="modal-footer">
+                    @* Item 116: short link to /shop?tim={code} *@
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CreateQuickViewShortLink" disabled="@_creatingShortLink">
+                        @(_creatingShortLink ? "Đang tạo..." : "🔗 Link ngắn")
+                    </button>
                     <button type="button" class="btn btn-secondary" @onclick="CloseQuickView">Đóng</button>
                     <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart">
                         Thêm vào giỏ — @FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))
                     </button>
                 </div>
+                @if (!string.IsNullOrEmpty(_shortLinkCopied))
+                {
+                    <div class="alert alert-success m-3">@_shortLinkCopied</div>
+                }
             </div>
         </div>
     </div>
@@ -273,8 +322,21 @@ else
     private string _tagFilter;
     private string _sort = "popular";
 
+    // Item 109: branch picker.
+    private List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.BranchModel> _branches;
+    private Guid? _branchFilter;
+
+    // Item 118: time-based suggestions (pure client-side by hour).
+    private List<ShopProductModel> _suggestions = new List<ShopProductModel>();
+    private string _suggestionTitle;
+
     // Item 95: table QR — ?ban={label} shows a "đang đặt tại bàn" chip.
     private string _tableLabel;
+
+    // Item 116: short link for the quick-viewed product.
+    private string _quickViewShortLink;
+    private bool _creatingShortLink;
+    private string _shortLinkCopied;
 
     // Quick-view state.
     private ShopProductModel _quickView;
@@ -288,14 +350,16 @@ else
 
         try
         {
+            var branchesTask = Wave4Service.GetActiveBranchesAsync();
             var pagedTask = ShopService.GetProductsAsync();
             var combosTask = ShopService.GetCombosAsync();
             var toppingsTask = ShopService.GetToppingsAsync();
             var todaySoldTask = ShopService.GetTodaySoldAsync();
             var bestSellersTask = ShopService.GetBestSellerIdsAsync();
 
-            await Task.WhenAll(pagedTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
+            await Task.WhenAll(branchesTask, pagedTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
 
+            _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.BranchModel>();
             _products = pagedTask.Result.Items ?? new List<ShopProductModel>();
             _combos = combosTask.Result ?? new List<ComboModel>();
             _toppings = toppingsTask.Result ?? new List<ToppingModel>();
@@ -325,11 +389,76 @@ else
                 .ToList();
 
             ApplyFilters();
+            BuildSuggestions();
+
+            // Item 116: ?tim={productCode} opens the quick-view directly
+            // (target of the short links created from the quick-view).
+            var tim = GetQueryValue(Navigation.Uri, "tim");
+            if (!string.IsNullOrWhiteSpace(tim))
+            {
+                var match = _products.FirstOrDefault(p =>
+                    string.Equals(p.Code, tim.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                {
+                    OpenQuickView(match);
+                }
+            }
         }
         catch (Exception)
         {
             _error = "Không tải được danh sách sản phẩm. Vui lòng thử lại sau.";
             _products = new List<ShopProductModel>();
+        }
+    }
+
+    /// <summary>
+    /// Item 118: time-based suggestions, pure client-side by local hour:
+    /// 5h–10h → savory (tag "man") products; 17h–23h → evening picks.
+    /// </summary>
+    private void BuildSuggestions()
+    {
+        _suggestions = new List<ShopProductModel>();
+        _suggestionTitle = null;
+
+        if (_products == null || _products.Count == 0)
+        {
+            return;
+        }
+
+        var hour = DateTime.Now.Hour;
+        if (hour >= 5 && hour < 10)
+        {
+            _suggestionTitle = "☀️ Gợi ý buổi sáng";
+            _suggestions = _products
+                .Where(p => (p.Tags ?? string.Empty).Contains("man"))
+                .Take(3)
+                .ToList();
+        }
+        else if (hour >= 17 && hour < 23)
+        {
+            _suggestionTitle = "🌙 Gợi ý buổi tối";
+            _suggestions = _products.Take(3).ToList();
+        }
+    }
+
+    // ---------- Branch filter (item 109) ----------
+
+    private string BranchChipClass(Guid? branchId) =>
+        _branchFilter == branchId ? "btn-warning" : "btn-outline-secondary";
+
+    private async Task SetBranch(Guid? branchId)
+    {
+        _branchFilter = branchId;
+        try
+        {
+            var paged = await ShopService.GetProductsAsync(branchId);
+            _products = paged.Items ?? new List<ShopProductModel>();
+            ApplyFilters();
+            BuildSuggestions();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được sản phẩm theo chi nhánh.";
         }
     }
 
@@ -491,11 +620,51 @@ else
         _quickViewQty = _quantities.TryGetValue(product.Id, out var q) && q > 0 ? q : 1;
         _quickViewSizeId = SelectedSizeId(product);
         _quickViewToppings = new HashSet<Guid>();
+        _quickViewShortLink = null;
+        _shortLinkCopied = null;
     }
 
     private void CloseQuickView()
     {
         _quickView = null;
+    }
+
+    /// <summary>
+    /// Item 116: creates a short link to /shop?tim={code} and copies it.
+    /// </summary>
+    private async Task CreateQuickViewShortLink()
+    {
+        if (_quickView == null || _creatingShortLink)
+        {
+            return;
+        }
+
+        _creatingShortLink = true;
+        _shortLinkCopied = null;
+        try
+        {
+            var baseUrl = Navigation.BaseUri.TrimEnd('/');
+            var target = $"{baseUrl}/shop?tim={Uri.EscapeDataString(_quickView.Code)}";
+            var link = await Wave4Service.CreateShortLinkAsync(target);
+            _quickViewShortLink = $"{baseUrl}/s/{link.Code}";
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _quickViewShortLink);
+                _shortLinkCopied = "Đã sao chép link ngắn: " + _quickViewShortLink;
+            }
+            catch (Exception)
+            {
+                _shortLinkCopied = _quickViewShortLink;
+            }
+        }
+        catch (Exception)
+        {
+            _shortLinkCopied = "Không tạo được link ngắn, vui lòng thử lại.";
+        }
+        finally
+        {
+            _creatingShortLink = false;
+        }
     }
 
     private void ToggleQuickViewTopping(Guid toppingId, bool on)

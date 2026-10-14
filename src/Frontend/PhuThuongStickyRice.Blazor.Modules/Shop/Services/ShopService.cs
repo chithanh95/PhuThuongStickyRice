@@ -22,7 +22,19 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
 
         public async Task<PagedResult<ShopProductModel>> GetProductsAsync()
         {
-            var response = await _httpClient.GetAsync("api/products?page=1&pageSize=100&status=Active");
+            return await GetProductsAsync(null);
+        }
+
+        /// <summary>Item 109: optional branch filter (products of the branch + global products).</summary>
+        public async Task<PagedResult<ShopProductModel>> GetProductsAsync(Guid? branchId)
+        {
+            var url = "api/products?page=1&pageSize=100&status=Active";
+            if (branchId.HasValue)
+            {
+                url += $"&branch={branchId.Value}";
+            }
+
+            var response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<PagedResult<ShopProductModel>>();
         }

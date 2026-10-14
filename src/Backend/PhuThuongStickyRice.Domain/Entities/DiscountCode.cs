@@ -30,6 +30,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public bool IsActive { get; set; }
 
         /// <summary>
+        /// Voucher type (item 120): Discount (giảm giá) or Freeship
+        /// (miễn phí ship — sets the delivery fee to 0 at checkout).
+        /// </summary>
+        public VoucherType VoucherType { get; set; }
+
+        /// <summary>
         /// Optional phone the code is tied to (lucky-spin / birthday vouchers).
         /// When set, only this phone may redeem the code.
         /// </summary>

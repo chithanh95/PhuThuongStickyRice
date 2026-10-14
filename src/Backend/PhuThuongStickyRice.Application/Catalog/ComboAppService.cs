@@ -32,15 +32,18 @@ namespace PhuThuongStickyRice.Application.Catalog
         private readonly IRepository<Combo, Guid> _combos;
         private readonly IRepository<Product, Guid> _products;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public ComboAppService(
             IRepository<Combo, Guid> combos,
             IRepository<Product, Guid> products,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _combos = combos;
             _products = products;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         [AllowAnonymous]
@@ -91,6 +94,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             }
 
             await _combos.InsertAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
             return (await MapToDtosAsync(new[] { entity })).First();
         }
 
@@ -118,6 +122,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             }
 
             await _combos.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
             return (await MapToDtosAsync(new[] { entity })).First();
         }
 
@@ -125,6 +130,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         public async Task DeleteAsync(Guid id)
         {
             await _combos.DeleteAsync(id);
+            _catalogCache.Invalidate();
         }
 
         private async Task EnsureItemsValidAsync(CreateUpdateComboDto dto)

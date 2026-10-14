@@ -32,6 +32,25 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.RecaptchaSiteKey).HasMaxLength(100);
             builder.Property(x => x.RecaptchaSecretKey).HasMaxLength(100);
             builder.Property(x => x.WebBaseUrl).HasMaxLength(500);
+
+            // Wave 4: maintenance mode, health alerts, disk warning, payment
+            // display config (non-secret), image backup.
+            builder.Property(x => x.MaintenanceMode).IsRequired();
+            builder.Property(x => x.MaintenanceMessage).HasMaxLength(500);
+            builder.Property(x => x.TelegramBotToken).HasMaxLength(100);
+            builder.Property(x => x.TelegramChatId).HasMaxLength(50);
+            builder.Property(x => x.HealthAlertsEnabled).IsRequired();
+            builder.Property(x => x.ErrorRateThreshold).IsRequired();
+            builder.Property(x => x.UploadsSizeWarningMb).IsRequired();
+            builder.Property(x => x.BankName).HasMaxLength(200);
+            builder.Property(x => x.BankId).HasMaxLength(20);
+            builder.Property(x => x.BankAccountNumber).HasMaxLength(50);
+            builder.Property(x => x.BankAccountName).HasMaxLength(200);
+            builder.Property(x => x.BankQrTemplate).HasMaxLength(20);
+            builder.Property(x => x.MoMoPartnerCode).HasMaxLength(50);
+            builder.Property(x => x.MoMoEndpoint).HasMaxLength(500);
+            builder.Property(x => x.ImageBackupProvider).HasMaxLength(50);
+            builder.Property(x => x.ImageBackupSettingsJson).HasMaxLength(4000);
         }
     }
 }

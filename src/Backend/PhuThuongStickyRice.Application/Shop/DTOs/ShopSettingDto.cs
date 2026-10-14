@@ -91,5 +91,71 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         /// <summary>Public base URL of the shop web, used for table QR codes.</summary>
         [StringLength(500)]
         public string WebBaseUrl { get; set; }
+
+        /// <summary>Maintenance mode (bảo trì): public pages show a friendly page.</summary>
+        public bool MaintenanceMode { get; set; }
+
+        /// <summary>Message shown on the maintenance page.</summary>
+        [StringLength(500)]
+        public string MaintenanceMessage { get; set; }
+
+        /// <summary>Telegram bot token for health alerts. Empty = disabled.</summary>
+        [StringLength(100)]
+        public string TelegramBotToken { get; set; }
+
+        /// <summary>Telegram chat id receiving health alerts. Empty = disabled.</summary>
+        [StringLength(50)]
+        public string TelegramChatId { get; set; }
+
+        /// <summary>When false, the health worker only logs.</summary>
+        public bool HealthAlertsEnabled { get; set; }
+
+        /// <summary>Error entries in the last hour above this count trigger an alert.</summary>
+        [Range(1, int.MaxValue)]
+        public int ErrorRateThreshold { get; set; }
+
+        /// <summary>Uploads folder size (MB) above which /admin/he-thong warns.</summary>
+        [Range(1, int.MaxValue)]
+        public int UploadsSizeWarningMb { get; set; }
+
+        // ---- Payment config (item 106): non-secret display values ----
+
+        /// <summary>Bank transfer: bank display name.</summary>
+        [StringLength(200)]
+        public string BankName { get; set; }
+
+        /// <summary>Bank transfer: VietQR bank code, e.g. "VCB".</summary>
+        [StringLength(20)]
+        public string BankId { get; set; }
+
+        /// <summary>Bank transfer: account number.</summary>
+        [StringLength(50)]
+        public string BankAccountNumber { get; set; }
+
+        /// <summary>Bank transfer: account holder name.</summary>
+        [StringLength(200)]
+        public string BankAccountName { get; set; }
+
+        /// <summary>Bank transfer: VietQR image template (compact/compact2/qr_only).</summary>
+        [StringLength(20)]
+        public string BankQrTemplate { get; set; }
+
+        /// <summary>MoMo: partner code (non-secret).</summary>
+        [StringLength(50)]
+        public string MoMoPartnerCode { get; set; }
+
+        /// <summary>MoMo: create-payment endpoint URL override. Empty = appsettings.</summary>
+        [StringLength(500)]
+        public string MoMoEndpoint { get; set; }
+
+        // ---- Cloud image backup (item 114) ----
+
+        /// <summary>Image backup provider name ("None" default).</summary>
+        [StringLength(50)]
+        public string ImageBackupProvider { get; set; }
+
+        /// <summary>JSON settings for the image backup provider.</summary>
+        [StringLength(4000)]
+        public string ImageBackupSettingsJson { get; set; }
     }
 }

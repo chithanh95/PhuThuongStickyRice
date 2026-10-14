@@ -104,6 +104,12 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Assigned shipper name.</summary>
         public string ShipperName { get; set; }
 
+        /// <summary>Branch id (nullable, item 109).</summary>
+        public Guid? BranchId { get; set; }
+
+        /// <summary>Branch display name.</summary>
+        public string BranchName { get; set; }
+
         /// <summary>Auto-applied "giờ vàng" promotion name, if any.</summary>
         public string PromotionName { get; set; }
 
@@ -213,6 +219,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         /// <summary>reCAPTCHA v3 token. Verified when reCAPTCHA is enabled.</summary>
         public string RecaptchaToken { get; set; }
+
+        /// <summary>Optional branch id (item 109). Null = no branch.</summary>
+        public Guid? BranchId { get; set; }
 
         public List<CreateOrderLineDto> Lines { get; set; } = new List<CreateOrderLineDto>();
     }

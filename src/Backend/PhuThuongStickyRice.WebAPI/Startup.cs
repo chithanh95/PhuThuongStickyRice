@@ -50,6 +50,16 @@ namespace PhuThuongStickyRice.WebAPI
         {
             services.Configure<AppSettings>(Configuration);
 
+            // Item 102: Brotli + Gzip response compression for the API.
+            // EnableForHttps = true: the payloads are public catalog/menu
+            // JSON (no per-user secrets in compressed responses here).
+            services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true;
+                options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+                options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+            });
+
             services.AddMonitoringServices(AppSettings.Monitoring);
 
             services.AddControllers(configure =>
@@ -200,6 +210,9 @@ namespace PhuThuongStickyRice.WebAPI
 
             services.AddScoped(typeof(ICsvReader<>), typeof(CsvReader<>));
             services.AddScoped(typeof(ICsvWriter<>), typeof(CsvWriter<>));
+
+            // Item 104: persists Warning+ log entries to the AppLogs table.
+            services.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider, Services.AppLogLoggerProvider>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -208,6 +221,10 @@ namespace PhuThuongStickyRice.WebAPI
             app.InitializeApplication();
 
             app.UseDebuggingMiddleware();
+
+            // Item 102: must run before UseStaticFiles/UseRouting so API and
+            // static responses are compressed.
+            app.UseResponseCompression();
 
             // Serves wwwroot, including /uploads/landing/* for landing page images.
             app.UseStaticFiles();

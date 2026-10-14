@@ -14,6 +14,14 @@
     <meta property="og:image" content="images/logo.png" />
     <meta property="og:site_name" content="Xôi Phú Thượng" />
     <meta name="zalo-platform-site-verification" content="" />
+    <!-- PWA (item 115) -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#7a1b2e" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Xôi Phú Thượng" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
     <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
     <link href="PhuThuongStickyRice.BlazorWebAssembly.styles.css" rel="stylesheet">
@@ -31,6 +39,15 @@
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="_content/PhuThuongStickyRice.Blazor.Modules/scripts/interop.js"></script>
+    <script>
+        // PWA (item 115): register the service worker for the app-shell
+        // cache + offline fallback page.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').catch(function () { });
+            });
+        }
+    </script>
 </body>
 
 </html>

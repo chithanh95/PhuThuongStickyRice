@@ -1,9 +1,11 @@
 @page "/track-order"
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
 @using Microsoft.JSInterop
 @inject ShopService ShopService
 @inject Wave2Service Wave2Service
+@inject Wave4Service Wave4Service
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @implements IDisposable
@@ -93,6 +95,47 @@
                     <small>💰 Đơn này cần <strong>đặt cọc trước</strong> để shop xác nhận. Shop sẽ liên hệ với bạn.</small>
                 </div>
             }
+            @* Item 119: address book management from the track-order profile. *@
+            <div class="card mt-2 mb-2">
+                <div class="card-body py-2">
+                    <small class="text-muted d-block mb-1">📒 <strong>Sổ địa chỉ</strong> của số @_order.CustomerPhone</small>
+                    @if (_addresses == null)
+                    {
+                        <small><em>Đang tải...</em></small>
+                    }
+                    else if (_addresses.Count == 0)
+                    {
+                        <small class="text-muted">Chưa có địa chỉ nào được lưu.</small>
+                    }
+                    else
+                    {
+                        @foreach (var a in _addresses)
+                        {
+                            <div class="d-flex justify-content-between align-items-center border-bottom py-1">
+                                <small><strong>@a.Label:</strong> @a.Address</small>
+                                <button class="btn btn-sm btn-link text-danger" @onclick="() => DeleteAddressAsync(a)">Xóa</button>
+                            </div>
+                        }
+                    }
+                    <div class="form-row mt-2">
+                        <div class="col-4">
+                            <input class="form-control form-control-sm" @bind="_newAddressLabel" placeholder="Nhãn (Nhà/Cty)" />
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <input class="form-control form-control-sm" @bind="_newAddressText" placeholder="Địa chỉ mới..." />
+                                <div class="input-group-append">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="AddAddressAsync" disabled="@_savingAddress">Lưu</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_addressBookMessage))
+                    {
+                        <small class="text-success">@_addressBookMessage</small>
+                    }
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-sm">
                     <thead>
@@ -349,6 +392,13 @@
     private bool _savingBirthday;
     private string _birthdayMessage;
 
+    // Item 119: address book.
+    private System.Collections.Generic.List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.AddressBookModel> _addresses;
+    private string _newAddressLabel;
+    private string _newAddressText;
+    private bool _savingAddress;
+    private string _addressBookMessage;
+
     // Customer self-service: cancel.
     private bool _cancelling;
     private string _cancelError;
@@ -497,6 +547,8 @@
         _birthdayMessage = null;
         _order = null;
         _bankInfo = null;
+        _addresses = null;
+        _addressBookMessage = null;
         StopPolling();
 
         if (string.IsNullOrWhiteSpace(_orderNumber) || string.IsNullOrWhiteSpace(_phone))
@@ -557,6 +609,63 @@
         catch (Exception)
         {
             _loyalty = null;
+        }
+
+        // Item 119: address book for the order phone.
+        await LoadAddressBookAsync();
+    }
+
+    /// <summary>Item 119: address book management in the profile section.</summary>
+    private async Task LoadAddressBookAsync()
+    {
+        try
+        {
+            _addresses = await Wave4Service.GetAddressesAsync(_order?.CustomerPhone);
+        }
+        catch (Exception)
+        {
+            _addresses = new System.Collections.Generic.List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.AddressBookModel>();
+        }
+    }
+
+    private async Task AddAddressAsync()
+    {
+        _addressBookMessage = null;
+        if (string.IsNullOrWhiteSpace(_newAddressLabel) || string.IsNullOrWhiteSpace(_newAddressText))
+        {
+            _addressBookMessage = "Vui lòng nhập nhãn và địa chỉ.";
+            return;
+        }
+
+        _savingAddress = true;
+        try
+        {
+            await Wave4Service.SaveAddressAsync(_order.CustomerPhone, _newAddressLabel.Trim(), _newAddressText.Trim());
+            _newAddressLabel = null;
+            _newAddressText = null;
+            await LoadAddressBookAsync();
+            _addressBookMessage = "Đã lưu địa chỉ.";
+        }
+        catch (Exception ex)
+        {
+            _addressBookMessage = "Không lưu được: " + ex.Message;
+        }
+        finally
+        {
+            _savingAddress = false;
+        }
+    }
+
+    private async Task DeleteAddressAsync(PhuThuongStickyRice.Blazor.Modules.Admin.Models.AddressBookModel address)
+    {
+        try
+        {
+            await Wave4Service.DeleteAddressAsync(address.Id, _order.CustomerPhone);
+            await LoadAddressBookAsync();
+        }
+        catch (Exception)
+        {
+            _addressBookMessage = "Không xóa được địa chỉ.";
         }
     }
 

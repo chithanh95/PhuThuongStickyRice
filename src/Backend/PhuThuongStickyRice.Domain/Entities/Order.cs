@@ -107,6 +107,22 @@ namespace PhuThuongStickyRice.Domain.Entities
         public Shipper Shipper { get; private set; }
 
         /// <summary>
+        /// Branch the order belongs to (nullable, item 109). Shown on the
+        /// admin order list/print.
+        /// </summary>
+        public Guid? BranchId { get; private set; }
+
+        /// <summary>Branch display name (denormalized at creation).</summary>
+        public string BranchName { get; private set; }
+
+        /// <summary>Assigns or clears the branch (admin).</summary>
+        public void ChangeBranch(Guid? branchId, string branchName)
+        {
+            BranchId = branchId;
+            BranchName = string.IsNullOrWhiteSpace(branchName) ? null : branchName.Trim();
+        }
+
+        /// <summary>
         /// Idempotency key from the checkout attempt. A retry with the same
         /// key within 24h returns the existing order instead of creating a new one.
         /// </summary>
@@ -156,7 +172,9 @@ namespace PhuThuongStickyRice.Domain.Entities
             string referralCodeUsed = null,
             string idempotencyKey = null,
             string promotionName = null,
-            decimal promotionDiscountAmount = 0)
+            decimal promotionDiscountAmount = 0,
+            Guid? branchId = null,
+            string branchName = null)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
@@ -208,6 +226,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 ? promotionName.Trim()
                 : null;
             PromotionDiscountAmount = promo;
+            BranchId = branchId;
+            BranchName = string.IsNullOrWhiteSpace(branchName) ? null : branchName.Trim();
             TotalAmount = Money.Of(subtotal - promo - discount - loyalty - tier + fee + gift, currency);
         }
 
@@ -239,7 +259,9 @@ namespace PhuThuongStickyRice.Domain.Entities
             string referralCodeUsed = null,
             string idempotencyKey = null,
             string promotionName = null,
-            decimal promotionDiscountAmount = 0)
+            decimal promotionDiscountAmount = 0,
+            Guid? branchId = null,
+            string branchName = null)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -340,7 +362,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 referralCodeUsed,
                 idempotencyKey,
                 promotionName,
-                promotionDiscountAmount);
+                promotionDiscountAmount,
+                branchId,
+                branchName);
         }
 
         /// <summary>

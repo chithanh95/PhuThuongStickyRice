@@ -127,6 +127,15 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Wave 4: feature flags, branches, webhooks, short links, app
+            // logs, disk usage, payment config, group orders, address book.
+            builder.Services.AddHttpClient<Wave4Service, Wave4Service>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Toast notifications.
             builder.Services.AddScoped<ToastService>();
 

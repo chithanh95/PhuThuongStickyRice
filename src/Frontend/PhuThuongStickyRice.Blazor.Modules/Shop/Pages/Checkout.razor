@@ -12,6 +12,7 @@
 @inject DiscountService DiscountService
 @inject Wave2Service Wave2Service
 @inject Wave3Service Wave3Service
+@inject Wave4Service Wave4Service
 @inject CartState CartState
 @inject NavigationManager Navigation
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
@@ -107,7 +108,8 @@
         </p>
     </div>
 
-    @if (!_placedOrder.LuckySpinUsed)
+    @* Item 105: lucky spin is feature-flagged (backend enforces too). *@
+    @if (!_placedOrder.LuckySpinUsed && _luckySpinEnabled)
     {
         <div class="card mb-3">
             <div class="card-header">🎡 Quay may mắn — nhận voucher cho đơn tiếp theo</div>
@@ -290,14 +292,27 @@ else
                             <label class="form-check-label" for="fm-pickup">🏪 Tự đến lấy tại quán <small class="text-success">(miễn phí ship)</small></label>
                         </div>
                     </div>
+                    @* Item 109: branch picker. *@
+                    @if (_branches != null && _branches.Count > 0)
+                    {
+                        <div class="form-group">
+                            <label>Chi nhánh <small class="text-muted">(tùy chọn)</small></label>
+                            <select class="form-control" @onchange="OnBranchChanged">
+                                <option value="">— Không chọn —</option>
+                                @foreach (var b in _branches)
+                                {
+                                    <option value="@b.Id" selected="@(_branchId == b.Id)">@b.Name</option>
+                                }
+                            </select>
+                        </div>
+                    }
                     <div class="form-group">
                         <label>Họ tên *</label>
                         <input class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
                         @if (!string.IsNullOrEmpty(_nameError))
                         {
                             <small class="text-danger">@_nameError</small>
-                        }
-                    </div>
+                        }                    </div>
                     <div class="form-group">
                         <label>Số điện thoại *</label>
                         <input class="form-control @FieldClass(_phoneError)" @bind="_order.CustomerPhone"
@@ -338,6 +353,28 @@ else
                             @if (!string.IsNullOrEmpty(_addressError))
                             {
                                 <small class="text-danger">@_addressError</small>
+                            }
+                            @* Item 119: address book quick-select chips. *@
+                            @if (_addresses != null && _addresses.Count > 0)
+                            {
+                                <div class="mt-2">
+                                    <small class="text-muted d-block mb-1">📒 Địa chỉ đã lưu:</small>
+                                    @foreach (var a in _addresses)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-info mr-1 mb-1"
+                                                @onclick="() => UseSavedAddress(a)" title="@a.Address">
+                                            @a.Label
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-1" @onclick="SaveCurrentAddressAsync"
+                                    disabled="@_savingAddress">
+                                @(_savingAddress ? "Đang lưu..." : "💾 Lưu địa chỉ này")
+                            </button>
+                            @if (!string.IsNullOrEmpty(_addressSavedMessage))
+                            {
+                                <small class="text-success d-block mt-1">@_addressSavedMessage</small>
                             }
                         </div>
                     }
@@ -408,20 +445,24 @@ else
                             </div>
                         }
                     </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="gift-toggle"
-                               @bind="_order.IsGift" />
-                        <label class="form-check-label" for="gift-toggle">
-                            🎁 Gói quà (+@FormatPrice(_shopSettings.GiftFee))
-                        </label>
-                    </div>
-                    @if (_order.IsGift)
+                    @* Item 105: gift-wrap is feature-flagged. *@
+                    @if (_giftWrapEnabled)
                     {
-                        <div class="form-group">
-                            <label>Lời nhắn trên thiệp</label>
-                            <textarea class="form-control" @bind="_order.GiftMessage" rows="2"
-                                      placeholder="Ví dụ: Chúc mừng sinh nhật!"></textarea>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="gift-toggle"
+                                   @bind="_order.IsGift" />
+                            <label class="form-check-label" for="gift-toggle">
+                                🎁 Gói quà (+@FormatPrice(_shopSettings.GiftFee))
+                            </label>
                         </div>
+                        @if (_order.IsGift)
+                        {
+                            <div class="form-group">
+                                <label>Lời nhắn trên thiệp</label>
+                                <textarea class="form-control" @bind="_order.GiftMessage" rows="2"
+                                          placeholder="Ví dụ: Chúc mừng sinh nhật!"></textarea>
+                            </div>
+                        }
                     }
                     <div class="form-group">
                         <label>Phương thức thanh toán *</label>
@@ -487,6 +528,13 @@ else
                                 <tr>
                                     <td class="text-success">Giảm giá (@_appliedCode)</td>
                                     <td class="text-right text-success">−@FormatPrice(_discountAmount)</td>
+                                </tr>
+                            }
+                            @if (_isFreeship)
+                            {
+                                <tr>
+                                    <td class="text-success">🚚 Miễn phí ship (@_appliedCode)</td>
+                                    <td class="text-right text-success">−@FormatPrice(_shopSettings.DeliveryFee)</td>
                                 </tr>
                             }
                             @if (_tierDiscountPreview > 0)
@@ -591,10 +639,14 @@ else
                         </div>
                     }
 
-                    <div class="form-group">
-                        <label>Mã giới thiệu <small class="text-muted">(nếu có)</small></label>
-                        <input class="form-control" @bind="_order.ReferralCode" placeholder="VD: PT-AB12CD" />
-                    </div>
+                    @* Item 105: referrals are feature-flagged. *@
+                    @if (_referralsEnabled)
+                    {
+                        <div class="form-group">
+                            <label>Mã giới thiệu <small class="text-muted">(nếu có)</small></label>
+                            <input class="form-control" @bind="_order.ReferralCode" placeholder="VD: PT-AB12CD" />
+                        </div>
+                    }
 
                     @if (_depositPreview > 0)
                     {
@@ -649,6 +701,23 @@ else
     private bool _orderForSomeoneElse;
     private bool _showVat;
 
+    // Item 105: feature flags (UI gating; backend enforces too).
+    private bool _giftWrapEnabled = true;
+    private bool _referralsEnabled = true;
+    private bool _luckySpinEnabled = true;
+
+    // Item 109: branch selection.
+    private List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.BranchModel> _branches;
+    private Guid? _branchId;
+
+    // Item 119: address book.
+    private List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.AddressBookModel> _addresses;
+    private bool _savingAddress;
+    private string _addressSavedMessage;
+
+    // Item 120: freeship voucher state.
+    private bool _isFreeship;
+
     // Loyalty.
     private LoyaltyAccountModel _loyalty;
     private int _redeemPointsInput;
@@ -685,6 +754,12 @@ else
         get
         {
             if (_fulfillment == "Pickup")
+            {
+                return 0;
+            }
+
+            // Item 120: freeship vouchers zero the fee.
+            if (_isFreeship)
             {
                 return 0;
             }
@@ -785,8 +860,98 @@ else
             _activePromotion = null;
         }
 
+        // Item 105: feature flags (fail open — a status check must never
+        // block checkout).
+        try
+        {
+            var flags = await Wave4Service.GetFeatureFlagMapAsync();
+            _giftWrapEnabled = GetFlag(flags, "gift-wrap", true);
+            _referralsEnabled = GetFlag(flags, "referrals", true);
+            _luckySpinEnabled = GetFlag(flags, "lucky-spin", true);
+        }
+        catch (Exception)
+        {
+        }
+
+        // Item 109: active branches for the branch picker.
+        try
+        {
+            _branches = await Wave4Service.GetActiveBranchesAsync();
+        }
+        catch (Exception)
+        {
+            _branches = new System.Collections.Generic.List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.BranchModel>();
+        }
+
         RefreshMinOrderState();
         CartState.OnChange += OnCartChanged;
+    }
+
+    private static bool GetFlag(System.Collections.Generic.Dictionary<string, bool> flags, string key, bool fallback)
+    {
+        return flags != null && flags.TryGetValue(key, out var enabled) ? enabled : fallback;
+    }
+
+    /// <summary>Item 109: branch picker.</summary>
+    private void OnBranchChanged(ChangeEventArgs e)
+    {
+        _branchId = Guid.TryParse(e.Value?.ToString(), out var id) ? id : (Guid?)null;
+    }
+
+    /// <summary>Item 119: address book — load saved addresses with the phone lookup.</summary>
+    private async Task LoadAddressBookAsync(string phone)
+    {
+        try
+        {
+            _addresses = await Wave4Service.GetAddressesAsync(phone);
+        }
+        catch (Exception)
+        {
+            _addresses = new System.Collections.Generic.List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.AddressBookModel>();
+        }
+    }
+
+    private void UseSavedAddress(PhuThuongStickyRice.Blazor.Modules.Admin.Models.AddressBookModel address)
+    {
+        _order.CustomerAddress = address.Address;
+        _addressError = null;
+        _addressSavedMessage = null;
+    }
+
+    /// <summary>Item 119: save the current address under a quick label.</summary>
+    private async Task SaveCurrentAddressAsync()
+    {
+        _addressSavedMessage = null;
+        var phone = (_order.CustomerPhone ?? "").Trim();
+        var address = (_order.CustomerAddress ?? "").Trim();
+        if (!IsValidPhone(phone))
+        {
+            _addressSavedMessage = "Vui lòng nhập số điện thoại hợp lệ trước.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            _addressSavedMessage = "Vui lòng nhập địa chỉ trước.";
+            return;
+        }
+
+        _savingAddress = true;
+        try
+        {
+            var label = "Địa chỉ " + ((_addresses?.Count ?? 0) + 1);
+            await Wave4Service.SaveAddressAsync(phone, label, address);
+            await LoadAddressBookAsync(phone);
+            _addressSavedMessage = $"Đã lưu \"{label}\".";
+        }
+        catch (Exception ex)
+        {
+            _addressSavedMessage = "Không lưu được: " + ex.Message;
+        }
+        finally
+        {
+            _savingAddress = false;
+        }
     }
 
     private void OnCartChanged()
@@ -849,6 +1014,9 @@ else
             // Best effort only — the form works fine without the suggestion.
         }
 
+        // Item 119: address book for this phone.
+        await LoadAddressBookAsync(phone);
+
         // Loyalty summary (points, tier, referral code) for the phone.
         try
         {
@@ -893,6 +1061,7 @@ else
         {
             _discountAmount = 0;
             _appliedCode = null;
+            _isFreeship = false;
             _discountMessage = "Vui lòng nhập mã giảm giá.";
             return;
         }
@@ -905,12 +1074,14 @@ else
             {
                 _discountAmount = result.DiscountAmount;
                 _appliedCode = code.ToUpperInvariant();
+                _isFreeship = result.IsFreeship;
                 _discountMessage = result.Message;
             }
             else
             {
                 _discountAmount = 0;
                 _appliedCode = null;
+                _isFreeship = false;
                 _discountMessage = result.Message;
             }
         }
@@ -918,6 +1089,7 @@ else
         {
             _discountAmount = 0;
             _appliedCode = null;
+            _isFreeship = false;
             _discountMessage = "Không kiểm tra được mã giảm giá. Vui lòng thử lại.";
         }
         finally
@@ -1010,6 +1182,7 @@ else
             _order.DiscountCode = _appliedCode;
             _order.FulfillmentMethod = _fulfillment;
             _order.RedeemPoints = _redeemPoints;
+            _order.BranchId = _branchId;
 
             // Item 97: fresh idempotency key per submit attempt, kept in memory.
             _order.IdempotencyKey = Guid.NewGuid().ToString("D");

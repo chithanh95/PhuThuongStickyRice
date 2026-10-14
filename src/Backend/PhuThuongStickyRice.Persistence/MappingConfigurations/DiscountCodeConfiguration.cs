@@ -23,6 +23,7 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.IsActive).IsRequired();
 
             builder.Property(x => x.OwnerPhone).HasMaxLength(30);
+            builder.Property(x => x.VoucherType).IsRequired();
         }
     }
 }

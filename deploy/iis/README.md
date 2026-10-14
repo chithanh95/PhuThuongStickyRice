@@ -79,6 +79,32 @@ Invoke-RestMethod -Uri http://localhost:5001/api/auth/change-password -Method Po
 | Migrator báo lỗi DbUp | Xem log console lúc chạy Migrator; thường do DB chưa tạo được (sai connection string) hoặc bảng đã tồn tại do chạy migration 2 lần. |
 | Upload ảnh landing báo lỗi / ảnh không hiện | App pool identity (`IIS AppPool\PhuThuong`) chưa có quyền **ghi** vào thư mục `publish\api\wwwroot\uploads\landing`. Trong Explorer → chuột phải thư mục → Properties → Security → cấp quyền **Modify** cho `IIS AppPool\PhuThuong`, rồi thử upload lại. |
 
+### Bật nén HTTP trên IIS (khuyến nghị cho production)
+
+App đã bật sẵn response compression middleware (Brotli + Gzip) cho các API
+response — hoạt động ngay không cần cấu hình. Ngoài ra, nên bật nén ở tầng
+IIS để nén cả file tĩnh (Blazor WASM, ảnh, CSS):
+
+1. **Cài Dynamic + Static Compression**: Server Manager → Add Roles and
+   Features → Web Server (IIS) → Performance → chọn **Static Content
+   Compression** và **Dynamic Content Compression** → cài đặt rồi `iisreset`.
+2. **Bật trên site** (IIS Manager → site PhuThuong → Compression): tick
+   **Enable dynamic content compression** và **Enable static content
+   compression**.
+3. **Dynamic types mặc định không nén JSON**. Nếu muốn nén thêm JSON qua IIS,
+   thêm vào `web.config` của site trong `<system.webServer>`:
+   ```xml
+   <httpCompression>
+     <dynamicTypes>
+       <add mimeType="application/json" enabled="true" />
+       <add mimeType="application/json; charset=utf-8" enabled="true" />
+     </dynamicTypes>
+   </httpCompression>
+   ```
+   (Không bắt buộc — middleware Brotli/Gzip của app đã xử lý JSON.)
+4. **Kiểm tra**: mở DevTools → Network → tải lại `/shop` → response header
+   phải có `content-encoding: br` (hoặc `gzip`) và dung lượng nhỏ hơn nhiều.
+
 ## Ghi chú
 
 - Không cần chạy BackgroundServer khi test local (mail đang ở chế độ Fake).

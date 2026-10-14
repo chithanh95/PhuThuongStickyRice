@@ -88,6 +88,74 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public string WebBaseUrl { get; set; }
 
+        /// <summary>
+        /// Maintenance mode (bảo trì). When true, the public WASM app shows
+        /// a friendly maintenance page; /login, /admin/* and /bep still work.
+        /// </summary>
+        public bool MaintenanceMode { get; set; }
+
+        /// <summary>Message shown on the maintenance page.</summary>
+        public string MaintenanceMessage { get; set; }
+
+        /// <summary>
+        /// Telegram bot token for health alerts. Empty = Telegram disabled.
+        /// Secrets stay server-side; this is admin-configurable on purpose.
+        /// </summary>
+        public string TelegramBotToken { get; set; }
+
+        /// <summary>Telegram chat id receiving health alerts. Empty = disabled.</summary>
+        public string TelegramChatId { get; set; }
+
+        /// <summary>When false, the SystemHealth worker only logs. Default true.</summary>
+        public bool HealthAlertsEnabled { get; set; }
+
+        /// <summary>
+        /// Error entries in the last hour above this count trigger a health
+        /// alert. Default 20.
+        /// </summary>
+        public int ErrorRateThreshold { get; set; }
+
+        /// <summary>
+        /// Uploads folder size (MB) above which /admin/he-thong shows a
+        /// warning banner. Default 500.
+        /// </summary>
+        public int UploadsSizeWarningMb { get; set; }
+
+        // ---- Payment config (item 106): non-secret display values, admin-editable
+        // at /admin/thanh-toan. Secrets stay in appsettings/Production.json. ----
+
+        /// <summary>Bank transfer: bank display name, e.g. "Vietcombank".</summary>
+        public string BankName { get; set; }
+
+        /// <summary>Bank transfer: VietQR bank code, e.g. "VCB".</summary>
+        public string BankId { get; set; }
+
+        /// <summary>Bank transfer: account number.</summary>
+        public string BankAccountNumber { get; set; }
+
+        /// <summary>Bank transfer: account holder name.</summary>
+        public string BankAccountName { get; set; }
+
+        /// <summary>Bank transfer: VietQR image template (compact/compact2/qr_only).</summary>
+        public string BankQrTemplate { get; set; }
+
+        /// <summary>MoMo: partner code (non-secret). AccessKey/SecretKey stay in appsettings.</summary>
+        public string MoMoPartnerCode { get; set; }
+
+        /// <summary>MoMo: create-payment endpoint URL override. Empty = appsettings.</summary>
+        public string MoMoEndpoint { get; set; }
+
+        // ---- Cloud image backup (item 114) ----
+
+        /// <summary>
+        /// Image backup provider name, e.g. "None" (default) or "S3".
+        /// Only "None" is implemented; see docs for adding a provider.
+        /// </summary>
+        public string ImageBackupProvider { get; set; }
+
+        /// <summary>JSON settings for the image backup provider (e.g. connection string).</summary>
+        public string ImageBackupSettingsJson { get; set; }
+
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting
@@ -112,7 +180,23 @@ namespace PhuThuongStickyRice.Domain.Entities
                 UnconfirmedAlertMinutes = 15,
                 RecaptchaSiteKey = null,
                 RecaptchaSecretKey = null,
-                WebBaseUrl = null
+                WebBaseUrl = null,
+                MaintenanceMode = false,
+                MaintenanceMessage = "Cửa hàng đang bảo trì, vui lòng quay lại sau.",
+                TelegramBotToken = null,
+                TelegramChatId = null,
+                HealthAlertsEnabled = true,
+                ErrorRateThreshold = 20,
+                UploadsSizeWarningMb = 500,
+                BankName = null,
+                BankId = null,
+                BankAccountNumber = null,
+                BankAccountName = null,
+                BankQrTemplate = null,
+                MoMoPartnerCode = null,
+                MoMoEndpoint = null,
+                ImageBackupProvider = "None",
+                ImageBackupSettingsJson = null
             };
         }
     }

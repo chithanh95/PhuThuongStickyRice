@@ -16,6 +16,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
     [Route("api/[controller]")]
+    // Item 107: versioned prefix — both routes stay live.
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class OrdersController : ControllerBase
     {

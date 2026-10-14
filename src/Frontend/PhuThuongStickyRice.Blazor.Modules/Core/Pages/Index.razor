@@ -12,6 +12,7 @@
 @inject ShopService ShopService
 @inject CartState CartState
 @inject ToastService Toasts
+@inject PhuThuongStickyRice.Blazor.Modules.Admin.Services.Wave4Service Wave4Service
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
 <!-- 0. FLASH BANNER (item 94) -->
@@ -289,6 +290,9 @@
     private bool _popupChecked;
     private const string PopupSeenKey = "phuthuong.popup.seen";
 
+    // Item 105: promo-popup feature flag.
+    private bool _promoPopupEnabled = true;
+
     /// <summary>
     /// Converts a YouTube watch/share URL to an embed URL.
     /// Returns null when no video is configured.
@@ -361,6 +365,16 @@
             _publicReviews = new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.PublicReviewModel>();
         }
 
+        // Item 105: promo-popup feature flag (fail open).
+        try
+        {
+            var flags = await Wave4Service.GetFeatureFlagMapAsync();
+            _promoPopupEnabled = flags == null || !flags.TryGetValue("promo-popup", out var on) || on;
+        }
+        catch (Exception)
+        {
+        }
+
         try
         {
             var paged = await ShopService.GetProductsAsync();
@@ -387,7 +401,7 @@
     /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_popupChecked && _content.PopupActive)
+        if (firstRender && !_popupChecked && _content.PopupActive && _promoPopupEnabled)
         {
             _popupChecked = true;
             try

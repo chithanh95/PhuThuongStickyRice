@@ -27,6 +27,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [Authorize(Roles = "Admin")]
     [Produces("application/json")]
     [Route("api/[controller]")]
+    // Item 107: versioned prefix — both routes stay live.
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class ProductsController : ControllerBase
     {
@@ -59,6 +61,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet]
         public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
             [FromQuery] string searchTerm = null, [FromQuery] string status = null,
+            [FromQuery] Guid? branch = null,
             CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Getting products");
@@ -67,7 +70,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 MaxResultCount = pageSize < 1 ? 20 : pageSize,
                 SkipCount = (page < 1 ? 0 : page - 1) * (pageSize < 1 ? 20 : pageSize),
                 SearchTerm = searchTerm,
-                Status = status
+                Status = status,
+                BranchId = branch
             });
             return Ok(paged);
         }
@@ -112,7 +116,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     IsNew = model.IsNew,
                     IsSignature = model.IsSignature,
                     AvailableFrom = model.AvailableFrom,
-                    AvailableTo = model.AvailableTo
+                    AvailableTo = model.AvailableTo,
+                    BranchId = model.BranchId
                 });
                 return Created($"/api/products/{created.Id}", created);
             }
@@ -151,7 +156,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     IsNew = model.IsNew,
                     IsSignature = model.IsSignature,
                     AvailableFrom = model.AvailableFrom,
-                    AvailableTo = model.AvailableTo
+                    AvailableTo = model.AvailableTo,
+                    BranchId = model.BranchId
                 });
                 return Ok(dto);
             }

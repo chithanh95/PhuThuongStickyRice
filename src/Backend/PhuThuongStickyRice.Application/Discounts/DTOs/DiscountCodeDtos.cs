@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Domain.Entities;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -33,6 +34,9 @@ namespace PhuThuongStickyRice.Application.Discounts.DTOs
 
         /// <summary>Phone the code is tied to (lucky-spin / birthday vouchers).</summary>
         public string OwnerPhone { get; set; }
+
+        /// <summary>Voucher type (item 120): Discount or Freeship.</summary>
+        public VoucherType VoucherType { get; set; }
     }
 
     /// <summary>
@@ -76,6 +80,9 @@ namespace PhuThuongStickyRice.Application.Discounts.DTOs
         public int? MaxUses { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        /// <summary>Voucher type (item 120): Discount (giảm giá) or Freeship (miễn phí ship).</summary>
+        public VoucherType VoucherType { get; set; } = VoucherType.Discount;
     }
 
     public class ValidateDiscountInput
@@ -101,5 +108,8 @@ namespace PhuThuongStickyRice.Application.Discounts.DTOs
 
         /// <summary>Discount in VND for the given subtotal (0 when invalid).</summary>
         public decimal DiscountAmount { get; set; }
+
+        /// <summary>True when the code is a freeship voucher: fee becomes 0.</summary>
+        public bool IsFreeship { get; set; }
     }
 }

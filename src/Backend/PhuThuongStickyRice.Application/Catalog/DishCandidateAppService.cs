@@ -55,6 +55,13 @@ namespace PhuThuongStickyRice.Application.Catalog
         [AllowAnonymous]
         public async Task<DishCandidateDto> VoteAsync(Guid id)
         {
+            // Item 105: dish-voting is feature-flagged (UI hides it too).
+            var flags = LazyServiceProvider.LazyGetRequiredService<Wave4.IFeatureFlagAppService>();
+            if (!await flags.IsEnabledAsync(FeatureFlag.DishVoting))
+            {
+                throw new Domain.Exceptions.DomainException("Bình chọn món mới hiện đang tắt.");
+            }
+
             var entity = await _candidates.FindAsync(id);
             if (entity == null || !entity.IsActive)
             {

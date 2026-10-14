@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Orders.Exceptions;
+using PhuThuongStickyRice.Application.Wave4;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.Repositories;
@@ -24,19 +25,26 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
     /// the create-signature for verification. With real credentials
     /// (TestMode = false) the service posts the signed create request to MoMo
     /// and verifies the signed IPN callback the same way.
+    ///
+    /// Item 106: non-secret values (PartnerCode, Endpoint) are read from the
+    /// database first (admin-editable at /admin/thanh-toan), falling back to
+    /// appsettings. Secrets stay in appsettings only.
     /// </summary>
     public class MoMoPaymentService : IMoMoPaymentService
     {
         private const string RequestType = "captureWallet";
 
         private readonly IOrderRepository _orders;
-        private readonly MoMoOptions _options;
+        private readonly IPaymentConfigProvider _paymentConfig;
         private readonly HttpClient _httpClient;
 
-        public MoMoPaymentService(IOrderRepository orders, MoMoOptions options, HttpClient httpClient)
+        public MoMoPaymentService(
+            IOrderRepository orders,
+            IPaymentConfigProvider paymentConfig,
+            HttpClient httpClient)
         {
             _orders = orders;
-            _options = options;
+            _paymentConfig = paymentConfig;
             _httpClient = httpClient;
         }
 
@@ -51,6 +59,8 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             {
                 throw new DomainException("Order is already paid.");
             }
+
+            var _options = await _paymentConfig.GetMoMoAsync();
 
             var requestId = order.Id.ToString("N");
             var amount = (long)order.TotalAmount.Amount;
@@ -134,6 +144,8 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
 
         public async Task<Order> HandleCallbackAsync(MoMoCallbackDto callback)
         {
+            var _options = await _paymentConfig.GetMoMoAsync();
+
             if (callback == null)
             {
                 throw new DomainException("MoMo callback payload is required.");
@@ -141,15 +153,15 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
 
             if (callback.Simulated)
             {
-                return await HandleSimulatedCallbackAsync(callback);
+                return await HandleSimulatedCallbackAsync(callback, _options);
             }
 
-            return await HandleRealCallbackAsync(callback);
+            return await HandleRealCallbackAsync(callback, _options);
         }
 
-        private async Task<Order> HandleSimulatedCallbackAsync(MoMoCallbackDto callback)
+        private async Task<Order> HandleSimulatedCallbackAsync(MoMoCallbackDto callback, MoMoOptions options)
         {
-            if (!_options.TestMode)
+            if (!options.TestMode)
             {
                 throw new DomainException("Simulated MoMo callbacks are only accepted in TestMode.");
             }
@@ -167,7 +179,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
 
             // Verify the echoed create-signature: recompute it from the same
             // deterministic inputs used at create time.
-            var expectedSignature = BuildCreateSignature(order);
+            var expectedSignature = await BuildCreateSignatureAsync(order);
             if (!string.Equals(expectedSignature, callback.SimulatedSignature, StringComparison.Ordinal))
             {
                 throw new DomainException("Invalid simulated MoMo signature.");
@@ -176,7 +188,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             return await ApplyResultAsync(order, callback.ResultCode);
         }
 
-        private async Task<Order> HandleRealCallbackAsync(MoMoCallbackDto callback)
+        private async Task<Order> HandleRealCallbackAsync(MoMoCallbackDto callback, MoMoOptions options)
         {
             // In a real IPN, MoMo's orderId is our merchant order number.
             var order = await _orders.GetByOrderNumberAsync(callback.OrderId);
@@ -191,12 +203,12 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             }
 
             var rawString = MoMoSignatureHelper.BuildCallbackRawString(
-                _options.AccessKey, callback.Amount, callback.ExtraData ?? string.Empty,
+                options.AccessKey, callback.Amount, callback.ExtraData ?? string.Empty,
                 callback.Message ?? string.Empty, callback.OrderId, callback.OrderInfo ?? string.Empty,
-                "momo_wallet", _options.PartnerCode, callback.PayType ?? string.Empty,
+                "momo_wallet", options.PartnerCode, callback.PayType ?? string.Empty,
                 callback.RequestId ?? string.Empty, callback.ResponseTime, callback.ResultCode,
                 callback.TransId ?? string.Empty);
-            var expectedSignature = MoMoSignatureHelper.Sign(rawString, _options.SecretKey);
+            var expectedSignature = MoMoSignatureHelper.Sign(rawString, options.SecretKey);
             if (!string.Equals(expectedSignature, callback.Signature, StringComparison.Ordinal))
             {
                 throw new DomainException("Invalid MoMo callback signature.");
@@ -231,17 +243,18 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             return order;
         }
 
-        private string BuildCreateSignature(Order order)
+        private async Task<string> BuildCreateSignatureAsync(Order order)
         {
+            var options = await _paymentConfig.GetMoMoAsync();
             var requestId = order.Id.ToString("N");
             var amount = (long)order.TotalAmount.Amount;
             var orderInfo = $"Thanh toan don hang {order.OrderNumber} - Xoi Phu Thuong";
-            var redirectUrl = $"{_options.StorefrontBaseUrl.TrimEnd('/')}/track-order?orderNumber={Uri.EscapeDataString(order.OrderNumber)}";
-            var ipnUrl = $"{_options.ApiBaseUrl.TrimEnd('/')}/api/payments/momo/callback";
+            var redirectUrl = $"{options.StorefrontBaseUrl.TrimEnd('/')}/track-order?orderNumber={Uri.EscapeDataString(order.OrderNumber)}";
+            var ipnUrl = $"{options.ApiBaseUrl.TrimEnd('/')}/api/payments/momo/callback";
             var rawString = MoMoSignatureHelper.BuildCreateRawString(
-                _options.PartnerCode, _options.AccessKey, requestId, amount,
+                options.PartnerCode, options.AccessKey, requestId, amount,
                 order.OrderNumber, orderInfo, redirectUrl, ipnUrl, RequestType);
-            return MoMoSignatureHelper.Sign(rawString, _options.SecretKey);
+            return MoMoSignatureHelper.Sign(rawString, options.SecretKey);
         }
     }
 }

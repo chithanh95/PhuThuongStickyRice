@@ -1,0 +1,316 @@
+@page "/admin/webhooks"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Core.Components
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@inject Wave4Service Wave4Service
+
+<h3>Webhooks</h3>
+<p class="text-muted">Gửi sự kiện <code>OrderCreated</code> / <code>OrderStatusChanged</code> tới URL của bạn (POST JSON, ký HMAC-SHA256 trong header <code>X-Webhook-Signature</code>).</p>
+
+<ConfirmDialog @ref="_deleteDialog"
+               Title="Xóa webhook"
+               YesText="Xóa"
+               NoText="Hủy"
+               ConfirmEventCallback="ConfirmedDelete">
+    <Message>Xóa webhook <strong>@_deleting?.Name</strong>?</Message>
+</ConfirmDialog>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">@(_editingId == null ? "Thêm webhook" : "Sửa webhook")</div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label>Tên *</label>
+                <input class="form-control" @bind="_form.Name" placeholder="VD: KDS bếp" />
+            </div>
+            <div class="form-group col-md-5">
+                <label>URL *</label>
+                <input class="form-control" @bind="_form.Url" placeholder="https://..." />
+            </div>
+            <div class="form-group col-md-4">
+                <label>Secret ký HMAC <small class="text-muted">(để trống giữ nguyên)</small></label>
+                <input class="form-control" @bind="_form.Secret" placeholder="Chuỗi bí mật" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6 d-flex align-items-center flex-wrap">
+                <div class="form-check mr-4">
+                    <input class="form-check-input" type="checkbox" id="wh-ev-created" @bind="_form.WantsOrderCreated" />
+                    <label class="form-check-label" for="wh-ev-created"><code>OrderCreated</code></label>
+                </div>
+                <div class="form-check mr-4">
+                    <input class="form-check-input" type="checkbox" id="wh-ev-status" @bind="_form.WantsOrderStatusChanged" />
+                    <label class="form-check-label" for="wh-ev-status"><code>OrderStatusChanged</code></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="wh-active" @bind="_form.IsActive" />
+                    <label class="form-check-label" for="wh-active">Đang hoạt động</label>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+            @(_saving ? "Đang lưu..." : (_editingId == null ? "Thêm webhook" : "Cập nhật"))
+        </button>
+        @if (_editingId != null)
+        {
+            <button class="btn btn-outline-secondary ml-2" @onclick="CancelEdit">Hủy</button>
+        }
+    </div>
+</div>
+
+@if (_endpoints == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_endpoints.Count == 0)
+{
+    <div class="alert alert-info">Chưa có webhook nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Tên</th>
+                    <th>URL</th>
+                    <th>Sự kiện</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var w in _endpoints)
+                {
+                    <tr>
+                        <td><strong>@w.Name</strong></td>
+                        <td class="text-break" style="max-width: 320px;">@w.Url</td>
+                        <td><small><code>@w.Events</code></small></td>
+                        <td>
+                            @if (w.IsActive)
+                            {
+                                <span class="badge badge-success">Bật</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary">Tắt</span>
+                            }
+                            @if (w.HasSecret)
+                            {
+                                <span class="badge badge-info ml-1" title="Đã cấu hình secret ký HMAC">🔑</span>
+                            }
+                        </td>
+                        <td class="text-right text-nowrap">
+                            <button class="btn btn-sm btn-outline-info" @onclick="() => TestAsync(w)" disabled="@_testing.Contains(w.Id)">
+                                @(_testing.Contains(w.Id) ? "Đang gửi..." : "Gửi thử")
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(w)">Sửa</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(w)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<h4 class="mt-4">Nhật ký gửi <small class="text-muted">(50 lần gần nhất)</small></h4>
+@if (_deliveries == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_deliveries.Count == 0)
+{
+    <div class="alert alert-info">Chưa có lần gửi nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Endpoint</th>
+                    <th>Sự kiện</th>
+                    <th>Kết quả</th>
+                    <th>Chi tiết</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in _deliveries)
+                {
+                    <tr>
+                        <td>@d.At.ToLocalTime().ToString("dd/MM HH:mm:ss")</td>
+                        <td>@d.EndpointName</td>
+                        <td><code>@d.Event</code></td>
+                        <td>
+                            @if (d.Success)
+                            {
+                                <span class="badge badge-success">OK @(d.StatusCode)</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger">Lỗi @(d.StatusCode)</span>
+                            }
+                        </td>
+                        <td><small class="text-muted">@d.Error</small></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<WebhookEndpointModel> _endpoints;
+    private List<WebhookDeliveryModel> _deliveries;
+    private WebhookEndpointModel _form = new WebhookEndpointModel();
+    private Guid? _editingId;
+    private WebhookEndpointModel _deleting;
+    private ConfirmDialog _deleteDialog;
+    private string _error;
+    private string _success;
+    private bool _saving;
+    private readonly HashSet<Guid> _testing = new HashSet<Guid>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        try
+        {
+            _deliveries = await Wave4Service.GetWebhookDeliveriesAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được nhật ký gửi: " + ex.Message;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _endpoints = await Wave4Service.GetWebhooksAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được webhooks: " + ex.Message;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        if (string.IsNullOrWhiteSpace(_form.Name) || string.IsNullOrWhiteSpace(_form.Url))
+        {
+            _error = "Vui lòng nhập tên và URL.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (_editingId == null)
+            {
+                await Wave4Service.CreateWebhookAsync(_form);
+                _success = "Đã thêm webhook.";
+            }
+            else
+            {
+                await Wave4Service.UpdateWebhookAsync(_editingId.Value, _form);
+                _success = "Đã cập nhật webhook.";
+            }
+
+            _form = new WebhookEndpointModel();
+            _editingId = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không lưu được: " + ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void StartEdit(WebhookEndpointModel w)
+    {
+        _editingId = w.Id;
+        _form = new WebhookEndpointModel
+        {
+            Name = w.Name,
+            Url = w.Url,
+            IsActive = w.IsActive,
+            WantsOrderCreated = (w.Events ?? string.Empty).Contains("OrderCreated"),
+            WantsOrderStatusChanged = (w.Events ?? string.Empty).Contains("OrderStatusChanged")
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _form = new WebhookEndpointModel();
+    }
+
+    private void AskDelete(WebhookEndpointModel w)
+    {
+        _deleting = w;
+        _deleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete()
+    {
+        try
+        {
+            await Wave4Service.DeleteWebhookAsync(_deleting.Id);
+            _success = "Đã xóa webhook.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không xóa được: " + ex.Message;
+        }
+    }
+
+    private async Task TestAsync(WebhookEndpointModel w)
+    {
+        _error = null;
+        _success = null;
+        _testing.Add(w.Id);
+        try
+        {
+            var delivery = await Wave4Service.TestWebhookAsync(w.Id);
+            if (delivery.Success)
+            {
+                _success = $"Gửi thử tới \"{w.Name}\" thành công (HTTP {delivery.StatusCode}).";
+            }
+            else
+            {
+                _error = $"Gửi thử thất bại: {delivery.Error ?? $"HTTP {delivery.StatusCode}"}.";
+            }
+
+            _deliveries = await Wave4Service.GetWebhookDeliveriesAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không gửi thử được: " + ex.Message;
+        }
+        finally
+        {
+            _testing.Remove(w.Id);
+        }
+    }
+}

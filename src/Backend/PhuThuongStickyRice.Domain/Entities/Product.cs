@@ -60,6 +60,18 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public DateTime? AvailableTo { get; private set; }
 
+        /// <summary>
+        /// Branch the product belongs to (nullable). Null = available at
+        /// all branches. Pricing stays global (item 109).
+        /// </summary>
+        public Guid? BranchId { get; private set; }
+
+        /// <summary>Assigns or clears the branch.</summary>
+        public void ChangeBranch(Guid? branchId)
+        {
+            BranchId = branchId;
+        }
+
         // EF Core
         private Product()
         {
