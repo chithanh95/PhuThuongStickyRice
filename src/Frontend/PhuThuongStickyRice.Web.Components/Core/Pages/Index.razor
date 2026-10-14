@@ -19,6 +19,10 @@
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito:wght@400;600;700;800;900&display=swap&subset=vietnamese" rel="stylesheet" />
+
 @* Wave 6d (item 38): friendly full-page error when the initial API load
    fails, reusing the PWA offline.html visual language. *@
 @if (_loadFailed)
@@ -34,341 +38,429 @@
 }
 else
 {
+<div class="xo-page">
 
 <!-- 0. FLASH BANNER (item 94) -->
 @if (!_bannerDismissed && _content.FlashBannerActive && !string.IsNullOrWhiteSpace(_content.FlashBannerText))
 {
-    <div class="rw-flash" role="alert">
+    <div class="xo-flash" role="alert">
         <span>⚡ @_content.FlashBannerText</span>
-        <button type="button" class="rw-flash-close" aria-label="Đóng" @onclick="() => _bannerDismissed = true">×</button>
+        <button type="button" class="xo-flash-close" aria-label="Đóng" @onclick="() => _bannerDismissed = true">×</button>
     </div>
 }
 
 <!-- 1. STICKY HEADER -->
-<header class="rw-header">
-    <nav class="rw-nav">
-        <a href="#gioi-thieu">Giới thiệu</a>
-        <a href="#thuc-don">Thực đơn</a>
-        <a href="#danh-gia">Đánh giá</a>
-        <a href="#lien-he">Liên hệ</a>
-    </nav>
-    <a class="rw-logo" href="/">
-        <span class="rw-logo-main">Xôi Phú Thượng</span>
-        <span class="rw-logo-sub">Vietnamese Sticky Rice</span>
-    </a>
-    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
-    {
-        <a class="rw-hotline" href="tel:@_content.ContactPhone">Hotline: @_content.ContactPhone</a>
-    }
-    else
-    {
-        <a class="rw-hotline" href="/shop">Đặt xôi ngay</a>
-    }
+<header class="xo-header">
+    <div class="xo-header-inner">
+        <input type="checkbox" id="xo-nav-toggle" class="xo-nav-checkbox" />
+        <nav class="xo-nav">
+            <a href="#gioi-thieu">Giới thiệu</a>
+            <a href="#uu-dai">Ưu đãi</a>
+            <a href="#dat-xoi">Đặt xôi</a>
+            <a href="#lien-he">Liên hệ</a>
+        </nav>
+        <a class="xo-logo" href="/">
+            <span class="xo-logo-main">Xôi Phú Thượng</span>
+            <span class="xo-logo-sub">Vietnamese Cuisine</span>
+        </a>
+        <div class="xo-header-right">
+            @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+            {
+                <a class="xo-hotline" href="tel:@_content.ContactPhone">Hotline: @_content.ContactPhone</a>
+            }
+            else
+            {
+                <a class="xo-hotline" href="/shop">Đặt xôi ngay</a>
+            }
+            <label for="xo-nav-toggle" class="xo-hamburger" aria-label="Menu"><span></span><span></span><span></span></label>
+        </div>
+    </div>
 </header>
 
-<!-- 2. HERO -->
-<section class="rw-hero">
-    <div class="rw-hero-inner">
-        <div class="rw-hero-text">
+<!-- 2. HERO: banner khuyến mãi -->
+<section class="xo-hero">
+    <div class="xo-hero-inner">
+        <div class="xo-hero-text">
             @if (!string.IsNullOrEmpty(_openStatusText))
             {
-                <div class="rw-openbadge @(_openNow ? "is-open" : "is-closed")">@_openStatusText</div>
+                <div class="xo-openbadge @(_openNow ? "is-open" : "is-closed")">@_openStatusText</div>
             }
-            <p class="rw-hero-kicker">Xôi Phú Thượng &bull; Vietnamese Cuisine</p>
-            <h1 class="rw-hero-title">@_content.HeroTitle</h1>
-            <p class="rw-hero-tag">@_content.HeroTagline</p>
-            <div class="rw-hero-cta">
-                <a href="/shop" class="rw-btn rw-btn-brick">@_content.HeroButtonText</a>
-                <a href="#thuc-don" class="rw-btn rw-btn-ghost">Xem thực đơn</a>
+            <p class="xo-hero-kicker">Xôi Phú Thượng &bull; Vietnamese Cuisine</p>
+            <h1 class="xo-hero-title">@_content.HeroTitle</h1>
+            <p class="xo-hero-tag">@_content.HeroTagline</p>
+            <div class="xo-hero-promos">
+                <div class="xo-promo-badge"><strong>-15%</strong><span>Đặt trước<br />qua web</span></div>
+                <div class="xo-promo-badge"><strong>-10%</strong><span>Đơn từ<br />10 gói</span></div>
+                <div class="xo-promo-badge"><strong>-5%</strong><span>Khách<br />thân thiết</span></div>
+            </div>
+            <div class="xo-hero-cta">
+                <a href="/shop" class="xo-btn xo-btn-red">@_content.HeroButtonText</a>
+                <a href="#thuc-don" class="xo-btn xo-btn-ghost">Xem thực đơn</a>
             </div>
         </div>
-        <div class="rw-hero-imgwrap">
+        <div class="xo-hero-imgwrap">
             <img loading="lazy" src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg")"
-                 alt="Xôi Phú Thượng" class="rw-hero-img" />
+                 alt="Xôi Phú Thượng" class="xo-hero-img" />
         </div>
     </div>
 </section>
 
 <!-- 3. GIỚI THIỆU -->
-<section class="rw-section" id="gioi-thieu">
-    <div class="rw-sec-head">
-        <h2 class="rw-sec-title">@_content.StoryTitle</h2>
-        <div class="rw-sec-div"><span></span><em>Xoi Phu Thuong Vietnamese Cuisine</em><span></span></div>
-    </div>
-    <div class="rw-about-imgs">
-        <img loading="lazy" src="@Img(_content.MenuImage1Url, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg")" alt="@_content.MenuLabel1" />
-        <img loading="lazy" src="@Img(_content.MenuImage2Url, "_content/PhuThuongStickyRice.Web.Components/images/xoi-xeo.svg")" alt="@_content.MenuLabel2" />
-        <img loading="lazy" src="@Img(_content.MenuImage3Url, "_content/PhuThuongStickyRice.Web.Components/images/xoi-ngu-sac.svg")" alt="@_content.MenuLabel3" />
-    </div>
-    <p class="rw-about-text">@_content.StoryBody</p>
-    <div class="rw-center">
-        <a href="/shop" class="rw-btn rw-btn-brick">Đặt xôi ngay</a>
+<section class="xo-section xo-about" id="gioi-thieu">
+    <div class="xo-container">
+        <div class="xo-sec-head">
+            <h2 class="xo-sec-title">@_content.StoryTitle</h2>
+            <div class="xo-sec-div"><span></span><em>Xoi Phu Thuong Vietnamese Cuisine</em><span></span></div>
+        </div>
+        <div class="xo-about-grid">
+            <p class="xo-about-text">@_content.StoryBody</p>
+            <div class="xo-about-imgs">
+                <img loading="lazy" src="@Img(_content.MenuImage1Url, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg")" alt="@_content.MenuLabel1" />
+                <img loading="lazy" src="@Img(_content.MenuImage2Url, "_content/PhuThuongStickyRice.Web.Components/images/xoi-xeo.svg")" alt="@_content.MenuLabel2" />
+                <img loading="lazy" src="@Img(_content.MenuImage3Url, "_content/PhuThuongStickyRice.Web.Components/images/xoi-ngu-sac.svg")" alt="@_content.MenuLabel3" />
+            </div>
+        </div>
+        <div class="xo-center">
+            <a href="/shop" class="xo-btn xo-btn-red">Đặt xôi ngay</a>
+        </div>
     </div>
 </section>
 
-<!-- 4. THỰC ĐƠN -->
-<section class="rw-section rw-section-white" id="thuc-don">
-    <div class="rw-sec-head">
-        <h2 class="rw-sec-title">@_content.MenuTitle</h2>
-        <div class="rw-sec-div"><span></span><em>Thực đơn hôm nay</em><span></span></div>
-        @if (_todaySold > 0)
-        {
-            <p class="rw-today-sold">🔥 Hôm nay đã bán @_todaySold gói xôi</p>
-        }
-    </div>
-    <div class="rw-dish-grid">
-        @if (_quickProducts == null)
-        {
-            <p class="rw-muted"><em>Đang tải món ngon...</em></p>
-        }
-        else if (_quickProducts.Count == 0)
-        {
-            <p class="rw-muted"><em>Hiện chưa có món nào.</em></p>
-        }
-        else
-        {
-            @foreach (var product in _quickProducts)
+<!-- 4. ƯU ĐÃI -->
+@if (_content.NewsItems != null && _content.NewsItems.Count > 0)
+{
+    <section class="xo-section" id="uu-dai">
+        <div class="xo-container">
+            <div class="xo-sec-head">
+                <h2 class="xo-sec-title">Ưu đãi tháng này</h2>
+                <div class="xo-sec-div"><span></span><em>Xoi Phu Thuong Vietnamese Cuisine</em><span></span></div>
+            </div>
+            <div class="xo-promo-grid">
+                @foreach (var item in _content.NewsItems)
+                {
+                    <div class="xo-promo-card" @key="item.Title">
+                        <div class="xo-promo-pct">%</div>
+                        <h3 class="xo-promo-title">@item.Title</h3>
+                        <p class="xo-promo-body">@item.Body</p>
+                        @if (!string.IsNullOrWhiteSpace(item.Source))
+                        {
+                            <div class="xo-promo-src">@item.Source</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- 5. THỰC ĐƠN XÔI -->
+<section class="xo-section xo-menu" id="thuc-don">
+    <div class="xo-container">
+        <div class="xo-sec-head">
+            <h2 class="xo-sec-title">@_content.MenuTitle</h2>
+            <div class="xo-sec-div"><span></span><em>Thực đơn hôm nay</em><span></span></div>
+            @if (_todaySold > 0)
             {
-                <div class="rw-dish-card" @key="product.Id">
-                    <div class="rw-dish-imgwrap">
-                        <img loading="lazy" src="@ProductImage(product.Code)" alt="@product.Name" />
-                    </div>
-                    <div class="rw-dish-body">
-                        <h3 class="rw-dish-name">@product.Name</h3>
-                        <div class="rw-dish-price">@FormatPrice(product.Price)</div>
-                        <button class="rw-btn rw-btn-brick rw-dish-btn" @onclick="() => QuickAdd(product)">Thêm vào giỏ</button>
-                    </div>
-                </div>
+                <p class="xo-today-sold">🔥 Hôm nay đã bán @_todaySold gói xôi</p>
             }
-        }
-    </div>
-    <div class="rw-center rw-menu-labels">
-        <span class="rw-oval">@_content.MenuLabel1</span>
-        <span class="rw-oval">@_content.MenuLabel2</span>
-        <span class="rw-oval">@_content.MenuLabel3</span>
-    </div>
-    <div class="rw-center">
-        <a href="/shop" class="rw-btn rw-btn-brick">@_content.HeroButtonText</a>
-        <a href="/cart" class="rw-btn rw-btn-outline">Xem giỏ hàng →</a>
+        </div>
+        <div class="xo-dish-grid">
+            @if (_quickProducts == null)
+            {
+                <p class="xo-muted"><em>Đang tải món ngon...</em></p>
+            }
+            else if (_quickProducts.Count == 0)
+            {
+                <p class="xo-muted"><em>Hiện chưa có món nào.</em></p>
+            }
+            else
+            {
+                @foreach (var product in _quickProducts)
+                {
+                    <div class="xo-dish-card" @key="product.Id">
+                        <div class="xo-dish-imgwrap">
+                            <img loading="lazy" src="@ProductImage(product.Code)" alt="@product.Name" />
+                        </div>
+                        <div class="xo-dish-body">
+                            <h3 class="xo-dish-name">@product.Name</h3>
+                            <div class="xo-dish-price">@FormatPrice(product.Price)</div>
+                            <button class="xo-btn xo-btn-red xo-dish-btn" @onclick="() => QuickAdd(product)">Thêm vào giỏ</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <div class="xo-center xo-menu-labels">
+            <span class="xo-oval">@_content.MenuLabel1</span>
+            <span class="xo-oval">@_content.MenuLabel2</span>
+            <span class="xo-oval">@_content.MenuLabel3</span>
+        </div>
+        <div class="xo-center">
+            <a href="/shop" class="xo-btn xo-btn-red">@_content.HeroButtonText</a>
+            <a href="/cart" class="xo-btn xo-btn-outline">Xem giỏ hàng →</a>
+        </div>
     </div>
 </section>
 
-<!-- 5. ĐÁNH GIÁ -->
+<!-- 6. ĐÁNH GIÁ KHÁCH HÀNG -->
 @if (!string.IsNullOrWhiteSpace(_content.ReviewsEmbedHtml))
 {
-    <section class="rw-reviews-embed">
+    <section class="xo-reviews-embed">
         @((MarkupString)_content.ReviewsEmbedHtml)
     </section>
 }
 @if (_publicReviews != null && _publicReviews.Count > 0)
 {
-    <section class="rw-section" id="danh-gia">
-        <div class="rw-sec-head">
-            <h2 class="rw-sec-title">Khách hàng nói gì</h2>
-            <div class="rw-sec-div"><span></span><em>Đánh giá thật từ đơn hàng</em><span></span></div>
-        </div>
-        <div class="rw-review-grid">
-            @foreach (var r in _publicReviews)
-            {
-                <div class="rw-review-card" @key="r.OrderNumber">
-                    <div class="rw-stars">
-                        @(new string('★', r.Rating))<span>@(new string('★', 5 - r.Rating))</span>
+    <section class="xo-section xo-reviews" id="danh-gia">
+        <div class="xo-container">
+            <div class="xo-sec-head">
+                <h2 class="xo-sec-title">Khách hàng nói gì</h2>
+                <div class="xo-sec-div"><span></span><em>Đánh giá thật từ đơn hàng</em><span></span></div>
+            </div>
+            <div class="xo-review-grid">
+                @foreach (var r in _publicReviews)
+                {
+                    <div class="xo-review-card" @key="r.OrderNumber">
+                        <div class="xo-stars">
+                            @(new string('★', r.Rating))<span>@(new string('★', 5 - r.Rating))</span>
+                        </div>
+                        <p class="xo-review-text">@r.Comment</p>
+                        @if (!string.IsNullOrWhiteSpace(r.AdminReply))
+                        {
+                            <p class="xo-review-reply"><strong>Quán trả lời:</strong> @r.AdminReply</p>
+                        }
+                        <div class="xo-review-who">— SĐT @MaskPhone(r.CustomerPhone)</div>
                     </div>
-                    <p class="rw-review-text">@r.Comment</p>
-                    @if (!string.IsNullOrWhiteSpace(r.AdminReply))
-                    {
-                        <p class="rw-review-reply"><strong>Quán trả lời:</strong> @r.AdminReply</p>
-                    }
-                    <div class="rw-review-who">— SĐT @MaskPhone(r.CustomerPhone)</div>
-                </div>
-            }
+                }
+            </div>
         </div>
     </section>
 }
 
-<!-- 6. TIN TỨC -->
-<section class="rw-section rw-section-white">
-    <div class="rw-sec-head">
-        <h2 class="rw-sec-title">@_content.NewsTitle</h2>
-        <div class="rw-sec-div"><span></span><em>Tin tức &amp; câu chuyện</em><span></span></div>
-    </div>
-    <div class="rw-news-grid">
-        @if (_articles != null && _articles.Count > 0)
-        {
-            @foreach (var item in _articles)
-            {
-                <div class="rw-news-card" @key="item.Id">
-                    @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
-                    {
-                        <img loading="lazy" src="@Img(item.ImageUrl, null)" alt="@item.Title" class="rw-news-img" />
-                    }
-                    <h3 class="rw-news-title">@item.Title</h3>
-                    <p class="rw-news-body">@item.Body</p>
-                    <div class="rw-news-date">@item.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
-                </div>
-            }
-        }
-        else
-        {
-            @foreach (var item in _content.NewsItems)
-            {
-                <div class="rw-news-card" @key="item.Title">
-                    <h3 class="rw-news-title">@item.Title</h3>
-                    <p class="rw-news-body">@item.Body</p>
-                    <div class="rw-news-date">@item.Source</div>
-                </div>
-            }
-        }
-    </div>
-</section>
-
 <!-- 6b. VIDEO -->
 @if (!string.IsNullOrWhiteSpace(VideoEmbedUrl))
 {
-    <section class="rw-section">
-        @if (!string.IsNullOrWhiteSpace(_content.VideoTitle))
-        {
-            <div class="rw-sec-head">
-                <h2 class="rw-sec-title">@_content.VideoTitle</h2>
-                <div class="rw-sec-div"><span></span><em>Video</em><span></span></div>
+    <section class="xo-section xo-video">
+        <div class="xo-container">
+            @if (!string.IsNullOrWhiteSpace(_content.VideoTitle))
+            {
+                <div class="xo-sec-head">
+                    <h2 class="xo-sec-title">@_content.VideoTitle</h2>
+                    <div class="xo-sec-div"><span></span><em>Video</em><span></span></div>
+                </div>
+            }
+            <div class="xo-video-frame">
+                <iframe src="@VideoEmbedUrl" title="@_content.VideoTitle"
+                        frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
             </div>
-        }
-        <div class="rw-video-frame">
-            <iframe src="@VideoEmbedUrl" title="@_content.VideoTitle"
-                    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen></iframe>
         </div>
     </section>
 }
 
 <!-- 7. ĐẶT XÔI NGAY (form) -->
-<section class="rw-section rw-book" id="lien-he">
-    <div class="rw-sec-head">
-        <h2 class="rw-sec-title">Đặt xôi ngay</h2>
-        <div class="rw-sec-div rw-sec-div-light"><span></span><em>Để lại thông tin, quán gọi lại xác nhận</em><span></span></div>
-    </div>
-    <div class="rw-book-grid">
-        <form class="rw-book-form" @onsubmit="SubmitBooking">
-            <label class="rw-field">
-                <span>Tên của bạn *</span>
-                <input @bind="_bookName" placeholder="Nguyễn Văn A" maxlength="100" />
-            </label>
-            <label class="rw-field">
-                <span>Số điện thoại *</span>
-                <input @bind="_bookPhone" placeholder="090..." inputmode="tel" maxlength="15" />
-            </label>
-            <label class="rw-field">
-                <span>Số lượng (gói)</span>
-                <input type="number" @bind="_bookQty" min="1" max="1000" />
-            </label>
-            <label class="rw-field">
-                <span>Ghi chú</span>
-                <textarea @bind="_bookNotes" rows="3" placeholder="Giao lúc mấy giờ, địa chỉ..." maxlength="500"></textarea>
-            </label>
-            @if (!string.IsNullOrEmpty(_bookError))
-            {
-                <p class="rw-book-error">@_bookError</p>
-            }
-            @if (_bookSent)
-            {
-                <p class="rw-book-ok">✓ Cảm ơn bạn! Quán sẽ gọi lại xác nhận đơn ngay.</p>
-            }
-            else
-            {
-                <button type="submit" class="rw-btn rw-btn-orange" disabled="@_bookSending">
-                    @(_bookSending ? "Đang gửi..." : "Gửi")
-                </button>
-            }
-        </form>
-        <div class="rw-book-side">
-            <div class="rw-book-logo">Xôi Phú Thượng<small>Vietnamese Sticky Rice</small></div>
-            <p class="rw-book-note">Chúng tôi hân hạnh được phục vụ quý khách.</p>
-            <ul class="rw-contact-list">
-                @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
+<section class="xo-book" id="dat-xoi">
+    <div class="xo-container">
+        <div class="xo-sec-head xo-sec-head-light">
+            <h2 class="xo-sec-title">Đặt xôi ngay</h2>
+            <div class="xo-sec-div"><span></span><em>Để lại thông tin, quán gọi lại xác nhận</em><span></span></div>
+        </div>
+        <div class="xo-book-grid">
+            <form class="xo-book-form" @onsubmit="SubmitBooking">
+                <label class="xo-field">
+                    <span>Tên của bạn *</span>
+                    <input @bind="_bookName" placeholder="Nguyễn Văn A" maxlength="100" />
+                </label>
+                <label class="xo-field">
+                    <span>Số điện thoại *</span>
+                    <input @bind="_bookPhone" placeholder="090..." inputmode="tel" maxlength="15" />
+                </label>
+                <label class="xo-field">
+                    <span>Số lượng (gói)</span>
+                    <input type="number" @bind="_bookQty" min="1" max="1000" />
+                </label>
+                <label class="xo-field">
+                    <span>Ghi chú</span>
+                    <textarea @bind="_bookNotes" rows="3" placeholder="Giao lúc mấy giờ, địa chỉ..." maxlength="500"></textarea>
+                </label>
+                @if (!string.IsNullOrEmpty(_bookError))
                 {
-                    <li><span class="oi oi-home" aria-hidden="true"></span> @_content.ContactAddress</li>
+                    <p class="xo-book-error">@_bookError</p>
                 }
-                @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+                @if (_bookSent)
                 {
-                    <li><span class="oi oi-phone" aria-hidden="true"></span> @_content.ContactPhone</li>
+                    <p class="xo-book-ok">✓ Cảm ơn bạn! Quán sẽ gọi lại xác nhận đơn ngay.</p>
                 }
-                @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
+                else
                 {
-                    <li><span class="oi oi-envelope-closed" aria-hidden="true"></span> @_content.ContactEmail</li>
+                    <button type="submit" class="xo-btn-send" disabled="@_bookSending">
+                        @(_bookSending ? "Đang gửi..." : "Gửi")
+                    </button>
                 }
-            </ul>
+            </form>
+            <div class="xo-book-side">
+                <div class="xo-book-logo">Xôi Phú Thượng<small>Vietnamese Sticky Rice</small></div>
+                <p class="xo-book-note">Chúng tôi hân hạnh được phục vụ quý khách.</p>
+                <ul class="xo-book-contact">
+                    @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
+                    {
+                        <li><span class="oi oi-home" aria-hidden="true"></span> @_content.ContactAddress</li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+                    {
+                        <li><span class="oi oi-phone" aria-hidden="true"></span> @_content.ContactPhone</li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
+                    {
+                        <li><span class="oi oi-envelope-closed" aria-hidden="true"></span> @_content.ContactEmail</li>
+                    }
+                </ul>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- 8. FOOTER -->
-<footer class="rw-footer">
-    <div class="rw-foot-grid">
-        <div class="rw-foot-col">
-            <h3 class="rw-foot-title">@_content.FooterTitle</h3>
-            <ul class="rw-contact-list">
-                @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
-                {
-                    <li><span class="oi oi-home" aria-hidden="true"></span> @_content.ContactAddress</li>
-                }
-                @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
-                {
-                    <li><span class="oi oi-phone" aria-hidden="true"></span> @_content.ContactPhone</li>
-                }
-                @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
-                {
-                    <li><span class="oi oi-envelope-closed" aria-hidden="true"></span> @_content.ContactEmail</li>
-                }
-            </ul>
-            <a href="/shop" class="rw-btn rw-btn-brick">@_content.FooterButtonText</a>
+<!-- 8. TIN TỨC -->
+<section class="xo-section" id="tin-tuc">
+    <div class="xo-container">
+        <div class="xo-sec-head">
+            <h2 class="xo-sec-title">@_content.NewsTitle</h2>
+            <div class="xo-sec-div"><span></span><em>Tin tức &amp; câu chuyện</em><span></span></div>
         </div>
-        <div class="rw-foot-col">
-            <div class="rw-foot-imgs">
-                <img loading="lazy" src="_content/PhuThuongStickyRice.Web.Components/images/xoi-do.svg" alt="Xôi đỗ" />
-                <img loading="lazy" src="_content/PhuThuongStickyRice.Web.Components/images/xoi-vo.svg" alt="Xôi vò" />
-                <img loading="lazy" src="_content/PhuThuongStickyRice.Web.Components/images/xoi-xeo.svg" alt="Xôi xéo" />
-                <img loading="lazy" src="_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg" alt="Xôi gấc" />
+        <div class="xo-news-grid">
+            @if (_articles != null && _articles.Count > 0)
+            {
+                @foreach (var item in _articles)
+                {
+                    <div class="xo-news-card" @key="item.Id">
+                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                        {
+                            <img loading="lazy" src="@Img(item.ImageUrl, null)" alt="@item.Title" class="xo-news-img" />
+                        }
+                        <div class="xo-news-pad">
+                            <h3 class="xo-news-title">@item.Title</h3>
+                            <p class="xo-news-body">@item.Body</p>
+                            <div class="xo-news-date">@item.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                @foreach (var item in _content.NewsItems)
+                {
+                    <div class="xo-news-card" @key="item.Title">
+                        <div class="xo-news-pad">
+                            <h3 class="xo-news-title">@item.Title</h3>
+                            <p class="xo-news-body">@item.Body</p>
+                            <div class="xo-news-date">@item.Source</div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</section>
+
+<!-- 9. LIÊN HỆ + BẢN ĐỒ -->
+<section class="xo-section xo-contact" id="lien-he">
+    <div class="xo-container">
+        <div class="xo-sec-head">
+            <h2 class="xo-sec-title">Liên hệ với chúng tôi</h2>
+            <div class="xo-sec-div"><span></span><em>Xoi Phu Thuong Vietnamese Cuisine</em><span></span></div>
+        </div>
+        <div class="xo-contact-grid">
+            <div class="xo-contact-info">
+                <h3 class="xo-contact-title">@_content.FooterTitle</h3>
+                <ul class="xo-contact-list">
+                    @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
+                    {
+                        <li><span class="oi oi-home" aria-hidden="true"></span> @_content.ContactAddress</li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+                    {
+                        <li><span class="oi oi-phone" aria-hidden="true"></span> <a href="tel:@_content.ContactPhone">@_content.ContactPhone</a></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
+                    {
+                        <li><span class="oi oi-envelope-closed" aria-hidden="true"></span> @_content.ContactEmail</li>
+                    }
+                </ul>
+                <a href="/shop" class="xo-btn xo-btn-red">@_content.FooterButtonText</a>
             </div>
-        </div>
-        @if (!string.IsNullOrWhiteSpace(_content.MapEmbedUrl))
-        {
-            <div class="rw-foot-col">
-                <div class="rw-map">
+            @if (!string.IsNullOrWhiteSpace(_content.MapEmbedUrl))
+            {
+                <div class="xo-map">
                     <iframe src="@_content.MapEmbedUrl" title="Bản đồ" frameborder="0"
                             allowfullscreen loading="lazy"></iframe>
                 </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- 10. FOOTER -->
+<footer class="xo-footer @(HasFooterBg ? "xo-footer-bg" : "")" style="@FooterBgStyle">
+    <div class="xo-container xo-footer-inner">
+        <h3 class="xo-footer-title">@_content.FooterTitle</h3>
+        <ul class="xo-footer-contact">
+            @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
+            {
+                <li><span class="oi oi-home" aria-hidden="true"></span> @_content.ContactAddress</li>
+            }
+            @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+            {
+                <li><span class="oi oi-phone" aria-hidden="true"></span> <a href="tel:@_content.ContactPhone">@_content.ContactPhone</a></li>
+            }
+            @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
+            {
+                <li><span class="oi oi-envelope-closed" aria-hidden="true"></span> @_content.ContactEmail</li>
+            }
+        </ul>
+        <a href="/shop" class="xo-btn xo-btn-red">@_content.FooterButtonText</a>
+        @if (_policies.Count > 0)
+        {
+            <div class="xo-policy-bar">
+                @foreach (var p in _policies)
+                {
+                    <a href="/chinh-sach/@p.Slug">@p.Title</a>
+                }
+                <a href="/faq">Câu hỏi thường gặp</a>
             </div>
         }
     </div>
-    @if (_policies.Count > 0)
-    {
-        <div class="rw-policy-bar">
-            @foreach (var p in _policies)
-            {
-                <a href="/chinh-sach/@p.Slug">@p.Title</a>
-            }
-            <a href="/faq">Câu hỏi thường gặp</a>
-        </div>
-    }
-    <div class="rw-bottom-bar">&copy; 2026 Xôi Phú Thượng &mdash; Thổi hồn vào từng gói xôi</div>
+    <div class="xo-bottom-bar">&copy; 2026 Xôi Phú Thượng &mdash; Thổi hồn vào từng gói xôi</div>
 </footer>
 
-<!-- 9. PROMO POPUP (item 94) -->
+<!-- 11. NÚT CỐ ĐỊNH: Facebook + Gọi điện -->
+<div class="xo-fixed-btns">
+    <a class="xo-fb-btn" href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">f</a>
+    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+    {
+        <a class="xo-call-btn" href="tel:@_content.ContactPhone" aria-label="Gọi ngay" title="Gọi ngay">
+            <span class="oi oi-phone" aria-hidden="true"></span>
+        </a>
+    }
+</div>
+
+<!-- 12. PROMO POPUP (item 94) -->
 @if (_showPopup)
 {
-    <div class="rw-popup-overlay" @onclick="DismissPopup">
-        <div class="rw-popup" @onclick:stopPropagation>
-            <button type="button" class="rw-popup-close" aria-label="Đóng" @onclick="DismissPopup">×</button>
+    <div class="xo-popup-overlay" @onclick="DismissPopup">
+        <div class="xo-popup" @onclick:stopPropagation>
+            <button type="button" class="xo-popup-close" aria-label="Đóng" @onclick="DismissPopup">×</button>
             @if (!string.IsNullOrWhiteSpace(_content.PopupImageUrl))
             {
-                <img loading="lazy" src="@Img(_content.PopupImageUrl, null)" alt="@_content.PopupTitle" class="rw-popup-img" />
+                <img loading="lazy" src="@Img(_content.PopupImageUrl, null)" alt="@_content.PopupTitle" class="xo-popup-img" />
             }
-            <h3 class="rw-popup-title">@_content.PopupTitle</h3>
-            <p class="rw-popup-body">@_content.PopupBody</p>
-            <a href="/shop" class="rw-btn rw-btn-brick">Đặt ngay →</a>
+            <h3 class="xo-popup-title">@_content.PopupTitle</h3>
+            <p class="xo-popup-body">@_content.PopupBody</p>
+            <a href="/shop" class="xo-btn xo-btn-red">Đặt ngay →</a>
         </div>
     </div>
 }
+
+</div> @* /.xo-page *@
 } @* /_loadFailed else *@
 
 @code {
