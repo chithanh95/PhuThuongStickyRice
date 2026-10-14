@@ -14,6 +14,7 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.DeliveryFee).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.FreeShipThreshold).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.MinOrderAmount).HasPrecision(18, 2).IsRequired();
+            builder.Property(x => x.EstimatedDeliveryMinutes).IsRequired();
         }
     }
 }

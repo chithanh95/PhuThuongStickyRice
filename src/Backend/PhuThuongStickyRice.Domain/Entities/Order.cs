@@ -44,7 +44,10 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public Money TotalAmount { get; private set; }
 
-        /// <summary>Delivery fee charged on this order (0 when free shipping).</summary>
+        /// <summary>Delivery or self-pickup.</summary>
+        public FulfillmentMethod FulfillmentMethod { get; private set; }
+
+        /// <summary>Delivery fee charged on this order (0 when free shipping or pickup).</summary>
         public Money DeliveryFee { get; private set; }
 
         /// <summary>Discount code applied by the customer, if any.</summary>
@@ -75,7 +78,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             List<OrderLine> lines,
             Money deliveryFee,
             string discountCode,
-            Money discountAmount)
+            Money discountAmount,
+            FulfillmentMethod fulfillmentMethod)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
@@ -86,6 +90,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             Status = OrderStatus.Pending;
             PaymentMethod = paymentMethod;
             PaymentStatus = PaymentStatus.Unpaid;
+            FulfillmentMethod = fulfillmentMethod;
             CreatedAt = DateTime.UtcNow;
             _lines.AddRange(lines);
 
@@ -112,10 +117,12 @@ namespace PhuThuongStickyRice.Domain.Entities
             string customerAddress,
             string notes,
             PaymentMethod paymentMethod,
-            IEnumerable<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity)> lines,
+            IEnumerable<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo)> lines,
             Money deliveryFee = null,
             string discountCode = null,
-            Money discountAmount = null)
+            Money discountAmount = null,
+            FulfillmentMethod fulfillmentMethod = FulfillmentMethod.Delivery)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -156,12 +163,14 @@ namespace PhuThuongStickyRice.Domain.Entities
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(customerAddress))
+            var isPickup = fulfillmentMethod == FulfillmentMethod.Pickup;
+
+            if (!isPickup && string.IsNullOrWhiteSpace(customerAddress))
             {
                 throw new DomainException("Customer address must not be empty.");
             }
 
-            if (customerAddress.Trim().Length > CustomerAddressMaxLength)
+            if (!string.IsNullOrWhiteSpace(customerAddress) && customerAddress.Trim().Length > CustomerAddressMaxLength)
             {
                 throw new DomainException($"Customer address must not exceed {CustomerAddressMaxLength} characters.");
             }
@@ -171,8 +180,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException($"Order notes must not exceed {NotesMaxLength} characters.");
             }
 
-            var orderLines = (lines ?? Enumerable.Empty<(Guid, string, Money, int)>())
-                .Select(x => OrderLine.Create(x.ProductId, x.ProductName, x.UnitPrice, x.Quantity))
+            var orderLines = (lines ?? Enumerable.Empty<(Guid, string, Money, int, string, string, decimal, bool)>())
+                .Select(x => OrderLine.Create(
+                    x.Item1, x.Item2, x.Item3, x.Item4, x.Item5, x.Item6, x.Item7, x.Item8))
                 .ToList();
 
             if (orderLines.Count == 0)
@@ -191,13 +201,14 @@ namespace PhuThuongStickyRice.Domain.Entities
                 customerName.Trim(),
                 customerPhone.Trim(),
                 string.IsNullOrWhiteSpace(customerEmail) ? null : customerEmail.Trim(),
-                customerAddress.Trim(),
+                string.IsNullOrWhiteSpace(customerAddress) ? null : customerAddress.Trim(),
                 notes?.Trim(),
                 paymentMethod,
                 orderLines,
                 deliveryFee,
                 discountCode,
-                discountAmount);
+                discountAmount,
+                fulfillmentMethod);
         }
 
         /// <summary>

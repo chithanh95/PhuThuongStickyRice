@@ -15,6 +15,11 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.ProductName).HasMaxLength(Product.NameMaxLength).IsRequired();
             builder.Property(x => x.Quantity).IsRequired();
 
+            builder.Property(x => x.SizeName).HasMaxLength(OrderLine.SizeNameMaxLength);
+            builder.Property(x => x.ToppingNames).HasMaxLength(OrderLine.ToppingNamesMaxLength);
+            builder.Property(x => x.ToppingsExtra).HasPrecision(18, 2).IsRequired();
+            builder.Property(x => x.IsCombo).IsRequired();
+
             builder.ComplexProperty(x => x.UnitPrice, priceBuilder =>
             {
                 priceBuilder.Property(x => x.Amount)

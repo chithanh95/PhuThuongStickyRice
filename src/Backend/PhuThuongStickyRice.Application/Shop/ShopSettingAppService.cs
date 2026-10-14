@@ -50,6 +50,7 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.DeliveryFee = Math.Max(0, dto.DeliveryFee);
             entity.FreeShipThreshold = Math.Max(0, dto.FreeShipThreshold);
             entity.MinOrderAmount = Math.Max(0, dto.MinOrderAmount);
+            entity.EstimatedDeliveryMinutes = dto.EstimatedDeliveryMinutes < 0 ? 45 : dto.EstimatedDeliveryMinutes;
             await _settings.UpdateAsync(entity, autoSave: true);
 
             return MapToDto(entity);
@@ -67,7 +68,8 @@ namespace PhuThuongStickyRice.Application.Shop
             {
                 DeliveryFee = entity.DeliveryFee,
                 FreeShipThreshold = entity.FreeShipThreshold,
-                MinOrderAmount = entity.MinOrderAmount
+                MinOrderAmount = entity.MinOrderAmount,
+                EstimatedDeliveryMinutes = entity.EstimatedDeliveryMinutes
             };
         }
     }

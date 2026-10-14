@@ -18,13 +18,20 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Minimum order subtotal. 0 = no minimum.</summary>
         public decimal MinOrderAmount { get; set; }
 
+        /// <summary>
+        /// Estimated delivery time in minutes, shown at checkout
+        /// ("Dự kiến giao trong 30–45 phút"). Default 45.
+        /// </summary>
+        public int EstimatedDeliveryMinutes { get; set; }
+
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting
             {
                 DeliveryFee = 20000,
                 FreeShipThreshold = 200000,
-                MinOrderAmount = 0
+                MinOrderAmount = 0,
+                EstimatedDeliveryMinutes = 45
             };
         }
     }

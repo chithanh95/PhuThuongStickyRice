@@ -13,5 +13,9 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
 
         [Range(0, double.MaxValue)]
         public decimal MinOrderAmount { get; set; }
+
+        /// <summary>Estimated delivery time in minutes, shown at checkout.</summary>
+        [Range(0, 600)]
+        public int EstimatedDeliveryMinutes { get; set; }
     }
 }

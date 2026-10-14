@@ -102,6 +102,14 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Admin: catalog features (toppings, combos, quotes, dish votes, size options).
+            builder.Services.AddHttpClient<CatalogAdminService, CatalogAdminService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Toast notifications.
             builder.Services.AddScoped<ToastService>();
 

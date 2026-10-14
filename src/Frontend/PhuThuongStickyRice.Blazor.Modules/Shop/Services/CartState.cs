@@ -10,7 +10,9 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
 {
     /// <summary>
     /// Client-side shopping cart state, persisted to browser localStorage
-    /// so a page refresh does not wipe the cart.
+    /// so a page refresh does not wipe the cart. Lines are keyed by
+    /// product/combo + size + toppings so different configurations stay
+    /// separate.
     /// </summary>
     public class CartState
     {
@@ -54,7 +56,21 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
                     var saved = JsonSerializer.Deserialize<List<CartItemModel>>(json);
                     if (saved != null && saved.Count > 0)
                     {
-                        _items.AddRange(saved.Where(x => x != null && x.Quantity > 0));
+                        foreach (var item in saved.Where(x => x != null && x.Quantity > 0))
+                        {
+                            // Backwards compatibility with carts saved before
+                            // line keys existed.
+                            if (string.IsNullOrEmpty(item.LineKey))
+                            {
+                                item.LineKey = BuildLineKey(
+                                    item.ProductId, item.SizeOptionId,
+                                    item.ToppingIds, item.IsCombo);
+                            }
+
+                            item.ToppingIds ??= new List<Guid>();
+                            _items.Add(item);
+                        }
+
                         NotifyChanged();
                     }
                 }
@@ -66,18 +82,55 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
             }
         }
 
+        /// <summary>
+        /// Adds a plain product line (base price, no options).
+        /// </summary>
         public void Add(ShopProductModel product, int quantity = 1)
         {
-            var existing = _items.FirstOrDefault(x => x.ProductId == product.Id);
+            AddConfigured(
+                product.Id, product.Name, product.Code, product.Price, quantity,
+                sizeOptionId: null, sizeName: null,
+                toppingIds: null, toppingNames: null, toppingsTotal: 0,
+                isCombo: false);
+        }
+
+        /// <summary>
+        /// Adds a product line with a chosen size and toppings. The unit
+        /// price is the final per-item price (size price + toppings).
+        /// </summary>
+        public void AddConfigured(
+            Guid productId,
+            string productName,
+            string productCode,
+            decimal unitPrice,
+            int quantity,
+            Guid? sizeOptionId,
+            string sizeName,
+            List<Guid> toppingIds,
+            string toppingNames,
+            decimal toppingsTotal,
+            bool isCombo)
+        {
+            toppingIds ??= new List<Guid>();
+            var key = BuildLineKey(productId, sizeOptionId, toppingIds, isCombo);
+
+            var existing = _items.FirstOrDefault(x => x.LineKey == key);
             if (existing == null)
             {
                 _items.Add(new CartItemModel
                 {
-                    ProductId = product.Id,
-                    ProductName = product.Name,
-                    ProductCode = product.Code,
-                    UnitPrice = product.Price,
-                    Quantity = quantity
+                    LineKey = key,
+                    ProductId = productId,
+                    ProductName = productName,
+                    ProductCode = productCode,
+                    UnitPrice = unitPrice,
+                    Quantity = quantity,
+                    SizeOptionId = sizeOptionId,
+                    SizeName = sizeName,
+                    ToppingIds = toppingIds,
+                    ToppingNames = toppingNames,
+                    ToppingsTotal = toppingsTotal,
+                    IsCombo = isCombo
                 });
             }
             else
@@ -88,9 +141,19 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
             NotifyChanged();
         }
 
-        public void UpdateQuantity(Guid productId, int quantity)
+        /// <summary>Adds a family combo as a single line at the combo price.</summary>
+        public void AddCombo(ComboModel combo, int quantity = 1)
         {
-            var existing = _items.FirstOrDefault(x => x.ProductId == productId);
+            AddConfigured(
+                combo.Id, combo.Name, "COMBO", combo.Price, quantity,
+                sizeOptionId: null, sizeName: null,
+                toppingIds: null, toppingNames: null, toppingsTotal: 0,
+                isCombo: true);
+        }
+
+        public void UpdateQuantity(string lineKey, int quantity)
+        {
+            var existing = _items.FirstOrDefault(x => x.LineKey == lineKey);
             if (existing == null)
             {
                 return;
@@ -108,6 +171,23 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
             NotifyChanged();
         }
 
+        public void UpdateQuantity(Guid productId, int quantity)
+        {
+            var existing = _items.FirstOrDefault(x => x.ProductId == productId);
+            if (existing == null)
+            {
+                return;
+            }
+
+            UpdateQuantity(existing.LineKey, quantity);
+        }
+
+        public void Remove(string lineKey)
+        {
+            _items.RemoveAll(x => x.LineKey == lineKey);
+            NotifyChanged();
+        }
+
         public void Remove(Guid productId)
         {
             _items.RemoveAll(x => x.ProductId == productId);
@@ -118,6 +198,18 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
         {
             _items.Clear();
             NotifyChanged();
+        }
+
+        public static string BuildLineKey(
+            Guid productId,
+            Guid? sizeOptionId,
+            IEnumerable<Guid> toppingIds,
+            bool isCombo)
+        {
+            var toppings = toppingIds == null
+                ? string.Empty
+                : string.Join(",", toppingIds.OrderBy(x => x).Select(x => x.ToString("N")));
+            return $"{(isCombo ? "combo" : "product")}:{productId:N}:{sizeOptionId?.ToString("N")}:{toppings}";
         }
 
         private void NotifyChanged()

@@ -1,4 +1,8 @@
 @page "/checkout"
+@using System
+@using System.Linq
+@using System.Text.RegularExpressions
+@using System.Threading.Tasks
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Services
 @using PhuThuongStickyRice.Blazor.Modules.Admin.Services
@@ -26,7 +30,11 @@
                         <td class="text-right text-success">−@FormatPrice(_placedOrder.DiscountAmount)</td>
                     </tr>
                 }
-                @if (_placedOrder.DeliveryFee > 0)
+                @if (_placedOrder.FulfillmentMethod == "Pickup")
+                {
+                    <tr><td>Nhận hàng</td><td class="text-right text-success">Tự đến lấy tại quán</td></tr>
+                }
+                else if (_placedOrder.DeliveryFee > 0)
                 {
                     <tr><td>Phí giao hàng</td><td class="text-right">@FormatPrice(_placedOrder.DeliveryFee)</td></tr>
                 }
@@ -170,8 +178,21 @@ else
     <div class="row">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">Thông tin giao hàng</div>
+                <div class="card-header">Thông tin nhận hàng</div>
                 <div class="card-body">
+                    <div class="form-group">
+                        <label>Hình thức nhận hàng *</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="fulfillment" id="fm-delivery"
+                                   checked="@(_fulfillment == "Delivery")" @onchange="@(() => _fulfillment = "Delivery")" />
+                            <label class="form-check-label" for="fm-delivery">🛵 Giao tận nơi</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="fulfillment" id="fm-pickup"
+                                   checked="@(_fulfillment == "Pickup")" @onchange="@(() => _fulfillment = "Pickup")" />
+                            <label class="form-check-label" for="fm-pickup">🏪 Tự đến lấy tại quán <small class="text-success">(miễn phí ship)</small></label>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Họ tên *</label>
                         <input class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
@@ -182,10 +203,25 @@ else
                     </div>
                     <div class="form-group">
                         <label>Số điện thoại *</label>
-                        <input class="form-control @FieldClass(_phoneError)" @bind="_order.CustomerPhone" placeholder="0901234567" />
+                        <input class="form-control @FieldClass(_phoneError)" @bind="_order.CustomerPhone"
+                               @onblur="LookupLastOrderAsync" placeholder="0901234567" />
                         @if (!string.IsNullOrEmpty(_phoneError))
                         {
                             <small class="text-danger">@_phoneError</small>
+                        }
+                        @if (_addressSuggestion != null)
+                        {
+                            <div class="alert alert-info py-2 mt-2">
+                                <small>
+                                    Đã tìm thấy địa chỉ cũ của số này.
+                                    <button type="button" class="btn btn-sm btn-outline-primary ml-1" @onclick="UseSuggestedAddress">
+                                        Dùng địa chỉ cũ: @_addressSuggestion.CustomerAddress
+                                    </button>
+                                    <button type="button" class="close" aria-label="Bỏ qua" @onclick="DismissSuggestion">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </small>
+                            </div>
                         }
                     </div>
                     <div class="form-group">
@@ -196,15 +232,24 @@ else
                             <small class="text-danger">@_emailError</small>
                         }
                     </div>
-                    <div class="form-group">
-                        <label>Địa chỉ giao hàng *</label>
-                        <textarea class="form-control @FieldClass(_addressError)" @bind="_order.CustomerAddress" rows="3"
-                                  placeholder="Số nhà, đường, phường..."></textarea>
-                        @if (!string.IsNullOrEmpty(_addressError))
-                        {
-                            <small class="text-danger">@_addressError</small>
-                        }
-                    </div>
+                    @if (_fulfillment == "Delivery")
+                    {
+                        <div class="form-group">
+                            <label>Địa chỉ giao hàng *</label>
+                            <textarea class="form-control @FieldClass(_addressError)" @bind="_order.CustomerAddress" rows="3"
+                                      placeholder="Số nhà, đường, phường..."></textarea>
+                            @if (!string.IsNullOrEmpty(_addressError))
+                            {
+                                <small class="text-danger">@_addressError</small>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <small>🏪 Bạn sẽ tự đến lấy tại quán — không cần nhập địa chỉ, <strong>miễn phí ship</strong>.</small>
+                        </div>
+                    }
                     <div class="form-group">
                         <label>Ghi chú</label>
                         <textarea class="form-control" @bind="_order.Notes" rows="2"
@@ -239,8 +284,22 @@ else
                         <tbody>
                             @foreach (var item in CartState.Items)
                             {
-                                <tr @key="item.ProductId">
-                                    <td>@item.ProductName <span class="text-muted">× @item.Quantity</span></td>
+                                <tr @key="item.LineKey">
+                                    <td>
+                                        @item.ProductName <span class="text-muted">× @item.Quantity</span>
+                                        @if (item.IsCombo)
+                                        {
+                                            <span class="badge badge-warning ml-1">COMBO</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.SizeName))
+                                        {
+                                            <br /><small class="text-muted">Size: @item.SizeName</small>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.ToppingNames))
+                                        {
+                                            <br /><small class="text-muted">Ăn kèm: @item.ToppingNames</small>
+                                        }
+                                    </td>
                                     <td class="text-right">@FormatPrice(item.LineTotal)</td>
                                 </tr>
                             }
@@ -258,7 +317,11 @@ else
                             <tr>
                                 <td class="text-muted">
                                     Phí giao hàng
-                                    @if (_fee > 0 && _shopSettings.FreeShipThreshold > 0)
+                                    @if (_fulfillment == "Pickup")
+                                    {
+                                        <small class="d-block text-success">Tự đến lấy — miễn phí</small>
+                                    }
+                                    else if (_fee > 0 && _shopSettings.FreeShipThreshold > 0)
                                     {
                                         <small class="d-block">Miễn phí cho đơn từ @FormatPrice(_shopSettings.FreeShipThreshold)</small>
                                     }
@@ -267,6 +330,12 @@ else
                                     @(_fee == 0 ? "Miễn phí" : FormatPrice(_fee))
                                 </td>
                             </tr>
+                            @if (_fulfillment == "Delivery" && !string.IsNullOrEmpty(_etaText))
+                            {
+                                <tr>
+                                    <td colspan="2" class="text-muted"><small>⏱️ @_etaText</small></td>
+                                </tr>
+                            }
                         </tbody>
                         <tfoot>
                             <tr>
@@ -313,11 +382,18 @@ else
     private bool _minOrderBlocked;
     private string _error;
 
+    // Fulfillment: "Delivery" or "Pickup".
+    private string _fulfillment = "Delivery";
+
     // Per-field validation messages.
     private string _nameError;
     private string _phoneError;
     private string _emailError;
     private string _addressError;
+
+    // Address auto-fill from phone history.
+    private LastOrderInfoModel _addressSuggestion;
+    private string _suggestedPhone;
 
     // Discount state.
     private string _discountCodeInput;
@@ -336,6 +412,11 @@ else
     {
         get
         {
+            if (_fulfillment == "Pickup")
+            {
+                return 0;
+            }
+
             if (_shopSettings.DeliveryFee <= 0)
             {
                 return 0;
@@ -352,6 +433,22 @@ else
     }
 
     private decimal _grandTotal => Math.Max(0, _subtotal - _discountAmount + _fee);
+
+    /// <summary>"Dự kiến giao trong 30–45 phút" from the shop setting.</summary>
+    private string _etaText
+    {
+        get
+        {
+            var minutes = _shopSettings.EstimatedDeliveryMinutes;
+            if (minutes <= 0)
+            {
+                return null;
+            }
+
+            var from = Math.Max(10, minutes - 15);
+            return $"Dự kiến giao trong {from}–{minutes} phút";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -397,6 +494,58 @@ else
                 + $"?amount={amount}&addInfo={Uri.EscapeDataString(_placedOrder.OrderNumber)}"
                 + $"&accountName={Uri.EscapeDataString(_bankInfo.AccountName ?? string.Empty)}";
         }
+    }
+
+    /// <summary>
+    /// When the phone field loses focus, look up the last order for that
+    /// phone and offer a one-click address fill.
+    /// </summary>
+    private async Task LookupLastOrderAsync()
+    {
+        _addressSuggestion = null;
+        var phone = (_order.CustomerPhone ?? "").Trim();
+        if (phone == _suggestedPhone || !IsValidPhone(phone))
+        {
+            return;
+        }
+
+        _suggestedPhone = phone;
+        try
+        {
+            var info = await ShopService.GetLastOrderInfoAsync(phone);
+            if (info != null && !string.IsNullOrWhiteSpace(info.CustomerAddress)
+                && !string.Equals(info.CustomerAddress.Trim(), (_order.CustomerAddress ?? "").Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                _addressSuggestion = info;
+            }
+        }
+        catch (Exception)
+        {
+            // Best effort only — the form works fine without the suggestion.
+        }
+    }
+
+    private void UseSuggestedAddress()
+    {
+        if (_addressSuggestion == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_order.CustomerName))
+        {
+            _order.CustomerName = _addressSuggestion.CustomerName;
+        }
+
+        _order.CustomerAddress = _addressSuggestion.CustomerAddress;
+        _addressError = null;
+        _addressSuggestion = null;
+    }
+
+    private void DismissSuggestion()
+    {
+        _addressSuggestion = null;
     }
 
     private async Task ApplyDiscount()
@@ -448,7 +597,9 @@ else
         _emailError = !string.IsNullOrWhiteSpace(_order.CustomerEmail) && !IsValidEmail(_order.CustomerEmail)
             ? "Email không đúng định dạng. Bạn có thể để trống nếu không có email."
             : null;
-        _addressError = string.IsNullOrWhiteSpace(_order.CustomerAddress) ? "Vui lòng nhập địa chỉ giao hàng." : null;
+        _addressError = _fulfillment == "Delivery" && string.IsNullOrWhiteSpace(_order.CustomerAddress)
+            ? "Vui lòng nhập địa chỉ giao hàng."
+            : null;
 
         return _nameError == null && _phoneError == null && _emailError == null && _addressError == null;
     }
@@ -473,8 +624,21 @@ else
         try
         {
             _order.DiscountCode = _appliedCode;
+            _order.FulfillmentMethod = _fulfillment;
+            if (_fulfillment == "Pickup")
+            {
+                _order.CustomerAddress = null;
+            }
+
             _order.Lines = CartState.Items
-                .Select(x => new CreateOrderLineModel { ProductId = x.ProductId, Quantity = x.Quantity })
+                .Select(x => new CreateOrderLineModel
+                {
+                    ProductId = x.ProductId,
+                    Quantity = x.Quantity,
+                    SizeOptionId = x.SizeOptionId,
+                    ToppingIds = x.ToppingIds ?? new System.Collections.Generic.List<Guid>(),
+                    IsCombo = x.IsCombo
+                })
                 .ToList();
 
             _placedOrder = await ShopService.CreateOrderAsync(_order);
@@ -551,7 +715,7 @@ else
 
     private static bool IsValidPhone(string phone) =>
         !string.IsNullOrWhiteSpace(phone)
-        && System.Text.RegularExpressions.Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 
     private static bool IsValidEmail(string email)
     {

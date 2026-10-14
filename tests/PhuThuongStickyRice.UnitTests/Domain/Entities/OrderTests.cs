@@ -19,10 +19,10 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
                 "123 Lang Phu Thuong, Ha Noi",
                 null,
                 PaymentMethod.Cod,
-                new List<(Guid, string, Money, int)>
+                new List<(Guid, string, Money, int, string, string, decimal, bool)>
                 {
-                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 2),
-                    (Guid.NewGuid(), "Xoi xeo", Money.Of(25000, "VND"), 1)
+                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 2, null, null, 0, false),
+                    (Guid.NewGuid(), "Xoi xeo", Money.Of(25000, "VND"), 1, null, null, 0, false)
                 });
         }
 
@@ -44,7 +44,7 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         {
             Assert.Throws<DomainException>(() =>
                 Order.Create("PX-1", "A", "090", null, "Addr", null, PaymentMethod.Cod,
-                    new List<(Guid, string, Money, int)>()));
+                    new List<(Guid, string, Money, int, string, string, decimal, bool)>()));
         }
 
         [Fact]
@@ -52,10 +52,10 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         {
             Assert.Throws<DomainException>(() =>
                 Order.Create("PX-1", "A", "090", null, "Addr", null, PaymentMethod.Cod,
-                    new List<(Guid, string, Money, int)>
+                    new List<(Guid, string, Money, int, string, string, decimal, bool)>
                     {
-                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1),
-                        (Guid.NewGuid(), "Xoi xeo", Money.Of(2, "USD"), 1)
+                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false),
+                        (Guid.NewGuid(), "Xoi xeo", Money.Of(2, "USD"), 1, null, null, 0, false)
                     }));
         }
 
@@ -118,9 +118,9 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
                 "123 Lang Phu Thuong, Ha Noi",
                 null,
                 PaymentMethod.BankTransfer,
-                new List<(Guid, string, Money, int)>
+                new List<(Guid, string, Money, int, string, string, decimal, bool)>
                 {
-                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1)
+                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false)
                 });
 
             Assert.Equal("b@example.com", order.CustomerEmail);
@@ -133,9 +133,9 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         {
             Assert.Throws<DomainException>(() =>
                 Order.Create("PX-1", "A", "090", "not-an-email", "Addr", null, PaymentMethod.Cod,
-                    new List<(Guid, string, Money, int)>
+                    new List<(Guid, string, Money, int, string, string, decimal, bool)>
                     {
-                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1)
+                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false)
                     }));
         }
 
@@ -144,9 +144,9 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         {
             Assert.Throws<DomainException>(() =>
                 Order.Create("PX-1", "A", " ", null, "Addr", null, PaymentMethod.Cod,
-                    new List<(Guid, string, Money, int)>
+                    new List<(Guid, string, Money, int, string, string, decimal, bool)>
                     {
-                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1)
+                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false)
                     }));
         }
 
@@ -161,9 +161,9 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
                 "123 Lang Phu Thuong, Ha Noi",
                 null,
                 PaymentMethod.BankTransfer,
-                new List<(Guid, string, Money, int)>
+                new List<(Guid, string, Money, int, string, string, decimal, bool)>
                 {
-                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1)
+                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false)
                 });
 
             order.MarkTransferred();

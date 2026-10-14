@@ -43,6 +43,12 @@ namespace PhuThuongStickyRice.Blazor.Modules.Products.Services
             await DeleteAsync($"api/products/{id}");
         }
 
+        /// <summary>One-click sold-out toggle (Active &lt;-&gt; Inactive).</summary>
+        public async Task<ProductModel> ToggleAvailabilityAsync(Guid id)
+        {
+            return await PostAsync<ProductModel>($"api/products/{id}/toggle-availability", new { });
+        }
+
         public string GetExportPdfUrl()
         {
             return $"{_httpClient.BaseAddress.AbsoluteUri.Trim('/')}/api/products/ExportAsPdf";

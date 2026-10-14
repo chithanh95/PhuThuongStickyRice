@@ -43,5 +43,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var products = await _dashboardAppService.GetTopProductsAsync(from, to, top);
             return Ok(products);
         }
+
+        /// <summary>
+        /// Public: total quantity of items sold today (Vietnam time), shown
+        /// on the shop hero and landing page ("Đã bán N gói hôm nay").
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("today-sold")]
+        public async Task<ActionResult> GetTodaySold(CancellationToken cancellationToken = default)
+        {
+            var count = await _dashboardAppService.GetTodaySoldCountAsync();
+            return Ok(new { quantitySold = count });
+        }
     }
 }

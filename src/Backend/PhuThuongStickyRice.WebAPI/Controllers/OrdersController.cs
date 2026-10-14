@@ -47,11 +47,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 Notes = model.Notes,
                 PaymentMethod = model.PaymentMethod,
                 DiscountCode = model.DiscountCode,
+                FulfillmentMethod = model.FulfillmentMethod,
                 Lines = model.Lines
                     .Select(x => new CreateOrderLineDto
                     {
                         ProductId = x.ProductId,
-                        Quantity = x.Quantity
+                        Quantity = x.Quantity,
+                        SizeOptionId = x.SizeOptionId,
+                        ToppingIds = x.ToppingIds ?? new System.Collections.Generic.List<Guid>(),
+                        IsCombo = x.IsCombo
                     })
                     .ToList()
             });
@@ -123,6 +127,26 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 CustomerPhone = phone
             });
             return Ok(order);
+        }
+
+        /// <summary>
+        /// Public: last order info for a phone number (name + address only),
+        /// used to auto-fill the checkout form. Returns 204 when no previous
+        /// order with an address is found.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("last-by-phone")]
+        public async Task<ActionResult> GetLastByPhone(
+            [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            var info = await _orderAppService.GetLastOrderInfoByPhoneAsync(phone);
+            if (info == null)
+            {
+                return NoContent();
+            }
+
+            return Ok(info);
         }
 
         /// <summary>

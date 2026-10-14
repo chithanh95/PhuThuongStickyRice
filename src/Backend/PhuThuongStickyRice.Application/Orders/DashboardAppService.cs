@@ -16,6 +16,18 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null);
 
         Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5);
+
+        /// <summary>
+        /// Public: total quantity of items sold today (Vietnam time),
+        /// shown on the shop hero and landing page ("Đã bán N gói hôm nay").
+        /// </summary>
+        Task<long> GetTodaySoldCountAsync();
+
+        /// <summary>
+        /// Public: product ids ordered by quantity sold (all-time,
+        /// non-cancelled orders). Powers the shop's "Bán chạy" sort.
+        /// </summary>
+        Task<List<Guid>> GetBestSellerProductIdsAsync(int top);
     }
 
     public class DashboardAppService : ApplicationService, IDashboardAppService
@@ -104,6 +116,26 @@ namespace PhuThuongStickyRice.Application.Orders
                     })
                     .OrderByDescending(x => x.QuantitySold)
                     .Take(top < 1 ? 5 : top));
+        }
+
+        public async Task<List<Guid>> GetBestSellerProductIdsAsync(int top)
+        {
+            var products = await GetTopProductsAsync(null, null, top < 1 ? 100 : top);
+            return products.Select(x => x.ProductId).ToList();
+        }
+
+        public async Task<long> GetTodaySoldCountAsync()
+        {
+            // The shop runs on Vietnam time (UTC+7); CreatedAt is UTC.
+            var startOfTodayUtc = DateTime.UtcNow.AddHours(7).Date.AddHours(-7);
+
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var billable = orderQueryable.Where(x =>
+                x.Status != OrderStatus.Cancelled
+                && x.CreatedAt >= startOfTodayUtc);
+
+            return await _asyncExecuter.SumAsync(
+                billable.SelectMany(x => x.Lines).Select(x => (long)x.Quantity));
         }
 
         /// <summary>

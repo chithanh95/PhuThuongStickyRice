@@ -55,7 +55,21 @@
                     @foreach (var line in _order.Lines)
                     {
                         <tr>
-                            <td>@line.ProductName</td>
+                            <td>
+                                @line.ProductName
+                                @if (line.IsCombo)
+                                {
+                                    <span class="badge badge-warning ml-1">COMBO</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.SizeName))
+                                {
+                                    <br /><small class="text-muted">Size: @line.SizeName</small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.ToppingNames))
+                                {
+                                    <br /><small class="text-muted">Ăn kèm: @line.ToppingNames</small>
+                                }
+                            </td>
                             <td class="text-right">@FormatPrice(line.UnitPrice)</td>
                             <td class="text-right">@line.Quantity</td>
                             <td class="text-right">@FormatPrice(line.LineTotal)</td>
@@ -76,7 +90,8 @@
             }
             <p>
                 Phương thức thanh toán: <strong>@PaymentMethodLabel(_order.PaymentMethod)</strong><br />
-                Trạng thái thanh toán: @PaymentStatusBadge(_order.PaymentStatus)
+                Trạng thái thanh toán: @PaymentStatusBadge(_order.PaymentStatus)<br />
+                Hình thức nhận hàng: <strong>@(_order.FulfillmentMethod == "Pickup" ? "🏪 Tự đến lấy tại quán" : "🛵 Giao tận nơi")</strong>
             </p>
 
             @if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
@@ -123,6 +138,13 @@
                         <button class="btn btn-success" @onclick="MarkTransferred" disabled="@_markingTransferred">
                             @(_markingTransferred ? "Đang gửi..." : "Tôi đã chuyển khoản")
                         </button>
+                        <button class="btn btn-outline-primary ml-2" @onclick="CopyPaymentLinkAsync" title="Sao chép link để thanh toán sau từ thiết bị khác">
+                            🔗 Sao chép link thanh toán
+                        </button>
+                        @if (!string.IsNullOrEmpty(_copyMessage))
+                        {
+                            <div class="alert alert-success mt-2 mb-0">@_copyMessage</div>
+                        }
                     </div>
                 </div>
             }
@@ -165,7 +187,33 @@
     private string _transferMessage;
     private string _transferError;
     private string _momoError;
+    private string _copyMessage;
     private System.Threading.Timer _pollTimer;
+
+    /// <summary>
+    /// Copies the track-order URL with ?orderNumber= prefilled so the
+    /// customer can pay later from any device (reusable payment link).
+    /// </summary>
+    private async Task CopyPaymentLinkAsync()
+    {
+        _copyMessage = null;
+        if (_order == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var link = $"{Navigation.BaseUri.TrimEnd('/')}/track-order"
+                + $"?orderNumber={Uri.EscapeDataString(_order.OrderNumber)}";
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", link);
+            _copyMessage = "Đã sao chép link thanh toán! Mở link này trên thiết bị khác để thanh toán sau.";
+        }
+        catch (Exception)
+        {
+            _copyMessage = "Không sao chép được. Vui lòng copy link trên thanh địa chỉ.";
+        }
+    }
 
     private string QrUrl
     {

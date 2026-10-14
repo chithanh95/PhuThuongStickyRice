@@ -14,6 +14,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.Name).HasMaxLength(Product.NameMaxLength).IsRequired();
             builder.Property(x => x.Description).HasMaxLength(Product.DescriptionMaxLength);
 
+            builder.Property(x => x.Tags).HasMaxLength(Product.TagsMaxLength);
+            builder.Property(x => x.Category).HasMaxLength(Product.CategoryMaxLength);
+            builder.Property(x => x.AllergenInfo).HasMaxLength(Product.AllergenInfoMaxLength);
+            builder.Property(x => x.IsNew).IsRequired();
+            builder.Property(x => x.IsSignature).IsRequired();
+            builder.Property(x => x.AvailableFrom);
+            builder.Property(x => x.AvailableTo);
+
             builder.Property(x => x.Status)
                 .HasConversion<int>()
                 .IsRequired();

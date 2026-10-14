@@ -33,6 +33,43 @@ namespace PhuThuongStickyRice.Blazor.Modules.Products.Pages
 
         public ProductModel DeletingProduct { get; private set; }
 
+        public string ToggleError { get; private set; }
+
+        /// <summary>One-click sold-out toggle (Active &lt;-&gt; Inactive).</summary>
+        protected async Task ToggleAvailability(ProductModel product)
+        {
+            ToggleError = null;
+            try
+            {
+                var updated = await ProductService.ToggleAvailabilityAsync(product.Id);
+                product.Status = updated.Status;
+            }
+            catch (System.Exception)
+            {
+                ToggleError = $"Không đổi được trạng thái của '{product.Name}'. Vui lòng thử lại.";
+            }
+        }
+
+        /// <summary>
+        /// True when the product has a seasonal window and today is outside it.
+        /// The public shop hides these; the admin list shows a "Hết mùa" badge.
+        /// </summary>
+        protected static bool IsOutOfSeason(ProductModel product)
+        {
+            var today = System.DateTime.UtcNow.Date;
+            if (product.AvailableFrom.HasValue && today < product.AvailableFrom.Value.Date)
+            {
+                return true;
+            }
+
+            if (product.AvailableTo.HasValue && today > product.AvailableTo.Value.Date)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         protected override async Task OnInitializedAsync()
         {
             Products = await ProductService.GetProductsAsync();

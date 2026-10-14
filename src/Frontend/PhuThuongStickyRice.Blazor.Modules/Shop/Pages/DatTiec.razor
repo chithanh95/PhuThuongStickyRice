@@ -1,0 +1,120 @@
+@page "/dat-tiec"
+@using System
+@using System.Text.RegularExpressions
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Models
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@inject ShopService ShopService
+
+<h3>Đặt tiệc / Đặt số lượng lớn</h3>
+<p class="text-muted">
+    Đám cưới, đám giỗ, liên hoan công ty hay đặt cỗ số lượng lớn — để lại thông tin,
+    shop sẽ gọi lại báo giá tốt nhất. <strong>Không cần thanh toán trước.</strong>
+</p>
+
+@if (_submitted)
+{
+    <div class="alert alert-success">
+        <h4>Cảm ơn bạn!</h4>
+        <p class="mb-0">
+            Shop đã nhận được yêu cầu đặt tiệc của bạn và sẽ liên hệ qua số
+            <strong>@_model.CustomerPhone</strong> để báo giá trong thời gian sớm nhất.
+        </p>
+    </div>
+    <a class="btn btn-primary" href="/shop">Xem thực đơn</a>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <div class="form-group">
+                <label>Họ tên *</label>
+                <input class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
+                @if (!string.IsNullOrEmpty(_nameError))
+                {
+                    <small class="text-danger">@_nameError</small>
+                }
+            </div>
+            <div class="form-group">
+                <label>Số điện thoại *</label>
+                <input class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
+                @if (!string.IsNullOrEmpty(_phoneError))
+                {
+                    <small class="text-danger">@_phoneError</small>
+                }
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Ngày tổ chức (dự kiến)</label>
+                    <input type="date" class="form-control" @bind="_model.EventDate" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Số lượng (gói/mâm) *</label>
+                    <input type="number" min="10" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity" />
+                    @if (!string.IsNullOrEmpty(_qtyError))
+                    {
+                        <small class="text-danger">@_qtyError</small>
+                    }
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Ghi chú</label>
+                <textarea class="form-control" rows="3" @bind="_model.Notes"
+                          placeholder="VD: tiệc cưới 30 mâm, cần giao trước 10h sáng..."></textarea>
+            </div>
+            <button class="btn btn-success btn-lg" @onclick="SubmitAsync" disabled="@_submitting">
+                @(_submitting ? "Đang gửi..." : "Gửi yêu cầu báo giá")
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly QuoteRequestModel _model = new QuoteRequestModel { Quantity = 50 };
+    private bool _submitting;
+    private bool _submitted;
+    private string _error;
+    private string _nameError;
+    private string _phoneError;
+    private string _qtyError;
+
+    private async Task SubmitAsync()
+    {
+        _error = null;
+        _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
+        _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
+        _qtyError = _model.Quantity < 10 ? "Đơn đặt tiệc từ 10 gói/mâm trở lên. Đơn nhỏ hơn vui lòng đặt tại cửa hàng." : null;
+
+        if (_nameError != null || _phoneError != null || _qtyError != null)
+        {
+            _error = "Vui lòng kiểm tra lại các thông tin được đánh dấu.";
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            await ShopService.CreateQuoteAsync(_model);
+            _submitted = true;
+        }
+        catch (Exception)
+        {
+            _error = "Gửi yêu cầu thất bại. Vui lòng thử lại hoặc gọi trực tiếp cho shop.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private static string FieldClass(string error) => string.IsNullOrEmpty(error) ? null : "is-invalid";
+
+    private static bool IsValidPhone(string phone) =>
+        !string.IsNullOrWhiteSpace(phone)
+        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+}

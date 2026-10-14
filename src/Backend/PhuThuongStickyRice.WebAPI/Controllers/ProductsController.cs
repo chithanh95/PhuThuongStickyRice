@@ -36,13 +36,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IPdfConverter _pdfConverter;
         private readonly ICsvWriter<ProductModel> _productCsvWriter;
         private readonly ICsvReader<ProductModel> _productCsvReader;
+        private readonly PhuThuongStickyRice.Application.Orders.IDashboardAppService _dashboardAppService;
 
         public ProductsController(IProductAppService productAppService,
             ILogger<ProductsController> logger,
             IHtmlGenerator htmlGenerator,
             IPdfConverter pdfConverter,
             ICsvWriter<ProductModel> productCsvWriter,
-            ICsvReader<ProductModel> productCsvReader)
+            ICsvReader<ProductModel> productCsvReader,
+            PhuThuongStickyRice.Application.Orders.IDashboardAppService dashboardAppService)
         {
             _productAppService = productAppService;
             _logger = logger;
@@ -50,6 +52,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _pdfConverter = pdfConverter;
             _productCsvWriter = productCsvWriter;
             _productCsvReader = productCsvReader;
+            _dashboardAppService = dashboardAppService;
         }
 
         [AllowAnonymous]
@@ -101,7 +104,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     Name = model.Name,
                     Description = model.Description,
                     Price = model.Price,
-                    Currency = string.IsNullOrWhiteSpace(model.Currency) ? "VND" : model.Currency
+                    Currency = string.IsNullOrWhiteSpace(model.Currency) ? "VND" : model.Currency,
+                    Tags = model.Tags,
+                    Category = model.Category,
+                    AllergenInfo = model.AllergenInfo,
+                    IsNew = model.IsNew,
+                    IsSignature = model.IsSignature,
+                    AvailableFrom = model.AvailableFrom,
+                    AvailableTo = model.AvailableTo
                 });
                 return Created($"/api/products/{created.Id}", created);
             }
@@ -132,8 +142,41 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     Description = model.Description,
                     Price = model.Price,
                     Currency = string.IsNullOrWhiteSpace(model.Currency) ? "VND" : model.Currency,
-                    Status = model.Status
+                    Status = model.Status,
+                    Tags = model.Tags,
+                    Category = model.Category,
+                    AllergenInfo = model.AllergenInfo,
+                    IsNew = model.IsNew,
+                    IsSignature = model.IsSignature,
+                    AvailableFrom = model.AvailableFrom,
+                    AvailableTo = model.AvailableTo
                 });
+                return Ok(dto);
+            }
+            catch (ProductNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// One-click sold-out toggle (Active &lt;-&gt; Inactive) for the
+        /// admin product list.
+        /// </summary>
+        [Authorize(AuthorizationPolicyNames.UpdateProductPolicy)]
+        [HttpPost("{id}/toggle-availability")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ProductDto>> ToggleAvailability(Guid id, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var dto = await _productAppService.ToggleAvailabilityAsync(id);
                 return Ok(dto);
             }
             catch (ProductNotFoundException ex)
@@ -161,6 +204,19 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 return NotFound(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Public: product ids ordered by quantity sold, for the shop's
+        /// "Bán chạy" sort. Returns ids only (no revenue data).
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("best-sellers")]
+        public async Task<ActionResult> GetBestSellers(
+            [FromQuery] int top = 100,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _dashboardAppService.GetBestSellerProductIdsAsync(top));
         }
 
         [HttpGet("exportaspdf")]

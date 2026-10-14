@@ -43,6 +43,12 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Admin: customers aggregated by phone number.</summary>
         Task<List<CustomerDto>> GetCustomersAsync(string searchTerm);
+
+        /// <summary>
+        /// Public: last order info for a phone number (name + address only),
+        /// used to auto-fill the checkout form.
+        /// </summary>
+        Task<LastOrderInfoDto> GetLastOrderInfoByPhoneAsync(string phone);
     }
 
     public class OrderAppService : ApplicationService, IOrderAppService
@@ -56,6 +62,9 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IMoMoPaymentService _momo;
         private readonly IShopSettingAppService _shopSettings;
         private readonly IDiscountAppService _discounts;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> _sizeOptions;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<Topping, Guid> _toppings;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<Combo, Guid> _combos;
 
         public OrderAppService(
             IOrderRepository orders,
@@ -66,7 +75,10 @@ namespace PhuThuongStickyRice.Application.Orders
             BankTransferOptions bankTransfer,
             IMoMoPaymentService momo,
             IShopSettingAppService shopSettings,
-            IDiscountAppService discounts)
+            IDiscountAppService discounts,
+            Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> sizeOptions,
+            Volo.Abp.Domain.Repositories.IRepository<Topping, Guid> toppings,
+            Volo.Abp.Domain.Repositories.IRepository<Combo, Guid> combos)
         {
             _orders = orders;
             _products = products;
@@ -77,6 +89,9 @@ namespace PhuThuongStickyRice.Application.Orders
             _momo = momo;
             _shopSettings = shopSettings;
             _discounts = discounts;
+            _sizeOptions = sizeOptions;
+            _toppings = toppings;
+            _combos = combos;
         }
 
         public async Task<OrderDto> CreateAsync(CreateOrderDto input)
@@ -93,14 +108,70 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException($"Unknown payment method '{input.PaymentMethod}'.");
             }
 
-            var productIds = input.Lines.Select(x => x.ProductId).Distinct().ToList();
+            // Fulfillment: delivery (default) or self-pickup at the shop.
+            var fulfillment = FulfillmentMethod.Delivery;
+            if (!string.IsNullOrWhiteSpace(input.FulfillmentMethod)
+                && Enum.TryParse<FulfillmentMethod>(input.FulfillmentMethod, ignoreCase: true, out var parsedFulfillment)
+                && Enum.IsDefined(typeof(FulfillmentMethod), parsedFulfillment))
+            {
+                fulfillment = parsedFulfillment;
+            }
+
+            var productIds = input.Lines.Where(x => !x.IsCombo).Select(x => x.ProductId).Distinct().ToList();
             var productQueryable = await _products.GetQueryableAsync();
             var products = await _asyncExecuter.ToListAsync(
                 productQueryable.Where(x => productIds.Contains(x.Id)));
 
-            var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity)>();
+            var comboIds = input.Lines.Where(x => x.IsCombo).Select(x => x.ProductId).Distinct().ToList();
+            var comboQueryable = await _combos.GetQueryableAsync();
+            var combos = await _asyncExecuter.ToListAsync(
+                comboQueryable.Where(x => comboIds.Contains(x.Id)));
+
+            var sizeOptionIds = input.Lines
+                .Where(x => x.SizeOptionId.HasValue)
+                .Select(x => x.SizeOptionId.Value)
+                .Distinct()
+                .ToList();
+            var sizeQueryable = await _sizeOptions.GetQueryableAsync();
+            var sizeOptions = sizeOptionIds.Count == 0
+                ? new List<ProductSizeOption>()
+                : await _asyncExecuter.ToListAsync(
+                    sizeQueryable.Where(x => sizeOptionIds.Contains(x.Id)));
+
+            var toppingIds = input.Lines
+                .SelectMany(x => x.ToppingIds ?? Enumerable.Empty<Guid>())
+                .Distinct()
+                .ToList();
+            var toppingQueryable = await _toppings.GetQueryableAsync();
+            var toppings = toppingIds.Count == 0
+                ? new List<Topping>()
+                : await _asyncExecuter.ToListAsync(
+                    toppingQueryable.Where(x => toppingIds.Contains(x.Id) && x.IsActive));
+
+            var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo)>();
             foreach (var line in input.Lines)
             {
+                if (line.IsCombo)
+                {
+                    var combo = combos.FirstOrDefault(x => x.Id == line.ProductId);
+                    if (combo == null || !combo.IsActive)
+                    {
+                        throw new Domain.Exceptions.DomainException("Combo không tồn tại hoặc đã ngừng bán.");
+                    }
+
+                    lines.Add((
+                        combo.Id,
+                        combo.Name,
+                        Money.Of(combo.Price, "VND"),
+                        line.Quantity,
+                        null,
+                        null,
+                        0,
+                        true));
+                    continue;
+                }
+
                 var product = products.FirstOrDefault(x => x.Id == line.ProductId);
                 if (product == null)
                 {
@@ -112,7 +183,41 @@ namespace PhuThuongStickyRice.Application.Orders
                     throw new Domain.Exceptions.DomainException($"Product '{product.Name}' is not available for ordering.");
                 }
 
-                lines.Add((product.Id, product.Name, product.Price, line.Quantity));
+                // Size option: replaces the base price with the size price.
+                string sizeName = null;
+                var unitPrice = product.Price;
+                if (line.SizeOptionId.HasValue)
+                {
+                    var sizeOption = sizeOptions.FirstOrDefault(x => x.Id == line.SizeOptionId.Value);
+                    if (sizeOption == null || !sizeOption.IsActive || sizeOption.ProductId != product.Id)
+                    {
+                        throw new Domain.Exceptions.DomainException(
+                            $"Size option for '{product.Name}' is not available.");
+                    }
+
+                    sizeName = sizeOption.Name;
+                    unitPrice = Money.Of(sizeOption.Price, product.Price.Currency);
+                }
+
+                // Toppings: extra charge summed on top of the unit price.
+                string toppingNames = null;
+                decimal toppingsExtra = 0;
+                var lineToppings = (line.ToppingIds ?? Enumerable.Empty<Guid>()).Distinct().ToList();
+                if (lineToppings.Count > 0)
+                {
+                    var resolved = toppings.Where(x => lineToppings.Contains(x.Id)).ToList();
+                    if (resolved.Count != lineToppings.Count)
+                    {
+                        throw new Domain.Exceptions.DomainException("Một topping đã chọn không còn khả dụng.");
+                    }
+
+                    toppingNames = string.Join(", ", resolved.Select(x => x.Name));
+                    toppingsExtra = resolved.Sum(x => x.ExtraPrice);
+                    unitPrice = Money.Of(unitPrice.Amount + toppingsExtra, unitPrice.Currency);
+                }
+
+                lines.Add((product.Id, product.Name, unitPrice, line.Quantity,
+                    sizeName, toppingNames, toppingsExtra, false));
             }
 
             var orderNumber = await GenerateOrderNumberAsync();
@@ -137,9 +242,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 appliedCode = input.DiscountCode.Trim().ToUpperInvariant();
             }
 
-            // Delivery fee: free when (subtotal - discount) reaches the threshold.
+            // Delivery fee: free when (subtotal - discount) reaches the
+            // threshold; always 0 for self-pickup orders.
             decimal feeValue = 0;
-            if (shopSetting.DeliveryFee > 0)
+            var isPickup = fulfillment == FulfillmentMethod.Pickup;
+            if (!isPickup && shopSetting.DeliveryFee > 0)
             {
                 var afterDiscount = subtotal - discountValue;
                 var freeShip = shopSetting.FreeShipThreshold > 0 && afterDiscount >= shopSetting.FreeShipThreshold;
@@ -157,7 +264,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 lines,
                 Money.Of(feeValue, currency),
                 appliedCode,
-                Money.Of(discountValue, currency));
+                Money.Of(discountValue, currency),
+                fulfillment);
 
             await _orders.InsertAsync(order);
 
@@ -303,6 +411,49 @@ namespace PhuThuongStickyRice.Application.Orders
                         LastOrderAt = g.Max(x => x.CreatedAt)
                     })
                     .OrderByDescending(x => x.TotalSpent));
+        }
+
+        /// <summary>
+        /// Public: last order info for a phone number — only the customer
+        /// name and delivery address (no order details, no sensitive data),
+        /// so the checkout form can offer one-click address re-fill.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public async Task<LastOrderInfoDto> GetLastOrderInfoByPhoneAsync(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                return null;
+            }
+
+            var normalized = new string(phone.Where(char.IsDigit).ToArray());
+            if (normalized.Length < 9)
+            {
+                return null;
+            }
+
+            // Phone matching reuses the tolerant PhonesMatch logic; it runs
+            // in memory over recent orders to keep the query provider-agnostic.
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var recent = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Status != OrderStatus.Cancelled
+                        && !string.IsNullOrWhiteSpace(x.CustomerAddress))
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(50));
+
+            var match = recent.FirstOrDefault(x => PhonesMatch(x.CustomerPhone, phone));
+            if (match == null)
+            {
+                return null;
+            }
+
+            return new LastOrderInfoDto
+            {
+                CustomerName = match.CustomerName,
+                CustomerAddress = match.CustomerAddress,
+                LastOrderAt = match.CreatedAt
+            };
         }
 
         private async Task<Order> FindOrThrowAsync(Guid id)

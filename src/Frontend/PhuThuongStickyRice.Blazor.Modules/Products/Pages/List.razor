@@ -1,4 +1,4 @@
-﻿@page "/products"
+@page "/products"
 @attribute [Authorize]
 
 <div class="card">
@@ -18,6 +18,10 @@
         </div>
     </div>
     <div class="card-body">
+        @if (!string.IsNullOrEmpty(ToggleError))
+        {
+            <div class="alert alert-danger">@ToggleError</div>
+        }
         <div class="table-responsive">
 
             @if (Products == null)
@@ -31,7 +35,8 @@
                         <tr>
                             <th>Tên món</th>
                             <th>Mã</th>
-                            <th>Mô tả</th>
+                            <th class="text-right">Giá (₫)</th>
+                            <th>Trạng thái</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -39,12 +44,47 @@
                         @foreach (var product in Products)
                         {
                             <tr @key="product.Id">
-                                <td><a href="@($"/products/{product.Id}")">@product.Name</a></td>
-                                <td>@product.Code</td>
-                                <td>@product.Description</td>
                                 <td>
-                                    <button @onclick="(()=> EditProduct(product))" class="btn btn-primary" title="Sửa">Sửa</button>
-                                    <button @onclick="(()=> DeleteProduct(product))" class="btn btn-danger" title="Xóa">Xóa</button>
+                                    <a href="@($"/products/{product.Id}")">@product.Name</a>
+                                    @if (product.IsNew)
+                                    {
+                                        <span class="badge badge-success ml-1">Món mới</span>
+                                    }
+                                    @if (product.IsSignature)
+                                    {
+                                        <span class="badge badge-warning ml-1">Signature</span>
+                                    }
+                                    @if (IsOutOfSeason(product))
+                                    {
+                                        <span class="badge badge-secondary ml-1" title="Ngoài khung thời gian bán theo mùa — web không hiển thị món này">Hết mùa</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(product.Category))
+                                    {
+                                        <br /><small class="text-muted">@product.Category</small>
+                                    }
+                                </td>
+                                <td>@product.Code</td>
+                                <td class="text-right">@product.Price.ToString("N0")</td>
+                                <td>
+                                    @if (product.Status == "Active")
+                                    {
+                                        <span class="badge badge-success">Đang bán</span>
+                                    }
+                                    else if (product.Status == "Inactive")
+                                    {
+                                        <span class="badge badge-secondary">Hết hàng</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-dark">@product.Status</span>
+                                    }
+                                </td>
+                                <td class="text-right text-nowrap">
+                                    <button @onclick="(() => ToggleAvailability(product))" class="btn btn-sm btn-outline-warning" title="Bật/tắt bán (hết hàng)">
+                                        @(product.Status == "Active" ? "Hết hàng" : "Mở bán")
+                                    </button>
+                                    <button @onclick="(() => EditProduct(product))" class="btn btn-sm btn-primary" title="Sửa">Sửa</button>
+                                    <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm btn-danger" title="Xóa">Xóa</button>
                                 </td>
                             </tr>
                         }

@@ -17,5 +17,19 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
         public string Currency { get; set; }
 
         public string Status { get; set; }
+
+        public string Tags { get; set; }
+
+        public string Category { get; set; }
+
+        public string AllergenInfo { get; set; }
+
+        public bool IsNew { get; set; }
+
+        public bool IsSignature { get; set; }
+
+        public DateTime? AvailableFrom { get; set; }
+
+        public DateTime? AvailableTo { get; set; }
     }
 }

@@ -25,10 +25,87 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public string Currency { get; set; }
 
         public string Status { get; set; }
+
+        /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
+        public string Tags { get; set; }
+
+        public string Category { get; set; }
+
+        public string AllergenInfo { get; set; }
+
+        public bool IsNew { get; set; }
+
+        public bool IsSignature { get; set; }
+
+        public DateTime? AvailableFrom { get; set; }
+
+        public DateTime? AvailableTo { get; set; }
+
+        public List<ProductSizeOptionModel> Sizes { get; set; } = new List<ProductSizeOptionModel>();
+
+        public DateTimeOffset CreatedDateTime { get; set; }
+    }
+
+    public class ProductSizeOptionModel
+    {
+        public Guid Id { get; set; }
+
+        public Guid ProductId { get; set; }
+
+        public string Name { get; set; }
+
+        public decimal Price { get; set; }
+
+        public int SortOrder { get; set; }
+
+        public bool IsActive { get; set; }
+    }
+
+    public class ToppingModel
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; }
+
+        public decimal ExtraPrice { get; set; }
+
+        public bool IsActive { get; set; }
+    }
+
+    public class ComboItemModel
+    {
+        public Guid ProductId { get; set; }
+
+        public string ProductName { get; set; }
+
+        public decimal ProductPrice { get; set; }
+
+        public int Quantity { get; set; }
+    }
+
+    public class ComboModel
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public decimal Price { get; set; }
+
+        public bool IsActive { get; set; }
+
+        public List<ComboItemModel> Items { get; set; } = new List<ComboItemModel>();
     }
 
     public class CartItemModel
     {
+        /// <summary>
+        /// Stable key for the configured line: product/combo id + size +
+        /// toppings, so different configurations are separate lines.
+        /// </summary>
+        public string LineKey { get; set; }
+
         public Guid ProductId { get; set; }
 
         public string ProductName { get; set; }
@@ -40,6 +117,18 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public int Quantity { get; set; }
 
         public decimal LineTotal => UnitPrice * Quantity;
+
+        public Guid? SizeOptionId { get; set; }
+
+        public string SizeName { get; set; }
+
+        public List<Guid> ToppingIds { get; set; } = new List<Guid>();
+
+        public string ToppingNames { get; set; }
+
+        public decimal ToppingsTotal { get; set; }
+
+        public bool IsCombo { get; set; }
     }
 
     public class CreateOrderLineModel
@@ -47,6 +136,12 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public Guid ProductId { get; set; }
 
         public int Quantity { get; set; }
+
+        public Guid? SizeOptionId { get; set; }
+
+        public List<Guid> ToppingIds { get; set; } = new List<Guid>();
+
+        public bool IsCombo { get; set; }
     }
 
     public class CreateOrderModel
@@ -67,6 +162,9 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         /// <summary>Optional discount/promo code.</summary>
         public string DiscountCode { get; set; }
+
+        /// <summary>"Delivery" (default) or "Pickup".</summary>
+        public string FulfillmentMethod { get; set; } = "Delivery";
 
         public List<CreateOrderLineModel> Lines { get; set; } = new List<CreateOrderLineModel>();
     }
@@ -100,6 +198,8 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public string PaymentMethod { get; set; }
 
         public string PaymentStatus { get; set; }
+
+        public string FulfillmentMethod { get; set; }
     }
 
     /// <summary>Public bank-transfer details shown at checkout (account info + VietQR).</summary>
@@ -174,6 +274,14 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public int Quantity { get; set; }
 
         public decimal LineTotal { get; set; }
+
+        public string SizeName { get; set; }
+
+        public string ToppingNames { get; set; }
+
+        public decimal ToppingsExtra { get; set; }
+
+        public bool IsCombo { get; set; }
     }
 
     /// <summary>Order as returned by the public /api/orders/track endpoint.</summary>
@@ -198,6 +306,8 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public string PaymentMethod { get; set; }
 
         public string PaymentStatus { get; set; }
+
+        public string FulfillmentMethod { get; set; }
 
         public decimal TotalAmount { get; set; }
 
@@ -224,5 +334,50 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public decimal FreeShipThreshold { get; set; }
 
         public decimal MinOrderAmount { get; set; }
+
+        public int EstimatedDeliveryMinutes { get; set; }
+    }
+
+    /// <summary>Result of GET api/dashboard/today-sold.</summary>
+    public class TodaySoldModel
+    {
+        public long QuantitySold { get; set; }
+    }
+
+    /// <summary>Bulk/event quote request (đặt tiệc).</summary>
+    public class QuoteRequestModel
+    {
+        public string CustomerName { get; set; }
+
+        public string CustomerPhone { get; set; }
+
+        public DateTime? EventDate { get; set; }
+
+        public int Quantity { get; set; }
+
+        public string Notes { get; set; }
+    }
+
+    public class DishCandidateModel
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public long Votes { get; set; }
+
+        public bool IsActive { get; set; }
+    }
+
+    /// <summary>Public: last order name/address for a phone number.</summary>
+    public class LastOrderInfoModel
+    {
+        public string CustomerName { get; set; }
+
+        public string CustomerAddress { get; set; }
+
+        public DateTime LastOrderAt { get; set; }
     }
 }

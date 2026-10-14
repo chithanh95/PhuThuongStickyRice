@@ -19,8 +19,13 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.CustomerName).HasMaxLength(Order.CustomerNameMaxLength).IsRequired();
             builder.Property(x => x.CustomerPhone).HasMaxLength(Order.CustomerPhoneMaxLength).IsRequired();
             builder.Property(x => x.CustomerEmail).HasMaxLength(Order.CustomerEmailMaxLength);
-            builder.Property(x => x.CustomerAddress).HasMaxLength(Order.CustomerAddressMaxLength).IsRequired();
+            builder.Property(x => x.CustomerAddress).HasMaxLength(Order.CustomerAddressMaxLength);
             builder.Property(x => x.Notes).HasMaxLength(Order.NotesMaxLength);
+
+            // Nullable: self-pickup orders have no delivery address.
+            builder.Property(x => x.FulfillmentMethod)
+                .HasConversion<int>()
+                .IsRequired();
 
             builder.Property(x => x.Status)
                 .HasConversion<int>()

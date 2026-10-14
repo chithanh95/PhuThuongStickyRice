@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Blazor.Modules.Products.Models
@@ -12,9 +12,31 @@ namespace PhuThuongStickyRice.Blazor.Modules.Products.Models
         public string Code { get; set; }
 
         [Required]
-        [MaxLength(10)]
+        [MaxLength(200)]
         public string Name { get; set; }
 
         public string Description { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal Price { get; set; }
+
+        public string Currency { get; set; } = "VND";
+
+        public string Status { get; set; }
+
+        /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
+        public string Tags { get; set; }
+
+        public string Category { get; set; }
+
+        public string AllergenInfo { get; set; }
+
+        public bool IsNew { get; set; }
+
+        public bool IsSignature { get; set; }
+
+        public DateTime? AvailableFrom { get; set; }
+
+        public DateTime? AvailableTo { get; set; }
     }
 }

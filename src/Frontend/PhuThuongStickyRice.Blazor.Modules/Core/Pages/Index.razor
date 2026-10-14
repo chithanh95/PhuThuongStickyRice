@@ -77,6 +77,10 @@
 <section class="lp-quick">
     <div class="lp-menu-band">
         <h2 class="lp-band-title">Món bán chạy</h2>
+        @if (_todaySold > 0)
+        {
+            <p class="text-center mb-0"><span class="badge badge-danger" style="font-size: 0.95rem;">🔥 Hôm nay đã bán @_todaySold gói</span></p>
+        }
     </div>
     <div class="lp-quick-row">
         @if (_quickProducts == null)
@@ -169,6 +173,7 @@
 @code {
     private LandingContentModel _content = new LandingContentModel();
     private List<ShopProductModel> _quickProducts;
+    private long _todaySold;
 
     protected override async Task OnInitializedAsync()
     {
@@ -189,6 +194,15 @@
         catch (Exception)
         {
             _quickProducts = new List<ShopProductModel>();
+        }
+
+        try
+        {
+            _todaySold = await ShopService.GetTodaySoldAsync();
+        }
+        catch (Exception)
+        {
+            _todaySold = 0;
         }
     }
 

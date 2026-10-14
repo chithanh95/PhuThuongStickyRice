@@ -16,6 +16,14 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public int Quantity { get; set; }
 
         public decimal LineTotal { get; set; }
+
+        public string SizeName { get; set; }
+
+        public string ToppingNames { get; set; }
+
+        public decimal ToppingsExtra { get; set; }
+
+        public bool IsCombo { get; set; }
     }
 
     public class OrderDto : EntityDto<Guid>
@@ -37,6 +45,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string PaymentMethod { get; set; }
 
         public string PaymentStatus { get; set; }
+
+        /// <summary>"Delivery" or "Pickup".</summary>
+        public string FulfillmentMethod { get; set; }
 
         public decimal TotalAmount { get; set; }
 
@@ -63,6 +74,15 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         [Range(1, int.MaxValue)]
         public int Quantity { get; set; }
+
+        /// <summary>Optional size option id (Nhỏ / Vừa / Lớn).</summary>
+        public Guid? SizeOptionId { get; set; }
+
+        /// <summary>Optional topping ids.</summary>
+        public List<Guid> ToppingIds { get; set; } = new List<Guid>();
+
+        /// <summary>True when ProductId is a combo id, not a product id.</summary>
+        public bool IsCombo { get; set; }
     }
 
     public class CreateOrderDto
@@ -96,7 +116,23 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         [StringLength(50)]
         public string DiscountCode { get; set; }
 
+        /// <summary>"Delivery" (default) or "Pickup". Pickup orders have no delivery fee and no address.</summary>
+        public string FulfillmentMethod { get; set; }
+
         public List<CreateOrderLineDto> Lines { get; set; } = new List<CreateOrderLineDto>();
+    }
+
+    /// <summary>
+    /// Public: last order info for a phone number, used to auto-fill the
+    /// checkout address. Returns only name/address — no sensitive data.
+    /// </summary>
+    public class LastOrderInfoDto
+    {
+        public string CustomerName { get; set; }
+
+        public string CustomerAddress { get; set; }
+
+        public DateTime LastOrderAt { get; set; }
     }
 
     /// <summary>Customer aggregated by phone number (admin).</summary>
