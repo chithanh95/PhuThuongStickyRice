@@ -12,6 +12,16 @@
 @inject ShopService ShopService
 @inject CartState CartState
 @inject ToastService Toasts
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+<!-- 0. FLASH BANNER (item 94) -->
+@if (!_bannerDismissed && _content.FlashBannerActive && !string.IsNullOrWhiteSpace(_content.FlashBannerText))
+{
+    <div class="lp-flash" role="alert">
+        <span>⚡ @_content.FlashBannerText</span>
+        <button type="button" class="lp-flash-close" aria-label="Đóng" @onclick="() => _bannerDismissed = true">×</button>
+    </div>
+}
 
 <!-- 1. HERO -->
 <section class="lp-hero">
@@ -111,20 +121,38 @@
     </div>
 </section>
 
-<!-- 5. NEWS / STORIES -->
+<!-- 5. NEWS / STORIES — item 93: published articles (latest 3), NewsItems JSON as fallback -->
 <section class="lp-news">
     <div class="row no-gutters">
         <div class="col-md-5 lp-news-title-col">
             <h2 class="lp-panel-title">@_content.NewsTitle</h2>
         </div>
         <div class="col-md-7 lp-news-panel">
-            @foreach (var item in _content.NewsItems)
+            @if (_articles != null && _articles.Count > 0)
             {
-                <div class="lp-news-item" @key="item.Title">
-                    <h3 class="lp-news-item-title">@item.Title</h3>
-                    <p class="lp-news-item-body">@item.Body</p>
-                    <div class="lp-news-source">— @item.Source</div>
-                </div>
+                @foreach (var item in _articles)
+                {
+                    <div class="lp-news-item" @key="item.Id">
+                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                        {
+                            <img src="@Img(item.ImageUrl, null)" alt="@item.Title" class="img-fluid mb-2" style="border-radius: 8px;" />
+                        }
+                        <h3 class="lp-news-item-title">@item.Title</h3>
+                        <p class="lp-news-item-body">@item.Body</p>
+                        <div class="lp-news-source">— @item.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                @foreach (var item in _content.NewsItems)
+                {
+                    <div class="lp-news-item" @key="item.Title">
+                        <h3 class="lp-news-item-title">@item.Title</h3>
+                        <p class="lp-news-item-body">@item.Body</p>
+                        <div class="lp-news-source">— @item.Source</div>
+                    </div>
+                }
             }
         </div>
     </div>
@@ -146,12 +174,55 @@
     </section>
 }
 
-<!-- 5c. REVIEWS -->
+<!-- 5c. REVIEWS — item 87: public customer reviews (hidden reviews excluded) -->
 @if (!string.IsNullOrWhiteSpace(_content.ReviewsEmbedHtml))
 {
     <section class="lp-reviews">
         @((MarkupString)_content.ReviewsEmbedHtml)
     </section>
+}
+@if (_publicReviews != null && _publicReviews.Count > 0)
+{
+    <section class="lp-news">
+        <div class="row no-gutters">
+            <div class="col-md-5 lp-news-title-col">
+                <h2 class="lp-panel-title">Khách hàng nói gì</h2>
+            </div>
+            <div class="col-md-7 lp-news-panel">
+                @foreach (var r in _publicReviews)
+                {
+                    <div class="lp-news-item" @key="r.OrderNumber">
+                        <div style="color: #f6c453; font-size: 18px; white-space: nowrap;">
+                            @(new string('★', r.Rating))<span style="color: #ddd;">@(new string('★', 5 - r.Rating))</span>
+                        </div>
+                        <p class="lp-news-item-body mt-1">@r.Comment</p>
+                        @if (!string.IsNullOrWhiteSpace(r.AdminReply))
+                        {
+                            <p class="mt-1"><small class="text-muted"><strong>Quán trả lời:</strong> @r.AdminReply</small></p>
+                        }
+                        <div class="lp-news-source">— SĐT @MaskPhone(r.CustomerPhone)</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- 5d. PROMO POPUP — item 94: shown once per session (localStorage) -->
+@if (_showPopup)
+{
+    <div class="lp-popup-overlay" @onclick="DismissPopup">
+        <div class="lp-popup" @onclick:stopPropagation>
+            <button type="button" class="lp-popup-close" aria-label="Đóng" @onclick="DismissPopup">×</button>
+            @if (!string.IsNullOrWhiteSpace(_content.PopupImageUrl))
+            {
+                <img src="@Img(_content.PopupImageUrl, null)" alt="@_content.PopupTitle" class="lp-popup-img" />
+            }
+            <h3 class="lp-popup-title">@_content.PopupTitle</h3>
+            <p class="lp-popup-body">@_content.PopupBody</p>
+            <a href="/shop" class="lp-cta lp-cta-maroon">Đặt ngay →</a>
+        </div>
+    </div>
 }
 
 <!-- 6. FOOTER -->
@@ -206,6 +277,18 @@
     private List<ShopProductModel> _quickProducts;
     private long _todaySold;
 
+    // Item 93: news CMS articles (latest 3 published).
+    private List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.ArticleModel> _articles;
+
+    // Item 87: public order reviews.
+    private List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.PublicReviewModel> _publicReviews;
+
+    // Item 94: flash banner + promo popup state.
+    private bool _bannerDismissed;
+    private bool _showPopup;
+    private bool _popupChecked;
+    private const string PopupSeenKey = "phuthuong.popup.seen";
+
     /// <summary>
     /// Converts a YouTube watch/share URL to an embed URL.
     /// Returns null when no video is configured.
@@ -256,6 +339,28 @@
             _content = new LandingContentModel();
         }
 
+        // Item 93: published articles; NewsItems JSON stays as fallback.
+        try
+        {
+            _articles = (await LandingService.GetArticlesAsync())
+                ?.Take(3).ToList() ?? new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.ArticleModel>();
+        }
+        catch (Exception)
+        {
+            _articles = new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.ArticleModel>();
+        }
+
+        // Item 87: public reviews (hidden reviews are excluded server-side).
+        try
+        {
+            _publicReviews = (await LandingService.GetPublicReviewsAsync())
+                ?.Take(6).ToList() ?? new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.PublicReviewModel>();
+        }
+        catch (Exception)
+        {
+            _publicReviews = new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.PublicReviewModel>();
+        }
+
         try
         {
             var paged = await ShopService.GetProductsAsync();
@@ -274,6 +379,55 @@
         {
             _todaySold = 0;
         }
+    }
+
+    /// <summary>
+    /// Item 94: shows the promo popup once per session. localStorage can only
+    /// be touched after the first render (server-side prerendering safety).
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_popupChecked && _content.PopupActive)
+        {
+            _popupChecked = true;
+            try
+            {
+                var seen = await JSRuntime.InvokeAsync<string>("localStorage.getItem", PopupSeenKey);
+                if (string.IsNullOrEmpty(seen))
+                {
+                    _showPopup = true;
+                    StateHasChanged();
+                }
+            }
+            catch (Exception)
+            {
+                // localStorage unavailable — skip the popup silently.
+            }
+        }
+    }
+
+    private async Task DismissPopup()
+    {
+        _showPopup = false;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", PopupSeenKey, "1");
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    /// <summary>Masks a phone number for public display (090•…•5678).</summary>
+    private static string MaskPhone(string phone)
+    {
+        var digits = new string((phone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 6)
+        {
+            return phone;
+        }
+
+        return $"{digits.Substring(0, 3)}•…•{digits.Substring(digits.Length - 4)}";
     }
 
     /// <summary>Add one item to the cart from the quick-order strip.</summary>

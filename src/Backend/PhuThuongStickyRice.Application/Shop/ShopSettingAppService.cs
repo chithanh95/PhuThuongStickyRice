@@ -63,6 +63,19 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.TierSilverDiscount = Math.Min(100, Math.Max(0, dto.TierSilverDiscount));
             entity.TierGoldMin = Math.Max(0, dto.TierGoldMin);
             entity.TierGoldDiscount = Math.Min(100, Math.Max(0, dto.TierGoldDiscount));
+            entity.OwnerReportEmail = string.IsNullOrWhiteSpace(dto.OwnerReportEmail)
+                ? null
+                : dto.OwnerReportEmail.Trim();
+            entity.UnconfirmedAlertMinutes = dto.UnconfirmedAlertMinutes < 1 ? 15 : dto.UnconfirmedAlertMinutes;
+            entity.RecaptchaSiteKey = string.IsNullOrWhiteSpace(dto.RecaptchaSiteKey)
+                ? null
+                : dto.RecaptchaSiteKey.Trim();
+            entity.RecaptchaSecretKey = string.IsNullOrWhiteSpace(dto.RecaptchaSecretKey)
+                ? null
+                : dto.RecaptchaSecretKey.Trim();
+            entity.WebBaseUrl = string.IsNullOrWhiteSpace(dto.WebBaseUrl)
+                ? null
+                : dto.WebBaseUrl.Trim().TrimEnd('/');
             await _settings.UpdateAsync(entity, autoSave: true);
 
             return MapToDto(entity);
@@ -95,7 +108,12 @@ namespace PhuThuongStickyRice.Application.Shop
                 TierSilverMin = entity.TierSilverMin,
                 TierSilverDiscount = entity.TierSilverDiscount,
                 TierGoldMin = entity.TierGoldMin,
-                TierGoldDiscount = entity.TierGoldDiscount
+                TierGoldDiscount = entity.TierGoldDiscount,
+                OwnerReportEmail = entity.OwnerReportEmail,
+                UnconfirmedAlertMinutes = entity.UnconfirmedAlertMinutes < 1 ? 15 : entity.UnconfirmedAlertMinutes,
+                RecaptchaSiteKey = entity.RecaptchaSiteKey,
+                RecaptchaSecretKey = entity.RecaptchaSecretKey,
+                WebBaseUrl = entity.WebBaseUrl
             };
         }
     }

@@ -64,5 +64,17 @@ namespace PhuThuongStickyRice.Blazor.Modules.Landing.Models
         public string MapEmbedUrl { get; set; }
 
         public string ReviewsEmbedHtml { get; set; }
+
+        public string PopupTitle { get; set; }
+
+        public string PopupBody { get; set; }
+
+        public string PopupImageUrl { get; set; }
+
+        public bool PopupActive { get; set; }
+
+        public string FlashBannerText { get; set; }
+
+        public bool FlashBannerActive { get; set; }
     }
 }

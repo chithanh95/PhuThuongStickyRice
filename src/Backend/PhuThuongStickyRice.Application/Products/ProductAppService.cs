@@ -111,6 +111,7 @@ namespace PhuThuongStickyRice.Application.Products
             }
 
             var product = Product.Create(code, input.Name, Money.Of(input.Price, input.Currency ?? "VND"), input.Description);
+            product.ChangeCostPrice(input.CostPrice);
             product.UpdateCatalogInfo(
                 input.Tags, input.Category, input.AllergenInfo,
                 input.IsNew, input.IsSignature,
@@ -134,6 +135,7 @@ namespace PhuThuongStickyRice.Application.Products
 
             product.UpdateDetails(input.Name, input.Description);
             product.ChangePrice(Money.Of(input.Price, input.Currency ?? "VND"));
+            product.ChangeCostPrice(input.CostPrice);
             product.UpdateCatalogInfo(
                 input.Tags, input.Category, input.AllergenInfo,
                 input.IsNew, input.IsSignature,

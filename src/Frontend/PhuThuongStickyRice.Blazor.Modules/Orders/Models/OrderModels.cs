@@ -21,6 +21,13 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Models
         public int Quantity { get; set; }
 
         public decimal LineTotal { get; set; }
+
+        public string SizeName { get; set; }
+
+        public string ToppingNames { get; set; }
+
+        /// <summary>Per-item note from the customer.</summary>
+        public string Note { get; set; }
     }
 
     public class OrderModel
@@ -83,6 +90,14 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Models
 
         public decimal GiftFee { get; set; }
 
+        public Guid? ShipperId { get; set; }
+
+        public string ShipperName { get; set; }
+
+        public string PromotionName { get; set; }
+
+        public decimal PromotionDiscountAmount { get; set; }
+
         public List<OrderLineModel> Lines { get; set; } = new List<OrderLineModel>();
     }
 
@@ -112,6 +127,11 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Models
         public long TotalOrders { get; set; }
 
         public long PendingOrders { get; set; }
+
+        /// <summary>Item 86: Pending orders older than StalePendingMinutes.</summary>
+        public long StalePendingOrders { get; set; }
+
+        public int StalePendingMinutes { get; set; }
 
         public decimal TotalRevenue { get; set; }
 

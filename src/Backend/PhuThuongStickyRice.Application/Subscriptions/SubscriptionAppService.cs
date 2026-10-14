@@ -133,10 +133,10 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             foreach (var sub in due)
             {
                 var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                    string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo)>
+                    string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>
                 {
                     (sub.ProductId, sub.ProductName, Money.Of(sub.UnitPrice, "VND"),
-                        sub.Quantity, sub.SizeName, sub.ToppingNames, 0, false)
+                        sub.Quantity, sub.SizeName, sub.ToppingNames, 0, false, null)
                 };
 
                 var subtotal = sub.UnitPrice * sub.Quantity;

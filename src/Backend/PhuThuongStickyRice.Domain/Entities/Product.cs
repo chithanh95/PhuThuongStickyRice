@@ -25,6 +25,12 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public Money Price { get; private set; }
 
+        /// <summary>
+        /// Cost price (giá vốn) in VND, admin-editable. Powers the
+        /// /admin/loi-nhuan profit report (revenue − cost).
+        /// </summary>
+        public decimal CostPrice { get; private set; }
+
         public ProductStatus Status { get; private set; }
 
         /// <summary>
@@ -137,6 +143,17 @@ namespace PhuThuongStickyRice.Domain.Entities
             }
 
             Price = newPrice;
+        }
+
+        /// <summary>Sets the cost price (giá vốn) in VND. Must not be negative.</summary>
+        public void ChangeCostPrice(decimal costPrice)
+        {
+            if (costPrice < 0)
+            {
+                throw new DomainException("Cost price must not be negative.");
+            }
+
+            CostPrice = costPrice;
         }
 
         public void Activate()

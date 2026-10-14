@@ -13,6 +13,7 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             builder.Property(x => x.Name).HasMaxLength(Product.NameMaxLength).IsRequired();
             builder.Property(x => x.Description).HasMaxLength(Product.DescriptionMaxLength);
+            builder.Property(x => x.CostPrice).HasPrecision(18, 2).IsRequired();
 
             builder.Property(x => x.Tags).HasMaxLength(Product.TagsMaxLength);
             builder.Property(x => x.Category).HasMaxLength(Product.CategoryMaxLength);

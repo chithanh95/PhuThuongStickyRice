@@ -1,0 +1,222 @@
+@page "/admin/quy-tac-thuong"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@inject Wave3Service Wave3Service
+
+<h3>Quy tắc thưởng tự động</h3>
+<p class="text-muted">Khi đơn hàng hoàn thành và đạt mức tiền tối thiểu, hệ thống tự thưởng: tặng topping (ghi chú trên đơn) hoặc sinh mã giảm giá cho SĐT khách.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">@(_editing == null ? "Thêm quy tắc" : "Sửa quy tắc")</div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="col-md-4 mb-2">
+                <label><small class="text-muted">Tên quy tắc *</small></label>
+                <input class="form-control" placeholder="VD: Đơn từ 200k tặng topping" @bind="_form.Name" />
+            </div>
+            <div class="col-md-2 mb-2">
+                <label><small class="text-muted">Đơn tối thiểu (₫) *</small></label>
+                <input type="number" min="0" step="10000" class="form-control" @bind="_form.MinAmount" />
+            </div>
+            <div class="col-md-2 mb-2">
+                <label><small class="text-muted">Loại thưởng</small></label>
+                <select class="form-control" @bind="_form.RewardType">
+                    <option value="FreeTopping">Tặng topping</option>
+                    <option value="DiscountCode">Mã giảm giá</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                @if (_form.RewardType == "DiscountCode")
+                {
+                    <label><small class="text-muted">% giảm của mã tặng *</small></label>
+                    <input type="number" min="1" max="100" step="1" class="form-control" @bind="_form.DiscountPercent" />
+                }
+                else
+                {
+                    <label><small class="text-muted">Tên topping tặng *</small></label>
+                    <input class="form-control" placeholder="VD: Hành phi" @bind="_form.ToppingName" />
+                }
+            </div>
+            <div class="col-md-1 mb-2">
+                <label><small class="text-muted">Bật</small></label>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="rule-active" @bind="_form.IsActive" />
+                    <label class="form-check-label" for="rule-active">✓</label>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-primary mr-2" @onclick="SaveAsync" disabled="@_saving">
+            @(_editing == null ? "Thêm" : "Lưu")
+        </button>
+        @if (_editing != null)
+        {
+            <button class="btn btn-outline-secondary" @onclick="CancelEdit">Hủy</button>
+        }
+    </div>
+</div>
+
+@if (_items == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_items.Count == 0)
+{
+    <div class="alert alert-info">Chưa có quy tắc thưởng nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr><th>Tên</th><th class="text-right">Đơn tối thiểu</th><th>Thưởng</th><th>Trạng thái</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in _items)
+                {
+                    <tr @key="r.Id">
+                        <td><strong>@r.Name</strong></td>
+                        <td class="text-right">@r.MinAmount.ToString("N0") ₫</td>
+                        <td>
+                            @if (r.RewardType == "DiscountCode")
+                            {
+                                <span class="badge badge-info">Mã −@((r.DiscountPercent ?? 0).ToString("N0"))%</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-success">Topping: @r.ToppingName</span>
+                            }
+                        </td>
+                        <td>
+                            @if (r.IsActive)
+                            {
+                                <span class="badge badge-success">Bật</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary">Tắt</span>
+                            }
+                        </td>
+                        <td class="text-right">
+                            <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(r)">Sửa</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(r)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<OrderRewardRuleModel> _items;
+    private OrderRewardRuleModel _form = NewForm();
+    private OrderRewardRuleModel _editing;
+    private string _error;
+    private string _message;
+    private bool _saving;
+
+    private static OrderRewardRuleModel NewForm() => new OrderRewardRuleModel
+    {
+        RewardType = "FreeTopping",
+        MinAmount = 200000,
+        DiscountPercent = 5,
+        IsActive = true
+    };
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _items = await Wave3Service.GetRewardRulesAsync() ?? new List<OrderRewardRuleModel>();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được quy tắc thưởng.";
+            _items = new List<OrderRewardRuleModel>();
+        }
+    }
+
+    private void StartEdit(OrderRewardRuleModel r)
+    {
+        _editing = r;
+        _form = new OrderRewardRuleModel
+        {
+            Id = r.Id,
+            Name = r.Name,
+            MinAmount = r.MinAmount,
+            RewardType = r.RewardType,
+            ToppingName = r.ToppingName,
+            DiscountPercent = r.DiscountPercent,
+            IsActive = r.IsActive
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editing = null;
+        _form = NewForm();
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _message = null;
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _error = "Vui lòng nhập tên quy tắc.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (_editing == null)
+            {
+                await Wave3Service.CreateRewardRuleAsync(_form);
+                _message = "Đã thêm quy tắc thưởng.";
+            }
+            else
+            {
+                await Wave3Service.UpdateRewardRuleAsync(_editing.Id, _form);
+                _message = "Đã lưu thay đổi.";
+            }
+
+            CancelEdit();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task DeleteAsync(OrderRewardRuleModel r)
+    {
+        _error = null;
+        try
+        {
+            await Wave3Service.DeleteRewardRuleAsync(r.Id);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

@@ -4,6 +4,7 @@
 @using PhuThuongStickyRice.Blazor.Modules.Orders.Services
 @inject OrderService OrderService
 @inject NavigationManager Navigation
+@inject PhuThuongStickyRice.Blazor.Modules.Admin.Services.Wave3Service Wave3Service
 
 <h3>Quản lý đơn hàng</h3>
 
@@ -23,6 +24,18 @@
                     <option value="Delivering">Đang giao</option>
                     <option value="Completed">Hoàn thành</option>
                     <option value="Cancelled">Đã hủy</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" @bind="_shipperFilter" @bind:after="() => LoadOrders(1)">
+                    <option value="">Tất cả shipper</option>
+                    @if (_shippers != null)
+                    {
+                        @foreach (var s in _shippers)
+                        {
+                            <option value="@s.Id">@s.Name</option>
+                        }
+                    }
                 </select>
             </div>
         </div>
@@ -47,6 +60,7 @@ else
                             <th class="text-right">Tổng tiền</th>
                             <th>Trạng thái</th>
                             <th>Thanh toán</th>
+                            <th>Shipper</th>
                             <th>Ngày đặt</th>
                             <th></th>
                         </tr>
@@ -73,17 +87,41 @@ else
                                 <td class="text-right"><strong>@FormatPrice(order.TotalAmount)</strong></td>
                                 <td>@StatusBadge(order.Status)</td>
                                 <td>@PaymentInfo(order)</td>
+                                <td><small>@order.ShipperName</small></td>
                                 <td>@order.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
                                 <td class="text-right">@NextStatusButtons(order) @ConfirmPaymentButton(order)</td>
                             </tr>
                             @if (_expandedOrderId == order.Id)
                             {
                                 <tr>
-                                    <td colspan="8" class="bg-light">
+                                    <td colspan="9" class="bg-light">
                                         <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
                                             <strong>Chi tiết đơn @order.OrderNumber</strong>
-                                            <a class="btn btn-sm btn-outline-secondary" href="@($"/orders/print/{order.Id}")" target="_blank">🖨 In hóa đơn</a>
+                                            <div>
+                                                <a class="btn btn-sm btn-outline-secondary mr-1" href="@($"/orders/print/{order.Id}")" target="_blank">🖨 In hóa đơn</a>
+                                                <a class="btn btn-sm btn-outline-secondary" href="@($"/orders/nhan/{order.Id}")" target="_blank">🏷 In tem</a>
+                                            </div>
                                         </div>
+                                        @if (order.Status == "Delivering" && _shippers != null)
+                                        {
+                                            <div class="form-row align-items-center mb-2">
+                                                <div class="col-md-4">
+                                                    <select class="form-control form-control-sm"
+                                                            value="@(order.ShipperId?.ToString() ?? "")"
+                                                            @onchange="(e) => AssignShipper(order, e.Value?.ToString())">
+                                                        <option value="">— Gán shipper —</option>
+                                                        @foreach (var s in _shippers)
+                                                        {
+                                                            <option value="@s.Id">@s.Name — @s.Phone</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(_shipperMessage))
+                                                {
+                                                    <div class="col-md-8"><small class="text-success">@_shipperMessage</small></div>
+                                                }
+                                            </div>
+                                        }
                                         @if (!string.IsNullOrWhiteSpace(order.CustomerEmail))
                                         {
                                             <div>Email: @order.CustomerEmail</div>
@@ -186,8 +224,13 @@ else
     private int _page = 1;
     private string _searchTerm;
     private string _statusFilter;
+    private string _shipperFilter;
     private Guid? _expandedOrderId;
     private System.Threading.Timer _searchTimer;
+
+    // Item 82: shippers for the filter dropdown and assignment.
+    private List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.ShipperModel> _shippers;
+    private string _shipperMessage;
 
     private static readonly string[] Statuses =
         { "Pending", "Confirmed", "Preparing", "Delivering", "Completed", "Cancelled" };
@@ -206,13 +249,36 @@ else
             _searchTerm = searchTerm;
         }
 
+        try
+        {
+            _shippers = await Wave3Service.GetShippersAsync(false)
+                ?? new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.ShipperModel>();
+        }
+        catch (Exception)
+        {
+            _shippers = new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.ShipperModel>();
+        }
+
         await LoadOrders(1);
+    }
+
+    private Guid? ShipperFilterId
+    {
+        get
+        {
+            if (Guid.TryParse(_shipperFilter, out var id) && id != Guid.Empty)
+            {
+                return id;
+            }
+
+            return null;
+        }
     }
 
     private async Task LoadOrders(int page)
     {
         _page = page < 1 ? 1 : page;
-        _paged = await OrderService.GetOrdersAsync(_page, 20, _searchTerm, _statusFilter);
+        _paged = await OrderService.GetOrdersAsync(_page, 20, _searchTerm, _statusFilter, ShipperFilterId);
     }
 
     private void OnSearchChanged()
@@ -239,6 +305,29 @@ else
     {
         await OrderService.ConfirmPaymentAsync(order.Id);
         await LoadOrders(_page);
+    }
+
+    /// <summary>Item 82: assigns (or unassigns) a shipper to the order.</summary>
+    private async Task AssignShipper(OrderModel order, string shipperIdText)
+    {
+        _shipperMessage = null;
+        Guid? shipperId = null;
+        if (Guid.TryParse(shipperIdText, out var id) && id != Guid.Empty)
+        {
+            shipperId = id;
+        }
+
+        try
+        {
+            var updated = await OrderService.AssignShipperAsync(order.Id, shipperId);
+            order.ShipperId = updated.ShipperId;
+            order.ShipperName = updated.ShipperName;
+            _shipperMessage = shipperId.HasValue ? "Đã gán shipper." : "Đã bỏ gán shipper.";
+        }
+        catch (Exception ex)
+        {
+            _shipperMessage = ex.Message;
+        }
     }
 
     private RenderFragment ConfirmPaymentButton(OrderModel order) => builder =>

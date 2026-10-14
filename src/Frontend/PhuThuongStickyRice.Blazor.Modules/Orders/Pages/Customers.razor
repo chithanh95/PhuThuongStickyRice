@@ -58,10 +58,58 @@ else
                                 <td><span class="badge badge-info">@TierOf(c.TotalSpent)</span></td>
                                 <td>@c.LastOrderAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                                 <td class="text-right">
+                                    <button class="btn btn-sm btn-outline-secondary mr-1"
+                                            @onclick="() => ToggleNotes(c.CustomerPhone)">
+                                        📝 Ghi chú @(_notes.TryGetValue(c.CustomerPhone, out var n) ? $"({n.Count})" : "")
+                                    </button>
                                     <a class="btn btn-sm btn-outline-primary"
                                        href="/orders?searchTerm=@Uri.EscapeDataString(c.CustomerPhone)">Xem đơn</a>
                                 </td>
                             </tr>
+                            @if (_expandedPhone == c.CustomerPhone)
+                            {
+                                <tr>
+                                    <td colspan="7" class="bg-light">
+                                        <strong>Ghi chú CRM — @c.CustomerPhone</strong>
+                                        @if (_loadingNotes)
+                                        {
+                                            <p class="mb-1"><em>Đang tải...</em></p>
+                                        }
+                                        else if (_notes.TryGetValue(c.CustomerPhone, out var notes) && notes.Count > 0)
+                                        {
+                                            <ul class="list-unstyled mb-2">
+                                                @foreach (var note in notes)
+                                                {
+                                                    <li class="border-bottom py-1">
+                                                        <div>@note.Note</div>
+                                                        <small class="text-muted">
+                                                            @note.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                            @(!string.IsNullOrWhiteSpace(note.CreatedBy) ? $" • {note.CreatedBy}" : "")
+                                                            <button class="btn btn-sm btn-link text-danger p-0 ml-2"
+                                                                    @onclick="() => DeleteNote(note)">xóa</button>
+                                                        </small>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted mb-1"><small>Chưa có ghi chú nào.</small></p>
+                                        }
+                                        <div class="input-group">
+                                            <input class="form-control" placeholder="Thêm ghi chú mới..."
+                                                   @bind="_newNote" />
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-primary" @onclick="AddNote">Thêm</button>
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(_noteError))
+                                        {
+                                            <div class="alert alert-danger mt-2 mb-0">@_noteError</div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
                         }
                     </tbody>
                 </table>
@@ -77,6 +125,14 @@ else
     private PhuThuongStickyRice.Blazor.Modules.Shop.Models.ShopSettingModel _settings
         = new PhuThuongStickyRice.Blazor.Modules.Shop.Models.ShopSettingModel();
 
+    // Item 89: CRM notes per customer phone.
+    [Inject] private PhuThuongStickyRice.Blazor.Modules.Admin.Services.Wave3Service Wave3Service { get; set; }
+    private string _expandedPhone;
+    private Dictionary<string, List<CustomerNoteModel>> _notes = new();
+    private string _newNote;
+    private string _noteError;
+    private bool _loadingNotes;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -90,6 +146,84 @@ else
         }
 
         await LoadAsync();
+    }
+
+    /// <summary>Item 89: toggles the notes panel for one customer.</summary>
+    private async Task ToggleNotes(string phone)
+    {
+        _noteError = null;
+        _newNote = null;
+        if (_expandedPhone == phone)
+        {
+            _expandedPhone = null;
+            return;
+        }
+
+        _expandedPhone = phone;
+        if (!_notes.ContainsKey(phone))
+        {
+            _loadingNotes = true;
+            try
+            {
+                var list = await Wave3Service.GetCustomerNotesAsync(phone);
+                _notes[phone] = list ?? new List<CustomerNoteModel>();
+            }
+            catch (Exception)
+            {
+                _noteError = "Không tải được ghi chú.";
+            }
+            finally
+            {
+                _loadingNotes = false;
+            }
+        }
+    }
+
+    /// <summary>Item 89: adds a CRM note for the expanded customer.</summary>
+    private async Task AddNote()
+    {
+        _noteError = null;
+        if (string.IsNullOrWhiteSpace(_expandedPhone))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_newNote))
+        {
+            _noteError = "Vui lòng nhập nội dung ghi chú.";
+            return;
+        }
+
+        try
+        {
+            var created = await Wave3Service.AddCustomerNoteAsync(_expandedPhone, _newNote.Trim());
+
+            var list = _notes[_expandedPhone];
+            list.Insert(0, created);
+            _newNote = null;
+        }
+        catch (Exception ex)
+        {
+            _noteError = ex.Message;
+        }
+    }
+
+    /// <summary>Item 89: deletes a CRM note.</summary>
+    private async Task DeleteNote(CustomerNoteModel note)
+    {
+        _noteError = null;
+        try
+        {
+            await Wave3Service.DeleteCustomerNoteAsync(note.Id);
+            if (_notes.TryGetValue(_expandedPhone, out var list))
+            {
+                list.RemoveAll(x => x.Id == note.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            _noteError = ex.Message;
+        }
     }
 
     /// <summary>Membership tier from lifetime spend (same rule as the backend).</summary>

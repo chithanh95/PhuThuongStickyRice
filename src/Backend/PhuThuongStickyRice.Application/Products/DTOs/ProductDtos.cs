@@ -17,6 +17,9 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
 
         public string Currency { get; set; }
 
+        /// <summary>Cost price (giá vốn) in VND, for the profit report.</summary>
+        public decimal CostPrice { get; set; }
+
         public string Status { get; set; }
 
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
@@ -56,6 +59,10 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         public decimal Price { get; set; }
 
         public string Currency { get; set; } = "VND";
+
+        /// <summary>Cost price (giá vốn) in VND, for the profit report.</summary>
+        [Range(0, double.MaxValue)]
+        public decimal CostPrice { get; set; }
 
         /// <summary>
         /// Only applied on update: "Active", "Inactive" or "Discontinued".

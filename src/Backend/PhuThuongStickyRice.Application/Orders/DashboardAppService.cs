@@ -1,4 +1,6 @@
 using PhuThuongStickyRice.Application.Orders.DTOs;
+using PhuThuongStickyRice.Application.Shop;
+using PhuThuongStickyRice.Application.Wave3.DTOs;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using System;
@@ -16,6 +18,12 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null);
 
         Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5);
+
+        /// <summary>
+        /// Item 90: new customers (first order inside the range) vs
+        /// returning customers, over the selected date range.
+        /// </summary>
+        Task<NewReturningCustomersDto> GetNewReturningCustomersAsync(DateTime? from = null, DateTime? to = null);
 
         /// <summary>
         /// Public: total quantity of items sold today (Vietnam time),
@@ -36,17 +44,20 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IProductRepository _products;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IObjectMapper _objectMapper;
+        private readonly IShopSettingAppService _shopSettings;
 
         public DashboardAppService(
             IOrderRepository orders,
             IProductRepository products,
             IAsyncQueryableExecuter asyncExecuter,
-            IObjectMapper objectMapper)
+            IObjectMapper objectMapper,
+            IShopSettingAppService shopSettings)
         {
             _orders = orders;
             _products = products;
             _asyncExecuter = asyncExecuter;
             _objectMapper = objectMapper;
+            _shopSettings = shopSettings;
         }
 
         public async Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null)
@@ -92,7 +103,59 @@ namespace PhuThuongStickyRice.Application.Orders
                 orderQueryable.OrderByDescending(x => x.CreatedAt).Take(5));
             stats.RecentOrders = _objectMapper.Map<List<Order>, List<OrderDto>>(recent);
 
+            // Item 86: orders still Pending after the configured minutes —
+            // the dashboard raises a distinct urgent alert for these.
+            var settings = await _shopSettings.GetAsync();
+            var staleMinutes = settings.UnconfirmedAlertMinutes < 1 ? 15 : settings.UnconfirmedAlertMinutes;
+            var staleCutoff = DateTime.UtcNow.AddMinutes(-staleMinutes);
+            stats.StalePendingOrders = await _asyncExecuter.LongCountAsync(
+                orderQueryable.Where(x => x.Status == OrderStatus.Pending && x.CreatedAt < staleCutoff));
+            stats.StalePendingMinutes = staleMinutes;
+
             return stats;
+        }
+
+        public async Task<NewReturningCustomersDto> GetNewReturningCustomersAsync(
+            DateTime? from = null, DateTime? to = null)
+        {
+            var (fromDate, toDate) = NormalizeRange(from, to);
+            var orderQueryable = await _orders.GetQueryableAsync();
+
+            // Phones (normalized) with at least one non-cancelled order in range.
+            var inRange = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Status != OrderStatus.Cancelled
+                        && x.CreatedAt >= fromDate && x.CreatedAt < toDate)
+                    .Select(x => new { x.CustomerPhone, x.CreatedAt }));
+            var inRangePhones = inRange
+                .Select(x => (x.CustomerPhone ?? string.Empty).Trim())
+                .Where(x => x.Length > 0)
+                .Distinct()
+                .ToList();
+
+            var result = new NewReturningCustomersDto();
+            if (inRangePhones.Count == 0)
+            {
+                return result;
+            }
+
+            // Phones that already ordered before the range = returning.
+            var beforePhones = new HashSet<string>(await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Status != OrderStatus.Cancelled
+                        && x.CreatedAt < fromDate
+                        && inRangePhones.Contains(x.CustomerPhone))
+                    .Select(x => x.CustomerPhone)
+                    .Distinct()));
+
+            var newPhones = inRangePhones.Where(p => !beforePhones.Contains(p)).ToList();
+            var returningPhones = inRangePhones.Where(p => beforePhones.Contains(p)).ToList();
+
+            result.NewCustomers = newPhones.Count;
+            result.ReturningCustomers = returningPhones.Count;
+            result.NewCustomerOrders = inRange.Count(x => newPhones.Contains((x.CustomerPhone ?? string.Empty).Trim()));
+            result.ReturningCustomerOrders = inRange.Count(x => returningPhones.Contains((x.CustomerPhone ?? string.Empty).Trim()));
+            return result;
         }
 
         public async Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5)

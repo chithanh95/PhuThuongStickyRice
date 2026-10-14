@@ -65,5 +65,31 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         /// <summary>Gold tier discount percent.</summary>
         [Range(0, 100)]
         public decimal TierGoldDiscount { get; set; }
+
+        /// <summary>
+        /// Owner email for the weekly/monthly auto report. Empty = disabled.
+        /// </summary>
+        [StringLength(254)]
+        [EmailAddress]
+        public string OwnerReportEmail { get; set; }
+
+        /// <summary>
+        /// Pending orders older than this (minutes) trigger the urgent
+        /// unconfirmed-order dashboard alert.
+        /// </summary>
+        [Range(1, 10080)]
+        public int UnconfirmedAlertMinutes { get; set; }
+
+        /// <summary>reCAPTCHA v3 site key. Empty = reCAPTCHA disabled.</summary>
+        [StringLength(100)]
+        public string RecaptchaSiteKey { get; set; }
+
+        /// <summary>reCAPTCHA v3 secret key. Empty = reCAPTCHA disabled.</summary>
+        [StringLength(100)]
+        public string RecaptchaSecretKey { get; set; }
+
+        /// <summary>Public base URL of the shop web, used for table QR codes.</summary>
+        [StringLength(500)]
+        public string WebBaseUrl { get; set; }
     }
 }

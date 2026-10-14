@@ -24,6 +24,9 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
 
         public string AllergenInfo { get; set; }
 
+        /// <summary>Item 84: cost price for the profit report.</summary>
+        public decimal CostPrice { get; set; }
+
         public bool IsNew { get; set; }
 
         public bool IsSignature { get; set; }

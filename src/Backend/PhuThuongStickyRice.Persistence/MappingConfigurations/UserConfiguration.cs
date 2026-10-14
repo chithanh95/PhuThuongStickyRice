@@ -13,6 +13,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.ToTable("Users");
             builder.Property(x => x.Id).HasDefaultValueSql("newsequentialid()");
 
+            builder.Property(x => x.TotpSecret).HasMaxLength(100);
+
             builder.HasMany(x => x.Claims)
                 .WithOne(x => x.User)
                 .OnDelete(DeleteBehavior.Cascade);

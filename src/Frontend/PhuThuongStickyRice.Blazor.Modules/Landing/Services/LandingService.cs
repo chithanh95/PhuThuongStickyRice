@@ -1,6 +1,8 @@
+using PhuThuongStickyRice.Blazor.Modules.Admin.Models;
 using PhuThuongStickyRice.Blazor.Modules.Core.Services;
 using PhuThuongStickyRice.Blazor.Modules.Landing.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -19,6 +21,18 @@ namespace PhuThuongStickyRice.Blazor.Modules.Landing.Services
         public async Task<LandingContentModel> GetContentAsync()
         {
             return await GetAsync<LandingContentModel>("api/landing/content");
+        }
+
+        /// <summary>Item 93: published news articles for the landing page.</summary>
+        public async Task<List<ArticleModel>> GetArticlesAsync()
+        {
+            return await GetAsync<List<ArticleModel>>("api/articles/published");
+        }
+
+        /// <summary>Item 87: public non-hidden order reviews for the landing page.</summary>
+        public async Task<List<PublicReviewModel>> GetPublicReviewsAsync()
+        {
+            return await GetAsync<List<PublicReviewModel>>("api/orders/reviews/public");
         }
 
         public async Task<LandingContentModel> UpdateContentAsync(LandingContentModel model)

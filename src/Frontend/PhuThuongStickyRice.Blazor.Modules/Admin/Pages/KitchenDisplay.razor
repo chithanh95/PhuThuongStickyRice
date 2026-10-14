@@ -1,0 +1,206 @@
+@page "/bep"
+@attribute [Authorize]
+@implements IDisposable
+@using System.Threading
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@using PhuThuongStickyRice.Blazor.Modules.Orders.Models
+@inject Wave3Service Wave3Service
+
+<style>
+    .kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+    .kds-card { border-left: 6px solid #ffc107; }
+    .kds-card.kds-confirmed { border-left-color: #17a2b8; }
+    .kds-card.kds-preparing { border-left-color: #007bff; }
+    .kds-advance { min-height: 56px; font-size: 1.15rem; font-weight: 600; }
+    .kds-item { font-size: 1.05rem; }
+    .kds-time { font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <h3 class="mb-2 mb-md-0">🍳 Màn hình bếp</h3>
+    <div class="d-flex align-items-center">
+        <small class="text-muted mr-3">Tự động làm mới 20s • Cập nhật: @_lastUpdated.ToString("HH:mm:ss")</small>
+        <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input" type="checkbox" id="kds-auto" @bind="_autoRefresh" />
+            <label class="form-check-label" for="kds-auto">Tự động</label>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@if (_orders == null)
+{
+    <p><em>Đang tải đơn bếp...</em></p>
+}
+else if (_orders.Count == 0)
+{
+    <div class="alert alert-success">🎉 Bếp đang rảnh — không có đơn nào cần làm.</div>
+}
+else
+{
+    <div class="kds-grid">
+        @foreach (var order in _orders)
+        {
+            <div class="card kds-card @KdsClass(order.Status)" @key="order.Id">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong class="h5 mb-0">#@order.OrderNumber</strong>
+                    <span class="badge badge-pill @StatusPill(order.Status) kds-time">@Elapsed(order.CreatedAt)</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>@order.CustomerName</strong>
+                        <small class="text-muted">• @order.CustomerPhone</small>
+                        @if (!string.IsNullOrWhiteSpace(order.ShipperName))
+                        {
+                            <div><small class="text-muted">🚚 @order.ShipperName</small></div>
+                        }
+                    </div>
+                    <ul class="list-unstyled mb-2">
+                        @foreach (var line in order.Lines)
+                        {
+                            <li class="kds-item border-bottom py-1">
+                                <strong>@line.Quantity×</strong> @line.ProductName
+                                @if (!string.IsNullOrWhiteSpace(line.SizeName))
+                                {
+                                    <span class="badge badge-light">@line.SizeName</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.ToppingNames))
+                                {
+                                    <div><small class="text-muted">+ @line.ToppingNames</small></div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.Note))
+                                {
+                                    <div><small class="text-danger font-weight-bold">📝 @line.Note</small></div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                    @if (!string.IsNullOrWhiteSpace(order.Notes))
+                    {
+                        <div class="alert alert-warning py-1 px-2 mb-2"><small><strong>Ghi chú:</strong> @order.Notes</small></div>
+                    }
+                    <button class="btn btn-primary btn-block kds-advance" @onclick="() => Advance(order)"
+                            disabled="@_advancing">
+                        @AdvanceLabel(order.Status)
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<OrderModel> _orders;
+    private string _error;
+    private bool _autoRefresh = true;
+    private bool _advancing;
+    private DateTime _lastUpdated = DateTime.Now;
+    private CancellationTokenSource _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _cts = new CancellationTokenSource();
+        _ = RefreshLoopAsync(_cts.Token);
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _orders = await Wave3Service.GetKitchenOrdersAsync() ?? new List<OrderModel>();
+            _lastUpdated = DateTime.Now;
+            _error = null;
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được đơn bếp. Vui lòng thử lại.";
+        }
+    }
+
+    private async Task Advance(OrderModel order)
+    {
+        _advancing = true;
+        _error = null;
+        try
+        {
+            await Wave3Service.AdvanceKitchenStatusAsync(order.Id);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _advancing = false;
+        }
+    }
+
+    private async Task RefreshLoopAsync(CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(20), token);
+                if (_autoRefresh && !token.IsCancellationRequested && !_advancing)
+                {
+                    await LoadAsync();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+
+    private static string KdsClass(string status) => status switch
+    {
+        "Confirmed" => "kds-confirmed",
+        "Preparing" => "kds-preparing",
+        _ => null
+    };
+
+    private static string StatusPill(string status) => status switch
+    {
+        "Pending" => "badge-warning",
+        "Confirmed" => "badge-info",
+        "Preparing" => "badge-primary",
+        _ => "badge-light"
+    };
+
+    private static string AdvanceLabel(string status) => status switch
+    {
+        "Pending" => "✅ Xác nhận → Chuẩn bị",
+        "Confirmed" => "🍳 Bắt đầu làm → Đang chuẩn bị",
+        "Preparing" => "🚚 Giao cho shipper → Đang giao",
+        _ => "Chuyển tiếp"
+    };
+
+    /// <summary>Elapsed time since the order was placed, VN-local.</summary>
+    private static string Elapsed(DateTime createdAtUtc)
+    {
+        var elapsed = DateTime.UtcNow - createdAtUtc.ToUniversalTime();
+        if (elapsed.TotalMinutes < 1)
+        {
+            return "vừa xong";
+        }
+
+        if (elapsed.TotalHours < 1)
+        {
+            return $"{(int)elapsed.TotalMinutes} phút";
+        }
+
+        return $"{(int)elapsed.TotalHours}h{(int)elapsed.Minutes}m";
+    }
+}

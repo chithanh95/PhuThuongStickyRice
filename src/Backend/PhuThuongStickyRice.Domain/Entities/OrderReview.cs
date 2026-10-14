@@ -4,12 +4,14 @@ namespace PhuThuongStickyRice.Domain.Entities
 {
     /// <summary>
     /// Post-delivery survey: star rating + comment for a completed order.
+    /// Hidden reviews are not shown publicly; the admin can reply.
     /// </summary>
     public class OrderReview : Entity<Guid>, IAggregateRoot
     {
         public const int OrderNumberMaxLength = 30;
         public const int PhoneMaxLength = 30;
         public const int CommentMaxLength = 1000;
+        public const int AdminReplyMaxLength = 1000;
 
         public Guid OrderId { get; set; }
 
@@ -21,6 +23,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public int Rating { get; set; }
 
         public string Comment { get; set; }
+
+        /// <summary>Hidden reviews are excluded from the public listing.</summary>
+        public bool IsHidden { get; set; }
+
+        /// <summary>Admin reply, shown publicly under the review.</summary>
+        public string AdminReply { get; set; }
 
         public DateTime CreatedAt { get; set; }
     }

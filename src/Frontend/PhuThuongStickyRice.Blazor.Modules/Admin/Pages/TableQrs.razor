@@ -1,0 +1,145 @@
+@page "/admin/qr-ban"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@inject Wave3Service Wave3Service
+@inject NavigationManager Navigation
+
+<h3>QR bàn</h3>
+<p class="text-muted">Tạo mã QR cho từng bàn — khách quét để mở trang đặt món (<code>/shop?ban=...</code>). Địa chỉ web lấy từ Cài đặt bán hàng (WebBaseUrl).</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">Tạo QR bàn mới</div>
+    <div class="card-body">
+        <div class="form-row align-items-end">
+            <div class="col-md-4 mb-2">
+                <label><small class="text-muted">Số / tên bàn * (VD: 1, A2, VIP)</small></label>
+                <input class="form-control" placeholder="VD: 5" @bind="_label" />
+            </div>
+            <div class="col-md-4 mb-2">
+                <button class="btn btn-primary" @onclick="GenerateAsync" disabled="@_generating">
+                    @(_generating ? "Đang tạo..." : "Tạo QR")
+                </button>
+            </div>
+        </div>
+        @if (_preview != null)
+        {
+            <div class="mt-3 text-center" style="max-width: 300px;">
+                <img src="@($"data:image/png;base64,{_preview.PngBase64}")" alt="QR @_preview.Label"
+                     class="img-fluid border p-2" />
+                <div><strong>Bàn @_preview.Label</strong></div>
+                <small class="text-muted d-block text-truncate">@_preview.EncodedUrl</small>
+                <a class="btn btn-sm btn-outline-primary mt-2" href="@Wave3Service.TableQrPngUrl(_preview.Id)" download>Tải PNG</a>
+            </div>
+        }
+    </div>
+</div>
+
+@if (_items == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_items.Count == 0)
+{
+    <div class="alert alert-info">Chưa có QR bàn nào được lưu.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr><th>Bàn</th><th>URL</th><th>Ngày tạo</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var q in _items)
+                {
+                    <tr @key="q.Id">
+                        <td><strong>@q.Label</strong></td>
+                        <td><small class="text-muted">@q.EncodedUrl</small></td>
+                        <td><small>@q.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small></td>
+                        <td class="text-right">
+                            <a class="btn btn-sm btn-outline-primary mr-1" href="@Wave3Service.TableQrPngUrl(q.Id)" download>Tải PNG</a>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(q)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<TableQrModel> _items;
+    private TableQrGeneratedModel _preview;
+    private string _label;
+    private string _error;
+    private string _message;
+    private bool _generating;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _items = await Wave3Service.GetTableQrsAsync() ?? new List<TableQrModel>();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được danh sách QR.";
+            _items = new List<TableQrModel>();
+        }
+    }
+
+    private async Task GenerateAsync()
+    {
+        _error = null;
+        _message = null;
+        _preview = null;
+        if (string.IsNullOrWhiteSpace(_label))
+        {
+            _error = "Vui lòng nhập số / tên bàn.";
+            return;
+        }
+
+        _generating = true;
+        try
+        {
+            _preview = await Wave3Service.GenerateTableQrAsync(_label.Trim());
+            _label = null;
+            _message = "Đã tạo QR bàn.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _generating = false;
+        }
+    }
+
+    private async Task DeleteAsync(TableQrModel q)
+    {
+        _error = null;
+        try
+        {
+            await Wave3Service.DeleteTableQrAsync(q.Id);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

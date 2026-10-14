@@ -17,6 +17,11 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public string PasswordHash { get; set; }
 
+        /// <summary>
+        /// TOTP secret (Base32) for admin 2FA. Null when 2FA is not set up.
+        /// </summary>
+        public string TotpSecret { get; set; }
+
         public string PhoneNumber { get; set; }
 
         public bool PhoneNumberConfirmed { get; set; }

@@ -25,6 +25,13 @@ namespace PhuThuongStickyRice.Blazor.Modules.Dashboard.Services
             return await GetAsync<List<TopProductModel>>(BuildUrl("api/dashboard/top-products", from, to) + $"&top={top}");
         }
 
+        /// <summary>Item 90: new vs returning customers over the date range.</summary>
+        public async Task<NewReturningCustomersModel> GetNewReturningCustomersAsync(DateTime? from = null, DateTime? to = null)
+        {
+            return await GetAsync<NewReturningCustomersModel>(
+                BuildUrl("api/dashboard/customers/new-vs-returning", from, to));
+        }
+
         private static string BuildUrl(string baseUrl, DateTime? from, DateTime? to)
         {
             var url = baseUrl + "?_=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds();

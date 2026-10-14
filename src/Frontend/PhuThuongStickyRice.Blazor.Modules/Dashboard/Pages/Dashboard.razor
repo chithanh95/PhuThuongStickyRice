@@ -38,6 +38,34 @@
     </div>
 }
 
+@if (_stats != null && !_staleDismissed && _stats.StalePendingOrders > 0)
+{
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+        <span class="mr-2" aria-hidden="true">🚨</span>
+        <div>
+            <strong>KHẨN: @_stats.StalePendingOrders đơn chờ xác nhận quá @_stats.StalePendingMinutes phút!</strong>
+            <a href="/orders?status=Pending" class="alert-link ml-2">Xử lý ngay →</a>
+        </div>
+        <button type="button" class="close ml-auto" aria-label="Đóng" @onclick="DismissStaleAlert">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_newIpWarning))
+{
+    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
+        <span class="mr-2" aria-hidden="true">⚠️</span>
+        <div>
+            <strong>Đăng nhập mới từ IP lạ:</strong> @_newIpWarning.
+            Nếu không phải bạn, hãy đổi mật khẩu ngay.
+        </div>
+        <button type="button" class="close ml-auto" aria-label="Đóng" @onclick="DismissIpWarning">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
 <div class="card mb-3">
     <div class="card-body">
         <div class="form-row align-items-end">
@@ -184,6 +212,31 @@ else
                 </div>
             </div>
         </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">Khách mới / khách quay lại</div>
+                <div class="card-body">
+                    @if (_newReturning == null)
+                    {
+                        <p class="text-muted mb-0"><em>Đang tải...</em></p>
+                    }
+                    else
+                    {
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h3 class="text-success mb-0">@_newReturning.NewCustomers</h3>
+                                <small class="text-muted">Khách mới<br />@_newReturning.NewCustomerOrders đơn</small>
+                            </div>
+                            <div class="col-6">
+                                <h3 class="text-info mb-0">@_newReturning.ReturningCustomers</h3>
+                                <small class="text-muted">Khách quay lại<br />@_newReturning.ReturningCustomerOrders đơn</small>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-2">Khách mới = lần đầu đặt trong khoảng thời gian đã chọn.</small>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="card">
@@ -226,6 +279,7 @@ else
 @code {
     private DashboardStatsModel _stats;
     private List<TopProductModel> _topProducts;
+    private NewReturningCustomersModel _newReturning;
     private bool _autoRefresh = true;
     private bool _refreshing;
     private DateTime _lastUpdated = DateTime.Now;
@@ -238,9 +292,26 @@ else
     private long _baselineOrderCount = -1;
     private int _newOrderCount;
 
+    // Item 86: urgent stale-pending alert state.
+    private long _lastStaleCount;
+    private bool _staleDismissed;
+
+    // Item 99: new-IP login warning (set by the login page in localStorage).
+    private string _newIpWarning;
+    private const string IpWarningKey = "phuthuong.last-login-ip-warning";
+
     protected override async Task OnInitializedAsync()
     {
         await LoadStatsAsync();
+
+        try
+        {
+            _newIpWarning = await JSRuntime.InvokeAsync<string>("localStorage.getItem", IpWarningKey);
+        }
+        catch (Exception)
+        {
+        }
+
         _cts = new CancellationTokenSource();
         _ = RefreshLoopAsync(_cts.Token);
     }
@@ -251,10 +322,21 @@ else
         {
             var stats = await DashboardService.GetStatsAsync(_from, _to);
             var top = await DashboardService.GetTopProductsAsync(_from, _to);
+            NewReturningCustomersModel newReturning = null;
+            try
+            {
+                newReturning = await DashboardService.GetNewReturningCustomersAsync(_from, _to);
+            }
+            catch (Exception)
+            {
+                // Non-critical section.
+            }
 
             DetectNewOrders(stats);
+            DetectStaleOrders(stats);
             _stats = stats;
             _topProducts = top;
+            _newReturning = newReturning;
             _lastUpdated = DateTime.Now;
         }
         catch (Exception)
@@ -298,6 +380,55 @@ else
         _newOrderCount = 0;
     }
 
+    /// <summary>
+    /// Item 86: distinct urgent sound + banner when stale pending orders
+    /// appear or grow.
+    /// </summary>
+    private void DetectStaleOrders(DashboardStatsModel stats)
+    {
+        if (_staleDismissed)
+        {
+            _lastStaleCount = stats.StalePendingOrders;
+            return;
+        }
+
+        if (stats.StalePendingOrders > 0 && stats.StalePendingOrders != _lastStaleCount)
+        {
+            _ = PlayUrgentAsync();
+        }
+
+        _lastStaleCount = stats.StalePendingOrders;
+    }
+
+    private void DismissStaleAlert()
+    {
+        _staleDismissed = true;
+    }
+
+    private async Task PlayUrgentAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("interop.playUrgent");
+        }
+        catch (Exception)
+        {
+            // Audio is best-effort.
+        }
+    }
+
+    private async Task DismissIpWarning()
+    {
+        _newIpWarning = null;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.removeItem", IpWarningKey);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
     private async Task ApplyDateRange()
     {
         if (_from > _to)
@@ -308,6 +439,8 @@ else
         // Re-baseline so the range change itself doesn't trigger the alert.
         _baselineOrderCount = -1;
         _newOrderCount = 0;
+        _staleDismissed = false;
+        _lastStaleCount = 0;
         await RefreshNow();
     }
 
@@ -317,6 +450,8 @@ else
         _to = DateTime.Today;
         _baselineOrderCount = -1;
         _newOrderCount = 0;
+        _staleDismissed = false;
+        _lastStaleCount = 0;
         await RefreshNow();
     }
 

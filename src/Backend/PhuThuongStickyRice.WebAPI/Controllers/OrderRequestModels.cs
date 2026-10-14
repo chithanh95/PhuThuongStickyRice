@@ -14,6 +14,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public List<Guid> ToppingIds { get; set; } = new List<Guid>();
 
         public bool IsCombo { get; set; }
+
+        /// <summary>Optional per-item note (rendered on sticky labels).</summary>
+        public string Note { get; set; }
     }
 
         public sealed class CreateOrderRequestModel
@@ -62,6 +65,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         /// <summary>Optional birthday (updates the loyalty profile).</summary>
         public DateTime? DateOfBirth { get; set; }
+
+        /// <summary>
+        /// Idempotency key for the checkout attempt. Retrying with the same
+        /// key within 24h returns the existing order.
+        /// </summary>
+        public string IdempotencyKey { get; set; }
+
+        /// <summary>reCAPTCHA v3 token (verified when reCAPTCHA is enabled).</summary>
+        public string RecaptchaToken { get; set; }
 
         public List<CreateOrderLineRequestModel> Lines { get; set; } = new List<CreateOrderLineRequestModel>();
     }

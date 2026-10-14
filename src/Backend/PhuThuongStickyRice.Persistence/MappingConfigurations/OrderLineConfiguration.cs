@@ -19,6 +19,7 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.ToppingNames).HasMaxLength(OrderLine.ToppingNamesMaxLength);
             builder.Property(x => x.ToppingsExtra).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.IsCombo).IsRequired();
+            builder.Property(x => x.Note).HasMaxLength(OrderLine.NoteMaxLength);
 
             builder.ComplexProperty(x => x.UnitPrice, priceBuilder =>
             {

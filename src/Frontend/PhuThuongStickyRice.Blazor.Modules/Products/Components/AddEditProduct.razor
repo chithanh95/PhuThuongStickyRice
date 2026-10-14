@@ -35,6 +35,15 @@
     </div>
 
     <div class="form-group row">
+        <label for="costprice" class="col-sm-2 col-form-label">Giá vốn (₫): </label>
+        <div class="col-sm-10">
+            <InputNumber id="costprice" class="form-control" @bind-Value="Product.CostPrice" placeholder="VD: 20000"></InputNumber>
+            <ValidationMessage For="@(() => Product.CostPrice)" />
+            <small class="form-text text-muted">Dùng cho báo cáo lợi nhuận (/admin/loi-nhuan).</small>
+        </div>
+    </div>
+
+    <div class="form-group row">
         <label for="description" class="col-sm-2 col-form-label">Mô tả: </label>
         <div class="col-sm-10">
             <InputText id="description" class="form-control" @bind-Value="Product.Description" placeholder="Nhập mô tả"></InputText>

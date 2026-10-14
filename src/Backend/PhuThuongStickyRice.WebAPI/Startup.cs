@@ -6,6 +6,7 @@ using PhuThuongStickyRice.Infrastructure.Monitoring;
 using PhuThuongStickyRice.Infrastructure.Web.Filters;
 using PhuThuongStickyRice.Persistence;
 using PhuThuongStickyRice.Application.Orders.Payments;
+using PhuThuongStickyRice.Application.Wave3;
 using PhuThuongStickyRice.Application.Zalo;
 using PhuThuongStickyRice.WebAPI.Authorization;
 using PhuThuongStickyRice.WebAPI.Services;
@@ -96,6 +97,8 @@ namespace PhuThuongStickyRice.WebAPI
             services.AddTransient<IZaloNotificationService, ZaloNotificationService>();
             services.AddScoped<JwtTokenService>();
             services.AddHttpClient<IMoMoPaymentService, MoMoPaymentService>();
+            // Item 96: typed client for reCAPTCHA v3 server verification.
+            services.AddHttpClient<IRecaptchaService, RecaptchaService>();
             services.AddHostedService<AdminSeedHostedService>();
 
             // ABP modules: Application Services (CQRS), EF Core (repositories, DbContext),
@@ -111,7 +114,7 @@ namespace PhuThuongStickyRice.WebAPI
                     })
                     .AddMessageHandlers()
                     .ConfigureInterceptors()
-                    .AddIdentityCore();
+                    .AddIdentityCore(Configuration);
 
             services.AddDataProtection()
                 .PersistKeysToDbContext<StickyRiceDbContext>()

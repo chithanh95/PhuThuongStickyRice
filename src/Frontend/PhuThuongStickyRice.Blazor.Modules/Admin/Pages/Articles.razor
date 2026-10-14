@@ -1,0 +1,203 @@
+@page "/admin/bai-viet"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@inject Wave3Service Wave3Service
+
+<h3>Bài viết — Chuyện nhà xôi</h3>
+<p class="text-muted">Bài viết đã xuất bản hiển thị ở mục "Chuyện nhà xôi" trên trang chủ (3 bài mới nhất).</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">@(_editing == null ? "Thêm bài viết" : "Sửa bài viết")</div>
+    <div class="card-body">
+        <div class="form-group">
+            <label><small class="text-muted">Tiêu đề *</small></label>
+            <input class="form-control" @bind="_form.Title" />
+        </div>
+        <div class="form-group">
+            <label><small class="text-muted">Nội dung *</small></label>
+            <textarea class="form-control" rows="4" @bind="_form.Body"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6 mb-2">
+                <label><small class="text-muted">Ảnh (URL)</small></label>
+                <input class="form-control" placeholder="/uploads/landing/abc.jpg" @bind="_form.ImageUrl" />
+            </div>
+            <div class="col-md-3 mb-2">
+                <label><small class="text-muted">Ngày đăng</small></label>
+                <input type="date" class="form-control" @bind="_publishedDate" />
+            </div>
+            <div class="col-md-3 mb-2">
+                <label><small class="text-muted">Trạng thái</small></label>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="art-pub" @bind="_form.IsPublished" />
+                    <label class="form-check-label" for="art-pub">Xuất bản</label>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-primary mr-2" @onclick="SaveAsync" disabled="@_saving">
+            @(_editing == null ? "Thêm" : "Lưu")
+        </button>
+        @if (_editing != null)
+        {
+            <button class="btn btn-outline-secondary" @onclick="CancelEdit">Hủy</button>
+        }
+    </div>
+</div>
+
+@if (_items == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_items.Count == 0)
+{
+    <div class="alert alert-info">Chưa có bài viết nào.</div>
+}
+else
+{
+    @foreach (var a in _items)
+    {
+        <div class="card mb-2" @key="a.Id">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title mb-1">@a.Title</h5>
+                        <small class="text-muted">@a.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                        @if (a.IsPublished)
+                        {
+                            <span class="badge badge-success ml-2">Đã xuất bản</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-secondary ml-2">Nháp</span>
+                        }
+                    </div>
+                    <div class="text-right">
+                        <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(a)">Sửa</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(a)">Xóa</button>
+                    </div>
+                </div>
+                <p class="card-text mt-2">@Truncate(a.Body, 220)</p>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<ArticleModel> _items;
+    private ArticleModel _form = NewForm();
+    private ArticleModel _editing;
+    private DateTime _publishedDate = DateTime.Today;
+    private string _error;
+    private string _message;
+    private bool _saving;
+
+    private static ArticleModel NewForm() => new ArticleModel { IsPublished = true };
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private static string Truncate(string value, int max)
+    {
+        if (string.IsNullOrEmpty(value) || value.Length <= max)
+        {
+            return value;
+        }
+
+        return value.Substring(0, max) + "…";
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _items = await Wave3Service.GetArticlesAsync() ?? new List<ArticleModel>();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được bài viết.";
+            _items = new List<ArticleModel>();
+        }
+    }
+
+    private void StartEdit(ArticleModel a)
+    {
+        _editing = a;
+        _form = new ArticleModel
+        {
+            Id = a.Id,
+            Title = a.Title,
+            Body = a.Body,
+            ImageUrl = a.ImageUrl,
+            IsPublished = a.IsPublished
+        };
+        _publishedDate = a.PublishedAt.ToLocalTime().Date;
+    }
+
+    private void CancelEdit()
+    {
+        _editing = null;
+        _form = NewForm();
+        _publishedDate = DateTime.Today;
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _message = null;
+        if (string.IsNullOrWhiteSpace(_form.Title) || string.IsNullOrWhiteSpace(_form.Body))
+        {
+            _error = "Vui lòng nhập tiêu đề và nội dung.";
+            return;
+        }
+
+        _form.PublishedAt = _publishedDate;
+        _saving = true;
+        try
+        {
+            if (_editing == null)
+            {
+                await Wave3Service.CreateArticleAsync(_form);
+                _message = "Đã thêm bài viết.";
+            }
+            else
+            {
+                await Wave3Service.UpdateArticleAsync(_editing.Id, _form);
+                _message = "Đã lưu thay đổi.";
+            }
+
+            CancelEdit();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task DeleteAsync(ArticleModel a)
+    {
+        _error = null;
+        try
+        {
+            await Wave3Service.DeleteArticleAsync(a.Id);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

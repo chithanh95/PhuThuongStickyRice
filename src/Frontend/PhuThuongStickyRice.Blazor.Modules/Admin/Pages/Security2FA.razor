@@ -1,0 +1,147 @@
+@page "/admin/bao-mat"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@inject Wave3Service Wave3Service
+
+<h3>Bảo mật — Xác thực 2 bước (2FA)</h3>
+<p class="text-muted">Bảo vệ tài khoản quản trị bằng mã 6 số từ ứng dụng Authenticator (Google Authenticator, Authy...). Sau khi bật, mỗi lần đăng nhập đều cần mã này.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+@if (_setup == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_setup.IsEnabled)
+{
+    <div class="alert alert-success">✅ Xác thực 2 bước đang <strong>BẬT</strong> cho tài khoản của bạn.</div>
+    <div class="card">
+        <div class="card-header">Tắt 2FA</div>
+        <div class="card-body">
+            <div class="form-row align-items-end">
+                <div class="col-md-3 mb-2">
+                    <label><small class="text-muted">Mã 6 số hiện tại</small></label>
+                    <input class="form-control" maxlength="6" inputmode="numeric" placeholder="123456" @bind="_disableCode" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <button class="btn btn-outline-danger" @onclick="DisableAsync" disabled="@_busy">Tắt 2FA</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">Bật 2FA — 3 bước</div>
+        <div class="card-body">
+            <ol>
+                <li class="mb-2">Quét mã QR bằng ứng dụng Authenticator:</li>
+            </ol>
+            @if (!string.IsNullOrEmpty(_setup.QrDataUrl))
+            {
+                <img src="@_setup.QrDataUrl" alt="QR 2FA" class="img-fluid border p-2 mb-2" style="max-width: 240px;" />
+            }
+            <p class="text-muted"><small>Hoặc nhập tay mã bí mật: <code>@_setup.Secret</code></small></p>
+            <ol start="2">
+                <li>Nhập mã 6 số từ ứng dụng để xác nhận:</li>
+            </ol>
+            <div class="form-row align-items-end">
+                <div class="col-md-3 mb-2">
+                    <input class="form-control" maxlength="6" inputmode="numeric" placeholder="123456" @bind="_enableCode" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <button class="btn btn-primary" @onclick="EnableAsync" disabled="@_busy">Xác nhận &amp; bật 2FA</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private TwoFactorSetupModel _setup;
+    private string _enableCode;
+    private string _disableCode;
+    private string _error;
+    private string _message;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _setup = await Wave3Service.GetTwoFactorSetupAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được trạng thái 2FA.";
+        }
+    }
+
+    private async Task EnableAsync()
+    {
+        _error = null;
+        _message = null;
+        if (string.IsNullOrWhiteSpace(_enableCode) || _enableCode.Trim().Length != 6)
+        {
+            _error = "Vui lòng nhập mã 6 số từ ứng dụng Authenticator.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await Wave3Service.EnableTwoFactorAsync(_setup.Secret, _enableCode.Trim());
+            _enableCode = null;
+            _message = "Đã bật xác thực 2 bước. Từ lần đăng nhập sau, bạn cần nhập mã 6 số.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DisableAsync()
+    {
+        _error = null;
+        _message = null;
+        if (string.IsNullOrWhiteSpace(_disableCode) || _disableCode.Trim().Length != 6)
+        {
+            _error = "Vui lòng nhập mã 6 số hiện tại để tắt 2FA.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await Wave3Service.DisableTwoFactorAsync(_disableCode.Trim());
+            _disableCode = null;
+            _message = "Đã tắt xác thực 2 bước.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

@@ -1,12 +1,14 @@
-using Microsoft.EntityFrameworkCore;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using PhuThuongStickyRice.WebAPI.Services;
+using PhuThuongStickyRice.Application.Wave3;
+using PhuThuongStickyRice.Application.Wave3.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -29,15 +31,21 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly UserManager<User> _userManager;
         private readonly IUserRepository _users;
         private readonly JwtTokenService _jwtTokenService;
+        private readonly ILoginAuditAppService _loginAudits;
+        private readonly ITwoFactorAppService _twoFactor;
 
         public AuthController(
             UserManager<User> userManager,
             IUserRepository users,
-            JwtTokenService jwtTokenService)
+            JwtTokenService jwtTokenService,
+            ILoginAuditAppService loginAudits,
+            ITwoFactorAppService twoFactor)
         {
             _userManager = userManager;
             _users = users;
             _jwtTokenService = jwtTokenService;
+            _loginAudits = loginAudits;
+            _twoFactor = twoFactor;
         }
 
         [AllowAnonymous]
@@ -51,27 +59,111 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest("Username/email and password are required.");
             }
 
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
             var login = model.UsernameOrEmail.Trim();
             var user = await _userManager.FindByNameAsync(login)
                 ?? (login.Contains("@") ? await _userManager.FindByEmailAsync(login) : null);
 
             if (user == null)
             {
+                // Item 99: every login attempt is audited.
+                await _loginAudits.RecordAsync(login, ip, false, "Không tìm thấy tài khoản.");
                 return Unauthorized("Invalid username/email or password.");
             }
 
             if (await _userManager.IsLockedOutAsync(user))
             {
-                return StatusCode(423, "Account is temporarily locked. Please try again later.");
+                await _loginAudits.RecordAsync(user.UserName, ip, false, "Tài khoản tạm khóa.");
+                // Item 100: Vietnamese lockout message.
+                return StatusCode(423, "Tài khoản tạm khóa. Vui lòng thử lại sau.");
             }
 
             if (!await _userManager.CheckPasswordAsync(user, model.Password))
             {
                 await _userManager.AccessFailedAsync(user);
+                await _loginAudits.RecordAsync(user.UserName, ip, false, "Sai mật khẩu.");
                 return Unauthorized("Invalid username/email or password.");
             }
 
             await _userManager.ResetAccessFailedCountAsync(user);
+
+            // Item 99: warn when the successful login comes from an IP never
+            // seen before for this user.
+            var newIpWarning = await _loginAudits.IsNewIpForUserAsync(user.UserName, ip);
+            await _loginAudits.RecordAsync(user.UserName, ip, true);
+
+            var roles = await GetRoleNamesAsync(user.Id);
+
+            // Item 98: 2FA — password OK, now require the 6-digit TOTP code.
+            if (user.TwoFactorEnabled)
+            {
+                var twoFactorToken = _jwtTokenService.CreateTwoFactorToken(user);
+                return Ok(new LoginResponseModel
+                {
+                    RequiresTwoFactor = true,
+                    TwoFactorToken = twoFactorToken.Token,
+                    UserName = user.UserName
+                });
+            }
+
+            var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
+
+            return Ok(new LoginResponseModel
+            {
+                AccessToken = token,
+                ExpiresAt = expiresAt,
+                UserName = user.UserName,
+                Email = user.Email,
+                Roles = roles,
+                NewIpWarning = newIpWarning,
+                NewIpAddress = newIpWarning ? ip : null
+            });
+        }
+
+        /// <summary>
+        /// Item 98: completes the 2FA login — validates the short-lived
+        /// two-factor token plus the 6-digit TOTP code, then issues the JWT.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("2fa/verify")]
+        public async Task<ActionResult> VerifyTwoFactor([FromBody] VerifyTwoFactorRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.TwoFactorToken)
+                || string.IsNullOrWhiteSpace(model.Code))
+            {
+                return BadRequest("Two-factor token and code are required.");
+            }
+
+            var userId = _jwtTokenService.ValidateTwoFactorToken(model.TwoFactorToken);
+            if (!userId.HasValue)
+            {
+                return Unauthorized("Mã đăng nhập 2 bước đã hết hạn. Vui lòng đăng nhập lại.");
+            }
+
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var user = await _userManager.FindByIdAsync(userId.Value.ToString());
+            if (user == null)
+            {
+                return Unauthorized("Invalid two-factor token.");
+            }
+
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                return StatusCode(423, "Tài khoản tạm khóa. Vui lòng thử lại sau.");
+            }
+
+            if (!await _twoFactor.VerifyCodeAsync(user.Id, model.Code))
+            {
+                await _userManager.AccessFailedAsync(user);
+                await _loginAudits.RecordAsync(user.UserName, ip, false, "Sai mã 2FA.");
+                return Unauthorized("Mã xác thực 2FA không đúng.");
+            }
+
+            await _userManager.ResetAccessFailedCountAsync(user);
+
+            var newIpWarning = await _loginAudits.IsNewIpForUserAsync(user.UserName, ip);
+            await _loginAudits.RecordAsync(user.UserName, ip, true);
 
             var roles = await GetRoleNamesAsync(user.Id);
             var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
@@ -82,8 +174,56 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 ExpiresAt = expiresAt,
                 UserName = user.UserName,
                 Email = user.Email,
-                Roles = roles
+                Roles = roles,
+                NewIpWarning = newIpWarning,
+                NewIpAddress = newIpWarning ? ip : null
             });
+        }
+
+        /// <summary>Item 98: returns the otpauth:// QR to set up 2FA (Admin).</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("2fa/setup")]
+        public async Task<ActionResult> GetTwoFactorSetup(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _twoFactor.GetSetupAsync());
+        }
+
+        /// <summary>Item 98: verifies the code and enables 2FA (Admin).</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPost("2fa/enable")]
+        public async Task<ActionResult> EnableTwoFactor([FromBody] EnableTwoFactorRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var result = await _twoFactor.EnableAsync(new EnableTwoFactorDto
+                {
+                    Secret = model?.Secret,
+                    Code = model?.Code
+                });
+                return Ok(new { enabled = result.IsEnabled });
+            }
+            catch (Domain.Exceptions.DomainException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>Item 98: disables 2FA (Admin, code required).</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPost("2fa/disable")]
+        public async Task<ActionResult> DisableTwoFactor([FromBody] DisableTwoFactorRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await _twoFactor.DisableAsync(new VerifyTwoFactorDto { Code = model?.Code });
+                return Ok(new { enabled = false });
+            }
+            catch (Domain.Exceptions.DomainException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [Authorize]
@@ -157,6 +297,30 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string NewPassword { get; set; }
     }
 
+    public sealed class VerifyTwoFactorRequestModel
+    {
+        [Required]
+        public string TwoFactorToken { get; set; }
+
+        [Required]
+        public string Code { get; set; }
+    }
+
+    public sealed class EnableTwoFactorRequestModel
+    {
+        [Required]
+        public string Secret { get; set; }
+
+        [Required]
+        public string Code { get; set; }
+    }
+
+    public sealed class DisableTwoFactorRequestModel
+    {
+        [Required]
+        public string Code { get; set; }
+    }
+
     public sealed class LoginResponseModel
     {
         public string AccessToken { get; set; }
@@ -168,5 +332,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string Email { get; set; }
 
         public string[] Roles { get; set; }
+
+        /// <summary>Item 98: true when a TOTP code is still required.</summary>
+        public bool RequiresTwoFactor { get; set; }
+
+        /// <summary>Item 98: short-lived token for the 2FA verification step.</summary>
+        public string TwoFactorToken { get; set; }
+
+        /// <summary>Item 99: true when this login came from a never-seen IP.</summary>
+        public bool NewIpWarning { get; set; }
+
+        public string NewIpAddress { get; set; }
     }
 }

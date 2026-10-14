@@ -128,6 +128,22 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.GiftMessage).HasMaxLength(Order.GiftMessageMaxLength);
             builder.Property(x => x.ReferralCodeUsed).HasMaxLength(Order.ReferralCodeMaxLength);
 
+            // Delivery shipper assignment (optional).
+            builder.Property(x => x.ShipperId);
+            builder.HasOne(x => x.Shipper)
+                .WithMany()
+                .HasForeignKey(x => x.ShipperId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Checkout idempotency: same key retried within 24h returns the
+            // existing order. NULLs stay distinct under a unique index.
+            builder.Property(x => x.IdempotencyKey).HasMaxLength(Order.IdempotencyKeyMaxLength);
+            builder.HasIndex(x => x.IdempotencyKey).IsUnique();
+
+            // Auto-applied "giờ vàng" promotion.
+            builder.Property(x => x.PromotionName).HasMaxLength(Order.PromotionNameMaxLength);
+            builder.Property(x => x.PromotionDiscountAmount).HasPrecision(18, 2).IsRequired();
+
             builder.HasMany(x => x.Lines)
                 .WithOne()
                 .HasForeignKey(x => x.OrderId)

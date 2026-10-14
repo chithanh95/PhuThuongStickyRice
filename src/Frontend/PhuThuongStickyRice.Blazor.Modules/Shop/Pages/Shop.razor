@@ -17,6 +17,10 @@
             <div>
                 <h1 class="display-5">Xôi Làng Nghề Phú Thượng</h1>
                 <p class="lead mb-1">Xôi dẻo thơm chuẩn vị làng nghề — đặt hàng online, giao tận nơi.</p>
+                @if (!string.IsNullOrWhiteSpace(_tableLabel))
+                {
+                    <p class="mb-1"><span class="badge badge-info" style="font-size: 1rem;">🍽 Đang đặt tại bàn @_tableLabel</span></p>
+                }
                 @if (_todaySold > 0)
                 {
                     <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 Hôm nay đã bán @_todaySold gói</span></p>
@@ -269,6 +273,9 @@ else
     private string _tagFilter;
     private string _sort = "popular";
 
+    // Item 95: table QR — ?ban={label} shows a "đang đặt tại bàn" chip.
+    private string _tableLabel;
+
     // Quick-view state.
     private ShopProductModel _quickView;
     private int _quickViewQty = 1;
@@ -277,6 +284,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _tableLabel = GetQueryValue(Navigation.Uri, "ban");
+
         try
         {
             var pagedTask = ShopService.GetProductsAsync();
@@ -571,4 +580,37 @@ else
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    /// <summary>Reads a query string value (item 95: ?ban={label}).</summary>
+    private static string GetQueryValue(string uri, string key)
+    {
+        var question = uri.IndexOf('?');
+        if (question < 0)
+        {
+            return null;
+        }
+
+        var query = uri.Substring(question + 1);
+        var hash = query.IndexOf('#');
+        if (hash >= 0)
+        {
+            query = query.Substring(0, hash);
+        }
+
+        foreach (var pair in query.Split('&', System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            if (string.Equals(Uri.UnescapeDataString(pair.Substring(0, eq)), key, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
+            }
+        }
+
+        return null;
+    }
 }

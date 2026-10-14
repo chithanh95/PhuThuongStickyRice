@@ -44,6 +44,49 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("DataProtectionKeys");
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Article", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(10000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("PublishedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Articles", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.AuditLogEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -77,6 +120,49 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.HasKey("Id");
 
                     b.ToTable("AuditLogEntries", (string)null);
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.BlacklistedPhone", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NormalizedPhone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedPhone")
+                        .IsUnique();
+
+                    b.ToTable("BlacklistedPhones", (string)null);
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Combo", b =>
@@ -179,6 +265,48 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.HasKey("Id");
 
                     b.ToTable("_CustomMigrationHistories", (string)null);
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CustomerNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Phone");
+
+                    b.ToTable("CustomerNotes", (string)null);
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.DiscountCode", b =>
@@ -408,6 +536,13 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<DateTimeOffset>("CreatedDateTime")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<bool>("FlashBannerActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("FlashBannerText")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
                     b.Property<string>("FooterBackgroundUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -476,6 +611,21 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<bool>("PopupActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PopupBody")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("PopupImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PopupTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("ReviewsEmbedHtml")
                         .HasMaxLength(8000)
                         .HasColumnType("nvarchar(max)");
@@ -531,6 +681,50 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.HasIndex("OwnerId");
 
                     b.ToTable("Locks", (string)null);
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.LoginAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserName");
+
+                    b.ToTable("LoginAudits", (string)null);
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.LoyaltyAccount", b =>
@@ -637,6 +831,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<bool>("IsGift")
                         .HasColumnType("bit");
 
@@ -661,6 +859,14 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("PromotionDiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("PromotionName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("RecipientName")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -680,6 +886,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<Guid?>("ShipperId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -777,8 +986,14 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+
                     b.HasIndex("OrderNumber")
                         .IsUnique();
+
+                    b.HasIndex("ShipperId");
 
                     b.ToTable("Orders", (string)null);
                 });
@@ -795,6 +1010,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 
                     b.Property<bool>("IsCombo")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uniqueidentifier");
@@ -872,6 +1091,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
+                    b.Property<string>("AdminReply")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<string>("Comment")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -886,6 +1109,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uniqueidentifier");
@@ -912,6 +1138,55 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .IsUnique();
 
                     b.ToTable("OrderReviews", (string)null);
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.OrderRewardRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal?>("DiscountPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("MinAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("RewardType")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("ToppingName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OrderRewardRules", (string)null);
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.OutboxEvent", b =>
@@ -1004,6 +1279,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<string>("Category")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("CostPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTimeOffset>("CreatedDateTime")
                         .HasColumnType("datetimeoffset");
@@ -1107,6 +1386,50 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductSizeOptions", (string)null);
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Promotion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DaysOfWeekFlags")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DiscountPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Promotions", (string)null);
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.QuoteRequest", b =>
@@ -1224,6 +1547,44 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("RoleClaims", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Shipper", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Shippers", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.ShopSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1264,6 +1625,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("OwnerReportEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
                     b.Property<decimal>("PointsPerVnd")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -1274,6 +1639,14 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<decimal>("PointsRedeemValue")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("RecaptchaSecretKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RecaptchaSiteKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("ReferralBonusPoints")
                         .HasColumnType("int");
@@ -1299,8 +1672,15 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("UnconfirmedAlertMinutes")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset?>("UpdatedDateTime")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("WebBaseUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
@@ -1439,6 +1819,45 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("SupportTickets", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.TableQr", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("EncodedUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Label")
+                        .IsUnique();
+
+                    b.ToTable("TableQrs", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Topping", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1527,6 +1946,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TotpSecret")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
@@ -1723,6 +2146,16 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasForeignKey("ComboId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Order", b =>
+                {
+                    b.HasOne("PhuThuongStickyRice.Domain.Entities.Shipper", "Shipper")
+                        .WithMany()
+                        .HasForeignKey("ShipperId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Shipper");
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.OrderLine", b =>

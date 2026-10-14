@@ -29,6 +29,8 @@ namespace PhuThuongStickyRice.WebAPI
             await context.AddBackgroundWorkerAsync<OrderAutoCancelWorker>();
             await context.AddBackgroundWorkerAsync<BirthdayVoucherWorker>();
             await context.AddBackgroundWorkerAsync<SubscriptionOrderWorker>();
+            // Item 85: weekly (Mon 7:00) + monthly (1st 7:00) owner reports.
+            await context.AddBackgroundWorkerAsync<OwnerReportWorker>();
         }
     }
 }

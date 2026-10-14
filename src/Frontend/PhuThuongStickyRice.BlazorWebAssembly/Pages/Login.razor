@@ -21,15 +21,32 @@
                 }
                 <div class="form-group">
                     <label>Tên đăng nhập / Email</label>
-                    <input class="form-control" @bind="_username" placeholder="admin@phuthuong.vn" />
+                    <input class="form-control" @bind="_username" placeholder="admin@phuthuong.vn"
+                           disabled="@_awaitingTwoFactor" />
                 </div>
                 <div class="form-group">
                     <label>Mật khẩu</label>
-                    <input type="password" class="form-control" @bind="_password" placeholder="Mật khẩu" />
+                    <input type="password" class="form-control" @bind="_password" placeholder="Mật khẩu"
+                           disabled="@_awaitingTwoFactor" />
                 </div>
+                @if (_awaitingTwoFactor)
+                {
+                    <div class="alert alert-info">
+                        <small>Mật khẩu đúng. Nhập mã 6 số từ ứng dụng Authenticator để hoàn tất đăng nhập.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Mã xác thực 2 bước</label>
+                        <input class="form-control" @bind="_twoFactorCode" maxlength="6" inputmode="numeric"
+                               placeholder="123456" />
+                    </div>
+                }
                 <button class="btn btn-primary btn-block" @onclick="LoginAsync" disabled="@_loggingIn">
-                    @(_loggingIn ? "Đang đăng nhập..." : "Đăng nhập")
+                    @(_loggingIn ? "Đang đăng nhập..." : _awaitingTwoFactor ? "Xác nhận mã 2FA" : "Đăng nhập")
                 </button>
+                @if (_awaitingTwoFactor)
+                {
+                    <button class="btn btn-link btn-block mt-1" @onclick="BackToLogin">← Quay lại nhập mật khẩu</button>
+                }
                 @if (_showHint)
                 {
                     <div class="alert alert-warning alert-dismissible mt-3 mb-0" role="alert">
@@ -52,6 +69,12 @@
     private string _returnUrl;
     private bool _showHint = true;
     private const string HintDismissedKey = "phuthuong.login-hint.dismissed";
+
+    // Item 98: 2FA step state; item 99: IP warning handoff to the dashboard.
+    private bool _awaitingTwoFactor;
+    private string _twoFactorToken;
+    private string _twoFactorCode;
+    private const string IpWarningKey = "phuthuong.last-login-ip-warning";
 
     protected override async Task OnInitializedAsync()
     {
@@ -86,9 +109,23 @@
         }
     }
 
+    private void BackToLogin()
+    {
+        _awaitingTwoFactor = false;
+        _twoFactorToken = null;
+        _twoFactorCode = null;
+        _error = null;
+    }
+
     private async Task LoginAsync()
     {
         _error = null;
+
+        if (_awaitingTwoFactor)
+        {
+            await VerifyTwoFactorAsync();
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
         {
@@ -109,16 +146,27 @@
 
             if (!response.IsSuccessStatusCode)
             {
-                _error = response.StatusCode == System.Net.HttpStatusCode.Unauthorized
-                    ? "Tên đăng nhập hoặc mật khẩu không đúng."
-                    : "Đăng nhập thất bại. Vui lòng thử lại.";
+                // Item 100: the server returns 423 + a Vietnamese message when locked.
+                _error = (int)response.StatusCode == 423
+                    ? await response.Content.ReadAsStringAsync()
+                    : response.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                        ? "Tên đăng nhập hoặc mật khẩu không đúng."
+                        : "Đăng nhập thất bại. Vui lòng thử lại.";
                 return;
             }
 
             var login = await response.Content.ReadFromJsonAsync<LoginResponse>();
-            await TokenManager.StoreTokenAsync(login.AccessToken, login.ExpiresAt);
-            AuthStateProvider.NotifyUserAuthentication();
-            Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? "/dashboard" : _returnUrl);
+
+            // Item 98: password OK but 2FA is enabled — go to the code step.
+            if (login.RequiresTwoFactor)
+            {
+                _twoFactorToken = login.TwoFactorToken;
+                _awaitingTwoFactor = true;
+                _error = null;
+                return;
+            }
+
+            await FinishLoginAsync(login);
         }
         catch (Exception)
         {
@@ -128,6 +176,74 @@
         {
             _loggingIn = false;
         }
+    }
+
+    /// <summary>Item 98: verifies the 6-digit TOTP code to complete login.</summary>
+    private async Task VerifyTwoFactorAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_twoFactorCode))
+        {
+            _error = "Vui lòng nhập mã 6 số từ ứng dụng Authenticator.";
+            return;
+        }
+
+        _loggingIn = true;
+        try
+        {
+            var client = HttpClientFactory.CreateClient();
+            client.BaseAddress = new Uri(AppSettings.ResourceServer.Endpoint.TrimEnd('/') + "/");
+            var response = await client.PostAsJsonAsync("api/auth/2fa/verify", new
+            {
+                TwoFactorToken = _twoFactorToken,
+                Code = _twoFactorCode.Trim()
+            });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = (int)response.StatusCode == 423
+                    ? await response.Content.ReadAsStringAsync()
+                    : response.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                        ? "Mã xác thực 2FA không đúng."
+                        : "Đăng nhập thất bại. Vui lòng thử lại.";
+                return;
+            }
+
+            var login = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            await FinishLoginAsync(login);
+        }
+        catch (Exception)
+        {
+            _error = "Không kết nối được tới máy chủ. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _loggingIn = false;
+        }
+    }
+
+    /// <summary>Stores the JWT and hands any new-IP warning to the dashboard.</summary>
+    private async Task FinishLoginAsync(LoginResponse login)
+    {
+        await TokenManager.StoreTokenAsync(login.AccessToken, login.ExpiresAt);
+        AuthStateProvider.NotifyUserAuthentication();
+
+        // Item 99: dashboard shows a warning banner for a never-seen IP.
+        try
+        {
+            if (login.NewIpWarning && !string.IsNullOrWhiteSpace(login.NewIpAddress))
+            {
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", IpWarningKey, login.NewIpAddress);
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("localStorage.removeItem", IpWarningKey);
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? "/dashboard" : _returnUrl);
     }
 
     private static string GetQueryValue(string uri, string key)
@@ -173,5 +289,13 @@
         public string Email { get; set; }
 
         public string[] Roles { get; set; }
+
+        public bool RequiresTwoFactor { get; set; }
+
+        public string TwoFactorToken { get; set; }
+
+        public bool NewIpWarning { get; set; }
+
+        public string NewIpAddress { get; set; }
     }
 }

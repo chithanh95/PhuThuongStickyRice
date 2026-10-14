@@ -65,6 +65,29 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Gold tier discount percent. Default 5.</summary>
         public decimal TierGoldDiscount { get; set; }
 
+        /// <summary>
+        /// Owner email for the weekly/monthly auto report. Empty = disabled.
+        /// </summary>
+        public string OwnerReportEmail { get; set; }
+
+        /// <summary>
+        /// Orders still Pending after this many minutes trigger the urgent
+        /// unconfirmed-order alert on the dashboard. Default 15.
+        /// </summary>
+        public int UnconfirmedAlertMinutes { get; set; }
+
+        /// <summary>reCAPTCHA v3 site key. Empty = reCAPTCHA disabled.</summary>
+        public string RecaptchaSiteKey { get; set; }
+
+        /// <summary>reCAPTCHA v3 secret key. Empty = reCAPTCHA disabled.</summary>
+        public string RecaptchaSecretKey { get; set; }
+
+        /// <summary>
+        /// Public base URL of the shop web (e.g. https://xoiphuthuong.vn),
+        /// used to build table QR codes. No trailing slash.
+        /// </summary>
+        public string WebBaseUrl { get; set; }
+
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting
@@ -84,7 +107,12 @@ namespace PhuThuongStickyRice.Domain.Entities
                 TierSilverMin = 1000000,
                 TierSilverDiscount = 2,
                 TierGoldMin = 5000000,
-                TierGoldDiscount = 5
+                TierGoldDiscount = 5,
+                OwnerReportEmail = null,
+                UnconfirmedAlertMinutes = 15,
+                RecaptchaSiteKey = null,
+                RecaptchaSecretKey = null,
+                WebBaseUrl = null
             };
         }
     }

@@ -26,6 +26,9 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int VideoUrlMaxLength = 500;
         public const int MapEmbedUrlMaxLength = 1000;
         public const int ReviewsEmbedHtmlMaxLength = 8000;
+        public const int PopupTitleMaxLength = 200;
+        public const int PopupBodyMaxLength = 2000;
+        public const int FlashBannerTextMaxLength = 300;
 
         public string HeroTitle { get; private set; }
 
@@ -87,6 +90,24 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public string ReviewsEmbedHtml { get; private set; }
 
+        /// <summary>Promo popup title. Shown once per session when active.</summary>
+        public string PopupTitle { get; private set; }
+
+        /// <summary>Promo popup body.</summary>
+        public string PopupBody { get; private set; }
+
+        /// <summary>Promo popup image URL (relative, e.g. /uploads/landing/abc.jpg).</summary>
+        public string PopupImageUrl { get; private set; }
+
+        /// <summary>Show the promo popup on the landing page.</summary>
+        public bool PopupActive { get; private set; }
+
+        /// <summary>Top flash banner text. Shown when <see cref="FlashBannerActive"/>.</summary>
+        public string FlashBannerText { get; private set; }
+
+        /// <summary>Show the top flash banner on the landing page.</summary>
+        public bool FlashBannerActive { get; private set; }
+
         protected LandingPageContent()
         {
         }
@@ -102,7 +123,9 @@ namespace PhuThuongStickyRice.Domain.Entities
             string menuImage1Url = null, string menuImage2Url = null, string menuImage3Url = null,
             string footerBackgroundUrl = null,
             string videoTitle = null, string videoUrl = null,
-            string mapEmbedUrl = null, string reviewsEmbedHtml = null)
+            string mapEmbedUrl = null, string reviewsEmbedHtml = null,
+            string popupTitle = null, string popupBody = null, string popupImageUrl = null,
+            bool popupActive = false, string flashBannerText = null, bool flashBannerActive = false)
         {
             var content = new LandingPageContent();
             content.Update(
@@ -116,7 +139,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 menuImage1Url, menuImage2Url, menuImage3Url,
                 footerBackgroundUrl,
                 videoTitle, videoUrl,
-                mapEmbedUrl, reviewsEmbedHtml);
+                mapEmbedUrl, reviewsEmbedHtml,
+                popupTitle, popupBody, popupImageUrl, popupActive,
+                flashBannerText, flashBannerActive);
             return content;
         }
 
@@ -131,12 +156,20 @@ namespace PhuThuongStickyRice.Domain.Entities
             string menuImage1Url = null, string menuImage2Url = null, string menuImage3Url = null,
             string footerBackgroundUrl = null,
             string videoTitle = null, string videoUrl = null,
-            string mapEmbedUrl = null, string reviewsEmbedHtml = null)
+            string mapEmbedUrl = null, string reviewsEmbedHtml = null,
+            string popupTitle = null, string popupBody = null, string popupImageUrl = null,
+            bool popupActive = false, string flashBannerText = null, bool flashBannerActive = false)
         {
             VideoTitle = videoTitle;
             VideoUrl = videoUrl;
             MapEmbedUrl = mapEmbedUrl;
             ReviewsEmbedHtml = reviewsEmbedHtml;
+            PopupTitle = popupTitle;
+            PopupBody = popupBody;
+            PopupImageUrl = popupImageUrl;
+            PopupActive = popupActive;
+            FlashBannerText = flashBannerText;
+            FlashBannerActive = flashBannerActive;
             HeroTitle = heroTitle;
             HeroTagline = heroTagline;
             HeroButtonText = heroButtonText;

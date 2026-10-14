@@ -118,6 +118,15 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Wave 3: shippers, blacklist, CRM notes, promos, reward rules,
+            // articles, table QRs, profit report, login audit, 2FA.
+            builder.Services.AddHttpClient<Wave3Service, Wave3Service>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Toast notifications.
             builder.Services.AddScoped<ToastService>();
 

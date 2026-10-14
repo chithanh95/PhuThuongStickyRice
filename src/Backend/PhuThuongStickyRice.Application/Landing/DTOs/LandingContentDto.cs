@@ -68,5 +68,23 @@ namespace PhuThuongStickyRice.Application.Landing.DTOs
 
         /// <summary>Trusted raw HTML snippet (reviews widget). Admin-only.</summary>
         public string ReviewsEmbedHtml { get; set; }
+
+        /// <summary>Promo popup title (once per session when active).</summary>
+        public string PopupTitle { get; set; }
+
+        /// <summary>Promo popup body.</summary>
+        public string PopupBody { get; set; }
+
+        /// <summary>Promo popup image URL.</summary>
+        public string PopupImageUrl { get; set; }
+
+        /// <summary>Show the promo popup on the landing page.</summary>
+        public bool PopupActive { get; set; }
+
+        /// <summary>Top flash banner text.</summary>
+        public string FlashBannerText { get; set; }
+
+        /// <summary>Show the top flash banner on the landing page.</summary>
+        public bool FlashBannerActive { get; set; }
     }
 }

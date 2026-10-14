@@ -11,8 +11,10 @@
 @inject ShopSettingsService ShopSettingsService
 @inject DiscountService DiscountService
 @inject Wave2Service Wave2Service
+@inject Wave3Service Wave3Service
 @inject CartState CartState
 @inject NavigationManager Navigation
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
 <h3>Đặt hàng</h3>
 
@@ -24,6 +26,13 @@
         <table class="table table-sm mb-2">
             <tbody>
                 <tr><td>Tạm tính</td><td class="text-right">@FormatPrice(_placedOrder.Subtotal)</td></tr>
+                @if (_placedOrder.PromotionDiscountAmount > 0)
+                {
+                    <tr>
+                        <td>🏷 Khuyến mãi giờ vàng @(!string.IsNullOrWhiteSpace(_placedOrder.PromotionName) ? $"({_placedOrder.PromotionName})" : "")</td>
+                        <td class="text-right text-success">−@FormatPrice(_placedOrder.PromotionDiscountAmount)</td>
+                    </tr>
+                }
                 @if (_placedOrder.DiscountAmount > 0)
                 {
                     <tr>
@@ -466,6 +475,13 @@ else
                                 <td class="text-muted">Tạm tính</td>
                                 <td class="text-right text-muted">@FormatPrice(_subtotal)</td>
                             </tr>
+                            @if (_activePromotion != null)
+                            {
+                                <tr>
+                                    <td class="text-success">🏷 Khuyến mãi giờ vàng (@_activePromotion.Name) −@_activePromotion.DiscountPercent%</td>
+                                    <td class="text-right text-success">−@FormatPrice(_promotionDiscountPreview)</td>
+                                </tr>
+                            }
                             @if (_discountAmount > 0)
                             {
                                 <tr>
@@ -603,6 +619,11 @@ else
 @code {
     private readonly CreateOrderModel _order = new CreateOrderModel();
     private PlacedOrderModel _placedOrder;
+
+    // Item 91: happy-hour promotion auto-applied by the server.
+    private PhuThuongStickyRice.Blazor.Modules.Admin.Models.PromotionModel _activePromotion;
+    private decimal _promotionDiscountPreview =>
+        _activePromotion != null ? Math.Round(_subtotal * _activePromotion.DiscountPercent / 100, 0) : 0;
     private BankTransferInfoModel _bankInfo;
     private ShopSettingModel _shopSettings = new ShopSettingModel();
     private bool _submitting;
@@ -752,6 +773,16 @@ else
         catch (Exception)
         {
             _shopSettings = new ShopSettingModel();
+        }
+
+        // Item 91: happy-hour promotion preview (auto-applied server-side).
+        try
+        {
+            _activePromotion = await Wave3Service.GetActivePromotionAsync();
+        }
+        catch (Exception)
+        {
+            _activePromotion = null;
         }
 
         RefreshMinOrderState();
@@ -979,6 +1010,24 @@ else
             _order.DiscountCode = _appliedCode;
             _order.FulfillmentMethod = _fulfillment;
             _order.RedeemPoints = _redeemPoints;
+
+            // Item 97: fresh idempotency key per submit attempt, kept in memory.
+            _order.IdempotencyKey = Guid.NewGuid().ToString("D");
+
+            // Item 96: reCAPTCHA v3 token when enabled in shop settings.
+            _order.RecaptchaToken = null;
+            if (!string.IsNullOrWhiteSpace(_shopSettings.RecaptchaSiteKey))
+            {
+                try
+                {
+                    _order.RecaptchaToken = await JSRuntime.InvokeAsync<string>(
+                        "interop.recaptchaToken", _shopSettings.RecaptchaSiteKey);
+                }
+                catch (Exception)
+                {
+                    _order.RecaptchaToken = null;
+                }
+            }
             if (_fulfillment == "Pickup")
             {
                 _order.CustomerAddress = null;

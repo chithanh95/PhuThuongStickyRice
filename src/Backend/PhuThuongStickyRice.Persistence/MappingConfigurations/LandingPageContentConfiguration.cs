@@ -39,6 +39,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.VideoUrl).HasMaxLength(LandingPageContent.VideoUrlMaxLength);
             builder.Property(x => x.MapEmbedUrl).HasMaxLength(LandingPageContent.MapEmbedUrlMaxLength);
             builder.Property(x => x.ReviewsEmbedHtml).HasMaxLength(LandingPageContent.ReviewsEmbedHtmlMaxLength);
+            builder.Property(x => x.PopupTitle).HasMaxLength(LandingPageContent.PopupTitleMaxLength);
+            builder.Property(x => x.PopupBody).HasMaxLength(LandingPageContent.PopupBodyMaxLength);
+            builder.Property(x => x.PopupImageUrl).HasMaxLength(LandingPageContent.ImageUrlMaxLength);
+            builder.Property(x => x.PopupActive).IsRequired();
+            builder.Property(x => x.FlashBannerText).HasMaxLength(LandingPageContent.FlashBannerTextMaxLength);
+            builder.Property(x => x.FlashBannerActive).IsRequired();
         }
     }
 }

@@ -142,6 +142,9 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public List<Guid> ToppingIds { get; set; } = new List<Guid>();
 
         public bool IsCombo { get; set; }
+
+        /// <summary>Optional per-item note (rendered on sticky labels).</summary>
+        public string Note { get; set; }
     }
 
     public class CreateOrderModel
@@ -191,6 +194,12 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         /// <summary>Optional birthday (updates the loyalty profile).</summary>
         public DateTime? DateOfBirth { get; set; }
+
+        /// <summary>Idempotency key for the checkout attempt.</summary>
+        public string IdempotencyKey { get; set; }
+
+        /// <summary>reCAPTCHA v3 token (verified when reCAPTCHA is enabled).</summary>
+        public string RecaptchaToken { get; set; }
 
         public List<CreateOrderLineModel> Lines { get; set; } = new List<CreateOrderLineModel>();
     }
@@ -248,6 +257,11 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public string PaymentMethod { get; set; }
 
         public string PaymentStatus { get; set; }
+
+        /// <summary>Item 91: happy-hour promotion auto-applied at checkout.</summary>
+        public string PromotionName { get; set; }
+
+        public decimal PromotionDiscountAmount { get; set; }
 
         public string FulfillmentMethod { get; set; }
     }
@@ -438,6 +452,16 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public decimal TierGoldMin { get; set; }
 
         public decimal TierGoldDiscount { get; set; }
+
+        public string OwnerReportEmail { get; set; }
+
+        public int UnconfirmedAlertMinutes { get; set; }
+
+        public string RecaptchaSiteKey { get; set; }
+
+        public string RecaptchaSecretKey { get; set; }
+
+        public string WebBaseUrl { get; set; }
     }
 
     /// <summary>Result of GET api/dashboard/today-sold.</summary>

@@ -26,6 +26,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public decimal ToppingsExtra { get; set; }
 
         public bool IsCombo { get; set; }
+
+        /// <summary>Per-item note from the customer.</summary>
+        public string Note { get; set; }
     }
 
     public class OrderDto : EntityDto<Guid>
@@ -95,6 +98,18 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public bool LuckySpinUsed { get; set; }
 
+        /// <summary>Assigned shipper id (nullable).</summary>
+        public Guid? ShipperId { get; set; }
+
+        /// <summary>Assigned shipper name.</summary>
+        public string ShipperName { get; set; }
+
+        /// <summary>Auto-applied "giờ vàng" promotion name, if any.</summary>
+        public string PromotionName { get; set; }
+
+        /// <summary>Auto-applied promotion discount in VND.</summary>
+        public decimal PromotionDiscountAmount { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         public List<OrderLineDto> Lines { get; set; } = new List<OrderLineDto>();
@@ -116,6 +131,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         /// <summary>True when ProductId is a combo id, not a product id.</summary>
         public bool IsCombo { get; set; }
+
+        /// <summary>Optional per-item note (e.g. "ít hành"). Rendered on sticky labels.</summary>
+        [StringLength(500)]
+        public string Note { get; set; }
     }
 
     public class CreateOrderDto
@@ -185,6 +204,16 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Optional birthday (updates the loyalty profile).</summary>
         public DateTime? DateOfBirth { get; set; }
 
+        /// <summary>
+        /// Idempotency key for the checkout attempt. Retrying with the same
+        /// key within 24h returns the existing order.
+        /// </summary>
+        [StringLength(100)]
+        public string IdempotencyKey { get; set; }
+
+        /// <summary>reCAPTCHA v3 token. Verified when reCAPTCHA is enabled.</summary>
+        public string RecaptchaToken { get; set; }
+
         public List<CreateOrderLineDto> Lines { get; set; } = new List<CreateOrderLineDto>();
     }
 
@@ -251,7 +280,26 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public string Comment { get; set; }
 
+        /// <summary>Hidden reviews are not shown publicly.</summary>
+        public bool IsHidden { get; set; }
+
+        /// <summary>Admin reply, shown publicly under the review.</summary>
+        public string AdminReply { get; set; }
+
         public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>Admin: hide/unhide a review.</summary>
+    public class SetReviewHiddenDto
+    {
+        public bool IsHidden { get; set; }
+    }
+
+    /// <summary>Admin: reply to a review.</summary>
+    public class ReplyReviewDto
+    {
+        [StringLength(1000)]
+        public string Reply { get; set; }
     }
 
     /// <summary>Lucky-spin request after checkout.</summary>
@@ -309,12 +357,22 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string SearchTerm { get; set; }
 
         public string Status { get; set; }
+
+        /// <summary>Filter by assigned shipper.</summary>
+        public Guid? ShipperId { get; set; }
     }
 
     public class UpdateOrderStatusDto
     {
         [Required]
         public string Status { get; set; }
+    }
+
+    /// <summary>Admin: assign/unassign a delivery shipper.</summary>
+    public class AssignShipperDto
+    {
+        /// <summary>Shipper id; null unassigns.</summary>
+        public Guid? ShipperId { get; set; }
     }
 
     /// <summary>Customer marks their bank transfer as sent. Phone must match the order.</summary>
@@ -406,6 +464,15 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public long TotalOrders { get; set; }
 
         public long PendingOrders { get; set; }
+
+        /// <summary>
+        /// Item 86: Pending orders older than the configured
+        /// UnconfirmedAlertMinutes — shown as an urgent dashboard alert.
+        /// </summary>
+        public long StalePendingOrders { get; set; }
+
+        /// <summary>Configured threshold in minutes for <see cref="StalePendingOrders"/>.</summary>
+        public int StalePendingMinutes { get; set; }
 
         public decimal TotalRevenue { get; set; }
 

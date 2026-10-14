@@ -25,6 +25,8 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int RecipientPhoneMaxLength = 30;
         public const int GiftMessageMaxLength = 1000;
         public const int ReferralCodeMaxLength = 20;
+        public const int IdempotencyKeyMaxLength = 100;
+        public const int PromotionNameMaxLength = 100;
 
         public string OrderNumber { get; private set; }
 
@@ -99,6 +101,23 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Customer already used the post-checkout lucky spin for this order.</summary>
         public bool LuckySpinUsed { get; private set; }
 
+        /// <summary>Assigned delivery shipper (nullable). Set by the admin.</summary>
+        public Guid? ShipperId { get; private set; }
+
+        public Shipper Shipper { get; private set; }
+
+        /// <summary>
+        /// Idempotency key from the checkout attempt. A retry with the same
+        /// key within 24h returns the existing order instead of creating a new one.
+        /// </summary>
+        public string IdempotencyKey { get; private set; }
+
+        /// <summary>Auto-applied "giờ vàng" promotion name, if any.</summary>
+        public string PromotionName { get; private set; }
+
+        /// <summary>Auto-applied promotion discount in the order currency.</summary>
+        public decimal PromotionDiscountAmount { get; private set; }
+
         public DateTime CreatedAt { get; private set; }
 
         private readonly List<OrderLine> _lines = new List<OrderLine>();
@@ -134,7 +153,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             Money loyaltyDiscount = null,
             int loyaltyPointsRedeemed = 0,
             Money tierDiscount = null,
-            string referralCodeUsed = null)
+            string referralCodeUsed = null,
+            string idempotencyKey = null,
+            string promotionName = null,
+            decimal promotionDiscountAmount = 0)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
@@ -156,7 +178,10 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             // Discounts are applied in priority order and never exceed the
             // remaining subtotal, so the total can never go negative.
+            // The auto-applied "giờ vàng" promotion comes first.
             var remaining = subtotal;
+            var promo = Math.Min(Math.Max(0, promotionDiscountAmount), remaining);
+            remaining -= promo;
             var discount = Math.Min(Math.Max(0, discountAmount?.Amount ?? 0), remaining);
             remaining -= discount;
             var loyalty = Math.Min(Math.Max(0, loyaltyDiscount?.Amount ?? 0), remaining);
@@ -178,7 +203,12 @@ namespace PhuThuongStickyRice.Domain.Entities
             RecipientPhone = string.IsNullOrWhiteSpace(recipientPhone) ? null : recipientPhone.Trim();
             IsGift = isGift;
             GiftMessage = string.IsNullOrWhiteSpace(giftMessage) ? null : giftMessage.Trim();
-            TotalAmount = Money.Of(subtotal - discount - loyalty - tier + fee + gift, currency);
+            IdempotencyKey = string.IsNullOrWhiteSpace(idempotencyKey) ? null : idempotencyKey.Trim();
+            PromotionName = promo > 0 && !string.IsNullOrWhiteSpace(promotionName)
+                ? promotionName.Trim()
+                : null;
+            PromotionDiscountAmount = promo;
+            TotalAmount = Money.Of(subtotal - promo - discount - loyalty - tier + fee + gift, currency);
         }
 
         public static Order Create(
@@ -190,7 +220,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             string notes,
             PaymentMethod paymentMethod,
             IEnumerable<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo)> lines,
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> lines,
             Money deliveryFee = null,
             string discountCode = null,
             Money discountAmount = null,
@@ -206,7 +236,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             Money loyaltyDiscount = null,
             int loyaltyPointsRedeemed = 0,
             Money tierDiscount = null,
-            string referralCodeUsed = null)
+            string referralCodeUsed = null,
+            string idempotencyKey = null,
+            string promotionName = null,
+            decimal promotionDiscountAmount = 0)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -264,9 +297,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException($"Order notes must not exceed {NotesMaxLength} characters.");
             }
 
-            var orderLines = (lines ?? Enumerable.Empty<(Guid, string, Money, int, string, string, decimal, bool)>())
+            var orderLines = (lines ?? Enumerable.Empty<(Guid, string, Money, int, string, string, decimal, bool, string)>())
                 .Select(x => OrderLine.Create(
-                    x.Item1, x.Item2, x.Item3, x.Item4, x.Item5, x.Item6, x.Item7, x.Item8))
+                    x.Item1, x.Item2, x.Item3, x.Item4, x.Item5, x.Item6, x.Item7, x.Item8, x.Item9))
                 .ToList();
 
             if (orderLines.Count == 0)
@@ -304,7 +337,10 @@ namespace PhuThuongStickyRice.Domain.Entities
                 loyaltyDiscount,
                 loyaltyPointsRedeemed,
                 tierDiscount,
-                referralCodeUsed);
+                referralCodeUsed,
+                idempotencyKey,
+                promotionName,
+                promotionDiscountAmount);
         }
 
         /// <summary>
@@ -313,6 +349,28 @@ namespace PhuThuongStickyRice.Domain.Entities
         public void MarkLuckySpinUsed()
         {
             LuckySpinUsed = true;
+        }
+
+        /// <summary>
+        /// Assigns (or unassigns with null) a delivery shipper.
+        /// </summary>
+        public void AssignShipper(Guid? shipperId)
+        {
+            ShipperId = shipperId;
+        }
+
+        /// <summary>
+        /// Appends an auto-reward note (e.g. free topping) to the order notes.
+        /// </summary>
+        public void AddRewardNote(string note)
+        {
+            if (string.IsNullOrWhiteSpace(note))
+            {
+                return;
+            }
+
+            var trimmed = note.Trim();
+            Notes = string.IsNullOrWhiteSpace(Notes) ? trimmed : Notes + "\n" + trimmed;
         }
 
         /// <summary>
@@ -365,13 +423,15 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             var currency = TotalAmount.Currency;
             var subtotal = _lines.Sum(x => x.LineTotal.Amount);
-            var discount = Math.Min(DiscountAmount.Amount, subtotal);
-            var loyalty = Math.Min(LoyaltyDiscount.Amount, subtotal - discount);
-            var tier = Math.Min(TierDiscount.Amount, subtotal - discount - loyalty);
+            var promo = Math.Min(PromotionDiscountAmount, subtotal);
+            var discount = Math.Min(DiscountAmount.Amount, subtotal - promo);
+            var loyalty = Math.Min(LoyaltyDiscount.Amount, subtotal - promo - discount);
+            var tier = Math.Min(TierDiscount.Amount, subtotal - promo - discount - loyalty);
+            PromotionDiscountAmount = promo;
             DiscountAmount = Money.Of(discount, currency);
             LoyaltyDiscount = Money.Of(loyalty, currency);
             TierDiscount = Money.Of(tier, currency);
-            TotalAmount = Money.Of(subtotal - discount - loyalty - tier + DeliveryFee.Amount + GiftFee.Amount, currency);
+            TotalAmount = Money.Of(subtotal - promo - discount - loyalty - tier + DeliveryFee.Amount + GiftFee.Amount, currency);
         }
 
         /// <summary>

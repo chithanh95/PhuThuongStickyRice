@@ -156,6 +156,10 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         public string Comment { get; set; }
 
+        public bool IsHidden { get; set; }
+
+        public string AdminReply { get; set; }
+
         public DateTime CreatedAt { get; set; }
     }
 

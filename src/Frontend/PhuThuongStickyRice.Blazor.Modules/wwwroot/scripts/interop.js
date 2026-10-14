@@ -57,6 +57,68 @@ interop.fileSelected = function (e) {
  * @param {number} [freq=880] - tone frequency in Hz
  * @param {number} [durationMs=180] - tone duration in milliseconds
  */
+interop.playUrgent = function () {
+    // Distinct urgent pattern: three rising beeps for the stale-order alert.
+    try {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) {
+            return;
+        }
+        var ctx = new AudioCtx();
+        [660, 880, 1100].forEach(function (freq, i) {
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.value = freq;
+            gain.gain.value = 0.08;
+            var start = ctx.currentTime + i * 0.22;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            gain.gain.setValueAtTime(0.08, start);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18);
+            osc.start(start);
+            osc.stop(start + 0.2);
+        });
+        setTimeout(function () { try { ctx.close(); } catch (e) { } }, 900);
+    } catch (e) {
+        console.warn('playUrgent failed', e);
+    }
+};
+
+/**
+ * Loads the reCAPTCHA v3 script once and executes it for the "checkout"
+ * action, resolving with the token (or null when misconfigured).
+ * @param {string} siteKey
+ */
+interop.recaptchaToken = function (siteKey) {
+    return new Promise(function (resolve) {
+        if (!siteKey) {
+            resolve(null);
+            return;
+        }
+        function execute() {
+            try {
+                window.grecaptcha.ready(function () {
+                    window.grecaptcha.execute(siteKey, { action: 'checkout' })
+                        .then(function (t) { resolve(t); }, function () { resolve(null); });
+                });
+            } catch (e) {
+                resolve(null);
+            }
+        }
+        if (window.grecaptcha && window.grecaptcha.execute) {
+            execute();
+            return;
+        }
+        var s = document.createElement('script');
+        s.src = 'https://www.google.com/recaptcha/api.js?render=' + encodeURIComponent(siteKey);
+        s.async = true;
+        s.defer = true;
+        s.onload = execute;
+        s.onerror = function () { resolve(null); };
+        document.head.appendChild(s);
+    });
+};
 interop.playBeep = function (freq, durationMs) {
     try {
         freq = freq || 880;

@@ -57,6 +57,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 RedeemPoints = model.RedeemPoints,
                 ReferralCode = model.ReferralCode,
                 DateOfBirth = model.DateOfBirth,
+                IdempotencyKey = model.IdempotencyKey,
+                RecaptchaToken = model.RecaptchaToken,
                 Lines = model.Lines
                     .Select(x => new CreateOrderLineDto
                     {
@@ -64,7 +66,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                         Quantity = x.Quantity,
                         SizeOptionId = x.SizeOptionId,
                         ToppingIds = x.ToppingIds ?? new System.Collections.Generic.List<Guid>(),
-                        IsCombo = x.IsCombo
+                        IsCombo = x.IsCombo,
+                        Note = x.Note
                     })
                     .ToList()
             });
@@ -76,6 +79,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet]
         public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
             [FromQuery] string searchTerm = null, [FromQuery] string status = null,
+            [FromQuery] Guid? shipperId = null,
             CancellationToken cancellationToken = default)
         {
             var paged = await _orderAppService.GetListAsync(new GetOrdersInput
@@ -83,7 +87,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 MaxResultCount = pageSize < 1 ? 20 : pageSize,
                 SkipCount = (page < 1 ? 0 : page - 1) * (pageSize < 1 ? 20 : pageSize),
                 SearchTerm = searchTerm,
-                Status = status
+                Status = status,
+                ShipperId = shipperId
             });
 
             return Ok(paged);
@@ -334,5 +339,109 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        /// <summary>Item 82: admin assigns (or unassigns) a delivery shipper.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id:guid}/assign-shipper")]
+        public async Task<ActionResult> AssignShipper(Guid id,
+            [FromBody] AssignShipperRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.AssignShipperAsync(id, new AssignShipperDto
+                {
+                    ShipperId = model?.ShipperId
+                });
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>Item 81: kitchen display — Pending/Confirmed/Preparing orders.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("kitchen")]
+        public async Task<ActionResult> GetKitchenOrders(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _orderAppService.GetKitchenOrdersAsync());
+        }
+
+        /// <summary>Item 81: kitchen display tap advances one stage.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPost("{id:guid}/kitchen/advance")]
+        public async Task<ActionResult> AdvanceKitchenStatus(Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return Ok(await _orderAppService.AdvanceKitchenStatusAsync(id));
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>Item 87: admin hides/unhides a review.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPut("reviews/{id:guid}/hide")]
+        public async Task<ActionResult> SetReviewHidden(Guid id,
+            [FromBody] SetReviewHiddenRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            var review = await _orderAppService.SetReviewHiddenAsync(id, new SetReviewHiddenDto
+            {
+                IsHidden = model?.IsHidden ?? false
+            });
+            return Ok(review);
+        }
+
+        /// <summary>Item 87: admin replies to a review (shown publicly).</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPut("reviews/{id:guid}/reply")]
+        public async Task<ActionResult> ReplyReview(Guid id,
+            [FromBody] ReplyReviewRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var review = await _orderAppService.ReplyReviewAsync(id, new ReplyReviewDto
+                {
+                    Reply = model?.Reply
+                });
+                return Ok(review);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>Item 87: public non-hidden reviews for the landing page.</summary>
+        [AllowAnonymous]
+        [HttpGet("reviews/public")]
+        public async Task<ActionResult> GetPublicReviews(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _orderAppService.GetPublicReviewsAsync());
+        }
+    }
+
+    public sealed class AssignShipperRequestModel
+    {
+        /// <summary>Shipper id; null unassigns.</summary>
+        public Guid? ShipperId { get; set; }
+    }
+
+    public sealed class SetReviewHiddenRequestModel
+    {
+        public bool IsHidden { get; set; }
+    }
+
+    public sealed class ReplyReviewRequestModel
+    {
+        public string Reply { get; set; }
     }
 }

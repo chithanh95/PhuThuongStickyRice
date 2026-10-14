@@ -111,6 +111,40 @@ else
                 <input type="number" min="0" step="1000" class="form-control" @bind="_model.GiftFee" />
             </div>
 
+            <h5 class="mt-4">Báo cáo chủ quán (mục 85)</h5>
+            <div class="form-group">
+                <label>Email nhận báo cáo</label>
+                <input type="email" class="form-control" @bind="_model.OwnerReportEmail" placeholder="chu-quan@example.com" />
+                <small class="form-text text-muted">Báo cáo tự động gửi thứ 2 hàng tuần và mùng 1 hàng tháng lúc 7:00. Để trống = tắt.</small>
+            </div>
+
+            <h5 class="mt-4">Cảnh báo đơn chưa xác nhận (mục 86)</h5>
+            <div class="form-group">
+                <label>Cảnh báo khẩn khi đơn Pending quá (phút)</label>
+                <input type="number" min="1" max="1440" class="form-control" @bind="_model.UnconfirmedAlertMinutes" />
+                <small class="form-text text-muted">Mặc định 15 phút — dashboard hiện banner đỏ + phát âm thanh khẩn.</small>
+            </div>
+
+            <h5 class="mt-4">reCAPTCHA chống spam (mục 96)</h5>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Site key</label>
+                    <input class="form-control" @bind="_model.RecaptchaSiteKey" placeholder="6L..." />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Secret key</label>
+                    <input type="password" class="form-control" @bind="_model.RecaptchaSecretKey" placeholder="6L..." />
+                </div>
+            </div>
+            <small class="form-text text-muted mb-3">Để trống cả hai = tắt reCAPTCHA. Khi bật, trang đặt hàng chạy reCAPTCHA v3 (yêu cầu điểm ≥ 0.5) trước khi tạo đơn.</small>
+
+            <h5 class="mt-4">Website &amp; QR bàn (mục 95)</h5>
+            <div class="form-group">
+                <label>Địa chỉ web công khai</label>
+                <input class="form-control" @bind="_model.WebBaseUrl" placeholder="https://phuthuong.vn" />
+                <small class="form-text text-muted">Dùng để tạo mã QR bàn — VD: https://phuthuong.vn/shop?ban=5.</small>
+            </div>
+
             <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
                 @(_saving ? "Đang lưu..." : "Lưu thay đổi")
             </button>

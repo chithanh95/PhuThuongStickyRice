@@ -55,5 +55,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var count = await _dashboardAppService.GetTodaySoldCountAsync();
             return Ok(new { quantitySold = count });
         }
+
+        /// <summary>
+        /// Item 90: new customers (first order inside the range) vs
+        /// returning customers, over the selected date range.
+        /// </summary>
+        [HttpGet("customers/new-vs-returning")]
+        public async Task<ActionResult> GetNewReturningCustomers(
+            [FromQuery] DateTime? from = null,
+            [FromQuery] DateTime? to = null,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _dashboardAppService.GetNewReturningCustomersAsync(from, to));
+        }
     }
 }

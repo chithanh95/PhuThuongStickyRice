@@ -22,6 +22,10 @@ namespace PhuThuongStickyRice.Blazor.Modules.Products.Models
 
         public string Currency { get; set; } = "VND";
 
+        /// <summary>Cost price (giá vốn) in VND, for the profit report.</summary>
+        [Range(0, double.MaxValue)]
+        public decimal CostPrice { get; set; }
+
         public string Status { get; set; }
 
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>

@@ -27,6 +27,11 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.TierSilverDiscount).HasPrecision(5, 2).IsRequired();
             builder.Property(x => x.TierGoldMin).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.TierGoldDiscount).HasPrecision(5, 2).IsRequired();
+            builder.Property(x => x.OwnerReportEmail).HasMaxLength(254);
+            builder.Property(x => x.UnconfirmedAlertMinutes).IsRequired();
+            builder.Property(x => x.RecaptchaSiteKey).HasMaxLength(100);
+            builder.Property(x => x.RecaptchaSecretKey).HasMaxLength(100);
+            builder.Property(x => x.WebBaseUrl).HasMaxLength(500);
         }
     }
 }

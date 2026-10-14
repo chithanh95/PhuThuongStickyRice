@@ -105,6 +105,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     Description = model.Description,
                     Price = model.Price,
                     Currency = string.IsNullOrWhiteSpace(model.Currency) ? "VND" : model.Currency,
+                    CostPrice = model.CostPrice,
                     Tags = model.Tags,
                     Category = model.Category,
                     AllergenInfo = model.AllergenInfo,
@@ -142,6 +143,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     Description = model.Description,
                     Price = model.Price,
                     Currency = string.IsNullOrWhiteSpace(model.Currency) ? "VND" : model.Currency,
+                    CostPrice = model.CostPrice,
                     Status = model.Status,
                     Tags = model.Tags,
                     Category = model.Category,
@@ -265,7 +267,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 Description = x.Description,
                 Price = x.Price,
                 Currency = x.Currency,
-                Status = x.Status
+                Status = x.Status,
+                CostPrice = x.CostPrice
             }).ToList();
         }
     }

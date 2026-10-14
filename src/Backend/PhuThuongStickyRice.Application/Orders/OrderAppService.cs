@@ -8,6 +8,7 @@ using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Loyalty;
 using PhuThuongStickyRice.Application.Zalo;
+using PhuThuongStickyRice.Application.Wave3;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using PhuThuongStickyRice.Domain.ValueObjects;
@@ -31,6 +32,25 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<OrderDto> GetAsync(Guid id);
 
         Task<OrderDto> UpdateStatusAsync(Guid id, UpdateOrderStatusDto input);
+
+        /// <summary>Admin: assigns (or unassigns with null) a delivery shipper.</summary>
+        Task<OrderDto> AssignShipperAsync(Guid id, AssignShipperDto input);
+
+        /// <summary>Admin (kitchen display): orders in Pending/Confirmed/Preparing, oldest first.</summary>
+        Task<List<OrderDto>> GetKitchenOrdersAsync();
+
+        /// <summary>Admin (kitchen display): advance one kitchen stage
+        /// (Pending→Confirmed→Preparing→Delivering).</summary>
+        Task<OrderDto> AdvanceKitchenStatusAsync(Guid id);
+
+        /// <summary>Admin: hide/unhide an order review.</summary>
+        Task<OrderReviewDto> SetReviewHiddenAsync(Guid id, SetReviewHiddenDto input);
+
+        /// <summary>Admin: reply to an order review (shown publicly).</summary>
+        Task<OrderReviewDto> ReplyReviewAsync(Guid id, ReplyReviewDto input);
+
+        /// <summary>Public: non-hidden reviews for the landing page.</summary>
+        Task<List<OrderReviewDto>> GetPublicReviewsAsync();
 
         /// <summary>Customer marks their bank-transfer order as transferred.</summary>
         Task<OrderDto> MarkTransferredAsync(Guid id, MarkTransferredDto input);
@@ -93,6 +113,11 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly ILoyaltyAppService _loyalty;
         private readonly IZaloNotificationService _zalo;
         private readonly Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> _reviews;
+        private readonly IBlacklistAppService _blacklist;
+        private readonly IPromotionAppService _promotions;
+        private readonly IRecaptchaService _recaptcha;
+        private readonly IRewardRuleAppService _rewardRules;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> _shippers;
 
         public OrderAppService(
             IOrderRepository orders,
@@ -109,7 +134,12 @@ namespace PhuThuongStickyRice.Application.Orders
             Volo.Abp.Domain.Repositories.IRepository<Combo, Guid> combos,
             ILoyaltyAppService loyalty,
             IZaloNotificationService zalo,
-            Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> reviews)
+            Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> reviews,
+            IBlacklistAppService blacklist,
+            IPromotionAppService promotions,
+            IRecaptchaService recaptcha,
+            IRewardRuleAppService rewardRules,
+            Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> shippers)
         {
             _orders = orders;
             _products = products;
@@ -126,6 +156,11 @@ namespace PhuThuongStickyRice.Application.Orders
             _loyalty = loyalty;
             _zalo = zalo;
             _reviews = reviews;
+            _blacklist = blacklist;
+            _promotions = promotions;
+            _recaptcha = recaptcha;
+            _rewardRules = rewardRules;
+            _shippers = shippers;
         }
 
         public async Task<OrderDto> CreateAsync(CreateOrderDto input)
@@ -133,6 +168,36 @@ namespace PhuThuongStickyRice.Application.Orders
             if (input.Lines == null || input.Lines.Count == 0)
             {
                 throw new Domain.Exceptions.DomainException("Order must contain at least one line.");
+            }
+
+            // Item 97: idempotency — the same key retried within 24h returns
+            // the existing order instead of creating a duplicate.
+            var idempotencyKey = string.IsNullOrWhiteSpace(input.IdempotencyKey)
+                ? null
+                : input.IdempotencyKey.Trim();
+            if (idempotencyKey != null)
+            {
+                var duplicate = await FindByIdempotencyKeyAsync(idempotencyKey);
+                if (duplicate != null)
+                {
+                    var duplicateDto = _objectMapper.Map<Order, OrderDto>(duplicate);
+                    await FillShipperNamesAsync(new[] { duplicateDto });
+                    return duplicateDto;
+                }
+            }
+
+            // Item 88: blocked phones cannot place orders.
+            if (await _blacklist.IsBlacklistedAsync(input.CustomerPhone))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Số điện thoại này tạm thời không thể đặt hàng.");
+            }
+
+            // Item 96: reCAPTCHA v3, verified server-side when configured.
+            if (!await _recaptcha.VerifyAsync(input.RecaptchaToken))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Xác thực chống spam không thành công. Vui lòng thử lại.");
             }
 
             if ((!Enum.TryParse<PaymentMethod>(input.PaymentMethod, ignoreCase: true, out var paymentMethod)
@@ -183,7 +248,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     toppingQueryable.Where(x => toppingIds.Contains(x.Id) && x.IsActive));
 
             var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo)>();
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>();
             foreach (var line in input.Lines)
             {
                 if (line.IsCombo)
@@ -202,7 +267,8 @@ namespace PhuThuongStickyRice.Application.Orders
                         null,
                         null,
                         0,
-                        true));
+                        true,
+                        string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim()));
                     continue;
                 }
 
@@ -251,13 +317,26 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
 
                 lines.Add((product.Id, product.Name, unitPrice, line.Quantity,
-                    sizeName, toppingNames, toppingsExtra, false));
+                    sizeName, toppingNames, toppingsExtra, false,
+                    string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim()));
             }
 
             var orderNumber = await GenerateOrderNumberAsync();
 
             var subtotal = lines.Sum(x => x.Quantity * x.UnitPrice.Amount);
             var currency = lines.First().UnitPrice.Currency;
+
+            // Item 91: auto-apply the best active "giờ vàng" promotion
+            // (Vietnam local time). It comes first in the discount priority
+            // order, so the subtotal below already accounts for it.
+            string promotionName = null;
+            decimal promotionDiscount = 0;
+            var bestPromo = await _promotions.GetBestActiveAsync();
+            if (bestPromo != null && bestPromo.DiscountPercent > 0)
+            {
+                promotionName = bestPromo.Name;
+                promotionDiscount = Math.Round(subtotal * bestPromo.DiscountPercent / 100, 0);
+            }
 
             // Minimum order amount (shop setting).
             var shopSetting = await _shopSettings.GetAsync();
@@ -268,13 +347,14 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // Discount code (validated + usage counted here; owner-tied
-            // spin/birthday codes require the matching phone).
+            // spin/birthday codes require the matching phone). The code
+            // applies to the subtotal remaining after the happy-hour promotion.
             decimal discountValue = 0;
             string appliedCode = null;
             if (!string.IsNullOrWhiteSpace(input.DiscountCode))
             {
                 discountValue = await _discounts.ApplyAsync(
-                    input.DiscountCode, subtotal, input.CustomerPhone);
+                    input.DiscountCode, subtotal - promotionDiscount, input.CustomerPhone);
                 appliedCode = input.DiscountCode.Trim().ToUpperInvariant();
             }
 
@@ -284,7 +364,7 @@ namespace PhuThuongStickyRice.Application.Orders
             decimal tierValue = 0;
             if (loyaltyAccount.TotalSpent > 0 && tierPercent > 0)
             {
-                tierValue = Math.Round((subtotal - discountValue) * tierPercent / 100, 0);
+                tierValue = Math.Round((subtotal - promotionDiscount - discountValue) * tierPercent / 100, 0);
             }
 
             // Loyalty points redemption.
@@ -349,14 +429,14 @@ namespace PhuThuongStickyRice.Application.Orders
             var isPickup = fulfillment == FulfillmentMethod.Pickup;
             if (!isPickup && shopSetting.DeliveryFee > 0)
             {
-                var afterDiscount = subtotal - discountValue;
+                var afterDiscount = subtotal - promotionDiscount - discountValue;
                 var freeShip = shopSetting.FreeShipThreshold > 0 && afterDiscount >= shopSetting.FreeShipThreshold;
                 feeValue = freeShip ? 0 : shopSetting.DeliveryFee;
             }
 
             // Deposit: large bank-transfer orders are flagged; the checkout
             // shows "Cần đặt cọc Xđ" and the admin confirms via ConfirmPayment.
-            var totalBeforeDeposit = subtotal - discountValue - loyaltyValue - tierValue + feeValue + giftFeeValue;
+            var totalBeforeDeposit = subtotal - promotionDiscount - discountValue - loyaltyValue - tierValue + feeValue + giftFeeValue;
             var requiresDeposit = paymentMethod == PaymentMethod.BankTransfer
                 && shopSetting.DepositThreshold > 0
                 && totalBeforeDeposit >= shopSetting.DepositThreshold;
@@ -385,7 +465,10 @@ namespace PhuThuongStickyRice.Application.Orders
                 Money.Of(loyaltyValue, currency),
                 redeemedPoints,
                 Money.Of(tierValue, currency),
-                referralCodeUsed);
+                referralCodeUsed,
+                idempotencyKey,
+                promotionName,
+                promotionDiscount);
 
             await _orders.InsertAsync(order);
 
@@ -436,18 +519,58 @@ namespace PhuThuongStickyRice.Application.Orders
                 query = query.Where(x => x.Status == status);
             }
 
+            // Item 82: filter orders by assigned shipper.
+            if (input.ShipperId.HasValue && input.ShipperId.Value != Guid.Empty)
+            {
+                var shipperId = input.ShipperId.Value;
+                query = query.Where(x => x.ShipperId == shipperId);
+            }
+
             var totalCount = await _asyncExecuter.LongCountAsync(query);
             var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
 
-            return new PagedResultDto<OrderDto>(
-                totalCount,
-                _objectMapper.Map<List<Order>, List<OrderDto>>(items));
+            var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
+            await FillShipperNamesAsync(dtos);
+            return new PagedResultDto<OrderDto>(totalCount, dtos);
+        }
+
+        /// <summary>
+        /// Item 82: fills <see cref="OrderDto.ShipperName"/> for orders with an
+        /// assigned shipper (single lookup, no N+1).
+        /// </summary>
+        private async Task FillShipperNamesAsync(IList<OrderDto> dtos)
+        {
+            var ids = dtos
+                .Where(x => x.ShipperId.HasValue && x.ShipperId.Value != Guid.Empty)
+                .Select(x => x.ShipperId.Value)
+                .Distinct()
+                .ToList();
+            if (ids.Count == 0)
+            {
+                return;
+            }
+
+            var queryable = await _shippers.GetQueryableAsync();
+            var names = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => ids.Contains(x.Id))
+                    .Select(x => new { x.Id, x.Name }));
+            var map = names.ToDictionary(x => x.Id, x => x.Name);
+
+            foreach (var dto in dtos)
+            {
+                if (dto.ShipperId.HasValue && map.TryGetValue(dto.ShipperId.Value, out var name))
+                {
+                    dto.ShipperName = name;
+                }
+            }
         }
 
         public async Task<OrderDto> GetAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
-            return _objectMapper.Map<Order, OrderDto>(order);
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            await FillShipperNamesAsync(new[] { dto });
+            return dto;
         }
 
         public async Task<OrderDto> UpdateStatusAsync(Guid id, UpdateOrderStatusDto input)
@@ -467,6 +590,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 // Earn loyalty points + referral bonuses (once per order —
                 // Complete() can only run a single time per order).
                 await _loyalty.AwardCompletedOrderAsync(order);
+
+                // Item 92: automatic reward rules (free topping note /
+                // auto-generated discount code).
+                await _rewardRules.ApplyOnOrderCompletedAsync(order);
+                await _orders.UpdateAsync(order);
             }
 
             if (status == OrderStatus.Cancelled)
@@ -474,7 +602,117 @@ namespace PhuThuongStickyRice.Application.Orders
                 await _loyalty.RefundRedeemedPointsAsync(order);
             }
 
-            return _objectMapper.Map<Order, OrderDto>(order);
+            var updatedDto = _objectMapper.Map<Order, OrderDto>(order);
+            await FillShipperNamesAsync(new[] { updatedDto });
+            return updatedDto;
+        }
+
+        /// <summary>Item 82: admin assigns (or unassigns) a delivery shipper.</summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<OrderDto> AssignShipperAsync(Guid id, AssignShipperDto input)
+        {
+            var order = await FindOrThrowAsync(id);
+
+            if (input.ShipperId.HasValue && input.ShipperId.Value != Guid.Empty)
+            {
+                var shipper = await _shippers.FindAsync(input.ShipperId.Value);
+                if (shipper == null || !shipper.IsActive)
+                {
+                    throw new Domain.Exceptions.DomainException(
+                        "Shipper không tồn tại hoặc đã ngừng hoạt động.");
+                }
+
+                order.AssignShipper(shipper.Id);
+            }
+            else
+            {
+                order.AssignShipper(null);
+            }
+
+            await _orders.UpdateAsync(order);
+
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            await FillShipperNamesAsync(new[] { dto });
+            return dto;
+        }
+
+        /// <summary>Item 81: kitchen display — Pending/Confirmed/Preparing, oldest first.</summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<List<OrderDto>> GetKitchenOrdersAsync()
+        {
+            var kitchenStatuses = new[]
+                { OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.Preparing };
+            var queryable = await _orders.GetQueryableAsync();
+            var items = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => kitchenStatuses.Contains(x.Status))
+                    .OrderBy(x => x.CreatedAt));
+            var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
+            await FillShipperNamesAsync(dtos);
+            return dtos;
+        }
+
+        /// <summary>
+        /// Item 81: kitchen display tap advances one stage:
+        /// Pending→Confirmed→Preparing→Delivering.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<OrderDto> AdvanceKitchenStatusAsync(Guid id)
+        {
+            var order = await FindOrThrowAsync(id);
+
+            switch (order.Status)
+            {
+                case OrderStatus.Pending:
+                    order.Confirm();
+                    break;
+                case OrderStatus.Confirmed:
+                    order.StartPreparing();
+                    break;
+                case OrderStatus.Preparing:
+                    order.StartDelivering();
+                    break;
+                default:
+                    throw new Domain.Exceptions.DomainException(
+                        $"Đơn hàng ở trạng thái '{order.Status}' không thể chuyển tiếp từ màn hình bếp.");
+            }
+
+            await _orders.UpdateAsync(order);
+
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            await FillShipperNamesAsync(new[] { dto });
+            return dto;
+        }
+
+        /// <summary>Item 87: admin hides/unhides an order review.</summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<OrderReviewDto> SetReviewHiddenAsync(Guid id, SetReviewHiddenDto input)
+        {
+            var review = await _reviews.GetAsync(id);
+            review.IsHidden = input.IsHidden;
+            await _reviews.UpdateAsync(review, autoSave: true);
+            return MapReviewToDto(review);
+        }
+
+        /// <summary>Item 87: admin replies to a review (shown publicly).</summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<OrderReviewDto> ReplyReviewAsync(Guid id, ReplyReviewDto input)
+        {
+            var review = await _reviews.GetAsync(id);
+            review.AdminReply = string.IsNullOrWhiteSpace(input.Reply) ? null : input.Reply.Trim();
+            await _reviews.UpdateAsync(review, autoSave: true);
+            return MapReviewToDto(review);
+        }
+
+        /// <summary>Item 87: public non-hidden reviews, newest first.</summary>
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public async Task<List<OrderReviewDto>> GetPublicReviewsAsync()
+        {
+            var reviewQueryable = await _reviews.GetQueryableAsync();
+            var items = await _asyncExecuter.ToListAsync(
+                reviewQueryable.Where(x => !x.IsHidden)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(20));
+            return items.Select(MapReviewToDto).ToList();
         }
 
         public async Task<OrderDto> CancelByCustomerAsync(CancelOrderByCustomerInput input)
@@ -704,6 +942,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 CustomerPhone = review.CustomerPhone,
                 Rating = review.Rating,
                 Comment = review.Comment,
+                IsHidden = review.IsHidden,
+                AdminReply = review.AdminReply,
                 CreatedAt = review.CreatedAt
             };
         }
@@ -860,6 +1100,18 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             return order;
+        }
+
+        /// <summary>
+        /// Item 97: finds an order created with the same idempotency key
+        /// within the last 24h (a retry of the same checkout attempt).
+        /// </summary>
+        private async Task<Order> FindByIdempotencyKeyAsync(string idempotencyKey)
+        {
+            var cutoff = DateTime.UtcNow.AddHours(-24);
+            var queryable = await _orders.GetQueryableAsync();
+            return await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x => x.IdempotencyKey == idempotencyKey && x.CreatedAt >= cutoff));
         }
 
         private async Task<string> GenerateOrderNumberAsync()

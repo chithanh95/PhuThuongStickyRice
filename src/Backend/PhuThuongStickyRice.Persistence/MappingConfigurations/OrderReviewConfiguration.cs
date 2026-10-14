@@ -22,6 +22,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .IsRequired();
             builder.Property(x => x.Rating).IsRequired();
             builder.Property(x => x.Comment).HasMaxLength(OrderReview.CommentMaxLength);
+            builder.Property(x => x.IsHidden).IsRequired();
+            builder.Property(x => x.AdminReply).HasMaxLength(OrderReview.AdminReplyMaxLength);
             builder.Property(x => x.CreatedAt).IsRequired();
         }
     }

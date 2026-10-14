@@ -11,6 +11,7 @@ namespace PhuThuongStickyRice.Domain.Entities
     {
         public const int SizeNameMaxLength = 100;
         public const int ToppingNamesMaxLength = 500;
+        public const int NoteMaxLength = 500;
 
         public Guid OrderId { get; private set; }
 
@@ -41,6 +42,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>True when this line is a family combo, not a product.</summary>
         public bool IsCombo { get; private set; }
 
+        /// <summary>
+        /// Per-item note from the customer (e.g. "ít hành", "không ớt").
+        /// Rendered on the kitchen sticky labels when present.
+        /// </summary>
+        public string Note { get; private set; }
+
         // EF Core
         private OrderLine()
         {
@@ -54,7 +61,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string sizeName,
             string toppingNames,
             decimal toppingsExtra,
-            bool isCombo)
+            bool isCombo,
+            string note = null)
         {
             ProductId = productId;
             ProductName = productName;
@@ -65,6 +73,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             ToppingNames = toppingNames;
             ToppingsExtra = toppingsExtra;
             IsCombo = isCombo;
+            Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
         }
 
         internal static OrderLine Create(
@@ -75,7 +84,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string sizeName = null,
             string toppingNames = null,
             decimal toppingsExtra = 0,
-            bool isCombo = false)
+            bool isCombo = false,
+            string note = null)
         {
             if (productId == Guid.Empty)
             {
@@ -112,6 +122,11 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("Toppings extra must not be negative.");
             }
 
+            if (note != null && note.Length > NoteMaxLength)
+            {
+                throw new DomainException($"Order line note must not exceed {NoteMaxLength} characters.");
+            }
+
             return new OrderLine(
                 productId,
                 productName.Trim(),
@@ -120,7 +135,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 string.IsNullOrWhiteSpace(sizeName) ? null : sizeName.Trim(),
                 string.IsNullOrWhiteSpace(toppingNames) ? null : toppingNames.Trim(),
                 toppingsExtra,
-                isCombo);
+                isCombo,
+                note);
         }
 
         /// <summary>
