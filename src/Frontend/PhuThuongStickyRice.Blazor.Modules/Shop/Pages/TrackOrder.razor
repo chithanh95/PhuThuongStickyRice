@@ -1,9 +1,15 @@
 @page "/track-order"
+@using System
+@using System.Linq
+@using System.Threading.Tasks
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@using PhuThuongStickyRice.Blazor.Modules.Core.Services
 @using PhuThuongStickyRice.Blazor.Modules.Admin.Services
 @using Microsoft.JSInterop
 @inject ShopService ShopService
+@inject CartState CartState
+@inject ToastService Toasts
 @inject Wave2Service Wave2Service
 @inject Wave4Service Wave4Service
 @inject Wave5Service Wave5Service
@@ -75,6 +81,16 @@
             <span class="float-right">@OrderStatusBadge(_order.Status)</span>
         </div>
         <div class="card-body">
+            @* Wave 6a (item 21): reorder — restores the order's lines into the cart. *@
+            <div class="mb-2">
+                <button class="btn btn-outline-success btn-sm" @onclick="ReorderAsync" disabled="@_reordering">
+                    @(_reordering ? "Đang khôi phục..." : "🔄 Đặt lại đơn này")
+                </button>
+                @if (!string.IsNullOrEmpty(_reorderMessage))
+                {
+                    <small class="text-danger ml-2">@_reorderMessage</small>
+                }
+            </div>
             <p>
                 Ngày đặt: <strong>@_order.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong><br />
                 Khách hàng: <strong>@_order.CustomerName</strong> — @_order.CustomerPhone<br />
@@ -189,6 +205,10 @@
                                 @if (!string.IsNullOrWhiteSpace(line.ToppingNames))
                                 {
                                     <br /><small class="text-muted">Ăn kèm: @line.ToppingNames</small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.Note))
+                                {
+                                    <br /><small class="text-info">📝 @line.Note</small>
                                 }
                             </td>
                             <td class="text-right">@FormatPrice(line.UnitPrice)</td>
@@ -319,6 +339,10 @@
                 Phương thức thanh toán: <strong>@PaymentMethodLabel(_order.PaymentMethod)</strong><br />
                 Trạng thái thanh toán: @PaymentStatusBadge(_order.PaymentStatus)<br />
                 Hình thức nhận hàng: <strong>@(_order.FulfillmentMethod == "Pickup" ? "🏪 Tự đến lấy tại quán" : "🛵 Giao tận nơi")</strong>
+                @if (!string.IsNullOrWhiteSpace(_order.DeliverySlot))
+                {
+                    <br /><span>🕖 Giờ giao hẹn: <strong>@_order.DeliverySlot</strong></span>
+                }
             </p>
             @* Item 130: refund status visible to the customer. *@
             @if (!string.IsNullOrEmpty(_order.RefundStatus) && _order.RefundStatus != "None")
@@ -476,6 +500,10 @@
     private bool _savingLines;
     private string _editError;
 
+    // Wave 6a (item 21): reorder.
+    private bool _reordering;
+    private string _reorderMessage;
+
     // Post-delivery survey.
     private int _rating;
     private string _reviewComment;
@@ -603,6 +631,7 @@
         _copyMessage = null;
         _cancelError = null;
         _editError = null;
+        _reorderMessage = null;
         _reviewError = null;
         _reviewSubmitted = false;
         _rating = 0;
@@ -801,6 +830,137 @@
     private static int ParseQty(object value)
     {
         return int.TryParse(value?.ToString(), out var qty) ? Math.Max(0, Math.Min(100, qty)) : 0;
+    }
+
+    /// <summary>
+    /// Wave 6a (item 21): "Đặt lại đơn này" — restores the tracked order's
+    /// lines into the cart by matching ProductId against the current
+    /// catalog. Size/toppings are best-effort (matched by name); products
+    /// that no longer exist are skipped and reported via toast.
+    /// </summary>
+    private async Task ReorderAsync()
+    {
+        _reorderMessage = null;
+        if (_order == null || _reordering)
+        {
+            return;
+        }
+
+        _reordering = true;
+        try
+        {
+            var productsTask = ShopService.GetProductsAsync();
+            var combosTask = ShopService.GetCombosAsync();
+            var toppingsTask = ShopService.GetToppingsAsync();
+            await Task.WhenAll(productsTask, combosTask, toppingsTask);
+
+            var products = (productsTask.Result?.Items ?? new System.Collections.Generic.List<ShopProductModel>())
+                .ToDictionary(p => p.Id);
+            var combos = (combosTask.Result ?? new System.Collections.Generic.List<ComboModel>())
+                .ToDictionary(c => c.Id);
+            var toppings = toppingsTask.Result ?? new System.Collections.Generic.List<ToppingModel>();
+
+            var restored = 0;
+            var skipped = 0;
+            foreach (var line in _order.Lines)
+            {
+                if (line.Quantity < 1)
+                {
+                    continue;
+                }
+
+                var qty = Math.Min(line.Quantity, 99);
+
+                if (line.IsCombo)
+                {
+                    if (combos.TryGetValue(line.ProductId, out var combo) && combo.IsActive)
+                    {
+                        CartState.AddCombo(combo, qty);
+                        restored++;
+                    }
+                    else
+                    {
+                        skipped++;
+                    }
+
+                    continue;
+                }
+
+                if (!products.TryGetValue(line.ProductId, out var product) || product.Status != "Active")
+                {
+                    skipped++;
+                    continue;
+                }
+
+                // Best-effort size match by name.
+                ProductSizeOptionModel size = null;
+                if (!string.IsNullOrWhiteSpace(line.SizeName))
+                {
+                    size = product.Sizes?.FirstOrDefault(s =>
+                        string.Equals(s.Name?.Trim(), line.SizeName.Trim(),
+                            StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Best-effort topping match by name (comma-separated).
+                var chosen = new System.Collections.Generic.List<ToppingModel>();
+                if (!string.IsNullOrWhiteSpace(line.ToppingNames))
+                {
+                    foreach (var name in line.ToppingNames.Split(
+                        new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var trimmed = name.Trim();
+                        if (trimmed.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        var topping = toppings.FirstOrDefault(t =>
+                            !chosen.Contains(t)
+                            && string.Equals(t.Name?.Trim(), trimmed,
+                                StringComparison.OrdinalIgnoreCase));
+                        if (topping != null)
+                        {
+                            chosen.Add(topping);
+                        }
+                    }
+                }
+
+                var toppingsTotal = chosen.Sum(t => t.ExtraPrice);
+                CartState.AddConfigured(
+                    product.Id, product.Name, product.Code,
+                    (size?.Price ?? product.Price) + toppingsTotal, qty,
+                    size?.Id, size?.Name ?? line.SizeName,
+                    chosen.Select(t => t.Id).ToList(),
+                    line.ToppingNames, toppingsTotal,
+                    isCombo: false,
+                    note: line.Note);
+                restored++;
+            }
+
+            if (restored > 0)
+            {
+                var message = $"Đã khôi phục {restored} món vào giỏ";
+                if (skipped > 0)
+                {
+                    message += $" ({skipped} món không còn bán nên đã bỏ qua)";
+                }
+
+                Toasts.Show(message, "Xem giỏ hàng", "/cart");
+                Navigation.NavigateTo("/cart");
+            }
+            else
+            {
+                _reorderMessage = "Không khôi phục được món nào (các món trong đơn đã ngừng bán).";
+            }
+        }
+        catch (Exception)
+        {
+            _reorderMessage = "Không khôi phục được giỏ hàng. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _reordering = false;
+        }
     }
 
     private async Task SaveEditedLines()

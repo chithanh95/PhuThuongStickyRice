@@ -41,6 +41,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             builder.Property(x => x.CreatedAt).IsRequired();
 
+            // Wave 6a (item 23): scheduled delivery slot.
+            builder.Property(x => x.DeliverySlot).HasMaxLength(Order.DeliverySlotMaxLength);
+
             // Item 128/130/133.
             builder.Property(x => x.Source).HasMaxLength(Order.SourceMaxLength);
             builder.Property(x => x.MoMoMatched).IsRequired();

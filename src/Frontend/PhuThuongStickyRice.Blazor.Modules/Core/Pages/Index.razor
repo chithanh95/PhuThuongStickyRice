@@ -10,6 +10,7 @@
 @using PhuThuongStickyRice.Blazor.Modules.Core.Services
 @inject LandingService LandingService
 @inject ShopService ShopService
+@inject ShopSettingsService ShopSettingsService
 @inject CartState CartState
 @inject ToastService Toasts
 @inject PhuThuongStickyRice.Blazor.Modules.Admin.Services.Wave4Service Wave4Service
@@ -30,6 +31,11 @@
         <div class="col-md-7 lp-hero-text">
             <h1 class="lp-brand">@_content.HeroTitle</h1>
             <div class="lp-oval lp-oval-dark"><span>@_content.HeroTagline</span></div>
+            @* Wave 6a (item 22): open-hours display (VN time). *@
+            @if (!string.IsNullOrEmpty(_openStatusText))
+            {
+                <div class="mb-2"><span class="badge @(_openNow ? "badge-success" : "badge-danger")" style="font-size: 1rem;">@_openStatusText</span></div>
+            }
             <a href="/shop" class="lp-cta lp-cta-outline">@_content.HeroButtonText</a>
         </div>
         <div class="col-md-5 text-center">
@@ -293,6 +299,10 @@
     // Item 105: promo-popup feature flag.
     private bool _promoPopupEnabled = true;
 
+    // Wave 6a (item 22): open-hours display in the hero.
+    private string _openStatusText;
+    private bool _openNow;
+
     /// <summary>
     /// Converts a YouTube watch/share URL to an embed URL.
     /// Returns null when no video is configured.
@@ -334,6 +344,22 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Wave 6a (item 22): open-hours badge in the hero (fail-safe —
+        // the landing works fine with the built-in defaults).
+        try
+        {
+            var settings = await ShopSettingsService.GetAsync();
+            if (settings != null)
+            {
+                var (isOpen, text) = ShopHours.StatusText(settings.OpenTime, settings.CloseTime);
+                _openNow = isOpen;
+                _openStatusText = text;
+            }
+        }
+        catch (Exception)
+        {
+        }
+
         try
         {
             _content = await LandingService.GetContentAsync() ?? new LandingContentModel();

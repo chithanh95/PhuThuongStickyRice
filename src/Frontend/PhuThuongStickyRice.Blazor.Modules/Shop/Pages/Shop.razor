@@ -8,6 +8,7 @@
 @using PhuThuongStickyRice.Blazor.Modules.Core.Services
 @using PhuThuongStickyRice.Blazor.Modules.Admin.Services
 @inject ShopService ShopService
+@inject ShopSettingsService ShopSettingsService
 @inject Wave4Service Wave4Service
 @inject CartState CartState
 @inject ShopI18n I18n
@@ -29,6 +30,11 @@
                 @if (_todaySold > 0)
                 {
                     <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 @I18n.T("sold_today"): @_todaySold</span></p>
+                }
+                @* Wave 6a (item 22): open-hours display (VN time). *@
+                @if (!string.IsNullOrEmpty(_openStatusText))
+                {
+                    <p class="mb-0 mt-1"><span class="badge @(_openNow ? "badge-success" : "badge-danger")" style="font-size: 1rem;">@_openStatusText</span></p>
                 }
             </div>
             <a class="btn btn-dark mt-2" href="/menu-print" target="_blank" title="Mở thực đơn để in / lưu PDF">
@@ -286,6 +292,12 @@ else
                         <input id="qv-qty" type="number" min="1" max="99" class="form-control" style="width: 90px;"
                                @bind="_quickViewQty" />
                     </div>
+                    @* Wave 6a (item 24): per-item note flows into the order line. *@
+                    <div class="form-group mt-2 mb-0">
+                        <label for="qv-note"><small class="text-muted">📝 Ghi chú món <span class="text-muted">(vd: ít hành, nhiều đậu)</span></small></label>
+                        <input id="qv-note" class="form-control form-control-sm" maxlength="500"
+                               placeholder="Ghi chú cho món này (tùy chọn)" @bind="_quickViewNote" />
+                    </div>
                 </div>
                 <div class="modal-footer">
                     @* Item 116: short link to /shop?tim={code} *@
@@ -345,6 +357,12 @@ else
     private int _quickViewQty = 1;
     private Guid? _quickViewSizeId;
     private HashSet<Guid> _quickViewToppings = new HashSet<Guid>();
+    private string _quickViewNote;
+
+    // Wave 6a (item 22): open-hours display.
+    private ShopSettingModel _shopSettings;
+    private string _openStatusText;
+    private bool _openNow;
 
     protected override async Task OnInitializedAsync()
     {
@@ -369,6 +387,24 @@ else
         else
         {
             CartState.Source = "Web";
+        }
+
+        // Wave 6a (item 22): open-hours badge in the hero (fail-safe —
+        // the shop works fine with the built-in defaults).
+        try
+        {
+            _shopSettings = await ShopSettingsService.GetAsync();
+        }
+        catch (Exception)
+        {
+            _shopSettings = null;
+        }
+
+        if (_shopSettings != null)
+        {
+            var (isOpen, text) = ShopHours.StatusText(_shopSettings.OpenTime, _shopSettings.CloseTime);
+            _openNow = isOpen;
+            _openStatusText = text;
         }
 
         try
@@ -643,6 +679,7 @@ else
         _quickViewQty = _quantities.TryGetValue(product.Id, out var q) && q > 0 ? q : 1;
         _quickViewSizeId = SelectedSizeId(product);
         _quickViewToppings = new HashSet<Guid>();
+        _quickViewNote = null;
         _quickViewShortLink = null;
         _shortLinkCopied = null;
     }
@@ -741,7 +778,8 @@ else
             unitPrice, qty,
             size?.Id, size?.Name,
             toppingIds, toppingNames, toppingsTotal,
-            isCombo: false);
+            isCombo: false,
+            note: _quickViewNote);
 
         _quantities[_quickView.Id] = qty;
         if (size != null)

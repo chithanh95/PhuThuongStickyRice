@@ -111,6 +111,9 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.CheckInPoints = dto.CheckInPoints < 0 ? 5 : dto.CheckInPoints;
             entity.NepPerPortionGrams = dto.NepPerPortionGrams < 1 ? 150 : dto.NepPerPortionGrams;
             entity.DailyTargetAmount = Math.Max(0, dto.DailyTargetAmount);
+            // Wave 6a (item 22): normalized to "HH:mm"; admin config UI arrives in Wave 6b.
+            entity.OpenTime = NormalizeHour(dto.OpenTime, "06:00");
+            entity.CloseTime = NormalizeHour(dto.CloseTime, "10:30");
             await _settings.UpdateAsync(entity, autoSave: true);
 
             return MapToDto(entity);
@@ -119,6 +122,22 @@ namespace PhuThuongStickyRice.Application.Shop
         private static string TrimOrNull(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Wave 6a (item 22): normalizes an "HH:mm" open/close time; anything
+        /// unparseable falls back to the documented default so the public
+        /// display never breaks on a bad admin value.
+        /// </summary>
+        private static string NormalizeHour(string value, string fallback)
+        {
+            if (TimeSpan.TryParse(value?.Trim(), out var time)
+                && time >= TimeSpan.Zero && time < TimeSpan.FromDays(1))
+            {
+                return $"{(int)time.TotalHours:D2}:{time.Minutes:D2}";
+            }
+
+            return fallback;
         }
 
         /// <summary>
@@ -218,7 +237,9 @@ namespace PhuThuongStickyRice.Application.Shop
                 ImageBackupSettingsJson = entity.ImageBackupSettingsJson,
                 CheckInPoints = entity.CheckInPoints,
                 NepPerPortionGrams = entity.NepPerPortionGrams < 1 ? 150 : entity.NepPerPortionGrams,
-                DailyTargetAmount = entity.DailyTargetAmount
+                DailyTargetAmount = entity.DailyTargetAmount,
+                OpenTime = NormalizeHour(entity.OpenTime, "06:00"),
+                CloseTime = NormalizeHour(entity.CloseTime, "10:30")
             };
         }
     }

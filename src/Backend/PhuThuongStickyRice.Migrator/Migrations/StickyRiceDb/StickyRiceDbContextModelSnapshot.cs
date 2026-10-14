@@ -1236,6 +1236,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<string>("DeliverySlot")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("DiscountCode")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -2101,6 +2105,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<int>("CheckInPoints")
                         .HasColumnType("int");
 
+                    b.Property<string>("CloseTime")
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
                     b.Property<DateTimeOffset>("CreatedDateTime")
                         .HasColumnType("datetimeoffset");
 
@@ -2166,6 +2174,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 
                     b.Property<int>("NepPerPortionGrams")
                         .HasColumnType("int");
+
+                    b.Property<string>("OpenTime")
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
 
                     b.Property<string>("OwnerReportEmail")
                         .HasMaxLength(254)

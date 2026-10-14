@@ -129,6 +129,12 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public decimal ToppingsTotal { get; set; }
 
         public bool IsCombo { get; set; }
+
+        /// <summary>
+        /// Per-item note from the customer ("ghi chú món"), e.g. "ít hành".
+        /// Flows into the order line at checkout (wave 6a, item 24).
+        /// </summary>
+        public string Note { get; set; }
     }
 
     public class CreateOrderLineModel
@@ -207,6 +213,12 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         /// <summary>reCAPTCHA v3 token (verified when reCAPTCHA is enabled).</summary>
         public string RecaptchaToken { get; set; }
 
+        /// <summary>
+        /// Wave 6a (item 23): scheduled delivery slot ("06:00–06:30").
+        /// Null = giao ngay.
+        /// </summary>
+        public string DeliverySlot { get; set; }
+
         public List<CreateOrderLineModel> Lines { get; set; } = new List<CreateOrderLineModel>();
     }
 
@@ -270,6 +282,9 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public decimal PromotionDiscountAmount { get; set; }
 
         public string FulfillmentMethod { get; set; }
+
+        /// <summary>Wave 6a (item 23): scheduled delivery slot. Null = giao ngay.</summary>
+        public string DeliverySlot { get; set; }
     }
 
     /// <summary>Public bank-transfer details shown at checkout (account info + VietQR).</summary>
@@ -354,6 +369,9 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public decimal ToppingsExtra { get; set; }
 
         public bool IsCombo { get; set; }
+
+        /// <summary>Per-item note from the customer (wave 6a, item 24).</summary>
+        public string Note { get; set; }
     }
 
     /// <summary>Order as returned by the public /api/orders/track endpoint.</summary>
@@ -426,6 +444,9 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         /// <summary>Item 130: refund amount in VND.</summary>
         public decimal RefundAmount { get; set; }
+
+        /// <summary>Wave 6a (item 23): scheduled delivery slot. Null = giao ngay.</summary>
+        public string DeliverySlot { get; set; }
 
         public List<TrackedOrderLineModel> Lines { get; set; } = new List<TrackedOrderLineModel>();
     }
@@ -515,6 +536,12 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         /// <summary>Item 139: daily revenue target in VND.</summary>
         public decimal DailyTargetAmount { get; set; }
+
+        /// <summary>Wave 6a (item 22): daily opening time "HH:mm" (VN time). Default "06:00".</summary>
+        public string OpenTime { get; set; }
+
+        /// <summary>Wave 6a (item 22): daily closing time "HH:mm" (VN time). Default "10:30".</summary>
+        public string CloseTime { get; set; }
     }
 
     /// <summary>Result of GET api/dashboard/today-sold.</summary>

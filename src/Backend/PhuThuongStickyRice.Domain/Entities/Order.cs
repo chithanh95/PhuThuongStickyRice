@@ -28,6 +28,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int IdempotencyKeyMaxLength = 100;
         public const int PromotionNameMaxLength = 100;
         public const int SourceMaxLength = 50;
+        public const int DeliverySlotMaxLength = 50;
 
         public string OrderNumber { get; private set; }
 
@@ -142,6 +143,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string Source { get; private set; }
 
         /// <summary>
+        /// Wave 6a (item 23): scheduled delivery slot chosen at checkout,
+        /// e.g. "06:00–06:30". Null = giao ngay (deliver ASAP).
+        /// </summary>
+        public string DeliverySlot { get; private set; }
+
+        /// <summary>
         /// Item 128: true when a MoMo IPN callback was matched to this order
         /// by parsing the order number out of the callback's OrderInfo.
         /// </summary>
@@ -194,7 +201,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             decimal promotionDiscountAmount = 0,
             Guid? branchId = null,
             string branchName = null,
-            string source = null)
+            string source = null,
+            string deliverySlot = null)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
@@ -249,6 +257,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             BranchId = branchId;
             BranchName = string.IsNullOrWhiteSpace(branchName) ? null : branchName.Trim();
             Source = string.IsNullOrWhiteSpace(source) ? "Web" : source.Trim();
+            DeliverySlot = string.IsNullOrWhiteSpace(deliverySlot) ? null : deliverySlot.Trim();
             MoMoMatched = false;
             RefundStatus = RefundStatus.None;
             RefundAmount = 0;
@@ -286,7 +295,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             decimal promotionDiscountAmount = 0,
             Guid? branchId = null,
             string branchName = null,
-            string source = null)
+            string source = null,
+            string deliverySlot = null)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -344,6 +354,11 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException($"Order notes must not exceed {NotesMaxLength} characters.");
             }
 
+            if (deliverySlot != null && deliverySlot.Trim().Length > DeliverySlotMaxLength)
+            {
+                throw new DomainException($"Delivery slot must not exceed {DeliverySlotMaxLength} characters.");
+            }
+
             var orderLines = (lines ?? Enumerable.Empty<(Guid, string, Money, int, string, string, decimal, bool, string)>())
                 .Select(x => OrderLine.Create(
                     x.Item1, x.Item2, x.Item3, x.Item4, x.Item5, x.Item6, x.Item7, x.Item8, x.Item9))
@@ -390,7 +405,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 promotionDiscountAmount,
                 branchId,
                 branchName,
-                source);
+                source,
+                deliverySlot);
         }
 
         /// <summary>

@@ -119,6 +119,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Order source (item 133): "Web", "QR bàn", "Link chia sẻ", "Nhóm", "POS".</summary>
         public string Source { get; set; }
 
+        /// <summary>Wave 6a (item 23): scheduled delivery slot, e.g. "06:00–06:30". Null = giao ngay.</summary>
+        public string DeliverySlot { get; set; }
+
         /// <summary>Item 128: MoMo IPN auto-matched by parsing OrderInfo.</summary>
         public bool MoMoMatched { get; set; }
 
@@ -231,6 +234,13 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         /// <summary>reCAPTCHA v3 token. Verified when reCAPTCHA is enabled.</summary>
         public string RecaptchaToken { get; set; }
+
+        /// <summary>
+        /// Wave 6a (item 23): scheduled delivery slot ("06:00–06:30").
+        /// Null/empty = giao ngay.
+        /// </summary>
+        [StringLength(50)]
+        public string DeliverySlot { get; set; }
 
         /// <summary>Optional branch id (item 109). Null = no branch.</summary>
         public Guid? BranchId { get; set; }

@@ -37,6 +37,10 @@
                 {
                     <tr><td><strong>Ghi chú:</strong></td><td colspan="3">@_order.Notes</td></tr>
                 }
+                @if (!string.IsNullOrWhiteSpace(_order.DeliverySlot))
+                {
+                    <tr><td><strong>Giờ giao:</strong></td><td colspan="3">🕖 @_order.DeliverySlot</td></tr>
+                }
                 @if (!string.IsNullOrWhiteSpace(_order.RecipientName))
                 {
                     <tr><td><strong>Người nhận:</strong></td><td>@_order.RecipientName</td>
@@ -68,7 +72,13 @@
                         i++;
                         <tr>
                             <td>@i</td>
-                            <td>@line.ProductName</td>
+                            <td>
+                                @line.ProductName
+                                @if (!string.IsNullOrWhiteSpace(line.Note))
+                                {
+                                    <br /><small>📝 @line.Note</small>
+                                }
+                            </td>
                             <td class="r">@FormatPrice(line.UnitPrice)</td>
                             <td class="r">@line.Quantity</td>
                             <td class="r">@FormatPrice(line.LineTotal)</td>

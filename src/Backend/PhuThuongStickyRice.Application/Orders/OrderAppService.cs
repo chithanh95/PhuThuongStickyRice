@@ -514,7 +514,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 promotionDiscount,
                 branchId,
                 branchName,
-                input.Source);
+                input.Source,
+                string.IsNullOrWhiteSpace(input.DeliverySlot) ? null : input.DeliverySlot.Trim());
 
             // Item 140: wallet payment — charge the prepaid balance up front;
             // insufficient balance aborts before the order row is written.

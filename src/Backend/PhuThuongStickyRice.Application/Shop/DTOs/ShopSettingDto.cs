@@ -171,5 +171,15 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         /// <summary>Daily revenue target in VND (dashboard). Default 2000000.</summary>
         [Range(0, 1000000000)]
         public decimal DailyTargetAmount { get; set; }
+
+        // ---- Wave 6a (item 22): open-hours display ("HH:mm") ----
+
+        /// <summary>Daily opening time ("HH:mm", Vietnam local time). Default "06:00".</summary>
+        [StringLength(5)]
+        public string OpenTime { get; set; }
+
+        /// <summary>Daily closing time ("HH:mm", Vietnam local time). Default "10:30".</summary>
+        [StringLength(5)]
+        public string CloseTime { get; set; }
     }
 }

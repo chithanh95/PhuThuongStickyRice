@@ -130,6 +130,11 @@ else
                                         {
                                             <div><em>Ghi chú: @order.Notes</em></div>
                                         }
+                                        @* Wave 6a (item 23): scheduled delivery slot. *@
+                                        @if (!string.IsNullOrWhiteSpace(order.DeliverySlot))
+                                        {
+                                            <div>🕖 Giờ giao hẹn: <strong>@order.DeliverySlot</strong></div>
+                                        }
                                         @if (!string.IsNullOrWhiteSpace(order.RecipientName))
                                         {
                                             <div>Người nhận: <strong>@order.RecipientName</strong> — @order.RecipientPhone</div>
@@ -169,7 +174,14 @@ else
                                                 @foreach (var line in order.Lines)
                                                 {
                                                     <tr>
-                                                        <td>@line.ProductName</td>
+                                                        <td>
+                                                            @line.ProductName
+                                                            @* Wave 6a (item 24): per-item note. *@
+                                                            @if (!string.IsNullOrWhiteSpace(line.Note))
+                                                            {
+                                                                <br /><small class="text-info">📝 @line.Note</small>
+                                                            }
+                                                        </td>
                                                         <td class="text-right">@FormatPrice(line.UnitPrice)</td>
                                                         <td class="text-right">@line.Quantity</td>
                                                         <td class="text-right">@FormatPrice(line.LineTotal)</td>

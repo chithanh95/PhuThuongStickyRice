@@ -56,6 +56,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.CheckInPoints).IsRequired();
             builder.Property(x => x.NepPerPortionGrams).IsRequired();
             builder.Property(x => x.DailyTargetAmount).HasPrecision(18, 2).IsRequired();
+
+            // Wave 6a (item 22): open-hours display ("HH:mm").
+            builder.Property(x => x.OpenTime).HasMaxLength(5);
+            builder.Property(x => x.CloseTime).HasMaxLength(5);
         }
     }
 }

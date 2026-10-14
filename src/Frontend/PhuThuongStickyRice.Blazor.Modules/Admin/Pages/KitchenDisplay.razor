@@ -58,6 +58,11 @@ else
                         {
                             <div><small class="text-muted">🚚 @order.ShipperName</small></div>
                         }
+                        @* Wave 6a (item 23): scheduled delivery slot. *@
+                        @if (!string.IsNullOrWhiteSpace(order.DeliverySlot))
+                        {
+                            <div><span class="badge badge-info">🕖 Giao @order.DeliverySlot</span></div>
+                        }
                     </div>
                     <ul class="list-unstyled mb-2">
                         @foreach (var line in order.Lines)

@@ -116,7 +116,8 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
             List<Guid> toppingIds,
             string toppingNames,
             decimal toppingsTotal,
-            bool isCombo)
+            bool isCombo,
+            string note = null)
         {
             toppingIds ??= new List<Guid>();
             var key = BuildLineKey(productId, sizeOptionId, toppingIds, isCombo);
@@ -137,15 +138,51 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
                     ToppingIds = toppingIds,
                     ToppingNames = toppingNames,
                     ToppingsTotal = toppingsTotal,
-                    IsCombo = isCombo
+                    IsCombo = isCombo,
+                    Note = TrimNote(note)
                 });
             }
             else
             {
                 existing.Quantity += quantity;
+                if (!string.IsNullOrWhiteSpace(note))
+                {
+                    existing.Note = TrimNote(note);
+                }
             }
 
             NotifyChanged();
+        }
+
+        /// <summary>
+        /// Wave 6a (item 24): updates the per-item "ghi chú món" on a cart
+        /// line (persists to localStorage via <see cref="NotifyChanged"/>).
+        /// </summary>
+        public void UpdateNote(string lineKey, string note)
+        {
+            var existing = _items.FirstOrDefault(x => x.LineKey == lineKey);
+            if (existing == null)
+            {
+                return;
+            }
+
+            var trimmed = TrimNote(note);
+            if (existing.Note != trimmed)
+            {
+                existing.Note = trimmed;
+                NotifyChanged();
+            }
+        }
+
+        private static string TrimNote(string note)
+        {
+            if (string.IsNullOrWhiteSpace(note))
+            {
+                return null;
+            }
+
+            var trimmed = note.Trim();
+            return trimmed.Length > 500 ? trimmed.Substring(0, 500) : trimmed;
         }
 
         /// <summary>Adds a family combo as a single line at the combo price.</summary>

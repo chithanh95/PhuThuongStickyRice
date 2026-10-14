@@ -67,6 +67,12 @@ else
                             {
                                 <br /><small class="text-muted">@item.ProductCode</small>
                             }
+                            @* Wave 6a (item 24): per-item note ("ghi chú món"). *@
+                            <br />
+                            <input class="form-control form-control-sm mt-1" style="max-width: 230px;"
+                                   maxlength="500" placeholder="📝 Ghi chú món (vd: ít hành)"
+                                   value="@item.Note"
+                                   @onchange="(e) => CartState.UpdateNote(item.LineKey, e.Value?.ToString())" />
                         </td>
                         <td class="text-right">@FormatPrice(item.UnitPrice)</td>
                         <td class="text-center">

@@ -110,6 +110,9 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Models
         /// <summary>Item 130: refund amount in VND.</summary>
         public decimal RefundAmount { get; set; }
 
+        /// <summary>Wave 6a (item 23): scheduled delivery slot. Null = giao ngay.</summary>
+        public string DeliverySlot { get; set; }
+
         public List<OrderLineModel> Lines { get; set; } = new List<OrderLineModel>();
     }
 

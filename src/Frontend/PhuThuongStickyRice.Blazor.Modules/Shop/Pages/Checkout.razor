@@ -89,13 +89,23 @@
                 {
                     <tr><td>Nhận hàng</td><td class="text-right text-success">Tự đến lấy tại quán</td></tr>
                 }
-                else if (_placedOrder.DeliveryFee > 0)
-                {
-                    <tr><td>@I18n.T("delivery_fee")</td><td class="text-right">@FormatPrice(_placedOrder.DeliveryFee)</td></tr>
-                }
                 else
                 {
-                    <tr><td>@I18n.T("delivery_fee")</td><td class="text-right text-success">Miễn phí</td></tr>
+                    @if (!string.IsNullOrWhiteSpace(_placedOrder.DeliverySlot))
+                    {
+                        <tr>
+                            <td>Giờ giao</td>
+                            <td class="text-right"><strong>🕖 @_placedOrder.DeliverySlot</strong></td>
+                        </tr>
+                    }
+                    @if (_placedOrder.DeliveryFee > 0)
+                    {
+                        <tr><td>@I18n.T("delivery_fee")</td><td class="text-right">@FormatPrice(_placedOrder.DeliveryFee)</td></tr>
+                    }
+                    else
+                    {
+                        <tr><td>@I18n.T("delivery_fee")</td><td class="text-right text-success">Miễn phí</td></tr>
+                    }
                 }
                 <tr>
                     <td><strong>Tổng tiền</strong></td>
@@ -300,6 +310,46 @@ else
                             <label class="form-check-label" for="fm-pickup">🏪 Tự đến lấy tại quán <small class="text-success">(miễn phí ship)</small></label>
                         </div>
                     </div>
+                    @* Wave 6a (item 23): delivery time slot — giao ngay or hẹn giờ. *@
+                    @if (_fulfillment == "Delivery")
+                    {
+                        <div class="form-group">
+                            <label>Thời gian giao hàng *</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="deliverySlot" id="ds-now"
+                                       checked="@(_deliverySlotMode == "now")" @onchange='() => _deliverySlotMode = "now"' />
+                                <label class="form-check-label" for="ds-now">🛵 Giao ngay</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="deliverySlot" id="ds-scheduled"
+                                       checked="@(_deliverySlotMode == "scheduled")" @onchange='() => _deliverySlotMode = "scheduled"' />
+                                <label class="form-check-label" for="ds-scheduled">🕖 Hẹn giờ</label>
+                            </div>
+                            @if (_deliverySlotMode == "scheduled")
+                            {
+                                @if (_deliverySlots.Count > 0)
+                                {
+                                    <select class="form-control mt-2 @FieldClass(_slotError)" @bind="_selectedSlot">
+                                        <option value="">— Chọn khung giờ —</option>
+                                        @foreach (var s in _deliverySlots)
+                                        {
+                                            <option value="@s">@s</option>
+                                        }
+                                    </select>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning py-2 mt-2 mb-0">
+                                        <small>Hết khung giờ hôm nay — bạn vui lòng chọn “🛵 Giao ngay”.</small>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(_slotError))
+                                {
+                                    <small class="text-danger">@_slotError</small>
+                                }
+                            }
+                        </div>
+                    }
                     @* Item 109: branch picker. *@
                     @if (_branches != null && _branches.Count > 0)
                     {
@@ -509,12 +559,15 @@ else
                 <div class="card-header">Đơn hàng của bạn</div>
                 <div class="card-body">
                     <table class="table table-sm">
+                        <thead>
+                            <tr><th>Món</th><th class="text-center">SL</th><th class="text-right">Thành tiền</th></tr>
+                        </thead>
                         <tbody>
                             @foreach (var item in CartState.Items)
                             {
                                 <tr @key="item.LineKey">
                                     <td>
-                                        @item.ProductName <span class="text-muted">× @item.Quantity</span>
+                                        @item.ProductName
                                         @if (item.IsCombo)
                                         {
                                             <span class="badge badge-warning ml-1">COMBO</span>
@@ -527,58 +580,69 @@ else
                                         {
                                             <br /><small class="text-muted">Ăn kèm: @item.ToppingNames</small>
                                         }
+                                        @if (!string.IsNullOrWhiteSpace(item.Note))
+                                        {
+                                            <br /><small class="text-info">📝 @item.Note</small>
+                                        }
+                                    </td>
+                                    <td class="text-center" style="white-space: nowrap;">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                @onclick="() => ChangeQty(item, -1)" title="Bớt 1">−</button>
+                                        <span class="mx-2">@item.Quantity</span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                @onclick="() => ChangeQty(item, 1)" title="Thêm 1">+</button>
                                     </td>
                                     <td class="text-right">@FormatPrice(item.LineTotal)</td>
                                 </tr>
                             }
                             <tr>
-                                <td class="text-muted">@I18n.T("subtotal")</td>
+                                <td class="text-muted" colspan="2">@I18n.T("subtotal")</td>
                                 <td class="text-right text-muted">@FormatPrice(_subtotal)</td>
                             </tr>
                             @if (_activePromotion != null)
                             {
                                 <tr>
-                                    <td class="text-success">🏷 Khuyến mãi giờ vàng (@_activePromotion.Name) −@_activePromotion.DiscountPercent%</td>
+                                    <td class="text-success" colspan="2">🏷 Khuyến mãi giờ vàng (@_activePromotion.Name) −@_activePromotion.DiscountPercent%</td>
                                     <td class="text-right text-success">−@FormatPrice(_promotionDiscountPreview)</td>
                                 </tr>
                             }
                             @if (_discountAmount > 0)
                             {
                                 <tr>
-                                    <td class="text-success">Giảm giá (@_appliedCode)</td>
+                                    <td class="text-success" colspan="2">Giảm giá (@_appliedCode)</td>
                                     <td class="text-right text-success">−@FormatPrice(_discountAmount)</td>
                                 </tr>
                             }
                             @if (_isFreeship)
                             {
                                 <tr>
-                                    <td class="text-success">🚚 Miễn phí ship (@_appliedCode)</td>
+                                    <td class="text-success" colspan="2">🚚 Miễn phí ship (@_appliedCode)</td>
                                     <td class="text-right text-success">−@FormatPrice(_shopSettings.DeliveryFee)</td>
                                 </tr>
                             }
                             @if (_tierDiscountPreview > 0)
                             {
                                 <tr>
-                                    <td class="text-success">Ưu đãi hạng @_loyalty.Tier (@_loyalty.TierDiscountPercent%)</td>
+                                    <td class="text-success" colspan="2">Ưu đãi hạng @_loyalty.Tier (@_loyalty.TierDiscountPercent%)</td>
                                     <td class="text-right text-success">−@FormatPrice(_tierDiscountPreview)</td>
                                 </tr>
                             }
                             @if (_redeemDiscountPreview > 0)
                             {
                                 <tr>
-                                    <td class="text-success">Đổi @_redeemPoints điểm</td>
+                                    <td class="text-success" colspan="2">Đổi @_redeemPoints điểm</td>
                                     <td class="text-right text-success">−@FormatPrice(_redeemDiscountPreview)</td>
                                 </tr>
                             }
                             @if (_giftFeePreview > 0)
                             {
                                 <tr>
-                                    <td class="text-muted">🎁 Phí gói quà</td>
+                                    <td class="text-muted" colspan="2">🎁 Phí gói quà</td>
                                     <td class="text-right text-muted">+@FormatPrice(_giftFeePreview)</td>
                                 </tr>
                             }
                             <tr>
-                                <td class="text-muted">
+                                <td class="text-muted" colspan="2">
                                     Phí giao hàng
                                     @if (_fulfillment == "Pickup")
                                     {
@@ -596,13 +660,13 @@ else
                             @if (_fulfillment == "Delivery" && !string.IsNullOrEmpty(_etaText))
                             {
                                 <tr>
-                                    <td colspan="2" class="text-muted"><small>⏱️ @_etaText</small></td>
+                                    <td colspan="3" class="text-muted"><small>⏱️ @_etaText</small></td>
                                 </tr>
                             }
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td><strong>@I18n.T("total")</strong></td>
+                                <td colspan="2"><strong>@I18n.T("total")</strong></td>
                                 <td class="text-right"><strong class="text-danger">@FormatPrice(_grandTotal)</strong></td>
                             </tr>
                         </tfoot>
@@ -705,6 +769,12 @@ else
 
     // Fulfillment: "Delivery" or "Pickup".
     private string _fulfillment = "Delivery";
+
+    // Wave 6a (item 23): delivery time slot — "now" (default) or "scheduled".
+    private string _deliverySlotMode = "now";
+    private string _selectedSlot;
+    private System.Collections.Generic.List<string> _deliverySlots = new System.Collections.Generic.List<string>();
+    private string _slotError;
 
     // Per-field validation messages.
     private string _nameError;
@@ -912,6 +982,10 @@ else
         CartState.OnChange += OnCartChanged;
         I18n.OnChange += OnLangChanged;
         await I18n.InitializeAsync();
+
+        // Wave 6a (item 23): 30-min delivery slots from today's open hours;
+        // only future slots are offered.
+        _deliverySlots = ShopHours.BuildSlots(_shopSettings.OpenTime, _shopSettings.CloseTime);
     }
 
     private static bool GetFlag(System.Collections.Generic.Dictionary<string, bool> flags, string key, bool fallback)
@@ -985,6 +1059,15 @@ else
     {
         RefreshMinOrderState();
         InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Wave 6a (item 25): quantity steppers on the checkout order summary.
+    /// Reducing to 0 removes the line; totals update live via OnCartChanged.
+    /// </summary>
+    private void ChangeQty(CartItemModel item, int delta)
+    {
+        CartState.UpdateQuantity(item.LineKey, item.Quantity + delta);
     }
 
     private void RefreshMinOrderState()
@@ -1192,15 +1275,21 @@ else
         _companyNameError = _showVat && string.IsNullOrWhiteSpace(_order.CompanyName)
             ? "Vui lòng nhập tên công ty."
             : null;
+        // Wave 6a (item 23): a scheduled delivery needs a chosen slot.
+        _slotError = _fulfillment == "Delivery" && _deliverySlotMode == "scheduled" && string.IsNullOrWhiteSpace(_selectedSlot)
+            ? "Vui lòng chọn khung giờ giao hàng."
+            : null;
 
         return _nameError == null && _phoneError == null && _emailError == null && _addressError == null
             && _recipientNameError == null && _recipientPhoneError == null
-            && _taxCodeError == null && _companyNameError == null;
+            && _taxCodeError == null && _companyNameError == null
+            && _slotError == null;
     }
 
     private async Task PlaceOrder()
     {
         _error = null;
+        _slotError = null;
 
         if (!ValidateFields())
         {
@@ -1221,6 +1310,11 @@ else
             _order.FulfillmentMethod = _fulfillment;
             _order.RedeemPoints = _redeemPoints;
             _order.BranchId = _branchId;
+
+            // Wave 6a (item 23): scheduled delivery slot; null = giao ngay.
+            _order.DeliverySlot = _fulfillment == "Delivery" && _deliverySlotMode == "scheduled"
+                ? _selectedSlot?.Trim()
+                : null;
 
             // Item 133: order source captured at shop entry.
             _order.Source = CartState.Source;
@@ -1271,7 +1365,9 @@ else
                     Quantity = x.Quantity,
                     SizeOptionId = x.SizeOptionId,
                     ToppingIds = x.ToppingIds ?? new System.Collections.Generic.List<Guid>(),
-                    IsCombo = x.IsCombo
+                    IsCombo = x.IsCombo,
+                    // Wave 6a (item 24): per-item note persists to the order line.
+                    Note = x.Note
                 })
                 .ToList();
 

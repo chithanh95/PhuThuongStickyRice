@@ -156,6 +156,18 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>JSON settings for the image backup provider (e.g. connection string).</summary>
         public string ImageBackupSettingsJson { get; set; }
 
+        // ---- Wave 6a (item 22): open-hours display ----
+
+        /// <summary>
+        /// Daily opening time ("HH:mm", Vietnam local time). Default "06:00".
+        /// Shown on the shop hero and landing page (item 22). The admin
+        /// config UI and checkout gating arrive in Wave 6b.
+        /// </summary>
+        public string OpenTime { get; set; }
+
+        /// <summary>Daily closing time ("HH:mm", Vietnam local time). Default "10:30".</summary>
+        public string CloseTime { get; set; }
+
         // ---- Wave 5 (items 121/124/139) ----
 
         /// <summary>Loyalty points awarded per daily check-in. Default 5.</summary>
@@ -216,7 +228,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 ImageBackupSettingsJson = null,
                 CheckInPoints = 5,
                 NepPerPortionGrams = 150,
-                DailyTargetAmount = 2000000
+                DailyTargetAmount = 2000000,
+                OpenTime = "06:00",
+                CloseTime = "10:30"
             };
         }
     }
