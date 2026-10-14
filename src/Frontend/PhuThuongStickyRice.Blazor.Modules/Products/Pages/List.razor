@@ -2,21 +2,17 @@
 @attribute [Authorize]
 
 <div class="card">
-    <div class="card-header">
-        Product List
+    <div class="card-header d-flex flex-wrap align-items-center">
+        <span>Product List</span>
 
-        <div style="float: right">
-            <button type="button" class="btn btn-secondary" @onclick="ExportAsPdf">
+        <div class="d-flex flex-wrap ml-md-auto mt-2 mt-md-0">
+            <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsPdf">
                 Export as Pdf
             </button>
-            &nbsp;
-            <button type="button" class="btn btn-secondary" @onclick="ExportAsCsv">
+            <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsCsv">
                 Export as Csv
             </button>
-            &nbsp;
-            <button class="btn btn-primary"
-                    style="float: right;"
-                    @onclick="QuickAddProduct">
+            <button class="btn btn-primary mb-1" @onclick="QuickAddProduct">
                 Add Product
             </button>
         </div>

@@ -136,6 +136,21 @@ app {
     top: 0.5rem;
 }
 
+/* Extra small-screen polish for the shop + admin UI */
+@media (max-width: 575.98px) {
+    .display-5 {
+        font-size: 2rem;
+    }
+
+    .jumbotron {
+        padding: 1.5rem;
+    }
+
+    .content {
+        padding-top: 0.75rem;
+    }
+}
+
 @media (max-width: 767.98px) {
     .main .top-row:not(.auth) {
         display: none;

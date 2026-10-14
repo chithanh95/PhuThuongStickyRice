@@ -44,10 +44,11 @@
                 Khách hàng: <strong>@_order.CustomerName</strong> — @_order.CustomerPhone<br />
                 Địa chỉ: @_order.CustomerAddress
             </p>
-            <table class="table table-sm">
-                <thead>
-                    <tr><th>Món</th><th class="text-right">Đơn giá</th><th class="text-right">SL</th><th class="text-right">Thành tiền</th></tr>
-                </thead>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr><th>Món</th><th class="text-right">Đơn giá</th><th class="text-right">SL</th><th class="text-right">Thành tiền</th></tr>
+                    </thead>
                 <tbody>
                     @foreach (var line in _order.Lines)
                     {
@@ -66,6 +67,7 @@
                     </tr>
                 </tfoot>
             </table>
+            </div>
             @if (!string.IsNullOrWhiteSpace(_order.Notes))
             {
                 <p><em>Ghi chú: @_order.Notes</em></p>
