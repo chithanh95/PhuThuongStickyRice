@@ -1,0 +1,313 @@
+
+/* Landing page — Canva-style: mustard #D9A94B, maroon #7A1B2E, cream #FDFBF7 */
+:root {
+    --lp-yellow: #d9a94b;
+    --lp-maroon: #7a1b2e;
+    --lp-cream: #fdfbf7;
+}
+
+.lp-brand {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 300;
+    font-size: 4.2rem;
+    letter-spacing: 0.12em;
+    color: var(--lp-maroon);
+    text-transform: uppercase;
+    line-height: 1.05;
+    margin-bottom: 1.25rem;
+}
+
+/* Thin oval outline badge */
+.lp-oval {
+    display: inline-block;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 0.55rem 1.6rem;
+    font-size: 1.05rem;
+    margin-bottom: 1.5rem;
+}
+
+.lp-oval-dark {
+    color: var(--lp-maroon);
+    background: transparent;
+}
+
+.lp-oval-light {
+    color: #fff;
+    background: rgba(122, 27, 46, 0.55);
+    position: absolute;
+    bottom: 1.4rem;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    margin-bottom: 0;
+}
+
+/* Oval CTA buttons */
+.lp-cta {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 0.7rem 2.2rem;
+    font-size: 1.05rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lp-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.lp-cta-outline {
+    border: 1px solid var(--lp-maroon);
+    color: var(--lp-maroon);
+    background: transparent;
+}
+
+.lp-cta-outline:hover {
+    color: var(--lp-maroon);
+}
+
+.lp-cta-maroon {
+    background: var(--lp-maroon);
+    color: #fff;
+}
+
+.lp-cta-maroon:hover {
+    color: #fff;
+}
+
+.lp-cta-cream {
+    background: var(--lp-cream);
+    color: var(--lp-maroon);
+    font-weight: 600;
+}
+
+.lp-cta-cream:hover {
+    color: var(--lp-maroon);
+}
+
+/* Section titles: thin serif, uppercase, wide spacing */
+.lp-panel-title,
+.lp-band-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    line-height: 1.2;
+}
+
+.lp-panel-title {
+    font-size: 2.6rem;
+    color: #fff;
+}
+
+/* 1. HERO */
+.lp-hero {
+    background: var(--lp-yellow);
+    padding: 3.5rem 2.5rem;
+}
+
+.lp-hero-text {
+    padding-right: 2rem;
+}
+
+.lp-hero-img {
+    max-width: 320px;
+    width: 80%;
+    border-radius: 50%;
+    border: 1px solid rgba(122, 27, 46, 0.35);
+    background: var(--lp-cream);
+    padding: 1rem;
+}
+
+/* 2. BANNER */
+.lp-banner {
+    background: var(--lp-cream);
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.lp-banner-img {
+    max-height: 260px;
+    max-width: 100%;
+}
+
+/* 3. STORY */
+.lp-story {
+    background: var(--lp-maroon);
+    padding: 3.5rem 2.5rem;
+}
+
+.lp-story-body {
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1.75;
+    margin-bottom: 0;
+    white-space: pre-line;
+}
+
+/* 4. MENU */
+.lp-menu-band {
+    background: var(--lp-maroon);
+    text-align: center;
+    padding: 1.6rem 1rem;
+}
+
+.lp-band-title {
+    font-size: 2.2rem;
+    color: #fff;
+    margin-bottom: 0;
+}
+
+.lp-menu-item {
+    position: relative;
+    background: var(--lp-cream);
+    border-right: 1px solid #f0e7d5;
+    text-align: center;
+    padding: 2rem 1rem 3.2rem;
+}
+
+.lp-menu-item:last-child {
+    border-right: none;
+}
+
+.lp-menu-item img {
+    max-height: 300px;
+    max-width: 100%;
+}
+
+.lp-menu-cta {
+    background: var(--lp-cream);
+    padding: 2rem 1rem 2.5rem;
+}
+
+/* 5. NEWS */
+.lp-news-title-col {
+    background: var(--lp-yellow);
+    display: flex;
+    align-items: center;
+    padding: 3rem 2.5rem;
+}
+
+.lp-news-title-col .lp-panel-title {
+    color: var(--lp-maroon);
+}
+
+.lp-news-panel {
+    background: var(--lp-maroon);
+    padding: 2.5rem;
+}
+
+.lp-news-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 1.25rem 0;
+    color: #fff;
+}
+
+.lp-news-item:first-child {
+    padding-top: 0;
+}
+
+.lp-news-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.lp-news-item-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 500;
+    font-size: 1.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.lp-news-item-body {
+    font-size: 1rem;
+    line-height: 1.65;
+    margin-bottom: 0.4rem;
+    opacity: 0.95;
+}
+
+.lp-news-source {
+    font-style: italic;
+    font-size: 0.95rem;
+    opacity: 0.8;
+}
+
+/* 6. FOOTER */
+.lp-footer-contact {
+    background: var(--lp-maroon);
+    padding: 3rem 2.5rem;
+    color: #fff;
+}
+
+.lp-contact-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 1.5rem 0 2rem;
+}
+
+.lp-contact-list li {
+    margin-bottom: 0.7rem;
+    font-size: 1.05rem;
+}
+
+.lp-contact-list .oi {
+    margin-right: 0.6rem;
+    color: var(--lp-yellow);
+}
+
+.lp-footer-img {
+    background: var(--lp-cream);
+    border: 1px solid #f0e7d5;
+    text-align: center;
+    padding: 1.5rem 1rem;
+}
+
+.lp-footer-img img {
+    max-height: 200px;
+    max-width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .lp-brand {
+        font-size: 2.6rem;
+    }
+
+    .lp-hero {
+        padding: 2.5rem 1.5rem;
+    }
+
+    .lp-hero-text {
+        padding-right: 0;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .lp-panel-title {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .lp-story,
+    .lp-news-panel,
+    .lp-footer-contact {
+        padding: 2rem 1.5rem;
+    }
+
+    .lp-news-title-col {
+        padding: 2rem 1.5rem;
+    }
+
+    .lp-menu-item {
+        border-right: none;
+        border-bottom: 1px solid #f0e7d5;
+    }
+
+    .lp-menu-item:last-child {
+        border-bottom: none;
+    }
+}

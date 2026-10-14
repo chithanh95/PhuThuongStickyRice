@@ -1,36 +1,139 @@
-﻿@page "/"
+@page "/"
+@using PhuThuongStickyRice.Blazor.Modules.Landing.Models
+@using PhuThuongStickyRice.Blazor.Modules.Landing.Services
+@inject LandingService LandingService
 
-<div class="card">
-    <div class="card-header">
-        Welcome PhuThuongStickyRice Blazor version @version
-    </div>
-    <div class="card-body">
-        <div class="container-fluid">
-            <div class="text-center">
-                <img src="/images/logo.png"
-                     class="img-responsive center-block"
-                     style="max-height:300px; padding-bottom:10px" />
-            </div>
-
-            <div class="text-center">Developed by:</div>
-            <div class="text-center">
-                <h3>Phong Nguyen</h3>
-            </div>
-
-            <div class="text-center">@("@phongnguyend")</div>
-            <div class="text-center">
-                <a href="https://github.com/phongnguyend/Practical.CleanArchitecture">
-                    Practical.CleanArchitecture
-                </a>
-            </div>
-            <div class="text-center">
-                <strong>Blazor v@(version)</strong>
-            </div>
-            <div class="text-center">@DateTimeOffset.Now</div>
+<!-- 1. HERO -->
+<section class="lp-hero">
+    <div class="row align-items-center no-gutters">
+        <div class="col-md-7 lp-hero-text">
+            <h1 class="lp-brand">@_content.HeroTitle</h1>
+            <div class="lp-oval lp-oval-dark"><span>@_content.HeroTagline</span></div>
+            <a href="/shop" class="lp-cta lp-cta-outline">@_content.HeroButtonText</a>
+        </div>
+        <div class="col-md-5 text-center">
+            <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg"
+                 alt="Xôi Phú Thượng" class="lp-hero-img" />
         </div>
     </div>
+</section>
+
+<!-- 2. PHOTO BANNER -->
+<div class="lp-banner">
+    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg"
+         alt="Xôi ngũ sắc" class="lp-banner-img" />
 </div>
 
-@code{
-    string version = "5.0";
+<!-- 3. STORY PANEL -->
+<section class="lp-story">
+    <div class="row no-gutters align-items-center">
+        <div class="col-md-4">
+            <h2 class="lp-panel-title">@_content.StoryTitle</h2>
+        </div>
+        <div class="col-md-8">
+            <p class="lp-story-body">@_content.StoryBody</p>
+        </div>
+    </div>
+</section>
+
+<!-- 4. MENU SHOWCASE -->
+<section class="lp-menu">
+    <div class="lp-menu-band">
+        <h2 class="lp-band-title">@_content.MenuTitle</h2>
+    </div>
+    <div class="row no-gutters">
+        <div class="col-md-4 col-12 lp-menu-item">
+            <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg"
+                 alt="@_content.MenuLabel1" />
+            <span class="lp-oval lp-oval-light">@_content.MenuLabel1</span>
+        </div>
+        <div class="col-md-4 col-12 lp-menu-item">
+            <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-xeo.svg"
+                 alt="@_content.MenuLabel2" />
+            <span class="lp-oval lp-oval-light">@_content.MenuLabel2</span>
+        </div>
+        <div class="col-md-4 col-12 lp-menu-item">
+            <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg"
+                 alt="@_content.MenuLabel3" />
+            <span class="lp-oval lp-oval-light">@_content.MenuLabel3</span>
+        </div>
+    </div>
+    <div class="text-center lp-menu-cta">
+        <a href="/shop" class="lp-cta lp-cta-maroon">@_content.HeroButtonText</a>
+    </div>
+</section>
+
+<!-- 5. NEWS / STORIES -->
+<section class="lp-news">
+    <div class="row no-gutters">
+        <div class="col-md-5 lp-news-title-col">
+            <h2 class="lp-panel-title">@_content.NewsTitle</h2>
+        </div>
+        <div class="col-md-7 lp-news-panel">
+            @foreach (var item in _content.NewsItems)
+            {
+                <div class="lp-news-item" @key="item.Title">
+                    <h3 class="lp-news-item-title">@item.Title</h3>
+                    <p class="lp-news-item-body">@item.Body</p>
+                    <div class="lp-news-source">— @item.Source</div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- 6. FOOTER -->
+<footer class="lp-footer">
+    <div class="row no-gutters">
+        <div class="col-md-6 lp-footer-contact">
+            <h2 class="lp-panel-title">@_content.FooterTitle</h2>
+            <ul class="lp-contact-list">
+                @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
+                {
+                    <li><span class="oi oi-home" aria-hidden="true"></span> @_content.ContactAddress</li>
+                }
+                @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+                {
+                    <li><span class="oi oi-phone" aria-hidden="true"></span> @_content.ContactPhone</li>
+                }
+                @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
+                {
+                    <li><span class="oi oi-envelope-closed" aria-hidden="true"></span> @_content.ContactEmail</li>
+                }
+            </ul>
+            <a href="/shop" class="lp-cta lp-cta-cream">@_content.FooterButtonText</a>
+        </div>
+        <div class="col-md-6">
+            <div class="row no-gutters">
+                <div class="col-6 lp-footer-img">
+                    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-do.svg" alt="Xôi đỗ" />
+                </div>
+                <div class="col-6 lp-footer-img">
+                    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-vo.svg" alt="Xôi vò" />
+                </div>
+                <div class="col-6 lp-footer-img">
+                    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-xeo.svg" alt="Xôi xéo" />
+                </div>
+                <div class="col-6 lp-footer-img">
+                    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg" alt="Xôi gấc" />
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+@code {
+    private LandingContentModel _content = new LandingContentModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _content = await LandingService.GetContentAsync() ?? new LandingContentModel();
+        }
+        catch (Exception)
+        {
+            _content = new LandingContentModel();
+        }
+    }
 }

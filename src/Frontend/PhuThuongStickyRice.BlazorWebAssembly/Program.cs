@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Blazor.Modules.Core.Services;
 using PhuThuongStickyRice.Blazor.Modules.Dashboard.Services;
+using PhuThuongStickyRice.Blazor.Modules.Landing.Services;
 using PhuThuongStickyRice.Blazor.Modules.Orders.Services;
 using PhuThuongStickyRice.Blazor.Modules.Products.Services;
 using PhuThuongStickyRice.Blazor.Modules.Shop.Services;
@@ -63,6 +64,14 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
             });
 
             builder.Services.AddHttpClient<DashboardService, DashboardService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Landing page content (public GET, admin PUT via JWT).
+            builder.Services.AddHttpClient<LandingService, LandingService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
                 client.Timeout = new TimeSpan(0, 0, 30);
