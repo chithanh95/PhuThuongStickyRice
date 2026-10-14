@@ -77,6 +77,7 @@ Invoke-RestMethod -Uri http://localhost:5001/api/auth/change-password -Method Po
 | 401 khi vào Dashboard/Đơn hàng | Chưa đăng nhập, hoặc token ký bằng key khác với key trong `appsettings.Production.json`. Đăng nhập lại ở `/login`. |
 | `Login failed for user 'sa'` | Sai connection string / SQL Server chưa bật Mixed Mode / sai mật khẩu `sa`. |
 | Migrator báo lỗi DbUp | Xem log console lúc chạy Migrator; thường do DB chưa tạo được (sai connection string) hoặc bảng đã tồn tại do chạy migration 2 lần. |
+| Upload ảnh landing báo lỗi / ảnh không hiện | App pool identity (`IIS AppPool\PhuThuong`) chưa có quyền **ghi** vào thư mục `publish\api\wwwroot\uploads\landing`. Trong Explorer → chuột phải thư mục → Properties → Security → cấp quyền **Modify** cho `IIS AppPool\PhuThuong`, rồi thử upload lại. |
 
 ## Ghi chú
 
