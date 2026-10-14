@@ -1,0 +1,133 @@
+@page "/momo-simulator"
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Models
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@inject ShopService ShopService
+@inject NavigationManager Navigation
+
+<h3>MoMo — Trang thanh toán giả lập <span class="badge badge-warning">TEST</span></h3>
+
+<div class="alert alert-warning">
+    <strong>Đây là trang giả lập MoMo (chế độ TEST).</strong>
+    Không có tiền thật nào được trừ. Sau này khi shop có tài khoản doanh nghiệp MoMo, khách sẽ được đưa tới trang thanh toán thật của MoMo thay vì trang này.
+</div>
+
+@if (string.IsNullOrEmpty(_orderId))
+{
+    <div class="alert alert-danger">Thiếu thông tin thanh toán (orderId). Vui lòng quay lại trang đặt hàng.</div>
+}
+else if (_done)
+{
+    <div class="alert @(_success ? "alert-success" : "alert-danger")">
+        @(_success ? "Thanh toán MoMo thành công (TEST)!" : "Thanh toán MoMo thất bại (TEST).")
+    </div>
+    <a class="btn btn-primary" href="/track-order?orderNumber=@Uri.EscapeDataString(_orderNumber)">Xem đơn hàng</a>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <p>
+                Mã đơn hàng: <strong>@_orderNumber</strong><br />
+                Số tiền: <strong class="text-danger">@FormatPrice(_amount)</strong>
+            </p>
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-danger">@_error</div>
+            }
+            <button class="btn btn-success mr-2" @onclick="() => Submit(true)" disabled="@_submitting">
+                @(_submitting ? "Đang xử lý..." : "Thanh toán thành công (TEST)")
+            </button>
+            <button class="btn btn-outline-danger" @onclick="() => Submit(false)" disabled="@_submitting">
+                Thanh toán thất bại (TEST)
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private string _orderId;
+    private string _orderNumber;
+    private long _amount;
+    private string _requestId;
+    private string _signature;
+    private bool _submitting;
+    private bool _done;
+    private bool _success;
+    private string _error;
+
+    protected override void OnInitialized()
+    {
+        var query = ParseQuery(Navigation.Uri);
+        query.TryGetValue("orderId", out _orderId);
+        query.TryGetValue("orderNumber", out _orderNumber);
+        query.TryGetValue("requestId", out _requestId);
+        query.TryGetValue("signature", out _signature);
+        if (query.TryGetValue("amount", out var amountText))
+        {
+            long.TryParse(amountText, out _amount);
+        }
+    }
+
+    private async Task Submit(bool success)
+    {
+        _error = null;
+        _submitting = true;
+        try
+        {
+            await ShopService.MoMoCallbackAsync(new MoMoCallbackModel
+            {
+                OrderId = _orderId,
+                RequestId = _requestId,
+                Amount = _amount,
+                OrderInfo = $"Thanh toan don hang {_orderNumber} - Xoi Phu Thuong",
+                ResultCode = success ? 0 : 1,
+                Message = success ? "Simulated success" : "Simulated failure",
+                SimulatedSignature = _signature,
+                Simulated = true
+            });
+            _success = success;
+            _done = true;
+        }
+        catch (Exception)
+        {
+            _error = "Không gửi được kết quả thanh toán. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private static System.Collections.Generic.Dictionary<string, string> ParseQuery(string uri)
+    {
+        var result = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+        var question = uri.IndexOf('?');
+        if (question < 0)
+        {
+            return result;
+        }
+
+        var query = uri.Substring(question + 1);
+        var hash = query.IndexOf('#');
+        if (hash >= 0)
+        {
+            query = query.Substring(0, hash);
+        }
+
+        foreach (var pair in query.Split('&', System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            result[Uri.UnescapeDataString(pair.Substring(0, eq))] =
+                Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
+        }
+
+        return result;
+    }
+
+    private static string FormatPrice(long price) => $"{price:N0} ₫";
+}

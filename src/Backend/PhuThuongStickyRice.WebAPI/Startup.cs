@@ -5,7 +5,9 @@ using PhuThuongStickyRice.Infrastructure.Identity;
 using PhuThuongStickyRice.Infrastructure.Monitoring;
 using PhuThuongStickyRice.Infrastructure.Web.Filters;
 using PhuThuongStickyRice.Persistence;
+using PhuThuongStickyRice.Application.Orders.Payments;
 using PhuThuongStickyRice.WebAPI.Authorization;
+using PhuThuongStickyRice.WebAPI.Services;
 using PhuThuongStickyRice.WebAPI.ConfigurationOptions;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using PhuThuongStickyRice.WebAPI.Tenants;
@@ -17,12 +19,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 
 namespace PhuThuongStickyRice.WebAPI
 {
@@ -77,6 +81,19 @@ namespace PhuThuongStickyRice.WebAPI
 
             services.AddDateTimeProvider();
 
+            // Self-issued JWT + payment options (bound from appsettings.json).
+            // The API issues and validates its own tokens — no external
+            // IdentityServer is involved.
+            services.Configure<JwtOptions>(Configuration.GetSection("Jwt"));
+            services.Configure<MoMoOptions>(Configuration.GetSection("MoMo"));
+            services.Configure<BankTransferOptions>(Configuration.GetSection("BankTransfer"));
+            services.AddSingleton(sp => sp.GetRequiredService<IOptions<JwtOptions>>().Value);
+            services.AddSingleton(sp => sp.GetRequiredService<IOptions<MoMoOptions>>().Value);
+            services.AddSingleton(sp => sp.GetRequiredService<IOptions<BankTransferOptions>>().Value);
+            services.AddScoped<JwtTokenService>();
+            services.AddHttpClient<IMoMoPaymentService, MoMoPaymentService>();
+            services.AddHostedService<AdminSeedHostedService>();
+
             // ABP modules: Application Services (CQRS), EF Core (repositories, DbContext),
             // AutoMapper. Replaces the template AddMultiTenantPersistence (its
             // multi-tenancy was scaffolding that always returned the default
@@ -96,25 +113,24 @@ namespace PhuThuongStickyRice.WebAPI
                 .PersistKeysToDbContext<StickyRiceDbContext>()
                 .SetApplicationName("PhuThuongStickyRice");
 
+            // Self-issued JWT validation: the API validates the tokens it
+            // issues itself (see JwtTokenService). No external IdentityServer.
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
-                    if (AppSettings.IdentityServerAuthentication.Provider == "OpenIddict")
+                    var jwtOptions = Configuration.GetSection("Jwt").Get<JwtOptions>();
+                    options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        options.TokenValidationParameters = new TokenValidationParameters
-                        {
-                            ValidateAudience = false,
-                            ValidIssuer = AppSettings.IdentityServerAuthentication.OpenIddict.IssuerUri,
-                            TokenDecryptionKey = new X509SecurityKey(AppSettings.IdentityServerAuthentication.OpenIddict.TokenDecryptionCertificate.FindCertificate()),
-                            IssuerSigningKey = new X509SecurityKey(AppSettings.IdentityServerAuthentication.OpenIddict.IssuerSigningCertificate.FindCertificate()),
-                        };
-                    }
-                    else
-                    {
-                        options.Authority = AppSettings.IdentityServerAuthentication.Authority;
-                        options.Audience = AppSettings.IdentityServerAuthentication.ApiName;
-                        options.RequireHttpsMetadata = AppSettings.IdentityServerAuthentication.RequireHttpsMetadata;
-                    }
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = jwtOptions.Issuer,
+                        ValidAudience = jwtOptions.Audience,
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(jwtOptions.Key)),
+                        ClockSkew = TimeSpan.FromMinutes(2)
+                    };
                 });
 
             services.AddAuthorizationPolicies(Assembly.GetExecutingAssembly(), AuthorizationPolicyNames.GetPolicyNames());
@@ -154,45 +170,8 @@ namespace PhuThuongStickyRice.WebAPI
                     Description = "Input your Bearer token to access this API",
                 });
 
-                setupAction.AddSecurityDefinition("Oidc", new OpenApiSecurityScheme
-                {
-                    Type = SecuritySchemeType.OAuth2,
-                    Flows = new OpenApiOAuthFlows
-                    {
-                        AuthorizationCode = new OpenApiOAuthFlow
-                        {
-                            TokenUrl = new Uri(AppSettings.IdentityServerAuthentication.Authority + "/connect/token", UriKind.Absolute),
-                            AuthorizationUrl = new Uri(AppSettings.IdentityServerAuthentication.Authority + "/connect/authorize", UriKind.Absolute),
-                            Scopes = new Dictionary<string, string>
-                            {
-                                { "openid", "OpenId" },
-                                { "profile", "Profile" },
-                                { "PhuThuongStickyRice.WebAPI", "PhuThuongStickyRice WebAPI" },
-                            },
-                        },
-                        ClientCredentials = new OpenApiOAuthFlow
-                        {
-                            TokenUrl = new Uri(AppSettings.IdentityServerAuthentication.Authority + "/connect/token", UriKind.Absolute),
-                            Scopes = new Dictionary<string, string>
-                            {
-                                { "PhuThuongStickyRice.WebAPI", "PhuThuongStickyRice WebAPI" },
-                            },
-                        },
-                    },
-                });
-
                 setupAction.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Oidc",
-                            },
-                        }, new List<string>()
-                    },
                     {
                         new OpenApiSecurityScheme
                         {
@@ -242,10 +221,6 @@ namespace PhuThuongStickyRice.WebAPI
 
             app.UseSwaggerUI(setupAction =>
             {
-                setupAction.OAuthClientId("Swagger");
-                setupAction.OAuthClientSecret("secret");
-                setupAction.OAuthUsePkce();
-
                 setupAction.SwaggerEndpoint(
                     "/swagger/PhuThuongStickyRice/swagger.json",
                     "PhuThuongStickyRice API");

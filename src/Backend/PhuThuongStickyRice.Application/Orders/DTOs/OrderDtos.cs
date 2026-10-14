@@ -26,11 +26,17 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public string CustomerPhone { get; set; }
 
+        public string CustomerEmail { get; set; }
+
         public string CustomerAddress { get; set; }
 
         public string Notes { get; set; }
 
         public string Status { get; set; }
+
+        public string PaymentMethod { get; set; }
+
+        public string PaymentStatus { get; set; }
 
         public decimal TotalAmount { get; set; }
 
@@ -60,12 +66,22 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         [StringLength(30)]
         public string CustomerPhone { get; set; }
 
+        /// <summary>
+        /// Optional. When provided, the order confirmation email is sent here.
+        /// </summary>
+        [EmailAddress]
+        [StringLength(254)]
+        public string CustomerEmail { get; set; }
+
         [Required]
         [StringLength(500)]
         public string CustomerAddress { get; set; }
 
         [StringLength(1000)]
         public string Notes { get; set; }
+
+        /// <summary>Payment method: "Cod" (default), "BankTransfer" or "MoMo".</summary>
+        public string PaymentMethod { get; set; }
 
         public List<CreateOrderLineDto> Lines { get; set; } = new List<CreateOrderLineDto>();
     }
@@ -81,6 +97,90 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
     {
         [Required]
         public string Status { get; set; }
+    }
+
+    /// <summary>Customer marks their bank transfer as sent. Phone must match the order.</summary>
+    public class MarkTransferredDto
+    {
+        [Required]
+        public string CustomerPhone { get; set; }
+    }
+
+    /// <summary>Public order lookup: order number + phone (the phone proves ownership).</summary>
+    public class TrackOrderInput
+    {
+        [Required]
+        public string OrderNumber { get; set; }
+
+        [Required]
+        public string CustomerPhone { get; set; }
+    }
+
+    /// <summary>Public bank-transfer details shown at checkout (account info + VietQR).</summary>
+    public class BankTransferInfoDto
+    {
+        public string BankName { get; set; }
+
+        public string BankId { get; set; }
+
+        public string AccountNumber { get; set; }
+
+        public string AccountName { get; set; }
+
+        public string QrTemplate { get; set; }
+    }
+
+    /// <summary>Response of POST /api/orders/{id}/momo/create.</summary>
+    public class MoMoCreatePaymentResultDto
+    {
+        public Guid OrderId { get; set; }
+
+        public string OrderNumber { get; set; }
+
+        public decimal Amount { get; set; }
+
+        /// <summary>
+        /// Where the buyer is sent to pay. In TestMode this is the in-app
+        /// MoMo simulator page; in production it is the real MoMo payUrl.
+        /// </summary>
+        public string PayUrl { get; set; }
+
+        public bool TestMode { get; set; }
+    }
+
+    /// <summary>
+    /// MoMo return / IPN payload. In TestMode the simulator posts the echoed
+    /// create-signature (<see cref="SimulatedSignature"/>) plus the result the
+    /// buyer picked; in production MoMo posts its signed IPN fields.
+    /// </summary>
+    public class MoMoCallbackDto
+    {
+        public string OrderId { get; set; }
+
+        public string RequestId { get; set; }
+
+        public long Amount { get; set; }
+
+        public string OrderInfo { get; set; }
+
+        public int ResultCode { get; set; }
+
+        public string Message { get; set; }
+
+        public string TransId { get; set; }
+
+        public string PayType { get; set; }
+
+        public long ResponseTime { get; set; }
+
+        public string ExtraData { get; set; }
+
+        public string Signature { get; set; }
+
+        /// <summary>Echoed create-signature, only used by the TEST simulator.</summary>
+        public string SimulatedSignature { get; set; }
+
+        public bool Simulated { get; set; }
     }
 
     public class DashboardStatsDto

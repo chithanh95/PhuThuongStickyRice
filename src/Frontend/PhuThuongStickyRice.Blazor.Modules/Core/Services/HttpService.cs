@@ -19,6 +19,10 @@ namespace PhuThuongStickyRice.Blazor.Modules.Core.Services
         public async Task<string> GetAccessToken()
         {
             var token = await _tokenManager.GetToken();
+            if (token == null)
+            {
+                return null;
+            }
 
             if (token.TokenExpired)
             {
@@ -26,7 +30,7 @@ namespace PhuThuongStickyRice.Blazor.Modules.Core.Services
                 token = await _tokenManager.GetToken();
             }
 
-            return token.AccessToken;
+            return token?.AccessToken;
         }
 
         protected async Task SetBearerToken()

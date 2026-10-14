@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Orders.DTOs;
+using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,8 +42,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 CustomerName = model.CustomerName,
                 CustomerPhone = model.CustomerPhone,
+                CustomerEmail = model.CustomerEmail,
                 CustomerAddress = model.CustomerAddress,
                 Notes = model.Notes,
+                PaymentMethod = model.PaymentMethod,
                 Lines = model.Lines
                     .Select(x => new CreateOrderLineDto
                     {
@@ -55,7 +58,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(order);
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
             [FromQuery] string searchTerm = null, [FromQuery] string status = null,
@@ -72,7 +75,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(paged);
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
         {
@@ -80,7 +83,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(order);
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id:guid}/status")]
         public async Task<ActionResult> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusRequestModel model,
             CancellationToken cancellationToken = default)
@@ -91,6 +94,85 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             });
 
             return Ok(order);
+        }
+
+        /// <summary>
+        /// Public order lookup: order number + phone (used by /track-order).
+        /// Not-found is mapped to 404 by the GlobalExceptionFilter.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("track")]
+        public async Task<ActionResult> Track(
+            [FromQuery] string orderNumber, [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            var order = await _orderAppService.TrackOrderAsync(new TrackOrderInput
+            {
+                OrderNumber = orderNumber,
+                CustomerPhone = phone
+            });
+            return Ok(order);
+        }
+
+        /// <summary>
+        /// Customer reports they sent the bank transfer. Public, but the
+        /// phone in the body must match the order's phone.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("{id:guid}/mark-transferred")]
+        public async Task<ActionResult> MarkTransferred(Guid id,
+            [FromBody] MarkTransferredRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.MarkTransferredAsync(id, new MarkTransferredDto
+                {
+                    CustomerPhone = model?.CustomerPhone
+                });
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>Admin confirms a bank-transfer payment.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id:guid}/confirm-payment")]
+        public async Task<ActionResult> ConfirmPayment(Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.ConfirmPaymentAsync(id);
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Creates a MoMo payment for a MoMo order. Public. In TestMode
+        /// returns a payUrl to the in-app simulator; otherwise the real MoMo payUrl.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("{id:guid}/momo/create")]
+        public async Task<ActionResult> CreateMoMoPayment(Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var result = await _orderAppService.CreateMoMoPaymentAsync(id);
+                return Ok(result);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

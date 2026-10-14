@@ -45,6 +45,7 @@ else
                             <th>Địa chỉ</th>
                             <th class="text-right">Tổng tiền</th>
                             <th>Trạng thái</th>
+                            <th>Thanh toán</th>
                             <th>Ngày đặt</th>
                             <th></th>
                         </tr>
@@ -62,14 +63,19 @@ else
                                 <td><small>@order.CustomerAddress</small></td>
                                 <td class="text-right"><strong>@FormatPrice(order.TotalAmount)</strong></td>
                                 <td>@StatusBadge(order.Status)</td>
+                                <td>@PaymentInfo(order)</td>
                                 <td>@order.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
-                                <td class="text-right">@NextStatusButtons(order)</td>
+                                <td class="text-right">@NextStatusButtons(order) @ConfirmPaymentButton(order)</td>
                             </tr>
                             @if (_expandedOrderId == order.Id)
                             {
                                 <tr>
-                                    <td colspan="7" class="bg-light">
+                                    <td colspan="8" class="bg-light">
                                         <strong>Chi tiết đơn @order.OrderNumber</strong>
+                                        @if (!string.IsNullOrWhiteSpace(order.CustomerEmail))
+                                        {
+                                            <div>Email: @order.CustomerEmail</div>
+                                        }
                                         @if (!string.IsNullOrWhiteSpace(order.Notes))
                                         {
                                             <div><em>Ghi chú: @order.Notes</em></div>
@@ -150,6 +156,52 @@ else
         await OrderService.UpdateStatusAsync(order.Id, status);
         await LoadOrders(_page);
     }
+
+    private async Task ConfirmPayment(OrderModel order)
+    {
+        await OrderService.ConfirmPaymentAsync(order.Id);
+        await LoadOrders(_page);
+    }
+
+    private RenderFragment ConfirmPaymentButton(OrderModel order) => builder =>
+    {
+        if (order.PaymentStatus != "PendingConfirmation")
+        {
+            return;
+        }
+
+        builder.OpenElement(0, "button");
+        builder.AddAttribute(1, "class", "btn btn-sm btn-outline-success mr-1");
+        builder.AddAttribute(2, "onclick", Microsoft.AspNetCore.Components.EventCallback.Factory.Create(this, () => ConfirmPayment(order)));
+        builder.AddContent(3, "Xác nhận thanh toán");
+        builder.CloseElement();
+    };
+
+    private static RenderFragment PaymentInfo(OrderModel order) => builder =>
+    {
+        var method = order.PaymentMethod switch
+        {
+            "Cod" => "COD",
+            "BankTransfer" => "Chuyển khoản",
+            "MoMo" => "MoMo",
+            _ => order.PaymentMethod
+        };
+        var (css, label) = order.PaymentStatus switch
+        {
+            "Unpaid" => ("badge badge-warning", "Chưa thanh toán"),
+            "PendingConfirmation" => ("badge badge-info", "Chờ xác nhận"),
+            "Paid" => ("badge badge-success", "Đã thanh toán"),
+            "Failed" => ("badge badge-danger", "Thất bại"),
+            _ => ("badge badge-light", order.PaymentStatus)
+        };
+        builder.OpenElement(0, "div");
+        builder.AddContent(1, method);
+        builder.CloseElement();
+        builder.OpenElement(2, "span");
+        builder.AddAttribute(3, "class", css);
+        builder.AddContent(4, label);
+        builder.CloseElement();
+    };
 
     private RenderFragment NextStatusButtons(OrderModel order) => builder =>
     {

@@ -1,5 +1,4 @@
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JSRuntime
 
 @using PhuThuongStickyRice.BlazorWebAssembly.Shared
 
@@ -8,7 +7,7 @@
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <NotAuthorized>
-                    Please <a href="/authentication/login?returnUrl=@(Uri.EscapeDataString(NavigationManager.Uri))">Login</a>
+                    Bạn cần đăng nhập quản trị. <a href="/login?returnUrl=@(Uri.EscapeDataString(NavigationManager.Uri))">Đăng nhập</a>
                 </NotAuthorized>
             </AuthorizeRouteView>
         </Found>

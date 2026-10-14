@@ -1,5 +1,7 @@
 using PhuThuongStickyRice.Application.Orders.DTOs;
+using PhuThuongStickyRice.Application.Orders.Email;
 using PhuThuongStickyRice.Application.Orders.Exceptions;
+using PhuThuongStickyRice.Application.Orders.Payments;
 using PhuThuongStickyRice.Application.Products.Exceptions;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
@@ -24,6 +26,18 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<OrderDto> GetAsync(Guid id);
 
         Task<OrderDto> UpdateStatusAsync(Guid id, UpdateOrderStatusDto input);
+
+        /// <summary>Customer marks their bank-transfer order as transferred.</summary>
+        Task<OrderDto> MarkTransferredAsync(Guid id, MarkTransferredDto input);
+
+        /// <summary>Admin confirms a payment (bank transfer).</summary>
+        Task<OrderDto> ConfirmPaymentAsync(Guid id);
+
+        /// <summary>Creates a MoMo payment for a MoMo order (test simulator or real payUrl).</summary>
+        Task<MoMoCreatePaymentResultDto> CreateMoMoPaymentAsync(Guid id);
+
+        /// <summary>Public order lookup by order number + phone.</summary>
+        Task<OrderDto> TrackOrderAsync(TrackOrderInput input);
     }
 
     public class OrderAppService : ApplicationService, IOrderAppService
@@ -32,17 +46,26 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IProductRepository _products;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IObjectMapper _objectMapper;
+        private readonly IEmailMessageRepository _emailMessages;
+        private readonly BankTransferOptions _bankTransfer;
+        private readonly IMoMoPaymentService _momo;
 
         public OrderAppService(
             IOrderRepository orders,
             IProductRepository products,
             IAsyncQueryableExecuter asyncExecuter,
-            IObjectMapper objectMapper)
+            IObjectMapper objectMapper,
+            IEmailMessageRepository emailMessages,
+            BankTransferOptions bankTransfer,
+            IMoMoPaymentService momo)
         {
             _orders = orders;
             _products = products;
             _asyncExecuter = asyncExecuter;
             _objectMapper = objectMapper;
+            _emailMessages = emailMessages;
+            _bankTransfer = bankTransfer;
+            _momo = momo;
         }
 
         public async Task<OrderDto> CreateAsync(CreateOrderDto input)
@@ -50,6 +73,13 @@ namespace PhuThuongStickyRice.Application.Orders
             if (input.Lines == null || input.Lines.Count == 0)
             {
                 throw new Domain.Exceptions.DomainException("Order must contain at least one line.");
+            }
+
+            if ((!Enum.TryParse<PaymentMethod>(input.PaymentMethod, ignoreCase: true, out var paymentMethod)
+                    || !Enum.IsDefined(typeof(PaymentMethod), paymentMethod))
+                && !string.IsNullOrWhiteSpace(input.PaymentMethod))
+            {
+                throw new Domain.Exceptions.DomainException($"Unknown payment method '{input.PaymentMethod}'.");
             }
 
             var productIds = input.Lines.Select(x => x.ProductId).Distinct().ToList();
@@ -80,11 +110,33 @@ namespace PhuThuongStickyRice.Application.Orders
                 orderNumber,
                 input.CustomerName,
                 input.CustomerPhone,
+                input.CustomerEmail,
                 input.CustomerAddress,
                 input.Notes,
+                paymentMethod,
                 lines);
 
             await _orders.InsertAsync(order);
+
+            // Order-confirmation email (order creation only, never on payment
+            // confirmation). Only when the customer gave an email address.
+            // The row is queued via the existing EmailMessage pipeline; with
+            // the current Fake/test provider nothing is actually delivered.
+            if (!string.IsNullOrWhiteSpace(order.CustomerEmail))
+            {
+                var (subject, body) = OrderConfirmationEmailComposer.Compose(order, _bankTransfer);
+                await _emailMessages.AddAsync(new EmailMessage
+                {
+                    From = OrderConfirmationEmailComposer.FromAddress,
+                    Tos = order.CustomerEmail,
+                    Subject = subject,
+                    Body = body
+                });
+
+                // Same explicit-save pattern as the Product*EventHandlers:
+                // the template repository only stages the row in the DbSet.
+                await _emailMessages.UnitOfWork.SaveChangesAsync();
+            }
 
             return _objectMapper.Map<Order, OrderDto>(order);
         }
@@ -138,6 +190,49 @@ namespace PhuThuongStickyRice.Application.Orders
             return _objectMapper.Map<Order, OrderDto>(order);
         }
 
+        public async Task<OrderDto> MarkTransferredAsync(Guid id, MarkTransferredDto input)
+        {
+            var order = await FindOrThrowAsync(id);
+
+            if (!PhonesMatch(order.CustomerPhone, input.CustomerPhone))
+            {
+                throw new Domain.Exceptions.DomainException("Số điện thoại không khớp với đơn hàng.");
+            }
+
+            order.MarkTransferred();
+            await _orders.UpdateAsync(order);
+
+            return _objectMapper.Map<Order, OrderDto>(order);
+        }
+
+        public async Task<OrderDto> ConfirmPaymentAsync(Guid id)
+        {
+            var order = await FindOrThrowAsync(id);
+            order.ConfirmPayment();
+            await _orders.UpdateAsync(order);
+
+            return _objectMapper.Map<Order, OrderDto>(order);
+        }
+
+        public async Task<MoMoCreatePaymentResultDto> CreateMoMoPaymentAsync(Guid id)
+        {
+            var order = await FindOrThrowAsync(id);
+            return await _momo.CreatePaymentAsync(order);
+        }
+
+        public async Task<OrderDto> TrackOrderAsync(TrackOrderInput input)
+        {
+            var order = await _orders.GetByOrderNumberAsync(input.OrderNumber?.Trim());
+            if (order == null || !PhonesMatch(order.CustomerPhone, input.CustomerPhone))
+            {
+                // Same error for "not found" and "phone mismatch" so the
+                // endpoint cannot be used to probe order numbers.
+                throw new OrderNotFoundException("Order not found. Please check the order number and phone.");
+            }
+
+            return _objectMapper.Map<Order, OrderDto>(order);
+        }
+
         private async Task<Order> FindOrThrowAsync(Guid id)
         {
             var order = await _orders.FindAsync(id);
@@ -164,6 +259,32 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             throw new Domain.Exceptions.DomainException("Could not generate a unique order number. Please try again.");
+        }
+
+        /// <summary>
+        /// Phone comparison tolerant of spaces/dashes/dots and a leading
+        /// country code (e.g. +84 vs 0). Both sides are reduced to digits,
+        /// then the last 9 digits are compared.
+        /// </summary>
+        internal static bool PhonesMatch(string orderPhone, string givenPhone)
+        {
+            if (string.IsNullOrWhiteSpace(orderPhone) || string.IsNullOrWhiteSpace(givenPhone))
+            {
+                return false;
+            }
+
+            var a = new string(orderPhone.Where(char.IsDigit).ToArray());
+            var b = new string(givenPhone.Where(char.IsDigit).ToArray());
+
+            if (a.Length < 9 || b.Length < 9)
+            {
+                return string.Equals(a, b, StringComparison.Ordinal);
+            }
+
+            return string.Equals(
+                a.Substring(a.Length - 9),
+                b.Substring(b.Length - 9),
+                StringComparison.Ordinal);
         }
 
         private static void ApplyStatus(Order order, OrderStatus status)

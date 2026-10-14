@@ -14,8 +14,110 @@
         <p>Mã đơn hàng của bạn: <strong>@_placedOrder.OrderNumber</strong></p>
         <p>Tổng tiền: <strong>@FormatPrice(_placedOrder.TotalAmount)</strong></p>
         <p>Chúng tôi sẽ liên hệ với bạn qua số <strong>@_placedOrder.CustomerPhone</strong> để xác nhận.</p>
-        <a class="btn btn-primary" href="/shop">Tiếp tục mua hàng</a>
+        <p>
+            <a class="btn btn-outline-primary btn-sm" href="/track-order?orderNumber=@Uri.EscapeDataString(_placedOrder.OrderNumber)">Tra cứu đơn hàng</a>
+            <a class="btn btn-primary btn-sm ml-2" href="/shop">Tiếp tục mua hàng</a>
+        </p>
     </div>
+
+    @if (_placedOrder.PaymentMethod == "Cod")
+    {
+        <div class="alert alert-info">
+            <strong>Thanh toán khi nhận hàng (COD):</strong> bạn sẽ trả tiền mặt cho shipper khi nhận hàng.
+        </div>
+    }
+    else if (_placedOrder.PaymentMethod == "BankTransfer")
+    {
+        <div class="card mb-3">
+            <div class="card-header">Chuyển khoản ngân hàng</div>
+            <div class="card-body">
+                @if (_bankInfo == null)
+                {
+                    <p><em>Đang tải thông tin chuyển khoản...</em></p>
+                }
+                else if (!_bankInfo.IsConfigured)
+                {
+                    <div class="alert alert-warning">
+                        <strong>QR sẽ hiện khi shop cấu hình ngân hàng.</strong>
+                        <p class="mb-0">Tạm thời bạn vui lòng chuyển khoản với nội dung: <strong>@_placedOrder.OrderNumber</strong> rồi bấm “Tôi đã chuyển khoản” bên dưới để shop xác nhận.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="row">
+                        <div class="col-md-5 text-center">
+                            <img src="@QrUrl" alt="QR chuyển khoản" style="max-width: 260px; width: 100%;" />
+                            <p class="text-muted mt-2"><small>Quét mã để chuyển khoản nhanh</small></p>
+                        </div>
+                        <div class="col-md-7">
+                            <table class="table table-sm">
+                                <tr><td><strong>Ngân hàng</strong></td><td>@_bankInfo.BankName</td></tr>
+                                <tr><td><strong>Số tài khoản</strong></td><td><strong>@_bankInfo.AccountNumber</strong></td></tr>
+                                <tr><td><strong>Chủ tài khoản</strong></td><td>@_bankInfo.AccountName</td></tr>
+                                <tr><td><strong>Số tiền</strong></td><td><strong class="text-danger">@FormatPrice(_placedOrder.TotalAmount)</strong></td></tr>
+                                <tr><td><strong>Nội dung</strong></td><td><strong>@_placedOrder.OrderNumber</strong></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_transferMessage))
+                {
+                    <div class="alert alert-success">@_transferMessage</div>
+                }
+                @if (!string.IsNullOrEmpty(_transferError))
+                {
+                    <div class="alert alert-danger">@_transferError</div>
+                }
+
+                @if (_placedOrder.PaymentStatus == "Unpaid")
+                {
+                    <button class="btn btn-success" @onclick="MarkTransferred" disabled="@_markingTransferred">
+                        @(_markingTransferred ? "Đang gửi..." : "Tôi đã chuyển khoản")
+                    </button>
+                    <p class="text-muted mt-2"><small>Sau khi bạn bấm nút này, shop sẽ xác nhận và trang tra cứu đơn hàng sẽ hiện “Đã thanh toán”.</small></p>
+                }
+                else if (_placedOrder.PaymentStatus == "PendingConfirmation")
+                {
+                    <div class="alert alert-info mb-0">Đã ghi nhận bạn đã chuyển khoản. Shop đang xác nhận thanh toán.</div>
+                }
+                else if (_placedOrder.PaymentStatus == "Paid")
+                {
+                    <div class="alert alert-success mb-0">Thanh toán thành công! Cảm ơn bạn.</div>
+                }
+            </div>
+        </div>
+    }
+    else if (_placedOrder.PaymentMethod == "MoMo")
+    {
+        <div class="card mb-3">
+            <div class="card-header">Thanh toán qua MoMo <span class="badge badge-warning">TEST</span></div>
+            <div class="card-body">
+                @if (_placedOrder.PaymentStatus == "Paid")
+                {
+                    <div class="alert alert-success mb-0">Thanh toán MoMo thành công! Cảm ơn bạn.</div>
+                }
+                else if (_placedOrder.PaymentStatus == "Failed")
+                {
+                    <div class="alert alert-danger">Thanh toán MoMo thất bại. Bạn có thể thử lại.</div>
+                    <button class="btn btn-primary" @onclick="PayWithMoMo" disabled="@_payingMoMo">
+                        @(_payingMoMo ? "Đang xử lý..." : "Thử thanh toán MoMo lại")
+                    </button>
+                }
+                else
+                {
+                    <p>Đơn hàng của bạn sẽ được thanh toán qua ví MoMo (chế độ test — chưa trừ tiền thật).</p>
+                    @if (!string.IsNullOrEmpty(_momoError))
+                    {
+                        <div class="alert alert-danger">@_momoError</div>
+                    }
+                    <button class="btn btn-primary" @onclick="PayWithMoMo" disabled="@_payingMoMo">
+                        @(_payingMoMo ? "Đang xử lý..." : "Thanh toán MoMo")
+                    </button>
+                }
+            </div>
+        </div>
+    }
 }
 else if (CartState.Items.Count == 0)
 {
@@ -44,6 +146,10 @@ else
                         <input class="form-control" @bind="_order.CustomerPhone" placeholder="0901234567" />
                     </div>
                     <div class="form-group">
+                        <label>Email (tùy chọn — để nhận mail xác nhận đơn)</label>
+                        <input class="form-control" @bind="_order.CustomerEmail" placeholder="ban@example.com" />
+                    </div>
+                    <div class="form-group">
                         <label>Địa chỉ giao hàng *</label>
                         <textarea class="form-control" @bind="_order.CustomerAddress" rows="3"
                                   placeholder="Số nhà, đường, phường..."></textarea>
@@ -52,6 +158,24 @@ else
                         <label>Ghi chú</label>
                         <textarea class="form-control" @bind="_order.Notes" rows="2"
                                   placeholder="Ví dụ: giao giờ hành chính..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Phương thức thanh toán *</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="pm-cod"
+                                   checked="@(_order.PaymentMethod == "Cod")" @onchange="@(() => _order.PaymentMethod = "Cod")" />
+                            <label class="form-check-label" for="pm-cod">Thanh toán khi nhận hàng (COD)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="pm-bank"
+                                   checked="@(_order.PaymentMethod == "BankTransfer")" @onchange="@(() => _order.PaymentMethod = "BankTransfer")" />
+                            <label class="form-check-label" for="pm-bank">Chuyển khoản ngân hàng (QR)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="pm-momo"
+                                   checked="@(_order.PaymentMethod == "MoMo")" @onchange="@(() => _order.PaymentMethod = "MoMo")" />
+                            <label class="form-check-label" for="pm-momo">Ví MoMo <span class="badge badge-warning">TEST</span></label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -89,8 +213,34 @@ else
 @code {
     private readonly CreateOrderModel _order = new CreateOrderModel();
     private PlacedOrderModel _placedOrder;
+    private BankTransferInfoModel _bankInfo;
     private bool _submitting;
+    private bool _markingTransferred;
+    private bool _payingMoMo;
     private string _error;
+    private string _transferMessage;
+    private string _transferError;
+    private string _momoError;
+
+    /// <summary>VietQR image URL built from the shop's bank config + this order.</summary>
+    private string QrUrl
+    {
+        get
+        {
+            if (_bankInfo == null || _placedOrder == null)
+            {
+                return string.Empty;
+            }
+
+            var template = string.IsNullOrWhiteSpace(_bankInfo.QrTemplate) || _bankInfo.QrTemplate == "xxx"
+                ? "compact2"
+                : _bankInfo.QrTemplate;
+            var amount = (long)_placedOrder.TotalAmount;
+            return $"https://img.vietqr.io/image/{_bankInfo.BankId}-{_bankInfo.AccountNumber}-{template}.png"
+                + $"?amount={amount}&addInfo={Uri.EscapeDataString(_placedOrder.OrderNumber)}"
+                + $"&accountName={Uri.EscapeDataString(_bankInfo.AccountName ?? string.Empty)}";
+        }
+    }
 
     private async Task PlaceOrder()
     {
@@ -104,6 +254,12 @@ else
             return;
         }
 
+        if (!string.IsNullOrWhiteSpace(_order.CustomerEmail) && !IsValidEmail(_order.CustomerEmail))
+        {
+            _error = "Email không đúng định dạng. Bạn có thể để trống nếu không có email.";
+            return;
+        }
+
         _submitting = true;
         try
         {
@@ -113,6 +269,20 @@ else
 
             _placedOrder = await ShopService.CreateOrderAsync(_order);
             CartState.Clear();
+
+            if (_placedOrder.PaymentMethod == "BankTransfer")
+            {
+                try
+                {
+                    _bankInfo = await ShopService.GetBankTransferInfoAsync();
+                }
+                catch (Exception)
+                {
+                    // Bank info is nice-to-have here; the track-order page
+                    // shows the same info. Fall back to the placeholder box.
+                    _bankInfo = new BankTransferInfoModel();
+                }
+            }
         }
         catch (Exception)
         {
@@ -122,6 +292,58 @@ else
         {
             _submitting = false;
         }
+    }
+
+    private async Task MarkTransferred()
+    {
+        _transferMessage = null;
+        _transferError = null;
+        _markingTransferred = true;
+        try
+        {
+            var updated = await ShopService.MarkTransferredAsync(_placedOrder.Id, _placedOrder.CustomerPhone);
+            _placedOrder.PaymentStatus = updated.PaymentStatus;
+            _transferMessage = "Đã ghi nhận bạn đã chuyển khoản. Shop sẽ xác nhận thanh toán sớm.";
+        }
+        catch (Exception)
+        {
+            _transferError = "Không ghi nhận được. Vui lòng thử lại hoặc liên hệ shop.";
+        }
+        finally
+        {
+            _markingTransferred = false;
+        }
+    }
+
+    private async Task PayWithMoMo()
+    {
+        _momoError = null;
+        _payingMoMo = true;
+        try
+        {
+            var result = await ShopService.CreateMoMoPaymentAsync(_placedOrder.Id);
+            Navigation.NavigateTo(result.PayUrl);
+        }
+        catch (Exception)
+        {
+            _momoError = "Không tạo được thanh toán MoMo. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _payingMoMo = false;
+        }
+    }
+
+    private static bool IsValidEmail(string email)
+    {
+        var at = email.IndexOf('@');
+        if (at <= 0 || at != email.LastIndexOf('@'))
+        {
+            return false;
+        }
+
+        var dot = email.LastIndexOf('.');
+        return dot > at + 1 && dot < email.Length - 1 && !email.Contains(" ");
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";

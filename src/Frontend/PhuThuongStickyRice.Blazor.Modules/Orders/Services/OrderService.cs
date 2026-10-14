@@ -35,5 +35,11 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Services
             return await PutAsync<OrderModel>($"api/orders/{orderId}/status",
                 new UpdateOrderStatusModel { Status = status });
         }
+
+        /// <summary>Admin confirms a bank-transfer payment.</summary>
+        public async Task<OrderModel> ConfirmPaymentAsync(Guid orderId)
+        {
+            return await PutAsync<OrderModel>($"api/orders/{orderId}/confirm-payment", new { });
+        }
     }
 }

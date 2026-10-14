@@ -15,8 +15,10 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
                 "PX-20261014-0001",
                 "Nguyen Van A",
                 "0901234567",
+                null,
                 "123 Lang Phu Thuong, Ha Noi",
                 null,
+                PaymentMethod.Cod,
                 new List<(Guid, string, Money, int)>
                 {
                     (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 2),
@@ -41,7 +43,7 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         public void Create_EmptyLines_ThrowsDomainException()
         {
             Assert.Throws<DomainException>(() =>
-                Order.Create("PX-1", "A", "090", "Addr", null,
+                Order.Create("PX-1", "A", "090", null, "Addr", null, PaymentMethod.Cod,
                     new List<(Guid, string, Money, int)>()));
         }
 
@@ -49,7 +51,7 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         public void Create_MixedCurrencies_ThrowsDomainException()
         {
             Assert.Throws<DomainException>(() =>
-                Order.Create("PX-1", "A", "090", "Addr", null,
+                Order.Create("PX-1", "A", "090", null, "Addr", null, PaymentMethod.Cod,
                     new List<(Guid, string, Money, int)>
                     {
                         (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1),
@@ -103,6 +105,98 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
             order.Cancel();
 
             Assert.Equal(OrderStatus.Cancelled, order.Status);
+        }
+
+        [Fact]
+        public void Create_WithEmailAndPaymentMethod_SetsProperties()
+        {
+            var order = Order.Create(
+                "PX-20261014-0002",
+                "Nguyen Van B",
+                "0901234567",
+                "b@example.com",
+                "123 Lang Phu Thuong, Ha Noi",
+                null,
+                PaymentMethod.BankTransfer,
+                new List<(Guid, string, Money, int)>
+                {
+                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1)
+                });
+
+            Assert.Equal("b@example.com", order.CustomerEmail);
+            Assert.Equal(PaymentMethod.BankTransfer, order.PaymentMethod);
+            Assert.Equal(PaymentStatus.Unpaid, order.PaymentStatus);
+        }
+
+        [Fact]
+        public void Create_InvalidEmail_ThrowsDomainException()
+        {
+            Assert.Throws<DomainException>(() =>
+                Order.Create("PX-1", "A", "090", "not-an-email", "Addr", null, PaymentMethod.Cod,
+                    new List<(Guid, string, Money, int)>
+                    {
+                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1)
+                    }));
+        }
+
+        [Fact]
+        public void Create_EmptyPhone_ThrowsDomainException()
+        {
+            Assert.Throws<DomainException>(() =>
+                Order.Create("PX-1", "A", " ", null, "Addr", null, PaymentMethod.Cod,
+                    new List<(Guid, string, Money, int)>
+                    {
+                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1)
+                    }));
+        }
+
+        [Fact]
+        public void PaymentFlow_BankTransfer_MarkTransferredThenConfirmPayment()
+        {
+            var order = Order.Create(
+                "PX-20261014-0003",
+                "Nguyen Van C",
+                "0901234567",
+                null,
+                "123 Lang Phu Thuong, Ha Noi",
+                null,
+                PaymentMethod.BankTransfer,
+                new List<(Guid, string, Money, int)>
+                {
+                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1)
+                });
+
+            order.MarkTransferred();
+            Assert.Equal(PaymentStatus.PendingConfirmation, order.PaymentStatus);
+
+            order.ConfirmPayment();
+            Assert.Equal(PaymentStatus.Paid, order.PaymentStatus);
+        }
+
+        [Fact]
+        public void MarkTransferred_CodOrder_ThrowsDomainException()
+        {
+            var order = CreateValidOrder();
+
+            Assert.Throws<DomainException>(() => order.MarkTransferred());
+        }
+
+        [Fact]
+        public void ConfirmPayment_AlreadyPaid_ThrowsDomainException()
+        {
+            var order = CreateValidOrder();
+            order.ConfirmPayment();
+
+            Assert.Throws<DomainException>(() => order.ConfirmPayment());
+        }
+
+        [Fact]
+        public void MarkPaymentFailed_PaidOrder_ThrowsDomainException()
+        {
+            var order = CreateValidOrder();
+            order.ConfirmPayment();
+
+            Assert.Throws<DomainException>(() => order.MarkPaymentFailed());
         }
     }
 }

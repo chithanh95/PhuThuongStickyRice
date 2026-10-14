@@ -1,0 +1,405 @@
+@page "/track-order"
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Models
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@inject ShopService ShopService
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<h3>Tra cứu đơn hàng</h3>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="form-row">
+            <div class="col-md-4">
+                <label>Mã đơn hàng</label>
+                <input class="form-control" @bind="_orderNumber" placeholder="PX-20261014-0001" />
+            </div>
+            <div class="col-md-4">
+                <label>Số điện thoại đặt hàng</label>
+                <input class="form-control" @bind="_phone" placeholder="0901234567" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-primary" @onclick="Lookup" disabled="@_loading">
+                    @(_loading ? "Đang tra cứu..." : "Tra cứu")
+                </button>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger mt-3 mb-0">@_error</div>
+        }
+    </div>
+</div>
+
+@if (_order != null)
+{
+    <div class="card mb-3">
+        <div class="card-header">
+            Đơn hàng <strong>@_order.OrderNumber</strong>
+            <span class="float-right">@OrderStatusBadge(_order.Status)</span>
+        </div>
+        <div class="card-body">
+            <p>
+                Ngày đặt: <strong>@_order.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong><br />
+                Khách hàng: <strong>@_order.CustomerName</strong> — @_order.CustomerPhone<br />
+                Địa chỉ: @_order.CustomerAddress
+            </p>
+            <table class="table table-sm">
+                <thead>
+                    <tr><th>Món</th><th class="text-right">Đơn giá</th><th class="text-right">SL</th><th class="text-right">Thành tiền</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in _order.Lines)
+                    {
+                        <tr>
+                            <td>@line.ProductName</td>
+                            <td class="text-right">@FormatPrice(line.UnitPrice)</td>
+                            <td class="text-right">@line.Quantity</td>
+                            <td class="text-right">@FormatPrice(line.LineTotal)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3"><strong>Tổng cộng</strong></td>
+                        <td class="text-right"><strong class="text-danger">@FormatPrice(_order.TotalAmount)</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+            @if (!string.IsNullOrWhiteSpace(_order.Notes))
+            {
+                <p><em>Ghi chú: @_order.Notes</em></p>
+            }
+            <p>
+                Phương thức thanh toán: <strong>@PaymentMethodLabel(_order.PaymentMethod)</strong><br />
+                Trạng thái thanh toán: @PaymentStatusBadge(_order.PaymentStatus)
+            </p>
+
+            @if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
+            {
+                <div class="card mb-3">
+                    <div class="card-header">Chuyển khoản ngân hàng</div>
+                    <div class="card-body">
+                        @if (_bankInfo == null)
+                        {
+                            <p><em>Đang tải thông tin chuyển khoản...</em></p>
+                        }
+                        else if (!_bankInfo.IsConfigured)
+                        {
+                            <div class="alert alert-warning">
+                                <strong>QR sẽ hiện khi shop cấu hình ngân hàng.</strong>
+                                <p class="mb-0">Tạm thời bạn vui lòng chuyển khoản với nội dung: <strong>@_order.OrderNumber</strong>.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row">
+                                <div class="col-md-5 text-center">
+                                    <img src="@QrUrl" alt="QR chuyển khoản" style="max-width: 260px; width: 100%;" />
+                                </div>
+                                <div class="col-md-7">
+                                    <table class="table table-sm">
+                                        <tr><td><strong>Ngân hàng</strong></td><td>@_bankInfo.BankName</td></tr>
+                                        <tr><td><strong>Số tài khoản</strong></td><td><strong>@_bankInfo.AccountNumber</strong></td></tr>
+                                        <tr><td><strong>Chủ tài khoản</strong></td><td>@_bankInfo.AccountName</td></tr>
+                                        <tr><td><strong>Số tiền</strong></td><td><strong class="text-danger">@FormatPrice(_order.TotalAmount)</strong></td></tr>
+                                        <tr><td><strong>Nội dung</strong></td><td><strong>@_order.OrderNumber</strong></td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_transferMessage))
+                        {
+                            <div class="alert alert-success">@_transferMessage</div>
+                        }
+                        @if (!string.IsNullOrEmpty(_transferError))
+                        {
+                            <div class="alert alert-danger">@_transferError</div>
+                        }
+                        <button class="btn btn-success" @onclick="MarkTransferred" disabled="@_markingTransferred">
+                            @(_markingTransferred ? "Đang gửi..." : "Tôi đã chuyển khoản")
+                        </button>
+                    </div>
+                </div>
+            }
+            else if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "PendingConfirmation")
+            {
+                <div class="alert alert-info">Đã ghi nhận bạn đã chuyển khoản. Shop đang xác nhận thanh toán — trang này tự cập nhật khi shop xác nhận.</div>
+            }
+            else if (_order.PaymentStatus == "Paid")
+            {
+                <div class="alert alert-success">Thanh toán thành công! Cảm ơn bạn.</div>
+            }
+
+            @if (_order.PaymentMethod == "MoMo" && (_order.PaymentStatus == "Unpaid" || _order.PaymentStatus == "Failed"))
+            {
+                @if (!string.IsNullOrEmpty(_momoError))
+                {
+                    <div class="alert alert-danger">@_momoError</div>
+                }
+                <button class="btn btn-primary" @onclick="PayWithMoMo" disabled="@_payingMoMo">
+                    @(_payingMoMo ? "Đang xử lý..." : "Thanh toán MoMo (TEST)")
+                </button>
+            }
+            else if (_order.PaymentMethod == "MoMo" && _order.PaymentStatus == "Failed")
+            {
+                <div class="alert alert-danger">Thanh toán MoMo thất bại.</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private string _orderNumber;
+    private string _phone;
+    private TrackedOrderModel _order;
+    private BankTransferInfoModel _bankInfo;
+    private bool _loading;
+    private bool _markingTransferred;
+    private bool _payingMoMo;
+    private string _error;
+    private string _transferMessage;
+    private string _transferError;
+    private string _momoError;
+    private System.Threading.Timer _pollTimer;
+
+    private string QrUrl
+    {
+        get
+        {
+            if (_bankInfo == null || _order == null)
+            {
+                return string.Empty;
+            }
+
+            var template = string.IsNullOrWhiteSpace(_bankInfo.QrTemplate) || _bankInfo.QrTemplate == "xxx"
+                ? "compact2"
+                : _bankInfo.QrTemplate;
+            var amount = (long)_order.TotalAmount;
+            return $"https://img.vietqr.io/image/{_bankInfo.BankId}-{_bankInfo.AccountNumber}-{template}.png"
+                + $"?amount={amount}&addInfo={Uri.EscapeDataString(_order.OrderNumber)}"
+                + $"&accountName={Uri.EscapeDataString(_bankInfo.AccountName ?? string.Empty)}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var query = ParseQuery(Navigation.Uri);
+        if (query.TryGetValue("orderNumber", out var orderNumber))
+        {
+            _orderNumber = orderNumber;
+        }
+    }
+
+    private async Task Lookup()
+    {
+        _error = null;
+        _transferMessage = null;
+        _transferError = null;
+        _momoError = null;
+        _order = null;
+        _bankInfo = null;
+        StopPolling();
+
+        if (string.IsNullOrWhiteSpace(_orderNumber) || string.IsNullOrWhiteSpace(_phone))
+        {
+            _error = "Vui lòng nhập mã đơn hàng và số điện thoại.";
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            _order = await ShopService.TrackOrderAsync(_orderNumber.Trim(), _phone.Trim());
+            await AfterOrderLoadedAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Không tìm thấy đơn hàng. Vui lòng kiểm tra mã đơn và số điện thoại.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AfterOrderLoadedAsync()
+    {
+        if (_order == null)
+        {
+            return;
+        }
+
+        if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
+        {
+            try
+            {
+                _bankInfo = await ShopService.GetBankTransferInfoAsync();
+            }
+            catch (Exception)
+            {
+                _bankInfo = new BankTransferInfoModel();
+            }
+        }
+
+        // Poll for payment-status updates (e.g. admin confirms the transfer)
+        // while the payment is still unsettled.
+        if (_order.PaymentStatus == "Unpaid" || _order.PaymentStatus == "PendingConfirmation")
+        {
+            StartPolling();
+        }
+    }
+
+    private void StartPolling()
+    {
+        StopPolling();
+        _pollTimer = new System.Threading.Timer(async _ =>
+        {
+            try
+            {
+                var fresh = await ShopService.TrackOrderAsync(_order.OrderNumber, _order.CustomerPhone);
+                await InvokeAsync(() =>
+                {
+                    _order = fresh;
+                    if (fresh.PaymentStatus != "Unpaid" && fresh.PaymentStatus != "PendingConfirmation")
+                    {
+                        StopPolling();
+                    }
+
+                    StateHasChanged();
+                });
+            }
+            catch (Exception)
+            {
+                // Polling is best-effort; the manual lookup still works.
+            }
+        }, null, 5000, 5000);
+    }
+
+    private void StopPolling()
+    {
+        _pollTimer?.Dispose();
+        _pollTimer = null;
+    }
+
+    private async Task MarkTransferred()
+    {
+        _transferMessage = null;
+        _transferError = null;
+        _markingTransferred = true;
+        try
+        {
+            var updated = await ShopService.MarkTransferredAsync(_order.Id, _order.CustomerPhone);
+            _order.PaymentStatus = updated.PaymentStatus;
+            _transferMessage = "Đã ghi nhận bạn đã chuyển khoản. Shop sẽ xác nhận thanh toán sớm.";
+            StartPolling();
+        }
+        catch (Exception)
+        {
+            _transferError = "Không ghi nhận được. Vui lòng thử lại hoặc liên hệ shop.";
+        }
+        finally
+        {
+            _markingTransferred = false;
+        }
+    }
+
+    private async Task PayWithMoMo()
+    {
+        _momoError = null;
+        _payingMoMo = true;
+        try
+        {
+            var result = await ShopService.CreateMoMoPaymentAsync(_order.Id);
+            Navigation.NavigateTo(result.PayUrl);
+        }
+        catch (Exception)
+        {
+            _momoError = "Không tạo được thanh toán MoMo. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _payingMoMo = false;
+        }
+    }
+
+    private static System.Collections.Generic.Dictionary<string, string> ParseQuery(string uri)
+    {
+        var result = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+        var question = uri.IndexOf('?');
+        if (question < 0)
+        {
+            return result;
+        }
+
+        var query = uri.Substring(question + 1);
+        var hash = query.IndexOf('#');
+        if (hash >= 0)
+        {
+            query = query.Substring(0, hash);
+        }
+
+        foreach (var pair in query.Split('&', System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            result[Uri.UnescapeDataString(pair.Substring(0, eq))] =
+                Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
+        }
+
+        return result;
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    private static string PaymentMethodLabel(string method) => method switch
+    {
+        "Cod" => "Thanh toán khi nhận hàng (COD)",
+        "BankTransfer" => "Chuyển khoản ngân hàng",
+        "MoMo" => "Ví MoMo",
+        _ => method
+    };
+
+    private static RenderFragment OrderStatusBadge(string status) => builder =>
+    {
+        var css = status switch
+        {
+            "Pending" => "badge badge-warning",
+            "Confirmed" => "badge badge-info",
+            "Preparing" => "badge badge-primary",
+            "Delivering" => "badge badge-secondary",
+            "Completed" => "badge badge-success",
+            "Cancelled" => "badge badge-danger",
+            _ => "badge badge-light"
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", css);
+        builder.AddContent(2, status);
+        builder.CloseElement();
+    };
+
+    private static RenderFragment PaymentStatusBadge(string status) => builder =>
+    {
+        var (css, label) = status switch
+        {
+            "Unpaid" => ("badge badge-warning", "Chưa thanh toán"),
+            "PendingConfirmation" => ("badge badge-info", "Chờ xác nhận thanh toán"),
+            "Paid" => ("badge badge-success", "Đã thanh toán"),
+            "Failed" => ("badge badge-danger", "Thanh toán thất bại"),
+            _ => ("badge badge-light", status)
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", css);
+        builder.AddContent(2, label);
+        builder.CloseElement();
+    };
+
+    public void Dispose()
+    {
+        StopPolling();
+    }
+}

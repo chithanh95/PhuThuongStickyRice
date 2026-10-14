@@ -1,14 +1,11 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
-
-@inject IAccessTokenProvider TokenProvider
+@using Microsoft.AspNetCore.Components.Authorization
+@using PhuThuongStickyRice.BlazorWebAssembly.Services
+@inject JwtTokenManager TokenManager
+@inject JwtAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
-@inject SignOutSessionStateManager SignOutManager
-@inject IJSRuntime JSRuntime
-@inject Blazor.Modules.Core.Services.ITokenManager tokenManager
 
 <div class="top-row pl-4 navbar navbar-dark">
-    <a class="navbar-brand" href="">Blazor WebAssembly</a>
+    <a class="navbar-brand" href="">Xôi Phú Thượng</a>
     <button class="navbar-toggler" @onclick="ToggleNavMenu">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -31,6 +28,11 @@
                 <span class="oi oi-basket" aria-hidden="true"></span> Giỏ hàng
             </NavLink>
         </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="track-order">
+                <span class="oi oi-magnifying-glass" aria-hidden="true"></span> Tra cứu đơn hàng
+            </NavLink>
+        </li>
         <AuthorizeView>
             <Authorized>
                 <li class="nav-item px-3">
@@ -43,25 +45,21 @@
                         <span class="oi oi-clipboard" aria-hidden="true"></span> Đơn hàng
                     </NavLink>
                 </li>
-            </Authorized>
-        </AuthorizeView>
-        <li class="nav-item px-3">
-            <NavLink class="nav-link" href="products">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Products
-            </NavLink>
-        </li>
-        <AuthorizeView>
-            <Authorized>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="products">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Products
+                    </NavLink>
+                </li>
                 <li class="nav-item px-3">
                     <a class="nav-link" @onclick="SignOut" href="javascript:void(0)">
-                        <span class="oi oi-account-logout" aria-hidden="true"></span> Logout
+                        <span class="oi oi-account-logout" aria-hidden="true"></span> Đăng xuất
                     </a>
                 </li>
             </Authorized>
             <NotAuthorized>
                 <li class="nav-item px-3">
-                    <NavLink class="nav-link" href="/authentication/login">
-                        <span class="oi oi-account-login" aria-hidden="true"></span> Login
+                    <NavLink class="nav-link" href="/login">
+                        <span class="oi oi-account-login" aria-hidden="true"></span> Đăng nhập quản trị
                     </NavLink>
                 </li>
             </NotAuthorized>
@@ -79,19 +77,10 @@
         collapseNavMenu = !collapseNavMenu;
     }
 
-    private async Task SignOut(MouseEventArgs args)
+    private async Task SignOut()
     {
-        //var tokenResult = await TokenProvider.RequestAccessToken();
-        //if (tokenResult.TryGetToken(out var token))
-        //{
-        //    await JSRuntime.InvokeVoidAsync("alert", token.Value);
-        //}
-
-        //var token = await tokenManager.GetToken();
-        //await JSRuntime.InvokeVoidAsync("alert", token.AccessToken);
-        //await JSRuntime.InvokeVoidAsync("alert", token.ExpiresAt.ToString());
-
-        await SignOutManager.SetSignOutState();
-        Navigation.NavigateTo("authentication/logout");
+        await TokenManager.ClearTokenAsync();
+        AuthStateProvider.NotifyUserLogout();
+        Navigation.NavigateTo("/login");
     }
 }

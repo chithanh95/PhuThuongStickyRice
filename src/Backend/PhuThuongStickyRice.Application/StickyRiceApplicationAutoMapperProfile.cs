@@ -16,7 +16,9 @@ namespace PhuThuongStickyRice.Application
             CreateMap<Order, Orders.DTOs.OrderDto>()
                 .ForMember(d => d.TotalAmount, o => o.MapFrom(s => s.TotalAmount.Amount))
                 .ForMember(d => d.Currency, o => o.MapFrom(s => s.TotalAmount.Currency))
-                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.PaymentMethod, o => o.MapFrom(s => s.PaymentMethod.ToString()))
+                .ForMember(d => d.PaymentStatus, o => o.MapFrom(s => s.PaymentStatus.ToString()));
 
             CreateMap<OrderLine, Orders.DTOs.OrderLineDto>()
                 .ForMember(d => d.UnitPrice, o => o.MapFrom(s => s.UnitPrice.Amount))

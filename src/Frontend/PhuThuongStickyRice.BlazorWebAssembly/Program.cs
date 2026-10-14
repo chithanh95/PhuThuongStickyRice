@@ -5,7 +5,7 @@ using PhuThuongStickyRice.Blazor.Modules.Products.Services;
 using PhuThuongStickyRice.Blazor.Modules.Shop.Services;
 using PhuThuongStickyRice.BlazorWebAssembly.ConfigurationOptions;
 using PhuThuongStickyRice.BlazorWebAssembly.Services;
-using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,40 +24,28 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
 
             var appSettings = new AppSettings();
             builder.Configuration.Bind(appSettings);
+            builder.Services.AddSingleton(appSettings);
 
-            builder.Services.AddOidcAuthentication(options =>
-            {
-                options.ProviderOptions.Authority = appSettings.OpenIdConnect.Authority;
-                options.ProviderOptions.ClientId = appSettings.OpenIdConnect.ClientId;
-                options.ProviderOptions.RedirectUri = appSettings.OpenIdConnect.RedirectUri;
-                options.ProviderOptions.PostLogoutRedirectUri = appSettings.OpenIdConnect.PostLogoutRedirectUri;
-                options.ProviderOptions.ResponseType = "code";
-                options.ProviderOptions.DefaultScopes.Add("openid");
-                options.ProviderOptions.DefaultScopes.Add("profile");
-                options.ProviderOptions.DefaultScopes.Add("PhuThuongStickyRice.WebAPI");
-                options.UserOptions.NameClaim = "name";
-            });
-
+            // In-repo JWT admin login (no OIDC / external IdentityServer).
             builder.Services.AddAuthorizationCore();
+            builder.Services.AddScoped<JwtTokenManager>();
+            builder.Services.AddScoped<JwtAuthenticationStateProvider>();
+            builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
+                sp.GetRequiredService<JwtAuthenticationStateProvider>());
+            builder.Services.AddScoped<ITokenManager>(sp =>
+                sp.GetRequiredService<JwtTokenManager>());
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-            builder.Services.AddScoped<ITokenManager, TokenManager>();
 
+            // Admin services attach the JWT via HttpService + ITokenManager.
             builder.Services.AddHttpClient<ProductService, ProductService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
-            })
-            .AddHttpMessageHandler(sp =>
-            {
-                var handler = sp.GetService<AuthorizationMessageHandler>()
-                .ConfigureHandler(
-                    authorizedUrls: new[] { appSettings.ResourceServer.Endpoint }
-                    );
-                return handler;
             });
 
+            // Public storefront (anonymous).
             builder.Services.AddHttpClient<ShopService, ShopService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
@@ -66,20 +54,12 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
             });
             builder.Services.AddScoped<CartState>();
 
-            // Admin: orders + dashboard (authenticated)
+            // Admin: orders + dashboard (authenticated).
             builder.Services.AddHttpClient<OrderService, OrderService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
-            })
-            .AddHttpMessageHandler(sp =>
-            {
-                var handler = sp.GetService<AuthorizationMessageHandler>()
-                .ConfigureHandler(
-                    authorizedUrls: new[] { appSettings.ResourceServer.Endpoint }
-                    );
-                return handler;
             });
 
             builder.Services.AddHttpClient<DashboardService, DashboardService>(client =>
@@ -87,14 +67,6 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
-            })
-            .AddHttpMessageHandler(sp =>
-            {
-                var handler = sp.GetService<AuthorizationMessageHandler>()
-                .ConfigureHandler(
-                    authorizedUrls: new[] { appSettings.ResourceServer.Endpoint }
-                    );
-                return handler;
             });
 
             await builder.Build().RunAsync();

@@ -24,7 +24,7 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [Produces("application/json")]
     [Route("api/[controller]")]
     [ApiController]

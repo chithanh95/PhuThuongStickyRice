@@ -9,5 +9,10 @@ namespace PhuThuongStickyRice.Application.Orders.Exceptions
             : base($"Order with id '{id}' was not found.")
         {
         }
+
+        public OrderNotFoundException(string message)
+            : base(message)
+        {
+        }
     }
 }
