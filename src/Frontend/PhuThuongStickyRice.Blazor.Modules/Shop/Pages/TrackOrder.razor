@@ -1,8 +1,10 @@
 @page "/track-order"
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@using Microsoft.JSInterop
 @inject ShopService ShopService
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
 <h3>Tra cứu đơn hàng</h3>
@@ -193,6 +195,64 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !string.IsNullOrWhiteSpace(_orderNumber))
+        {
+            return;
+        }
+
+        // Restore the last successful lookup so returning customers don't
+        // have to retype the order number and phone.
+        try
+        {
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", TrackOrderStorageKey);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                var saved = System.Text.Json.JsonSerializer.Deserialize<TrackOrderMemory>(json);
+                if (saved != null
+                    && !string.IsNullOrWhiteSpace(saved.OrderNumber)
+                    && !string.IsNullOrWhiteSpace(saved.Phone))
+                {
+                    _orderNumber = saved.OrderNumber;
+                    _phone = saved.Phone;
+                    await Lookup();
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Best effort only.
+        }
+    }
+
+    private async Task RememberLookupAsync()
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(new TrackOrderMemory
+            {
+                OrderNumber = _orderNumber?.Trim(),
+                Phone = _phone?.Trim()
+            });
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", TrackOrderStorageKey, json);
+        }
+        catch (Exception)
+        {
+            // Best effort only.
+        }
+    }
+
+    private sealed class TrackOrderMemory
+    {
+        public string OrderNumber { get; set; }
+
+        public string Phone { get; set; }
+    }
+
+    private const string TrackOrderStorageKey = "phuthuong.track-order.v1";
+
     private async Task Lookup()
     {
         _error = null;
@@ -213,6 +273,7 @@
         try
         {
             _order = await ShopService.TrackOrderAsync(_orderNumber.Trim(), _phone.Trim());
+            await RememberLookupAsync();
             await AfterOrderLoadedAsync();
         }
         catch (Exception)

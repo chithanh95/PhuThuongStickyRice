@@ -2,9 +2,12 @@
 @attribute [Authorize]
 @implements IDisposable
 @using System.Threading
+@using Microsoft.JSInterop
 @using PhuThuongStickyRice.Blazor.Modules.Dashboard.Services
 @using PhuThuongStickyRice.Blazor.Modules.Orders.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
 @inject DashboardService DashboardService
+@inject IJSRuntime JSRuntime
 
 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
     <h3 class="mb-2 mb-md-0">Dashboard</h3>
@@ -17,6 +20,39 @@
         <div class="form-check form-check-inline mb-1 mb-md-0">
             <input class="form-check-input" type="checkbox" id="autoRefreshToggle" @bind="_autoRefresh" />
             <label class="form-check-label" for="autoRefreshToggle">Tự động (30s)</label>
+        </div>
+    </div>
+</div>
+
+@if (_newOrderCount > 0)
+{
+    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
+        <span class="mr-2" aria-hidden="true">🔔</span>
+        <div>
+            <strong>Có @_newOrderCount đơn hàng mới!</strong>
+            <a href="/orders?status=Pending" class="alert-link ml-2">Xem ngay →</a>
+        </div>
+        <button type="button" class="close ml-auto" aria-label="Đóng" @onclick="DismissNewOrderAlert">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="form-row align-items-end">
+            <div class="col-6 col-md-3">
+                <label for="dash-from"><small class="text-muted">Từ ngày</small></label>
+                <input id="dash-from" type="date" class="form-control" @bind="_from" />
+            </div>
+            <div class="col-6 col-md-3">
+                <label for="dash-to"><small class="text-muted">Đến ngày</small></label>
+                <input id="dash-to" type="date" class="form-control" @bind="_to" />
+            </div>
+            <div class="col-12 col-md-3 mt-2 mt-md-0">
+                <button class="btn btn-primary mr-2" @onclick="ApplyDateRange" disabled="@_refreshing">Áp dụng</button>
+                <button class="btn btn-outline-secondary" @onclick="ResetDateRange" disabled="@_refreshing">7 ngày qua</button>
+            </div>
         </div>
     </div>
 </div>
@@ -87,7 +123,7 @@ else
         </div>
         <div class="col-md-6 mb-3">
             <div class="card">
-                <div class="card-header">Doanh thu 7 ngày gần nhất</div>
+                <div class="card-header">Doanh thu theo ngày</div>
                 <div class="card-body">
                     <table class="table table-sm">
                         <thead>
@@ -104,6 +140,47 @@ else
                             }
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">Món bán chạy nhất</div>
+                <div class="card-body">
+                    @if (_topProducts == null)
+                    {
+                        <p class="text-muted mb-0"><em>Đang tải...</em></p>
+                    }
+                    else if (_topProducts.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Chưa có dữ liệu trong khoảng thời gian này.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr><th>#</th><th>Món</th><th class="text-right">Đã bán</th><th class="text-right">Doanh thu</th></tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var rank = 0;
+                                }
+                                @foreach (var p in _topProducts)
+                                {
+                                    rank++;
+                                    <tr>
+                                        <td><strong>@rank</strong></td>
+                                        <td>@p.ProductName</td>
+                                        <td class="text-right">@p.QuantitySold</td>
+                                        <td class="text-right">@FormatPrice(p.Revenue)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
                 </div>
             </div>
         </div>
@@ -148,10 +225,18 @@ else
 
 @code {
     private DashboardStatsModel _stats;
+    private List<TopProductModel> _topProducts;
     private bool _autoRefresh = true;
     private bool _refreshing;
     private DateTime _lastUpdated = DateTime.Now;
     private CancellationTokenSource _cts;
+
+    private DateTime _from = DateTime.Today.AddDays(-6);
+    private DateTime _to = DateTime.Today;
+
+    // New-order alert state.
+    private long _baselineOrderCount = -1;
+    private int _newOrderCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -164,13 +249,75 @@ else
     {
         try
         {
-            _stats = await DashboardService.GetStatsAsync();
+            var stats = await DashboardService.GetStatsAsync(_from, _to);
+            var top = await DashboardService.GetTopProductsAsync(_from, _to);
+
+            DetectNewOrders(stats);
+            _stats = stats;
+            _topProducts = top;
             _lastUpdated = DateTime.Now;
         }
         catch (Exception)
         {
             _stats ??= new DashboardStatsModel();
         }
+    }
+
+    private void DetectNewOrders(DashboardStatsModel stats)
+    {
+        if (_baselineOrderCount < 0)
+        {
+            // First load: establish the baseline, no alert.
+            _baselineOrderCount = stats.TotalOrders;
+            return;
+        }
+
+        var delta = stats.TotalOrders - _baselineOrderCount;
+        if (delta > 0)
+        {
+            _newOrderCount += (int)delta;
+            _baselineOrderCount = stats.TotalOrders;
+            _ = PlayBeepAsync();
+        }
+    }
+
+    private async Task PlayBeepAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("interop.playBeep");
+        }
+        catch (Exception)
+        {
+            // Audio is best-effort.
+        }
+    }
+
+    private void DismissNewOrderAlert()
+    {
+        _newOrderCount = 0;
+    }
+
+    private async Task ApplyDateRange()
+    {
+        if (_from > _to)
+        {
+            (_from, _to) = (_to, _from);
+        }
+
+        // Re-baseline so the range change itself doesn't trigger the alert.
+        _baselineOrderCount = -1;
+        _newOrderCount = 0;
+        await RefreshNow();
+    }
+
+    private async Task ResetDateRange()
+    {
+        _from = DateTime.Today.AddDays(-6);
+        _to = DateTime.Today;
+        _baselineOrderCount = -1;
+        _newOrderCount = 0;
+        await RefreshNow();
     }
 
     private async Task RefreshNow()

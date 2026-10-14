@@ -65,6 +65,9 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         /// <summary>"Cod" (default), "BankTransfer" or "MoMo".</summary>
         public string PaymentMethod { get; set; } = "Cod";
 
+        /// <summary>Optional discount/promo code.</summary>
+        public string DiscountCode { get; set; }
+
         public List<CreateOrderLineModel> Lines { get; set; } = new List<CreateOrderLineModel>();
     }
 
@@ -83,6 +86,14 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public string CustomerAddress { get; set; }
 
         public decimal TotalAmount { get; set; }
+
+        public decimal Subtotal { get; set; }
+
+        public decimal DeliveryFee { get; set; }
+
+        public string DiscountCode { get; set; }
+
+        public decimal DiscountAmount { get; set; }
 
         public string Status { get; set; }
 
@@ -194,6 +205,24 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         public DateTime CreatedAt { get; set; }
 
+        public decimal Subtotal { get; set; }
+
+        public decimal DeliveryFee { get; set; }
+
+        public string DiscountCode { get; set; }
+
+        public decimal DiscountAmount { get; set; }
+
         public List<TrackedOrderLineModel> Lines { get; set; } = new List<TrackedOrderLineModel>();
+    }
+
+    /// <summary>Shop commerce settings. Amounts in VND.</summary>
+    public class ShopSettingModel
+    {
+        public decimal DeliveryFee { get; set; }
+
+        public decimal FreeShipThreshold { get; set; }
+
+        public decimal MinOrderAmount { get; set; }
     }
 }

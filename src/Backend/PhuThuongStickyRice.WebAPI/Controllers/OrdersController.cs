@@ -46,6 +46,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 CustomerAddress = model.CustomerAddress,
                 Notes = model.Notes,
                 PaymentMethod = model.PaymentMethod,
+                DiscountCode = model.DiscountCode,
                 Lines = model.Lines
                     .Select(x => new CreateOrderLineDto
                     {
@@ -73,6 +74,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             });
 
             return Ok(paged);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("customers")]
+        public async Task<ActionResult> GetCustomers(
+            [FromQuery] string searchTerm = null,
+            CancellationToken cancellationToken = default)
+        {
+            var customers = await _orderAppService.GetCustomersAsync(searchTerm);
+            return Ok(customers);
         }
 
         [Authorize(Roles = "Admin")]

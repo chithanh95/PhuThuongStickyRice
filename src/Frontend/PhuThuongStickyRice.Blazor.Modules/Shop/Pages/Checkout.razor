@@ -1,7 +1,11 @@
 @page "/checkout"
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@implements IDisposable
 @inject ShopService ShopService
+@inject ShopSettingsService ShopSettingsService
+@inject DiscountService DiscountService
 @inject CartState CartState
 @inject NavigationManager Navigation
 
@@ -12,7 +16,30 @@
     <div class="alert alert-success">
         <h4>Đặt hàng thành công!</h4>
         <p>Mã đơn hàng của bạn: <strong>@_placedOrder.OrderNumber</strong></p>
-        <p>Tổng tiền: <strong>@FormatPrice(_placedOrder.TotalAmount)</strong></p>
+        <table class="table table-sm mb-2">
+            <tbody>
+                <tr><td>Tạm tính</td><td class="text-right">@FormatPrice(_placedOrder.Subtotal)</td></tr>
+                @if (_placedOrder.DiscountAmount > 0)
+                {
+                    <tr>
+                        <td>Giảm giá @(!string.IsNullOrWhiteSpace(_placedOrder.DiscountCode) ? $"({_placedOrder.DiscountCode})" : "")</td>
+                        <td class="text-right text-success">−@FormatPrice(_placedOrder.DiscountAmount)</td>
+                    </tr>
+                }
+                @if (_placedOrder.DeliveryFee > 0)
+                {
+                    <tr><td>Phí giao hàng</td><td class="text-right">@FormatPrice(_placedOrder.DeliveryFee)</td></tr>
+                }
+                else
+                {
+                    <tr><td>Phí giao hàng</td><td class="text-right text-success">Miễn phí</td></tr>
+                }
+                <tr>
+                    <td><strong>Tổng tiền</strong></td>
+                    <td class="text-right"><strong class="text-danger">@FormatPrice(_placedOrder.TotalAmount)</strong></td>
+                </tr>
+            </tbody>
+        </table>
         <p>Chúng tôi sẽ liên hệ với bạn qua số <strong>@_placedOrder.CustomerPhone</strong> để xác nhận.</p>
         <p>
             <a class="btn btn-outline-primary btn-sm" href="/track-order?orderNumber=@Uri.EscapeDataString(_placedOrder.OrderNumber)">Tra cứu đơn hàng</a>
@@ -132,6 +159,14 @@ else
         <div class="alert alert-danger">@_error</div>
     }
 
+    @if (_minOrderBlocked)
+    {
+        <div class="alert alert-warning">
+            Đơn hàng tối thiểu <strong>@FormatPrice(_shopSettings.MinOrderAmount)</strong>.
+            Vui lòng thêm món vào giỏ để tiếp tục.
+        </div>
+    }
+
     <div class="row">
         <div class="col-md-6">
             <div class="card">
@@ -139,20 +174,36 @@ else
                 <div class="card-body">
                     <div class="form-group">
                         <label>Họ tên *</label>
-                        <input class="form-control" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
+                        <input class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
+                        @if (!string.IsNullOrEmpty(_nameError))
+                        {
+                            <small class="text-danger">@_nameError</small>
+                        }
                     </div>
                     <div class="form-group">
                         <label>Số điện thoại *</label>
-                        <input class="form-control" @bind="_order.CustomerPhone" placeholder="0901234567" />
+                        <input class="form-control @FieldClass(_phoneError)" @bind="_order.CustomerPhone" placeholder="0901234567" />
+                        @if (!string.IsNullOrEmpty(_phoneError))
+                        {
+                            <small class="text-danger">@_phoneError</small>
+                        }
                     </div>
                     <div class="form-group">
                         <label>Email (tùy chọn — để nhận mail xác nhận đơn)</label>
-                        <input class="form-control" @bind="_order.CustomerEmail" placeholder="ban@example.com" />
+                        <input class="form-control @FieldClass(_emailError)" @bind="_order.CustomerEmail" placeholder="ban@example.com" />
+                        @if (!string.IsNullOrEmpty(_emailError))
+                        {
+                            <small class="text-danger">@_emailError</small>
+                        }
                     </div>
                     <div class="form-group">
                         <label>Địa chỉ giao hàng *</label>
-                        <textarea class="form-control" @bind="_order.CustomerAddress" rows="3"
+                        <textarea class="form-control @FieldClass(_addressError)" @bind="_order.CustomerAddress" rows="3"
                                   placeholder="Số nhà, đường, phường..."></textarea>
+                        @if (!string.IsNullOrEmpty(_addressError))
+                        {
+                            <small class="text-danger">@_addressError</small>
+                        }
                     </div>
                     <div class="form-group">
                         <label>Ghi chú</label>
@@ -193,15 +244,56 @@ else
                                     <td class="text-right">@FormatPrice(item.LineTotal)</td>
                                 </tr>
                             }
+                            <tr>
+                                <td class="text-muted">Tạm tính</td>
+                                <td class="text-right text-muted">@FormatPrice(_subtotal)</td>
+                            </tr>
+                            @if (_discountAmount > 0)
+                            {
+                                <tr>
+                                    <td class="text-success">Giảm giá (@_appliedCode)</td>
+                                    <td class="text-right text-success">−@FormatPrice(_discountAmount)</td>
+                                </tr>
+                            }
+                            <tr>
+                                <td class="text-muted">
+                                    Phí giao hàng
+                                    @if (_fee > 0 && _shopSettings.FreeShipThreshold > 0)
+                                    {
+                                        <small class="d-block">Miễn phí cho đơn từ @FormatPrice(_shopSettings.FreeShipThreshold)</small>
+                                    }
+                                </td>
+                                <td class="text-right @(_fee == 0 ? "text-success" : null)">
+                                    @(_fee == 0 ? "Miễn phí" : FormatPrice(_fee))
+                                </td>
+                            </tr>
                         </tbody>
                         <tfoot>
                             <tr>
                                 <td><strong>Tổng cộng</strong></td>
-                                <td class="text-right"><strong class="text-danger">@FormatPrice(CartState.TotalAmount)</strong></td>
+                                <td class="text-right"><strong class="text-danger">@FormatPrice(_grandTotal)</strong></td>
                             </tr>
                         </tfoot>
                     </table>
-                    <button class="btn btn-success btn-block btn-lg" @onclick="PlaceOrder" disabled="@_submitting">
+
+                    <div class="form-group">
+                        <label>Mã giảm giá</label>
+                        <div class="input-group">
+                            <input class="form-control" @bind="_discountCodeInput" placeholder="Nhập mã (nếu có)"
+                                   disabled="@_applyingDiscount" />
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" @onclick="ApplyDiscount" disabled="@_applyingDiscount">
+                                    @(_applyingDiscount ? "Đang kiểm tra..." : "Áp dụng")
+                                </button>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_discountMessage))
+                        {
+                            <small class="@(_discountAmount > 0 ? "text-success" : "text-danger")">@_discountMessage</small>
+                        }
+                    </div>
+
+                    <button class="btn btn-success btn-block btn-lg" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked)">
                         @(_submitting ? "Đang xử lý..." : "Xác nhận đặt hàng")
                     </button>
                 </div>
@@ -214,13 +306,78 @@ else
     private readonly CreateOrderModel _order = new CreateOrderModel();
     private PlacedOrderModel _placedOrder;
     private BankTransferInfoModel _bankInfo;
+    private ShopSettingModel _shopSettings = new ShopSettingModel();
     private bool _submitting;
     private bool _markingTransferred;
     private bool _payingMoMo;
+    private bool _minOrderBlocked;
     private string _error;
+
+    // Per-field validation messages.
+    private string _nameError;
+    private string _phoneError;
+    private string _emailError;
+    private string _addressError;
+
+    // Discount state.
+    private string _discountCodeInput;
+    private string _appliedCode;
+    private decimal _discountAmount;
+    private string _discountMessage;
+    private bool _applyingDiscount;
+
     private string _transferMessage;
     private string _transferError;
     private string _momoError;
+
+    private decimal _subtotal => CartState.TotalAmount;
+
+    private decimal _fee
+    {
+        get
+        {
+            if (_shopSettings.DeliveryFee <= 0)
+            {
+                return 0;
+            }
+
+            var afterDiscount = _subtotal - _discountAmount;
+            if (_shopSettings.FreeShipThreshold > 0 && afterDiscount >= _shopSettings.FreeShipThreshold)
+            {
+                return 0;
+            }
+
+            return _shopSettings.DeliveryFee;
+        }
+    }
+
+    private decimal _grandTotal => Math.Max(0, _subtotal - _discountAmount + _fee);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _shopSettings = await ShopSettingsService.GetAsync() ?? new ShopSettingModel();
+        }
+        catch (Exception)
+        {
+            _shopSettings = new ShopSettingModel();
+        }
+
+        RefreshMinOrderState();
+        CartState.OnChange += OnCartChanged;
+    }
+
+    private void OnCartChanged()
+    {
+        RefreshMinOrderState();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void RefreshMinOrderState()
+    {
+        _minOrderBlocked = _shopSettings.MinOrderAmount > 0 && _subtotal < _shopSettings.MinOrderAmount;
+    }
 
     /// <summary>VietQR image URL built from the shop's bank config + this order.</summary>
     private string QrUrl
@@ -242,39 +399,87 @@ else
         }
     }
 
+    private async Task ApplyDiscount()
+    {
+        _discountMessage = null;
+        var code = (_discountCodeInput ?? "").Trim();
+        if (string.IsNullOrEmpty(code))
+        {
+            _discountAmount = 0;
+            _appliedCode = null;
+            _discountMessage = "Vui lòng nhập mã giảm giá.";
+            return;
+        }
+
+        _applyingDiscount = true;
+        try
+        {
+            var result = await DiscountService.ValidateAsync(code, _subtotal);
+            if (result.Valid)
+            {
+                _discountAmount = result.DiscountAmount;
+                _appliedCode = code.ToUpperInvariant();
+                _discountMessage = result.Message;
+            }
+            else
+            {
+                _discountAmount = 0;
+                _appliedCode = null;
+                _discountMessage = result.Message;
+            }
+        }
+        catch (Exception)
+        {
+            _discountAmount = 0;
+            _appliedCode = null;
+            _discountMessage = "Không kiểm tra được mã giảm giá. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _applyingDiscount = false;
+            RefreshMinOrderState();
+        }
+    }
+
+    private bool ValidateFields()
+    {
+        _nameError = string.IsNullOrWhiteSpace(_order.CustomerName) ? "Vui lòng nhập họ tên." : null;
+        _phoneError = !IsValidPhone(_order.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
+        _emailError = !string.IsNullOrWhiteSpace(_order.CustomerEmail) && !IsValidEmail(_order.CustomerEmail)
+            ? "Email không đúng định dạng. Bạn có thể để trống nếu không có email."
+            : null;
+        _addressError = string.IsNullOrWhiteSpace(_order.CustomerAddress) ? "Vui lòng nhập địa chỉ giao hàng." : null;
+
+        return _nameError == null && _phoneError == null && _emailError == null && _addressError == null;
+    }
+
     private async Task PlaceOrder()
     {
         _error = null;
 
-        if (string.IsNullOrWhiteSpace(_order.CustomerName)
-            || string.IsNullOrWhiteSpace(_order.CustomerPhone)
-            || string.IsNullOrWhiteSpace(_order.CustomerAddress))
+        if (!ValidateFields())
         {
-            _error = "Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ giao hàng.";
+            _error = "Vui lòng kiểm tra lại các thông tin được đánh dấu.";
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(_order.CustomerEmail) && !IsValidEmail(_order.CustomerEmail))
+        if (_minOrderBlocked)
         {
-            _error = "Email không đúng định dạng. Bạn có thể để trống nếu không có email.";
-            return;
-        }
-
-        if (!IsValidPhone(_order.CustomerPhone))
-        {
-            _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            _error = $"Đơn hàng tối thiểu {FormatPrice(_shopSettings.MinOrderAmount)}. Vui lòng thêm món vào giỏ.";
             return;
         }
 
         _submitting = true;
         try
         {
+            _order.DiscountCode = _appliedCode;
             _order.Lines = CartState.Items
                 .Select(x => new CreateOrderLineModel { ProductId = x.ProductId, Quantity = x.Quantity })
                 .ToList();
 
             _placedOrder = await ShopService.CreateOrderAsync(_order);
             CartState.Clear();
+            CartState.OnChange -= OnCartChanged;
 
             if (_placedOrder.PaymentMethod == "BankTransfer")
             {
@@ -290,9 +495,11 @@ else
                 }
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin và thử lại.";
+            _error = ex.Message.Contains("tối thiểu") || ex.Message.Contains("Mã")
+                ? ex.Message
+                : "Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin và thử lại.";
         }
         finally
         {
@@ -340,12 +547,15 @@ else
         }
     }
 
+    private static string FieldClass(string error) => string.IsNullOrEmpty(error) ? null : "is-invalid";
+
     private static bool IsValidPhone(string phone) =>
         !string.IsNullOrWhiteSpace(phone)
         && System.Text.RegularExpressions.Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 
     private static bool IsValidEmail(string email)
-    {        var at = email.IndexOf('@');
+    {
+        var at = email.IndexOf('@');
         if (at <= 0 || at != email.LastIndexOf('@'))
         {
             return false;
@@ -356,4 +566,9 @@ else
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    public void Dispose()
+    {
+        CartState.OnChange -= OnCartChanged;
+    }
 }

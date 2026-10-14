@@ -1,0 +1,59 @@
+@using PhuThuongStickyRice.Blazor.Modules.Core.Services
+@inject ToastService Toasts
+@implements IDisposable
+
+<div class="toast-container" aria-live="polite">
+    @foreach (var toast in _toasts)
+    {
+        <div class="toast show mb-2" @key="toast.Id" role="status">
+            <div class="d-flex align-items-center">
+                <span class="mr-2" aria-hidden="true">✅</span>
+                <div class="mr-3">
+                    @toast.Message
+                    @if (!string.IsNullOrWhiteSpace(toast.LinkText) && !string.IsNullOrWhiteSpace(toast.LinkUrl))
+                    {
+                        <a href="@toast.LinkUrl" class="ml-2"><strong>@toast.LinkText</strong></a>
+                    }
+                </div>
+                <button type="button" class="ml-auto close" aria-label="Đóng" @onclick="() => Dismiss(toast.Id)">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly List<ToastMessage> _toasts = new List<ToastMessage>();
+
+    protected override void OnInitialized()
+    {
+        Toasts.OnShow += HandleShow;
+    }
+
+    private void HandleShow(ToastMessage toast)
+    {
+        _toasts.Add(toast);
+        InvokeAsync(StateHasChanged);
+        _ = AutoDismissAsync(toast.Id);
+    }
+
+    private async Task AutoDismissAsync(Guid id)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(3));
+        Dismiss(id);
+    }
+
+    private void Dismiss(Guid id)
+    {
+        if (_toasts.RemoveAll(x => x.Id == id) > 0)
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        Toasts.OnShow -= HandleShow;
+    }
+}

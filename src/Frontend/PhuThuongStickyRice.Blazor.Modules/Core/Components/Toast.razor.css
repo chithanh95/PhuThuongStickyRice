@@ -1,0 +1,23 @@
+.toast-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 1080;
+    max-width: min(92vw, 360px);
+}
+
+.toast-container .toast {
+    background: #fff;
+    border: 1px solid #d9a94b;
+    border-left: 4px solid #7a1b2e;
+    border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+    padding: 0.6rem 0.8rem;
+    opacity: 1;
+}
+
+.toast-container .close {
+    font-size: 1.1rem;
+    line-height: 1;
+    opacity: 0.6;
+}

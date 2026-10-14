@@ -13,7 +13,9 @@ namespace PhuThuongStickyRice.Application.Orders
 {
     public interface IDashboardAppService : IApplicationService
     {
-        Task<DashboardStatsDto> GetStatsAsync();
+        Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null);
+
+        Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5);
     }
 
     public class DashboardAppService : ApplicationService, IDashboardAppService
@@ -35,15 +37,19 @@ namespace PhuThuongStickyRice.Application.Orders
             _objectMapper = objectMapper;
         }
 
-        public async Task<DashboardStatsDto> GetStatsAsync()
+        public async Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null)
         {
+            var (fromDate, toDate) = NormalizeRange(from, to);
+
             var orderQueryable = await _orders.GetQueryableAsync();
             var productQueryable = await _products.GetQueryableAsync();
-            var billable = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled);
+
+            var ranged = orderQueryable.Where(x => x.CreatedAt >= fromDate && x.CreatedAt < toDate);
+            var billable = ranged.Where(x => x.Status != OrderStatus.Cancelled);
 
             var stats = new DashboardStatsDto
             {
-                TotalOrders = await _asyncExecuter.LongCountAsync(orderQueryable),
+                TotalOrders = await _asyncExecuter.LongCountAsync(ranged),
                 PendingOrders = await _asyncExecuter.LongCountAsync(
                     orderQueryable.Where(x => x.Status == OrderStatus.Pending)),
                 TotalRevenue = await _asyncExecuter.SumAsync(billable.Select(x => x.TotalAmount.Amount)),
@@ -53,17 +59,15 @@ namespace PhuThuongStickyRice.Application.Orders
             };
 
             stats.OrdersByStatus = await _asyncExecuter.ToListAsync(
-                orderQueryable.GroupBy(x => x.Status)
+                ranged.GroupBy(x => x.Status)
                     .Select(g => new OrdersByStatusDto
                     {
                         Status = g.Key.ToString(),
                         Count = g.LongCount()
                     }));
 
-            var weekAgo = DateTime.UtcNow.Date.AddDays(-6);
             stats.RevenueByDay = await _asyncExecuter.ToListAsync(
-                billable.Where(x => x.CreatedAt >= weekAgo)
-                    .GroupBy(x => x.CreatedAt.Date)
+                billable.GroupBy(x => x.CreatedAt.Date)
                     .Select(g => new RevenueByDayDto
                     {
                         Date = g.Key,
@@ -77,6 +81,45 @@ namespace PhuThuongStickyRice.Application.Orders
             stats.RecentOrders = _objectMapper.Map<List<Order>, List<OrderDto>>(recent);
 
             return stats;
+        }
+
+        public async Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5)
+        {
+            var (fromDate, toDate) = NormalizeRange(from, to);
+
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var billable = orderQueryable.Where(x =>
+                x.Status != OrderStatus.Cancelled
+                && x.CreatedAt >= fromDate && x.CreatedAt < toDate);
+
+            return await _asyncExecuter.ToListAsync(
+                billable.SelectMany(x => x.Lines)
+                    .GroupBy(x => new { x.ProductId, x.ProductName })
+                    .Select(g => new TopProductDto
+                    {
+                        ProductId = g.Key.ProductId,
+                        ProductName = g.Key.ProductName,
+                        QuantitySold = g.Sum(x => (long)x.Quantity),
+                        Revenue = g.Sum(x => x.LineTotal.Amount)
+                    })
+                    .OrderByDescending(x => x.QuantitySold)
+                    .Take(top < 1 ? 5 : top));
+        }
+
+        /// <summary>
+        /// Default range = last 7 days (old behavior). The end is exclusive
+        /// and pushed to the end of the "to" day so the whole day is included.
+        /// </summary>
+        private static (DateTime From, DateTime To) NormalizeRange(DateTime? from, DateTime? to)
+        {
+            var toDate = (to?.Date ?? DateTime.UtcNow.Date).AddDays(1);
+            var fromDate = from?.Date ?? toDate.AddDays(-7);
+            if (fromDate > toDate)
+            {
+                fromDate = toDate.AddDays(-7);
+            }
+
+            return (fromDate, toDate);
         }
     }
 }

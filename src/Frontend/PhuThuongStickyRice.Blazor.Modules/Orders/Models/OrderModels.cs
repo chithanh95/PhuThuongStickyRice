@@ -51,6 +51,14 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Models
 
         public DateTime CreatedAt { get; set; }
 
+        public decimal Subtotal { get; set; }
+
+        public decimal DeliveryFee { get; set; }
+
+        public string DiscountCode { get; set; }
+
+        public decimal DiscountAmount { get; set; }
+
         public List<OrderLineModel> Lines { get; set; } = new List<OrderLineModel>();
     }
 

@@ -3,17 +3,17 @@
 
 <div class="card">
     <div class="card-header d-flex flex-wrap align-items-center">
-        <span>Product List</span>
+        <span>Danh sách sản phẩm</span>
 
         <div class="d-flex flex-wrap ml-md-auto mt-2 mt-md-0">
             <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsPdf">
-                Export as Pdf
+                Xuất PDF
             </button>
             <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsCsv">
-                Export as Csv
+                Xuất CSV
             </button>
             <button class="btn btn-primary mb-1" @onclick="QuickAddProduct">
-                Add Product
+                Thêm sản phẩm
             </button>
         </div>
     </div>
@@ -22,16 +22,16 @@
 
             @if (Products == null)
             {
-                <p><em>Loading...</em></p>
+                <p><em>Đang tải...</em></p>
             }
             else
             {
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Code</th>
-                            <th>Description</th>
+                            <th>Tên món</th>
+                            <th>Mã</th>
+                            <th>Mô tả</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -43,8 +43,8 @@
                                 <td>@product.Code</td>
                                 <td>@product.Description</td>
                                 <td>
-                                    <button @onclick="(()=> EditProduct(product))" class="btn btn-primary" title="Edit">Edit</button>
-                                    <button @onclick="(()=> DeleteProduct(product))" class="btn btn-danger" title="Delete">Delete</button>
+                                    <button @onclick="(()=> EditProduct(product))" class="btn btn-primary" title="Sửa">Sửa</button>
+                                    <button @onclick="(()=> DeleteProduct(product))" class="btn btn-danger" title="Xóa">Xóa</button>
                                 </td>
                             </tr>
                         }
@@ -55,8 +55,8 @@
     </div>
 </div>
 
-<ConfirmDialog @ref="DeleteDialog" Title="Delete Product" YesText="Yes" NoText="No" ConfirmEventCallback="ConfirmedDeleteProduct">
+<ConfirmDialog @ref="DeleteDialog" Title="Xóa sản phẩm" YesText="Có" NoText="Không" ConfirmEventCallback="ConfirmedDeleteProduct">
     <Message>
-        Are you sure you want to delete product: <strong>@DeletingProduct.Name</strong>
+        Bạn có chắc muốn xóa sản phẩm: <strong>@DeletingProduct.Name</strong>?
     </Message>
 </ConfirmDialog>

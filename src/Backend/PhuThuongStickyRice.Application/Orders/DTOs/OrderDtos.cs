@@ -42,6 +42,15 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public string Currency { get; set; }
 
+        /// <summary>Lines subtotal before discount and fee.</summary>
+        public decimal Subtotal { get; set; }
+
+        public decimal DeliveryFee { get; set; }
+
+        public string DiscountCode { get; set; }
+
+        public decimal DiscountAmount { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         public List<OrderLineDto> Lines { get; set; } = new List<OrderLineDto>();
@@ -83,7 +92,25 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Payment method: "Cod" (default), "BankTransfer" or "MoMo".</summary>
         public string PaymentMethod { get; set; }
 
+        /// <summary>Optional discount/promo code entered at checkout.</summary>
+        [StringLength(50)]
+        public string DiscountCode { get; set; }
+
         public List<CreateOrderLineDto> Lines { get; set; } = new List<CreateOrderLineDto>();
+    }
+
+    /// <summary>Customer aggregated by phone number (admin).</summary>
+    public class CustomerDto
+    {
+        public string CustomerName { get; set; }
+
+        public string CustomerPhone { get; set; }
+
+        public long OrderCount { get; set; }
+
+        public decimal TotalSpent { get; set; }
+
+        public DateTime LastOrderAt { get; set; }
     }
 
     public class GetOrdersInput : PagedAndSortedResultRequestDto
@@ -216,5 +243,16 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public decimal Revenue { get; set; }
 
         public long Orders { get; set; }
+    }
+
+    public class TopProductDto
+    {
+        public Guid ProductId { get; set; }
+
+        public string ProductName { get; set; }
+
+        public long QuantitySold { get; set; }
+
+        public decimal Revenue { get; set; }
     }
 }

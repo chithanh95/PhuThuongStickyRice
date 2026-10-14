@@ -3,6 +3,8 @@ using PhuThuongStickyRice.Application.Orders.Email;
 using PhuThuongStickyRice.Application.Orders.Exceptions;
 using PhuThuongStickyRice.Application.Orders.Payments;
 using PhuThuongStickyRice.Application.Products.Exceptions;
+using PhuThuongStickyRice.Application.Shop;
+using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using PhuThuongStickyRice.Domain.ValueObjects;
@@ -38,6 +40,9 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Public order lookup by order number + phone.</summary>
         Task<OrderDto> TrackOrderAsync(TrackOrderInput input);
+
+        /// <summary>Admin: customers aggregated by phone number.</summary>
+        Task<List<CustomerDto>> GetCustomersAsync(string searchTerm);
     }
 
     public class OrderAppService : ApplicationService, IOrderAppService
@@ -49,6 +54,8 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IEmailMessageRepository _emailMessages;
         private readonly BankTransferOptions _bankTransfer;
         private readonly IMoMoPaymentService _momo;
+        private readonly IShopSettingAppService _shopSettings;
+        private readonly IDiscountAppService _discounts;
 
         public OrderAppService(
             IOrderRepository orders,
@@ -57,7 +64,9 @@ namespace PhuThuongStickyRice.Application.Orders
             IObjectMapper objectMapper,
             IEmailMessageRepository emailMessages,
             BankTransferOptions bankTransfer,
-            IMoMoPaymentService momo)
+            IMoMoPaymentService momo,
+            IShopSettingAppService shopSettings,
+            IDiscountAppService discounts)
         {
             _orders = orders;
             _products = products;
@@ -66,6 +75,8 @@ namespace PhuThuongStickyRice.Application.Orders
             _emailMessages = emailMessages;
             _bankTransfer = bankTransfer;
             _momo = momo;
+            _shopSettings = shopSettings;
+            _discounts = discounts;
         }
 
         public async Task<OrderDto> CreateAsync(CreateOrderDto input)
@@ -106,6 +117,35 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var orderNumber = await GenerateOrderNumberAsync();
 
+            var subtotal = lines.Sum(x => x.Quantity * x.UnitPrice.Amount);
+            var currency = lines.First().UnitPrice.Currency;
+
+            // Minimum order amount (shop setting).
+            var shopSetting = await _shopSettings.GetAsync();
+            if (shopSetting.MinOrderAmount > 0 && subtotal < shopSetting.MinOrderAmount)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    $"Đơn hàng tối thiểu {shopSetting.MinOrderAmount:N0} ₫. Vui lòng thêm món vào giỏ.");
+            }
+
+            // Discount code (validated + usage counted here).
+            decimal discountValue = 0;
+            string appliedCode = null;
+            if (!string.IsNullOrWhiteSpace(input.DiscountCode))
+            {
+                discountValue = await _discounts.ApplyAsync(input.DiscountCode, subtotal);
+                appliedCode = input.DiscountCode.Trim().ToUpperInvariant();
+            }
+
+            // Delivery fee: free when (subtotal - discount) reaches the threshold.
+            decimal feeValue = 0;
+            if (shopSetting.DeliveryFee > 0)
+            {
+                var afterDiscount = subtotal - discountValue;
+                var freeShip = shopSetting.FreeShipThreshold > 0 && afterDiscount >= shopSetting.FreeShipThreshold;
+                feeValue = freeShip ? 0 : shopSetting.DeliveryFee;
+            }
+
             var order = Order.Create(
                 orderNumber,
                 input.CustomerName,
@@ -114,7 +154,10 @@ namespace PhuThuongStickyRice.Application.Orders
                 input.CustomerAddress,
                 input.Notes,
                 paymentMethod,
-                lines);
+                lines,
+                Money.Of(feeValue, currency),
+                appliedCode,
+                Money.Of(discountValue, currency));
 
             await _orders.InsertAsync(order);
 
@@ -231,6 +274,35 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             return _objectMapper.Map<Order, OrderDto>(order);
+        }
+
+        /// <summary>
+        /// Admin: customers aggregated by phone number (order count, total
+        /// spent, last order). Cancelled orders are excluded from the totals.
+        /// </summary>
+        public async Task<List<CustomerDto>> GetCustomersAsync(string searchTerm)
+        {
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var query = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled);
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var term = searchTerm.Trim();
+                query = query.Where(x =>
+                    x.CustomerPhone.Contains(term) || x.CustomerName.Contains(term));
+            }
+
+            return await _asyncExecuter.ToListAsync(
+                query.GroupBy(x => x.CustomerPhone)
+                    .Select(g => new CustomerDto
+                    {
+                        CustomerPhone = g.Key,
+                        CustomerName = g.Max(x => x.CustomerName),
+                        OrderCount = g.LongCount(),
+                        TotalSpent = g.Sum(x => x.TotalAmount.Amount),
+                        LastOrderAt = g.Max(x => x.CreatedAt)
+                    })
+                    .OrderByDescending(x => x.TotalSpent));
         }
 
         private async Task<Order> FindOrThrowAsync(Guid id)

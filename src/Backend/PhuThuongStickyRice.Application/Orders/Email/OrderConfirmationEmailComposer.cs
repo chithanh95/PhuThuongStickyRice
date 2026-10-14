@@ -56,6 +56,22 @@ namespace PhuThuongStickyRice.Application.Orders.Email
                 body.Append("</tr>");
             }
 
+            var subtotal = order.TotalAmount.Amount - order.DeliveryFee.Amount + order.DiscountAmount.Amount;
+            body.Append($"<tr><td colspan=\"3\" align=\"right\">Tạm tính</td>"
+                + $"<td align=\"right\">{FormatPrice(subtotal)}</td></tr>");
+            if (order.DiscountAmount.Amount > 0)
+            {
+                var codeLabel = string.IsNullOrWhiteSpace(order.DiscountCode) ? "" : $" ({Escape(order.DiscountCode)})";
+                body.Append($"<tr><td colspan=\"3\" align=\"right\">Giảm giá{codeLabel}</td>"
+                    + $"<td align=\"right\">-{FormatPrice(order.DiscountAmount.Amount)}</td></tr>");
+            }
+
+            if (order.DeliveryFee.Amount > 0)
+            {
+                body.Append("<tr><td colspan=\"3\" align=\"right\">Phí giao hàng</td>"
+                    + $"<td align=\"right\">{FormatPrice(order.DeliveryFee.Amount)}</td></tr>");
+            }
+
             body.Append("<tr><td colspan=\"3\" align=\"right\"><strong>Tổng tiền</strong></td>"
                 + $"<td align=\"right\"><strong>{FormatPrice(order.TotalAmount.Amount)}</strong></td></tr>");
             body.Append("</table>");

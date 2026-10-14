@@ -7,6 +7,7 @@
 @inject JwtTokenManager TokenManager
 @inject JwtAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 <h3>Đăng nhập quản trị</h3>
 
@@ -29,9 +30,15 @@
                 <button class="btn btn-primary btn-block" @onclick="LoginAsync" disabled="@_loggingIn">
                     @(_loggingIn ? "Đang đăng nhập..." : "Đăng nhập")
                 </button>
-                <p class="text-muted mt-3 mb-0">
-                    <small>Tài khoản mặc định lần đầu: <strong>admin@phuthuong.vn</strong> / <strong>Admin@123</strong> — hãy đổi mật khẩu ngay sau khi đăng nhập lần đầu.</small>
-                </p>
+                @if (_showHint)
+                {
+                    <div class="alert alert-warning alert-dismissible mt-3 mb-0" role="alert">
+                        <small>Tài khoản mặc định lần đầu: <strong>admin@phuthuong.vn</strong> / <strong>Admin@123</strong> — hãy đổi mật khẩu ngay sau khi đăng nhập lần đầu.</small>
+                        <button type="button" class="close" aria-label="Ẩn" @onclick="DismissHint">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -43,15 +50,39 @@
     private string _error;
     private bool _loggingIn;
     private string _returnUrl;
+    private bool _showHint = true;
+    private const string HintDismissedKey = "phuthuong.login-hint.dismissed";
 
     protected override async Task OnInitializedAsync()
     {
         _returnUrl = GetQueryValue(Navigation.Uri, "returnUrl");
 
+        try
+        {
+            var dismissed = await JSRuntime.InvokeAsync<string>("localStorage.getItem", HintDismissedKey);
+            _showHint = dismissed != "1";
+        }
+        catch (Exception)
+        {
+            _showHint = true;
+        }
+
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated == true)
         {
             Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? "/dashboard" : _returnUrl);
+        }
+    }
+
+    private async Task DismissHint()
+    {
+        _showHint = false;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", HintDismissedKey, "1");
+        }
+        catch (Exception)
+        {
         }
     }
 

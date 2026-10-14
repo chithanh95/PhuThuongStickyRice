@@ -18,6 +18,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int CustomerEmailMaxLength = 254;
         public const int CustomerAddressMaxLength = 500;
         public const int NotesMaxLength = 1000;
+        public const int DiscountCodeMaxLength = 50;
 
         public string OrderNumber { get; private set; }
 
@@ -43,6 +44,15 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public Money TotalAmount { get; private set; }
 
+        /// <summary>Delivery fee charged on this order (0 when free shipping).</summary>
+        public Money DeliveryFee { get; private set; }
+
+        /// <summary>Discount code applied by the customer, if any.</summary>
+        public string DiscountCode { get; private set; }
+
+        /// <summary>Discount amount subtracted from the subtotal (0 when none).</summary>
+        public Money DiscountAmount { get; private set; }
+
         public DateTime CreatedAt { get; private set; }
 
         private readonly List<OrderLine> _lines = new List<OrderLine>();
@@ -62,7 +72,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             string customerAddress,
             string notes,
             PaymentMethod paymentMethod,
-            List<OrderLine> lines)
+            List<OrderLine> lines,
+            Money deliveryFee,
+            string discountCode,
+            Money discountAmount)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
@@ -75,9 +88,20 @@ namespace PhuThuongStickyRice.Domain.Entities
             PaymentStatus = PaymentStatus.Unpaid;
             CreatedAt = DateTime.UtcNow;
             _lines.AddRange(lines);
-            TotalAmount = Money.Of(
-                lines.Sum(x => x.LineTotal.Amount),
-                lines.First().LineTotal.Currency);
+
+            var currency = lines.First().LineTotal.Currency;
+            var subtotal = lines.Sum(x => x.LineTotal.Amount);
+            var discount = Math.Max(0, discountAmount?.Amount ?? 0);
+            var fee = Math.Max(0, deliveryFee?.Amount ?? 0);
+            if (discount > subtotal)
+            {
+                discount = subtotal;
+            }
+
+            DeliveryFee = Money.Of(fee, currency);
+            DiscountCode = string.IsNullOrWhiteSpace(discountCode) ? null : discountCode.Trim();
+            DiscountAmount = Money.Of(discount, currency);
+            TotalAmount = Money.Of(subtotal - discount + fee, currency);
         }
 
         public static Order Create(
@@ -88,7 +112,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             string customerAddress,
             string notes,
             PaymentMethod paymentMethod,
-            IEnumerable<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity)> lines)
+            IEnumerable<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity)> lines,
+            Money deliveryFee = null,
+            string discountCode = null,
+            Money discountAmount = null)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -167,7 +194,10 @@ namespace PhuThuongStickyRice.Domain.Entities
                 customerAddress.Trim(),
                 notes?.Trim(),
                 paymentMethod,
-                orderLines);
+                orderLines,
+                deliveryFee,
+                discountCode,
+                discountAmount);
         }
 
         /// <summary>

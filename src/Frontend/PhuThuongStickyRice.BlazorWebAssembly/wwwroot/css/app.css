@@ -197,3 +197,20 @@ app {
         display: block;
     }
 }
+
+/* Print: hide the app chrome on invoice / print pages */
+@media print {
+    .sidebar,
+    .main .top-row {
+        display: none !important;
+    }
+
+    .main > div {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .content {
+        padding-top: 0 !important;
+    }
+}

@@ -7,9 +7,11 @@
 @using PhuThuongStickyRice.Blazor.Modules.Landing.Services
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@using PhuThuongStickyRice.Blazor.Modules.Core.Services
 @inject LandingService LandingService
 @inject ShopService ShopService
 @inject CartState CartState
+@inject ToastService Toasts
 
 <!-- 1. HERO -->
 <section class="lp-hero">
@@ -93,16 +95,9 @@
                     <img src="@ProductImage(product.Code)" alt="@product.Name" />
                     <div class="lp-quick-name">@product.Name</div>
                     <div class="lp-quick-price">@FormatPrice(product.Price)</div>
-                    @if (_added.TryGetValue(product.Id, out var added) && added)
-                    {
-                        <div class="lp-quick-added">Đã thêm ✓</div>
-                    }
-                    else
-                    {
-                        <button class="lp-cta lp-cta-maroon lp-quick-btn" @onclick="() => QuickAdd(product)">
-                            Thêm vào giỏ
-                        </button>
-                    }
+                    <button class="lp-cta lp-cta-maroon lp-quick-btn" @onclick="() => QuickAdd(product)">
+                        Thêm vào giỏ
+                    </button>
                 </div>
             }
         }
@@ -174,7 +169,6 @@
 @code {
     private LandingContentModel _content = new LandingContentModel();
     private List<ShopProductModel> _quickProducts;
-    private readonly Dictionary<Guid, bool> _added = new Dictionary<Guid, bool>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -202,16 +196,7 @@
     private void QuickAdd(ShopProductModel product)
     {
         CartState.Add(product, 1);
-
-        var id = product.Id;
-        _added[id] = true;
-
-        // Show the transient confirmation, then revert to the button.
-        _ = Task.Delay(2000).ContinueWith(_ => InvokeAsync(() =>
-        {
-            _added[id] = false;
-            StateHasChanged();
-        }));
+        Toasts.Show($"Đã thêm {product.Name} × 1 vào giỏ", "Xem giỏ hàng", "/cart");
     }
 
     /// <summary>SVG placeholder per product code (matches the shop page).</summary>

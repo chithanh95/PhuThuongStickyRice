@@ -10,7 +10,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public int Quantity { get; set; }
     }
 
-    public sealed class CreateOrderRequestModel
+        public sealed class CreateOrderRequestModel
     {
         public string CustomerName { get; set; }
 
@@ -24,6 +24,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         /// <summary>"Cod" (default), "BankTransfer" or "MoMo".</summary>
         public string PaymentMethod { get; set; }
+
+        /// <summary>Optional discount/promo code.</summary>
+        public string DiscountCode { get; set; }
 
         public List<CreateOrderLineRequestModel> Lines { get; set; } = new List<CreateOrderLineRequestModel>();
     }

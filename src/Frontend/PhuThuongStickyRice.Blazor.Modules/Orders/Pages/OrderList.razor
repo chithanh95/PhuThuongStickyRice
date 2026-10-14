@@ -3,6 +3,7 @@
 @using PhuThuongStickyRice.Blazor.Modules.Orders.Models
 @using PhuThuongStickyRice.Blazor.Modules.Orders.Services
 @inject OrderService OrderService
+@inject NavigationManager Navigation
 
 <h3>Quản lý đơn hàng</h3>
 
@@ -71,7 +72,10 @@ else
                             {
                                 <tr>
                                     <td colspan="8" class="bg-light">
-                                        <strong>Chi tiết đơn @order.OrderNumber</strong>
+                                        <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                                            <strong>Chi tiết đơn @order.OrderNumber</strong>
+                                            <a class="btn btn-sm btn-outline-secondary" href="@($"/orders/print/{order.Id}")" target="_blank">🖨 In hóa đơn</a>
+                                        </div>
                                         @if (!string.IsNullOrWhiteSpace(order.CustomerEmail))
                                         {
                                             <div>Email: @order.CustomerEmail</div>
@@ -95,6 +99,29 @@ else
                                                     </tr>
                                                 }
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="3" class="text-right text-muted">Tạm tính</td>
+                                                    <td class="text-right text-muted">@FormatPrice(order.Subtotal)</td>
+                                                </tr>
+                                                @if (order.DiscountAmount > 0)
+                                                {
+                                                    <tr>
+                                                        <td colspan="3" class="text-right text-success">
+                                                            Giảm giá @(!string.IsNullOrWhiteSpace(order.DiscountCode) ? $"({order.DiscountCode})" : "")
+                                                        </td>
+                                                        <td class="text-right text-success">−@FormatPrice(order.DiscountAmount)</td>
+                                                    </tr>
+                                                }
+                                                <tr>
+                                                    <td colspan="3" class="text-right text-muted">Phí giao hàng</td>
+                                                    <td class="text-right text-muted">@(order.DeliveryFee > 0 ? FormatPrice(order.DeliveryFee) : "Miễn phí")</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="3" class="text-right"><strong>Tổng cộng</strong></td>
+                                                    <td class="text-right"><strong>@FormatPrice(order.TotalAmount)</strong></td>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </td>
                                 </tr>
@@ -128,6 +155,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Support deep links like /orders?status=Pending or /orders?searchTerm=090...
+        var query = ParseQuery(Navigation.Uri);
+        if (query.TryGetValue("status", out var status) && !string.IsNullOrWhiteSpace(status))
+        {
+            _statusFilter = status;
+        }
+
+        if (query.TryGetValue("searchTerm", out var searchTerm) && !string.IsNullOrWhiteSpace(searchTerm))
+        {
+            _searchTerm = searchTerm;
+        }
+
         await LoadOrders(1);
     }
 
@@ -238,6 +277,37 @@ else
     };
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    private static System.Collections.Generic.Dictionary<string, string> ParseQuery(string uri)
+    {
+        var result = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+        var question = uri.IndexOf('?');
+        if (question < 0)
+        {
+            return result;
+        }
+
+        var query = uri.Substring(question + 1);
+        var hash = query.IndexOf('#');
+        if (hash >= 0)
+        {
+            query = query.Substring(0, hash);
+        }
+
+        foreach (var pair in query.Split('&', System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            result[Uri.UnescapeDataString(pair.Substring(0, eq))] =
+                Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
+        }
+
+        return result;
+    }
 
     private static RenderFragment StatusBadge(string status) => builder =>
     {

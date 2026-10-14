@@ -48,6 +48,33 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                     .IsRequired();
             });
 
+            builder.ComplexProperty(x => x.DeliveryFee, feeBuilder =>
+            {
+                feeBuilder.Property(x => x.Amount)
+                    .HasColumnName("DeliveryFee")
+                    .HasPrecision(18, 2)
+                    .IsRequired();
+                feeBuilder.Property(x => x.Currency)
+                    .HasColumnName("DeliveryFeeCurrency")
+                    .HasMaxLength(3)
+                    .IsRequired();
+            });
+
+            builder.ComplexProperty(x => x.DiscountAmount, discountBuilder =>
+            {
+                discountBuilder.Property(x => x.Amount)
+                    .HasColumnName("DiscountAmount")
+                    .HasPrecision(18, 2)
+                    .IsRequired();
+                discountBuilder.Property(x => x.Currency)
+                    .HasColumnName("DiscountCurrency")
+                    .HasMaxLength(3)
+                    .IsRequired();
+            });
+
+            builder.Property(x => x.DiscountCode)
+                .HasMaxLength(Order.DiscountCodeMaxLength);
+
             builder.HasMany(x => x.Lines)
                 .WithOne()
                 .HasForeignKey(x => x.OrderId)

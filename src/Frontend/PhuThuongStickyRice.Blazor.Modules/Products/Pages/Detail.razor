@@ -3,32 +3,26 @@
 
 <div class="card">
     <div class="card-header">
-        Product Detail: @Product.Name
+        Chi tiết sản phẩm: @Product.Name
     </div>
 
     <div class="card-body">
         <div class="row">
             <div class="col-md-8">
                 <div class="row">
-                    <div class="col-md-4">Name:</div>
+                    <div class="col-md-4">Tên món:</div>
                     <div class="col-md-8">@Product.Name</div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4">Code:</div>
+                    <div class="col-md-4">Mã:</div>
                     <div class="col-md-8">@Product.Code?.ToUpper()</div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4">Description:</div>
+                    <div class="col-md-4">Mô tả:</div>
                     <div class="col-md-8">@Product.Description</div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4">Price:</div>
-                    <div class="col-md-8">
-
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-4">5 Star Rating:</div>
+                    <div class="col-md-4">Giá:</div>
                     <div class="col-md-8">
 
                     </div>
@@ -46,9 +40,9 @@
 
     <div class="card-footer">
         <NavLink class="btn btn-outline-secondary" href="products">
-            <i class="fa fa-chevron-left"></i> Back
+            <i class="fa fa-chevron-left"></i> Quay lại
         </NavLink>
         &nbsp;
-        <button @onclick="@(()=> NavManager.NavigateTo($"/products/edit/{ProductId}"))" class="btn btn-primary" title="Edit">Edit</button>
+        <button @onclick="@(()=> NavManager.NavigateTo($"/products/edit/{ProductId}"))" class="btn btn-primary" title="Sửa">Sửa</button>
     </div>
 </div>

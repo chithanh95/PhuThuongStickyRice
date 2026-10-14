@@ -1,0 +1,93 @@
+@page "/admin/shop-settings"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Models
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@inject ShopSettingsService ShopSettingsService
+
+<h3>Cài đặt bán hàng</h3>
+<p class="text-muted">Phí giao hàng và đơn tối thiểu áp dụng cho mọi đơn đặt qua web.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+@if (_model == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="form-group">
+                <label>Phí giao hàng (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_model.DeliveryFee" />
+                <small class="form-text text-muted">Đặt 0 để luôn miễn phí giao hàng.</small>
+            </div>
+            <div class="form-group">
+                <label>Miễn phí ship cho đơn từ (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_model.FreeShipThreshold" />
+                <small class="form-text text-muted">Đơn có (tạm tính − giảm giá) từ mức này trở lên được miễn phí ship. Đặt 0 để tắt miễn phí ship.</small>
+            </div>
+            <div class="form-group">
+                <label>Giá trị đơn tối thiểu (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_model.MinOrderAmount" />
+                <small class="form-text text-muted">Đặt 0 để không giới hạn. Khách không thể đặt đơn dưới mức này.</small>
+            </div>
+            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+                @(_saving ? "Đang lưu..." : "Lưu thay đổi")
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private ShopSettingModel _model;
+    private bool _saving;
+    private string _error;
+    private string _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _model = await ShopSettingsService.GetAsync() ?? new ShopSettingModel();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được cài đặt. Vui lòng thử lại.";
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+
+        if (_model.DeliveryFee < 0 || _model.FreeShipThreshold < 0 || _model.MinOrderAmount < 0)
+        {
+            _error = "Các mức tiền không được âm.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            _model = await ShopSettingsService.UpdateAsync(_model);
+            _success = "Đã lưu cài đặt bán hàng.";
+        }
+        catch (Exception)
+        {
+            _error = "Lưu thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

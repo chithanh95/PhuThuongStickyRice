@@ -1,0 +1,258 @@
+@page "/admin/discounts"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Core.Components
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@inject DiscountService DiscountService
+
+<h3>Mã giảm giá</h3>
+
+<ConfirmDialog @ref="_deleteDialog"
+               Title="Xóa mã giảm giá"
+               YesText="Xóa"
+               NoText="Hủy"
+               ConfirmEventCallback="ConfirmedDelete">
+    <Message>Xóa mã <strong>@_deleting?.Code</strong>? Mã đã dùng trong các đơn trước vẫn giữ nguyên.</Message>
+</ConfirmDialog>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">@(_editingId == null ? "Thêm mã mới" : "Sửa mã")</div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label>Mã *</label>
+                <input class="form-control text-uppercase" @bind="_form.Code" placeholder="VD: XOI10" />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Giảm theo % (0–100)</label>
+                <input type="number" min="0" max="100" step="1" class="form-control" @bind="_form.DiscountPercent" />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Hoặc giảm số tiền (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_form.DiscountAmount" />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Đơn tối thiểu (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_form.MinOrderAmount" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label>Hết hạn</label>
+                <input type="date" class="form-control" @bind="_expiresDate" />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Số lượt dùng tối đa</label>
+                <input type="number" min="1" class="form-control" @bind="_form.MaxUses" placeholder="Trống = không giới hạn" />
+            </div>
+            <div class="form-group col-md-3 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="disc-active" @bind="_form.IsActive" />
+                    <label class="form-check-label" for="disc-active">Đang hoạt động</label>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+            @(_saving ? "Đang lưu..." : (_editingId == null ? "Thêm mã" : "Cập nhật"))
+        </button>
+        @if (_editingId != null)
+        {
+            <button class="btn btn-outline-secondary ml-2" @onclick="CancelEdit">Hủy</button>
+        }
+    </div>
+</div>
+
+@if (_codes == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_codes.Count == 0)
+{
+    <div class="alert alert-info">Chưa có mã giảm giá nào.</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Ưu đãi</th>
+                            <th class="text-right">Đơn tối thiểu</th>
+                            <th class="text-right">Đã dùng</th>
+                            <th>Hết hạn</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in _codes)
+                        {
+                            <tr @key="c.Id">
+                                <td><strong class="text-monospace">@c.Code</strong></td>
+                                <td>@c.DisplayValue</td>
+                                <td class="text-right">@FormatPrice(c.MinOrderAmount)</td>
+                                <td class="text-right">@c.UsedCount@(c.MaxUses.HasValue ? $"/{c.MaxUses}" : "")</td>
+                                <td>@(c.ExpiresAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")</td>
+                                <td>
+                                    @if (c.IsActive)
+                                    {
+                                        <span class="badge badge-success">Hoạt động</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Đã tắt</span>
+                                    }
+                                </td>
+                                <td class="text-right" style="white-space: nowrap;">
+                                    <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(c)">Sửa</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(c)">Xóa</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<DiscountCodeModel> _codes;
+    private DiscountCodeModel _form = new DiscountCodeModel();
+    private DateTime? _expiresDate;
+    private Guid? _editingId;
+    private bool _saving;
+    private string _error;
+    private string _success;
+    private ConfirmDialog _deleteDialog;
+    private DiscountCodeModel _deleting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _codes = await DiscountService.GetListAsync() ?? new List<DiscountCodeModel>();
+        }
+        catch (Exception)
+        {
+            _codes = new List<DiscountCodeModel>();
+            _error = "Không tải được danh sách mã giảm giá.";
+        }
+    }
+
+    private void StartEdit(DiscountCodeModel c)
+    {
+        _editingId = c.Id;
+        _form = new DiscountCodeModel
+        {
+            Code = c.Code,
+            DiscountPercent = c.DiscountPercent,
+            DiscountAmount = c.DiscountAmount,
+            MinOrderAmount = c.MinOrderAmount,
+            MaxUses = c.MaxUses,
+            IsActive = c.IsActive
+        };
+        _expiresDate = c.ExpiresAt?.ToLocalTime().Date;
+        _error = null;
+        _success = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _form = new DiscountCodeModel();
+        _expiresDate = null;
+        _error = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+
+        if (string.IsNullOrWhiteSpace(_form.Code))
+        {
+            _error = "Vui lòng nhập mã giảm giá.";
+            return;
+        }
+
+        if (!_form.DiscountPercent.HasValue && !_form.DiscountAmount.HasValue)
+        {
+            _error = "Vui lòng nhập phần trăm giảm hoặc số tiền giảm.";
+            return;
+        }
+
+        _form.ExpiresAt = _expiresDate?.ToUniversalTime();
+        _saving = true;
+        try
+        {
+            if (_editingId == null)
+            {
+                await DiscountService.CreateAsync(_form);
+                _success = "Đã thêm mã giảm giá.";
+            }
+            else
+            {
+                await DiscountService.UpdateAsync(_editingId.Value, _form);
+                _success = "Đã cập nhật mã giảm giá.";
+            }
+
+            CancelEdit();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task DeleteAsync(DiscountCodeModel c)
+    {
+        _deleting = c;
+        _deleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete(bool confirmed)
+    {
+        _deleteDialog.Close();
+        if (!confirmed || _deleting == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await DiscountService.DeleteAsync(_deleting.Id);
+            _success = $"Đã xóa mã {_deleting.Code}.";
+            _deleting = null;
+            await LoadAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Xóa thất bại. Vui lòng thử lại.";
+        }
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+}

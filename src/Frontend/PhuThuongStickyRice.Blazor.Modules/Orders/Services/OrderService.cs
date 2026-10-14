@@ -1,6 +1,8 @@
+using PhuThuongStickyRice.Blazor.Modules.Admin.Models;
 using PhuThuongStickyRice.Blazor.Modules.Core.Services;
 using PhuThuongStickyRice.Blazor.Modules.Orders.Models;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -40,6 +42,24 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Services
         public async Task<OrderModel> ConfirmPaymentAsync(Guid orderId)
         {
             return await PutAsync<OrderModel>($"api/orders/{orderId}/confirm-payment", new { });
+        }
+
+        /// <summary>Admin: get a single order by id (used by the print page).</summary>
+        public async Task<OrderModel> GetByIdAsync(Guid orderId)
+        {
+            return await GetAsync<OrderModel>($"api/orders/{orderId}");
+        }
+
+        /// <summary>Admin: customers aggregated by phone number.</summary>
+        public async Task<List<CustomerModel>> GetCustomersAsync(string searchTerm = null)
+        {
+            var url = "api/orders/customers";
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                url += $"?searchTerm={Uri.EscapeDataString(searchTerm)}";
+            }
+
+            return await GetAsync<List<CustomerModel>>(url);
         }
     }
 }

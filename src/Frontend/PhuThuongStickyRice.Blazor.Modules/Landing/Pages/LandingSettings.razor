@@ -4,6 +4,7 @@
 @using PhuThuongStickyRice.Blazor.Modules.Landing.Models
 @using PhuThuongStickyRice.Blazor.Modules.Landing.Services
 @inject LandingService LandingService
+@inject IJSRuntime JSRuntime
 
 <h3>Cài đặt trang landing</h3>
 <p class="text-muted">Nội dung bạn sửa ở đây sẽ hiển thị ngay trên trang chủ (landing page) của web.</p>
@@ -64,7 +65,7 @@ else
                                     <span class="text-muted"><small>Đang dùng ảnh mẫu</small></span>
                                 }
                             </div>
-                            <InputFile OnChange="@(e => OnImageSelected(e, slot))" accept="image/*"
+                            <InputFile id="@($"upload-{slot.Key}")" OnChange="@(e => OnImageSelected(e, slot))" accept="image/*"
                                        class="form-control-file mb-2" />
                             @if (_uploadingSlot == slot.Key)
                             {
@@ -253,8 +254,11 @@ else
         _uploadingSlot = slot.Key;
         try
         {
-            await using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
-            var url = await LandingService.UploadImageAsync(stream, file.Name, file.ContentType);
+            // Compress client-side (GIFs are passed through untouched to keep animation).
+            var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
+                "interop.compressImageFromInput", $"upload-{slot.Key}", 1600, 0.85);
+            using var stream = new System.IO.MemoryStream(compressed.Bytes);
+            var url = await LandingService.UploadImageAsync(stream, compressed.FileName, compressed.ContentType);
             slot.Set(url);
         }
         catch (Exception ex)
@@ -288,5 +292,13 @@ else
         {
             _saving = false;
         }
+    }
+
+    /// <summary>Shape of the object returned by interop.compressImageFromInput.</summary>
+    private sealed class CompressedImage
+    {
+        public byte[] Bytes { get; set; } = Array.Empty<byte>();
+        public string FileName { get; set; } = "image.jpg";
+        public string ContentType { get; set; } = "image/jpeg";
     }
 }

@@ -4,6 +4,7 @@ using PhuThuongStickyRice.Blazor.Modules.Landing.Services;
 using PhuThuongStickyRice.Blazor.Modules.Orders.Services;
 using PhuThuongStickyRice.Blazor.Modules.Products.Services;
 using PhuThuongStickyRice.Blazor.Modules.Shop.Services;
+using PhuThuongStickyRice.Blazor.Modules.Admin.Services;
 using PhuThuongStickyRice.BlazorWebAssembly.ConfigurationOptions;
 using PhuThuongStickyRice.BlazorWebAssembly.Services;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -77,6 +78,32 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
+
+            // Shop commerce settings (public GET, admin PUT via JWT).
+            builder.Services.AddHttpClient<ShopSettingsService, ShopSettingsService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Admin: discount codes + audit logs (authenticated).
+            builder.Services.AddHttpClient<DiscountService, DiscountService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            builder.Services.AddHttpClient<AuditLogService, AuditLogService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Toast notifications.
+            builder.Services.AddScoped<ToastService>();
 
             await builder.Build().RunAsync();
         }
