@@ -35,11 +35,11 @@
     Skip the publish + run Migrator step.
 
 .EXAMPLE
-    .\publish.ps1 -ApiUrl https://localhost:5001 -ConnectionString "Server=127.0.0.1;Database=PhuThuongStickyRice;User Id=sa;Password=YourPassword;MultipleActiveResultSets=true;Encrypt=False"
+    .\publish.ps1 -ApiUrl http://localhost:5001 -ConnectionString "Server=127.0.0.1;Database=PhuThuongStickyRice;User Id=sa;Password=YourPassword;MultipleActiveResultSets=true;Encrypt=False"
 #>
 [CmdletBinding()]
 param(
-    [string]$ApiUrl = "https://localhost:5001",
+    [string]$ApiUrl = "http://localhost:5001",
     [string]$OutputDir = "",
     [string]$Configuration = "Release",
     [string]$ConnectionString = "",
@@ -93,7 +93,10 @@ if (-not $SkipMigrator) {
     $oldCs = $env:ConnectionStrings__PhuThuongStickyRice
     try {
         $env:ASPNETCORE_ENVIRONMENT = "Production"
-        if (-not [string]::IsNullOrWhiteSpace($ConnectionString)) {
+        if ([string]::IsNullOrWhiteSpace($ConnectionString)) {
+            Write-Warning "No -ConnectionString: Migrator will use its own appsettings.json (currently points at a machine-specific SQL Server). Pass -ConnectionString to be safe."
+        }
+        else {
             $env:ConnectionStrings__PhuThuongStickyRice = $ConnectionString
         }
         $proc = Start-Process dotnet -ArgumentList "`"$migDll`"" -PassThru -NoNewWindow

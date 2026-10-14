@@ -16,7 +16,7 @@ Mở PowerShell **thường** (không cần admin) tại thư mục gốc repo:
 
 ```powershell
 cd deploy\iis
-.\publish.ps1 -ApiUrl https://localhost:5001 -ConnectionString "Server=127.0.0.1;Database=PhuThuongStickyRice;User Id=sa;Password=MAT_KHAU_THAT;MultipleActiveResultSets=true;Encrypt=False"
+.\publish.ps1 -ApiUrl http://localhost:5001 -ConnectionString "Server=127.0.0.1;Database=PhuThuongStickyRice;User Id=sa;Password=MAT_KHAU_THAT;MultipleActiveResultSets=true;Encrypt=False"
 ```
 
 Script sẽ:
@@ -27,7 +27,7 @@ Script sẽ:
 4. Sửa `web\wwwroot\appsettings.json` để frontend gọi API ở `-ApiUrl`
 5. Publish + chạy Migrator 1 lần (chạy migration + seed 5 món xôi + tài khoản admin), rồi tự dừng nó sau 60 giây
 
-Muốn bỏ bước Migrator: thêm `-SkipMigrator`. Muốn Migrator dùng connection string trong file của nó thì bỏ `-ConnectionString`.
+Muốn bỏ bước Migrator: thêm `-SkipMigrator`. Muốn Migrator dùng connection string trong file của nó thì bỏ `-ConnectionString` — nhưng lưu ý file `appsettings.json` của Migrator đang trỏ tới 1 SQL Server gắn với tên máy cụ thể, nên **nên luôn truyền `-ConnectionString`**.
 
 ## 3. Tạo site IIS
 
@@ -48,7 +48,8 @@ Muốn tạo tay trong IIS Manager cũng được: 2 site → cùng 1 app pool N
 |---|---|---|
 | `publish\api\appsettings.Production.json` | `ConnectionStrings` | Connection string SQL thật của PC |
 | `publish\api\appsettings.Production.json` | `Jwt:Key` | **Đổi ngay** — key mẫu đang public trong repo, ai có nó cũng giả được token admin |
-| `publish\api\appsettings.Production.json` | `CORS:AllowedOrigins` | Thêm URL site Web trên IIS (ví dụ `http://localhost:5000`), không thì trình duyệt chặn gọi API |
+| `publish\api\appsettings.Production.json` | `CORS:AllowedOrigins` | Đã có sẵn `http://localhost:5000` trong file mẫu — kiểm tra lại nếu site Web chạy port khác, và thêm domain thật khi có |
+| `publish\api\appsettings.Production.json` | `MoMo:StorefrontBaseUrl` / `ApiBaseUrl` | Đã set sẵn `http://localhost:5000` / `http://localhost:5001` cho IIS local — đổi theo URL thật nếu khác |
 | `publish\web\wwwroot\appsettings.json` | `ResourceServer.Endpoint` | Đã được `publish.ps1` sửa theo `-ApiUrl`; kiểm tra lại nếu đổi port sau đó |
 
 `MoMo` và `BankTransfer` trong `appsettings.json` vẫn đang để `xxx` (chế độ test). Điền thông tin thật sau, theo hướng dẫn trong README chính.
@@ -57,8 +58,13 @@ Muốn tạo tay trong IIS Manager cũng được: 2 site → cùng 1 app pool N
 
 - Mở `http://localhost:5000` → trang shop hiện danh sách xôi.
 - Đặt thử 1 đơn (COD) → vào `/track-order` tra cứu bằng mã đơn + SĐT.
-- Mở `http://localhost:5001/swagger` → API chạy (trang Swagger).
-- Đăng nhập admin: `admin@phuthuong.vn` / `Admin@123` → **đổi mật khẩu ngay** (trang đổi mật khẩu ở API: `POST /api/auth/change-password`).
+- Mở `http://localhost:5001/` → Swagger UI của API (nó nằm ở root, không phải `/swagger`).
+- Đăng nhập admin rồi **đổi mật khẩu ngay**. Chưa có trang đổi mật khẩu trong UI, đổi bằng API:
+
+```powershell
+$login = Invoke-RestMethod -Uri http://localhost:5001/api/auth/login -Method Post -Body (@{ UsernameOrEmail = "admin@phuthuong.vn"; Password = "<MAT_KHAU_HIEN_TAI>" } | ConvertTo-Json) -ContentType "application/json"
+Invoke-RestMethod -Uri http://localhost:5001/api/auth/change-password -Method Post -Headers @{ Authorization = "Bearer $($login.AccessToken)" } -Body (@{ CurrentPassword = "<MAT_KHAU_HIEN_TAI>"; NewPassword = "<MAT_KHAU_MOI>" } | ConvertTo-Json) -ContentType "application/json"
+```
 
 ## 6. Sự cố thường gặp
 
