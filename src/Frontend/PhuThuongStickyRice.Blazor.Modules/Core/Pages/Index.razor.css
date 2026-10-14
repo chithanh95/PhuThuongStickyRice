@@ -291,6 +291,69 @@
     max-width: 100%;
 }
 
+/* 4b. QUICK ORDER (Món bán chạy) */
+.lp-quick {
+    background: var(--lp-cream);
+}
+
+.lp-quick-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding: 2.5rem 2.5rem 0;
+    justify-content: center;
+}
+
+.lp-quick-loading {
+    color: var(--lp-maroon);
+}
+
+.lp-quick-card {
+    flex: 1 1 0;
+    min-width: 220px;
+    max-width: 340px;
+    background: #fff;
+    border: 1px solid #f0e7d5;
+    border-radius: 14px;
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.lp-quick-card img {
+    max-height: 180px;
+    max-width: 100%;
+    margin-bottom: 0.75rem;
+}
+
+.lp-quick-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.lp-quick-price {
+    color: var(--lp-maroon);
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin: 0.4rem 0 1rem;
+}
+
+.lp-quick-btn {
+    font-size: 0.95rem;
+    padding: 0.6rem 1.8rem;
+    margin-top: auto;
+}
+
+.lp-quick-added {
+    color: #2e7d32;
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 0.6rem 0;
+}
+
 /* Responsive */
 @media (max-width: 767.98px) {
     .lp-brand {
@@ -316,6 +379,10 @@
     .lp-news-panel,
     .lp-footer-contact {
         padding: 2rem 1.5rem;
+    }
+
+    .lp-quick-row {
+        padding: 2rem 1.5rem 0;
     }
 
     .lp-news-title-col {

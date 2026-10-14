@@ -1,4 +1,5 @@
 @inject NavigationManager NavigationManager
+@inject PhuThuongStickyRice.Blazor.Modules.Shop.Services.CartState CartState
 
 @using PhuThuongStickyRice.BlazorWebAssembly.Shared
 
@@ -19,6 +20,14 @@
     </Router>
 </CascadingAuthenticationState>
 
-@code{
-
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Restore the persisted cart from localStorage now that
+            // JS interop is available.
+            await CartState.InitializeAsync();
+        }
+    }
 }

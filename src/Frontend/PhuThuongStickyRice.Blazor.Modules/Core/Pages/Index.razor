@@ -1,7 +1,15 @@
 @page "/"
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
 @using PhuThuongStickyRice.Blazor.Modules.Landing.Models
 @using PhuThuongStickyRice.Blazor.Modules.Landing.Services
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Models
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
 @inject LandingService LandingService
+@inject ShopService ShopService
+@inject CartState CartState
 
 <!-- 1. HERO -->
 <section class="lp-hero">
@@ -60,6 +68,47 @@
     </div>
     <div class="text-center lp-menu-cta">
         <a href="/shop" class="lp-cta lp-cta-maroon">@_content.HeroButtonText</a>
+    </div>
+</section>
+
+<!-- 4b. QUICK ORDER: Món bán chạy -->
+<section class="lp-quick">
+    <div class="lp-menu-band">
+        <h2 class="lp-band-title">Món bán chạy</h2>
+    </div>
+    <div class="lp-quick-row">
+        @if (_quickProducts == null)
+        {
+            <p class="lp-quick-loading"><em>Đang tải món ngon...</em></p>
+        }
+        else if (_quickProducts.Count == 0)
+        {
+            <p class="lp-quick-loading"><em>Hiện chưa có món nào.</em></p>
+        }
+        else
+        {
+            @foreach (var product in _quickProducts)
+            {
+                <div class="lp-quick-card" @key="product.Id">
+                    <img src="@ProductImage(product.Code)" alt="@product.Name" />
+                    <div class="lp-quick-name">@product.Name</div>
+                    <div class="lp-quick-price">@FormatPrice(product.Price)</div>
+                    @if (_added.TryGetValue(product.Id, out var added) && added)
+                    {
+                        <div class="lp-quick-added">Đã thêm ✓</div>
+                    }
+                    else
+                    {
+                        <button class="lp-cta lp-cta-maroon lp-quick-btn" @onclick="() => QuickAdd(product)">
+                            Thêm vào giỏ
+                        </button>
+                    }
+                </div>
+            }
+        }
+    </div>
+    <div class="text-center lp-menu-cta">
+        <a href="/cart" class="lp-cta lp-cta-outline">Xem giỏ hàng →</a>
     </div>
 </section>
 
@@ -124,6 +173,8 @@
 
 @code {
     private LandingContentModel _content = new LandingContentModel();
+    private List<ShopProductModel> _quickProducts;
+    private readonly Dictionary<Guid, bool> _added = new Dictionary<Guid, bool>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -135,7 +186,54 @@
         {
             _content = new LandingContentModel();
         }
+
+        try
+        {
+            var paged = await ShopService.GetProductsAsync();
+            _quickProducts = (paged.Items ?? new List<ShopProductModel>()).Take(3).ToList();
+        }
+        catch (Exception)
+        {
+            _quickProducts = new List<ShopProductModel>();
+        }
     }
+
+    /// <summary>Add one item to the cart from the quick-order strip.</summary>
+    private void QuickAdd(ShopProductModel product)
+    {
+        CartState.Add(product, 1);
+
+        var id = product.Id;
+        _added[id] = true;
+
+        // Show the transient confirmation, then revert to the button.
+        _ = Task.Delay(2000).ContinueWith(_ => InvokeAsync(() =>
+        {
+            _added[id] = false;
+            StateHasChanged();
+        }));
+    }
+
+    /// <summary>SVG placeholder per product code (matches the shop page).</summary>
+    private static string ProductImage(string code)
+    {
+        var slug = (code ?? "").ToLowerInvariant()
+            .Replace("xoi-", "xoi-")
+            .Replace("_", "-");
+        var file = slug switch
+        {
+            "xoi-gac" => "xoi-gac.svg",
+            "xoi-do" => "xoi-do.svg",
+            "xoi-xeo" => "xoi-xeo.svg",
+            "xoi-vo" => "xoi-vo.svg",
+            "xoi-ns" => "xoi-ngu-sac.svg",
+            "xoi-ngu-sac" => "xoi-ngu-sac.svg",
+            _ => "xoi-gac.svg"
+        };
+        return $"_content/PhuThuongStickyRice.Blazor.Modules/images/{file}";
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
     /// <summary>Uploaded image URL if set, otherwise the SVG placeholder.</summary>
     private string Img(string uploadedUrl, string fallbackSvg) =>

@@ -260,6 +260,12 @@ else
             return;
         }
 
+        if (!IsValidPhone(_order.CustomerPhone))
+        {
+            _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            return;
+        }
+
         _submitting = true;
         try
         {
@@ -334,9 +340,12 @@ else
         }
     }
 
+    private static bool IsValidPhone(string phone) =>
+        !string.IsNullOrWhiteSpace(phone)
+        && System.Text.RegularExpressions.Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+
     private static bool IsValidEmail(string email)
-    {
-        var at = email.IndexOf('@');
+    {        var at = email.IndexOf('@');
         if (at <= 0 || at != email.LastIndexOf('@'))
         {
             return false;
