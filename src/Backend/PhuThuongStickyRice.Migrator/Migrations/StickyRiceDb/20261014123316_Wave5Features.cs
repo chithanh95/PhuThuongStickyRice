@@ -33,15 +33,14 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                 oldMaxLength: 100,
                 oldNullable: true);
 
-            migrationBuilder.AlterColumn<string>(
+            // NOTE: no earlier migration ever created Orders.Source (the model
+            // had it, but the AddColumn was missing), so this must ADD it.
+            migrationBuilder.AddColumn<string>(
                 name: "Source",
                 table: "Orders",
                 type: "nvarchar(50)",
                 maxLength: 50,
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(max)",
-                oldNullable: true);
+                nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "CheckIns",
@@ -288,15 +287,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                 oldMaxLength: 1000,
                 oldNullable: true);
 
-            migrationBuilder.AlterColumn<string>(
+            migrationBuilder.DropColumn(
                 name: "Source",
-                table: "Orders",
-                type: "nvarchar(max)",
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(50)",
-                oldMaxLength: 50,
-                oldNullable: true);
+                table: "Orders");
         }
     }
 }
