@@ -47,7 +47,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.AddressBook", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -87,7 +86,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.AppLog", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -130,7 +128,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Article", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -173,7 +170,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.AuditLogEntry", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -208,7 +204,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.BlacklistedPhone", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -251,7 +246,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Branch", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -290,7 +284,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CheckIn", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -330,7 +323,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Combo", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -372,7 +364,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.ComboItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -406,7 +397,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CorporateClient", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -465,7 +455,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CustomMigrationHistory", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -491,7 +480,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CustomerNote", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -533,7 +521,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CustomerPhoto", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -578,7 +565,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.DiscountCode", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -640,7 +626,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.DishCandidate", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -681,7 +666,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.EmailMessage", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -743,7 +727,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.FaqItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -782,7 +765,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.FeatureFlag", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -825,7 +807,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.GroupOrder", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -878,7 +859,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.LandingPageContent", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1051,7 +1031,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.LoginAudit", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1095,7 +1074,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.LoyaltyAccount", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1153,7 +1131,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.MessageTemplate", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1197,7 +1174,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Order", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1441,7 +1417,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.OrderLine", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1527,7 +1502,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.OrderReview", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1583,7 +1557,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.OrderReviewLine", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1624,7 +1597,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.OrderRewardRule", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1673,7 +1645,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.OrderStatusHistory", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1753,7 +1724,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.PasswordHistory", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1784,7 +1754,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.PolicyPage", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1827,7 +1796,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1918,7 +1886,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.ProductSizeOption", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -1961,7 +1928,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Promotion", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2005,7 +1971,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.QuoteRequest", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2054,7 +2019,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2086,7 +2050,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.RoleClaim", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2120,7 +2083,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.ShiftClose", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2166,7 +2128,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Shipper", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2204,7 +2165,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.ShopSetting", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2398,7 +2358,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.ShortLink", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2434,7 +2393,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Subscription", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2511,7 +2469,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.SupportTicket", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2566,7 +2523,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.TableQr", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2605,7 +2561,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Topping", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2643,7 +2598,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2730,7 +2684,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.UserClaim", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2764,7 +2717,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2797,7 +2749,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.UserToken", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2834,7 +2785,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.WalletAccount", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2874,7 +2824,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.WalletTransaction", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2922,7 +2871,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.WebhookDelivery", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -2971,7 +2919,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.WebhookEndpoint", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
@@ -3015,7 +2962,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.WorkShift", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
