@@ -1,10 +1,25 @@
 @page "/dashboard"
 @attribute [Authorize]
+@implements IDisposable
+@using System.Threading
 @using PhuThuongStickyRice.Blazor.Modules.Dashboard.Services
 @using PhuThuongStickyRice.Blazor.Modules.Orders.Models
 @inject DashboardService DashboardService
 
-<h3>Dashboard</h3>
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <h3 class="mb-2 mb-md-0">Dashboard</h3>
+    <div class="d-flex align-items-center flex-wrap">
+        @if (_stats != null)
+        {
+            <small class="text-muted mr-3 mb-1 mb-md-0">Cập nhật: @_lastUpdated.ToString("HH:mm:ss")</small>
+        }
+        <button class="btn btn-sm btn-outline-secondary mr-2 mb-1 mb-md-0" @onclick="RefreshNow" disabled="@_refreshing">⟳ Làm mới</button>
+        <div class="form-check form-check-inline mb-1 mb-md-0">
+            <input class="form-check-input" type="checkbox" id="autoRefreshToggle" @bind="_autoRefresh" />
+            <label class="form-check-label" for="autoRefreshToggle">Tự động (30s)</label>
+        </div>
+    </div>
+</div>
 
 @if (_stats == null)
 {
@@ -133,17 +148,65 @@ else
 
 @code {
     private DashboardStatsModel _stats;
+    private bool _autoRefresh = true;
+    private bool _refreshing;
+    private DateTime _lastUpdated = DateTime.Now;
+    private CancellationTokenSource _cts;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadStatsAsync();
+        _cts = new CancellationTokenSource();
+        _ = RefreshLoopAsync(_cts.Token);
+    }
+
+    private async Task LoadStatsAsync()
     {
         try
         {
             _stats = await DashboardService.GetStatsAsync();
+            _lastUpdated = DateTime.Now;
         }
         catch (Exception)
         {
-            _stats = new DashboardStatsModel();
+            _stats ??= new DashboardStatsModel();
         }
+    }
+
+    private async Task RefreshNow()
+    {
+        _refreshing = true;
+        try
+        {
+            await LoadStatsAsync();
+        }
+        finally
+        {
+            _refreshing = false;
+        }
+    }
+
+    private async Task RefreshLoopAsync(CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30), token);
+                if (_autoRefresh && !token.IsCancellationRequested)
+                {
+                    await LoadStatsAsync();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";

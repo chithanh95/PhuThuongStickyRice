@@ -46,7 +46,8 @@ tests/
 
 ### Web admin (đăng nhập)
 - `/dashboard` — thẻ thống kê: tổng đơn, doanh thu, món đã bán, đơn chờ xử lý;
-  đơn theo trạng thái, doanh thu 7 ngày, đơn mới nhất
+  đơn theo trạng thái, doanh thu 7 ngày, đơn mới nhất;
+  tự động làm mới mỗi 30s (có nút tắt/mở + nút làm mới thủ công)
 - `/orders` — tìm kiếm/lọc đơn, xem chi tiết, chuyển trạng thái
   (`Pending → Confirmed → Preparing → Delivering → Completed`, hoặc `Cancelled`)
 - `/products` — thêm/sửa/xóa món, đổi giá, kích hoạt/ngừng bán
