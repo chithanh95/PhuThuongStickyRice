@@ -88,11 +88,23 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
                 new { OrderNumber = orderNumber, CustomerPhone = phone, Lines = lines });
         }
 
+        /// <summary>
+        /// Submits the post-delivery survey. dishRatings: optional per-dish
+        /// stars as {ProductId, Rating} objects (Wave 6b, item 26).
+        /// </summary>
         public async Task<OrderReviewModel> SubmitReviewAsync(
-            string orderNumber, string phone, int rating, string comment)
+            string orderNumber, string phone, int rating, string comment,
+            List<object> dishRatings = null)
         {
             return await PostAsync<OrderReviewModel>("api/orders/track/review",
-                new { OrderNumber = orderNumber, CustomerPhone = phone, Rating = rating, Comment = comment });
+                new
+                {
+                    OrderNumber = orderNumber,
+                    CustomerPhone = phone,
+                    Rating = rating,
+                    Comment = comment,
+                    Lines = dishRatings ?? new List<object>()
+                });
         }
 
         public async Task<List<OrderReviewModel>> GetReviewsAsync()

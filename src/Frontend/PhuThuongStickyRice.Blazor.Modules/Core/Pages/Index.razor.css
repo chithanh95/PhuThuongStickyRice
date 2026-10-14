@@ -291,6 +291,27 @@
     max-width: 100%;
 }
 
+/* Wave 6b (item 28): policy links bar at the bottom of the footer. */
+.lp-policy-bar {
+    background: var(--lp-maroon);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.9rem 2rem;
+    text-align: center;
+}
+
+.lp-policy-bar a {
+    color: #fff;
+    opacity: 0.85;
+    font-size: 0.9rem;
+    margin: 0 0.8rem;
+    white-space: nowrap;
+}
+
+.lp-policy-bar a:hover {
+    opacity: 1;
+    color: var(--lp-yellow);
+}
+
 /* 4b. QUICK ORDER (Món bán chạy) */
 .lp-quick {
     background: var(--lp-cream);

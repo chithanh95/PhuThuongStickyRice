@@ -132,6 +132,19 @@ else
                     <option value="newest" selected="@(_sort == "newest")">Mới nhất</option>
                 </select>
             </div>
+            @* Wave 6b (item 29): client-side search by name, debounced. *@
+            <div class="mt-2" style="max-width: 420px;">
+                <div class="input-group input-group-sm">
+                    <input class="form-control" placeholder="Tìm món ăn..." aria-label="Tìm món ăn"
+                           value="@_searchTerm" @oninput="OnSearchInput" />
+                    @if (!string.IsNullOrWhiteSpace(_searchTerm))
+                    {
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" title="Xóa tìm kiếm" @onclick="ClearSearch">✕</button>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 
@@ -178,6 +191,11 @@ else
                             <h5 class="card-title">
                                 <a href="javascript:void(0)" class="text-dark" @onclick="() => OpenQuickView(product)">@product.Name</a>
                             </h5>
+                            @* Wave 6b (item 26): "★ 4.8 (12)" — hidden when no reviews. *@
+                            @if (RatingText(product) is string cardRating)
+                            {
+                                <div class="small text-muted mb-1">@cardRating</div>
+                            }
                             <div class="mb-1">
                                 @if (product.IsNew)
                                 {
@@ -247,6 +265,11 @@ else
                     <img src="@ProductImage(_quickView.Code)" alt="@_quickView.Name"
                          class="img-fluid rounded mb-3" style="max-height: 300px; width: 100%; object-fit: cover;" />
                     <p class="text-muted">@_quickView.Description</p>
+                    @* Wave 6b (item 26): "★ 4.8 (12)" — hidden when no reviews. *@
+                    @if (RatingText(_quickView) is string quickViewRating)
+                    {
+                        <p class="mb-2"><span class="text-muted">@quickViewRating</span></p>
+                    }
                     @if (!string.IsNullOrWhiteSpace(_quickView.AllergenInfo))
                     {
                         <div class="alert alert-warning py-2">
@@ -336,6 +359,23 @@ else
     private string _tagFilter;
     private string _sort = "popular";
 
+    // Wave 6b (item 29): client-side product search, debounced 300ms.
+    private string _searchTerm = string.Empty;
+    private System.Threading.CancellationTokenSource _searchCts;
+
+    // Wave 6b (item 26): per-product rating aggregates {avg, count}.
+    private Dictionary<Guid, (double Avg, int Count)> _ratings = new Dictionary<Guid, (double Avg, int Count)>();
+
+    private string RatingText(ShopProductModel product)
+    {
+        if (product == null || !_ratings.TryGetValue(product.Id, out var r) || r.Count <= 0)
+        {
+            return null;
+        }
+
+        return $"★ {r.Avg:0.0} ({r.Count})";
+    }
+
     // Item 109: branch picker.
     private List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.BranchModel> _branches;
     private Guid? _branchFilter;
@@ -417,6 +457,20 @@ else
             var bestSellersTask = ShopService.GetBestSellerIdsAsync();
 
             await Task.WhenAll(branchesTask, pagedTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
+
+            // Wave 6b (item 26): rating aggregates are fail-soft — the shop
+            // hides the stars when the call fails.
+            try
+            {
+                var ratings = await ShopService.GetProductRatingsAsync();
+                _ratings = (ratings ?? new List<ProductRatingModel>())
+                    .Where(r => r.ReviewCount > 0)
+                    .ToDictionary(r => r.ProductId, r => (r.AverageRating, r.ReviewCount));
+            }
+            catch (Exception)
+            {
+                _ratings = new Dictionary<Guid, (double Avg, int Count)>();
+            }
 
             _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Blazor.Modules.Admin.Models.BranchModel>();
             _products = pagedTask.Result.Items ?? new List<ShopProductModel>();
@@ -546,6 +600,40 @@ else
         _categoryFilter = null;
         _tagFilter = null;
         _sort = "popular";
+        ClearSearch();
+    }
+
+    /// <summary>
+    /// Wave 6b (item 29): debounced search input (300ms) over the loaded
+    /// product list; combined with the category/tag chips and sort.
+    /// </summary>
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value?.ToString() ?? string.Empty;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new System.Threading.CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(300, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (!token.IsCancellationRequested)
+        {
+            ApplyFilters();
+            StateHasChanged();
+        }
+    }
+
+    private void ClearSearch()
+    {
+        _searchCts?.Cancel();
+        _searchTerm = string.Empty;
         ApplyFilters();
     }
 
@@ -567,6 +655,13 @@ else
         if (!string.IsNullOrWhiteSpace(_tagFilter))
         {
             query = query.Where(p => ProductTags(p).Contains(_tagFilter));
+        }
+
+        // Wave 6b (item 29): name search (diacritics-sensitive).
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var term = _searchTerm.Trim();
+            query = query.Where(p => (p.Name ?? string.Empty).IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         _filtered = _sort switch
@@ -849,5 +944,7 @@ else
     public void Dispose()
     {
         I18n.OnChange -= OnLangChanged;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
     }
 }

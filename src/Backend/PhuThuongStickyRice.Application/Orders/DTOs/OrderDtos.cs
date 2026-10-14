@@ -302,6 +302,31 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         [StringLength(1000)]
         public string Comment { get; set; }
+
+        /// <summary>
+        /// Wave 6b (item 26): optional per-dish star ratings. Each entry
+        /// must reference a product of the order; entries for products not
+        /// in the order are ignored server-side.
+        /// </summary>
+        public List<SubmitReviewLineInput> Lines { get; set; } = new List<SubmitReviewLineInput>();
+    }
+
+    /// <summary>Wave 6b (item 26): per-dish star rating inside the survey.</summary>
+    public class SubmitReviewLineInput
+    {
+        public Guid ProductId { get; set; }
+
+        [Range(1, 5)]
+        public int Rating { get; set; }
+    }
+
+    public class OrderReviewLineDto
+    {
+        public Guid ProductId { get; set; }
+
+        public string ProductName { get; set; }
+
+        public int Rating { get; set; }
     }
 
     public class OrderReviewDto
@@ -325,6 +350,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string AdminReply { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>Wave 6b (item 26): per-dish star ratings.</summary>
+        public List<OrderReviewLineDto> Lines { get; set; } = new List<OrderReviewLineDto>();
     }
 
     /// <summary>Admin: hide/unhide a review.</summary>

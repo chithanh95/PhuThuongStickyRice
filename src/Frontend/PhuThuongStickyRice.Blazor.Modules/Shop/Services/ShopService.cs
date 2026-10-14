@@ -71,6 +71,19 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
             return await response.Content.ReadAs<List<Guid>>();
         }
 
+        /// <summary>
+        /// Wave 6b (item 26): per-product rating aggregates
+        /// {ProductId, AverageRating, ReviewCount}. Fail-soft: the shop
+        /// page hides the stars when this call fails.
+        /// </summary>
+        public async Task<List<ProductRatingModel>> GetProductRatingsAsync()
+        {
+            var response = await _httpClient.GetAsync("api/products/ratings");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAs<List<ProductRatingModel>>()
+                ?? new List<ProductRatingModel>();
+        }
+
         /// <summary>Quantity of items sold today ("Đã bán N gói hôm nay").</summary>
         public async Task<long> GetTodaySoldAsync()
         {

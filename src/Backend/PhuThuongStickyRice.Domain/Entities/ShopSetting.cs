@@ -168,6 +168,26 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Daily closing time ("HH:mm", Vietnam local time). Default "10:30".</summary>
         public string CloseTime { get; set; }
 
+        // ---- Wave 6b (items 27, 30) ----
+
+        /// <summary>
+        /// Hotline shown on the floating mobile call button (item 27).
+        /// Empty = fall back to the landing page ContactPhone.
+        /// </summary>
+        public string Hotline { get; set; }
+
+        /// <summary>
+        /// Phone used for the floating mobile Zalo chat button (item 27).
+        /// Empty = fall back to the landing page ContactPhone.
+        /// </summary>
+        public string ZaloPhone { get; set; }
+
+        /// <summary>
+        /// Wave 6b (item 30): when false, checkout is blocked with a
+        /// friendly message, even inside open hours. Default true.
+        /// </summary>
+        public bool AcceptingOrders { get; set; }
+
         // ---- Wave 5 (items 121/124/139) ----
 
         /// <summary>Loyalty points awarded per daily check-in. Default 5.</summary>
@@ -230,7 +250,10 @@ namespace PhuThuongStickyRice.Domain.Entities
                 NepPerPortionGrams = 150,
                 DailyTargetAmount = 2000000,
                 OpenTime = "06:00",
-                CloseTime = "10:30"
+                CloseTime = "10:30",
+                Hotline = null,
+                ZaloPhone = null,
+                AcceptingOrders = true
             };
         }
     }

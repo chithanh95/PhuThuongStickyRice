@@ -135,4 +135,18 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
 
         public bool IsActive { get; set; } = true;
     }
+
+    /// <summary>
+    /// Wave 6b (item 26): per-product rating aggregate for the public
+    /// <c>GET api/products/ratings</c> endpoint. Only non-hidden reviews
+    /// count; products without reviews are omitted.
+    /// </summary>
+    public class ProductRatingDto
+    {
+        public Guid ProductId { get; set; }
+
+        public double AverageRating { get; set; }
+
+        public int ReviewCount { get; set; }
+    }
 }

@@ -742,9 +742,13 @@ else
                         </div>
                     }
 
-                    <button class="btn btn-success btn-block btn-lg" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked)">
+                    <button class="btn btn-success btn-block btn-lg" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
                         @(_submitting ? "Đang xử lý..." : I18n.T("order_now"))
                     </button>
+                    @if (_orderingBlocked && !string.IsNullOrEmpty(_closedNotice))
+                    {
+                        <div class="alert alert-warning mt-2 mb-0">🔴 @_closedNotice</div>
+                    }
                 </div>
             </div>
         </div>
@@ -765,6 +769,14 @@ else
     private bool _markingTransferred;
     private bool _payingMoMo;
     private bool _minOrderBlocked;
+
+    /// <summary>
+    /// Wave 6b (item 30): true when the shop paused orders or is outside
+    /// open hours. Defense in depth — the server also rejects.
+    /// </summary>
+    private bool _orderingBlocked;
+
+    private string _closedNotice;
     private string _error;
 
     // Fulfillment: "Delivery" or "Pickup".
@@ -979,6 +991,8 @@ else
         }
 
         RefreshMinOrderState();
+        // Wave 6b (item 30): pause/hours notice for the submit button.
+        RefreshOrderingState();
         CartState.OnChange += OnCartChanged;
         I18n.OnChange += OnLangChanged;
         await I18n.InitializeAsync();
@@ -1073,6 +1087,33 @@ else
     private void RefreshMinOrderState()
     {
         _minOrderBlocked = _shopSettings.MinOrderAmount > 0 && _subtotal < _shopSettings.MinOrderAmount;
+    }
+
+    /// <summary>
+    /// Wave 6b (item 30): pause toggle + open-hours check for the checkout
+    /// notice and the disabled submit button. Mirrors the server gate in
+    /// OrderAppService.CreateAsync.
+    /// </summary>
+    private void RefreshOrderingState()
+    {
+        _orderingBlocked = false;
+        _closedNotice = null;
+
+        if (!_shopSettings.AcceptingOrders)
+        {
+            _orderingBlocked = true;
+            _closedNotice = "Quán đang tạm ngừng nhận đơn. Vui lòng quay lại sau.";
+            return;
+        }
+
+        if (!ShopHours.IsOpen(_shopSettings.OpenTime, _shopSettings.CloseTime))
+        {
+            var open = ShopHours.ParseOpen(_shopSettings.OpenTime);
+            var close = ShopHours.ParseClose(_shopSettings.CloseTime);
+            _orderingBlocked = true;
+            _closedNotice = $"Quán chỉ nhận đơn từ {open.Hours}:{open.Minutes:D2} đến {close.Hours}:{close.Minutes:D2}. " +
+                            "Vui lòng quay lại trong giờ mở cửa.";
+        }
     }
 
     /// <summary>VietQR image URL built from the shop's bank config + this order.</summary>
@@ -1300,6 +1341,13 @@ else
         if (_minOrderBlocked)
         {
             _error = $"Đơn hàng tối thiểu {FormatPrice(_shopSettings.MinOrderAmount)}. Vui lòng thêm món vào giỏ.";
+            return;
+        }
+
+        // Wave 6b (item 30): client-side guard; the server is the real gate.
+        if (_orderingBlocked)
+        {
+            _error = _closedNotice ?? "Quán đang tạm ngừng nhận đơn.";
             return;
         }
 

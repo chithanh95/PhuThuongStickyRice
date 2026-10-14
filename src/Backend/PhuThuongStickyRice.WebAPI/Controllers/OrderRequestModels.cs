@@ -116,6 +116,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public int Rating { get; set; }
 
         public string Comment { get; set; }
+
+        /// <summary>Wave 6b (item 26): optional per-dish star ratings.</summary>
+        public List<ReviewLineRequestModel> Lines { get; set; } = new List<ReviewLineRequestModel>();
+    }
+
+    public sealed class ReviewLineRequestModel
+    {
+        public Guid ProductId { get; set; }
+
+        public int Rating { get; set; }
     }
 
     public sealed class SpinRequestModel

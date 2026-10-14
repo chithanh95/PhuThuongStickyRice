@@ -11,6 +11,7 @@
 @inject LandingService LandingService
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
+@inject PolicyService PolicyService
 @inject CartState CartState
 @inject ToastService Toasts
 @inject PhuThuongStickyRice.Blazor.Modules.Admin.Services.Wave4Service Wave4Service
@@ -277,6 +278,17 @@
             </div>
         </div>
     </div>
+    @* Wave 6b (item 28): policy page links. *@
+    @if (_policies.Count > 0)
+    {
+        <div class="lp-policy-bar">
+            @foreach (var p in _policies)
+            {
+                <a href="/chinh-sach/@p.Slug">@p.Title</a>
+            }
+            <a href="/faq">Câu hỏi thường gặp</a>
+        </div>
+    }
 </footer>
 
 @code {
@@ -302,6 +314,9 @@
     // Wave 6a (item 22): open-hours display in the hero.
     private string _openStatusText;
     private bool _openNow;
+
+    // Wave 6b (item 28): policy pages for the footer links (fail-soft).
+    private List<PolicyPageSummaryModel> _policies = new List<PolicyPageSummaryModel>();
 
     /// <summary>
     /// Converts a YouTube watch/share URL to an embed URL.
@@ -358,6 +373,17 @@
         }
         catch (Exception)
         {
+        }
+
+        // Wave 6b (item 28): policy links for the footer (fail-soft).
+        try
+        {
+            _policies = await PolicyService.GetPublicListAsync()
+                ?? new List<PolicyPageSummaryModel>();
+        }
+        catch (Exception)
+        {
+            _policies = new List<PolicyPageSummaryModel>();
         }
 
         try

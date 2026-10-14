@@ -542,6 +542,15 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         /// <summary>Wave 6a (item 22): daily closing time "HH:mm" (VN time). Default "10:30".</summary>
         public string CloseTime { get; set; }
+
+        /// <summary>Wave 6b (item 27): hotline for the floating mobile call button.</summary>
+        public string Hotline { get; set; }
+
+        /// <summary>Wave 6b (item 27): phone for the floating mobile Zalo button.</summary>
+        public string ZaloPhone { get; set; }
+
+        /// <summary>Wave 6b (item 30): when false, checkout is blocked.</summary>
+        public bool AcceptingOrders { get; set; } = true;
     }
 
     /// <summary>Result of GET api/dashboard/today-sold.</summary>

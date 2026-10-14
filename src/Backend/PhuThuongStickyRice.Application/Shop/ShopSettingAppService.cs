@@ -114,6 +114,10 @@ namespace PhuThuongStickyRice.Application.Shop
             // Wave 6a (item 22): normalized to "HH:mm"; admin config UI arrives in Wave 6b.
             entity.OpenTime = NormalizeHour(dto.OpenTime, "06:00");
             entity.CloseTime = NormalizeHour(dto.CloseTime, "10:30");
+            // Wave 6b (items 27, 30): floating contact numbers + pause toggle.
+            entity.Hotline = TrimOrNull(dto.Hotline);
+            entity.ZaloPhone = TrimOrNull(dto.ZaloPhone);
+            entity.AcceptingOrders = dto.AcceptingOrders;
             await _settings.UpdateAsync(entity, autoSave: true);
 
             return MapToDto(entity);
@@ -239,7 +243,12 @@ namespace PhuThuongStickyRice.Application.Shop
                 NepPerPortionGrams = entity.NepPerPortionGrams < 1 ? 150 : entity.NepPerPortionGrams,
                 DailyTargetAmount = entity.DailyTargetAmount,
                 OpenTime = NormalizeHour(entity.OpenTime, "06:00"),
-                CloseTime = NormalizeHour(entity.CloseTime, "10:30")
+                CloseTime = NormalizeHour(entity.CloseTime, "10:30"),
+                // Wave 6b (items 27, 30). The migration backfills
+                // AcceptingOrders = true for pre-existing rows.
+                Hotline = entity.Hotline,
+                ZaloPhone = entity.ZaloPhone,
+                AcceptingOrders = entity.AcceptingOrders
             };
         }
     }

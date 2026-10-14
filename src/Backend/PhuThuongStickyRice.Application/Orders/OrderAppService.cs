@@ -4,6 +4,7 @@ using PhuThuongStickyRice.Application.Orders.Exceptions;
 using PhuThuongStickyRice.Application.Orders.Payments;
 using PhuThuongStickyRice.Application.Products.Exceptions;
 using PhuThuongStickyRice.Application.Shop;
+using PhuThuongStickyRice.Application.Shop.DTOs;
 using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Loyalty;
@@ -180,6 +181,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException("Order must contain at least one line.");
             }
 
+            // Wave 6b (item 30): pause toggle + open-hours gating. Checked
+            // first so a paused/closed shop rejects before any other work.
+            var shopSetting = await _shopSettings.GetAsync();
+            EnsureAcceptingOrders(shopSetting);
+
             // Item 97: idempotency — the same key retried within 24h returns
             // the existing order instead of creating a duplicate.
             var idempotencyKey = string.IsNullOrWhiteSpace(input.IdempotencyKey)
@@ -348,8 +354,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 promotionDiscount = Math.Round(subtotal * bestPromo.DiscountPercent / 100, 0);
             }
 
-            // Minimum order amount (shop setting).
-            var shopSetting = await _shopSettings.GetAsync();
+            // Minimum order amount (shop setting, loaded once at the top of CreateAsync).
 
             // Item 105: feature flags for the checkout extras (UI hides them
             // too; the backend is the real gate).
@@ -884,11 +889,70 @@ namespace PhuThuongStickyRice.Application.Orders
                 CustomerPhone = order.CustomerPhone,
                 Rating = input.Rating,
                 Comment = string.IsNullOrWhiteSpace(input.Comment) ? null : input.Comment.Trim(),
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                // Wave 6b (item 26): per-dish ratings. Only products that
+                // belong to this order are kept; one rating per product.
+                Lines = await BuildReviewLinesAsync(order.Id, input.Lines)
             };
             await _reviews.InsertAsync(review, autoSave: true);
 
             return MapReviewToDto(review);
+        }
+
+        /// <summary>
+        /// Wave 6b (item 26): validates per-dish ratings against the order's
+        /// own lines and resolves the product names server-side.
+        /// </summary>
+        private async Task<List<OrderReviewLine>> BuildReviewLinesAsync(
+            Guid orderId, List<SubmitReviewLineInput> lines)
+        {
+            var result = new List<OrderReviewLine>();
+            if (lines == null || lines.Count == 0)
+            {
+                return result;
+            }
+
+            var orderQueryable = await _orders.GetQueryableAsync();
+            // One order's lines only — grouped client-side to avoid
+            // provider-specific GROUP BY translation issues.
+            var orderLines = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Id == orderId)
+                    .SelectMany(x => x.Lines)
+                    .Select(x => new { x.ProductId, x.ProductName }));
+            var productNames = orderLines
+                .GroupBy(x => x.ProductId)
+                .ToDictionary(g => g.Key, g => g.First().ProductName);
+
+            foreach (var line in lines)
+            {
+                if (line == null || line.Rating < 1 || line.Rating > 5)
+                {
+                    continue;
+                }
+
+                var product = productNames.TryGetValue(line.ProductId, out var productName)
+                    ? productName
+                    : null;
+                if (product == null)
+                {
+                    continue;
+                }
+
+                if (result.Any(x => x.ProductId == line.ProductId))
+                {
+                    continue;
+                }
+
+                result.Add(new OrderReviewLine
+                {
+                    ProductId = line.ProductId,
+                    ProductName = product,
+                    Rating = line.Rating
+                });
+            }
+
+            return result;
         }
 
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
@@ -1036,8 +1100,48 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>
         /// Public lookup that also proves ownership via phone match.
         /// </summary>
-        private async Task<Order> FindByNumberAndPhoneAsync(string orderNumber, string customerPhone)
+        /// <summary>
+        /// Wave 6b (item 30): rejects checkout when the pause toggle is off
+        /// or the current Vietnam time (UTC+7, no DST) is outside the
+        /// configured open hours. Strict: no grace period after CloseTime.
+        /// </summary>
+        private static void EnsureAcceptingOrders(ShopSettingDto shopSetting)
         {
+            if (!shopSetting.AcceptingOrders)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Quán đang tạm ngừng nhận đơn. Vui lòng quay lại sau.");
+            }
+
+            var now = DateTimeOffset.UtcNow.AddHours(7).TimeOfDay;
+            var open = ParseHour(shopSetting.OpenTime, "06:00");
+            var close = ParseHour(shopSetting.CloseTime, "10:30");
+            if (close > open && (now < open || now >= close))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    $"Quán chỉ nhận đơn từ {FormatHour(open)} đến {FormatHour(close)}. " +
+                    "Vui lòng quay lại trong giờ mở cửa.");
+            }
+        }
+
+        private static TimeSpan ParseHour(string value, string fallback)
+        {
+            if (TimeSpan.TryParse(value?.Trim(), out var time)
+                && time >= TimeSpan.Zero && time < TimeSpan.FromDays(1))
+            {
+                return time;
+            }
+
+            TimeSpan.TryParse(fallback, out var fallbackTime);
+            return fallbackTime;
+        }
+
+        private static string FormatHour(TimeSpan time)
+        {
+            return $"{(int)time.TotalHours}:{time.Minutes:D2}";
+        }
+
+        private async Task<Order> FindByNumberAndPhoneAsync(string orderNumber, string customerPhone)        {
             var order = await _orders.GetByOrderNumberAsync(orderNumber?.Trim());
             if (order == null || !PhonesMatch(order.CustomerPhone, customerPhone))
             {
@@ -1059,7 +1163,13 @@ namespace PhuThuongStickyRice.Application.Orders
                 Comment = review.Comment,
                 IsHidden = review.IsHidden,
                 AdminReply = review.AdminReply,
-                CreatedAt = review.CreatedAt
+                CreatedAt = review.CreatedAt,
+                Lines = review.Lines?.Select(x => new OrderReviewLineDto
+                {
+                    ProductId = x.ProductId,
+                    ProductName = x.ProductName,
+                    Rating = x.Rating
+                }).ToList() ?? new List<OrderReviewLineDto>()
             };
         }
 

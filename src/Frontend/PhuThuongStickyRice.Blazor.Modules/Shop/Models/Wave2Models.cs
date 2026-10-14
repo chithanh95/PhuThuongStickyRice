@@ -161,6 +161,19 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public string AdminReply { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>Wave 6b (item 26): per-dish star ratings.</summary>
+        public List<OrderReviewLineModel> Lines { get; set; } = new List<OrderReviewLineModel>();
+    }
+
+    /// <summary>Wave 6b (item 26): per-dish star rating inside a review.</summary>
+    public class OrderReviewLineModel
+    {
+        public Guid ProductId { get; set; }
+
+        public string ProductName { get; set; }
+
+        public int Rating { get; set; }
     }
 
     public class ZaloStatusModel

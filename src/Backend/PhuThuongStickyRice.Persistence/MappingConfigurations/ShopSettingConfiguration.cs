@@ -60,6 +60,11 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Wave 6a (item 22): open-hours display ("HH:mm").
             builder.Property(x => x.OpenTime).HasMaxLength(5);
             builder.Property(x => x.CloseTime).HasMaxLength(5);
+
+            // Wave 6b (items 27, 30): floating contact numbers + pause-orders toggle.
+            builder.Property(x => x.Hotline).HasMaxLength(30);
+            builder.Property(x => x.ZaloPhone).HasMaxLength(30);
+            builder.Property(x => x.AcceptingOrders).IsRequired();
         }
     }
 }

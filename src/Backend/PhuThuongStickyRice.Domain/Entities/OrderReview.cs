@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Domain.Entities
 {
@@ -31,5 +32,11 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string AdminReply { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>
+        /// Wave 6b (item 26): per-dish star ratings for the products of
+        /// this order. Loaded explicitly where needed.
+        /// </summary>
+        public List<OrderReviewLine> Lines { get; set; } = new List<OrderReviewLine>();
     }
 }

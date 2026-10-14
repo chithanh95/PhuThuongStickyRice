@@ -227,6 +227,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _dashboardAppService.GetBestSellerProductIdsAsync(top));
         }
 
+        /// <summary>
+        /// Wave 6b (item 26): public per-product rating aggregates
+        /// {ProductId, AverageRating, ReviewCount} from non-hidden reviews.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("ratings")]
+        public async Task<ActionResult> GetRatings(
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _productAppService.GetProductRatingsAsync());
+        }
+
         [HttpGet("exportaspdf")]
         public async Task<IActionResult> ExportAsPdf(CancellationToken cancellationToken = default)
         {

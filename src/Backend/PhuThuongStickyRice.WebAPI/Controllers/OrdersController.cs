@@ -300,7 +300,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     OrderNumber = model?.OrderNumber,
                     CustomerPhone = model?.CustomerPhone,
                     Rating = model?.Rating ?? 0,
-                    Comment = model?.Comment
+                    Comment = model?.Comment,
+                    Lines = model?.Lines?
+                        .Select(x => new SubmitReviewLineInput
+                        {
+                            ProductId = x.ProductId,
+                            Rating = x.Rating
+                        })
+                        .ToList() ?? new System.Collections.Generic.List<SubmitReviewLineInput>()
                 });
                 return Ok(review);
             }

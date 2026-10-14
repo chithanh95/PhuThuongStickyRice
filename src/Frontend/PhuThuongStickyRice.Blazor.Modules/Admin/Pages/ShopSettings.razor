@@ -45,6 +45,40 @@ else
                 <small class="form-text text-muted">Hiển thị ở trang đặt hàng, VD: 45 → “Dự kiến giao trong 30–45 phút”. Đặt 0 để ẩn.</small>
             </div>
 
+            <h5 class="mt-4">Giờ mở cửa &amp; nhận đơn (mục 30)</h5>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="set-accepting" @bind="_model.AcceptingOrders" />
+                <label class="form-check-label" for="set-accepting">
+                    <strong>Nhận đơn hàng</strong> — tắt để tạm ngừng nhận đơn (trang đặt hàng hiển thị thông báo, server từ chối đơn mới)
+                </label>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Giờ mở cửa (HH:mm)</label>
+                    <input class="form-control" @bind="_model.OpenTime" placeholder="06:00" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Giờ đóng cửa (HH:mm)</label>
+                    <input class="form-control" @bind="_model.CloseTime" placeholder="10:30" />
+                </div>
+            </div>
+            <small class="form-text text-muted mb-3">Ngoài giờ này khách không thể đặt đơn, kể cả khi đang bật "Nhận đơn hàng". Giờ Việt Nam (UTC+7).</small>
+
+            <h5 class="mt-4">Nút gọi/Zalo trên di động (mục 27)</h5>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Hotline</label>
+                    <input class="form-control" @bind="_model.Hotline" placeholder="0901 234 567" />
+                    <small class="form-text text-muted">Nút "📞 Gọi ngay" (tel: link).</small>
+                </div>
+                <div class="form-group col-md-6">
+                    <label>SĐT Zalo</label>
+                    <input class="form-control" @bind="_model.ZaloPhone" placeholder="0901 234 567" />
+                    <small class="form-text text-muted">Nút chat Zalo (zalo.me/số-điện-thoại).</small>
+                </div>
+            </div>
+            <small class="form-text text-muted mb-3">Để trống = dùng số điện thoại trong chân trang landing. Các nút chỉ hiện trên điện thoại.</small>
+
             <h5 class="mt-4">Chuyển khoản & đặt cọc</h5>
             <div class="form-group">
                 <label>Tự động hủy đơn chuyển khoản chưa thanh toán sau (phút)</label>

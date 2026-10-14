@@ -32,6 +32,12 @@ namespace PhuThuongStickyRice.Application.Products
         /// Discontinued products cannot be toggled.
         /// </summary>
         Task<ProductDto> ToggleAvailabilityAsync(Guid id);
+
+        /// <summary>
+        /// Wave 6b (item 26): public per-product rating aggregates from
+        /// non-hidden order reviews. Products without reviews are omitted.
+        /// </summary>
+        Task<List<ProductRatingDto>> GetProductRatingsAsync();
     }
 
     public class ProductAppService : ApplicationService, IProductAppService
@@ -42,6 +48,7 @@ namespace PhuThuongStickyRice.Application.Products
         private readonly IObjectMapper _objectMapper;
         private readonly Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> _sizeOptions;
         private readonly IProductCatalogCache _catalogCache;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> _reviews;
 
         public ProductAppService(
             IProductRepository products,
@@ -49,7 +56,8 @@ namespace PhuThuongStickyRice.Application.Products
             IAsyncQueryableExecuter asyncExecuter,
             IObjectMapper objectMapper,
             Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> sizeOptions,
-            IProductCatalogCache catalogCache)
+            IProductCatalogCache catalogCache,
+            Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> reviews)
         {
             _products = products;
             _domainEvents = domainEvents;
@@ -57,6 +65,7 @@ namespace PhuThuongStickyRice.Application.Products
             _objectMapper = objectMapper;
             _sizeOptions = sizeOptions;
             _catalogCache = catalogCache;
+            _reviews = reviews;
         }
 
         public async Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input)
@@ -237,6 +246,35 @@ namespace PhuThuongStickyRice.Application.Products
             await _products.DeleteAsync(product);
             await _domainEvents.DispatchAsync(new EntityDeletedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
+        }
+
+        /// <summary>
+        /// Wave 6b (item 26): public per-product rating aggregates. One
+        /// GROUP BY query over the review lines of non-hidden reviews;
+        /// cached for 5 minutes like the public catalog.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public async Task<List<ProductRatingDto>> GetProductRatingsAsync()
+        {
+            return await _catalogCache.GetOrAddAsync(
+                "product-ratings",
+                QueryProductRatingsAsync);
+        }
+
+        private async Task<List<ProductRatingDto>> QueryProductRatingsAsync()
+        {
+            var reviewQueryable = await _reviews.GetQueryableAsync();
+            var query = reviewQueryable
+                .Where(x => !x.IsHidden)
+                .SelectMany(x => x.Lines)
+                .GroupBy(x => x.ProductId)
+                .Select(g => new ProductRatingDto
+                {
+                    ProductId = g.Key,
+                    AverageRating = g.Average(x => x.Rating),
+                    ReviewCount = g.Count()
+                });
+            return await _asyncExecuter.ToListAsync(query);
         }
 
         private async Task<Product> FindOrThrowAsync(Guid id)

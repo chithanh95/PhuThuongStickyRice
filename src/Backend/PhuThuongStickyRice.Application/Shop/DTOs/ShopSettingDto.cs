@@ -181,5 +181,18 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         /// <summary>Daily closing time ("HH:mm", Vietnam local time). Default "10:30".</summary>
         [StringLength(5)]
         public string CloseTime { get; set; }
+
+        // ---- Wave 6b (items 27, 30) ----
+
+        /// <summary>Hotline for the floating mobile call button. Empty = landing ContactPhone.</summary>
+        [StringLength(30)]
+        public string Hotline { get; set; }
+
+        /// <summary>Phone for the floating mobile Zalo button. Empty = landing ContactPhone.</summary>
+        [StringLength(30)]
+        public string ZaloPhone { get; set; }
+
+        /// <summary>When false, checkout is blocked. Default true.</summary>
+        public bool AcceptingOrders { get; set; } = true;
     }
 }

@@ -1,5 +1,6 @@
 @page "/track-order"
 @using System
+@using System.Collections.Generic
 @using System.Linq
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
@@ -313,6 +314,29 @@
                         }
                         else
                         {
+                            @* Wave 6b (item 26): per-dish star inputs, one row per order line. *@
+                            @if (_order.Lines != null && _order.Lines.Count > 0)
+                            {
+                                <p class="mb-1"><strong>Đánh giá từng món:</strong> <small class="text-muted">(tùy chọn)</small></p>
+                                @foreach (var line in _order.Lines)
+                                {
+                                    var l = line;
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="small text-truncate mr-2" style="max-width: 60%;">@l.ProductName</span>
+                                        <span style="white-space: nowrap;">
+                                            @for (var star = 1; star <= 5; star++)
+                                            {
+                                                var s = star;
+                                                <button type="button" class="btn btn-link p-0"
+                                                        style="font-size: 20px; color: @(s <= LineRating(l.Id) ? "#f6c453" : "#ccc"); text-decoration: none;"
+                                                        @onclick="() => SetLineRating(l.Id, s)">★</button>
+                                            }
+                                        </span>
+                                    </div>
+                                }
+                                <hr class="my-2" />
+                            }
+                            <p class="mb-1"><strong>Đánh giá chung:</strong></p>
                             <div class="mb-2">
                                 @for (var star = 1; star <= 5; star++)
                                 {
@@ -512,6 +536,19 @@
     private string _reviewError;
 
     /// <summary>
+    /// Wave 6b (item 26): per-dish star ratings keyed by order line id.
+    /// </summary>
+    private readonly Dictionary<Guid, int> _lineRatings = new Dictionary<Guid, int>();
+
+    private int LineRating(Guid lineId) =>
+        _lineRatings.TryGetValue(lineId, out var r) ? r : 0;
+
+    private void SetLineRating(Guid lineId, int stars)
+    {
+        _lineRatings[lineId] = stars;
+    }
+
+    /// <summary>
     /// Copies the track-order URL with ?orderNumber= prefilled so the
     /// customer can pay later from any device (reusable payment link).
     /// </summary>
@@ -636,6 +673,7 @@
         _reviewSubmitted = false;
         _rating = 0;
         _reviewComment = null;
+        _lineRatings.Clear();
         _editingLines = false;
         _loyalty = null;
         _birthdayInput = null;
@@ -1001,8 +1039,13 @@
         _submittingReview = true;
         try
         {
+            // Wave 6b (item 26): per-dish stars for lines the customer rated.
+            var dishRatings = _order.Lines?
+                .Where(l => _lineRatings.TryGetValue(l.Id, out var r) && r >= 1)
+                .Select(l => (object)new { ProductId = l.ProductId, Rating = _lineRatings[l.Id] })
+                .ToList() ?? new List<object>();
             await Wave2Service.SubmitReviewAsync(
-                _order.OrderNumber, _order.CustomerPhone, _rating, _reviewComment);
+                _order.OrderNumber, _order.CustomerPhone, _rating, _reviewComment, dishRatings);
             _reviewSubmitted = true;
         }
         catch (Exception ex)
