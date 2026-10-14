@@ -1,5 +1,5 @@
 @page "/admin/tinh-nang"
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Blazor.Modules.Admin.Models
 @using PhuThuongStickyRice.Blazor.Modules.Admin.Services
 @inject Wave4Service Wave4Service

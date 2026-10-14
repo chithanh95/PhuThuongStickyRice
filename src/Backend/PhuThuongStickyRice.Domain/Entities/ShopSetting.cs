@@ -156,6 +156,23 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>JSON settings for the image backup provider (e.g. connection string).</summary>
         public string ImageBackupSettingsJson { get; set; }
 
+        // ---- Wave 5 (items 121/124/139) ----
+
+        /// <summary>Loyalty points awarded per daily check-in. Default 5.</summary>
+        public int CheckInPoints { get; set; }
+
+        /// <summary>
+        /// Grams of nếp per sold portion, used by the ingredient forecast
+        /// heuristic (item 124). Default 150.
+        /// </summary>
+        public int NepPerPortionGrams { get; set; }
+
+        /// <summary>
+        /// Daily revenue target in VND shown on the dashboard (item 139).
+        /// Default 2000000.
+        /// </summary>
+        public decimal DailyTargetAmount { get; set; }
+
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting
@@ -196,7 +213,10 @@ namespace PhuThuongStickyRice.Domain.Entities
                 MoMoPartnerCode = null,
                 MoMoEndpoint = null,
                 ImageBackupProvider = "None",
-                ImageBackupSettingsJson = null
+                ImageBackupSettingsJson = null,
+                CheckInPoints = 5,
+                NepPerPortionGrams = 150,
+                DailyTargetAmount = 2000000
             };
         }
     }

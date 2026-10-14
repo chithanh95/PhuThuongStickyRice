@@ -31,7 +31,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         public string Notes { get; set; }
 
-        /// <summary>"Cod" (default), "BankTransfer" or "MoMo".</summary>
+        /// <summary>"Cod" (default), "BankTransfer", "MoMo" or "Wallet".</summary>
         public string PaymentMethod { get; set; }
 
         /// <summary>Optional discount/promo code.</summary>
@@ -74,6 +74,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         /// <summary>reCAPTCHA v3 token (verified when reCAPTCHA is enabled).</summary>
         public string RecaptchaToken { get; set; }
+
+        /// <summary>
+        /// Order source (item 133): "Web", "QR bàn", "Link chia sẻ", "Nhóm".
+        /// Set by the storefront from shop entry params.
+        /// </summary>
+        public string Source { get; set; }
 
         public List<CreateOrderLineRequestModel> Lines { get; set; } = new List<CreateOrderLineRequestModel>();
     }

@@ -185,6 +185,10 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 throw new DomainException("Invalid simulated MoMo signature.");
             }
 
+            // Item 128: simulated callbacks have no OrderInfo; the verified
+            // echo-signature itself proves the callback belongs to this order.
+            order.MarkMoMoMatched();
+
             return await ApplyResultAsync(order, callback.ResultCode);
         }
 
@@ -214,6 +218,17 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 throw new DomainException("Invalid MoMo callback signature.");
             }
 
+            // Item 128: auto-match — parse the order number out of OrderInfo
+            // and flag the order when it matches this order. Full automatic
+            // reconciliation (amounts, settlement files) needs the MoMo
+            // business API; see the /admin/doi-soat-momo docs.
+            var parsedNumber = ParseOrderNumberFromOrderInfo(callback.OrderInfo);
+            if (!string.IsNullOrEmpty(parsedNumber)
+                && string.Equals(parsedNumber, order.OrderNumber, StringComparison.OrdinalIgnoreCase))
+            {
+                order.MarkMoMoMatched();
+            }
+
             return await ApplyResultAsync(order, callback.ResultCode);
         }
 
@@ -241,6 +256,22 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
 
             await _orders.UpdateAsync(order);
             return order;
+        }
+
+        /// <summary>
+        /// Item 128: extracts the merchant order number (e.g. "PX-20261014-4821")
+        /// from MoMo's free-text OrderInfo. Returns null when none is found.
+        /// </summary>
+        private static string ParseOrderNumberFromOrderInfo(string orderInfo)
+        {
+            if (string.IsNullOrWhiteSpace(orderInfo))
+            {
+                return null;
+            }
+
+            var match = System.Text.RegularExpressions.Regex.Match(
+                orderInfo, @"PX-\d{8}-\d+");
+            return match.Success ? match.Value : null;
         }
 
         private async Task<string> BuildCreateSignatureAsync(Order order)

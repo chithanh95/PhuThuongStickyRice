@@ -1,0 +1,63 @@
+@page "/anh-khach-hang"
+@using PhuThuongStickyRice.Blazor.Modules.Shop.Services
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@inject Wave5Service Wave5Service
+@inject ShopI18n I18n
+@implements IDisposable
+
+<h3>@I18n.T("gallery")</h3>
+<p class="text-muted">Những món xôi do chính khách hàng của chúng tôi chụp 📸</p>
+
+@if (_photos == null)
+{
+    <p><em>@I18n.T("loading")</em></p>
+}
+else if (_photos.Count == 0)
+{
+    <div class="alert alert-info">Chưa có ảnh nào. Hãy là người đầu tiên chia sẻ sau khi nhận món nhé!</div>
+}
+else
+{
+    <div class="row">
+        @foreach (var p in _photos)
+        {
+            <div class="col-6 col-md-4 col-lg-3 mb-3">
+                <div class="card h-100">
+                    <img src="@Wave5Service.ResolveImageUrl(p.ImageUrl)" class="card-img-top" alt="Ảnh món ăn của khách hàng" style="height:200px;object-fit:cover;" loading="lazy" />
+                    @if (!string.IsNullOrWhiteSpace(p.Caption))
+                    {
+                        <div class="card-body p-2">
+                            <p class="card-text small mb-0">@p.Caption</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<CustomerPhotoModel> _photos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        I18n.OnChange += OnLangChanged;
+        await I18n.InitializeAsync();
+        try
+        {
+            _photos = await Wave5Service.GetApprovedPhotosAsync();
+        }
+        catch (Exception)
+        {
+            _photos = new List<CustomerPhotoModel>();
+        }
+    }
+
+    private void OnLangChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        I18n.OnChange -= OnLangChanged;
+    }
+}

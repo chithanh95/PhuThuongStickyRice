@@ -12,6 +12,9 @@ namespace PhuThuongStickyRice.Domain.Entities
         BankTransfer = 1,
 
         /// <summary>MoMo e-wallet (test/simulated until real merchant credentials exist).</summary>
-        MoMo = 2
+        MoMo = 2,
+
+        /// <summary>Customer prepaid wallet balance (item 140).</summary>
+        Wallet = 3
     }
 }

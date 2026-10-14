@@ -27,6 +27,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int ReferralCodeMaxLength = 20;
         public const int IdempotencyKeyMaxLength = 100;
         public const int PromotionNameMaxLength = 100;
+        public const int SourceMaxLength = 50;
 
         public string OrderNumber { get; private set; }
 
@@ -134,6 +135,24 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Auto-applied promotion discount in the order currency.</summary>
         public decimal PromotionDiscountAmount { get; private set; }
 
+        /// <summary>
+        /// Where the order came from (item 133): "Web", "QR bàn",
+        /// "Link chia sẻ" or "Nhóm". Set at creation from shop entry params.
+        /// </summary>
+        public string Source { get; private set; }
+
+        /// <summary>
+        /// Item 128: true when a MoMo IPN callback was matched to this order
+        /// by parsing the order number out of the callback's OrderInfo.
+        /// </summary>
+        public bool MoMoMatched { get; private set; }
+
+        /// <summary>Refund state (item 130): money movement is manual.</summary>
+        public RefundStatus RefundStatus { get; private set; }
+
+        /// <summary>Refund amount in VND (0 when no refund).</summary>
+        public decimal RefundAmount { get; private set; }
+
         public DateTime CreatedAt { get; private set; }
 
         private readonly List<OrderLine> _lines = new List<OrderLine>();
@@ -174,7 +193,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string promotionName = null,
             decimal promotionDiscountAmount = 0,
             Guid? branchId = null,
-            string branchName = null)
+            string branchName = null,
+            string source = null)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
@@ -228,6 +248,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             PromotionDiscountAmount = promo;
             BranchId = branchId;
             BranchName = string.IsNullOrWhiteSpace(branchName) ? null : branchName.Trim();
+            Source = string.IsNullOrWhiteSpace(source) ? "Web" : source.Trim();
+            MoMoMatched = false;
+            RefundStatus = RefundStatus.None;
+            RefundAmount = 0;
             TotalAmount = Money.Of(subtotal - promo - discount - loyalty - tier + fee + gift, currency);
         }
 
@@ -261,7 +285,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string promotionName = null,
             decimal promotionDiscountAmount = 0,
             Guid? branchId = null,
-            string branchName = null)
+            string branchName = null,
+            string source = null)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -364,7 +389,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 promotionName,
                 promotionDiscountAmount,
                 branchId,
-                branchName);
+                branchName,
+                source);
         }
 
         /// <summary>
@@ -373,6 +399,57 @@ namespace PhuThuongStickyRice.Domain.Entities
         public void MarkLuckySpinUsed()
         {
             LuckySpinUsed = true;
+        }
+
+        /// <summary>
+        /// Item 128: flags the order as auto-matched by the MoMo IPN callback
+        /// (the callback's OrderInfo contained this order's number).
+        /// </summary>
+        public void MarkMoMoMatched()
+        {
+            MoMoMatched = true;
+        }
+
+        /// <summary>
+        /// Item 130: admin requests a refund (records the intent; the money
+        /// movement is manual — cash / bank / wallet credit).
+        /// </summary>
+        public void RequestRefund(decimal amount, string reason)
+        {
+            if (RefundStatus != RefundStatus.None)
+            {
+                throw new DomainException("Đã có yêu cầu hoàn tiền cho đơn này.");
+            }
+
+            if (amount <= 0)
+            {
+                throw new DomainException("Số tiền hoàn phải lớn hơn 0.");
+            }
+
+            if (amount > TotalAmount.Amount)
+            {
+                throw new DomainException("Số tiền hoàn không được vượt quá tổng đơn.");
+            }
+
+            RefundStatus = RefundStatus.Requested;
+            RefundAmount = amount;
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                AddRewardNote("Hoàn tiền: " + reason.Trim());
+            }
+        }
+
+        /// <summary>
+        /// Item 130: records the refund as paid out (money moved manually).
+        /// </summary>
+        public void ConfirmRefund()
+        {
+            if (RefundStatus != RefundStatus.Requested)
+            {
+                throw new DomainException("Chưa có yêu cầu hoàn tiền nào đang chờ.");
+            }
+
+            RefundStatus = RefundStatus.Refunded;
         }
 
         /// <summary>

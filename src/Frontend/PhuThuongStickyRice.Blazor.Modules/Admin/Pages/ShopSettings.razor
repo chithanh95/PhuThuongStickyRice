@@ -83,6 +83,23 @@ else
                 <input type="number" min="0" class="form-control" @bind="_model.ReferralBonusPoints" />
                 <small class="form-text text-muted">Thưởng khi đơn đầu tiên có mã giới thiệu được hoàn thành.</small>
             </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Điểm thưởng điểm danh mỗi ngày</label>
+                    <input type="number" min="0" max="1000" class="form-control" @bind="_model.CheckInPoints" />
+                    <small class="form-text text-muted">Mỗi SĐT điểm danh 1 lần/ngày ở trang tra cứu đơn.</small>
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Định mức nếp (g/suất)</label>
+                    <input type="number" min="1" max="1000" class="form-control" @bind="_model.NepPerPortionGrams" />
+                    <small class="form-text text-muted">Dùng cho dự báo nguyên liệu.</small>
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Mục tiêu doanh thu ngày (₫)</label>
+                    <input type="number" min="0" step="100000" class="form-control" @bind="_model.DailyTargetAmount" />
+                    <small class="form-text text-muted">Hiện thanh tiến độ trên dashboard.</small>
+                </div>
+            </div>
 
             <h5 class="mt-4">Hạng thành viên</h5>
             <div class="form-row">

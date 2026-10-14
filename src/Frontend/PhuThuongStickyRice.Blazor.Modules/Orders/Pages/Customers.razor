@@ -1,5 +1,5 @@
 @page "/customers"
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin,Cashier")]
 @implements IDisposable
 @using System.Threading
 @using PhuThuongStickyRice.Blazor.Modules.Orders.Services

@@ -1,0 +1,114 @@
+@page "/admin/huong-dan"
+@attribute [Authorize]
+
+<h3>📖 Hướng dẫn vận hành</h3>
+<p class="text-muted">Sổ tay nhanh cho nhân viên quầy / bếp / admin.</p>
+
+<div class="accordion" id="handbook">
+    <div class="card">
+        <div class="card-header"><strong>1. Xác nhận đơn hàng</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li>Mở <strong>Đơn hàng</strong> — đơn mới ở trạng thái <em>Chờ xác nhận</em>.</li>
+                <li>Kiểm tra món, số lượng, địa chỉ, ghi chú của khách.</li>
+                <li>Bấm <strong>Xác nhận</strong>. Đơn chuyển khoản: chờ khách báo đã chuyển rồi bấm <strong>Xác nhận thanh toán</strong>.</li>
+                <li>Đơn quá giờ chưa xác nhận sẽ hiện cảnh báo trên dashboard.</li>
+            </ol>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><strong>2. Màn hình bếp (KDS)</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li>Mở <strong>/bep</strong> trên máy tính bảng ở bếp (tài khoản bếp).</li>
+                <li>Đơn mới hiện cột <em>Đã xác nhận</em> — chạm <strong>Bắt đầu làm</strong> khi vào bếp.</li>
+                <li>Xong món → chạm <strong>Giao hàng / Hoàn thành</strong> để chuyển trạng thái.</li>
+                <li>Màn hình tự làm mới mỗi 20 giây.</li>
+            </ol>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><strong>3. In hóa đơn & tem dán</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li>Trong chi tiết đơn, bấm <strong>In hóa đơn</strong> (khổ A5) đưa cho khách.</li>
+                <li><strong>In tem dán hộp</strong>: tem nhỏ dán lên từng hộp xôi (tên món, ghi chú "ít hành"...).</li>
+                <li>Kiểm tra máy in trước giờ cao điểm sáng.</li>
+            </ol>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><strong>4. Giao shipper</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li>Đơn ở trạng thái <em>Đang chuẩn bị</em> → chọn shipper ở mục <strong>Gán shipper</strong>.</li>
+                <li>Báo shipper số đơn + địa chỉ + số tiền thu hộ (COD).</li>
+                <li>Shipper giao xong → bấm <strong>Hoàn thành</strong> trên đơn.</li>
+            </ol>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><strong>5. Kết ca cuối ngày</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li>Mở <strong>Kết ca</strong> — hệ thống tự tính <em>tiền COD dự kiến</em> từ các đơn đã hoàn thành.</li>
+                <li>Đếm tiền mặt thực tế, nhập vào ô <em>Thực tế</em>, bấm <strong>Chốt ca</strong>.</li>
+                <li>Nếu chênh lệch ≠ 0: kiểm tra lại đơn COD và tiền lẻ trong két, ghi chú lý do.</li>
+            </ol>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><strong>6. Khách "bom hàng" / quấy rối</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li>Mở <strong>Chặn SĐT</strong>, thêm số điện thoại vào danh sách chặn.</li>
+                <li>SĐT bị chặn không đặt được đơn mới trên web.</li>
+                <li>Chỉ admin mới được gỡ chặn.</li>
+            </ol>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><strong>7. Khuyến mãi & voucher</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li><strong>Mã giảm giá</strong>: tạo mã % hoặc giảm tiền, giới hạn lượt dùng / ngày hết hạn.</li>
+                <li><strong>Chiến dịch</strong>: tạo hàng loạt mã riêng cho từng SĐT (khách lâu không mua, hạng Bạc/Vàng).</li>
+                <li><strong>Giờ vàng</strong>: giảm giá tự động theo khung giờ — kiểm tra kỹ giờ bắt đầu/kết thúc.</li>
+                <li>Khách hỏi mã không dùng được → kiểm tra: còn hạn? đúng SĐT? đủ đơn tối thiểu?</li>
+            </ol>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><strong>8. Hoàn tiền</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li>Mở <strong>Hoàn tiền</strong>, nhập mã đơn + số tiền + lý do → <strong>Ghi nhận yêu cầu</strong>.</li>
+                <li>Chuyển tiền cho khách <strong>thủ công</strong> (tiền mặt / chuyển khoản / cộng vào ví).</li>
+                <li>Bấm <strong>Xác nhận đã hoàn</strong> sau khi chuyển xong.</li>
+            </ol>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><strong>9. Điểm danh & ví khách</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li>Khách bấm <strong>📅 Điểm danh hôm nay</strong> ở trang tra cứu đơn để nhận điểm (mỗi SĐT 1 lần/ngày).</li>
+                <li><strong>Ví tiền</strong>: nạp tiền mặt cho khách tại quầy (ghi rõ lý do); khách dùng ví thanh toán online.</li>
+                <li>Hủy đơn đã trả bằng ví → tiền tự động hoàn về ví khách.</li>
+            </ol>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><strong>10. Khi có sự cố</strong></div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li>Web chậm / lỗi: chụp màn hình, ghi lại giờ xảy ra, báo admin.</li>
+                <li>Không đăng nhập được: kiểm tra caps-lock; quá 5 lần sai sẽ bị khóa tạm thời — chờ 15 phút.</li>
+                <li>Mất điện / mất mạng: nhận đơn qua điện thoại, nhập bù vào <strong>Bán hàng tại quầy</strong> khi có mạng lại.</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+@code {
+}

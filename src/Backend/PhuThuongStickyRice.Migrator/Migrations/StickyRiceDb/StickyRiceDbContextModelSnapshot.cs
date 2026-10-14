@@ -287,6 +287,46 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("Branches", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CheckIn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("PointsAwarded")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Phone", "Date")
+                        .IsUnique();
+
+                    b.ToTable("CheckIns", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Combo", b =>
                 {
                     b.Property<Guid>("Id")
@@ -363,6 +403,65 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("ComboItems", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CorporateClient", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ContactName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ItemsJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Weekday")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Weekday");
+
+                    b.ToTable("CorporateClients", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CustomMigrationHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -429,6 +528,51 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.HasIndex("Phone");
 
                     b.ToTable("CustomerNotes", (string)null);
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CustomerPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsApproved");
+
+                    b.ToTable("CustomerPhotos", (string)null);
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.DiscountCode", b =>
@@ -1006,6 +1150,50 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("LoyaltyAccounts", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.MessageTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MessageTemplates", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1072,6 +1260,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<bool>("LuckySpinUsed")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("MoMoMatched")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -1107,6 +1298,13 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<decimal>("RefundAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("RefundStatus")
+                        .HasColumnType("int");
+
                     b.Property<bool>("RequiresDeposit")
                         .HasColumnType("bit");
 
@@ -1117,6 +1315,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 
                     b.Property<Guid?>("ShipperId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -1782,6 +1984,52 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("RoleClaims", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.ShiftClose", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<decimal>("ActualCod")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ExpectedCod")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date")
+                        .IsUnique();
+
+                    b.ToTable("ShiftCloses", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Shipper", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1850,8 +2098,15 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<int>("BankTransferExpiryMinutes")
                         .HasColumnType("int");
 
+                    b.Property<int>("CheckInPoints")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset>("CreatedDateTime")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("DailyTargetAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("DeliveryFee")
                         .HasPrecision(18, 2)
@@ -1909,6 +2164,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("NepPerPortionGrams")
+                        .HasColumnType("int");
+
                     b.Property<string>("OwnerReportEmail")
                         .HasMaxLength(254)
                         .HasColumnType("nvarchar(254)");
@@ -1925,8 +2183,8 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("RecaptchaSecretKey")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("RecaptchaSiteKey")
                         .HasMaxLength(100)
@@ -1941,8 +2199,8 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasColumnType("rowversion");
 
                     b.Property<string>("TelegramBotToken")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("TelegramChatId")
                         .HasMaxLength(50)
@@ -2418,6 +2676,94 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("UserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.WalletAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Phone")
+                        .IsUnique();
+
+                    b.ToTable("WalletAccounts", (string)null);
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.WalletTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<decimal>("BalanceAfter")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Phone");
+
+                    b.ToTable("WalletTransactions", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.WebhookDelivery", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2509,6 +2855,52 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.HasKey("Id");
 
                     b.ToTable("WebhookEndpoints", (string)null);
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.WorkShift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("StaffName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date");
+
+                    b.ToTable("WorkShifts", (string)null);
                 });
 
             modelBuilder.Entity("PhuThuongStickyRice.Persistence.CircuitBreakers.CircuitBreaker", b =>

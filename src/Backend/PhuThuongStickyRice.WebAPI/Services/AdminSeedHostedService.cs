@@ -25,6 +25,12 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
         public const string AdminRoleName = "Admin";
 
+        /// <summary>Item 126: kitchen display staff.</summary>
+        public const string KitchenRoleName = "Kitchen";
+
+        /// <summary>Item 126: counter staff (orders / POS / customers, no finance pages).</summary>
+        public const string CashierRoleName = "Cashier";
+
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<AdminSeedHostedService> _logger;
 
@@ -55,6 +61,25 @@ namespace PhuThuongStickyRice.WebAPI.Services
                     await dbContext.Set<Role>().AddAsync(role, cancellationToken);
                     await dbContext.SaveChangesAsync(cancellationToken);
                 }
+
+                // Item 126: seed the Kitchen and Cashier roles too (no users
+                // assigned — the admin assigns them on the user admin page).
+                foreach (var extraRole in new[] { KitchenRoleName, CashierRoleName })
+                {
+                    var exists = await dbContext.Set<Role>()
+                        .AnyAsync(r => r.NormalizedName == extraRole.ToUpperInvariant(), cancellationToken);
+                    if (!exists)
+                    {
+                        await dbContext.Set<Role>().AddAsync(new Role
+                        {
+                            Name = extraRole,
+                            NormalizedName = extraRole.ToUpperInvariant(),
+                            ConcurrencyStamp = Guid.NewGuid().ToString()
+                        }, cancellationToken);
+                    }
+                }
+
+                await dbContext.SaveChangesAsync(cancellationToken);
 
                 var admin = await userManager.FindByEmailAsync(DefaultAdminEmail);
                 if (admin == null)

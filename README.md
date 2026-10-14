@@ -193,6 +193,107 @@ Các bước bật gửi tin nhắn thật:
   freeship đặt phí giao hàng = 0; tạo/chọn loại tại `/admin/discounts`;
   checkout hiện dòng "🚚 Miễn phí ship".
 
+## Wave 5 (items 121–140)
+
+- **Điểm danh mỗi ngày (121)**: `/track-order` có nút "📅 Điểm danh hôm nay";
+  mỗi SĐT 1 lần/ngày, cộng điểm tích lũy (mặc định 5, đổi ở shop-settings);
+  hiển thị chuỗi ngày liên tiếp. API: `POST /api/checkins`.
+- **Khách doanh nghiệp (122)**: `/admin/doanh-nghiep` CRUD khách đặt định kỳ
+  hàng tuần (tên công ty, SĐT, ngày trong tuần, món cố định);
+  dashboard hiện widget "Đơn doanh nghiệp tuần này" — admin tự tạo đơn,
+  không tự động trừ tiền.
+- **Gallery ảnh khách (123)**: khách chia sẻ ảnh từ `/track-order`
+  ("Chia sẻ ảnh món bạn đã nhận") → `/admin/anh-khach-hang` duyệt/từ chối →
+  gallery công khai `/anh-khach-hang`.
+- **Dự báo nguyên liệu (124)**: `/admin/du-bao-nguyen-lieu` ước tính kg nếp
+  cần cho sáng mai = trung bình suất bán cùng thứ trong 4 tuần qua ×
+  định mức g/suất (mặc định 150g, đổi ở shop-settings); heuristic đơn giản,
+  đã ghi chú trên trang + widget dashboard.
+- **Ca làm việc (125)**: `/admin/ca-lam-viec` CRUD ca (tên NV, ngày, giờ) —
+  xem theo tuần.
+- **Phân quyền (126)**: 3 vai trò — xem bảng dưới.
+- **POS (127)**: `/ban-hang` (Admin/Cashier) — chạm chọn món → thu tiền mặt →
+  đơn COD hoàn thành + đã thanh toán ngay; nút in hóa đơn.
+- **Đối soát MoMo (128)**: callback MoMo tự parse mã đơn từ `OrderInfo` và
+  đánh dấu `MoMoMatched=true`; `/admin/doi-soat-momo` lọc đã khớp/chưa khớp +
+  nút "đánh dấu đã đối soát" thủ công. Đối soát tự động hoàn toàn
+  (số tiền, file quyết toán) cần MoMo business API.
+- **Kết ca COD (129)**: `/admin/ket-ca` (Admin/Cashier) — dự kiến tự cộng từ
+  đơn COD đã hoàn thành trong ngày; nhập thực tế → cảnh báo chênh lệch.
+- **Hoàn tiền (130)**: `Order.RefundStatus` (None/Requested/Refunded) +
+  `RefundAmount`; admin ghi nhận ở `/admin/hoan-tien` (chuyển tiền thủ công);
+  khách thấy trạng thái hoàn tiền ở `/track-order`.
+- **Mẫu tin nhắn (131)**: `/admin/mau-tin-nhan` CRUD mẫu SMS/Zalo với
+  `{placeholder}` + nút "Sao chép".
+- **Chiến dịch voucher (132)**: `/admin/chien-dich` — chọn đối tượng
+  (không mua 30+ ngày / hạng Bạc,Vàng / tất cả) + cấu hình giảm giá →
+  tạo 1 mã riêng cho mỗi SĐT; sao chép danh sách để gửi thủ công.
+  Gửi hàng loạt cần kênh Zalo OA/SMS (làm sau).
+- **Nguồn đơn hàng (133)**: `Order.Source` — `?ban=` → "QR bàn",
+  `?share=` → "Link chia sẻ", `?nhom=` → "Nhóm", còn lại "Web";
+  dashboard có thẻ đơn + doanh thu theo nguồn.
+- **EN/VI (134)**: nút EN/VI trên thanh điều hướng; chỉ dịch chrome của
+  trang shop/giỏ/checkout (không dịch tên món/mô tả); lưu localStorage.
+- **Ví khách hàng (140)**: `WalletAccount` (SĐT, số dư) + `WalletTransaction`;
+  `/admin/vi-tien` nạp/trừ thủ công có lý do + sổ giao dịch; checkout hiện
+  "💰 Thanh toán bằng ví" khi số dư ≥ tổng đơn (trừ ngay khi tạo đơn);
+  hủy đơn hoàn tiền về ví tự động. Thêm `PaymentMethod.Wallet`.
+
+### Vai trò người dùng (item 126)
+
+| Vai trò | Được làm gì |
+|---|---|
+| `Admin` | Toàn quyền: mọi trang admin + API. |
+| `Kitchen` | Chỉ `/bep` (màn hình bếp): xem đơn bếp + chuyển trạng thái món. |
+| `Cashier` | `/dashboard`, `/orders`, `/customers`, `/ban-hang` (POS), `/admin/ket-ca`. KHÔNG thấy `/admin/loi-nhuan`, `/admin/thanh-toan`, `/admin/tinh-nang` (cả link điều hướng lẫn API đều chặn). |
+
+Các role `Kitchen`/`Cashier` được seed tự động lúc khởi động (cùng `Admin`);
+gán role cho user trong trang quản trị user. JWT mang claim `role` nên
+`[Authorize(Roles="...")]` hoạt động cả ở API lẫn Blazor WASM.
+
+### Bảo mật & định hướng (item 135)
+
+- **WebAuthn/Passkey: hoãn lại (deferred).** Chưa triển khai đăng nhập bằng
+  passkey — cần đánh giá kỹ (attestation, backup key, UX khôi phục) trước khi
+  làm, không làm nửa vời.
+- **Xác thực 2 lớp hiện tại: TOTP 2FA** (Wave 3, `/admin/bao-mat`) + khóa tài
+  khoản sau 5 lần đăng nhập sai. Đây là second factor chính thức lúc này.
+
+### Mã hóa secret trong ShopSetting (item 136)
+
+Các secret lưu trong DB (`TelegramBotToken`, `RecaptchaSecretKey`) được mã hóa
+lúc lưu và giải mã lúc đọc bằng ASP.NET Core **DataProtection**
+(prefix `DPv1:`; giá trị cũ chưa mã hóa vẫn đọc được và sẽ mã hóa lại ở lần
+lưu tiếp theo). Mọi secret mới chuyển vào DB sau này phải đi qua cùng cơ chế
+(`ShopSettingAppService.ProtectSecret/UnprotectSecret`).
+
+**Key persistence cho IIS farm:** DataProtection đã cấu hình
+`PersistKeysToDbContext<StickyRiceDbContext>()` (bảng `DataProtectionKeys`)
++ `SetApplicationName("PhuThuongStickyRice")` — mọi node trong farm đọc chung
+key từ DB nên giải mã được trên mọi máy. Lưu ý:
+
+- Backup bảng `DataProtectionKeys` cùng DB — mất key = không giải mã được
+  secret cũ (phải nhập lại trong `/admin/shop-settings`).
+- Nếu chạy nhiều app khác nhau chung DB, `SetApplicationName` khác nhau để
+  key không dùng lẫn.
+
+### Bảo trì định kỳ (item 137)
+
+- Mỗi tháng chạy: `dotnet list package --vulnerable --include-transitive`
+  cho toàn solution và nâng cấp các package có CVE.
+- Nên bật **Dependabot** trên GitHub (`.github/dependabot.yml`) để tự tạo PR
+  nâng cấp package hàng tuần.
+- Snapshot `dotnet list package --vulnerable` ngày 2026-10-14 (xem chi tiết
+  trong báo cáo wave): các package `OpenTelemetry.*` bản `-rc` và
+  `System.Data.SqlClient 4.1.0/4.8.5` có cảnh báo NU1902/NU1903, `AutoMapper 14.0.0`
+  có NU1903 (high), `System.Text.Json 7.0.1` có NU1903 (high),
+  `System.Security.Cryptography.Pkcs 9.0.11` có NU1902/NU1903
+  — lên kế hoạch nâng cấp `OpenTelemetry` lên bản stable, thay
+  `System.Data.SqlClient` bằng `Microsoft.Data.SqlClient`, và xem xét nâng
+  `AutoMapper`/`System.Text.Json` khi rảnh. **Đã xử lý trong Wave 5:**
+  `Microsoft.AspNetCore.DataProtection(.EntityFrameworkCore)` 10.0.0 → 10.0.11
+  (bản 10.0.0 có CVE critical NU1904 / GHSA-9mv3-2cwr-p262).
+
 ## Ghi chú
 
 - Ảnh sản phẩm hiện là placeholder SVG trong `Blazor.Modules/wwwroot/images/`

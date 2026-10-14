@@ -160,8 +160,11 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         public string Notes { get; set; }
 
-        /// <summary>"Cod" (default), "BankTransfer" or "MoMo".</summary>
+        /// <summary>"Cod" (default), "BankTransfer", "MoMo" or "Wallet".</summary>
         public string PaymentMethod { get; set; } = "Cod";
+
+        /// <summary>Item 133: "Web" / "QR bàn" / "Link chia sẻ" / "Nhóm".</summary>
+        public string Source { get; set; }
 
         /// <summary>Optional discount/promo code.</summary>
         public string DiscountCode { get; set; }
@@ -418,6 +421,12 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
 
         public bool LuckySpinUsed { get; set; }
 
+        /// <summary>Item 130: "None" / "Requested" / "Refunded".</summary>
+        public string RefundStatus { get; set; }
+
+        /// <summary>Item 130: refund amount in VND.</summary>
+        public decimal RefundAmount { get; set; }
+
         public List<TrackedOrderLineModel> Lines { get; set; } = new List<TrackedOrderLineModel>();
     }
 
@@ -497,6 +506,15 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Models
         public string ImageBackupProvider { get; set; }
 
         public string ImageBackupSettingsJson { get; set; }
+
+        /// <summary>Item 121: loyalty points per daily check-in.</summary>
+        public int CheckInPoints { get; set; }
+
+        /// <summary>Item 124: grams of nếp per portion (forecast).</summary>
+        public int NepPerPortionGrams { get; set; }
+
+        /// <summary>Item 139: daily revenue target in VND.</summary>
+        public decimal DailyTargetAmount { get; set; }
     }
 
     /// <summary>Result of GET api/dashboard/today-sold.</summary>

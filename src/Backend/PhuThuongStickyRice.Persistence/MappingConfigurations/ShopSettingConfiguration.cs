@@ -30,14 +30,16 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.OwnerReportEmail).HasMaxLength(254);
             builder.Property(x => x.UnconfirmedAlertMinutes).IsRequired();
             builder.Property(x => x.RecaptchaSiteKey).HasMaxLength(100);
-            builder.Property(x => x.RecaptchaSecretKey).HasMaxLength(100);
+            // Item 136: encrypted at rest ("DPv1:" + DataProtection payload) — needs headroom.
+            builder.Property(x => x.RecaptchaSecretKey).HasMaxLength(1000);
             builder.Property(x => x.WebBaseUrl).HasMaxLength(500);
 
             // Wave 4: maintenance mode, health alerts, disk warning, payment
             // display config (non-secret), image backup.
             builder.Property(x => x.MaintenanceMode).IsRequired();
             builder.Property(x => x.MaintenanceMessage).HasMaxLength(500);
-            builder.Property(x => x.TelegramBotToken).HasMaxLength(100);
+            // Item 136: encrypted at rest ("DPv1:" + DataProtection payload) — needs headroom.
+            builder.Property(x => x.TelegramBotToken).HasMaxLength(1000);
             builder.Property(x => x.TelegramChatId).HasMaxLength(50);
             builder.Property(x => x.HealthAlertsEnabled).IsRequired();
             builder.Property(x => x.ErrorRateThreshold).IsRequired();
@@ -51,6 +53,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.MoMoEndpoint).HasMaxLength(500);
             builder.Property(x => x.ImageBackupProvider).HasMaxLength(50);
             builder.Property(x => x.ImageBackupSettingsJson).HasMaxLength(4000);
+            builder.Property(x => x.CheckInPoints).IsRequired();
+            builder.Property(x => x.NepPerPortionGrams).IsRequired();
+            builder.Property(x => x.DailyTargetAmount).HasPrecision(18, 2).IsRequired();
         }
     }
 }

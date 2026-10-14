@@ -6,11 +6,42 @@
 @inject ShopService ShopService
 @inject Wave2Service Wave2Service
 @inject Wave4Service Wave4Service
+@inject Wave5Service Wave5Service
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
 <h3>Tra cứu đơn hàng</h3>
+
+@* Item 121: daily check-in — one per phone per day, awards loyalty points. *@
+<div class="card mb-3">
+    <div class="card-body py-2 d-flex flex-wrap align-items-center">
+        <strong class="mr-2">📅 Điểm danh hôm nay</strong>
+        <input class="form-control form-control-sm mr-2" style="max-width:160px" @bind="_checkInPhone"
+               placeholder="SĐT của bạn" inputmode="tel" />
+        <button class="btn btn-sm btn-outline-success" @onclick="CheckInAsync" disabled="@_checkingIn">
+            @(_checkingIn ? "Đang điểm danh..." : "Điểm danh")
+        </button>
+        @if (_checkInResult != null)
+        {
+            <span class="ml-2">
+                @if (_checkInResult.AlreadyCheckedIn)
+                {
+                    <span class="badge badge-info">Đã điểm danh hôm nay</span>
+                }
+                else
+                {
+                    <span class="badge badge-success">+@_checkInResult.PointsAwarded điểm</span>
+                }
+                <small class="text-muted ml-1">🔥 @_checkInResult.StreakDays ngày liên tiếp • @_checkInResult.LoyaltyPoints điểm</small>
+            </span>
+        }
+        @if (!string.IsNullOrEmpty(_checkInError))
+        {
+            <small class="text-danger ml-2">@_checkInError</small>
+        }
+    </div>
+</div>
 
 <div class="card mb-3">
     <div class="card-body">
@@ -289,6 +320,14 @@
                 Trạng thái thanh toán: @PaymentStatusBadge(_order.PaymentStatus)<br />
                 Hình thức nhận hàng: <strong>@(_order.FulfillmentMethod == "Pickup" ? "🏪 Tự đến lấy tại quán" : "🛵 Giao tận nơi")</strong>
             </p>
+            @* Item 130: refund status visible to the customer. *@
+            @if (!string.IsNullOrEmpty(_order.RefundStatus) && _order.RefundStatus != "None")
+            {
+                <div class="alert @(_order.RefundStatus == "Refunded" ? "alert-success" : "alert-warning") py-2">
+                    ↩️ Hoàn tiền <strong>@_order.RefundAmount.ToString("N0") ₫</strong> —
+                    @(_order.RefundStatus == "Refunded" ? "shop đã hoàn thành." : "đang chờ shop xử lý, shop sẽ liên hệ với bạn.")
+                </div>
+            }
 
             @if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
             {
@@ -367,6 +406,33 @@
             {
                 <div class="alert alert-danger">Thanh toán MoMo thất bại.</div>
             }
+        </div>
+    </div>
+
+    @* Item 123: share a photo of the received dish → moderation → public gallery. *@
+    <div class="card mb-3">
+        <div class="card-header py-2"><strong>📸 Chia sẻ ảnh món bạn đã nhận</strong></div>
+        <div class="card-body py-2">
+            @if (!string.IsNullOrEmpty(_photoMessage))
+            {
+                <div class="alert @(_photoError ? "alert-danger" : "alert-success") py-2 mb-2">@_photoMessage</div>
+            }
+            <div class="form-row align-items-end">
+                <div class="col-md-5 mb-2">
+                    <InputFile id="share-photo-input" OnChange="OnPhotoSelected" accept="image/*" class="form-control-file" />
+                    <small class="text-muted">Ảnh sẽ được duyệt trước khi hiện ở gallery.</small>
+                </div>
+                <div class="col-md-5 mb-2">
+                    <input class="form-control form-control-sm" @bind="_photoCaption" maxlength="300"
+                           placeholder="Chú thích (tùy chọn) — vd: Xôi gấc dẻo thơm!" />
+                </div>
+                <div class="col-md-2 mb-2">
+                    <button class="btn btn-sm btn-primary btn-block" @onclick="UploadPhotoAsync"
+                            disabled="@(_uploadingPhoto || _selectedPhoto == null)">
+                        @(_uploadingPhoto ? "Đang tải..." : "Chia sẻ")
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -902,6 +968,7 @@
         "Cod" => "Thanh toán khi nhận hàng (COD)",
         "BankTransfer" => "Chuyển khoản ngân hàng",
         "MoMo" => "Ví MoMo",
+        "Wallet" => "Ví Xôi Phú Thượng",
         _ => method
     };
 
@@ -942,5 +1009,93 @@
     public void Dispose()
     {
         StopPolling();
+    }
+
+    // ---------- Item 121: daily check-in ----------
+
+    private string _checkInPhone;
+    private PhuThuongStickyRice.Blazor.Modules.Admin.Models.CheckInResultModel _checkInResult;
+    private bool _checkingIn;
+    private string _checkInError;
+
+    private async Task CheckInAsync()
+    {
+        _checkInError = null;
+        _checkInResult = null;
+        if (string.IsNullOrWhiteSpace(_checkInPhone))
+        {
+            _checkInError = "Vui lòng nhập SĐT.";
+            return;
+        }
+
+        _checkingIn = true;
+        try
+        {
+            _checkInResult = await Wave5Service.CheckInAsync(_checkInPhone.Trim());
+        }
+        catch (Exception ex)
+        {
+            _checkInError = ex.Message;
+        }
+        finally
+        {
+            _checkingIn = false;
+        }
+    }
+
+    // ---------- Item 123: share a photo ----------
+
+    private InputFileChangeEventArgs _selectedPhoto;
+    private string _photoCaption;
+    private bool _uploadingPhoto;
+    private string _photoMessage;
+    private bool _photoError;
+
+    private void OnPhotoSelected(InputFileChangeEventArgs e)
+    {
+        _selectedPhoto = e;
+        _photoMessage = null;
+    }
+
+    private async Task UploadPhotoAsync()
+    {
+        if (_selectedPhoto?.File == null || _order == null)
+        {
+            return;
+        }
+
+        _uploadingPhoto = true;
+        _photoMessage = null;
+        _photoError = false;
+        try
+        {
+            // Compress client-side (same helper as the landing image upload).
+            var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
+                "interop.compressImageFromInput", "share-photo-input", 1600, 0.85);
+            using var stream = new System.IO.MemoryStream(compressed.Bytes);
+            await Wave5Service.UploadCustomerPhotoAsync(
+                stream, compressed.FileName, compressed.ContentType,
+                _order.CustomerPhone, _photoCaption);
+            _photoMessage = "Cảm ơn bạn! Ảnh đang chờ duyệt và sẽ sớm hiện ở gallery.";
+            _photoCaption = null;
+            _selectedPhoto = null;
+        }
+        catch (Exception ex)
+        {
+            _photoError = true;
+            _photoMessage = ex.Message;
+        }
+        finally
+        {
+            _uploadingPhoto = false;
+        }
+    }
+
+    /// <summary>Shape of the object returned by interop.compressImageFromInput.</summary>
+    private sealed class CompressedImage
+    {
+        public byte[] Bytes { get; set; } = Array.Empty<byte>();
+        public string FileName { get; set; } = "image.jpg";
+        public string ContentType { get; set; } = "image/jpeg";
     }
 }

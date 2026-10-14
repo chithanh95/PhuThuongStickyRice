@@ -61,6 +61,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 DateOfBirth = model.DateOfBirth,
                 IdempotencyKey = model.IdempotencyKey,
                 RecaptchaToken = model.RecaptchaToken,
+                Source = model.Source,
                 Lines = model.Lines
                     .Select(x => new CreateOrderLineDto
                     {
@@ -77,7 +78,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(order);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Cashier")]
         [HttpGet]
         public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
             [FromQuery] string searchTerm = null, [FromQuery] string status = null,
@@ -96,7 +97,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(paged);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Cashier")]
         [HttpGet("customers")]
         public async Task<ActionResult> GetCustomers(
             [FromQuery] string searchTerm = null,
@@ -106,7 +107,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(customers);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Cashier")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
         {
@@ -114,7 +115,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(order);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Cashier")]
         [HttpPut("{id:guid}/status")]
         public async Task<ActionResult> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusRequestModel model,
             CancellationToken cancellationToken = default)
@@ -190,7 +191,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>Admin confirms a bank-transfer payment.</summary>
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Cashier")]
         [HttpPut("{id:guid}/confirm-payment")]
         public async Task<ActionResult> ConfirmPayment(Guid id,
             CancellationToken cancellationToken = default)
@@ -343,7 +344,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>Item 82: admin assigns (or unassigns) a delivery shipper.</summary>
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Cashier")]
         [HttpPut("{id:guid}/assign-shipper")]
         public async Task<ActionResult> AssignShipper(Guid id,
             [FromBody] AssignShipperRequestModel model,
@@ -364,7 +365,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>Item 81: kitchen display — Pending/Confirmed/Preparing orders.</summary>
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Kitchen")]
         [HttpGet("kitchen")]
         public async Task<ActionResult> GetKitchenOrders(CancellationToken cancellationToken = default)
         {
@@ -372,7 +373,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>Item 81: kitchen display tap advances one stage.</summary>
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Kitchen")]
         [HttpPost("{id:guid}/kitchen/advance")]
         public async Task<ActionResult> AdvanceKitchenStatus(Guid id,
             CancellationToken cancellationToken = default)

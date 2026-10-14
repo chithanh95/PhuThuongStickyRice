@@ -36,6 +36,13 @@ namespace PhuThuongStickyRice.Blazor.Modules.Shop.Services
         public decimal TotalAmount => _items.Sum(x => x.LineTotal);
 
         /// <summary>
+        /// Order source (item 133): set from the shop entry query params
+        /// (?ban= → "QR bàn", ?share= → "Link chia sẻ", ?nhom= → "Nhóm",
+        /// else "Web"). Sent with the checkout request.
+        /// </summary>
+        public string Source { get; set; } = "Web";
+
+        /// <summary>
         /// Loads persisted items from localStorage. Call once at app startup
         /// (after render, when JS interop is available).
         /// </summary>

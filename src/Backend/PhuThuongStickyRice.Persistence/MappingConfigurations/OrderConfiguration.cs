@@ -41,6 +41,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             builder.Property(x => x.CreatedAt).IsRequired();
 
+            // Item 128/130/133.
+            builder.Property(x => x.Source).HasMaxLength(Order.SourceMaxLength);
+            builder.Property(x => x.MoMoMatched).IsRequired();
+            builder.Property(x => x.RefundStatus)
+                .HasConversion<int>()
+                .IsRequired();
+            builder.Property(x => x.RefundAmount).HasPrecision(18, 2).IsRequired();
+
             builder.ComplexProperty(x => x.TotalAmount, totalBuilder =>
             {
                 totalBuilder.Property(x => x.Amount)

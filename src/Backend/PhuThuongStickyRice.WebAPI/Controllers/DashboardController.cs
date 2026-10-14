@@ -1,4 +1,5 @@
 using PhuThuongStickyRice.Application.Orders;
+using PhuThuongStickyRice.Application.Wave5;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,17 +11,24 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Cashier")]
     [Produces("application/json")]
     [Route("api/[controller]")]
     [ApiController]
     public class DashboardController : ControllerBase
     {
         private readonly IDashboardAppService _dashboardAppService;
+        private readonly ICorporateClientAppService _corporateClients;
+        private readonly IIngredientForecastAppService _forecast;
 
-        public DashboardController(IDashboardAppService dashboardAppService)
+        public DashboardController(
+            IDashboardAppService dashboardAppService,
+            ICorporateClientAppService corporateClients,
+            IIngredientForecastAppService forecast)
         {
             _dashboardAppService = dashboardAppService;
+            _corporateClients = corporateClients;
+            _forecast = forecast;
         }
 
         [HttpGet("stats")]
@@ -67,6 +75,48 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             return Ok(await _dashboardAppService.GetNewReturningCustomersAsync(from, to));
+        }
+
+        /// <summary>
+        /// Item 139: today's revenue vs the daily target (Vietnam date).
+        /// </summary>
+        [HttpGet("daily-target")]
+        public async Task<ActionResult> GetDailyTarget(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _dashboardAppService.GetDailyTargetAsync());
+        }
+
+        /// <summary>
+        /// Item 133: orders + revenue grouped by order source over a range.
+        /// </summary>
+        [HttpGet("source-stats")]
+        public async Task<ActionResult> GetSourceStats(
+            [FromQuery] DateTime? from = null,
+            [FromQuery] DateTime? to = null,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _dashboardAppService.GetSourceStatsAsync(from, to));
+        }
+
+        /// <summary>
+        /// Item 122: corporate clients whose standing order falls on today's
+        /// weekday (admin converts to a real order manually).
+        /// </summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("corporate-due")]
+        public async Task<ActionResult> GetCorporateDue(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _corporateClients.GetDueTodayAsync());
+        }
+
+        /// <summary>
+        /// Item 124: nếp forecast for tomorrow morning (dashboard widget).
+        /// </summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("ingredient-forecast")]
+        public async Task<ActionResult> GetIngredientForecast(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _forecast.GetForecastAsync());
         }
     }
 }

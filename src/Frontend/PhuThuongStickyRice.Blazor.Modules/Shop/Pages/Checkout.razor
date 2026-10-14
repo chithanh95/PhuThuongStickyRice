@@ -13,11 +13,13 @@
 @inject Wave2Service Wave2Service
 @inject Wave3Service Wave3Service
 @inject Wave4Service Wave4Service
+@inject Wave5Service Wave5Service
 @inject CartState CartState
 @inject NavigationManager Navigation
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
+@inject ShopI18n I18n
 
-<h3>Đặt hàng</h3>
+<h3>@I18n.T("checkout")</h3>
 
 @if (_placedOrder != null)
 {
@@ -26,7 +28,7 @@
         <p>Mã đơn hàng của bạn: <strong>@_placedOrder.OrderNumber</strong></p>
         <table class="table table-sm mb-2">
             <tbody>
-                <tr><td>Tạm tính</td><td class="text-right">@FormatPrice(_placedOrder.Subtotal)</td></tr>
+                <tr><td>@I18n.T("subtotal")</td><td class="text-right">@FormatPrice(_placedOrder.Subtotal)</td></tr>
                 @if (_placedOrder.PromotionDiscountAmount > 0)
                 {
                     <tr>
@@ -37,7 +39,7 @@
                 @if (_placedOrder.DiscountAmount > 0)
                 {
                     <tr>
-                        <td>Giảm giá @(!string.IsNullOrWhiteSpace(_placedOrder.DiscountCode) ? $"({_placedOrder.DiscountCode})" : "")</td>
+                        <td>@I18n.T("discount") @(!string.IsNullOrWhiteSpace(_placedOrder.DiscountCode) ? $"({_placedOrder.DiscountCode})" : "")</td>
                         <td class="text-right text-success">−@FormatPrice(_placedOrder.DiscountAmount)</td>
                     </tr>
                 }
@@ -89,11 +91,11 @@
                 }
                 else if (_placedOrder.DeliveryFee > 0)
                 {
-                    <tr><td>Phí giao hàng</td><td class="text-right">@FormatPrice(_placedOrder.DeliveryFee)</td></tr>
+                    <tr><td>@I18n.T("delivery_fee")</td><td class="text-right">@FormatPrice(_placedOrder.DeliveryFee)</td></tr>
                 }
                 else
                 {
-                    <tr><td>Phí giao hàng</td><td class="text-right text-success">Miễn phí</td></tr>
+                    <tr><td>@I18n.T("delivery_fee")</td><td class="text-right text-success">Miễn phí</td></tr>
                 }
                 <tr>
                     <td><strong>Tổng tiền</strong></td>
@@ -158,6 +160,12 @@
     {
         <div class="alert alert-info">
             <strong>Thanh toán khi nhận hàng (COD):</strong> bạn sẽ trả tiền mặt cho shipper khi nhận hàng.
+        </div>
+    }
+    else if (_placedOrder.PaymentMethod == "Wallet")
+    {
+        <div class="alert alert-success">
+            <strong>💰 Đã thanh toán bằng ví</strong> (@_placedOrder.TotalAmount.ToString("N0") ₫ đã trừ khỏi số dư của bạn).
         </div>
     }
     else if (_placedOrder.PaymentMethod == "BankTransfer")
@@ -277,7 +285,7 @@ else
     <div class="row">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">Thông tin nhận hàng</div>
+                <div class="card-header">@I18n.T("your_info")</div>
                 <div class="card-body">
                     <div class="form-group">
                         <label>Hình thức nhận hàng *</label>
@@ -307,14 +315,14 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label>Họ tên *</label>
+                        <label>@I18n.T("full_name") *</label>
                         <input class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
                         @if (!string.IsNullOrEmpty(_nameError))
                         {
                             <small class="text-danger">@_nameError</small>
                         }                    </div>
                     <div class="form-group">
-                        <label>Số điện thoại *</label>
+                        <label>@I18n.T("phone") *</label>
                         <input class="form-control @FieldClass(_phoneError)" @bind="_order.CustomerPhone"
                                @onblur="LookupLastOrderAsync" placeholder="0901234567" />
                         @if (!string.IsNullOrEmpty(_phoneError))
@@ -347,7 +355,7 @@ else
                     @if (_fulfillment == "Delivery")
                     {
                         <div class="form-group">
-                            <label>Địa chỉ giao hàng *</label>
+                            <label>@I18n.T("address") *</label>
                             <textarea class="form-control @FieldClass(_addressError)" @bind="_order.CustomerAddress" rows="3"
                                       placeholder="Số nhà, đường, phường..."></textarea>
                             @if (!string.IsNullOrEmpty(_addressError))
@@ -385,7 +393,7 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label>Ghi chú</label>
+                        <label>@I18n.T("note")</label>
                         <textarea class="form-control" @bind="_order.Notes" rows="2"
                                   placeholder="Ví dụ: giao giờ hành chính..."></textarea>
                     </div>
@@ -465,22 +473,33 @@ else
                         }
                     }
                     <div class="form-group">
-                        <label>Phương thức thanh toán *</label>
+                        <label>@I18n.T("payment_method") *</label>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-cod"
                                    checked="@(_order.PaymentMethod == "Cod")" @onchange="@(() => _order.PaymentMethod = "Cod")" />
-                            <label class="form-check-label" for="pm-cod">Thanh toán khi nhận hàng (COD)</label>
+                            <label class="form-check-label" for="pm-cod">@I18n.T("pay_cod")</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-bank"
                                    checked="@(_order.PaymentMethod == "BankTransfer")" @onchange="@(() => _order.PaymentMethod = "BankTransfer")" />
-                            <label class="form-check-label" for="pm-bank">Chuyển khoản ngân hàng (QR)</label>
+                            <label class="form-check-label" for="pm-bank">@I18n.T("pay_bank")</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-momo"
                                    checked="@(_order.PaymentMethod == "MoMo")" @onchange="@(() => _order.PaymentMethod = "MoMo")" />
-                            <label class="form-check-label" for="pm-momo">Ví MoMo <span class="badge badge-warning">TEST</span></label>
+                            <label class="form-check-label" for="pm-momo">@I18n.T("pay_momo") <span class="badge badge-warning">TEST</span></label>
                         </div>
+                        @* Item 140: wallet payment — shown when the balance covers the total. *@
+                        @if (_walletBalance >= _estimatedTotal && _estimatedTotal > 0)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="paymentMethod" id="pm-wallet"
+                                       checked="@(_order.PaymentMethod == "Wallet")" @onchange="@(() => _order.PaymentMethod = "Wallet")" />
+                                <label class="form-check-label" for="pm-wallet">
+                                    💰 @I18n.T("pay_wallet") <small class="text-muted">(số dư @_walletBalance.ToString("N0") ₫)</small>
+                                </label>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -513,7 +532,7 @@ else
                                 </tr>
                             }
                             <tr>
-                                <td class="text-muted">Tạm tính</td>
+                                <td class="text-muted">@I18n.T("subtotal")</td>
                                 <td class="text-right text-muted">@FormatPrice(_subtotal)</td>
                             </tr>
                             @if (_activePromotion != null)
@@ -583,7 +602,7 @@ else
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td><strong>Tổng cộng</strong></td>
+                                <td><strong>@I18n.T("total")</strong></td>
                                 <td class="text-right"><strong class="text-danger">@FormatPrice(_grandTotal)</strong></td>
                             </tr>
                         </tfoot>
@@ -660,7 +679,7 @@ else
                     }
 
                     <button class="btn btn-success btn-block btn-lg" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked)">
-                        @(_submitting ? "Đang xử lý..." : "Xác nhận đặt hàng")
+                        @(_submitting ? "Đang xử lý..." : I18n.T("order_now"))
                     </button>
                 </div>
             </div>
@@ -782,6 +801,12 @@ else
     private decimal _grandTotal => Math.Max(0,
         _subtotal - _discountAmount - _tierDiscountPreview - _redeemDiscountPreview + _fee + _giftFeePreview);
 
+    /// <summary>Item 140: estimated total used to gate the ví payment option.</summary>
+    private decimal _estimatedTotal => _grandTotal;
+
+    /// <summary>Item 140: wallet balance of the entered phone (0 = no ví option).</summary>
+    private decimal _walletBalance;
+
     /// <summary>Membership-tier discount preview (auto-applied for recognized phones).</summary>
     private decimal _tierDiscountPreview =>
         _loyalty != null && _loyalty.TotalSpent > 0 && _loyalty.TierDiscountPercent > 0
@@ -885,6 +910,8 @@ else
 
         RefreshMinOrderState();
         CartState.OnChange += OnCartChanged;
+        I18n.OnChange += OnLangChanged;
+        await I18n.InitializeAsync();
     }
 
     private static bool GetFlag(System.Collections.Generic.Dictionary<string, bool> flags, string key, bool fallback)
@@ -1028,6 +1055,17 @@ else
         catch (Exception)
         {
             _loyalty = null;
+        }
+
+        // Item 140: wallet balance for this phone (enables the ví option).
+        try
+        {
+            var wallet = await Wave5Service.GetWalletBalanceAsync(phone);
+            _walletBalance = wallet?.Balance ?? 0;
+        }
+        catch (Exception)
+        {
+            _walletBalance = 0;
         }
     }
 
@@ -1183,6 +1221,9 @@ else
             _order.FulfillmentMethod = _fulfillment;
             _order.RedeemPoints = _redeemPoints;
             _order.BranchId = _branchId;
+
+            // Item 133: order source captured at shop entry.
+            _order.Source = CartState.Source;
 
             // Item 97: fresh idempotency key per submit attempt, kept in memory.
             _order.IdempotencyKey = Guid.NewGuid().ToString("D");
@@ -1363,8 +1404,11 @@ else
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
+    private void OnLangChanged() => InvokeAsync(StateHasChanged);
+
     public void Dispose()
     {
         CartState.OnChange -= OnCartChanged;
+        I18n.OnChange -= OnLangChanged;
     }
 }

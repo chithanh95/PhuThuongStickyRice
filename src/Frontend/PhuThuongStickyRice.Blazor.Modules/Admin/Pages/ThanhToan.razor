@@ -1,5 +1,5 @@
 @page "/admin/thanh-toan"
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Models
 @using PhuThuongStickyRice.Blazor.Modules.Shop.Services
 @inject ShopSettingsService ShopSettingsService

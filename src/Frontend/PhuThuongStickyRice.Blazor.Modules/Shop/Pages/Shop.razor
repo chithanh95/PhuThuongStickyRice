@@ -10,6 +10,8 @@
 @inject ShopService ShopService
 @inject Wave4Service Wave4Service
 @inject CartState CartState
+@inject ShopI18n I18n
+@implements IDisposable
 @inject ToastService Toasts
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
@@ -22,11 +24,11 @@
                 <p class="lead mb-1">Xôi dẻo thơm chuẩn vị làng nghề — đặt hàng online, giao tận nơi.</p>
                 @if (!string.IsNullOrWhiteSpace(_tableLabel))
                 {
-                    <p class="mb-1"><span class="badge badge-info" style="font-size: 1rem;">🍽 Đang đặt tại bàn @_tableLabel</span></p>
+                    <p class="mb-1"><span class="badge badge-info" style="font-size: 1rem;">🍽 @I18n.T("table_order") @_tableLabel</span></p>
                 }
                 @if (_todaySold > 0)
                 {
-                    <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 Hôm nay đã bán @_todaySold gói</span></p>
+                    <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 @I18n.T("sold_today"): @_todaySold</span></p>
                 }
             </div>
             <a class="btn btn-dark mt-2" href="/menu-print" target="_blank" title="Mở thực đơn để in / lưu PDF">
@@ -203,7 +205,7 @@ else
                                 <input type="number" min="1" max="99" class="form-control mr-2" style="width: 80px;"
                                        @bind="_quantities[product.Id]" />
                                 <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)">
-                                    Thêm vào giỏ
+                                    @I18n.T("add_to_cart")
                                 </button>
                             </div>
                         </div>
@@ -292,7 +294,7 @@ else
                     </button>
                     <button type="button" class="btn btn-secondary" @onclick="CloseQuickView">Đóng</button>
                     <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart">
-                        Thêm vào giỏ — @FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))
+                        @I18n.T("add_to_cart") — @FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))
                     </button>
                 </div>
                 @if (!string.IsNullOrEmpty(_shortLinkCopied))
@@ -346,7 +348,28 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        I18n.OnChange += OnLangChanged;
+        await I18n.InitializeAsync();
         _tableLabel = GetQueryValue(Navigation.Uri, "ban");
+
+        // Item 133: order source from shop entry params.
+        // ?ban= → "QR bàn", ?share= → "Link chia sẻ", ?nhom= → "Nhóm", else "Web".
+        if (!string.IsNullOrWhiteSpace(_tableLabel))
+        {
+            CartState.Source = "QR bàn";
+        }
+        else if (!string.IsNullOrWhiteSpace(GetQueryValue(Navigation.Uri, "share")))
+        {
+            CartState.Source = "Link chia sẻ";
+        }
+        else if (!string.IsNullOrWhiteSpace(GetQueryValue(Navigation.Uri, "nhom")))
+        {
+            CartState.Source = "Nhóm";
+        }
+        else
+        {
+            CartState.Source = "Web";
+        }
 
         try
         {
@@ -781,5 +804,12 @@ else
         }
 
         return null;
+    }
+
+    private void OnLangChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        I18n.OnChange -= OnLangChanged;
     }
 }

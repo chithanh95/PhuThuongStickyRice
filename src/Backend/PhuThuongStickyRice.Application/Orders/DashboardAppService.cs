@@ -1,6 +1,7 @@
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Wave3.DTOs;
+using PhuThuongStickyRice.Application.Wave5.DTOs;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using System;
@@ -36,6 +37,16 @@ namespace PhuThuongStickyRice.Application.Orders
         /// non-cancelled orders). Powers the shop's "Bán chạy" sort.
         /// </summary>
         Task<List<Guid>> GetBestSellerProductIdsAsync(int top);
+
+        /// <summary>
+        /// Item 139: today's revenue vs the daily target (Vietnam date).
+        /// </summary>
+        Task<DailyTargetDto> GetDailyTargetAsync();
+
+        /// <summary>
+        /// Item 133: orders + revenue grouped by order source over a range.
+        /// </summary>
+        Task<List<SourceStatDto>> GetSourceStatsAsync(DateTime? from = null, DateTime? to = null);
     }
 
     public class DashboardAppService : ApplicationService, IDashboardAppService
@@ -113,6 +124,51 @@ namespace PhuThuongStickyRice.Application.Orders
             stats.StalePendingMinutes = staleMinutes;
 
             return stats;
+        }
+
+        public async Task<DailyTargetDto> GetDailyTargetAsync()
+        {
+            var settings = await _shopSettings.GetAsync();
+            var target = settings.DailyTargetAmount > 0 ? settings.DailyTargetAmount : 2000000;
+
+            var todayVn = Wave5.VietnamTime.Today();
+            var startUtc = todayVn.AddHours(-7); // VN 00:00 → UTC
+            var endUtc = startUtc.AddDays(1);
+
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var revenue = await _asyncExecuter.SumAsync(
+                orderQueryable
+                    .Where(x => x.CreatedAt >= startUtc && x.CreatedAt < endUtc
+                        && x.Status != OrderStatus.Cancelled)
+                    .Select(x => x.TotalAmount.Amount));
+
+            return new DailyTargetDto
+            {
+                TodayRevenue = revenue,
+                Target = target,
+                Percent = target > 0 ? (double)revenue / (double)target * 100 : 0
+            };
+        }
+
+        public async Task<List<SourceStatDto>> GetSourceStatsAsync(DateTime? from = null, DateTime? to = null)
+        {
+            var (fromDate, toDate) = NormalizeRange(from, to);
+            var orderQueryable = await _orders.GetQueryableAsync();
+
+            var rows = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.CreatedAt >= fromDate && x.CreatedAt < toDate
+                        && x.Status != OrderStatus.Cancelled)
+                    .GroupBy(x => x.Source)
+                    .Select(g => new SourceStatDto
+                    {
+                        Source = g.Key,
+                        OrderCount = g.Count(),
+                        Revenue = g.Sum(x => x.TotalAmount.Amount)
+                    })
+                    .OrderByDescending(x => x.Revenue));
+
+            return rows;
         }
 
         public async Task<NewReturningCustomersDto> GetNewReturningCustomersAsync(

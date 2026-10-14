@@ -13,7 +13,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     /// <summary>Item 82: delivery shippers (Admin).</summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Cashier")]
     [Produces("application/json")]
     [Route("api/[controller]")]
     [ApiController]

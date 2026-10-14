@@ -121,6 +121,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> _shippers;
         private readonly Wave4.IWebhookDispatcher _webhooks;
         private readonly Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> _branches;
+        private readonly Wave5.IWalletAppService _wallets;
 
         public OrderAppService(
             IOrderRepository orders,
@@ -144,7 +145,8 @@ namespace PhuThuongStickyRice.Application.Orders
             IRewardRuleAppService rewardRules,
             Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> shippers,
             Wave4.IWebhookDispatcher webhooks,
-            Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> branches)
+            Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> branches,
+            Wave5.IWalletAppService wallets)
         {
             _orders = orders;
             _products = products;
@@ -168,6 +170,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _shippers = shippers;
             _webhooks = webhooks;
             _branches = branches;
+            _wallets = wallets;
         }
 
         public async Task<OrderDto> CreateAsync(CreateOrderDto input)
@@ -510,7 +513,16 @@ namespace PhuThuongStickyRice.Application.Orders
                 promotionName,
                 promotionDiscount,
                 branchId,
-                branchName);
+                branchName,
+                input.Source);
+
+            // Item 140: wallet payment — charge the prepaid balance up front;
+            // insufficient balance aborts before the order row is written.
+            if (order.PaymentMethod == PaymentMethod.Wallet)
+            {
+                await _wallets.ChargeAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
+                order.ConfirmPayment();
+            }
 
             await _orders.InsertAsync(order);
 
@@ -654,6 +666,13 @@ namespace PhuThuongStickyRice.Application.Orders
             if (status == OrderStatus.Cancelled)
             {
                 await _loyalty.RefundRedeemedPointsAsync(order);
+
+                // Item 140: wallet-paid orders are credited back on cancel.
+                if (order.PaymentMethod == PaymentMethod.Wallet
+                    && order.PaymentStatus == PaymentStatus.Paid)
+                {
+                    await _wallets.RefundAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
+                }
             }
 
             var updatedDto = _objectMapper.Map<Order, OrderDto>(order);
@@ -688,7 +707,7 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>Item 82: admin assigns (or unassigns) a delivery shipper.</summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
         public async Task<OrderDto> AssignShipperAsync(Guid id, AssignShipperDto input)
         {
             var order = await FindOrThrowAsync(id);
@@ -717,7 +736,7 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>Item 81: kitchen display — Pending/Confirmed/Preparing, oldest first.</summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Kitchen")]
         public async Task<List<OrderDto>> GetKitchenOrdersAsync()
         {
             var kitchenStatuses = new[]
@@ -735,7 +754,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Item 81: kitchen display tap advances one stage:
         /// Pending→Confirmed→Preparing→Delivering.
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Kitchen")]
         public async Task<OrderDto> AdvanceKitchenStatusAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
@@ -808,6 +827,13 @@ namespace PhuThuongStickyRice.Application.Orders
             order.Cancel();
             await _orders.UpdateAsync(order);
             await _loyalty.RefundRedeemedPointsAsync(order);
+
+            // Item 140: wallet-paid orders are credited back on cancel.
+            if (order.PaymentMethod == PaymentMethod.Wallet
+                && order.PaymentStatus == PaymentStatus.Paid)
+            {
+                await _wallets.RefundAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
+            }
 
             return _objectMapper.Map<Order, OrderDto>(order);
         }

@@ -136,6 +136,18 @@ namespace PhuThuongStickyRice.BlazorWebAssembly
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Wave 5: check-in, corporate clients, gallery, forecast, shifts,
+            // wallet, reconciliation, refunds, templates, campaigns, POS.
+            builder.Services.AddHttpClient<Wave5Service, Wave5Service>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Item 134: VI/EN dictionary for the shop pages' chrome.
+            builder.Services.AddScoped<PhuThuongStickyRice.Blazor.Modules.Shop.Services.ShopI18n>();
+
             // Toast notifications.
             builder.Services.AddScoped<ToastService>();
 

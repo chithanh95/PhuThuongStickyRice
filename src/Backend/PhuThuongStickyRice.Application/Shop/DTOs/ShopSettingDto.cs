@@ -157,5 +157,19 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         /// <summary>JSON settings for the image backup provider.</summary>
         [StringLength(4000)]
         public string ImageBackupSettingsJson { get; set; }
+
+        // ---- Wave 5 (items 121/124/139) ----
+
+        /// <summary>Loyalty points per daily check-in. Default 5.</summary>
+        [Range(0, 1000)]
+        public int CheckInPoints { get; set; }
+
+        /// <summary>Grams of nếp per portion (forecast heuristic). Default 150.</summary>
+        [Range(1, 1000)]
+        public int NepPerPortionGrams { get; set; }
+
+        /// <summary>Daily revenue target in VND (dashboard). Default 2000000.</summary>
+        [Range(0, 1000000000)]
+        public decimal DailyTargetAmount { get; set; }
     }
 }

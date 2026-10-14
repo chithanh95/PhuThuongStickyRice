@@ -1,0 +1,192 @@
+@page "/admin/ket-ca"
+@attribute [Authorize(Roles = "Admin,Cashier")]
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@inject Wave5Service Wave5Service
+
+<h3>💵 Kết ca (COD)</h3>
+<p class="text-muted">Tiền mặt dự kiến = tổng các đơn COD đã hoàn thành trong ngày. Nhập số tiền thực đếm được để đối chiếu.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="form-row align-items-end">
+            <div class="form-group col-md-3">
+                <label>Ngày</label>
+                <input type="date" class="form-control" @bind="_date" />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Dự kiến thu (₫)</label>
+                <input class="form-control" value="@_expected.ToString("N0")" disabled />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Thực tế đếm được (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_actual" />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Ghi chú</label>
+                <input class="form-control" @bind="_note" placeholder="VD: thiếu 20k tiền lẻ" />
+            </div>
+        </div>
+        <button class="btn btn-primary" @onclick="LoadExpectedAsync" disabled="@_busy">Tính lại dự kiến</button>
+        <button class="btn btn-success ml-2" @onclick="CloseAsync" disabled="@_busy">
+            @(_busy ? "Đang lưu..." : "Chốt ca")
+        </button>
+        @if (_discrepancy != 0)
+        {
+            <div class="alert @(_discrepancy > 0 ? "alert-warning" : "alert-danger") mt-3 mb-0">
+                ⚠️ Chênh lệch: <strong>@_discrepancy.ToString("N0") ₫</strong>
+                @(_discrepancy > 0 ? "(thừa)" : "(thiếu)") — vui lòng kiểm tra lại tiền mặt và đơn COD.
+            </div>
+        }
+        else if (_closedToday)
+        {
+            <div class="alert alert-success mt-3 mb-0">✅ Ca hôm nay đã khớp (chênh lệch 0 ₫).</div>
+        }
+    </div>
+</div>
+
+<h5>Lịch sử chốt ca</h5>
+@if (_history == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_history.Count == 0)
+{
+    <div class="alert alert-info">Chưa có ca nào được chốt.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Ngày</th>
+                    <th class="text-right">Dự kiến</th>
+                    <th class="text-right">Thực tế</th>
+                    <th class="text-right">Chênh lệch</th>
+                    <th>Người chốt</th>
+                    <th>Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in _history)
+                {
+                    <tr class="@(c.Discrepancy != 0 ? "table-warning" : "")">
+                        <td>@c.Date.ToString("dd/MM/yyyy")</td>
+                        <td class="text-right">@c.ExpectedCod.ToString("N0") ₫</td>
+                        <td class="text-right">@c.ActualCod.ToString("N0") ₫</td>
+                        <td class="text-right">
+                            @if (c.Discrepancy != 0)
+                            {
+                                <strong class="text-danger">@c.Discrepancy.ToString("N0") ₫</strong>
+                            }
+                            else
+                            {
+                                <span class="text-muted">0</span>
+                            }
+                        </td>
+                        <td><small>@c.CreatedBy</small></td>
+                        <td><small>@c.Note</small></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private DateTime _date = DateTime.Today;
+    private decimal _expected;
+    private decimal _actual;
+    private decimal _discrepancy;
+    private bool _closedToday;
+    private string _note;
+    private bool _busy;
+    private string _error;
+    private string _success;
+    private List<ShiftCloseModel> _history;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadExpectedAsync();
+        await LoadHistoryAsync();
+    }
+
+    private async Task LoadExpectedAsync()
+    {
+        _error = null;
+        _busy = true;
+        try
+        {
+            _expected = await Wave5Service.GetExpectedCodAsync(_date);
+            var existing = await Wave5Service.GetShiftCloseAsync(_date);
+            if (existing != null)
+            {
+                _actual = existing.ActualCod;
+                _note = existing.Note;
+                _discrepancy = existing.Discrepancy;
+                _closedToday = _discrepancy == 0;
+            }
+            else
+            {
+                _actual = _expected;
+                _discrepancy = 0;
+                _closedToday = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tính được dự kiến: " + ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        try
+        {
+            _history = await Wave5Service.GetShiftClosesAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được lịch sử: " + ex.Message;
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        _error = null;
+        _success = null;
+        _busy = true;
+        try
+        {
+            var result = await Wave5Service.CloseShiftAsync(_date, _actual, _note);
+            _discrepancy = result.Discrepancy;
+            _closedToday = _discrepancy == 0;
+            _success = _discrepancy == 0
+                ? "Đã chốt ca — khớp tiền mặt."
+                : $"Đã chốt ca. Chênh lệch {_discrepancy:N0} ₫ — vui lòng kiểm tra.";
+            await LoadHistoryAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Chốt ca thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

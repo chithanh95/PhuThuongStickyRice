@@ -116,6 +116,18 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Auto-applied promotion discount in VND.</summary>
         public decimal PromotionDiscountAmount { get; set; }
 
+        /// <summary>Order source (item 133): "Web", "QR bàn", "Link chia sẻ", "Nhóm", "POS".</summary>
+        public string Source { get; set; }
+
+        /// <summary>Item 128: MoMo IPN auto-matched by parsing OrderInfo.</summary>
+        public bool MoMoMatched { get; set; }
+
+        /// <summary>Item 130: refund state ("None" / "Requested" / "Refunded").</summary>
+        public string RefundStatus { get; set; }
+
+        /// <summary>Item 130: refund amount in VND.</summary>
+        public decimal RefundAmount { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         public List<OrderLineDto> Lines { get; set; } = new List<OrderLineDto>();
@@ -167,7 +179,7 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         [StringLength(1000)]
         public string Notes { get; set; }
 
-        /// <summary>Payment method: "Cod" (default), "BankTransfer" or "MoMo".</summary>
+        /// <summary>Payment method: "Cod" (default), "BankTransfer", "MoMo" or "Wallet".</summary>
         public string PaymentMethod { get; set; }
 
         /// <summary>Optional discount/promo code entered at checkout.</summary>
@@ -222,6 +234,13 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         /// <summary>Optional branch id (item 109). Null = no branch.</summary>
         public Guid? BranchId { get; set; }
+
+        /// <summary>
+        /// Order source (item 133): "Web", "QR bàn", "Link chia sẻ", "Nhóm",
+        /// "POS". Defaults to "Web" when empty.
+        /// </summary>
+        [StringLength(50)]
+        public string Source { get; set; }
 
         public List<CreateOrderLineDto> Lines { get; set; } = new List<CreateOrderLineDto>();
     }

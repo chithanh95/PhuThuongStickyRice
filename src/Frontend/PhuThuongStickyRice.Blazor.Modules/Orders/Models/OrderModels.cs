@@ -98,6 +98,18 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Models
 
         public decimal PromotionDiscountAmount { get; set; }
 
+        /// <summary>Item 133: "Web" / "QR bàn" / "Link chia sẻ" / "Nhóm" / "POS".</summary>
+        public string Source { get; set; }
+
+        /// <summary>Item 128: MoMo IPN auto-matched by parsing OrderInfo.</summary>
+        public bool MoMoMatched { get; set; }
+
+        /// <summary>Item 130: "None" / "Requested" / "Refunded".</summary>
+        public string RefundStatus { get; set; }
+
+        /// <summary>Item 130: refund amount in VND.</summary>
+        public decimal RefundAmount { get; set; }
+
         public List<OrderLineModel> Lines { get; set; } = new List<OrderLineModel>();
     }
 

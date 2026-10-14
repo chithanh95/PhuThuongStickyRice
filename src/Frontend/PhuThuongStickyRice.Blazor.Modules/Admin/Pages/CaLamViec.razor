@@ -1,0 +1,242 @@
+@page "/admin/ca-lam-viec"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Blazor.Modules.Core.Components
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Models
+@using PhuThuongStickyRice.Blazor.Modules.Admin.Services
+@inject Wave5Service Wave5Service
+
+<h3>🕒 Ca làm việc</h3>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">@(_editingId == null ? "Thêm ca" : "Sửa ca")</div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label>Tên nhân viên *</label>
+                <input class="form-control" @bind="_form.StaffName" />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Ngày *</label>
+                <input type="date" class="form-control" @bind="_formDate" />
+            </div>
+            <div class="form-group col-md-2">
+                <label>Giờ bắt đầu *</label>
+                <input type="time" class="form-control" @bind="_startTime" />
+            </div>
+            <div class="form-group col-md-2">
+                <label>Giờ kết thúc *</label>
+                <input type="time" class="form-control" @bind="_endTime" />
+            </div>
+            <div class="form-group col-md-2">
+                <label>Ghi chú</label>
+                <input class="form-control" @bind="_form.Note" />
+            </div>
+        </div>
+        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+            @(_saving ? "Đang lưu..." : (_editingId == null ? "Thêm ca" : "Cập nhật"))
+        </button>
+        @if (_editingId != null)
+        {
+            <button class="btn btn-outline-secondary ml-2" @onclick="CancelEdit">Hủy</button>
+        }
+    </div>
+</div>
+
+<div class="d-flex flex-wrap align-items-center mb-2">
+    <button class="btn btn-sm btn-outline-secondary mr-2" @onclick="() => MoveWeek(-7)">← Tuần trước</button>
+    <strong>@WeekLabel()</strong>
+    <button class="btn btn-sm btn-outline-secondary ml-2" @onclick="() => MoveWeek(7)">Tuần sau →</button>
+</div>
+
+@if (_shifts == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_shifts.Count == 0)
+{
+    <div class="alert alert-info">Tuần này chưa có ca nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Ngày</th>
+                    <th>Nhân viên</th>
+                    <th>Giờ</th>
+                    <th>Ghi chú</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in _shifts)
+                {
+                    <tr>
+                        <td>@s.Date.ToString("ddd dd/MM", _viCulture)</td>
+                        <td><strong>@s.StaffName</strong></td>
+                        <td>@s.StartTime.ToString(@"hh\:mm") – @s.EndTime.ToString(@"hh\:mm")</td>
+                        <td><small>@s.Note</small></td>
+                        <td class="text-right text-nowrap">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => Edit(s)">Sửa</button>
+                            <button class="btn btn-sm btn-outline-danger ml-1" @onclick="() => AskDelete(s)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<ConfirmDialog @ref="_deleteDialog" Title="Xóa ca làm việc" YesText="Xóa" NoText="Hủy" ConfirmEventCallback="ConfirmedDelete">
+    <Message>Xóa ca của <strong>@_deleting?.StaffName</strong> ngày @_deleting?.Date.ToString("dd/MM/yyyy")?</Message>
+</ConfirmDialog>
+
+@code {
+    private static readonly System.Globalization.CultureInfo _viCulture =
+        System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+
+    private List<WorkShiftModel> _shifts;
+    private DateTime _weekAnchor = DateTime.Today;
+    private WorkShiftModel _form = new WorkShiftModel();
+    private DateTime _formDate = DateTime.Today;
+    private TimeOnly? _startTime = new TimeOnly(6, 0);
+    private TimeOnly? _endTime = new TimeOnly(14, 0);
+    private Guid? _editingId;
+    private bool _saving;
+    private string _error;
+    private string _success;
+    private WorkShiftModel _deleting;
+    private ConfirmDialog _deleteDialog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task MoveWeek(int days)
+    {
+        _weekAnchor = _weekAnchor.AddDays(days);
+        await LoadAsync();
+    }
+
+    private string WeekLabel()
+    {
+        var monday = _weekAnchor.AddDays(-(((int)_weekAnchor.DayOfWeek + 6) % 7));
+        return $"Tuần {monday:dd/MM} – {monday.AddDays(6):dd/MM/yyyy}";
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _shifts = await Wave5Service.GetWorkShiftsAsync(_weekAnchor);
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được ca làm việc: " + ex.Message;
+        }
+    }
+
+    private void Edit(WorkShiftModel s)
+    {
+        _editingId = s.Id;
+        _form = new WorkShiftModel
+        {
+            StaffName = s.StaffName,
+            Note = s.Note
+        };
+        _formDate = s.Date;
+        _startTime = TimeOnly.FromTimeSpan(s.StartTime);
+        _endTime = TimeOnly.FromTimeSpan(s.EndTime);
+        _success = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _form = new WorkShiftModel();
+        _formDate = DateTime.Today;
+        _startTime = new TimeOnly(6, 0);
+        _endTime = new TimeOnly(14, 0);
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        _form.Date = _formDate;
+        _form.StartTime = _startTime?.ToTimeSpan() ?? TimeSpan.Zero;
+        _form.EndTime = _endTime?.ToTimeSpan() ?? TimeSpan.Zero;
+        if (string.IsNullOrWhiteSpace(_form.StaffName))
+        {
+            _error = "Vui lòng nhập tên nhân viên.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (_editingId == null)
+            {
+                await Wave5Service.CreateWorkShiftAsync(_form);
+                _success = "Đã thêm ca.";
+            }
+            else
+            {
+                await Wave5Service.UpdateWorkShiftAsync(_editingId.Value, _form);
+                _success = "Đã cập nhật ca.";
+            }
+
+            CancelEdit();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Lưu thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void AskDelete(WorkShiftModel s)
+    {
+        _deleting = s;
+        _deleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete()
+    {
+        if (_deleting == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Wave5Service.DeleteWorkShiftAsync(_deleting.Id);
+            _success = "Đã xóa ca.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Xóa thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _deleting = null;
+        }
+    }
+}
