@@ -1,0 +1,309 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@implements IDisposable
+
+<link href="_content/PhuThuongStickyRice.Web.Components/css/admin-lexa.css" rel="stylesheet" />
+
+<div class="lx-admin">
+    <div class="lx-wrapper @(_sidebarOpen ? "lx-sidebar-open" : "")">
+        @* ============ SIDEBAR ============ *@
+        <aside class="lx-sidebar">
+            <a class="lx-logo" href="/dashboard" @onclick:preventDefault="false">
+                <span class="lx-logo-mark">X</span>
+                <span class="lx-logo-text">Xôi Phú Thượng<small>Quản trị</small></span>
+            </a>
+            <nav class="lx-nav">
+                @if (!string.IsNullOrWhiteSpace(_search))
+                {
+                    @foreach (var item in FilteredItems)
+                    {
+                        <a class="lx-nav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseSidebarMobile">
+                            <span class="oi @item.Icon" aria-hidden="true"></span>
+                            <span>@item.Label</span>
+                        </a>
+                    }
+                    @if (!FilteredItems.Any())
+                    {
+                        <div class="lx-nav-label">Không tìm thấy mục nào</div>
+                    }
+                }
+                else
+                {
+                    @foreach (var group in MenuGroups)
+                    {
+                        <div class="lx-nav-group @(IsGroupOpen(group.Key) ? "open" : "")">
+                            <a class="lx-nav-link" href="javascript:void(0)" @onclick="() => ToggleGroup(group.Key)" @onclick:preventDefault="true">
+                                <span class="oi @group.Icon" aria-hidden="true"></span>
+                                <span>@group.Label</span>
+                                <span class="oi oi-chevron-right lx-nav-caret" aria-hidden="true"></span>
+                            </a>
+                            <div class="lx-subnav">
+                                @foreach (var item in group.Items)
+                                {
+                                    <a class="lx-nav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseSidebarMobile">
+                                        <span>@item.Label</span>
+                                        @if (!string.IsNullOrEmpty(item.Badge))
+                                        {
+                                            <span class="lx-badge @item.BadgeClass lx-nav-badge">@item.Badge</span>
+                                        }
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </nav>
+            <div class="lx-sidebar-foot">Xôi Phú Thượng &bull; Admin v1.0</div>
+        </aside>
+        <div class="lx-backdrop" @onclick="CloseSidebarMobile"></div>
+
+        @* ============ MAIN ============ *@
+        <div class="lx-main">
+            <header class="lx-topbar">
+                <button class="lx-icon-btn" @onclick="ToggleSidebar" title="Menu">
+                    <span class="oi oi-menu" aria-hidden="true"></span>
+                </button>
+                <div class="lx-search">
+                    <span class="oi oi-magnifying-glass" aria-hidden="true"></span>
+                    <input placeholder="Tìm chức năng..." @bind="_search" @bind:event="oninput" />
+                </div>
+                <div class="lx-topbar-right">
+                    <a class="lx-icon-btn" href="/orders" title="Đơn hàng">
+                        <span class="oi oi-bell" aria-hidden="true"></span>
+                        @if (_pendingCount > 0)
+                        {
+                            <span class="lx-dot">@_pendingCount</span>
+                        }
+                    </a>
+                    <div class="lx-dropdown">
+                        <button class="lx-user-chip" @onclick="ToggleUserMenu">
+                            <AuthorizeView>
+                                <Authorized>
+                                    <span class="lx-avatar">@UserInitial(context.User.Identity?.Name)</span>
+                                    <span class="lx-user-name">@context.User.Identity?.Name</span>
+                                </Authorized>
+                                <NotAuthorized>
+                                    <span class="lx-avatar">A</span>
+                                    <span class="lx-user-name">Admin</span>
+                                </NotAuthorized>
+                            </AuthorizeView>
+                        </button>
+                        @if (_userMenuOpen)
+                        {
+                            <div class="lx-dropdown-menu">
+                                <a class="lx-dropdown-item" href="/doi-mat-khau" @onclick="CloseUserMenu">
+                                    <span class="oi oi-key" aria-hidden="true"></span> Đổi mật khẩu
+                                </a>
+                                <button class="lx-dropdown-item" @onclick="SignOut">
+                                    <span class="oi oi-account-logout" aria-hidden="true"></span> Đăng xuất
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </header>
+
+            <div class="lx-content">
+                <div class="lx-page-head">
+                    <div>
+                        <h1 class="lx-page-title">@_pageTitle</h1>
+                        <p class="lx-page-sub">@_pageGroup</p>
+                    </div>
+                    <p class="lx-breadcrumb">
+                        <a href="/dashboard">Trang quản trị</a><span class="sep">/</span>@_pageGroup<span class="sep">/</span><span class="current">@_pageTitle</span>
+                    </p>
+                </div>
+                @Body
+            </div>
+
+            <footer class="lx-footer">&copy; 2026 Xôi Phú Thượng &mdash; Trang quản trị</footer>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _sidebarOpen;
+    private bool _userMenuOpen;
+    private string _search = "";
+    private int _pendingCount = 0;
+
+    private static string UserInitial(string name) =>
+        string.IsNullOrWhiteSpace(name) ? "A" : name.Trim().Substring(0, 1).ToUpperInvariant();
+    private string _pageTitle = "Bảng điều khiển";
+    private string _pageGroup = "Tổng quan";
+
+    private readonly HashSet<string> _openGroups = new();
+
+    private List<MenuGroup> MenuGroups = new()
+    {
+        new("overview", "Tổng quan", "oi-dashboard", new()
+        {
+            new("/dashboard", "Dashboard", "oi-dashboard"),
+            new("/orders", "Đơn hàng", "oi-cart"),
+            new("/customers", "Khách hàng", "oi-people"),
+        }),
+        new("sales", "Bán hàng", "oi-tag", new()
+        {
+            new("/products", "Sản phẩm", "oi-tag"),
+            new("/admin/toppings", "Topping", "oi-plus"),
+            new("/admin/combos", "Combo", "oi-layers"),
+            new("/admin/discounts", "Mã giảm giá", "oi-badge"),
+            new("/admin/khuyen-mai", "Khuyến mãi", "oi-bolt"),
+            new("/admin/qr-ban", "QR bàn", "oi-grid-three-up"),
+        }),
+        new("ops", "Vận hành", "oi-cog", new()
+        {
+            new("/ban-hang", "Bán hàng (POS)", "oi-credit-card"),
+            new("/bep", "Màn hình bếp", "oi-fire"),
+            new("/admin/shippers", "Shipper", "oi-person"),
+            new("/admin/chi-nhanh", "Chi nhánh", "oi-home"),
+            new("/admin/ca-lam-viec", "Ca làm việc", "oi-clock"),
+            new("/admin/ket-ca", "Kết ca", "oi-clipboard"),
+            new("/admin/du-bao-nguyen-lieu", "Dự báo nguyên liệu", "oi-spreadsheet"),
+        }),
+        new("content", "Nội dung", "oi-image", new()
+        {
+            new("/admin/landing", "Landing page", "oi-image"),
+            new("/admin/bai-viet", "Bài viết", "oi-copywriting"),
+            new("/admin/faq", "FAQ", "oi-question-mark"),
+            new("/admin/chinh-sach", "Chính sách", "oi-book"),
+            new("/admin/danh-gia", "Đánh giá", "oi-star"),
+            new("/admin/anh-khach-hang", "Ảnh khách hàng", "oi-camera"),
+        }),
+        new("marketing", "Marketing", "oi-bullhorn", new()
+        {
+            new("/admin/loyalty", "Khách hàng thân thiết", "oi-heart"),
+            new("/admin/quy-tac-thuong", "Quy tắc thưởng", "oi-target"),
+            new("/admin/chien-dich", "Chiến dịch", "oi-bullhorn"),
+            new("/admin/dinh-ky", "Đặt xôi định kỳ", "oi-calendar"),
+            new("/admin/doanh-nghiep", "Khách doanh nghiệp", "oi-briefcase"),
+            new("/admin/quotes", "Báo giá", "oi-calculator"),
+            new("/admin/binh-chon", "Bình chọn món mới", "oi-thumb-up"),
+            new("/admin/mau-tin-nhan", "Mẫu tin nhắn", "oi-envelope-closed"),
+            new("/admin/link-rut-gon", "Link rút gọn", "oi-link-intact"),
+        }),
+        new("finance", "Tài chính", "oi-dollar", new()
+        {
+            new("/admin/thanh-toan", "Thanh toán", "oi-dollar"),
+            new("/admin/doi-soat-momo", "Đối soát MoMo", "oi-transfer"),
+            new("/admin/doi-soat-ngay", "Đối soát ngày", "oi-data-transfer-download"),
+            new("/admin/vi-tien", "Ví tiền", "oi-box"),
+            new("/admin/hoan-tien", "Hoàn tiền", "oi-action-undo"),
+            new("/admin/loi-nhuan", "Lợi nhuận", "oi-graph"),
+        }),
+        new("system", "Hệ thống", "oi-wrench", new()
+        {
+            new("/admin/shop-settings", "Cài đặt cửa hàng", "oi-cog"),
+            new("/admin/tinh-nang", "Tính năng", "oi-wrench"),
+            new("/admin/integrations", "Tích hợp", "oi-puzzle-piece"),
+            new("/admin/webhooks", "Webhooks", "oi-rss"),
+            new("/admin/audit-logs", "Nhật ký thao tác", "oi-list"),
+            new("/admin/nhat-ky-he-thong", "Nhật ký hệ thống", "oi-terminal"),
+            new("/admin/lich-su-dang-nhap", "Lịch sử đăng nhập", "oi-account-login"),
+            new("/admin/blacklist", "Danh sách chặn", "oi-ban"),
+            new("/admin/bao-mat", "Bảo mật", "oi-shield"),
+            new("/admin/he-thong", "Hệ thống", "oi-monitor"),
+            new("/admin/ho-tro", "Hỗ trợ", "oi-comment-square"),
+            new("/admin/huong-dan", "Hướng dẫn", "oi-info"),
+        }),
+    };
+
+    private IEnumerable<MenuItem> FilteredItems =>
+        MenuGroups.SelectMany(g => g.Items)
+            .Where(i => i.Label.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        UpdatePageHead();
+        // Mở sẵn nhóm chứa trang hiện tại
+        var group = MenuGroups.FirstOrDefault(g => g.Items.Any(i => IsHrefActive(i.Href)));
+        if (group != null) _openGroups.Add(group.Key);
+        else _openGroups.Add("overview");
+    }
+
+    private void OnLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        UpdatePageHead();
+        var group = MenuGroups.FirstOrDefault(g => g.Items.Any(i => IsHrefActive(i.Href)));
+        if (group != null) _openGroups.Add(group.Key);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdatePageHead()
+    {
+        var path = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
+        foreach (var g in MenuGroups)
+        {
+            var item = g.Items.FirstOrDefault(i =>
+                string.Equals(i.Href, path, StringComparison.OrdinalIgnoreCase));
+            if (item != null)
+            {
+                _pageTitle = item.Label;
+                _pageGroup = g.Label;
+                return;
+            }
+        }
+        _pageTitle = "Bảng điều khiển";
+        _pageGroup = "Tổng quan";
+    }
+
+    private bool IsHrefActive(string href)
+    {
+        var path = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
+        return string.Equals(href.TrimEnd('/'), path, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string IsActive(string href) => IsHrefActive(href) ? "active" : "";
+
+    private bool IsGroupOpen(string key) => _openGroups.Contains(key);
+
+    private void ToggleGroup(string key)
+    {
+        if (!_openGroups.Remove(key)) _openGroups.Add(key);
+    }
+
+    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
+    private void CloseSidebarMobile() => _sidebarOpen = false;
+    private void ToggleUserMenu() => _userMenuOpen = !_userMenuOpen;
+    private void CloseUserMenu() => _userMenuOpen = false;
+
+    private async Task SignOut()
+    {
+        _userMenuOpen = false;
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token_expires");
+        }
+        catch { }
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private sealed class MenuGroup
+    {
+        public MenuGroup(string key, string label, string icon, List<MenuItem> items)
+        { Key = key; Label = label; Icon = icon; Items = items; }
+        public string Key { get; }
+        public string Label { get; }
+        public string Icon { get; }
+        public List<MenuItem> Items { get; }
+    }
+
+    private sealed class MenuItem
+    {
+        public MenuItem(string href, string label, string icon, string badge = null, string badgeClass = "lx-badge-primary")
+        { Href = href; Label = label; Icon = icon; Badge = badge; BadgeClass = badgeClass; }
+        public string Href { get; }
+        public string Label { get; }
+        public string Icon { get; }
+        public string Badge { get; }
+        public string BadgeClass { get; }
+    }
+}
