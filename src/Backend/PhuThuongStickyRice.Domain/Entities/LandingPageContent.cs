@@ -21,6 +21,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int ContactAddressMaxLength = 500;
         public const int ContactPhoneMaxLength = 100;
         public const int ContactEmailMaxLength = 254;
+        public const int ImageUrlMaxLength = 500;
 
         public string HeroTitle { get; private set; }
 
@@ -54,6 +55,19 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public string FooterButtonText { get; private set; }
 
+        /// <summary>Uploaded image URLs (relative, e.g. /uploads/landing/abc.jpg). Null = use placeholder.</summary>
+        public string HeroImageUrl { get; private set; }
+
+        public string BannerImageUrl { get; private set; }
+
+        public string MenuImage1Url { get; private set; }
+
+        public string MenuImage2Url { get; private set; }
+
+        public string MenuImage3Url { get; private set; }
+
+        public string FooterBackgroundUrl { get; private set; }
+
         protected LandingPageContent()
         {
         }
@@ -64,7 +78,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             string menuTitle, string menuLabel1, string menuLabel2, string menuLabel3,
             string newsTitle, string newsItemsJson,
             string footerTitle, string contactAddress, string contactPhone, string contactEmail,
-            string footerButtonText)
+            string footerButtonText,
+            string heroImageUrl = null, string bannerImageUrl = null,
+            string menuImage1Url = null, string menuImage2Url = null, string menuImage3Url = null,
+            string footerBackgroundUrl = null)
         {
             var content = new LandingPageContent();
             content.Update(
@@ -73,7 +90,10 @@ namespace PhuThuongStickyRice.Domain.Entities
                 menuTitle, menuLabel1, menuLabel2, menuLabel3,
                 newsTitle, newsItemsJson,
                 footerTitle, contactAddress, contactPhone, contactEmail,
-                footerButtonText);
+                footerButtonText,
+                heroImageUrl, bannerImageUrl,
+                menuImage1Url, menuImage2Url, menuImage3Url,
+                footerBackgroundUrl);
             return content;
         }
 
@@ -83,7 +103,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             string menuTitle, string menuLabel1, string menuLabel2, string menuLabel3,
             string newsTitle, string newsItemsJson,
             string footerTitle, string contactAddress, string contactPhone, string contactEmail,
-            string footerButtonText)
+            string footerButtonText,
+            string heroImageUrl = null, string bannerImageUrl = null,
+            string menuImage1Url = null, string menuImage2Url = null, string menuImage3Url = null,
+            string footerBackgroundUrl = null)
         {
             HeroTitle = heroTitle;
             HeroTagline = heroTagline;
@@ -101,6 +124,12 @@ namespace PhuThuongStickyRice.Domain.Entities
             ContactPhone = contactPhone;
             ContactEmail = contactEmail;
             FooterButtonText = footerButtonText;
+            HeroImageUrl = heroImageUrl;
+            BannerImageUrl = bannerImageUrl;
+            MenuImage1Url = menuImage1Url;
+            MenuImage2Url = menuImage2Url;
+            MenuImage3Url = menuImage3Url;
+            FooterBackgroundUrl = footerBackgroundUrl;
         }
     }
 }

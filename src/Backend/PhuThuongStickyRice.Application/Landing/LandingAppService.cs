@@ -53,7 +53,10 @@ namespace PhuThuongStickyRice.Application.Landing
                     dto.MenuTitle, dto.MenuLabel1, dto.MenuLabel2, dto.MenuLabel3,
                     dto.NewsTitle, newsJson,
                     dto.FooterTitle, dto.ContactAddress, dto.ContactPhone, dto.ContactEmail,
-                    dto.FooterButtonText);
+                    dto.FooterButtonText,
+                    dto.HeroImageUrl, dto.BannerImageUrl,
+                    dto.MenuImage1Url, dto.MenuImage2Url, dto.MenuImage3Url,
+                    dto.FooterBackgroundUrl);
                 await _contentRepository.InsertAsync(entity, autoSave: true);
             }
             else
@@ -64,7 +67,10 @@ namespace PhuThuongStickyRice.Application.Landing
                     dto.MenuTitle, dto.MenuLabel1, dto.MenuLabel2, dto.MenuLabel3,
                     dto.NewsTitle, newsJson,
                     dto.FooterTitle, dto.ContactAddress, dto.ContactPhone, dto.ContactEmail,
-                    dto.FooterButtonText);
+                    dto.FooterButtonText,
+                    dto.HeroImageUrl, dto.BannerImageUrl,
+                    dto.MenuImage1Url, dto.MenuImage2Url, dto.MenuImage3Url,
+                    dto.FooterBackgroundUrl);
                 await _contentRepository.UpdateAsync(entity, autoSave: true);
             }
 
@@ -96,7 +102,13 @@ namespace PhuThuongStickyRice.Application.Landing
                 ContactAddress = entity.ContactAddress,
                 ContactPhone = entity.ContactPhone,
                 ContactEmail = entity.ContactEmail,
-                FooterButtonText = entity.FooterButtonText
+                FooterButtonText = entity.FooterButtonText,
+                HeroImageUrl = entity.HeroImageUrl,
+                BannerImageUrl = entity.BannerImageUrl,
+                MenuImage1Url = entity.MenuImage1Url,
+                MenuImage2Url = entity.MenuImage2Url,
+                MenuImage3Url = entity.MenuImage3Url,
+                FooterBackgroundUrl = entity.FooterBackgroundUrl
             };
         }
 

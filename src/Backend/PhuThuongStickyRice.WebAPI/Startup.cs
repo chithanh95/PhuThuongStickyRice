@@ -202,6 +202,9 @@ namespace PhuThuongStickyRice.WebAPI
 
             app.UseDebuggingMiddleware();
 
+            // Serves wwwroot, including /uploads/landing/* for landing page images.
+            app.UseStaticFiles();
+
             app.UseAccessTokenFromFormMiddleware();
 
             app.UseLoggingStatusCodeMiddleware();

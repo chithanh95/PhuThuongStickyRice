@@ -1,5 +1,6 @@
 @page "/admin/landing"
 @attribute [Authorize]
+@using Microsoft.AspNetCore.Components.Forms
 @using PhuThuongStickyRice.Blazor.Modules.Landing.Models
 @using PhuThuongStickyRice.Blazor.Modules.Landing.Services
 @inject LandingService LandingService
@@ -37,6 +38,53 @@ else
                 <label>Chữ trên nút bấm</label>
                 <input class="form-control" @bind="_model.HeroButtonText" />
             </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Hình ảnh landing</div>
+        <div class="card-body">
+            <p class="text-muted">Tải ảnh lên để thay ảnh mẫu. Để trống sẽ dùng ảnh mẫu. Định dạng: jpg, png, webp, gif — tối đa 5 MB mỗi ảnh.</p>
+            @if (_imageSlots != null)
+            {
+                <div class="row">
+                    @foreach (var slot in _imageSlots)
+                    {
+                        <div class="col-md-4 col-sm-6 mb-4">
+                            <label class="font-weight-bold">@slot.Label</label>
+                            <div class="border rounded p-2 text-center mb-2 d-flex align-items-center justify-content-center"
+                                 style="min-height: 120px; background: #f8f9fa;">
+                                @if (!string.IsNullOrEmpty(slot.Get()))
+                                {
+                                    <img src="@LandingService.ResolveImageUrl(slot.Get())"
+                                         alt="@slot.Label" class="img-fluid" style="max-height: 150px;" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted"><small>Đang dùng ảnh mẫu</small></span>
+                                }
+                            </div>
+                            <InputFile OnChange="@(e => OnImageSelected(e, slot))" accept="image/*"
+                                       class="form-control-file mb-2" />
+                            @if (_uploadingSlot == slot.Key)
+                            {
+                                <div class="text-info"><small>Đang tải lên...</small></div>
+                            }
+                            @if (_uploadErrors.TryGetValue(slot.Key, out var uploadError))
+                            {
+                                <div class="text-danger"><small>@uploadError</small></div>
+                            }
+                            @if (!string.IsNullOrEmpty(slot.Get()) && _uploadingSlot != slot.Key)
+                            {
+                                <button class="btn btn-sm btn-outline-secondary mt-1"
+                                        @onclick="() => slot.Set(null)">
+                                    Dùng lại ảnh mẫu
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
         </div>
     </div>
 
@@ -148,6 +196,21 @@ else
     private string _error;
     private string _success;
 
+    private List<ImageSlot> _imageSlots;
+    private string _uploadingSlot;
+    private readonly Dictionary<string, string> _uploadErrors = new Dictionary<string, string>();
+
+    private sealed class ImageSlot
+    {
+        public string Key { get; set; }
+
+        public string Label { get; set; }
+
+        public Func<string> Get { get; set; }
+
+        public Action<string> Set { get; set; }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -160,10 +223,47 @@ else
             }
 
             _model.NewsItems = _news;
+
+            _imageSlots = new List<ImageSlot>
+            {
+                new ImageSlot { Key = "hero", Label = "Ảnh hero (bên phải)", Get = () => _model.HeroImageUrl, Set = v => _model.HeroImageUrl = v },
+                new ImageSlot { Key = "banner", Label = "Ảnh banner toàn chiều rộng", Get = () => _model.BannerImageUrl, Set = v => _model.BannerImageUrl = v },
+                new ImageSlot { Key = "menu1", Label = "Ảnh món 1", Get = () => _model.MenuImage1Url, Set = v => _model.MenuImage1Url = v },
+                new ImageSlot { Key = "menu2", Label = "Ảnh món 2", Get = () => _model.MenuImage2Url, Set = v => _model.MenuImage2Url = v },
+                new ImageSlot { Key = "menu3", Label = "Ảnh món 3", Get = () => _model.MenuImage3Url, Set = v => _model.MenuImage3Url = v },
+                new ImageSlot { Key = "footerBg", Label = "Ảnh nền chân trang", Get = () => _model.FooterBackgroundUrl, Set = v => _model.FooterBackgroundUrl = v }
+            };
         }
         catch (Exception)
         {
             _error = "Không tải được nội dung landing. Vui lòng thử lại.";
+        }
+    }
+
+    private async Task OnImageSelected(InputFileChangeEventArgs e, ImageSlot slot)
+    {
+        _uploadErrors.Remove(slot.Key);
+        _success = null;
+        var file = e.File;
+        if (file == null)
+        {
+            return;
+        }
+
+        _uploadingSlot = slot.Key;
+        try
+        {
+            await using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            var url = await LandingService.UploadImageAsync(stream, file.Name, file.ContentType);
+            slot.Set(url);
+        }
+        catch (Exception ex)
+        {
+            _uploadErrors[slot.Key] = ex.Message;
+        }
+        finally
+        {
+            _uploadingSlot = null;
         }
     }
 

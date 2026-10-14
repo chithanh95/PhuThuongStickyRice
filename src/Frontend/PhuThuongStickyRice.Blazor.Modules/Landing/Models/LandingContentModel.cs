@@ -44,5 +44,17 @@ namespace PhuThuongStickyRice.Blazor.Modules.Landing.Models
         public string ContactEmail { get; set; }
 
         public string FooterButtonText { get; set; } = "Đặt món ngay";
+
+        public string HeroImageUrl { get; set; }
+
+        public string BannerImageUrl { get; set; }
+
+        public string MenuImage1Url { get; set; }
+
+        public string MenuImage2Url { get; set; }
+
+        public string MenuImage3Url { get; set; }
+
+        public string FooterBackgroundUrl { get; set; }
     }
 }

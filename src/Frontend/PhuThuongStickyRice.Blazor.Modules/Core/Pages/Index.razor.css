@@ -243,6 +243,26 @@
     color: #fff;
 }
 
+/* Footer with an uploaded background image: keep the maroon identity
+   with a dark overlay so the text stays readable. */
+.lp-footer-contact.has-bg {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+}
+
+.lp-footer-contact.has-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(122, 27, 46, 0.88);
+}
+
+.lp-footer-contact.has-bg > * {
+    position: relative;
+    z-index: 1;
+}
+
 .lp-contact-list {
     list-style: none;
     padding-left: 0;

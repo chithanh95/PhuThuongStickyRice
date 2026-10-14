@@ -12,7 +12,7 @@
             <a href="/shop" class="lp-cta lp-cta-outline">@_content.HeroButtonText</a>
         </div>
         <div class="col-md-5 text-center">
-            <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg"
+            <img src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg")"
                  alt="Xôi Phú Thượng" class="lp-hero-img" />
         </div>
     </div>
@@ -20,7 +20,7 @@
 
 <!-- 2. PHOTO BANNER -->
 <div class="lp-banner">
-    <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg"
+    <img src="@Img(_content.BannerImageUrl, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg")"
          alt="Xôi ngũ sắc" class="lp-banner-img" />
 </div>
 
@@ -43,17 +43,17 @@
     </div>
     <div class="row no-gutters">
         <div class="col-md-4 col-12 lp-menu-item">
-            <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg"
+            <img src="@Img(_content.MenuImage1Url, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-gac.svg")"
                  alt="@_content.MenuLabel1" />
             <span class="lp-oval lp-oval-light">@_content.MenuLabel1</span>
         </div>
         <div class="col-md-4 col-12 lp-menu-item">
-            <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-xeo.svg"
+            <img src="@Img(_content.MenuImage2Url, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-xeo.svg")"
                  alt="@_content.MenuLabel2" />
             <span class="lp-oval lp-oval-light">@_content.MenuLabel2</span>
         </div>
         <div class="col-md-4 col-12 lp-menu-item">
-            <img src="_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg"
+            <img src="@Img(_content.MenuImage3Url, "_content/PhuThuongStickyRice.Blazor.Modules/images/xoi-ngu-sac.svg")"
                  alt="@_content.MenuLabel3" />
             <span class="lp-oval lp-oval-light">@_content.MenuLabel3</span>
         </div>
@@ -85,7 +85,7 @@
 <!-- 6. FOOTER -->
 <footer class="lp-footer">
     <div class="row no-gutters">
-        <div class="col-md-6 lp-footer-contact">
+        <div class="col-md-6 lp-footer-contact @(HasFooterBg ? "has-bg" : null)" style="@FooterBgStyle">
             <h2 class="lp-panel-title">@_content.FooterTitle</h2>
             <ul class="lp-contact-list">
                 @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
@@ -136,4 +136,16 @@
             _content = new LandingContentModel();
         }
     }
+
+    /// <summary>Uploaded image URL if set, otherwise the SVG placeholder.</summary>
+    private string Img(string uploadedUrl, string fallbackSvg) =>
+        !string.IsNullOrWhiteSpace(uploadedUrl)
+            ? LandingService.ResolveImageUrl(uploadedUrl)
+            : fallbackSvg;
+
+    private bool HasFooterBg => !string.IsNullOrWhiteSpace(_content.FooterBackgroundUrl);
+
+    private string FooterBgStyle => HasFooterBg
+        ? $"background-image: url('{LandingService.ResolveImageUrl(_content.FooterBackgroundUrl)}');"
+        : null;
 }
