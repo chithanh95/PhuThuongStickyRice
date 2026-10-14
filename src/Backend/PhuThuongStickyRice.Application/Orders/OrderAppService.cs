@@ -1,0 +1,195 @@
+using PhuThuongStickyRice.Application.Orders.DTOs;
+using PhuThuongStickyRice.Application.Orders.Exceptions;
+using PhuThuongStickyRice.Application.Products.Exceptions;
+using PhuThuongStickyRice.Domain.Entities;
+using PhuThuongStickyRice.Domain.Repositories;
+using PhuThuongStickyRice.Domain.ValueObjects;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Volo.Abp.Application.Dtos;
+using Volo.Abp.Application.Services;
+using Volo.Abp.Linq;
+using Volo.Abp.ObjectMapping;
+
+namespace PhuThuongStickyRice.Application.Orders
+{
+    public interface IOrderAppService : IApplicationService
+    {
+        Task<OrderDto> CreateAsync(CreateOrderDto input);
+
+        Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInput input);
+
+        Task<OrderDto> GetAsync(Guid id);
+
+        Task<OrderDto> UpdateStatusAsync(Guid id, UpdateOrderStatusDto input);
+    }
+
+    public class OrderAppService : ApplicationService, IOrderAppService
+    {
+        private readonly IOrderRepository _orders;
+        private readonly IProductRepository _products;
+        private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IObjectMapper _objectMapper;
+
+        public OrderAppService(
+            IOrderRepository orders,
+            IProductRepository products,
+            IAsyncQueryableExecuter asyncExecuter,
+            IObjectMapper objectMapper)
+        {
+            _orders = orders;
+            _products = products;
+            _asyncExecuter = asyncExecuter;
+            _objectMapper = objectMapper;
+        }
+
+        public async Task<OrderDto> CreateAsync(CreateOrderDto input)
+        {
+            if (input.Lines == null || input.Lines.Count == 0)
+            {
+                throw new Domain.Exceptions.DomainException("Order must contain at least one line.");
+            }
+
+            var productIds = input.Lines.Select(x => x.ProductId).Distinct().ToList();
+            var productQueryable = await _products.GetQueryableAsync();
+            var products = await _asyncExecuter.ToListAsync(
+                productQueryable.Where(x => productIds.Contains(x.Id)));
+
+            var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity)>();
+            foreach (var line in input.Lines)
+            {
+                var product = products.FirstOrDefault(x => x.Id == line.ProductId);
+                if (product == null)
+                {
+                    throw new ProductNotFoundException(line.ProductId);
+                }
+
+                if (product.Status != ProductStatus.Active)
+                {
+                    throw new Domain.Exceptions.DomainException($"Product '{product.Name}' is not available for ordering.");
+                }
+
+                lines.Add((product.Id, product.Name, product.Price, line.Quantity));
+            }
+
+            var orderNumber = await GenerateOrderNumberAsync();
+
+            var order = Order.Create(
+                orderNumber,
+                input.CustomerName,
+                input.CustomerPhone,
+                input.CustomerAddress,
+                input.Notes,
+                lines);
+
+            await _orders.InsertAsync(order);
+
+            return _objectMapper.Map<Order, OrderDto>(order);
+        }
+
+        public async Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInput input)
+        {
+            var queryable = await _orders.GetQueryableAsync();
+            System.Linq.IQueryable<Order> query = queryable.OrderByDescending(x => x.CreatedAt);
+
+            if (!string.IsNullOrWhiteSpace(input.SearchTerm))
+            {
+                var term = input.SearchTerm.Trim();
+                query = query.Where(x =>
+                    x.OrderNumber.Contains(term)
+                    || x.CustomerName.Contains(term)
+                    || x.CustomerPhone.Contains(term));
+            }
+
+            if (!string.IsNullOrWhiteSpace(input.Status)
+                && Enum.TryParse<OrderStatus>(input.Status, ignoreCase: true, out var status))
+            {
+                query = query.Where(x => x.Status == status);
+            }
+
+            var totalCount = await _asyncExecuter.LongCountAsync(query);
+            var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
+
+            return new PagedResultDto<OrderDto>(
+                totalCount,
+                _objectMapper.Map<List<Order>, List<OrderDto>>(items));
+        }
+
+        public async Task<OrderDto> GetAsync(Guid id)
+        {
+            var order = await FindOrThrowAsync(id);
+            return _objectMapper.Map<Order, OrderDto>(order);
+        }
+
+        public async Task<OrderDto> UpdateStatusAsync(Guid id, UpdateOrderStatusDto input)
+        {
+            var order = await FindOrThrowAsync(id);
+
+            if (!Enum.TryParse<OrderStatus>(input.Status, ignoreCase: true, out var status))
+            {
+                throw new Domain.Exceptions.DomainException($"Unknown order status '{input.Status}'.");
+            }
+
+            ApplyStatus(order, status);
+            await _orders.UpdateAsync(order);
+
+            return _objectMapper.Map<Order, OrderDto>(order);
+        }
+
+        private async Task<Order> FindOrThrowAsync(Guid id)
+        {
+            var order = await _orders.FindAsync(id);
+            if (order == null)
+            {
+                throw new OrderNotFoundException(id);
+            }
+
+            return order;
+        }
+
+        private async Task<string> GenerateOrderNumberAsync()
+        {
+            var random = new Random();
+
+            for (var attempt = 0; attempt < 10; attempt++)
+            {
+                var orderNumber = $"PX-{DateTime.UtcNow:yyyyMMdd}-{random.Next(1000, 9999)}";
+
+                if (!await _orders.ExistsWithOrderNumberAsync(orderNumber))
+                {
+                    return orderNumber;
+                }
+            }
+
+            throw new Domain.Exceptions.DomainException("Could not generate a unique order number. Please try again.");
+        }
+
+        private static void ApplyStatus(Order order, OrderStatus status)
+        {
+            switch (status)
+            {
+                case OrderStatus.Confirmed:
+                    order.Confirm();
+                    break;
+                case OrderStatus.Preparing:
+                    order.StartPreparing();
+                    break;
+                case OrderStatus.Delivering:
+                    order.StartDelivering();
+                    break;
+                case OrderStatus.Completed:
+                    order.Complete();
+                    break;
+                case OrderStatus.Cancelled:
+                    order.Cancel();
+                    break;
+                case OrderStatus.Pending:
+                    throw new Domain.Exceptions.DomainException("Cannot move an order back to 'Pending'.");
+                default:
+                    throw new Domain.Exceptions.DomainException($"Unsupported order status '{status}'.");
+            }
+        }
+    }
+}

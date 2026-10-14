@@ -1,5 +1,4 @@
-using MediatR;
-using PhuThuongStickyRice.Application.Orders.Queries;
+using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,17 +15,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [ApiController]
     public class DashboardController : ControllerBase
     {
-        private readonly IMediator _mediator;
+        private readonly IDashboardAppService _dashboardAppService;
 
-        public DashboardController(IMediator mediator)
+        public DashboardController(IDashboardAppService dashboardAppService)
         {
-            _mediator = mediator;
+            _dashboardAppService = dashboardAppService;
         }
 
         [HttpGet("stats")]
         public async Task<ActionResult> GetStats(CancellationToken cancellationToken = default)
         {
-            var stats = await _mediator.Send(new GetDashboardStatsQuery(), cancellationToken);
+            var stats = await _dashboardAppService.GetStatsAsync();
             return Ok(stats);
         }
     }

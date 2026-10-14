@@ -98,7 +98,7 @@ else
                 </table>
             </div>
             <div class="d-flex justify-content-between align-items-center">
-                <span>Tổng: @_paged.TotalItems đơn</span>
+                <span>Tổng: @_paged.TotalCount đơn</span>
                 <div>
                     <button class="btn btn-sm btn-outline-secondary" disabled="@(_page <= 1)" @onclick="() => LoadOrders(_page - 1)">Trước</button>
                     <span class="mx-2">Trang @_page</span>

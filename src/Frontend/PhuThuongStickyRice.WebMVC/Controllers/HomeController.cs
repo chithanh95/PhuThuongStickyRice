@@ -1,6 +1,4 @@
-﻿using MediatR;
-using PhuThuongStickyRice.Application.Products.DTOs;
-using PhuThuongStickyRice.Application.Products.Queries;
+﻿using PhuThuongStickyRice.Application.Products.DTOs;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using PhuThuongStickyRice.WebMVC.ConfigurationOptions;
 using PhuThuongStickyRice.WebMVC.Hubs;
@@ -30,21 +28,18 @@ namespace PhuThuongStickyRice.WebMVC.Controllers
     public class HomeController : Controller
     {
         private readonly IDistributedCache _distributedCache;
-        private readonly IMediator _mediator;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger _logger;
         private readonly IHubContext<SimulatedLongRunningTaskHub> _hubContext;
         private readonly AppSettings _appSettings;
 
         public HomeController(IDistributedCache distributedCache,
-            IMediator mediator,
             IHttpClientFactory httpClientFactory,
             ILogger<HomeController> logger,
             IOptionsSnapshot<AppSettings> appSettings,
             IHubContext<SimulatedLongRunningTaskHub> hubContext)
         {
             _distributedCache = distributedCache;
-            _mediator = mediator;
             _httpClientFactory = httpClientFactory;
             _logger = logger;
             _hubContext = hubContext;
@@ -63,8 +58,9 @@ namespace PhuThuongStickyRice.WebMVC.Controllers
 
             if (User.Identity.IsAuthenticated)
             {
-                var products = await _mediator.Send(new GetProductsQuery { Page = 1, PageSize = 5 });
-                _logger.LogInformation("Found {TotalItems} products via MediatR", products.TotalItems);
+                // Products are fetched from the WebAPI over HTTP below.
+                // (Previously this demo used MediatR; the backend now uses ABP Application Services.)
+                _logger.LogInformation("User is authenticated; products will be loaded via WebAPI below.");
             }
 
             var accessToken = await HttpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken);

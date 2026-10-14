@@ -90,8 +90,13 @@ namespace PhuThuongStickyRice.WebAPI
 
             services.AddDateTimeProvider();
 
-            services.AddMultiTenantPersistence(typeof(StickyRiceDbContextMultiTenantConnectionStringResolver), typeof(TenantResolver))
-                    .AddDomainServices()
+            // ABP modules: Application Services (CQRS), EF Core (repositories, DbContext),
+            // AutoMapper. Replaces the template AddMultiTenantPersistence (its
+            // multi-tenancy was scaffolding that always returned the default
+            // connection string).
+            services.AddApplication<StickyRiceWebApiModule>();
+
+            services.AddDomainServices()
                     .AddApplicationServices((Type serviceType, Type implementationType, ServiceLifetime serviceLifetime) =>
                     {
                         services.AddInterceptors(serviceType, implementationType, serviceLifetime, AppSettings.Interceptors);
@@ -234,6 +239,8 @@ namespace PhuThuongStickyRice.WebAPI
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.InitializeApplication();
+
             app.UseDebuggingMiddleware();
 
             app.UseAccessTokenFromFormMiddleware();

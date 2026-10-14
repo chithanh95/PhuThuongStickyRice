@@ -17,8 +17,6 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             DomainEvents.RegisterHandlers(Assembly.GetExecutingAssembly(), services);
 
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
-
             services
                 .AddScoped<IDomainEvents, DomainEvents>()
                 .AddScoped(typeof(ICrudService<>), typeof(CrudService<>))
@@ -49,6 +47,16 @@ namespace Microsoft.Extensions.DependencyInjection
 
             foreach (var type in assemblyTypes)
             {
+                // Skip open-generic handler definitions (e.g. AddEntityCommandHandler<T>,
+                // AuditLogCommandDecorator<T>). MS DI tolerates registering their
+                // open-generic interfaces with factories, but Autofac rejects it.
+                // The closed versions are registered by the loop below, and the
+                // decorators are instantiated by HandlerFactory via reflection.
+                if (type.IsGenericTypeDefinition)
+                {
+                    continue;
+                }
+
                 var handlerInterfaces = type.GetInterfaces()
                    .Where(Utils.IsHandlerInterface)
                    .ToList();

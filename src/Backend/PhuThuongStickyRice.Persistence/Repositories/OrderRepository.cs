@@ -1,28 +1,35 @@
-using Microsoft.EntityFrameworkCore;
-using PhuThuongStickyRice.CrossCuttingConcerns.OS;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Volo.Abp.Domain.Repositories.EntityFrameworkCore;
+using Volo.Abp.EntityFrameworkCore;
 
 namespace PhuThuongStickyRice.Persistence.Repositories
 {
-    public class OrderRepository : Repository<Order, System.Guid>, IOrderRepository
+    public class OrderRepository : EfCoreRepository<StickyRiceDbContext, Order, System.Guid>, IOrderRepository
     {
-        public OrderRepository(StickyRiceDbContext dbContext, IDateTimeProvider dateTimeProvider)
-            : base(dbContext, dateTimeProvider)
+        public OrderRepository(IDbContextProvider<StickyRiceDbContext> dbContextProvider,
+            Volo.Abp.DependencyInjection.IAbpLazyServiceProvider lazyServiceProvider)
+            : base(dbContextProvider)
         {
+            // See ProductRepository: ABP property injection needs Autofac; set explicitly.
+            LazyServiceProvider = lazyServiceProvider;
         }
 
-        public Task<Order> GetByOrderNumberAsync(string orderNumber, CancellationToken cancellationToken = default)
+        public async Task<Order> GetByOrderNumberAsync(string orderNumber, CancellationToken cancellationToken = default)
         {
-            return SingleOrDefaultAsync(DbSet.Where(x => x.OrderNumber == orderNumber));
+            var queryable = await GetQueryableAsync();
+            return await AsyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x => x.OrderNumber == orderNumber), cancellationToken);
         }
 
         public async Task<bool> ExistsWithOrderNumberAsync(string orderNumber, CancellationToken cancellationToken = default)
         {
-            return await DbSet.AnyAsync(x => x.OrderNumber == orderNumber, cancellationToken);
+            var queryable = await GetQueryableAsync();
+            return await AsyncExecuter.AnyAsync(
+                queryable.Where(x => x.OrderNumber == orderNumber), cancellationToken);
         }
     }
 }

@@ -58,9 +58,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     .AddScoped(typeof(IEmailMessageRepository), typeof(EmailMessageRepository))
                     .AddScoped(typeof(ISmsMessageRepository), typeof(SmsMessageRepository))
                     .AddScoped(typeof(IUserRepository), typeof(UserRepository))
-                    .AddScoped(typeof(IRoleRepository), typeof(RoleRepository))
-                    .AddScoped(typeof(IProductRepository), typeof(ProductRepository))
-                    .AddScoped(typeof(IOrderRepository), typeof(OrderRepository));
+                    .AddScoped(typeof(IRoleRepository), typeof(RoleRepository));
 
             services.AddScoped(typeof(IUnitOfWork), services =>
             {

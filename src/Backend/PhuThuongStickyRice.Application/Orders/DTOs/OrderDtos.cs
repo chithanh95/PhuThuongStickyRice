@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using Volo.Abp.Application.Dtos;
 
 namespace PhuThuongStickyRice.Application.Orders.DTOs
 {
@@ -16,10 +18,8 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public decimal LineTotal { get; set; }
     }
 
-    public class OrderDto
+    public class OrderDto : EntityDto<Guid>
     {
-        public Guid Id { get; set; }
-
         public string OrderNumber { get; set; }
 
         public string CustomerName { get; set; }
@@ -39,6 +39,48 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public DateTime CreatedAt { get; set; }
 
         public List<OrderLineDto> Lines { get; set; } = new List<OrderLineDto>();
+    }
+
+    public class CreateOrderLineDto
+    {
+        [Required]
+        public Guid ProductId { get; set; }
+
+        [Range(1, int.MaxValue)]
+        public int Quantity { get; set; }
+    }
+
+    public class CreateOrderDto
+    {
+        [Required]
+        [StringLength(200)]
+        public string CustomerName { get; set; }
+
+        [Required]
+        [StringLength(30)]
+        public string CustomerPhone { get; set; }
+
+        [Required]
+        [StringLength(500)]
+        public string CustomerAddress { get; set; }
+
+        [StringLength(1000)]
+        public string Notes { get; set; }
+
+        public List<CreateOrderLineDto> Lines { get; set; } = new List<CreateOrderLineDto>();
+    }
+
+    public class GetOrdersInput : PagedAndSortedResultRequestDto
+    {
+        public string SearchTerm { get; set; }
+
+        public string Status { get; set; }
+    }
+
+    public class UpdateOrderStatusDto
+    {
+        [Required]
+        public string Status { get; set; }
     }
 
     public class DashboardStatsDto

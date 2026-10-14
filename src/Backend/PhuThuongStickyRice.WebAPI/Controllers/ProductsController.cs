@@ -1,10 +1,8 @@
-using MediatR;
 using PhuThuongStickyRice.Application;
-using PhuThuongStickyRice.Application.AuditLogEntries.DTOs;
 using PhuThuongStickyRice.Application.AuditLogEntries.Queries;
-using PhuThuongStickyRice.Application.Products.Commands;
+using PhuThuongStickyRice.Application.Products;
+using PhuThuongStickyRice.Application.Products.DTOs;
 using PhuThuongStickyRice.Application.Products.Exceptions;
-using PhuThuongStickyRice.Application.Products.Queries;
 using PhuThuongStickyRice.CrossCuttingConcerns.Csv;
 using PhuThuongStickyRice.CrossCuttingConcerns.HtmlGenerator;
 using PhuThuongStickyRice.CrossCuttingConcerns.PdfConverter;
@@ -35,7 +33,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly IMediator _mediator;
+        private readonly IProductAppService _productAppService;
         private readonly Dispatcher _dispatcher;
         private readonly ILogger _logger;
         private readonly IHtmlGenerator _htmlGenerator;
@@ -43,7 +41,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly ICsvWriter<ProductModel> _productCsvWriter;
         private readonly ICsvReader<ProductModel> _productCsvReader;
 
-        public ProductsController(IMediator mediator,
+        public ProductsController(IProductAppService productAppService,
             Dispatcher dispatcher,
             ILogger<ProductsController> logger,
             IHtmlGenerator htmlGenerator,
@@ -51,7 +49,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             ICsvWriter<ProductModel> productCsvWriter,
             ICsvReader<ProductModel> productCsvReader)
         {
-            _mediator = mediator;
+            _productAppService = productAppService;
             _dispatcher = dispatcher;
             _logger = logger;
             _htmlGenerator = htmlGenerator;
@@ -67,26 +65,26 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Getting products");
-            var paged = await _mediator.Send(new GetProductsQuery
+            var paged = await _productAppService.GetListAsync(new GetProductsInput
             {
-                Page = page,
-                PageSize = pageSize,
+                MaxResultCount = pageSize < 1 ? 20 : pageSize,
+                SkipCount = (page < 1 ? 0 : page - 1) * (pageSize < 1 ? 20 : pageSize),
                 SearchTerm = searchTerm,
                 Status = status
-            }, cancellationToken);
-            return Ok(paged.ToModels());
+            });
+            return Ok(paged);
         }
 
         [AllowAnonymous]
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ProductModel>> Get(Guid id, CancellationToken cancellationToken = default)
+        public async Task<ActionResult<ProductDto>> Get(Guid id, CancellationToken cancellationToken = default)
         {
             try
             {
-                var dto = await _mediator.Send(new GetProductByIdQuery { Id = id }, cancellationToken);
-                return Ok(dto.ToModel());
+                var dto = await _productAppService.GetAsync(id);
+                return Ok(dto);
             }
             catch (ProductNotFoundException ex)
             {
@@ -99,22 +97,19 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [Consumes("application/json")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ProductModel>> Post([FromBody] ProductModel model, CancellationToken cancellationToken = default)
+        public async Task<ActionResult<ProductDto>> Post([FromBody] ProductModel model, CancellationToken cancellationToken = default)
         {
             try
             {
-                var id = await _mediator.Send(new CreateProductCommand
+                var created = await _productAppService.CreateAsync(new CreateUpdateProductDto
                 {
                     Code = model.Code,
                     Name = model.Name,
                     Description = model.Description,
                     Price = model.Price,
                     Currency = string.IsNullOrWhiteSpace(model.Currency) ? "VND" : model.Currency
-                }, cancellationToken);
-
-                var created = await _mediator.Send(new GetProductByIdQuery { Id = id }, cancellationToken);
-                var createdModel = created.ToModel();
-                return Created($"/api/products/{createdModel.Id}", createdModel);
+                });
+                return Created($"/api/products/{created.Id}", created);
             }
             catch (DomainException ex)
             {
@@ -132,20 +127,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ProductModel>> Put(Guid id, [FromBody] ProductModel model, CancellationToken cancellationToken = default)
+        public async Task<ActionResult<ProductDto>> Put(Guid id, [FromBody] ProductModel model, CancellationToken cancellationToken = default)
         {
             try
             {
-                var dto = await _mediator.Send(new UpdateProductCommand
+                var dto = await _productAppService.UpdateAsync(id, new CreateUpdateProductDto
                 {
-                    Id = id,
+                    Code = model.Code,
                     Name = model.Name,
                     Description = model.Description,
                     Price = model.Price,
                     Currency = string.IsNullOrWhiteSpace(model.Currency) ? "VND" : model.Currency,
                     Status = model.Status
-                }, cancellationToken);
-                return Ok(dto.ToModel());
+                });
+                return Ok(dto);
             }
             catch (ProductNotFoundException ex)
             {
@@ -165,7 +160,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             try
             {
-                await _mediator.Send(new DeleteProductCommand { Id = id }, cancellationToken);
+                await _productAppService.DeleteAsync(id);
                 return Ok();
             }
             catch (ProductNotFoundException ex)
@@ -179,7 +174,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> GetAuditLogs(Guid id, CancellationToken cancellationToken = default)
         {
             // NOTE: audit log reads still go through the legacy Dispatcher; it will be
-            // migrated to MediatR together with the AuditLogEntries feature.
+            // migrated to an ABP Application Service together with the AuditLogEntries feature.
             var logs = await _dispatcher.DispatchAsync(new GetAuditEntriesQuery { ObjectId = id.ToString() }, cancellationToken);
 
             var entries = new List<object>();
@@ -243,8 +238,21 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         private async Task<List<ProductModel>> GetAllProductModels(CancellationToken cancellationToken)
         {
-            var paged = await _mediator.Send(new GetProductsQuery { Page = 1, PageSize = int.MaxValue }, cancellationToken);
-            return paged.ToModels().Items;
+            var paged = await _productAppService.GetListAsync(new GetProductsInput
+            {
+                MaxResultCount = int.MaxValue,
+                SkipCount = 0
+            });
+            return paged.Items.Select(x => new ProductModel
+            {
+                Id = x.Id,
+                Code = x.Code,
+                Name = x.Name,
+                Description = x.Description,
+                Price = x.Price,
+                Currency = x.Currency,
+                Status = x.Status
+            }).ToList();
         }
 
         /// <summary>

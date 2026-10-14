@@ -8,7 +8,12 @@ admin có dashboard thống kê, quản lý đơn hàng và sản phẩm.
 - **.NET 10 LTS** (Blazor WebAssembly + ASP.NET Core WebAPI)
 - **Clean Architecture**: `Domain` → `Application` → `Persistence` → `WebAPI`
 - **DDD**: `Product`, `Order` là aggregate root (private setters, factory `Create`, behavior methods, value objects `ProductCode`/`Money`)
-- **CQRS bằng MediatR**: `CreateOrderCommand`, `UpdateOrderStatusCommand`, `GetOrdersQuery`, `GetDashboardStatsQuery`...
+- **ABP Framework 10.7**: Application Services thay cho CQRS thủ công — `ProductAppService`, `OrderAppService`, `DashboardAppService`
+  (trả `PagedResultDto<T>`; UoW/Auditing/Validation qua interceptor). MediatR đã gỡ khỏi các luồng Product/Order/Dashboard.
+  Host dùng **Autofac** (`Program.cs`: Generic Host + `UseAutofac`, `StickyRiceWebApiModule` phụ thuộc `AbpAutofacModule`) vì
+  interception của ABP (Castle DynamicProxy) chỉ chạy với Autofac, không chạy với MS DI mặc định.
+  Các module ABP: `StickyRiceDomainModule`, `StickyRiceApplicationModule` (AutoMapper), `StickyRiceEntityFrameworkCoreModule` (`AddAbpDbContext` + `EfCoreRepository`), `StickyRiceWebApiModule`.
+  Các luồng legacy (Users, Roles, Files, AuditLogs...) vẫn dùng Dispatcher/`CrudService` như cũ.
 - **SQL Server + EF Core (code-first)**, migration qua project `Migrator`
 
 ## Cấu trúc solution
@@ -17,8 +22,8 @@ admin có dashboard thống kê, quản lý đơn hàng và sản phẩm.
 src/
   Backend/
     PhuThuongStickyRice.Domain/        # Entities, ValueObjects, Repositories (interfaces)
-    PhuThuongStickyRice.Application/  # MediatR Commands/Queries/Handlers, DTOs
-    PhuThuongStickyRice.Persistence/  # EF Core mappings, repositories
+    PhuThuongStickyRice.Application/  # ABP Application Services + DTOs + AutoMapper profiles
+    PhuThuongStickyRice.Persistence/  # ABP EF Core module, DbContext (AbpDbContext), repositories
     PhuThuongStickyRice.WebAPI/       # Controllers
     PhuThuongStickyRice.Migrator/     # EF Core migrations + seed data
     ...

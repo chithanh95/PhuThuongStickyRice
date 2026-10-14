@@ -1,9 +1,9 @@
-﻿using PhuThuongStickyRice.Infrastructure.Logging;
+using PhuThuongStickyRice.Infrastructure.Logging;
 using PhuThuongStickyRice.WebAPI.ConfigurationOptions;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace PhuThuongStickyRice.WebAPI
 {
@@ -11,17 +11,22 @@ namespace PhuThuongStickyRice.WebAPI
     {
         public static void Main(string[] args)
         {
-            CreateWebHostBuilder(args).Build().Run();
+            // Generic Host + Autofac (ABP standard): ABP's interception
+            // (UnitOfWork, Auditing, Validation, Authorization on Application
+            // Services) is implemented with Castle DynamicProxy and only works
+            // with Autofac, not with the built-in MS DI container.
+            Host.CreateDefaultBuilder(args)
+                .UseAutofac()
+                .ConfigureWebHostDefaults(webBuilder => webBuilder
+                    .UseStartup<Startup>()
+                    .UsePhuThuongStickyRiceLogger(configuration =>
+                    {
+                        var appSettings = new AppSettings();
+                        configuration.Bind(appSettings);
+                        return appSettings.Logging;
+                    }))
+                .Build()
+                .Run();
         }
-
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>()
-                .UsePhuThuongStickyRiceLogger(configuration =>
-                {
-                    var appSettings = new AppSettings();
-                    configuration.Bind(appSettings);
-                    return appSettings.Logging;
-                });
     }
 }

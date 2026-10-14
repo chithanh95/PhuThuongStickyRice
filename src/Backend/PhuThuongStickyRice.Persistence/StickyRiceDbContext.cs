@@ -1,4 +1,4 @@
-﻿using PhuThuongStickyRice.Domain.Repositories;
+using PhuThuongStickyRice.Domain.Repositories;
 using PhuThuongStickyRice.Persistence.Locks;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
@@ -9,10 +9,15 @@ using System.Data;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Volo.Abp.EntityFrameworkCore;
 
 namespace PhuThuongStickyRice.Persistence
 {
-    public class StickyRiceDbContext : DbContext, IUnitOfWork, IDataProtectionKeyContext
+    /// <summary>
+    /// ABP DbContext. Still implements the template <see cref="IUnitOfWork"/> so the
+    /// legacy Dispatcher/CrudService paths keep working unchanged.
+    /// </summary>
+    public class StickyRiceDbContext : AbpDbContext<StickyRiceDbContext>, IUnitOfWork, IDataProtectionKeyContext
     {
         private IDbContextTransaction _dbContextTransaction;
 

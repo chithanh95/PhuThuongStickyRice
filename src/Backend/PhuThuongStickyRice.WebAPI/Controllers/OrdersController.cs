@@ -1,6 +1,5 @@
-using MediatR;
-using PhuThuongStickyRice.Application.Orders.Commands;
-using PhuThuongStickyRice.Application.Orders.Queries;
+using PhuThuongStickyRice.Application.Orders;
+using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,12 +18,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [ApiController]
     public class OrdersController : ControllerBase
     {
-        private readonly IMediator _mediator;
+        private readonly IOrderAppService _orderAppService;
         private readonly ILogger _logger;
 
-        public OrdersController(IMediator mediator, ILogger<OrdersController> logger)
+        public OrdersController(IOrderAppService orderAppService, ILogger<OrdersController> logger)
         {
-            _mediator = mediator;
+            _orderAppService = orderAppService;
             _logger = logger;
         }
 
@@ -38,20 +37,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             _logger.LogInformation("Creating order for {CustomerPhone}", model?.CustomerPhone);
 
-            var order = await _mediator.Send(new CreateOrderCommand
+            var order = await _orderAppService.CreateAsync(new CreateOrderDto
             {
                 CustomerName = model.CustomerName,
                 CustomerPhone = model.CustomerPhone,
                 CustomerAddress = model.CustomerAddress,
                 Notes = model.Notes,
                 Lines = model.Lines
-                    .Select(x => new CreateOrderLineRequest
+                    .Select(x => new CreateOrderLineDto
                     {
                         ProductId = x.ProductId,
                         Quantity = x.Quantity
                     })
                     .ToList()
-            }, cancellationToken);
+            });
 
             return Ok(order);
         }
@@ -62,13 +61,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] string searchTerm = null, [FromQuery] string status = null,
             CancellationToken cancellationToken = default)
         {
-            var paged = await _mediator.Send(new GetOrdersQuery
+            var paged = await _orderAppService.GetListAsync(new GetOrdersInput
             {
-                Page = page,
-                PageSize = pageSize,
+                MaxResultCount = pageSize < 1 ? 20 : pageSize,
+                SkipCount = (page < 1 ? 0 : page - 1) * (pageSize < 1 ? 20 : pageSize),
                 SearchTerm = searchTerm,
                 Status = status
-            }, cancellationToken);
+            });
 
             return Ok(paged);
         }
@@ -77,7 +76,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet("{id:guid}")]
         public async Task<ActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
         {
-            var order = await _mediator.Send(new GetOrderByIdQuery { OrderId = id }, cancellationToken);
+            var order = await _orderAppService.GetAsync(id);
             return Ok(order);
         }
 
@@ -86,11 +85,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusRequestModel model,
             CancellationToken cancellationToken = default)
         {
-            var order = await _mediator.Send(new UpdateOrderStatusCommand
+            var order = await _orderAppService.UpdateStatusAsync(id, new UpdateOrderStatusDto
             {
-                OrderId = id,
                 Status = model.Status
-            }, cancellationToken);
+            });
 
             return Ok(order);
         }
