@@ -30,6 +30,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int SourceMaxLength = 50;
         public const int DeliverySlotMaxLength = 50;
 
+        /// <summary>
+        /// Wave 6c (item 33): internal note for staff only. Never exposed
+        /// on public (track-order / customer) endpoints.
+        /// </summary>
+        public const int AdminNoteMaxLength = 2000;
+
         public string OrderNumber { get; private set; }
 
         public string CustomerName { get; private set; }
@@ -159,6 +165,26 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         /// <summary>Refund amount in VND (0 when no refund).</summary>
         public decimal RefundAmount { get; private set; }
+
+        /// <summary>
+        /// Internal staff note (Wave 6c, item 33). Nullable; never exposed
+        /// on public endpoints.
+        /// </summary>
+        public string AdminNote { get; private set; }
+
+        /// <summary>
+        /// Sets or clears the internal staff note. Admin/staff only.
+        /// </summary>
+        public void SetAdminNote(string note)
+        {
+            var trimmed = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+            if (trimmed != null && trimmed.Length > AdminNoteMaxLength)
+            {
+                throw new DomainException($"Ghi chú nội bộ không được vượt quá {AdminNoteMaxLength} ký tự.");
+            }
+
+            AdminNote = trimmed;
+        }
 
         public DateTime CreatedAt { get; private set; }
 

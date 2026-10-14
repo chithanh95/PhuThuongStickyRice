@@ -46,6 +46,12 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Models
 
         public string Notes { get; set; }
 
+        /// <summary>
+        /// Wave 6c (item 33): internal staff note. Admin endpoints only —
+        /// never returned by public track-order endpoints.
+        /// </summary>
+        public string AdminNote { get; set; }
+
         public string Status { get; set; }
 
         public string PaymentMethod { get; set; }
@@ -119,6 +125,54 @@ namespace PhuThuongStickyRice.Blazor.Modules.Orders.Models
     public class UpdateOrderStatusModel
     {
         public string Status { get; set; }
+    }
+
+    /// <summary>Wave 6c (item 34): one recorded status transition.</summary>
+    public class OrderStatusHistoryModel
+    {
+        public Guid Id { get; set; }
+
+        public Guid OrderId { get; set; }
+
+        public string FromStatus { get; set; }
+
+        public string ToStatus { get; set; }
+
+        public DateTime At { get; set; }
+
+        public string ByUser { get; set; }
+    }
+
+    /// <summary>Wave 6c (item 31): one payment channel of the daily reconciliation.</summary>
+    public class ReconciliationChannelModel
+    {
+        public string PaymentMethod { get; set; }
+
+        public string Label { get; set; }
+
+        public long OrderCount { get; set; }
+
+        public decimal Revenue { get; set; }
+
+        public decimal PaidAmount { get; set; }
+
+        public decimal UnpaidAmount { get; set; }
+    }
+
+    /// <summary>Wave 6c (item 31): daily payment-channel reconciliation.</summary>
+    public class DailyReconciliationModel
+    {
+        public DateTime Date { get; set; }
+
+        public List<ReconciliationChannelModel> Channels { get; set; } = new List<ReconciliationChannelModel>();
+
+        public long TotalOrderCount { get; set; }
+
+        public decimal TotalRevenue { get; set; }
+
+        public decimal TotalPaidAmount { get; set; }
+
+        public decimal TotalUnpaidAmount { get; set; }
     }
 
     public class OrdersByStatusModel

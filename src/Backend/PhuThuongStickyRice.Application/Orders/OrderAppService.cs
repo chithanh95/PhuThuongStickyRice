@@ -78,6 +78,17 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Customer self-service: cancel a Pending order (phone must match).</summary>
         Task<OrderDto> CancelByCustomerAsync(CancelOrderByCustomerInput input);
 
+        /// <summary>
+        /// Wave 6c (item 33): admin sets/clears the internal order note.
+        /// Never exposed on public endpoints.
+        /// </summary>
+        Task<OrderDto> UpdateAdminNoteAsync(Guid id, UpdateAdminNoteDto input);
+
+        /// <summary>
+        /// Wave 6c (item 34): status-transition timeline of an order.
+        /// </summary>
+        Task<List<OrderStatusHistoryDto>> GetStatusHistoryAsync(Guid id);
+
         /// <summary>Customer self-service: edit quantities of a Pending order (phone must match).</summary>
         Task<OrderDto> UpdateLinesByCustomerAsync(UpdateOrderLinesInput input);
 
@@ -124,6 +135,9 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> _branches;
         private readonly Wave5.IWalletAppService _wallets;
 
+        /// <summary>Wave 6c (item 34): status-transition audit trail.</summary>
+        private readonly Volo.Abp.Domain.Repositories.IRepository<OrderStatusHistory, Guid> _statusHistory;
+
         public OrderAppService(
             IOrderRepository orders,
             IProductRepository products,
@@ -147,7 +161,8 @@ namespace PhuThuongStickyRice.Application.Orders
             Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> shippers,
             Wave4.IWebhookDispatcher webhooks,
             Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> branches,
-            Wave5.IWalletAppService wallets)
+            Wave5.IWalletAppService wallets,
+            Volo.Abp.Domain.Repositories.IRepository<OrderStatusHistory, Guid> statusHistory)
         {
             _orders = orders;
             _products = products;
@@ -172,6 +187,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _webhooks = webhooks;
             _branches = branches;
             _wallets = wallets;
+            _statusHistory = statusHistory;
         }
 
         public async Task<OrderDto> CreateAsync(CreateOrderDto input)
@@ -598,6 +614,20 @@ namespace PhuThuongStickyRice.Application.Orders
                 query = query.Where(x => x.ShipperId == shipperId);
             }
 
+            // Wave 6c (item 35): date-only range on the order creation day
+            // (Vietnam timezone day boundaries).
+            if (input.FromDate.HasValue)
+            {
+                var fromUtc = VietnamTime.DayStartUtc(input.FromDate.Value);
+                query = query.Where(x => x.CreatedAt >= fromUtc);
+            }
+
+            if (input.ToDate.HasValue)
+            {
+                var toUtc = VietnamTime.DayEndExclusiveUtc(input.ToDate.Value);
+                query = query.Where(x => x.CreatedAt < toUtc);
+            }
+
             var totalCount = await _asyncExecuter.LongCountAsync(query);
             var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
 
@@ -654,8 +684,12 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException($"Unknown order status '{input.Status}'.");
             }
 
+            var fromStatus = order.Status;
             ApplyStatus(order, status);
             await _orders.UpdateAsync(order);
+
+            // Wave 6c (item 34): audit the transition.
+            await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
 
             if (status == OrderStatus.Completed)
             {
@@ -752,6 +786,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 queryable.Where(x => kitchenStatuses.Contains(x.Status))
                     .OrderBy(x => x.CreatedAt));
             var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
+            // Wave 6c (item 33): internal note stays in the admin UI.
+            dtos.ForEach(x => x.AdminNote = null);
             await FillShipperNamesAsync(dtos);
             return dtos;
         }
@@ -764,6 +800,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public async Task<OrderDto> AdvanceKitchenStatusAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
+            var fromStatus = order.Status;
 
             switch (order.Status)
             {
@@ -783,9 +820,76 @@ namespace PhuThuongStickyRice.Application.Orders
 
             await _orders.UpdateAsync(order);
 
+            // Wave 6c (item 34): audit the KDS tap.
+            await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
+
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            // Wave 6c (item 33): internal note stays in the admin UI.
+            dto.AdminNote = null;
+            await FillShipperNamesAsync(new[] { dto });
+            return dto;
+        }
+
+        /// <summary>
+        /// Wave 6c (item 34): appends one transition record to the audit
+        /// trail. No-op when the status did not change.
+        /// </summary>
+        private async Task RecordStatusChangeAsync(Guid orderId, OrderStatus from, OrderStatus to)
+        {
+            if (from == to)
+            {
+                return;
+            }
+
+            var byUser = CurrentUser?.UserName;
+            await _statusHistory.InsertAsync(new OrderStatusHistory
+            {
+                OrderId = orderId,
+                FromStatus = from,
+                ToStatus = to,
+                At = DateTime.UtcNow,
+                ByUser = string.IsNullOrWhiteSpace(byUser) ? "hệ thống" : byUser
+            }, autoSave: true);
+        }
+
+        /// <summary>
+        /// Wave 6c (item 33): admin sets or clears the internal note.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
+        public async Task<OrderDto> UpdateAdminNoteAsync(Guid id, UpdateAdminNoteDto input)
+        {
+            var order = await FindOrThrowAsync(id);
+            order.SetAdminNote(input?.Note);
+            await _orders.UpdateAsync(order);
+
             var dto = _objectMapper.Map<Order, OrderDto>(order);
             await FillShipperNamesAsync(new[] { dto });
             return dto;
+        }
+
+        /// <summary>
+        /// Wave 6c (item 34): status-transition timeline, oldest first.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier,Kitchen")]
+        public async Task<List<OrderStatusHistoryDto>> GetStatusHistoryAsync(Guid id)
+        {
+            // Throw when the order does not exist (also guards against
+            // probing arbitrary ids from the kitchen role).
+            await FindOrThrowAsync(id);
+
+            var queryable = await _statusHistory.GetQueryableAsync();
+            var items = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => x.OrderId == id)
+                    .OrderBy(x => x.At));
+            return items.Select(x => new OrderStatusHistoryDto
+            {
+                Id = x.Id,
+                OrderId = x.OrderId,
+                FromStatus = x.FromStatus.ToString(),
+                ToStatus = x.ToStatus.ToString(),
+                At = x.At,
+                ByUser = x.ByUser
+            }).ToList();
         }
 
         /// <summary>Item 87: admin hides/unhides an order review.</summary>
@@ -834,6 +938,9 @@ namespace PhuThuongStickyRice.Application.Orders
             await _orders.UpdateAsync(order);
             await _loyalty.RefundRedeemedPointsAsync(order);
 
+            // Wave 6c (item 34): audit the customer cancel.
+            await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled);
+
             // Item 140: wallet-paid orders are credited back on cancel.
             if (order.PaymentMethod == PaymentMethod.Wallet
                 && order.PaymentStatus == PaymentStatus.Paid)
@@ -841,7 +948,10 @@ namespace PhuThuongStickyRice.Application.Orders
                 await _wallets.RefundAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
             }
 
-            return _objectMapper.Map<Order, OrderDto>(order);
+            // Wave 6c (item 33): internal note never leaves on public DTOs.
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            dto.AdminNote = null;
+            return dto;
         }
 
         public async Task<OrderDto> UpdateLinesByCustomerAsync(UpdateOrderLinesInput input)
@@ -861,7 +971,10 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             await _orders.UpdateAsync(order);
-            return _objectMapper.Map<Order, OrderDto>(order);
+            // Wave 6c (item 33): internal note is never serialized publicly.
+            var linesDto = _objectMapper.Map<Order, OrderDto>(order);
+            linesDto.AdminNote = null;
+            return linesDto;
         }
 
         public async Task<OrderReviewDto> SubmitReviewAsync(SubmitReviewInput input)
@@ -1091,6 +1204,8 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 order.Cancel();
                 await _orders.UpdateAsync(order);
+                // Wave 6c (item 34): audit the worker cancel ("hệ thống").
+                await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled);
                 await _loyalty.RefundRedeemedPointsAsync(order);
             }
 
@@ -1213,7 +1328,10 @@ namespace PhuThuongStickyRice.Application.Orders
             order.MarkTransferred();
             await _orders.UpdateAsync(order);
 
-            return _objectMapper.Map<Order, OrderDto>(order);
+            // Wave 6c (item 33): internal note is never serialized publicly.
+            var transferredDto = _objectMapper.Map<Order, OrderDto>(order);
+            transferredDto.AdminNote = null;
+            return transferredDto;
         }
 
         public async Task<OrderDto> ConfirmPaymentAsync(Guid id)
@@ -1241,7 +1359,10 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new OrderNotFoundException("Order not found. Please check the order number and phone.");
             }
 
-            return _objectMapper.Map<Order, OrderDto>(order);
+            // Wave 6c (item 33): internal note is never serialized publicly.
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            dto.AdminNote = null;
+            return dto;
         }
 
         /// <summary>

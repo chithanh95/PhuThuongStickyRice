@@ -144,4 +144,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         public string CustomerPhone { get; set; }
     }
+
+    /// <summary>Wave 6c (item 33): admin edits the internal order note.</summary>
+    public sealed class UpdateAdminNoteRequestModel
+    {
+        /// <summary>Internal note; null/empty clears it.</summary>
+        public string Note { get; set; }
+    }
 }

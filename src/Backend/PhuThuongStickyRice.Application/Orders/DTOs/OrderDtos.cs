@@ -45,6 +45,13 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public string Notes { get; set; }
 
+        /// <summary>
+        /// Wave 6c (item 33): internal staff note. Serialized only on
+        /// admin endpoints — public methods (track/cancel/edit lines,
+        /// mark-transferred) null it out before returning.
+        /// </summary>
+        public string AdminNote { get; set; }
+
         public string Status { get; set; }
 
         public string PaymentMethod { get; set; }
@@ -426,6 +433,79 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         /// <summary>Filter by assigned shipper.</summary>
         public Guid? ShipperId { get; set; }
+
+        /// <summary>
+        /// Wave 6c (item 35): date-only range filter on the order creation
+        /// day (Vietnam timezone day boundaries).
+        /// </summary>
+        public DateTime? FromDate { get; set; }
+
+        /// <summary>
+        /// Wave 6c (item 35): date-only range filter on the order creation
+        /// day (Vietnam timezone day boundaries).
+        /// </summary>
+        public DateTime? ToDate { get; set; }
+    }
+
+    /// <summary>Wave 6c (item 33): admin edits the internal order note.</summary>
+    public class UpdateAdminNoteDto
+    {
+        /// <summary>Internal note; null/empty clears it.</summary>
+        [StringLength(2000)]
+        public string Note { get; set; }
+    }
+
+    /// <summary>Wave 6c (item 34): one recorded status transition.</summary>
+    public class OrderStatusHistoryDto
+    {
+        public Guid Id { get; set; }
+
+        public Guid OrderId { get; set; }
+
+        public string FromStatus { get; set; }
+
+        public string ToStatus { get; set; }
+
+        /// <summary>UTC timestamp of the transition.</summary>
+        public DateTime At { get; set; }
+
+        public string ByUser { get; set; }
+    }
+
+    /// <summary>Wave 6c (item 31): one payment channel of the daily reconciliation.</summary>
+    public class ReconciliationChannelDto
+    {
+        public string PaymentMethod { get; set; }
+
+        public string Label { get; set; }
+
+        public long OrderCount { get; set; }
+
+        /// <summary>Revenue of non-cancelled orders.</summary>
+        public decimal Revenue { get; set; }
+
+        /// <summary>Revenue already paid (PaymentStatus = Paid).</summary>
+        public decimal PaidAmount { get; set; }
+
+        /// <summary>Revenue not yet paid (Unpaid / PendingConfirmation / Failed).</summary>
+        public decimal UnpaidAmount { get; set; }
+    }
+
+    /// <summary>Wave 6c (item 31): daily payment-channel reconciliation.</summary>
+    public class DailyReconciliationDto
+    {
+        /// <summary>The reconciled day (Vietnam timezone, date-only).</summary>
+        public DateTime Date { get; set; }
+
+        public List<ReconciliationChannelDto> Channels { get; set; } = new List<ReconciliationChannelDto>();
+
+        public long TotalOrderCount { get; set; }
+
+        public decimal TotalRevenue { get; set; }
+
+        public decimal TotalPaidAmount { get; set; }
+
+        public decimal TotalUnpaidAmount { get; set; }
     }
 
     public class UpdateOrderStatusDto

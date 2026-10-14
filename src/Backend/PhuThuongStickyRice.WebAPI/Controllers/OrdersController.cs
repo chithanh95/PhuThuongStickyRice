@@ -83,6 +83,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
             [FromQuery] string searchTerm = null, [FromQuery] string status = null,
             [FromQuery] Guid? shipperId = null,
+            // Wave 6c (item 35): date-only range filter (Vietnam day boundaries).
+            [FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null,
             CancellationToken cancellationToken = default)
         {
             var paged = await _orderAppService.GetListAsync(new GetOrdersInput
@@ -91,7 +93,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 SkipCount = (page < 1 ? 0 : page - 1) * (pageSize < 1 ? 20 : pageSize),
                 SearchTerm = searchTerm,
                 Status = status,
-                ShipperId = shipperId
+                ShipperId = shipperId,
+                FromDate = fromDate,
+                ToDate = toDate
             });
 
             return Ok(paged);
@@ -369,6 +373,42 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Wave 6c (item 33): admin sets or clears the internal order note.
+        /// The note never appears on public endpoints.
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpPut("{id:guid}/admin-note")]
+        public async Task<ActionResult> UpdateAdminNote(Guid id,
+            [FromBody] UpdateAdminNoteRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.UpdateAdminNoteAsync(id, new UpdateAdminNoteDto
+                {
+                    Note = model?.Note
+                });
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Wave 6c (item 34): status-transition timeline of an order,
+        /// oldest first. Kitchen staff see it on the /bep cards.
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier,Kitchen")]
+        [HttpGet("{id:guid}/status-history")]
+        public async Task<ActionResult> GetStatusHistory(Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _orderAppService.GetStatusHistoryAsync(id));
         }
 
         /// <summary>Item 81: kitchen display — Pending/Confirmed/Preparing orders.</summary>

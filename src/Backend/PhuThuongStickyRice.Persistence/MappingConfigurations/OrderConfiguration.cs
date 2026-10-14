@@ -22,6 +22,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.CustomerAddress).HasMaxLength(Order.CustomerAddressMaxLength);
             builder.Property(x => x.Notes).HasMaxLength(Order.NotesMaxLength);
 
+            // Wave 6c (item 33): internal staff note. Nullable, never public.
+            builder.Property(x => x.AdminNote).HasMaxLength(Order.AdminNoteMaxLength);
+
             // Nullable: self-pickup orders have no delivery address.
             builder.Property(x => x.FulfillmentMethod)
                 .HasConversion<int>()
