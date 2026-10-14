@@ -128,7 +128,7 @@
   dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.Migrator/PhuThuongStickyRice.Migrator.csproj -o ./publish/PhuThuongStickyRice.Migrator
   dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.WebAPI/PhuThuongStickyRice.WebAPI.csproj -o ./publish/PhuThuongStickyRice.WebAPI
   dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.BlazorServerSide/PhuThuongStickyRice.BlazorServerSide.csproj -o ./publish/PhuThuongStickyRice.BlazorServerSide
-  dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.BlazorWebAssembly/PhuThuongStickyRice.BlazorWebAssembly.csproj -o ./publish/PhuThuongStickyRice.BlazorWebAssembly
+  dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.Web/PhuThuongStickyRice.Web.csproj -o ./publish/PhuThuongStickyRice.Web
   dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.WebMVC/PhuThuongStickyRice.WebMVC.csproj -o ./publish/PhuThuongStickyRice.WebMVC
   ```
 
@@ -140,7 +140,7 @@
   dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.Migrator --basePath=./publish/PhuThuongStickyRice.Migrator
   dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.WebAPI --basePath=./publish/PhuThuongStickyRice.WebAPI
   dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.BlazorServerSide --basePath=./publish/PhuThuongStickyRice.BlazorServerSide
-  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.BlazorWebAssembly --basePath=./publish/PhuThuongStickyRice.BlazorWebAssembly
+  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.Web --basePath=./publish/PhuThuongStickyRice.Web
   dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.WebMVC --basePath=./publish/PhuThuongStickyRice.WebMVC
   ```
 

@@ -1,0 +1,316 @@
+@page "/admin/shop-settings"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject ShopSettingsService ShopSettingsService
+
+<h3>Cài đặt bán hàng</h3>
+<p class="text-muted">Phí giao hàng và đơn tối thiểu áp dụng cho mọi đơn đặt qua web.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+@if (_model == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="form-group">
+                <label>Phí giao hàng (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_model.DeliveryFee" />
+                <small class="form-text text-muted">Đặt 0 để luôn miễn phí giao hàng.</small>
+            </div>
+            <div class="form-group">
+                <label>Miễn phí ship cho đơn từ (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_model.FreeShipThreshold" />
+                <small class="form-text text-muted">Đơn có (tạm tính − giảm giá) từ mức này trở lên được miễn phí ship. Đặt 0 để tắt miễn phí ship.</small>
+            </div>
+            <div class="form-group">
+                <label>Giá trị đơn tối thiểu (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_model.MinOrderAmount" />
+                <small class="form-text text-muted">Đặt 0 để không giới hạn. Khách không thể đặt đơn dưới mức này.</small>
+            </div>
+            <div class="form-group">
+                <label>Thời gian giao hàng dự kiến (phút)</label>
+                <input type="number" min="0" max="600" step="5" class="form-control" @bind="_model.EstimatedDeliveryMinutes" />
+                <small class="form-text text-muted">Hiển thị ở trang đặt hàng, VD: 45 → “Dự kiến giao trong 30–45 phút”. Đặt 0 để ẩn.</small>
+            </div>
+
+            <h5 class="mt-4">Giờ mở cửa &amp; nhận đơn (mục 30)</h5>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="set-accepting" @bind="_model.AcceptingOrders" />
+                <label class="form-check-label" for="set-accepting">
+                    <strong>Nhận đơn hàng</strong> — tắt để tạm ngừng nhận đơn (trang đặt hàng hiển thị thông báo, server từ chối đơn mới)
+                </label>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Giờ mở cửa (HH:mm)</label>
+                    <input class="form-control" @bind="_model.OpenTime" placeholder="06:00" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Giờ đóng cửa (HH:mm)</label>
+                    <input class="form-control" @bind="_model.CloseTime" placeholder="10:30" />
+                </div>
+            </div>
+            <small class="form-text text-muted mb-3">Ngoài giờ này khách không thể đặt đơn, kể cả khi đang bật "Nhận đơn hàng". Giờ Việt Nam (UTC+7).</small>
+
+            <h5 class="mt-4">Chống spam (mục 39)</h5>
+            <div class="form-group">
+                <label>Số đơn tối đa / SĐT / ngày</label>
+                <input type="number" min="0" max="1000" class="form-control" @bind="_model.MaxOrdersPerPhonePerDay" />
+                <small class="form-text text-muted">Mặc định 10. Đặt 0 = không giới hạn. Đơn đã hủy không tính. Ngày theo giờ Việt Nam.</small>
+            </div>
+
+            <h5 class="mt-4">Nút gọi/Zalo trên di động (mục 27)</h5>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Hotline</label>
+                    <input class="form-control" @bind="_model.Hotline" placeholder="0901 234 567" />
+                    <small class="form-text text-muted">Nút "📞 Gọi ngay" (tel: link).</small>
+                </div>
+                <div class="form-group col-md-6">
+                    <label>SĐT Zalo</label>
+                    <input class="form-control" @bind="_model.ZaloPhone" placeholder="0901 234 567" />
+                    <small class="form-text text-muted">Nút chat Zalo (zalo.me/số-điện-thoại).</small>
+                </div>
+            </div>
+            <small class="form-text text-muted mb-3">Để trống = dùng số điện thoại trong chân trang landing. Các nút chỉ hiện trên điện thoại.</small>
+
+            <h5 class="mt-4">Chuyển khoản & đặt cọc</h5>
+            <div class="form-group">
+                <label>Tự động hủy đơn chuyển khoản chưa thanh toán sau (phút)</label>
+                <input type="number" min="1" max="10080" class="form-control" @bind="_model.BankTransferExpiryMinutes" />
+                <small class="form-text text-muted">Mặc định 30 phút. Worker chạy mỗi 5 phút.</small>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Ngưỡng yêu cầu đặt cọc (₫)</label>
+                    <input type="number" min="0" step="10000" class="form-control" @bind="_model.DepositThreshold" />
+                    <small class="form-text text-muted">Đơn chuyển khoản từ mức này phải đặt cọc. Đặt 0 để tắt.</small>
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Tỷ lệ đặt cọc (%)</label>
+                    <input type="number" min="0" max="100" class="form-control" @bind="_model.DepositPercent" />
+                </div>
+            </div>
+
+            <h5 class="mt-4">Điểm tích lũy</h5>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>₫ chi tiêu / 1 điểm</label>
+                    <input type="number" min="1" step="1000" class="form-control" @bind="_model.PointsPerVnd" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Điểm cho 1 lần đổi</label>
+                    <input type="number" min="1" class="form-control" @bind="_model.PointsRedeemUnit" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>₫ giảm / 1 lần đổi</label>
+                    <input type="number" min="0" step="1000" class="form-control" @bind="_model.PointsRedeemValue" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Điểm thưởng giới thiệu (cho cả người giới thiệu và người mua)</label>
+                <input type="number" min="0" class="form-control" @bind="_model.ReferralBonusPoints" />
+                <small class="form-text text-muted">Thưởng khi đơn đầu tiên có mã giới thiệu được hoàn thành.</small>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Điểm thưởng điểm danh mỗi ngày</label>
+                    <input type="number" min="0" max="1000" class="form-control" @bind="_model.CheckInPoints" />
+                    <small class="form-text text-muted">Mỗi SĐT điểm danh 1 lần/ngày ở trang tra cứu đơn.</small>
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Định mức nếp (g/suất)</label>
+                    <input type="number" min="1" max="1000" class="form-control" @bind="_model.NepPerPortionGrams" />
+                    <small class="form-text text-muted">Dùng cho dự báo nguyên liệu.</small>
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Mục tiêu doanh thu ngày (₫)</label>
+                    <input type="number" min="0" step="100000" class="form-control" @bind="_model.DailyTargetAmount" />
+                    <small class="form-text text-muted">Hiện thanh tiến độ trên dashboard.</small>
+                </div>
+            </div>
+
+            <h5 class="mt-4">Hạng thành viên</h5>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>Chi tiêu hạng Bạc (₫)</label>
+                    <input type="number" min="0" step="100000" class="form-control" @bind="_model.TierSilverMin" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Giảm giá hạng Bạc (%)</label>
+                    <input type="number" min="0" max="100" class="form-control" @bind="_model.TierSilverDiscount" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Chi tiêu hạng Vàng (₫)</label>
+                    <input type="number" min="0" step="100000" class="form-control" @bind="_model.TierGoldMin" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Giảm giá hạng Vàng (%)</label>
+                    <input type="number" min="0" max="100" class="form-control" @bind="_model.TierGoldDiscount" />
+                </div>
+            </div>
+            <small class="form-text text-muted mb-3">Hạng Đồng: dưới ngưỡng Bạc (không giảm giá).</small>
+
+            <h5 class="mt-4">Gói quà</h5>
+            <div class="form-group">
+                <label>Phí gói quà (₫)</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_model.GiftFee" />
+            </div>
+
+            <h5 class="mt-4">Báo cáo chủ quán (mục 85)</h5>
+            <div class="form-group">
+                <label>Email nhận báo cáo</label>
+                <input type="email" class="form-control" @bind="_model.OwnerReportEmail" placeholder="chu-quan@example.com" />
+                <small class="form-text text-muted">Báo cáo tự động gửi thứ 2 hàng tuần và mùng 1 hàng tháng lúc 7:00. Để trống = tắt.</small>
+            </div>
+
+            <h5 class="mt-4">Cảnh báo đơn chưa xác nhận (mục 86)</h5>
+            <div class="form-group">
+                <label>Cảnh báo khẩn khi đơn Pending quá (phút)</label>
+                <input type="number" min="1" max="1440" class="form-control" @bind="_model.UnconfirmedAlertMinutes" />
+                <small class="form-text text-muted">Mặc định 15 phút — dashboard hiện banner đỏ + phát âm thanh khẩn.</small>
+            </div>
+
+            <h5 class="mt-4">reCAPTCHA chống spam (mục 96)</h5>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Site key</label>
+                    <input class="form-control" @bind="_model.RecaptchaSiteKey" placeholder="6L..." />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Secret key</label>
+                    <input type="password" class="form-control" @bind="_model.RecaptchaSecretKey" placeholder="6L..." />
+                </div>
+            </div>
+            <small class="form-text text-muted mb-3">Để trống cả hai = tắt reCAPTCHA. Khi bật, trang đặt hàng chạy reCAPTCHA v3 (yêu cầu điểm ≥ 0.5) trước khi tạo đơn.</small>
+
+            <h5 class="mt-4">Website &amp; QR bàn (mục 95)</h5>
+            <div class="form-group">
+                <label>Địa chỉ web công khai</label>
+                <input class="form-control" @bind="_model.WebBaseUrl" placeholder="https://phuthuong.vn" />
+                <small class="form-text text-muted">Dùng để tạo mã QR bàn — VD: https://phuthuong.vn/shop?ban=5.</small>
+            </div>
+
+            <h5 class="mt-4">Bảo trì &amp; giám sát (mục 103, 111, 113, 114)</h5>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="set-maintenance" @bind="_model.MaintenanceMode" />
+                <label class="form-check-label" for="set-maintenance">
+                    <strong>Chế độ bảo trì</strong> — trang công khai hiển thị trang bảo trì (/login, /admin/*, /bep vẫn hoạt động)
+                </label>
+            </div>
+            <div class="form-group">
+                <label>Thông báo bảo trì</label>
+                <input class="form-control" @bind="_model.MaintenanceMessage" />
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Telegram bot token <small class="text-muted">(để trống = tắt cảnh báo Telegram)</small></label>
+                    <input type="password" class="form-control" @bind="_model.TelegramBotToken" autocomplete="off" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Telegram chat id</label>
+                    <input class="form-control" @bind="_model.TelegramChatId" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Ngưỡng lỗi/giờ để cảnh báo</label>
+                    <input type="number" min="1" class="form-control" @bind="_model.ErrorRateThreshold" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Ngưỡng cảnh báo uploads (MB)</label>
+                    <input type="number" min="1" class="form-control" @bind="_model.UploadsSizeWarningMb" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Nhà cung cấp sao lưu ảnh</label>
+                    <input class="form-control" @bind="_model.ImageBackupProvider" placeholder="None" />
+                    <small class="form-text text-muted">"None" = không sao lưu. Xem README để thêm S3.</small>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Cấu hình JSON cho sao lưu ảnh</label>
+                <input class="form-control" @bind="_model.ImageBackupSettingsJson" placeholder='{"connectionString": "..."}' />
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="set-health" @bind="_model.HealthAlertsEnabled" />
+                <label class="form-check-label" for="set-health">Gửi cảnh báo sức khỏe (Telegram/email). Tắt = chỉ ghi log.</label>
+            </div>
+            <p class="small text-muted">
+                Cấu hình thanh toán (ngân hàng, MoMo — mục 106) nằm ở trang
+                <a href="/admin/thanh-toan">Thanh toán</a>.
+            </p>
+
+            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+                @(_saving ? "Đang lưu..." : "Lưu thay đổi")
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private ShopSettingModel _model;
+    private bool _saving;
+    private string _error;
+    private string _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _model = await ShopSettingsService.GetAsync() ?? new ShopSettingModel();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được cài đặt. Vui lòng thử lại.";
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+
+        if (_model.DeliveryFee < 0 || _model.FreeShipThreshold < 0 || _model.MinOrderAmount < 0)
+        {
+            _error = "Các mức tiền không được âm.";
+            return;
+        }
+
+        if (_model.EstimatedDeliveryMinutes < 0)
+        {
+            _model.EstimatedDeliveryMinutes = 0;
+        }
+
+        if (_model.MaxOrdersPerPhonePerDay < 0)
+        {
+            _model.MaxOrdersPerPhonePerDay = 0;
+        }
+
+        _saving = true;
+        try
+        {
+            _model = await ShopSettingsService.UpdateAsync(_model);
+            _success = "Đã lưu cài đặt bán hàng.";
+        }
+        catch (Exception)
+        {
+            _error = "Lưu thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

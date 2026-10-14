@@ -1,0 +1,100 @@
+@page "/admin/he-thong"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject Wave4Service Wave4Service
+
+<h3>Hệ thống — dung lượng</h3>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@if (_usage == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else
+{
+    @if (_usage.OverThreshold)
+    {
+        <div class="alert alert-warning">
+            <strong>⚠️ Thư mục uploads đã vượt ngưỡng cảnh báo (@_usage.WarningThresholdMb MB).</strong>
+            Hãy xóa ảnh không dùng tới hoặc cân nhắc sao lưu đám mây (cấu hình tại trang Cài đặt shop).
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h2 mb-0">@FormatBytes(_usage.UploadsBytes)</div>
+                    <div class="text-muted">Thư mục uploads (@_usage.UploadsFileCount tệp)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h2 mb-0">@(_usage.DatabaseBytes.HasValue ? FormatBytes(_usage.DatabaseBytes.Value) : "—")</div>
+                    <div class="text-muted">Cơ sở dữ liệu (ước tính)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h2 mb-0">@_usage.WarningThresholdMb <small class="text-muted">MB</small></div>
+                    <div class="text-muted">Ngưỡng cảnh báo uploads</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-outline-primary" @onclick="ReloadAsync" disabled="@_loading">
+        @(_loading ? "Đang tải..." : "Tải lại")
+    </button>
+    <p class="text-muted mt-2 small">Ngưỡng cảnh báo chỉnh tại trang Cài đặt shop (UploadsSizeWarningMb).</p>
+}
+
+@code {
+    private DiskUsageModel _usage;
+    private string _error;
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _error = null;
+        _loading = true;
+        try
+        {
+            _usage = await Wave4Service.GetDiskUsageAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được thông tin dung lượng: " + ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes >= 1024L * 1024 * 1024)
+        {
+            return (bytes / (1024.0 * 1024 * 1024)).ToString("0.0") + " GB";
+        }
+
+        if (bytes >= 1024L * 1024)
+        {
+            return (bytes / (1024.0 * 1024)).ToString("0.0") + " MB";
+        }
+
+        return (bytes / 1024.0).ToString("0.0") + " KB";
+    }
+}

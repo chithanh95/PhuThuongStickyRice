@@ -1,0 +1,988 @@
+@page "/shop"
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Core.Services
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject ShopService ShopService
+@inject ShopSettingsService ShopSettingsService
+@inject Wave4Service Wave4Service
+@inject CartState CartState
+@inject ShopI18n I18n
+@implements IDisposable
+@inject ToastService Toasts
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<div class="jumbotron jumbotron-fluid bg-warning text-dark rounded p-4 mb-4">
+    <div class="container">
+        <div class="d-flex flex-wrap align-items-center justify-content-between">
+            <div>
+                <h1 class="display-5">Xôi Làng Nghề Phú Thượng</h1>
+                <p class="lead mb-1">Xôi dẻo thơm chuẩn vị làng nghề — đặt hàng online, giao tận nơi.</p>
+                @if (!string.IsNullOrWhiteSpace(_tableLabel))
+                {
+                    <p class="mb-1"><span class="badge badge-info" style="font-size: 1rem;">🍽 @I18n.T("table_order") @_tableLabel</span></p>
+                }
+                @if (_todaySold > 0)
+                {
+                    <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 @I18n.T("sold_today"): @_todaySold</span></p>
+                }
+                @* Wave 6a (item 22): open-hours display (VN time). *@
+                @if (!string.IsNullOrEmpty(_openStatusText))
+                {
+                    <p class="mb-0 mt-1"><span class="badge @(_openNow ? "badge-success" : "badge-danger")" style="font-size: 1rem;">@_openStatusText</span></p>
+                }
+            </div>
+            <a class="btn btn-dark mt-2" href="/menu-print" target="_blank" title="Mở thực đơn để in / lưu PDF">
+                📄 Tải menu (PDF)
+            </a>
+        </div>
+    </div>
+</div>
+
+@if (_loadFailed)
+{
+    @* Wave 6d (item 38): friendly full-page error, PWA offline.html look. *@
+    <div class="card" style="background: #f5ebcd; border: none;">
+        <div class="card-body text-center py-5">
+            <div style="font-size: 4rem;">😞</div>
+            <h2 style="font-family: Georgia, serif; color: #7a1b2e;">Không kết nối được tới máy chủ</h2>
+            <p class="mb-4" style="color: #4a2b1a;">Kiểm tra mạng rồi thử lại.</p>
+            <button class="btn" style="background: #7a1b2e; color: #fff; padding: 12px 28px; border-radius: 6px;" @onclick="RetryLoad">Thử lại</button>
+        </div>
+    </div>
+}
+else
+{
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+}
+
+@if (_combos != null && _combos.Count > 0)
+{
+    <h4 class="mb-3">🎉 Combo gia đình <small class="text-muted">— tiết kiệm hơn gọi lẻ</small></h4>
+    <div class="row">
+        @foreach (var combo in _combos)
+        {
+            <div class="col-md-6 mb-4" @key="combo.Id">
+                <div class="card h-100 border-warning">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            @combo.Name
+                            <span class="badge badge-warning ml-1">COMBO</span>
+                        </h5>
+                        <p class="card-text text-muted small">@combo.Description</p>
+                        <ul class="list-unstyled small mb-2">
+                            @foreach (var item in combo.Items)
+                            {
+                                <li>• @item.ProductName <span class="text-muted">× @item.Quantity</span></li>
+                            }
+                        </ul>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <strong class="text-danger" style="font-size: 1.3rem;">@FormatPrice(combo.Price)</strong>
+                            <button class="btn btn-warning" @onclick="() => AddComboToCart(combo)">
+                                Thêm combo vào giỏ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (_products == null)
+{
+    <p><em>Đang tải sản phẩm...</em></p>
+}
+else
+{
+    <!-- Filters: categories + dietary tags + sort + branch -->
+    <div class="card mb-4">
+        <div class="card-body py-3">
+            @if (_branches != null && _branches.Count > 0)
+            {
+                <div class="mb-2">
+                    <span class="text-muted small mr-2">Chi nhánh:</span>
+                    <div class="btn-group btn-group-sm flex-wrap" role="group">
+                        <button class="btn @BranchChipClass(null)" @onclick="() => SetBranch(null)">Tất cả</button>
+                        @foreach (var b in _branches)
+                        {
+                            <button class="btn @BranchChipClass(b.Id)" @onclick="() => SetBranch(b.Id)">@b.Name</button>
+                        }
+                    </div>
+                </div>
+            }
+            <div class="mb-2">
+                <span class="text-muted small mr-2">Danh mục:</span>
+                <div class="btn-group btn-group-sm flex-wrap" role="group">
+                    <button class="btn @CategoryChipClass(null)" @onclick="() => SetCategory(null)">Tất cả</button>
+                    @foreach (var cat in _categories)
+                    {
+                        <button class="btn @CategoryChipClass(cat)" @onclick="() => SetCategory(cat)">@cat</button>
+                    }
+                </div>
+            </div>
+            <div class="mb-2">
+                <span class="text-muted small mr-2">Khẩu vị:</span>
+                <div class="btn-group btn-group-sm flex-wrap" role="group">
+                    <button class="btn @TagChipClass(null)" @onclick="() => SetTag(null)">Tất cả</button>
+                    <button class="btn @TagChipClass("chay")" @onclick='() => SetTag("chay")'>🥬 Chay</button>
+                    <button class="btn @TagChipClass("man")" @onclick='() => SetTag("man")'>🍖 Mặn</button>
+                    <button class="btn @TagChipClass("cay")" @onclick='() => SetTag("cay")'>🌶️ Cay</button>
+                </div>
+            </div>
+            <div class="form-inline">
+                <label class="text-muted small mr-2" for="sort-select">Sắp xếp:</label>
+                <select id="sort-select" class="form-control form-control-sm" @onchange="OnSortChanged">
+                    <option value="popular" selected="@(_sort == "popular")">Bán chạy</option>
+                    <option value="priceAsc" selected="@(_sort == "priceAsc")">Giá tăng dần</option>
+                    <option value="priceDesc" selected="@(_sort == "priceDesc")">Giá giảm dần</option>
+                    <option value="newest" selected="@(_sort == "newest")">Mới nhất</option>
+                </select>
+            </div>
+            @* Wave 6b (item 29): client-side search by name, debounced. *@
+            <div class="mt-2" style="max-width: 420px;">
+                <div class="input-group input-group-sm">
+                    <input class="form-control" placeholder="Tìm món ăn..." aria-label="Tìm món ăn"
+                           value="@_searchTerm" @oninput="OnSearchInput" />
+                    @if (!string.IsNullOrWhiteSpace(_searchTerm))
+                    {
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" title="Xóa tìm kiếm" @onclick="ClearSearch">✕</button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Item 118: time-based suggestions — pure client-side by hour. *@
+    @if (_suggestions.Count > 0)
+    {
+        <h4 class="mb-3">@_suggestionTitle</h4>
+        <div class="row">
+            @foreach (var product in _suggestions)
+            {
+                <div class="col-6 col-md-4 mb-4" @key="product.Id">
+                    <div class="card h-100 border-info">
+                        <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name">
+                            <img class="card-img-top" src="@ProductImage(product.Code)" alt="@product.Name" loading="lazy" />
+                        </a>
+                        <div class="card-body py-2">
+                            <a href="javascript:void(0)" class="text-dark" @onclick="() => OpenQuickView(product)"><strong>@product.Name</strong></a>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <strong class="text-danger">@FormatPrice(product.Price)</strong>
+                                <button class="btn btn-sm btn-warning" @onclick="() => AddToCart(product)">+ Thêm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (_filtered.Count == 0)
+    {
+        <div class="alert alert-info">Không có món nào phù hợp với bộ lọc. <a href="javascript:void(0)" @onclick="ClearFilters">Xóa bộ lọc</a></div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var product in _filtered)
+            {
+                <div class="col-6 col-md-4 mb-4" @key="product.Id">
+                    <div class="card h-100">
+                        <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name">
+                            <img class="card-img-top" src="@ProductImage(product.Code)" alt="@product.Name" loading="lazy" style="height: 200px; object-fit: cover;" />
+                        </a>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">
+                                <a href="javascript:void(0)" class="text-dark" @onclick="() => OpenQuickView(product)">@product.Name</a>
+                            </h5>
+                            @* Wave 6b (item 26): "★ 4.8 (12)" — hidden when no reviews. *@
+                            @if (RatingText(product) is string cardRating)
+                            {
+                                <div class="small text-muted mb-1">@cardRating</div>
+                            }
+                            <div class="mb-1">
+                                @if (product.IsNew)
+                                {
+                                    <span class="badge badge-success mr-1">Món mới</span>
+                                }
+                                @if (product.IsSignature)
+                                {
+                                    <span class="badge badge-warning mr-1">Signature</span>
+                                }
+                                @foreach (var tag in ProductTags(product))
+                                {
+                                    <span class="badge badge-info mr-1">@TagLabel(tag)</span>
+                                }
+                            </div>
+                            <p class="card-text text-muted small flex-grow-1">@product.Description</p>
+                            <p class="card-text mb-1">
+                                <strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(DisplayPrice(product))</strong>
+                            </p>
+                            @if (product.Sizes != null && product.Sizes.Count > 0)
+                            {
+                                <select class="form-control form-control-sm mb-2" @onchange="(e) => OnCardSizeChanged(product, e)">
+                                    @foreach (var size in product.Sizes)
+                                    {
+                                        <option value="@size.Id" selected="@(SelectedSizeId(product) == size.Id)">
+                                            @size.Name — @FormatPrice(size.Price)
+                                        </option>
+                                    }
+                                </select>
+                            }
+                            <div class="d-flex align-items-center">
+                                <input type="number" min="1" max="99" class="form-control mr-2" style="width: 80px;"
+                                       @bind="_quantities[product.Id]" />
+                                <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)">
+                                    @I18n.T("add_to_cart")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@if (_quickView != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" @onclick="CloseQuickView">
+        <div class="modal-dialog modal-dialog-centered" role="document" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @_quickView.Name
+                        @if (_quickView.IsNew)
+                        {
+                            <span class="badge badge-success ml-1">Món mới</span>
+                        }
+                        @if (_quickView.IsSignature)
+                        {
+                            <span class="badge badge-warning ml-1">Signature</span>
+                        }
+                    </h5>
+                    <button type="button" class="close" aria-label="Đóng" @onclick="CloseQuickView">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img src="@ProductImage(_quickView.Code)" alt="@_quickView.Name" loading="lazy"
+                         class="img-fluid rounded mb-3" style="max-height: 300px; width: 100%; object-fit: cover;" />
+                    <p class="text-muted">@_quickView.Description</p>
+                    @* Wave 6b (item 26): "★ 4.8 (12)" — hidden when no reviews. *@
+                    @if (RatingText(_quickView) is string quickViewRating)
+                    {
+                        <p class="mb-2"><span class="text-muted">@quickViewRating</span></p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_quickView.AllergenInfo))
+                    {
+                        <div class="alert alert-warning py-2">
+                            <small>⚠️ <strong>Thông tin dị ứng:</strong> @_quickView.AllergenInfo</small>
+                        </div>
+                    }
+                    @if (_quickView.Sizes != null && _quickView.Sizes.Count > 0)
+                    {
+                        <p class="mb-1"><strong>Chọn size:</strong></p>
+                        @foreach (var size in _quickView.Sizes)
+                        {
+                            <div class="form-check" @key="size.Id">
+                                <input class="form-check-input" type="radio" name="qv-size" id="qv-size-@size.Id"
+                                       checked="@(_quickViewSizeId == size.Id)"
+                                       @onchange="() => _quickViewSizeId = size.Id" />
+                                <label class="form-check-label" for="qv-size-@size.Id">
+                                    @size.Name — <strong class="text-danger">@FormatPrice(size.Price)</strong>
+                                </label>
+                            </div>
+                        }
+                    }
+                    @if (_toppings != null && _toppings.Count > 0)
+                    {
+                        <p class="mb-1 mt-2"><strong>Ăn kèm thêm:</strong></p>
+                        @foreach (var topping in _toppings)
+                        {
+                            <div class="form-check" @key="topping.Id">
+                                <input class="form-check-input" type="checkbox" id="qv-top-@topping.Id"
+                                       checked="@_quickViewToppings.Contains(topping.Id)"
+                                       @onchange="(e) => ToggleQuickViewTopping(topping.Id, (bool)e.Value)" />
+                                <label class="form-check-label" for="qv-top-@topping.Id">
+                                    @topping.Name <span class="text-muted">+@FormatPrice(topping.ExtraPrice)</span>
+                                </label>
+                            </div>
+                        }
+                    }
+                    <p class="mt-3">
+                        <strong class="text-danger" style="font-size: 1.4rem;">@FormatPrice(QuickViewUnitPrice())</strong>
+                        <small class="text-muted">/ gói</small>
+                    </p>
+                    <div class="d-flex align-items-center">
+                        <label class="mr-2 mb-0" for="qv-qty">Số lượng:</label>
+                        <input id="qv-qty" type="number" min="1" max="99" class="form-control" style="width: 90px;"
+                               @bind="_quickViewQty" />
+                    </div>
+                    @* Wave 6a (item 24): per-item note flows into the order line. *@
+                    <div class="form-group mt-2 mb-0">
+                        <label for="qv-note"><small class="text-muted">📝 Ghi chú món <span class="text-muted">(vd: ít hành, nhiều đậu)</span></small></label>
+                        <input id="qv-note" class="form-control form-control-sm" maxlength="500"
+                               placeholder="Ghi chú cho món này (tùy chọn)" @bind="_quickViewNote" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    @* Item 116: short link to /shop?tim={code} *@
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CreateQuickViewShortLink" disabled="@_creatingShortLink">
+                        @(_creatingShortLink ? "Đang tạo..." : "🔗 Link ngắn")
+                    </button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseQuickView">Đóng</button>
+                    <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart">
+                        @I18n.T("add_to_cart") — @FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))
+                    </button>
+                </div>
+                @if (!string.IsNullOrEmpty(_shortLinkCopied))
+                {
+                    <div class="alert alert-success m-3">@_shortLinkCopied</div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+} @* /_loadFailed else *@
+
+@code {
+    private List<ShopProductModel> _products;
+    private List<ShopProductModel> _filtered = new List<ShopProductModel>();
+    private List<string> _categories = new List<string>();
+    private List<ComboModel> _combos;
+    private List<ToppingModel> _toppings;
+    private Dictionary<Guid, int> _rank = new Dictionary<Guid, int>();
+    private long _todaySold;
+    private Dictionary<Guid, int> _quantities = new Dictionary<Guid, int>();
+    private Dictionary<Guid, Guid?> _cardSizes = new Dictionary<Guid, Guid?>();
+    private string _error;
+
+    // Wave 6d (item 38): initial product load failed → full-page error state.
+    private bool _loadFailed;
+
+    // Filters.
+    private string _categoryFilter;
+    private string _tagFilter;
+    private string _sort = "popular";
+
+    // Wave 6b (item 29): client-side product search, debounced 300ms.
+    private string _searchTerm = string.Empty;
+    private System.Threading.CancellationTokenSource _searchCts;
+
+    // Wave 6b (item 26): per-product rating aggregates {avg, count}.
+    private Dictionary<Guid, (double Avg, int Count)> _ratings = new Dictionary<Guid, (double Avg, int Count)>();
+
+    private string RatingText(ShopProductModel product)
+    {
+        if (product == null || !_ratings.TryGetValue(product.Id, out var r) || r.Count <= 0)
+        {
+            return null;
+        }
+
+        return $"★ {r.Avg:0.0} ({r.Count})";
+    }
+
+    // Item 109: branch picker.
+    private List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel> _branches;
+    private Guid? _branchFilter;
+
+    // Item 118: time-based suggestions (pure client-side by hour).
+    private List<ShopProductModel> _suggestions = new List<ShopProductModel>();
+    private string _suggestionTitle;
+
+    // Item 95: table QR — ?ban={label} shows a "đang đặt tại bàn" chip.
+    private string _tableLabel;
+
+    // Item 116: short link for the quick-viewed product.
+    private string _quickViewShortLink;
+    private bool _creatingShortLink;
+    private string _shortLinkCopied;
+
+    // Quick-view state.
+    private ShopProductModel _quickView;
+    private int _quickViewQty = 1;
+    private Guid? _quickViewSizeId;
+    private HashSet<Guid> _quickViewToppings = new HashSet<Guid>();
+    private string _quickViewNote;
+
+    // Wave 6a (item 22): open-hours display.
+    private ShopSettingModel _shopSettings;
+    private string _openStatusText;
+    private bool _openNow;
+
+    protected override async Task OnInitializedAsync()
+    {
+        I18n.OnChange += OnLangChanged;
+        await I18n.InitializeAsync();
+        _tableLabel = GetQueryValue(Navigation.Uri, "ban");
+
+        // Item 133: order source from shop entry params.
+        // ?ban= → "QR bàn", ?share= → "Link chia sẻ", ?nhom= → "Nhóm", else "Web".
+        if (!string.IsNullOrWhiteSpace(_tableLabel))
+        {
+            CartState.Source = "QR bàn";
+        }
+        else if (!string.IsNullOrWhiteSpace(GetQueryValue(Navigation.Uri, "share")))
+        {
+            CartState.Source = "Link chia sẻ";
+        }
+        else if (!string.IsNullOrWhiteSpace(GetQueryValue(Navigation.Uri, "nhom")))
+        {
+            CartState.Source = "Nhóm";
+        }
+        else
+        {
+            CartState.Source = "Web";
+        }
+
+        // Wave 6a (item 22): open-hours badge in the hero (fail-safe —
+        // the shop works fine with the built-in defaults).
+        try
+        {
+            _shopSettings = await ShopSettingsService.GetAsync();
+        }
+        catch (Exception)
+        {
+            _shopSettings = null;
+        }
+
+        if (_shopSettings != null)
+        {
+            var (isOpen, text) = ShopHours.StatusText(_shopSettings.OpenTime, _shopSettings.CloseTime);
+            _openNow = isOpen;
+            _openStatusText = text;
+        }
+
+        try
+        {
+            // Wave 6d (item 38): products are the critical load — their
+            // failure gets the full-page error state with a retry button.
+            try
+            {
+                var paged = await ShopService.GetProductsAsync();
+                _products = paged.Items ?? new List<ShopProductModel>();
+            }
+            catch (Exception)
+            {
+                _loadFailed = true;
+                _products = new List<ShopProductModel>();
+            }
+
+            var branchesTask = Wave4Service.GetActiveBranchesAsync();
+            var combosTask = ShopService.GetCombosAsync();
+            var toppingsTask = ShopService.GetToppingsAsync();
+            var todaySoldTask = ShopService.GetTodaySoldAsync();
+            var bestSellersTask = ShopService.GetBestSellerIdsAsync();
+
+            await Task.WhenAll(branchesTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
+
+            // Wave 6b (item 26): rating aggregates are fail-soft — the shop
+            // hides the stars when the call fails.
+            try
+            {
+                var ratings = await ShopService.GetProductRatingsAsync();
+                _ratings = (ratings ?? new List<ProductRatingModel>())
+                    .Where(r => r.ReviewCount > 0)
+                    .ToDictionary(r => r.ProductId, r => (r.AverageRating, r.ReviewCount));
+            }
+            catch (Exception)
+            {
+                _ratings = new Dictionary<Guid, (double Avg, int Count)>();
+            }
+
+            _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
+            _combos = combosTask.Result ?? new List<ComboModel>();
+            _toppings = toppingsTask.Result ?? new List<ToppingModel>();
+            _todaySold = todaySoldTask.Result;
+
+            var rank = 0;
+            foreach (var id in bestSellersTask.Result ?? new List<Guid>())
+            {
+                _rank[id] = rank++;
+            }
+
+            foreach (var p in _products)
+            {
+                _quantities[p.Id] = 1;
+                _cardSizes[p.Id] = DefaultSizeId(p);
+                if (p.Sizes == null)
+                {
+                    p.Sizes = new List<ProductSizeOptionModel>();
+                }
+            }
+
+            _categories = _products
+                .Select(p => p.Category)
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct()
+                .OrderBy(c => c)
+                .ToList();
+
+            ApplyFilters();
+            BuildSuggestions();
+
+            // Item 116: ?tim={productCode} opens the quick-view directly
+            // (target of the short links created from the quick-view).
+            var tim = GetQueryValue(Navigation.Uri, "tim");
+            if (!string.IsNullOrWhiteSpace(tim))
+            {
+                var match = _products.FirstOrDefault(p =>
+                    string.Equals(p.Code, tim.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                {
+                    OpenQuickView(match);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Non-critical extras (combos, toppings, best-sellers) failed;
+            // products have their own _loadFailed flag (item 38).
+            _error = "Một số thông tin bổ sung không tải được. Vui lòng thử lại sau.";
+            _products ??= new List<ShopProductModel>();
+        }
+    }
+
+    /// <summary>Wave 6d (item 38): full reload after a failed initial load.</summary>
+    private void RetryLoad()
+    {
+        Navigation.NavigateTo("/shop", forceLoad: true);
+    }
+
+    /// <summary>
+    /// Item 118: time-based suggestions, pure client-side by local hour:
+    /// 5h–10h → savory (tag "man") products; 17h–23h → evening picks.
+    /// </summary>
+    private void BuildSuggestions()
+    {
+        _suggestions = new List<ShopProductModel>();
+        _suggestionTitle = null;
+
+        if (_products == null || _products.Count == 0)
+        {
+            return;
+        }
+
+        var hour = DateTime.Now.Hour;
+        if (hour >= 5 && hour < 10)
+        {
+            _suggestionTitle = "☀️ Gợi ý buổi sáng";
+            _suggestions = _products
+                .Where(p => (p.Tags ?? string.Empty).Contains("man"))
+                .Take(3)
+                .ToList();
+        }
+        else if (hour >= 17 && hour < 23)
+        {
+            _suggestionTitle = "🌙 Gợi ý buổi tối";
+            _suggestions = _products.Take(3).ToList();
+        }
+    }
+
+    // ---------- Branch filter (item 109) ----------
+
+    private string BranchChipClass(Guid? branchId) =>
+        _branchFilter == branchId ? "btn-warning" : "btn-outline-secondary";
+
+    private async Task SetBranch(Guid? branchId)
+    {
+        _branchFilter = branchId;
+        try
+        {
+            var paged = await ShopService.GetProductsAsync(branchId);
+            _products = paged.Items ?? new List<ShopProductModel>();
+            ApplyFilters();
+            BuildSuggestions();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được sản phẩm theo chi nhánh.";
+        }
+    }
+
+    // ---------- Filtering & sorting ----------
+
+    private void SetCategory(string category)
+    {
+        _categoryFilter = category;
+        ApplyFilters();
+    }
+
+    private void SetTag(string tag)
+    {
+        _tagFilter = tag;
+        ApplyFilters();
+    }
+
+    private void OnSortChanged(ChangeEventArgs e)
+    {
+        _sort = e.Value?.ToString() ?? "popular";
+        ApplyFilters();
+    }
+
+    private void ClearFilters()
+    {
+        _categoryFilter = null;
+        _tagFilter = null;
+        _sort = "popular";
+        ClearSearch();
+    }
+
+    /// <summary>
+    /// Wave 6b (item 29): debounced search input (300ms) over the loaded
+    /// product list; combined with the category/tag chips and sort.
+    /// </summary>
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value?.ToString() ?? string.Empty;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new System.Threading.CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(300, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (!token.IsCancellationRequested)
+        {
+            ApplyFilters();
+            StateHasChanged();
+        }
+    }
+
+    private void ClearSearch()
+    {
+        _searchCts?.Cancel();
+        _searchTerm = string.Empty;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        if (_products == null)
+        {
+            _filtered = new List<ShopProductModel>();
+            return;
+        }
+
+        var query = _products.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(_categoryFilter))
+        {
+            query = query.Where(p => string.Equals(p.Category?.Trim(), _categoryFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(_tagFilter))
+        {
+            query = query.Where(p => ProductTags(p).Contains(_tagFilter));
+        }
+
+        // Wave 6b (item 29): name search (diacritics-sensitive).
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var term = _searchTerm.Trim();
+            query = query.Where(p => (p.Name ?? string.Empty).IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        _filtered = _sort switch
+        {
+            "priceAsc" => query.OrderBy(p => MinPrice(p)).ToList(),
+            "priceDesc" => query.OrderByDescending(p => MinPrice(p)).ToList(),
+            "newest" => query.OrderByDescending(p => p.CreatedDateTime).ToList(),
+            _ => query.OrderBy(p => _rank.TryGetValue(p.Id, out var r) ? r : int.MaxValue).ThenBy(p => p.Name).ToList()
+        };
+    }
+
+    private string CategoryChipClass(string category) =>
+        string.Equals(_categoryFilter, category, StringComparison.OrdinalIgnoreCase)
+            ? "btn-primary" : "btn-outline-primary";
+
+    private string TagChipClass(string tag) =>
+        string.Equals(_tagFilter, tag, StringComparison.OrdinalIgnoreCase)
+            ? "btn-success" : "btn-outline-success";
+
+    private static List<string> ProductTags(ShopProductModel product) =>
+        (product.Tags ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim().ToLowerInvariant())
+            .Where(x => x.Length > 0)
+            .Distinct()
+            .ToList();
+
+    private static string TagLabel(string tag) => tag switch
+    {
+        "chay" => "🥬 Chay",
+        "man" => "🍖 Mặn",
+        "cay" => "🌶️ Cay",
+        _ => tag
+    };
+
+    private static decimal MinPrice(ShopProductModel product) =>
+        product.Sizes != null && product.Sizes.Count > 0
+            ? product.Sizes.Min(s => s.Price)
+            : product.Price;
+
+    // ---------- Sizes ----------
+
+    private static Guid? DefaultSizeId(ShopProductModel product)
+    {
+        if (product.Sizes == null || product.Sizes.Count == 0)
+        {
+            return null;
+        }
+
+        return product.Sizes.OrderBy(s => s.SortOrder)
+            .FirstOrDefault(s => s.Price == product.Price)?.Id
+            ?? product.Sizes.OrderBy(s => s.SortOrder).First().Id;
+    }
+
+    private Guid? SelectedSizeId(ShopProductModel product)
+    {
+        if (_cardSizes.TryGetValue(product.Id, out var id) && id.HasValue
+            && product.Sizes.Any(s => s.Id == id.Value))
+        {
+            return id;
+        }
+
+        return DefaultSizeId(product);
+    }
+
+    private void OnCardSizeChanged(ShopProductModel product, ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var sizeId))
+        {
+            _cardSizes[product.Id] = sizeId;
+        }
+    }
+
+    private decimal DisplayPrice(ShopProductModel product)
+    {
+        var sizeId = SelectedSizeId(product);
+        var size = sizeId.HasValue ? product.Sizes.FirstOrDefault(s => s.Id == sizeId.Value) : null;
+        return size?.Price ?? product.Price;
+    }
+
+    // ---------- Cart ----------
+
+    private void AddToCart(ShopProductModel product)
+    {
+        var qty = _quantities.TryGetValue(product.Id, out var q) && q > 0 ? q : 1;
+        var sizeId = SelectedSizeId(product);
+        var size = sizeId.HasValue ? product.Sizes.FirstOrDefault(s => s.Id == sizeId.Value) : null;
+
+        CartState.AddConfigured(
+            product.Id, product.Name, product.Code,
+            size?.Price ?? product.Price, qty,
+            size?.Id, size?.Name,
+            toppingIds: null, toppingNames: null, toppingsTotal: 0,
+            isCombo: false);
+
+        var detail = size != null ? $" (size {size.Name})" : "";
+        Toasts.Show($"Đã thêm {product.Name}{detail} × {qty} vào giỏ", "Xem giỏ hàng", "/cart");
+    }
+
+    private void AddComboToCart(ComboModel combo)
+    {
+        CartState.AddCombo(combo);
+        Toasts.Show($"Đã thêm {combo.Name} vào giỏ", "Xem giỏ hàng", "/cart");
+    }
+
+    // ---------- Quick view ----------
+
+    private void OpenQuickView(ShopProductModel product)
+    {
+        _quickView = product;
+        _quickViewQty = _quantities.TryGetValue(product.Id, out var q) && q > 0 ? q : 1;
+        _quickViewSizeId = SelectedSizeId(product);
+        _quickViewToppings = new HashSet<Guid>();
+        _quickViewNote = null;
+        _quickViewShortLink = null;
+        _shortLinkCopied = null;
+    }
+
+    private void CloseQuickView()
+    {
+        _quickView = null;
+    }
+
+    /// <summary>
+    /// Item 116: creates a short link to /shop?tim={code} and copies it.
+    /// </summary>
+    private async Task CreateQuickViewShortLink()
+    {
+        if (_quickView == null || _creatingShortLink)
+        {
+            return;
+        }
+
+        _creatingShortLink = true;
+        _shortLinkCopied = null;
+        try
+        {
+            var baseUrl = Navigation.BaseUri.TrimEnd('/');
+            var target = $"{baseUrl}/shop?tim={Uri.EscapeDataString(_quickView.Code)}";
+            var link = await Wave4Service.CreateShortLinkAsync(target);
+            _quickViewShortLink = $"{baseUrl}/s/{link.Code}";
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _quickViewShortLink);
+                _shortLinkCopied = "Đã sao chép link ngắn: " + _quickViewShortLink;
+            }
+            catch (Exception)
+            {
+                _shortLinkCopied = _quickViewShortLink;
+            }
+        }
+        catch (Exception)
+        {
+            _shortLinkCopied = "Không tạo được link ngắn, vui lòng thử lại.";
+        }
+        finally
+        {
+            _creatingShortLink = false;
+        }
+    }
+
+    private void ToggleQuickViewTopping(Guid toppingId, bool on)
+    {
+        if (on)
+        {
+            _quickViewToppings.Add(toppingId);
+        }
+        else
+        {
+            _quickViewToppings.Remove(toppingId);
+        }
+    }
+
+    private decimal QuickViewUnitPrice()
+    {
+        if (_quickView == null)
+        {
+            return 0;
+        }
+
+        var size = _quickViewSizeId.HasValue
+            ? _quickView.Sizes.FirstOrDefault(s => s.Id == _quickViewSizeId.Value)
+            : null;
+        var basePrice = size?.Price ?? _quickView.Price;
+        var toppingsTotal = (_toppings ?? new List<ToppingModel>())
+            .Where(t => _quickViewToppings.Contains(t.Id))
+            .Sum(t => t.ExtraPrice);
+        return basePrice + toppingsTotal;
+    }
+
+    private void AddQuickViewToCart()
+    {
+        if (_quickView == null)
+        {
+            return;
+        }
+
+        var qty = _quickViewQty > 0 ? _quickViewQty : 1;
+        var size = _quickViewSizeId.HasValue
+            ? _quickView.Sizes.FirstOrDefault(s => s.Id == _quickViewSizeId.Value)
+            : null;
+        var chosenToppings = (_toppings ?? new List<ToppingModel>()).Where(t => _quickViewToppings.Contains(t.Id)).ToList();
+        var toppingIds = chosenToppings.Select(t => t.Id).ToList();
+        var toppingNames = chosenToppings.Count == 0 ? null : string.Join(", ", chosenToppings.Select(t => t.Name));
+        var toppingsTotal = chosenToppings.Sum(t => t.ExtraPrice);
+        var unitPrice = (size?.Price ?? _quickView.Price) + toppingsTotal;
+
+        CartState.AddConfigured(
+            _quickView.Id, _quickView.Name, _quickView.Code,
+            unitPrice, qty,
+            size?.Id, size?.Name,
+            toppingIds, toppingNames, toppingsTotal,
+            isCombo: false,
+            note: _quickViewNote);
+
+        _quantities[_quickView.Id] = qty;
+        if (size != null)
+        {
+            _cardSizes[_quickView.Id] = size.Id;
+        }
+
+        Toasts.Show($"Đã thêm {_quickView.Name} × {qty} vào giỏ", "Xem giỏ hàng", "/cart");
+        CloseQuickView();
+    }
+
+    private static string ProductImage(string code)
+    {
+        var slug = (code ?? "").ToLowerInvariant()
+            .Replace("xoi-", "xoi-")
+            .Replace("_", "-");
+        var file = slug switch
+        {
+            "xoi-gac" => "xoi-gac.svg",
+            "xoi-do" => "xoi-do.svg",
+            "xoi-xeo" => "xoi-xeo.svg",
+            "xoi-vo" => "xoi-vo.svg",
+            "xoi-ns" => "xoi-ngu-sac.svg",
+            "xoi-ngu-sac" => "xoi-ngu-sac.svg",
+            _ => "xoi-gac.svg"
+        };
+        return $"_content/PhuThuongStickyRice.Web.Components/images/{file}";
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    /// <summary>Reads a query string value (item 95: ?ban={label}).</summary>
+    private static string GetQueryValue(string uri, string key)
+    {
+        var question = uri.IndexOf('?');
+        if (question < 0)
+        {
+            return null;
+        }
+
+        var query = uri.Substring(question + 1);
+        var hash = query.IndexOf('#');
+        if (hash >= 0)
+        {
+            query = query.Substring(0, hash);
+        }
+
+        foreach (var pair in query.Split('&', System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            if (string.Equals(Uri.UnescapeDataString(pair.Substring(0, eq)), key, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
+            }
+        }
+
+        return null;
+    }
+
+    private void OnLangChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        I18n.OnChange -= OnLangChanged;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
+}

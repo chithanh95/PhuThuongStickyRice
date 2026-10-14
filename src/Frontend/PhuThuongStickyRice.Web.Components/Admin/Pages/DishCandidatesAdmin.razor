@@ -1,0 +1,215 @@
+@page "/admin/binh-chon"
+@attribute [Authorize]
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Core.Components
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject CatalogAdminService CatalogService
+
+<h3>Bình chọn món mới</h3>
+<p class="text-muted">Quản lý các món ứng cử trên trang <a href="/binh-chon-mon-moi">/binh-chon-mon-moi</a> và xem thứ hạng bình chọn.</p>
+
+<ConfirmDialog @ref="_deleteDialog"
+               Title="Xóa món ứng cử"
+               YesText="Xóa"
+               NoText="Hủy"
+               ConfirmEventCallback="ConfirmedDelete">
+    <Message>Xóa món <strong>@_deleting?.Name</strong>? Số lượt bình chọn sẽ mất.</Message>
+</ConfirmDialog>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">@(_editingId == null ? "Thêm món ứng cử" : "Sửa món ứng cử")</div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label>Tên món *</label>
+                <input class="form-control" @bind="_form.Name" placeholder="VD: Xôi cốm" />
+            </div>
+            <div class="form-group col-md-6">
+                <label>Mô tả</label>
+                <input class="form-control" @bind="_form.Description" placeholder="Mô tả ngắn về món ăn" />
+            </div>
+            <div class="form-group col-md-2 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="cand-active" @bind="_form.IsActive" />
+                    <label class="form-check-label" for="cand-active">Mở bình chọn</label>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+            @(_saving ? "Đang lưu..." : (_editingId == null ? "Thêm món" : "Cập nhật"))
+        </button>
+        @if (_editingId != null)
+        {
+            <button class="btn btn-outline-secondary ml-2" @onclick="CancelEdit">Hủy</button>
+        }
+    </div>
+</div>
+
+@if (_items == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_items.Count == 0)
+{
+    <div class="alert alert-info">Chưa có món ứng cử nào.</div>
+}
+else
+{
+    var max = Math.Max(1, _items.Max(x => x.Votes));
+    <div class="card">
+        <div class="card-header">Thứ hạng bình chọn</div>
+        <div class="card-body">
+            @foreach (var c in _items.OrderByDescending(x => x.Votes))
+            {
+                <div class="mb-3" @key="c.Id">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-1">
+                        <div>
+                            <strong>#@(_items.OrderByDescending(x => x.Votes).ToList().IndexOf(c) + 1) @c.Name</strong>
+                            @if (!c.IsActive)
+                            {
+                                <span class="badge badge-secondary ml-1">Đã đóng</span>
+                            }
+                            <span class="text-muted ml-2"><small>@c.Description</small></span>
+                        </div>
+                        <div>
+                            <span class="badge badge-success mr-2" style="font-size: 0.9rem;">@c.Votes phiếu</span>
+                            <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(c)">Sửa</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(c)">Xóa</button>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar"
+                             style="width: @((int)Math.Round(c.Votes * 100.0 / max))%;"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<DishCandidateModel> _items;
+    private DishCandidateModel _form = new DishCandidateModel();
+    private Guid? _editingId;
+    private bool _saving;
+    private string _error;
+    private string _success;
+    private ConfirmDialog _deleteDialog;
+    private DishCandidateModel _deleting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _items = await CatalogService.GetDishCandidatesAsync() ?? new List<DishCandidateModel>();
+        }
+        catch (Exception)
+        {
+            _items = new List<DishCandidateModel>();
+            _error = "Không tải được danh sách bình chọn.";
+        }
+    }
+
+    private void StartEdit(DishCandidateModel c)
+    {
+        _editingId = c.Id;
+        _form = new DishCandidateModel
+        {
+            Name = c.Name,
+            Description = c.Description,
+            IsActive = c.IsActive
+        };
+        _error = null;
+        _success = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _form = new DishCandidateModel();
+        _error = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _error = "Vui lòng nhập tên món.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (_editingId == null)
+            {
+                await CatalogService.CreateDishCandidateAsync(_form);
+                _success = "Đã thêm món ứng cử.";
+            }
+            else
+            {
+                await CatalogService.UpdateDishCandidateAsync(_editingId.Value, _form);
+                _success = "Đã cập nhật món ứng cử.";
+            }
+
+            CancelEdit();
+            await LoadAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Lưu thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void DeleteAsync(DishCandidateModel c)
+    {
+        _deleting = c;
+        _deleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete(bool confirmed)
+    {
+        _deleteDialog.Close();
+        if (!confirmed || _deleting == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await CatalogService.DeleteDishCandidateAsync(_deleting.Id);
+            _success = $"Đã xóa {_deleting.Name}.";
+            _deleting = null;
+            await LoadAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Xóa thất bại. Vui lòng thử lại.";
+        }
+    }
+}

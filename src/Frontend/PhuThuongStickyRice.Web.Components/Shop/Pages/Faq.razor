@@ -1,0 +1,135 @@
+@page "/faq"
+@using System
+@using System.Threading
+@using System.Collections.Generic
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject Wave2Service Wave2Service
+@inject PolicyService PolicyService
+@implements IDisposable
+
+<h3>Câu hỏi thường gặp</h3>
+
+<div class="input-group mb-3" style="max-width: 480px;">
+    <input class="form-control" @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp"
+           placeholder="Tìm kiếm câu hỏi..." />
+    <div class="input-group-append">
+        <button class="btn btn-outline-secondary" @onclick="Search">Tìm</button>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_faqs == null || _faqs.Count == 0)
+{
+    <div class="alert alert-info">Chưa có câu hỏi nào. <a href="/ho-tro">Gửi câu hỏi cho shop</a>.</div>
+}
+else
+{
+    <div>
+        @foreach (var faq in _faqs)
+        {
+            var isOpen = _expandedId == faq.Id;
+            <div class="card mb-2" @key="faq.Id">
+                <div class="card-header p-2">
+                    <button class="btn btn-link btn-block text-left p-1" type="button"
+                            @onclick="() => Toggle(faq.Id)">
+                        <strong>@(isOpen ? "▾" : "▸") @faq.Question</strong>
+                    </button>
+                </div>
+                @if (isOpen)
+                {
+                    <div class="card-body">@faq.Answer</div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@* Wave 6b (item 28): cross-link FAQ ↔ policy pages. *@
+@if (_policies.Count > 0)
+{
+    <hr />
+    <p class="text-muted">
+        Xem thêm:
+        @foreach (var p in _policies)
+        {
+            <a class="mr-3" href="/chinh-sach/@p.Slug">@p.Title</a>
+        }
+    </p>
+}
+
+@code {
+    private List<FaqItemModel> _faqs = new List<FaqItemModel>();
+    private List<PolicyPageSummaryModel> _policies = new List<PolicyPageSummaryModel>();
+    private string _searchTerm;
+    private bool _loading = true;
+    private Timer _debounceTimer;
+    private Guid _expandedId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync(null);
+
+        // Wave 6b (item 28): cross-link to the policy pages (fail-soft).
+        try
+        {
+            _policies = await PolicyService.GetPublicListAsync()
+                ?? new List<PolicyPageSummaryModel>();
+        }
+        catch (Exception)
+        {
+            _policies = new List<PolicyPageSummaryModel>();
+        }
+    }
+
+    private void Toggle(Guid id)
+    {
+        _expandedId = _expandedId == id ? Guid.Empty : id;
+    }
+
+    private async Task LoadAsync(string term)
+    {
+        _loading = true;
+        try
+        {
+            _faqs = await Wave2Service.GetFaqsAsync(term) ?? new List<FaqItemModel>();
+        }
+        catch (Exception)
+        {
+            _faqs = new List<FaqItemModel>();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnSearchKeyUp()
+    {
+        // Debounce: wait 400ms after the user stops typing before searching.
+        _debounceTimer?.Dispose();
+        _debounceTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadAsync(_searchTerm);
+                StateHasChanged();
+            });
+        }, null, 400, Timeout.Infinite);
+    }
+
+    private async Task Search()
+    {
+        _debounceTimer?.Dispose();
+        await LoadAsync(_searchTerm);
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+    }
+}

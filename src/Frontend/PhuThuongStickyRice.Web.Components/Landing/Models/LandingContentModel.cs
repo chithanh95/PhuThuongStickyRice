@@ -1,0 +1,80 @@
+using System.Collections.Generic;
+
+namespace PhuThuongStickyRice.Web.Components.Landing.Models
+{
+    public class LandingNewsItemModel
+    {
+        public string Title { get; set; }
+
+        public string Body { get; set; }
+
+        public string Source { get; set; }
+    }
+
+    public class LandingContentModel
+    {
+        public string HeroTitle { get; set; } = "XÔI PHÚ THƯỢNG";
+
+        public string HeroTagline { get; set; } = "hương vị làng nghề, dẻo thơm mỗi sáng";
+
+        public string HeroButtonText { get; set; } = "Đặt món ngay";
+
+        public string StoryTitle { get; set; }
+
+        public string StoryBody { get; set; }
+
+        public string MenuTitle { get; set; }
+
+        public string MenuLabel1 { get; set; } = "Xôi gấc";
+
+        public string MenuLabel2 { get; set; } = "Xôi xéo";
+
+        public string MenuLabel3 { get; set; } = "Xôi ngũ sắc";
+
+        public string NewsTitle { get; set; }
+
+        public List<LandingNewsItemModel> NewsItems { get; set; } = new List<LandingNewsItemModel>();
+
+        public string FooterTitle { get; set; }
+
+        public string ContactAddress { get; set; }
+
+        public string ContactPhone { get; set; }
+
+        public string ContactEmail { get; set; }
+
+        public string FooterButtonText { get; set; } = "Đặt món ngay";
+
+        public string HeroImageUrl { get; set; }
+
+        public string BannerImageUrl { get; set; }
+
+        public string MenuImage1Url { get; set; }
+
+        public string MenuImage2Url { get; set; }
+
+        public string MenuImage3Url { get; set; }
+
+        public string FooterBackgroundUrl { get; set; }
+
+        public string VideoTitle { get; set; }
+
+        public string VideoUrl { get; set; }
+
+        public string MapEmbedUrl { get; set; }
+
+        public string ReviewsEmbedHtml { get; set; }
+
+        public string PopupTitle { get; set; }
+
+        public string PopupBody { get; set; }
+
+        public string PopupImageUrl { get; set; }
+
+        public bool PopupActive { get; set; }
+
+        public string FlashBannerText { get; set; }
+
+        public bool FlashBannerActive { get; set; }
+    }
+}

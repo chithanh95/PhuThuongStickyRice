@@ -1,0 +1,135 @@
+@page "/admin/blacklist"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject Wave3Service Wave3Service
+
+<h3>Danh sách chặn SĐT</h3>
+<p class="text-muted">Các số trong danh sách này không thể đặt hàng ("Số điện thoại này tạm thời không thể đặt hàng.").</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">Chặn số mới</div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="col-md-3 mb-2">
+                <input class="form-control" placeholder="Số điện thoại *" @bind="_phone" />
+            </div>
+            <div class="col-md-6 mb-2">
+                <input class="form-control" placeholder="Lý do (VD: đơn ảo, spam...)" @bind="_reason" />
+            </div>
+            <div class="col-md-3 mb-2">
+                <button class="btn btn-danger" @onclick="CreateAsync" disabled="@_saving">Chặn số</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_items == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_items.Count == 0)
+{
+    <div class="alert alert-info">Chưa chặn số nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr><th>SĐT</th><th>Lý do</th><th>Ngày chặn</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _items)
+                {
+                    <tr @key="item.Id">
+                        <td><strong>@item.Phone</strong></td>
+                        <td>@item.Reason</td>
+                        <td><small>@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td>
+                        <td class="text-right">
+                            <button class="btn btn-sm btn-outline-success"
+                                    @onclick="() => DeleteAsync(item)">Gỡ chặn</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<BlacklistedPhoneModel> _items;
+    private string _phone;
+    private string _reason;
+    private string _error;
+    private string _message;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _items = await Wave3Service.GetBlacklistAsync() ?? new List<BlacklistedPhoneModel>();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được danh sách chặn.";
+            _items = new List<BlacklistedPhoneModel>();
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        _error = null;
+        _message = null;
+        if (string.IsNullOrWhiteSpace(_phone))
+        {
+            _error = "Vui lòng nhập số điện thoại.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            await Wave3Service.AddToBlacklistAsync(_phone.Trim(), _reason?.Trim());
+            _phone = null;
+            _reason = null;
+            _message = "Đã chặn số điện thoại.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task DeleteAsync(BlacklistedPhoneModel item)
+    {
+        _error = null;
+        try
+        {
+            await Wave3Service.RemoveFromBlacklistAsync(item.Id);
+            _message = "Đã gỡ chặn.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Xôi Phú Thượng — đặt xôi online giao tận nơi. Xôi gấc, xôi xéo, xôi đỗ, xôi vò, xôi ngũ sắc chuẩn vị làng nghề Phú Thượng, Hà Nội. Đặt hàng nhanh, thanh toán COD, chuyển khoản QR hoặc MoMo." />
+    <title>Xôi Phú Thượng — Đặt xôi online giao tận nơi</title>
+    <base href="/" />
+    <meta property="og:title" content="Xôi Phú Thượng — Đặt xôi online giao tận nơi" />
+    <meta property="og:description" content="Xôi gấc, xôi xéo, xôi đỗ, xôi vò, xôi ngũ sắc chuẩn vị làng nghề Phú Thượng, Hà Nội. Đặt hàng nhanh, giao tận nơi." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:image" content="images/logo.png" />
+    <meta property="og:site_name" content="Xôi Phú Thượng" />
+    <meta name="zalo-platform-site-verification" content="" />
+    <!-- PWA (item 115) -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#7a1b2e" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Xôi Phú Thượng" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="PhuThuongStickyRice.Web.styles.css" rel="stylesheet">
+</head>
+
+<body>
+    <app>Loading...</app>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_content/Microsoft.AspNetCore.Components.WebAssembly.Authentication/AuthenticationService.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="_content/PhuThuongStickyRice.Web.Components/scripts/interop.js"></script>
+    <script>
+        // PWA (item 115): register the service worker for the app-shell
+        // cache + offline fallback page.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').catch(function () { });
+            });
+        }
+    </script>
+</body>
+
+</html>

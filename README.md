@@ -28,8 +28,8 @@ src/
     PhuThuongStickyRice.Migrator/     # EF Core migrations + seed data
     ...
   Frontend/
-    PhuThuongStickyRice.BlazorWebAssembly/  # Host
-    PhuThuongStickyRice.Blazor.Modules/
+    PhuThuongStickyRice.Web/  # Host
+    PhuThuongStickyRice.Web.Components/
       Shop/        # Web bán hàng: /shop, /cart, /checkout (không cần đăng nhập)
       Dashboard/   # Admin: /dashboard (cần đăng nhập)
       Orders/      # Admin: /orders — duyệt đơn, đổi trạng thái (cần đăng nhập)
@@ -88,7 +88,7 @@ tests/
    ```
 4. Chạy Blazor WASM:
    ```bash
-   cd ../../../Frontend/PhuThuongStickyRice.BlazorWebAssembly
+   cd ../../../Frontend/PhuThuongStickyRice.Web
    dotnet run
    ```
 
@@ -296,7 +296,7 @@ key từ DB nên giải mã được trên mọi máy. Lưu ý:
 
 ## Ghi chú
 
-- Ảnh sản phẩm hiện là placeholder SVG trong `Blazor.Modules/wwwroot/images/`
+- Ảnh sản phẩm hiện là placeholder SVG trong `Web.Components/wwwroot/images/`
   (theo mã sản phẩm: `XOI-GAC` → `xoi-gac.svg`...). Thay bằng ảnh thật khi deploy.
 - Số liệu "khách vào xem" (page views) chưa có — dashboard hiện thống kê theo đơn hàng/doanh thu.
   Muốn có page views thì cần thêm bảng `PageViews` + middleware ghi log (có thể làm ở phase sau).

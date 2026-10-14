@@ -1,0 +1,84 @@
+@page "/admin/tinh-nang"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject Wave4Service Wave4Service
+
+<h3>Tính năng (Feature flags)</h3>
+<p class="text-muted">Bật/tắt các tính năng mở rộng của cửa hàng. Tắt một cờ sẽ ẩn tính năng tương ứng ở giao diện khách hàng.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+@if (_flags == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var flag in _flags)
+        {
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@flag.Name</strong>
+                    <div class="text-muted small"><code>@flag.Key</code> — @flag.Description</div>
+                </div>
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="flag-@flag.Key"
+                           checked="@flag.IsEnabled" @onchange="e => ToggleAsync(flag, (bool)e.Value)"
+                           disabled="@_toggling.Contains(flag.Key)" />
+                    <label class="custom-control-label" for="flag-@flag.Key">
+                        @(flag.IsEnabled ? "Bật" : "Tắt")
+                    </label>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<FeatureFlagModel> _flags;
+    private string _error;
+    private string _success;
+    private readonly HashSet<string> _toggling = new HashSet<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _flags = await Wave4Service.GetFeatureFlagsAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được danh sách tính năng: " + ex.Message;
+        }
+    }
+
+    private async Task ToggleAsync(FeatureFlagModel flag, bool enabled)
+    {
+        _error = null;
+        _success = null;
+        _toggling.Add(flag.Key);
+        try
+        {
+            var updated = await Wave4Service.SetFeatureFlagAsync(flag.Key, enabled);
+            flag.IsEnabled = updated.IsEnabled;
+            _success = $"Đã {(enabled ? "bật" : "tắt")} tính năng \"{flag.Name}\".";
+        }
+        catch (Exception ex)
+        {
+            _error = "Không lưu được: " + ex.Message;
+        }
+        finally
+        {
+            _toggling.Remove(flag.Key);
+        }
+    }
+}

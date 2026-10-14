@@ -1,0 +1,175 @@
+@page "/admin/link-rut-gon"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Web.Components.Core.Components
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject Wave4Service Wave4Service
+@inject NavigationManager NavigationManager
+
+<h3>Link rút gọn</h3>
+<p class="text-muted"><code>/s/{mã}</code> chuyển hướng 302 tới URL đích.</p>
+
+<ConfirmDialog @ref="_deleteDialog"
+               Title="Xóa link"
+               YesText="Xóa"
+               NoText="Hủy"
+               ConfirmEventCallback="ConfirmedDelete">
+    <Message>Xóa link <strong>/s/@_deleting?.Code</strong>?</Message>
+</ConfirmDialog>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">Tạo link mới</div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-9">
+                <label>URL đích *</label>
+                <input class="form-control" @bind="_targetUrl" placeholder="https://phuthuong.vn/shop?tim=..." />
+            </div>
+            <div class="form-group col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary" @onclick="CreateAsync" disabled="@_saving">Tạo link</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_links == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_links.Count == 0)
+{
+    <div class="alert alert-info">Chưa có link rút gọn nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Link ngắn</th>
+                    <th>URL đích</th>
+                    <th>Ngày tạo</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var l in _links)
+                {
+                    var shortUrl = NavigationManager.BaseUri.TrimEnd('/') + "/s/" + l.Code;
+                    <tr>
+                        <td class="text-nowrap"><a href="@shortUrl" target="_blank">@("/s/" + l.Code)</a></td>
+                        <td class="text-break" style="max-width: 360px;"><small>@l.TargetUrl</small></td>
+                        <td class="text-nowrap">@l.CreatedDateTime.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                        <td class="text-right text-nowrap">
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => CopyAsync(shortUrl)">Sao chép</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(l)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (!string.IsNullOrEmpty(_copied))
+    {
+        <div class="alert alert-success">@_copied</div>
+    }
+}
+
+@code {
+    private List<ShortLinkModel> _links;
+    private string _targetUrl;
+    private ShortLinkModel _deleting;
+    private ConfirmDialog _deleteDialog;
+    private string _error;
+    private string _success;
+    private string _copied;
+    private bool _saving;
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _links = await Wave4Service.GetShortLinksAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được danh sách link: " + ex.Message;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        _error = null;
+        _success = null;
+        _copied = null;
+        if (string.IsNullOrWhiteSpace(_targetUrl))
+        {
+            _error = "Vui lòng nhập URL đích.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            var created = await Wave4Service.CreateShortLinkAsync(_targetUrl.Trim());
+            _targetUrl = null;
+            _success = $"Đã tạo link: /s/{created.Code}";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tạo được link: " + ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void AskDelete(ShortLinkModel l)
+    {
+        _deleting = l;
+        _deleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete()
+    {
+        try
+        {
+            await Wave4Service.DeleteShortLinkAsync(_deleting.Id);
+            _success = "Đã xóa link.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không xóa được: " + ex.Message;
+        }
+    }
+
+    private async Task CopyAsync(string url)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", url);
+            _copied = "Đã sao chép: " + url;
+        }
+        catch (Exception)
+        {
+            _copied = url;
+        }
+    }
+}

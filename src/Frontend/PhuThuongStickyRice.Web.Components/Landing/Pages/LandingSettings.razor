@@ -1,0 +1,374 @@
+@page "/admin/landing"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Components.Forms
+@using PhuThuongStickyRice.Web.Components.Landing.Models
+@using PhuThuongStickyRice.Web.Components.Landing.Services
+@inject LandingService LandingService
+@inject IJSRuntime JSRuntime
+
+<h3>Cài đặt trang landing</h3>
+<p class="text-muted">Nội dung bạn sửa ở đây sẽ hiển thị ngay trên trang chủ (landing page) của web.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+@if (_model == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-header">Phần mở đầu (Hero)</div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>Tên thương hiệu</label>
+                <input class="form-control" @bind="_model.HeroTitle" />
+            </div>
+            <div class="form-group">
+                <label>Câu khẩu hiệu (hiển thị trong khung oval)</label>
+                <input class="form-control" @bind="_model.HeroTagline" />
+            </div>
+            <div class="form-group">
+                <label>Chữ trên nút bấm</label>
+                <input class="form-control" @bind="_model.HeroButtonText" />
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Hình ảnh landing</div>
+        <div class="card-body">
+            <p class="text-muted">Tải ảnh lên để thay ảnh mẫu. Để trống sẽ dùng ảnh mẫu. Định dạng: jpg, png, webp, gif — tối đa 5 MB mỗi ảnh.</p>
+            @if (_imageSlots != null)
+            {
+                <div class="row">
+                    @foreach (var slot in _imageSlots)
+                    {
+                        <div class="col-md-4 col-sm-6 mb-4">
+                            <label class="font-weight-bold">@slot.Label</label>
+                            <div class="border rounded p-2 text-center mb-2 d-flex align-items-center justify-content-center"
+                                 style="min-height: 120px; background: #f8f9fa;">
+                                @if (!string.IsNullOrEmpty(slot.Get()))
+                                {
+                                    <img src="@LandingService.ResolveImageUrl(slot.Get())"
+                                         alt="@slot.Label" class="img-fluid" style="max-height: 150px;" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted"><small>Đang dùng ảnh mẫu</small></span>
+                                }
+                            </div>
+                            <InputFile id="@($"upload-{slot.Key}")" OnChange="@(e => OnImageSelected(e, slot))" accept="image/*"
+                                       class="form-control-file mb-2" />
+                            @if (_uploadingSlot == slot.Key)
+                            {
+                                <div class="text-info"><small>Đang tải lên...</small></div>
+                            }
+                            @if (_uploadErrors.TryGetValue(slot.Key, out var uploadError))
+                            {
+                                <div class="text-danger"><small>@uploadError</small></div>
+                            }
+                            @if (!string.IsNullOrEmpty(slot.Get()) && _uploadingSlot != slot.Key)
+                            {
+                                <button class="btn btn-sm btn-outline-secondary mt-1"
+                                        @onclick="() => slot.Set(null)">
+                                    Dùng lại ảnh mẫu
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Câu chuyện làng nghề</div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>Tiêu đề</label>
+                <input class="form-control" @bind="_model.StoryTitle" />
+            </div>
+            <div class="form-group">
+                <label>Nội dung</label>
+                <textarea class="form-control" rows="6" @bind="_model.StoryBody"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Món ngon mỗi sáng</div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>Tiêu đề</label>
+                <input class="form-control" @bind="_model.MenuTitle" />
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Nhãn món 1</label>
+                    <input class="form-control" @bind="_model.MenuLabel1" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Nhãn món 2</label>
+                    <input class="form-control" @bind="_model.MenuLabel2" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Nhãn món 3</label>
+                    <input class="form-control" @bind="_model.MenuLabel3" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Tin tức / chuyện nhà xôi</div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>Tiêu đề</label>
+                <input class="form-control" @bind="_model.NewsTitle" />
+            </div>
+            @for (var i = 0; i < _news.Count; i++)
+            {
+                var index = i;
+                <div class="border rounded p-3 mb-3">
+                    <h6>Tin @(index + 1)</h6>
+                    <div class="form-group">
+                        <label>Tiêu đề tin</label>
+                        <input class="form-control" @bind="_news[index].Title" />
+                    </div>
+                    <div class="form-group">
+                        <label>Nội dung</label>
+                        <textarea class="form-control" rows="3" @bind="_news[index].Body"></textarea>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Nguồn</label>
+                        <input class="form-control" @bind="_news[index].Source" placeholder="VD: ShopeeFood, khách hàng..." />
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Chân trang & liên hệ</div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>Tiêu đề</label>
+                <input class="form-control" @bind="_model.FooterTitle" />
+            </div>
+            <div class="form-group">
+                <label>Địa chỉ</label>
+                <input class="form-control" @bind="_model.ContactAddress" />
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Số điện thoại</label>
+                    <input class="form-control" @bind="_model.ContactPhone" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Email</label>
+                    <input class="form-control" @bind="_model.ContactEmail" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Chữ trên nút đặt món</label>
+                <input class="form-control" @bind="_model.FooterButtonText" />
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Video giới thiệu</div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>Tiêu đề video</label>
+                <input class="form-control" @bind="_model.VideoTitle" placeholder="VD: Xôi Phú Thượng — hương vị làng nghề" />
+            </div>
+            <div class="form-group mb-0">
+                <label>Link YouTube</label>
+                <input class="form-control" @bind="_model.VideoUrl" placeholder="https://www.youtube.com/watch?v=..." />
+                <small class="form-text text-muted">Dán link watch hoặc link chia sẻ youtu.be — trang chủ tự chuyển thành video nhúng. Để trống để ẩn.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Bản đồ</div>
+        <div class="card-body">
+            <div class="form-group mb-0">
+                <label>Link nhúng Google Maps</label>
+                <input class="form-control" @bind="_model.MapEmbedUrl" placeholder="https://www.google.com/maps/embed?pb=..." />
+                <small class="form-text text-muted">Lấy từ Google Maps → Chia sẻ → Nhúng bản đồ → copy thuộc tính <code>src</code> của iframe. Để trống để ẩn.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Popup khuyến mãi &amp; banner flash (mục 94)</div>
+        <div class="card-body">
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="popup-active" @bind="_model.PopupActive" />
+                <label class="form-check-label" for="popup-active">Bật popup (hiện 1 lần mỗi phiên trên trang chủ)</label>
+            </div>
+            <div class="form-group">
+                <label>Tiêu đề popup</label>
+                <input class="form-control" @bind="_model.PopupTitle" placeholder="VD: Giờ vàng — giảm 10% từ 14h–16h" />
+            </div>
+            <div class="form-group">
+                <label>Nội dung popup</label>
+                <textarea class="form-control" rows="3" @bind="_model.PopupBody"
+                          placeholder="VD: Áp dụng tự động cho mọi đơn đặt trong khung giờ vàng."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ảnh popup (URL, tùy chọn)</label>
+                <input class="form-control" @bind="_model.PopupImageUrl" placeholder="/uploads/landing/popup.jpg" />
+            </div>
+            <hr />
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="flash-active" @bind="_model.FlashBannerActive" />
+                <label class="form-check-label" for="flash-active">Bật banner flash (dải chữ chạy trên đầu trang chủ)</label>
+            </div>
+            <div class="form-group mb-0">
+                <label>Nội dung banner flash</label>
+                <input class="form-control" @bind="_model.FlashBannerText" placeholder="VD: Hôm nay giảm 10% mọi đơn từ 200k!" />
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Đánh giá nhúng <span class="badge badge-warning">HTML tin cậy</span></div>
+        <div class="card-body">
+            <div class="form-group mb-0">
+                <label>Mã HTML widget đánh giá</label>
+                <textarea class="form-control" rows="4" @bind="_model.ReviewsEmbedHtml"
+                          placeholder="<script ...>...</script>"></textarea>
+                <small class="form-text text-muted">Chỉ dành cho admin — đoạn HTML này được render nguyên văn trên trang chủ (VD: widget Google reviews). Để trống để ẩn. Ngoài ra, đánh giá của khách đặt hàng (không bị ẩn) tự hiện ở mục "Khách hàng nói gì".</small>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-primary btn-lg" @onclick="SaveAsync" disabled="@_saving">
+        @(_saving ? "Đang lưu..." : "Lưu thay đổi")
+    </button>
+    <a class="btn btn-outline-secondary btn-lg ml-2" href="/" target="_blank">Xem trang chủ</a>
+}
+
+@code {
+    private LandingContentModel _model;
+    private List<LandingNewsItemModel> _news = new List<LandingNewsItemModel>();
+    private bool _saving;
+    private string _error;
+    private string _success;
+
+    private List<ImageSlot> _imageSlots;
+    private string _uploadingSlot;
+    private readonly Dictionary<string, string> _uploadErrors = new Dictionary<string, string>();
+
+    private sealed class ImageSlot
+    {
+        public string Key { get; set; }
+
+        public string Label { get; set; }
+
+        public Func<string> Get { get; set; }
+
+        public Action<string> Set { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _model = await LandingService.GetContentAsync() ?? new LandingContentModel();
+            _news = _model.NewsItems ?? new List<LandingNewsItemModel>();
+            while (_news.Count < 3)
+            {
+                _news.Add(new LandingNewsItemModel());
+            }
+
+            _model.NewsItems = _news;
+
+            _imageSlots = new List<ImageSlot>
+            {
+                new ImageSlot { Key = "hero", Label = "Ảnh hero (bên phải)", Get = () => _model.HeroImageUrl, Set = v => _model.HeroImageUrl = v },
+                new ImageSlot { Key = "banner", Label = "Ảnh banner toàn chiều rộng", Get = () => _model.BannerImageUrl, Set = v => _model.BannerImageUrl = v },
+                new ImageSlot { Key = "menu1", Label = "Ảnh món 1", Get = () => _model.MenuImage1Url, Set = v => _model.MenuImage1Url = v },
+                new ImageSlot { Key = "menu2", Label = "Ảnh món 2", Get = () => _model.MenuImage2Url, Set = v => _model.MenuImage2Url = v },
+                new ImageSlot { Key = "menu3", Label = "Ảnh món 3", Get = () => _model.MenuImage3Url, Set = v => _model.MenuImage3Url = v },
+                new ImageSlot { Key = "footerBg", Label = "Ảnh nền chân trang", Get = () => _model.FooterBackgroundUrl, Set = v => _model.FooterBackgroundUrl = v }
+            };
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được nội dung landing. Vui lòng thử lại.";
+        }
+    }
+
+    private async Task OnImageSelected(InputFileChangeEventArgs e, ImageSlot slot)
+    {
+        _uploadErrors.Remove(slot.Key);
+        _success = null;
+        var file = e.File;
+        if (file == null)
+        {
+            return;
+        }
+
+        _uploadingSlot = slot.Key;
+        try
+        {
+            // Compress client-side (GIFs are passed through untouched to keep animation).
+            var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
+                "interop.compressImageFromInput", $"upload-{slot.Key}", 1600, 0.85);
+            using var stream = new System.IO.MemoryStream(compressed.Bytes);
+            var url = await LandingService.UploadImageAsync(stream, compressed.FileName, compressed.ContentType);
+            slot.Set(url);
+        }
+        catch (Exception ex)
+        {
+            _uploadErrors[slot.Key] = ex.Message;
+        }
+        finally
+        {
+            _uploadingSlot = null;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        _saving = true;
+        try
+        {
+            _model.NewsItems = _news
+                .Where(x => !string.IsNullOrWhiteSpace(x.Title) || !string.IsNullOrWhiteSpace(x.Body))
+                .ToList();
+            await LandingService.UpdateContentAsync(_model);
+            _success = "Đã lưu. Mở trang chủ để xem thay đổi.";
+        }
+        catch (Exception)
+        {
+            _error = "Lưu thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    /// <summary>Shape of the object returned by interop.compressImageFromInput.</summary>
+    private sealed class CompressedImage
+    {
+        public byte[] Bytes { get; set; } = Array.Empty<byte>();
+        public string FileName { get; set; } = "image.jpg";
+        public string ContentType { get; set; } = "image/jpeg";
+    }
+}

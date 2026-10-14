@@ -1,0 +1,136 @@
+@page "/admin/doi-soat-momo"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject Wave5Service Wave5Service
+
+<h3>🔁 Đối soát MoMo</h3>
+<p class="text-muted">
+    Đơn MoMo đã thanh toán. Callback tự đánh dấu <em>đã khớp</em> khi mã đơn trong OrderInfo trùng khớp;
+    các đơn còn lại cần kiểm tra thủ công trên MoMo rồi "đánh dấu đã đối soát" ở đây.
+    Đối soát tự động hoàn toàn (số tiền, file quyết toán) cần MoMo business API.
+</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="mb-3">
+    <div class="btn-group btn-group-sm" role="group">
+        <button class="btn @(_filter == null ? "btn-primary" : "btn-outline-primary")" @onclick="() => SetFilter(null)">Tất cả</button>
+        <button class="btn @(_filter == true ? "btn-primary" : "btn-outline-primary")" @onclick="() => SetFilter(true)">Đã khớp</button>
+        <button class="btn @(_filter == false ? "btn-primary" : "btn-outline-primary")" @onclick="() => SetFilter(false)">Chưa khớp</button>
+    </div>
+</div>
+
+@if (_orders == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_orders.Count == 0)
+{
+    <div class="alert alert-info">Không có đơn MoMo nào trong nhóm này.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Khách</th>
+                    <th>Số tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Đối soát</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in _orders)
+                {
+                    <tr>
+                        <td><strong>@o.OrderNumber</strong><br /><small class="text-muted">@o.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</small></td>
+                        <td>@o.CustomerName<br /><small class="text-muted">@o.CustomerPhone</small></td>
+                        <td class="text-right">@o.TotalAmount.ToString("N0") ₫</td>
+                        <td>@o.PaymentStatus</td>
+                        <td>
+                            @if (o.MoMoMatched)
+                            {
+                                <span class="badge badge-success">Đã đối soát</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-warning">Chưa khớp</span>
+                            }
+                        </td>
+                        <td class="text-right">
+                            @if (!o.MoMoMatched)
+                            {
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => MarkMatchedAsync(o)" disabled="@_busy">
+                                    Đánh dấu đã đối soát
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<MoMoOrderModel> _orders;
+    private bool? _filter;
+    private bool _busy;
+    private string _error;
+    private string _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task SetFilter(bool? filter)
+    {
+        _filter = filter;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _orders = await Wave5Service.GetMoMoOrdersAsync(_filter);
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được danh sách: " + ex.Message;
+        }
+    }
+
+    private async Task MarkMatchedAsync(MoMoOrderModel o)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Wave5Service.MarkMoMoMatchedAsync(o.Id);
+            _success = $"Đã đánh dấu đối soát đơn {o.OrderNumber}.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

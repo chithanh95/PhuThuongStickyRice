@@ -1,0 +1,120 @@
+@page "/menu-print"
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using Microsoft.JSInterop
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject ShopService ShopService
+@inject IJSRuntime JSRuntime
+
+<style>
+    @@media print {
+        .no-print {
+            display: none !important;
+        }
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+</style>
+
+<div class="container py-4">
+    <div class="no-print mb-3 d-flex flex-wrap align-items-center justify-content-between">
+        <a href="/shop" class="btn btn-outline-secondary mb-2">← Về cửa hàng</a>
+        <button class="btn btn-primary mb-2" @onclick="PrintAsync">🖨️ In / Lưu PDF</button>
+    </div>
+
+    <div class="text-center mb-4">
+        <h1>Xôi Làng Nghề Phú Thượng</h1>
+        <p class="text-muted">Thực đơn — cập nhật @DateTime.Now.ToString("dd/MM/yyyy")</p>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger no-print">@_error</div>
+    }
+    else if (_products == null)
+    {
+        <p><em>Đang tải thực đơn...</em></p>
+    }
+    else if (_products.Count == 0)
+    {
+        <div class="alert alert-info">Hiện chưa có món nào trong thực đơn.</div>
+    }
+    else
+    {
+        @foreach (var group in _products.GroupBy(p => string.IsNullOrWhiteSpace(p.Category) ? "Thực đơn" : p.Category).OrderBy(g => g.Key))
+        {
+            <h3 class="mt-4 mb-3 border-bottom pb-2">@group.Key</h3>
+            <table class="table">
+                <tbody>
+                    @foreach (var product in group.OrderBy(p => p.Name))
+                    {
+                        <tr @key="product.Id">
+                            <td style="width: 60%;">
+                                <strong>@product.Name</strong>
+                                @if (product.IsSignature)
+                                {
+                                    <span class="badge badge-warning ml-1">Signature</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(product.Description))
+                                {
+                                    <br /><small class="text-muted">@product.Description</small>
+                                }
+                                @if (product.Sizes != null && product.Sizes.Count > 0)
+                                {
+                                    <br />
+                                    <small class="text-muted">
+                                        @string.Join(" · ", product.Sizes.OrderBy(s => s.Price).Select(s => $"{s.Name}: {s.Price:N0} ₫"))
+                                    </small>
+                                }
+                            </td>
+                            <td class="text-right" style="vertical-align: middle;">
+                                <strong class="text-danger" style="font-size: 1.1rem;">@($"{MinPrice(product):N0} ₫")</strong>
+                                @if (product.Sizes != null && product.Sizes.Count > 0)
+                                {
+                                    <br /><small class="text-muted">từ</small>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <p class="text-center text-muted mt-5">
+            <small>Đặt hàng online tại website — giao tận nơi, hoặc tự đến lấy tại quán.</small>
+        </p>
+    }
+</div>
+
+@code {
+    private List<ShopProductModel> _products;
+    private string _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var paged = await ShopService.GetProductsAsync();
+            _products = paged.Items ?? new List<ShopProductModel>();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được thực đơn. Vui lòng thử lại sau.";
+        }
+    }
+
+    private async Task PrintAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("window.print");
+    }
+
+    private static decimal MinPrice(ShopProductModel product) =>
+        product.Sizes != null && product.Sizes.Count > 0
+            ? product.Sizes.Min(s => s.Price)
+            : product.Price;
+}

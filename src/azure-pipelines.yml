@@ -128,7 +128,7 @@ stages:
             src/PhuThuongStickyRice.IdentityServer/*.csproj
             src/Frontend/PhuThuongStickyRice.WebMVC/*.csproj
             src/Frontend/PhuThuongStickyRice.BlazorServerSide/*.csproj
-            src/PhuThuongStickyRice.BlazorWebAssembly/*.csproj
+            src/PhuThuongStickyRice.Web/*.csproj
           arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)'
       - task: PublishBuildArtifacts@1
         inputs:
@@ -202,7 +202,7 @@ stages:
           src/PhuThuongStickyRice.IdentityServer/*.csproj
           src/Frontend/PhuThuongStickyRice.WebMVC/*.csproj
           src/Frontend/PhuThuongStickyRice.BlazorServerSide/*.csproj
-          src/PhuThuongStickyRice.BlazorWebAssembly/*.csproj
+          src/PhuThuongStickyRice.Web/*.csproj
         arguments: '--configuration Release -p:Version=1.0.0-$(Build.BuildNumber) --output $(Build.ArtifactStagingDirectory)'
         zipAfterPublish: false
 
@@ -215,7 +215,7 @@ stages:
           dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.Migrator --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.Migrator
           dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.WebAPI --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.WebAPI
           dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.BlazorServerSide --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.BlazorServerSide
-          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.BlazorWebAssembly --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.BlazorWebAssembly
+          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.Web --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.Web
           dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.IdentityServer --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.IdentityServer
           dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.WebMVC --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.WebMVC
     - task: DotNetCoreCLI@2

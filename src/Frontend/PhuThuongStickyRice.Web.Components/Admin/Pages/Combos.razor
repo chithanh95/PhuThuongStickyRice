@@ -1,0 +1,325 @@
+@page "/admin/combos"
+@attribute [Authorize]
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Core.Components
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Products.Services
+@inject CatalogAdminService CatalogService
+@inject ProductService ProductService
+
+<h3>Combo gia đình</h3>
+<p class="text-muted">Combo là gói cố định nhiều món với giá ưu đãi — khách thêm cả combo vào giỏ bằng một nút.</p>
+
+<ConfirmDialog @ref="_deleteDialog"
+               Title="Xóa combo"
+               YesText="Xóa"
+               NoText="Hủy"
+               ConfirmEventCallback="ConfirmedDelete">
+    <Message>Xóa combo <strong>@_deleting?.Name</strong>?</Message>
+</ConfirmDialog>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">@(_editingId == null ? "Thêm combo" : "Sửa combo")</div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label>Tên combo *</label>
+                <input class="form-control" @bind="_form.Name" placeholder="VD: Combo Gia Đình 4 Người" />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Giá combo (₫) *</label>
+                <input type="number" min="0" step="1000" class="form-control" @bind="_form.Price" />
+            </div>
+            <div class="form-group col-md-3 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="combo-active" @bind="_form.IsActive" />
+                    <label class="form-check-label" for="combo-active">Đang bán</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Mô tả</label>
+            <textarea class="form-control" rows="2" @bind="_form.Description" placeholder="VD: 2 xôi gấc + 2 xôi xéo — đủ cho cả nhà 4 người"></textarea>
+        </div>
+
+        <label>Các món trong combo *</label>
+        @foreach (var row in _itemRows)
+        {
+            <div class="form-row mb-2" @key="row.Key">
+                <div class="col-7">
+                    <select class="form-control" @bind="row.ProductId">
+                        <option value="">— Chọn món —</option>
+                        @foreach (var p in _products)
+                        {
+                            <option value="@p.Id">@p.Name (@FormatPrice(p.Price))</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-3">
+                    <input type="number" min="1" max="99" class="form-control" @bind="row.Quantity" placeholder="SL" />
+                </div>
+                <div class="col-2">
+                    <button class="btn btn-outline-danger btn-block" @onclick="() => _itemRows.Remove(row)">✕</button>
+                </div>
+            </div>
+        }
+        <button class="btn btn-outline-secondary btn-sm mb-3" @onclick="AddItemRow">+ Thêm món</button>
+
+        <div>
+            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+                @(_saving ? "Đang lưu..." : (_editingId == null ? "Thêm combo" : "Cập nhật"))
+            </button>
+            @if (_editingId != null)
+            {
+                <button class="btn btn-outline-secondary ml-2" @onclick="CancelEdit">Hủy</button>
+            }
+        </div>
+    </div>
+</div>
+
+@if (_combos == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_combos.Count == 0)
+{
+    <div class="alert alert-info">Chưa có combo nào.</div>
+}
+else
+{
+    <div class="row">
+        @foreach (var combo in _combos)
+        {
+            <div class="col-md-6 mb-3" @key="combo.Id">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            @combo.Name
+                            @if (combo.IsActive)
+                            {
+                                <span class="badge badge-success ml-1">Đang bán</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary ml-1">Đã tắt</span>
+                            }
+                        </h5>
+                        <p class="text-muted small">@combo.Description</p>
+                        <ul class="small mb-2">
+                            @foreach (var item in combo.Items)
+                            {
+                                <li>@item.ProductName × @item.Quantity</li>
+                            }
+                        </ul>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <strong class="text-danger">@FormatPrice(combo.Price)</strong>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(combo)">Sửa</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(combo)">Xóa</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<ComboModel> _combos;
+    private List<PhuThuongStickyRice.Web.Components.Products.Models.ProductModel> _products
+        = new List<PhuThuongStickyRice.Web.Components.Products.Models.ProductModel>();
+    private ComboModel _form = new ComboModel();
+    private List<ItemRow> _itemRows = new List<ItemRow>();
+    private Guid? _editingId;
+    private bool _saving;
+    private string _error;
+    private string _success;
+    private ConfirmDialog _deleteDialog;
+    private ComboModel _deleting;
+
+    private sealed class ItemRow
+    {
+        public Guid Key { get; } = Guid.NewGuid();
+
+        public string ProductId { get; set; }
+
+        public int Quantity { get; set; } = 1;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _products = await ProductService.GetProductsAsync()
+                ?? new List<PhuThuongStickyRice.Web.Components.Products.Models.ProductModel>();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được danh sách sản phẩm.";
+        }
+
+        AddItemRow();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _combos = await CatalogService.GetCombosAsync() ?? new List<ComboModel>();
+        }
+        catch (Exception)
+        {
+            _combos = new List<ComboModel>();
+            _error = "Không tải được danh sách combo.";
+        }
+    }
+
+    private void AddItemRow()
+    {
+        _itemRows.Add(new ItemRow());
+    }
+
+    private void StartEdit(ComboModel combo)
+    {
+        _editingId = combo.Id;
+        _form = new ComboModel
+        {
+            Name = combo.Name,
+            Description = combo.Description,
+            Price = combo.Price,
+            IsActive = combo.IsActive
+        };
+        _itemRows = combo.Items
+            .Select(i => new ItemRow { ProductId = i.ProductId.ToString(), Quantity = i.Quantity })
+            .ToList();
+        if (_itemRows.Count == 0)
+        {
+            AddItemRow();
+        }
+
+        _error = null;
+        _success = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _form = new ComboModel();
+        _itemRows = new List<ItemRow>();
+        AddItemRow();
+        _error = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _error = "Vui lòng nhập tên combo.";
+            return;
+        }
+
+        if (_form.Price < 0)
+        {
+            _error = "Giá combo không được âm.";
+            return;
+        }
+
+        var items = new List<ComboItemModel>();
+        foreach (var row in _itemRows)
+        {
+            if (string.IsNullOrWhiteSpace(row.ProductId) || !Guid.TryParse(row.ProductId, out var productId))
+            {
+                continue;
+            }
+
+            if (row.Quantity < 1)
+            {
+                _error = "Số lượng mỗi món phải từ 1 trở lên.";
+                return;
+            }
+
+            items.Add(new ComboItemModel { ProductId = productId, Quantity = row.Quantity });
+        }
+
+        if (items.Count == 0)
+        {
+            _error = "Combo phải có ít nhất một món.";
+            return;
+        }
+
+        _form.Items = items;
+
+        _saving = true;
+        try
+        {
+            if (_editingId == null)
+            {
+                await CatalogService.CreateComboAsync(_form);
+                _success = "Đã thêm combo.";
+            }
+            else
+            {
+                await CatalogService.UpdateComboAsync(_editingId.Value, _form);
+                _success = "Đã cập nhật combo.";
+            }
+
+            CancelEdit();
+            await LoadAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Lưu thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void DeleteAsync(ComboModel combo)
+    {
+        _deleting = combo;
+        _deleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete(bool confirmed)
+    {
+        _deleteDialog.Close();
+        if (!confirmed || _deleting == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await CatalogService.DeleteComboAsync(_deleting.Id);
+            _success = $"Đã xóa combo {_deleting.Name}.";
+            _deleting = null;
+            await LoadAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Xóa thất bại. Vui lòng thử lại.";
+        }
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+}

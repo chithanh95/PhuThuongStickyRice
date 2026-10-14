@@ -1,0 +1,1304 @@
+@page "/track-order"
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Core.Services
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@using Microsoft.JSInterop
+@inject ShopService ShopService
+@inject CartState CartState
+@inject ToastService Toasts
+@inject Wave2Service Wave2Service
+@inject Wave4Service Wave4Service
+@inject Wave5Service Wave5Service
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<h3>Tra cứu đơn hàng</h3>
+
+@* Item 121: daily check-in — one per phone per day, awards loyalty points. *@
+<div class="card mb-3">
+    <div class="card-body py-2 d-flex flex-wrap align-items-center">
+        <strong class="mr-2">📅 Điểm danh hôm nay</strong>
+        <input class="form-control form-control-sm mr-2" style="max-width:160px" @bind="_checkInPhone"
+               placeholder="SĐT của bạn" inputmode="tel" />
+        <button class="btn btn-sm btn-outline-success" @onclick="CheckInAsync" disabled="@_checkingIn">
+            @(_checkingIn ? "Đang điểm danh..." : "Điểm danh")
+        </button>
+        @if (_checkInResult != null)
+        {
+            <span class="ml-2">
+                @if (_checkInResult.AlreadyCheckedIn)
+                {
+                    <span class="badge badge-info">Đã điểm danh hôm nay</span>
+                }
+                else
+                {
+                    <span class="badge badge-success">+@_checkInResult.PointsAwarded điểm</span>
+                }
+                <small class="text-muted ml-1">🔥 @_checkInResult.StreakDays ngày liên tiếp • @_checkInResult.LoyaltyPoints điểm</small>
+            </span>
+        }
+        @if (!string.IsNullOrEmpty(_checkInError))
+        {
+            <small class="text-danger ml-2">@_checkInError</small>
+        }
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="form-row">
+            <div class="col-md-4">
+                <label>Mã đơn hàng</label>
+                <input class="form-control" @bind="_orderNumber" placeholder="PX-20261014-0001" />
+            </div>
+            <div class="col-md-4">
+                <label>Số điện thoại đặt hàng</label>
+                <input class="form-control" @bind="_phone" placeholder="0901234567" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-primary" @onclick="Lookup" disabled="@_loading">
+                    @(_loading ? "Đang tra cứu..." : "Tra cứu")
+                </button>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger mt-3 mb-0">@_error</div>
+        }
+    </div>
+</div>
+
+@if (_order != null)
+{
+    <div class="card mb-3">
+        <div class="card-header">
+            Đơn hàng <strong>@_order.OrderNumber</strong>
+            <span class="float-right">@OrderStatusBadge(_order.Status)</span>
+        </div>
+        <div class="card-body">
+            @* Wave 6a (item 21): reorder — restores the order's lines into the cart. *@
+            <div class="mb-2">
+                <button class="btn btn-outline-success btn-sm" @onclick="ReorderAsync" disabled="@_reordering">
+                    @(_reordering ? "Đang khôi phục..." : "🔄 Đặt lại đơn này")
+                </button>
+                @if (!string.IsNullOrEmpty(_reorderMessage))
+                {
+                    <small class="text-danger ml-2">@_reorderMessage</small>
+                }
+            </div>
+            <p>
+                Ngày đặt: <strong>@_order.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong><br />
+                Khách hàng: <strong>@_order.CustomerName</strong> — @_order.CustomerPhone<br />
+                @if (!string.IsNullOrWhiteSpace(_order.RecipientName))
+                {
+                    <span>Người nhận: <strong>@_order.RecipientName</strong> — @_order.RecipientPhone<br /></span>
+                }
+                Địa chỉ: @_order.CustomerAddress
+                @if (!string.IsNullOrWhiteSpace(_order.TaxCode))
+                {
+                    <br /><span>Hóa đơn VAT: @_order.CompanyName (MST: @_order.TaxCode)</span>
+                }
+                @if (_order.IsGift)
+                {
+                    <br /><span>🎁 Gói quà@(!string.IsNullOrWhiteSpace(_order.GiftMessage) ? $": {_order.GiftMessage}" : "")</span>
+                }
+            </p>
+            @if (_loyalty != null)
+            {
+                <p>
+                    <small>
+                        ⭐ Bạn có <strong>@_loyalty.Points điểm</strong>
+                        <span class="badge badge-info">Hạng @_loyalty.Tier</span>
+                        @if (!string.IsNullOrWhiteSpace(_loyalty.ReferralCode))
+                        {
+                            <span class="ml-1">Mã giới thiệu: <strong>@_loyalty.ReferralCode</strong></span>
+                        }
+                    </small>
+                </p>
+                <div class="form-row align-items-end mb-2">
+                    <div class="col-auto">
+                        <label><small>Ngày sinh <small class="text-muted">(để nhận voucher sinh nhật)</small></small></label>
+                        <input type="date" class="form-control form-control-sm" @bind="_birthdayInput" />
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="SaveBirthday" disabled="@_savingBirthday">
+                            @(_savingBirthday ? "Đang lưu..." : "Lưu ngày sinh")
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_birthdayMessage))
+                    {
+                        <div class="col-12"><small class="text-success">@_birthdayMessage</small></div>
+                    }
+                </div>
+            }
+            @if (_order.RequiresDeposit && _order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
+            {
+                <div class="alert alert-warning py-2">
+                    <small>💰 Đơn này cần <strong>đặt cọc trước</strong> để shop xác nhận. Shop sẽ liên hệ với bạn.</small>
+                </div>
+            }
+            @* Item 119: address book management from the track-order profile. *@
+            <div class="card mt-2 mb-2">
+                <div class="card-body py-2">
+                    <small class="text-muted d-block mb-1">📒 <strong>Sổ địa chỉ</strong> của số @_order.CustomerPhone</small>
+                    @if (_addresses == null)
+                    {
+                        <small><em>Đang tải...</em></small>
+                    }
+                    else if (_addresses.Count == 0)
+                    {
+                        <small class="text-muted">Chưa có địa chỉ nào được lưu.</small>
+                    }
+                    else
+                    {
+                        @foreach (var a in _addresses)
+                        {
+                            <div class="d-flex justify-content-between align-items-center border-bottom py-1">
+                                <small><strong>@a.Label:</strong> @a.Address</small>
+                                <button class="btn btn-sm btn-link text-danger" @onclick="() => DeleteAddressAsync(a)">Xóa</button>
+                            </div>
+                        }
+                    }
+                    <div class="form-row mt-2">
+                        <div class="col-4">
+                            <input class="form-control form-control-sm" @bind="_newAddressLabel" placeholder="Nhãn (Nhà/Cty)" />
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <input class="form-control form-control-sm" @bind="_newAddressText" placeholder="Địa chỉ mới..." />
+                                <div class="input-group-append">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="AddAddressAsync" disabled="@_savingAddress">Lưu</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_addressBookMessage))
+                    {
+                        <small class="text-success">@_addressBookMessage</small>
+                    }
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr><th>Món</th><th class="text-right">Đơn giá</th><th class="text-right">SL</th><th class="text-right">Thành tiền</th></tr>
+                    </thead>
+                <tbody>
+                    @foreach (var line in _order.Lines)
+                    {
+                        <tr>
+                            <td>
+                                @line.ProductName
+                                @if (line.IsCombo)
+                                {
+                                    <span class="badge badge-warning ml-1">COMBO</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.SizeName))
+                                {
+                                    <br /><small class="text-muted">Size: @line.SizeName</small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.ToppingNames))
+                                {
+                                    <br /><small class="text-muted">Ăn kèm: @line.ToppingNames</small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.Note))
+                                {
+                                    <br /><small class="text-info">📝 @line.Note</small>
+                                }
+                            </td>
+                            <td class="text-right">@FormatPrice(line.UnitPrice)</td>
+                            <td class="text-right">@line.Quantity</td>
+                            <td class="text-right">@FormatPrice(line.LineTotal)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    @if (_order.DiscountAmount > 0)
+                    {
+                        <tr>
+                            <td colspan="3" class="text-success">Giảm giá @(!string.IsNullOrWhiteSpace(_order.DiscountCode) ? $"({_order.DiscountCode})" : "")</td>
+                            <td class="text-right text-success">−@FormatPrice(_order.DiscountAmount)</td>
+                        </tr>
+                    }
+                    @if (_order.TierDiscount > 0)
+                    {
+                        <tr>
+                            <td colspan="3" class="text-success">Ưu đãi hạng thành viên</td>
+                            <td class="text-right text-success">−@FormatPrice(_order.TierDiscount)</td>
+                        </tr>
+                    }
+                    @if (_order.LoyaltyDiscount > 0)
+                    {
+                        <tr>
+                            <td colspan="3" class="text-success">Đổi @_order.LoyaltyPointsRedeemed điểm</td>
+                            <td class="text-right text-success">−@FormatPrice(_order.LoyaltyDiscount)</td>
+                        </tr>
+                    }
+                    @if (_order.GiftFee > 0)
+                    {
+                        <tr>
+                            <td colspan="3" class="text-muted">🎁 Phí gói quà</td>
+                            <td class="text-right text-muted">+@FormatPrice(_order.GiftFee)</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td colspan="3"><strong>Tổng cộng</strong></td>
+                        <td class="text-right"><strong class="text-danger">@FormatPrice(_order.TotalAmount)</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_order.Notes))
+            {
+                <p><em>Ghi chú: @_order.Notes</em></p>
+            }
+
+            @if (_order.Status == "Pending")
+            {
+                <div class="mb-3">
+                    @if (!_editingLines)
+                    {
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="StartEditLines">✏️ Sửa đơn (số lượng)</button>
+                        <button class="btn btn-outline-danger btn-sm ml-2" @onclick="CancelOrder" disabled="@_cancelling">
+                            @(_cancelling ? "Đang hủy..." : "Hủy đơn")
+                        </button>
+                        @if (!string.IsNullOrEmpty(_cancelError))
+                        {
+                            <div class="alert alert-danger mt-2 mb-0">@_cancelError</div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="card">
+                            <div class="card-header py-2"><strong>Sửa số lượng</strong> <small class="text-muted">(0 = bỏ món)</small></div>
+                            <div class="card-body py-2">
+                                @foreach (var line in _order.Lines)
+                                {
+                                    <div class="form-row align-items-center mb-1">
+                                        <div class="col-8"><small>@line.ProductName</small></div>
+                                        <div class="col-4">
+                                            <input type="number" class="form-control form-control-sm"
+                                                   min="0" max="100" value="@_editQuantities[line.Id]"
+                                                   @onchange="(e => _editQuantities[line.Id] = ParseQty(e.Value))" />
+                                        </div>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(_editError))
+                                {
+                                    <div class="alert alert-danger mt-2 mb-1">@_editError</div>
+                                }
+                                <button class="btn btn-success btn-sm mt-2" @onclick="SaveEditedLines" disabled="@_savingLines">
+                                    @(_savingLines ? "Đang lưu..." : "Lưu thay đổi")
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm mt-2 ml-2" @onclick="() => _editingLines = false">Bỏ qua</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_order.Status == "Completed")
+            {
+                <div class="card mb-3">
+                    <div class="card-header py-2"><strong>Đánh giá đơn hàng</strong></div>
+                    <div class="card-body py-2">
+                        @if (_reviewSubmitted)
+                        {
+                            <div class="alert alert-success mb-0">Cảm ơn bạn đã đánh giá! ⭐</div>
+                        }
+                        else
+                        {
+                            @* Wave 6b (item 26): per-dish star inputs, one row per order line. *@
+                            @if (_order.Lines != null && _order.Lines.Count > 0)
+                            {
+                                <p class="mb-1"><strong>Đánh giá từng món:</strong> <small class="text-muted">(tùy chọn)</small></p>
+                                @foreach (var line in _order.Lines)
+                                {
+                                    var l = line;
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="small text-truncate mr-2" style="max-width: 60%;">@l.ProductName</span>
+                                        <span style="white-space: nowrap;">
+                                            @for (var star = 1; star <= 5; star++)
+                                            {
+                                                var s = star;
+                                                <button type="button" class="btn btn-link p-0"
+                                                        style="font-size: 20px; color: @(s <= LineRating(l.Id) ? "#f6c453" : "#ccc"); text-decoration: none;"
+                                                        @onclick="() => SetLineRating(l.Id, s)">★</button>
+                                            }
+                                        </span>
+                                    </div>
+                                }
+                                <hr class="my-2" />
+                            }
+                            <p class="mb-1"><strong>Đánh giá chung:</strong></p>
+                            <div class="mb-2">
+                                @for (var star = 1; star <= 5; star++)
+                                {
+                                    var s = star;
+                                    <button type="button" class="btn btn-link p-0 mr-1"
+                                            style="font-size: 28px; color: @(s <= _rating ? "#f6c453" : "#ccc"); text-decoration: none;"
+                                            @onclick="() => _rating = s">★</button>
+                                }
+                            </div>
+                            <textarea class="form-control form-control-sm mb-2" rows="2" @bind="_reviewComment"
+                                      placeholder="Chia sẻ cảm nhận của bạn (tùy chọn)..."></textarea>
+                            @if (!string.IsNullOrEmpty(_reviewError))
+                            {
+                                <div class="alert alert-danger py-1">@_reviewError</div>
+                            }
+                            <button class="btn btn-primary btn-sm" @onclick="SubmitReview" disabled="@(_submittingReview || _rating == 0)">
+                                @(_submittingReview ? "Đang gửi..." : "Gửi đánh giá")
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+            <p>
+                Phương thức thanh toán: <strong>@PaymentMethodLabel(_order.PaymentMethod)</strong><br />
+                Trạng thái thanh toán: @PaymentStatusBadge(_order.PaymentStatus)<br />
+                Hình thức nhận hàng: <strong>@(_order.FulfillmentMethod == "Pickup" ? "🏪 Tự đến lấy tại quán" : "🛵 Giao tận nơi")</strong>
+                @if (!string.IsNullOrWhiteSpace(_order.DeliverySlot))
+                {
+                    <br /><span>🕖 Giờ giao hẹn: <strong>@_order.DeliverySlot</strong></span>
+                }
+            </p>
+            @* Item 130: refund status visible to the customer. *@
+            @if (!string.IsNullOrEmpty(_order.RefundStatus) && _order.RefundStatus != "None")
+            {
+                <div class="alert @(_order.RefundStatus == "Refunded" ? "alert-success" : "alert-warning") py-2">
+                    ↩️ Hoàn tiền <strong>@_order.RefundAmount.ToString("N0") ₫</strong> —
+                    @(_order.RefundStatus == "Refunded" ? "shop đã hoàn thành." : "đang chờ shop xử lý, shop sẽ liên hệ với bạn.")
+                </div>
+            }
+
+            @if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
+            {
+                <div class="card mb-3">
+                    <div class="card-header">Chuyển khoản ngân hàng</div>
+                    <div class="card-body">
+                        @if (_bankInfo == null)
+                        {
+                            <p><em>Đang tải thông tin chuyển khoản...</em></p>
+                        }
+                        else if (!_bankInfo.IsConfigured)
+                        {
+                            <div class="alert alert-warning">
+                                <strong>QR sẽ hiện khi shop cấu hình ngân hàng.</strong>
+                                <p class="mb-0">Tạm thời bạn vui lòng chuyển khoản với nội dung: <strong>@_order.OrderNumber</strong>.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row">
+                                <div class="col-md-5 text-center">
+                                    <img src="@QrUrl" alt="QR chuyển khoản" style="max-width: 260px; width: 100%;" />
+                                </div>
+                                <div class="col-md-7">
+                                    <table class="table table-sm">
+                                        <tr><td><strong>Ngân hàng</strong></td><td>@_bankInfo.BankName</td></tr>
+                                        <tr><td><strong>Số tài khoản</strong></td><td><strong>@_bankInfo.AccountNumber</strong></td></tr>
+                                        <tr><td><strong>Chủ tài khoản</strong></td><td>@_bankInfo.AccountName</td></tr>
+                                        <tr><td><strong>Số tiền</strong></td><td><strong class="text-danger">@FormatPrice(_order.TotalAmount)</strong></td></tr>
+                                        <tr><td><strong>Nội dung</strong></td><td><strong>@_order.OrderNumber</strong></td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_transferMessage))
+                        {
+                            <div class="alert alert-success">@_transferMessage</div>
+                        }
+                        @if (!string.IsNullOrEmpty(_transferError))
+                        {
+                            <div class="alert alert-danger">@_transferError</div>
+                        }
+                        <button class="btn btn-success" @onclick="MarkTransferred" disabled="@_markingTransferred">
+                            @(_markingTransferred ? "Đang gửi..." : "Tôi đã chuyển khoản")
+                        </button>
+                        <button class="btn btn-outline-primary ml-2" @onclick="CopyPaymentLinkAsync" title="Sao chép link để thanh toán sau từ thiết bị khác">
+                            🔗 Sao chép link thanh toán
+                        </button>
+                        @if (!string.IsNullOrEmpty(_copyMessage))
+                        {
+                            <div class="alert alert-success mt-2 mb-0">@_copyMessage</div>
+                        }
+                    </div>
+                </div>
+            }
+            else if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "PendingConfirmation")
+            {
+                <div class="alert alert-info">Đã ghi nhận bạn đã chuyển khoản. Shop đang xác nhận thanh toán — trang này tự cập nhật khi shop xác nhận.</div>
+            }
+            else if (_order.PaymentStatus == "Paid")
+            {
+                <div class="alert alert-success">Thanh toán thành công! Cảm ơn bạn.</div>
+            }
+
+            @if (_order.PaymentMethod == "MoMo" && (_order.PaymentStatus == "Unpaid" || _order.PaymentStatus == "Failed"))
+            {
+                @if (!string.IsNullOrEmpty(_momoError))
+                {
+                    <div class="alert alert-danger">@_momoError</div>
+                }
+                <button class="btn btn-primary" @onclick="PayWithMoMo" disabled="@_payingMoMo">
+                    @(_payingMoMo ? "Đang xử lý..." : "Thanh toán MoMo (TEST)")
+                </button>
+            }
+            else if (_order.PaymentMethod == "MoMo" && _order.PaymentStatus == "Failed")
+            {
+                <div class="alert alert-danger">Thanh toán MoMo thất bại.</div>
+            }
+        </div>
+    </div>
+
+    @* Item 123: share a photo of the received dish → moderation → public gallery. *@
+    <div class="card mb-3">
+        <div class="card-header py-2"><strong>📸 Chia sẻ ảnh món bạn đã nhận</strong></div>
+        <div class="card-body py-2">
+            @if (!string.IsNullOrEmpty(_photoMessage))
+            {
+                <div class="alert @(_photoError ? "alert-danger" : "alert-success") py-2 mb-2">@_photoMessage</div>
+            }
+            <div class="form-row align-items-end">
+                <div class="col-md-5 mb-2">
+                    <InputFile id="share-photo-input" OnChange="OnPhotoSelected" accept="image/*" class="form-control-file" />
+                    <small class="text-muted">Ảnh sẽ được duyệt trước khi hiện ở gallery.</small>
+                </div>
+                <div class="col-md-5 mb-2">
+                    <input class="form-control form-control-sm" @bind="_photoCaption" maxlength="300"
+                           placeholder="Chú thích (tùy chọn) — vd: Xôi gấc dẻo thơm!" />
+                </div>
+                <div class="col-md-2 mb-2">
+                    <button class="btn btn-sm btn-primary btn-block" @onclick="UploadPhotoAsync"
+                            disabled="@(_uploadingPhoto || _selectedPhoto == null)">
+                        @(_uploadingPhoto ? "Đang tải..." : "Chia sẻ")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string _orderNumber;
+    private string _phone;
+    private TrackedOrderModel _order;
+    private BankTransferInfoModel _bankInfo;
+    private bool _loading;
+    private bool _markingTransferred;
+    private bool _payingMoMo;
+    private string _error;
+    private string _transferMessage;
+    private string _transferError;
+    private string _momoError;
+    private string _copyMessage;
+    private System.Threading.Timer _pollTimer;
+
+    // Loyalty profile.
+    private LoyaltyAccountModel _loyalty;
+    private DateTime? _birthdayInput;
+    private bool _savingBirthday;
+    private string _birthdayMessage;
+
+    // Item 119: address book.
+    private System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel> _addresses;
+    private string _newAddressLabel;
+    private string _newAddressText;
+    private bool _savingAddress;
+    private string _addressBookMessage;
+
+    // Customer self-service: cancel.
+    private bool _cancelling;
+    private string _cancelError;
+
+    // Customer self-service: edit quantities.
+    private bool _editingLines;
+    private System.Collections.Generic.Dictionary<Guid, int> _editQuantities
+        = new System.Collections.Generic.Dictionary<Guid, int>();
+    private bool _savingLines;
+    private string _editError;
+
+    // Wave 6a (item 21): reorder.
+    private bool _reordering;
+    private string _reorderMessage;
+
+    // Post-delivery survey.
+    private int _rating;
+    private string _reviewComment;
+    private bool _submittingReview;
+    private bool _reviewSubmitted;
+    private string _reviewError;
+
+    /// <summary>
+    /// Wave 6b (item 26): per-dish star ratings keyed by order line id.
+    /// </summary>
+    private readonly Dictionary<Guid, int> _lineRatings = new Dictionary<Guid, int>();
+
+    private int LineRating(Guid lineId) =>
+        _lineRatings.TryGetValue(lineId, out var r) ? r : 0;
+
+    private void SetLineRating(Guid lineId, int stars)
+    {
+        _lineRatings[lineId] = stars;
+    }
+
+    /// <summary>
+    /// Copies the track-order URL with ?orderNumber= prefilled so the
+    /// customer can pay later from any device (reusable payment link).
+    /// </summary>
+    private async Task CopyPaymentLinkAsync()
+    {
+        _copyMessage = null;
+        if (_order == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var link = $"{Navigation.BaseUri.TrimEnd('/')}/track-order"
+                + $"?orderNumber={Uri.EscapeDataString(_order.OrderNumber)}";
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", link);
+            _copyMessage = "Đã sao chép link thanh toán! Mở link này trên thiết bị khác để thanh toán sau.";
+        }
+        catch (Exception)
+        {
+            _copyMessage = "Không sao chép được. Vui lòng copy link trên thanh địa chỉ.";
+        }
+    }
+
+    private string QrUrl
+    {
+        get
+        {
+            if (_bankInfo == null || _order == null)
+            {
+                return string.Empty;
+            }
+
+            var template = string.IsNullOrWhiteSpace(_bankInfo.QrTemplate) || _bankInfo.QrTemplate == "xxx"
+                ? "compact2"
+                : _bankInfo.QrTemplate;
+            var amount = (long)_order.TotalAmount;
+            return $"https://img.vietqr.io/image/{_bankInfo.BankId}-{_bankInfo.AccountNumber}-{template}.png"
+                + $"?amount={amount}&addInfo={Uri.EscapeDataString(_order.OrderNumber)}"
+                + $"&accountName={Uri.EscapeDataString(_bankInfo.AccountName ?? string.Empty)}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var query = ParseQuery(Navigation.Uri);
+        if (query.TryGetValue("orderNumber", out var orderNumber))
+        {
+            _orderNumber = orderNumber;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !string.IsNullOrWhiteSpace(_orderNumber))
+        {
+            return;
+        }
+
+        // Restore the last successful lookup so returning customers don't
+        // have to retype the order number and phone.
+        try
+        {
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", TrackOrderStorageKey);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                var saved = System.Text.Json.JsonSerializer.Deserialize<TrackOrderMemory>(json);
+                if (saved != null
+                    && !string.IsNullOrWhiteSpace(saved.OrderNumber)
+                    && !string.IsNullOrWhiteSpace(saved.Phone))
+                {
+                    _orderNumber = saved.OrderNumber;
+                    _phone = saved.Phone;
+                    await Lookup();
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Best effort only.
+        }
+    }
+
+    private async Task RememberLookupAsync()
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(new TrackOrderMemory
+            {
+                OrderNumber = _orderNumber?.Trim(),
+                Phone = _phone?.Trim()
+            });
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", TrackOrderStorageKey, json);
+        }
+        catch (Exception)
+        {
+            // Best effort only.
+        }
+    }
+
+    private sealed class TrackOrderMemory
+    {
+        public string OrderNumber { get; set; }
+
+        public string Phone { get; set; }
+    }
+
+    private const string TrackOrderStorageKey = "phuthuong.track-order.v1";
+
+    private async Task Lookup()
+    {
+        _error = null;
+        _transferMessage = null;
+        _transferError = null;
+        _momoError = null;
+        _copyMessage = null;
+        _cancelError = null;
+        _editError = null;
+        _reorderMessage = null;
+        _reviewError = null;
+        _reviewSubmitted = false;
+        _rating = 0;
+        _reviewComment = null;
+        _lineRatings.Clear();
+        _editingLines = false;
+        _loyalty = null;
+        _birthdayInput = null;
+        _birthdayMessage = null;
+        _order = null;
+        _bankInfo = null;
+        _addresses = null;
+        _addressBookMessage = null;
+        StopPolling();
+
+        if (string.IsNullOrWhiteSpace(_orderNumber) || string.IsNullOrWhiteSpace(_phone))
+        {
+            _error = "Vui lòng nhập mã đơn hàng và số điện thoại.";
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            _order = await ShopService.TrackOrderAsync(_orderNumber.Trim(), _phone.Trim());
+            await RememberLookupAsync();
+            await AfterOrderLoadedAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Không tìm thấy đơn hàng. Vui lòng kiểm tra mã đơn và số điện thoại.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AfterOrderLoadedAsync()
+    {
+        if (_order == null)
+        {
+            return;
+        }
+
+        if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
+        {
+            try
+            {
+                _bankInfo = await ShopService.GetBankTransferInfoAsync();
+            }
+            catch (Exception)
+            {
+                _bankInfo = new BankTransferInfoModel();
+            }
+        }
+
+        // Poll for payment-status updates (e.g. admin confirms the transfer)
+        // while the payment is still unsettled.
+        if (_order.PaymentStatus == "Unpaid" || _order.PaymentStatus == "PendingConfirmation")
+        {
+            StartPolling();
+        }
+
+        // Loyalty profile for the order phone (points, tier, birthday).
+        try
+        {
+            _loyalty = await Wave2Service.GetLoyaltyByPhoneAsync(_order.CustomerPhone);
+            _birthdayInput = _loyalty?.DateOfBirth;
+        }
+        catch (Exception)
+        {
+            _loyalty = null;
+        }
+
+        // Item 119: address book for the order phone.
+        await LoadAddressBookAsync();
+    }
+
+    /// <summary>Item 119: address book management in the profile section.</summary>
+    private async Task LoadAddressBookAsync()
+    {
+        try
+        {
+            _addresses = await Wave4Service.GetAddressesAsync(_order?.CustomerPhone);
+        }
+        catch (Exception)
+        {
+            _addresses = new System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel>();
+        }
+    }
+
+    private async Task AddAddressAsync()
+    {
+        _addressBookMessage = null;
+        if (string.IsNullOrWhiteSpace(_newAddressLabel) || string.IsNullOrWhiteSpace(_newAddressText))
+        {
+            _addressBookMessage = "Vui lòng nhập nhãn và địa chỉ.";
+            return;
+        }
+
+        _savingAddress = true;
+        try
+        {
+            await Wave4Service.SaveAddressAsync(_order.CustomerPhone, _newAddressLabel.Trim(), _newAddressText.Trim());
+            _newAddressLabel = null;
+            _newAddressText = null;
+            await LoadAddressBookAsync();
+            _addressBookMessage = "Đã lưu địa chỉ.";
+        }
+        catch (Exception ex)
+        {
+            _addressBookMessage = "Không lưu được: " + ex.Message;
+        }
+        finally
+        {
+            _savingAddress = false;
+        }
+    }
+
+    private async Task DeleteAddressAsync(PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel address)
+    {
+        try
+        {
+            await Wave4Service.DeleteAddressAsync(address.Id, _order.CustomerPhone);
+            await LoadAddressBookAsync();
+        }
+        catch (Exception)
+        {
+            _addressBookMessage = "Không xóa được địa chỉ.";
+        }
+    }
+
+    private async Task SaveBirthday()
+    {
+        _birthdayMessage = null;
+        if (_order == null || _birthdayInput == null)
+        {
+            return;
+        }
+
+        _savingBirthday = true;
+        try
+        {
+            _loyalty = await Wave2Service.UpdateBirthdayAsync(_order.CustomerPhone, _birthdayInput);
+            _birthdayMessage = "Đã lưu ngày sinh. Bạn sẽ nhận voucher vào đúng ngày sinh nhật!";
+        }
+        catch (Exception)
+        {
+            _birthdayMessage = null;
+        }
+        finally
+        {
+            _savingBirthday = false;
+        }
+    }
+
+    private async Task CancelOrder()
+    {
+        _cancelError = null;
+        if (_order == null)
+        {
+            return;
+        }
+
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm",
+            $"Bạn chắc chắn muốn hủy đơn hàng {_order.OrderNumber}?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        _cancelling = true;
+        try
+        {
+            _order = await Wave2Service.CancelOrderByCustomerAsync(_order.OrderNumber, _order.CustomerPhone);
+        }
+        catch (Exception ex)
+        {
+            _cancelError = ex.Message.Contains("chờ xác nhận")
+                ? ex.Message
+                : "Không hủy được đơn hàng. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _cancelling = false;
+        }
+    }
+
+    private void StartEditLines()
+    {
+        _editError = null;
+        _editQuantities = _order.Lines.ToDictionary(x => x.Id, x => x.Quantity);
+        _editingLines = true;
+    }
+
+    private static int ParseQty(object value)
+    {
+        return int.TryParse(value?.ToString(), out var qty) ? Math.Max(0, Math.Min(100, qty)) : 0;
+    }
+
+    /// <summary>
+    /// Wave 6a (item 21): "Đặt lại đơn này" — restores the tracked order's
+    /// lines into the cart by matching ProductId against the current
+    /// catalog. Size/toppings are best-effort (matched by name); products
+    /// that no longer exist are skipped and reported via toast.
+    /// </summary>
+    private async Task ReorderAsync()
+    {
+        _reorderMessage = null;
+        if (_order == null || _reordering)
+        {
+            return;
+        }
+
+        _reordering = true;
+        try
+        {
+            var productsTask = ShopService.GetProductsAsync();
+            var combosTask = ShopService.GetCombosAsync();
+            var toppingsTask = ShopService.GetToppingsAsync();
+            await Task.WhenAll(productsTask, combosTask, toppingsTask);
+
+            var products = (productsTask.Result?.Items ?? new System.Collections.Generic.List<ShopProductModel>())
+                .ToDictionary(p => p.Id);
+            var combos = (combosTask.Result ?? new System.Collections.Generic.List<ComboModel>())
+                .ToDictionary(c => c.Id);
+            var toppings = toppingsTask.Result ?? new System.Collections.Generic.List<ToppingModel>();
+
+            var restored = 0;
+            var skipped = 0;
+            foreach (var line in _order.Lines)
+            {
+                if (line.Quantity < 1)
+                {
+                    continue;
+                }
+
+                var qty = Math.Min(line.Quantity, 99);
+
+                if (line.IsCombo)
+                {
+                    if (combos.TryGetValue(line.ProductId, out var combo) && combo.IsActive)
+                    {
+                        CartState.AddCombo(combo, qty);
+                        restored++;
+                    }
+                    else
+                    {
+                        skipped++;
+                    }
+
+                    continue;
+                }
+
+                if (!products.TryGetValue(line.ProductId, out var product) || product.Status != "Active")
+                {
+                    skipped++;
+                    continue;
+                }
+
+                // Best-effort size match by name.
+                ProductSizeOptionModel size = null;
+                if (!string.IsNullOrWhiteSpace(line.SizeName))
+                {
+                    size = product.Sizes?.FirstOrDefault(s =>
+                        string.Equals(s.Name?.Trim(), line.SizeName.Trim(),
+                            StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Best-effort topping match by name (comma-separated).
+                var chosen = new System.Collections.Generic.List<ToppingModel>();
+                if (!string.IsNullOrWhiteSpace(line.ToppingNames))
+                {
+                    foreach (var name in line.ToppingNames.Split(
+                        new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var trimmed = name.Trim();
+                        if (trimmed.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        var topping = toppings.FirstOrDefault(t =>
+                            !chosen.Contains(t)
+                            && string.Equals(t.Name?.Trim(), trimmed,
+                                StringComparison.OrdinalIgnoreCase));
+                        if (topping != null)
+                        {
+                            chosen.Add(topping);
+                        }
+                    }
+                }
+
+                var toppingsTotal = chosen.Sum(t => t.ExtraPrice);
+                CartState.AddConfigured(
+                    product.Id, product.Name, product.Code,
+                    (size?.Price ?? product.Price) + toppingsTotal, qty,
+                    size?.Id, size?.Name ?? line.SizeName,
+                    chosen.Select(t => t.Id).ToList(),
+                    line.ToppingNames, toppingsTotal,
+                    isCombo: false,
+                    note: line.Note);
+                restored++;
+            }
+
+            if (restored > 0)
+            {
+                var message = $"Đã khôi phục {restored} món vào giỏ";
+                if (skipped > 0)
+                {
+                    message += $" ({skipped} món không còn bán nên đã bỏ qua)";
+                }
+
+                Toasts.Show(message, "Xem giỏ hàng", "/cart");
+                Navigation.NavigateTo("/cart");
+            }
+            else
+            {
+                _reorderMessage = "Không khôi phục được món nào (các món trong đơn đã ngừng bán).";
+            }
+        }
+        catch (Exception)
+        {
+            _reorderMessage = "Không khôi phục được giỏ hàng. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _reordering = false;
+        }
+    }
+
+    private async Task SaveEditedLines()
+    {
+        _editError = null;
+        _savingLines = true;
+        try
+        {
+            var lines = _editQuantities
+                .Select(kv => new { LineId = kv.Key, Quantity = kv.Value })
+                .Cast<object>()
+                .ToList();
+            _order = await Wave2Service.UpdateOrderLinesAsync(
+                _order.OrderNumber, _order.CustomerPhone, lines);
+            _editingLines = false;
+        }
+        catch (Exception ex)
+        {
+            _editError = ex.Message.Contains("tối thiểu") || ex.Message.Contains("ít nhất")
+                ? ex.Message
+                : "Không lưu được thay đổi. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _savingLines = false;
+        }
+    }
+
+    private async Task SubmitReview()
+    {
+        _reviewError = null;
+        if (_rating < 1)
+        {
+            _reviewError = "Vui lòng chọn số sao đánh giá.";
+            return;
+        }
+
+        _submittingReview = true;
+        try
+        {
+            // Wave 6b (item 26): per-dish stars for lines the customer rated.
+            var dishRatings = _order.Lines?
+                .Where(l => _lineRatings.TryGetValue(l.Id, out var r) && r >= 1)
+                .Select(l => (object)new { ProductId = l.ProductId, Rating = _lineRatings[l.Id] })
+                .ToList() ?? new List<object>();
+            await Wave2Service.SubmitReviewAsync(
+                _order.OrderNumber, _order.CustomerPhone, _rating, _reviewComment, dishRatings);
+            _reviewSubmitted = true;
+        }
+        catch (Exception ex)
+        {
+            _reviewError = ex.Message.Contains("đã được đánh giá") || ex.Message.Contains("hoàn thành")
+                ? ex.Message
+                : "Không gửi được đánh giá. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _submittingReview = false;
+        }
+    }
+
+    private void StartPolling()
+    {
+        StopPolling();
+        _pollTimer = new System.Threading.Timer(async _ =>
+        {
+            try
+            {
+                var fresh = await ShopService.TrackOrderAsync(_order.OrderNumber, _order.CustomerPhone);
+                await InvokeAsync(() =>
+                {
+                    _order = fresh;
+                    if (fresh.PaymentStatus != "Unpaid" && fresh.PaymentStatus != "PendingConfirmation")
+                    {
+                        StopPolling();
+                    }
+
+                    StateHasChanged();
+                });
+            }
+            catch (Exception)
+            {
+                // Polling is best-effort; the manual lookup still works.
+            }
+        }, null, 5000, 5000);
+    }
+
+    private void StopPolling()
+    {
+        _pollTimer?.Dispose();
+        _pollTimer = null;
+    }
+
+    private async Task MarkTransferred()
+    {
+        _transferMessage = null;
+        _transferError = null;
+        _markingTransferred = true;
+        try
+        {
+            var updated = await ShopService.MarkTransferredAsync(_order.Id, _order.CustomerPhone);
+            _order.PaymentStatus = updated.PaymentStatus;
+            _transferMessage = "Đã ghi nhận bạn đã chuyển khoản. Shop sẽ xác nhận thanh toán sớm.";
+            StartPolling();
+        }
+        catch (Exception)
+        {
+            _transferError = "Không ghi nhận được. Vui lòng thử lại hoặc liên hệ shop.";
+        }
+        finally
+        {
+            _markingTransferred = false;
+        }
+    }
+
+    private async Task PayWithMoMo()
+    {
+        _momoError = null;
+        _payingMoMo = true;
+        try
+        {
+            var result = await ShopService.CreateMoMoPaymentAsync(_order.Id);
+            Navigation.NavigateTo(result.PayUrl);
+        }
+        catch (Exception)
+        {
+            _momoError = "Không tạo được thanh toán MoMo. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _payingMoMo = false;
+        }
+    }
+
+    private static System.Collections.Generic.Dictionary<string, string> ParseQuery(string uri)
+    {
+        var result = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+        var question = uri.IndexOf('?');
+        if (question < 0)
+        {
+            return result;
+        }
+
+        var query = uri.Substring(question + 1);
+        var hash = query.IndexOf('#');
+        if (hash >= 0)
+        {
+            query = query.Substring(0, hash);
+        }
+
+        foreach (var pair in query.Split('&', System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            result[Uri.UnescapeDataString(pair.Substring(0, eq))] =
+                Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
+        }
+
+        return result;
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    private static string PaymentMethodLabel(string method) => method switch
+    {
+        "Cod" => "Thanh toán khi nhận hàng (COD)",
+        "BankTransfer" => "Chuyển khoản ngân hàng",
+        "MoMo" => "Ví MoMo",
+        "Wallet" => "Ví Xôi Phú Thượng",
+        _ => method
+    };
+
+    private static RenderFragment OrderStatusBadge(string status) => builder =>
+    {
+        var css = status switch
+        {
+            "Pending" => "badge badge-warning",
+            "Confirmed" => "badge badge-info",
+            "Preparing" => "badge badge-primary",
+            "Delivering" => "badge badge-secondary",
+            "Completed" => "badge badge-success",
+            "Cancelled" => "badge badge-danger",
+            _ => "badge badge-light"
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", css);
+        builder.AddContent(2, status);
+        builder.CloseElement();
+    };
+
+    private static RenderFragment PaymentStatusBadge(string status) => builder =>
+    {
+        var (css, label) = status switch
+        {
+            "Unpaid" => ("badge badge-warning", "Chưa thanh toán"),
+            "PendingConfirmation" => ("badge badge-info", "Chờ xác nhận thanh toán"),
+            "Paid" => ("badge badge-success", "Đã thanh toán"),
+            "Failed" => ("badge badge-danger", "Thanh toán thất bại"),
+            _ => ("badge badge-light", status)
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", css);
+        builder.AddContent(2, label);
+        builder.CloseElement();
+    };
+
+    public void Dispose()
+    {
+        StopPolling();
+    }
+
+    // ---------- Item 121: daily check-in ----------
+
+    private string _checkInPhone;
+    private PhuThuongStickyRice.Web.Components.Admin.Models.CheckInResultModel _checkInResult;
+    private bool _checkingIn;
+    private string _checkInError;
+
+    private async Task CheckInAsync()
+    {
+        _checkInError = null;
+        _checkInResult = null;
+        if (string.IsNullOrWhiteSpace(_checkInPhone))
+        {
+            _checkInError = "Vui lòng nhập SĐT.";
+            return;
+        }
+
+        _checkingIn = true;
+        try
+        {
+            _checkInResult = await Wave5Service.CheckInAsync(_checkInPhone.Trim());
+        }
+        catch (Exception ex)
+        {
+            _checkInError = ex.Message;
+        }
+        finally
+        {
+            _checkingIn = false;
+        }
+    }
+
+    // ---------- Item 123: share a photo ----------
+
+    private InputFileChangeEventArgs _selectedPhoto;
+    private string _photoCaption;
+    private bool _uploadingPhoto;
+    private string _photoMessage;
+    private bool _photoError;
+
+    private void OnPhotoSelected(InputFileChangeEventArgs e)
+    {
+        _selectedPhoto = e;
+        _photoMessage = null;
+    }
+
+    private async Task UploadPhotoAsync()
+    {
+        if (_selectedPhoto?.File == null || _order == null)
+        {
+            return;
+        }
+
+        _uploadingPhoto = true;
+        _photoMessage = null;
+        _photoError = false;
+        try
+        {
+            // Compress client-side (same helper as the landing image upload).
+            var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
+                "interop.compressImageFromInput", "share-photo-input", 1600, 0.85);
+            using var stream = new System.IO.MemoryStream(compressed.Bytes);
+            await Wave5Service.UploadCustomerPhotoAsync(
+                stream, compressed.FileName, compressed.ContentType,
+                _order.CustomerPhone, _photoCaption);
+            _photoMessage = "Cảm ơn bạn! Ảnh đang chờ duyệt và sẽ sớm hiện ở gallery.";
+            _photoCaption = null;
+            _selectedPhoto = null;
+        }
+        catch (Exception ex)
+        {
+            _photoError = true;
+            _photoMessage = ex.Message;
+        }
+        finally
+        {
+            _uploadingPhoto = false;
+        }
+    }
+
+    /// <summary>Shape of the object returned by interop.compressImageFromInput.</summary>
+    private sealed class CompressedImage
+    {
+        public byte[] Bytes { get; set; } = Array.Empty<byte>();
+        public string FileName { get; set; } = "image.jpg";
+        public string ContentType { get; set; } = "image/jpeg";
+    }
+}

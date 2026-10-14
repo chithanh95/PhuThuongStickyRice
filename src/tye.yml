@@ -36,7 +36,7 @@ services:
   - protocol: https
     port: 44331
 - name: blazorwebassembly
-  project: ./Frontend/PhuThuongStickyRice.BlazorWebAssembly/PhuThuongStickyRice.BlazorWebAssembly.csproj
+  project: ./Frontend/PhuThuongStickyRice.Web/PhuThuongStickyRice.Web.csproj
   bindings:
   - protocol: https
     port: 44348  

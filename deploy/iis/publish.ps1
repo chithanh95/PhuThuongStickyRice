@@ -65,7 +65,7 @@ dotnet publish (Join-Path $repoRoot "src\Backend\PhuThuongStickyRice.WebAPI\PhuT
     -c $Configuration -o $apiOut --nologo
 
 Write-Host "Publishing Blazor WebAssembly -> $webOut"
-dotnet publish (Join-Path $repoRoot "src\Frontend\PhuThuongStickyRice.BlazorWebAssembly\PhuThuongStickyRice.BlazorWebAssembly.csproj") `
+dotnet publish (Join-Path $repoRoot "src\Frontend\PhuThuongStickyRice.Web\PhuThuongStickyRice.Web.csproj") `
     -c $Configuration -o $webOut --nologo
 
 Write-Host "Copying SPA fallback web.config (needs IIS URL Rewrite Module)"

@@ -1,0 +1,86 @@
+@page "/chinh-sach/{slug}"
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject PolicyService PolicyService
+@inject NavigationManager Navigation
+
+@if (_loading)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_page == null)
+{
+    <div class="alert alert-warning">
+        Không tìm thấy trang chính sách.
+        <a href="/faq">Xem câu hỏi thường gặp</a>.
+    </div>
+}
+else
+{
+    <h3>@_page.Title</h3>
+    <div class="policy-body">
+        @foreach (var paragraph in BodyParagraphs(_page.Body))
+        {
+            <p>@paragraph</p>
+        }
+    </div>
+    <hr />
+    <p>
+        <a href="/faq">Câu hỏi thường gặp</a>
+        @if (_siblings.Count > 0)
+        {
+            <span class="text-muted"> · </span>
+            @foreach (var s in _siblings)
+            {
+                <a class="mr-2" href="/chinh-sach/@s.Slug">@s.Title</a>
+            }
+        }
+    </p>
+}
+
+@code {
+    [Parameter]
+    public string Slug { get; set; }
+
+    private PolicyPageModel _page;
+    private List<PolicyPageSummaryModel> _siblings = new List<PolicyPageSummaryModel>();
+    private bool _loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _page = null;
+        _siblings = new List<PolicyPageSummaryModel>();
+        try
+        {
+            var pageTask = PolicyService.GetBySlugAsync(Slug);
+            var listTask = PolicyService.GetPublicListAsync();
+            await Task.WhenAll(pageTask, listTask);
+            _page = pageTask.Result;
+            _siblings = (listTask.Result ?? new List<PolicyPageSummaryModel>())
+                .Where(x => !string.Equals(x.Slug, Slug, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        catch (Exception)
+        {
+            _page = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static List<string> BodyParagraphs(string body)
+    {
+        return (body ?? string.Empty)
+            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+            .Select(x => x.Trim())
+            .Where(x => x.Length > 0)
+            .ToList();
+    }
+}

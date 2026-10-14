@@ -29,7 +29,7 @@ pipeline {
           sh "dotnet publish -p:Version=${VERSION} PhuThuongStickyRice.WebAPI/*.csproj --configuration Release"
           sh "dotnet publish -p:Version=${VERSION} PhuThuongStickyRice.WebMVC/*.csproj --configuration Release"
           sh "dotnet publish -p:Version=${VERSION} PhuThuongStickyRice.BlazorServerSide/*.csproj --configuration Release"
-          sh "dotnet publish -p:Version=${VERSION} PhuThuongStickyRice.BlazorWebAssembly/*.csproj --configuration Release"
+          sh "dotnet publish -p:Version=${VERSION} PhuThuongStickyRice.Web/*.csproj --configuration Release"
         }
       }
     }

@@ -1,0 +1,17 @@
+﻿@page "/products/edit/{ProductId:guid}"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Web.Components.Products.Components
+
+<div class="card">
+    <div class="card-header">
+        Sửa sản phẩm
+    </div>
+    <div class="card-body">
+        <AddEditProduct Product="Product"></AddEditProduct>
+    </div>
+    <div class="card-footer">
+        <NavLink class="btn btn-outline-secondary" href="products">
+            <i class="fa fa-chevron-left"></i> Quay lại
+        </NavLink>
+    </div>
+</div>

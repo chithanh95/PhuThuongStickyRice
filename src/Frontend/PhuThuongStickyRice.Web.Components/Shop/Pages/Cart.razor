@@ -1,0 +1,328 @@
+@page "/cart"
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using Microsoft.JSInterop
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Core.Services
+@inject CartState CartState
+@inject ShopService ShopService
+@inject ToastService Toasts
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject ShopI18n I18n
+@implements IDisposable
+
+<h3>@I18n.T("cart")</h3>
+
+@if (!string.IsNullOrEmpty(_shareMessage))
+{
+    <div class="alert alert-success">@_shareMessage</div>
+}
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@if (CartState.Items.Count == 0)
+{
+    <div class="alert alert-info">
+        @I18n.T("cart_empty") <a href="/shop">@I18n.T("cart_browse")</a>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th class="text-right">Đơn giá</th>
+                    <th class="text-center">Số lượng</th>
+                    <th class="text-right">Thành tiền</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in CartState.Items)
+                {
+                    <tr @key="item.LineKey">
+                        <td>
+                            <strong>@item.ProductName</strong>
+                            @if (item.IsCombo)
+                            {
+                                <span class="badge badge-warning ml-1">COMBO</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(item.SizeName))
+                            {
+                                <br /><small class="text-muted">Size: @item.SizeName</small>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(item.ToppingNames))
+                            {
+                                <br /><small class="text-muted">Ăn kèm: @item.ToppingNames</small>
+                            }
+                            @if (!item.IsCombo)
+                            {
+                                <br /><small class="text-muted">@item.ProductCode</small>
+                            }
+                            @* Wave 6a (item 24): per-item note ("ghi chú món"). *@
+                            <br />
+                            <input class="form-control form-control-sm mt-1" style="max-width: 230px;"
+                                   maxlength="500" placeholder="📝 Ghi chú món (vd: ít hành)"
+                                   value="@item.Note"
+                                   @onchange="(e) => CartState.UpdateNote(item.LineKey, e.Value?.ToString())" />
+                        </td>
+                        <td class="text-right">@FormatPrice(item.UnitPrice)</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => ChangeQuantity(item, -1)">−</button>
+                            <span class="mx-2">@item.Quantity</span>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => ChangeQuantity(item, 1)">+</button>
+                        </td>
+                        <td class="text-right"><strong>@FormatPrice(item.LineTotal)</strong></td>
+                        <td class="text-right">
+                            <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(item.LineKey)">@I18n.T("remove")</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-right"><strong>@I18n.T("total"):</strong></td>
+                    <td class="text-right"><strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(CartState.TotalAmount)</strong></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div>
+            <a class="btn btn-secondary mb-2 mr-2" href="/shop">@I18n.T("continue_shopping")</a>
+            <button class="btn btn-outline-primary mb-2" @onclick="ShareCartAsync" disabled="@_sharing">
+                @(_sharing ? "Đang tạo link..." : "🔗 Chia sẻ giỏ hàng")
+            </button>
+        </div>
+        <button class="btn btn-success btn-lg mb-2" @onclick='() => Navigation.NavigateTo("/checkout")'>
+            @I18n.T("checkout") (@CartState.TotalQuantity)
+        </button>
+    </div>
+
+    @if (_suggestions != null && _suggestions.Count > 0)
+    {
+        <div class="card mt-2">
+            <div class="card-header">🍢 Ăn kèm gợi ý</div>
+            <div class="card-body">
+                <div class="row">
+                    @foreach (var s in _suggestions)
+                    {
+                        <div class="col-12 col-md-4 mb-2" @key="s.Id">
+                            <div class="d-flex align-items-center justify-content-between border rounded p-2">
+                                <div>
+                                    <strong>@s.Name</strong><br />
+                                    <span class="text-danger">@FormatPrice(s.Price)</span>
+                                </div>
+                                <button class="btn btn-sm btn-primary" @onclick="() => QuickAddSuggestion(s)">+ Thêm</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<ShopProductModel> _suggestions;
+    private string _error;
+    private string _shareMessage;
+    private bool _sharing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        I18n.OnChange += OnLangChanged;
+        await I18n.InitializeAsync();
+        CartState.OnChange += OnCartChanged;
+        await MergeSharedCartAsync();
+        await LoadSuggestionsAsync();
+    }
+
+    private void OnCartChanged()
+    {
+        _ = LoadSuggestionsAsync();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ChangeQuantity(CartItemModel item, int delta)
+    {
+        CartState.UpdateQuantity(item.LineKey, item.Quantity + delta);
+    }
+
+    private void QuickAddSuggestion(ShopProductModel product)
+    {
+        CartState.Add(product, 1);
+        Toasts.Show($"Đã thêm {product.Name} vào giỏ");
+    }
+
+    /// <summary>
+    /// "Ăn kèm gợi ý": 3 products not already in the cart, preferring
+    /// side dishes ("Món ăn kèm") when available.
+    /// </summary>
+    private async Task LoadSuggestionsAsync()
+    {
+        try
+        {
+            var inCart = new HashSet<Guid>(CartState.Items.Select(x => x.ProductId));
+            var paged = await ShopService.GetProductsAsync();
+            var all = paged.Items ?? new List<ShopProductModel>();
+
+            _suggestions = all
+                .Where(p => !inCart.Contains(p.Id))
+                .OrderByDescending(p => (p.Category ?? "").Contains("kèm") ? 1 : 0)
+                .ThenBy(p => p.Name)
+                .Take(3)
+                .ToList();
+        }
+        catch (Exception)
+        {
+            _suggestions = new List<ShopProductModel>();
+        }
+    }
+
+    /// <summary>
+    /// Copies a shareable cart link: /cart?share=&lt;base64 of "id:qty;id:qty"&gt;.
+    /// </summary>
+    private async Task ShareCartAsync()
+    {
+        _shareMessage = null;
+        _error = null;
+
+        if (CartState.Items.Count == 0)
+        {
+            return;
+        }
+
+        _sharing = true;
+        try
+        {
+            var payload = string.Join(";",
+                CartState.Items
+                    .Where(x => !x.IsCombo)
+                    .Select(x => $"{x.ProductId:N}:{x.Quantity}"));
+            var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(payload))
+                .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+            var link = $"{Navigation.BaseUri.TrimEnd('/')}/cart?share={base64}";
+
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", link);
+            _shareMessage = "Đã sao chép link giỏ hàng! Gửi link này cho bạn bè để họ đặt cùng.";
+        }
+        catch (Exception)
+        {
+            _error = "Không sao chép được link. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _sharing = false;
+        }
+    }
+
+    /// <summary>
+    /// On page load, merges ?share= items into the cart (product ids are
+    /// validated against the API).
+    /// </summary>
+    private async Task MergeSharedCartAsync()
+    {
+        var query = ParseQuery(Navigation.Uri);
+        if (!query.TryGetValue("share", out var share) || string.IsNullOrWhiteSpace(share))
+        {
+            return;
+        }
+
+        try
+        {
+            var padded = share.Replace('-', '+').Replace('_', '/');
+            padded = padded.PadRight(padded.Length + (4 - padded.Length % 4) % 4, '=');
+            var payload = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(padded));
+
+            var added = 0;
+            foreach (var part in payload.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var pieces = part.Split(':');
+                if (pieces.Length != 2
+                    || !Guid.TryParseExact(pieces[0], "N", out var productId)
+                    || !int.TryParse(pieces[1], out var qty)
+                    || qty < 1)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var product = await ShopService.GetProductAsync(productId);
+                    if (product != null && product.Status == "Active")
+                    {
+                        CartState.Add(product, Math.Min(qty, 99));
+                        added++;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Invalid / unavailable product id — skip it.
+                }
+            }
+
+            if (added > 0)
+            {
+                Toasts.Show($"Đã thêm {added} món từ link chia sẻ vào giỏ");
+                // Remove the share param so a refresh doesn't re-add.
+                Navigation.NavigateTo("/cart", forceLoad: false);
+            }
+        }
+        catch (Exception)
+        {
+            // Malformed share payload — ignore.
+        }
+    }
+
+    private static Dictionary<string, string> ParseQuery(string uri)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var question = uri.IndexOf('?');
+        if (question < 0)
+        {
+            return result;
+        }
+
+        var query = uri.Substring(question + 1);
+        var hash = query.IndexOf('#');
+        if (hash >= 0)
+        {
+            query = query.Substring(0, hash);
+        }
+
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            result[Uri.UnescapeDataString(pair.Substring(0, eq))] =
+                Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
+        }
+
+        return result;
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    private void OnLangChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        CartState.OnChange -= OnCartChanged;
+        I18n.OnChange -= OnLangChanged;
+    }
+}

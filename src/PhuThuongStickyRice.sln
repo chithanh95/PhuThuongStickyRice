@@ -37,9 +37,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.UnitTes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.IntegrationTests", "..\tests\PhuThuongStickyRice.IntegrationTests\PhuThuongStickyRice.IntegrationTests.csproj", "{A9444B01-1964-4C99-AD57-5A2DF28F702C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.BlazorWebAssembly", "Frontend\PhuThuongStickyRice.BlazorWebAssembly\PhuThuongStickyRice.BlazorWebAssembly.csproj", "{3C4830C0-9866-463A-9820-903EEFA28331}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Web", "Frontend\PhuThuongStickyRice.Web\PhuThuongStickyRice.Web.csproj", "{3C4830C0-9866-463A-9820-903EEFA28331}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Blazor.Modules", "Frontend\PhuThuongStickyRice.Blazor.Modules\PhuThuongStickyRice.Blazor.Modules.csproj", "{6EB5F523-5274-421D-9483-CAF86BD149AA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.Web.Components", "Frontend\PhuThuongStickyRice.Web.Components\PhuThuongStickyRice.Web.Components.csproj", "{6EB5F523-5274-421D-9483-CAF86BD149AA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhuThuongStickyRice.ContractTests", "..\tests\PhuThuongStickyRice.ContractTests\PhuThuongStickyRice.ContractTests.csproj", "{65832FF6-24CE-4DAA-BEB6-EBFE76FC46F0}"
 EndProject

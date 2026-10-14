@@ -1,0 +1,203 @@
+@page "/admin/chi-nhanh"
+@attribute [Authorize]
+@using PhuThuongStickyRice.Web.Components.Core.Components
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject Wave4Service Wave4Service
+
+<h3>Chi nhánh</h3>
+<p class="text-muted">Quản lý chi nhánh. Sản phẩm và đơn hàng có thể gắn chi nhánh; giá bán vẫn áp dụng chung toàn hệ thống (giá theo chi nhánh là tính năng tương lai).</p>
+
+<ConfirmDialog @ref="_deleteDialog"
+               Title="Xóa chi nhánh"
+               YesText="Xóa"
+               NoText="Hủy"
+               ConfirmEventCallback="ConfirmedDelete">
+    <Message>Xóa chi nhánh <strong>@_deleting?.Name</strong>? Sản phẩm/đơn hàng đang gắn chi nhánh này sẽ chuyển thành "chung".</Message>
+</ConfirmDialog>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">@(_editingId == null ? "Thêm chi nhánh" : "Sửa chi nhánh")</div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label>Tên chi nhánh *</label>
+                <input class="form-control" @bind="_form.Name" placeholder="VD: Cơ sở Phú Thượng" />
+            </div>
+            <div class="form-group col-md-4">
+                <label>Địa chỉ</label>
+                <input class="form-control" @bind="_form.Address" />
+            </div>
+            <div class="form-group col-md-2">
+                <label>Điện thoại</label>
+                <input class="form-control" @bind="_form.Phone" />
+            </div>
+            <div class="form-group col-md-2 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="branch-active" @bind="_form.IsActive" />
+                    <label class="form-check-label" for="branch-active">Đang hoạt động</label>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+            @(_saving ? "Đang lưu..." : (_editingId == null ? "Thêm chi nhánh" : "Cập nhật"))
+        </button>
+        @if (_editingId != null)
+        {
+            <button class="btn btn-outline-secondary ml-2" @onclick="CancelEdit">Hủy</button>
+        }
+    </div>
+</div>
+
+@if (_branches == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_branches.Count == 0)
+{
+    <div class="alert alert-info">Chưa có chi nhánh nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Tên</th>
+                    <th>Địa chỉ</th>
+                    <th>Điện thoại</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in _branches)
+                {
+                    <tr>
+                        <td><strong>@b.Name</strong></td>
+                        <td>@b.Address</td>
+                        <td>@b.Phone</td>
+                        <td>
+                            @if (b.IsActive)
+                            {
+                                <span class="badge badge-success">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary">Ngừng</span>
+                            }
+                        </td>
+                        <td class="text-right text-nowrap">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(b)">Sửa</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(b)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<BranchModel> _branches;
+    private BranchModel _form = new BranchModel();
+    private Guid? _editingId;
+    private BranchModel _deleting;
+    private ConfirmDialog _deleteDialog;
+    private string _error;
+    private string _success;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _branches = await Wave4Service.GetBranchesAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được chi nhánh: " + ex.Message;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _error = "Vui lòng nhập tên chi nhánh.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (_editingId == null)
+            {
+                await Wave4Service.CreateBranchAsync(_form);
+                _success = "Đã thêm chi nhánh.";
+            }
+            else
+            {
+                await Wave4Service.UpdateBranchAsync(_editingId.Value, _form);
+                _success = "Đã cập nhật chi nhánh.";
+            }
+
+            _form = new BranchModel();
+            _editingId = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không lưu được: " + ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void StartEdit(BranchModel b)
+    {
+        _editingId = b.Id;
+        _form = new BranchModel { Name = b.Name, Address = b.Address, Phone = b.Phone, IsActive = b.IsActive };
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _form = new BranchModel();
+    }
+
+    private void AskDelete(BranchModel b)
+    {
+        _deleting = b;
+        _deleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete()
+    {
+        try
+        {
+            await Wave4Service.DeleteBranchAsync(_deleting.Id);
+            _success = "Đã xóa chi nhánh.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không xóa được: " + ex.Message;
+        }
+    }
+}

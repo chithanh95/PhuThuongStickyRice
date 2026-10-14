@@ -103,13 +103,13 @@
             }
         },
         {
-            "name": "PhuThuongStickyRice.BlazorWebAssembly",
+            "name": "PhuThuongStickyRice.Web",
             "type": "coreclr",
             "request": "launch",
             //"preLaunchTask": "build",
-            "program": "${workspaceFolder}/PhuThuongStickyRice.BlazorWebAssembly/bin/Debug/net6.0/PhuThuongStickyRice.BlazorWebAssembly.dll",
+            "program": "${workspaceFolder}/PhuThuongStickyRice.Web/bin/Debug/net6.0/PhuThuongStickyRice.Web.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/PhuThuongStickyRice.BlazorWebAssembly",
+            "cwd": "${workspaceFolder}/PhuThuongStickyRice.Web",
             "stopAtEntry": false,
             "serverReadyAction": {
                 "action": "openExternally",
@@ -174,7 +174,7 @@
     "compounds": [
         {
             "name": "PhuThuongStickyRice.Monolith",
-            "configurations": ["PhuThuongStickyRice.BackgroundServer", "PhuThuongStickyRice.GraphQL", "PhuThuongStickyRice.Migrator", "PhuThuongStickyRice.WebAPI","PhuThuongStickyRice.BlazorServerSide","PhuThuongStickyRice.BlazorWebAssembly","PhuThuongStickyRice.IdentityServer","PhuThuongStickyRice.WebMVC"]
+            "configurations": ["PhuThuongStickyRice.BackgroundServer", "PhuThuongStickyRice.GraphQL", "PhuThuongStickyRice.Migrator", "PhuThuongStickyRice.WebAPI","PhuThuongStickyRice.BlazorServerSide","PhuThuongStickyRice.Web","PhuThuongStickyRice.IdentityServer","PhuThuongStickyRice.WebMVC"]
         }
     ]
 }

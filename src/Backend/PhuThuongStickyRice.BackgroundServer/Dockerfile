@@ -11,8 +11,8 @@ COPY ./Backend/PhuThuongStickyRice.WebAPI/*.csproj ./Backend/PhuThuongStickyRice
 COPY ./Backend/PhuThuongStickyRice.BackgroundServer/*.csproj ./Backend/PhuThuongStickyRice.BackgroundServer/
 COPY ./Backend/PhuThuongStickyRice.Migrator/*.csproj ./Backend/PhuThuongStickyRice.Migrator/
 COPY ./Backend/PhuThuongStickyRice.GraphQL/*.csproj ./Backend/PhuThuongStickyRice.GraphQL/
-COPY ./Frontend/PhuThuongStickyRice.Blazor.Modules/*.csproj ./Frontend/PhuThuongStickyRice.Blazor.Modules/
-COPY ./Frontend/PhuThuongStickyRice.BlazorWebAssembly/*.csproj ./Frontend/PhuThuongStickyRice.BlazorWebAssembly/
+COPY ./Frontend/PhuThuongStickyRice.Web.Components/*.csproj ./Frontend/PhuThuongStickyRice.Web.Components/
+COPY ./Frontend/PhuThuongStickyRice.Web/*.csproj ./Frontend/PhuThuongStickyRice.Web/
 COPY ./Frontend/PhuThuongStickyRice.BlazorServerSide/*.csproj ./Frontend/PhuThuongStickyRice.BlazorServerSide/
 COPY ./Frontend/PhuThuongStickyRice.WebMVC/*.csproj ./Frontend/PhuThuongStickyRice.WebMVC/
 

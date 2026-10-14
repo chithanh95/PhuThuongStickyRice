@@ -1,0 +1,369 @@
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject CatalogAdminService CatalogService
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave4Service Wave4Service
+
+<EditForm Model="Product" OnValidSubmit="HandleValidSubmit">
+
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group row">
+        <label for="productName" class="col-sm-2 col-form-label">Tên món: </label>
+        <div class="col-sm-10">
+            <InputText id="productName" class="form-control" @bind-Value="Product.Name" placeholder="Nhập tên món"></InputText>
+            <ValidationMessage For="@(() => Product.Name)" />
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="code" class="col-sm-2 col-form-label">Mã: </label>
+        <div class="col-sm-10">
+            <InputText id="code" class="form-control" @bind-Value="Product.Code" placeholder="Nhập mã (VD: xoi-gac)"></InputText>
+            <ValidationMessage For="@(() => Product.Code)" />
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="price" class="col-sm-2 col-form-label">Giá (₫): </label>
+        <div class="col-sm-10">
+            <InputNumber id="price" class="form-control" @bind-Value="Product.Price" placeholder="VD: 35000"></InputNumber>
+            <ValidationMessage For="@(() => Product.Price)" />
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="costprice" class="col-sm-2 col-form-label">Giá vốn (₫): </label>
+        <div class="col-sm-10">
+            <InputNumber id="costprice" class="form-control" @bind-Value="Product.CostPrice" placeholder="VD: 20000"></InputNumber>
+            <ValidationMessage For="@(() => Product.CostPrice)" />
+            <small class="form-text text-muted">Dùng cho báo cáo lợi nhuận (/admin/loi-nhuan).</small>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="description" class="col-sm-2 col-form-label">Mô tả: </label>
+        <div class="col-sm-10">
+            <InputText id="description" class="form-control" @bind-Value="Product.Description" placeholder="Nhập mô tả"></InputText>
+            <ValidationMessage For="@(() => Product.Description)" />
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="category" class="col-sm-2 col-form-label">Danh mục: </label>
+        <div class="col-sm-10">
+            <InputText id="category" class="form-control" @bind-Value="Product.Category" placeholder="VD: Xôi mặn / Xôi ngọt / Món ăn kèm"></InputText>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="branch" class="col-sm-2 col-form-label">Chi nhánh: </label>
+        <div class="col-sm-10">
+            <InputSelect id="branch" class="form-control" @bind-Value="Product.BranchId">
+                <option value="">-- Tất cả chi nhánh --</option>
+                @if (_branches != null)
+                {
+                    @foreach (var b in _branches)
+                    {
+                        <option value="@b.Id">@b.Name</option>
+                    }
+                }
+            </InputSelect>
+            <small class="form-text text-muted">Để trống = bán tại mọi chi nhánh.</small>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-2 col-form-label">Nhãn dinh dưỡng: </label>
+        <div class="col-sm-10">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="tag-chay"
+                       checked="@HasTag("chay")" @onchange="@((e) => ToggleTag("chay", (bool)e.Value))" />
+                <label class="form-check-label" for="tag-chay">Chay</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="tag-man"
+                       checked="@HasTag("man")" @onchange="@((e) => ToggleTag("man", (bool)e.Value))" />
+                <label class="form-check-label" for="tag-man">Mặn</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="tag-cay"
+                       checked="@HasTag("cay")" @onchange="@((e) => ToggleTag("cay", (bool)e.Value))" />
+                <label class="form-check-label" for="tag-cay">Cay</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="allergens" class="col-sm-2 col-form-label">Dị ứng: </label>
+        <div class="col-sm-10">
+            <InputText id="allergens" class="form-control" @bind-Value="Product.AllergenInfo" placeholder="VD: đậu phộng, tôm"></InputText>
+            <small class="form-text text-muted">Hiển thị trong cửa sổ xem nhanh để khách dị ứng lưu ý.</small>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-2 col-form-label">Huy hiệu: </label>
+        <div class="col-sm-10">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="badge-new" @bind="Product.IsNew" />
+                <label class="form-check-label" for="badge-new">Món mới</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="badge-signature" @bind="Product.IsSignature" />
+                <label class="form-check-label" for="badge-signature">Signature</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-2 col-form-label">Bán theo mùa: </label>
+        <div class="col-sm-5">
+            <InputDate id="availFrom" class="form-control" @bind-Value="Product.AvailableFrom" />
+            <small class="form-text text-muted">Từ ngày (để trống = quanh năm)</small>
+        </div>
+        <div class="col-sm-5">
+            <InputDate id="availTo" class="form-control" @bind-Value="Product.AvailableTo" />
+            <small class="form-text text-muted">Đến ngày (để trống = quanh năm)</small>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-2 col-form-label"></label>
+        <div class="col-sm-10">
+            <button type="submit" class="btn btn-primary">Lưu</button>
+        </div>
+    </div>
+</EditForm>
+
+@if (Product.Id != Guid.Empty)
+{
+    <hr />
+    <h5>Size (Nhỏ / Vừa / Lớn)</h5>
+    <p class="text-muted"><small>Mỗi size có giá bán riêng. Không có size = bán theo giá gốc ở trên.</small></p>
+
+    @if (!string.IsNullOrEmpty(_sizeError))
+    {
+        <div class="alert alert-danger">@_sizeError</div>
+    }
+
+    @if (_sizes == null)
+    {
+        <p><em>Đang tải sizes...</em></p>
+    }
+    else if (_sizes.Count == 0)
+    {
+        <div class="alert alert-info">Chưa có size nào.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr><th>Tên size</th><th class="text-right">Giá (₫)</th><th>Thứ tự</th><th></th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in _sizes)
+                    {
+                        <tr @key="s.Id">
+                            <td>@s.Name</td>
+                            <td class="text-right">@s.Price.ToString("N0")</td>
+                            <td>@s.SortOrder</td>
+                            <td>
+                                @if (s.IsActive)
+                                {
+                                    <span class="badge badge-success">Đang bán</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Ẩn</span>
+                                }
+                            </td>
+                            <td class="text-right">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditSize(s)">Sửa</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSizeAsync(s)">Xóa</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div class="card mb-3">
+        <div class="card-header">@(_editingSizeId == null ? "Thêm size" : "Sửa size")</div>
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Tên size *</label>
+                    <input class="form-control" @bind="_sizeForm.Name" placeholder="VD: Nhỏ / Vừa / Lớn" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Giá (₫) *</label>
+                    <input type="number" min="0" step="1000" class="form-control" @bind="_sizeForm.Price" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label>Thứ tự</label>
+                    <input type="number" class="form-control" @bind="_sizeForm.SortOrder" />
+                </div>
+                <div class="form-group col-md-3 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="size-active" @bind="_sizeForm.IsActive" />
+                        <label class="form-check-label" for="size-active">Đang bán</label>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary" @onclick="SaveSizeAsync" disabled="@_savingSize">
+                @(_savingSize ? "Đang lưu..." : (_editingSizeId == null ? "Thêm size" : "Cập nhật"))
+            </button>
+            @if (_editingSizeId != null)
+            {
+                <button class="btn btn-outline-secondary ml-2" @onclick="CancelEditSize">Hủy</button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    // Size-option state (only for existing products).
+    private List<PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel> _sizes;
+    private PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel _sizeForm
+        = new PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel();
+    private Guid? _editingSizeId;
+    private bool _savingSize;
+    private string _sizeError;
+
+    // Item 109: branch picker.
+    private List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel> _branches;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Product?.Id != Guid.Empty)
+        {
+            await LoadSizesAsync();
+        }
+
+        if (_branches == null)
+        {
+            try
+            {
+                _branches = await Wave4Service.GetBranchesAsync();
+            }
+            catch (Exception)
+            {
+                _branches = new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
+            }
+        }
+    }
+
+    private bool HasTag(string tag)
+    {
+        var tags = (Product.Tags ?? "").Split(',', ';', ' ')
+            .Select(x => x.Trim().ToLowerInvariant());
+        return tags.Contains(tag);
+    }
+
+    private void ToggleTag(string tag, bool on)
+    {
+        var tags = (Product.Tags ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim().ToLowerInvariant())
+            .Where(x => x.Length > 0 && x != tag)
+            .ToList();
+        if (on)
+        {
+            tags.Add(tag);
+        }
+
+        Product.Tags = tags.Count == 0 ? null : string.Join(",", tags);
+    }
+
+    private async Task LoadSizesAsync()
+    {
+        try
+        {
+            _sizes = await CatalogService.GetSizeOptionsAsync(Product.Id);
+        }
+        catch (Exception)
+        {
+            _sizeError = "Không tải được danh sách size.";
+            _sizes = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel>();
+        }
+    }
+
+    private void StartEditSize(PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel s)
+    {
+        _editingSizeId = s.Id;
+        _sizeForm = new PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel
+        {
+            Name = s.Name,
+            Price = s.Price,
+            SortOrder = s.SortOrder,
+            IsActive = s.IsActive,
+            ProductId = s.ProductId
+        };
+        _sizeError = null;
+    }
+
+    private void CancelEditSize()
+    {
+        _editingSizeId = null;
+        _sizeForm = new PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel();
+    }
+
+    private async Task SaveSizeAsync()
+    {
+        _sizeError = null;
+        if (string.IsNullOrWhiteSpace(_sizeForm.Name))
+        {
+            _sizeError = "Vui lòng nhập tên size.";
+            return;
+        }
+
+        if (_sizeForm.Price < 0)
+        {
+            _sizeError = "Giá size không được âm.";
+            return;
+        }
+
+        _savingSize = true;
+        try
+        {
+            _sizeForm.ProductId = Product.Id;
+            if (_editingSizeId == null)
+            {
+                await CatalogService.CreateSizeOptionAsync(_sizeForm);
+            }
+            else
+            {
+                await CatalogService.UpdateSizeOptionAsync(_editingSizeId.Value, _sizeForm);
+            }
+
+            CancelEditSize();
+            await LoadSizesAsync();
+        }
+        catch (Exception)
+        {
+            _sizeError = "Lưu size thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _savingSize = false;
+        }
+    }
+
+    private async Task DeleteSizeAsync(PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel s)
+    {
+        try
+        {
+            await CatalogService.DeleteSizeOptionAsync(s.Id);
+            await LoadSizesAsync();
+        }
+        catch (Exception)
+        {
+            _sizeError = "Xóa size thất bại. Vui lòng thử lại.";
+        }
+    }
+}

@@ -1,0 +1,227 @@
+@page "/dat-dinh-ky"
+@using System.Linq
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject ShopService ShopService
+@inject Wave2Service Wave2Service
+
+<h3>Đặt xôi định kỳ mỗi ngày</h3>
+<p class="text-muted">
+    Đăng ký một lần — mỗi sáng shop tự tạo đơn giao xôi đến địa chỉ của bạn,
+    thanh toán khi nhận hàng (COD). Tạm dừng / hủy bất cứ lúc nào.
+</p>
+
+@if (_done)
+{
+    <div class="alert alert-success">
+        <strong>Đăng ký thành công!</strong> Từ ngày <strong>@_created.StartDate.ToString("dd/MM/yyyy")</strong>,
+        mỗi sáng shop sẽ tự tạo đơn <strong>@_created.Quantity × @_created.ProductName</strong>
+        giao đến địa chỉ của bạn.
+    </div>
+    <button class="btn btn-outline-primary" @onclick="Reset">Đăng ký thêm</button>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Họ tên *</label>
+                    <input class="form-control" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Số điện thoại *</label>
+                    <input class="form-control" @bind="_model.Phone" placeholder="0901234567" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Món xôi *</label>
+                <select class="form-control" @onchange="OnProductChanged">
+                    <option value="">— Chọn món —</option>
+                    @foreach (var p in _products)
+                    {
+                        <option value="@p.Id" selected="@(p.Id == _model.ProductId)">@p.Name — @FormatPrice(p.Price)</option>
+                    }
+                </select>
+            </div>
+            @if (_selectedProduct?.Sizes?.Any(s => s.IsActive) == true)
+            {
+                <div class="form-group">
+                    <label>Size</label>
+                    <select class="form-control" @bind="_model.SizeOptionId">
+                        <option value="">Mặc định</option>
+                        @foreach (var s in _selectedProduct.Sizes.Where(x => x.IsActive))
+                        {
+                            <option value="@s.Id">@s.Name — @FormatPrice(s.Price)</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_toppings.Count > 0)
+            {
+                <div class="form-group">
+                    <label>Ăn kèm</label>
+                    <div>
+                        @foreach (var t in _toppings)
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="top-@t.Id"
+                                       checked="@_model.ToppingIds.Contains(t.Id)"
+                                       @onchange="e => ToggleTopping(t.Id, (bool)e.Value)" />
+                                <label class="form-check-label" for="top-@t.Id">@t.Name (+@FormatPrice(t.ExtraPrice))</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Số lượng mỗi ngày *</label>
+                    <input type="number" class="form-control" min="1" max="100" @bind="_model.Quantity" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Ước tính / ngày</label>
+                    <input class="form-control" readonly value="@FormatPrice(EstimatedDaily)" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Bắt đầu từ ngày *</label>
+                    <input type="date" class="form-control" @bind="_model.StartDate" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Địa chỉ giao hàng *</label>
+                <textarea class="form-control" rows="2" @bind="_model.DeliveryAddress"
+                          placeholder="Số nhà, đường, phường..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ghi chú</label>
+                <textarea class="form-control" rows="2" @bind="_model.Notes"
+                          placeholder="VD: giao trước 7h sáng..."></textarea>
+            </div>
+            <button class="btn btn-success" @onclick="Submit" disabled="@_submitting">
+                @(_submitting ? "Đang đăng ký..." : "Đăng ký đặt định kỳ")
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly CreateSubscriptionModel _model = new CreateSubscriptionModel();
+    private List<ShopProductModel> _products = new List<ShopProductModel>();
+    private List<ToppingModel> _toppings = new List<ToppingModel>();
+    private ShopProductModel _selectedProduct;
+    private SubscriptionModel _created;
+    private bool _done;
+    private bool _submitting;
+    private string _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var paged = await ShopService.GetProductsAsync();
+            _products = paged?.Items?.Where(p => p.Status == "Active").ToList()
+                ?? new List<ShopProductModel>();
+            _toppings = await ShopService.GetToppingsAsync() ?? new List<ToppingModel>();
+        }
+        catch (Exception)
+        {
+            // Form shows empty state; the user can retry.
+        }
+    }
+
+    private void OnProductChanged(ChangeEventArgs e)
+    {
+        _model.ToppingIds.Clear();
+        _model.SizeOptionId = null;
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _model.ProductId = id;
+            _selectedProduct = _products.FirstOrDefault(p => p.Id == id);
+        }
+        else
+        {
+            _model.ProductId = Guid.Empty;
+            _selectedProduct = null;
+        }
+    }
+
+    private void ToggleTopping(Guid id, bool selected)
+    {
+        if (selected && !_model.ToppingIds.Contains(id))
+        {
+            _model.ToppingIds.Add(id);
+        }
+        else if (!selected)
+        {
+            _model.ToppingIds.Remove(id);
+        }
+    }
+
+    private decimal EstimatedDaily
+    {
+        get
+        {
+            var unit = _selectedProduct?.Price ?? 0;
+            if (_model.SizeOptionId.HasValue && _selectedProduct != null)
+            {
+                var size = _selectedProduct.Sizes.FirstOrDefault(s => s.Id == _model.SizeOptionId.Value);
+                if (size != null)
+                {
+                    unit = size.Price;
+                }
+            }
+
+            unit += _toppings.Where(t => _model.ToppingIds.Contains(t.Id)).Sum(t => t.ExtraPrice);
+            return unit * Math.Max(1, _model.Quantity);
+        }
+    }
+
+    private async Task Submit()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_model.CustomerName)
+            || string.IsNullOrWhiteSpace(_model.Phone)
+            || string.IsNullOrWhiteSpace(_model.DeliveryAddress))
+        {
+            _error = "Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ.";
+            return;
+        }
+
+        if (_model.ProductId == Guid.Empty)
+        {
+            _error = "Vui lòng chọn món xôi.";
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            _created = await Wave2Service.CreateSubscriptionAsync(_model);
+            _done = true;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message.Contains("ngừng bán") || ex.Message.Contains("quá khứ")
+                ? ex.Message
+                : "Không đăng ký được. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void Reset()
+    {
+        _done = false;
+        _created = null;
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+}

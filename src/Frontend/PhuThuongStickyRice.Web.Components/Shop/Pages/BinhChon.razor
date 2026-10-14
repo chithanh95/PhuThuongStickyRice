@@ -1,0 +1,185 @@
+@page "/binh-chon-mon-moi"
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Text.Json
+@using System.Threading.Tasks
+@using Microsoft.JSInterop
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject ShopService ShopService
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave4Service Wave4Service
+@inject IJSRuntime JSRuntime
+
+<h3>🗳️ Bình chọn món mới</h3>
+
+@* Item 105: dish-voting is feature-flagged. *@
+@if (_votingChecked && !_votingEnabled)
+{
+    <div class="alert alert-info">Tính năng bình chọn món mới hiện đang tạm tắt. Quay lại sau nhé!</div>
+}
+else
+{
+<p class="text-muted">
+    Bạn muốn shop bán thêm món nào? Bình chọn cho món bạn thích nhất —
+    món được bình chọn nhiều nhất sẽ lên thực đơn!
+</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+@if (_candidates == null)
+{
+    <p><em>Đang tải danh sách món...</em></p>
+}
+else if (_candidates.Count == 0)
+{
+    <div class="alert alert-info">Hiện chưa có món nào để bình chọn. Quay lại sau nhé!</div>
+}
+else
+{
+    var total = Math.Max(1, _candidates.Sum(c => c.Votes));
+    <div class="row">
+        @foreach (var candidate in _candidates)
+        {
+            var voted = _votedIds.Contains(candidate.Id);
+            var percent = (int)Math.Round(candidate.Votes * 100.0 / total);
+            <div class="col-md-6 mb-4" @key="candidate.Id">
+                <div class="card h-100 @(voted ? "border-success" : "")">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">
+                            @candidate.Name
+                            @if (voted)
+                            {
+                                <span class="badge badge-success ml-1">Đã bình chọn ✓</span>
+                            }
+                        </h5>
+                        <p class="card-text text-muted small flex-grow-1">@candidate.Description</p>
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar bg-success" role="progressbar"
+                                 style="width: @percent%;" aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100">
+                                @percent%
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span><strong>@candidate.Votes</strong> lượt bình chọn</span>
+                            <button class="btn @(voted ? "btn-outline-secondary" : "btn-primary")"
+                                    @onclick="() => VoteAsync(candidate)" disabled="@(voted || _voting)">
+                                @(_voting ? "Đang gửi..." : voted ? "Đã bình chọn" : "👍 Bình chọn")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <p class="text-muted"><small>Mỗi trình duyệt được bình chọn 1 món. Cảm ơn bạn đã góp ý thực đơn!</small></p>
+}
+}
+
+@code {
+    private const string VoteStorageKey = "phuthuong.dish-votes.v1";
+
+    private List<DishCandidateModel> _candidates;
+    private HashSet<Guid> _votedIds = new HashSet<Guid>();
+    private bool _voting;
+    private string _error;
+    private string _success;
+
+    // Item 105: dish-voting feature flag.
+    private bool _votingChecked;
+    private bool _votingEnabled = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var flags = await Wave4Service.GetFeatureFlagMapAsync();
+            _votingEnabled = flags == null || !flags.TryGetValue("dish-voting", out var on) || on;
+        }
+        catch (Exception)
+        {
+        }
+        finally
+        {
+            _votingChecked = true;
+        }
+
+        if (!_votingEnabled)
+        {
+            return;
+        }
+
+        try
+        {
+            _candidates = await ShopService.GetDishCandidatesAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được danh sách bình chọn. Vui lòng thử lại sau.";
+            _candidates = new List<DishCandidateModel>();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", VoteStorageKey);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                var ids = JsonSerializer.Deserialize<List<Guid>>(json);
+                if (ids != null)
+                {
+                    _votedIds = new HashSet<Guid>(ids);
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Best effort only.
+        }
+    }
+
+    private async Task VoteAsync(DishCandidateModel candidate)
+    {
+        if (_votedIds.Contains(candidate.Id))
+        {
+            return;
+        }
+
+        _error = null;
+        _success = null;
+        _voting = true;
+        try
+        {
+            var updated = await ShopService.VoteDishCandidateAsync(candidate.Id);
+            candidate.Votes = updated.Votes;
+            _votedIds.Add(candidate.Id);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", VoteStorageKey,
+                JsonSerializer.Serialize(_votedIds.ToList()));
+            _candidates = _candidates.OrderByDescending(c => c.Votes).ToList();
+            _success = $"Cảm ơn bạn đã bình chọn cho món {candidate.Name}!";
+        }
+        catch (Exception)
+        {
+            _error = "Bình chọn thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _voting = false;
+        }
+    }
+}
