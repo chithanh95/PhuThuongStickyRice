@@ -714,19 +714,6 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public DateTime CreatedAt { get; set; }
     }
 
-    public class DishCandidateModel
-    {
-        public Guid Id { get; set; }
-
-        public string Name { get; set; }
-
-        public string Description { get; set; }
-
-        public long Votes { get; set; }
-
-        public bool IsActive { get; set; }
-    }
-
     /// <summary>Public: last order name/address for a phone number.</summary>
     public class LastOrderInfoModel
     {

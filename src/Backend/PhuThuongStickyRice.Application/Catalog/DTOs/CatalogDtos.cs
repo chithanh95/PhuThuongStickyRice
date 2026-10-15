@@ -173,27 +173,4 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
 
         public string Status { get; set; }
     }
-
-    public class DishCandidateDto : EntityDto<Guid>
-    {
-        public string Name { get; set; }
-
-        public string Description { get; set; }
-
-        public long Votes { get; set; }
-
-        public bool IsActive { get; set; }
-    }
-
-    public class CreateUpdateDishCandidateDto
-    {
-        [Required]
-        [StringLength(200)]
-        public string Name { get; set; }
-
-        [StringLength(1000)]
-        public string Description { get; set; }
-
-        public bool IsActive { get; set; } = true;
-    }
 }

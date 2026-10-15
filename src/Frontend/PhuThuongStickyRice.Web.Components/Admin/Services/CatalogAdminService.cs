@@ -90,28 +90,6 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             return await PutAsync<CungReminderModel>($"api/quotes/cung-reminders/{id}/toggle", new { });
         }
 
-        // Dish candidates.
-
-        public async Task<List<DishCandidateModel>> GetDishCandidatesAsync()
-        {
-            return await GetAsync<List<DishCandidateModel>>("api/dish-candidates/all");
-        }
-
-        public async Task<DishCandidateModel> CreateDishCandidateAsync(DishCandidateModel model)
-        {
-            return await PostAsync<DishCandidateModel>("api/dish-candidates/manage", model);
-        }
-
-        public async Task<DishCandidateModel> UpdateDishCandidateAsync(Guid id, DishCandidateModel model)
-        {
-            return await PutAsync<DishCandidateModel>($"api/dish-candidates/manage/{id}", model);
-        }
-
-        public async Task DeleteDishCandidateAsync(Guid id)
-        {
-            await DeleteAsync($"api/dish-candidates/manage/{id}");
-        }
-
         // Product size options.
 
         public async Task<List<ProductSizeOptionModel>> GetSizeOptionsAsync(Guid productId)

@@ -1,0 +1,181 @@
+@inherits LayoutComponentBase
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Landing.Services
+@inject ShopSettingsService ShopSettingsService
+@inject LandingService LandingService
+@inject CartState CartState
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@implements IDisposable
+
+@* Layout dành cho KHÁCH: header sạch, không sidebar, không mục admin.
+   Luồng khách: Trang chủ (/) → Thực đơn (/shop) → Giỏ hàng (/cart) → Đặt hàng (/checkout). *@
+
+<div class="shp-page">
+    <header class="shp-header">
+        <div class="shp-header-inner">
+            <a class="shp-logo" href="/">
+                <span class="shp-logo-main">Xôi Phú Thượng</span>
+                <span class="shp-logo-sub">Làng nghề Hà Nội</span>
+            </a>
+
+            <button class="shp-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+
+            <nav class="shp-nav @(_menuOpen ? "open" : "")">
+                <a href="/" class="@NavActive("/")">Trang chủ</a>
+                <a href="/shop" class="@NavActive("/shop")">Thực đơn</a>
+                <a href="/dat-so-luong-lon" class="@NavActive("/dat-so-luong-lon")">Đặt số lượng lớn</a>
+                <a href="#lien-he" class="">Liên hệ</a>
+            </nav>
+
+            <div class="shp-header-right">
+                @if (!string.IsNullOrEmpty(_hotline))
+                {
+                    <a class="shp-hotline" href="tel:@_hotline" title="Gọi cho quán">
+                        📞 @_hotline
+                    </a>
+                }
+                <a class="shp-cart" href="/cart" title="Giỏ hàng">
+                    🛒
+                    @if (CartState.TotalQuantity > 0)
+                    {
+                        <span class="shp-cart-badge">@CartState.TotalQuantity</span>
+                    }
+                </a>
+                <a class="shp-order-btn" href="/cart">Đặt hàng</a>
+
+                <AuthorizeView>
+                    <Authorized>
+                        @if (context.User.IsInRole("Admin") || context.User.IsInRole("Cashier") || context.User.IsInRole("Kitchen"))
+                        {
+                            <a class="shp-account shp-admin-link" href="/dashboard" title="Khu vực quản trị">
+                                🛠️ Vào trang quản trị
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="shp-user">
+                                <a class="shp-account" href="/tai-khoan" title="Tài khoản mua hàng của bạn">
+                                    👤 Xin chào, @(context.User.Identity?.Name ?? "bạn")
+                                </a>
+                                <button type="button" class="shp-logout" @onclick="SignOut" title="Đăng xuất">Đăng xuất</button>
+                            </div>
+                        }
+                    </Authorized>
+                    <NotAuthorized>
+                        <a class="shp-account" href="/dang-nhap" title="Đăng nhập / đăng ký tài khoản mua hàng">
+                            👤 Đăng nhập / Đăng ký
+                        </a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </header>
+
+    <main class="shp-main">
+        @Body
+    </main>
+
+    <footer class="shp-footer" id="lien-he">
+        <div class="shp-footer-inner">
+            <div class="shp-footer-col">
+                <div class="shp-logo-main" style="color:#fff">Xôi Phú Thượng</div>
+                <p>Xôi dẻo thơm chuẩn vị làng nghề Phú Thượng, Hà Nội.<br />Đồ mỗi sáng, giao nóng tận tay.</p>
+                @if (!string.IsNullOrEmpty(_address))
+                {
+                    <p>📍 @_address</p>
+                }
+            </div>
+            <div class="shp-footer-col">
+                <h4>Khám phá</h4>
+                <a href="/">Trang chủ</a>
+                <a href="/shop">Thực đơn</a>
+                <a href="/dat-so-luong-lon">Đặt số lượng lớn &amp; định kỳ</a>
+                <a href="/track-order">Tra cứu đơn hàng</a>
+            </div>
+            <div class="shp-footer-col">
+                <h4>Liên hệ</h4>
+                @if (!string.IsNullOrEmpty(_hotline))
+                {
+                    <p>📞 Hotline: <a href="tel:@_hotline">@_hotline</a></p>
+                }
+                @if (!string.IsNullOrEmpty(_email))
+                {
+                    <p>✉️ @_email</p>
+                }
+                <a class="shp-admin-login" href="/login">🔐 Đăng nhập quản trị</a>
+            </div>
+        </div>
+        <div class="shp-copyright">&copy; 2026 Xôi Phú Thượng. All rights reserved.</div>
+    </footer>
+</div>
+
+@code {
+    private bool _menuOpen;
+    private string _hotline;
+    private string _address;
+    private string _email;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CartState.OnChange += OnCartChanged;
+
+        string hotline = null, address = null, email = null;
+        try
+        {
+            var settings = await ShopSettingsService.GetAsync();
+            hotline = NormalizePhone(settings?.Hotline);
+        }
+        catch { }
+
+        try
+        {
+            var landing = await LandingService.GetContentAsync();
+            if (string.IsNullOrEmpty(hotline)) hotline = NormalizePhone(landing?.ContactPhone);
+            address = landing?.ContactAddress;
+            if (string.IsNullOrEmpty(email)) email = landing?.ContactEmail;
+        }
+        catch { }
+
+        _hotline = hotline;
+        _address = address;
+        _email = email;
+    }
+
+    private static string NormalizePhone(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return null;
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+        return string.IsNullOrEmpty(digits) ? null : digits;
+    }
+
+    private string NavActive(string href)
+    {
+        try
+        {
+            var path = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
+            return string.Equals(path, href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase) ? "active" : "";
+        }
+        catch { return ""; }
+    }
+
+    private void OnCartChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task SignOut()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token_expires");
+        }
+        catch { }
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        CartState.OnChange -= OnCartChanged;
+    }
+}

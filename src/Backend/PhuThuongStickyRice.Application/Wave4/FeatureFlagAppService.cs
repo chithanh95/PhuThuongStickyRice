@@ -36,7 +36,6 @@ namespace PhuThuongStickyRice.Application.Wave4
             (FeatureFlag.LuckySpin, "Vòng quay may mắn", "Mini-game quay thưởng sau khi đặt đơn thành công."),
             (FeatureFlag.GiftWrap, "Gói quà", "Cho phép khách chọn gói quà (tính phí) ở bước thanh toán."),
             (FeatureFlag.Referrals, "Giới thiệu bạn bè", "Nhập mã giới thiệu ở bước thanh toán để nhận điểm thưởng."),
-            (FeatureFlag.DishVoting, "Bình chọn món mới", "Trang /binh-chon cho khách bình chọn món ăn mới."),
             (FeatureFlag.PromoPopup, "Popup khuyến mãi", "Hiện popup khuyến mãi trên trang chủ (1 lần/phiên).")
         };
 

@@ -52,7 +52,6 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<CustomerNote> CustomerNotes { get; set; }
         public DbSet<CustomerPhoto> CustomerPhotos { get; set; }
         public DbSet<DiscountCode> DiscountCodes { get; set; }
-        public DbSet<DishCandidate> DishCandidates { get; set; }
         public DbSet<EmailMessage> EmailMessages { get; set; }
         public DbSet<FaqItem> FaqItems { get; set; }
         public DbSet<FeatureFlag> FeatureFlags { get; set; }

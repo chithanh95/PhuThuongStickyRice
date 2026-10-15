@@ -130,25 +130,6 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<CungReminderModel>();
         }
 
-        /// <summary>Active dish candidates ordered by votes.</summary>
-        public async Task<List<DishCandidateModel>> GetDishCandidatesAsync()
-        {
-            var response = await _httpClient.GetAsync("api/dish-candidates");
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAs<List<DishCandidateModel>>();
-        }
-
-        /// <summary>Votes for a dish candidate.</summary>
-        public async Task<DishCandidateModel> VoteDishCandidateAsync(Guid id)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, $"api/dish-candidates/{id}/vote");
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            var response = await _httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAs<DishCandidateModel>();
-        }
-
         /// <summary>
         /// Last order name/address for a phone number (for checkout auto-fill).
         /// Returns null when no previous order with an address exists.

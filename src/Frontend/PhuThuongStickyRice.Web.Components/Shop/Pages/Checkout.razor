@@ -24,6 +24,18 @@
 
 <h3>@I18n.T("checkout")</h3>
 
+@* Gợi ý nhẹ cho khách vãng lai — không bắt buộc, checkout vẫn chạy bình thường khi chưa đăng nhập. *@
+<AuthorizeView>
+    <NotAuthorized>
+        @if (_placedOrder == null)
+        {
+            <div class="alert alert-light border mb-3" role="note">
+                💡 <a href="/dang-nhap">Đăng nhập</a> để tích điểm thưởng &amp; dễ dàng theo dõi đơn hàng của bạn.
+            </div>
+        }
+    </NotAuthorized>
+</AuthorizeView>
+
 @if (_placedOrder != null)
 {
     <div class="alert alert-success">
@@ -109,8 +121,9 @@
         </table>
         <p>Chúng tôi sẽ liên hệ với bạn qua số <strong>@_placedOrder.CustomerPhone</strong> để xác nhận.</p>
         <p>
-            <a class="btn btn-outline-primary btn-sm" href="/track-order?orderNumber=@Uri.EscapeDataString(_placedOrder.OrderNumber)">Tra cứu đơn hàng</a>
-            <a class="btn btn-primary btn-sm ml-2" href="/shop">Tiếp tục mua hàng</a>
+            <a class="btn btn-outline-secondary btn-sm" href="/">🏠 Về trang chủ</a>
+            <a class="btn btn-primary btn-sm ml-2" href="/shop">🍚 Xem thực đơn</a>
+            <a class="btn btn-outline-primary btn-sm ml-2" href="/track-order?orderNumber=@Uri.EscapeDataString(_placedOrder.OrderNumber)">Tra cứu đơn hàng</a>
         </p>
     </div>
 

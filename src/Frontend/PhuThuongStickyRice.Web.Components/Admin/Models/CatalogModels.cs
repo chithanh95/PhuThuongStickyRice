@@ -67,19 +67,6 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public DateTime CreatedAt { get; set; }
     }
 
-    public class DishCandidateModel
-    {
-        public Guid Id { get; set; }
-
-        public string Name { get; set; }
-
-        public string Description { get; set; }
-
-        public long Votes { get; set; }
-
-        public bool IsActive { get; set; } = true;
-    }
-
     public class ProductSizeOptionModel
     {
         public Guid Id { get; set; }

@@ -13,7 +13,6 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const string LuckySpin = "lucky-spin";
         public const string GiftWrap = "gift-wrap";
         public const string Referrals = "referrals";
-        public const string DishVoting = "dish-voting";
         public const string PromoPopup = "promo-popup";
 
         public const int KeyMaxLength = 100;
