@@ -240,6 +240,31 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Item 142: admin/cashier explicitly merges duplicate orders —
+        /// the given orders' lines are merged into the primary order and
+        /// the merged orders are cancelled with a note. Never automatic.
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpPost("merge")]
+        public async Task<ActionResult> MergeOrders([FromBody] MergeOrdersInput model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.MergeOrdersAsync(new MergeOrdersInput
+                {
+                    PrimaryOrderId = model?.PrimaryOrderId ?? Guid.Empty,
+                    OrderIds = model?.OrderIds
+                });
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Creates a MoMo payment for a MoMo order. Public. In TestMode
         /// returns a payUrl to the in-app simulator; otherwise the real MoMo payUrl.
         /// </summary>

@@ -250,6 +250,93 @@ interop.compressImageFromInput = function (elementId, maxDim, quality) {
 };
 
 /**
+ * Item 141: keyboard shortcuts for the admin orders page (/orders).
+ *
+ * start(dotNetRef) attaches a document keydown listener that forwards
+ * actions to the Blazor component via OnShortcutKey(action). stop() removes
+ * the listener (called when leaving the page).
+ *
+ * Typing inside inputs/textareas/selects/contenteditable is ignored
+ * (Escape blurs the field instead). On buttons/links only harmless
+ * navigation keys (j/k/arrows, /, ?) work — Enter and letter actions are
+ * left to the control itself so nothing fires twice.
+ */
+interop.orderShortcuts = (function () {
+    var dotNetRef = null;
+    var handler = null;
+
+    function send(action) {
+        if (dotNetRef) {
+            dotNetRef.invokeMethodAsync('OnShortcutKey', action);
+        }
+    }
+
+    return {
+        start: function (ref) {
+            dotNetRef = ref;
+            if (handler) {
+                document.removeEventListener('keydown', handler);
+            }
+            handler = function (e) {
+                var t = e.target;
+                var tag = t && t.tagName ? t.tagName.toUpperCase() : '';
+                var inTextField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+                    || (t && t.isContentEditable);
+                if (inTextField) {
+                    if (e.key === 'Escape' && t.blur) {
+                        t.blur();
+                    }
+                    return;
+                }
+                var key = e.key;
+                if (key === '?') {
+                    send('help');
+                    return;
+                }
+                if (key === '/') {
+                    send('search');
+                    e.preventDefault();
+                    return;
+                }
+                if (key === 'j' || key === 'J' || key === 'ArrowDown') {
+                    send('next');
+                    e.preventDefault();
+                    return;
+                }
+                if (key === 'k' || key === 'K' || key === 'ArrowUp') {
+                    send('prev');
+                    e.preventDefault();
+                    return;
+                }
+                // On buttons/links, leave Enter and letters to the control.
+                if (tag === 'BUTTON' || tag === 'A') {
+                    return;
+                }
+                if (key === 'Enter') {
+                    send('open');
+                    return;
+                }
+                var lower = (key && key.length === 1) ? key.toLowerCase() : '';
+                if (lower === 'c') {
+                    send('confirm');
+                } else if (lower === 'p') {
+                    send('prepare');
+                } else if (lower === 'x') {
+                    send('cancel');
+                }
+            };
+            document.addEventListener('keydown', handler);
+        },
+        stop: function () {
+            if (handler) {
+                document.removeEventListener('keydown', handler);
+                handler = null;
+            }
+            dotNetRef = null;
+        }
+    };
+})();
+/**
  * Wave 6d (item 40): client-side error reporting. window.onerror and
  * unhandledrejection are throttled to max 1 POST per 30s per page and
  * sent to POST api/system/client-errors (anonymous, server rate-limited).
@@ -298,3 +385,23 @@ interop.compressImageFromInput = function (elementId, maxDim, quality) {
             reason && reason.stack);
     });
 })();
+
+/* Item 160: đọc báo cáo doanh thu bằng giọng nói (Web Speech API). */
+interop.speak = function (text) {
+    try {
+        if (!('speechSynthesis' in window)) return false;
+        window.speechSynthesis.cancel();
+        var utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'vi-VN';
+        utter.rate = 0.95;
+        var voices = window.speechSynthesis.getVoices();
+        var vi = voices.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf('vi') === 0; });
+        if (vi.length > 0) utter.voice = vi[0];
+        window.speechSynthesis.speak(utter);
+        return true;
+    } catch (e) { return false; }
+};
+
+interop.stopSpeak = function () {
+    try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) { }
+};

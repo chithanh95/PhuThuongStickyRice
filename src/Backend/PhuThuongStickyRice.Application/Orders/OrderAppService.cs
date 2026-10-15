@@ -2,12 +2,15 @@ using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Orders.Email;
 using PhuThuongStickyRice.Application.Orders.Exceptions;
 using PhuThuongStickyRice.Application.Orders.Payments;
+using PhuThuongStickyRice.Application.Permissions;
 using PhuThuongStickyRice.Application.Products.Exceptions;
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Shop.DTOs;
+using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Loyalty;
+using PhuThuongStickyRice.Application.Customer;
 using PhuThuongStickyRice.Application.Zalo;
 using PhuThuongStickyRice.Application.Wave3;
 using PhuThuongStickyRice.Domain.Entities;
@@ -102,6 +105,19 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Customer self-service: edit quantities of a Pending order (phone must match).</summary>
         Task<OrderDto> UpdateLinesByCustomerAsync(UpdateOrderLinesInput input);
 
+        /// <summary>
+        /// Item 142 (Admin): groups of possibly-duplicate orders — same
+        /// phone, placed within the last 30 minutes, still Pending/Confirmed.
+        /// </summary>
+        Task<List<DuplicateOrderGroupDto>> GetDuplicateOrderGroupsAsync();
+
+        /// <summary>
+        /// Item 142 (Admin/Cashier): merges the given orders' lines into the
+        /// primary order and cancels the merged ones with a note.
+        /// Always explicit — never automatic.
+        /// </summary>
+        Task<OrderDto> MergeOrdersAsync(MergeOrdersInput input);
+
         /// <summary>Public: submit a star rating for a completed order.</summary>
         Task<OrderReviewDto> SubmitReviewAsync(SubmitReviewInput input);
 
@@ -147,6 +163,11 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Wave 6c (item 34): status-transition audit trail.</summary>
         private readonly Volo.Abp.Domain.Repositories.IRepository<OrderStatusHistory, Guid> _statusHistory;
+        private readonly IPermissionService _permissions;
+        private readonly IStaffActivityLogger _activityLogger;
+
+        /// <summary>Item 149: customer tags (shown on customer list + order detail).</summary>
+        private readonly ICustomerTagAppService _customerTags;
 
         public OrderAppService(
             IOrderRepository orders,
@@ -172,7 +193,10 @@ namespace PhuThuongStickyRice.Application.Orders
             Wave4.IWebhookDispatcher webhooks,
             Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> branches,
             Wave5.IWalletAppService wallets,
-            Volo.Abp.Domain.Repositories.IRepository<OrderStatusHistory, Guid> statusHistory)
+            Volo.Abp.Domain.Repositories.IRepository<OrderStatusHistory, Guid> statusHistory,
+            ICustomerTagAppService customerTags,
+            IPermissionService permissions,
+            IStaffActivityLogger activityLogger)
         {
             _orders = orders;
             _products = products;
@@ -198,6 +222,9 @@ namespace PhuThuongStickyRice.Application.Orders
             _branches = branches;
             _wallets = wallets;
             _statusHistory = statusHistory;
+            _customerTags = customerTags;
+            _permissions = permissions;
+            _activityLogger = activityLogger;
         }
 
         public async Task<OrderDto> CreateAsync(CreateOrderDto input)
@@ -695,7 +722,36 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
             await FillShipperNamesAsync(dtos);
+            await FillCustomerTagsAsync(dtos);
             return new PagedResultDto<OrderDto>(totalCount, dtos);
+        }
+
+        /// <summary>
+        /// Item 149: fills <see cref="OrderDto.CustomerTags"/> for orders
+        /// (single lookup, no N+1). Admin endpoints only — tags are internal.
+        /// </summary>
+        private async Task FillCustomerTagsAsync(IList<OrderDto> dtos)
+        {
+            var phones = dtos
+                .Where(x => !string.IsNullOrWhiteSpace(x.CustomerPhone))
+                .Select(x => x.CustomerPhone.Trim())
+                .Distinct()
+                .ToList();
+            if (phones.Count == 0)
+            {
+                return;
+            }
+
+            var tagsByPhone = await _customerTags.GetTagsByPhonesAsync(phones);
+            foreach (var dto in dtos)
+            {
+                var phone = dto.CustomerPhone?.Trim();
+                if (!string.IsNullOrEmpty(phone)
+                    && tagsByPhone.TryGetValue(phone, out var tags))
+                {
+                    dto.CustomerTags = tags;
+                }
+            }
         }
 
         /// <summary>
@@ -734,6 +790,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var order = await FindOrThrowAsync(id);
             var dto = _objectMapper.Map<Order, OrderDto>(order);
             await FillShipperNamesAsync(new[] { dto });
+            await FillCustomerTagsAsync(new[] { dto });
             return dto;
         }
 
@@ -746,12 +803,24 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException($"Unknown order status '{input.Status}'.");
             }
 
+            // Item 155: fine-grained permission — cancelling an order needs
+            // orders.cancel; any other status transition needs orders.confirm.
+            await _permissions.RequirePermissionAsync(
+                status == OrderStatus.Cancelled ? PermissionKeys.OrdersCancel : PermissionKeys.OrdersConfirm);
+
             var fromStatus = order.Status;
             ApplyStatus(order, status);
             await _orders.UpdateAsync(order);
 
             // Wave 6c (item 34): audit the transition.
             await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
+
+            // Item 156: staff activity log.
+            var statusAction = status == OrderStatus.Cancelled ? StaffActions.OrderCancel
+                : status == OrderStatus.Confirmed ? StaffActions.OrderConfirm
+                : StaffActions.OrderStatusChange;
+            await _activityLogger.LogAsync(statusAction,
+                $"Đơn {order.OrderNumber}: {fromStatus} → {order.Status}.");
 
             if (status == OrderStatus.Completed)
             {
@@ -832,6 +901,10 @@ namespace PhuThuongStickyRice.Application.Orders
 
             await _orders.UpdateAsync(order);
 
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.OrderPickedUp,
+                $"Xác nhận đã lấy hàng đơn {order.OrderNumber}.");
+
             var dto = _objectMapper.Map<Order, OrderDto>(order);
             await FillShipperNamesAsync(new[] { dto });
             return dto;
@@ -851,6 +924,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // Wave 6c (item 33): internal note stays in the admin UI.
             dtos.ForEach(x => x.AdminNote = null);
             await FillShipperNamesAsync(dtos);
+            await FillCustomerTagsAsync(dtos);
             return dtos;
         }
 
@@ -884,6 +958,11 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Wave 6c (item 34): audit the KDS tap.
             await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
+
+            // Item 156: staff activity log (kitchen advances are role-gated,
+            // no extra permission needed).
+            await _activityLogger.LogAsync(StaffActions.OrderStatusChange,
+                $"Bếp chuyển đơn {order.OrderNumber}: {fromStatus} → {order.Status}.");
 
             var dto = _objectMapper.Map<Order, OrderDto>(order);
             // Wave 6c (item 33): internal note stays in the admin UI.
@@ -938,6 +1017,9 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
         public async Task<OrderDto> MarkPickedUpAsync(Guid id, MarkPickedUpDto input)
         {
+            // Item 155: confirming a pickup needs orders.confirm.
+            await _permissions.RequirePermissionAsync(PermissionKeys.OrdersConfirm);
+
             var order = await FindOrThrowAsync(id);
 
             order.SetPickupShipperInfo(input?.PickupShipperName, input?.PickupShipperPhone);
@@ -1334,6 +1416,19 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         private static void EnsureAcceptingOrders(ShopSettingDto shopSetting)
         {
+            // Item 176: maintenance mode blocks order creation on every
+            // channel (web, POS, group orders, Messenger — all go through
+            // CreateAsync). The public WASM app shows the maintenance page
+            // instead; this is the server-side backstop.
+            if (shopSetting.MaintenanceMode)
+            {
+                var message = (shopSetting.MaintenanceMessage ?? string.Empty).Trim();
+                throw new Domain.Exceptions.DomainException(
+                    string.IsNullOrEmpty(message)
+                        ? "Quán đang bảo trì. Vui lòng quay lại sau."
+                        : message);
+            }
+
             if (!shopSetting.AcceptingOrders)
             {
                 var reason = (shopSetting.PausedReason ?? string.Empty).Trim();
@@ -1501,7 +1596,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     x.CustomerPhone.Contains(term) || x.CustomerName.Contains(term));
             }
 
-            return await _asyncExecuter.ToListAsync(
+            var customers = await _asyncExecuter.ToListAsync(
                 query.GroupBy(x => x.CustomerPhone)
                     .Select(g => new CustomerDto
                     {
@@ -1512,6 +1607,148 @@ namespace PhuThuongStickyRice.Application.Orders
                         LastOrderAt = g.Max(x => x.CreatedAt)
                     })
                     .OrderByDescending(x => x.TotalSpent));
+
+            // Item 149: attach tags (single lookup, no N+1).
+            var tagsByPhone = await _customerTags.GetTagsByPhonesAsync(
+                customers.Select(x => x.CustomerPhone));
+            foreach (var c in customers)
+            {
+                if (tagsByPhone.TryGetValue(c.CustomerPhone, out var tags))
+                {
+                    c.Tags = tags;
+                }
+            }
+
+            return customers;
+        }
+
+        /// <summary>
+        /// Item 142 (Admin): finds groups of possibly-duplicate orders —
+        /// same phone (tolerant match), placed within the last 30 minutes,
+        /// still Pending or Confirmed. The shop never merges automatically;
+        /// this list only feeds the admin review panel.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<List<DuplicateOrderGroupDto>> GetDuplicateOrderGroupsAsync()
+        {
+            var cutoff = DateTime.UtcNow.AddMinutes(-30);
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var candidates = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => (x.Status == OrderStatus.Pending || x.Status == OrderStatus.Confirmed)
+                        && x.CreatedAt >= cutoff)
+                    .OrderBy(x => x.CreatedAt));
+
+            var groups = candidates
+                .Where(x => !string.IsNullOrWhiteSpace(x.CustomerPhone))
+                .GroupBy(x => NormalizePhoneKey(x.CustomerPhone))
+                .Where(g => g.Key != null && g.Count() > 1)
+                .Select(g =>
+                {
+                    var dtos = g.Select(o => _objectMapper.Map<Order, OrderDto>(o)).ToList();
+                    return new DuplicateOrderGroupDto
+                    {
+                        Phone = g.First().CustomerPhone,
+                        CustomerName = g.First().CustomerName,
+                        Orders = dtos
+                    };
+                })
+                .ToList();
+
+            await FillShipperNamesAsync(groups.SelectMany(g => g.Orders).ToList());
+            return groups;
+        }
+
+        /// <summary>
+        /// Item 142 (Admin/Cashier): merges the selected orders' lines into
+        /// the primary order, cancels the merged orders with an admin note
+        /// ("gộp vào đơn ..."). Totals are recalculated server-side.
+        /// Always explicit — the shop must press the button.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
+        public async Task<OrderDto> MergeOrdersAsync(MergeOrdersInput input)
+        {
+            if (input == null || input.OrderIds == null || input.OrderIds.Count == 0)
+            {
+                throw new Domain.Exceptions.DomainException("Chưa chọn đơn nào để gộp.");
+            }
+
+            var primary = await FindOrThrowAsync(input.PrimaryOrderId);
+            EnsureMergeable(primary);
+
+            var secondaries = new List<Order>();
+            foreach (var id in input.OrderIds.Distinct())
+            {
+                if (id == primary.Id)
+                {
+                    continue;
+                }
+
+                var other = await FindOrThrowAsync(id);
+                EnsureMergeable(other);
+                secondaries.Add(other);
+            }
+
+            if (secondaries.Count == 0)
+            {
+                throw new Domain.Exceptions.DomainException("Không có đơn hợp lệ để gộp.");
+            }
+
+            foreach (var other in secondaries)
+            {
+                primary.MergeLinesFrom(other);
+
+                var stamp = $"Gộp vào đơn {primary.OrderNumber} lúc {DateTime.UtcNow:dd/MM HH:mm}.";
+                primary.SetAdminNote(AppendNote(primary.AdminNote, stamp));
+
+                var existing = other.AdminNote;
+                other.SetAdminNote(AppendNote(existing, $"Gộp vào đơn {primary.OrderNumber}."));
+
+                var fromStatus = other.Status;
+                other.Cancel();
+                await _orders.UpdateAsync(other);
+                await RecordStatusChangeAsync(other.Id, fromStatus, OrderStatus.Cancelled);
+
+                // Mirror the cancel path: refund redeemed loyalty points and
+                // wallet payments so the customer does not lose money.
+                await _loyalty.RefundRedeemedPointsAsync(other);
+                if (other.PaymentMethod == PaymentMethod.Wallet
+                    && other.PaymentStatus == PaymentStatus.Paid)
+                {
+                    await _wallets.RefundAsync(other.CustomerPhone, other.TotalAmount.Amount, other.OrderNumber);
+                }
+            }
+
+            await _orders.UpdateAsync(primary);
+
+            var dto = _objectMapper.Map<Order, OrderDto>(primary);
+            await FillShipperNamesAsync(new[] { dto });
+            return dto;
+        }
+
+        private static void EnsureMergeable(Order order)
+        {
+            if (order.Status != OrderStatus.Pending && order.Status != OrderStatus.Confirmed)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    $"Đơn {order.OrderNumber} không còn ở trạng thái có thể gộp (chờ xác nhận/đã xác nhận).");
+            }
+        }
+
+        private static string NormalizePhoneKey(string phone)
+        {
+            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            return digits.Length >= 9 ? digits.Substring(digits.Length - 9) : null;
+        }
+
+        private static string AppendNote(string existing, string addition)
+        {
+            if (string.IsNullOrWhiteSpace(existing))
+            {
+                return addition;
+            }
+
+            return existing.Trim() + " | " + addition;
         }
 
         /// <summary>

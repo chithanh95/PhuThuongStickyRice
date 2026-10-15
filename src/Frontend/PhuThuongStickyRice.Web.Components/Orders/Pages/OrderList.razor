@@ -1,5 +1,6 @@
 @page "/orders"
 @attribute [Authorize(Roles = "Admin,Cashier")]
+@implements System.IAsyncDisposable
 @using PhuThuongStickyRice.Web.Components.Orders.Models
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @inject OrderService OrderService
@@ -22,7 +23,7 @@
     <div class="card-body">
         <div class="form-row">
             <div class="col-md-4">
-                <input class="form-control" placeholder="Tìm mã đơn / tên / SĐT..."
+                <input id="orderSearchInput" class="form-control" placeholder="Tìm mã đơn / tên / SĐT... (phím /)"
                        @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchChanged" />
             </div>
             <div class="col-md-3">
@@ -68,10 +69,91 @@
                 <button class="btn btn-sm btn-success" @onclick="ExportExcel" disabled="@_exporting">
                     @(_exporting ? "Đang xuất..." : "📥 Xuất Excel")
                 </button>
+                <button class="btn btn-sm btn-outline-secondary ml-2" @onclick="() => _showShortcutHelp = true" title="Xem phím tắt (phím ?)">
+                    ⌨ Phím tắt
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+@* Item 142: duplicate-phone warning banner + review panel. *@
+@if (_duplicateGroups != null && _duplicateGroups.Count > 0 && !_duplicatesDismissed)
+{
+    <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center">
+        <span>⚠️ Có <strong>@_duplicateGroups.Count</strong> nhóm đơn trùng SĐT trong 30 phút qua — có thể khách đặt nhầm 2 lần.</span>
+        <div class="mt-2 mt-md-0">
+            <button class="btn btn-sm btn-warning mr-2" @onclick="() => _showDuplicates = !_showDuplicates">
+                @(_showDuplicates ? "Ẩn" : "Xem & xử lý")
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="() => _duplicatesDismissed = true">Bỏ qua</button>
+        </div>
+    </div>
+}
+
+@if (_showDuplicates && _duplicateGroups != null && _duplicateGroups.Count > 0)
+{
+    <div class="card mb-3 border-warning">
+        <div class="card-header bg-warning text-dark py-2"><strong>⚠️ Đơn trùng SĐT — kiểm tra & gộp</strong></div>
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(_mergeMessage))
+            {
+                <div class="alert @(_mergeIsError ? "alert-danger" : "alert-success") py-2">@_mergeMessage</div>
+            }
+            @foreach (var group in _duplicateGroups)
+            {
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                            <strong>📞 @group.Phone <small class="text-muted">— @group.CustomerName</small></strong>
+                            <button class="btn btn-sm btn-primary" @onclick="() => MergeGroup(group)" disabled="@_merging">
+                                @(_merging ? "Đang gộp..." : "🔀 Gộp đơn (giữ đơn đầu)")
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:34px" title="Đơn giữ lại sau khi gộp">Giữ</th>
+                                        <th>Mã đơn</th>
+                                        <th>Giờ đặt</th>
+                                        <th>Món</th>
+                                        <th class="text-right">Tổng</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thanh toán</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var gi = 0; gi < group.Orders.Count; gi++)
+                                    {
+                                        var go = group.Orders[gi];
+                                        var isPrimary = _mergePrimary.TryGetValue(group.Phone, out var pid)
+                                            ? pid == go.Id
+                                            : gi == 0;
+                                        <tr class="@(isPrimary ? "table-success" : "")">
+                                            <td>
+                                                <input type="radio" name="primary-@group.Phone" checked="@isPrimary"
+                                                       @onchange="() => _mergePrimary[group.Phone] = go.Id"
+                                                       title="Chọn đơn giữ lại" />
+                                            </td>
+                                            <td><strong>@go.OrderNumber</strong></td>
+                                            <td><small>@go.CreatedAt.ToLocalTime().ToString("HH:mm")</small></td>
+                                            <td><small>@string.Join(", ", go.Lines.Select(l => $"{l.ProductName}×{l.Quantity}"))</small></td>
+                                            <td class="text-right"><small><strong>@FormatPrice(go.TotalAmount)</strong></small></td>
+                                            <td><small>@StatusLabel(go.Status)</small></td>
+                                            <td><small>@PaymentStatusLabel(go.PaymentStatus)</small></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted">Các món của đơn còn lại sẽ được cộng vào đơn giữ lại; đơn còn lại bị hủy với ghi chú “gộp vào đơn …”. Luôn cần bạn bấm nút — hệ thống không tự gộp.</small>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
 
 @if (_paged == null)
 {
@@ -97,9 +179,11 @@ else
                         </tr>
                     </thead>
                     <tbody>
+                        @{ var rowIndex = 0; }
                         @foreach (var order in _paged.Items)
                         {
-                            <tr @key="order.Id">
+                            var idx = rowIndex++;
+                            <tr @key="order.Id" class="@(_selectedIndex == idx ? "table-primary" : null)">
                                 <td>
                                     <a href="javascript:void(0)" @onclick="() => ToggleDetail(order)">
                                         <strong>@order.OrderNumber</strong>
@@ -124,7 +208,18 @@ else
                                     }
                                     <br />@FulfillmentBadge(order.FulfillmentMethod, order.PickedUpAt)
                                 </td>
-                                <td>@order.CustomerName<br /><small class="text-muted">@order.CustomerPhone</small></td>
+                                <td>
+                                    @order.CustomerName<br /><small class="text-muted">@order.CustomerPhone</small>
+                                    @* Item 149: customer tags visible while processing the order. *@
+                                    @if (order.CustomerTags != null && order.CustomerTags.Count > 0)
+                                    {
+                                        <br />
+                                        @foreach (var tag in order.CustomerTags)
+                                        {
+                                            <span class="badge mr-1" style="background-color: @(string.IsNullOrWhiteSpace(tag.Color) ? "#6c757d" : tag.Color); color: #fff;">@tag.TagName</span>
+                                        }
+                                    }
+                                </td>
                                 <td><small>@order.CustomerAddress</small></td>
                                 <td class="text-right"><strong>@FormatPrice(order.TotalAmount)</strong></td>
                                 <td>@StatusBadge(order.Status)</td>
@@ -368,6 +463,36 @@ else
     </div>
 }
 
+@* Item 141: keyboard-shortcut cheat sheet (toggle with "?"). *@
+@if (_showShortcutHelp)
+{
+    <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,.45);" @onclick="() => _showShortcutHelp = false">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title mb-0">⌨ Phím tắt xử lý đơn</h6>
+                    <button type="button" class="close" @onclick="() => _showShortcutHelp = false"><span>&times;</span></button>
+                </div>
+                <div class="modal-body py-2">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            <tr><td style="width:130px"><kbd>J</kbd> / <kbd>↓</kbd></td><td>Chọn đơn tiếp theo</td></tr>
+                            <tr><td><kbd>K</kbd> / <kbd>↑</kbd></td><td>Chọn đơn trước đó</td></tr>
+                            <tr><td><kbd>Enter</kbd></td><td>Mở / thu gọn chi tiết đơn đang chọn</td></tr>
+                            <tr><td><kbd>C</kbd></td><td>Xác nhận đơn (Chờ xác nhận → Đã xác nhận)</td></tr>
+                            <tr><td><kbd>P</kbd></td><td>Chuyển sang đang chuẩn bị</td></tr>
+                            <tr><td><kbd>X</kbd></td><td>Hủy đơn đang chọn (hỏi lại trước khi hủy)</td></tr>
+                            <tr><td><kbd>/</kbd></td><td>Nhảy tới ô tìm kiếm</td></tr>
+                            <tr><td><kbd>?</kbd></td><td>Mở / đóng bảng này</td></tr>
+                        </tbody>
+                    </table>
+                    <small class="text-muted">Phím tắt tự tắt khi bạn đang gõ trong ô nhập liệu.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private PagedResult<OrderModel> _paged;
     private int _page = 1;
@@ -397,6 +522,21 @@ else
     // Item 82: shippers for the filter dropdown and assignment.
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.ShipperModel> _shippers;
     private string _shipperMessage;
+
+    // Item 141: keyboard shortcuts.
+    private DotNetObjectReference<OrderList> _shortcutsRef;
+    private bool _shortcutsStarted;
+    private int _selectedIndex = -1;
+    private bool _showShortcutHelp;
+
+    // Item 142: duplicate-phone groups.
+    private List<DuplicateOrderGroupModel> _duplicateGroups;
+    private bool _showDuplicates;
+    private bool _duplicatesDismissed;
+    private bool _merging;
+    private string _mergeMessage;
+    private bool _mergeIsError;
+    private readonly System.Collections.Generic.Dictionary<string, System.Guid> _mergePrimary = new System.Collections.Generic.Dictionary<string, System.Guid>();
 
     private static readonly string[] Statuses =
         { "Pending", "Confirmed", "Preparing", "Delivering", "Completed", "Cancelled" };
@@ -437,6 +577,41 @@ else
         }
 
         await LoadOrders(1);
+
+        // Item 142: load duplicate-phone groups (best effort — never blocks the page).
+        _ = LoadDuplicateGroupsAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Item 141: attach the keyboard-shortcut listener once.
+        if (firstRender && !_shortcutsStarted)
+        {
+            _shortcutsStarted = true;
+            try
+            {
+                _shortcutsRef = DotNetObjectReference.Create(this);
+                await JSRuntime.InvokeVoidAsync("interop.orderShortcuts.start", _shortcutsRef);
+            }
+            catch (Exception)
+            {
+                // Shortcuts are a nice-to-have; the page works without them.
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("interop.orderShortcuts.stop");
+        }
+        catch (Exception)
+        {
+        }
+
+        _shortcutsRef?.Dispose();
+        _searchTimer?.Dispose();
     }
 
     private Guid? ShipperFilterId
@@ -455,6 +630,7 @@ else
     private async Task LoadOrders(int page)
     {
         _page = page < 1 ? 1 : page;
+        _selectedIndex = -1; // Item 141: reset keyboard selection on reload.
         _paged = await OrderService.GetOrdersAsync(_page, 20, _searchTerm, _statusFilter, ShipperFilterId, _fromDate, _toDate);
     }
 
@@ -491,6 +667,147 @@ else
             await InvokeAsync(async () => await LoadOrders(1));
         }, null, 500, System.Threading.Timeout.Infinite);
     }
+
+    /// <summary>
+    /// Item 141: handles keyboard shortcuts forwarded by
+    /// interop.orderShortcuts. Ignored while typing (handled in JS).
+    /// </summary>
+    [JSInvokable]
+    public async Task OnShortcutKey(string action)
+    {
+        var items = _paged?.Items;
+        switch (action)
+        {
+            case "next":
+                if (items != null && items.Count > 0)
+                {
+                    _selectedIndex = System.Math.Min(_selectedIndex + 1, items.Count - 1);
+                    StateHasChanged();
+                }
+                break;
+            case "prev":
+                if (items != null && items.Count > 0)
+                {
+                    _selectedIndex = _selectedIndex <= 0 ? 0 : _selectedIndex - 1;
+                    StateHasChanged();
+                }
+                break;
+            case "open":
+                if (items != null && _selectedIndex >= 0 && _selectedIndex < items.Count)
+                {
+                    await ToggleDetail(items[_selectedIndex]);
+                    StateHasChanged();
+                }
+                break;
+            case "confirm":
+                if (items != null && _selectedIndex >= 0 && _selectedIndex < items.Count
+                    && items[_selectedIndex].Status == "Pending")
+                {
+                    await ChangeStatus(items[_selectedIndex], "Confirmed");
+                }
+                break;
+            case "prepare":
+                if (items != null && _selectedIndex >= 0 && _selectedIndex < items.Count
+                    && items[_selectedIndex].Status == "Confirmed")
+                {
+                    await ChangeStatus(items[_selectedIndex], "Preparing");
+                }
+                break;
+            case "cancel":
+                if (items != null && _selectedIndex >= 0 && _selectedIndex < items.Count)
+                {
+                    var order = items[_selectedIndex];
+                    if (order.Status == "Pending" || order.Status == "Confirmed")
+                    {
+                        var ok = await JSRuntime.InvokeAsync<bool>("confirm",
+                            $"Hủy đơn {order.OrderNumber} của {order.CustomerName}?");
+                        if (ok)
+                        {
+                            await ChangeStatus(order, "Cancelled");
+                        }
+                    }
+                }
+                break;
+            case "search":
+                await JSRuntime.InvokeVoidAsync("interop.focusElementById", "orderSearchInput");
+                break;
+            case "help":
+                _showShortcutHelp = !_showShortcutHelp;
+                StateHasChanged();
+                break;
+        }
+    }
+
+    /// <summary>Item 142: loads duplicate-phone groups in the background.</summary>
+    private async Task LoadDuplicateGroupsAsync()
+    {
+        try
+        {
+            _duplicateGroups = await OrderService.GetDuplicateOrdersAsync()
+                ?? new List<DuplicateOrderGroupModel>();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception)
+        {
+            _duplicateGroups = new List<DuplicateOrderGroupModel>();
+        }
+    }
+
+    /// <summary>
+    /// Item 142: merges one duplicate group into the chosen primary order
+    /// (oldest by default). Always asks for confirmation first.
+    /// </summary>
+    private async Task MergeGroup(DuplicateOrderGroupModel group)
+    {
+        _mergeMessage = null;
+        _mergeIsError = false;
+
+        if (group?.Orders == null || group.Orders.Count < 2)
+        {
+            return;
+        }
+
+        var primaryId = _mergePrimary.TryGetValue(group.Phone, out var pid)
+            ? pid
+            : group.Orders[0].Id;
+        var primary = group.Orders.FirstOrDefault(o => o.Id == primaryId) ?? group.Orders[0];
+        var others = group.Orders.Where(o => o.Id != primary.Id).ToList();
+
+        var ok = await JSRuntime.InvokeAsync<bool>("confirm",
+            $"Gộp {others.Count} đơn vào đơn {primary.OrderNumber}?\n" +
+            "Các món sẽ được cộng dồn, các đơn còn lại bị hủy (có ghi chú). Không thể hoàn tác.");
+        if (!ok)
+        {
+            return;
+        }
+
+        _merging = true;
+        try
+        {
+            var merged = await OrderService.MergeOrdersAsync(primary.Id, others.Select(o => o.Id).ToList());
+            _mergeMessage = $"Đã gộp thành công vào đơn {merged.OrderNumber} — tổng mới {FormatPrice(merged.TotalAmount)}.";
+            await LoadOrders(_page);
+            await LoadDuplicateGroupsAsync();
+        }
+        catch (Exception ex)
+        {
+            _mergeMessage = "Lỗi: " + ex.Message;
+            _mergeIsError = true;
+        }
+        finally
+        {
+            _merging = false;
+        }
+    }
+
+    private static string PaymentStatusLabel(string status) => status switch
+    {
+        "Unpaid" => "Chưa thanh toán",
+        "PendingConfirmation" => "Chờ xác nhận",
+        "Paid" => "Đã thanh toán",
+        "Failed" => "Thất bại",
+        _ => status
+    };
 
     private async Task ToggleDetail(OrderModel order)
     {

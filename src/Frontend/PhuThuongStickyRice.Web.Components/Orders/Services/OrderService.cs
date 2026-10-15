@@ -225,6 +225,93 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             return await GetAsync<List<CustomerModel>>(url);
         }
 
+        /// <summary>Item 149: tags for a customer phone.</summary>
+        public async Task<List<PhuThuongStickyRice.Web.Components.Admin.Models.CustomerTagModel>> GetCustomerTagsAsync(string phone)
+        {
+            var url = $"api/admin/customer-care/tags?phone={Uri.EscapeDataString(phone ?? "")}";
+            return await GetAsync<List<PhuThuongStickyRice.Web.Components.Admin.Models.CustomerTagModel>>(url);
+        }
+
+        /// <summary>Item 149: add a tag to a customer phone.</summary>
+        public async Task<PhuThuongStickyRice.Web.Components.Admin.Models.CustomerTagModel> AddCustomerTagAsync(
+            string phone, string tagName)
+        {
+            return await PostAsync<PhuThuongStickyRice.Web.Components.Admin.Models.CustomerTagModel>(
+                "api/admin/customer-care/tags",
+                new { CustomerPhone = phone, TagName = tagName });
+        }
+
+        /// <summary>Item 149: remove a customer tag.</summary>
+        public async Task DeleteCustomerTagAsync(Guid tagId)
+        {
+            await DeleteAsync($"api/admin/customer-care/tags/{tagId}");
+        }
+
+        /// <summary>
+        /// Item 151: customer list (.xlsx) — same filters as the admin
+        /// customer page: searchTerm, tag, inactiveOnly.
+        /// </summary>
+        public string GetExportCustomersUrl(string searchTerm = null, string tag = null, bool inactiveOnly = false)        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                parts.Add($"searchTerm={Uri.EscapeDataString(searchTerm)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(tag))
+            {
+                parts.Add($"tag={Uri.EscapeDataString(tag)}");
+            }
+
+            if (inactiveOnly)
+            {
+                parts.Add("inactiveOnly=true");
+            }
+
+            var query = parts.Count == 0 ? "" : "?" + string.Join("&", parts);
+            var baseAddress = _httpClient.BaseAddress?.ToString()?.TrimEnd('/');
+            return $"{baseAddress}/api/admin/customer-care/customers/export{query}";
+        }
+
+        /// <summary>
+        /// Item 168: detailed purchase history of one customer by phone —
+        /// totals, first/last order, top 3 products, 10 most recent orders,
+        /// CRM tags.
+        /// </summary>
+        public async Task<Admin.Models.CustomerDetailModel> GetCustomerDetailAsync(string phone)
+        {
+            return await GetAsync<Admin.Models.CustomerDetailModel>(
+                $"api/admin/customers/{Uri.EscapeDataString(phone)}/detail");
+        }
+
+        /// <summary>
+        /// Item 169: revenue summary of one date range (order count, total
+        /// revenue, average order value, top 5 products). The compare view
+        /// calls this once per period.
+        /// </summary>
+        public async Task<Admin.Models.RevenueSummaryModel> GetRevenueSummaryAsync(
+            DateTime? from, DateTime? to)
+        {
+            var parts = new List<string>();
+            if (from.HasValue)
+            {
+                parts.Add($"from={from.Value:yyyy-MM-dd}");
+            }
+
+            if (to.HasValue)
+            {
+                parts.Add($"to={to.Value:yyyy-MM-dd}");
+            }
+
+            var url = "api/admin/orders/revenue-summary";
+            if (parts.Count > 0)
+            {
+                url += "?" + string.Join("&", parts);
+            }
+
+            return await GetAsync<Admin.Models.RevenueSummaryModel>(url);
+        }
+
         /// <summary>Item 82: assigns a shipper to an order (null unassigns).</summary>
         public async Task<OrderModel> AssignShipperAsync(Guid orderId, Guid? shipperId)
         {

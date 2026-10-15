@@ -607,6 +607,51 @@ namespace PhuThuongStickyRice.Domain.Entities
         }
 
         /// <summary>
+        /// Item 142: merges every line of another order into this one
+        /// (admin "gộp đơn trùng SĐT"). Only allowed while this order is
+        /// still Pending or Confirmed. Discounts stay as fixed amounts;
+        /// totals are recalculated server-side.
+        /// </summary>
+        public void MergeLinesFrom(Order source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (source.Id == Id)
+            {
+                throw new DomainException("Không thể gộp một đơn vào chính nó.");
+            }
+
+            if (Status != OrderStatus.Pending && Status != OrderStatus.Confirmed)
+            {
+                throw new DomainException("Chỉ gộp được vào đơn đang chờ xác nhận hoặc đã xác nhận.");
+            }
+
+            if (source.Lines == null || source.Lines.Count == 0)
+            {
+                throw new DomainException("Đơn được gộp không có món nào.");
+            }
+
+            foreach (var line in source.Lines)
+            {
+                _lines.Add(OrderLine.Create(
+                    line.ProductId,
+                    line.ProductName,
+                    line.UnitPrice,
+                    line.Quantity,
+                    line.SizeName,
+                    line.ToppingNames,
+                    line.ToppingsExtra,
+                    line.IsCombo,
+                    line.Note));
+            }
+
+            RecalculateTotals();
+        }
+
+        /// <summary>
         /// Appends an auto-reward note (e.g. free topping) to the order notes.
         /// </summary>
         public void AddRewardNote(string note)

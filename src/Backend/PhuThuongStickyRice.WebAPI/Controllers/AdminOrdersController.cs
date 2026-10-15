@@ -23,15 +23,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IOrderReportsAppService _reports;
         private readonly IOrderForecastAppService _forecast;
         private readonly IOrderHourlyReportAppService _hourlyReport;
+        private readonly IOrderAppService _orderAppService;
 
         public AdminOrdersController(
             IOrderReportsAppService reports,
             IOrderForecastAppService forecast,
-            IOrderHourlyReportAppService hourlyReport)
+            IOrderHourlyReportAppService hourlyReport,
+            IOrderAppService orderAppService)
         {
             _reports = reports;
             _forecast = forecast;
             _hourlyReport = hourlyReport;
+            _orderAppService = orderAppService;
         }
 
         /// <summary>
@@ -117,6 +120,33 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             return Ok(await _hourlyReport.GetHourlySalesReportAsync(date));
+        }
+
+        /// <summary>
+        /// Item 169: revenue summary of one Vietnam date range (cancelled
+        /// orders excluded) — order count, total revenue, average order
+        /// value, top 5 products. The compare view calls this once per
+        /// period.
+        /// </summary>
+        [HttpGet("revenue-summary")]
+        public async Task<ActionResult> GetRevenueSummary(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _reports.GetRevenueSummaryAsync(from, to));
+        }
+
+        /// <summary>
+        /// Item 142: groups of possibly-duplicate orders (same phone,
+        /// placed within the last 30 minutes, still Pending/Confirmed)
+        /// for the admin review panel. Never merged automatically.
+        /// </summary>
+        [HttpGet("duplicates")]
+        public async Task<ActionResult> GetDuplicates(
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _orderAppService.GetDuplicateOrderGroupsAsync());
         }
     }
 }
