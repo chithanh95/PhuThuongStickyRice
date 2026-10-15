@@ -90,11 +90,25 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         }
 
         /// <summary>
-        /// Revenue report: Excel export URL for a date range (same endpoint
-        /// as the orders export, date-filtered).
+        /// Revenue report (.xlsx, 2 sheets) for a Vietnam date range.
         /// </summary>
         public string GetExportRevenueUrl(DateTime? fromDate = null, DateTime? toDate = null)
-            => GetExportOrdersUrl(fromDate: fromDate, toDate: toDate);
+        {
+            var parts = new List<string>();
+            if (fromDate.HasValue)
+            {
+                parts.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
+            }
+
+            if (toDate.HasValue)
+            {
+                parts.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+            }
+
+            var query = parts.Count == 0 ? "" : "?" + string.Join("&", parts);
+            var baseAddress = _httpClient.BaseAddress?.ToString()?.TrimEnd('/');
+            return $"{baseAddress}/api/admin/orders/export-revenue{query}";
+        }
 
         /// <summary>Wave 6c (item 31): daily payment-channel reconciliation.</summary>
         public async Task<DailyReconciliationModel> GetReconciliationAsync(DateTime? date = null)

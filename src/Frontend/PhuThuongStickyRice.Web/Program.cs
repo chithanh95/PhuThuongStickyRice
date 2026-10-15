@@ -111,6 +111,14 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Admin: staff accounts & roles (authenticated, Admin only).
+            builder.Services.AddHttpClient<StaffService, StaffService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Admin: catalog features (toppings, combos, quotes, dish votes, size options).
             builder.Services.AddHttpClient<CatalogAdminService, CatalogAdminService>(client =>
             {

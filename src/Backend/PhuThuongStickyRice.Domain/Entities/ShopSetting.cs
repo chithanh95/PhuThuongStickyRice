@@ -189,6 +189,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public bool AcceptingOrders { get; set; }
 
         /// <summary>
+        /// Reason shown to customers when <see cref="AcceptingOrders"/> is
+        /// false, e.g. "Hết nếp, mở lại lúc 14:00". Null/empty = generic message.
+        /// </summary>
+        public string PausedReason { get; set; }
+
+        /// <summary>
         /// Wave 6d (item 39): max non-cancelled orders per phone per day
         /// (Vietnam day). 0 = unlimited. Default 10.
         /// </summary>

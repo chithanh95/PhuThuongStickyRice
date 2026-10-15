@@ -1308,6 +1308,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<DateTime?>("ScheduledFor")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid?>("ShipperId")
                         .HasColumnType("uniqueidentifier");
 
@@ -2004,12 +2007,20 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<DateTime?>("EventDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("EventLocation")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("QuoteType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -2296,6 +2307,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<string>("OwnerReportEmail")
                         .HasMaxLength(254)
                         .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("PausedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<decimal>("PointsPerVnd")
                         .HasPrecision(18, 2)

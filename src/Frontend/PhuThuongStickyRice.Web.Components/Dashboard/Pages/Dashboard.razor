@@ -94,7 +94,9 @@
     </div>
 }
 
-@* Wave 5 widgets: daily target, source stats, corporate due, forecast. *@
+@* Wave 5 widgets: daily target, source stats — revenue, Admin only. *@
+<AuthorizeView Roles="Admin">
+    <Authorized>
 <div class="row mb-3">
     <div class="col-md-6 mb-3">
         <div class="card h-100">
@@ -153,8 +155,12 @@
         </div>
     </div>
 </div>
+    </Authorized>
+</AuthorizeView>
 
-@* Wave 6d (item 36): today vs yesterday comparison card. *@
+@* Wave 6d (item 36): today vs yesterday comparison card — revenue, Admin only. *@
+<AuthorizeView Roles="Admin">
+    <Authorized>
 <div class="row mb-3">
     <div class="col-12">
         <div class="card">
@@ -188,6 +194,8 @@
         </div>
     </div>
 </div>
+    </Authorized>
+</AuthorizeView>
 
 <div class="card mb-3">
     <div class="card-body">
@@ -223,6 +231,8 @@ else
                 <span class="lx-mini-icon"><span class="oi oi-cart" aria-hidden="true"></span></span>
             </div>
         </div>
+        <AuthorizeView Roles="Admin">
+            <Authorized>
         <div class="col-md-3 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Doanh thu</p>
@@ -231,6 +241,8 @@ else
                 <span class="lx-mini-icon"><span class="oi oi-dollar" aria-hidden="true"></span></span>
             </div>
         </div>
+            </Authorized>
+        </AuthorizeView>
         <div class="col-md-3 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Món xôi đã bán</p>
@@ -268,6 +280,8 @@ else
                 </div>
             </div>
         </div>
+        <AuthorizeView Roles="Admin">
+            <Authorized>
         <div class="col-md-6 mb-3">
             <div class="card">
                 <div class="card-header">Doanh thu theo ngày</div>
@@ -290,9 +304,13 @@ else
                 </div>
             </div>
         </div>
+            </Authorized>
+        </AuthorizeView>
     </div>
 
     <div class="row mb-4">
+    <AuthorizeView Roles="Admin">
+        <Authorized>
         <div class="col-md-6 mb-3">
             <div class="card">
                 <div class="card-header">Món bán chạy nhất</div>
@@ -331,6 +349,8 @@ else
                 </div>
             </div>
         </div>
+        </Authorized>
+    </AuthorizeView>
         <div class="col-md-6 mb-3">
             <div class="card">
                 <div class="card-header">Khách mới / khách quay lại</div>

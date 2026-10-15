@@ -196,8 +196,9 @@ namespace PhuThuongStickyRice.Domain.Entities
         public DateTime? PickedUpAt { get; private set; }
 
         /// <summary>
-        /// Pre-order: scheduled pickup/delivery time (UTC). Null = ASAP.
-        /// Set at checkout when the customer chooses "Đặt trước theo giờ".
+        /// Pre-order: the date/time (UTC) the customer wants to pick up the
+        /// order. Null = ASAP. Set at checkout when the customer chooses
+        /// "Đặt trước theo giờ".
         /// </summary>
         public DateTime? ScheduledFor { get; private set; }
 
@@ -311,7 +312,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string source = null,
             string deliverySlot = null,
             string pickupShipperName = null,
-            string pickupShipperPhone = null)
+            string pickupShipperPhone = null,
+            DateTime? scheduledFor = null)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
@@ -368,6 +370,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             Source = string.IsNullOrWhiteSpace(source) ? "Web" : source.Trim();
             DeliverySlot = string.IsNullOrWhiteSpace(deliverySlot) ? null : deliverySlot.Trim();
             SetPickupShipperInfo(pickupShipperName, pickupShipperPhone);
+            ScheduledFor = scheduledFor;
             MoMoMatched = false;
             RefundStatus = RefundStatus.None;
             RefundAmount = 0;
@@ -408,7 +411,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string source = null,
             string deliverySlot = null,
             string pickupShipperName = null,
-            string pickupShipperPhone = null)
+            string pickupShipperPhone = null,
+            DateTime? scheduledFor = null)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -521,7 +525,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 source,
                 deliverySlot,
                 pickupShipperName,
-                pickupShipperPhone);
+                pickupShipperPhone,
+                scheduledFor);
         }
 
         /// <summary>

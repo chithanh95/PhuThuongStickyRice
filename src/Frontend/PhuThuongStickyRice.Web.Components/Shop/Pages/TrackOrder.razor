@@ -74,6 +74,60 @@
     </div>
 </div>
 
+@* Lịch sử đơn hàng theo SĐT — không cần đăng nhập. *@
+<div class="card mb-3">
+    <div class="card-body">
+        <h5>📋 Lịch sử đơn hàng</h5>
+        <p class="text-muted"><small>Nhập số điện thoại đã dùng để đặt hàng để xem toàn bộ đơn cũ và đặt lại 1 chạm.</small></p>
+        <div class="form-row">
+            <div class="col-md-4">
+                <input class="form-control" @bind="_historyPhone" placeholder="0901234567" inputmode="tel" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-outline-primary" @onclick="LoadHistoryAsync" disabled="@_historyLoading">
+                    @(_historyLoading ? "Đang tải..." : "Xem lịch sử")
+                </button>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(_historyError))
+        {
+            <div class="alert alert-danger mt-3 mb-0">@_historyError</div>
+        }
+        @if (_history != null)
+        {
+            if (_history.Count == 0)
+            {
+                <p class="text-muted mt-3 mb-0"><em>Số này chưa có đơn hàng nào.</em></p>
+            }
+            else
+            {
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr><th>Mã đơn</th><th>Ngày đặt</th><th class="text-right">Tổng tiền</th><th>Trạng thái</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var h in _history)
+                            {
+                                <tr>
+                                    <td><strong>@h.OrderNumber</strong></td>
+                                    <td>@h.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="text-right">@FormatPrice(h.TotalAmount)</td>
+                                    <td>@OrderStatusBadge(h.Status)</td>
+                                    <td class="text-right text-nowrap">
+                                        <button class="btn btn-sm btn-outline-info mr-1" @onclick="() => ViewHistoryDetail(h)">Chi tiết</button>
+                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ReorderAsync(h)" disabled="@_reordering">🔄 Đặt lại</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </div>
+</div>
+
 @if (_order != null)
 {
     <div class="card mb-3">
@@ -84,7 +138,7 @@
         <div class="card-body">
             @* Wave 6a (item 21): reorder — restores the order's lines into the cart. *@
             <div class="mb-2">
-                <button class="btn btn-outline-success btn-sm" @onclick="ReorderAsync" disabled="@_reordering">
+                <button class="btn btn-outline-success btn-sm" @onclick="() => ReorderAsync(_order)" disabled="@_reordering">
                     @(_reordering ? "Đang khôi phục..." : "🔄 Đặt lại đơn này")
                 </button>
                 @if (!string.IsNullOrEmpty(_reorderMessage))
@@ -528,6 +582,12 @@
     private bool _savingAddress;
     private string _addressBookMessage;
 
+    // Lịch sử đơn hàng theo SĐT (không cần đăng nhập).
+    private string _historyPhone;
+    private System.Collections.Generic.List<TrackedOrderModel> _history;
+    private bool _historyLoading;
+    private string _historyError;
+
     // Customer self-service: cancel.
     private bool _cancelling;
     private string _cancelError;
@@ -722,13 +782,52 @@
         }
     }
 
+    /// <summary>
+    /// Loads the full order history for a VN phone number (no login).
+    /// </summary>
+    private async Task LoadHistoryAsync()
+    {
+        _historyError = null;
+        _history = null;
+
+        if (string.IsNullOrWhiteSpace(_historyPhone))
+        {
+            _historyError = "Vui lòng nhập số điện thoại.";
+            return;
+        }
+
+        _historyLoading = true;
+        try
+        {
+            _history = await ShopService.GetOrdersByPhoneAsync(_historyPhone.Trim());
+        }
+        catch (Exception)
+        {
+            _historyError = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+        }
+        finally
+        {
+            _historyLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Shows a history order in the detail panel below.
+    /// </summary>
+    private async Task ViewHistoryDetail(TrackedOrderModel order)
+    {
+        _order = order;
+        _reorderMessage = null;
+        await AfterOrderLoadedAsync();
+        await JSRuntime.InvokeVoidAsync("eval", "window.scrollTo({top: document.body.scrollHeight * 0.25, behavior: 'smooth'})");
+    }
+
     private async Task AfterOrderLoadedAsync()
     {
         if (_order == null)
         {
             return;
         }
-
         if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
         {
             try
@@ -886,15 +985,15 @@
     }
 
     /// <summary>
-    /// Wave 6a (item 21): "Đặt lại đơn này" — restores the tracked order's
+    /// Wave 6a (item 21): "Đặt lại đơn này" — restores the given order's
     /// lines into the cart by matching ProductId against the current
     /// catalog. Size/toppings are best-effort (matched by name); products
     /// that no longer exist are skipped and reported via toast.
     /// </summary>
-    private async Task ReorderAsync()
+    private async Task ReorderAsync(TrackedOrderModel order)
     {
         _reorderMessage = null;
-        if (_order == null || _reordering)
+        if (order == null || _reordering)
         {
             return;
         }
@@ -915,7 +1014,7 @@
 
             var restored = 0;
             var skipped = 0;
-            foreach (var line in _order.Lines)
+            foreach (var line in order.Lines)
             {
                 if (line.Quantity < 1)
                 {

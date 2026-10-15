@@ -172,7 +172,7 @@
     else if (_placedOrder.PaymentMethod == "BankTransfer")
     {
         <div class="card mb-3">
-            <div class="card-header">Chuyển khoản ngân hàng</div>
+            <div class="card-header">Chuyển khoản QR (VietQR)</div>
             <div class="card-body">
                 @if (_bankInfo == null)
                 {
@@ -737,7 +737,7 @@ else
     private string _shipperName;
     private string _shipperPhone;
 
-    // Pre-order (đặt trước theo giờ) — fields for the in-progress feature.
+    // Pre-order (đặt trước theo giờ): false = nhận ngay (ASAP).
     private bool _isPreOrder;
     private DateTime _preOrderDate = DateTime.Today;
     private string _preOrderTime;
@@ -952,7 +952,9 @@ else
         if (!_shopSettings.AcceptingOrders)
         {
             _orderingBlocked = true;
-            _closedNotice = "Quán đang tạm ngừng nhận đơn. Vui lòng quay lại sau.";
+            _closedNotice = string.IsNullOrWhiteSpace(_shopSettings.PausedReason)
+                ? "Quán đang tạm ngừng nhận đơn. Vui lòng quay lại sau."
+                : $"Quán tạm ngưng nhận đơn: {_shopSettings.PausedReason}";
             return;
         }
 

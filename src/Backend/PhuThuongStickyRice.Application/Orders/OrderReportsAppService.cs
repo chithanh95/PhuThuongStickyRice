@@ -26,6 +26,13 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Capped at 5000 rows.
         /// </summary>
         Task<byte[]> ExportOrdersAsync(GetOrdersInput input);
+
+        /// <summary>
+        /// Revenue report: 2 sheets — daily summary (date, order count,
+        /// revenue, average order value) and order details — for the given
+        /// Vietnam date range. Capped at 5000 detail rows.
+        /// </summary>
+        Task<byte[]> ExportRevenueAsync(DateTime? from, DateTime? to);
     }
 
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
@@ -170,11 +177,104 @@ namespace PhuThuongStickyRice.Application.Orders
             return stream.ToArray();
         }
 
-        /// <summary>
-        /// Mirrors the filters in <see cref="OrderAppService.GetListAsync"/>
-        /// (search / status / shipper) plus the Wave 6c date range
-        /// (Vietnam timezone day boundaries).
-        /// </summary>
+        public async Task<byte[]> ExportRevenueAsync(DateTime? from, DateTime? to)
+        {
+            var queryable = await _orders.GetQueryableAsync();
+            var startUtc = from.HasValue ? VietnamTime.DayStartUtc(from.Value) : DateTime.MinValue;
+            var endUtc = to.HasValue ? VietnamTime.DayEndExclusiveUtc(to.Value) : DateTime.MaxValue;
+            var ranged = queryable.Where(x => x.CreatedAt >= startUtc && x.CreatedAt < endUtc);
+            var billable = ranged.Where(x => x.Status != OrderStatus.Cancelled);
+
+            var daily = await _asyncExecuter.ToListAsync(
+                billable.GroupBy(x => x.CreatedAt.AddHours(7).Date)
+                    .Select(g => new
+                    {
+                        Date = g.Key,
+                        OrderCount = g.LongCount(),
+                        Revenue = g.Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m
+                    })
+                    .OrderBy(x => x.Date));
+
+            var details = await _asyncExecuter.ToListAsync(
+                ranged.OrderByDescending(x => x.CreatedAt).Take(MaxExportRows));
+
+            using var workbook = new XLWorkbook();
+
+            // ---- Sheet 1: Tổng hợp theo ngày ----
+            var summary = workbook.Worksheets.Add("Tổng hợp");
+            var sumHeaders = new[] { "Ngày", "Số đơn", "Doanh thu (₫)", "Giá trị TB/đơn (₫)" };
+            for (var c = 0; c < sumHeaders.Length; c++)
+                summary.Cell(1, c + 1).Value = sumHeaders[c];
+            StyleHeader(summary.Row(1));
+
+            var r = 2;
+            foreach (var d in daily)
+            {
+                summary.Cell(r, 1).Value = d.Date;
+                summary.Cell(r, 1).Style.NumberFormat.Format = "dd/MM/yyyy";
+                summary.Cell(r, 2).Value = d.OrderCount;
+                summary.Cell(r, 3).Value = d.Revenue;
+                summary.Cell(r, 3).Style.NumberFormat.Format = "#,##0";
+                summary.Cell(r, 4).Value = d.OrderCount > 0 ? d.Revenue / d.OrderCount : 0m;
+                summary.Cell(r, 4).Style.NumberFormat.Format = "#,##0";
+                r++;
+            }
+            // Total row
+            var totalOrders = daily.Sum(x => x.OrderCount);
+            var totalRevenue = daily.Sum(x => x.Revenue);
+            summary.Cell(r, 1).Value = "TỔNG CỘNG";
+            summary.Cell(r, 2).Value = totalOrders;
+            summary.Cell(r, 3).Value = totalRevenue;
+            summary.Cell(r, 3).Style.NumberFormat.Format = "#,##0";
+            summary.Cell(r, 4).Value = totalOrders > 0 ? totalRevenue / totalOrders : 0m;
+            summary.Cell(r, 4).Style.NumberFormat.Format = "#,##0";
+            summary.Row(r).Style.Font.Bold = true;
+            summary.Columns().AdjustToContents();
+
+            // ---- Sheet 2: Chi tiết đơn ----
+            var sheet = workbook.Worksheets.Add("Chi tiết đơn");
+            var headers = new[]
+            {
+                "Mã đơn", "Ngày đặt", "Khách hàng", "SĐT",
+                "Món", "Tổng tiền", "Kênh thanh toán", "Trạng thái đơn"
+            };
+            for (var c = 0; c < headers.Length; c++)
+                sheet.Cell(1, c + 1).Value = headers[c];
+            StyleHeader(sheet.Row(1));
+
+            var row = 2;
+            foreach (var order in details)
+            {
+                var itemsText = string.Join("; ",
+                    order.Lines.Select(x =>
+                        $"{x.Quantity}× {x.ProductName}" +
+                        (string.IsNullOrWhiteSpace(x.SizeName) ? "" : $" ({x.SizeName})")));
+                sheet.Cell(row, 1).Value = order.OrderNumber;
+                sheet.Cell(row, 2).Value = order.CreatedAt.AddHours(7);
+                sheet.Cell(row, 2).Style.NumberFormat.Format = "dd/MM/yyyy HH:mm";
+                sheet.Cell(row, 3).Value = order.CustomerName;
+                sheet.Cell(row, 4).Value = order.CustomerPhone;
+                sheet.Cell(row, 5).Value = itemsText;
+                sheet.Cell(row, 6).Value = order.TotalAmount.Amount;
+                sheet.Cell(row, 6).Style.NumberFormat.Format = "#,##0";
+                sheet.Cell(row, 7).Value = OrderLabels.PaymentMethod(order.PaymentMethod);
+                sheet.Cell(row, 8).Value = OrderLabels.OrderStatus(order.Status);
+                row++;
+            }
+            sheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
+        }
+
+        private static void StyleHeader(IXLRow headerRow)
+        {
+            headerRow.Style.Font.Bold = true;
+            headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#7a6fbe");
+            headerRow.Style.Font.FontColor = XLColor.White;
+            headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        }
         private static IQueryable<Order> ApplyFilters(IQueryable<Order> query, GetOrdersInput input)
         {
             if (!string.IsNullOrWhiteSpace(input.SearchTerm))

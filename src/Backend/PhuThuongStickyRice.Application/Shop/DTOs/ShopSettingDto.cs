@@ -195,6 +195,10 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         /// <summary>When false, checkout is blocked. Default true.</summary>
         public bool AcceptingOrders { get; set; } = true;
 
+        /// <summary>Reason shown to customers while orders are paused.</summary>
+        [StringLength(500)]
+        public string PausedReason { get; set; }
+
         // ---- Wave 6d (item 39): anti-spam ----
 
         /// <summary>

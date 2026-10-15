@@ -629,7 +629,7 @@ else
         builder.OpenElement(0, "button");
         builder.AddAttribute(1, "class", "btn btn-sm btn-outline-success mr-1");
         builder.AddAttribute(2, "onclick", Microsoft.AspNetCore.Components.EventCallback.Factory.Create(this, () => ConfirmPayment(order)));
-        builder.AddContent(3, "Xác nhận thanh toán");
+        builder.AddContent(3, "Đã nhận tiền");
         builder.CloseElement();
     };
 
@@ -638,7 +638,7 @@ else
         var method = order.PaymentMethod switch
         {
             "Cod" => "COD",
-            "BankTransfer" => "Chuyển khoản",
+            "BankTransfer" => "VietQR",
             "MoMo" => "MoMo",
             _ => order.PaymentMethod
         };

@@ -76,6 +76,11 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// </summary>
         public DateTime? PickedUpAt { get; set; }
 
+        /// <summary>
+        /// Pre-order scheduled pickup time (UTC). Null = nhận ngay (ASAP).
+        /// </summary>
+        public DateTime? ScheduledFor { get; set; }
+
         public decimal TotalAmount { get; set; }
 
         public string Currency { get; set; }
@@ -287,6 +292,12 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// </summary>
         [StringLength(30)]
         public string PickupShipperPhone { get; set; }
+
+        /// <summary>
+        /// Pre-order scheduled pickup time (UTC). Null = nhận ngay (ASAP).
+        /// Must be at least 1 hour in the future and within shop open hours.
+        /// </summary>
+        public DateTime? ScheduledFor { get; set; }
 
         /// <summary>
         /// Order source (item 133): "Web", "QR bàn", "Link chia sẻ", "Nhóm",

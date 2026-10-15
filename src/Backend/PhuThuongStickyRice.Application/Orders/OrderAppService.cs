@@ -57,6 +57,9 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Customer marks their bank-transfer order as transferred.</summary>
         Task<OrderDto> MarkTransferredAsync(Guid id, MarkTransferredDto input);
 
+        /// <summary>Public: order history lookup by phone number.</summary>
+        Task<List<OrderDto>> GetOrdersByPhoneAsync(string phone);
+
         /// <summary>Admin confirms a payment (bank transfer).</summary>
         Task<OrderDto> ConfirmPaymentAsync(Guid id);
 
@@ -518,6 +521,46 @@ namespace PhuThuongStickyRice.Application.Orders
                 branchName = branch.Name;
             }
 
+            // Pre-order (đặt trước): ScheduledFor must be at least 1 hour
+            // ahead and inside shop open hours. Null = nhận ngay.
+            DateTime? scheduledFor = null;
+            if (input.ScheduledFor.HasValue)
+            {
+                var sf = input.ScheduledFor.Value;
+                // Accept both UTC and unspecified/local input; normalize to UTC.
+                if (sf.Kind == DateTimeKind.Unspecified)
+                {
+                    sf = DateTime.SpecifyKind(sf, DateTimeKind.Local).ToUniversalTime();
+                }
+                else if (sf.Kind == DateTimeKind.Local)
+                {
+                    sf = sf.ToUniversalTime();
+                }
+
+                if (sf <= DateTime.UtcNow.AddHours(1))
+                {
+                    throw new Domain.Exceptions.DomainException("Giờ đặt trước phải sau thời điểm hiện tại ít nhất 1 tiếng.");
+                }
+
+                // Within open hours (Vietnam local, UTC+7).
+                var vnTime = sf.AddHours(7).TimeOfDay;
+                if (!TimeSpan.TryParse(shopSetting.OpenTime, out var open))
+                {
+                    open = TimeSpan.FromHours(6);
+                }
+                if (!TimeSpan.TryParse(shopSetting.CloseTime, out var close))
+                {
+                    close = new TimeSpan(10, 30, 0);
+                }
+                if (vnTime < open || vnTime >= close)
+                {
+                    throw new Domain.Exceptions.DomainException(
+                        $"Giờ đặt trước phải trong giờ mở cửa ({shopSetting.OpenTime}–{shopSetting.CloseTime}).");
+                }
+
+                scheduledFor = sf;
+            }
+
             var order = Order.Create(
                 orderNumber,
                 input.CustomerName,
@@ -551,7 +594,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 input.Source,
                 string.IsNullOrWhiteSpace(input.DeliverySlot) ? null : input.DeliverySlot.Trim(),
                 string.IsNullOrWhiteSpace(input.PickupShipperName) ? null : input.PickupShipperName.Trim(),
-                string.IsNullOrWhiteSpace(input.PickupShipperPhone) ? null : input.PickupShipperPhone.Trim());
+                string.IsNullOrWhiteSpace(input.PickupShipperPhone) ? null : input.PickupShipperPhone.Trim(),
+                scheduledFor);
 
             // Item 140: wallet payment — charge the prepaid balance up front;
             // insufficient balance aborts before the order row is written.
@@ -1482,6 +1526,41 @@ namespace PhuThuongStickyRice.Application.Orders
                 CustomerAddress = match.CustomerAddress,
                 LastOrderAt = match.CreatedAt
             };
+        }
+
+        /// <summary>
+        /// Public: full order history for a VN phone number (no login).
+        /// Strict VN mobile format required. Only orders whose phone matches
+        /// are returned; AdminNote is stripped like other public endpoints.
+        /// Returns an empty list when the phone has no orders.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public async Task<List<OrderDto>> GetOrdersByPhoneAsync(string phone)
+        {
+            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (!System.Text.RegularExpressions.Regex.IsMatch(digits, @"^(0)(3|5|7|8|9)\d{8}$"))
+            {
+                throw new CrossCuttingConcerns.Exceptions.ValidationException(
+                    "Số điện thoại không đúng định dạng (VD: 0901234567).");
+            }
+
+            var last9 = digits.Substring(digits.Length - 9);
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var candidates = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.CustomerPhone.Contains(last9))
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(100));
+
+            var result = new List<OrderDto>();
+            foreach (var order in candidates.Where(x => PhonesMatch(x.CustomerPhone, digits)))
+            {
+                var dto = _objectMapper.Map<Order, OrderDto>(order);
+                dto.AdminNote = null;
+                result.Add(dto);
+            }
+
+            return result;
         }
 
         private async Task<Order> FindOrThrowAsync(Guid id)

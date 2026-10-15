@@ -173,6 +173,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Public: full order history for a VN phone number (no login).
+        /// Strict VN mobile format is validated; 400 on invalid format.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("by-phone")]
+        public async Task<ActionResult> GetByPhone(
+            [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            var orders = await _orderAppService.GetOrdersByPhoneAsync(phone);
+            return Ok(orders);
+        }
+
+        /// <summary>
         /// Customer reports they sent the bank transfer. Public, but the
         /// phone in the body must match the order's phone.
         /// </summary>

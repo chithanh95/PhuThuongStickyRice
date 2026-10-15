@@ -36,6 +36,12 @@
                 {
                     <p class="mb-0 mt-1"><span class="badge @(_openNow ? "badge-success" : "badge-danger")" style="font-size: 1rem;">@_openStatusText</span></p>
                 }
+                @if (OrdersPaused)
+                {
+                    <div class="alert alert-warning mt-2 mb-0" role="alert">
+                        ⏸ Quán tạm ngưng nhận đơn@(string.IsNullOrWhiteSpace(_shopSettings.PausedReason) ? "." : ": " + _shopSettings.PausedReason)
+                    </div>
+                }
             </div>
             <a class="btn btn-dark mt-2" href="/menu-print" target="_blank" title="Mở thực đơn để in / lưu PDF">
                 📄 Tải menu (PDF)
@@ -179,7 +185,7 @@ else
                             <a href="javascript:void(0)" class="text-dark" @onclick="() => OpenQuickView(product)"><strong>@product.Name</strong></a>
                             <div class="d-flex justify-content-between align-items-center mt-1">
                                 <strong class="text-danger">@FormatPrice(product.Price)</strong>
-                                <button class="btn btn-sm btn-warning" @onclick="() => AddToCart(product)">+ Thêm</button>
+                                <button class="btn btn-sm btn-warning" @onclick="() => AddToCart(product)" disabled="@OrdersPaused">+ Thêm</button>
                             </div>
                         </div>
                     </div>
@@ -243,7 +249,7 @@ else
                             <div class="d-flex align-items-center">
                                 <input type="number" min="1" max="99" class="form-control mr-2" style="width: 80px;"
                                        @bind="_quantities[product.Id]" />
-                                <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)">
+                                <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)" disabled="@OrdersPaused">
                                     @I18n.T("add_to_cart")
                                 </button>
                             </div>
@@ -343,7 +349,7 @@ else
                         @(_creatingShortLink ? "Đang tạo..." : "🔗 Link ngắn")
                     </button>
                     <button type="button" class="btn btn-secondary" @onclick="CloseQuickView">Đóng</button>
-                    <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart">
+                    <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart" disabled="@OrdersPaused">
                         @I18n.T("add_to_cart") — @FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))
                     </button>
                 </div>
@@ -427,10 +433,10 @@ else
     // Wave 6a (item 22): open-hours display.
     private ShopSettingModel _shopSettings;
     private string _openStatusText;
-    private bool _openNow;
 
-    /// <summary>Tạm ngưng nhận đơn (theo cài đặt cửa hàng).</summary>
+    /// <summary>True when the shop paused order intake (AcceptingOrders = false).</summary>
     private bool OrdersPaused => _shopSettings != null && !_shopSettings.AcceptingOrders;
+    private bool _openNow;
 
     protected override async Task OnInitializedAsync()
     {

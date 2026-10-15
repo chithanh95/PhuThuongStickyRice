@@ -52,6 +52,12 @@ else
                     <strong>Nhận đơn hàng</strong> — tắt để tạm ngừng nhận đơn (trang đặt hàng hiển thị thông báo, server từ chối đơn mới)
                 </label>
             </div>
+            <div class="form-group">
+                <label>Lý do tạm ngưng nhận đơn</label>
+                <input class="form-control" @bind="_model.PausedReason" maxlength="500"
+                       placeholder="VD: Hết nếp, mở lại lúc 14:00" />
+                <small class="form-text text-muted">Hiển thị cho khách khi tắt "Nhận đơn hàng". Bỏ trống thì hiện thông báo chung.</small>
+            </div>
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label>Giờ mở cửa (HH:mm)</label>
@@ -92,6 +98,35 @@ else
                 <input type="number" min="1" max="10080" class="form-control" @bind="_model.BankTransferExpiryMinutes" />
                 <small class="form-text text-muted">Mặc định 30 phút. Worker chạy mỗi 5 phút.</small>
             </div>
+
+            <h6 class="mt-3">Tài khoản nhận chuyển khoản QR (VietQR)</h6>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Tên ngân hàng</label>
+                    <input class="form-control" @bind="_model.BankName" placeholder="VD: Vietcombank" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Mã ngân hàng VietQR</label>
+                    <input class="form-control" @bind="_model.BankId" placeholder="VD: VCB" />
+                    <small class="form-text text-muted">Mã BIN của ngân hàng theo chuẩn VietQR (VD: VCB, TCB, MBB).</small>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Số tài khoản</label>
+                    <input class="form-control" @bind="_model.BankAccountNumber" placeholder="VD: 0123456789" inputmode="numeric" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Chủ tài khoản</label>
+                    <input class="form-control" @bind="_model.BankAccountName" placeholder="VD: NGUYEN VAN A" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Mẫu ảnh QR</label>
+                <input class="form-control" @bind="_model.BankQrTemplate" placeholder="compact2" />
+                <small class="form-text text-muted">Để trống = compact2. Các mẫu VietQR: qr_only, compact, compact2.</small>
+            </div>
+            <small class="form-text text-muted mb-3">Để trống các ô trên = tắt thanh toán QR (khách chỉ thấy hướng dẫn chuyển khoản thủ công).</small>
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label>Ngưỡng yêu cầu đặt cọc (₫)</label>

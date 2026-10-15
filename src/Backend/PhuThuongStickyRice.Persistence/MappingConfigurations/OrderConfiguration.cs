@@ -148,6 +148,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.PickupShipperPhone).HasMaxLength(Order.PickupShipperPhoneMaxLength);
             builder.Property(x => x.PickedUpAt);
 
+            // Pre-order scheduled pickup time (UTC). Null = ASAP.
+            builder.Property(x => x.ScheduledFor);
+
             // Delivery shipper assignment (optional).
             builder.Property(x => x.ShipperId);
             builder.HasOne(x => x.Shipper)

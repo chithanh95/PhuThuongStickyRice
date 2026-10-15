@@ -71,5 +71,23 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 fileName);
         }
+
+        /// <summary>
+        /// Revenue report for a Vietnam date range: sheet 1 = daily summary
+        /// (orders, revenue, average order value), sheet 2 = order details.
+        /// </summary>
+        [HttpGet("export-revenue")]
+        public async Task<ActionResult> ExportRevenue(
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null,
+            CancellationToken cancellationToken = default)
+        {
+            var bytes = await _reports.ExportRevenueAsync(fromDate, toDate);
+            var from = (fromDate?.Date ?? DateTime.UtcNow.AddHours(7).Date).ToString("yyyy-MM-dd");
+            var to = (toDate?.Date ?? DateTime.UtcNow.AddHours(7).Date).ToString("yyyy-MM-dd");
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"bao-cao-doanh-thu-{from}_{to}.xlsx");
+        }
     }
 }

@@ -202,5 +202,14 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<TrackedOrderModel>();
         }
+
+        /// <summary>Public: full order history for a VN phone number (no login).</summary>
+        public async Task<List<TrackedOrderModel>> GetOrdersByPhoneAsync(string phone)
+        {
+            var url = $"api/orders/by-phone?phone={Uri.EscapeDataString(phone ?? string.Empty)}";
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAs<List<TrackedOrderModel>>();
+        }
     }
 }
