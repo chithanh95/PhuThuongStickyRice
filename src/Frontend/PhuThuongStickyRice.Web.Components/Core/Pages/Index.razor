@@ -12,6 +12,7 @@
 @inject LandingService LandingService
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
+@inject HolidayService HolidayService
 @inject PolicyService PolicyService
 @inject CartState CartState
 @inject ToastService Toasts
@@ -57,6 +58,7 @@ else
             <a href="#gioi-thieu">Giới thiệu</a>
             <a href="#dat-xoi">Đặt xôi</a>
             <a href="/dat-tiec">Đặt tiệc</a>
+            <a href="/cung-gio">Cúng giỗ</a>
             <a href="#lien-he">Liên hệ</a>
         </nav>
         <a class="xo-logo" href="/">
@@ -170,7 +172,7 @@ else
             }
             @if (OrdersPaused)
             {
-                <p class="xo-paused-notice">⏸ Quán tạm ngưng nhận đơn@(string.IsNullOrWhiteSpace(_shopSettings.PausedReason) ? "." : ": " + _shopSettings.PausedReason)</p>
+                <p class="xo-paused-notice">⏸ @(HolidayPaused ? _shopSettings.PausedReason : "Quán tạm ngưng nhận đơn" + (string.IsNullOrWhiteSpace(_shopSettings.PausedReason) ? "." : ": " + _shopSettings.PausedReason))</p>
             }
         </div>
         <div class="xo-dish-grid">
@@ -192,12 +194,16 @@ else
                             {
                                 <span class="xo-bestseller">🔥 Bán chạy nhất</span>
                             }
+                            @if (IsSoldOut(product))
+                            {
+                                <span class="xo-soldout">Tạm hết</span>
+                            }
                             <img loading="lazy" src="@ProductImage(product.Code)" alt="@product.Name" />
                         </div>
                         <div class="xo-dish-body">
                             <h3 class="xo-dish-name">@product.Name</h3>
-                            <div class="xo-dish-price">@FormatPrice(product.Price)</div>
-                            <button class="xo-btn xo-btn-red xo-dish-btn" @onclick="() => QuickAdd(product)" disabled="@OrdersPaused">Thêm vào giỏ</button>
+                            <div class="xo-dish-price">@FormatPrice(product.Price)<small>@UnitSuffix(product)</small></div>
+                            <button class="xo-btn xo-btn-red xo-dish-btn" @onclick="() => QuickAdd(product)" disabled="@(OrdersPaused || IsSoldOut(product))">@(IsSoldOut(product) ? "Tạm hết" : "Thêm vào giỏ")</button>
                         </div>
                     </div>
                 }
@@ -421,8 +427,7 @@ else
 </section>
 
 <!-- 9. LIÊN HỆ + BẢN ĐỒ -->
-<section class="xo-section xo-contact" id="lien-he">
-    <div class="xo-container">
+<section class="xo-section xo-contact" id="lien-he">    <div class="xo-container">
         <div class="xo-sec-head">
             <h2 class="xo-sec-title">Liên hệ với chúng tôi</h2>
             <div class="xo-sec-div"><span></span><em>Xoi Phu Thuong Vietnamese Cuisine</em><span></span></div>
@@ -457,6 +462,34 @@ else
     </div>
 </section>
 
+@if (_upcomingHolidays != null && _upcomingHolidays.Count > 0)
+{
+    <!-- 9b. LỊCH NGHỈ SẮP TỚI (item 117) -->
+    <section class="xo-section xo-holidays" id="lich-nghi">
+        <div class="xo-container">
+            <div class="xo-sec-head">
+                <h2 class="xo-sec-title">Lịch nghỉ sắp tới</h2>
+                <div class="xo-sec-div"><span></span><em>Quán nghỉ — hẹn gặp lại quý khách</em><span></span></div>
+            </div>
+            <div class="xo-holiday-list">
+                @foreach (var h in _upcomingHolidays.Take(3))
+                {
+                    <div class="xo-holiday-card">
+                        <div class="xo-holiday-date">
+                            <span class="xo-holiday-day">@h.HolidayDate.ToString("dd/MM")</span>
+                            <span class="xo-holiday-weekday">@VnWeekday(h.HolidayDate)</span>
+                        </div>
+                        <div class="xo-holiday-info">
+                            <strong>@h.Reason</strong>
+                            <small>@(h.IsFullDay ? "Nghỉ cả ngày" : "Nghỉ một phần ngày")</small>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
 <!-- 10. FOOTER -->
 <footer class="xo-footer @(HasFooterBg ? "xo-footer-bg" : "")" style="@FooterBgStyle">
     <div class="xo-container xo-footer-inner">
@@ -477,6 +510,7 @@ else
         </ul>
         <a href="/shop" class="xo-btn xo-btn-red">@_content.FooterButtonText</a>
         <a href="/dat-tiec" class="xo-btn xo-btn-gold" style="margin-left:8px">Đặt tiệc / Số lượng lớn</a>
+        <a href="/cung-gio" class="xo-btn xo-btn-gold" style="margin-left:8px">🕯️ Cúng giỗ</a>
         <a href="/nhuong-quyen" class="xo-btn xo-btn-gold" style="margin-left:8px">Nhượng quyền</a>
         @if (_policies.Count > 0)
         {
@@ -592,9 +626,24 @@ else
     // Pause-orders state (fail-soft — landing works with defaults).
     private ShopSettingModel _shopSettings;
     private bool OrdersPaused => _shopSettings != null && !_shopSettings.AcceptingOrders;
+    private bool HolidayPaused => _shopSettings != null && _shopSettings.IsHolidayPaused;
 
     // Wave 6b (item 28): policy pages for the footer links (fail-soft).
     private List<PolicyPageSummaryModel> _policies = new List<PolicyPageSummaryModel>();
+
+    // Item 117: upcoming holidays shown in the "Lịch nghỉ sắp tới" section.
+    private List<HolidayModel> _upcomingHolidays = new List<HolidayModel>();
+
+    private static string VnWeekday(DateTime d) => d.DayOfWeek switch
+    {
+        DayOfWeek.Monday => "Thứ 2",
+        DayOfWeek.Tuesday => "Thứ 3",
+        DayOfWeek.Wednesday => "Thứ 4",
+        DayOfWeek.Thursday => "Thứ 5",
+        DayOfWeek.Friday => "Thứ 6",
+        DayOfWeek.Saturday => "Thứ 7",
+        _ => "Chủ nhật",
+    };
 
     /// <summary>
     /// Converts a YouTube/TikTok/Facebook video URL to an embed URL.
@@ -668,7 +717,7 @@ else
         // the landing works fine with the built-in defaults).
         try
         {
-            var settings = await ShopSettingsService.GetAsync();
+            var settings = await ShopSettingsService.GetPublicAsync();
             _shopSettings = settings;
             if (settings != null)
             {
@@ -690,6 +739,17 @@ else
         catch (Exception)
         {
             _policies = new List<PolicyPageSummaryModel>();
+        }
+
+        // Item 117: upcoming holidays for the "Lịch nghỉ sắp tới" section (fail-soft).
+        try
+        {
+            _upcomingHolidays = await HolidayService.GetUpcomingAsync()
+                ?? new List<HolidayModel>();
+        }
+        catch (Exception)
+        {
+            _upcomingHolidays = new List<HolidayModel>();
         }
 
         try
@@ -830,6 +890,11 @@ else
             Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.");
             return;
         }
+        if (IsSoldOut(product))
+        {
+            Toasts.Show($"'{product?.Name}' tạm hết, vui lòng chọn món khác.");
+            return;
+        }
         CartState.Add(product, 1);
 
         // Upsell: xôi → suggest Chả cốm / Chả giò.
@@ -885,6 +950,14 @@ else
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    /// <summary>Item 81: "/kg" for weight products, "/suất" otherwise.</summary>
+    private static string UnitSuffix(ShopProductModel product) =>
+        string.Equals(product?.Unit, "kg", StringComparison.OrdinalIgnoreCase) ? "/kg" : "/suất";
+
+    /// <summary>Item 85: true when the product is sold out (Inactive).</summary>
+    private static bool IsSoldOut(ShopProductModel product) =>
+        !string.Equals(product?.Status, "Active", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Uploaded image URL if set, otherwise the SVG placeholder.</summary>
     private string Img(string uploadedUrl, string fallbackSvg) =>

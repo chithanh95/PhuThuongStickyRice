@@ -1,0 +1,228 @@
+@page "/admin/lich-nghi"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject HolidayService HolidayService
+
+<h3>🗓️ Lịch nghỉ lễ / Tết</h3>
+<p class="text-muted">
+    Thêm các ngày quán nghỉ. Vào đúng ngày nghỉ <strong>cả ngày</strong>, web tự động
+    chuyển sang chế độ "tạm ngưng nhận đơn" với lý do từ lịch — không cần bật/tắt tay.
+</p>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">@(_editingId == null ? "Thêm ngày nghỉ" : "Sửa ngày nghỉ")</h5>
+        <div class="form-row align-items-end">
+            <div class="col-md-3 mb-2">
+                <label class="mb-1"><small class="text-muted">Ngày nghỉ</small></label>
+                <input type="date" class="form-control" @bind="_model.HolidayDate" />
+            </div>
+            <div class="col-md-5 mb-2">
+                <label class="mb-1"><small class="text-muted">Lý do</small></label>
+                <input type="text" class="form-control" @bind="_model.Reason"
+                       maxlength="200" placeholder="VD: Nghỉ Tết Nguyên đán" />
+            </div>
+            <div class="col-md-2 mb-2">
+                <div class="form-check mt-4">
+                    <input type="checkbox" class="form-check-input" id="holiday-fullday" @bind="_model.IsFullDay" />
+                    <label class="form-check-label" for="holiday-fullday">Nghỉ cả ngày</label>
+                </div>
+            </div>
+            <div class="col-md-2 mb-2 text-right">
+                <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+                    @(_saving ? "Đang lưu..." : (_editingId == null ? "Thêm" : "Lưu"))
+                </button>
+                @if (_editingId != null)
+                {
+                    <button class="btn btn-outline-secondary ml-2" @onclick="CancelEdit">Hủy</button>
+                }
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger mt-2 mb-0">@_error</div>
+        }
+        @if (!string.IsNullOrEmpty(_success))
+        {
+            <div class="alert alert-success mt-2 mb-0">@_success</div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Thứ</th>
+                        <th>Lý do</th>
+                        <th>Hình thức</th>
+                        <th>Trạng thái</th>
+                        <th class="text-right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (_loading)
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">Đang tải...</td></tr>
+                    }
+                    else if (_holidays.Count == 0)
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">Chưa có ngày nghỉ nào.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var h in _holidays)
+                        {
+                            var isPast = h.HolidayDate.Date < DateTime.Today;
+                            var isToday = h.HolidayDate.Date == DateTime.Today;
+                            <tr class="@(isPast ? "text-muted" : "") @(isToday ? "table-warning" : "")">
+                                <td><strong>@h.HolidayDate.ToString("dd/MM/yyyy")</strong></td>
+                                <td>@VnWeekday(h.HolidayDate)</td>
+                                <td>@h.Reason</td>
+                                <td>@(h.IsFullDay ? "Nghỉ cả ngày" : "Nghỉ một phần")</td>
+                                <td>
+                                    @if (isToday)
+                                    {
+                                        <span class="badge badge-warning">Hôm nay — đang nghỉ</span>
+                                    }
+                                    else if (isPast)
+                                    {
+                                        <span class="badge badge-secondary">Đã qua</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-success">Sắp tới</span>
+                                    }
+                                </td>
+                                <td class="text-right">
+                                    <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(h)">Sửa</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(h)">Xóa</button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<HolidayModel> _holidays = new();
+    private CreateHolidayModel _model = new() { HolidayDate = DateTime.Today };
+    private Guid? _editingId;
+    private bool _loading = true;
+    private bool _saving;
+    private string _error;
+    private string _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _holidays = await HolidayService.GetListAsync() ?? new();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được lịch nghỉ: " + ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void StartEdit(HolidayModel h)
+    {
+        _editingId = h.Id;
+        _model = new CreateHolidayModel
+        {
+            HolidayDate = h.HolidayDate.Date,
+            Reason = h.Reason,
+            IsFullDay = h.IsFullDay
+        };
+        _error = null;
+        _success = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _model = new() { HolidayDate = DateTime.Today };
+        _error = null;
+        _success = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        if (string.IsNullOrWhiteSpace(_model.Reason))
+        {
+            _error = "Vui lòng nhập lý do nghỉ.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (_editingId == null)
+            {
+                await HolidayService.CreateAsync(_model);
+                _success = "Đã thêm ngày nghỉ.";
+            }
+            else
+            {
+                await HolidayService.UpdateAsync(_editingId.Value, _model);
+                _success = "Đã cập nhật ngày nghỉ.";
+            }
+            CancelEdit();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task DeleteAsync(HolidayModel h)
+    {
+        _error = null;
+        try
+        {
+            await HolidayService.DeleteAsync(h.Id);
+            _success = $"Đã xóa ngày nghỉ {h.HolidayDate:dd/MM/yyyy}.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không xóa được: " + ex.Message;
+        }
+    }
+
+    private static string VnWeekday(DateTime d) => d.DayOfWeek switch
+    {
+        DayOfWeek.Monday => "Thứ 2",
+        DayOfWeek.Tuesday => "Thứ 3",
+        DayOfWeek.Wednesday => "Thứ 4",
+        DayOfWeek.Thursday => "Thứ 5",
+        DayOfWeek.Friday => "Thứ 6",
+        DayOfWeek.Saturday => "Thứ 7",
+        _ => "Chủ nhật",
+    };
+}

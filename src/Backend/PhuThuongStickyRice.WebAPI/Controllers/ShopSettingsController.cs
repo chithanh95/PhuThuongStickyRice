@@ -30,6 +30,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _shopSettingAppService.GetAsync());
         }
 
+        /// <summary>
+        /// Public storefront view (item 117): same settings but a full-day
+        /// holiday today automatically pauses ordering with the holiday
+        /// reason. The landing/shop/checkout pages use this endpoint.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("public")]
+        public async Task<ActionResult> GetPublic(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _shopSettingAppService.GetPublicAsync());
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpPut]
         public async Task<ActionResult> Update(

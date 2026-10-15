@@ -1558,6 +1558,22 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
 }
 
+/* Item 85: sold-out badge on dish cards */
+.xo-soldout {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    background: #6c757d;
+    color: #ffffff;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12.5px;
+    font-weight: 800;
+    padding: 5px 12px;
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
+}
+
 /* Zalo fixed button (same cluster as FB / call) */
 .xo-zalo-btn {
     width: 46px;
@@ -1777,4 +1793,74 @@ html.dark .xo-cung-inner {
 }
 html.dark .xo-cung-text p {
     color: #eee;
+}
+
+/* Item 117: Lịch nghỉ sắp tới */
+.xo-holidays {
+    background: #F5E9D4;
+    padding: 48px 0;
+}
+.xo-holiday-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 8px;
+}
+.xo-holiday-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border: 2px solid #D08B8B;
+    border-radius: 18px 6px 18px 6px;
+    padding: 12px 18px 12px 12px;
+    min-width: 260px;
+    max-width: 340px;
+    box-shadow: 0 2px 8px rgba(118, 52, 52, .08);
+}
+.xo-holiday-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #763434;
+    color: #F5E9D4;
+    border-radius: 12px 4px 12px 4px;
+    min-width: 74px;
+    padding: 8px 6px;
+}
+.xo-holiday-day {
+    font-family: Lora, serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.1;
+}
+.xo-holiday-weekday {
+    font-size: 12px;
+    opacity: .9;
+}
+.xo-holiday-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.xo-holiday-info strong {
+    font-family: Lora, serif;
+    color: #763434;
+    font-size: 16px;
+}
+.xo-holiday-info small {
+    color: #9C682C;
+    font-size: 13px;
+}
+html.dark .xo-holidays {
+    background: #262640;
+}
+html.dark .xo-holiday-card {
+    background: rgba(255, 255, 255, .06);
+    border-color: #D08B8B;
+}
+html.dark .xo-holiday-info strong {
+    color: #F5E9D4;
 }

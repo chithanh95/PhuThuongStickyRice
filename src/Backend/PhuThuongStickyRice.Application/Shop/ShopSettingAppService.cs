@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
@@ -14,6 +15,14 @@ namespace PhuThuongStickyRice.Application.Shop
     public interface IShopSettingAppService : IApplicationService
     {
         Task<ShopSettingDto> GetAsync();
+
+        /// <summary>
+        /// Public storefront view of the settings: same as <see cref="GetAsync"/>
+        /// but a full-day holiday today automatically switches
+        /// <c>AcceptingOrders</c> off with the holiday reason. Used by the
+        /// landing/shop/checkout pages and by order creation gating.
+        /// </summary>
+        Task<ShopSettingDto> GetPublicAsync();
 
         Task<ShopSettingDto> UpdateAsync(ShopSettingDto dto);
     }
@@ -28,15 +37,18 @@ namespace PhuThuongStickyRice.Application.Shop
         private const string EncryptedPrefix = "DPv1:";
 
         private readonly IRepository<ShopSetting, Guid> _settings;
+        private readonly IRepository<HolidaySchedule, Guid> _holidays;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IDataProtector _protector;
 
         public ShopSettingAppService(
             IRepository<ShopSetting, Guid> settings,
+            IRepository<HolidaySchedule, Guid> holidays,
             IAsyncQueryableExecuter asyncExecuter,
             IDataProtectionProvider dataProtectionProvider)
         {
             _settings = settings;
+            _holidays = holidays;
             _asyncExecuter = asyncExecuter;
             _protector = dataProtectionProvider.CreateProtector("PhuThuongStickyRice.ShopSettings");
         }
@@ -47,6 +59,47 @@ namespace PhuThuongStickyRice.Application.Shop
         {
             var entity = await GetSingleAsync();
             return MapToDto(entity ?? ShopSetting.CreateDefault());
+        }
+
+        /// <summary>
+        /// Public storefront settings with the holiday auto-pause applied:
+        /// on a full-day holiday the shop is shown as paused with the holiday
+        /// reason, without changing the stored manual toggle. A manual pause
+        /// (AcceptingOrders = false) always wins over the holiday reason.
+        /// </summary>
+        [AllowAnonymous]
+        public async Task<ShopSettingDto> GetPublicAsync()
+        {
+            var dto = await GetAsync();
+            if (dto.AcceptingOrders)
+            {
+                var reason = await GetTodayHolidayReasonAsync();
+                if (!string.IsNullOrEmpty(reason))
+                {
+                    dto.AcceptingOrders = false;
+                    dto.PausedReason = $"Hôm nay quán nghỉ: {reason}";
+                    dto.IsHolidayPaused = true;
+                }
+            }
+            return dto;
+        }
+
+        /// <summary>Vietnam calendar date (UTC+7, no DST).</summary>
+        private async Task<string> GetTodayHolidayReasonAsync()
+        {
+            try
+            {
+                var today = DateTime.UtcNow.AddHours(7).Date;
+                var queryable = await _holidays.GetQueryableAsync();
+                var holiday = await _asyncExecuter.FirstOrDefaultAsync(
+                    queryable.Where(x => x.HolidayDate == today && x.IsFullDay));
+                return holiday?.Reason;
+            }
+            catch
+            {
+                // Fail-soft: a holiday lookup problem must never break the storefront.
+                return null;
+            }
         }
 
         [Authorize(Roles = "Admin")]

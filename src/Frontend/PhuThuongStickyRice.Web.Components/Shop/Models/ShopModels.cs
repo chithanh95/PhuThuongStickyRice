@@ -24,6 +24,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         public string Currency { get; set; }
 
+        /// <summary>Item 81: selling unit — "suất" (per portion) or "kg" (per kilogram).</summary>
+        public string Unit { get; set; }
+
         public string Status { get; set; }
 
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
@@ -604,6 +607,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public bool AcceptingOrders { get; set; } = true;
 
         public string PausedReason { get; set; }
+
+        /// <summary>Item 117: true khi web đang nghỉ vì lịch nghỉ lễ hôm nay.</summary>
+        public bool IsHolidayPaused { get; set; }
 
         /// <summary>
         /// Wave 6d (item 39): max non-cancelled orders per phone per day

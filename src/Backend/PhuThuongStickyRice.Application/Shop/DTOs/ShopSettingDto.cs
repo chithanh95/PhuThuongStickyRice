@@ -217,6 +217,13 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         [StringLength(500)]
         public string PausedReason { get; set; }
 
+        /// <summary>
+        /// Item 117: true when the pause comes from today's holiday schedule
+        /// (set by GetPublicAsync only — never persisted). The storefront shows
+        /// the holiday banner text instead of the generic paused message.
+        /// </summary>
+        public bool IsHolidayPaused { get; set; }
+
         // ---- Wave 6d (item 39): anti-spam ----
 
         /// <summary>

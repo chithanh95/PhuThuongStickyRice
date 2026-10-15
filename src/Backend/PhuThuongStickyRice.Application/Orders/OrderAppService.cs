@@ -209,7 +209,8 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Wave 6b (item 30): pause toggle + open-hours gating. Checked
             // first so a paused/closed shop rejects before any other work.
-            var shopSetting = await _shopSettings.GetAsync();
+            // Item 117: holiday-aware — a full-day holiday auto-pauses ordering.
+            var shopSetting = await _shopSettings.GetPublicAsync();
             EnsureAcceptingOrders(shopSetting);
 
             // Item 97: idempotency — the same key retried within 24h returns
@@ -1335,8 +1336,14 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             if (!shopSetting.AcceptingOrders)
             {
+                var reason = (shopSetting.PausedReason ?? string.Empty).Trim();
+                // Item 117: on a holiday the banner reason is the whole message.
                 throw new Domain.Exceptions.DomainException(
-                    "Quán đang tạm ngừng nhận đơn. Vui lòng quay lại sau.");
+                    shopSetting.IsHolidayPaused && reason.Length > 0
+                        ? reason
+                        : string.IsNullOrEmpty(reason)
+                            ? "Quán đang tạm ngừng nhận đơn. Vui lòng quay lại sau."
+                            : $"Quán đang tạm ngừng nhận đơn: {reason}");
             }
 
             var now = DateTimeOffset.UtcNow.AddHours(7).TimeOfDay;
