@@ -54,6 +54,32 @@
     </div>
 }
 
+@if (_stats != null && _stats.UpcomingPreOrders != null && _stats.UpcomingPreOrders.Count > 0)
+{
+    <div class="alert alert-info d-flex align-items-start" role="alert">
+        <span class="mr-2" aria-hidden="true">📅</span>
+        <div class="flex-grow-1">
+            <strong>Đơn đặt trước sắp đến giờ (@_stats.UpcomingPreOrders.Count):</strong>
+            <div class="table-responsive mt-2">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        @foreach (var o in _stats.UpcomingPreOrders)
+                        {
+                            <tr>
+                                <td><strong>@o.OrderNumber</strong></td>
+                                <td>@o.CustomerName<br /><small class="text-muted">@o.CustomerPhone</small></td>
+                                <td><span class="badge badge-primary">📅 @o.ScheduledFor?.ToLocalTime().ToString("dd/MM HH:mm")</span></td>
+                                <td class="text-right">@FormatPrice(o.TotalAmount)</td>
+                                <td><a href="/orders?search=@Uri.EscapeDataString(o.OrderNumber)" class="btn btn-sm btn-outline-primary">Xem</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
 @if (!string.IsNullOrEmpty(_newIpWarning))
 {
     <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">

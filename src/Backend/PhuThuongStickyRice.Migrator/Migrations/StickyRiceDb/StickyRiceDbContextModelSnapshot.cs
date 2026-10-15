@@ -2182,6 +2182,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<bool>("AcceptingOrders")
                         .HasColumnType("bit");
 
+                    b.Property<string>("PausedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("BankAccountName")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");

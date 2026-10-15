@@ -356,6 +356,12 @@ else
     </div>
     <div class="modal-backdrop fade show"></div>
 }
+<PhuThuongStickyRice.Web.Components.Shop.Components.UpsellPopup
+    Visible="@_upsellVisible"
+    Products="@_upsellProducts"
+    AddedProductName="@_upsellAddedName"
+    OnAdd="AddUpsell"
+    OnClose="CloseUpsell" />
 } @* /_loadFailed else *@
 
 @code {
@@ -422,6 +428,9 @@ else
     private ShopSettingModel _shopSettings;
     private string _openStatusText;
     private bool _openNow;
+
+    /// <summary>Tạm ngưng nhận đơn (theo cài đặt cửa hàng).</summary>
+    private bool OrdersPaused => _shopSettings != null && !_shopSettings.AcceptingOrders;
 
     protected override async Task OnInitializedAsync()
     {
@@ -783,6 +792,11 @@ else
 
     private void AddToCart(ShopProductModel product)
     {
+        if (OrdersPaused)
+        {
+            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.");
+            return;
+        }
         var qty = _quantities.TryGetValue(product.Id, out var q) && q > 0 ? q : 1;
         var sizeId = SelectedSizeId(product);
         var size = sizeId.HasValue ? product.Sizes.FirstOrDefault(s => s.Id == sizeId.Value) : null;
@@ -794,8 +808,58 @@ else
             toppingIds: null, toppingNames: null, toppingsTotal: 0,
             isCombo: false);
 
+        // Upsell: when a xôi is added, suggest Chả cốm / Chả giò.
+        if (IsXoi(product))
+        {
+            ShowUpsell(product.Name);
+            return;
+        }
+
         var detail = size != null ? $" (size {size.Name})" : "";
         Toasts.Show($"Đã thêm {product.Name}{detail} × {qty} vào giỏ", "Xem giỏ hàng", "/cart");
+    }
+
+    /// <summary>True for xôi products (upsell trigger). Chả cốm / Chả giò excluded.</summary>
+    private static bool IsXoi(ShopProductModel product)
+    {
+        return (product?.Code ?? "").StartsWith("XOI", StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ---------- Upsell popup ----------
+
+    private bool _upsellVisible;
+    private string _upsellAddedName;
+    private List<ShopProductModel> _upsellProducts;
+
+    private void ShowUpsell(string addedProductName)
+    {
+        if (_products == null || _products.Count == 0)
+        {
+            return;
+        }
+        _upsellProducts = _products
+            .Where(p => !IsXoi(p) && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(p => p.Code == "CHA-COM" ? 0 : p.Code == "CHA-GIO" ? 1 : 2)
+            .ThenBy(p => p.Price)
+            .Take(4)
+            .ToList();
+        if (_upsellProducts.Count == 0)
+        {
+            return;
+        }
+        _upsellAddedName = addedProductName;
+        _upsellVisible = true;
+    }
+
+    private void AddUpsell(ShopProductModel product)
+    {
+        CartState.Add(product, 1);
+        Toasts.Show($"Đã thêm {product.Name} × 1 vào giỏ", "Xem giỏ hàng", "/cart");
+    }
+
+    private void CloseUpsell()
+    {
+        _upsellVisible = false;
     }
 
     private void AddComboToCart(ComboModel combo)
@@ -891,6 +955,11 @@ else
 
     private void AddQuickViewToCart()
     {
+        if (OrdersPaused)
+        {
+            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.");
+            return;
+        }
         if (_quickView == null)
         {
             return;

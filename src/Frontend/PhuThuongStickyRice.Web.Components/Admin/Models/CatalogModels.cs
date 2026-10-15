@@ -56,6 +56,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
 
         public string Notes { get; set; }
 
+        public string EventLocation { get; set; }
+
+        public string QuoteType { get; set; }
+
         public string Status { get; set; }
 
         public DateTime CreatedAt { get; set; }

@@ -1,0 +1,214 @@
+@page "/admin/nhan-vien"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject StaffService StaffService
+
+<h3>👥 Nhân viên</h3>
+<p class="text-muted">
+    Quản lý tài khoản đăng nhập trang quản trị. <strong>Admin</strong> thấy tất cả,
+    <strong>Thu ngân (Cashier)</strong> chỉ thấy Đơn hàng, Bán POS và Dashboard cơ bản (không doanh thu),
+    <strong>Bếp (Kitchen)</strong> chỉ thấy Màn hình bếp.
+</p>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">➕ Tạo tài khoản mới</h5>
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label>Tên đăng nhập</label>
+                <input class="form-control" @bind="_userName" placeholder="thungan1" />
+            </div>
+            <div class="form-group col-md-3">
+                <label>Email</label>
+                <input class="form-control" @bind="_email" placeholder="thungan1@phuthuong.vn" />
+            </div>
+            <div class="form-group col-md-2">
+                <label>Mật khẩu</label>
+                <input type="password" class="form-control" @bind="_password" placeholder="Tối thiểu 6 ký tự" />
+            </div>
+            <div class="form-group col-md-2">
+                <label>Vai trò</label>
+                <select class="form-control" @bind="_role">
+                    <option value="Cashier">Thu ngân (Cashier)</option>
+                    <option value="Kitchen">Bếp (Kitchen)</option>
+                    <option value="Admin">Quản trị (Admin)</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary btn-block" @onclick="CreateUser" disabled="@_saving">
+                    @(_saving ? "Đang tạo..." : "Tạo tài khoản")
+                </button>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger mb-0">@_error</div>
+        }
+        @if (!string.IsNullOrEmpty(_success))
+        {
+            <div class="alert alert-success mb-0">@_success</div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Tên đăng nhập</th>
+                        <th>Email</th>
+                        <th>Vai trò</th>
+                        <th class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (_users == null)
+                    {
+                        <tr><td colspan="4" class="text-center"><em>Đang tải...</em></td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var u in _users)
+                        {
+                            <tr @key="u.Id">
+                                <td>
+                                    <strong>@u.UserName</strong>
+                                    @if (u.Locked)
+                                    {
+                                        <span class="lx-pill lx-pill-danger ml-2">Đã khóa</span>
+                                    }
+                                </td>
+                                <td>@u.Email</td>
+                                <td>
+                                    @foreach (var r in u.Roles)
+                                    {
+                                        <span class="lx-pill @RolePillClass(r) mr-1">
+                                            @RoleLabel(r)
+                                            <button type="button" class="close ml-1" aria-label="Gỡ"
+                                                    style="font-size:14px;line-height:1;" title="Gỡ vai trò @r"
+                                                    @onclick="() => RemoveRole(u, r)">×</button>
+                                        </span>
+                                    }
+                                    @if (u.Roles.Count == 0)
+                                    {
+                                        <span class="text-muted"><em>Chưa có vai trò</em></span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <select class="form-control form-control-sm d-inline-block" style="width:auto;"
+                                            value="" @onchange="(e) => AssignRole(u, e.Value?.ToString())">
+                                        <option value="">+ Gán vai trò...</option>
+                                        @foreach (var r in AllRoles.Where(r => !u.Roles.Contains(r)))
+                                        {
+                                            <option value="@r">@RoleLabel(r)</option>
+                                        }
+                                    </select>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<StaffUserModel> _users;
+    private string _userName, _email, _password;
+    private string _role = "Cashier";
+    private bool _saving;
+    private string _error, _success;
+
+    private static readonly string[] AllRoles = { "Admin", "Cashier", "Kitchen" };
+
+    private static string RoleLabel(string r) => r switch
+    {
+        "Admin" => "Quản trị",
+        "Cashier" => "Thu ngân",
+        "Kitchen" => "Bếp",
+        _ => r
+    };
+
+    private static string RolePillClass(string r) => r switch
+    {
+        "Admin" => "lx-pill-danger",
+        "Cashier" => "lx-pill-primary",
+        "Kitchen" => "lx-pill-warning",
+        _ => "lx-pill-secondary"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            _users = await StaffService.GetUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được danh sách: " + ex.Message;
+        }
+    }
+
+    private async Task CreateUser()
+    {
+        _error = null;
+        _success = null;
+        if (string.IsNullOrWhiteSpace(_userName) || string.IsNullOrWhiteSpace(_password))
+        {
+            _error = "Nhập tên đăng nhập và mật khẩu.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            await StaffService.CreateUserAsync(_userName.Trim(), _email?.Trim(), _password, _role);
+            _success = $"Đã tạo tài khoản {_userName} với vai trò {RoleLabel(_role)}.";
+            _userName = _email = _password = null;
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            _error = "Tạo thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task AssignRole(StaffUserModel u, string role)
+    {
+        if (string.IsNullOrEmpty(role)) return;
+        try
+        {
+            await StaffService.AssignRoleAsync(u.Id, role);
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            _error = "Gán vai trò thất bại: " + ex.Message;
+        }
+    }
+
+    private async Task RemoveRole(StaffUserModel u, string role)
+    {
+        try
+        {
+            await StaffService.RemoveRoleAsync(u.Id, role);
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            _error = "Gỡ vai trò thất bại: " + ex.Message;
+        }
+    }
+}

@@ -682,6 +682,12 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public List<RevenueByDayDto> RevenueByDay { get; set; } = new List<RevenueByDayDto>();
 
         public List<OrderDto> RecentOrders { get; set; } = new List<OrderDto>();
+
+        /// <summary>
+        /// Pre-orders (ScheduledFor set) not yet picked up/completed, ordered
+        /// by scheduled time ascending — the kitchen prioritizes these.
+        /// </summary>
+        public List<OrderDto> UpcomingPreOrders { get; set; } = new List<OrderDto>();
     }
 
     public class OrdersByStatusDto

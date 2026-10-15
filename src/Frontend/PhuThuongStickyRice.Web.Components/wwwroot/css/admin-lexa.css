@@ -686,3 +686,123 @@
         display: none;
     }
 }
+
+/* ============================================================
+   DARK MODE (html.dark) — admin Lexa layout.
+   Sidebar stays dark; content/cards/text switch to dark theme.
+   ============================================================ */
+html.dark .lx-admin {
+    --lx-body-bg: #1a1a2e;
+    --lx-card-bg: #262640;
+    --lx-text: #f0eef5;
+    --lx-muted: #a5a2bd;
+    --lx-muted-2: #8a87a3;
+    --lx-topbar-icon: #c9c7dd;
+    --lx-search-bg: #20203a;
+    --lx-border: #3a3a58;
+    --lx-tertiary: #20203a;
+    --lx-footer-bg: #20203a;
+    --lx-footer-text: #a5a2bd;
+}
+
+html.dark .lx-wrapper {
+    background: #1a1a2e;
+    color: #f0eef5;
+}
+
+html.dark .lx-topbar {
+    background: #22223c;
+}
+
+html.dark .lx-btn-create {
+    background: #2c2c4e;
+    color: #f0eef5;
+}
+
+html.dark .lx-btn-create:hover {
+    background: #34345a;
+}
+
+html.dark .lx-search input {
+    color: #f0eef5;
+}
+
+html.dark .lx-user-name {
+    color: #f0eef5;
+}
+
+html.dark .lx-dropdown-menu {
+    background: #262640;
+    border-color: #3a3a58;
+}
+
+html.dark .lx-dropdown-item {
+    color: #e8e6f0;
+}
+
+html.dark .lx-dropdown-item:hover {
+    background: #34345a;
+}
+
+html.dark .lx-page-title {
+    color: #f0eef5;
+}
+
+html.dark .lx-breadcrumb,
+html.dark .lx-breadcrumb a {
+    color: #a5a2bd;
+}
+
+html.dark .lx-breadcrumb .current {
+    color: #f0eef5;
+}
+
+html.dark .lx-admin .card {
+    background: #262640;
+}
+
+html.dark .lx-admin .card-header {
+    background: #262640;
+    border-bottom-color: #3a3a58;
+}
+
+html.dark .lx-admin .card-title {
+    color: #f0eef5;
+}
+
+html.dark .lx-admin .table {
+    color: #e8e6f0;
+}
+
+html.dark .lx-admin .table thead th {
+    color: #a5a2bd;
+    border-bottom-color: #3a3a58;
+}
+
+html.dark .lx-admin .table td {
+    border-color: #3a3a58;
+}
+
+html.dark .lx-admin .form-control,
+html.dark .lx-admin .form-select {
+    background-color: #1e1e36;
+    border-color: #4a4a6e;
+    color: #f0eef5;
+}
+
+html.dark .lx-admin .form-control::placeholder {
+    color: #8a87a3;
+}
+
+html.dark .lx-footer {
+    background: #20203a;
+    color: #a5a2bd;
+}
+
+html.dark .lx-mini-stat {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+
+html.dark .lx-icon-btn:hover {
+    background: #34345a;
+}

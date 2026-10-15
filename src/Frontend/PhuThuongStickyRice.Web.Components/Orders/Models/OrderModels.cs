@@ -70,6 +70,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         /// <summary>When the order was collected at the shop (UTC). Nullable.</summary>
         public DateTime? PickedUpAt { get; set; }
 
+        /// <summary>Pre-order scheduled pickup time (UTC). Null = ASAP.</summary>
+        public DateTime? ScheduledFor { get; set; }
+
         public decimal TotalAmount { get; set; }
 
         public string Currency { get; set; }
@@ -225,5 +228,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public List<RevenueByDayModel> RevenueByDay { get; set; } = new List<RevenueByDayModel>();
 
         public List<OrderModel> RecentOrders { get; set; } = new List<OrderModel>();
+
+        /// <summary>Pre-orders sorted by scheduled time — kitchen priority.</summary>
+        public List<OrderModel> UpcomingPreOrders { get; set; } = new List<OrderModel>();
     }
 }

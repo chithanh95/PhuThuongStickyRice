@@ -190,6 +190,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// </summary>
         public string PickupShipperPhone { get; set; }
 
+        /// <summary>Pre-order scheduled pickup time (UTC). Null = ASAP.</summary>
+        public DateTime? ScheduledFor { get; set; }
+
         /// <summary>Optional VAT invoice tax code.</summary>
         public string TaxCode { get; set; }
 
@@ -303,6 +306,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         /// <summary>When the order was collected at the shop (UTC). Nullable.</summary>
         public DateTime? PickedUpAt { get; set; }
+
+        /// <summary>Pre-order scheduled pickup time (UTC). Null = ASAP.</summary>
+        public DateTime? ScheduledFor { get; set; }
 
         /// <summary>Wave 6a (item 23): scheduled delivery slot. Null = giao ngay.</summary>
         public string DeliverySlot { get; set; }
@@ -428,6 +434,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         /// <summary>When the order was collected at the shop (UTC). Nullable.</summary>
         public DateTime? PickedUpAt { get; set; }
+
+        /// <summary>Pre-order scheduled pickup time (UTC). Null = ASAP.</summary>
+        public DateTime? ScheduledFor { get; set; }
 
         public decimal TotalAmount { get; set; }
 
@@ -582,6 +591,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// <summary>Wave 6b (item 30): when false, checkout is blocked.</summary>
         public bool AcceptingOrders { get; set; } = true;
 
+        public string PausedReason { get; set; }
+
         /// <summary>
         /// Wave 6d (item 39): max non-cancelled orders per phone per day
         /// (Vietnam day). 0 = unlimited. Default 10.
@@ -607,6 +618,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public int Quantity { get; set; }
 
         public string Notes { get; set; }
+
+        public string EventLocation { get; set; }
+
+        public string QuoteType { get; set; }
     }
 
     public class DishCandidateModel

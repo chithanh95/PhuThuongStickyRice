@@ -14,6 +14,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.CustomerName).HasMaxLength(QuoteRequest.CustomerNameMaxLength).IsRequired();
             builder.Property(x => x.CustomerPhone).HasMaxLength(QuoteRequest.CustomerPhoneMaxLength).IsRequired();
             builder.Property(x => x.EventDate);
+            builder.Property(x => x.EventLocation).HasMaxLength(QuoteRequest.EventLocationMaxLength);
+            builder.Property(x => x.QuoteType).HasMaxLength(QuoteRequest.QuoteTypeMaxLength);
             builder.Property(x => x.Quantity).IsRequired();
             builder.Property(x => x.Notes).HasMaxLength(QuoteRequest.NotesMaxLength);
             builder.Property(x => x.Status).HasConversion<int>().IsRequired();

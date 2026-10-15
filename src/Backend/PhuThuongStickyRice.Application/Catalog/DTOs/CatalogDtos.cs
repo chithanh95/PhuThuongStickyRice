@@ -92,6 +92,10 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
 
         public string Notes { get; set; }
 
+        public string EventLocation { get; set; }
+
+        public string QuoteType { get; set; }
+
         public string Status { get; set; }
 
         public DateTime CreatedAt { get; set; }
@@ -114,6 +118,12 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
 
         [StringLength(1000)]
         public string Notes { get; set; }
+
+        [StringLength(500)]
+        public string EventLocation { get; set; }
+
+        [StringLength(50)]
+        public string QuoteType { get; set; }
     }
 
     public class UpdateQuoteRequestStatusDto

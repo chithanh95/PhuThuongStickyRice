@@ -24,6 +24,9 @@
                 </button>
             </div>
             <div class="lx-topbar-right">
+                <button class="lx-icon-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng">
+                    <span aria-hidden="true">@(_isDark ? "☀️" : "🌙")</span>
+                </button>
                 <div class="lx-search">
                     <input placeholder="Tìm chức năng..." @bind="_search" @bind:event="oninput" />
                     <span class="oi oi-magnifying-glass" aria-hidden="true"></span>
@@ -87,7 +90,7 @@
                 else
                 {
                     <div class="lx-nav-label">Main</div>
-                    @foreach (var group in MenuGroups)
+                    @foreach (var (group, items) in VisibleMenu())
                     {
                         <div class="lx-nav-group @(IsGroupOpen(group.Key) ? "open" : "")">
                             <a class="lx-nav-link" href="javascript:void(0)" @onclick="() => ToggleGroup(group.Key)" @onclick:preventDefault="true">
@@ -96,7 +99,7 @@
                                 <span class="oi oi-chevron-right lx-nav-caret" aria-hidden="true"></span>
                             </a>
                             <div class="lx-subnav">
-                                @foreach (var item in group.Items)
+                                @foreach (var item in items)
                                 {
                                     <a class="lx-nav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseSidebarMobile">
                                         <span class="lx-nav-text">@item.Label</span>
@@ -135,6 +138,17 @@
 
 @code {
     private bool _sidebarOpen;
+    private bool _isDark;
+
+    private async Task ToggleTheme()
+    {
+        try
+        {
+            var theme = await JS.InvokeAsync<string>("ptToggleTheme");
+            _isDark = theme == "dark";
+        }
+        catch { }
+    }
     private bool _userMenuOpen;
     private string _search = "";
     private int _pendingCount = 0;
@@ -150,8 +164,9 @@
     {
         new("overview", "Tổng quan", "oi-dashboard", new()
         {
-            new("/dashboard", "Dashboard", "oi-dashboard"),
-            new("/orders", "Đơn hàng", "oi-cart"),
+            new("/dashboard", "Dashboard", "oi-dashboard", roles: "Admin,Cashier"),
+            new("/orders", "Đơn hàng", "oi-cart", roles: "Admin,Cashier"),
+            new("/admin/quotes", "Đơn đặt tiệc", "oi-calendar"),
             new("/customers", "Khách hàng", "oi-people"),
         }),
         new("sales", "Bán hàng", "oi-tag", new()
@@ -163,8 +178,8 @@
         }),
         new("ops", "Vận hành", "oi-cog", new()
         {
-            new("/ban-hang", "Bán hàng (POS)", "oi-credit-card"),
-            new("/bep", "Màn hình bếp", "oi-fire"),
+            new("/ban-hang", "Bán hàng (POS)", "oi-credit-card", roles: "Admin,Cashier"),
+            new("/bep", "Màn hình bếp", "oi-fire", roles: "Admin,Kitchen"),
         }),
         new("content", "Nội dung", "oi-image", new()
         {
@@ -174,25 +189,56 @@
         }),
         new("finance", "Tài chính", "oi-dollar", new()
         {
+            new("/admin/bao-cao", "Báo cáo doanh thu", "oi-graph"),
             new("/admin/doi-soat-momo", "Đối soát MoMo", "oi-transfer"),
             new("/admin/doi-soat-ngay", "Đối soát ngày", "oi-data-transfer-download"),
         }),
         new("system", "Hệ thống", "oi-wrench", new()
         {
             new("/admin/shop-settings", "Cài đặt cửa hàng", "oi-cog"),
+            new("/admin/nhan-vien", "Nhân viên", "oi-people"),
         }),
     };
 
     private IEnumerable<MenuItem> FilteredItems =>
         MenuGroups.SelectMany(g => g.Items)
-            .Where(i => i.Label.Contains(_search, StringComparison.OrdinalIgnoreCase));
+            .Where(i => IsVisible(i) && i.Label.Contains(_search, StringComparison.OrdinalIgnoreCase));
 
-    protected override void OnInitialized()
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; }
+    private System.Security.Claims.ClaimsPrincipal _user;
+
+    private bool IsVisible(MenuItem item)
     {
+        if (_user == null) return false;
+        return item.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Any(r => _user.IsInRole(r.Trim()));
+    }
+
+    private IEnumerable<(MenuGroup Group, List<MenuItem> Items)> VisibleMenu()
+    {
+        foreach (var g in MenuGroups)
+        {
+            var items = g.Items.Where(IsVisible).ToList();
+            if (items.Count > 0) yield return (g, items);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Dark mode: sync toggle icon with saved theme (JS already applied the class pre-paint).
+        try { _isDark = await JS.InvokeAsync<string>("ptGetTheme") == "dark"; } catch { }
+        try
+        {
+            _user = (await AuthStateTask)?.User;
+        }
+        catch
+        {
+            _user = new System.Security.Claims.ClaimsPrincipal();
+        }
         Navigation.LocationChanged += OnLocationChanged;
         UpdatePageHead();
         // Mở sẵn nhóm chứa trang hiện tại
-        var group = MenuGroups.FirstOrDefault(g => g.Items.Any(i => IsHrefActive(i.Href)));
+        var group = MenuGroups.FirstOrDefault(g => g.Items.Any(i => IsVisible(i) && IsHrefActive(i.Href)));
         if (group != null) _openGroups.Add(group.Key);
         else _openGroups.Add("overview");
     }
@@ -281,12 +327,14 @@
 
     private sealed class MenuItem
     {
-        public MenuItem(string href, string label, string icon, string badge = null, string badgeClass = "b-primary")
-        { Href = href; Label = label; Icon = icon; Badge = badge; BadgeClass = badgeClass; }
+        public MenuItem(string href, string label, string icon, string badge = null, string badgeClass = "b-primary", string roles = "Admin")
+        { Href = href; Label = label; Icon = icon; Badge = badge; BadgeClass = badgeClass; Roles = roles; }
         public string Href { get; }
         public string Label { get; }
         public string Icon { get; }
         public string Badge { get; }
         public string BadgeClass { get; }
+        /// <summary>Comma-separated roles allowed to see this item.</summary>
+        public string Roles { get; }
     }
 }

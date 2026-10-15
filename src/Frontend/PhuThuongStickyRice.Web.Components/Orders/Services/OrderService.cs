@@ -89,6 +89,13 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             return $"{baseAddress}/api/admin/orders/export{query}";
         }
 
+        /// <summary>
+        /// Revenue report: Excel export URL for a date range (same endpoint
+        /// as the orders export, date-filtered).
+        /// </summary>
+        public string GetExportRevenueUrl(DateTime? fromDate = null, DateTime? toDate = null)
+            => GetExportOrdersUrl(fromDate: fromDate, toDate: toDate);
+
         /// <summary>Wave 6c (item 31): daily payment-channel reconciliation.</summary>
         public async Task<DailyReconciliationModel> GetReconciliationAsync(DateTime? date = null)
         {

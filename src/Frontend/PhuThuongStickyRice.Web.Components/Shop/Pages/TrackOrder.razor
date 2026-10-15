@@ -378,6 +378,10 @@
                 {
                     <br /><span>🕖 Giờ giao hẹn: <strong>@_order.DeliverySlot</strong></span>
                 }
+                @if (_order.ScheduledFor.HasValue)
+                {
+                    <br /><span>📅 <strong>Đơn đặt trước</strong> — giờ lấy hẹn: <strong class="text-primary">@_order.ScheduledFor.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></span>
+                }
             </p>
             @* Item 130: refund status visible to the customer. *@
             @if (!string.IsNullOrEmpty(_order.RefundStatus) && _order.RefundStatus != "None")

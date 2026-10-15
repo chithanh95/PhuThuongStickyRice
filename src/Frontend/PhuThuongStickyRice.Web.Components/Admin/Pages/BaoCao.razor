@@ -1,0 +1,91 @@
+@page "/admin/bao-cao"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Orders.Services
+@inject OrderService OrderService
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+<h3>📈 Báo cáo doanh thu</h3>
+<p class="text-muted">
+    Xuất file Excel gồm 2 sheet: <strong>Tổng hợp</strong> (doanh thu, số đơn, giá trị trung bình theo ngày)
+    và <strong>Chi tiết đơn</strong>. Đơn đã hủy không tính vào doanh thu.
+</p>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="form-row align-items-end">
+            <div class="col-md-3 col-6">
+                <label class="mb-1"><small class="text-muted">Từ ngày</small></label>
+                <input type="date" class="form-control" @bind="_fromDate" />
+            </div>
+            <div class="col-md-3 col-6">
+                <label class="mb-1"><small class="text-muted">Đến ngày</small></label>
+                <input type="date" class="form-control" @bind="_toDate" />
+            </div>
+            <div class="col-md-6 col-12 text-right mt-2 mt-md-0">
+                <button class="btn btn-outline-secondary mr-2" @onclick="SetThisMonth">Tháng này</button>
+                <button class="btn btn-outline-secondary mr-2" @onclick="SetLast7Days">7 ngày qua</button>
+                <button class="btn btn-primary" @onclick="ExportExcel" disabled="@_exporting">
+                    @(_exporting ? "Đang xuất..." : "⬇ Xuất Excel")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@code {
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+    private bool _exporting;
+    private string _error;
+
+    protected override void OnInitialized()
+    {
+        SetThisMonth();
+    }
+
+    private void SetThisMonth()
+    {
+        var today = DateTime.Today;
+        _fromDate = new DateTime(today.Year, today.Month, 1);
+        _toDate = today;
+    }
+
+    private void SetLast7Days()
+    {
+        _toDate = DateTime.Today;
+        _fromDate = DateTime.Today.AddDays(-6);
+    }
+
+    private async Task ExportExcel()
+    {
+        _error = null;
+        _exporting = true;
+        try
+        {
+            if (_fromDate > _toDate)
+            {
+                _error = "Từ ngày phải trước hoặc bằng đến ngày.";
+                return;
+            }
+
+            var token = await OrderService.GetAccessToken();
+            var url = OrderService.GetExportRevenueUrl(_fromDate, _toDate);
+            var from = (_fromDate ?? DateTime.Today).ToString("yyyy-MM-dd");
+            var to = (_toDate ?? DateTime.Today).ToString("yyyy-MM-dd");
+            await JSRuntime.InvokeVoidAsync("interop.downloadFile", url, token, $"bao-cao-doanh-thu-{from}_{to}.xlsx");
+        }
+        catch (Exception ex)
+        {
+            _error = "Xuất file thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _exporting = false;
+        }
+    }
+}

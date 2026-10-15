@@ -120,6 +120,20 @@ namespace PhuThuongStickyRice.Application.Orders
                 orderQueryable.OrderByDescending(x => x.CreatedAt).Take(5));
             stats.RecentOrders = _objectMapper.Map<List<Order>, List<OrderDto>>(recent);
 
+            // Pre-orders the kitchen should prioritize: scheduled, not yet
+            // picked up, not cancelled/completed — soonest first.
+            var now = DateTime.UtcNow;
+            var upcoming = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.ScheduledFor != null
+                        && x.ScheduledFor >= now.AddHours(-2)
+                        && !x.PickedUpAt.HasValue
+                        && x.Status != OrderStatus.Cancelled
+                        && x.Status != OrderStatus.Completed)
+                    .OrderBy(x => x.ScheduledFor)
+                    .Take(8));
+            stats.UpcomingPreOrders = _objectMapper.Map<List<Order>, List<OrderDto>>(upcoming);
+
             // Item 86: orders still Pending after the configured minutes —
             // the dashboard raises a distinct urgent alert for these.
             var settings = await _shopSettings.GetAsync();

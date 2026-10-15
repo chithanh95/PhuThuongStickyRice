@@ -94,6 +94,10 @@
                     <tr><td>Nhận hàng</td><td class="text-right text-success">🛵 Shipper đến lấy tại quán (miễn phí ship)</td></tr>
                     <tr><td colspan="2"><small class="text-muted">Quán chuẩn bị sẵn — shipper đến đọc mã đơn <strong>@_placedOrder.OrderNumber</strong> để lấy.</small></td></tr>
                 }
+                @if (_placedOrder.ScheduledFor.HasValue)
+                {
+                    <tr><td>📅 Giờ lấy hẹn trước</td><td class="text-right"><strong class="text-primary">@_placedOrder.ScheduledFor.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></td></tr>
+                }
                 <tr>
                     <td><strong>Tổng tiền</strong></td>
                     <td class="text-right"><strong class="text-danger">@FormatPrice(_placedOrder.TotalAmount)</strong></td>
@@ -305,6 +309,51 @@ else
                             <input class="form-control mb-2" @bind="_shipperName" placeholder="Tên shipper (VD: Grab — Anh Tuấn)" />
                             <input class="form-control" @bind="_shipperPhone" placeholder="SĐT shipper" />
                         </div>
+                    }
+                    <div class="form-group">
+                        <label>Thời gian nhận hàng *</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="timing" id="tm-now"
+                                   checked="@(!_isPreOrder)" @onchange="@(() => _isPreOrder = false)" />
+                            <label class="form-check-label" for="tm-now">⚡ Nhận ngay <small class="text-muted">(quán chuẩn bị sớm nhất có thể)</small></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="timing" id="tm-pre"
+                                   checked="@(_isPreOrder)" @onchange="@(() => _isPreOrder = true)" />
+                            <label class="form-check-label" for="tm-pre">📅 Đặt trước theo giờ <small class="text-muted">(trước ít nhất 1 tiếng, trong giờ mở cửa)</small></label>
+                        </div>
+                    </div>
+                    @if (_isPreOrder)
+                    {
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label>Ngày lấy *</label>
+                                <select class="form-control @FieldClass(_preOrderError)" value="@_preOrderDate.ToString("yyyy-MM-dd")" @onchange="OnPreOrderDateChanged">
+                                    @foreach (var d in PreOrderDates())
+                                    {
+                                        <option value="@d.ToString("yyyy-MM-dd")">@d.ToString("dd/MM") (@VnDayName(d.DayOfWeek))</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group col-6">
+                                <label>Giờ lấy *</label>
+                                <select class="form-control @FieldClass(_preOrderError)" @bind="_preOrderTime">
+                                    <option value="">— Chọn giờ —</option>
+                                    @foreach (var t in PreOrderTimes())
+                                    {
+                                        <option value="@t">@t</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_preOrderError))
+                        {
+                            <small class="text-danger d-block mb-2">@_preOrderError</small>
+                        }
+                        else
+                        {
+                            <small class="text-muted d-block mb-2">Mở cửa: @_shopSettings?.OpenTime – @_shopSettings?.CloseTime</small>
+                        }
                     }
                     @* Item 109: branch picker. *@
                     @if (_branches != null && _branches.Count > 0)
@@ -687,6 +736,12 @@ else
     // Optional customer-booked shipper info (ShipperPickup only).
     private string _shipperName;
     private string _shipperPhone;
+
+    // Pre-order (đặt trước theo giờ) — fields for the in-progress feature.
+    private bool _isPreOrder;
+    private DateTime _preOrderDate = DateTime.Today;
+    private string _preOrderTime;
+    private string _preOrderError;
 
     // Per-field validation messages.
     private string _nameError;
@@ -1072,12 +1127,101 @@ else
 
         return _nameError == null && _phoneError == null && _emailError == null && _addressError == null
             && _recipientNameError == null && _recipientPhoneError == null
-            && _taxCodeError == null && _companyNameError == null;
+            && _taxCodeError == null && _companyNameError == null
+            && _preOrderError == null;
+    }
+
+    // ---------- Pre-order (đặt trước theo giờ) ----------
+
+    private static string VnDayName(DayOfWeek dow) => dow switch
+    {
+        DayOfWeek.Monday => "T2",
+        DayOfWeek.Tuesday => "T3",
+        DayOfWeek.Wednesday => "T4",
+        DayOfWeek.Thursday => "T5",
+        DayOfWeek.Friday => "T6",
+        DayOfWeek.Saturday => "T7",
+        _ => "CN",
+    };
+
+    /// <summary>Bookable dates: today + next 6 days.</summary>
+    private static List<DateTime> PreOrderDates()
+    {
+        var dates = new List<DateTime>();
+        for (var i = 0; i < 7; i++)
+        {
+            dates.Add(DateTime.Today.AddDays(i));
+        }
+        return dates;
+    }
+
+    /// <summary>
+    /// 30-minute pickup slots inside shop open hours. For today, only
+    /// slots at least 1 hour ahead are offered.
+    /// </summary>
+    private List<string> PreOrderTimes()
+    {
+        var slots = new List<string>();
+        var open = ShopHours.ParseOpen(_shopSettings?.OpenTime);
+        var close = ShopHours.ParseClose(_shopSettings?.CloseTime);
+        var minTime = _preOrderDate.Date == DateTime.Today
+            ? DateTime.Now.TimeOfDay.Add(TimeSpan.FromHours(1))
+            : TimeSpan.Zero;
+
+        for (var t = open; t.Add(TimeSpan.FromMinutes(30)) <= close; t = t.Add(TimeSpan.FromMinutes(30)))
+        {
+            if (t >= minTime)
+            {
+                slots.Add($"{(int)t.TotalHours:D2}:{t.Minutes:D2}");
+            }
+        }
+        return slots;
+    }
+
+    private void OnPreOrderDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+        {
+            _preOrderDate = d.Date;
+        }
+        // Reset the time when the date changes — the old slot may be invalid.
+        _preOrderTime = null;
+        _preOrderError = null;
+    }
+
+    /// <summary>
+    /// Validates the pre-order selection. Returns the scheduled local
+    /// DateTime, or null when "nhận ngay". Sets _preOrderError on failure.
+    /// </summary>
+    private DateTime? ValidatePreOrder()
+    {
+        _preOrderError = null;
+        if (!_isPreOrder)
+        {
+            return null;
+        }
+        if (string.IsNullOrWhiteSpace(_preOrderTime)
+            || !TimeSpan.TryParse(_preOrderTime, out var time))
+        {
+            _preOrderError = "Vui lòng chọn giờ lấy.";
+            return null;
+        }
+        var scheduled = _preOrderDate.Date.Add(time);
+        if (scheduled <= DateTime.Now.AddHours(1))
+        {
+            _preOrderError = "Giờ đặt trước phải sau thời điểm hiện tại ít nhất 1 tiếng.";
+            return null;
+        }
+        return scheduled;
     }
 
     private async Task PlaceOrder()
     {
         _error = null;
+
+        // Pre-order validation runs before the other fields so the error
+        // shows next to the date/time pickers.
+        var scheduledFor = ValidatePreOrder();
 
         if (!ValidateFields())
         {
@@ -1108,6 +1252,9 @@ else
 
             // No delivery slot — the shop does not deliver.
             _order.DeliverySlot = null;
+
+            // Pre-order scheduled pickup time (local → server normalizes to UTC).
+            _order.ScheduledFor = scheduledFor;
 
             // Customer-booked shipper info (optional, ShipperPickup only).
             _order.PickupShipperName = _fulfillment == "ShipperPickup"

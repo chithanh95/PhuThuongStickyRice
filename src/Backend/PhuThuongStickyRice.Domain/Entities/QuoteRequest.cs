@@ -11,6 +11,8 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int CustomerNameMaxLength = 200;
         public const int CustomerPhoneMaxLength = 30;
         public const int NotesMaxLength = 1000;
+        public const int QuoteTypeMaxLength = 50;
+        public const int EventLocationMaxLength = 500;
 
         public string CustomerName { get; set; }
 
@@ -18,6 +20,12 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         /// <summary>Planned event date (date part is what matters).</summary>
         public DateTime? EventDate { get; set; }
+
+        /// <summary>Where the event takes place (địa điểm tổ chức tiệc).</summary>
+        public string EventLocation { get; set; }
+
+        /// <summary>Source of the quote: "DatTiec" (party page) or "Landing" (home booking form).</summary>
+        public string QuoteType { get; set; }
 
         /// <summary>Estimated number of servings / packages.</summary>
         public int Quantity { get; set; }

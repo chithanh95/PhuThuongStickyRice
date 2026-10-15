@@ -117,6 +117,11 @@ else
                                     {
                                         <span class="ml-1" title="Ghi chú nội bộ: @order.AdminNote">📝</span>
                                     }
+                                    @* Pre-order badge: đặt trước theo giờ. *@
+                                    @if (order.ScheduledFor.HasValue)
+                                    {
+                                        <span class="badge badge-primary ml-1" title="Đơn đặt trước">📅 @order.ScheduledFor.Value.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                                    }
                                     <br />@FulfillmentBadge(order.FulfillmentMethod, order.PickedUpAt)
                                 </td>
                                 <td>@order.CustomerName<br /><small class="text-muted">@order.CustomerPhone</small></td>
@@ -185,6 +190,10 @@ else
                                             @if (order.PickedUpAt.HasValue)
                                             {
                                                 <div class="text-success">✅ Đã lấy hàng lúc <strong>@order.PickedUpAt.Value.ToLocalTime().ToString("dd/MM HH:mm")</strong></div>
+                                            }
+                                            @if (order.ScheduledFor.HasValue)
+                                            {
+                                                <div class="mt-1">📅 <strong>Đơn đặt trước</strong> — giờ lấy hẹn: <strong class="text-primary">@order.ScheduledFor.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></div>
                                             }
                                             else if (order.Status != "Cancelled" && order.Status != "Completed")
                                             {

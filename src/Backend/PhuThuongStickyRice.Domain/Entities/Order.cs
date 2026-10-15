@@ -196,6 +196,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public DateTime? PickedUpAt { get; private set; }
 
         /// <summary>
+        /// Pre-order: scheduled pickup/delivery time (UTC). Null = ASAP.
+        /// Set at checkout when the customer chooses "Đặt trước theo giờ".
+        /// </summary>
+        public DateTime? ScheduledFor { get; private set; }
+
+        /// <summary>
         /// Sets or clears the internal staff note. Admin/staff only.
         /// </summary>
         public void SetAdminNote(string note)

@@ -55,7 +55,7 @@ else
                 </div>
                 <div class="form-group col-md-6">
                     <label>Số lượng (gói/mâm) *</label>
-                    <input type="number" min="10" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity" />
+                    <input type="number" min="30" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity" />
                     @if (!string.IsNullOrEmpty(_qtyError))
                     {
                         <small class="text-danger">@_qtyError</small>
@@ -63,9 +63,13 @@ else
                 </div>
             </div>
             <div class="form-group">
-                <label>Ghi chú</label>
+                <label>Địa điểm tổ chức</label>
+                <input class="form-control" @bind="_model.EventLocation" placeholder="VD: 123 Phố Huế, Hai Bà Trưng, Hà Nội" />
+            </div>
+            <div class="form-group">
+                <label>Ghi chú món ăn</label>
                 <textarea class="form-control" rows="3" @bind="_model.Notes"
-                          placeholder="VD: tiệc cưới 30 mâm, cần giao trước 10h sáng..."></textarea>
+                          placeholder="VD: tiệc cưới 30 mâm, cần giao trước 10h sáng, 20 mâm xôi gấc + 10 mâm xôi xéo..."></textarea>
             </div>
             <button class="btn btn-success btn-lg" @onclick="SubmitAsync" disabled="@_submitting">
                 @(_submitting ? "Đang gửi..." : "Gửi yêu cầu báo giá")
@@ -75,7 +79,7 @@ else
 }
 
 @code {
-    private readonly QuoteRequestModel _model = new QuoteRequestModel { Quantity = 50 };
+    private readonly QuoteRequestModel _model = new QuoteRequestModel { Quantity = 30, QuoteType = "DatTiec" };
     private bool _submitting;
     private bool _submitted;
     private string _error;
@@ -88,7 +92,7 @@ else
         _error = null;
         _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
         _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
-        _qtyError = _model.Quantity < 10 ? "Đơn đặt tiệc từ 10 gói/mâm trở lên. Đơn nhỏ hơn vui lòng đặt tại cửa hàng." : null;
+        _qtyError = _model.Quantity < 30 ? "Đơn đặt tiệc từ 30 gói/mâm trở lên. Đơn nhỏ hơn vui lòng đặt tại cửa hàng." : null;
 
         if (_nameError != null || _phoneError != null || _qtyError != null)
         {

@@ -3,6 +3,26 @@
 
 <head>
     <meta charset="utf-8" />
+    <script>
+        // Theme (dark mode): apply saved choice before first paint to avoid flash.
+        (function () {
+            try {
+                if (localStorage.getItem('pt-theme') === 'dark') {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) { }
+        })();
+        window.ptGetTheme = function () {
+            try { return localStorage.getItem('pt-theme') === 'dark' ? 'dark' : 'light'; }
+            catch (e) { return 'light'; }
+        };
+        window.ptToggleTheme = function () {
+            var dark = !document.documentElement.classList.contains('dark');
+            document.documentElement.classList.toggle('dark', dark);
+            try { localStorage.setItem('pt-theme', dark ? 'dark' : 'light'); } catch (e) { }
+            return dark ? 'dark' : 'light';
+        };
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="Xôi Phú Thượng — xôi ngon Hà Nội, đặt xôi online. Xôi gấc, xôi xéo, xôi đỗ, xôi vò, xôi ngũ sắc chuẩn vị làng nghề Phú Thượng. Đặt hàng nhanh, shipper đến lấy tận quán, thanh toán COD, chuyển khoản QR hoặc MoMo." />
     <meta name="keywords" content="xôi Phú Thượng, xôi ngon Hà Nội, đặt xôi online, xôi gấc, xôi xéo, xôi ngũ sắc, xôi sáng Hà Nội" />

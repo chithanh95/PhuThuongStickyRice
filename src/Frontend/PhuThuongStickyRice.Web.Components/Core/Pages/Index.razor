@@ -56,6 +56,7 @@ else
         <nav class="xo-nav">
             <a href="#gioi-thieu">Giới thiệu</a>
             <a href="#dat-xoi">Đặt xôi</a>
+            <a href="/dat-tiec">Đặt tiệc</a>
             <a href="#lien-he">Liên hệ</a>
         </nav>
         <a class="xo-logo" href="/">
@@ -63,6 +64,9 @@ else
             <span class="xo-logo-sub">Vietnamese Cuisine</span>
         </a>
         <div class="xo-header-right">
+            <button class="xo-theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
+                @(_isDark ? "☀️" : "🌙")
+            </button>
             @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
             {
                 <a class="xo-hotline" href="tel:@_content.ContactPhone">Hotline: @_content.ContactPhone</a>
@@ -156,6 +160,10 @@ else
             {
                 <p class="xo-today-sold">🔥 Hôm nay đã bán @_todaySold gói xôi</p>
             }
+            @if (OrdersPaused)
+            {
+                <p class="xo-paused-notice">⏸ Quán tạm ngưng nhận đơn@(string.IsNullOrWhiteSpace(_shopSettings.PausedReason) ? "." : ": " + _shopSettings.PausedReason)</p>
+            }
         </div>
         <div class="xo-dish-grid">
             @if (_quickProducts == null)
@@ -181,7 +189,7 @@ else
                         <div class="xo-dish-body">
                             <h3 class="xo-dish-name">@product.Name</h3>
                             <div class="xo-dish-price">@FormatPrice(product.Price)</div>
-                            <button class="xo-btn xo-btn-red xo-dish-btn" @onclick="() => QuickAdd(product)">Thêm vào giỏ</button>
+                            <button class="xo-btn xo-btn-red xo-dish-btn" @onclick="() => QuickAdd(product)" disabled="@OrdersPaused">Thêm vào giỏ</button>
                         </div>
                     </div>
                 }
@@ -415,6 +423,7 @@ else
             }
         </ul>
         <a href="/shop" class="xo-btn xo-btn-red">@_content.FooterButtonText</a>
+        <a href="/dat-tiec" class="xo-btn xo-btn-gold" style="margin-left:8px">Đặt tiệc / Số lượng lớn</a>
         @if (_policies.Count > 0)
         {
             <div class="xo-policy-bar">
@@ -459,11 +468,23 @@ else
 }
 
 </div> @* /.xo-page *@
+<PhuThuongStickyRice.Web.Components.Shop.Components.UpsellPopup
+    Visible="@_upsellVisible"
+    Products="@_upsellProducts"
+    AddedProductName="@_upsellAddedName"
+    OnAdd="AddUpsell"
+    OnClose="CloseUpsell" />
 } @* /_loadFailed else *@
 
 @code {
     private LandingContentModel _content = new LandingContentModel();
     private List<ShopProductModel> _quickProducts;
+    private List<ShopProductModel> _allProducts = new List<ShopProductModel>();
+
+    // Upsell popup state.
+    private bool _upsellVisible;
+    private string _upsellAddedName;
+    private List<ShopProductModel> _upsellProducts = new List<ShopProductModel>();
     private long _todaySold;
 
     // Sale upgrades: best-seller ids (fail-soft), product count + rating aggregates for the trust strip.
@@ -514,6 +535,10 @@ else
     private string _openStatusText;
     private bool _openNow;
 
+    // Pause-orders state (fail-soft — landing works with defaults).
+    private ShopSettingModel _shopSettings;
+    private bool OrdersPaused => _shopSettings != null && !_shopSettings.AcceptingOrders;
+
     // Wave 6b (item 28): policy pages for the footer links (fail-soft).
     private List<PolicyPageSummaryModel> _policies = new List<PolicyPageSummaryModel>();
 
@@ -558,11 +583,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Dark mode: sync toggle icon with saved theme (JS already applied the class pre-paint).
+        try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme") == "dark"; } catch { }
         // Wave 6a (item 22): open-hours badge in the hero (fail-safe —
         // the landing works fine with the built-in defaults).
         try
         {
             var settings = await ShopSettingsService.GetAsync();
+            _shopSettings = settings;
             if (settings != null)
             {
                 var (isOpen, text) = ShopHours.StatusText(settings.OpenTime, settings.CloseTime);
@@ -636,7 +664,8 @@ else
         {
             var paged = await ShopService.GetProductsAsync();
             _productCount = paged?.TotalCount ?? 0;
-            _quickProducts = (paged.Items ?? new List<ShopProductModel>()).Take(3).ToList();
+            _allProducts = paged.Items ?? new List<ShopProductModel>();
+            _quickProducts = _allProducts.Take(3).ToList();
         }
         catch (Exception)
         {
@@ -717,8 +746,44 @@ else
     /// <summary>Add one item to the cart from the quick-order strip.</summary>
     private void QuickAdd(ShopProductModel product)
     {
+        if (OrdersPaused)
+        {
+            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.");
+            return;
+        }
+        CartState.Add(product, 1);
+
+        // Upsell: xôi → suggest Chả cốm / Chả giò.
+        if ((product?.Code ?? "").StartsWith("XOI", StringComparison.OrdinalIgnoreCase))
+        {
+            var upsells = _allProducts
+                .Where(p => !(p.Code ?? "").StartsWith("XOI", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(p => p.Code == "CHA-COM" ? 0 : p.Code == "CHA-GIO" ? 1 : 2)
+                .ThenBy(p => p.Price)
+                .Take(4)
+                .ToList();
+            if (upsells.Count > 0)
+            {
+                _upsellProducts = upsells;
+                _upsellAddedName = product.Name;
+                _upsellVisible = true;
+                return;
+            }
+        }
+
+        Toasts.Show($"Đã thêm {product.Name} × 1 vào giỏ", "Xem giỏ hàng", "/cart");
+    }
+
+    private void AddUpsell(ShopProductModel product)
+    {
         CartState.Add(product, 1);
         Toasts.Show($"Đã thêm {product.Name} × 1 vào giỏ", "Xem giỏ hàng", "/cart");
+    }
+
+    private void CloseUpsell()
+    {
+        _upsellVisible = false;
     }
 
     /// <summary>SVG placeholder per product code (matches the shop page).</summary>
@@ -761,6 +826,19 @@ else
     private string _bookNotes = "";
     private bool _bookSending;
     private bool _bookSent;
+
+    // Dark mode toggle (persisted in localStorage via ptToggleTheme).
+    private bool _isDark;
+
+    private async Task ToggleTheme()
+    {
+        try
+        {
+            var theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme");
+            _isDark = theme == "dark";
+        }
+        catch { }
+    }
     private string _bookError;
 
     private async Task SubmitBooking()
@@ -781,7 +859,8 @@ else
                 CustomerName = _bookName.Trim(),
                 CustomerPhone = digits,
                 Quantity = _bookQty > 0 ? _bookQty : 10,
-                Notes = _bookNotes?.Trim()
+                Notes = _bookNotes?.Trim(),
+                QuoteType = "Landing"
             });
             _bookSent = true;
         }

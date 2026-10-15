@@ -1,0 +1,170 @@
+@page "/admin/quotes"
+@attribute [Authorize]
+@using System
+@using System.Collections.Generic
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject CatalogAdminService CatalogService
+
+<h3>Yêu cầu báo giá đặt tiệc</h3>
+<p class="text-muted">Đơn đặt cỗ / số lượng lớn từ trang <a href="/dat-tiec">/dat-tiec</a> và form đặt xôi ở trang chủ. Không thu tiền trước — shop gọi lại báo giá.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="mb-3">
+    <div class="btn-group btn-group-sm" role="group">
+        <button class="btn @StatusChipClass(null)" @onclick="() => SetStatus(null)">Tất cả</button>
+        <button class="btn @StatusChipClass("New")" @onclick='() => SetStatus("New")'>Mới</button>
+        <button class="btn @StatusChipClass("Contacted")" @onclick='() => SetStatus("Contacted")'>Đã liên hệ</button>
+        <button class="btn @StatusChipClass("Confirmed")" @onclick='() => SetStatus("Confirmed")'>Đã chốt</button>
+        <button class="btn @StatusChipClass("Cancelled")" @onclick='() => SetStatus("Cancelled")'>Hủy</button>
+    </div>
+</div>
+
+@if (_quotes == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_quotes.Count == 0)
+{
+    <div class="alert alert-info">Chưa có yêu cầu báo giá nào.</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Ngày gửi</th>
+                            <th>Loại</th>
+                            <th>Khách hàng</th>
+                            <th>SĐT</th>
+                            <th>Ngày tiệc</th>
+                            <th class="text-right">Số lượng</th>
+                            <th>Địa điểm</th>
+                            <th>Ghi chú</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var q in _quotes)
+                        {
+                            <tr @key="q.Id">
+                                <td style="white-space: nowrap;">@q.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                <td>@QuoteTypeBadge(q.QuoteType)</td>
+                                <td><strong>@q.CustomerName</strong></td>
+                                <td style="white-space: nowrap;"><a href="tel:@q.CustomerPhone">@q.CustomerPhone</a></td>
+                                <td>@(q.EventDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                <td class="text-right">@q.Quantity</td>
+                                <td><small>@(string.IsNullOrWhiteSpace(q.EventLocation) ? "—" : q.EventLocation)</small></td>
+                                <td><small>@q.Notes</small></td>
+                                <td>@StatusBadge(q.Status)</td>
+                                <td style="white-space: nowrap;">
+                                    <a class="btn btn-sm btn-outline-primary mr-1" href="tel:@q.CustomerPhone">📞 Gọi</a>
+                                    @if (q.Status == "New")
+                                    {
+                                        <button class="btn btn-sm btn-outline-info mr-1" @onclick='() => ChangeStatusAsync(q, "Contacted")'>Đã liên hệ</button>
+                                    }
+                                    @if (q.Status == "New" || q.Status == "Contacted")
+                                    {
+                                        <button class="btn btn-sm btn-outline-success mr-1" @onclick='() => ChangeStatusAsync(q, "Confirmed")'>Chốt</button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick='() => ChangeStatusAsync(q, "Cancelled")'>Hủy</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<QuoteRequestAdminModel> _quotes;
+    private string _statusFilter;
+    private string _error;
+    private string _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task SetStatus(string status)
+    {
+        _statusFilter = status;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _quotes = await CatalogService.GetQuotesAsync(_statusFilter)
+                ?? new List<QuoteRequestAdminModel>();
+        }
+        catch (Exception)
+        {
+            _quotes = new List<QuoteRequestAdminModel>();
+            _error = "Không tải được danh sách yêu cầu báo giá.";
+        }
+    }
+
+    private async Task ChangeStatusAsync(QuoteRequestAdminModel quote, string status)
+    {
+        _error = null;
+        _success = null;
+        try
+        {
+            var updated = await CatalogService.UpdateQuoteStatusAsync(quote.Id, status);
+            quote.Status = updated.Status;
+            _success = $"Đã cập nhật trạng thái yêu cầu của {quote.CustomerName}.";
+        }
+        catch (Exception)
+        {
+            _error = "Cập nhật trạng thái thất bại. Vui lòng thử lại.";
+        }
+    }
+
+    private string StatusChipClass(string status) =>
+        string.Equals(_statusFilter, status, StringComparison.OrdinalIgnoreCase)
+            ? "btn-primary" : "btn-outline-primary";
+
+    private static RenderFragment QuoteTypeBadge(string quoteType) => builder =>
+    {
+        var isTiec = string.Equals(quoteType, "DatTiec", StringComparison.OrdinalIgnoreCase);
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", isTiec ? "lx-pill lx-pill-warning" : "lx-pill lx-pill-secondary");
+        builder.AddContent(2, isTiec ? "🎉 Tiệc" : "Web");
+        builder.CloseElement();
+    };
+
+    private static RenderFragment StatusBadge(string status) => builder =>
+    {
+        var (css, label) = status switch
+        {
+            "New" => ("badge badge-warning", "Mới"),
+            "Contacted" => ("badge badge-info", "Đã liên hệ"),
+            "Confirmed" => ("badge badge-success", "Đã chốt"),
+            "Cancelled" => ("badge badge-danger", "Hủy"),
+            _ => ("badge badge-light", status)
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", css);
+        builder.AddContent(2, label);
+        builder.CloseElement();
+    };
+}
