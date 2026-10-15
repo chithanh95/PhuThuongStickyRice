@@ -21,6 +21,21 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .IsRequired()
                 .HasDefaultValue(Product.UnitPortion);
 
+            // Item 164: daily sale time windows (JSON array of
+            // {"from":"HH:mm","to":"HH:mm"}; null = sold all day).
+            builder.Property(x => x.AvailableHoursJson)
+                .HasMaxLength(Product.AvailableHoursJsonMaxLength);
+
+            // Item 165: max portions per day; null = unlimited.
+            builder.Property(x => x.DailyLimit);
+
+            // Item 166: photo gallery as a JSON string array of image URLs.
+            builder.Property(x => x.ImageUrlsJson)
+                .HasMaxLength(Product.ImageUrlsJsonMaxLength);
+
+            // Item 146: manual display order (drag & drop on /products).
+            builder.Property(x => x.SortOrder).IsRequired().HasDefaultValue(0);
+
             builder.Property(x => x.Tags).HasMaxLength(Product.TagsMaxLength);
             builder.Property(x => x.Category).HasMaxLength(Product.CategoryMaxLength);
             builder.Property(x => x.AllergenInfo).HasMaxLength(Product.AllergenInfoMaxLength);

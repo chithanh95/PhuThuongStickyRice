@@ -27,6 +27,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// <summary>Item 81: selling unit — "suất" (per portion) or "kg" (per kilogram).</summary>
         public string Unit { get; set; }
 
+        /// <summary>Item 146: manual display order set by drag &amp; drop on /products.</summary>
+        public int SortOrder { get; set; }
+
         public string Status { get; set; }
 
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
@@ -603,6 +606,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// <summary>Item 53: verify token for the Facebook webhook subscription.</summary>
         public string FacebookVerifyToken { get; set; }
 
+        /// <summary>Item 130: Facebook Page ID for auto-posting new products.</summary>
+        public string FacebookPageId { get; set; }
+
         /// <summary>Wave 6b (item 30): when false, checkout is blocked.</summary>
         public bool AcceptingOrders { get; set; } = true;
 
@@ -616,6 +622,15 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// (Vietnam day). 0 = unlimited. Default 10.
         /// </summary>
         public int MaxOrdersPerPhonePerDay { get; set; } = 10;
+
+        /// <summary>Item 138: Zalo OA access token for the Monday weekly report. Empty = show report in admin + copy button only.</summary>
+        public string ZaloOaAccessToken { get; set; }
+
+        /// <summary>Item 138: owner phone number.</summary>
+        public string OwnerPhone { get; set; }
+
+        /// <summary>Item 138: Zalo user id of the owner (OA messages are addressed by user id).</summary>
+        public string OwnerZaloUserId { get; set; }
     }
 
     /// <summary>Result of GET api/dashboard/today-sold.</summary>

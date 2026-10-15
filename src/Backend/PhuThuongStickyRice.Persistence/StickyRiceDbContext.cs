@@ -47,6 +47,7 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<CustomMigrationHistory> CustomMigrationHistories { get; set; }
         public DbSet<CustomerAddress> CustomerAddresses { get; set; }
         public DbSet<CustomerReminder> CustomerReminders { get; set; }
+        public DbSet<CustomerTag> CustomerTags { get; set; }
         public DbSet<DailyInventory> DailyInventories { get; set; }
         public DbSet<CustomerNote> CustomerNotes { get; set; }
         public DbSet<CustomerPhoto> CustomerPhotos { get; set; }
@@ -72,14 +73,17 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<PasswordHistory> PasswordHistories { get; set; }
         public DbSet<PolicyPage> PolicyPages { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<ProductChangeLog> ProductChangeLogs { get; set; }
         public DbSet<ProductSizeOption> ProductSizeOptions { get; set; }
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<QuoteRequest> QuoteRequests { get; set; }
         public DbSet<CungReminder> CungReminders { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RoleClaim> RoleClaims { get; set; }
+        public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<ShiftClose> ShiftCloses { get; set; }
         public DbSet<Shipper> Shippers { get; set; }
+        public DbSet<StaffActivityLog> StaffActivityLogs { get; set; }
         public DbSet<ShopSetting> ShopSettings { get; set; }
         public DbSet<ShortLink> ShortLinks { get; set; }
         public DbSet<Subscription> Subscriptions { get; set; }

@@ -16,8 +16,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
 
         public async Task<List<ProductModel>> GetProductsAsync()
         {
-            var products = await GetAsync<List<ProductModel>>("api/products");
-            return products;
+            // The API returns a paged result; unwrap the items list.
+            var paged = await GetAsync<PagedResultModel<ProductModel>>("api/products");
+            return paged?.Items ?? new List<ProductModel>();
         }
 
         public async Task<ProductModel> GetProductByIdAsync(Guid id)
@@ -47,6 +48,43 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
         public async Task<ProductModel> ToggleAvailabilityAsync(Guid id)
         {
             return await PostAsync<ProductModel>($"api/products/{id}/toggle-availability", new { });
+        }
+
+        /// <summary>
+        /// Item 146: saves the manual display order (drag &amp; drop on
+        /// /products). Ids are in display order.
+        /// </summary>
+        public async Task ReorderAsync(List<Guid> ids)
+        {
+            await PostAsync<object>("api/products/reorder", new { ids });
+        }
+
+        /// <summary>
+        /// Item 148: change history of a product ("ai sửa gì, khi nào"),
+        /// newest first.
+        /// </summary>
+        public async Task<List<ProductChangeLogModel>> GetChangeLogAsync(Guid id)
+        {
+            var logs = await GetAsync<List<ProductChangeLogModel>>($"api/products/{id}/change-log");
+            return logs ?? new List<ProductChangeLogModel>();
+        }
+
+        /// <summary>Item 130: whether FB auto-post is configured (Page ID + token).</summary>
+        public async Task<FacebookStatusModel> GetFacebookStatusAsync()
+        {
+            return await GetAsync<FacebookStatusModel>("api/admin/facebook/status");
+        }
+
+        /// <summary>Item 130: publishes a product announcement to the FB Page feed now.</summary>
+        public async Task<FacebookPublishResultModel> PublishProductToFacebookAsync(Guid id)
+        {
+            return await PostAsync<FacebookPublishResultModel>($"api/admin/facebook/publish-product/{id}", new { });
+        }
+
+        /// <summary>Item 130: recent FB auto-post history, newest first.</summary>
+        public async Task<List<FacebookPostLogModel>> GetFacebookPostHistoryAsync(int maxCount = 50)
+        {
+            return await GetAsync<List<FacebookPostLogModel>>($"api/admin/facebook/posts?maxCount={maxCount}");
         }
 
         public string GetExportPdfUrl()

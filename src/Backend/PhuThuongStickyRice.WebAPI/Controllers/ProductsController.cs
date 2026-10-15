@@ -218,6 +218,36 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Item 146: saves the manual display order (drag &amp; drop on
+        /// /products). Body: { "ids": [guid, ...] } in display order.
+        /// </summary>
+        [Authorize(AuthorizationPolicyNames.UpdateProductPolicy)]
+        [HttpPost("reorder")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> Reorder([FromBody] ReorderProductsModel model, CancellationToken cancellationToken = default)
+        {
+            if (model?.Ids == null || model.Ids.Count == 0)
+            {
+                return BadRequest("Danh sách id trống.");
+            }
+
+            await _productAppService.ReorderAsync(model.Ids);
+            return Ok();
+        }
+
+        /// <summary>
+        /// Item 148: change history of a product ("ai sửa gì, khi nào"),
+        /// newest first. Admin-only.
+        /// </summary>
+        [HttpGet("{id}/change-log")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetChangeLog(Guid id, CancellationToken cancellationToken = default)
+        {
+            return Ok(await _productAppService.GetChangeLogAsync(id));
+        }
+
         [Authorize(AuthorizationPolicyNames.DeleteProductPolicy)]
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]

@@ -23,6 +23,30 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         /// <summary>Selling unit: "suất" (per portion) or "kg" (per kilogram).</summary>
         public string Unit { get; set; }
 
+        /// <summary>Item 146: manual display order (drag &amp; drop on /products).</summary>
+        public int SortOrder { get; set; }
+
+        /// <summary>
+        /// Item 164: daily sale time windows as JSON, e.g.
+        /// [{"from":"06:00","to":"10:00"}]. Null = sold all day.
+        /// </summary>
+        public string AvailableHoursJson { get; set; }
+
+        /// <summary>Item 165: max portions sold per day. Null = unlimited.</summary>
+        public int? DailyLimit { get; set; }
+
+        /// <summary>
+        /// Item 166: photo gallery as a JSON string array of image URLs
+        /// (first = primary). Null = placeholder SVG.
+        /// </summary>
+        public string ImageUrlsJson { get; set; }
+
+        /// <summary>
+        /// Item 165: portions still sellable today. Null = no daily limit.
+        /// Filled on the public shop list only.
+        /// </summary>
+        public int? RemainingToday { get; set; }
+
         public string Status { get; set; }
 
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
@@ -78,6 +102,23 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         /// Only applied on update: "Active", "Inactive" or "Discontinued".
         /// </summary>
         public string Status { get; set; }
+
+        /// <summary>
+        /// Item 164: daily sale time windows as JSON, e.g.
+        /// [{"from":"06:00","to":"10:00"}]. Null/empty = sold all day.
+        /// </summary>
+        [StringLength(1000)]
+        public string AvailableHoursJson { get; set; }
+
+        /// <summary>Item 165: max portions sold per day. Null = unlimited.</summary>
+        [Range(0, int.MaxValue)]
+        public int? DailyLimit { get; set; }
+
+        /// <summary>
+        /// Item 166: photo gallery as a JSON string array of image URLs.
+        /// </summary>
+        [StringLength(4000)]
+        public string ImageUrlsJson { get; set; }
 
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
         [StringLength(200)]
@@ -148,6 +189,40 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         public int SortOrder { get; set; }
 
         public bool IsActive { get; set; } = true;
+    }
+
+    /// <summary>
+    /// Item 165: per-product daily-limit status for the public shop
+    /// ("Còn N suất"). Only products with a DailyLimit are included.
+    /// </summary>
+    public class ProductDailyRemainingDto
+    {
+        public Guid ProductId { get; set; }
+
+        public int DailyLimit { get; set; }
+
+        public int SoldToday { get; set; }
+
+        public int RemainingToday { get; set; }
+    }
+
+    /// <summary>
+    /// Item 148: one row of the product change history ("ai sửa gì, khi nào").
+    /// </summary>
+    public class ProductChangeLogDto : EntityDto<Guid>
+    {
+        public Guid ProductId { get; set; }
+
+        public string ChangedBy { get; set; }
+
+        public DateTime ChangedAt { get; set; }
+
+        /// <summary>Vietnamese field label, e.g. "Giá bán".</summary>
+        public string FieldName { get; set; }
+
+        public string OldValue { get; set; }
+
+        public string NewValue { get; set; }
     }
 
     /// <summary>

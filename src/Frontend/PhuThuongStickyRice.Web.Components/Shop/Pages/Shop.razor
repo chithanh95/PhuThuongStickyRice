@@ -769,7 +769,11 @@ else
             "priceAsc" => query.OrderBy(p => MinPrice(p)).ToList(),
             "priceDesc" => query.OrderByDescending(p => MinPrice(p)).ToList(),
             "newest" => query.OrderByDescending(p => p.CreatedDateTime).ToList(),
-            _ => query.OrderBy(p => _rank.TryGetValue(p.Id, out var r) ? r : int.MaxValue).ThenBy(p => p.Name).ToList()
+            // Item 146: manual display order (drag & drop on /products) first;
+            // best-seller rank and name are the tiebreaks (all zero by default).
+            _ => query.OrderBy(p => p.SortOrder)
+                .ThenBy(p => _rank.TryGetValue(p.Id, out var r) ? r : int.MaxValue)
+                .ThenBy(p => p.Name).ToList()
         };
     }
 

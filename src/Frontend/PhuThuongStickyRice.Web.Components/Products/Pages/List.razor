@@ -23,6 +23,31 @@
         {
             <div class="alert alert-danger">@ToggleError</div>
         }
+        @if (!string.IsNullOrEmpty(_reorderMessage))
+        {
+            <div class="alert alert-success">@_reorderMessage</div>
+        }
+        @if (!string.IsNullOrEmpty(_reorderError))
+        {
+            <div class="alert alert-danger">@_reorderError</div>
+        }
+        @if (_orderChanged)
+        {
+            <div class="alert alert-info d-flex align-items-center justify-content-between">
+                <span>↕️ Bạn đã đổi thứ tự món. Nhấn <strong>Lưu thứ tự</strong> để áp dụng lên trang bán hàng.</span>
+                <button type="button" class="btn btn-primary btn-sm" @onclick="SaveOrderAsync" disabled="@_reordering">
+                    @(_reordering ? "Đang lưu..." : "Lưu thứ tự")
+                </button>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(_fbMessage))
+        {
+            <div class="alert alert-success">@_fbMessage</div>
+        }
+        @if (!string.IsNullOrEmpty(_fbError))
+        {
+            <div class="alert alert-warning">@_fbError</div>
+        }
         <div class="table-responsive">
 
             @if (Products == null)
@@ -34,6 +59,7 @@
                 <table class="table">
                     <thead>
                         <tr>
+                            <th style="width: 36px;" title="Kéo thả để sắp xếp thứ tự hiển thị"></th>
                             <th>Tên món</th>
                             <th>Mã</th>
                             <th class="text-right">Giá (₫)</th>
@@ -44,7 +70,14 @@
                     <tbody>
                         @foreach (var product in Products)
                         {
-                            <tr @key="product.Id">
+                            <tr @key="product.Id"
+                                draggable="true"
+                                @ondragstart="() => OnDragStart(product)"
+                                @ondragover:preventDefault="true"
+                                @ondrop="() => OnDrop(product)"
+                                @ondragend="OnDragEnd"
+                                class="@(_draggedProduct?.Id == product.Id ? "table-active" : null)">
+                                <td class="text-muted" style="cursor: grab; font-size: 18px;" title="Kéo để sắp xếp">☰</td>
                                 <td>
                                     <a href="@($"/products/{product.Id}")">@product.Name</a>
                                     @if (product.IsNew)
@@ -83,6 +116,9 @@
                                 <td class="text-right text-nowrap">
                                     <button @onclick="(() => ToggleAvailability(product))" class="btn btn-sm btn-outline-warning" title="Bật/tắt bán (hết hàng)">
                                         @(product.Status == "Active" ? "Hết hàng" : "Mở bán")
+                                    </button>
+                                    <button @onclick="(() => PostToFacebook(product))" class="btn btn-sm btn-outline-info" title="Đăng món này lên Facebook Fanpage" disabled="@_fbPosting">
+                                        📣
                                     </button>
                                     <button @onclick="(() => EditProduct(product))" class="btn btn-sm btn-primary" title="Sửa">Sửa</button>
                                     <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm btn-danger" title="Xóa">Xóa</button>

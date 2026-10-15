@@ -34,6 +34,25 @@ namespace PhuThuongStickyRice.Application.Products
         Task<ProductDto> ToggleAvailabilityAsync(Guid id);
 
         /// <summary>
+        /// Item 146: saves the manual display order (drag &amp; drop on
+        /// /products). The ids are in display order; each product gets
+        /// SortOrder = its index.
+        /// </summary>
+        Task ReorderAsync(List<Guid> productIds);
+
+        /// <summary>
+        /// Item 148: change history of a product ("ai sửa gì, khi nào"),
+        /// newest first. Admin-only.
+        /// </summary>
+        Task<List<ProductChangeLogDto>> GetChangeLogAsync(Guid productId);
+
+        /// <summary>
+        /// Item 165: daily-limit status of limited products for the public
+        /// shop ("Còn N suất"). Public, no auth.
+        /// </summary>
+        Task<List<ProductDailyRemainingDto>> GetDailyRemainingAsync();
+
+        /// <summary>
         /// Wave 6b (item 26): public per-product rating aggregates from
         /// non-hidden order reviews. Products without reviews are omitted.
         /// </summary>
@@ -49,6 +68,8 @@ namespace PhuThuongStickyRice.Application.Products
         private readonly Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> _sizeOptions;
         private readonly IProductCatalogCache _catalogCache;
         private readonly Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> _reviews;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<ProductChangeLog, Guid> _changeLogs;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<Order, Guid> _orders;
 
         public ProductAppService(
             IProductRepository products,
@@ -57,7 +78,9 @@ namespace PhuThuongStickyRice.Application.Products
             IObjectMapper objectMapper,
             Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> sizeOptions,
             IProductCatalogCache catalogCache,
-            Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> reviews)
+            Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> reviews,
+            Volo.Abp.Domain.Repositories.IRepository<ProductChangeLog, Guid> changeLogs,
+            Volo.Abp.Domain.Repositories.IRepository<Order, Guid> orders)
         {
             _products = products;
             _domainEvents = domainEvents;
@@ -66,6 +89,8 @@ namespace PhuThuongStickyRice.Application.Products
             _sizeOptions = sizeOptions;
             _catalogCache = catalogCache;
             _reviews = reviews;
+            _changeLogs = changeLogs;
+            _orders = orders;
         }
 
         public async Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input)
@@ -91,7 +116,12 @@ namespace PhuThuongStickyRice.Application.Products
         private async Task<PagedResultDto<ProductDto>> QueryListAsync(GetProductsInput input)
         {
             var queryable = await _products.GetQueryableAsync();
-            System.Linq.IQueryable<Product> query = queryable.OrderBy(x => x.Name);
+            // Item 146: the manual display order (drag & drop on /products)
+            // comes first; name is the tiebreak. The public shop goes
+            // through this same query with status=Active.
+            System.Linq.IQueryable<Product> query = queryable
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.Name);
 
             if (!string.IsNullOrWhiteSpace(input.SearchTerm))
             {
@@ -170,6 +200,10 @@ namespace PhuThuongStickyRice.Application.Products
             {
                 product.ChangeUnit(input.Unit);
             }
+            // Items 164/165/166: sale time windows, daily portion limit, photo gallery.
+            product.ChangeAvailableHoursJson(input.AvailableHoursJson);
+            product.ChangeDailyLimit(input.DailyLimit);
+            product.ChangeImageUrlsJson(input.ImageUrlsJson);
             product.ChangeBranch(input.BranchId);
             product.UpdateCatalogInfo(
                 input.Tags, input.Category, input.AllergenInfo,
@@ -193,6 +227,9 @@ namespace PhuThuongStickyRice.Application.Products
                 throw new Domain.Exceptions.DomainException("Product code cannot be changed.");
             }
 
+            // Item 148: snapshot before mutation so only real changes are logged.
+            var before = SnapshotFields(product);
+
             product.UpdateDetails(input.Name, input.Description);
             product.ChangePrice(Money.Of(input.Price, input.Currency ?? "VND"));
             product.ChangeCostPrice(input.CostPrice);
@@ -200,6 +237,10 @@ namespace PhuThuongStickyRice.Application.Products
             {
                 product.ChangeUnit(input.Unit);
             }
+            // Items 164/165/166: sale time windows, daily portion limit, photo gallery.
+            product.ChangeAvailableHoursJson(input.AvailableHoursJson);
+            product.ChangeDailyLimit(input.DailyLimit);
+            product.ChangeImageUrlsJson(input.ImageUrlsJson);
             product.UpdateCatalogInfo(
                 input.Tags, input.Category, input.AllergenInfo,
                 input.IsNew, input.IsSignature,
@@ -215,6 +256,7 @@ namespace PhuThuongStickyRice.Application.Products
             }
 
             await _products.UpdateAsync(product);
+            await LogFieldChangesAsync(id, before, SnapshotFields(product));
             await _domainEvents.DispatchAsync(new EntityUpdatedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
 
@@ -224,6 +266,7 @@ namespace PhuThuongStickyRice.Application.Products
         public async Task<ProductDto> ToggleAvailabilityAsync(Guid id)
         {
             var product = await FindOrThrowAsync(id);
+            var before = SnapshotFields(product);
 
             if (product.Status == ProductStatus.Active)
             {
@@ -239,10 +282,189 @@ namespace PhuThuongStickyRice.Application.Products
             }
 
             await _products.UpdateAsync(product);
+            // Item 148: the one-click sold-out toggle also lands in the history.
+            await LogFieldChangesAsync(id, before, SnapshotFields(product));
             await _domainEvents.DispatchAsync(new EntityUpdatedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
 
             return _objectMapper.Map<Product, ProductDto>(product);
+        }
+
+        /// <summary>
+        /// Item 146: saves the manual display order. Unknown ids are
+        /// ignored; products not in the list keep their current order.
+        /// </summary>
+        public async Task ReorderAsync(List<Guid> productIds)
+        {
+            if (productIds == null || productIds.Count == 0)
+            {
+                return;
+            }
+
+            var queryable = await _products.GetQueryableAsync();
+            var ids = productIds.Distinct().ToList();
+            var found = await _asyncExecuter.ToListAsync(queryable.Where(x => ids.Contains(x.Id)));
+            var byId = found.ToDictionary(x => x.Id);
+
+            for (var i = 0; i < ids.Count; i++)
+            {
+                if (byId.TryGetValue(ids[i], out var product))
+                {
+                    product.ChangeSortOrder(i);
+                    await _products.UpdateAsync(product);
+                }
+            }
+
+            _catalogCache.Invalidate();
+        }
+
+        /// <summary>
+        /// Item 165: daily-limit status of limited products for the public
+        /// shop ("Còn N suất"). One grouped query over today's
+        /// non-cancelled orders; products without a DailyLimit are skipped.
+        /// </summary>
+        public async Task<List<ProductDailyRemainingDto>> GetDailyRemainingAsync()
+        {
+            var productQueryable = await _products.GetQueryableAsync();
+            var limited = await _asyncExecuter.ToListAsync(
+                productQueryable
+                    .Where(x => x.DailyLimit != null && x.Status == ProductStatus.Active)
+                    .Select(x => new { x.Id, Limit = x.DailyLimit.Value }));
+
+            if (limited.Count == 0)
+            {
+                return new List<ProductDailyRemainingDto>();
+            }
+
+            var today = Orders.VietnamTime.Today;
+            var fromUtc = Orders.VietnamTime.DayStartUtc(today);
+            var toUtc = Orders.VietnamTime.DayEndExclusiveUtc(today);
+
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var soldRows = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Status != OrderStatus.Cancelled
+                        && x.CreatedAt >= fromUtc
+                        && x.CreatedAt < toUtc)
+                    .SelectMany(x => x.Lines)
+                    .GroupBy(l => l.ProductId)
+                    .Select(g => new { ProductId = g.Key, Sold = g.Sum(l => l.Quantity) }));
+
+            var soldMap = soldRows.ToDictionary(x => x.ProductId, x => (int)x.Sold);
+
+            return limited
+                .Select(x =>
+                {
+                    var sold = soldMap.TryGetValue(x.Id, out var s) ? s : 0;
+                    return new ProductDailyRemainingDto
+                    {
+                        ProductId = x.Id,
+                        DailyLimit = x.Limit,
+                        SoldToday = sold,
+                        RemainingToday = Math.Max(0, x.Limit - sold)
+                    };
+                })
+                .ToList();
+        }
+
+        /// <summary>
+        /// Item 148: change history of a product, newest first.
+        /// </summary>
+        public async Task<List<ProductChangeLogDto>> GetChangeLogAsync(Guid productId)
+        {
+            var queryable = await _changeLogs.GetQueryableAsync();
+            var logs = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => x.ProductId == productId)
+                    .OrderByDescending(x => x.ChangedAt));
+
+            return _objectMapper.Map<List<ProductChangeLog>, List<ProductChangeLogDto>>(logs);
+        }
+
+        /// <summary>
+        /// Item 148: display snapshot of the loggable fields, label → value.
+        /// </summary>
+        private static Dictionary<string, string> SnapshotFields(Product product)
+        {
+            return new Dictionary<string, string>
+            {
+                ["Tên món"] = product.Name,
+                ["Mô tả"] = Truncate(product.Description, 200),
+                ["Giá bán"] = FormatMoney(product.Price.Amount),
+                ["Giá vốn"] = FormatMoney(product.CostPrice),
+                ["Đơn vị"] = product.Unit,
+                ["Trạng thái"] = StatusLabel(product.Status),
+                ["Nhóm món"] = product.Category,
+                ["Tags"] = product.Tags,
+                ["Dị ứng"] = product.AllergenInfo,
+                ["Món mới"] = product.IsNew ? "Có" : "Không",
+                ["Signature"] = product.IsSignature ? "Có" : "Không",
+                ["Bán từ"] = FormatDate(product.AvailableFrom),
+                ["Bán đến"] = FormatDate(product.AvailableTo),
+            };
+        }
+
+        /// <summary>
+        /// Item 148: writes one log row per field whose display value
+        /// actually changed between the two snapshots.
+        /// </summary>
+        private async Task LogFieldChangesAsync(
+            Guid productId,
+            Dictionary<string, string> before,
+            Dictionary<string, string> after)
+        {
+            var changedBy = CurrentUser?.UserName ?? "system";
+            var now = DateTime.UtcNow;
+
+            foreach (var kvp in after)
+            {
+                before.TryGetValue(kvp.Key, out var oldValue);
+                var newValue = kvp.Value;
+                if (string.Equals(oldValue ?? string.Empty, newValue ?? string.Empty, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                await _changeLogs.InsertAsync(new ProductChangeLog
+                {
+                    ProductId = productId,
+                    ChangedBy = changedBy,
+                    ChangedAt = now,
+                    FieldName = kvp.Key,
+                    OldValue = Truncate(oldValue, ProductChangeLog.ValueMaxLength),
+                    NewValue = Truncate(newValue, ProductChangeLog.ValueMaxLength),
+                });
+            }
+        }
+
+        private static string Truncate(string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
+            {
+                return value;
+            }
+
+            return value.Substring(0, maxLength);
+        }
+
+        private static string FormatMoney(decimal amount)
+        {
+            return amount.ToString("N0") + "₫";
+        }
+
+        private static string FormatDate(DateTime? date)
+        {
+            return date?.ToString("dd/MM/yyyy");
+        }
+
+        private static string StatusLabel(ProductStatus status)
+        {
+            return status switch
+            {
+                ProductStatus.Active => "Đang bán",
+                ProductStatus.Inactive => "Hết hàng",
+                ProductStatus.Discontinued => "Ngừng bán",
+                _ => status.ToString(),
+            };
         }
 
         private static void ApplyStatus(Product product, ProductStatus status)

@@ -15,3 +15,49 @@
         </NavLink>
     </div>
 </div>
+
+@* Item 148: change history ("ai sửa gì, khi nào"). *@
+<div class="card mt-3">
+    <div class="card-header">
+        🕘 Lịch sử thay đổi
+    </div>
+    <div class="card-body">
+        @if (_changeLog == null)
+        {
+            <p><em>Đang tải...</em></p>
+        }
+        else if (_changeLog.Count == 0)
+        {
+            <p class="text-muted mb-0">Chưa có thay đổi nào được ghi nhận.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Người sửa</th>
+                            <th>Nội dung thay đổi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in _changeLog)
+                        {
+                            <tr @key="log.Id">
+                                <td class="text-nowrap">@log.ChangedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@(string.IsNullOrWhiteSpace(log.ChangedBy) ? "—" : log.ChangedBy)</td>
+                                <td>
+                                    <strong>@log.FieldName</strong>:
+                                    <span class="text-muted">@DisplayValue(log.OldValue)</span>
+                                    →
+                                    <span>@DisplayValue(log.NewValue)</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

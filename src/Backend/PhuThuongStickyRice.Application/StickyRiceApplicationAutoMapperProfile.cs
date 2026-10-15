@@ -13,6 +13,9 @@ namespace PhuThuongStickyRice.Application
                 .ForMember(d => d.Currency, o => o.MapFrom(s => s.Price.Currency))
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 
+            // Item 148: product change history (convention mapping).
+            CreateMap<ProductChangeLog, Products.DTOs.ProductChangeLogDto>();
+
             CreateMap<Order, Orders.DTOs.OrderDto>()
                 .ForMember(d => d.TotalAmount, o => o.MapFrom(s => s.TotalAmount.Amount))
                 .ForMember(d => d.Currency, o => o.MapFrom(s => s.TotalAmount.Currency))

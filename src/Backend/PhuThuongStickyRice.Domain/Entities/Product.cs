@@ -1,7 +1,9 @@
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.ValueObjects;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace PhuThuongStickyRice.Domain.Entities
 {
@@ -43,6 +45,33 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// 500g / 1kg packs through size options.
         /// </summary>
         public string Unit { get; private set; } = UnitPortion;
+
+        /// <summary>
+        /// Manual display order (item 146): the admin drags products into
+        /// order on /products; the shop lists by SortOrder. 0 = default.
+        /// </summary>
+        public int SortOrder { get; private set; }
+
+        /// <summary>
+        /// Item 164: daily sale time windows as JSON, e.g.
+        /// [{"from":"06:00","to":"10:00"}]. Null/empty = sold all day.
+        /// </summary>
+        public string AvailableHoursJson { get; private set; }
+
+        public const int AvailableHoursJsonMaxLength = 1000;
+
+        /// <summary>
+        /// Item 165: max portions sold per day. Null = unlimited.
+        /// </summary>
+        public int? DailyLimit { get; private set; }
+
+        /// <summary>
+        /// Item 166: product photo gallery as a JSON string array of image
+        /// URLs. First item = primary image. Null/empty = placeholder SVG.
+        /// </summary>
+        public string ImageUrlsJson { get; private set; }
+
+        public const int ImageUrlsJsonMaxLength = 4000;
 
         public ProductStatus Status { get; private set; }
 
@@ -199,6 +228,183 @@ namespace PhuThuongStickyRice.Domain.Entities
             Unit = normalized;
         }
 
+        /// <summary>
+        /// Sets the manual display order (item 146). Must not be negative.
+        /// </summary>
+        public void ChangeSortOrder(int sortOrder)
+        {
+            if (sortOrder < 0)
+            {
+                throw new DomainException("Sort order must not be negative.");
+            }
+
+            SortOrder = sortOrder;
+        }
+
+        /// <summary>
+        /// Item 164: sets the daily sale time windows. Null/empty = sold all
+        /// day. Otherwise a JSON array of {"from":"HH:mm","to":"HH:mm"}
+        /// windows (max 3), each with from &lt; to.
+        /// </summary>
+        public void ChangeAvailableHoursJson(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                AvailableHoursJson = null;
+                return;
+            }
+
+            var trimmed = json.Trim();
+            if (trimmed.Length > AvailableHoursJsonMaxLength)
+            {
+                throw new DomainException("Khung giờ bán quá dài.");
+            }
+
+            var windows = ParseHourWindows(trimmed);
+            if (windows.Count == 0)
+            {
+                throw new DomainException("Khung giờ bán không hợp lệ.");
+            }
+
+            if (windows.Count > 3)
+            {
+                throw new DomainException("Tối đa 3 khung giờ bán mỗi ngày.");
+            }
+
+            AvailableHoursJson = trimmed;
+        }
+
+        /// <summary>
+        /// Item 165: sets the daily portion limit. Null = unlimited.
+        /// </summary>
+        public void ChangeDailyLimit(int? limit)
+        {
+            if (limit.HasValue && limit.Value < 0)
+            {
+                throw new DomainException("Giới hạn suất/ngày không được âm.");
+            }
+
+            DailyLimit = limit;
+        }
+
+        /// <summary>
+        /// Item 166: sets the photo gallery. Null/empty clears it. Otherwise
+        /// a JSON string array of image URLs (max 10).
+        /// </summary>
+        public void ChangeImageUrlsJson(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                ImageUrlsJson = null;
+                return;
+            }
+
+            var trimmed = json.Trim();
+            if (trimmed.Length > ImageUrlsJsonMaxLength)
+            {
+                throw new DomainException("Danh sách ảnh quá dài.");
+            }
+
+            var urls = ParseImageUrls(trimmed);
+            if (urls.Count == 0)
+            {
+                throw new DomainException("Danh sách ảnh không hợp lệ.");
+            }
+
+            if (urls.Count > 10)
+            {
+                throw new DomainException("Tối đa 10 ảnh cho mỗi món.");
+            }
+
+            ImageUrlsJson = trimmed;
+        }
+
+        /// <summary>Item 166: parsed gallery URLs; empty when none or invalid.</summary>
+        public List<string> GetImageUrls()
+        {
+            return ParseImageUrls(ImageUrlsJson);
+        }
+
+        private static List<string> ParseImageUrls(string json)
+        {
+            var result = new List<string>();
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return result;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                {
+                    return result;
+                }
+
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    if (el.ValueKind == JsonValueKind.String)
+                    {
+                        var url = el.GetString()?.Trim();
+                        if (!string.IsNullOrEmpty(url) && url.Length <= 500)
+                        {
+                            result.Add(url);
+                        }
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Fail-open: bad data never hides the gallery logic's fallback.
+            }
+
+            return result;
+        }
+
+        private static List<(TimeSpan From, TimeSpan To)> ParseHourWindows(string json)
+        {
+            var result = new List<(TimeSpan From, TimeSpan To)>();
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                {
+                    return result;
+                }
+
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    if (el.ValueKind != JsonValueKind.Object)
+                    {
+                        return new List<(TimeSpan From, TimeSpan To)>();
+                    }
+
+                    if (!el.TryGetProperty("from", out var fromEl)
+                        || !el.TryGetProperty("to", out var toEl))
+                    {
+                        return new List<(TimeSpan From, TimeSpan To)>();
+                    }
+
+                    var fromStr = fromEl.GetString();
+                    var toStr = toEl.GetString();
+                    if (!TimeSpan.TryParse(fromStr, out var from)
+                        || !TimeSpan.TryParse(toStr, out var to)
+                        || from >= to)
+                    {
+                        return new List<(TimeSpan From, TimeSpan To)>();
+                    }
+
+                    result.Add((from, to));
+                }
+            }
+            catch (JsonException)
+            {
+                return new List<(TimeSpan From, TimeSpan To)>();
+            }
+
+            return result;
+        }
+
         public void Activate()
         {
             if (Status == ProductStatus.Discontinued)
@@ -274,7 +480,9 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         /// <summary>
         /// True when the product may be shown on the public shop right now:
-        /// active status and inside the seasonal window (when one is set).
+        /// active status, inside the seasonal window (when one is set) and
+        /// inside a daily sale time window (item 164; null = all day).
+        /// Hour windows are evaluated in Vietnam time (UTC+7).
         /// </summary>
         public bool IsAvailableNow(DateTime utcNow)
         {
@@ -294,8 +502,57 @@ namespace PhuThuongStickyRice.Domain.Entities
                 return false;
             }
 
+            // Item 164: daily sale time windows (Vietnam time).
+            if (!string.IsNullOrWhiteSpace(AvailableHoursJson))
+            {
+                var windows = ParseHourWindows(AvailableHoursJson.Trim());
+                if (windows.Count > 0)
+                {
+                    var vnNow = utcNow.AddHours(7).TimeOfDay;
+                    var inWindow = false;
+                    foreach (var w in windows)
+                    {
+                        if (vnNow >= w.From && vnNow < w.To)
+                        {
+                            inWindow = true;
+                            break;
+                        }
+                    }
+
+                    if (!inWindow)
+                    {
+                        return false;
+                    }
+                }
+                // Invalid JSON fails open (write-time validation prevents it).
+            }
+
             return true;
         }
+
+        /// <summary>
+        /// Item 164: human-readable sale windows for badges, e.g. "6h–10h,
+        /// 17h–20h". Empty when sold all day.
+        /// </summary>
+        public string GetSaleWindowsLabel()
+        {
+            if (string.IsNullOrWhiteSpace(AvailableHoursJson))
+            {
+                return string.Empty;
+            }
+
+            var windows = ParseHourWindows(AvailableHoursJson.Trim());
+            var parts = new List<string>();
+            foreach (var w in windows)
+            {
+                parts.Add($"{FormatHour(w.From)}–{FormatHour(w.To)}");
+            }
+
+            return string.Join(", ", parts);
+        }
+
+        private static string FormatHour(TimeSpan t) =>
+            t.Minutes == 0 ? $"{t.Hours}h" : $"{t.Hours}:{t.Minutes:D2}";
 
         private static string NormalizeTags(string tags)
         {
