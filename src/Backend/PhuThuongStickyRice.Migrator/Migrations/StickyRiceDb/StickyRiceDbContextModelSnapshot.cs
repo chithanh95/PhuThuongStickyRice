@@ -643,8 +643,11 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<bool>("IsApproved")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
@@ -2388,6 +2391,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<decimal>("GiftFee")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("GoogleMapsUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("HealthAlertsEnabled")
                         .HasColumnType("bit");

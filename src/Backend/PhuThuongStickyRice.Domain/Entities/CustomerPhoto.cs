@@ -10,13 +10,21 @@ namespace PhuThuongStickyRice.Domain.Entities
     {
         public const int CaptionMaxLength = 300;
         public const int PhoneMaxLength = 30;
+        public const int NameMaxLength = 100;
 
         /// <summary>Relative URL under /uploads/customer-photos/.</summary>
         public string ImageUrl { get; set; }
 
         public string Caption { get; set; }
 
+        /// <summary>
+        /// Optional phone (used by the track-order share flow). Nullable since
+        /// the /check-in page only asks for a name.
+        /// </summary>
         public string Phone { get; set; }
+
+        /// <summary>Display name shown under the photo in the gallery.</summary>
+        public string Name { get; set; }
 
         public bool IsApproved { get; set; }
 

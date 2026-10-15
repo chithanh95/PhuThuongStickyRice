@@ -183,6 +183,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string ZaloPhone { get; set; }
 
         /// <summary>
+        /// Link tới Google Maps của quán (đánh giá trên Google).
+        /// Admin nhập 1 lần ở Cài đặt cửa hàng.
+        /// </summary>
+        public string GoogleMapsUrl { get; set; }
+
+        /// <summary>
         /// Facebook Page Access Token for the Messenger chatbot (item 53).
         /// Empty = chatbot runs in "waiting for configuration" mode (webhook
         /// still verifies, but no replies are sent). Stored data-protected.
@@ -278,6 +284,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 CloseTime = "10:30",
                 Hotline = null,
                 ZaloPhone = null,
+                GoogleMapsUrl = null,
                 AcceptingOrders = true,
                 MaxOrdersPerPhonePerDay = 10
             };

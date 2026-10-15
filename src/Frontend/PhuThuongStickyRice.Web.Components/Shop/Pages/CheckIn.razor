@@ -1,0 +1,142 @@
+@page "/check-in"
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject Wave5Service Wave5Service
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+<div class="xo-checkin">
+    <div class="xo-container">
+        <div class="xo-sec-head">
+            <h2 class="xo-sec-title">Check-in tại quán 📸</h2>
+            <div class="xo-sec-div"><span></span><em>Ảnh của khách hàng</em><span></span></div>
+        </div>
+        <p class="xo-checkin-sub">Chụp ảnh món xôi của bạn tại quán, đăng lên đây — ảnh được duyệt sẽ hiện trên tường ảnh của quán.</p>
+
+        <div class="xo-checkin-form card">
+            <div class="card-body">
+                <h5 class="xo-checkin-form-title">Đăng ảnh của bạn</h5>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Tên của bạn</label>
+                        <input class="form-control" @bind="_name" maxlength="100" placeholder="VD: Chị Lan Anh" />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Chọn ảnh</label>
+                        <input id="checkin-photo-input" type="file" accept="image/*" class="form-control-file"
+                               @onchange="OnPhotoSelected" />
+                        <small class="form-text text-muted">Ảnh tự nén trước khi tải lên (tối đa 5MB).</small>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(_message))
+                {
+                    <div class="alert @(_isError ? "alert-danger" : "alert-success") py-2">@_message</div>
+                }
+                <button class="xo-btn xo-btn-red" @onclick="UploadAsync" disabled="@(_uploading || _selectedFileName == null)">
+                    @(_uploading ? "Đang tải lên..." : "Đăng ảnh")
+                </button>
+            </div>
+        </div>
+
+        <h3 class="xo-checkin-wall-title">Tường ảnh khách hàng</h3>
+        @if (_photos == null)
+        {
+            <p><em>Đang tải...</em></p>
+        }
+        else if (_photos.Count == 0)
+        {
+            <div class="alert alert-info">Chưa có ảnh nào. Hãy là người đầu tiên check-in nhé!</div>
+        }
+        else
+        {
+            <div class="xo-checkin-grid">
+                @foreach (var p in _photos)
+                {
+                    <div class="xo-checkin-card" @key="p.Id">
+                        <img src="@Wave5Service.ResolveImageUrl(p.ImageUrl)" alt="Ảnh check-in của khách hàng"
+                             loading="lazy" />
+                        <div class="xo-checkin-meta">
+                            @if (!string.IsNullOrWhiteSpace(p.Name))
+                            {
+                                <strong>@p.Name</strong>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(p.Caption))
+                            {
+                                <span>@p.Caption</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<CustomerPhotoModel> _photos;
+    private string _name;
+    private string _selectedFileName;
+    private string _message;
+    private bool _isError;
+    private bool _uploading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _photos = await Wave5Service.GetApprovedPhotosAsync() ?? new List<CustomerPhotoModel>();
+        }
+        catch (Exception)
+        {
+            _photos = new List<CustomerPhotoModel>();
+        }
+    }
+
+    private void OnPhotoSelected(ChangeEventArgs e)
+    {
+        _selectedFileName = "selected";
+        _message = null;
+    }
+
+    private async Task UploadAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _isError = true;
+            _message = "Vui lòng nhập tên của bạn.";
+            return;
+        }
+
+        _uploading = true;
+        _message = null;
+        try
+        {
+            var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
+                "interop.compressImageFromInput", "checkin-photo-input", 1600, 0.85);
+            using var stream = new System.IO.MemoryStream(compressed.Bytes);
+            await Wave5Service.UploadCustomerPhotoAsync(
+                stream, compressed.FileName, compressed.ContentType,
+                phone: null, caption: null, name: _name);
+            _isError = false;
+            _message = "Cảm ơn bạn! Ảnh đang chờ duyệt và sẽ sớm hiện trên tường ảnh.";
+            _name = null;
+            _selectedFileName = null;
+        }
+        catch (Exception ex)
+        {
+            _isError = true;
+            _message = ex.Message;
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    /// <summary>Shape of the object returned by interop.compressImageFromInput.</summary>
+    private sealed class CompressedImage
+    {
+        public byte[] Bytes { get; set; } = Array.Empty<byte>();
+        public string FileName { get; set; } = "image.jpg";
+        public string ContentType { get; set; } = "image/jpeg";
+    }
+}

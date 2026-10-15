@@ -3,8 +3,11 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @using PhuThuongStickyRice.Web.Components.Orders.Services
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject Wave2Service Wave2Service
 @inject OrderService OrderService
+@inject Wave5Service Wave5Service
 
 <h3>Đánh giá đơn hàng</h3>
 <p class="text-muted">Đánh giá bị ẩn không hiển thị công khai. Phản hồi của quán hiển thị dưới đánh giá trên trang chủ.</p>
@@ -116,6 +119,49 @@ else
     </div>
 }
 
+<h3 class="mt-5">Ảnh check-in chờ duyệt 📸</h3>
+<p class="text-muted">Ảnh khách đăng ở trang <a href="/check-in" target="_blank">/check-in</a>. Duyệt mới hiện trên tường ảnh.</p>
+
+@if (_pendingPhotos == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_pendingPhotos.Count == 0)
+{
+    <div class="alert alert-info">Không có ảnh nào chờ duyệt.</div>
+}
+else
+{
+    <div class="row">
+        @foreach (var p in _pendingPhotos)
+        {
+            <div class="col-6 col-md-3 mb-3" @key="p.Id">
+                <div class="card h-100">
+                    <a href="@Wave5Service.ResolveImageUrl(p.ImageUrl)" target="_blank" rel="noopener">
+                        <img src="@Wave5Service.ResolveImageUrl(p.ImageUrl)" class="card-img-top" alt="Ảnh check-in chờ duyệt"
+                             style="height: 160px; object-fit: cover;" />
+                    </a>
+                    <div class="card-body p-2">
+                        @if (!string.IsNullOrWhiteSpace(p.Name))
+                        {
+                            <p class="mb-1"><strong>@p.Name</strong></p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(p.Caption))
+                        {
+                            <p class="small text-muted mb-1">@p.Caption</p>
+                        }
+                        <small class="text-muted">@p.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</small>
+                    </div>
+                    <div class="card-footer p-2 d-flex">
+                        <button class="btn btn-sm btn-success flex-fill mr-1" @onclick="() => ApprovePhoto(p)">Duyệt</button>
+                        <button class="btn btn-sm btn-outline-danger flex-fill" @onclick="() => RejectPhoto(p)">Xóa</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
 @code {
     private List<OrderReviewModel> _reviews;
     private string _error;
@@ -124,6 +170,9 @@ else
     // Reply-in-progress state.
     private Guid _replyingId;
     private string _replyText;
+
+    // Check-in photos pending moderation (item 93).
+    private List<CustomerPhotoModel> _pendingPhotos;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -137,6 +186,48 @@ else
         {
             _error = "Không tải được đánh giá.";
             _reviews = new List<OrderReviewModel>();
+        }
+        await LoadPendingPhotosAsync();
+    }
+
+    private async Task LoadPendingPhotosAsync()
+    {
+        try
+        {
+            _pendingPhotos = await Wave5Service.GetCustomerPhotosAsync(pendingOnly: true)
+                ?? new List<CustomerPhotoModel>();
+        }
+        catch (Exception)
+        {
+            _pendingPhotos = new List<CustomerPhotoModel>();
+        }
+    }
+
+    private async Task ApprovePhoto(CustomerPhotoModel p)
+    {
+        try
+        {
+            await Wave5Service.ApproveCustomerPhotoAsync(p.Id);
+            _pendingPhotos.Remove(p);
+            _message = "Đã duyệt ảnh check-in.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task RejectPhoto(CustomerPhotoModel p)
+    {
+        try
+        {
+            await Wave5Service.RejectCustomerPhotoAsync(p.Id);
+            _pendingPhotos.Remove(p);
+            _message = "Đã xóa ảnh check-in.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
         }
     }
 

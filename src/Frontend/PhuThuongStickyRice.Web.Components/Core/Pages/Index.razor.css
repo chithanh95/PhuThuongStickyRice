@@ -769,6 +769,18 @@
     background: #ffffff;
 }
 
+/* ---------- google maps reviews (item 95) ---------- */
+.xo-gmaps {
+    background: #F5E9D4;
+    text-align: center;
+}
+.xo-gmaps-sub {
+    color: #6F0707;
+    font-size: 17px;
+    margin-bottom: 20px;
+}
+.xo-gmaps-sub strong { color: #763434; }
+
 .xo-video-frame {
     max-width: 860px;
     margin: 0 auto;
@@ -1603,8 +1615,14 @@ html.dark .xo-page {
 
 html.dark .xo-page .xo-section,
 html.dark .xo-page .xo-video,
+html.dark .xo-page .xo-gmaps,
 html.dark .xo-page .xo-news {
     background: #1a1a2e;
+}
+
+html.dark .xo-gmaps-sub,
+html.dark .xo-gmaps-sub strong {
+    color: #e8c9a0;
 }
 
 html.dark .xo-about {

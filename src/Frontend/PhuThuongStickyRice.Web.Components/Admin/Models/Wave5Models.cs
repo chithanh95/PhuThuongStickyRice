@@ -35,6 +35,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public Guid Id { get; set; }
         public string ImageUrl { get; set; }
         public string Caption { get; set; }
+        public string Name { get; set; }
         public bool IsApproved { get; set; }
         public DateTime CreatedAt { get; set; }
     }

@@ -63,7 +63,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             }
 
             var phone = VietnamTime.NormalizePhone(input?.Phone);
-            if (string.IsNullOrEmpty(phone))
+            if (!string.IsNullOrEmpty(input?.Phone) && string.IsNullOrEmpty(phone))
             {
                 throw new DomainException("Số điện thoại không hợp lệ.");
             }
@@ -73,6 +73,7 @@ namespace PhuThuongStickyRice.Application.Wave5
                 ImageUrl = imageUrl,
                 Caption = string.IsNullOrWhiteSpace(input.Caption) ? null : input.Caption.Trim(),
                 Phone = phone,
+                Name = string.IsNullOrWhiteSpace(input.Name) ? null : input.Name.Trim(),
                 IsApproved = false,
                 CreatedAt = DateTime.UtcNow
             };
@@ -117,6 +118,7 @@ namespace PhuThuongStickyRice.Application.Wave5
                 Id = x.Id,
                 ImageUrl = x.ImageUrl,
                 Caption = x.Caption,
+                Name = x.Name,
                 IsApproved = x.IsApproved,
                 CreatedAt = x.CreatedAt
             };

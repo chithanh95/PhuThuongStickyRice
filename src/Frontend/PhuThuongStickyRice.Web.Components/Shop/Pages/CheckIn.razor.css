@@ -1,0 +1,94 @@
+.xo-checkin {
+    background: #F5E9D4;
+    padding: 40px 0 56px;
+    font-family: 'Nunito', sans-serif;
+}
+
+.xo-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.xo-sec-head { text-align: center; margin-bottom: 12px; }
+.xo-sec-title {
+    font-family: 'Lora', serif;
+    font-size: 40px;
+    color: #763434;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.xo-sec-div { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.xo-sec-div span { display: inline-block; width: 60px; height: 1px; background: #9C682C; }
+.xo-sec-div em { color: #9C682C; font-family: 'Lora', serif; }
+
+.xo-checkin-sub { text-align: center; color: #6F0707; margin-bottom: 24px; }
+
+.xo-checkin-form {
+    border: 3px double #D08B8B;
+    border-radius: 20px 6px 20px 6px;
+    margin-bottom: 36px;
+    background: #fff;
+}
+.xo-checkin-form-title {
+    font-family: 'Lora', serif;
+    color: #763434;
+    margin-bottom: 12px;
+}
+
+.xo-btn {
+    display: inline-block;
+    padding: 10px 28px;
+    border-radius: 999px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+.xo-btn:disabled { opacity: .6; cursor: not-allowed; }
+.xo-btn-red { background: #6F0707; color: #fff; }
+.xo-btn-red:hover { background: #8a0b0b; color: #fff; }
+
+.xo-checkin-wall-title {
+    font-family: 'Lora', serif;
+    color: #763434;
+    font-size: 28px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.xo-checkin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+@media (min-width: 768px) {
+    .xo-checkin-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.xo-checkin-card {
+    background: #fff;
+    border: 3px double #D08B8B;
+    border-radius: 14px 4px 14px 4px;
+    overflow: hidden;
+}
+.xo-checkin-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+}
+.xo-checkin-meta {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+}
+.xo-checkin-meta strong { color: #763434; font-size: 14px; }
+.xo-checkin-meta span { color: #666; font-size: 13px; }
+
+html.dark .xo-checkin { background: #1c1c22; }
+html.dark .xo-checkin-sub { color: #e8c9a0; }
+html.dark .xo-checkin-form,
+html.dark .xo-checkin-card { background: #2a2a32; }
+html.dark .xo-checkin-meta strong { color: #e8c9a0; }
+html.dark .xo-checkin-meta span { color: #aaa; }

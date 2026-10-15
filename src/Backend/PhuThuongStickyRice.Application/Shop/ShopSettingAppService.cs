@@ -117,6 +117,7 @@ namespace PhuThuongStickyRice.Application.Shop
             // Wave 6b (items 27, 30): floating contact numbers + pause toggle.
             entity.Hotline = TrimOrNull(dto.Hotline);
             entity.ZaloPhone = TrimOrNull(dto.ZaloPhone);
+            entity.GoogleMapsUrl = TrimOrNull(dto.GoogleMapsUrl);
             entity.FacebookPageAccessToken = ProtectSecret(dto.FacebookPageAccessToken);
             entity.FacebookVerifyToken = TrimOrNull(dto.FacebookVerifyToken);
             entity.AcceptingOrders = dto.AcceptingOrders;
@@ -253,6 +254,7 @@ namespace PhuThuongStickyRice.Application.Shop
                 // AcceptingOrders = true for pre-existing rows.
                 Hotline = entity.Hotline,
                 ZaloPhone = entity.ZaloPhone,
+                GoogleMapsUrl = entity.GoogleMapsUrl,
                 FacebookPageAccessToken = UnprotectSecret(entity.FacebookPageAccessToken),
                 FacebookVerifyToken = entity.FacebookVerifyToken,
                 AcceptingOrders = entity.AcceptingOrders,

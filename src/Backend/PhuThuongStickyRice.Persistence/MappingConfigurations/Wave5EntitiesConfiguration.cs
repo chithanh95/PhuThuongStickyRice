@@ -48,7 +48,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             builder.Property(x => x.ImageUrl).HasMaxLength(500).IsRequired();
             builder.Property(x => x.Caption).HasMaxLength(CustomerPhoto.CaptionMaxLength);
-            builder.Property(x => x.Phone).HasMaxLength(CustomerPhoto.PhoneMaxLength).IsRequired();
+            builder.Property(x => x.Phone).HasMaxLength(CustomerPhoto.PhoneMaxLength);
+            builder.Property(x => x.Name).HasMaxLength(CustomerPhoto.NameMaxLength);
             builder.Property(x => x.IsApproved).IsRequired();
             builder.Property(x => x.CreatedAt).IsRequired();
             builder.HasIndex(x => x.IsApproved);

@@ -172,6 +172,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromForm] IFormFile file,
             [FromForm] string phone,
             [FromForm] string caption,
+            [FromForm] string name,
             CancellationToken cancellationToken = default)
         {
             if (file == null || file.Length == 0)
@@ -207,7 +208,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var photo = await _photos.RegisterAsync(
                     $"/uploads/customer-photos/{fileName}",
-                    new CreateCustomerPhotoDto { Phone = phone, Caption = caption });
+                    new CreateCustomerPhotoDto { Phone = phone, Caption = caption, Name = name });
                 return Ok(photo);
             }
             catch (DomainException ex)

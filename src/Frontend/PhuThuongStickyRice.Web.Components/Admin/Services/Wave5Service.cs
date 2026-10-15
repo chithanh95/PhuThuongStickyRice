@@ -71,7 +71,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         /// moderation. Mirrors the LandingService upload pattern.
         /// </summary>
         public async Task<CustomerPhotoModel> UploadCustomerPhotoAsync(
-            System.IO.Stream content, string fileName, string contentType, string phone, string caption)
+            System.IO.Stream content, string fileName, string contentType, string phone, string caption,
+            string name = null)
         {
             await SetBearerToken();
 
@@ -82,6 +83,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             form.Add(fileContent, "file", fileName);
             form.Add(new StringContent(phone ?? string.Empty), "phone");
             form.Add(new StringContent(caption ?? string.Empty), "caption");
+            form.Add(new StringContent(name ?? string.Empty), "name");
 
             var response = await _httpClient.PostAsync("api/customer-photos/upload", form);
             var body = await response.Content.ReadAsStringAsync();

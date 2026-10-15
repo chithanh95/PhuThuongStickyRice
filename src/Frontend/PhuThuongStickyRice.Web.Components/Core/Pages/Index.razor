@@ -293,6 +293,29 @@ else
     </section>
 }
 
+<!-- 6c. ĐÁNH GIÁ TRÊN GOOGLE (item 95) -->
+@if (!string.IsNullOrWhiteSpace(_shopSettings?.GoogleMapsUrl))
+{
+    <section class="xo-section xo-gmaps">
+        <div class="xo-container">
+            <div class="xo-sec-head">
+                <h2 class="xo-sec-title">Đánh giá trên Google</h2>
+                <div class="xo-sec-div"><span></span><em>Google Maps</em><span></span></div>
+            </div>
+            <p class="xo-gmaps-sub">
+                Ăn ngon rồi? Hãy để lại đánh giá 5⭐ cho quán trên Google Maps nhé!
+                @if (_reviewCount > 0)
+                {
+                    <br /><span>Điểm trung bình từ @_reviewCount đánh giá thật: <strong>⭐ @_avgRating.ToString("0.0")/5</strong></span>
+                }
+            </p>
+            <a class="xo-btn xo-btn-red" href="@_shopSettings.GoogleMapsUrl" target="_blank" rel="noopener">
+                📍 Đánh giá quán trên Google Maps
+            </a>
+        </div>
+    </section>
+}
+
 <!-- 7. ĐẶT XÔI NGAY (form) -->
 <section class="xo-book" id="dat-xoi">
     <div class="xo-container">
@@ -574,8 +597,8 @@ else
     private List<PolicyPageSummaryModel> _policies = new List<PolicyPageSummaryModel>();
 
     /// <summary>
-    /// Converts a YouTube watch/share URL to an embed URL.
-    /// Returns null when no video is configured.
+    /// Converts a YouTube/TikTok/Facebook video URL to an embed URL.
+    /// Returns null when no video is configured or the URL is not supported.
     /// </summary>
     private string VideoEmbedUrl
     {
@@ -587,11 +610,19 @@ else
                 return null;
             }
 
+            // Basic validation: only http(s) URLs, no javascript: tricks.
+            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
             if (url.Contains("/embed/"))
             {
                 return url;
             }
 
+            // ---- YouTube ----
             // youtu.be/VIDEO_ID
             var shortIdx = url.IndexOf("youtu.be/", StringComparison.OrdinalIgnoreCase);
             if (shortIdx >= 0)
@@ -602,10 +633,27 @@ else
 
             // youtube.com/watch?v=VIDEO_ID
             var vIdx = url.IndexOf("v=", StringComparison.OrdinalIgnoreCase);
-            if (vIdx >= 0)
+            if (vIdx >= 0 && url.IndexOf("youtube.com", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 var id = url.Substring(vIdx + 2).Split('?', '&')[0];
                 return $"https://www.youtube.com/embed/{id}";
+            }
+
+            // ---- TikTok ----
+            // tiktok.com/@user/video/VIDEO_ID
+            var ttIdx = url.IndexOf("/video/", StringComparison.OrdinalIgnoreCase);
+            if (ttIdx >= 0 && url.IndexOf("tiktok.com", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                var id = url.Substring(ttIdx + "/video/".Length).Split('?', '&', '/')[0];
+                return $"https://www.tiktok.com/embed/v2/{id}";
+            }
+
+            // ---- Facebook ----
+            // facebook.com/.../videos/VIDEO_ID or facebook.com/watch?v=VIDEO_ID
+            if (url.IndexOf("facebook.com", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "https://www.facebook.com/plugins/video.php?href="
+                    + Uri.EscapeDataString(url);
             }
 
             return null;
