@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminUtilityService UtilityService
+@using PhuThuongStickyRice.Web.Components.Admin.Models
 @implements IDisposable
 
 <link href="_content/PhuThuongStickyRice.Web.Components/css/admin-lexa.css" rel="stylesheet" />
@@ -27,20 +29,102 @@
                 <button class="lx-icon-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng">
                     <span aria-hidden="true">@(_isDark ? "☀️" : "🌙")</span>
                 </button>
-                <div class="lx-search">
-                    <input placeholder="Tìm chức năng..." @bind="_search" @bind:event="oninput" />
-                    <span class="oi oi-magnifying-glass" aria-hidden="true"></span>
+                <div class="lx-dropdown lx-search-wrap">
+                    <div class="lx-search">
+                        <input placeholder="Tìm chức năng, đơn, món, khách..." value="@_search"
+                               @oninput="OnSearchInput" @onfocus="() => _searchFocused = true" @onfocusout="OnSearchBlur" />
+                        <span class="oi oi-magnifying-glass" aria-hidden="true"></span>
+                    </div>
+                    @if (_searchFocused && _search.Trim().Length >= 2)
+                    {
+                        <div class="lx-dropdown-menu lx-search-menu">
+                            @if (_searching)
+                            {
+                                <div class="lx-search-empty"><em>Đang tìm...</em></div>
+                            }
+                            else if (_searchResult != null && _searchResult.HasAny)
+                            {
+                                @if (_searchResult.Orders.Count > 0)
+                                {
+                                    <div class="lx-search-group-label">🧾 Đơn hàng</div>
+                                    @foreach (var r in _searchResult.Orders)
+                                    {
+                                        <button class="lx-search-item" @onclick="() => GoSearch(r.Link)">
+                                            <span class="oi oi-cart" aria-hidden="true"></span>
+                                            <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
+                                        </button>
+                                    }
+                                }
+                                @if (_searchResult.Products.Count > 0)
+                                {
+                                    <div class="lx-search-group-label">🍚 Món ăn</div>
+                                    @foreach (var r in _searchResult.Products)
+                                    {
+                                        <button class="lx-search-item" @onclick="() => GoSearch(r.Link)">
+                                            <span class="oi oi-tag" aria-hidden="true"></span>
+                                            <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
+                                        </button>
+                                    }
+                                }
+                                @if (_searchResult.Customers.Count > 0)
+                                {
+                                    <div class="lx-search-group-label">👤 Khách hàng</div>
+                                    @foreach (var r in _searchResult.Customers)
+                                    {
+                                        <button class="lx-search-item" @onclick="() => GoSearch(r.Link)">
+                                            <span class="oi oi-person" aria-hidden="true"></span>
+                                            <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
+                                        </button>
+                                    }
+                                }
+                            }
+                            else if (_searchResult != null)
+                            {
+                                <div class="lx-search-empty">Không tìm thấy đơn/món/khách nào.</div>
+                            }
+                        </div>
+                    }
                 </div>
                 <button class="lx-icon-btn" title="Toàn màn hình" @onclick="ToggleFullscreen">
                     <span class="oi oi-fullscreen-enter" aria-hidden="true"></span>
                 </button>
-                <a class="lx-icon-btn" href="/orders" title="Đơn hàng mới">
-                    <span class="oi oi-bell" aria-hidden="true"></span>
-                    @if (_pendingCount > 0)
+                <div class="lx-dropdown">
+                    <button class="lx-icon-btn" @onclick="ToggleNotifications" title="Thông báo">
+                        <span class="oi oi-bell" aria-hidden="true"></span>
+                        @if (UnreadCount > 0)
+                        {
+                            <span class="lx-dot">@UnreadCount</span>
+                        }
+                    </button>
+                    @if (_notifOpen)
                     {
-                        <span class="lx-dot">@_pendingCount</span>
+                        <div class="lx-dropdown-menu lx-notif-menu">
+                            <div class="d-flex justify-content-between align-items-center px-2 py-1">
+                                <strong>Thông báo</strong>
+                                <button class="btn btn-link btn-sm p-0" @onclick="MarkAllRead">Đánh dấu đã đọc</button>
+                            </div>
+                            @if (_notifications == null)
+                            {
+                                <div class="lx-search-empty"><em>Đang tải...</em></div>
+                            }
+                            else if (_notifications.Count == 0)
+                            {
+                                <div class="lx-search-empty">🎉 Không có cảnh báo nào.</div>
+                            }
+                            else
+                            {
+                                @foreach (var n in _notifications)
+                                {
+                                    <button class="lx-search-item @(_readNotifIds.Contains(n.Id) ? "" : "lx-notif-unread")"
+                                            @onclick="() => OpenNotification(n)">
+                                        <span aria-hidden="true">@KindIcon(n.Kind)</span>
+                                        <span><span class="t">@n.Title</span><br /><span class="s">@n.Detail</span></span>
+                                    </button>
+                                }
+                            }
+                        </div>
                     }
-                </a>
+                </div>
                 <div class="lx-dropdown lx-user-wrap">
                     <button class="lx-avatar" @onclick="ToggleUserMenu" title="Tài khoản">
                         <AuthorizeView>
@@ -151,7 +235,20 @@
     }
     private bool _userMenuOpen;
     private string _search = "";
-    private int _pendingCount = 0;
+
+    @* Item 157: global search (debounced). *@
+    private bool _searchFocused;
+    private bool _searching;
+    private GlobalSearchResultModel _searchResult;
+    private System.Threading.CancellationTokenSource _searchCts;
+
+    @* Item 158: notification center. *@
+    private bool _notifOpen;
+    private List<NotificationModel> _notifications;
+    private readonly HashSet<string> _readNotifIds = new();
+    private const string NotifReadKey = "pt-notif-read";
+
+    private int UnreadCount => _notifications?.Count(n => !_readNotifIds.Contains(n.Id)) ?? 0;
 
     private static string UserInitial(string name) =>
         string.IsNullOrWhiteSpace(name) ? "A" : name.Trim().Substring(0, 1).ToUpperInvariant();
@@ -246,11 +343,20 @@
         var group = MenuGroups.FirstOrDefault(g => g.Items.Any(i => IsVisible(i) && IsHrefActive(i.Href)));
         if (group != null) _openGroups.Add(group.Key);
         else _openGroups.Add("overview");
+
+        // Item 158: badge count on the bell — load once per page load.
+        await LoadReadIdsAsync();
+        if (_user != null && (_user.IsInRole("Admin") || _user.IsInRole("Cashier")))
+        {
+            await LoadNotificationsAsync();
+        }
     }
 
     private void OnLocationChanged(object sender, LocationChangedEventArgs e)
     {
         UpdatePageHead();
+        _notifOpen = false;
+        _searchFocused = false;
         var group = MenuGroups.FirstOrDefault(g => g.Items.Any(i => IsHrefActive(i.Href)));
         if (group != null) _openGroups.Add(group.Key);
         InvokeAsync(StateHasChanged);
@@ -294,6 +400,115 @@
     private void ToggleUserMenu() => _userMenuOpen = !_userMenuOpen;
     private void CloseUserMenu() => _userMenuOpen = false;
 
+    @* ============ Item 157: global search (debounce 300ms, min 2 chars) ============ *@
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? "";
+        _searchCts?.Cancel();
+        _searchCts = new System.Threading.CancellationTokenSource();
+        var token = _searchCts.Token;
+        _searchResult = null;
+        if (_search.Trim().Length < 2)
+        {
+            StateHasChanged();
+            return;
+        }
+        try
+        {
+            await Task.Delay(300, token);
+            token.ThrowIfCancellationRequested();
+            _searching = true;
+            StateHasChanged();
+            _searchResult = await UtilityService.SearchAsync(_search.Trim());
+        }
+        catch (OperationCanceledException) { }
+        catch { _searchResult = null; }
+        finally { _searching = false; }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnSearchBlur()
+    {
+        // Delay so a click on a result still registers before hiding.
+        await Task.Delay(250);
+        _searchFocused = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void GoSearch(string link)
+    {
+        _searchFocused = false;
+        _search = "";
+        _searchResult = null;
+        Navigation.NavigateTo(link);
+    }
+
+    @* ============ Item 158: notification center ============ *@
+    private static string KindIcon(string kind) => kind switch
+    {
+        "urgent" => "🚨",
+        "warning" => "⚠️",
+        _ => "ℹ️"
+    };
+
+    private async Task LoadNotificationsAsync()
+    {
+        try
+        {
+            _notifications = await UtilityService.GetNotificationsAsync() ?? new List<NotificationModel>();
+        }
+        catch { _notifications = new List<NotificationModel>(); }
+    }
+
+    private async Task LoadReadIdsAsync()
+    {
+        try
+        {
+            var json = await JS.InvokeAsync<string>("localStorage.getItem", NotifReadKey);
+            if (!string.IsNullOrEmpty(json))
+            {
+                var ids = System.Text.Json.JsonSerializer.Deserialize<string[]>(json);
+                if (ids != null) foreach (var id in ids) _readNotifIds.Add(id);
+            }
+        }
+        catch { }
+    }
+
+    private async Task SaveReadIdsAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", NotifReadKey,
+                System.Text.Json.JsonSerializer.Serialize(_readNotifIds.ToArray()));
+        }
+        catch { }
+    }
+
+    private async Task ToggleNotifications()
+    {
+        _notifOpen = !_notifOpen;
+        if (_notifOpen && _notifications == null)
+        {
+            await LoadNotificationsAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task MarkAllRead()
+    {
+        if (_notifications != null)
+            foreach (var n in _notifications) _readNotifIds.Add(n.Id);
+        await SaveReadIdsAsync();
+    }
+
+    private async Task OpenNotification(NotificationModel n)
+    {
+        _readNotifIds.Add(n.Id);
+        await SaveReadIdsAsync();
+        _notifOpen = false;
+        Navigation.NavigateTo(n.Link);
+    }
+
     private async Task ToggleFullscreen()
     {
         try
@@ -318,6 +533,7 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+        try { _searchCts?.Cancel(); _searchCts?.Dispose(); } catch { }
     }
 
     private sealed class MenuGroup

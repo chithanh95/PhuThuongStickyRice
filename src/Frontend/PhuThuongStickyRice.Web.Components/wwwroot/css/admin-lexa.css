@@ -806,3 +806,93 @@ html.dark .lx-mini-stat {
 html.dark .lx-icon-btn:hover {
     background: #34345a;
 }
+
+/* ---------- Items 157-158: global search + notification center ---------- */
+.lx-search-wrap {
+    position: relative;
+}
+
+.lx-search-menu {
+    left: 0;
+    right: auto;
+    min-width: 340px;
+    max-width: 420px;
+    max-height: 440px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.lx-search-group-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--lx-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    padding: 8px 8px 2px;
+}
+
+.lx-search-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    width: 100%;
+    text-align: left;
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--lx-text);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.lx-search-item:hover {
+    background: var(--lx-search-bg);
+}
+
+.lx-search-item .oi {
+    margin-top: 2px;
+    color: var(--lx-primary);
+}
+
+.lx-search-item .t {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.lx-search-item .s {
+    font-size: 11px;
+    color: var(--lx-muted);
+}
+
+.lx-search-empty {
+    padding: 12px;
+    font-size: 13px;
+    color: var(--lx-muted);
+    text-align: center;
+}
+
+.lx-notif-menu {
+    min-width: 340px;
+    max-width: 400px;
+    max-height: 440px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.lx-notif-unread {
+    background: rgba(122, 111, 190, 0.10);
+}
+
+html.dark .lx-notif-unread {
+    background: rgba(122, 111, 190, 0.22);
+}
+
+/* ---------- Item 160: voice report button ---------- */
+.lx-voice-btn.spinning .oi {
+    animation: lx-spin 1s linear infinite;
+}
+
+@keyframes lx-spin {
+    to { transform: rotate(360deg); }
+}

@@ -1,0 +1,255 @@
+@page "/cho"
+@layout PhuThuongStickyRice.Web.Components.Core.Layouts.EmptyLayout
+@implements IDisposable
+@using System.Threading
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject QueueService QueueService
+
+@* Item 178: màn hình số thứ tự cho khách chờ — treo TV ở quán. Chữ lớn,
+   tương phản cao, tự làm mới 15s, không cần đăng nhập. *@
+
+<style>
+    .cho-screen {
+        min-height: 100vh;
+        background: #111;
+        color: #fff;
+        font-family: 'Nunito', Arial, sans-serif;
+        padding: 1.5rem;
+    }
+    .cho-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 3px solid #9C682C;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .cho-brand {
+        font-family: 'Lora', Georgia, serif;
+        font-size: 2.2rem;
+        color: #F5E9D4;
+    }
+    .cho-clock {
+        font-size: 2rem;
+        font-variant-numeric: tabular-nums;
+        color: #FFBA31;
+    }
+    .cho-section-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin: 0 0 1rem;
+    }
+    .cho-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    .cho-ticket {
+        position: relative;
+        border-radius: 16px;
+        padding: 1.2rem 0.6rem;
+        text-align: center;
+        cursor: pointer;
+        border: 3px solid transparent;
+    }
+    .cho-ticket .cho-num {
+        font-size: 4rem;
+        font-weight: 900;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+    .cho-ticket .cho-code {
+        font-size: 1.1rem;
+        opacity: 0.85;
+        margin-top: 0.3rem;
+        letter-spacing: 2px;
+    }
+    .cho-ticket .cho-zoom {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        background: rgba(0,0,0,0.35);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        padding: 2px 8px;
+        cursor: pointer;
+    }
+    .cho-preparing { background: #4a3200; border-color: #FFBA31; }
+    .cho-preparing .cho-num { color: #FFBA31; }
+    .cho-ready {
+        background: #0b3d1b;
+        border-color: #28e06c;
+        animation: cho-blink 1.2s ease-in-out infinite;
+    }
+    .cho-ready .cho-num { color: #28e06c; }
+    @@keyframes cho-blink {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(40,224,108,0.0); }
+        50% { box-shadow: 0 0 28px 6px rgba(40,224,108,0.55); }
+    }
+    .cho-empty {
+        font-size: 1.6rem;
+        color: #bbb;
+        text-align: center;
+        padding: 3rem 0;
+    }
+    .cho-zoom-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.92);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        cursor: pointer;
+    }
+    .cho-zoom-overlay .cho-big {
+        font-size: 14rem;
+        font-weight: 900;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+    .cho-zoom-overlay .cho-big-label {
+        font-size: 2.2rem;
+        margin-top: 1rem;
+    }
+    .cho-footer {
+        margin-top: 2rem;
+        text-align: center;
+        color: #888;
+        font-size: 1rem;
+    }
+</style>
+
+<div class="cho-screen">
+    <div class="cho-header">
+        <div class="cho-brand">🍚 Xôi Phú Thượng</div>
+        <div class="cho-clock">@_now.ToString("HH:mm:ss")</div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    @if (_tickets == null)
+    {
+        <p class="cho-empty">Đang tải...</p>
+    }
+    else
+    {
+        var ready = _tickets.Where(t => t.IsReady).ToList();
+        var preparing = _tickets.Where(t => !t.IsReady).ToList();
+
+        @if (ready.Count > 0)
+        {
+            <h2 class="cho-section-title" style="color:#28e06c;">🔔 MỜI LẤY MÓN</h2>
+            <div class="cho-grid mb-4">
+                @foreach (var t in ready)
+                {
+                    <div class="cho-ticket cho-ready" @onclick="() => Zoom(t)">
+                        <button class="cho-zoom" title="Phóng to" @onclick:stopPropagation="true" @onclick="() => Zoom(t)">⤢</button>
+                        <div class="cho-num">@t.QueueNumber</div>
+                        <div class="cho-code">@t.ShortCode</div>
+                    </div>
+                }
+            </div>
+        }
+
+        <h2 class="cho-section-title" style="color:#FFBA31;">🍳 ĐANG CHUẨN BỊ</h2>
+        @if (preparing.Count == 0 && ready.Count == 0)
+        {
+            <p class="cho-empty">Hiện chưa có đơn nào đang chờ 🎉</p>
+        }
+        else if (preparing.Count == 0)
+        {
+            <p class="cho-empty">Không còn đơn nào đang làm — tất cả đã sẵn sàng!</p>
+        }
+        else
+        {
+            <div class="cho-grid">
+                @foreach (var t in preparing)
+                {
+                    <div class="cho-ticket cho-preparing" @onclick="() => Zoom(t)">
+                        <button class="cho-zoom" title="Phóng to" @onclick:stopPropagation="true" @onclick="() => Zoom(t)">⤢</button>
+                        <div class="cho-num">@t.QueueNumber</div>
+                        <div class="cho-code">@t.ShortCode</div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    <div class="cho-footer">
+        Quý khách giữ số thứ tự — khi tới lượt, số của quý khách sẽ nhấp nháy xanh ở mục "Mời lấy món".
+        <br />Tự động cập nhật 15 giây một lần • Cập nhật lúc @_updated.ToString("HH:mm:ss")
+    </div>
+</div>
+
+@if (_zoomed != null)
+{
+    <div class="cho-zoom-overlay" @onclick="() => _zoomed = null">
+        <div class="cho-big" style="color:@(_zoomed.IsReady ? "#28e06c" : "#FFBA31")">@_zoomed.QueueNumber</div>
+        <div class="cho-big-label">@(_zoomed.IsReady ? "🔔 Mời lấy món!" : "🍳 Đang chuẩn bị...")</div>
+        <div class="mt-3" style="color:#888;">Chạm vào màn hình để thu nhỏ</div>
+    </div>
+}
+
+@code {
+    private List<QueueTicketModel> _tickets;
+    private string _error;
+    private DateTime _now = DateTime.Now;
+    private DateTime _updated = DateTime.Now;
+    private QueueTicketModel _zoomed;
+    private Timer _timer;
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+        // Tự làm mới 15s (item 178).
+        _timer = new Timer(async _ =>
+        {
+            _now = DateTime.Now;
+            await InvokeAsync(async () =>
+            {
+                await RefreshAsync();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (_loading) return;
+        _loading = true;
+        try
+        {
+            _tickets = await QueueService.GetNowServingAsync();
+            _updated = DateTime.Now;
+            _error = null;
+        }
+        catch (Exception)
+        {
+            _error = "Không kết nối được máy chủ — đang thử lại...";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Zoom(QueueTicketModel ticket)
+    {
+        _zoomed = ticket;
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}

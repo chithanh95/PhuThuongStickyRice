@@ -20,6 +20,17 @@
             <small class="text-muted mr-3 mb-1 mb-md-0">Cập nhật: @_lastUpdated.ToString("HH:mm:ss")</small>
         }
         <button class="btn btn-sm btn-outline-secondary mr-2 mb-1 mb-md-0" @onclick="RefreshNow" disabled="@_refreshing">⟳ Làm mới</button>
+        @if (_stats != null)
+        {
+            @if (_speaking)
+            {
+                <button class="btn btn-sm btn-outline-danger mr-2 mb-1 mb-md-0" @onclick="StopSpeaking">⏹ Dừng đọc</button>
+            }
+            else
+            {
+                <button class="btn btn-sm btn-outline-primary mr-2 mb-1 mb-md-0" @onclick="SpeakReport" title="Đọc báo cáo doanh thu">🔊 Đọc báo cáo</button>
+            }
+        }
         <div class="form-check form-check-inline mb-1 mb-md-0">
             <input class="form-check-input" type="checkbox" id="autoRefreshToggle" @bind="_autoRefresh" />
             <label class="form-check-label" for="autoRefreshToggle">Tự động (30s)</label>
@@ -728,7 +739,10 @@ else
         }
     }
 
+    // Item 160: đọc báo cáo doanh thu bằng giọng nói (Web Speech API, vi-VN).
+    private bool _speaking;
 
+    private async Task SpeakReport()
     {
         if (_stats == null) return;
         var text = $"Hôm nay có {_stats.TotalOrders} đơn hàng, " +
@@ -736,16 +750,22 @@ else
                    $"{_stats.PendingOrders} đơn đang chờ xử lý.";
         try
         {
+            var ok = await JSRuntime.InvokeAsync<bool>("interop.speak", text);
+            _speaking = ok;
             if (!ok)
             {
                 // Trình duyệt không hỗ trợ đọc giọng nói.
+                _speaking = false;
             }
         }
+        catch { _speaking = false; }
         StateHasChanged();
     }
 
+    private async Task StopSpeaking()
     {
         try { await JSRuntime.InvokeVoidAsync("interop.stopSpeak"); } catch { }
+        _speaking = false;
     }
 
     // Item 138: weekly owner report actions.
@@ -823,6 +843,7 @@ else
     {
         _cts?.Cancel();
         _cts?.Dispose();
+        try { JSRuntime.InvokeVoidAsync("interop.stopSpeak"); } catch { }
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";

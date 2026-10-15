@@ -8,9 +8,20 @@
 @inject ShopService ShopService
 @inject Wave5Service Wave5Service
 @inject NavigationManager Navigation
+@inject Microsoft.JSInterop.IJSRuntime JS
 
 <h3>🧾 Bán hàng tại quầy (POS)</h3>
 <p class="text-muted">Chạm để thêm món → nhập SĐT khách (để tích điểm) → thu tiền mặt → đơn hoàn thành ngay, in hóa đơn.</p>
+
+@if (_offlineQueue.Count > 0)
+{
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between">
+        <div><strong>⚠️ Đang offline</strong> — @_offlineQueue.Count đơn chờ đồng bộ lên server.</div>
+        <button class="btn btn-sm btn-warning mt-2 mt-md-0" @onclick="SyncQueueAsync" disabled="@_syncing">
+            @(_syncing ? "Đang đồng bộ..." : "🔄 Đồng bộ ngay")
+        </button>
+    </div>
+}
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -99,17 +110,22 @@
 </div>
 
 @code {
+    private const string OfflineQueueKey = "pt-pos-offline-queue";
+
     private List<ShopProductModel> _products;
     private List<PosLine> _lines = new List<PosLine>();
     private string _phone;
     private string _customerName;
     private bool _busy;
+    private bool _syncing;
     private string _error;
     private string _success;
     private OrderModel _lastOrder;
+    private List<QueuedPosOrder> _offlineQueue = new List<QueuedPosOrder>();
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadQueueAsync();
         try
         {
             var paged = await ShopService.GetProductsAsync();
@@ -121,6 +137,12 @@
         catch (Exception ex)
         {
             _error = "Không tải được món ăn: " + ex.Message;
+        }
+
+        // Item 159: có mạng trở lại thì tự thử đồng bộ đơn chờ.
+        if (_offlineQueue.Count > 0)
+        {
+            await SyncQueueAsync();
         }
     }
 
@@ -161,20 +183,30 @@
         _busy = true;
         try
         {
-            var input = new
+            var input = new PosOrderInput
             {
-                customerName = string.IsNullOrWhiteSpace(_customerName) ? "Khách vãng lai" : _customerName.Trim(),
-                customerPhone = _phone?.Trim(),
-                note = "Bán tại quầy (POS)",
-                lines = _lines.Select(x => new
+                CustomerName = string.IsNullOrWhiteSpace(_customerName) ? "Khách vãng lai" : _customerName.Trim(),
+                CustomerPhone = _phone?.Trim(),
+                Note = "Bán tại quầy (POS)",
+                Lines = _lines.Select(x => new PosOrderLineInput
                 {
-                    productId = x.ProductId,
-                    quantity = x.Quantity
+                    ProductId = x.ProductId,
+                    Quantity = x.Quantity
                 }).ToList()
             };
 
             _lastOrder = await Wave5Service.CreatePosOrderAsync<OrderModel>(input);
             _success = $"Đã thu {_lastOrder.TotalAmount:N0} ₫ — đơn {_lastOrder.OrderNumber} hoàn thành.";
+            _lines.Clear();
+            _phone = null;
+            _customerName = null;
+        }
+        catch (Exception ex) when (IsNetworkError(ex))
+        {
+            // Item 159: mất mạng → lưu đơn vào hàng chờ offline.
+            await EnqueueOfflineAsync();
+            _error = null;
+            _success = $"⚠️ Mất kết nối — đơn đã lưu offline ({_offlineQueue.Count} đơn chờ đồng bộ).";
             _lines.Clear();
             _phone = null;
             _customerName = null;
@@ -189,11 +221,134 @@
         }
     }
 
+    private static bool IsNetworkError(Exception ex)
+    {
+        // HttpRequestException (không tới được server) hoặc TaskCanceled do timeout.
+        for (var e = ex; e != null; e = e.InnerException)
+        {
+            if (e is System.Net.Http.HttpRequestException) return true;
+        }
+        return ex is TaskCanceledException;
+    }
+
+    private PosOrderInput BuildInput()
+    {
+        return new PosOrderInput
+        {
+            CustomerName = string.IsNullOrWhiteSpace(_customerName) ? "Khách vãng lai" : _customerName.Trim(),
+            CustomerPhone = _phone?.Trim(),
+            Note = "Bán tại quầy (POS)",
+            Lines = _lines.Select(x => new PosOrderLineInput
+            {
+                ProductId = x.ProductId,
+                Quantity = x.Quantity
+            }).ToList()
+        };
+    }
+
+    private async Task EnqueueOfflineAsync()
+    {
+        _offlineQueue.Add(new QueuedPosOrder
+        {
+            LocalId = Guid.NewGuid().ToString("N"),
+            CreatedAt = DateTime.Now,
+            Input = BuildInput()
+        });
+        await SaveQueueAsync();
+    }
+
+    private async Task SyncQueueAsync()
+    {
+        if (_syncing || _offlineQueue.Count == 0) return;
+        _syncing = true;
+        _error = null;
+        try
+        {
+            var ok = 0;
+            var failed = new List<QueuedPosOrder>();
+            foreach (var q in _offlineQueue.ToList())
+            {
+                try
+                {
+                    var order = await Wave5Service.CreatePosOrderAsync<OrderModel>(q.Input);
+                    ok++;
+                    _lastOrder = order;
+                }
+                catch (Exception ex) when (IsNetworkError(ex))
+                {
+                    // Vẫn mất mạng — giữ lại toàn bộ phần còn lại.
+                    failed.Add(q);
+                    failed.AddRange(_offlineQueue.Skip(_offlineQueue.IndexOf(q) + 1));
+                    break;
+                }
+                catch
+                {
+                    // Lỗi nghiệp vụ — giữ lại đơn này, tiếp tục đơn khác.
+                    failed.Add(q);
+                }
+            }
+            _offlineQueue = failed;
+            await SaveQueueAsync();
+            _success = ok > 0
+                ? $"Đã đồng bộ {ok} đơn lên server." + (failed.Count > 0 ? $" Còn {failed.Count} đơn lỗi/chờ." : "")
+                : (_offlineQueue.Count > 0 ? "Vẫn chưa có mạng — các đơn tiếp tục chờ." : null);
+        }
+        finally
+        {
+            _syncing = false;
+        }
+    }
+
+    private async Task LoadQueueAsync()
+    {
+        try
+        {
+            var json = await JS.InvokeAsync<string>("localStorage.getItem", OfflineQueueKey);
+            if (!string.IsNullOrEmpty(json))
+            {
+                _offlineQueue = System.Text.Json.JsonSerializer.Deserialize<List<QueuedPosOrder>>(json)
+                    ?? new List<QueuedPosOrder>();
+            }
+        }
+        catch { _offlineQueue = new List<QueuedPosOrder>(); }
+    }
+
+    private async Task SaveQueueAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", OfflineQueueKey,
+                System.Text.Json.JsonSerializer.Serialize(_offlineQueue));
+        }
+        catch { }
+    }
+
     private class PosLine
     {
         public Guid ProductId { get; set; }
         public string ProductName { get; set; }
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }
+    }
+
+    private class PosOrderInput
+    {
+        public string CustomerName { get; set; }
+        public string CustomerPhone { get; set; }
+        public string Note { get; set; }
+        public List<PosOrderLineInput> Lines { get; set; } = new List<PosOrderLineInput>();
+    }
+
+    private class PosOrderLineInput
+    {
+        public Guid ProductId { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    private class QueuedPosOrder
+    {
+        public string LocalId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public PosOrderInput Input { get; set; }
     }
 }

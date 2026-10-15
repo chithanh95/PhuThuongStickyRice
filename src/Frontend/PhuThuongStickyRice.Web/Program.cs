@@ -213,6 +213,14 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Items 157–158: admin global search + notification center.
+            builder.Services.AddHttpClient<AdminUtilityService, AdminUtilityService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Toast notifications.
             builder.Services.AddScoped<ToastService>();
 
