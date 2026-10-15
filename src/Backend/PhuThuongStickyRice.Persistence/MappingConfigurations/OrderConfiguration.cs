@@ -142,6 +142,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.GiftMessage).HasMaxLength(Order.GiftMessageMaxLength);
             builder.Property(x => x.ReferralCodeUsed).HasMaxLength(Order.ReferralCodeMaxLength);
 
+            // Customer-booked pickup shipper (ShipperPickup orders). Nullable;
+            // distinct from the shop's assigned delivery shipper (ShipperId).
+            builder.Property(x => x.PickupShipperName).HasMaxLength(Order.PickupShipperNameMaxLength);
+            builder.Property(x => x.PickupShipperPhone).HasMaxLength(Order.PickupShipperPhoneMaxLength);
+            builder.Property(x => x.PickedUpAt);
+
             // Delivery shipper assignment (optional).
             builder.Property(x => x.ShipperId);
             builder.HasOne(x => x.Shipper)

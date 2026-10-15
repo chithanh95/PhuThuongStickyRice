@@ -85,6 +85,13 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<OrderDto> UpdateAdminNoteAsync(Guid id, UpdateAdminNoteDto input);
 
         /// <summary>
+        /// Staff confirms a ShipperPickup order was collected at the shop
+        /// ("Xác nhận đã lấy hàng"). Optionally records the customer-booked
+        /// shipper info.
+        /// </summary>
+        Task<OrderDto> MarkPickedUpAsync(Guid id, MarkPickedUpDto input);
+
+        /// <summary>
         /// Wave 6c (item 34): status-transition timeline of an order.
         /// </summary>
         Task<List<OrderStatusHistoryDto>> GetStatusHistoryAsync(Guid id);
@@ -243,8 +250,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException($"Unknown payment method '{input.PaymentMethod}'.");
             }
 
-            // Fulfillment: delivery (default) or self-pickup at the shop.
-            var fulfillment = FulfillmentMethod.Delivery;
+            // Fulfillment: customer-booked shipper pickup (default — the shop
+            // does not deliver), self-pickup, or legacy home delivery.
+            var fulfillment = FulfillmentMethod.ShipperPickup;
             if (!string.IsNullOrWhiteSpace(input.FulfillmentMethod)
                 && Enum.TryParse<FulfillmentMethod>(input.FulfillmentMethod, ignoreCase: true, out var parsedFulfillment)
                 && Enum.IsDefined(typeof(FulfillmentMethod), parsedFulfillment))
@@ -475,11 +483,12 @@ namespace PhuThuongStickyRice.Application.Orders
             // Gift packaging.
             var giftFeeValue = isGift ? Math.Max(0, shopSetting.GiftFee) : 0;
 
-            // Delivery fee: free when (subtotal - discount) reaches the
-            // threshold; always 0 for self-pickup orders; always 0 when a
-            // freeship voucher is applied (item 120).
+            // Delivery fee: the shop does not deliver — always 0 for
+            // ShipperPickup and self-pickup orders; legacy Delivery orders
+            // keep the old threshold/freeship rules.
             decimal feeValue = 0;
-            var isPickup = fulfillment == FulfillmentMethod.Pickup;
+            var isPickup = fulfillment == FulfillmentMethod.Pickup
+                || fulfillment == FulfillmentMethod.ShipperPickup;
             if (!isPickup && shopSetting.DeliveryFee > 0 && !isFreeship)
             {
                 var afterDiscount = subtotal - promotionDiscount - discountValue;
@@ -540,7 +549,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 branchId,
                 branchName,
                 input.Source,
-                string.IsNullOrWhiteSpace(input.DeliverySlot) ? null : input.DeliverySlot.Trim());
+                string.IsNullOrWhiteSpace(input.DeliverySlot) ? null : input.DeliverySlot.Trim(),
+                string.IsNullOrWhiteSpace(input.PickupShipperName) ? null : input.PickupShipperName.Trim(),
+                string.IsNullOrWhiteSpace(input.PickupShipperPhone) ? null : input.PickupShipperPhone.Trim());
 
             // Item 140: wallet payment — charge the prepaid balance up front;
             // insufficient balance aborts before the order row is written.
@@ -864,6 +875,38 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var order = await FindOrThrowAsync(id);
             order.SetAdminNote(input?.Note);
+            await _orders.UpdateAsync(order);
+
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            await FillShipperNamesAsync(new[] { dto });
+            return dto;
+        }
+
+        /// <summary>
+        /// Staff confirms a ShipperPickup order was collected at the shop
+        /// ("Xác nhận đã lấy hàng"). Optionally records the customer-booked
+        /// shipper info. When the order is being prepared, it advances to
+        /// Delivering (the shipper is now transporting it).
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
+        public async Task<OrderDto> MarkPickedUpAsync(Guid id, MarkPickedUpDto input)
+        {
+            var order = await FindOrThrowAsync(id);
+
+            order.SetPickupShipperInfo(input?.PickupShipperName, input?.PickupShipperPhone);
+
+            var fromStatus = order.Status;
+            order.MarkPickedUp();
+
+            // The shipper now has the food — move Preparing orders forward so
+            // the status flow stays truthful. Pending/Confirmed orders keep
+            // their status; staff advances them normally.
+            if (order.Status == OrderStatus.Preparing)
+            {
+                order.StartDelivering();
+                await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
+            }
+
             await _orders.UpdateAsync(order);
 
             var dto = _objectMapper.Map<Order, OrderDto>(order);

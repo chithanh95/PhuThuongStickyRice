@@ -50,6 +50,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 PaymentMethod = model.PaymentMethod,
                 DiscountCode = model.DiscountCode,
                 FulfillmentMethod = model.FulfillmentMethod,
+                PickupShipperName = model.PickupShipperName,
+                PickupShipperPhone = model.PickupShipperPhone,
                 TaxCode = model.TaxCode,
                 CompanyName = model.CompanyName,
                 RecipientName = model.RecipientName,
@@ -409,6 +411,32 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             return Ok(await _orderAppService.GetStatusHistoryAsync(id));
+        }
+
+        /// <summary>
+        /// Staff confirms a ShipperPickup order was collected at the shop
+        /// ("Xác nhận đã lấy hàng"). Optionally records the customer-booked
+        /// shipper info. A Preparing order advances to Delivering.
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpPut("{id:guid}/mark-picked-up")]
+        public async Task<ActionResult> MarkPickedUp(Guid id,
+            [FromBody] MarkPickedUpRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.MarkPickedUpAsync(id, new MarkPickedUpDto
+                {
+                    PickupShipperName = model?.PickupShipperName,
+                    PickupShipperPhone = model?.PickupShipperPhone
+                });
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>Item 81: kitchen display — Pending/Confirmed/Preparing orders.</summary>

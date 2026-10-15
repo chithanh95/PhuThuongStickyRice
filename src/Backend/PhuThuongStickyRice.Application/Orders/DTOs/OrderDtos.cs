@@ -58,8 +58,23 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public string PaymentStatus { get; set; }
 
-        /// <summary>"Delivery" or "Pickup".</summary>
+        /// <summary>"Delivery", "Pickup" or "ShipperPickup".</summary>
         public string FulfillmentMethod { get; set; }
+
+        /// <summary>
+        /// Name of the customer-booked shipper (Grab/Ahamove/...) for a
+        /// ShipperPickup order. Nullable.
+        /// </summary>
+        public string PickupShipperName { get; set; }
+
+        /// <summary>Phone of the customer-booked shipper. Nullable.</summary>
+        public string PickupShipperPhone { get; set; }
+
+        /// <summary>
+        /// When the shipper/customer collected a ShipperPickup order at the
+        /// shop (UTC). Null until staff confirms pickup.
+        /// </summary>
+        public DateTime? PickedUpAt { get; set; }
 
         public decimal TotalAmount { get; set; }
 
@@ -182,7 +197,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         [StringLength(254)]
         public string CustomerEmail { get; set; }
 
-        [Required]
+        /// <summary>
+        /// Delivery address. Required only for legacy Delivery orders;
+        /// ShipperPickup/Pickup orders leave it empty.
+        /// </summary>
         [StringLength(500)]
         public string CustomerAddress { get; set; }
 
@@ -196,7 +214,11 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         [StringLength(50)]
         public string DiscountCode { get; set; }
 
-        /// <summary>"Delivery" (default) or "Pickup". Pickup orders have no delivery fee and no address.</summary>
+        /// <summary>
+        /// "ShipperPickup" (customer-booked shipper collects at the shop),
+        /// "Pickup" (customer collects in person), or legacy "Delivery".
+        /// Defaults to ShipperPickup.
+        /// </summary>
         public string FulfillmentMethod { get; set; }
 
         /// <summary>Optional VAT invoice tax code.</summary>
@@ -251,6 +273,20 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         /// <summary>Optional branch id (item 109). Null = no branch.</summary>
         public Guid? BranchId { get; set; }
+
+        /// <summary>
+        /// Name of the customer-booked shipper (Grab/Ahamove/...) for a
+        /// ShipperPickup order. Optional — may be left empty at checkout.
+        /// </summary>
+        [StringLength(200)]
+        public string PickupShipperName { get; set; }
+
+        /// <summary>
+        /// Phone of the customer-booked shipper for a ShipperPickup order.
+        /// Optional.
+        /// </summary>
+        [StringLength(30)]
+        public string PickupShipperPhone { get; set; }
 
         /// <summary>
         /// Order source (item 133): "Web", "QR bàn", "Link chia sẻ", "Nhóm",
@@ -453,6 +489,21 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Internal note; null/empty clears it.</summary>
         [StringLength(2000)]
         public string Note { get; set; }
+    }
+
+    /// <summary>
+    /// Staff confirms a ShipperPickup order was collected at the shop.
+    /// Optionally records/updates the customer-booked shipper info.
+    /// </summary>
+    public class MarkPickedUpDto
+    {
+        /// <summary>Shipper name; null/empty clears it.</summary>
+        [StringLength(200)]
+        public string PickupShipperName { get; set; }
+
+        /// <summary>Shipper phone; null/empty clears it.</summary>
+        [StringLength(30)]
+        public string PickupShipperPhone { get; set; }
     }
 
     /// <summary>Wave 6c (item 34): one recorded status transition.</summary>

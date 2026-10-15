@@ -117,6 +117,7 @@ else
                                     {
                                         <span class="ml-1" title="Ghi chú nội bộ: @order.AdminNote">📝</span>
                                     }
+                                    <br />@FulfillmentBadge(order.FulfillmentMethod, order.PickedUpAt)
                                 </td>
                                 <td>@order.CustomerName<br /><small class="text-muted">@order.CustomerPhone</small></td>
                                 <td><small>@order.CustomerAddress</small></td>
@@ -170,6 +171,47 @@ else
                                         @if (!string.IsNullOrWhiteSpace(order.DeliverySlot))
                                         {
                                             <div>🕖 Giờ giao hẹn: <strong>@order.DeliverySlot</strong></div>
+                                        }
+                                        @* Shipper pickup info + "Xác nhận đã lấy hàng". *@
+                                        @if (order.FulfillmentMethod == "ShipperPickup")
+                                        {
+                                            <div class="mt-1">
+                                                🛵 <strong>Shipper đến lấy tại quán</strong>
+                                                @if (!string.IsNullOrWhiteSpace(order.PickupShipperName) || !string.IsNullOrWhiteSpace(order.PickupShipperPhone))
+                                                {
+                                                    <span class="text-muted"> — @order.PickupShipperName@(!string.IsNullOrWhiteSpace(order.PickupShipperPhone) ? $" ({order.PickupShipperPhone})" : "")</span>
+                                                }
+                                            </div>
+                                            @if (order.PickedUpAt.HasValue)
+                                            {
+                                                <div class="text-success">✅ Đã lấy hàng lúc <strong>@order.PickedUpAt.Value.ToLocalTime().ToString("dd/MM HH:mm")</strong></div>
+                                            }
+                                            else if (order.Status != "Cancelled" && order.Status != "Completed")
+                                            {
+                                                <div class="form-row align-items-end mt-2">
+                                                    <div class="col-md-4">
+                                                        <label class="mb-1"><small class="text-muted">Tên shipper (tùy chọn)</small></label>
+                                                        <input class="form-control form-control-sm" @bind="_pickupShipperName" placeholder="Tên shipper" />
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="mb-1"><small class="text-muted">SĐT shipper (tùy chọn)</small></label>
+                                                        <input class="form-control form-control-sm" @bind="_pickupShipperPhone" placeholder="SĐT shipper" />
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <button class="btn btn-sm btn-success" @onclick="() => MarkPickedUp(order)" disabled="@_markingPickedUp">
+                                                            @(_markingPickedUp ? "Đang xác nhận..." : "✅ Xác nhận đã lấy hàng")
+                                                        </button>
+                                                        @if (!string.IsNullOrEmpty(_pickupMessage))
+                                                        {
+                                                            <small class="@(_pickupIsError ? "text-danger" : "text-success") ml-2">@_pickupMessage</small>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                        else if (order.FulfillmentMethod == "Pickup")
+                                        {
+                                            <div class="mt-1">🏪 <strong>Khách tự đến lấy tại quán</strong></div>
                                         }
                                         @if (!string.IsNullOrWhiteSpace(order.RecipientName))
                                         {
@@ -453,6 +495,12 @@ else
             // Wave 6c (item 33): prefill the internal-note draft.
             _adminNoteDraft = order.AdminNote;
 
+            // Prefill the pickup-shipper confirmation fields.
+            _pickupShipperName = order.PickupShipperName;
+            _pickupShipperPhone = order.PickupShipperPhone;
+            _pickupMessage = null;
+            _pickupIsError = false;
+
             // Wave 6c (item 34): load the status timeline for this order.
             _historyLoading = true;
             try
@@ -524,6 +572,41 @@ else
         catch (Exception ex)
         {
             _shipperMessage = ex.Message;
+        }
+    }
+
+    // Shipper-pickup confirmation state (expanded order detail).
+    private string _pickupShipperName;
+    private string _pickupShipperPhone;
+    private bool _markingPickedUp;
+    private string _pickupMessage;
+    private bool _pickupIsError;
+
+    /// <summary>
+    /// Staff confirms a ShipperPickup order was collected at the shop.
+    /// </summary>
+    private async Task MarkPickedUp(OrderModel order)
+    {
+        _pickupMessage = null;
+        _pickupIsError = false;
+        _markingPickedUp = true;
+        try
+        {
+            var updated = await OrderService.MarkPickedUpAsync(order.Id, _pickupShipperName, _pickupShipperPhone);
+            order.PickupShipperName = updated.PickupShipperName;
+            order.PickupShipperPhone = updated.PickupShipperPhone;
+            order.PickedUpAt = updated.PickedUpAt;
+            order.Status = updated.Status;
+            _pickupMessage = "Đã xác nhận lấy hàng.";
+        }
+        catch (Exception ex)
+        {
+            _pickupMessage = ex.Message;
+            _pickupIsError = true;
+        }
+        finally
+        {
+            _markingPickedUp = false;
         }
     }
 
@@ -645,6 +728,21 @@ else
 
         return result;
     }
+
+    /// <summary>Fulfillment badge: "Shipper lấy" / "Tự lấy" / legacy "Giao".</summary>
+    private static RenderFragment FulfillmentBadge(string fulfillment, System.DateTime? pickedUpAt) => builder =>
+    {
+        var (css, label) = fulfillment switch
+        {
+            "ShipperPickup" => ("badge badge-info", pickedUpAt.HasValue ? "🛵 Đã lấy hàng" : "🛵 Shipper lấy"),
+            "Pickup" => ("badge badge-secondary", "🏪 Tự lấy"),
+            _ => ("badge badge-light", "Giao")
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", css + " mt-1");
+        builder.AddContent(2, label);
+        builder.CloseElement();
+    };
 
     private static RenderFragment StatusBadge(string status) => builder =>
     {

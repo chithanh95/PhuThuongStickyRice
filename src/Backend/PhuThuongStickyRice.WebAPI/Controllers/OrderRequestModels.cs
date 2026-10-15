@@ -37,8 +37,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// <summary>Optional discount/promo code.</summary>
         public string DiscountCode { get; set; }
 
-        /// <summary>"Delivery" (default) or "Pickup".</summary>
+        /// <summary>"ShipperPickup" (default), "Pickup" or legacy "Delivery".</summary>
         public string FulfillmentMethod { get; set; }
+
+        /// <summary>
+        /// Name of the customer-booked shipper (Grab/Ahamove/...) for a
+        /// ShipperPickup order. Optional.
+        /// </summary>
+        public string PickupShipperName { get; set; }
+
+        /// <summary>
+        /// Phone of the customer-booked shipper for a ShipperPickup order.
+        /// Optional.
+        /// </summary>
+        public string PickupShipperPhone { get; set; }
 
         /// <summary>Optional VAT invoice tax code.</summary>
         public string TaxCode { get; set; }
@@ -150,5 +162,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         /// <summary>Internal note; null/empty clears it.</summary>
         public string Note { get; set; }
+    }
+
+    /// <summary>
+    /// Staff confirms a ShipperPickup order was collected at the shop.
+    /// Optionally records the customer-booked shipper info.
+    /// </summary>
+    public sealed class MarkPickedUpRequestModel
+    {
+        /// <summary>Shipper name; null/empty clears it.</summary>
+        public string PickupShipperName { get; set; }
+
+        /// <summary>Shipper phone; null/empty clears it.</summary>
+        public string PickupShipperPhone { get; set; }
     }
 }

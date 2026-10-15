@@ -1262,6 +1262,17 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("PickedUpAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PickupShipperName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PickupShipperPhone")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<decimal>("PromotionDiscountAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");

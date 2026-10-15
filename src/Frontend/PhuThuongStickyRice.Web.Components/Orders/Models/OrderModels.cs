@@ -58,6 +58,18 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
 
         public string PaymentStatus { get; set; }
 
+        /// <summary>"ShipperPickup" / "Pickup" / legacy "Delivery".</summary>
+        public string FulfillmentMethod { get; set; }
+
+        /// <summary>Name of the customer-booked pickup shipper. Nullable.</summary>
+        public string PickupShipperName { get; set; }
+
+        /// <summary>Phone of the customer-booked pickup shipper. Nullable.</summary>
+        public string PickupShipperPhone { get; set; }
+
+        /// <summary>When the order was collected at the shop (UTC). Nullable.</summary>
+        public DateTime? PickedUpAt { get; set; }
+
         public decimal TotalAmount { get; set; }
 
         public string Currency { get; set; }

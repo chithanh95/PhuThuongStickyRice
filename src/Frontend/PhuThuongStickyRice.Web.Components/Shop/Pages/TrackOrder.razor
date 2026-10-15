@@ -362,7 +362,18 @@
             <p>
                 Phương thức thanh toán: <strong>@PaymentMethodLabel(_order.PaymentMethod)</strong><br />
                 Trạng thái thanh toán: @PaymentStatusBadge(_order.PaymentStatus)<br />
-                Hình thức nhận hàng: <strong>@(_order.FulfillmentMethod == "Pickup" ? "🏪 Tự đến lấy tại quán" : "🛵 Giao tận nơi")</strong>
+                Hình thức nhận hàng: <strong>@FulfillmentLabel(_order.FulfillmentMethod)</strong>
+                @if (_order.FulfillmentMethod == "ShipperPickup")
+                {
+                    @if (_order.PickedUpAt.HasValue)
+                    {
+                        <br /><span class="text-success">✅ Đã lấy hàng lúc <strong>@_order.PickedUpAt.Value.ToLocalTime().ToString("dd/MM HH:mm")</strong></span>
+                    }
+                    else
+                    {
+                        <br /><span class="text-info">🛵 Chờ shipper đến lấy — quán chuẩn bị sẵn, shipper đọc mã đơn <strong>@_order.OrderNumber</strong> để lấy.</span>
+                    }
+                }
                 @if (!string.IsNullOrWhiteSpace(_order.DeliverySlot))
                 {
                     <br /><span>🕖 Giờ giao hẹn: <strong>@_order.DeliverySlot</strong></span>
@@ -1173,6 +1184,13 @@
         "MoMo" => "Ví MoMo",
         "Wallet" => "Ví Xôi Phú Thượng",
         _ => method
+    };
+
+    private static string FulfillmentLabel(string fulfillment) => fulfillment switch
+    {
+        "ShipperPickup" => "🛵 Shipper đến lấy tại quán",
+        "Pickup" => "🏪 Tự đến lấy tại quán",
+        _ => "🛵 Giao tận nơi"
     };
 
     private static RenderFragment OrderStatusBadge(string status) => builder =>

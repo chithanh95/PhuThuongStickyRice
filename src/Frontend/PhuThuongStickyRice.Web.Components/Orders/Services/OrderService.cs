@@ -108,6 +108,16 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
                 new { Note = note });
         }
 
+        /// <summary>
+        /// Staff confirms a ShipperPickup order was collected at the shop.
+        /// Optionally records the customer-booked shipper info.
+        /// </summary>
+        public async Task<OrderModel> MarkPickedUpAsync(Guid orderId, string shipperName, string shipperPhone)
+        {
+            return await PutAsync<OrderModel>($"api/orders/{orderId}/mark-picked-up",
+                new { PickupShipperName = shipperName, PickupShipperPhone = shipperPhone });
+        }
+
         /// <summary>Wave 6c (item 34): status-transition timeline, oldest first.</summary>
         public async Task<List<OrderStatusHistoryModel>> GetStatusHistoryAsync(Guid orderId)
         {

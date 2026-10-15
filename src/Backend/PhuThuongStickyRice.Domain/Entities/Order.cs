@@ -36,6 +36,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public const int AdminNoteMaxLength = 2000;
 
+        /// <summary>Customer-booked pickup shipper name (optional).</summary>
+        public const int PickupShipperNameMaxLength = 200;
+
+        /// <summary>Customer-booked pickup shipper phone (optional).</summary>
+        public const int PickupShipperPhoneMaxLength = 30;
+
         public string OrderNumber { get; private set; }
 
         public string CustomerName { get; private set; }
@@ -173,6 +179,23 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string AdminNote { get; private set; }
 
         /// <summary>
+        /// Name of the customer-booked shipper (Grab/Ahamove/...) who will
+        /// pick up a ShipperPickup order. Optional — the customer may fill
+        /// it in at checkout or the staff may record it later.
+        /// Distinct from <see cref="Shipper"/> (the shop's own delivery staff).
+        /// </summary>
+        public string PickupShipperName { get; private set; }
+
+        /// <summary>Phone of the customer-booked pickup shipper. Optional.</summary>
+        public string PickupShipperPhone { get; private set; }
+
+        /// <summary>
+        /// When the shipper/customer collected a ShipperPickup order at the
+        /// shop (UTC). Set by staff via "Xác nhận đã lấy hàng".
+        /// </summary>
+        public DateTime? PickedUpAt { get; private set; }
+
+        /// <summary>
         /// Sets or clears the internal staff note. Admin/staff only.
         /// </summary>
         public void SetAdminNote(string note)
@@ -184,6 +207,58 @@ namespace PhuThuongStickyRice.Domain.Entities
             }
 
             AdminNote = trimmed;
+        }
+
+        /// <summary>
+        /// Records (or clears) the customer-booked pickup shipper info.
+        /// Allowed on ShipperPickup orders at any non-final status.
+        /// </summary>
+        public void SetPickupShipperInfo(string name, string phone)
+        {
+            var trimmedName = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+            var trimmedPhone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+
+            if (trimmedName != null && trimmedName.Length > PickupShipperNameMaxLength)
+            {
+                throw new DomainException($"Tên shipper không được vượt quá {PickupShipperNameMaxLength} ký tự.");
+            }
+
+            if (trimmedPhone != null && trimmedPhone.Length > PickupShipperPhoneMaxLength)
+            {
+                throw new DomainException($"SĐT shipper không được vượt quá {PickupShipperPhoneMaxLength} ký tự.");
+            }
+
+            PickupShipperName = trimmedName;
+            PickupShipperPhone = trimmedPhone;
+        }
+
+        /// <summary>
+        /// Staff confirms the shipper/customer collected the order at the
+        /// shop. Only for ShipperPickup orders that have not been picked up.
+        /// </summary>
+        public void MarkPickedUp()
+        {
+            if (FulfillmentMethod != FulfillmentMethod.ShipperPickup)
+            {
+                throw new DomainException("Chỉ đơn 'Shipper đến lấy' mới cần xác nhận lấy hàng.");
+            }
+
+            if (PickedUpAt.HasValue)
+            {
+                throw new DomainException("Đơn này đã được xác nhận lấy hàng.");
+            }
+
+            if (Status == OrderStatus.Cancelled)
+            {
+                throw new DomainException("Không thể xác nhận lấy hàng cho đơn đã hủy.");
+            }
+
+            if (Status == OrderStatus.Completed)
+            {
+                throw new DomainException("Đơn này đã hoàn thành.");
+            }
+
+            PickedUpAt = DateTime.UtcNow;
         }
 
         public DateTime CreatedAt { get; private set; }
@@ -228,7 +303,9 @@ namespace PhuThuongStickyRice.Domain.Entities
             Guid? branchId = null,
             string branchName = null,
             string source = null,
-            string deliverySlot = null)
+            string deliverySlot = null,
+            string pickupShipperName = null,
+            string pickupShipperPhone = null)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
@@ -284,6 +361,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             BranchName = string.IsNullOrWhiteSpace(branchName) ? null : branchName.Trim();
             Source = string.IsNullOrWhiteSpace(source) ? "Web" : source.Trim();
             DeliverySlot = string.IsNullOrWhiteSpace(deliverySlot) ? null : deliverySlot.Trim();
+            SetPickupShipperInfo(pickupShipperName, pickupShipperPhone);
             MoMoMatched = false;
             RefundStatus = RefundStatus.None;
             RefundAmount = 0;
@@ -322,7 +400,9 @@ namespace PhuThuongStickyRice.Domain.Entities
             Guid? branchId = null,
             string branchName = null,
             string source = null,
-            string deliverySlot = null)
+            string deliverySlot = null,
+            string pickupShipperName = null,
+            string pickupShipperPhone = null)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -363,7 +443,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 }
             }
 
-            var isPickup = fulfillmentMethod == FulfillmentMethod.Pickup;
+            var isPickup = fulfillmentMethod == FulfillmentMethod.Pickup
+                || fulfillmentMethod == FulfillmentMethod.ShipperPickup;
 
             if (!isPickup && string.IsNullOrWhiteSpace(customerAddress))
             {
@@ -432,7 +513,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 branchId,
                 branchName,
                 source,
-                deliverySlot);
+                deliverySlot,
+                pickupShipperName,
+                pickupShipperPhone);
         }
 
         /// <summary>

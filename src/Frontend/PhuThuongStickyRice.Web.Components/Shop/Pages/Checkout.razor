@@ -87,25 +87,12 @@
                 }
                 @if (_placedOrder.FulfillmentMethod == "Pickup")
                 {
-                    <tr><td>Nhận hàng</td><td class="text-right text-success">Tự đến lấy tại quán</td></tr>
+                    <tr><td>Nhận hàng</td><td class="text-right text-success">🏪 Tự đến lấy tại quán</td></tr>
                 }
                 else
                 {
-                    @if (!string.IsNullOrWhiteSpace(_placedOrder.DeliverySlot))
-                    {
-                        <tr>
-                            <td>Giờ giao</td>
-                            <td class="text-right"><strong>🕖 @_placedOrder.DeliverySlot</strong></td>
-                        </tr>
-                    }
-                    @if (_placedOrder.DeliveryFee > 0)
-                    {
-                        <tr><td>@I18n.T("delivery_fee")</td><td class="text-right">@FormatPrice(_placedOrder.DeliveryFee)</td></tr>
-                    }
-                    else
-                    {
-                        <tr><td>@I18n.T("delivery_fee")</td><td class="text-right text-success">Miễn phí</td></tr>
-                    }
+                    <tr><td>Nhận hàng</td><td class="text-right text-success">🛵 Shipper đến lấy tại quán (miễn phí ship)</td></tr>
+                    <tr><td colspan="2"><small class="text-muted">Quán chuẩn bị sẵn — shipper đến đọc mã đơn <strong>@_placedOrder.OrderNumber</strong> để lấy.</small></td></tr>
                 }
                 <tr>
                     <td><strong>Tổng tiền</strong></td>
@@ -300,54 +287,23 @@ else
                     <div class="form-group">
                         <label>Hình thức nhận hàng *</label>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="fulfillment" id="fm-delivery"
-                                   checked="@(_fulfillment == "Delivery")" @onchange="@(() => _fulfillment = "Delivery")" />
-                            <label class="form-check-label" for="fm-delivery">🛵 Giao tận nơi</label>
+                            <input class="form-check-input" type="radio" name="fulfillment" id="fm-shipper"
+                                   checked="@(_fulfillment == "ShipperPickup")" @onchange="@(() => _fulfillment = "ShipperPickup")" />
+                            <label class="form-check-label" for="fm-shipper">🛵 Shipper đến lấy tại quán <small class="text-success">(miễn phí ship)</small></label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="fulfillment" id="fm-pickup"
                                    checked="@(_fulfillment == "Pickup")" @onchange="@(() => _fulfillment = "Pickup")" />
-                            <label class="form-check-label" for="fm-pickup">🏪 Tự đến lấy tại quán <small class="text-success">(miễn phí ship)</small></label>
+                            <label class="form-check-label" for="fm-pickup">🏪 Tôi tự đến quán lấy <small class="text-success">(miễn phí ship)</small></label>
                         </div>
+                        <small class="text-muted d-block mt-1">Quán chuẩn bị sẵn, shipper đến đọc mã đơn để lấy.</small>
                     </div>
-                    @* Wave 6a (item 23): delivery time slot — giao ngay or hẹn giờ. *@
-                    @if (_fulfillment == "Delivery")
+                    @if (_fulfillment == "ShipperPickup")
                     {
                         <div class="form-group">
-                            <label>Thời gian giao hàng *</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="deliverySlot" id="ds-now"
-                                       checked="@(_deliverySlotMode == "now")" @onchange='() => _deliverySlotMode = "now"' />
-                                <label class="form-check-label" for="ds-now">🛵 Giao ngay</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="deliverySlot" id="ds-scheduled"
-                                       checked="@(_deliverySlotMode == "scheduled")" @onchange='() => _deliverySlotMode = "scheduled"' />
-                                <label class="form-check-label" for="ds-scheduled">🕖 Hẹn giờ</label>
-                            </div>
-                            @if (_deliverySlotMode == "scheduled")
-                            {
-                                @if (_deliverySlots.Count > 0)
-                                {
-                                    <select class="form-control mt-2 @FieldClass(_slotError)" @bind="_selectedSlot">
-                                        <option value="">— Chọn khung giờ —</option>
-                                        @foreach (var s in _deliverySlots)
-                                        {
-                                            <option value="@s">@s</option>
-                                        }
-                                    </select>
-                                }
-                                else
-                                {
-                                    <div class="alert alert-warning py-2 mt-2 mb-0">
-                                        <small>Hết khung giờ hôm nay — bạn vui lòng chọn “🛵 Giao ngay”.</small>
-                                    </div>
-                                }
-                                @if (!string.IsNullOrEmpty(_slotError))
-                                {
-                                    <small class="text-danger">@_slotError</small>
-                                }
-                            }
+                            <label>Thông tin shipper <small class="text-muted">(tùy chọn — có thể bổ sung sau)</small></label>
+                            <input class="form-control mb-2" @bind="_shipperName" placeholder="Tên shipper (VD: Grab — Anh Tuấn)" />
+                            <input class="form-control" @bind="_shipperPhone" placeholder="SĐT shipper" />
                         </div>
                     }
                     @* Item 109: branch picker. *@
@@ -379,20 +335,6 @@ else
                         {
                             <small class="text-danger">@_phoneError</small>
                         }
-                        @if (_addressSuggestion != null)
-                        {
-                            <div class="alert alert-info py-2 mt-2">
-                                <small>
-                                    Đã tìm thấy địa chỉ cũ của số này.
-                                    <button type="button" class="btn btn-sm btn-outline-primary ml-1" @onclick="UseSuggestedAddress">
-                                        Dùng địa chỉ cũ: @_addressSuggestion.CustomerAddress
-                                    </button>
-                                    <button type="button" class="close" aria-label="Bỏ qua" @onclick="DismissSuggestion">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </small>
-                            </div>
-                        }
                     </div>
                     <div class="form-group">
                         <label>Email (tùy chọn — để nhận mail xác nhận đơn)</label>
@@ -402,38 +344,10 @@ else
                             <small class="text-danger">@_emailError</small>
                         }
                     </div>
-                    @if (_fulfillment == "Delivery")
+                    @if (_fulfillment == "ShipperPickup")
                     {
-                        <div class="form-group">
-                            <label>@I18n.T("address") *</label>
-                            <textarea class="form-control @FieldClass(_addressError)" @bind="_order.CustomerAddress" rows="3"
-                                      placeholder="Số nhà, đường, phường..."></textarea>
-                            @if (!string.IsNullOrEmpty(_addressError))
-                            {
-                                <small class="text-danger">@_addressError</small>
-                            }
-                            @* Item 119: address book quick-select chips. *@
-                            @if (_addresses != null && _addresses.Count > 0)
-                            {
-                                <div class="mt-2">
-                                    <small class="text-muted d-block mb-1">📒 Địa chỉ đã lưu:</small>
-                                    @foreach (var a in _addresses)
-                                    {
-                                        <button type="button" class="btn btn-sm btn-outline-info mr-1 mb-1"
-                                                @onclick="() => UseSavedAddress(a)" title="@a.Address">
-                                            @a.Label
-                                        </button>
-                                    }
-                                </div>
-                            }
-                            <button type="button" class="btn btn-sm btn-outline-secondary mt-1" @onclick="SaveCurrentAddressAsync"
-                                    disabled="@_savingAddress">
-                                @(_savingAddress ? "Đang lưu..." : "💾 Lưu địa chỉ này")
-                            </button>
-                            @if (!string.IsNullOrEmpty(_addressSavedMessage))
-                            {
-                                <small class="text-success d-block mt-1">@_addressSavedMessage</small>
-                            }
+                        <div class="alert alert-info">
+                            <small>🛵 Bạn tự book shipper (Grab/Ahamove...). Quán chuẩn bị sẵn món — shipper đến đọc <strong>mã đơn</strong> để lấy, <strong>miễn phí ship</strong>.</small>
                         </div>
                     }
                     else
@@ -644,25 +558,12 @@ else
                             <tr>
                                 <td class="text-muted" colspan="2">
                                     Phí giao hàng
-                                    @if (_fulfillment == "Pickup")
-                                    {
-                                        <small class="d-block text-success">Tự đến lấy — miễn phí</small>
-                                    }
-                                    else if (_fee > 0 && _shopSettings.FreeShipThreshold > 0)
-                                    {
-                                        <small class="d-block">Miễn phí cho đơn từ @FormatPrice(_shopSettings.FreeShipThreshold)</small>
-                                    }
+                                    <small class="d-block text-success">Quán không giao hàng — miễn phí</small>
                                 </td>
-                                <td class="text-right @(_fee == 0 ? "text-success" : null)">
-                                    @(_fee == 0 ? "Miễn phí" : FormatPrice(_fee))
+                                <td class="text-right text-success">
+                                    Miễn phí
                                 </td>
                             </tr>
-                            @if (_fulfillment == "Delivery" && !string.IsNullOrEmpty(_etaText))
-                            {
-                                <tr>
-                                    <td colspan="3" class="text-muted"><small>⏱️ @_etaText</small></td>
-                                </tr>
-                            }
                         </tbody>
                         <tfoot>
                             <tr>
@@ -779,14 +680,13 @@ else
     private string _closedNotice;
     private string _error;
 
-    // Fulfillment: "Delivery" or "Pickup".
-    private string _fulfillment = "Delivery";
+    // Fulfillment: "ShipperPickup" (default) or "Pickup". The shop does
+    // not deliver — no address, no delivery fee, no time slot.
+    private string _fulfillment = "ShipperPickup";
 
-    // Wave 6a (item 23): delivery time slot — "now" (default) or "scheduled".
-    private string _deliverySlotMode = "now";
-    private string _selectedSlot;
-    private System.Collections.Generic.List<string> _deliverySlots = new System.Collections.Generic.List<string>();
-    private string _slotError;
+    // Optional customer-booked shipper info (ShipperPickup only).
+    private string _shipperName;
+    private string _shipperPhone;
 
     // Per-field validation messages.
     private string _nameError;
@@ -811,11 +711,6 @@ else
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel> _branches;
     private Guid? _branchId;
 
-    // Item 119: address book.
-    private List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel> _addresses;
-    private bool _savingAddress;
-    private string _addressSavedMessage;
-
     // Item 120: freeship voucher state.
     private bool _isFreeship;
 
@@ -834,7 +729,6 @@ else
     private string _spinError;
 
     // Address auto-fill from phone history.
-    private LastOrderInfoModel _addressSuggestion;
     private string _suggestedPhone;
 
     // Discount state.
@@ -852,32 +746,9 @@ else
 
     private decimal _fee
     {
-        get
-        {
-            if (_fulfillment == "Pickup")
-            {
-                return 0;
-            }
-
-            // Item 120: freeship vouchers zero the fee.
-            if (_isFreeship)
-            {
-                return 0;
-            }
-
-            if (_shopSettings.DeliveryFee <= 0)
-            {
-                return 0;
-            }
-
-            var afterDiscount = _subtotal - _discountAmount;
-            if (_shopSettings.FreeShipThreshold > 0 && afterDiscount >= _shopSettings.FreeShipThreshold)
-            {
-                return 0;
-            }
-
-            return _shopSettings.DeliveryFee;
-        }
+        // The shop does not deliver — both ShipperPickup and Pickup are
+        // always free of delivery fee.
+        get => 0;
     }
 
     private decimal _grandTotal => Math.Max(0,
@@ -927,22 +798,6 @@ else
             return total >= _shopSettings.DepositThreshold
                 ? Math.Round(total * _shopSettings.DepositPercent / 100, 0)
                 : 0;
-        }
-    }
-
-    /// <summary>"Dự kiến giao trong 30–45 phút" from the shop setting.</summary>
-    private string _etaText
-    {
-        get
-        {
-            var minutes = _shopSettings.EstimatedDeliveryMinutes;
-            if (minutes <= 0)
-            {
-                return null;
-            }
-
-            var from = Math.Max(10, minutes - 15);
-            return $"Dự kiến giao trong {from}–{minutes} phút";
         }
     }
 
@@ -996,10 +851,6 @@ else
         CartState.OnChange += OnCartChanged;
         I18n.OnChange += OnLangChanged;
         await I18n.InitializeAsync();
-
-        // Wave 6a (item 23): 30-min delivery slots from today's open hours;
-        // only future slots are offered.
-        _deliverySlots = ShopHours.BuildSlots(_shopSettings.OpenTime, _shopSettings.CloseTime);
     }
 
     private static bool GetFlag(System.Collections.Generic.Dictionary<string, bool> flags, string key, bool fallback)
@@ -1011,62 +862,6 @@ else
     private void OnBranchChanged(ChangeEventArgs e)
     {
         _branchId = Guid.TryParse(e.Value?.ToString(), out var id) ? id : (Guid?)null;
-    }
-
-    /// <summary>Item 119: address book — load saved addresses with the phone lookup.</summary>
-    private async Task LoadAddressBookAsync(string phone)
-    {
-        try
-        {
-            _addresses = await Wave4Service.GetAddressesAsync(phone);
-        }
-        catch (Exception)
-        {
-            _addresses = new System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel>();
-        }
-    }
-
-    private void UseSavedAddress(PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel address)
-    {
-        _order.CustomerAddress = address.Address;
-        _addressError = null;
-        _addressSavedMessage = null;
-    }
-
-    /// <summary>Item 119: save the current address under a quick label.</summary>
-    private async Task SaveCurrentAddressAsync()
-    {
-        _addressSavedMessage = null;
-        var phone = (_order.CustomerPhone ?? "").Trim();
-        var address = (_order.CustomerAddress ?? "").Trim();
-        if (!IsValidPhone(phone))
-        {
-            _addressSavedMessage = "Vui lòng nhập số điện thoại hợp lệ trước.";
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(address))
-        {
-            _addressSavedMessage = "Vui lòng nhập địa chỉ trước.";
-            return;
-        }
-
-        _savingAddress = true;
-        try
-        {
-            var label = "Địa chỉ " + ((_addresses?.Count ?? 0) + 1);
-            await Wave4Service.SaveAddressAsync(phone, label, address);
-            await LoadAddressBookAsync(phone);
-            _addressSavedMessage = $"Đã lưu \"{label}\".";
-        }
-        catch (Exception ex)
-        {
-            _addressSavedMessage = "Không lưu được: " + ex.Message;
-        }
-        finally
-        {
-            _savingAddress = false;
-        }
     }
 
     private void OnCartChanged()
@@ -1137,12 +932,11 @@ else
     }
 
     /// <summary>
-    /// When the phone field loses focus, look up the last order for that
-    /// phone and offer a one-click address fill.
+    /// When the phone field loses focus, load the loyalty summary, wallet
+    /// balance and address book for that phone.
     /// </summary>
     private async Task LookupLastOrderAsync()
     {
-        _addressSuggestion = null;
         var phone = (_order.CustomerPhone ?? "").Trim();
         if (phone == _suggestedPhone || !IsValidPhone(phone))
         {
@@ -1150,23 +944,6 @@ else
         }
 
         _suggestedPhone = phone;
-        try
-        {
-            var info = await ShopService.GetLastOrderInfoAsync(phone);
-            if (info != null && !string.IsNullOrWhiteSpace(info.CustomerAddress)
-                && !string.Equals(info.CustomerAddress.Trim(), (_order.CustomerAddress ?? "").Trim(),
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                _addressSuggestion = info;
-            }
-        }
-        catch (Exception)
-        {
-            // Best effort only — the form works fine without the suggestion.
-        }
-
-        // Item 119: address book for this phone.
-        await LoadAddressBookAsync(phone);
 
         // Loyalty summary (points, tier, referral code) for the phone.
         try
@@ -1191,28 +968,6 @@ else
         {
             _walletBalance = 0;
         }
-    }
-
-    private void UseSuggestedAddress()
-    {
-        if (_addressSuggestion == null)
-        {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(_order.CustomerName))
-        {
-            _order.CustomerName = _addressSuggestion.CustomerName;
-        }
-
-        _order.CustomerAddress = _addressSuggestion.CustomerAddress;
-        _addressError = null;
-        _addressSuggestion = null;
-    }
-
-    private void DismissSuggestion()
-    {
-        _addressSuggestion = null;
     }
 
     private async Task ApplyDiscount()
@@ -1301,9 +1056,7 @@ else
         _emailError = !string.IsNullOrWhiteSpace(_order.CustomerEmail) && !IsValidEmail(_order.CustomerEmail)
             ? "Email không đúng định dạng. Bạn có thể để trống nếu không có email."
             : null;
-        _addressError = _fulfillment == "Delivery" && string.IsNullOrWhiteSpace(_order.CustomerAddress)
-            ? "Vui lòng nhập địa chỉ giao hàng."
-            : null;
+        _addressError = null;
         _recipientNameError = _orderForSomeoneElse && string.IsNullOrWhiteSpace(_order.RecipientName)
             ? "Vui lòng nhập tên người nhận."
             : null;
@@ -1316,21 +1069,15 @@ else
         _companyNameError = _showVat && string.IsNullOrWhiteSpace(_order.CompanyName)
             ? "Vui lòng nhập tên công ty."
             : null;
-        // Wave 6a (item 23): a scheduled delivery needs a chosen slot.
-        _slotError = _fulfillment == "Delivery" && _deliverySlotMode == "scheduled" && string.IsNullOrWhiteSpace(_selectedSlot)
-            ? "Vui lòng chọn khung giờ giao hàng."
-            : null;
 
         return _nameError == null && _phoneError == null && _emailError == null && _addressError == null
             && _recipientNameError == null && _recipientPhoneError == null
-            && _taxCodeError == null && _companyNameError == null
-            && _slotError == null;
+            && _taxCodeError == null && _companyNameError == null;
     }
 
     private async Task PlaceOrder()
     {
         _error = null;
-        _slotError = null;
 
         if (!ValidateFields())
         {
@@ -1359,9 +1106,15 @@ else
             _order.RedeemPoints = _redeemPoints;
             _order.BranchId = _branchId;
 
-            // Wave 6a (item 23): scheduled delivery slot; null = giao ngay.
-            _order.DeliverySlot = _fulfillment == "Delivery" && _deliverySlotMode == "scheduled"
-                ? _selectedSlot?.Trim()
+            // No delivery slot — the shop does not deliver.
+            _order.DeliverySlot = null;
+
+            // Customer-booked shipper info (optional, ShipperPickup only).
+            _order.PickupShipperName = _fulfillment == "ShipperPickup"
+                ? _shipperName?.Trim()
+                : null;
+            _order.PickupShipperPhone = _fulfillment == "ShipperPickup"
+                ? _shipperPhone?.Trim()
                 : null;
 
             // Item 133: order source captured at shop entry.
@@ -1384,7 +1137,7 @@ else
                     _order.RecaptchaToken = null;
                 }
             }
-            if (_fulfillment == "Pickup")
+            if (_fulfillment == "Pickup" || _fulfillment == "ShipperPickup")
             {
                 _order.CustomerAddress = null;
             }
