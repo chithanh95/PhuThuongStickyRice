@@ -12,7 +12,6 @@
 @inject LandingService LandingService
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
-@inject HolidayService HolidayService
 @inject PolicyService PolicyService
 @inject CartState CartState
 @inject ToastService Toasts
@@ -22,540 +21,448 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito:wght@400;600;700;800;900&display=swap&subset=vietnamese" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito:wght@400;600;700;800&display=swap&subset=vietnamese" rel="stylesheet" />
 
-@* Wave 6d (item 38): friendly full-page error when the initial API load
-   fails, reusing the PWA offline.html visual language. *@
 @if (_loadFailed)
 {
-    <div class="card" style="background: #f5ebcd; border: none;">
-        <div class="card-body text-center py-5">
-            <div style="font-size: 4rem;">😞</div>
-            <h2 style="font-family: Georgia, serif; color: #7a1b2e;">Không kết nối được tới máy chủ</h2>
-            <p class="mb-4" style="color: #4a2b1a;">Kiểm tra mạng rồi thử lại.</p>
-            <button class="btn" style="background: #7a1b2e; color: #fff; padding: 12px 28px; border-radius: 6px;" @onclick="RetryLoad">Thử lại</button>
+    <div class="sg-loadfail">
+        <div class="sg-loadfail-card">
+            <div class="sg-loadfail-face">😞</div>
+            <h2>Không kết nối được tới máy chủ</h2>
+            <p>Kiểm tra mạng rồi thử lại.</p>
+            <button class="sg-btn sg-btn-solid" @onclick="RetryLoad">Thử lại</button>
         </div>
     </div>
 }
 else
 {
-<div class="xo-page">
+<div class="sg-page">
 
-<!-- 0. FLASH BANNER (item 94) -->
+<!-- FLASH BANNER (admin-controlled) -->
 @if (!_bannerDismissed && _content.FlashBannerActive && !string.IsNullOrWhiteSpace(_content.FlashBannerText))
 {
-    <div class="xo-flash" role="alert">
+    <div class="sg-flash" role="alert">
         <span>⚡ @_content.FlashBannerText</span>
-        <button type="button" class="xo-flash-close" aria-label="Đóng" @onclick="() => _bannerDismissed = true">×</button>
+        <button type="button" class="sg-flash-close" aria-label="Đóng" @onclick="() => _bannerDismissed = true">×</button>
     </div>
 }
 
-<!-- 1. STICKY HEADER -->
-<header class="xo-header">
-    <div class="xo-header-inner">
-        <input type="checkbox" id="xo-nav-toggle" class="xo-nav-checkbox" />
-        <nav class="xo-nav">
+<!-- 1. HEADER -->
+<header class="sg-header">
+    <div class="sg-header-inner">
+        <a class="sg-logo" href="/">
+            <span class="sg-logo-main">Xôi Phú Thượng</span>
+            <span class="sg-logo-sub">Vietnamese Cuisine</span>
+        </a>
+        <input type="checkbox" id="sg-nav-toggle" class="sg-nav-checkbox" />
+        <nav class="sg-nav">
             <a href="#gioi-thieu">Giới thiệu</a>
-            <a href="#dat-xoi">Đặt xôi</a>
-            <a href="/dat-tiec">Đặt tiệc</a>
-            <a href="/cung-gio">Cúng giỗ</a>
+            <a href="#mon-dac-trung">Món đặc trưng</a>
+            <a href="#thuc-don">Thực đơn</a>
             <a href="#lien-he">Liên hệ</a>
         </nav>
-        <a class="xo-logo" href="/">
-            <span class="xo-logo-main">Xôi Phú Thượng</span>
-            <span class="xo-logo-sub">Vietnamese Cuisine</span>
-        </a>
-        <div class="xo-header-right">
-            <button class="xo-theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
+        <div class="sg-header-right">
+            <button class="sg-theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
                 @(_isDark ? "☀️" : "🌙")
             </button>
             <AuthorizeView>
                 <Authorized>
-                    <a class="xo-account" href="/tai-khoan" title="Tài khoản của tôi">👤 @context.User.Identity?.Name</a>
+                    <a class="sg-account" href="/tai-khoan" title="Tài khoản của tôi">👤 @context.User.Identity?.Name</a>
                 </Authorized>
                 <NotAuthorized>
-                    <a class="xo-account" href="/dang-nhap">Đăng nhập</a>
+                    <a class="sg-account" href="/dang-nhap">Đăng nhập</a>
                 </NotAuthorized>
             </AuthorizeView>
             @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
             {
-                <a class="xo-hotline" href="tel:@_content.ContactPhone">Hotline: @_content.ContactPhone</a>
+                <a class="sg-hotline" href="tel:@_content.ContactPhone">📞 @_content.ContactPhone</a>
             }
             else
             {
-                <a class="xo-hotline" href="/shop">Đặt xôi ngay</a>
+                <a class="sg-hotline" href="/shop">Đặt xôi ngay</a>
             }
-            <label for="xo-nav-toggle" class="xo-hamburger" aria-label="Menu"><span></span><span></span><span></span></label>
+            <label for="sg-nav-toggle" class="sg-hamburger" aria-label="Menu"><span></span><span></span><span></span></label>
         </div>
     </div>
 </header>
 
-<!-- 2. HERO: banner khuyến mãi -->
-<section class="xo-hero">
-    <div class="xo-hero-inner">
-        <div class="xo-hero-text">
-            @if (!string.IsNullOrEmpty(_openStatusText))
-            {
-                <div class="xo-openbadge @(_openNow ? "is-open" : "is-closed")">@_openStatusText</div>
-            }
-            <p class="xo-hero-kicker">Xôi Phú Thượng &bull; Vietnamese Cuisine</p>
-            <h1 class="xo-hero-title">@_content.HeroTitle</h1>
-            <p class="xo-hero-tag">@_content.HeroTagline</p>
-            <div class="xo-hero-cta">
-                <a href="/shop" class="xo-btn xo-btn-red xo-btn-hero">@_content.HeroButtonText</a>
-                @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
-                {
-                    <a href="tel:@_content.ContactPhone" class="xo-btn xo-btn-call">📞 @_content.ContactPhone</a>
-                }
-                <a href="#thuc-don" class="xo-btn xo-btn-ghost">Xem thực đơn</a>
-            </div>
-        </div>
-        <div class="xo-hero-imgwrap">
-            <img loading="lazy" src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg")"
-                 alt="Xôi Phú Thượng" class="xo-hero-img" />
+<!-- 2. HERO -->
+<section class="sg-hero" style="@HeroBgStyle">
+    <div class="sg-hero-overlay"></div>
+    <div class="sg-hero-inner">
+        <p class="sg-hero-eyebrow">Làng nghề Phú Thượng · Hà Nội</p>
+        <h1 class="sg-hero-title">@HeroTitleText</h1>
+        <p class="sg-hero-tag">@HeroTaglineText</p>
+        @if (!string.IsNullOrEmpty(_openStatusText))
+        {
+            <p class="sg-hero-open @(_openNow ? "is-open" : "is-closed")">@_openStatusText</p>
+        }
+        <div class="sg-hero-cta">
+            <a href="/shop" class="sg-btn sg-btn-solid sg-btn-lg">Đặt xôi ngay</a>
+            <a href="#thuc-don" class="sg-btn sg-btn-ghost sg-btn-lg">Xem thực đơn</a>
         </div>
     </div>
+    <a class="sg-scroll" href="#gioi-thieu" aria-label="Cuộn xuống">
+        <span class="sg-scroll-mouse"><span class="sg-scroll-wheel"></span></span>
+        <span class="sg-scroll-text">Cuộn xuống</span>
+    </a>
 </section>
-
-<!-- 2b. THANH TIN TƯỞNG -->
-<div class="xo-trust">
-    <div class="xo-container xo-trust-inner">
-        <div class="xo-trust-item">
-            <strong>🔥 @_todaySold+</strong>
-            <span>suất bán hôm nay</span>
-        </div>
-        <div class="xo-trust-item">
-            <strong>⭐ @_avgRating.ToString("0.0")/5</strong>
-            <span>@_reviewCount đánh giá thật</span>
-        </div>
-        <div class="xo-trust-item">
-            <strong>🍚 @_productCount+</strong>
-            <span>món xôi mỗi ngày</span>
-        </div>
-        <div class="xo-trust-item">
-            <strong>🛵 Shipper lấy</strong>
-            <span>đến lấy tận quán</span>
-        </div>
-    </div>
-</div>
 
 <!-- 3. GIỚI THIỆU -->
-<section class="xo-section xo-about" id="gioi-thieu">
-    <div class="xo-container">
-        <div class="xo-sec-head">
-            <h2 class="xo-sec-title">@_content.StoryTitle</h2>
-            <div class="xo-sec-div"><span></span><em>Xoi Phu Thuong Vietnamese Cuisine</em><span></span></div>
-        </div>
-        <div class="xo-about-grid">
-            <p class="xo-about-text">@_content.StoryBody</p>
-            <div class="xo-about-imgs">
-                <img loading="lazy" src="@Img(_content.MenuImage1Url, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg")" alt="@_content.MenuLabel1" />
-                <img loading="lazy" src="@Img(_content.MenuImage2Url, "_content/PhuThuongStickyRice.Web.Components/images/xoi-xeo.svg")" alt="@_content.MenuLabel2" />
-                <img loading="lazy" src="@Img(_content.MenuImage3Url, "_content/PhuThuongStickyRice.Web.Components/images/xoi-ngu-sac.svg")" alt="@_content.MenuLabel3" />
+<section class="sg-section" id="gioi-thieu">
+    <div class="sg-container">
+        <p class="sg-poem">Dẻo thơm hạt nếp đầu ngày,<br />Gói xôi nóng hổi trao tay người thương.</p>
+        <div class="sg-intro-grid">
+            <div class="sg-intro-text">
+                <p class="sg-eyebrow">Giới thiệu</p>
+                <h2 class="sg-h2">@StoryTitleText</h2>
+                <p class="sg-lead">@StoryBodyText</p>
+                <a href="/shop" class="sg-btn sg-btn-outline">Đặt xôi ngay →</a>
             </div>
-        </div>
-        <div class="xo-center">
-            <a href="/shop" class="xo-btn xo-btn-red">Đặt xôi ngay</a>
+            <div class="sg-intro-img">
+                <img loading="lazy" src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg")" alt="Xôi Phú Thượng" />
+            </div>
         </div>
     </div>
 </section>
 
-<!-- 4. THỰC ĐƠN XÔI -->
-<section class="xo-section xo-menu" id="thuc-don">
-    <div class="xo-container">
-        <div class="xo-sec-head">
-            <h2 class="xo-sec-title">@_content.MenuTitle</h2>
-            <div class="xo-sec-div"><span></span><em>Thực đơn hôm nay</em><span></span></div>
-            @if (_todaySold > 0)
-            {
-                <p class="xo-today-sold">🔥 Hôm nay đã bán @_todaySold gói xôi</p>
-            }
-            @if (OrdersPaused)
-            {
-                <p class="xo-paused-notice">⏸ @(HolidayPaused ? _shopSettings.PausedReason : "Quán tạm ngưng nhận đơn" + (string.IsNullOrWhiteSpace(_shopSettings.PausedReason) ? "." : ": " + _shopSettings.PausedReason))</p>
-            }
+<!-- 4. TRẢI NGHIỆM -->
+<section class="sg-section sg-why">
+    <div class="sg-container">
+        <div class="sg-sec-head">
+            <p class="sg-eyebrow">Trải nghiệm</p>
+            <h2 class="sg-h2">Vì sao chọn Xôi Phú Thượng</h2>
         </div>
-        <div class="xo-dish-grid">
-            @if (_quickProducts == null)
+        <div class="sg-why-grid">
+            <div class="sg-why-card">
+                <div class="sg-why-icon">🌾</div>
+                <h3>Nếp cái hoa vàng</h3>
+                <p>Chọn gạo nếp cái hoa vàng hạt mẩy, ngâm đủ giờ để xôi dẻo thơm mà không nát.</p>
+            </div>
+            <div class="sg-why-card">
+                <div class="sg-why-icon">🎋</div>
+                <h3>Đồ bằng chõ tre</h3>
+                <p>Xôi được đồ trong chõ tre truyền thống của làng nghề, giữ trọn hương nếp mới.</p>
+            </div>
+            <div class="sg-why-card">
+                <div class="sg-why-icon">🛵</div>
+                <h3>Giao nóng mỗi sáng</h3>
+                <p>Xôi ra lò từ 5h sáng, gói lá chuối, giao nóng hổi đến tay bạn.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 5. MÓN XÔI ĐẶC TRƯNG -->
+<section class="sg-section" id="mon-dac-trung">
+    <div class="sg-container">
+        <div class="sg-sec-head">
+            <p class="sg-eyebrow">Món xôi đặc trưng</p>
+            <h2 class="sg-h2">Những gói xôi được yêu thích nhất</h2>
+        </div>
+        @if (OrdersPaused)
+        {
+            <p class="sg-paused">⏸ Quán tạm ngưng nhận đơn @PauseReasonText</p>
+        }
+        <div class="sg-dish-grid">
+            @if (_allProducts == null)
             {
-                <p class="xo-muted"><em>Đang tải món ngon...</em></p>
+                <p class="sg-muted"><em>Đang tải món ngon...</em></p>
             }
-            else if (_quickProducts.Count == 0)
+            else if (SignatureProducts.Count == 0)
             {
-                <p class="xo-muted"><em>Hiện chưa có món nào.</em></p>
+                <p class="sg-muted"><em>Hiện chưa có món nào.</em></p>
             }
             else
             {
-                @foreach (var product in _quickProducts)
+                @foreach (var product in SignatureProducts)
                 {
-                    <div class="xo-dish-card" @key="product.Id">
-                        <div class="xo-dish-imgwrap">
+                    <div class="sg-dish-card" @key="product.Id">
+                        <div class="sg-dish-imgwrap">
                             @if (IsBestSeller(product))
                             {
-                                <span class="xo-bestseller">🔥 Bán chạy nhất</span>
+                                <span class="sg-badge">Bán chạy</span>
                             }
                             @if (IsSoldOut(product))
                             {
-                                <span class="xo-soldout">Tạm hết</span>
+                                <span class="sg-badge sg-badge-out">Tạm hết</span>
                             }
                             <img loading="lazy" src="@ProductImage(product)" alt="@product.Name" />
                         </div>
-                        <div class="xo-dish-body">
-                            <h3 class="xo-dish-name">@product.Name</h3>
-                            <div class="xo-dish-price">@FormatPrice(product.Price)<small>@UnitSuffix(product)</small></div>
-                            <button class="xo-btn xo-btn-red xo-dish-btn" @onclick="() => QuickAdd(product)" disabled="@(OrdersPaused || IsSoldOut(product))">@(IsSoldOut(product) ? "Tạm hết" : "Thêm vào giỏ")</button>
+                        <div class="sg-dish-body">
+                            <h3 class="sg-dish-name">@product.Name</h3>
+                            <div class="sg-dish-price">@FormatPrice(product.Price)<small>@UnitSuffix(product)</small></div>
+                            <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddToCart(product)" disabled="@(OrdersPaused || IsSoldOut(product))">
+                                @(IsSoldOut(product) ? "Tạm hết" : "Thêm vào giỏ")
+                            </button>
                         </div>
                     </div>
                 }
             }
         </div>
-        <div class="xo-center xo-menu-labels">
-            <span class="xo-oval">@_content.MenuLabel1</span>
-            <span class="xo-oval">@_content.MenuLabel2</span>
-            <span class="xo-oval">@_content.MenuLabel3</span>
-        </div>
-        <div class="xo-center">
-            <a href="/shop" class="xo-btn xo-btn-red">@_content.HeroButtonText</a>
-            <a href="/cart" class="xo-btn xo-btn-outline">Xem giỏ hàng →</a>
+        <div class="sg-center">
+            <a href="/shop" class="sg-btn sg-btn-outline">Xem tất cả món →</a>
         </div>
     </div>
 </section>
 
-<!-- 5b. GOM ĐƠN VĂN PHÒNG (mục 54) -->
-<section class="xo-section xo-gomdon">
-    <div class="xo-gomdon-inner">
-        <div class="xo-gomdon-text">
-            <h2 class="xo-gomdon-title">🏢 Đặt chung cả văn phòng</h2>
-            <p>Trưởng nhóm tạo đơn chung, gửi link cho mọi người — mỗi người tự chọn món của mình, đến giờ chốt là có 1 đơn tổng. Không cần đăng nhập.</p>
-        </div>
-        <a href="/gom-don" class="xo-btn xo-btn-red">Tạo nhóm gom đơn →</a>
+<!-- 6. CÂU CHUYỆN LÀNG NGHỀ -->
+<section class="sg-section sg-story">
+    <div class="sg-container sg-story-inner">
+        <p class="sg-eyebrow">Câu chuyện</p>
+        <h2 class="sg-h2">Làng nghề Phú Thượng</h2>
+        <p>Phú Thượng là làng nghề nấu xôi lâu đời ven sông Hồng của Hà Nội. Từ tờ mờ sáng, khắp làng đã thơm mùi nếp mới đồ trong chõ tre — mùi thơm ấy theo chân các gánh xôi đi khắp phố phường Thủ đô, trở thành ký ức của bao thế hệ người Hà Nội.</p>
+        <p>Chúng tôi giữ đúng cách làm của làng: gạo ngon, đồ hai lửa, gói lá chuối. Không vội vàng, không đường tắt — chỉ có gói xôi nóng hổi, dẻo thơm như ngày xưa.</p>
     </div>
 </section>
 
-<!-- 5c. XÔI CÚNG RẰM & MÙNG 1 (mục 41) -->
-<section class="xo-section xo-cung">
-    <div class="xo-cung-inner">
-        <div class="xo-cung-text">
-            <h2 class="xo-cung-title">🙏 Xôi cúng Rằm &amp; mùng 1</h2>
-            <p>Xôi gấc đỏ, xôi xéo, xôi vò dẻo thơm cho mâm cúng — mâm chay hoặc mâm mặn, làm theo số suất. Đặt trước để shop chuẩn bị chu đáo, và có thể đăng ký <strong>nhắc mỗi tháng</strong> để không quên ngày cúng.</p>
-        </div>
-        <a href="/dat-cung" class="xo-btn xo-btn-red">Đặt xôi cúng →</a>
-    </div>
-</section>
-
-<!-- 6. ĐÁNH GIÁ KHÁCH HÀNG -->
-@if (!string.IsNullOrWhiteSpace(_content.ReviewsEmbedHtml))
-{
-    <section class="xo-reviews-embed">
-        @((MarkupString)_content.ReviewsEmbedHtml)
-    </section>
-}
-@if (_publicReviews != null && _publicReviews.Count > 0)
-{
-    <section class="xo-section xo-reviews" id="danh-gia">
-        <div class="xo-container">
-            <div class="xo-sec-head">
-                <h2 class="xo-sec-title">Khách hàng nói gì</h2>
-                <div class="xo-sec-div"><span></span><em>Đánh giá thật từ đơn hàng</em><span></span></div>
-            </div>
-            <div class="xo-review-grid">
-                @foreach (var r in _publicReviews)
-                {
-                    <div class="xo-review-card" @key="r.OrderNumber">
-                        <div class="xo-stars">
-                            @(new string('★', r.Rating))<span>@(new string('★', 5 - r.Rating))</span>
-                        </div>
-                        <p class="xo-review-text">@r.Comment</p>
-                        @if (!string.IsNullOrWhiteSpace(r.AdminReply))
-                        {
-                            <p class="xo-review-reply"><strong>Quán trả lời:</strong> @r.AdminReply</p>
-                        }
-                        <div class="xo-review-who">— SĐT @MaskPhone(r.CustomerPhone)</div>
-                    </div>
-                }
-            </div>
-        </div>
-    </section>
-}
-
-<!-- 6b. VIDEO -->
-@if (!string.IsNullOrWhiteSpace(VideoEmbedUrl))
-{
-    <section class="xo-section xo-video">
-        <div class="xo-container">
-            @if (!string.IsNullOrWhiteSpace(_content.VideoTitle))
+<!-- 7. BANNER ĐẶT XÔI -->
+<section class="sg-cta" style="@CtaBgStyle">
+    <div class="sg-cta-overlay"></div>
+    <div class="sg-cta-inner">
+        <p class="sg-cta-eyebrow">Giao nóng mỗi sáng</p>
+        <h2 class="sg-cta-title">Đặt xôi ngay</h2>
+        <p class="sg-cta-sub">Đặt online hoặc gọi hotline — quán chuẩn bị trong 15 phút.</p>
+        <div class="sg-cta-btns">
+            <a href="/shop" class="sg-btn sg-btn-solid sg-btn-lg">Đặt xôi ngay →</a>
+            @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
             {
-                <div class="xo-sec-head">
-                    <h2 class="xo-sec-title">@_content.VideoTitle</h2>
-                    <div class="xo-sec-div"><span></span><em>Video</em><span></span></div>
-                </div>
+                <a href="tel:@_content.ContactPhone" class="sg-btn sg-btn-ghost sg-btn-lg">📞 @_content.ContactPhone</a>
             }
-            <div class="xo-video-frame">
-                <iframe src="@VideoEmbedUrl" title="@_content.VideoTitle"
-                        frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen></iframe>
-            </div>
         </div>
-    </section>
-}
+    </div>
+</section>
 
-<!-- 6c. ĐÁNH GIÁ TRÊN GOOGLE (item 95) -->
-@if (!string.IsNullOrWhiteSpace(_shopSettings?.GoogleMapsUrl))
-{
-    <section class="xo-section xo-gmaps">
-        <div class="xo-container">
-            <div class="xo-sec-head">
-                <h2 class="xo-sec-title">Đánh giá trên Google</h2>
-                <div class="xo-sec-div"><span></span><em>Google Maps</em><span></span></div>
-            </div>
-            <p class="xo-gmaps-sub">
-                Ăn ngon rồi? Hãy để lại đánh giá 5⭐ cho quán trên Google Maps nhé!
-                @if (_reviewCount > 0)
+<!-- 8. THỰC ĐƠN -->
+<section class="sg-section" id="thuc-don">
+    <div class="sg-container">
+        <div class="sg-sec-head">
+            <p class="sg-eyebrow">Thực đơn</p>
+            <h2 class="sg-h2">@MenuTitleText</h2>
+        </div>
+        <div class="sg-tabs" role="tablist">
+            <button class="sg-tab @(_menuTab == "xoi" ? "active" : "")" @onclick='() => _menuTab = "xoi"'>Xôi truyền thống</button>
+            <button class="sg-tab @(_menuTab == "combo" ? "active" : "")" @onclick='() => _menuTab = "combo"'>Combo tiết kiệm</button>
+            <button class="sg-tab @(_menuTab == "tiec" ? "active" : "")" @onclick='() => _menuTab = "tiec"'>Đặt tiệc &amp; Cúng giỗ</button>
+        </div>
+
+        @if (_menuTab == "xoi")
+        {
+            <div class="sg-dish-grid">
+                @foreach (var product in XoiProducts)
                 {
-                    <br /><span>Điểm trung bình từ @_reviewCount đánh giá thật: <strong>⭐ @_avgRating.ToString("0.0")/5</strong></span>
+                    <div class="sg-dish-card" @key="product.Id">
+                        <div class="sg-dish-imgwrap">
+                            @if (IsSoldOut(product))
+                            {
+                                <span class="sg-badge sg-badge-out">Tạm hết</span>
+                            }
+                            <img loading="lazy" src="@ProductImage(product)" alt="@product.Name" />
+                        </div>
+                        <div class="sg-dish-body">
+                            <h3 class="sg-dish-name">@product.Name</h3>
+                            <div class="sg-dish-price">@FormatPrice(product.Price)<small>@UnitSuffix(product)</small></div>
+                            <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddToCart(product)" disabled="@(OrdersPaused || IsSoldOut(product))">
+                                @(IsSoldOut(product) ? "Tạm hết" : "Thêm vào giỏ")
+                            </button>
+                        </div>
+                    </div>
                 }
-            </p>
-            <a class="xo-btn xo-btn-red" href="@_shopSettings.GoogleMapsUrl" target="_blank" rel="noopener">
-                📍 Đánh giá quán trên Google Maps
-            </a>
-        </div>
-    </section>
-}
+            </div>
+        }
+        else if (_menuTab == "combo")
+        {
+            @if (_combos.Count == 0)
+            {
+                <p class="sg-muted sg-center"><em>Hiện chưa có combo nào — mời bạn xem các món xôi.</em></p>
+            }
+            <div class="sg-dish-grid">
+                @foreach (var combo in _combos)
+                {
+                    <div class="sg-dish-card" @key="combo.Id">
+                        <div class="sg-dish-body sg-combo-body">
+                            <h3 class="sg-dish-name">@combo.Name</h3>
+                            @if (!string.IsNullOrWhiteSpace(combo.Description))
+                            {
+                                <p class="sg-combo-desc">@combo.Description</p>
+                            }
+                            @if (combo.Items != null && combo.Items.Count > 0)
+                            {
+                                <p class="sg-combo-items">@combo.Items.Count món trong combo</p>
+                            }
+                            <div class="sg-dish-price">@FormatPrice(combo.Price)</div>
+                            <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddComboToCart(combo)" disabled="@OrdersPaused">
+                                Thêm combo vào giỏ
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="sg-tiec-grid">
+                <a class="sg-tiec-card" href="/dat-tiec">
+                    <div class="sg-tiec-icon">🎉</div>
+                    <h3>Đặt tiệc</h3>
+                    <p>Xôi tiệc, cỗ bàn số lượng lớn — báo giá trong ngày.</p>
+                    <span class="sg-tiec-link">Đặt tiệc →</span>
+                </a>
+                <a class="sg-tiec-card" href="/cung-gio">
+                    <div class="sg-tiec-icon">🕯️</div>
+                    <h3>Cúng giỗ</h3>
+                    <p>Mâm xôi cúng đầy đặn, trang trọng cho ngày giỗ.</p>
+                    <span class="sg-tiec-link">Đặt mâm cúng →</span>
+                </a>
+                <a class="sg-tiec-card" href="/dat-cung">
+                    <div class="sg-tiec-icon">🙏</div>
+                    <h3>Xôi cúng Rằm &amp; mùng 1</h3>
+                    <p>Đặt trước xôi cúng mỗi tháng, có nhắc lịch tự động.</p>
+                    <span class="sg-tiec-link">Đặt xôi cúng →</span>
+                </a>
+            </div>
+        }
+    </div>
+</section>
 
-<!-- 7. ĐẶT XÔI NGAY (form) -->
-<section class="xo-book" id="dat-xoi">
-    <div class="xo-container">
-        <div class="xo-sec-head xo-sec-head-light">
-            <h2 class="xo-sec-title">Đặt xôi ngay</h2>
-            <div class="xo-sec-div"><span></span><em>Để lại thông tin, quán gọi lại xác nhận</em><span></span></div>
-        </div>
-        <div class="xo-book-grid">
-            <form class="xo-book-form" @onsubmit="SubmitBooking">
-                <label class="xo-field">
+<!-- 9. ĐẶT TRƯỚC -->
+<section class="sg-section sg-book" id="dat-xoi">
+    <div class="sg-container">
+        <div class="sg-book-grid">
+            <div class="sg-book-info">
+                <p class="sg-eyebrow">Đặt trước</p>
+                <h2 class="sg-h2">Đặt xôi số lượng lớn</h2>
+                <p class="sg-lead">Để lại thông tin — quán gọi lại xác nhận trong 15 phút.</p>
+                <ul class="sg-book-contact">
+                    @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
+                    {
+                        <li>📍 @_content.ContactAddress</li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+                    {
+                        <li>📞 <a href="tel:@_content.ContactPhone">@_content.ContactPhone</a></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
+                    {
+                        <li>✉️ @_content.ContactEmail</li>
+                    }
+                </ul>
+            </div>
+            <form class="sg-book-form" @onsubmit="SubmitBooking">
+                <label class="sg-field">
                     <span>Tên của bạn *</span>
                     <input @bind="_bookName" placeholder="Nguyễn Văn A" maxlength="100" />
                 </label>
-                <label class="xo-field">
+                <label class="sg-field">
                     <span>Số điện thoại *</span>
                     <input @bind="_bookPhone" placeholder="090..." inputmode="tel" maxlength="15" />
                 </label>
-                <label class="xo-field">
-                    <span>Số lượng (gói)</span>
-                    <input type="number" @bind="_bookQty" min="1" max="1000" />
-                </label>
-                <label class="xo-field">
+                <div class="sg-field-row">
+                    <label class="sg-field">
+                        <span>Số lượng (gói)</span>
+                        <input type="number" @bind="_bookQty" min="1" max="1000" />
+                    </label>
+                </div>
+                <label class="sg-field">
                     <span>Ghi chú</span>
                     <textarea @bind="_bookNotes" rows="3" placeholder="Giao lúc mấy giờ, địa chỉ..." maxlength="500"></textarea>
                 </label>
                 @if (!string.IsNullOrEmpty(_bookError))
                 {
-                    <p class="xo-book-error">@_bookError</p>
+                    <p class="sg-form-error">@_bookError</p>
                 }
                 @if (_bookSent)
                 {
-                    <p class="xo-book-ok">✓ Đặt thành công! Quán sẽ gọi xác nhận.</p>
+                    <p class="sg-form-ok">✓ Đặt thành công! Quán sẽ gọi xác nhận.</p>
                 }
                 else
                 {
-                    <button type="submit" class="xo-btn-send" disabled="@_bookSending">
-                        @(_bookSending ? "Đang gửi..." : "Gửi")
+                    <button type="submit" class="sg-btn sg-btn-solid sg-btn-block" disabled="@_bookSending">
+                        @(_bookSending ? "Đang gửi..." : "Gửi đặt trước")
                     </button>
                 }
             </form>
-            <div class="xo-book-side">
-                <div class="xo-book-logo">Xôi Phú Thượng<small>Vietnamese Sticky Rice</small></div>
-                <p class="xo-book-note">Chúng tôi hân hạnh được phục vụ quý khách.</p>
-                <ul class="xo-book-contact">
-                    @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
-                    {
-                        <li><span class="oi oi-home" aria-hidden="true"></span> @_content.ContactAddress</li>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
-                    {
-                        <li><span class="oi oi-phone" aria-hidden="true"></span> @_content.ContactPhone</li>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
-                    {
-                        <li><span class="oi oi-envelope-closed" aria-hidden="true"></span> @_content.ContactEmail</li>
-                    }
-                </ul>
-            </div>
         </div>
     </div>
 </section>
-
-<!-- 8. TIN TỨC -->
-<section class="xo-section" id="tin-tuc">
-    <div class="xo-container">
-        <div class="xo-sec-head">
-            <h2 class="xo-sec-title">@_content.NewsTitle</h2>
-            <div class="xo-sec-div"><span></span><em>Tin tức &amp; câu chuyện</em><span></span></div>
-        </div>
-        <div class="xo-news-grid">
-            @if (_articles != null && _articles.Count > 0)
-            {
-                @foreach (var item in _articles)
-                {
-                    <div class="xo-news-card" @key="item.Id">
-                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
-                        {
-                            <img loading="lazy" src="@Img(item.ImageUrl, null)" alt="@item.Title" class="xo-news-img" />
-                        }
-                        <div class="xo-news-pad">
-                            <h3 class="xo-news-title">@item.Title</h3>
-                            <p class="xo-news-body">@item.Body</p>
-                            <div class="xo-news-date">@item.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
-                        </div>
-                    </div>
-                }
-            }
-            else
-            {
-                @foreach (var item in _content.NewsItems)
-                {
-                    <div class="xo-news-card" @key="item.Title">
-                        <div class="xo-news-pad">
-                            <h3 class="xo-news-title">@item.Title</h3>
-                            <p class="xo-news-body">@item.Body</p>
-                            <div class="xo-news-date">@item.Source</div>
-                        </div>
-                    </div>
-                }
-            }
-        </div>
-    </div>
-</section>
-
-<!-- 9. LIÊN HỆ + BẢN ĐỒ -->
-<section class="xo-section xo-contact" id="lien-he">    <div class="xo-container">
-        <div class="xo-sec-head">
-            <h2 class="xo-sec-title">Liên hệ với chúng tôi</h2>
-            <div class="xo-sec-div"><span></span><em>Xoi Phu Thuong Vietnamese Cuisine</em><span></span></div>
-        </div>
-        <div class="xo-contact-grid">
-            <div class="xo-contact-info">
-                <h3 class="xo-contact-title">@_content.FooterTitle</h3>
-                <ul class="xo-contact-list">
-                    @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
-                    {
-                        <li><span class="oi oi-home" aria-hidden="true"></span> @_content.ContactAddress</li>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
-                    {
-                        <li><span class="oi oi-phone" aria-hidden="true"></span> <a href="tel:@_content.ContactPhone">@_content.ContactPhone</a></li>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
-                    {
-                        <li><span class="oi oi-envelope-closed" aria-hidden="true"></span> @_content.ContactEmail</li>
-                    }
-                </ul>
-                <a href="/shop" class="xo-btn xo-btn-red">@_content.FooterButtonText</a>
-            </div>
-            @if (!string.IsNullOrWhiteSpace(_content.MapEmbedUrl))
-            {
-                <div class="xo-map">
-                    <iframe src="@_content.MapEmbedUrl" title="Bản đồ" frameborder="0"
-                            allowfullscreen loading="lazy"></iframe>
-                </div>
-            }
-        </div>
-    </div>
-</section>
-
-@if (_upcomingHolidays != null && _upcomingHolidays.Count > 0)
-{
-    <!-- 9b. LỊCH NGHỈ SẮP TỚI (item 117) -->
-    <section class="xo-section xo-holidays" id="lich-nghi">
-        <div class="xo-container">
-            <div class="xo-sec-head">
-                <h2 class="xo-sec-title">Lịch nghỉ sắp tới</h2>
-                <div class="xo-sec-div"><span></span><em>Quán nghỉ — hẹn gặp lại quý khách</em><span></span></div>
-            </div>
-            <div class="xo-holiday-list">
-                @foreach (var h in _upcomingHolidays.Take(3))
-                {
-                    <div class="xo-holiday-card">
-                        <div class="xo-holiday-date">
-                            <span class="xo-holiday-day">@h.HolidayDate.ToString("dd/MM")</span>
-                            <span class="xo-holiday-weekday">@VnWeekday(h.HolidayDate)</span>
-                        </div>
-                        <div class="xo-holiday-info">
-                            <strong>@h.Reason</strong>
-                            <small>@(h.IsFullDay ? "Nghỉ cả ngày" : "Nghỉ một phần ngày")</small>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    </section>
-}
 
 <!-- 10. FOOTER -->
-<footer class="xo-footer @(HasFooterBg ? "xo-footer-bg" : "")" style="@FooterBgStyle">
-    <div class="xo-container xo-footer-inner">
-        <h3 class="xo-footer-title">@_content.FooterTitle</h3>
-        <ul class="xo-footer-contact">
-            @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
-            {
-                <li><span class="oi oi-home" aria-hidden="true"></span> @_content.ContactAddress</li>
-            }
-            @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
-            {
-                <li><span class="oi oi-phone" aria-hidden="true"></span> <a href="tel:@_content.ContactPhone">@_content.ContactPhone</a></li>
-            }
-            @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
-            {
-                <li><span class="oi oi-envelope-closed" aria-hidden="true"></span> @_content.ContactEmail</li>
-            }
-        </ul>
-        <a href="/shop" class="xo-btn xo-btn-red">@_content.FooterButtonText</a>
-        <a href="/dat-tiec" class="xo-btn xo-btn-gold" style="margin-left:8px">Đặt tiệc / Số lượng lớn</a>
-        <a href="/cung-gio" class="xo-btn xo-btn-gold" style="margin-left:8px">🕯️ Cúng giỗ</a>
-        <a href="/nhuong-quyen" class="xo-btn xo-btn-gold" style="margin-left:8px">Nhượng quyền</a>
+<footer class="sg-footer" id="lien-he">
+    <div class="sg-container">
+        <div class="sg-footer-grid">
+            <div class="sg-footer-col">
+                <h3 class="sg-footer-brand">Xôi Phú Thượng</h3>
+                <p class="sg-footer-about">Gói xôi nóng hổi mỗi sáng từ làng nghề Phú Thượng — dẻo thơm, đúng vị Hà Nội.</p>
+                @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
+                {
+                    <p class="sg-footer-line">📍 @_content.ContactAddress</p>
+                }
+            </div>
+            <div class="sg-footer-col">
+                <h4 class="sg-footer-h">Khám phá</h4>
+                <a href="#gioi-thieu">Giới thiệu</a>
+                <a href="#mon-dac-trung">Món đặc trưng</a>
+                <a href="#thuc-don">Thực đơn</a>
+                <a href="/shop">Đặt xôi online</a>
+                <a href="/dat-tiec">Đặt tiệc</a>
+                <a href="/nhuong-quyen">Nhượng quyền</a>
+            </div>
+            <div class="sg-footer-col">
+                <h4 class="sg-footer-h">Liên hệ</h4>
+                @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+                {
+                    <a class="sg-footer-hotline" href="tel:@_content.ContactPhone">📞 @_content.ContactPhone</a>
+                }
+                @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
+                {
+                    <p class="sg-footer-line">✉️ @_content.ContactEmail</p>
+                }
+                <a href="/faq">Câu hỏi thường gặp</a>
+            </div>
+        </div>
         @if (_policies.Count > 0)
         {
-            <div class="xo-policy-bar">
+            <div class="sg-policy-bar">
                 @foreach (var p in _policies)
                 {
                     <a href="/chinh-sach/@p.Slug">@p.Title</a>
                 }
-                <a href="/faq">Câu hỏi thường gặp</a>
             </div>
         }
+        <div class="sg-bottom-bar">&copy; 2026 Xôi Phú Thượng &mdash; Thổi hồn vào từng gói xôi</div>
     </div>
-    <div class="xo-bottom-bar">&copy; 2026 Xôi Phú Thượng &mdash; Thổi hồn vào từng gói xôi</div>
 </footer>
 
-<!-- 11. NÚT CỐ ĐỊNH: Facebook + Gọi điện -->
-<div class="xo-fixed-btns">
-    <a class="xo-fb-btn" href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">f</a>
-    <a class="xo-zalo-btn" href="@ZaloUrl" target="_blank" rel="noopener" aria-label="Chat Zalo" title="Chat Zalo">Z</a>
+<!-- NÚT CỐ ĐỊNH -->
+<div class="sg-fixed-btns">
+    <a class="sg-fb-btn" href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">f</a>
+    <a class="sg-zalo-btn" href="@ZaloUrl" target="_blank" rel="noopener" aria-label="Chat Zalo" title="Chat Zalo">Z</a>
     @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
     {
-        <a class="xo-call-btn" href="tel:@_content.ContactPhone" aria-label="Gọi ngay" title="Gọi ngay">
+        <a class="sg-call-btn" href="tel:@_content.ContactPhone" aria-label="Gọi ngay" title="Gọi ngay">
             <span class="oi oi-phone" aria-hidden="true"></span>
         </a>
     }
 </div>
 
-<!-- 12. PROMO POPUP (item 94) -->
+<!-- POPUP KHUYẾN MÃI (admin-controlled) -->
 @if (_showPopup)
 {
-    <div class="xo-popup-overlay" @onclick="DismissPopup">
-        <div class="xo-popup" @onclick:stopPropagation>
-            <button type="button" class="xo-popup-close" aria-label="Đóng" @onclick="DismissPopup">×</button>
+    <div class="sg-popup-overlay" @onclick="DismissPopup">
+        <div class="sg-popup" @onclick:stopPropagation>
+            <button type="button" class="sg-popup-close" aria-label="Đóng" @onclick="DismissPopup">×</button>
             @if (!string.IsNullOrWhiteSpace(_content.PopupImageUrl))
             {
-                <img loading="lazy" src="@Img(_content.PopupImageUrl, null)" alt="@_content.PopupTitle" class="xo-popup-img" />
+                <img loading="lazy" src="@Img(_content.PopupImageUrl, null)" alt="@_content.PopupTitle" class="sg-popup-img" />
             }
-            <h3 class="xo-popup-title">@_content.PopupTitle</h3>
-            <p class="xo-popup-body">@_content.PopupBody</p>
-            <a href="/shop" class="xo-btn xo-btn-red">Đặt ngay →</a>
+            <h3 class="sg-popup-title">@_content.PopupTitle</h3>
+            <p class="sg-popup-body">@_content.PopupBody</p>
+            <a href="/shop" class="sg-btn sg-btn-solid sg-btn-block">Đặt ngay →</a>
         </div>
     </div>
 }
 
-</div> @* /.xo-page *@
+</div> @* /.sg-page *@
 <PhuThuongStickyRice.Web.Components.Shop.Components.UpsellPopup
     Visible="@_upsellVisible"
     Products="@_upsellProducts"
@@ -566,26 +473,48 @@ else
 
 @code {
     private LandingContentModel _content = new LandingContentModel();
-    private List<ShopProductModel> _quickProducts;
     private List<ShopProductModel> _allProducts = new List<ShopProductModel>();
+    private List<ComboModel> _combos = new List<ComboModel>();
+
+    // Menu tabs: "xoi" | "combo" | "tiec".
+    private string _menuTab = "xoi";
 
     // Upsell popup state.
     private bool _upsellVisible;
     private string _upsellAddedName;
     private List<ShopProductModel> _upsellProducts = new List<ShopProductModel>();
-    private long _todaySold;
 
-    // Sale upgrades: best-seller ids (fail-soft), product count + rating aggregates for the trust strip.
+    // Best-seller ids (fail-soft) for the "Bán chạy" badges.
     private HashSet<Guid> _bestSellerIds = new HashSet<Guid>();
-    private long _productCount;
-    private double _avgRating;
-    private int _reviewCount;
 
-    /// <summary>True when the product is a top seller (API) or marked signature.</summary>
     private bool IsBestSeller(ShopProductModel p) =>
         p != null && (_bestSellerIds.Contains(p.Id) || p.IsSignature);
 
-    /// <summary>Zalo chat link: zalo.me/&lt;phone&gt; when a hotline is configured, placeholder otherwise.</summary>
+    private static bool IsXoi(ShopProductModel p) =>
+        (p?.Code ?? "").StartsWith("XOI", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsSoldOut(ShopProductModel p) =>
+        !string.Equals(p?.Status, "Active", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Signature dishes: best sellers / signature first, max 6.</summary>
+    private List<ShopProductModel> SignatureProducts =>
+        _allProducts
+            .Where(p => string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(p => _bestSellerIds.Contains(p.Id) || p.IsSignature)
+            .ThenBy(p => p.SortOrder)
+            .ThenBy(p => p.Name)
+            .Take(6)
+            .ToList();
+
+    /// <summary>All active xôi products for the "Xôi truyền thống" tab.</summary>
+    private List<ShopProductModel> XoiProducts =>
+        _allProducts
+            .Where(p => IsXoi(p) && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(p => p.SortOrder)
+            .ThenBy(p => p.Name)
+            .ToList();
+
+    /// <summary>Zalo chat link: zalo.me/&lt;phone&gt; when a hotline is configured.</summary>
     private string ZaloUrl
     {
         get
@@ -595,126 +524,99 @@ else
         }
     }
 
-    // Wave 6d (item 38): initial API load failed → full-page error state.
     private bool _loadFailed;
 
-    /// <summary>Wave 6d (item 38): full reload after a failed initial load.</summary>
     private void RetryLoad()
     {
         Navigation.NavigateTo("/", forceLoad: true);
     }
 
-    // Item 93: news CMS articles (latest 3 published).
-    private List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel> _articles;
-
-    // Item 87: public order reviews.
-    private List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel> _publicReviews;
-
-    // Item 94: flash banner + promo popup state.
+    // Flash banner + promo popup state.
     private bool _bannerDismissed;
     private bool _showPopup;
     private bool _popupChecked;
     private const string PopupSeenKey = "phuthuong.popup.seen";
-
-    // Item 105: promo-popup feature flag.
     private bool _promoPopupEnabled = true;
 
-    // Wave 6a (item 22): open-hours display in the hero.
+    // Open-hours badge in the hero (fail-safe).
     private string _openStatusText;
     private bool _openNow;
 
-    // Pause-orders state (fail-soft — landing works with defaults).
+    // Pause-orders state (fail-soft).
     private ShopSettingModel _shopSettings;
     private bool OrdersPaused => _shopSettings != null && !_shopSettings.AcceptingOrders;
-    private bool HolidayPaused => _shopSettings != null && _shopSettings.IsHolidayPaused;
 
-    // Wave 6b (item 28): policy pages for the footer links (fail-soft).
+    private string PauseReasonText =>
+        _shopSettings != null && !string.IsNullOrWhiteSpace(_shopSettings.PausedReason)
+            ? $": {_shopSettings.PausedReason}"
+            : ".";
+
+    // Policy links for the footer (fail-soft).
     private List<PolicyPageSummaryModel> _policies = new List<PolicyPageSummaryModel>();
 
-    // Item 117: upcoming holidays shown in the "Lịch nghỉ sắp tới" section.
-    private List<HolidayModel> _upcomingHolidays = new List<HolidayModel>();
+    // Booking form (đặt xôi nhanh) — posts a quote request (api/quotes).
+    private string _bookName = "";
+    private string _bookPhone = "";
+    private int _bookQty = 10;
+    private string _bookNotes = "";
+    private bool _bookSending;
+    private bool _bookSent;
+    private string _bookError;
 
-    private static string VnWeekday(DateTime d) => d.DayOfWeek switch
+    // Dark mode toggle (persisted in localStorage via ptToggleTheme).
+    private bool _isDark;
+
+    private async Task ToggleTheme()
     {
-        DayOfWeek.Monday => "Thứ 2",
-        DayOfWeek.Tuesday => "Thứ 3",
-        DayOfWeek.Wednesday => "Thứ 4",
-        DayOfWeek.Thursday => "Thứ 5",
-        DayOfWeek.Friday => "Thứ 6",
-        DayOfWeek.Saturday => "Thứ 7",
-        _ => "Chủ nhật",
-    };
+        try
+        {
+            var theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme");
+            _isDark = theme == "dark";
+        }
+        catch { }
+    }
 
-    /// <summary>
-    /// Converts a YouTube/TikTok/Facebook video URL to an embed URL.
-    /// Returns null when no video is configured or the URL is not supported.
-    /// </summary>
-    private string VideoEmbedUrl
+    private string HeroTitleText =>
+        string.IsNullOrWhiteSpace(_content.HeroTitle) ? "Xôi Phú Thượng" : _content.HeroTitle;
+
+    private string HeroTaglineText =>
+        string.IsNullOrWhiteSpace(_content.HeroTagline)
+            ? "Gói xôi nóng hổi mỗi sáng — nếp dẻo, đậu bùi, đúng vị Hà Nội xưa."
+            : _content.HeroTagline;
+
+    private string StoryTitleText =>
+        string.IsNullOrWhiteSpace(_content.StoryTitle) ? "Câu chuyện Xôi Phú Thượng" : _content.StoryTitle;
+
+    private string StoryBodyText =>
+        string.IsNullOrWhiteSpace(_content.StoryBody)
+            ? "Từ làng nghề Phú Thượng ven sông Hồng, chúng tôi mang đến những gói xôi nóng hổi mỗi sáng — gạo nếp ngon, đồ bằng chõ tre, gói lá chuối thơm lừng."
+            : _content.StoryBody;
+
+    private string MenuTitleText =>
+        string.IsNullOrWhiteSpace(_content.MenuTitle) ? "Thực đơn hôm nay" : _content.MenuTitle;
+
+    private string HeroBgStyle
     {
         get
         {
-            var url = (_content.VideoUrl ?? "").Trim();
-            if (string.IsNullOrEmpty(url))
-            {
-                return null;
-            }
+            var url = Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg");
+            return $"background-image: url('{url}');";
+        }
+    }
 
-            // Basic validation: only http(s) URLs, no javascript: tricks.
-            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            if (url.Contains("/embed/"))
-            {
-                return url;
-            }
-
-            // ---- YouTube ----
-            // youtu.be/VIDEO_ID
-            var shortIdx = url.IndexOf("youtu.be/", StringComparison.OrdinalIgnoreCase);
-            if (shortIdx >= 0)
-            {
-                var id = url.Substring(shortIdx + "youtu.be/".Length).Split('?', '&')[0];
-                return $"https://www.youtube.com/embed/{id}";
-            }
-
-            // youtube.com/watch?v=VIDEO_ID
-            var vIdx = url.IndexOf("v=", StringComparison.OrdinalIgnoreCase);
-            if (vIdx >= 0 && url.IndexOf("youtube.com", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                var id = url.Substring(vIdx + 2).Split('?', '&')[0];
-                return $"https://www.youtube.com/embed/{id}";
-            }
-
-            // ---- TikTok ----
-            // tiktok.com/@user/video/VIDEO_ID
-            var ttIdx = url.IndexOf("/video/", StringComparison.OrdinalIgnoreCase);
-            if (ttIdx >= 0 && url.IndexOf("tiktok.com", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                var id = url.Substring(ttIdx + "/video/".Length).Split('?', '&', '/')[0];
-                return $"https://www.tiktok.com/embed/v2/{id}";
-            }
-
-            // ---- Facebook ----
-            // facebook.com/.../videos/VIDEO_ID or facebook.com/watch?v=VIDEO_ID
-            if (url.IndexOf("facebook.com", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                return "https://www.facebook.com/plugins/video.php?href="
-                    + Uri.EscapeDataString(url);
-            }
-
-            return null;
+    private string CtaBgStyle
+    {
+        get
+        {
+            var url = Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-xeo.svg");
+            return $"background-image: url('{url}');";
         }
     }
 
     protected override async Task OnInitializedAsync()
     {
-        // Dark mode: sync toggle icon with saved theme (JS already applied the class pre-paint).
         try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme") == "dark"; } catch { }
-        // Wave 6a (item 22): open-hours badge in the hero (fail-safe —
-        // the landing works fine with the built-in defaults).
+
         try
         {
             var settings = await ShopSettingsService.GetPublicAsync();
@@ -730,7 +632,6 @@ else
         {
         }
 
-        // Wave 6b (item 28): policy links for the footer (fail-soft).
         try
         {
             _policies = await PolicyService.GetPublicListAsync()
@@ -741,55 +642,16 @@ else
             _policies = new List<PolicyPageSummaryModel>();
         }
 
-        // Item 117: upcoming holidays for the "Lịch nghỉ sắp tới" section (fail-soft).
-        try
-        {
-            _upcomingHolidays = await HolidayService.GetUpcomingAsync()
-                ?? new List<HolidayModel>();
-        }
-        catch (Exception)
-        {
-            _upcomingHolidays = new List<HolidayModel>();
-        }
-
         try
         {
             _content = await LandingService.GetContentAsync() ?? new LandingContentModel();
         }
         catch (Exception)
         {
-            // Wave 6d (item 38): landing content is the critical load.
             _loadFailed = true;
             _content = new LandingContentModel();
         }
 
-        // Item 93: published articles; NewsItems JSON stays as fallback.
-        try
-        {
-            _articles = (await LandingService.GetArticlesAsync())
-                ?.Take(3).ToList() ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>();
-        }
-        catch (Exception)
-        {
-            _articles = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>();
-        }
-
-        // Item 87: public reviews (hidden reviews are excluded server-side).
-        try
-        {
-            _publicReviews = (await LandingService.GetPublicReviewsAsync())
-                ?.Take(6).ToList() ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel>();
-            _reviewCount = _publicReviews.Count;
-            _avgRating = _reviewCount > 0 ? _publicReviews.Average(r => r.Rating) : 5.0;
-        }
-        catch (Exception)
-        {
-            _publicReviews = new List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel>();
-            _reviewCount = 0;
-            _avgRating = 5.0;
-        }
-
-        // Item 105: promo-popup feature flag (fail open).
         try
         {
             var flags = await Wave4Service.GetFeatureFlagMapAsync();
@@ -802,18 +664,14 @@ else
         try
         {
             var paged = await ShopService.GetProductsAsync();
-            _productCount = paged?.TotalCount ?? 0;
-            _allProducts = paged.Items ?? new List<ShopProductModel>();
-            _quickProducts = _allProducts.Take(3).ToList();
+            _allProducts = paged?.Items ?? new List<ShopProductModel>();
         }
         catch (Exception)
         {
-            // Wave 6d (item 38): quick-order strip needs products.
             _loadFailed = true;
-            _quickProducts = new List<ShopProductModel>();
+            _allProducts = new List<ShopProductModel>();
         }
 
-        // Sale upgrade: best-seller ids for the "Bán chạy nhất" badges (fail-soft).
         try
         {
             var ids = await ShopService.GetBestSellerIdsAsync();
@@ -825,18 +683,15 @@ else
 
         try
         {
-            _todaySold = await ShopService.GetTodaySoldAsync();
+            _combos = (await ShopService.GetCombosAsync())
+                ?.Where(c => c.IsActive).ToList() ?? new List<ComboModel>();
         }
         catch (Exception)
         {
-            _todaySold = 0;
+            _combos = new List<ComboModel>();
         }
     }
 
-    /// <summary>
-    /// Item 94: shows the promo popup once per session. localStorage can only
-    /// be touched after the first render (server-side prerendering safety).
-    /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_popupChecked && _content.PopupActive && _promoPopupEnabled)
@@ -853,7 +708,6 @@ else
             }
             catch (Exception)
             {
-                // localStorage unavailable — skip the popup silently.
             }
         }
     }
@@ -870,20 +724,8 @@ else
         }
     }
 
-    /// <summary>Masks a phone number for public display (090•…•5678).</summary>
-    private static string MaskPhone(string phone)
-    {
-        var digits = new string((phone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 6)
-        {
-            return phone;
-        }
-
-        return $"{digits.Substring(0, 3)}•…•{digits.Substring(digits.Length - 4)}";
-    }
-
-    /// <summary>Add one item to the cart from the quick-order strip.</summary>
-    private void QuickAdd(ShopProductModel product)
+    /// <summary>Add one item to the cart.</summary>
+    private void AddToCart(ShopProductModel product)
     {
         if (OrdersPaused)
         {
@@ -898,11 +740,10 @@ else
         CartState.Add(product, 1);
 
         // Upsell: xôi → suggest Chả cốm / Chả giò.
-        if ((product?.Code ?? "").StartsWith("XOI", StringComparison.OrdinalIgnoreCase))
+        if (IsXoi(product))
         {
             var upsells = _allProducts
-                .Where(p => !(p.Code ?? "").StartsWith("XOI", StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .Where(p => !IsXoi(p) && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
                 .OrderBy(p => p.Code == "CHA-COM" ? 0 : p.Code == "CHA-GIO" ? 1 : 2)
                 .ThenBy(p => p.Price)
                 .Take(4)
@@ -919,6 +760,17 @@ else
         Toasts.Show($"Đã thêm {product.Name} × 1 vào giỏ", "Xem giỏ hàng", "/cart");
     }
 
+    private void AddComboToCart(ComboModel combo)
+    {
+        if (OrdersPaused)
+        {
+            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.");
+            return;
+        }
+        CartState.AddCombo(combo);
+        Toasts.Show($"Đã thêm {combo.Name} vào giỏ", "Xem giỏ hàng", "/cart");
+    }
+
     private void AddUpsell(ShopProductModel product)
     {
         CartState.Add(product, 1);
@@ -930,10 +782,7 @@ else
         _upsellVisible = false;
     }
 
-    /// <summary>
-    /// Item 166: primary gallery photo when uploaded; otherwise the SVG
-    /// placeholder per product code (matches the shop page).
-    /// </summary>
+    /// <summary>Primary gallery photo when uploaded; otherwise the SVG placeholder per product code.</summary>
     private static string ProductImage(ShopProductModel product)
     {
         var first = FirstImageUrl(product?.ImageUrlsJson);
@@ -942,9 +791,7 @@ else
             return first;
         }
 
-        var slug = (product?.Code ?? "").ToLowerInvariant()
-            .Replace("xoi-", "xoi-")
-            .Replace("_", "-");
+        var slug = (product?.Code ?? "").ToLowerInvariant().Replace("_", "-");
         var file = slug switch
         {
             "xoi-gac" => "xoi-gac.svg",
@@ -994,47 +841,15 @@ else
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
-    /// <summary>Item 81: "/kg" for weight products, "/suất" otherwise.</summary>
+    /// <summary>"/kg" for weight products, "/suất" otherwise.</summary>
     private static string UnitSuffix(ShopProductModel product) =>
         string.Equals(product?.Unit, "kg", StringComparison.OrdinalIgnoreCase) ? "/kg" : "/suất";
-
-    /// <summary>Item 85: true when the product is sold out (Inactive).</summary>
-    private static bool IsSoldOut(ShopProductModel product) =>
-        !string.Equals(product?.Status, "Active", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Uploaded image URL if set, otherwise the SVG placeholder.</summary>
     private string Img(string uploadedUrl, string fallbackSvg) =>
         !string.IsNullOrWhiteSpace(uploadedUrl)
             ? LandingService.ResolveImageUrl(uploadedUrl)
             : fallbackSvg;
-
-    private bool HasFooterBg => !string.IsNullOrWhiteSpace(_content.FooterBackgroundUrl);
-
-    private string FooterBgStyle => HasFooterBg
-        ? $"background-image: url('{LandingService.ResolveImageUrl(_content.FooterBackgroundUrl)}');"
-        : null;
-
-    // Booking form (đặt xôi nhanh) — posts a quote request (api/quotes).
-    private string _bookName = "";
-    private string _bookPhone = "";
-    private int _bookQty = 10;
-    private string _bookNotes = "";
-    private bool _bookSending;
-    private bool _bookSent;
-
-    // Dark mode toggle (persisted in localStorage via ptToggleTheme).
-    private bool _isDark;
-
-    private async Task ToggleTheme()
-    {
-        try
-        {
-            var theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme");
-            _isDark = theme == "dark";
-        }
-        catch { }
-    }
-    private string _bookError;
 
     private async Task SubmitBooking()
     {
