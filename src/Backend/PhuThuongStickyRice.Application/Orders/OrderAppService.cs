@@ -98,6 +98,13 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<OrderDto> MarkPickedUpAsync(Guid id, MarkPickedUpDto input);
 
         /// <summary>
+        /// Item 163: staff marks cash as collected for an order
+        /// ("💵 Đã thu tiền"). Rejected for cancelled or already-collected
+        /// orders.
+        /// </summary>
+        Task<OrderDto> MarkCashCollectedAsync(Guid id);
+
+        /// <summary>
         /// Wave 6c (item 34): status-transition timeline of an order.
         /// </summary>
         Task<List<OrderStatusHistoryDto>> GetStatusHistoryAsync(Guid id);
@@ -160,6 +167,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly Wave4.IWebhookDispatcher _webhooks;
         private readonly Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> _branches;
         private readonly Wave5.IWalletAppService _wallets;
+        private readonly System.Net.Http.IHttpClientFactory _httpClientFactory;
 
         /// <summary>Wave 6c (item 34): status-transition audit trail.</summary>
         private readonly Volo.Abp.Domain.Repositories.IRepository<OrderStatusHistory, Guid> _statusHistory;
@@ -196,7 +204,8 @@ namespace PhuThuongStickyRice.Application.Orders
             Volo.Abp.Domain.Repositories.IRepository<OrderStatusHistory, Guid> statusHistory,
             ICustomerTagAppService customerTags,
             IPermissionService permissions,
-            IStaffActivityLogger activityLogger)
+            IStaffActivityLogger activityLogger,
+            System.Net.Http.IHttpClientFactory httpClientFactory)
         {
             _orders = orders;
             _products = products;
@@ -225,6 +234,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _customerTags = customerTags;
             _permissions = permissions;
             _activityLogger = activityLogger;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<OrderDto> CreateAsync(CreateOrderDto input)
@@ -358,6 +368,15 @@ namespace PhuThuongStickyRice.Application.Orders
                     throw new Domain.Exceptions.DomainException($"Product '{product.Name}' is not available for ordering.");
                 }
 
+                // Item 164: sale time windows (and seasonal window), evaluated
+                // against the scheduled pickup time for pre-orders, now for
+                // immediate orders.
+                if (!product.IsAvailableNow(GetAvailabilityCheckTime(input)))
+                {
+                    throw new Domain.Exceptions.DomainException(
+                        $"Món '{product.Name}' không bán trong khung giờ này.");
+                }
+
                 // Size option: replaces the base price with the size price.
                 string sizeName = null;
                 var unitPrice = product.Price;
@@ -395,6 +414,11 @@ namespace PhuThuongStickyRice.Application.Orders
                     sizeName, toppingNames, toppingsExtra, false,
                     string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim()));
             }
+
+            // Item 165: daily portion limit per product. Counted server-side
+            // from today's non-cancelled orders. Best-effort against races
+            // (no serializable transaction); the overshoot window is tiny.
+            await EnsureDailyLimitsAsync(lines);
 
             var orderNumber = await GenerateOrderNumberAsync();
 
@@ -648,6 +672,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 branchName
             });
 
+            // Item 180: simple "new order" webhook (báo đơn mới) — 1 URL in
+            // shop settings. Fire-and-log with 5s timeout; a failing
+            // endpoint never breaks the order flow.
+            await FireSimpleNewOrderWebhookAsync(order);
+
             // Zalo OA e-receipt (stub: logs "would send" until configured).
             await _zalo.SendOrderReceiptAsync(
                 order.OrderNumber, order.CustomerPhone, order.TotalAmount.Amount);
@@ -715,6 +744,13 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 var toUtc = VietnamTime.DayEndExclusiveUtc(input.ToDate.Value);
                 query = query.Where(x => x.CreatedAt < toUtc);
+            }
+
+            // Item 163: filter by cash-collection state.
+            if (input.CashCollected.HasValue)
+            {
+                var collected = input.CashCollected.Value;
+                query = query.Where(x => x.CashCollected == collected);
             }
 
             var totalCount = await _asyncExecuter.LongCountAsync(query);
@@ -863,6 +899,56 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
+        /// Item 180: posts {maDon, sdt, tongTien, trangThai, thoiGian} to the
+        /// shop's configured new-order webhook URL. Fire-and-log with a 5s
+        /// timeout — failures only log, never break order creation.
+        /// </summary>
+        private async Task FireSimpleNewOrderWebhookAsync(Order order)
+        {
+            try
+            {
+                var settings = await _shopSettings.GetAsync();
+                if (settings == null || !settings.NewOrderWebhookEnabled)
+                {
+                    return;
+                }
+
+                var url = settings.NewOrderWebhookUrl;
+                if (string.IsNullOrWhiteSpace(url)
+                    || (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                        && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return;
+                }
+
+                var sent = await Shop.ShopSettingAppService.PostNewOrderWebhookAsync(
+                    _httpClientFactory,
+                    url,
+                    new
+                    {
+                        maDon = order.OrderNumber,
+                        sdt = order.CustomerPhone,
+                        tongTien = order.TotalAmount.Amount,
+                        trangThai = order.Status.ToString(),
+                        thoiGian = DateTime.UtcNow
+                    });
+
+                if (!sent)
+                {
+                    Logger.LogWarning(
+                        "Item 180: new-order webhook to {Url} returned a non-success status for order {OrderNumber}.",
+                        url, order.OrderNumber);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex,
+                    "Item 180: new-order webhook failed for order {OrderNumber}.",
+                    order.OrderNumber);
+            }
+        }
+
+        /// <summary>
         /// Webhook dispatch must never break the order flow: log and continue.
         /// </summary>
         private async Task FireWebhookSafelyAsync(string eventName, object payload)
@@ -900,10 +986,6 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             await _orders.UpdateAsync(order);
-
-            // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.OrderPickedUp,
-                $"Xác nhận đã lấy hàng đơn {order.OrderNumber}.");
 
             var dto = _objectMapper.Map<Order, OrderDto>(order);
             await FillShipperNamesAsync(new[] { dto });
@@ -1036,6 +1118,28 @@ namespace PhuThuongStickyRice.Application.Orders
                 await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
             }
 
+            await _orders.UpdateAsync(order);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.OrderPickedUp,
+                $"Xác nhận đã lấy hàng đơn {order.OrderNumber}.");
+
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            await FillShipperNamesAsync(new[] { dto });
+            return dto;
+        }
+
+        /// <summary>
+        /// Item 163: staff confirms cash was collected ("💵 Đã thu tiền").
+        /// Typically used on COD orders; the server only requires "not
+        /// cancelled, not yet collected".
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
+        public async Task<OrderDto> MarkCashCollectedAsync(Guid id)
+        {
+            var order = await FindOrThrowAsync(id);
+
+            order.MarkCashCollected();
             await _orders.UpdateAsync(order);
 
             var dto = _objectMapper.Map<Order, OrderDto>(order);
@@ -1551,9 +1655,16 @@ namespace PhuThuongStickyRice.Application.Orders
 
         public async Task<OrderDto> ConfirmPaymentAsync(Guid id)
         {
+            // Item 155: confirming "money received" needs orders.confirm-payment.
+            await _permissions.RequirePermissionAsync(PermissionKeys.OrdersConfirmPayment);
+
             var order = await FindOrThrowAsync(id);
             order.ConfirmPayment();
             await _orders.UpdateAsync(order);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.OrderConfirmPayment,
+                $"Xác nhận đã nhận tiền đơn {order.OrderNumber}.");
 
             return _objectMapper.Map<Order, OrderDto>(order);
         }
@@ -1904,8 +2015,94 @@ namespace PhuThuongStickyRice.Application.Orders
             }
         }
 
-        internal static bool PhonesMatch(string orderPhone, string givenPhone)
+        /// <summary>
+        /// Item 165: rejects lines whose product would exceed its daily
+        /// portion limit. Combos are excluded (they are not portion-based).
+        /// Best-effort against races — see the call site comment.
+        /// </summary>
+        private async Task EnsureDailyLimitsAsync(
+            List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> lines)
         {
+            var wanted = lines
+                .Where(x => !x.IsCombo)
+                .GroupBy(x => x.ProductId)
+                .ToDictionary(g => g.Key, g => new
+                {
+                    Name = g.First().ProductName,
+                    Quantity = g.Sum(x => x.Quantity)
+                });
+
+            if (wanted.Count == 0)
+            {
+                return;
+            }
+
+            var productQueryable = await _products.GetQueryableAsync();
+            var limits = await _asyncExecuter.ToListAsync(
+                productQueryable
+                    .Where(x => wanted.Keys.Contains(x.Id) && x.DailyLimit != null)
+                    .Select(x => new { x.Id, Limit = x.DailyLimit.Value }));
+
+            if (limits.Count == 0)
+            {
+                return;
+            }
+
+            var today = VietnamTime.Today;
+            var fromUtc = VietnamTime.DayStartUtc(today);
+            var toUtc = VietnamTime.DayEndExclusiveUtc(today);
+
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var soldRows = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Status != OrderStatus.Cancelled
+                        && x.CreatedAt >= fromUtc
+                        && x.CreatedAt < toUtc)
+                    .SelectMany(x => x.Lines)
+                    .GroupBy(l => l.ProductId)
+                    .Select(g => new { ProductId = g.Key, Sold = g.Sum(l => l.Quantity) }));
+
+            var soldMap = soldRows.ToDictionary(x => x.ProductId, x => (int)x.Sold);
+
+            foreach (var limited in limits)
+            {
+                var want = wanted[limited.Id];
+                var sold = soldMap.TryGetValue(limited.Id, out var s) ? s : 0;
+                if (sold + want.Quantity > limited.Limit)
+                {
+                    var remaining = Math.Max(0, limited.Limit - sold);
+                    throw new Domain.Exceptions.DomainException(
+                        $"Món '{want.Name}' hôm nay chỉ còn {remaining} suất. Vui lòng giảm số lượng.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Item 164: the instant used for sale-window checks — the scheduled
+        /// pickup time for pre-orders, now for immediate orders.
+        /// </summary>
+        private static DateTime GetAvailabilityCheckTime(CreateOrderDto input)
+        {
+            if (input.ScheduledFor.HasValue)
+            {
+                var sf = input.ScheduledFor.Value;
+                if (sf.Kind == DateTimeKind.Unspecified)
+                {
+                    sf = DateTime.SpecifyKind(sf, DateTimeKind.Local).ToUniversalTime();
+                }
+                else if (sf.Kind == DateTimeKind.Local)
+                {
+                    sf = sf.ToUniversalTime();
+                }
+
+                return sf;
+            }
+
+            return DateTime.UtcNow;
+        }
+
+        internal static bool PhonesMatch(string orderPhone, string givenPhone)        {
             if (string.IsNullOrWhiteSpace(orderPhone) || string.IsNullOrWhiteSpace(givenPhone))
             {
                 return false;

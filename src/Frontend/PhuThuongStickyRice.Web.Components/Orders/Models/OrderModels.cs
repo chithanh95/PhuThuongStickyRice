@@ -44,6 +44,12 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
 
         public string CustomerAddress { get; set; }
 
+        /// <summary>
+        /// Item 149: tags of this customer's phone (e.g. VIP). Admin only.
+        /// </summary>
+        public List<PhuThuongStickyRice.Web.Components.Admin.Models.CustomerTagModel> CustomerTags { get; set; }
+            = new List<PhuThuongStickyRice.Web.Components.Admin.Models.CustomerTagModel>();
+
         public string Notes { get; set; }
 
         /// <summary>

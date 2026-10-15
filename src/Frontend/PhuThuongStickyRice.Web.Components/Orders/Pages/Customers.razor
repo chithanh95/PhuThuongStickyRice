@@ -7,6 +7,7 @@
 @inject OrderService OrderService
 @inject NavigationManager Navigation
 @inject PhuThuongStickyRice.Web.Components.Shop.Services.ShopSettingsService ShopSettingsService
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
 <h3>Khách hàng</h3>
 <p class="text-muted">Tổng hợp theo số điện thoại (không tính đơn đã hủy).</p>
@@ -14,22 +15,40 @@
 <div class="card mb-3">
     <div class="card-body">
         <div class="form-row align-items-center">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <input class="form-control" placeholder="Tìm tên / SĐT..."
                        @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchChanged" />
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="form-check mt-2 mt-md-0">
                     <input type="checkbox" class="form-check-input" id="inactive-only" @bind="_inactiveOnly" />
                     <label class="form-check-label" for="inactive-only">Chỉ hiện khách chưa mua &gt; 30 ngày</label>
                 </div>
             </div>
-            <div class="col-md-4 text-md-right mt-2 mt-md-0">
+            <div class="col-md-3 mt-2 mt-md-0">
+                @* Item 149: filter customers by tag. *@
+                <select class="form-control" @bind="_tagFilter">
+                    <option value="">🏷️ Tất cả tag</option>
+                    @foreach (var t in TagPresets)
+                    {
+                        <option value="@t">@t</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 text-md-right mt-2 mt-md-0">
+                @* Item 151: export customer list to Excel. *@
+                <button class="btn btn-success mr-2" @onclick="ExportExcel" disabled="@_exporting">
+                    @(_exporting ? "Đang xuất..." : "⬇ Xuất Excel")
+                </button>
                 <button class="btn btn-outline-warning" @onclick="ToggleBirthdays">
                     🎂 Sinh nhật tháng này
                 </button>
             </div>
         </div>
+        @if (!string.IsNullOrEmpty(_exportError))
+        {
+            <div class="alert alert-danger mt-2 mb-0">@_exportError</div>
+        }
     </div>
 </div>
 
@@ -142,6 +161,7 @@ else
                             <th class="text-right">Số đơn</th>
                             <th class="text-right">Tổng chi tiêu</th>
                             <th>Hạng</th>
+                            <th>Tags</th>
                             <th>Đơn gần nhất</th>
                             <th></th>
                         </tr>
@@ -161,6 +181,47 @@ else
                                 <td class="text-right">@c.OrderCount</td>
                                 <td class="text-right"><strong class="text-success">@FormatPrice(c.TotalSpent)</strong></td>
                                 <td><span class="badge badge-info">@TierOf(c.TotalSpent)</span></td>
+                                <td>
+                                    @* Item 149: tags with quick add/remove. *@
+                                    @if (c.Tags != null)
+                                    {
+                                        @foreach (var tag in c.Tags)
+                                        {
+                                            <span class="badge mr-1 mb-1" style="background-color: @(string.IsNullOrWhiteSpace(tag.Color) ? "#6c757d" : tag.Color); color: #fff;"
+                                                  title="@(string.IsNullOrWhiteSpace(tag.CreatedBy) ? "" : $"Thêm bởi {tag.CreatedBy}")">
+                                                @tag.TagName
+                                                <button type="button" class="btn btn-sm p-0 ml-1" style="color: #fff; line-height: 1;"
+                                                        title="Xóa tag" @onclick="() => RemoveTag(c, tag)">×</button>
+                                            </span>
+                                        }
+                                    }
+                                    @if (_taggingPhone == c.CustomerPhone)
+                                    {
+                                        <span class="d-inline-block">
+                                            <input class="form-control form-control-sm d-inline-block" style="width: 130px;"
+                                                   placeholder="Tên tag..." list="tag-presets" @bind="_newTagName" />
+                                            <datalist id="tag-presets">
+                                                @foreach (var t in TagPresets)
+                                                {
+                                                    <option value="@t"></option>
+                                                }
+                                            </datalist>
+                                            <button class="btn btn-sm btn-primary" @onclick="() => AddTag(c)"
+                                                    disabled="@_tagBusy">Thêm</button>
+                                            <button class="btn btn-sm btn-link text-muted p-0 ml-1"
+                                                    @onclick="() => _taggingPhone = null">hủy</button>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-secondary" title="Gắn tag cho khách"
+                                                @onclick="() => { _taggingPhone = c.CustomerPhone; _newTagName = null; _tagError = null; }">+ tag</button>
+                                    }
+                                    @if (_taggingPhone == c.CustomerPhone && !string.IsNullOrEmpty(_tagError))
+                                    {
+                                        <div><small class="text-danger">@_tagError</small></div>
+                                    }
+                                </td>
                                 <td>@c.LastOrderAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                                 <td class="text-right">
                                     @if (IsInactive(c))
@@ -185,7 +246,7 @@ else
                             @if (_detailPhone == c.CustomerPhone)
                             {
                                 <tr>
-                                    <td colspan="7" class="bg-light">
+                                    <td colspan="8" class="bg-light">
                                         <strong>👤 Lịch sử mua hàng — @c.CustomerPhone</strong>
                                         @if (_loadingDetail)
                                         {
@@ -281,7 +342,7 @@ else
                             @if (_remindPhone == c.CustomerPhone)
                             {
                                 <tr>
-                                    <td colspan="7" class="bg-light">
+                                    <td colspan="8" class="bg-light">
                                         <strong>🔔 Nhắc khách @c.CustomerPhone quay lại</strong>
                                         <div class="alert alert-warning py-2 mt-2 mb-2">
                                             <small>⚠️ Hiện tại tin nhắn <strong>chưa gửi thật</strong> — cần cấu hình Zalo OA thì khách mới nhận được. Hệ thống chỉ lưu lịch sử nhắc ở dưới.</small>
@@ -321,7 +382,7 @@ else
                             @if (_expandedPhone == c.CustomerPhone)
                             {
                                 <tr>
-                                    <td colspan="7" class="bg-light">
+                                    <td colspan="8" class="bg-light">
                                         <strong>Ghi chú CRM — @c.CustomerPhone</strong>
                                         @if (_loadingNotes)
                                         {
@@ -404,6 +465,19 @@ else
     private decimal _giftAmount = 25000;
     private string _giftResult;
 
+    // Item 149: customer tags.
+    private static readonly string[] TagPresets =
+        { "VIP", "Khách sỉ", "Khách quen", "Cần ưu tiên", "Nợ", "Khó tính" };
+    private string _tagFilter;
+    private string _taggingPhone;
+    private string _newTagName;
+    private string _tagError;
+    private bool _tagBusy;
+
+    // Item 151: export customers to Excel.
+    private bool _exporting;
+    private string _exportError;
+
     // Item 168: customer purchase-history detail.
     private string _detailPhone;
     private PhuThuongStickyRice.Web.Components.Admin.Models.CustomerDetailModel _detail;
@@ -416,7 +490,11 @@ else
     private IEnumerable<Admin.Models.CustomerModel> FilteredCustomers() =>
         _customers == null
             ? Enumerable.Empty<Admin.Models.CustomerModel>()
-            : _customers.Where(c => !_inactiveOnly || IsInactive(c));
+            : _customers.Where(c =>
+                (!_inactiveOnly || IsInactive(c))
+                && (string.IsNullOrWhiteSpace(_tagFilter)
+                    || (c.Tags != null && c.Tags.Any(t =>
+                        string.Equals(t.TagName, _tagFilter, StringComparison.OrdinalIgnoreCase)))));
 
     protected override async Task OnInitializedAsync()
     {
@@ -646,6 +724,73 @@ else
         catch (Exception ex)
         {
             _noteError = ex.Message;
+        }
+    }
+
+    /// <summary>Item 149: adds a tag to a customer phone.</summary>
+    private async Task AddTag(Admin.Models.CustomerModel customer)
+    {
+        _tagError = null;
+        if (string.IsNullOrWhiteSpace(_newTagName))
+        {
+            _tagError = "Vui lòng nhập tên tag.";
+            return;
+        }
+
+        _tagBusy = true;
+        try
+        {
+            var created = await OrderService.AddCustomerTagAsync(
+                customer.CustomerPhone, _newTagName.Trim());
+            customer.Tags ??= new List<Admin.Models.CustomerTagModel>();
+            customer.Tags.Add(created);
+            customer.Tags = customer.Tags.OrderBy(t => t.TagName).ToList();
+            _taggingPhone = null;
+            _newTagName = null;
+        }
+        catch (Exception ex)
+        {
+            _tagError = ex.Message;
+        }
+        finally
+        {
+            _tagBusy = false;
+        }
+    }
+
+    /// <summary>Item 149: removes a tag from a customer phone.</summary>
+    private async Task RemoveTag(Admin.Models.CustomerModel customer, Admin.Models.CustomerTagModel tag)
+    {
+        try
+        {
+            await OrderService.DeleteCustomerTagAsync(tag.Id);
+            customer.Tags?.RemoveAll(t => t.Id == tag.Id);
+        }
+        catch (Exception)
+        {
+            // Best effort; the tag list refreshes on next load.
+        }
+    }
+
+    /// <summary>Item 151: exports the (filtered) customer list to Excel.</summary>
+    private async Task ExportExcel()
+    {
+        _exportError = null;
+        _exporting = true;
+        try
+        {
+            var token = await OrderService.GetAccessToken();
+            var url = OrderService.GetExportCustomersUrl(_searchTerm, _tagFilter, _inactiveOnly);
+            var fileName = $"khach-hang-{DateTime.Today:yyyy-MM-dd}.xlsx";
+            await JSRuntime.InvokeVoidAsync("interop.downloadFile", url, token, fileName);
+        }
+        catch (Exception ex)
+        {
+            _exportError = "Xuất file thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _exporting = false;
         }
     }
 

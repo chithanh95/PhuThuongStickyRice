@@ -22,10 +22,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public class CustomerCareController : ControllerBase
     {
         private readonly ICustomerProfileAppService _profiles;
+        private readonly ICustomerTagAppService _tags;
 
-        public CustomerCareController(ICustomerProfileAppService profiles)
+        public CustomerCareController(
+            ICustomerProfileAppService profiles,
+            ICustomerTagAppService tags)
         {
             _profiles = profiles;
+            _tags = tags;
         }
 
         /// <summary>Admin: registered customers with a birthday in a month (1-12).</summary>
@@ -72,6 +76,55 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             return Ok(await _profiles.GetRemindersAsync(phone));
+        }
+
+        /// <summary>Admin/Cashier: tags for a customer phone number.</summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpGet("tags")]
+        public async Task<ActionResult<List<CustomerTagDto>>> GetTags(
+            [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _tags.GetTagsAsync(phone));
+        }
+
+        /// <summary>Admin/Cashier: add a tag to a customer phone.</summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpPost("tags")]
+        public async Task<ActionResult<CustomerTagDto>> AddTag(
+            [FromBody] CreateCustomerTagDto dto,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _tags.AddTagAsync(dto));
+        }
+
+        /// <summary>Admin/Cashier: remove a customer tag.</summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpDelete("tags/{id:guid}")]
+        public async Task<ActionResult> DeleteTag(
+            Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            await _tags.DeleteTagAsync(id);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Admin/Cashier: customer list as .xlsx — same filters as the admin
+        /// customer page (searchTerm, tag, inactiveOnly).
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpGet("customers/export")]
+        public async Task<ActionResult> ExportCustomers(
+            [FromQuery] string searchTerm = null,
+            [FromQuery] string tag = null,
+            [FromQuery] bool inactiveOnly = false,
+            CancellationToken cancellationToken = default)
+        {
+            var bytes = await _tags.ExportCustomersAsync(searchTerm, tag, inactiveOnly);
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"khach-hang-{DateTime.UtcNow.AddHours(7):yyyy-MM-dd}.xlsx");
         }
     }
 }

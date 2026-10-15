@@ -17,6 +17,16 @@
         <div class="mb-2">
             <strong>@Order.CustomerName</strong>
             <small class="text-muted">• @Order.CustomerPhone</small>
+            @* Item 149: customer tags visible to the kitchen. *@
+            @if (Order.CustomerTags != null && Order.CustomerTags.Count > 0)
+            {
+                <div>
+                    @foreach (var tag in Order.CustomerTags)
+                    {
+                        <span class="badge mr-1" style="background-color: @(string.IsNullOrWhiteSpace(tag.Color) ? "#6c757d" : tag.Color); color: #fff;">@tag.TagName</span>
+                    }
+                </div>
+            }
             @if (!string.IsNullOrWhiteSpace(Order.ShipperName))
             {
                 <div><small class="text-muted">🚚 @Order.ShipperName</small></div>

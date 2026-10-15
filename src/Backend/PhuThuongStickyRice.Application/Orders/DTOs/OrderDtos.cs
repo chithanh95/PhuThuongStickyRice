@@ -43,6 +43,13 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public string CustomerAddress { get; set; }
 
+        /// <summary>
+        /// Item 149: tags of this customer's phone (e.g. VIP) so staff see
+        /// them while processing the order. Admin endpoints only.
+        /// </summary>
+        public List<PhuThuongStickyRice.Application.Customer.CustomerTagDto> CustomerTags { get; set; }
+            = new List<PhuThuongStickyRice.Application.Customer.CustomerTagDto>();
+
         public string Notes { get; set; }
 
         /// <summary>
@@ -80,6 +87,14 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// Pre-order scheduled pickup time (UTC). Null = nhận ngay (ASAP).
         /// </summary>
         public DateTime? ScheduledFor { get; set; }
+
+        /// <summary>
+        /// Item 163: true when staff confirmed cash was collected (COD).
+        /// </summary>
+        public bool CashCollected { get; set; }
+
+        /// <summary>When cash collection was confirmed (UTC).</summary>
+        public DateTime? CashCollectedAt { get; set; }
 
         public decimal TotalAmount { get; set; }
 
@@ -480,6 +495,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public decimal TotalSpent { get; set; }
 
         public DateTime LastOrderAt { get; set; }
+
+        /// <summary>Item 149: tags attached to this customer phone.</summary>
+        public List<PhuThuongStickyRice.Application.Customer.CustomerTagDto> Tags { get; set; }
+            = new List<PhuThuongStickyRice.Application.Customer.CustomerTagDto>();
     }
 
     public class GetOrdersInput : PagedAndSortedResultRequestDto
@@ -502,6 +521,12 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// day (Vietnam timezone day boundaries).
         /// </summary>
         public DateTime? ToDate { get; set; }
+
+        /// <summary>
+        /// Item 163: filter by cash-collection state. true = đã thu,
+        /// false = chưa thu, null = tất cả.
+        /// </summary>
+        public bool? CashCollected { get; set; }
     }
 
     /// <summary>Wave 6c (item 33): admin edits the internal order note.</summary>
