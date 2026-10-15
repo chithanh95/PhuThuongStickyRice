@@ -18,6 +18,49 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         }
 
         /// <summary>
+        /// POST api/auth/login. Returns the token payload on success; throws
+        /// <see cref="InvalidOperationException"/> with the server's message otherwise.
+        /// </summary>
+        public async Task<CustomerAuthResult> LoginAsync(string usernameOrEmail, string password)
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "api/auth/login",
+                new { UsernameOrEmail = usernameOrEmail?.Trim(), Password = password });
+
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException(ExtractMessage(body));
+            }
+
+            return System.Text.Json.JsonSerializer.Deserialize<CustomerAuthResult>(
+                body,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+
+        /// <summary>
+        /// POST api/auth/register (customer self-registration by phone).
+        /// Returns the token payload on success; throws
+        /// <see cref="InvalidOperationException"/> with the server's message otherwise.
+        /// </summary>
+        public async Task<CustomerAuthResult> RegisterAsync(string phone, string password, string fullName)
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "api/auth/register",
+                new { Phone = phone?.Trim(), Password = password, FullName = fullName?.Trim() });
+
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException(ExtractMessage(body));
+            }
+
+            return System.Text.Json.JsonSerializer.Deserialize<CustomerAuthResult>(
+                body,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+
+        /// <summary>
         /// POST api/auth/change-password. Throws <see cref="InvalidOperationException"/>
         /// with the server's message when the change is rejected.
         /// </summary>
@@ -65,5 +108,19 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
             return trimmed;
         }
+    }
+
+    /// <summary>Token payload returned by api/auth/login and api/auth/register.</summary>
+    public sealed class CustomerAuthResult
+    {
+        public string AccessToken { get; set; }
+
+        public DateTimeOffset ExpiresAt { get; set; }
+
+        public string UserName { get; set; }
+
+        public string Email { get; set; }
+
+        public string[] Roles { get; set; }
     }
 }

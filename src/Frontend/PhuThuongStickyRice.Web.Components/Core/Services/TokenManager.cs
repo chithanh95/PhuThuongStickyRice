@@ -10,6 +10,12 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         Task<TokenModel> GetToken();
 
         Task RefreshToken();
+
+        /// <summary>Stores a newly issued access token (e.g. after login/register).</summary>
+        Task StoreTokenAsync(string accessToken, DateTimeOffset expiresAt);
+
+        /// <summary>Clears the stored token (logout).</summary>
+        Task ClearTokenAsync();
     }
 
     public class TokenModel

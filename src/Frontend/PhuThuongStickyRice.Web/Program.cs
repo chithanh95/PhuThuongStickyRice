@@ -87,6 +87,14 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Customer account: saved addresses (authenticated).
+            builder.Services.AddHttpClient<CustomerAddressService, CustomerAddressService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Wave 6b (item 28): policy pages (public GET, admin PUT via JWT).
             builder.Services.AddHttpClient<PolicyService, PolicyService>(client =>
             {

@@ -420,7 +420,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string deliverySlot = null,
             string pickupShipperName = null,
             string pickupShipperPhone = null,
-            DateTime? scheduledFor = null)
+            DateTime? scheduledFor = null,
+            Guid? customerUserId = null)
         {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
@@ -534,7 +535,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 deliverySlot,
                 pickupShipperName,
                 pickupShipperPhone,
-                scheduledFor);
+                scheduledFor,
+                customerUserId);
         }
 
         /// <summary>

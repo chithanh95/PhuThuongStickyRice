@@ -1,0 +1,344 @@
+@page "/tai-khoan"
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components.Authorization
+@using PhuThuongStickyRice.Web.Components.Core.Services
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject AuthService AuthService
+@inject CustomerAddressService AddressService
+@inject ITokenManager TokenManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<div class="container py-4" style="max-width: 720px;">
+    <h3 style="font-family: 'Lora', Georgia, serif; color: #763434;">Tài khoản của tôi</h3>
+
+    @if (!_checked)
+    {
+        <p class="text-muted"><em>Đang tải...</em></p>
+    }
+    else if (!_isAuthenticated)
+    {
+        <div class="alert alert-warning">
+            Bạn cần <a href="/dang-nhap?returnUrl=%2Ftai-khoan">đăng nhập</a> để xem trang này.
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Thông tin cá nhân</h5>
+                <p class="mb-1"><strong>Số điện thoại:</strong> @_userName</p>
+                @if (!string.IsNullOrWhiteSpace(_email))
+                {
+                    <p class="mb-1"><strong>Email:</strong> @_email</p>
+                }
+                <p class="mb-0"><strong>Vai trò:</strong> @(string.Join(", ", _roles))</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Đổi mật khẩu</h5>
+                @if (!string.IsNullOrEmpty(_pwError))
+                {
+                    <div class="alert alert-danger">@_pwError</div>
+                }
+                @if (!string.IsNullOrEmpty(_pwInfo))
+                {
+                    <div class="alert alert-success">@_pwInfo</div>
+                }
+                <div class="form-group">
+                    <label>Mật khẩu hiện tại</label>
+                    <input type="password" class="form-control" @bind="_currentPw" />
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu mới (ít nhất 6 ký tự)</label>
+                    <input type="password" class="form-control" @bind="_newPw" />
+                </div>
+                <button class="btn btn-primary" style="background:#6F0707;border-color:#6F0707;"
+                        @onclick="ChangePasswordAsync" disabled="@_pwBusy">
+                    @(_pwBusy ? "Đang đổi..." : "Đổi mật khẩu")
+                </button>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">📇 Địa chỉ đã lưu</h5>
+                    <button class="btn btn-sm btn-outline-primary" @onclick="StartAdd">+ Thêm địa chỉ</button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_addrError))
+                {
+                    <div class="alert alert-danger">@_addrError</div>
+                }
+
+                @if (_editing)
+                {
+                    <div class="border rounded p-3 mb-3" style="background:#FFFDF7;">
+                        <div class="form-row">
+                            <div class="form-group col-md-4">
+                                <label>Tên gợi nhớ</label>
+                                <input class="form-control" @bind="_form.Label" placeholder="Nhà, Công ty..." />
+                            </div>
+                            <div class="form-group col-md-8">
+                                <label>Tên người nhận *</label>
+                                <input class="form-control" @bind="_form.ReceiverName" placeholder="Nguyễn Văn A" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>SĐT người nhận *</label>
+                                <input class="form-control" @bind="_form.ReceiverPhone" inputmode="tel" placeholder="0901234567" />
+                            </div>
+                            <div class="form-group col-md-6">
+                                <div class="form-check mt-4 pt-2">
+                                    <input type="checkbox" class="form-check-input" id="addr-default" @bind="_form.IsDefault" />
+                                    <label class="form-check-label" for="addr-default">Đặt làm mặc định</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Địa chỉ chi tiết *</label>
+                            <input class="form-control" @bind="_form.AddressDetail" placeholder="Số nhà, đường, phường/xã..." />
+                        </div>
+                        <div class="form-group">
+                            <label>Ghi chú</label>
+                            <input class="form-control" @bind="_form.Note" placeholder="VD: gọi trước khi đến" />
+                        </div>
+                        <button class="btn btn-primary mr-2" style="background:#6F0707;border-color:#6F0707;"
+                                @onclick="SaveAddressAsync" disabled="@_addrBusy">
+                            @(_addrBusy ? "Đang lưu..." : "Lưu địa chỉ")
+                        </button>
+                        <button class="btn btn-link" @onclick="CancelEdit">Hủy</button>
+                    </div>
+                }
+
+                @if (_addresses == null)
+                {
+                    <p class="text-muted"><em>Đang tải địa chỉ...</em></p>
+                }
+                else if (_addresses.Count == 0 && !_editing)
+                {
+                    <p class="text-muted">Chưa có địa chỉ nào. Thêm địa chỉ để đặt hàng nhanh hơn.</p>
+                }
+                else
+                {
+                    @foreach (var a in _addresses)
+                    {
+                        <div class="border rounded p-3 mb-2 d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>
+                                    @(!string.IsNullOrWhiteSpace(a.Label) ? a.Label + " — " : "")@a.ReceiverName
+                                </strong>
+                                @if (a.IsDefault)
+                                {
+                                    <span class="badge badge-success ml-1">Mặc định</span>
+                                }
+                                <div class="text-muted small">@a.ReceiverPhone</div>
+                                <div>@a.AddressDetail</div>
+                                @if (!string.IsNullOrWhiteSpace(a.Note))
+                                {
+                                    <div class="text-muted small"><em>@a.Note</em></div>
+                                }
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                @if (!a.IsDefault)
+                                {
+                                    <button class="btn btn-outline-secondary" title="Đặt mặc định" @onclick="() => SetDefaultAsync(a.Id)">★</button>
+                                }
+                                <button class="btn btn-outline-primary" @onclick="() => StartEdit(a)">Sửa</button>
+                                <button class="btn btn-outline-danger" @onclick="() => DeleteAsync(a.Id)">Xóa</button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <button class="btn btn-outline-secondary" @onclick="LogoutAsync">Đăng xuất</button>
+    }
+</div>
+
+@code {
+    private bool _checked;
+    private bool _isAuthenticated;
+    private string _userName;
+    private string _email;
+    private string[] _roles = System.Array.Empty<string>();
+
+    private string _currentPw;
+    private string _newPw;
+    private string _pwError;
+    private string _pwInfo;
+    private bool _pwBusy;
+
+    private List<CustomerAddressModel> _addresses;
+    private bool _editing;
+    private Guid _editingId;
+    private CustomerAddressModel _form = new CustomerAddressModel();
+    private string _addrError;
+    private bool _addrBusy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+            if (_isAuthenticated)
+            {
+                _userName = authState.User.Identity.Name;
+                _email = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                _roles = authState.User.FindAll(System.Security.Claims.ClaimTypes.Role)
+                    .Select(c => c.Value).Distinct().ToArray();
+                _addresses = await AddressService.GetMineAsync();
+            }
+        }
+        catch (Exception)
+        {
+            _isAuthenticated = false;
+        }
+        finally
+        {
+            _checked = true;
+        }
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        _pwError = null;
+        _pwInfo = null;
+        if (string.IsNullOrWhiteSpace(_currentPw) || string.IsNullOrWhiteSpace(_newPw))
+        {
+            _pwError = "Vui lòng nhập đủ mật khẩu hiện tại và mật khẩu mới.";
+            return;
+        }
+        if (_newPw.Length < 6)
+        {
+            _pwError = "Mật khẩu mới phải có ít nhất 6 ký tự.";
+            return;
+        }
+
+        _pwBusy = true;
+        try
+        {
+            await AuthService.ChangePasswordAsync(_currentPw, _newPw);
+            _pwInfo = "Đổi mật khẩu thành công.";
+            _currentPw = _newPw = null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _pwError = ex.Message;
+        }
+        catch (Exception)
+        {
+            _pwError = "Đổi mật khẩu thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _pwBusy = false;
+        }
+    }
+
+    private void StartAdd()
+    {
+        _editing = true;
+        _editingId = Guid.Empty;
+        _form = new CustomerAddressModel { ReceiverPhone = _userName };
+        _addrError = null;
+    }
+
+    private void StartEdit(CustomerAddressModel a)
+    {
+        _editing = true;
+        _editingId = a.Id;
+        _form = new CustomerAddressModel
+        {
+            Id = a.Id,
+            Label = a.Label,
+            ReceiverName = a.ReceiverName,
+            ReceiverPhone = a.ReceiverPhone,
+            AddressDetail = a.AddressDetail,
+            Note = a.Note,
+            IsDefault = a.IsDefault
+        };
+        _addrError = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editing = false;
+        _addrError = null;
+    }
+
+    private async Task SaveAddressAsync()
+    {
+        _addrError = null;
+        if (string.IsNullOrWhiteSpace(_form.ReceiverName)
+            || string.IsNullOrWhiteSpace(_form.ReceiverPhone)
+            || string.IsNullOrWhiteSpace(_form.AddressDetail))
+        {
+            _addrError = "Vui lòng nhập tên người nhận, SĐT và địa chỉ.";
+            return;
+        }
+
+        _addrBusy = true;
+        try
+        {
+            if (_editingId == Guid.Empty)
+            {
+                await AddressService.CreateAsync(_form);
+            }
+            else
+            {
+                await AddressService.UpdateAsync(_editingId, _form);
+            }
+
+            _editing = false;
+            _addresses = await AddressService.GetMineAsync();
+        }
+        catch (Exception)
+        {
+            _addrError = "Lưu địa chỉ thất bại. Kiểm tra lại SĐT (VD: 0901234567).";
+        }
+        finally
+        {
+            _addrBusy = false;
+        }
+    }
+
+    private async Task SetDefaultAsync(Guid id)
+    {
+        try
+        {
+            await AddressService.SetDefaultAsync(id);
+            _addresses = await AddressService.GetMineAsync();
+        }
+        catch (Exception) { }
+    }
+
+    private async Task DeleteAsync(Guid id)
+    {
+        try
+        {
+            await AddressService.DeleteAsync(id);
+            _addresses = await AddressService.GetMineAsync();
+        }
+        catch (Exception) { }
+    }
+
+    private async Task LogoutAsync()
+    {
+        try
+        {
+            await TokenManager.ClearTokenAsync();
+        }
+        catch (Exception) { }
+
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}

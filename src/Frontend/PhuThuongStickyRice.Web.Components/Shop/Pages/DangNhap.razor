@@ -1,0 +1,231 @@
+@page "/dang-nhap"
+@using System.Text.RegularExpressions
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components.Authorization
+@using PhuThuongStickyRice.Web.Components.Core.Services
+@inject AuthService AuthService
+@inject ITokenManager TokenManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<div class="container py-5" style="max-width: 480px;">
+    <div class="text-center mb-4">
+        <h3 style="font-family: 'Lora', Georgia, serif; color: #763434;">Xôi Phú Thượng</h3>
+        <p class="text-muted">Đăng nhập để đặt xôi nhanh hơn</p>
+    </div>
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <button type="button" class="nav-link @(_tab == "login" ? "active" : "")" @onclick='() => _tab = "login"'>Đăng nhập</button>
+        </li>
+        <li class="nav-item">
+            <button type="button" class="nav-link @(_tab == "register" ? "active" : "")" @onclick='() => _tab = "register"'>Đăng ký</button>
+        </li>
+    </ul>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_info))
+    {
+        <div class="alert alert-success">@_info</div>
+    }
+
+    @if (_tab == "login")
+    {
+        <div class="form-group">
+            <label>Số điện thoại</label>
+            <input class="form-control" @bind="_phone" inputmode="tel" placeholder="0901234567" />
+        </div>
+        <div class="form-group">
+            <label>Mật khẩu</label>
+            <input type="password" class="form-control" @bind="_password" placeholder="Mật khẩu"
+                   @onkeyup="OnLoginKeyUp" />
+        </div>
+        <button class="btn btn-primary btn-block" style="background:#6F0707;border-color:#6F0707;"
+                @onclick="LoginAsync" disabled="@_busy">
+            @(_busy ? "Đang xử lý..." : "Đăng nhập")
+        </button>
+    }
+    else
+    {
+        <div class="form-group">
+            <label>Họ tên</label>
+            <input class="form-control" @bind="_fullName" placeholder="Nguyễn Văn A" />
+        </div>
+        <div class="form-group">
+            <label>Số điện thoại *</label>
+            <input class="form-control" @bind="_phone" inputmode="tel" placeholder="0901234567" />
+            <small class="text-muted">Dùng số điện thoại để đăng nhập những lần sau.</small>
+        </div>
+        <div class="form-group">
+            <label>Mật khẩu * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
+            <input type="password" class="form-control" @bind="_password" placeholder="Mật khẩu" />
+        </div>
+        <div class="form-group">
+            <label>Nhập lại mật khẩu *</label>
+            <input type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu" />
+        </div>
+        <button class="btn btn-primary btn-block" style="background:#6F0707;border-color:#6F0707;"
+                @onclick="RegisterAsync" disabled="@_busy">
+            @(_busy ? "Đang xử lý..." : "Đăng ký")
+        </button>
+    }
+
+    <div class="text-center mt-3">
+        <a href="/">← Về trang chủ</a>
+    </div>
+</div>
+
+@code {
+    private string _tab = "login";
+    private string _phone;
+    private string _password;
+    private string _confirmPassword;
+    private string _fullName;
+    private string _error;
+    private string _info;
+    private bool _busy;
+    private string _returnUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _returnUrl = GetQueryValue(Navigation.Uri, "returnUrl");
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? "/tai-khoan" : _returnUrl);
+            }
+        }
+        catch (Exception) { }
+    }
+
+    private static bool IsValidPhone(string phone) =>
+        !string.IsNullOrWhiteSpace(phone)
+        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+
+    private async Task OnLoginKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await LoginAsync();
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        _error = null;
+        _info = null;
+        if (!IsValidPhone(_phone))
+        {
+            _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            _error = "Vui lòng nhập mật khẩu.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await AuthService.LoginAsync(_phone, _password);
+            await FinishAuthAsync(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Không kết nối được tới máy chủ. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RegisterAsync()
+    {
+        _error = null;
+        _info = null;
+        if (!IsValidPhone(_phone))
+        {
+            _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_password) || _password.Length < 6)
+        {
+            _error = "Mật khẩu phải có ít nhất 6 ký tự.";
+            return;
+        }
+        if (_password != _confirmPassword)
+        {
+            _error = "Mật khẩu nhập lại không khớp.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await AuthService.RegisterAsync(_phone, _password, _fullName);
+            await FinishAuthAsync(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Không kết nối được tới máy chủ. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task FinishAuthAsync(CustomerAuthResult result)
+    {
+        if (result == null || string.IsNullOrWhiteSpace(result.AccessToken))
+        {
+            _error = "Đăng nhập thất bại. Vui lòng thử lại.";
+            return;
+        }
+
+        await TokenManager.StoreTokenAsync(result.AccessToken, result.ExpiresAt);
+        // Reload so the JWT auth state provider picks up the new token.
+        Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? "/tai-khoan" : _returnUrl, forceLoad: true);
+    }
+
+    private static string GetQueryValue(string uri, string key)
+    {
+        var question = uri.IndexOf('?');
+        if (question < 0)
+        {
+            return null;
+        }
+
+        var query = uri.Substring(question + 1);
+        foreach (var pair in query.Split('&', System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            if (string.Equals(Uri.UnescapeDataString(pair.Substring(0, eq)), key, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
+            }
+        }
+
+        return null;
+    }
+}

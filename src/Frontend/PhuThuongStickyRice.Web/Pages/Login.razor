@@ -1,4 +1,5 @@
 @page "/login"
+@using System.Linq
 @using System.Net.Http.Json
 @using PhuThuongStickyRice.Web.ConfigurationOptions
 @using PhuThuongStickyRice.Web.Services
@@ -93,8 +94,20 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated == true)
         {
-            Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? "/dashboard" : _returnUrl);
+            Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? DefaultLanding(authState) : _returnUrl);
         }
+    }
+
+    /// <summary>Customers land on the storefront; staff land on the dashboard.</summary>
+    private static string DefaultLanding(Microsoft.AspNetCore.Components.Authorization.AuthenticationState authState)
+    {
+        var user = authState.User;
+        if (user.IsInRole("Admin") || user.IsInRole("Cashier") || user.IsInRole("Kitchen"))
+        {
+            return "/dashboard";
+        }
+
+        return "/";
     }
 
     private async Task DismissHint()
@@ -226,6 +239,13 @@
     {
         await TokenManager.StoreTokenAsync(login.AccessToken, login.ExpiresAt);
         AuthStateProvider.NotifyUserAuthentication();
+        var isStaff = login.Roles != null
+            && login.Roles.Any(r => r == "Admin" || r == "Cashier" || r == "Kitchen");
+        if (!isStaff && string.IsNullOrWhiteSpace(_returnUrl))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
 
         // Item 99: dashboard shows a warning banner for a never-seen IP.
         try

@@ -18,6 +18,8 @@
 @inject NavigationManager Navigation
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @inject ShopI18n I18n
+@inject CustomerAddressService CustomerAddressService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
 <h3>@I18n.T("checkout")</h3>
 
@@ -369,6 +371,21 @@ else
                             </select>
                         </div>
                     }
+                    @if (_savedAddresses != null && _savedAddresses.Count > 0)
+                    {
+                        <div class="form-group">
+                            <label>📇 Chọn địa chỉ đã lưu</label>
+                            <select class="form-control" @onchange="OnSavedAddressChanged">
+                                <option value="">— Nhập tay —</option>
+                                @foreach (var a in _savedAddresses)
+                                {
+                                    <option value="@a.Id">
+                                        @(!string.IsNullOrWhiteSpace(a.Label) ? a.Label + ": " : "")@a.ReceiverName — @a.AddressDetail
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                    }
                     <div class="form-group">
                         <label>@I18n.T("full_name") *</label>
                         <input class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
@@ -709,6 +726,30 @@ else
     private readonly CreateOrderModel _order = new CreateOrderModel();
     private PlacedOrderModel _placedOrder;
 
+    /// <summary>Customer's saved addresses (empty when anonymous).</summary>
+    private List<CustomerAddressModel> _savedAddresses = new List<CustomerAddressModel>();
+
+    private void OnSavedAddressChanged(ChangeEventArgs e)
+    {
+        if (!Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            return;
+        }
+
+        var addr = _savedAddresses.FirstOrDefault(a => a.Id == id);
+        if (addr == null)
+        {
+            return;
+        }
+
+        _order.CustomerName = addr.ReceiverName;
+        _order.CustomerPhone = addr.ReceiverPhone;
+        if (!string.IsNullOrWhiteSpace(addr.AddressDetail))
+        {
+            _order.CustomerAddress = addr.AddressDetail;
+        }
+    }
+
     // Item 91: happy-hour promotion auto-applied by the server.
     private PhuThuongStickyRice.Web.Components.Admin.Models.PromotionModel _activePromotion;
     private decimal _promotionDiscountPreview =>
@@ -898,6 +939,25 @@ else
         catch (Exception)
         {
             _branches = new System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
+        }
+
+        // Customer account: load saved addresses for quick-select.
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                _savedAddresses = await CustomerAddressService.GetMineAsync();
+                var phone = authState.User.Identity.Name;
+                if (IsValidPhone(phone) && string.IsNullOrWhiteSpace(_order.CustomerPhone))
+                {
+                    _order.CustomerPhone = phone;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            _savedAddresses = new List<CustomerAddressModel>();
         }
 
         RefreshMinOrderState();
