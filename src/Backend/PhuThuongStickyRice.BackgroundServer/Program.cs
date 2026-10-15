@@ -52,6 +52,7 @@ namespace PhuThuongStickyRice.BackgroundServer
                 services.AddNotificationServices(appSettings.Notification);
 
                 services.AddHostedService<SendEmailWorker>();
+                services.AddHostedService<WeeklyReportWorker>();
             });
     }
 }

@@ -74,6 +74,13 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             // Wave 6d (item 39): anti-spam per-phone daily cap.
             builder.Property(x => x.MaxOrdersPerPhonePerDay).IsRequired();
+
+            // Item 138: weekly owner report via Zalo OA (token is
+            // data-protected at rest, hence the 1000 headroom).
+            builder.Property(x => x.ZaloOaAccessToken).HasMaxLength(1000);
+            builder.Property(x => x.OwnerPhone).HasMaxLength(30);
+            builder.Property(x => x.OwnerZaloUserId).HasMaxLength(100);
+            builder.Property(x => x.LastWeeklyReportSentWeek).HasMaxLength(20);
         }
     }
 }

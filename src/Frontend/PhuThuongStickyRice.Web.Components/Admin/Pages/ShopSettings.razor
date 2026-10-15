@@ -126,6 +126,25 @@ else
                 </ol>
             </div>
 
+            <h5 class="mt-4">Báo cáo tuần qua Zalo (mục 138)</h5>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Zalo OA Access Token</label>
+                    <input type="password" class="form-control" @bind="_model.ZaloOaAccessToken" autocomplete="off" />
+                    <small class="form-text text-muted">Token của Zalo Official Account. Để trống = chỉ xem báo cáo trong admin + nút "Sao chép" (không giả vờ đã gửi).</small>
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Zalo User ID của chủ quán</label>
+                    <input class="form-control" @bind="_model.OwnerZaloUserId" placeholder="VD: 1234567890123456789" />
+                    <small class="form-text text-muted">Zalo OA gửi tin theo user ID (không phải SĐT). Chủ quán cần follow OA 1 lần để lấy được ID.</small>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>SĐT chủ quán</label>
+                <input class="form-control" @bind="_model.OwnerPhone" placeholder="0901 234 567" />
+                <small class="form-text text-muted">Dùng khi chưa có Zalo User ID. Báo cáo tự gửi 08:00 sáng thứ 2 hàng tuần (cần chạy BackgroundServer).</small>
+            </div>
+
             <h5 class="mt-4">Chuyển khoản & đặt cọc</h5>
             <div class="form-group">
                 <label>Tự động hủy đơn chuyển khoản chưa thanh toán sau (phút)</label>

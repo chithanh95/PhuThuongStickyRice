@@ -244,6 +244,45 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public decimal DailyTargetAmount { get; set; }
 
+        // ---- Item 138: weekly owner report via Zalo OA ----
+
+        /// <summary>
+        /// Zalo OA access token used to send the Monday-morning weekly
+        /// report to the owner. Empty = report is shown in admin with a
+        /// copy button only (no pretend-send). Stored data-protected.
+        /// </summary>
+        public string ZaloOaAccessToken { get; set; }
+
+        /// <summary>Owner phone number (displayed in the admin UI, used as
+        /// a fallback recipient identifier).</summary>
+        public string OwnerPhone { get; set; }
+
+        /// <summary>
+        /// Zalo user id of the shop owner. Zalo OA messages are addressed
+        /// by user id, not phone number — the owner must follow/interact
+        /// with the OA once for the id to be obtainable.
+        /// </summary>
+        public string OwnerZaloUserId { get; set; }
+
+        /// <summary>
+        /// Idempotency marker for the Monday worker ("yyyy-MM-dd" of the
+        /// reported week's Monday). Prevents double-sends after restarts.
+        /// </summary>
+        public string LastWeeklyReportSentWeek { get; set; }
+
+        // ---- Item 180: simple "new order" webhook (báo đơn mới) ----
+
+        /// <summary>
+        /// Item 180: URL nhận thông báo khi có đơn mới. POST JSON
+        /// {maDon, sdt, tongTien, trangThai, thoiGian}. Empty = disabled.
+        /// (Hệ thống WebhookEndpoint generic của item 110 vẫn hoạt động song
+        /// song — đây là chế độ đơn giản 1 URL cho chủ quán không rành kỹ thuật.)
+        /// </summary>
+        public string NewOrderWebhookUrl { get; set; }
+
+        /// <summary>Item 180: bật/tắt webhook báo đơn mới.</summary>
+        public bool NewOrderWebhookEnabled { get; set; }
+
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting

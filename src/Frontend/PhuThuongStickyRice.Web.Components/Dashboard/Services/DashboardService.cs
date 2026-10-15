@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Web.Components.Admin.Models;
 using PhuThuongStickyRice.Web.Components.Core.Services;
+using PhuThuongStickyRice.Web.Components.Dashboard.Models;
 using PhuThuongStickyRice.Web.Components.Orders.Models;
 using System;
 using System.Collections.Generic;
@@ -37,6 +38,19 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
         {
             return await GetAsync<TodayVsYesterdayModel>(
                 "api/dashboard/today-vs-yesterday?_=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        }
+
+        /// <summary>Item 138: aggregated numbers for the last full week.</summary>
+        public async Task<WeeklyReportModel> GetWeeklyReportAsync()
+        {
+            return await GetAsync<WeeklyReportModel>(
+                "api/admin/reports/weekly?_=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        }
+
+        /// <summary>Item 138: trigger a Zalo OA delivery of the weekly report (Admin).</summary>
+        public async Task<WeeklyReportSendResultModel> SendWeeklyReportAsync()
+        {
+            return await PostAsync<WeeklyReportSendResultModel>("api/admin/reports/weekly/send");
         }
 
         private static string BuildUrl(string baseUrl, DateTime? from, DateTime? to)

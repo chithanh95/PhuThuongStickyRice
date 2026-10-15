@@ -232,5 +232,32 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         /// </summary>
         [Range(0, 1000)]
         public int MaxOrdersPerPhonePerDay { get; set; } = 10;
+
+        // ---- Item 138: weekly owner report via Zalo OA ----
+
+        /// <summary>
+        /// Zalo OA access token for the Monday weekly report. Empty =
+        /// report is shown in admin with a copy button only.
+        /// </summary>
+        [StringLength(1000)]
+        public string ZaloOaAccessToken { get; set; }
+
+        /// <summary>Owner phone number.</summary>
+        [StringLength(30)]
+        public string OwnerPhone { get; set; }
+
+        /// <summary>
+        /// Zalo user id of the owner (OA messages are addressed by user id,
+        /// not phone). The owner must follow the OA once.
+        /// </summary>
+        [StringLength(100)]
+        public string OwnerZaloUserId { get; set; }
+
+        /// <summary>
+        /// Idempotency marker for the Monday worker ("yyyy-MM-dd" of the
+        /// reported week's Monday). Managed by the system; admin read-only.
+        /// </summary>
+        [StringLength(20)]
+        public string LastWeeklyReportSentWeek { get; set; }
     }
 }

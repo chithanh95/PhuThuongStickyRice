@@ -175,6 +175,11 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.GoogleMapsUrl = TrimOrNull(dto.GoogleMapsUrl);
             entity.FacebookPageAccessToken = ProtectSecret(dto.FacebookPageAccessToken);
             entity.FacebookVerifyToken = TrimOrNull(dto.FacebookVerifyToken);
+            // Item 138: weekly owner report via Zalo OA (token encrypted at rest).
+            entity.ZaloOaAccessToken = ProtectSecret(dto.ZaloOaAccessToken);
+            entity.OwnerPhone = TrimOrNull(dto.OwnerPhone);
+            entity.OwnerZaloUserId = TrimOrNull(dto.OwnerZaloUserId);
+            entity.LastWeeklyReportSentWeek = TrimOrNull(dto.LastWeeklyReportSentWeek);
             entity.AcceptingOrders = dto.AcceptingOrders;
             entity.PausedReason = TrimOrNull(dto.PausedReason);
             // Wave 6d (item 39): 0 = unlimited, otherwise cap at 1000.
@@ -313,6 +318,11 @@ namespace PhuThuongStickyRice.Application.Shop
                 GoogleMapsUrl = entity.GoogleMapsUrl,
                 FacebookPageAccessToken = UnprotectSecret(entity.FacebookPageAccessToken),
                 FacebookVerifyToken = entity.FacebookVerifyToken,
+                // Item 138: weekly owner report via Zalo OA.
+                ZaloOaAccessToken = UnprotectSecret(entity.ZaloOaAccessToken),
+                OwnerPhone = entity.OwnerPhone,
+                OwnerZaloUserId = entity.OwnerZaloUserId,
+                LastWeeklyReportSentWeek = entity.LastWeeklyReportSentWeek,
                 AcceptingOrders = entity.AcceptingOrders,
                 PausedReason = entity.PausedReason,
                 // Wave 6d (item 39): backfilled to 10 for pre-existing rows.

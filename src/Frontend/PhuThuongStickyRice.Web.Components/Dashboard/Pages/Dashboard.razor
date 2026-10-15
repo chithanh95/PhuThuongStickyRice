@@ -3,6 +3,7 @@
 @implements IDisposable
 @using System.Threading
 @using Microsoft.JSInterop
+@using PhuThuongStickyRice.Web.Components.Dashboard.Models
 @using PhuThuongStickyRice.Web.Components.Dashboard.Services
 @using PhuThuongStickyRice.Web.Components.Orders.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Models
@@ -378,6 +379,69 @@ else
         </div>
     </div>
 
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+        <div class="card mb-3">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
+                <span>📊 Báo cáo tuần — gửi Zalo chủ quán</span>
+                <div class="mt-1 mt-md-0">
+                    <button class="btn btn-sm btn-outline-secondary mr-2" @onclick="CopyWeeklyReportAsync" disabled="@(_weeklyReport == null)">📋 Sao chép nội dung</button>
+                    <button class="btn btn-sm btn-primary" @onclick="SendWeeklyReportAsync" disabled="@(_sendingWeekly || _weeklyReport == null)">
+                        @(_sendingWeekly ? "Đang gửi..." : "📤 Gửi qua Zalo")
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(_weeklySendNote))
+                {
+                    <div class="alert @(_weeklySendIsError ? "alert-warning" : "alert-success") mb-2">@_weeklySendNote</div>
+                }
+                @if (!string.IsNullOrEmpty(_weeklyCopied))
+                {
+                    <div class="alert alert-info py-1 mb-2">@_weeklyCopied</div>
+                }
+                @if (_weeklyReport == null)
+                {
+                    <p class="text-muted mb-0"><em>Đang tải...</em></p>
+                }
+                else
+                {
+                    <h5 class="mb-2">@_weeklyReport.WeekLabel</h5>
+                    <div class="row text-center mb-2">
+                        <div class="col-6 col-md-3 mb-2">
+                            <h4 class="text-primary mb-0">@FormatPrice(_weeklyReport.TotalRevenue)</h4>
+                            <small class="text-muted">Doanh thu @ChangeBadgeHtml(_weeklyReport.RevenueChangePercent)</small>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <h4 class="mb-0">@_weeklyReport.OrderCount</h4>
+                            <small class="text-muted">Số đơn @ChangeBadgeHtml(_weeklyReport.OrderChangePercent)</small>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <h4 class="text-danger mb-0">@_weeklyReport.CancelledCount</h4>
+                            <small class="text-muted">Đơn hủy</small>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <h4 class="mb-0">@FormatPrice(_weeklyReport.AverageOrderValue)</h4>
+                            <small class="text-muted">Giá trị TB/đơn</small>
+                        </div>
+                    </div>
+                    @if (_weeklyReport.TopProducts.Count > 0)
+                    {
+                        <strong>🏆 Món bán chạy:</strong>
+                        <ol class="mb-0 mt-1">
+                            @foreach (var p in _weeklyReport.TopProducts)
+                            {
+                                <li>@p.ProductName — <strong>@p.Quantity</strong> suất</li>
+                            }
+                        </ol>
+                    }
+                }
+                <small class="text-muted d-block mt-2">Tự động gửi 08:00 sáng thứ 2 hàng tuần (cần chạy BackgroundServer). Cấu hình token ở Cài đặt cửa hàng → "Báo cáo tuần qua Zalo".</small>
+            </div>
+        </div>
+        </Authorized>
+    </AuthorizeView>
+
     <div class="card">
         <div class="card-header">
             Đơn hàng mới nhất
@@ -426,6 +490,13 @@ else
 
     // Wave 6d (item 36): today-vs-yesterday comparison card.
     private TodayVsYesterdayModel _todayVsYesterday;
+
+    // Item 138: weekly owner report card (Admin-only API).
+    private WeeklyReportModel _weeklyReport;
+    private bool _sendingWeekly;
+    private string _weeklySendNote;
+    private bool _weeklySendIsError;
+    private string _weeklyCopied;
     private bool _autoRefresh = true;
     private bool _refreshing;
     private DateTime _lastUpdated = DateTime.Now;
@@ -496,6 +567,16 @@ else
             catch (Exception)
             {
                 _todayVsYesterday = null;
+            }
+
+            // Item 138: weekly report card (fail-soft; Admin-only API).
+            try
+            {
+                _weeklyReport = await DashboardService.GetWeeklyReportAsync();
+            }
+            catch (Exception)
+            {
+                _weeklyReport = null;
             }
         }
         catch (Exception)
@@ -645,6 +726,80 @@ else
         {
             _refreshing = false;
         }
+    }
+
+
+    {
+        if (_stats == null) return;
+        var text = $"Hôm nay có {_stats.TotalOrders} đơn hàng, " +
+                   $"doanh thu {(long)_stats.TotalRevenue:N0} đồng, " +
+                   $"{_stats.PendingOrders} đơn đang chờ xử lý.";
+        try
+        {
+            if (!ok)
+            {
+                // Trình duyệt không hỗ trợ đọc giọng nói.
+            }
+        }
+        StateHasChanged();
+    }
+
+    {
+        try { await JSRuntime.InvokeVoidAsync("interop.stopSpeak"); } catch { }
+    }
+
+    // Item 138: weekly owner report actions.
+    private async Task SendWeeklyReportAsync()
+    {
+        _sendingWeekly = true;
+        _weeklySendNote = null;
+        _weeklyCopied = null;
+        try
+        {
+            var result = await DashboardService.SendWeeklyReportAsync();
+            _weeklySendIsError = !result.Sent;
+            _weeklySendNote = result.Note;
+        }
+        catch (Exception ex)
+        {
+            _weeklySendIsError = true;
+            _weeklySendNote = "Gửi thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _sendingWeekly = false;
+        }
+    }
+
+    private async Task CopyWeeklyReportAsync()
+    {
+        if (_weeklyReport == null || string.IsNullOrEmpty(_weeklyReport.MessageText))
+        {
+            return;
+        }
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _weeklyReport.MessageText);
+            _weeklyCopied = "Đã sao chép nội dung báo cáo.";
+        }
+        catch (Exception)
+        {
+            _weeklyCopied = null;
+        }
+    }
+
+    private static MarkupString ChangeBadgeHtml(decimal? change)
+    {
+        if (!change.HasValue)
+        {
+            return new MarkupString("<span class=\"badge badge-secondary\">chưa có số liệu tuần trước</span>");
+        }
+
+        var arrow = change.Value > 0 ? "▲" : change.Value < 0 ? "▼" : "＝";
+        var sign = change.Value > 0 ? "+" : "";
+        var cls = change.Value > 0 ? "badge-success" : change.Value < 0 ? "badge-danger" : "badge-secondary";
+        return new MarkupString($"<span class=\"badge {cls}\">{arrow}{sign}{change.Value:N1}%</span>");
     }
 
     private async Task RefreshLoopAsync(CancellationToken token)
