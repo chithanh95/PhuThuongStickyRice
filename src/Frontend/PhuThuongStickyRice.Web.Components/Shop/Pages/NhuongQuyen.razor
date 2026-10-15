@@ -1,0 +1,214 @@
+@page "/nhuong-quyen"
+@using System
+@using System.Text.RegularExpressions
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject ShopService ShopService
+
+<div class="nq-hero">
+    <div class="xo-container">
+        <h1 class="nq-title">Nhượng quyền Xôi Phú Thượng</h1>
+        <div class="xo-sec-div"><span></span><em>Cùng lan tỏa hương vị xôi Việt</em><span></span></div>
+        <p class="nq-tagline">
+            Mô hình quán xôi tinh gọn, vốn đầu tư hợp lý, hoàn vốn nhanh —
+            phù hợp mặt bằng nhỏ, khu dân cư, trường học, văn phòng.
+        </p>
+        <a href="#nq-form" class="xo-btn xo-btn-red nq-cta">Đăng ký tư vấn</a>
+    </div>
+</div>
+
+<div class="xo-container nq-section">
+    <h2 class="xo-sec-title">Quyền lợi đối tác</h2>
+    <div class="xo-sec-div"><span></span><em>Đồng hành từ A đến Z</em><span></span></div>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="nq-card">
+                <div class="nq-card-icon">📋</div>
+                <h4>Công thức chuẩn vị</h4>
+                <p>Chuyển giao toàn bộ công thức, định lượng và quy trình chế biến xôi Phú Thượng.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="nq-card">
+                <div class="nq-card-icon">🎓</div>
+                <h4>Đào tạo tận nơi</h4>
+                <p>Đào tạo đội ngũ 7–10 ngày tại quán chính, kèm tài liệu vận hành chi tiết.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="nq-card">
+                <div class="nq-card-icon">📦</div>
+                <h4>Nguồn nguyên liệu</h4>
+                <p>Kết nối nhà cung cấp nếp, đậu, thịt giá gốc, đảm bảo chất lượng đồng đều.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="nq-card">
+                <div class="nq-card-icon">🎨</div>
+                <h4>Thiết kế & setup</h4>
+                <p>Hỗ trợ thiết kế mặt bằng, biển hiệu, quầy kệ theo nhận diện thương hiệu.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="nq-card">
+                <div class="nq-card-icon">📣</div>
+                <h4>Marketing khai trương</h4>
+                <p>Kế hoạch truyền thông khai trương: banner, fanpage, quảng cáo khu vực.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="nq-card">
+                <div class="nq-card-icon">💻</div>
+                <h4>Phần mềm bán hàng</h4>
+                <p>Bàn giao website đặt món + quản trị đơn hàng, doanh thu theo thời gian thực.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="nq-section nq-cream">
+    <div class="xo-container">
+        <h2 class="xo-sec-title">Chi phí đầu tư dự kiến</h2>
+        <div class="xo-sec-div"><span></span><em>Minh bạch từ đầu</em><span></span></div>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <table class="table nq-table">
+                    <tbody>
+                        <tr><td>Phí nhượng quyền thương hiệu</td><td class="text-right"><strong>Liên hệ</strong></td></tr>
+                        <tr><td>Setup quầy kệ, biển hiệu, thiết bị</td><td class="text-right"><strong>80 – 150 triệu</strong></td></tr>
+                        <tr><td>Nguyên liệu & vốn lưu động ban đầu</td><td class="text-right"><strong>20 – 40 triệu</strong></td></tr>
+                        <tr><td>Đào tạo & chuyển giao công thức</td><td class="text-right"><strong class="nq-free">Miễn phí</strong></td></tr>
+                        <tr class="nq-total"><td><strong>Tổng vốn dự kiến</strong></td><td class="text-right"><strong>100 – 200 triệu</strong></td></tr>
+                    </tbody>
+                </table>
+                <p class="text-muted small text-center">* Chi phí thực tế tùy diện tích mặt bằng và khu vực. Để lại thông tin để được tư vấn chi tiết.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="xo-container nq-section">
+    <h2 class="xo-sec-title">Quy trình 5 bước</h2>
+    <div class="xo-sec-div"><span></span><em>Nhanh gọn trong 30 ngày</em><span></span></div>
+    <div class="nq-steps">
+        <div class="nq-step"><div class="nq-step-num">1</div><h5>Đăng ký tư vấn</h5><p>Để lại thông tin, đội ngũ liên hệ trong 24h.</p></div>
+        <div class="nq-step"><div class="nq-step-num">2</div><h5>Khảo sát mặt bằng</h5><p>Đánh giá vị trí, lưu lượng khách tiềm năng.</p></div>
+        <div class="nq-step"><div class="nq-step-num">3</div><h5>Ký hợp đồng</h5><p>Thống nhất điều khoản, thanh toán phí nhượng quyền.</p></div>
+        <div class="nq-step"><div class="nq-step-num">4</div><h5>Setup & đào tạo</h5><p>Thi công quầy kệ, đào tạo đội ngũ 7–10 ngày.</p></div>
+        <div class="nq-step"><div class="nq-step-num">5</div><h5>Khai trương</h5><p>Hỗ trợ truyền thông và vận hành tuần đầu.</p></div>
+    </div>
+</div>
+
+<div class="nq-section nq-cream" id="nq-form">
+    <div class="xo-container">
+        <h2 class="xo-sec-title">Đăng ký tư vấn nhượng quyền</h2>
+        <div class="xo-sec-div"><span></span><em>Miễn phí, không ràng buộc</em><span></span></div>
+        <div class="row justify-content-center">
+            <div class="col-md-7">
+                @if (_submitted)
+                {
+                    <div class="alert alert-success">
+                        <h4>Cảm ơn bạn đã quan tâm!</h4>
+                        <p class="mb-0">
+                            Xôi Phú Thượng đã nhận được đăng ký của bạn và sẽ liên hệ qua số
+                            <strong>@_model.CustomerPhone</strong> trong 24 giờ làm việc.
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="alert alert-danger">@_error</div>
+                    }
+                    <div class="card nq-form-card">
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Họ tên *</label>
+                                <input class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
+                                @if (!string.IsNullOrEmpty(_nameError)) { <small class="text-danger">@_nameError</small> }
+                            </div>
+                            <div class="form-group">
+                                <label>Số điện thoại *</label>
+                                <input class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
+                                @if (!string.IsNullOrEmpty(_phoneError)) { <small class="text-danger">@_phoneError</small> }
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label>Tỉnh / Thành phố dự kiến mở *</label>
+                                    <input class="form-control @FieldClass(_provinceError)" @bind="_model.EventLocation" placeholder="VD: Hà Nội" />
+                                    @if (!string.IsNullOrEmpty(_provinceError)) { <small class="text-danger">@_provinceError</small> }
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Vốn dự kiến</label>
+                                    <select class="form-control" @bind="_model.Budget">
+                                        <option value="">— Chọn mức vốn —</option>
+                                        <option>Dưới 100 triệu</option>
+                                        <option>100 – 200 triệu</option>
+                                        <option>200 – 500 triệu</option>
+                                        <option>Trên 500 triệu</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Lời nhắn</label>
+                                <textarea class="form-control" rows="3" @bind="_model.Notes"
+                                          placeholder="VD: Tôi có mặt bằng 30m² ở mặt phố, muốn tìm hiểu thêm..."></textarea>
+                            </div>
+                            <button class="btn btn-block nq-submit" @onclick="SubmitAsync" disabled="@_submitting">
+                                @(_submitting ? "Đang gửi..." : "Gửi đăng ký tư vấn")
+                            </button>
+                            <p class="text-muted small text-center mt-2 mb-0">Thông tin của bạn được bảo mật tuyệt đối.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly QuoteRequestModel _model = new QuoteRequestModel { Quantity = 1, QuoteType = "NhuongQuyen" };
+    private bool _submitting;
+    private bool _submitted;
+    private string _error;
+    private string _nameError;
+    private string _phoneError;
+    private string _provinceError;
+
+    private async Task SubmitAsync()
+    {
+        _error = null;
+        _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
+        _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
+        _provinceError = string.IsNullOrWhiteSpace(_model.EventLocation) ? "Vui lòng nhập tỉnh/thành phố dự kiến." : null;
+
+        if (_nameError != null || _phoneError != null || _provinceError != null)
+        {
+            _error = "Vui lòng kiểm tra lại các thông tin được đánh dấu.";
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            await ShopService.CreateQuoteAsync(_model);
+            _submitted = true;
+        }
+        catch (Exception)
+        {
+            _error = "Gửi đăng ký thất bại. Vui lòng thử lại hoặc gọi trực tiếp cho shop.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private static string FieldClass(string error) => string.IsNullOrEmpty(error) ? null : "is-invalid";
+
+    private static bool IsValidPhone(string phone) =>
+        !string.IsNullOrWhiteSpace(phone)
+        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+}

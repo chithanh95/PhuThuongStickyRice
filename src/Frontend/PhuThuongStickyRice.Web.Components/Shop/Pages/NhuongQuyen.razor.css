@@ -1,0 +1,249 @@
+/* Nhượng quyền page — matches landing template tokens (Lora/Nunito,
+   #D08B8B #6F0707 #763434 #F5E9D4 #9C682C #FFBA31). Scoped to this page. */
+
+.nq-hero {
+    --xo-red: #6F0707;
+    --xo-title: #763434;
+    --xo-cream: #F5E9D4;
+    --xo-gold: #9C682C;
+    --xo-orange: #FFBA31;
+    --xo-orange-h: #F7A606;
+    background: linear-gradient(135deg, #a0522d 0%, #6F0707 100%);
+    color: #ffffff;
+    text-align: center;
+    padding: 70px 20px 60px;
+    font-family: 'Lora', Georgia, serif;
+}
+
+.nq-title {
+    font-size: 44px;
+    font-weight: 700;
+    margin: 0 0 14px;
+}
+
+.nq-tagline {
+    font-size: 18px;
+    max-width: 640px;
+    margin: 18px auto 26px;
+    line-height: 1.6;
+    opacity: 0.95;
+}
+
+.nq-cta {
+    display: inline-block;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    padding: 14px 40px;
+    border-radius: 8px;
+    background: #FFBA31;
+    color: #fff;
+    text-decoration: none;
+    border: 3px double #9C682C;
+}
+
+.nq-cta:hover {
+    background: #F7A606;
+    color: #fff;
+    text-decoration: none;
+}
+
+.nq-section {
+    padding: 56px 0;
+}
+
+.nq-cream {
+    background: #F5E9D4;
+}
+
+.xo-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.xo-sec-title {
+    font-family: 'Lora', serif;
+    font-size: 40px;
+    font-weight: 700;
+    color: #763434;
+    margin: 0 0 14px;
+    text-align: center;
+}
+
+.xo-sec-div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 30px;
+}
+
+.xo-sec-div span {
+    display: block;
+    width: 170px;
+    height: 1.4px;
+    background: #9C682C;
+}
+
+.xo-sec-div em {
+    font-style: normal;
+    font-family: 'Nunito', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #9C682C;
+    white-space: nowrap;
+}
+
+.nq-hero .xo-sec-div span {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.nq-hero .xo-sec-div em {
+    color: #ffffff;
+}
+
+.nq-card {
+    background: #ffffff;
+    border: 4px double rgba(111, 7, 7, 0.49);
+    border-radius: 50px 0 50px 0;
+    padding: 28px 22px;
+    text-align: center;
+    height: 100%;
+}
+
+.nq-card-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.nq-card h4 {
+    font-family: 'Lora', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #763434;
+    margin-bottom: 8px;
+}
+
+.nq-card p {
+    font-size: 15px;
+    color: #444;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.nq-table {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.nq-table td {
+    padding: 14px 18px;
+    font-size: 16px;
+    border-color: #eee;
+}
+
+.nq-free {
+    color: #1a9e4b;
+}
+
+.nq-total td {
+    background: #FFF1D4;
+    font-size: 18px;
+}
+
+.nq-steps {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.nq-step {
+    flex: 1 1 180px;
+    max-width: 210px;
+    text-align: center;
+    background: #ffffff;
+    border: 2px solid #9C682C;
+    border-radius: 16px;
+    padding: 22px 14px;
+}
+
+.nq-step-num {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    background: #6F0707;
+    color: #fff;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nq-step h5 {
+    font-family: 'Lora', serif;
+    font-weight: 700;
+    color: #763434;
+    font-size: 17px;
+    margin-bottom: 6px;
+}
+
+.nq-step p {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+}
+
+.nq-form-card {
+    border: 3px double #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+.nq-form-card label {
+    font-family: 'Lora', serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #763434;
+}
+
+.nq-form-card .form-control {
+    border-radius: 15px;
+}
+
+.nq-submit {
+    background: #FFBA31;
+    color: #fff;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    border: 3px double #9C682C;
+    border-radius: 15px;
+    padding: 12px;
+}
+
+.nq-submit:hover {
+    background: #F7A606;
+    color: #fff;
+}
+
+@media (max-width: 767px) {
+    .nq-title {
+        font-size: 32px;
+    }
+
+    .xo-sec-title {
+        font-size: 30px;
+    }
+
+    .xo-sec-div span {
+        width: 60px;
+    }
+}
