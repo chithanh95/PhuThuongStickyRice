@@ -1,161 +1,99 @@
-# Solution Structure
-![alt text](/docs/imgs/code-solution-structure.png)
+# PhuThuongStickyRice — Cấu trúc solution & quy ước phát triển
 
-# Add & Run Database Migration
+Tài liệu kỹ thuật cho developer. Hướng dẫn deploy IIS xem `../deploy/iis/README.md`.
 
-- Update Connection Strings:
+## Bố cục solution (`src/PhuThuongStickyRice.sln`)
 
-  | Project  | Configuration File | Configuration Key |
-  | -------- | ------------------ | ----------------- |
-  | PhuThuongStickyRice.Migrator | [appsettings.json](PhuThuongStickyRice.Migrator/appsettings.json) | ConnectionStrings:PhuThuongStickyRice |
-  | PhuThuongStickyRice.BackgroundServer | [appsettings.json](PhuThuongStickyRice.BackgroundServer/appsettings.json) | ConnectionStrings:PhuThuongStickyRice |
-  | PhuThuongStickyRice.IdentityServer | [appsettings.json](../IdentityServer/IdentityServer4/PhuThuongStickyRice.IdentityServer/appsettings.json) | ConnectionStrings:PhuThuongStickyRice |
-  | PhuThuongStickyRice.WebAPI | [appsettings.json](PhuThuongStickyRice.WebAPI/appsettings.json) | ConnectionStrings:PhuThuongStickyRice |
-  | PhuThuongStickyRice.WebMVC | [appsettings.json](PhuThuongStickyRice.WebMVC/appsettings.json) | ConnectionStrings:PhuThuongStickyRice |
+### Backend (`src/Backend/`)
 
+| Project | Mục đích |
+|---|---|
+| `PhuThuongStickyRice.Domain` | Entities (aggregate roots `Product`, `Order`...), ValueObjects (`ProductCode`, `Money`), repository interfaces, domain behaviors |
+| `PhuThuongStickyRice.Application` | ABP Application Services + DTOs + AutoMapper profiles (luồng nghiệp vụ chính) |
+| `PhuThuongStickyRice.CrossCuttingConcerns` | Helpers dùng chung phía backend |
+| `PhuThuongStickyRice.Infrastructure` | Tích hợp bên ngoài: Zalo OA, Messenger, webhook, export Excel... |
+| `PhuThuongStickyRice.Persistence` | EF Core module (`StickyRiceEntityFrameworkCoreModule`), `StickyRiceDbContext` (kế thừa `AbpDbContext`), repository implementations |
+| `PhuThuongStickyRice.WebAPI` | Controllers: API public (`/api/products`, `/api/orders`...) + API admin (`/api/admin/...`) |
+| `PhuThuongStickyRice.Migrator` | EF Core migrations + seed data. Chạy 1 lần mỗi khi có migration mới |
+| `PhuThuongStickyRice.BackgroundServer` | Host chạy worker định kỳ (báo cáo tuần Zalo 8h sáng T2, voucher sinh nhật, auto-cancel đơn...) |
 
-- Run Migration:
-  + Option 1: Using dotnet cli:
-    + Install **dotnet-ef** cli:
-      ```
-      dotnet tool install --global dotnet-ef --version="5.0"
-      ```
-    + Navigate to [PhuThuongStickyRice.Migrator](PhuThuongStickyRice.Migrator/) and run these commands:
-      ```
-      dotnet ef migrations add Init --context StickyRiceDbContext -o Migrations/StickyRiceDb
-      dotnet ef database update --context StickyRiceDbContext
-      ```
-  + Option 2: Using Package Manager Console:
-    + Set **PhuThuongStickyRice.Migrator** as StartUp Project
-    + Open Package Manager Console, select **PhuThuongStickyRice.Migrator** as Default Project
-    + Run these commands:
-      ```
-      Add-Migration -Context StickyRiceDbContext Init -OutputDir Migrations/StickyRiceDb
-      Update-Database -Context StickyRiceDbContext
-      ```  
+DI dùng **Autofac** (`UseAutofac` trong `Program.cs`): interception của ABP (UoW, Validation,
+Authorization — Castle DynamicProxy) chỉ hoạt động với Autofac, không hoạt động với MS DI mặc định.
 
-# Build & Run Locally using Tye
+### Frontend (`src/Frontend/`)
 
-- Install Tye
-  ```
-  dotnet tool install -g Microsoft.Tye --version "0.5.0-alpha.20555.1"
-  dotnet tool update -g Microsoft.Tye --version "0.5.0-alpha.20555.1"
-  ```
+| Project | Mục đích |
+|---|---|
+| `PhuThuongStickyRice.Web` | **Host** Blazor WebAssembly: `Program.cs` (DI, HttpClient), `App.razor` (router), `wwwroot/index.html`. Không chứa UI nghiệp vụ |
+| `PhuThuongStickyRice.Web.Components` | **Razor class library** — toàn bộ UI, tổ chức theo area: |
 
-- Install [Tye for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-tye)
+```
+Web.Components/
+  Shop/        # Web bán hàng public: /shop, /cart, /checkout, /track-order, /dat-tiec...
+  Core/        # Layouts (EmptyLayout, AdminLayout), trang chủ Index.razor (+ CSS)
+  Dashboard/   # /dashboard — thẻ thống kê, biểu đồ
+  Orders/      # /orders — duyệt đơn, chi tiết đơn
+  Products/    # /products — CRUD món, upload ảnh, kéo thả sắp xếp
+  Admin/       # Trang admin còn lại: tài chính, marketing, hệ thống, cài đặt...
+  Landing/     # Models/services phục vụ trang chủ
+  wwwroot/     # css/admin-lexa.css (theme admin), scripts/interop.js, images placeholder
+```
 
-- Run
-  ```
-  tye run
-  ```
-  
-- Open Tye Dashboard: http://localhost:8000/
+### Tests (`tests/`)
 
-# Build & Deploy to Kubernetes
+`PhuThuongStickyRice.UnitTests`, `PhuThuongStickyRice.IntegrationTests`,
+`PhuThuongStickyRice.ContractTests`, `PhuThuongStickyRice.ArchTests`.
 
-- Build
-  ```
-  docker-compose build
-  ```
+## Build
 
-- Tag
-  ```
-  docker tag PhuThuongStickyRice.backgroundserver phongnguyend/PhuThuongStickyRice.backgroundserver
-  docker tag PhuThuongStickyRice.migrator phongnguyend/PhuThuongStickyRice.migrator
-  docker tag PhuThuongStickyRice.webapi phongnguyend/PhuThuongStickyRice.webapi
-  docker tag PhuThuongStickyRice.graphql phongnguyend/PhuThuongStickyRice.graphql
-  docker tag PhuThuongStickyRice.blazor phongnguyend/PhuThuongStickyRice.blazor
-  docker tag PhuThuongStickyRice.identityserver phongnguyend/PhuThuongStickyRice.identityserver
-  docker tag PhuThuongStickyRice.webmvc phongnguyend/PhuThuongStickyRice.webmvc
-  ```
+```bash
+dotnet build src/PhuThuongStickyRice.sln
+```
 
-- Push
-  ```
-  docker push phongnguyend/PhuThuongStickyRice.backgroundserver
-  docker push phongnguyend/PhuThuongStickyRice.migrator
-  docker push phongnguyend/PhuThuongStickyRice.webapi
-  docker push phongnguyend/PhuThuongStickyRice.graphql
-  docker push phongnguyend/PhuThuongStickyRice.blazor
-  docker push phongnguyend/PhuThuongStickyRice.identityserver
-  docker push phongnguyend/PhuThuongStickyRice.webmvc
-  ```
+Kỳ vọng: **0 errors**. (Warnings analyzer/style có sẵn thì bỏ qua.)
 
-- Apply
-  ```
-  kubectl apply -f .k8s
-  kubectl get all
-  kubectl get services
-  kubectl get pods
-  ```
+## Migration (EF Core code-first)
 
-- Delete
-  ```
-  kubectl delete -f .k8s
-  ```
-  
-- Use Helm
-  ```
-  helm install myrelease .helm/monolith
-  helm list
-  helm upgrade myrelease .helm/monolith
-  ```
+Migration chạy qua project `Migrator` (không `Update-Database` thủ công):
 
-- UnInstall
-  ```
-  helm uninstall myrelease
-  ```
+```bash
+dotnet run --project src/Backend/PhuThuongStickyRice.Migrator
+```
 
-# Build Nuget Packages using OctoPack
+Tạo migration mới (khi đổi entity):
 
-- Install OctoPack
-  ```
-  dotnet tool install Octopus.DotNet.Cli --global --version 4.39.1
-  dotnet octo --version
-  dotnet tool update Octopus.DotNet.Cli --global
-  dotnet tool uninstall Octopus.DotNet.Cli --global
-  dotnet tool install Octopus.DotNet.Cli --global --version <version>
-  ```
+```bash
+cd src/Backend/PhuThuongStickyRice.Migrator
+dotnet ef migrations add <TenMigration> --context StickyRiceDbContext -o Migrations/StickyRiceDb
+```
 
-- Build
-  ```
-  dotnet restore PhuThuongStickyRice.Monolith.sln
+### 3 quy ước rút ra từ thực tế (bắt buộc nhớ)
 
-  dotnet build -p:Version=1.0.0.1 -c Release
+1. **Entity mới BẮT BUỘC phải có `DbSet<>` public trong `StickyRiceDbContext`.**
+   ABP `AddDefaultRepositories` chỉ đăng ký repository cho entity có `DbSet` —
+   thiếu thì compile vẫn qua nhưng runtime báo không resolve được repository.
+2. **Seed `InsertData` phải gồm mọi cột non-nullable** (vd `CreatedDateTime`).
+   Thiếu cột → migration chạy lỗi giữa chừng.
+3. **Kiểm tra tay `Up()` của migration sau khi scaffold.** Model snapshot đồng bộ
+   không đảm bảo `Up()` đúng — đã từng lọt `AlterColumn`/`DropColumn` cho cột không tồn tại.
+   Quy tắc: không bao giờ emit `AlterColumn`/`DropColumn` cho cột mà không có migration nào tạo ra;
+   quét toàn bộ chain khi nghi ngờ trùng `AddColumn`/`CreateTable`.
 
-  dotnet publish -p:Version=1.0.0.1 -c Release ../IdentityServer/IdentityServer4/PhuThuongStickyRice.IdentityServer/PhuThuongStickyRice.IdentityServer.csproj -o ./publish/PhuThuongStickyRice.IdentityServer
-  dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.BackgroundServer/PhuThuongStickyRice.BackgroundServer.csproj -o ./publish/PhuThuongStickyRice.BackgroundServer
-  dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.GraphQL/PhuThuongStickyRice.GraphQL.csproj -o ./publish/PhuThuongStickyRice.GraphQL
-  dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.Migrator/PhuThuongStickyRice.Migrator.csproj -o ./publish/PhuThuongStickyRice.Migrator
-  dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.WebAPI/PhuThuongStickyRice.WebAPI.csproj -o ./publish/PhuThuongStickyRice.WebAPI
-  dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.BlazorServerSide/PhuThuongStickyRice.BlazorServerSide.csproj -o ./publish/PhuThuongStickyRice.BlazorServerSide
-  dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.Web/PhuThuongStickyRice.Web.csproj -o ./publish/PhuThuongStickyRice.Web
-  dotnet publish -p:Version=1.0.0.1 -c Release ./PhuThuongStickyRice.WebMVC/PhuThuongStickyRice.WebMVC.csproj -o ./publish/PhuThuongStickyRice.WebMVC
-  ```
+## Chạy local
 
-- Pack
-  ```
-  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.IdentityServer --basePath=./publish/PhuThuongStickyRice.IdentityServer
-  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.BackgroundServer --basePath=./publish/PhuThuongStickyRice.BackgroundServer 
-  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.GraphQL --basePath=./publish/PhuThuongStickyRice.GraphQL
-  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.Migrator --basePath=./publish/PhuThuongStickyRice.Migrator
-  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.WebAPI --basePath=./publish/PhuThuongStickyRice.WebAPI
-  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.BlazorServerSide --basePath=./publish/PhuThuongStickyRice.BlazorServerSide
-  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.Web --basePath=./publish/PhuThuongStickyRice.Web
-  dotnet octo pack --version=1.0.0.1 --outFolder=./publish --overwrite --id=PhuThuongStickyRice.WebMVC --basePath=./publish/PhuThuongStickyRice.WebMVC
-  ```
+Thứ tự bắt buộc:
 
-# SonarQube
+1. **Migrator** — tạo DB + seed (lần đầu), áp migration mới (các lần sau)
+2. **WebAPI** — `dotnet run --project src/Backend/PhuThuongStickyRice.WebAPI`
+3. **Web** — `dotnet run --project src/Frontend/PhuThuongStickyRice.Web`
+4. (Tùy chọn) **BackgroundServer** — nếu cần job nền (báo cáo tuần, voucher sinh nhật)
 
-- Install Sonar Scanner
-  ```
-  dotnet tool install --global dotnet-sonarscanner
-  dotnet tool list --global
-  java --version
-  ```
+Connection string: key `ConnectionStrings:PhuThuongStickyRice` trong `appsettings.json`
+của WebAPI, Migrator, BackgroundServer.
 
-- Build & Scan
-  ```
-  dotnet sonarscanner begin /v:"1.0.0" /d:sonar.host.url="https://sonarcloud.io" /o:"phongnguyend" /k:"Monolith" /d:sonar.login="<token>"
-  dotnet build PhuThuongStickyRice.Monolith.sln
-  dotnet sonarscanner end /d:sonar.login="<token>"
-  ```
+## Quy ước commit
+
+- Làm trực tiếp trên `main`, **không force-push**.
+- Commit nhỏ theo nhóm tính năng, message tiếng Việt.
+- Chỉ stage đúng file của mình (`git add <path>`), không `git add -A`
+  (nhiều người/agent làm chung 1 checkout).

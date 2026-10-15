@@ -1,302 +1,130 @@
-# Xôi Phú Thượng — Web đặt hàng
+# Xôi Phú Thượng — Web đặt hàng & quản lý quán
 
-Web đặt hàng các món xôi làng nghề Phú Thượng (Hà Nội): khách xem menu, bỏ giỏ, đặt hàng online;
-admin có dashboard thống kê, quản lý đơn hàng và sản phẩm.
+Web bán hàng các món xôi làng nghề Phú Thượng (Hà Nội) + hệ thống admin quản lý toàn diện:
+khách xem menu, bỏ giỏ, đặt hàng online (shipper tự đến lấy hoặc giao tận nơi);
+admin có dashboard, duyệt đơn, bếp, POS bán tại quầy, quản lý món/khách/tài chính/marketing.
 
-## Kiến trúc
+## Công nghệ
 
-- **.NET 10 LTS** (Blazor WebAssembly + ASP.NET Core WebAPI)
-- **Clean Architecture**: `Domain` → `Application` → `Persistence` → `WebAPI`
-- **DDD**: `Product`, `Order` là aggregate root (private setters, factory `Create`, behavior methods, value objects `ProductCode`/`Money`)
-- **ABP Framework 10.7**: Application Services thay cho CQRS thủ công — `ProductAppService`, `OrderAppService`, `DashboardAppService`
-  (trả `PagedResultDto<T>`; UoW/Auditing/Validation qua interceptor). MediatR đã gỡ khỏi các luồng Product/Order/Dashboard.
-  Host dùng **Autofac** (`Program.cs`: Generic Host + `UseAutofac`, `StickyRiceWebApiModule` phụ thuộc `AbpAutofacModule`) vì
-  interception của ABP (Castle DynamicProxy) chỉ chạy với Autofac, không chạy với MS DI mặc định.
-  Các module ABP: `StickyRiceDomainModule`, `StickyRiceApplicationModule` (AutoMapper), `StickyRiceEntityFrameworkCoreModule` (`AddAbpDbContext` + `EfCoreRepository`), `StickyRiceWebApiModule`.
-  Các luồng legacy (Users, Roles, Files, AuditLogs...) vẫn dùng Dispatcher/`CrudService` như cũ.
-- **SQL Server + EF Core (code-first)**, migration qua project `Migrator`
+| Thành phần | Công nghệ |
+|---|---|
+| Runtime | .NET 10 (LTS) |
+| Kiến trúc | Clean Architecture + DDD (`Domain` → `Application` → `Persistence` → `WebAPI`) |
+| Framework | ABP Framework 10.7 (Application Services, UoW, Validation, AutoMapper) |
+| DI | Autofac (ABP interception chỉ chạy với Autofac, không chạy với MS DI mặc định) |
+| Frontend | Blazor WebAssembly (host) + Razor class library (components) |
+| Database | SQL Server + EF Core code-first, migration qua project `Migrator` |
+
+`Product` và `Order` là aggregate root (private setters, factory `Create`, behavior methods,
+value objects `ProductCode`/`Money`). Các module ABP: `StickyRiceDomainModule`,
+`StickyRiceApplicationModule`, `StickyRiceEntityFrameworkCoreModule` (`AddAbpDbContext` + `EfCoreRepository`),
+`StickyRiceWebApiModule`.
 
 ## Cấu trúc solution
 
 ```
 src/
   Backend/
-    PhuThuongStickyRice.Domain/        # Entities, ValueObjects, Repositories (interfaces)
-    PhuThuongStickyRice.Application/  # ABP Application Services + DTOs + AutoMapper profiles
-    PhuThuongStickyRice.Persistence/  # ABP EF Core module, DbContext (AbpDbContext), repositories
-    PhuThuongStickyRice.WebAPI/       # Controllers
-    PhuThuongStickyRice.Migrator/     # EF Core migrations + seed data
-    ...
+    PhuThuongStickyRice.Domain/              # Entities, ValueObjects, repository interfaces
+    PhuThuongStickyRice.Application/        # ABP Application Services + DTOs + AutoMapper
+    PhuThuongStickyRice.CrossCuttingConcerns/ # Shared helpers dùng chung backend
+    PhuThuongStickyRice.Infrastructure/     # Tích hợp ngoài (Zalo, Messenger, webhook...)
+    PhuThuongStickyRice.Persistence/        # EF Core module, StickyRiceDbContext, repositories
+    PhuThuongStickyRice.WebAPI/             # Controllers (public + admin)
+    PhuThuongStickyRice.Migrator/           # EF Core migrations + seed data
+    PhuThuongStickyRice.BackgroundServer/   # Worker định kỳ (báo cáo tuần, voucher sinh nhật...)
   Frontend/
-    PhuThuongStickyRice.Web/  # Host
-    PhuThuongStickyRice.Web.Components/
-      Shop/        # Web bán hàng: /shop, /cart, /checkout (không cần đăng nhập)
-      Dashboard/   # Admin: /dashboard (cần đăng nhập)
-      Orders/      # Admin: /orders — duyệt đơn, đổi trạng thái (cần đăng nhập)
-      Products/    # Admin: quản lý sản phẩm (cần đăng nhập)
+    PhuThuongStickyRice.Web/                # Host Blazor WASM (Program.cs, App.razor)
+    PhuThuongStickyRice.Web.Components/    # Razor class library — toàn bộ UI
+      Shop/        # /shop, /cart, /checkout (public, không cần đăng nhập)
+      Core/        # Layouts (EmptyLayout, AdminLayout...), trang chủ Index.razor
+      Dashboard/   # /dashboard (admin)
+      Orders/      # /orders — duyệt đơn (admin/thu ngân)
+      Products/    # /products — quản lý món (admin)
+      Admin/       # Các trang admin còn lại (tài chính, marketing, hệ thống...)
+      Landing/     # Models/services cho trang chủ
 tests/
+  PhuThuongStickyRice.UnitTests/
+  PhuThuongStickyRice.IntegrationTests/
+  PhuThuongStickyRice.ContractTests/
+  PhuThuongStickyRice.ArchTests/
+deploy/
+  iis/             # Hướng dẫn deploy IIS + script publish (xem deploy/iis/README.md)
+  seed-admin.sql   # Script tạo tài khoản admin thủ công (dự phòng)
 ```
 
 ## Tính năng
 
-### Web bán hàng (public)
-- `/shop` — danh sách món xôi (Xôi gấc, Xôi đỗ, Xôi xéo, Xôi vò, Xôi ngũ sắc), thêm vào giỏ
-- `/cart` — giỏ hàng: tăng/giảm số lượng, xóa món
-- `/checkout` — nhập tên/SĐT/địa chỉ → đặt hàng, nhận mã đơn (vd `PX-20261014-4821`);
-  hóa đơn VAT (tùy chọn), gói quà, đặt cho người khác, đổi điểm tích lũy, mã giới thiệu,
-  vòng quay may mắn sau khi đặt thành công
-- `/track-order` — tra cứu đơn: tự hủy đơn (khi đang chờ), sửa số lượng, đánh giá sao khi đã giao,
-  xem điểm tích lũy + hạng thành viên, lưu ngày sinh
-- `/dat-dinh-ky` — đăng ký giao xôi mỗi ngày (tự tạo đơn COD mỗi sáng)
-- `/faq` — câu hỏi thường gặp (có tìm kiếm); `/ho-tro` — gửi yêu cầu hỗ trợ
+### Web bán hàng (public, không cần đăng nhập)
 
-### Web admin (đăng nhập)
-- `/dashboard` — thẻ thống kê: tổng đơn, doanh thu, món đã bán, đơn chờ xử lý;
-  đơn theo trạng thái, doanh thu 7 ngày, đơn mới nhất;
-  tự động làm mới mỗi 30s (có nút tắt/mở + nút làm mới thủ công)
-- `/orders` — tìm kiếm/lọc đơn, xem chi tiết, chuyển trạng thái
-  (`Pending → Confirmed → Preparing → Delivering → Completed`, hoặc `Cancelled`)
-- `/products` — thêm/sửa/xóa món, đổi giá, kích hoạt/ngừng bán
-- `/admin/loyalty` — điểm tích lũy, điều chỉnh điểm, sinh nhật sắp tới (voucher tự động)
-- `/admin/danh-gia` — đánh giá sao của khách; `/admin/ho-tro` — yêu cầu hỗ trợ (trả lời/đổi trạng thái)
-- `/admin/faq` — quản lý câu hỏi thường gặp; `/admin/dinh-ky` — đăng ký giao định kỳ (tạm dừng/kích hoạt)
-- `/admin/integrations` — trạng thái + test tích hợp Zalo OA
-- `/admin/shop-settings` — phí ship, ngưỡng miễn ship, đơn tối thiểu, hết hạn chuyển khoản,
-  đặt cọc, điểm tích lũy, hạng thành viên (Đồng/Bạc/Vàng), phí gói quà
+- **Trang chủ** (`/`) — rebuild theo template Simple Garden: hero fullscreen, giới thiệu làng nghề,
+  lưới món đặc trưng, câu chuyện thương hiệu, banner "Đặt xôi ngay", thực đơn theo tab, footer.
+- **`/shop`, `/cart`, `/checkout`** — xem món, giỏ hàng (lưu local), đặt hàng nhận mã đơn
+  (vd `PX-20261015-4821`); thanh toán COD / chuyển khoản (VietQR) / MoMo / ví điểm.
+- **`/track-order`** — tra cứu đơn bằng SĐT: tự hủy khi đang chờ, sửa số lượng, đánh giá sao,
+  xem điểm tích lũy + hạng thành viên.
+- **Đặt trước** — hẹn giờ lấy/giao; hệ thống chặn đơn trùng ngày lễ và ngoài khung giờ bán của món.
+- **`/dat-tiec`, `/cung-gio`, `/dat-cung`, `/nhuong-quyen`** — đặt tiệc, mâm cúng giỗ/Rằm/mùng 1,
+  gom đơn văn phòng, đăng ký nhượng quyền.
+- **Tài khoản khách** (`/dang-nhap`, `/tai-khoan`) — đăng ký bằng SĐT + mật khẩu, lưu nhiều địa chỉ,
+  khẩu vị yêu thích, lịch sử mua hàng.
+- **Đánh giá** — đánh giá sao sau khi nhận hàng; review có ảnh được tặng mã giảm giá.
 
-### API chính
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET | `/api/products?status=Active` | Danh sách sản phẩm (public) |
-| POST | `/api/orders` | Đặt hàng (public) |
-| GET | `/api/orders` | Danh sách đơn (admin) |
-| PUT | `/api/orders/{id}/status` | Đổi trạng thái đơn (admin) |
-| GET | `/api/dashboard/stats` | Số liệu dashboard (admin) |
+### Admin (đăng nhập, theme Lexa)
+
+- **Dashboard** — thẻ thống kê, doanh thu 7 ngày, tự làm mới 30s; **dự báo doanh thu** 7/30 ngày;
+  nút đọc báo cáo bằng giọng nói.
+- **Đơn hàng** (`/orders`) — phím tắt (J/K/C/P/X), phát hiện & gộp đơn trùng SĐT,
+  mẫu tin nhắn theo trạng thái (copy gửi Zalo), đánh dấu đã thu tiền mặt.
+- **Bếp** (`/bep`) — đơn đặt trước hiện trước + đếm ngược; đơn khách VIP có banner ưu tiên.
+- **POS** (`/ban-hang`) — bán tại quầy, tự lưu đơn chờ khi mất mạng và đồng bộ lại sau.
+- **Sản phẩm** (`/products`) — kéo thả sắp xếp, bán theo suất/kg, khung giờ bán,
+  giới hạn suất mỗi ngày, upload nhiều ảnh, lịch sử ai sửa món.
+- **Khách hàng** (`/customers`) — tag khách (VIP/ưu tiên/nợ...), đánh dấu VIP được ưu tiên,
+  xuất Excel, nhắc khách lâu chưa quay lại, quà sinh nhật tự động.
+- **Tài chính** — báo cáo doanh thu, **lãi gộp theo món**, doanh thu theo giờ,
+  so sánh cùng kỳ, đối soát MoMo/ngày, kết ca cuối ngày, kiểm kê.
+- **Marketing** — mã giảm giá, chiến dịch voucher, popup khuyến mãi, điểm danh,
+  vòng quay may mắn, check-in tặng quà.
+- **Hệ thống** — phân quyền chi tiết tới từng nút (Admin/Cashier/Kitchen),
+  nhật ký hoạt động nhân viên, chế độ bảo trì, lịch nghỉ lễ (chặn đặt đơn),
+  webhook báo đơn mới, màn hình số thứ tự chờ (`/cho`), tìm kiếm toàn cục, trung tâm thông báo.
+
+### Tích hợp
+
+| Tích hợp | Trạng thái |
+|---|---|
+| Zalo OA | **Stub** — chưa có token thật thì chỉ ghi log, không gọi API, không ảnh hưởng checkout |
+| Chatbot Messenger | Cần Page Access Token + Verify Token thật mới chạy (cấu hình ở Cài đặt) |
+| Báo cáo tuần Zalo | Worker chạy **8h sáng thứ Hai** (cần chạy `BackgroundServer`), gửi doanh thu/tuần cho chủ quán |
+| Webhook đơn mới | POST JSON về URL cấu hình mỗi khi có đơn (timeout 5s, lỗi không ảnh hưởng đơn) |
 
 ## Chạy local
 
-1. Cập nhật connection string SQL Server trong `appsettings.json` của `WebAPI` và `Migrator`.
-2. Chạy migration + seed 5 món xôi:
+1. Sửa connection string SQL Server trong `appsettings.json` của **WebAPI** và **Migrator**
+   (key `ConnectionStrings:PhuThuongStickyRice`).
+2. Chạy migration + seed:
    ```bash
-   cd src/Backend/PhuThuongStickyRice.Migrator
-   dotnet run
+   dotnet run --project src/Backend/PhuThuongStickyRice.Migrator/PhuThuongStickyRice.Migrator.csproj
    ```
-3. Chạy WebAPI:
+3. Chạy WebAPI, rồi chạy Blazor WASM:
    ```bash
-   cd ../PhuThuongStickyRice.WebAPI
-   dotnet run
-   ```
-4. Chạy Blazor WASM:
-   ```bash
-   cd ../../../Frontend/PhuThuongStickyRice.Web
-   dotnet run
+   dotnet run --project src/Backend/PhuThuongStickyRice.WebAPI
+   dotnet run --project src/Frontend/PhuThuongStickyRice.Web
    ```
 
-## Zalo OA (gửi hóa đơn điện tử qua Zalo)
+> **Quan trọng:** mỗi lần `git pull` mà có migration mới thì chạy lại **Migrator** rồi **restart WebAPI**
+> (frontend đổi thì rebuild/republish project Web). Không chạy Migrator = app lỗi vì thiếu cột/bảng.
 
-Tích hợp hiện ở chế độ **stub**: khi chưa cấu hình, mỗi lần đặt hàng service chỉ ghi log
-`[Zalo OA stub] would send Zalo message...` — không gọi API thật, không làm hỏng checkout.
+## Deploy
 
-Các bước bật gửi tin nhắn thật:
+Xem chi tiết tại [`deploy/iis/README.md`](deploy/iis/README.md) + script [`deploy/publish.ps1`](deploy/iis/publish.ps1).
 
-1. Tạo Official Account tại `https://oa.zalo.me` và chờ duyệt.
-2. Vào OA → *Cài đặt → Thông tin OA* để lấy **OA ID**.
-3. Tạo ứng dụng tại `https://developers.zalo.me`, liên kết với OA, lấy **access token**
-   (token hết hạn định kỳ — cần cơ chế refresh, xem tài liệu Zalo).
-4. Điền vào `appsettings.json` của WebAPI:
-   ```json
-   "ZaloOa": { "AccessToken": "<token-thật>", "OaId": "<oa-id-thật>" }
-   ```
-5. Restart WebAPI. Vào `/admin/integrations` bấm **Gửi test** để kiểm tra.
-6. Để gửi thật, implement thêm trong `ZaloNotificationService.SendTextMessageAsync`
-   (Zalo định danh người nhận bằng `userId`, không phải SĐT — cần map SĐT → userId qua API
-   `GET /v2.0/oa/getfollowers` hoặc ZNS template theo tài liệu
-   `https://developers.zalo.me/docs/api/official-api`).
-
-## Background workers (WebAPI)
-
-- `OrderAutoCancelWorker` — mỗi 5 phút hủy đơn chuyển khoản `Pending`+`Unpaid` quá
-  `ShopSetting.BankTransferExpiryMinutes` (mặc định 30 phút).
-- `BirthdayVoucherWorker` — mỗi 24h tạo voucher sinh nhật giảm 20% (dùng 1 lần, HSD 30 ngày,
-  gắn với SĐT) cho tài khoản có sinh nhật hôm nay.
-- `SubscriptionOrderWorker` — mỗi 6h tạo đơn COD cho các đăng ký định kỳ đến hạn
-  (chống trùng bằng `LastOrderDate`).
-- Các worker mới chỉ được kiểm tra biên dịch (compile) trong môi trường dev —
-  cần kiểm tra lại hành vi runtime khi deploy lên IIS (ở đó có SQL Server thật).
-
-## Wave 4 (items 101–120)
-
-- **Cache sản phẩm (101)**: danh sách sản phẩm public (`IMemoryCache`, TTL 5 phút)
-  bị vô hiệu hóa khi tạo/sửa/xóa/tắt-bật sản phẩm, topping, combo.
-- **Nén response (102)**: middleware Brotli + Gzip đã bật cho WebAPI.
-  Hướng dẫn bật nén ở tầng IIS nằm trong `deploy/iis/README.md`
-  ("Bật nén HTTP trên IIS").
-- **Giám sát sức khỏe (103)**: worker `SystemHealthWorker` chạy mỗi 5 phút,
-  kiểm tra DB + dung lượng ổ đĩa uploads + tần suất lỗi gần đây; báo Telegram
-  (token/chat id cấu hình trong `/admin/shop-settings`, để trống = tắt) và
-  đẩy vào hàng đợi email. Đây là kiểm tra từ trong app — vẫn nên dùng dịch vụ
-  giám sát ngoài (UptimeRobot, Better Uptime...) để giám sát thật sự từ internet.
-- **Nhật ký hệ thống (104)**: entry Warning+ được lưu vào bảng `AppLog`
-  (giữ tối đa 2000 dòng mới nhất); xem tại `/admin/nhat-ky-he-thong`.
-- **Feature flags (105)**: bật/tắt `lucky-spin`, `gift-wrap`, `referrals`,
-  `dish-voting`, `promo-popup` tại `/admin/tinh-nang`. Cả UI (Blazor) và
-  backend (WebAPI) đều kiểm tra flag trước khi cho phép tính năng.
-- **Cấu hình thanh toán (106)**: thông tin ngân hàng (tên NH, số TK, chủ TK,
-  template QR) và MoMo **không bí mật** (partner code, endpoint) chỉnh tại
-  `/admin/thanh-toan`, lưu vào ShopSetting; app ưu tiên đọc DB, fallback về
-  appsettings. Secret (MoMo access/secret key, khóa ký VietQR...) vẫn nằm
-  trong `appsettings.Production.json`.
-- **API versioning (107)**: Orders/Products/Landing có thêm route versioned
-  `api/v1/...` (route cũ không đổi, vẫn chạy song song):
-  `GET /api/v1/products`, `POST /api/v1/orders`, `GET /api/v1/landing/content`.
-- **Đa chi nhánh (109)**: CRUD tại `/admin/chi-nhanh`; `Product.BranchId` và
-  `Order.BranchId` (nullable); public filter `?branch=` trên shop; chi nhánh
-  hiển thị trên đơn hàng. **Giá vẫn dùng chung toàn hệ thống** — giá riêng
-  theo chi nhánh là việc tương lai.
-- **Webhooks (110)**: cấu hình tại `/admin/webhooks` (Name, Url, Secret,
-  events `OrderCreated` / `OrderStatusChanged`, IsActive) + nút "Gửi thử".
-  Khi có sự kiện, app POST JSON tới URL kèm header `X-Webhook-Signature`
-  (HMAC-SHA256 của body với Secret). Lịch sử gửi xem ở cùng trang
-  (`WebhookDelivery`: thời gian, endpoint, event, thành công, status code).
-- **Maintenance mode (111)**: bật tại `/admin/shop-settings` ("Bảo trì &
-  giám sát") — `GET /api/system/status` public cho biết trạng thái; app WASM
-  kiểm tra khi khởi động, hiện trang bảo trì cho route public, các route
-  `/login`, `/admin/*`, `/bep` vẫn vào được.
-- **Dọn ảnh mồ côi (112)**: worker hàng tuần đối chiếu file trong
-  `wwwroot/uploads/landing` với URL ảnh được tham chiếu trong DB
-  (LandingPageContent, Article); chỉ xóa file **không được tham chiếu ở đâu
-  cả và đã tồn tại > 7 ngày**.
-- **Dung lượng đĩa (113)**: trang `/admin/he-thong` hiện kích thước + số file
-  thư mục uploads, ước lượng dung lượng DB; cảnh báo khi uploads vượt ngưỡng
-  cấu hình (mặc định 500 MB, chỉnh trong ShopSetting).
-- **Sao lưu ảnh (114)**: interface `IImageBackupProvider`, mặc định là
-  `NoneImageBackupProvider` (không làm gì). Cấu hình provider + settings JSON
-  trong `/admin/shop-settings`. Muốn thêm provider thật (ví dụ S3): tạo class
-  implement `IImageBackupProvider`, đăng ký trong DI (thay
-  `NoneImageBackupProvider`), đọc settings JSON đã lưu.
-- **PWA (115)**: `manifest.json` (tên "Xôi Phú Thượng", icons 192/512),
-  service worker `sw.js` cache app shell + trang `offline.html` khi mất mạng,
-  đăng ký tự động trong `index.html`.
-- **Link rút gọn (116)**: `/admin/link-rut-gon` tạo link 6 ký tự;
-  `GET /s/{code}` redirect 302. Trong quick-view sản phẩm có nút
-  "🔗 Link ngắn" tạo link tới `/shop?tim={code}`.
-- **Đặt món nhóm (117)**: tạo nhóm tại `/nhom`, chia sẻ link `/nhom/{code}`;
-  người có link thêm món (tên + sản phẩm + số lượng); người tạo "Chốt đơn" →
-  tạo đơn hàng COD bình thường và đóng nhóm.
-- **Gợi ý theo giờ (118)**: trang shop tự động hiện "☀️ Gợi ý buổi sáng"
-  (5h–10h, ưu tiên món có tag mặn) / "🌙 Gợi ý buổi tối" (17h–23h, 3 món)
-  — tính phía client theo giờ máy.
-- **Sổ địa chỉ (119)**: bảng `AddressBook` (SĐT, nhãn, địa chỉ); checkout hiện
-  chip chọn nhanh + nút "💾 Lưu địa chỉ này"; quản lý trong phần hồ sơ của
-  `/track-order`.
-- **Voucher freeship (120)**: `DiscountCode.VoucherType` (Discount/Freeship);
-  freeship đặt phí giao hàng = 0; tạo/chọn loại tại `/admin/discounts`;
-  checkout hiện dòng "🚚 Miễn phí ship".
-
-## Wave 5 (items 121–140)
-
-- **Điểm danh mỗi ngày (121)**: `/track-order` có nút "📅 Điểm danh hôm nay";
-  mỗi SĐT 1 lần/ngày, cộng điểm tích lũy (mặc định 5, đổi ở shop-settings);
-  hiển thị chuỗi ngày liên tiếp. API: `POST /api/checkins`.
-- **Khách doanh nghiệp (122)**: `/admin/doanh-nghiep` CRUD khách đặt định kỳ
-  hàng tuần (tên công ty, SĐT, ngày trong tuần, món cố định);
-  dashboard hiện widget "Đơn doanh nghiệp tuần này" — admin tự tạo đơn,
-  không tự động trừ tiền.
-- **Gallery ảnh khách (123)**: khách chia sẻ ảnh từ `/track-order`
-  ("Chia sẻ ảnh món bạn đã nhận") → `/admin/anh-khach-hang` duyệt/từ chối →
-  gallery công khai `/anh-khach-hang`.
-- **Dự báo nguyên liệu (124)**: `/admin/du-bao-nguyen-lieu` ước tính kg nếp
-  cần cho sáng mai = trung bình suất bán cùng thứ trong 4 tuần qua ×
-  định mức g/suất (mặc định 150g, đổi ở shop-settings); heuristic đơn giản,
-  đã ghi chú trên trang + widget dashboard.
-- **Ca làm việc (125)**: `/admin/ca-lam-viec` CRUD ca (tên NV, ngày, giờ) —
-  xem theo tuần.
-- **Phân quyền (126)**: 3 vai trò — xem bảng dưới.
-- **POS (127)**: `/ban-hang` (Admin/Cashier) — chạm chọn món → thu tiền mặt →
-  đơn COD hoàn thành + đã thanh toán ngay; nút in hóa đơn.
-- **Đối soát MoMo (128)**: callback MoMo tự parse mã đơn từ `OrderInfo` và
-  đánh dấu `MoMoMatched=true`; `/admin/doi-soat-momo` lọc đã khớp/chưa khớp +
-  nút "đánh dấu đã đối soát" thủ công. Đối soát tự động hoàn toàn
-  (số tiền, file quyết toán) cần MoMo business API.
-- **Kết ca COD (129)**: `/admin/ket-ca` (Admin/Cashier) — dự kiến tự cộng từ
-  đơn COD đã hoàn thành trong ngày; nhập thực tế → cảnh báo chênh lệch.
-- **Hoàn tiền (130)**: `Order.RefundStatus` (None/Requested/Refunded) +
-  `RefundAmount`; admin ghi nhận ở `/admin/hoan-tien` (chuyển tiền thủ công);
-  khách thấy trạng thái hoàn tiền ở `/track-order`.
-- **Mẫu tin nhắn (131)**: `/admin/mau-tin-nhan` CRUD mẫu SMS/Zalo với
-  `{placeholder}` + nút "Sao chép".
-- **Chiến dịch voucher (132)**: `/admin/chien-dich` — chọn đối tượng
-  (không mua 30+ ngày / hạng Bạc,Vàng / tất cả) + cấu hình giảm giá →
-  tạo 1 mã riêng cho mỗi SĐT; sao chép danh sách để gửi thủ công.
-  Gửi hàng loạt cần kênh Zalo OA/SMS (làm sau).
-- **Nguồn đơn hàng (133)**: `Order.Source` — `?ban=` → "QR bàn",
-  `?share=` → "Link chia sẻ", `?nhom=` → "Nhóm", còn lại "Web";
-  dashboard có thẻ đơn + doanh thu theo nguồn.
-- **EN/VI (134)**: nút EN/VI trên thanh điều hướng; chỉ dịch chrome của
-  trang shop/giỏ/checkout (không dịch tên món/mô tả); lưu localStorage.
-- **Ví khách hàng (140)**: `WalletAccount` (SĐT, số dư) + `WalletTransaction`;
-  `/admin/vi-tien` nạp/trừ thủ công có lý do + sổ giao dịch; checkout hiện
-  "💰 Thanh toán bằng ví" khi số dư ≥ tổng đơn (trừ ngay khi tạo đơn);
-  hủy đơn hoàn tiền về ví tự động. Thêm `PaymentMethod.Wallet`.
-
-### Vai trò người dùng (item 126)
-
-| Vai trò | Được làm gì |
-|---|---|
-| `Admin` | Toàn quyền: mọi trang admin + API. |
-| `Kitchen` | Chỉ `/bep` (màn hình bếp): xem đơn bếp + chuyển trạng thái món. |
-| `Cashier` | `/dashboard`, `/orders`, `/customers`, `/ban-hang` (POS), `/admin/ket-ca`. KHÔNG thấy `/admin/loi-nhuan`, `/admin/thanh-toan`, `/admin/tinh-nang` (cả link điều hướng lẫn API đều chặn). |
-
-Các role `Kitchen`/`Cashier` được seed tự động lúc khởi động (cùng `Admin`);
-gán role cho user trong trang quản trị user. JWT mang claim `role` nên
-`[Authorize(Roles="...")]` hoạt động cả ở API lẫn Blazor WASM.
-
-### Bảo mật & định hướng (item 135)
-
-- **WebAuthn/Passkey: hoãn lại (deferred).** Chưa triển khai đăng nhập bằng
-  passkey — cần đánh giá kỹ (attestation, backup key, UX khôi phục) trước khi
-  làm, không làm nửa vời.
-- **Xác thực 2 lớp hiện tại: TOTP 2FA** (Wave 3, `/admin/bao-mat`) + khóa tài
-  khoản sau 5 lần đăng nhập sai. Đây là second factor chính thức lúc này.
-
-### Mã hóa secret trong ShopSetting (item 136)
-
-Các secret lưu trong DB (`TelegramBotToken`, `RecaptchaSecretKey`) được mã hóa
-lúc lưu và giải mã lúc đọc bằng ASP.NET Core **DataProtection**
-(prefix `DPv1:`; giá trị cũ chưa mã hóa vẫn đọc được và sẽ mã hóa lại ở lần
-lưu tiếp theo). Mọi secret mới chuyển vào DB sau này phải đi qua cùng cơ chế
-(`ShopSettingAppService.ProtectSecret/UnprotectSecret`).
-
-**Key persistence cho IIS farm:** DataProtection đã cấu hình
-`PersistKeysToDbContext<StickyRiceDbContext>()` (bảng `DataProtectionKeys`)
-+ `SetApplicationName("PhuThuongStickyRice")` — mọi node trong farm đọc chung
-key từ DB nên giải mã được trên mọi máy. Lưu ý:
-
-- Backup bảng `DataProtectionKeys` cùng DB — mất key = không giải mã được
-  secret cũ (phải nhập lại trong `/admin/shop-settings`).
-- Nếu chạy nhiều app khác nhau chung DB, `SetApplicationName` khác nhau để
-  key không dùng lẫn.
-
-### Bảo trì định kỳ (item 137)
-
-- Mỗi tháng chạy: `dotnet list package --vulnerable --include-transitive`
-  cho toàn solution và nâng cấp các package có CVE.
-- Nên bật **Dependabot** trên GitHub (`.github/dependabot.yml`) để tự tạo PR
-  nâng cấp package hàng tuần.
-- Snapshot `dotnet list package --vulnerable` ngày 2026-10-14 (xem chi tiết
-  trong báo cáo wave): các package `OpenTelemetry.*` bản `-rc` và
-  `System.Data.SqlClient 4.1.0/4.8.5` có cảnh báo NU1902/NU1903, `AutoMapper 14.0.0`
-  có NU1903 (high), `System.Text.Json 7.0.1` có NU1903 (high),
-  `System.Security.Cryptography.Pkcs 9.0.11` có NU1902/NU1903
-  — lên kế hoạch nâng cấp `OpenTelemetry` lên bản stable, thay
-  `System.Data.SqlClient` bằng `Microsoft.Data.SqlClient`, và xem xét nâng
-  `AutoMapper`/`System.Text.Json` khi rảnh. **Đã xử lý trong Wave 5:**
-  `Microsoft.AspNetCore.DataProtection(.EntityFrameworkCore)` 10.0.0 → 10.0.11
-  (bản 10.0.0 có CVE critical NU1904 / GHSA-9mv3-2cwr-p262).
+Lưu ý trên IIS: cấp quyền **Modify** cho app pool trên thư mục `wwwroot/uploads` (ảnh món, ảnh landing
+do admin upload). DataProtection keys lưu trong database nên nhiều instance vẫn chung key.
 
 ## Ghi chú
 
-- Ảnh sản phẩm hiện là placeholder SVG trong `Web.Components/wwwroot/images/`
-  (theo mã sản phẩm: `XOI-GAC` → `xoi-gac.svg`...). Thay bằng ảnh thật khi deploy.
-- Số liệu "khách vào xem" (page views) chưa có — dashboard hiện thống kê theo đơn hàng/doanh thu.
-  Muốn có page views thì cần thêm bảng `PageViews` + middleware ghi log (có thể làm ở phase sau).
+- Ảnh món/ảnh landing hiện là **placeholder SVG** — upload ảnh thật khi deploy.
+- Không gửi email thật (tính năng mail đã loại khỏi phạm vi).
+- Muốn chạy job nền (báo cáo tuần Zalo, voucher sinh nhật...): chạy thêm project `BackgroundServer`.
