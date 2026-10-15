@@ -5,6 +5,16 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* Blazor WASM root element: the index.html uses a custom <app> tag
+   (see Program.cs: builder.RootComponents.Add<App>("app")). Unknown
+   elements default to display:inline, which can produce odd shrink-wrap
+   rendering of the page — force it to be a full-width block. */
+app {
+    display: block;
+    width: 100%;
+    min-width: 100%;
+}
+
 a, .btn-link {
     color: #0366d6;
 }

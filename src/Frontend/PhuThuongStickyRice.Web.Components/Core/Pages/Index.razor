@@ -120,7 +120,7 @@ else
                 <a href="/shop" class="sg-btn sg-btn-outline">Đặt xôi ngay →</a>
             </div>
             <div class="sg-intro-img">
-                <img loading="lazy" src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg")" alt="Xôi Phú Thượng" />
+                <img loading="lazy" src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.jpg")" alt="Xôi Phú Thượng" />
             </div>
         </div>
     </div>
@@ -599,7 +599,7 @@ else
     {
         get
         {
-            var url = Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.svg");
+            var url = Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.jpg");
             return $"background-image: url('{url}');";
         }
     }
@@ -608,7 +608,7 @@ else
     {
         get
         {
-            var url = Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-xeo.svg");
+            var url = Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-xeo.jpg");
             return $"background-image: url('{url}');";
         }
     }
@@ -794,13 +794,19 @@ else
         var slug = (product?.Code ?? "").ToLowerInvariant().Replace("_", "-");
         var file = slug switch
         {
-            "xoi-gac" => "xoi-gac.svg",
-            "xoi-do" => "xoi-do.svg",
-            "xoi-xeo" => "xoi-xeo.svg",
-            "xoi-vo" => "xoi-vo.svg",
+            "xoi-gac" => "xoi-gac.jpg",
+            "xoi-do" => "xoi-do.jpg",
+            "xoi-xeo" => "xoi-xeo.jpg",
+            "xoi-vo" => "xoi-vo.jpg",
+            "xoi-lac" => "xoi-lac.jpg",
+            "xoi-gac-kg" => "xoi-gac.jpg",
+            "xoi-do-kg" => "xoi-do.jpg",
+            "xoi-xeo-kg" => "xoi-xeo.jpg",
+            "xoi-vo-kg" => "xoi-vo.jpg",
+            "xoi-lac-kg" => "xoi-lac.jpg",
             "xoi-ns" => "xoi-ngu-sac.svg",
             "xoi-ngu-sac" => "xoi-ngu-sac.svg",
-            _ => "xoi-gac.svg"
+            _ => "xoi-gac.jpg"
         };
         return $"_content/PhuThuongStickyRice.Web.Components/images/{file}";
     }

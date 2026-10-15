@@ -20,6 +20,8 @@
     color: var(--sg-ink);
     background: var(--sg-bg);
     overflow-x: clip;
+    width: 100%;
+    min-width: 100%;
 }
 
 .sg-page section[id],
