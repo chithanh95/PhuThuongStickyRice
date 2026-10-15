@@ -183,6 +183,14 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string ZaloPhone { get; set; }
 
         /// <summary>
+        /// Item 101: when true, each product card on /shop and the quick-view
+        /// modal show a "💬 Hỏi qua Zalo" button linking to
+        /// zalo.me/&lt;ZaloPhone or Hotline&gt; with a pre-filled message.
+        /// Default true.
+        /// </summary>
+        public bool ShowZaloChatButton { get; set; }
+
+        /// <summary>
         /// Link tới Google Maps của quán (đánh giá trên Google).
         /// Admin nhập 1 lần ở Cài đặt cửa hàng.
         /// </summary>
@@ -284,6 +292,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 CloseTime = "10:30",
                 Hotline = null,
                 ZaloPhone = null,
+                ShowZaloChatButton = true,
                 GoogleMapsUrl = null,
                 AcceptingOrders = true,
                 MaxOrdersPerPhonePerDay = 10

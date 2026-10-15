@@ -187,6 +187,12 @@ else
                                 <strong class="text-danger">@FormatPrice(product.Price)</strong>
                                 <button class="btn btn-sm btn-warning" @onclick="() => AddToCart(product)" disabled="@OrdersPaused">+ Thêm</button>
                             </div>
+                            @* Item 101: ask about this dish on Zalo. *@
+                            @if (ShowZaloButton)
+                            {
+                                <a class="btn btn-sm btn-outline-success btn-block mt-1" href="@ZaloChatUrl(product.Name)"
+                                   target="_blank" rel="noopener" title="Hỏi về @product.Name qua Zalo">💬 Hỏi qua Zalo</a>
+                            }
                         </div>
                     </div>
                 </div>
@@ -253,6 +259,12 @@ else
                                     @I18n.T("add_to_cart")
                                 </button>
                             </div>
+                            @* Item 101: ask about this dish on Zalo. *@
+                            @if (ShowZaloButton)
+                            {
+                                <a class="btn btn-sm btn-outline-success btn-block mt-2" href="@ZaloChatUrl(product.Name)"
+                                   target="_blank" rel="noopener" title="Hỏi về @product.Name qua Zalo">💬 Hỏi qua Zalo</a>
+                            }
                         </div>
                     </div>
                 </div>
@@ -349,6 +361,11 @@ else
                         @(_creatingShortLink ? "Đang tạo..." : "🔗 Link ngắn")
                     </button>
                     <button type="button" class="btn btn-secondary" @onclick="CloseQuickView">Đóng</button>
+                    @* Item 101: ask about this dish on Zalo. *@
+                    @if (ShowZaloButton)
+                    {
+                        <a class="btn btn-outline-success" href="@ZaloChatUrl(_quickView.Name)" target="_blank" rel="noopener">💬 Hỏi qua Zalo</a>
+                    }
                     <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart" disabled="@OrdersPaused">
                         @I18n.T("add_to_cart") — @FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))
                     </button>
@@ -436,6 +453,27 @@ else
 
     /// <summary>True when the shop paused order intake (AcceptingOrders = false).</summary>
     private bool OrdersPaused => _shopSettings != null && !_shopSettings.AcceptingOrders;
+
+    // Item 101: per-product "Hỏi qua Zalo" button.
+    private string ZaloChatPhone => !string.IsNullOrWhiteSpace(_shopSettings?.ZaloPhone)
+        ? _shopSettings.ZaloPhone
+        : _shopSettings?.Hotline;
+
+    private bool ShowZaloButton => _shopSettings != null
+        && _shopSettings.ShowZaloChatButton
+        && !string.IsNullOrWhiteSpace(ZaloChatPhone);
+
+    /// <summary>zalo.me link with the phone normalized to 84xxxxxxxxx and a pre-filled question about the dish.</summary>
+    private string ZaloChatUrl(string productName)
+    {
+        var digits = new string((ZaloChatPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.StartsWith("0"))
+            digits = "84" + digits.Substring(1);
+        else if (!digits.StartsWith("84"))
+            digits = "84" + digits;
+        var text = Uri.EscapeDataString($"Chào quán, cho mình hỏi về món {productName}");
+        return $"https://zalo.me/{digits}?text={text}";
+    }
     private bool _openNow;
 
     protected override async Task OnInitializedAsync()

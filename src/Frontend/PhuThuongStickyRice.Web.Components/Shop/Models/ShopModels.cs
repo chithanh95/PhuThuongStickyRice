@@ -588,6 +588,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// <summary>Wave 6b (item 27): phone for the floating mobile Zalo button.</summary>
         public string ZaloPhone { get; set; }
 
+        /// <summary>Item 101: show the "💬 Hỏi qua Zalo" button on each product card. Default true.</summary>
+        public bool ShowZaloChatButton { get; set; } = true;
+
         /// <summary>Link tới Google Maps của quán (section "Đánh giá trên Google").</summary>
         public string GoogleMapsUrl { get; set; }
 

@@ -192,6 +192,9 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         [StringLength(30)]
         public string ZaloPhone { get; set; }
 
+        /// <summary>Item 101: show the "💬 Hỏi qua Zalo" button on each product card. Default true.</summary>
+        public bool ShowZaloChatButton { get; set; } = true;
+
         /// <summary>Link tới Google Maps của quán (section "Đánh giá trên Google").</summary>
         [StringLength(500)]
         public string GoogleMapsUrl { get; set; }

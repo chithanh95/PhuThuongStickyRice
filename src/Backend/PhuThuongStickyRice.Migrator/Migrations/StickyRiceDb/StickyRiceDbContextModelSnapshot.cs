@@ -2475,6 +2475,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<bool>("ShowZaloChatButton")
+                        .HasColumnType("bit");
+
                     b.Property<string>("TelegramBotToken")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
