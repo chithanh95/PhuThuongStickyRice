@@ -53,6 +53,7 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<DiscountCode> DiscountCodes { get; set; }
         public DbSet<DishCandidate> DishCandidates { get; set; }
         public DbSet<EmailMessage> EmailMessages { get; set; }
+        public DbSet<FacebookPostLog> FacebookPostLogs { get; set; }
         public DbSet<FaqItem> FaqItems { get; set; }
         public DbSet<FeatureFlag> FeatureFlags { get; set; }
         public DbSet<GroupOrder> GroupOrders { get; set; }

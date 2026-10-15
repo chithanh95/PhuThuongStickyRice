@@ -1,5 +1,6 @@
 @page "/products"
 @attribute [Authorize]
+@using System
 
 <div class="card">
     <div class="card-header d-flex flex-wrap align-items-center">
@@ -64,7 +65,7 @@
                                     }
                                 </td>
                                 <td>@product.Code</td>
-                                <td class="text-right">@product.Price.ToString("N0")</td>
+                                <td class="text-right">@product.Price.ToString("N0")<small class="text-muted">₫/@(string.Equals(product.Unit, "kg", StringComparison.OrdinalIgnoreCase) ? "kg" : "suất")</small></td>
                                 <td>
                                     @if (product.Status == "Active")
                                     {

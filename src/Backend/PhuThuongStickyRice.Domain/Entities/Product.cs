@@ -16,6 +16,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int TagsMaxLength = 200;
         public const int CategoryMaxLength = 100;
         public const int AllergenInfoMaxLength = 500;
+        public const int UnitMaxLength = 20;
+
+        /// <summary>Selling unit: "suất" (per portion, default) or "kg" (per kilogram).</summary>
+        public const string UnitPortion = "suất";
+
+        public const string UnitKg = "kg";
 
         public ProductCode Code { get; private set; }
 
@@ -30,6 +36,13 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// /admin/loi-nhuan profit report (revenue − cost).
         /// </summary>
         public decimal CostPrice { get; private set; }
+
+        /// <summary>
+        /// Selling unit: "suất" (per portion) or "kg" (per kilogram).
+        /// For "kg" products the price is per 1 kg; the shop sells
+        /// 500g / 1kg packs through size options.
+        /// </summary>
+        public string Unit { get; private set; } = UnitPortion;
 
         public ProductStatus Status { get; private set; }
 
@@ -166,6 +179,24 @@ namespace PhuThuongStickyRice.Domain.Entities
             }
 
             CostPrice = costPrice;
+        }
+
+        /// <summary>
+        /// Sets the selling unit: "suất" (per portion) or "kg" (per kilogram).
+        /// Null/empty normalizes to "suất".
+        /// </summary>
+        public void ChangeUnit(string unit)
+        {
+            var normalized = string.IsNullOrWhiteSpace(unit)
+                ? UnitPortion
+                : unit.Trim().ToLowerInvariant();
+
+            if (normalized != UnitPortion && normalized != UnitKg)
+            {
+                throw new DomainException("Unit must be 'suất' or 'kg'.");
+            }
+
+            Unit = normalized;
         }
 
         public void Activate()

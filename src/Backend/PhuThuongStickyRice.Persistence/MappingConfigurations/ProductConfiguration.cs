@@ -15,6 +15,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.Description).HasMaxLength(Product.DescriptionMaxLength);
             builder.Property(x => x.CostPrice).HasPrecision(18, 2).IsRequired();
 
+            // Item 81: selling unit — "suất" (portion) or "kg" (per kilogram).
+            builder.Property(x => x.Unit)
+                .HasMaxLength(Product.UnitMaxLength)
+                .IsRequired()
+                .HasDefaultValue(Product.UnitPortion);
+
             builder.Property(x => x.Tags).HasMaxLength(Product.TagsMaxLength);
             builder.Property(x => x.Category).HasMaxLength(Product.CategoryMaxLength);
             builder.Property(x => x.AllergenInfo).HasMaxLength(Product.AllergenInfoMaxLength);

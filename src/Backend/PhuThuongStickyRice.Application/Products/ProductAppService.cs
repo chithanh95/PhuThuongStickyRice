@@ -82,6 +82,8 @@ namespace PhuThuongStickyRice.Application.Products
             var cacheKey = "products:active:"
                 + (input.SearchTerm ?? string.Empty).Trim().ToLowerInvariant() + ":"
                 + (input.BranchId?.ToString() ?? "all") + ":"
+                + (input.Status ?? "all") + ":"
+                + (input.IncludeInactive ? "withInactive" : "activeOnly") + ":"
                 + input.SkipCount + ":" + input.MaxResultCount;
             return await _catalogCache.GetOrAddAsync(cacheKey, () => QueryListAsync(input));
         }
@@ -100,17 +102,31 @@ namespace PhuThuongStickyRice.Application.Products
             if (!string.IsNullOrWhiteSpace(input.Status)
                 && Enum.TryParse<ProductStatus>(input.Status, ignoreCase: true, out var status))
             {
-                query = query.Where(x => x.Status == status);
+                // Item 85: the public shop asks for status=Active with
+                // includeInactive=true so sold-out products can be shown
+                // with a "Tạm hết" badge. Discontinued stays hidden.
+                if (status == ProductStatus.Active && input.IncludeInactive)
+                {
+                    query = query.Where(x =>
+                        x.Status == ProductStatus.Active || x.Status == ProductStatus.Inactive);
+                }
+                else
+                {
+                    query = query.Where(x => x.Status == status);
+                }
 
                 // The public shop asks for status=Active: hide seasonal
                 // products that are outside their availability window.
                 // The admin list (no status filter) still sees them all.
+                // Sold-out (Inactive) products are shown regardless of the
+                // seasonal window — the "Tạm hết" badge is what matters.
                 if (status == ProductStatus.Active)
                 {
                     var today = DateTime.UtcNow.Date;
                     query = query.Where(x =>
-                        (x.AvailableFrom == null || x.AvailableFrom.Value.Date <= today)
-                        && (x.AvailableTo == null || x.AvailableTo.Value.Date >= today));
+                        x.Status == ProductStatus.Inactive
+                        || ((x.AvailableFrom == null || x.AvailableFrom.Value.Date <= today)
+                            && (x.AvailableTo == null || x.AvailableTo.Value.Date >= today)));
                 }
             }
 
@@ -150,6 +166,10 @@ namespace PhuThuongStickyRice.Application.Products
 
             var product = Product.Create(code, input.Name, Money.Of(input.Price, input.Currency ?? "VND"), input.Description);
             product.ChangeCostPrice(input.CostPrice);
+            if (!string.IsNullOrWhiteSpace(input.Unit))
+            {
+                product.ChangeUnit(input.Unit);
+            }
             product.ChangeBranch(input.BranchId);
             product.UpdateCatalogInfo(
                 input.Tags, input.Category, input.AllergenInfo,
@@ -176,6 +196,10 @@ namespace PhuThuongStickyRice.Application.Products
             product.UpdateDetails(input.Name, input.Description);
             product.ChangePrice(Money.Of(input.Price, input.Currency ?? "VND"));
             product.ChangeCostPrice(input.CostPrice);
+            if (!string.IsNullOrWhiteSpace(input.Unit))
+            {
+                product.ChangeUnit(input.Unit);
+            }
             product.UpdateCatalogInfo(
                 input.Tags, input.Category, input.AllergenInfo,
                 input.IsNew, input.IsSignature,

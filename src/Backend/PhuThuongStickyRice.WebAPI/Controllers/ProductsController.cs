@@ -1,6 +1,7 @@
-using PhuThuongStickyRice.Application.Products;
+﻿using PhuThuongStickyRice.Application.Products;
 using PhuThuongStickyRice.Application.Products.DTOs;
 using PhuThuongStickyRice.Application.Products.Exceptions;
+using PhuThuongStickyRice.Application.Facebook;
 using PhuThuongStickyRice.CrossCuttingConcerns.Csv;
 using PhuThuongStickyRice.CrossCuttingConcerns.HtmlGenerator;
 using PhuThuongStickyRice.CrossCuttingConcerns.PdfConverter;
@@ -39,6 +40,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly ICsvWriter<ProductModel> _productCsvWriter;
         private readonly ICsvReader<ProductModel> _productCsvReader;
         private readonly PhuThuongStickyRice.Application.Orders.IDashboardAppService _dashboardAppService;
+        private readonly IFacebookPostService _facebookPostService;
 
         public ProductsController(IProductAppService productAppService,
             ILogger<ProductsController> logger,
@@ -46,7 +48,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             IPdfConverter pdfConverter,
             ICsvWriter<ProductModel> productCsvWriter,
             ICsvReader<ProductModel> productCsvReader,
-            PhuThuongStickyRice.Application.Orders.IDashboardAppService dashboardAppService)
+            PhuThuongStickyRice.Application.Orders.IDashboardAppService dashboardAppService,
+            IFacebookPostService facebookPostService)
         {
             _productAppService = productAppService;
             _logger = logger;
@@ -55,6 +58,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _productCsvWriter = productCsvWriter;
             _productCsvReader = productCsvReader;
             _dashboardAppService = dashboardAppService;
+            _facebookPostService = facebookPostService;
         }
 
         [AllowAnonymous]
@@ -62,6 +66,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
             [FromQuery] string searchTerm = null, [FromQuery] string status = null,
             [FromQuery] Guid? branch = null,
+            [FromQuery] bool includeInactive = false,
             CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Getting products");
@@ -71,7 +76,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 SkipCount = (page < 1 ? 0 : page - 1) * (pageSize < 1 ? 20 : pageSize),
                 SearchTerm = searchTerm,
                 Status = status,
-                BranchId = branch
+                BranchId = branch,
+                IncludeInactive = includeInactive
             });
             return Ok(paged);
         }
@@ -117,8 +123,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     IsSignature = model.IsSignature,
                     AvailableFrom = model.AvailableFrom,
                     AvailableTo = model.AvailableTo,
-                    BranchId = model.BranchId
+                    BranchId = model.BranchId,
+                    Unit = model.Unit
                 });
+                if (model.PostToFacebook)
+                {
+                    // Item 130: auto-post the new product to the Facebook Page
+                    // feed. Runs in "waiting for configuration" mode when the
+                    // Page ID / token is missing — never throws.
+                    await _facebookPostService.PublishProductAsync(created.Id);
+                }
                 return Created($"/api/products/{created.Id}", created);
             }
             catch (DomainException ex)
@@ -157,8 +171,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     IsSignature = model.IsSignature,
                     AvailableFrom = model.AvailableFrom,
                     AvailableTo = model.AvailableTo,
-                    BranchId = model.BranchId
+                    BranchId = model.BranchId,
+                    Unit = model.Unit
                 });
+                if (model.PostToFacebook)
+                {
+                    // Item 130: auto-post the updated product to the Facebook
+                    // Page feed (e.g. when re-enabling a hidden product).
+                    await _facebookPostService.PublishProductAsync(dto.Id);
+                }
                 return Ok(dto);
             }
             catch (ProductNotFoundException ex)

@@ -26,6 +26,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Models
         [Range(0, double.MaxValue)]
         public decimal CostPrice { get; set; }
 
+        /// <summary>Item 81: selling unit — "suất" (per portion) or "kg" (per kilogram).</summary>
+        public string Unit { get; set; } = "suất";
+
         public string Status { get; set; }
 
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>

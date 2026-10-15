@@ -36,6 +36,16 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
         /// <summary>Item 109: branch the product belongs to (null = all branches).</summary>
         public Guid? BranchId { get; set; }
 
+        /// <summary>Item 81: selling unit — "suất" (per portion) or "kg" (per kilogram).</summary>
+        public string Unit { get; set; }
+
         public DateTime? AvailableTo { get; set; }
+
+        /// <summary>
+        /// Item 130: when true, the product is auto-posted to the Facebook
+        /// Page feed after saving (create or update). Ignored silently when
+        /// Facebook is not configured.
+        /// </summary>
+        public bool PostToFacebook { get; set; }
     }
 }

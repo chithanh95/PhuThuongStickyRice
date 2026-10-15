@@ -20,6 +20,9 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         /// <summary>Cost price (giá vốn) in VND, for the profit report.</summary>
         public decimal CostPrice { get; set; }
 
+        /// <summary>Selling unit: "suất" (per portion) or "kg" (per kilogram).</summary>
+        public string Unit { get; set; }
+
         public string Status { get; set; }
 
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
@@ -67,6 +70,10 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         [Range(0, double.MaxValue)]
         public decimal CostPrice { get; set; }
 
+        /// <summary>Selling unit: "suất" (per portion) or "kg" (per kilogram).</summary>
+        [StringLength(20)]
+        public string Unit { get; set; }
+
         /// <summary>
         /// Only applied on update: "Active", "Inactive" or "Discontinued".
         /// </summary>
@@ -103,6 +110,13 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         /// <summary>Optional branch filter (item 109): products of this
         /// branch plus branch-less (global) products.</summary>
         public Guid? BranchId { get; set; }
+
+        /// <summary>
+        /// Item 85: when true and Status=Active, Inactive (sold-out)
+        /// products are included so the shop can show a "Tạm hết" badge.
+        /// Discontinued products are never included.
+        /// </summary>
+        public bool IncludeInactive { get; set; }
     }
 
     public class ProductSizeOptionDto : EntityDto<Guid>
