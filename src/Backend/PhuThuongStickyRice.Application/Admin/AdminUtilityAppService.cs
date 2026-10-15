@@ -51,21 +51,22 @@ namespace PhuThuongStickyRice.Application.Admin
 
             var term = q.Trim();
 
-            var ordersTask = _orders.GetListAsync(new GetOrdersInput
+            // Sequential awaits: all repositories in one UoW share a single DbContext,
+            // so concurrent EF operations throw "A second operation was started
+            // on this context instance before a previous operation completed".
+            var ordersResult = await _orders.GetListAsync(new GetOrdersInput
             {
                 SearchTerm = term,
                 MaxResultCount = SearchTake
             });
-            var productsTask = _products.GetListAsync(new GetProductsInput
+            var productsResult = await _products.GetListAsync(new GetProductsInput
             {
                 SearchTerm = term,
                 MaxResultCount = SearchTake
             });
-            var customersTask = _orders.GetCustomersAsync(term);
+            var customersResult = await _orders.GetCustomersAsync(term);
 
-            await Task.WhenAll(ordersTask, productsTask, customersTask);
-
-            result.Orders = ordersTask.Result.Items
+            result.Orders = ordersResult.Items
                 .Take(SearchTake)
                 .Select(o => new GlobalSearchItemDto
                 {
@@ -76,7 +77,7 @@ namespace PhuThuongStickyRice.Application.Admin
                 })
                 .ToList();
 
-            result.Products = productsTask.Result.Items
+            result.Products = productsResult.Items
                 .Take(SearchTake)
                 .Select(p => new GlobalSearchItemDto
                 {
@@ -87,7 +88,7 @@ namespace PhuThuongStickyRice.Application.Admin
                 })
                 .ToList();
 
-            result.Customers = (customersTask.Result ?? new List<CustomerDto>())
+            result.Customers = (customersResult ?? new List<CustomerDto>())
                 .Take(SearchTake)
                 .Select(c => new GlobalSearchItemDto
                 {
@@ -106,12 +107,10 @@ namespace PhuThuongStickyRice.Application.Admin
             var notifications = new List<NotificationDto>();
             var nowVn = DateTime.UtcNow.AddHours(7);
 
-            var statsTask = _dashboard.GetStatsAsync();
-            var reviewsTask = _orders.GetReviewsAsync();
-            var birthdaysTask = _customerProfile.GetBirthdaysAsync(nowVn.Month);
-
-            await Task.WhenAll(statsTask, reviewsTask, birthdaysTask);
-            var stats = statsTask.Result;
+            // Sequential awaits (same single-DbContext reason as SearchAsync above).
+            var stats = await _dashboard.GetStatsAsync();
+            var reviewsResult = await _orders.GetReviewsAsync();
+            var birthdaysResult = await _customerProfile.GetBirthdaysAsync(nowVn.Month);
 
             // 1. Stale pending orders — urgent.
             if (stats.StalePendingOrders > 0)
@@ -155,7 +154,7 @@ namespace PhuThuongStickyRice.Application.Admin
             }
 
             // 4. New 1–2 star reviews (last 7 days) — warning.
-            var badReviews = (reviewsTask.Result ?? new List<OrderReviewDto>())
+            var badReviews = (reviewsResult ?? new List<OrderReviewDto>())
                 .Where(r => r.Rating <= 2 && r.CreatedAt >= nowVn.AddDays(-7))
                 .OrderByDescending(r => r.CreatedAt)
                 .Take(5)
@@ -173,7 +172,7 @@ namespace PhuThuongStickyRice.Application.Admin
             }
 
             // 5. Customers with birthday today — info.
-            var todayBirthdays = (birthdaysTask.Result ?? new List<BirthdayMemberDto>())
+            var todayBirthdays = (birthdaysResult ?? new List<BirthdayMemberDto>())
                 .Where(b => b.DateOfBirth.HasValue
                     && b.DateOfBirth.Value.Day == nowVn.Day
                     && b.DateOfBirth.Value.Month == nowVn.Month)
