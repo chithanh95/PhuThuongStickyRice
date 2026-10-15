@@ -9,6 +9,7 @@
 @inject JwtAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.PermissionService PermissionService
 
 <h3>Đăng nhập quản trị</h3>
 
@@ -239,6 +240,8 @@
     {
         await TokenManager.StoreTokenAsync(login.AccessToken, login.ExpiresAt);
         AuthStateProvider.NotifyUserAuthentication();
+        // Item 155: drop any cached permissions from a previous session.
+        PermissionService.ClearCache();
         var isStaff = login.Roles != null
             && login.Roles.Any(r => r == "Admin" || r == "Cashier" || r == "Kitchen");
         if (!isStaff && string.IsNullOrWhiteSpace(_returnUrl))

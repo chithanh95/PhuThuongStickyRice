@@ -1,0 +1,149 @@
+@page "/admin/phan-quyen"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject PermissionService PermissionService
+
+<h3>🔐 Phân quyền chi tiết</h3>
+<p class="text-muted">
+    Chọn quyền cho từng vai trò. <strong>Admin</strong> luôn có toàn quyền.
+    Nhân viên phải <strong>đăng nhập lại</strong> sau khi đổi quyền để nhận quyền mới.
+    Mọi thay đổi được ghi vào nhật ký nhân viên.
+</p>
+
+@if (_loading)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_matrix == null)
+{
+    <div class="alert alert-danger">Không tải được ma trận phân quyền.</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered mb-0">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 260px;">Quyền</th>
+                            @foreach (var role in _matrix.Roles)
+                            {
+                                <th class="text-center" style="min-width: 140px;">@role.RoleLabel</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var group in _matrix.Definitions.GroupBy(d => d.Group))
+                        {
+                            <tr class="table-light">
+                                <td colspan="@(_matrix.Roles.Count + 1)"><strong>@group.Key</strong></td>
+                            </tr>
+                            @foreach (var def in group)
+                            {
+                                <tr>
+                                    <td>@def.Label<br /><small class="text-muted">@def.Key</small></td>
+                                    @foreach (var role in _matrix.Roles)
+                                    {
+                                        var r = role;
+                                        var d = def;
+                                        <td class="text-center">
+                                            <input type="checkbox"
+                                                   checked="@r.GrantedKeys.Contains(d.Key)"
+                                                   @onchange="(e => OnToggle(r, d.Key, (bool)e.Value))" />
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        }
+                        <tr class="table-light">
+                            <td><strong>Tất cả quyền</strong><br /><small class="text-muted">Admin</small></td>
+                            <td colspan="@_matrix.Roles.Count" class="text-center text-muted">
+                                ✅ Mặc định có toàn quyền, không cần cấu hình
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex align-items-center">
+            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@(_saving || !_dirty)">
+                @(_saving ? "Đang lưu..." : "💾 Lưu phân quyền")
+            </button>
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <span class="ml-3 @(_isError ? "text-danger" : "text-success")">@_message</span>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private PermissionMatrixModel _matrix;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _dirty;
+    private string _message;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _matrix = await PermissionService.GetMatrixAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = "Lỗi: " + ex.Message;
+            _isError = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnToggle(RolePermissionsModel role, string key, bool granted)
+    {
+        if (granted)
+        {
+            if (!role.GrantedKeys.Contains(key))
+            {
+                role.GrantedKeys.Add(key);
+            }
+        }
+        else
+        {
+            role.GrantedKeys.Remove(key);
+        }
+
+        _dirty = true;
+        _message = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _message = null;
+        try
+        {
+            foreach (var role in _matrix.Roles)
+            {
+                await PermissionService.SaveRolePermissionsAsync(role.Role, role.GrantedKeys);
+            }
+
+            _dirty = false;
+            _message = "Đã lưu phân quyền.";
+            _isError = false;
+        }
+        catch (Exception ex)
+        {
+            _message = "Lỗi: " + ex.Message;
+            _isError = true;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -64,6 +64,14 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Item 130 (đúng): VIP marking + priority.
+            builder.Services.AddHttpClient<VipService, VipService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             builder.Services.AddHttpClient<DashboardService, DashboardService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
@@ -135,6 +143,14 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Item 178: public queue-number display (/cho, no login).
+            builder.Services.AddHttpClient<QueueService, QueueService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Admin: discount codes (authenticated).
             builder.Services.AddHttpClient<DiscountService, DiscountService>(client =>
             {
@@ -145,6 +161,20 @@ namespace PhuThuongStickyRice.Web
 
             // Admin: staff accounts & roles (authenticated, Admin only).
             builder.Services.AddHttpClient<StaffService, StaffService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Items 155/156: fine-grained permissions + staff activity log.
+            builder.Services.AddHttpClient<PermissionService, PermissionService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+            builder.Services.AddHttpClient<StaffLogService, StaffLogService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
                 client.Timeout = new TimeSpan(0, 0, 30);
@@ -213,8 +243,8 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
-            // Items 157–158: admin global search + notification center.
-            builder.Services.AddHttpClient<AdminUtilityService, AdminUtilityService>(client =>
+            // Item 162: order message templates (mẫu tin nhắn theo trạng thái đơn).
+            builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.MessageTemplateService, PhuThuongStickyRice.Web.Components.Admin.Services.MessageTemplateService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
                 client.Timeout = new TimeSpan(0, 0, 30);

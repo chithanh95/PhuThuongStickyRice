@@ -1150,6 +1150,9 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
         public async Task<OrderDto> MarkCashCollectedAsync(Guid id)
         {
+            // Item 155: cash handling needs orders.confirm-payment.
+            await _permissions.RequirePermissionAsync(PermissionKeys.OrdersConfirmPayment);
+
             var order = await FindOrThrowAsync(id);
 
             order.MarkCashCollected();

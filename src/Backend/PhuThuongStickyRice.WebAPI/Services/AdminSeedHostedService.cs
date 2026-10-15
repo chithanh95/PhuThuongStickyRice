@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Persistence;
+using PhuThuongStickyRice.Application.Permissions;
 using System;
 using System.Linq;
 using System.Threading;
@@ -159,6 +160,43 @@ namespace PhuThuongStickyRice.WebAPI.Services
             }
 
             _logger.LogInformation("Admin seed: DONE. '{Email}' has the '{Role}' role.", DefaultAdminEmail, AdminRoleName);
+
+            // Item 155: seed default fine-grained permissions (idempotent —
+            // only missing role/key pairs are added; admin edits at
+            // /admin/phan-quyen are never overwritten).
+            await SeedDefaultPermissionsAsync(dbContext, cancellationToken);
+        }
+
+        private async Task SeedDefaultPermissionsAsync(
+            StickyRiceDbContext dbContext, CancellationToken cancellationToken)
+        {
+            var set = dbContext.Set<RolePermission>();
+            var added = 0;
+
+            foreach (var pair in PermissionKeys.DefaultGrants)
+            {
+                foreach (var key in pair.Value)
+                {
+                    var exists = await set.AnyAsync(
+                        x => x.Role == pair.Key && x.PermissionKey == key, cancellationToken);
+                    if (!exists)
+                    {
+                        await set.AddAsync(new RolePermission
+                        {
+                            Role = pair.Key,
+                            PermissionKey = key,
+                            CreatedAt = DateTime.UtcNow,
+                        }, cancellationToken);
+                        added++;
+                    }
+                }
+            }
+
+            if (added > 0)
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Admin seed: {Count} default role permissions added.", added);
+            }
         }
 
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

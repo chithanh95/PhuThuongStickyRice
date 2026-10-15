@@ -1,4 +1,6 @@
 using PhuThuongStickyRice.Application.Shop.DTOs;
+using PhuThuongStickyRice.Application.Permissions;
+using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -25,6 +27,13 @@ namespace PhuThuongStickyRice.Application.Shop
         Task<ShopSettingDto> GetPublicAsync();
 
         Task<ShopSettingDto> UpdateAsync(ShopSettingDto dto);
+
+        /// <summary>
+        /// Item 180: posts a sample new-order payload to the given URL
+        /// (or the saved one when empty). Returns (ok, message) — the
+        /// admin UI shows the result; never throws.
+        /// </summary>
+        Task<(bool Ok, string Message)> TestNewOrderWebhookAsync(string url);
     }
 
     public class ShopSettingAppService : ApplicationService, IShopSettingAppService
@@ -40,17 +49,29 @@ namespace PhuThuongStickyRice.Application.Shop
         private readonly IRepository<HolidaySchedule, Guid> _holidays;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IDataProtector _protector;
+        private readonly System.Net.Http.IHttpClientFactory _httpClientFactory;
+        private readonly Microsoft.Extensions.Logging.ILogger<ShopSettingAppService> _logger;
+        private readonly IPermissionService _permissions;
+        private readonly IStaffActivityLogger _activityLogger;
 
         public ShopSettingAppService(
             IRepository<ShopSetting, Guid> settings,
             IRepository<HolidaySchedule, Guid> holidays,
             IAsyncQueryableExecuter asyncExecuter,
-            IDataProtectionProvider dataProtectionProvider)
+            IDataProtectionProvider dataProtectionProvider,
+            System.Net.Http.IHttpClientFactory httpClientFactory,
+            Microsoft.Extensions.Logging.ILogger<ShopSettingAppService> logger,
+            IPermissionService permissions,
+            IStaffActivityLogger activityLogger)
         {
             _settings = settings;
             _holidays = holidays;
             _asyncExecuter = asyncExecuter;
             _protector = dataProtectionProvider.CreateProtector("PhuThuongStickyRice.ShopSettings");
+            _httpClientFactory = httpClientFactory;
+            _logger = logger;
+            _permissions = permissions;
+            _activityLogger = activityLogger;
         }
 
         /// <summary>Public — the checkout page needs the fee rules.</summary>
@@ -105,6 +126,9 @@ namespace PhuThuongStickyRice.Application.Shop
         [Authorize(Roles = "Admin")]
         public async Task<ShopSettingDto> UpdateAsync(ShopSettingDto dto)
         {
+            // Item 155: editing shop settings needs settings.edit.
+            await _permissions.RequirePermissionAsync(PermissionKeys.SettingsEdit);
+
             var entity = await GetSingleAsync();
             if (entity == null)
             {
@@ -200,6 +224,97 @@ namespace PhuThuongStickyRice.Application.Shop
         private static string TrimOrNull(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Item 180: only absolute http(s) URLs are accepted as webhook
+        /// targets; anything else is treated as "not configured".
+        /// </summary>
+        private static string NormalizeWebhookUrl(string value)
+        {
+            var trimmed = TrimOrNull(value);
+            if (trimmed == null)
+            {
+                return null;
+            }
+
+            if (!trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                && !trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return trimmed.Length > 1000 ? trimmed.Substring(0, 1000) : trimmed;
+        }
+
+        /// <summary>
+        /// Item 180: "Gửi thử" — posts a sample payload to the given URL (or
+        /// the saved setting when empty) with a 5s timeout. Never throws;
+        /// the admin UI shows the returned message.
+        /// </summary>
+        [Authorize(Roles = "Admin")]
+        public async Task<(bool Ok, string Message)> TestNewOrderWebhookAsync(string url)
+        {
+            var target = NormalizeWebhookUrl(url);
+            if (target == null)
+            {
+                var entity = await GetSingleAsync();
+                target = NormalizeWebhookUrl(entity?.NewOrderWebhookUrl);
+            }
+
+            if (target == null)
+            {
+                return (false, "Chưa cấu hình URL webhook (phải bắt đầu bằng http:// hoặc https://).");
+            }
+
+            var payload = new
+            {
+                maDon = "TEST-0001",
+                sdt = "0901234567",
+                tongTien = 75000,
+                trangThai = "Pending",
+                thoiGian = DateTime.UtcNow
+            };
+
+            try
+            {
+                var ok = await PostNewOrderWebhookAsync(target, payload);
+                return ok
+                    ? (true, $"Đã gửi thử tới {target} — máy chủ trả về thành công.")
+                    : (false, $"Đã gửi tới {target} nhưng máy chủ không trả về thành công. Kiểm tra log WebAPI để biết chi tiết.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Item 180: test webhook POST failed for {Url}.", target);
+                return (false, $"Gửi thử thất bại: {ex.GetType().Name} — {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Item 180: posts the new-order payload. Returns true on HTTP
+        /// success. Throws on transport errors; callers must catch and log
+        /// so a failing endpoint never breaks order creation.
+        /// </summary>
+        public static async Task<bool> PostNewOrderWebhookAsync(
+            System.Net.Http.IHttpClientFactory httpClientFactory, string url, object payload)
+        {
+            var client = httpClientFactory.CreateClient("PhuThuongStickyRice.Webhook");
+            client.Timeout = TimeSpan.FromSeconds(5);
+
+            var body = System.Text.Json.JsonSerializer.Serialize(payload);
+            using var request = new System.Net.Http.HttpRequestMessage(
+                System.Net.Http.HttpMethod.Post, url)
+            {
+                Content = new System.Net.Http.StringContent(body, System.Text.Encoding.UTF8, "application/json")
+            };
+
+            var response = await client.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
+        private Task<bool> PostNewOrderWebhookAsync(string url, object payload)
+        {
+            return PostNewOrderWebhookAsync(_httpClientFactory, url, payload);
         }
 
         /// <summary>

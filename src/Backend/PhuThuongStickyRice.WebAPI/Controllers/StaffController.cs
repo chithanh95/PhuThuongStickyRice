@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Persistence;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
@@ -31,11 +32,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         private readonly UserManager<User> _userManager;
         private readonly StickyRiceDbContext _db;
+        private readonly IStaffActivityLogger _activityLogger;
 
-        public StaffController(UserManager<User> userManager, StickyRiceDbContext db)
+        public StaffController(
+            UserManager<User> userManager,
+            StickyRiceDbContext db,
+            IStaffActivityLogger activityLogger)
         {
             _userManager = userManager;
             _db = db;
+            _activityLogger = activityLogger;
         }
 
         [HttpGet("users")]
@@ -102,6 +108,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = string.Join("; ", result.Errors.Select(e => e.Description)) });
 
             await AssignRoleAsync(user.Id, request.Role, cancellationToken);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.StaffCreate,
+                $"Tạo tài khoản {user.UserName} vai trò {request.Role}.");
+
             return Ok(new { id = user.Id });
         }
 
@@ -124,6 +135,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (user == null) return NotFound();
 
             await AssignRoleAsync(user.Id, request.Role, cancellationToken);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.StaffRoleChange,
+                $"Gán vai trò {request.Role} cho {user.UserName}.");
+
             return Ok();
         }
 
@@ -152,6 +168,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 _db.Set<UserRole>().Remove(link);
                 await _db.SaveChangesAsync(cancellationToken);
+
+                // Item 156: staff activity log.
+                await _activityLogger.LogAsync(StaffActions.StaffRoleChange,
+                    $"Gỡ vai trò {role} khỏi {user.UserName}.");
             }
 
             return Ok();

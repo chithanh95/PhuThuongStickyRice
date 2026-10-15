@@ -1,4 +1,6 @@
 using PhuThuongStickyRice.Application.Discounts.DTOs;
+using PhuThuongStickyRice.Application.Permissions;
+using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -67,13 +69,19 @@ namespace PhuThuongStickyRice.Application.Discounts
     {
         private readonly IRepository<DiscountCode, Guid> _discounts;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IPermissionService _permissions;
+        private readonly IStaffActivityLogger _activityLogger;
 
         public DiscountAppService(
             IRepository<DiscountCode, Guid> discounts,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            IPermissionService permissions,
+            IStaffActivityLogger activityLogger)
         {
             _discounts = discounts;
             _asyncExecuter = asyncExecuter;
+            _permissions = permissions;
+            _activityLogger = activityLogger;
         }
 
         [Authorize(Roles = "Admin")]
@@ -95,6 +103,9 @@ namespace PhuThuongStickyRice.Application.Discounts
         [Authorize(Roles = "Admin")]
         public async Task<DiscountCodeDto> CreateAsync(CreateDiscountCodeDto dto)
         {
+            // Item 155: managing discount codes needs discounts.manage.
+            await _permissions.RequirePermissionAsync(PermissionKeys.DiscountsManage);
+
             var code = NormalizeCode(dto.Code);
             await EnsureCodeUniqueAsync(code, null);
             EnsureValueProvided(dto);
@@ -112,12 +123,19 @@ namespace PhuThuongStickyRice.Application.Discounts
                 VoucherType = dto.VoucherType
             };
             await _discounts.InsertAsync(entity, autoSave: true);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.DiscountCreate, $"Thêm mã giảm giá {entity.Code}.");
+
             return MapToDto(entity);
         }
 
         [Authorize(Roles = "Admin")]
         public async Task<DiscountCodeDto> UpdateAsync(Guid id, CreateDiscountCodeDto dto)
         {
+            // Item 155: managing discount codes needs discounts.manage.
+            await _permissions.RequirePermissionAsync(PermissionKeys.DiscountsManage);
+
             var entity = await _discounts.GetAsync(id);
             var code = NormalizeCode(dto.Code);
             await EnsureCodeUniqueAsync(code, id);
@@ -132,13 +150,24 @@ namespace PhuThuongStickyRice.Application.Discounts
             entity.IsActive = dto.IsActive;
             entity.VoucherType = dto.VoucherType;
             await _discounts.UpdateAsync(entity, autoSave: true);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.DiscountUpdate, $"Sửa mã giảm giá {entity.Code}.");
+
             return MapToDto(entity);
         }
 
         [Authorize(Roles = "Admin")]
         public async Task DeleteAsync(Guid id)
         {
-            await _discounts.DeleteAsync(id, autoSave: true);
+            // Item 155: managing discount codes needs discounts.manage.
+            await _permissions.RequirePermissionAsync(PermissionKeys.DiscountsManage);
+
+            var entity = await _discounts.GetAsync(id);
+            await _discounts.DeleteAsync(entity, autoSave: true);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.DiscountDelete, $"Xóa mã giảm giá {entity.Code}.");
         }
 
         [AllowAnonymous]

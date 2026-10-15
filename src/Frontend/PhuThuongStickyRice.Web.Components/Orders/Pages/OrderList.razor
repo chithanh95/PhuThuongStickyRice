@@ -6,6 +6,7 @@
 @inject OrderService OrderService
 @inject NavigationManager Navigation
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave3Service Wave3Service
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.PermissionService PermissionService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
 <style>
@@ -48,6 +49,21 @@
                         }
                     }
                 </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-control" @bind="_cashFilter" @bind:after="() => LoadOrders(1)" title="Lọc theo trạng thái thu tiền">
+                    <option value="">Thu tiền: tất cả</option>
+                    <option value="uncollected">💵 Chưa thu tiền</option>
+                    <option value="collected">✅ Đã thu tiền</option>
+                </select>
+            </div>
+            @* Item 130 (đúng): chỉ hiện đơn của khách VIP. *@
+            <div class="col-md-2 d-flex align-items-center">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="vipOnlyFilter"
+                           @bind="_vipOnly" @bind:after="() => LoadOrders(1)" />
+                    <label class="form-check-label font-weight-bold text-warning" for="vipOnlyFilter">👑 Chỉ VIP</label>
+                </div>
             </div>
         </div>
         @* Wave 6c (item 35): date-range filter. *@
@@ -206,6 +222,11 @@ else
                                     {
                                         <span class="badge badge-primary ml-1" title="Đơn đặt trước">📅 @order.ScheduledFor.Value.ToLocalTime().ToString("dd/MM HH:mm")</span>
                                     }
+                                    @* Item 130 (đúng): VIP priority badge. *@
+                                    @if (order.IsVip)
+                                    {
+                                        <span class="badge badge-warning ml-1" title="Khách VIP — ưu tiên xử lý">👑 VIP ưu tiên</span>
+                                    }
                                     <br />@FulfillmentBadge(order.FulfillmentMethod, order.PickedUpAt)
                                 </td>
                                 <td>
@@ -226,7 +247,7 @@ else
                                 <td>@PaymentInfo(order)</td>
                                 <td><small>@order.ShipperName</small></td>
                                 <td>@order.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
-                                <td class="text-right">@NextStatusButtons(order) @ConfirmPaymentButton(order)</td>
+                                <td class="text-right">@NextStatusButtons(order) @ConfirmPaymentButton(order) @CollectCashButton(order)</td>
                             </tr>
                             @if (_expandedOrderId == order.Id)
                             {
@@ -236,7 +257,15 @@ else
                                             <strong>Chi tiết đơn @order.OrderNumber</strong>
                                             <div>
                                                 <a class="btn btn-sm btn-outline-secondary mr-1" href="@($"/orders/print/{order.Id}")" target="_blank">🖨 In hóa đơn</a>
-                                                <a class="btn btn-sm btn-outline-secondary" href="@($"/orders/nhan/{order.Id}")" target="_blank">🏷 In tem</a>
+                                                <a class="btn btn-sm btn-outline-secondary mr-1" href="@($"/orders/nhan/{order.Id}")" target="_blank">🏷 In tem</a>
+                                                @* Item 162: copy the rendered message template for the current status. *@
+                                                <button class="btn btn-sm btn-outline-info" @onclick="() => CopyMessageAsync(order)" disabled="@_copyingMessage" title="Copy mẫu tin nhắn theo trạng thái hiện tại — gửi tay qua Zalo/tin nhắn">
+                                                    📋 @(_copyingMessage ? "Đang copy..." : "Copy tin nhắn")
+                                                </button>
+                                                @if (!string.IsNullOrEmpty(_copyMessageFeedback))
+                                                {
+                                                    <small class="text-muted d-block mt-1">@_copyMessageFeedback</small>
+                                                }
                                             </div>
                                         </div>
                                         @if (order.Status == "Delivering" && _shippers != null)
@@ -302,9 +331,13 @@ else
                                                         <input class="form-control form-control-sm" @bind="_pickupShipperPhone" placeholder="SĐT shipper" />
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <button class="btn btn-sm btn-success" @onclick="() => MarkPickedUp(order)" disabled="@_markingPickedUp">
-                                                            @(_markingPickedUp ? "Đang xác nhận..." : "✅ Xác nhận đã lấy hàng")
-                                                        </button>
+                                                        @* Item 155: confirming pickup needs orders.confirm. *@
+                                                        @if (HasPermission("orders.confirm"))
+                                                        {
+                                                            <button class="btn btn-sm btn-success" @onclick="() => MarkPickedUp(order)" disabled="@_markingPickedUp">
+                                                                @(_markingPickedUp ? "Đang xác nhận..." : "✅ Xác nhận đã lấy hàng")
+                                                            </button>
+                                                        }
                                                         @if (!string.IsNullOrEmpty(_pickupMessage))
                                                         {
                                                             <small class="@(_pickupIsError ? "text-danger" : "text-success") ml-2">@_pickupMessage</small>
@@ -496,9 +529,21 @@ else
 @code {
     private PagedResult<OrderModel> _paged;
     private int _page = 1;
+
+    // Item 155: fine-grained permission keys of the current user.
+    private System.Collections.Generic.HashSet<string> _permissions =
+        new(System.StringComparer.OrdinalIgnoreCase);
+
+    private bool HasPermission(string key) => _permissions.Contains(key);
     private string _searchTerm;
     private string _statusFilter;
     private string _shipperFilter;
+
+    // Item 163: cash-collection filter ("", "collected", "uncollected").
+    private string _cashFilter;
+
+    // Item 130 (đúng): only VIP customers' orders.
+    private bool _vipOnly;
 
     // Wave 6c (item 35): date-range filter.
     private DateTime? _fromDate;
@@ -543,6 +588,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Item 155: fine-grained permissions gate the sensitive buttons.
+        // Failure to load = no permissions (buttons hidden, APIs re-check).
+        try
+        {
+            _permissions = await PermissionService.GetMyPermissionsAsync();
+        }
+        catch
+        {
+            _permissions = new System.Collections.Generic.HashSet<string>(
+                System.StringComparer.OrdinalIgnoreCase);
+        }
+
         // Support deep links like /orders?status=Pending or /orders?searchTerm=090...
         var query = ParseQuery(Navigation.Uri);
         if (query.TryGetValue("status", out var status) && !string.IsNullOrWhiteSpace(status))
@@ -631,7 +688,14 @@ else
     {
         _page = page < 1 ? 1 : page;
         _selectedIndex = -1; // Item 141: reset keyboard selection on reload.
-        _paged = await OrderService.GetOrdersAsync(_page, 20, _searchTerm, _statusFilter, ShipperFilterId, _fromDate, _toDate);
+        // Item 163: cash-collection filter.
+        bool? cashCollected = _cashFilter switch
+        {
+            "collected" => true,
+            "uncollected" => false,
+            _ => null
+        };
+        _paged = await OrderService.GetOrdersAsync(_page, 20, _searchTerm, _statusFilter, ShipperFilterId, _fromDate, _toDate, cashCollected, _vipOnly);
     }
 
     /// <summary>Wave 6c (item 35): clears the date-range filter.</summary>
@@ -943,12 +1007,105 @@ else
             return;
         }
 
+        // Item 155: "Đã nhận tiền" needs orders.confirm-payment.
+        if (!HasPermission("orders.confirm-payment"))
+        {
+            return;
+        }
+
         builder.OpenElement(0, "button");
         builder.AddAttribute(1, "class", "btn btn-sm btn-outline-success mr-1");
         builder.AddAttribute(2, "onclick", Microsoft.AspNetCore.Components.EventCallback.Factory.Create(this, () => ConfirmPayment(order)));
         builder.AddContent(3, "Đã nhận tiền");
         builder.CloseElement();
     };
+
+    /// <summary>
+    /// Item 163: "💵 Đã thu tiền" — 1-click cash-collection marking for
+    /// orders that are not cancelled and not yet collected. Shown next to
+    /// the status buttons; collected orders show a badge instead.
+    /// </summary>
+    private RenderFragment CollectCashButton(OrderModel order) => builder =>
+    {
+        if (order.CashCollected)
+        {
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", "badge badge-success");
+            builder.AddAttribute(2, "title",
+                order.CashCollectedAt.HasValue
+                    ? $"Thu lúc {order.CashCollectedAt.Value.ToLocalTime():HH:mm dd/MM/yyyy}"
+                    : null);
+            builder.AddContent(3, "💵 Đã thu");
+            builder.CloseElement();
+            return;
+        }
+
+        if (order.Status == "Cancelled")
+        {
+            return;
+        }
+
+        // Item 155: reuses orders.confirm-payment (cash handling).
+        if (!HasPermission("orders.confirm-payment"))
+        {
+            return;
+        }
+
+        builder.OpenElement(0, "button");
+        builder.AddAttribute(1, "class", "btn btn-sm btn-outline-success mr-1");
+        builder.AddAttribute(2, "title", "Đánh dấu đã thu tiền mặt");
+        builder.AddAttribute(3, "onclick", Microsoft.AspNetCore.Components.EventCallback.Factory.Create(this, () => CollectCash(order)));
+        builder.AddContent(4, "💵 Thu tiền");
+        builder.CloseElement();
+    };
+
+    /// <summary>Item 163: marks cash as collected, then reloads the page.</summary>
+    private async Task CollectCash(OrderModel order)
+    {
+        try
+        {
+            await OrderService.MarkCashCollectedAsync(order.Id);
+            await LoadOrders(_page);
+        }
+        catch (Exception ex)
+        {
+            _shipperMessage = "Lỗi: " + ex.Message;
+        }
+    }
+
+    private bool _copyingMessage;
+    private string _copyMessageFeedback;
+
+    /// <summary>
+    /// Item 162: renders the message template for the order's current
+    /// status and copies it to the clipboard (JS interop). The template
+    /// names can be managed at /admin/mau-tin-nhan.
+    /// </summary>
+    private async Task CopyMessageAsync(OrderModel order)
+    {
+        _copyingMessage = true;
+        _copyMessageFeedback = null;
+        try
+        {
+            var preview = await OrderService.GetMessagePreviewAsync(order.Id, order.Status);
+            if (string.IsNullOrWhiteSpace(preview?.Message))
+            {
+                _copyMessageFeedback = "Không có nội dung mẫu.";
+                return;
+            }
+
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", preview.Message);
+            _copyMessageFeedback = "Đã copy vào clipboard — dán vào Zalo/tin nhắn để gửi tay.";
+        }
+        catch (Exception ex)
+        {
+            _copyMessageFeedback = "Lỗi: " + ex.Message;
+        }
+        finally
+        {
+            _copyingMessage = false;
+        }
+    }
 
     private static RenderFragment PaymentInfo(OrderModel order) => builder =>
     {
@@ -987,10 +1144,19 @@ else
             _ => System.Array.Empty<string>()
         };
 
+        // Item 155: cancelling needs orders.cancel; other transitions need
+        // orders.confirm. Buttons without permission are hidden; the API
+        // re-checks server-side.
         var seq = 0;
         foreach (var s in next)
         {
             var status = s;
+            var requiredKey = status == "Cancelled" ? "orders.cancel" : "orders.confirm";
+            if (!HasPermission(requiredKey))
+            {
+                continue;
+            }
+
             var css = status == "Cancelled" ? "btn btn-sm btn-outline-danger mr-1" : "btn btn-sm btn-outline-primary mr-1";
             builder.OpenElement(seq++, "button");
             builder.AddAttribute(seq++, "class", css);

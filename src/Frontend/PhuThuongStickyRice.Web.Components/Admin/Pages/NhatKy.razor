@@ -1,0 +1,198 @@
+@page "/admin/nhat-ky"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject StaffLogService StaffLogService
+@inject StaffService StaffService
+
+<h3>📋 Nhật ký nhân viên</h3>
+<p class="text-muted">Ai đã làm gì, lúc nào: đăng nhập, xác nhận/hủy đơn, sửa giá, tặng quà, đổi quyền...</p>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label>Nhân viên</label>
+                <select class="form-control" @bind="_filterUserId">
+                    <option value="">Tất cả</option>
+                    @foreach (var u in _staffUsers)
+                    {
+                        <option value="@u.Id">@u.UserName</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Hành động</label>
+                <select class="form-control" @bind="_filterAction">
+                    <option value="">Tất cả</option>
+                    @foreach (var a in _actions)
+                    {
+                        <option value="@a.Key">@a.Value</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label>Từ ngày</label>
+                <input type="date" class="form-control" @bind="_filterFrom" />
+            </div>
+            <div class="form-group col-md-2">
+                <label>Đến ngày</label>
+                <input type="date" class="form-control" @bind="_filterTo" />
+            </div>
+            <div class="form-group col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary btn-block" @onclick="ApplyFilter" disabled="@_loading">
+                    🔍 Lọc
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_loading && _logs == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else if (_logs != null)
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Nhân viên</th>
+                            <th>Hành động</th>
+                            <th>Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in _logs.Items)
+                        {
+                            <tr>
+                                <td style="white-space: nowrap;">@log.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@log.UserName</td>
+                                <td><span class="badge badge-info">@log.ActionLabel</span></td>
+                                <td>@log.Detail</td>
+                            </tr>
+                        }
+                        @if (_logs.Items.Count == 0)
+                        {
+                            <tr><td colspan="4" class="text-center text-muted">Không có bản ghi nào.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span class="text-muted">Tổng @_logs.TotalCount bản ghi</span>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="PrevPage" disabled="@(_page == 0 || _loading)">← Trước</button>
+                <span class="mx-2">Trang @(_page + 1)</span>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(_loading || (_page + 1) * _pageSize >= _logs.TotalCount)">Sau →</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private const int _pageSize = 50;
+
+    private StaffActivityLogListModel _logs;
+    private List<StaffUserModel> _staffUsers = new();
+    private List<KeyValuePair<string, string>> _actions = new();
+    private bool _loading;
+
+    private string _filterUserId = "";
+    private string _filterAction = "";
+    private DateTime? _filterFrom;
+    private DateTime? _filterTo;
+    private int _page;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _staffUsers = await StaffService.GetUsersAsync() ?? new List<StaffUserModel>();
+        }
+        catch
+        {
+            _staffUsers = new List<StaffUserModel>();
+        }
+
+        await LoadPage();
+    }
+
+    private async Task ApplyFilter()
+    {
+        _page = 0;
+        await LoadPage();
+    }
+
+    private async Task PrevPage()
+    {
+        if (_page > 0)
+        {
+            _page--;
+            await LoadPage();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        _page++;
+        await LoadPage();
+    }
+
+    private async Task LoadPage()
+    {
+        _loading = true;
+        try
+        {
+            Guid? userId = Guid.TryParse(_filterUserId, out var id) ? id : (Guid?)null;
+            _logs = await StaffLogService.GetLogsAsync(
+                userId,
+                string.IsNullOrWhiteSpace(_filterAction) ? null : _filterAction,
+                _filterFrom,
+                _filterTo,
+                _page * _pageSize,
+                _pageSize);
+
+            // Action filter options come from the server (distinct actions).
+            _actions = (_logs.Actions ?? new List<string>())
+                .Select(a => new KeyValuePair<string, string>(a, ActionLabel(a)))
+                .ToList();
+        }
+        catch
+        {
+            _logs = new StaffActivityLogListModel();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string ActionLabel(string action) => action switch
+    {
+        "staff.login" => "Đăng nhập",
+        "order.confirm" => "Xác nhận đơn",
+        "order.cancel" => "Hủy đơn",
+        "order.status" => "Chuyển trạng thái đơn",
+        "order.confirm-payment" => "Xác nhận đã nhận tiền",
+        "order.picked-up" => "Xác nhận đã lấy hàng",
+        "order.refund-request" => "Yêu cầu hoàn tiền",
+        "order.refund-confirm" => "Xác nhận hoàn tiền",
+        "product.create" => "Thêm món",
+        "product.update" => "Sửa món",
+        "product.delete" => "Xóa món",
+        "discount.create" => "Thêm mã giảm giá",
+        "discount.update" => "Sửa mã giảm giá",
+        "discount.delete" => "Xóa mã giảm giá",
+        "settings.update" => "Sửa cài đặt cửa hàng",
+        "customer.birthday-gift" => "Tặng quà sinh nhật",
+        "staff.permission-change" => "Đổi phân quyền",
+        "staff.create" => "Tạo tài khoản nhân viên",
+        "staff.role-change" => "Đổi vai trò nhân viên",
+        _ => action,
+    };
+}

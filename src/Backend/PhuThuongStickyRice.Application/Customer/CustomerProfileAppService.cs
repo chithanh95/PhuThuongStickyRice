@@ -1,4 +1,5 @@
 using PhuThuongStickyRice.Application.Zalo;
+using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -49,6 +50,7 @@ namespace PhuThuongStickyRice.Application.Customer
         private readonly IRepository<CustomerReminder, Guid> _reminders;
         private readonly IZaloNotificationService _zalo;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IStaffActivityLogger _activityLogger;
 
         public CustomerProfileAppService(
             IRepository<User, Guid> users,
@@ -57,7 +59,8 @@ namespace PhuThuongStickyRice.Application.Customer
             IRepository<DiscountCode, Guid> discounts,
             IRepository<CustomerReminder, Guid> reminders,
             IZaloNotificationService zalo,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            IStaffActivityLogger activityLogger)
         {
             _users = users;
             _userRoles = userRoles;
@@ -66,6 +69,7 @@ namespace PhuThuongStickyRice.Application.Customer
             _reminders = reminders;
             _zalo = zalo;
             _asyncExecuter = asyncExecuter;
+            _activityLogger = activityLogger;
         }
 
         public async Task<CustomerProfileDto> GetMyAsync()
@@ -223,6 +227,10 @@ namespace PhuThuongStickyRice.Application.Customer
             user.BirthdayGiftYear = thisYear;
             user.BirthdayGiftCode = code;
             await _users.UpdateAsync(user);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.BirthdayGift,
+                $"Tặng quà sinh nhật {amount:N0}₫ (mã {code}) cho SĐT {phone}.");
 
             return new BirthdayGiftResultDto
             {

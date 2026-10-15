@@ -2,6 +2,8 @@ using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using PhuThuongStickyRice.WebAPI.Services;
+using PhuThuongStickyRice.Application.Permissions;
+using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Application.Wave3;
 using PhuThuongStickyRice.Application.Wave3.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -33,19 +35,25 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly JwtTokenService _jwtTokenService;
         private readonly ILoginAuditAppService _loginAudits;
         private readonly ITwoFactorAppService _twoFactor;
+        private readonly IPermissionService _permissions;
+        private readonly IStaffActivityLogger _activityLogger;
 
         public AuthController(
             UserManager<User> userManager,
             IUserRepository users,
             JwtTokenService jwtTokenService,
             ILoginAuditAppService loginAudits,
-            ITwoFactorAppService twoFactor)
+            ITwoFactorAppService twoFactor,
+            IPermissionService permissions,
+            IStaffActivityLogger activityLogger)
         {
             _userManager = userManager;
             _users = users;
             _jwtTokenService = jwtTokenService;
             _loginAudits = loginAudits;
             _twoFactor = twoFactor;
+            _permissions = permissions;
+            _activityLogger = activityLogger;
         }
 
         [AllowAnonymous]
@@ -93,6 +101,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             await _loginAudits.RecordAsync(user.UserName, ip, true);
 
             var roles = await GetRoleNamesAsync(user.Id);
+
+            // Item 156: log staff logins in the staff activity log.
+            if (roles.Any(r => r == "Admin" || r == "Cashier" || r == "Kitchen"))
+            {
+                await _activityLogger.LogForUserAsync(user.Id, user.UserName, StaffActions.Login, "Đăng nhập trang quản trị.");
+            }
 
             // Item 98: 2FA — password OK, now require the 6-digit TOTP code.
             if (user.TwoFactorEnabled)
@@ -266,6 +280,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             await _loginAudits.RecordAsync(user.UserName, ip, true);
 
             var roles = await GetRoleNamesAsync(user.Id);
+
+            // Item 156: log staff logins (2FA path) in the staff activity log.
+            if (roles.Any(r => r == "Admin" || r == "Cashier" || r == "Kitchen"))
+            {
+                await _activityLogger.LogForUserAsync(user.Id, user.UserName, StaffActions.Login, "Đăng nhập trang quản trị (2FA).");
+            }
+
             var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
 
             return Ok(new LoginResponseModel
@@ -357,6 +378,19 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             return Ok(new { message = "Password changed." });
+        }
+
+        /// <summary>
+        /// Item 155: fine-grained permission keys of the current user.
+        /// The admin frontend caches this to hide/disable sensitive buttons;
+        /// every sensitive API still re-checks server-side.
+        /// </summary>
+        [Authorize]
+        [HttpGet("my-permissions")]
+        public async Task<ActionResult> GetMyPermissions(CancellationToken cancellationToken = default)
+        {
+            var permissions = await _permissions.GetUserPermissionsAsync();
+            return Ok(new { permissions = permissions.OrderBy(p => p).ToList() });
         }
 
         private async Task<string[]> GetRoleNamesAsync(Guid userId)

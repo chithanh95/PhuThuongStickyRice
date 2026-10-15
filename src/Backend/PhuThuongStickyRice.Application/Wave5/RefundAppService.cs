@@ -1,4 +1,6 @@
 using PhuThuongStickyRice.Application.Wave5.DTOs;
+using PhuThuongStickyRice.Application.Permissions;
+using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -42,13 +44,19 @@ namespace PhuThuongStickyRice.Application.Wave5
     {
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IPermissionService _permissions;
+        private readonly IStaffActivityLogger _activityLogger;
 
         public RefundAppService(
             IRepository<Order, Guid> orders,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            IPermissionService permissions,
+            IStaffActivityLogger activityLogger)
         {
             _orders = orders;
             _asyncExecuter = asyncExecuter;
+            _permissions = permissions;
+            _activityLogger = activityLogger;
         }
 
         public async Task<List<RefundReportRowDto>> GetReportAsync()
@@ -74,16 +82,30 @@ namespace PhuThuongStickyRice.Application.Wave5
 
         public async Task RequestRefundAsync(Guid orderId, RequestRefundInput input)
         {
+            // Item 155: refunds need orders.refund.
+            await _permissions.RequirePermissionAsync(PermissionKeys.OrdersRefund);
+
             var order = await _orders.GetAsync(orderId);
             order.RequestRefund(input.Amount, input.Reason);
             await _orders.UpdateAsync(order, autoSave: true);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.OrderRefundRequest,
+                $"Yêu cầu hoàn tiền đơn {order.OrderNumber}.");
         }
 
         public async Task ConfirmRefundAsync(Guid orderId)
         {
+            // Item 155: refunds need orders.refund.
+            await _permissions.RequirePermissionAsync(PermissionKeys.OrdersRefund);
+
             var order = await _orders.GetAsync(orderId);
             order.ConfirmRefund();
             await _orders.UpdateAsync(order, autoSave: true);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.OrderRefundConfirm,
+                $"Xác nhận hoàn tiền đơn {order.OrderNumber}.");
         }
     }
 }

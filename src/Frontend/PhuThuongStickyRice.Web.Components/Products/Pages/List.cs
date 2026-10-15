@@ -1,10 +1,12 @@
 ﻿using PhuThuongStickyRice.Web.Components.Core.Components;
 using PhuThuongStickyRice.Web.Components.Products.Models;
 using PhuThuongStickyRice.Web.Components.Products.Services;
+using PhuThuongStickyRice.Web.Components.Admin.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,9 +30,18 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         [Inject]
         public ILogger<List> Logger { get; set; }
 
+        [Inject]
+        public PermissionService PermissionService { get; set; }
+
         protected ConfirmDialog DeleteDialog { get; set; }
 
         public List<ProductModel> Products { get; set; }
+
+        /// <summary>Item 155: fine-grained permission keys of the current user.</summary>
+        public HashSet<string> Permissions { get; set; } =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        public bool HasPermission(string key) => Permissions.Contains(key);
 
         public ProductModel DeletingProduct { get; private set; }
 
@@ -168,6 +179,16 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         protected override async Task OnInitializedAsync()
         {
+            // Item 155: fine-grained permissions gate the sensitive buttons.
+            try
+            {
+                Permissions = await PermissionService.GetMyPermissionsAsync();
+            }
+            catch
+            {
+                Permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
             Products = await ProductService.GetProductsAsync();
         }
 

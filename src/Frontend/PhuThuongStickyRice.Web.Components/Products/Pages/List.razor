@@ -13,9 +13,12 @@
             <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsCsv">
                 Xuất CSV
             </button>
-            <button class="btn btn-primary mb-1" @onclick="QuickAddProduct">
-                Thêm sản phẩm
-            </button>
+            @if (HasPermission("products.edit"))
+            {
+                <button class="btn btn-primary mb-1" @onclick="QuickAddProduct">
+                    Thêm sản phẩm
+                </button>
+            }
         </div>
     </div>
     <div class="card-body">
@@ -114,14 +117,23 @@
                                     }
                                 </td>
                                 <td class="text-right text-nowrap">
-                                    <button @onclick="(() => ToggleAvailability(product))" class="btn btn-sm btn-outline-warning" title="Bật/tắt bán (hết hàng)">
-                                        @(product.Status == "Active" ? "Hết hàng" : "Mở bán")
-                                    </button>
+                                    @if (HasPermission("products.edit"))
+                                    {
+                                        <button @onclick="(() => ToggleAvailability(product))" class="btn btn-sm btn-outline-warning" title="Bật/tắt bán (hết hàng)">
+                                            @(product.Status == "Active" ? "Hết hàng" : "Mở bán")
+                                        </button>
+                                    }
                                     <button @onclick="(() => PostToFacebook(product))" class="btn btn-sm btn-outline-info" title="Đăng món này lên Facebook Fanpage" disabled="@_fbPosting">
                                         📣
                                     </button>
-                                    <button @onclick="(() => EditProduct(product))" class="btn btn-sm btn-primary" title="Sửa">Sửa</button>
-                                    <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm btn-danger" title="Xóa">Xóa</button>
+                                    @if (HasPermission("products.edit"))
+                                    {
+                                        <button @onclick="(() => EditProduct(product))" class="btn btn-sm btn-primary" title="Sửa">Sửa</button>
+                                    }
+                                    @if (HasPermission("products.delete"))
+                                    {
+                                        <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm btn-danger" title="Xóa">Xóa</button>
+                                    }
                                 </td>
                             </tr>
                         }
