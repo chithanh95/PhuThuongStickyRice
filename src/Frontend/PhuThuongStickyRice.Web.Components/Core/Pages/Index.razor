@@ -55,7 +55,6 @@ else
         <input type="checkbox" id="xo-nav-toggle" class="xo-nav-checkbox" />
         <nav class="xo-nav">
             <a href="#gioi-thieu">Giới thiệu</a>
-            <a href="#uu-dai">Ưu đãi</a>
             <a href="#dat-xoi">Đặt xôi</a>
             <a href="#lien-he">Liên hệ</a>
         </nav>
@@ -88,13 +87,12 @@ else
             <p class="xo-hero-kicker">Xôi Phú Thượng &bull; Vietnamese Cuisine</p>
             <h1 class="xo-hero-title">@_content.HeroTitle</h1>
             <p class="xo-hero-tag">@_content.HeroTagline</p>
-            <div class="xo-hero-promos">
-                <div class="xo-promo-badge"><strong>-15%</strong><span>Đặt trước<br />qua web</span></div>
-                <div class="xo-promo-badge"><strong>-10%</strong><span>Đơn từ<br />10 gói</span></div>
-                <div class="xo-promo-badge"><strong>-5%</strong><span>Khách<br />thân thiết</span></div>
-            </div>
             <div class="xo-hero-cta">
-                <a href="/shop" class="xo-btn xo-btn-red">@_content.HeroButtonText</a>
+                <a href="/shop" class="xo-btn xo-btn-red xo-btn-hero">@_content.HeroButtonText</a>
+                @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+                {
+                    <a href="tel:@_content.ContactPhone" class="xo-btn xo-btn-call">📞 @_content.ContactPhone</a>
+                }
                 <a href="#thuc-don" class="xo-btn xo-btn-ghost">Xem thực đơn</a>
             </div>
         </div>
@@ -104,6 +102,28 @@ else
         </div>
     </div>
 </section>
+
+<!-- 2b. THANH TIN TƯỞNG -->
+<div class="xo-trust">
+    <div class="xo-container xo-trust-inner">
+        <div class="xo-trust-item">
+            <strong>🔥 @_todaySold+</strong>
+            <span>suất bán hôm nay</span>
+        </div>
+        <div class="xo-trust-item">
+            <strong>⭐ @_avgRating.ToString("0.0")/5</strong>
+            <span>@_reviewCount đánh giá thật</span>
+        </div>
+        <div class="xo-trust-item">
+            <strong>🍚 @_productCount+</strong>
+            <span>món xôi mỗi ngày</span>
+        </div>
+        <div class="xo-trust-item">
+            <strong>🛵 Shipper lấy</strong>
+            <span>đến lấy tận quán</span>
+        </div>
+    </div>
+</div>
 
 <!-- 3. GIỚI THIỆU -->
 <section class="xo-section xo-about" id="gioi-thieu">
@@ -126,34 +146,7 @@ else
     </div>
 </section>
 
-<!-- 4. ƯU ĐÃI -->
-@if (_content.NewsItems != null && _content.NewsItems.Count > 0)
-{
-    <section class="xo-section" id="uu-dai">
-        <div class="xo-container">
-            <div class="xo-sec-head">
-                <h2 class="xo-sec-title">Ưu đãi tháng này</h2>
-                <div class="xo-sec-div"><span></span><em>Xoi Phu Thuong Vietnamese Cuisine</em><span></span></div>
-            </div>
-            <div class="xo-promo-grid">
-                @foreach (var item in _content.NewsItems)
-                {
-                    <div class="xo-promo-card" @key="item.Title">
-                        <div class="xo-promo-pct">%</div>
-                        <h3 class="xo-promo-title">@item.Title</h3>
-                        <p class="xo-promo-body">@item.Body</p>
-                        @if (!string.IsNullOrWhiteSpace(item.Source))
-                        {
-                            <div class="xo-promo-src">@item.Source</div>
-                        }
-                    </div>
-                }
-            </div>
-        </div>
-    </section>
-}
-
-<!-- 5. THỰC ĐƠN XÔI -->
+<!-- 4. THỰC ĐƠN XÔI -->
 <section class="xo-section xo-menu" id="thuc-don">
     <div class="xo-container">
         <div class="xo-sec-head">
@@ -179,6 +172,10 @@ else
                 {
                     <div class="xo-dish-card" @key="product.Id">
                         <div class="xo-dish-imgwrap">
+                            @if (IsBestSeller(product))
+                            {
+                                <span class="xo-bestseller">🔥 Bán chạy nhất</span>
+                            }
                             <img loading="lazy" src="@ProductImage(product.Code)" alt="@product.Name" />
                         </div>
                         <div class="xo-dish-body">
@@ -289,7 +286,7 @@ else
                 }
                 @if (_bookSent)
                 {
-                    <p class="xo-book-ok">✓ Cảm ơn bạn! Quán sẽ gọi lại xác nhận đơn ngay.</p>
+                    <p class="xo-book-ok">✓ Đặt thành công! Quán sẽ gọi xác nhận.</p>
                 }
                 else
                 {
@@ -435,6 +432,7 @@ else
 <!-- 11. NÚT CỐ ĐỊNH: Facebook + Gọi điện -->
 <div class="xo-fixed-btns">
     <a class="xo-fb-btn" href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">f</a>
+    <a class="xo-zalo-btn" href="@ZaloUrl" target="_blank" rel="noopener" aria-label="Chat Zalo" title="Chat Zalo">Z</a>
     @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
     {
         <a class="xo-call-btn" href="tel:@_content.ContactPhone" aria-label="Gọi ngay" title="Gọi ngay">
@@ -467,6 +465,26 @@ else
     private LandingContentModel _content = new LandingContentModel();
     private List<ShopProductModel> _quickProducts;
     private long _todaySold;
+
+    // Sale upgrades: best-seller ids (fail-soft), product count + rating aggregates for the trust strip.
+    private HashSet<Guid> _bestSellerIds = new HashSet<Guid>();
+    private long _productCount;
+    private double _avgRating;
+    private int _reviewCount;
+
+    /// <summary>True when the product is a top seller (API) or marked signature.</summary>
+    private bool IsBestSeller(ShopProductModel p) =>
+        p != null && (_bestSellerIds.Contains(p.Id) || p.IsSignature);
+
+    /// <summary>Zalo chat link: zalo.me/&lt;phone&gt; when a hotline is configured, placeholder otherwise.</summary>
+    private string ZaloUrl
+    {
+        get
+        {
+            var digits = new string((_content.ContactPhone ?? "").Where(char.IsDigit).ToArray());
+            return string.IsNullOrEmpty(digits) ? "https://zalo.me/" : $"https://zalo.me/{digits}";
+        }
+    }
 
     // Wave 6d (item 38): initial API load failed → full-page error state.
     private bool _loadFailed;
@@ -594,10 +612,14 @@ else
         {
             _publicReviews = (await LandingService.GetPublicReviewsAsync())
                 ?.Take(6).ToList() ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel>();
+            _reviewCount = _publicReviews.Count;
+            _avgRating = _reviewCount > 0 ? _publicReviews.Average(r => r.Rating) : 5.0;
         }
         catch (Exception)
         {
             _publicReviews = new List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel>();
+            _reviewCount = 0;
+            _avgRating = 5.0;
         }
 
         // Item 105: promo-popup feature flag (fail open).
@@ -613,6 +635,7 @@ else
         try
         {
             var paged = await ShopService.GetProductsAsync();
+            _productCount = paged?.TotalCount ?? 0;
             _quickProducts = (paged.Items ?? new List<ShopProductModel>()).Take(3).ToList();
         }
         catch (Exception)
@@ -620,6 +643,16 @@ else
             // Wave 6d (item 38): quick-order strip needs products.
             _loadFailed = true;
             _quickProducts = new List<ShopProductModel>();
+        }
+
+        // Sale upgrade: best-seller ids for the "Bán chạy nhất" badges (fail-soft).
+        try
+        {
+            var ids = await ShopService.GetBestSellerIdsAsync();
+            if (ids != null) _bestSellerIds = new HashSet<Guid>(ids);
+        }
+        catch (Exception)
+        {
         }
 
         try
