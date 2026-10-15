@@ -38,6 +38,30 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public int AccessFailedCount { get; set; }
 
+        /// <summary>
+        /// Taste preferences of a registered customer (item 90), stored as
+        /// JSON: {"tags":["Ít hành","Nhiều ruốc"],"note":"..."}. Prefilled
+        /// into the order note at checkout; the customer can edit it there.
+        /// </summary>
+        public string TastePreferences { get; set; }
+
+        /// <summary>
+        /// Customer's date of birth (item 92). Editable at most once a year
+        /// (see <see cref="DateOfBirthUpdatedAt"/>).
+        /// </summary>
+        public DateTime? DateOfBirth { get; set; }
+
+        public DateTimeOffset? DateOfBirthUpdatedAt { get; set; }
+
+        /// <summary>
+        /// Year the birthday gift was granted (null = never). Prevents
+        /// re-gifting within the same year.
+        /// </summary>
+        public int? BirthdayGiftYear { get; set; }
+
+        /// <summary>The birthday gift code granted this year (if any).</summary>
+        public string BirthdayGiftCode { get; set; }
+
         public IList<UserToken> Tokens { get; set; }
 
         public IList<UserClaim> Claims { get; set; }

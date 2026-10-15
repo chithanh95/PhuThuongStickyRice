@@ -15,6 +15,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             builder.Property(x => x.TotpSecret).HasMaxLength(100);
 
+            builder.Property(x => x.DateOfBirth).HasColumnType("date");
+            builder.Property(x => x.BirthdayGiftCode).HasMaxLength(50);
+
             builder.HasMany(x => x.Claims)
                 .WithOne(x => x.User)
                 .OnDelete(DeleteBehavior.Cascade);

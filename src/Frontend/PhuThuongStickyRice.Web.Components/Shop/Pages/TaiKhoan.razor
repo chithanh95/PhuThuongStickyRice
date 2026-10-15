@@ -1,4 +1,4 @@
-@page "/tai-khoan"
+﻿@page "/tai-khoan"
 @using System.Collections.Generic
 @using System.Linq
 @using System.Threading.Tasks
@@ -7,6 +7,7 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @inject AuthService AuthService
 @inject CustomerAddressService AddressService
+@inject CustomerProfileService ProfileService
 @inject ITokenManager TokenManager
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
@@ -26,6 +27,7 @@
     }
     else
     {
+
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Thông tin cá nhân</h5>
@@ -35,6 +37,82 @@
                     <p class="mb-1"><strong>Email:</strong> @_email</p>
                 }
                 <p class="mb-0"><strong>Vai trò:</strong> @(string.Join(", ", _roles))</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">🍜 Khẩu vị của tôi</h5>
+                <p class="text-muted small">Quán sẽ nhớ khẩu vị này và tự điền vào ghi chú mỗi lần bạn đặt hàng.</p>
+                @if (!string.IsNullOrEmpty(_tasteMsg))
+                {
+                    <div class="alert @(_tasteOk ? "alert-success" : "alert-danger") py-2">@_tasteMsg</div>
+                }
+                <div class="mb-2">
+                    @foreach (var tag in _tastePresets)
+                    {
+                        var t = tag;
+                        <button type="button"
+                                class="btn btn-sm mr-2 mb-2 @(_selectedTags.Contains(t) ? "btn-warning" : "btn-outline-secondary")"
+                                @onclick="() => ToggleTag(t)">@t</button>
+                    }
+                </div>
+                <div class="input-group mb-2" style="max-width: 420px;">
+                    <input class="form-control" placeholder="Thêm khẩu vị khác..." @bind="_customTag" />
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-primary" @onclick="AddCustomTag">Thêm</button>
+                    </div>
+                </div>
+                <div class="form-group" style="max-width: 420px;">
+                    <label>Ghi chú thêm</label>
+                    <input class="form-control" @bind="_profile.TasteNote" placeholder="VD: xôi dẻo một chút" />
+                </div>
+                <button class="btn btn-primary" style="background:#6F0707;border-color:#6F0707;"
+                        @onclick="SaveTasteAsync" disabled="@_tasteBusy">
+                    @(_tasteBusy ? "Đang lưu..." : "Lưu khẩu vị")
+                </button>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">🎂 Sinh nhật</h5>
+                @if (!string.IsNullOrEmpty(_dobMsg))
+                {
+                    <div class="alert @(_dobOk ? "alert-success" : "alert-danger") py-2">@_dobMsg</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_profile.BirthdayGiftCode))
+                {
+                    <div class="alert alert-warning">
+                        🎁 Quà sinh nhật năm nay của bạn: <strong>@_profile.BirthdayGiftCode</strong>
+                        @if (_profile.BirthdayGiftAmount.HasValue)
+                        {
+                            <span> (giảm @_profile.BirthdayGiftAmount.Value.ToString("N0") ₫)</span>
+                        }
+                        @if (_profile.BirthdayGiftExpiresAt.HasValue)
+                        {
+                            <span> — HSD @_profile.BirthdayGiftExpiresAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                        }
+                        <div class="small mt-1">Nhập mã này ở bước thanh toán để được giảm giá.</div>
+                    </div>
+                }
+                <div class="form-row align-items-end">
+                    <div class="form-group col-md-6 mb-2">
+                        <label>Ngày sinh</label>
+                        <input type="date" class="form-control" @bind="_dobValue" />
+                        <small class="text-muted">
+                            @(string.IsNullOrWhiteSpace(_profile.DateOfBirthChangeHint)
+                                ? "Ngày sinh chỉ được thay đổi 1 lần mỗi năm."
+                                : _profile.DateOfBirthChangeHint)
+                        </small>
+                    </div>
+                    <div class="form-group col-md-6 mb-2">
+                        <button class="btn btn-primary" style="background:#6F0707;border-color:#6F0707;"
+                                @onclick="SaveDobAsync" disabled="@(_dobBusy || !_profile.CanChangeDateOfBirth)">
+                            @(_dobBusy ? "Đang lưu..." : "Lưu ngày sinh")
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -183,6 +261,25 @@
     private string _addrError;
     private bool _addrBusy;
 
+    // Item 90: taste preferences.
+    private CustomerProfileModel _profile = new CustomerProfileModel();
+    private readonly string[] _tastePresets = new[]
+    {
+        "Ít hành", "Nhiều hành", "Nhiều ruốc", "Ít ngọt",
+        "Không cay", "Thêm dưa góp", "Ít mỡ", "Nhiều chả"
+    };
+    private HashSet<string> _selectedTags = new HashSet<string>();
+    private string _customTag;
+    private string _tasteMsg;
+    private bool _tasteOk;
+    private bool _tasteBusy;
+
+    // Item 92: birthday.
+    private DateTime? _dobValue;
+    private string _dobMsg;
+    private bool _dobOk;
+    private bool _dobBusy;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -196,6 +293,18 @@
                 _roles = authState.User.FindAll(System.Security.Claims.ClaimTypes.Role)
                     .Select(c => c.Value).Distinct().ToArray();
                 _addresses = await AddressService.GetMineAsync();
+
+                // Item 90+92: load taste preferences + birthday.
+                try
+                {
+                    _profile = await ProfileService.GetMyAsync() ?? new CustomerProfileModel();
+                    _selectedTags = new HashSet<string>(_profile.TasteTags ?? new List<string>());
+                    _dobValue = _profile.DateOfBirth;
+                }
+                catch (Exception)
+                {
+                    _profile = new CustomerProfileModel();
+                }
             }
         }
         catch (Exception)
@@ -340,5 +449,101 @@
         catch (Exception) { }
 
         Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    // Item 90: taste preferences.
+
+    private void ToggleTag(string tag)
+    {
+        _tasteMsg = null;
+        if (!_selectedTags.Add(tag))
+        {
+            _selectedTags.Remove(tag);
+        }
+    }
+
+    private void AddCustomTag()
+    {
+        _tasteMsg = null;
+        var tag = (_customTag ?? string.Empty).Trim();
+        if (tag.Length == 0)
+        {
+            return;
+        }
+
+        if (tag.Length > 50)
+        {
+            _tasteMsg = "Mỗi khẩu vị tối đa 50 ký tự.";
+            _tasteOk = false;
+            return;
+        }
+
+        _selectedTags.Add(tag);
+        _customTag = null;
+    }
+
+    private async Task SaveTasteAsync()
+    {
+        _tasteMsg = null;
+        _tasteBusy = true;
+        try
+        {
+            _profile.TasteTags = _selectedTags.ToList();
+            _profile = await ProfileService.UpdateAsync(_profile);
+            _selectedTags = new HashSet<string>(_profile.TasteTags ?? new List<string>());
+            _tasteMsg = "Đã lưu khẩu vị. Quán sẽ tự điền vào ghi chú mỗi lần bạn đặt hàng.";
+            _tasteOk = true;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _tasteMsg = ex.Message;
+            _tasteOk = false;
+        }
+        catch (Exception)
+        {
+            _tasteMsg = "Lưu khẩu vị thất bại. Vui lòng thử lại.";
+            _tasteOk = false;
+        }
+        finally
+        {
+            _tasteBusy = false;
+        }
+    }
+
+    // Item 92: birthday.
+
+    private async Task SaveDobAsync()
+    {
+        _dobMsg = null;
+        if (!_dobValue.HasValue)
+        {
+            _dobMsg = "Vui lòng chọn ngày sinh.";
+            _dobOk = false;
+            return;
+        }
+
+        _dobBusy = true;
+        try
+        {
+            _profile.DateOfBirth = _dobValue.Value.Date;
+            _profile = await ProfileService.UpdateAsync(_profile);
+            _dobValue = _profile.DateOfBirth;
+            _dobMsg = "Đã lưu ngày sinh. Chúc bạn luôn ngon miệng!";
+            _dobOk = true;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _dobMsg = ex.Message;
+            _dobOk = false;
+        }
+        catch (Exception)
+        {
+            _dobMsg = "Lưu ngày sinh thất bại. Vui lòng thử lại.";
+            _dobOk = false;
+        }
+        finally
+        {
+            _dobBusy = false;
+        }
     }
 }

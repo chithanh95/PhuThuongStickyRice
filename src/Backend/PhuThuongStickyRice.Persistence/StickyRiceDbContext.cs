@@ -46,6 +46,8 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<CorporateClient> CorporateClients { get; set; }
         public DbSet<CustomMigrationHistory> CustomMigrationHistories { get; set; }
         public DbSet<CustomerAddress> CustomerAddresses { get; set; }
+        public DbSet<CustomerReminder> CustomerReminders { get; set; }
+        public DbSet<DailyInventory> DailyInventories { get; set; }
         public DbSet<CustomerNote> CustomerNotes { get; set; }
         public DbSet<CustomerPhoto> CustomerPhotos { get; set; }
         public DbSet<DiscountCode> DiscountCodes { get; set; }
@@ -54,6 +56,7 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<FaqItem> FaqItems { get; set; }
         public DbSet<FeatureFlag> FeatureFlags { get; set; }
         public DbSet<GroupOrder> GroupOrders { get; set; }
+        public DbSet<HolidaySchedule> HolidaySchedules { get; set; }
         public DbSet<LandingPageContent> LandingPageContents { get; set; }
         public DbSet<LoginAudit> LoginAudits { get; set; }
         public DbSet<LoyaltyAccount> LoyaltyAccounts { get; set; }

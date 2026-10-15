@@ -95,6 +95,22 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Item 90+92: customer profile (taste preferences, birthday).
+            builder.Services.AddHttpClient<CustomerProfileService, CustomerProfileService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Item 91+92: admin customer care (reminders, birthday gifts).
+            builder.Services.AddHttpClient<CustomerCareService, CustomerCareService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Wave 6b (item 28): policy pages (public GET, admin PUT via JWT).
             builder.Services.AddHttpClient<PolicyService, PolicyService>(client =>
             {
@@ -105,6 +121,14 @@ namespace PhuThuongStickyRice.Web
 
             // Shop commerce settings (public GET, admin PUT via JWT).
             builder.Services.AddHttpClient<ShopSettingsService, ShopSettingsService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Item 117: holiday schedule (public upcoming + admin CRUD).
+            builder.Services.AddHttpClient<HolidayService, HolidayService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
                 client.Timeout = new TimeSpan(0, 0, 30);
@@ -172,6 +196,14 @@ namespace PhuThuongStickyRice.Web
 
             // Item 134: VI/EN dictionary for the shop pages' chrome.
             builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Shop.Services.ShopI18n>();
+
+            // Item 87: end-of-day inventory counts (kiểm kê cuối ngày).
+            builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService, PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
 
             // Toast notifications.
             builder.Services.AddScoped<ToastService>();

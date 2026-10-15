@@ -19,6 +19,7 @@
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @inject ShopI18n I18n
 @inject CustomerAddressService CustomerAddressService
+@inject CustomerProfileService CustomerProfileService
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
 <h3>@I18n.T("checkout")</h3>
@@ -901,7 +902,7 @@ else
     {
         try
         {
-            _shopSettings = await ShopSettingsService.GetAsync() ?? new ShopSettingModel();
+            _shopSettings = await ShopSettingsService.GetPublicAsync() ?? new ShopSettingModel();
         }
         catch (Exception)
         {
@@ -953,6 +954,22 @@ else
                 {
                     _order.CustomerPhone = phone;
                 }
+
+                // Item 90: prefill the customer's taste preferences into the
+                // order note (editable — the customer can change it).
+                try
+                {
+                    var profile = await CustomerProfileService.GetMyAsync();
+                    if (string.IsNullOrWhiteSpace(_order.Notes))
+                    {
+                        var tasteNote = BuildTasteNote(profile);
+                        if (!string.IsNullOrWhiteSpace(tasteNote))
+                        {
+                            _order.Notes = tasteNote;
+                        }
+                    }
+                }
+                catch (Exception) { }
             }
         }
         catch (Exception)
@@ -1012,9 +1029,11 @@ else
         if (!_shopSettings.AcceptingOrders)
         {
             _orderingBlocked = true;
-            _closedNotice = string.IsNullOrWhiteSpace(_shopSettings.PausedReason)
-                ? "Quán đang tạm ngừng nhận đơn. Vui lòng quay lại sau."
-                : $"Quán tạm ngưng nhận đơn: {_shopSettings.PausedReason}";
+            _closedNotice = _shopSettings.IsHolidayPaused && !string.IsNullOrWhiteSpace(_shopSettings.PausedReason)
+                ? _shopSettings.PausedReason
+                : string.IsNullOrWhiteSpace(_shopSettings.PausedReason)
+                    ? "Quán đang tạm ngừng nhận đơn. Vui lòng quay lại sau."
+                    : $"Quán tạm ngưng nhận đơn: {_shopSettings.PausedReason}";
             return;
         }
 
@@ -1456,6 +1475,28 @@ else
     private static bool IsValidPhone(string phone) =>
         !string.IsNullOrWhiteSpace(phone)
         && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+
+    /// <summary>Item 90: composes the taste-preference note for the order.</summary>
+    private static string BuildTasteNote(CustomerProfileModel profile)
+    {
+        if (profile == null)
+        {
+            return null;
+        }
+
+        var parts = new System.Collections.Generic.List<string>();
+        if (profile.TasteTags != null && profile.TasteTags.Count > 0)
+        {
+            parts.Add(string.Join(", ", profile.TasteTags));
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.TasteNote))
+        {
+            parts.Add(profile.TasteNote.Trim());
+        }
+
+        return parts.Count == 0 ? null : "Khẩu vị: " + string.Join(" — ", parts);
+    }
 
     private static bool IsValidEmail(string email)
     {

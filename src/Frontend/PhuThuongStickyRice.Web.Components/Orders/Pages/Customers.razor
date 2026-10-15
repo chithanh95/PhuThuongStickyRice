@@ -13,14 +13,113 @@
 
 <div class="card mb-3">
     <div class="card-body">
-        <div class="form-row">
+        <div class="form-row align-items-center">
             <div class="col-md-4">
                 <input class="form-control" placeholder="Tìm tên / SĐT..."
                        @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchChanged" />
             </div>
+            <div class="col-md-4">
+                <div class="form-check mt-2 mt-md-0">
+                    <input type="checkbox" class="form-check-input" id="inactive-only" @bind="_inactiveOnly" />
+                    <label class="form-check-label" for="inactive-only">Chỉ hiện khách chưa mua &gt; 30 ngày</label>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-right mt-2 mt-md-0">
+                <button class="btn btn-outline-warning" @onclick="ToggleBirthdays">
+                    🎂 Sinh nhật tháng này
+                </button>
+            </div>
         </div>
     </div>
 </div>
+
+@if (_showBirthdays)
+{
+    <div class="card mb-3 border-warning">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">🎂 Thành viên sinh nhật tháng @_birthdayMonth</h5>
+                <select class="form-control" style="width: 140px;" @bind="_birthdayMonth" @bind:after="LoadBirthdaysAsync">
+                    @for (var m = 1; m <= 12; m++)
+                    {
+                        <option value="@m">Tháng @m</option>
+                    }
+                </select>
+            </div>
+            @if (!string.IsNullOrEmpty(_birthdayMsg))
+            {
+                <div class="alert alert-danger py-2">@_birthdayMsg</div>
+            }
+            @if (!string.IsNullOrEmpty(_giftResult))
+            {
+                <div class="alert alert-success">@_giftResult</div>
+            }
+            @if (_birthdayMembers == null)
+            {
+                <p class="text-muted"><em>Đang tải...</em></p>
+            }
+            else if (_birthdayMembers.Count == 0)
+            {
+                <p class="text-muted">Không có thành viên nào sinh nhật tháng này.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>SĐT</th>
+                                <th>Ngày sinh</th>
+                                <th>Quà năm nay</th>
+                                <th class="text-right">Mệnh giá</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var b in _birthdayMembers)
+                            {
+                                <tr @key="b.UserId">
+                                    <td><strong>@b.Phone</strong></td>
+                                    <td>@(b.DateOfBirth?.ToString("dd/MM/yyyy"))</td>
+                                    <td>
+                                        @if (b.HasGiftThisYear)
+                                        {
+                                            <span class="badge badge-success">Đã tặng @b.GiftCode</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">Chưa tặng</span>
+                                        }
+                                    </td>
+                                    <td class="text-right">
+                                        @if (!b.HasGiftThisYear)
+                                        {
+                                            <input type="number" class="form-control form-control-sm d-inline-block"
+                                                   style="width: 110px;" step="5000" min="5000" max="1000000"
+                                                   @bind="_giftAmount" />
+                                            <span class="small text-muted">₫</span>
+                                        }
+                                    </td>
+                                    <td class="text-right">
+                                        @if (!b.HasGiftThisYear)
+                                        {
+                                            <button class="btn btn-sm btn-warning"
+                                                    disabled="@(_giftingUserId == b.UserId)"
+                                                    @onclick="() => GrantGift(b)">
+                                                @(_giftingUserId == b.UserId ? "Đang tặng..." : "🎁 Tặng quà")
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <small class="text-muted">Mã quà 1 lần dùng, gắn với SĐT khách, HSD 30 ngày. Đọc mã cho khách qua Zalo/điện thoại.</small>
+            }
+        </div>
+    </div>
+}
 
 @if (_customers == null)
 {
@@ -48,16 +147,29 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var c in _customers)
+                        @foreach (var c in FilteredCustomers())
                         {
                             <tr @key="c.CustomerPhone">
-                                <td>@c.CustomerName</td>
+                                <td>
+                                    @c.CustomerName
+                                    @if (IsInactive(c))
+                                    {
+                                        <span class="badge badge-warning ml-1" title="Chưa mua hàng quá 30 ngày">😴 Lâu chưa quay lại</span>
+                                    }
+                                </td>
                                 <td><strong>@c.CustomerPhone</strong></td>
                                 <td class="text-right">@c.OrderCount</td>
                                 <td class="text-right"><strong class="text-success">@FormatPrice(c.TotalSpent)</strong></td>
                                 <td><span class="badge badge-info">@TierOf(c.TotalSpent)</span></td>
                                 <td>@c.LastOrderAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                                 <td class="text-right">
+                                    @if (IsInactive(c))
+                                    {
+                                        <button class="btn btn-sm btn-outline-warning mr-1"
+                                                @onclick="() => ToggleRemind(c.CustomerPhone, c.CustomerName)">
+                                            🔔 Nhắc
+                                        </button>
+                                    }
                                     <button class="btn btn-sm btn-outline-secondary mr-1"
                                             @onclick="() => ToggleNotes(c.CustomerPhone)">
                                         📝 Ghi chú @(_notes.TryGetValue(c.CustomerPhone, out var n) ? $"({n.Count})" : "")
@@ -66,6 +178,46 @@ else
                                        href="/orders?searchTerm=@Uri.EscapeDataString(c.CustomerPhone)">Xem đơn</a>
                                 </td>
                             </tr>
+                            @if (_remindPhone == c.CustomerPhone)
+                            {
+                                <tr>
+                                    <td colspan="7" class="bg-light">
+                                        <strong>🔔 Nhắc khách @c.CustomerPhone quay lại</strong>
+                                        <div class="alert alert-warning py-2 mt-2 mb-2">
+                                            <small>⚠️ Hiện tại tin nhắn <strong>chưa gửi thật</strong> — cần cấu hình Zalo OA thì khách mới nhận được. Hệ thống chỉ lưu lịch sử nhắc ở dưới.</small>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(_remindMsg))
+                                        {
+                                            <div class="alert alert-info py-2">@_remindMsg</div>
+                                        }
+                                        <div class="form-group">
+                                            <label>Nội dung tin nhắn</label>
+                                            <textarea class="form-control" rows="3" @bind="_remindMessage"></textarea>
+                                        </div>
+                                        <button class="btn btn-warning" @onclick="SendReminder" disabled="@_remindBusy">
+                                            @(_remindBusy ? "Đang lưu..." : "Gửi nhắc (Zalo OA)")
+                                        </button>
+                                        @if (_remindHistory.TryGetValue(c.CustomerPhone, out var hist) && hist.Count > 0)
+                                        {
+                                            <hr />
+                                            <strong>Lịch sử nhắc:</strong>
+                                            <ul class="list-unstyled mt-1 mb-0">
+                                                @foreach (var r in hist)
+                                                {
+                                                    <li class="border-bottom py-1">
+                                                        <div>@r.Message</div>
+                                                        <small class="text-muted">
+                                                            @r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                            @(!string.IsNullOrWhiteSpace(r.CreatedBy) ? $" • {r.CreatedBy}" : "")
+                                                            • @r.SentVia
+                                                        </small>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </td>
+                                </tr>
+                            }
                             @if (_expandedPhone == c.CustomerPhone)
                             {
                                 <tr>
@@ -127,11 +279,38 @@ else
 
     // Item 89: CRM notes per customer phone.
     [Inject] private PhuThuongStickyRice.Web.Components.Admin.Services.Wave3Service Wave3Service { get; set; }
+    [Inject] private PhuThuongStickyRice.Web.Components.Shop.Services.CustomerCareService CareService { get; set; }
     private string _expandedPhone;
     private Dictionary<string, List<CustomerNoteModel>> _notes = new();
     private string _newNote;
     private string _noteError;
     private bool _loadingNotes;
+
+    // Item 91: inactive-customer reminders.
+    private bool _inactiveOnly;
+    private string _remindPhone;
+    private string _remindMessage;
+    private string _remindMsg;
+    private bool _remindBusy;
+    private Dictionary<string, List<PhuThuongStickyRice.Web.Components.Shop.Services.CustomerReminderModel>> _remindHistory = new();
+
+    // Item 92: birthday members + gifts.
+    private bool _showBirthdays;
+    private int _birthdayMonth = DateTime.Now.Month;
+    private List<PhuThuongStickyRice.Web.Components.Shop.Services.BirthdayMemberModel> _birthdayMembers;
+    private bool _birthdayBusy;
+    private string _birthdayMsg;
+    private Guid? _giftingUserId;
+    private decimal _giftAmount = 25000;
+    private string _giftResult;
+
+    private bool IsInactive(Admin.Models.CustomerModel c) =>
+        c.LastOrderAt.ToLocalTime() < DateTime.Now.AddDays(-30);
+
+    private IEnumerable<Admin.Models.CustomerModel> FilteredCustomers() =>
+        _customers == null
+            ? Enumerable.Empty<Admin.Models.CustomerModel>()
+            : _customers.Where(c => !_inactiveOnly || IsInactive(c));
 
     protected override async Task OnInitializedAsync()
     {
@@ -205,6 +384,113 @@ else
         catch (Exception ex)
         {
             _noteError = ex.Message;
+        }
+    }
+
+    /// <summary>Item 91: toggles the remind panel for one customer.</summary>
+    private async Task ToggleRemind(string phone, string name)
+    {
+        _remindMsg = null;
+        if (_remindPhone == phone)
+        {
+            _remindPhone = null;
+            return;
+        }
+
+        _remindPhone = phone;
+        _expandedPhone = null;
+        _remindMessage = $"Chào {name}, đã lâu quán Xôi Phú Thượng chưa thấy bạn ghé. Quán nhớ bạn lắm, hôm nào ghé ăn xôi nhé! 🍚";
+        try
+        {
+            _remindHistory[phone] = await CareService.GetRemindersAsync(phone);
+        }
+        catch (Exception)
+        {
+            _remindHistory[phone] = new List<PhuThuongStickyRice.Web.Components.Shop.Services.CustomerReminderModel>();
+        }
+    }
+
+    /// <summary>Item 91: saves a reminder (Zalo OA stub — honest history only).</summary>
+    private async Task SendReminder()
+    {
+        _remindMsg = null;
+        if (string.IsNullOrWhiteSpace(_remindPhone) || string.IsNullOrWhiteSpace(_remindMessage))
+        {
+            _remindMsg = "Vui lòng nhập nội dung tin nhắn.";
+            return;
+        }
+
+        _remindBusy = true;
+        try
+        {
+            var created = await CareService.CreateReminderAsync(_remindPhone, null, _remindMessage.Trim());
+            if (_remindHistory.TryGetValue(_remindPhone, out var list))
+            {
+                list.Insert(0, created);
+            }
+
+            _remindMsg = "Đã lưu lịch sử nhắc. ⚠️ Tin nhắn chưa gửi thật — cần cấu hình Zalo OA.";
+        }
+        catch (Exception ex)
+        {
+            _remindMsg = ex.Message;
+        }
+        finally
+        {
+            _remindBusy = false;
+        }
+    }
+
+    /// <summary>Item 92: toggles the birthday panel.</summary>
+    private async Task ToggleBirthdays()
+    {
+        _showBirthdays = !_showBirthdays;
+        _giftResult = null;
+        if (_showBirthdays && _birthdayMembers == null)
+        {
+            await LoadBirthdaysAsync();
+        }
+    }
+
+    private async Task LoadBirthdaysAsync()
+    {
+        _birthdayMsg = null;
+        _birthdayBusy = true;
+        try
+        {
+            _birthdayMembers = await CareService.GetBirthdaysAsync(_birthdayMonth);
+        }
+        catch (Exception ex)
+        {
+            _birthdayMsg = ex.Message;
+            _birthdayMembers = new List<PhuThuongStickyRice.Web.Components.Shop.Services.BirthdayMemberModel>();
+        }
+        finally
+        {
+            _birthdayBusy = false;
+        }
+    }
+
+    /// <summary>Item 92: grants this year's birthday gift to a member.</summary>
+    private async Task GrantGift(PhuThuongStickyRice.Web.Components.Shop.Services.BirthdayMemberModel member)
+    {
+        _giftResult = null;
+        _birthdayMsg = null;
+        _giftingUserId = member.UserId;
+        try
+        {
+            var result = await CareService.GrantBirthdayGiftAsync(member.UserId, _giftAmount);
+            member.HasGiftThisYear = true;
+            member.GiftCode = result.Code;
+            _giftResult = $"🎁 Đã tạo mã quà {result.Code} (giảm {result.DiscountAmount:N0} ₫, HSD {(result.ExpiresAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "?")}) cho SĐT {member.Phone}. Hãy đọc mã cho khách qua Zalo/điện thoại.";
+        }
+        catch (Exception ex)
+        {
+            _birthdayMsg = ex.Message;
+        }
+        finally
+        {
+            _giftingUserId = null;
         }
     }
 
