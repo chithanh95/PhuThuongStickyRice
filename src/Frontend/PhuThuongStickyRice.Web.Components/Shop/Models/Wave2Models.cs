@@ -164,6 +164,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         /// <summary>Wave 6b (item 26): per-dish star ratings.</summary>
         public List<OrderReviewLineModel> Lines { get; set; } = new List<OrderReviewLineModel>();
+
+        /// <summary>Item 44: photo attached to the review.</summary>
+        public string PhotoUrl { get; set; }
+
+        /// <summary>Item 44: auto-generated reward voucher code (free xoi) for photo reviews.</summary>
+        public string RewardCode { get; set; }
     }
 
     /// <summary>Wave 6b (item 26): per-dish star rating inside a review.</summary>

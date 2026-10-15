@@ -64,6 +64,51 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(paged);
         }
 
+        /// <summary>
+        /// Public: subscribes to monthly xoi-cung reminders (Rằm / mùng 1).
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("cung-reminders")]
+        public async Task<ActionResult> CreateCungReminder(
+            [FromBody] CreateCungReminderDto dto,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return Ok(await _appService.CreateReminderAsync(dto));
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>Admin: lists cung reminder subscriptions.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("cung-reminders")]
+        public async Task<ActionResult> GetCungReminders(
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _appService.GetRemindersAsync());
+        }
+
+        /// <summary>Admin: toggles a cung reminder subscription on/off.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPut("cung-reminders/{id:guid}/toggle")]
+        public async Task<ActionResult> ToggleCungReminder(
+            Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return Ok(await _appService.ToggleReminderAsync(id));
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpPut("{id:guid}/status")]
         public async Task<ActionResult> UpdateStatus(

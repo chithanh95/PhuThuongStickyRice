@@ -632,6 +632,23 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public string QuoteType { get; set; }
     }
 
+    /// <summary>Monthly xoi-cung reminder subscription (Rằm / mùng 1).</summary>
+    public class CungReminderModel
+    {
+        public Guid Id { get; set; }
+
+        public string CustomerName { get; set; }
+
+        public string CustomerPhone { get; set; }
+
+        /// <summary>"Ram" or "Mung1".</summary>
+        public string ReminderType { get; set; }
+
+        public bool IsActive { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+    }
+
     public class DishCandidateModel
     {
         public Guid Id { get; set; }

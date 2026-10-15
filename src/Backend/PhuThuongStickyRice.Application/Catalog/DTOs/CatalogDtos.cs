@@ -94,6 +94,8 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
 
         public string EventLocation { get; set; }
 
+        public string Budget { get; set; }
+
         public string QuoteType { get; set; }
 
         public string Status { get; set; }
@@ -122,8 +124,41 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         [StringLength(500)]
         public string EventLocation { get; set; }
 
+        [StringLength(100)]
+        public string Budget { get; set; }
+
         [StringLength(50)]
         public string QuoteType { get; set; }
+    }
+
+    /// <summary>Monthly xoi-cung reminder subscription (Rằm / mùng 1).</summary>
+    public class CungReminderDto : EntityDto<Guid>
+    {
+        public string CustomerName { get; set; }
+
+        public string CustomerPhone { get; set; }
+
+        /// <summary>"Ram" or "Mung1".</summary>
+        public string ReminderType { get; set; }
+
+        public bool IsActive { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class CreateCungReminderDto
+    {
+        [Required]
+        [StringLength(200)]
+        public string CustomerName { get; set; }
+
+        [Required]
+        [StringLength(30)]
+        public string CustomerPhone { get; set; }
+
+        /// <summary>"Ram" (rằm) or "Mung1" (mùng 1).</summary>
+        [Required]
+        public string ReminderType { get; set; }
     }
 
     public class UpdateQuoteRequestStatusDto

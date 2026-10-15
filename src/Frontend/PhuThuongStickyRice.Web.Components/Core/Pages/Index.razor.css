@@ -1718,3 +1718,45 @@ html.dark .xo-gomdon-inner {
 html.dark .xo-gomdon-text p {
     color: #eee;
 }
+
+/* Xôi cúng Rằm & mùng 1 (mục 41) — cùng phong cách banner template */
+.xo-cung {
+    background: #fff;
+    padding: 40px 20px;
+}
+.xo-cung-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    background: #F5E9D4;
+    border: 4px double rgba(111, 7, 7, .49);
+    border-radius: 50px 0 50px 0;
+    padding: 28px 36px;
+}
+.xo-cung-title {
+    font-family: Lora, serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #763434;
+    margin: 0 0 8px;
+}
+.xo-cung-text p {
+    font-family: Lora, serif;
+    font-size: 17px;
+    color: #000;
+    margin: 0;
+    max-width: 520px;
+}
+html.dark .xo-cung {
+    background: #262640;
+}
+html.dark .xo-cung-inner {
+    background: rgba(255, 255, 255, .06);
+}
+html.dark .xo-cung-text p {
+    color: #eee;
+}

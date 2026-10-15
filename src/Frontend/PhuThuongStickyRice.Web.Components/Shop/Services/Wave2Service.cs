@@ -3,8 +3,10 @@ using PhuThuongStickyRice.Web.Components.Shop.Models;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
@@ -94,7 +96,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// </summary>
         public async Task<OrderReviewModel> SubmitReviewAsync(
             string orderNumber, string phone, int rating, string comment,
-            List<object> dishRatings = null)
+            List<object> dishRatings = null, string photoUrl = null)
         {
             return await PostAsync<OrderReviewModel>("api/orders/track/review",
                 new
@@ -103,8 +105,48 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                     CustomerPhone = phone,
                     Rating = rating,
                     Comment = comment,
-                    Lines = dishRatings ?? new List<object>()
+                    Lines = dishRatings ?? new List<object>(),
+                    PhotoUrl = photoUrl
                 });
+        }
+
+        /// <summary>
+        /// Item 44: uploads a review photo (compressed client-side before upload).
+        /// Returns the public photo URL, or null when upload failed.
+        /// </summary>
+        public async Task<string> UploadReviewPhotoAsync(Stream content, string fileName, string contentType)
+        {
+            using var form = new MultipartFormDataContent();
+            var fileContent = new StreamContent(content);
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            form.Add(fileContent, "file", fileName);
+            form.Add(new StringContent(_pendingReviewOrderNumber ?? string.Empty), "orderNumber");
+            form.Add(new StringContent(_pendingReviewPhone ?? string.Empty), "customerPhone");
+
+            var response = await _httpClient.PostAsync("api/orders/track/review/photo", form);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<ReviewPhotoUploadResult>();
+            return result?.Url;
+        }
+
+        /// <summary>Item 44: context for the review-photo upload endpoint.</summary>
+        public void SetReviewPhotoContext(string orderNumber, string phone)
+        {
+            _pendingReviewOrderNumber = orderNumber;
+            _pendingReviewPhone = phone;
+        }
+
+        private string _pendingReviewOrderNumber;
+        private string _pendingReviewPhone;
+
+        private sealed class ReviewPhotoUploadResult
+        {
+            public string Url { get; set; }
         }
 
         public async Task<List<OrderReviewModel>> GetReviewsAsync()

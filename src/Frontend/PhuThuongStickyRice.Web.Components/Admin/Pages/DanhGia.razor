@@ -31,7 +31,7 @@ else
     <div class="table-responsive">
         <table class="table table-sm table-striped">
             <thead>
-                <tr><th>Đơn hàng</th><th>SĐT</th><th>Sao</th><th>Nhận xét</th><th>Phản hồi</th><th>Ngày</th><th></th></tr>
+                <tr><th>Đơn hàng</th><th>SĐT</th><th>Sao</th><th>Nhận xét</th><th>Ảnh</th><th>Quà tặng</th><th>Phản hồi</th><th>Ngày</th><th></th></tr>
             </thead>
             <tbody>
                 @foreach (var r in _reviews)
@@ -47,6 +47,35 @@ else
                             @if (r.IsHidden)
                             {
                                 <span class="badge badge-dark ml-1">Đã ẩn</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(r.PhotoUrl))
+                            {
+                                <a href="@r.PhotoUrl" target="_blank" rel="noopener">
+                                    <img src="@r.PhotoUrl" alt="Ảnh đánh giá"
+                                         style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px;" />
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(r.RewardCode))
+                            {
+                                <span class="badge badge-success" title="Đã tặng 1 phần xôi (mã giảm giá)">
+                                    🎁 @r.RewardCode
+                                </span>
+                            }
+                            else if (!string.IsNullOrEmpty(r.PhotoUrl))
+                            {
+                                <span class="badge badge-warning" title="Có ảnh nhưng chưa có mã quà">⏳ Chưa có mã</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
                             }
                         </td>
                         <td>

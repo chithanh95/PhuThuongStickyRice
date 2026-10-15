@@ -3,10 +3,13 @@ using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,11 +26,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly IOrderAppService _orderAppService;
         private readonly ILogger _logger;
+        private readonly IWebHostEnvironment _environment;
 
-        public OrdersController(IOrderAppService orderAppService, ILogger<OrdersController> logger)
+        private static readonly string[] AllowedReviewPhotoExtensions =
+            { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+        private const long MaxReviewPhotoBytes = 5 * 1024 * 1024;
+
+        public OrdersController(
+            IOrderAppService orderAppService,
+            ILogger<OrdersController> logger,
+            IWebHostEnvironment environment)
         {
             _orderAppService = orderAppService;
             _logger = logger;
+            _environment = environment;
         }
 
         /// <summary>
@@ -343,6 +355,73 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> GetReviews(CancellationToken cancellationToken = default)
         {
             return Ok(await _orderAppService.GetReviewsAsync());
+        }
+
+        /// <summary>
+        /// Public: uploads a photo to attach to a review. The photo is saved
+        /// immediately and its URL must be passed as PhotoUrl when submitting
+        /// the review. Validates the order belongs to the phone.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("track/review/photo")]
+        [RequestSizeLimit(MaxReviewPhotoBytes)]
+        public async Task<ActionResult> UploadReviewPhoto(
+            [FromForm] IFormFile file,
+            [FromForm] string orderNumber,
+            [FromForm] string customerPhone,
+            CancellationToken cancellationToken = default)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { message = "Vui lòng chọn một file ảnh." });
+            }
+
+            var extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrWhiteSpace(extension)
+                || !AllowedReviewPhotoExtensions.Contains(extension.ToLowerInvariant()))
+            {
+                return BadRequest(new
+                {
+                    message = "Định dạng ảnh không hợp lệ. Chỉ nhận: jpg, jpeg, png, webp, gif."
+                });
+            }
+
+            if (file.Length > MaxReviewPhotoBytes)
+            {
+                return BadRequest(new { message = "File ảnh tối đa 5 MB." });
+            }
+
+            // The order must exist and belong to this phone.
+            OrderDto order;
+            try
+            {
+                order = await _orderAppService.TrackOrderAsync(new TrackOrderInput
+                {
+                    OrderNumber = orderNumber,
+                    CustomerPhone = customerPhone
+                });
+            }
+            catch (DomainException)
+            {
+                return BadRequest(new { message = "Không tìm thấy đơn hàng." });
+            }
+
+            if (order == null)
+            {
+                return BadRequest(new { message = "Không tìm thấy đơn hàng." });
+            }
+
+            var folder = Path.Combine(_environment.WebRootPath, "uploads", "review-photos");
+            Directory.CreateDirectory(folder);
+
+            var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+            var filePath = Path.Combine(folder, fileName);
+            await using (var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write))
+            {
+                await file.CopyToAsync(stream, cancellationToken);
+            }
+
+            return Ok(new { photoUrl = $"/uploads/review-photos/{fileName}" });
         }
 
         /// <summary>

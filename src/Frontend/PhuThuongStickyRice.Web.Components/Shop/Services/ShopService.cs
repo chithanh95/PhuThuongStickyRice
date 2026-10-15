@@ -104,6 +104,18 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             response.EnsureSuccessStatusCode();
         }
 
+        /// <summary>Subscribes a phone to monthly cung reminders (public).</summary>
+        public async Task<CungReminderModel> CreateCungReminderAsync(CungReminderModel model)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/quotes/cung-reminders");
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Content = model.AsJsonContent();
+
+            var response = await _httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAs<CungReminderModel>();
+        }
+
         /// <summary>Active dish candidates ordered by votes.</summary>
         public async Task<List<DishCandidateModel>> GetDishCandidatesAsync()
         {

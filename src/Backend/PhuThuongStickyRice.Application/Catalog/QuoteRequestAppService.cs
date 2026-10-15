@@ -20,18 +20,30 @@ namespace PhuThuongStickyRice.Application.Catalog
         Task<PagedResultDto<QuoteRequestDto>> GetListAsync(GetQuoteRequestsInput input);
 
         Task<QuoteRequestDto> UpdateStatusAsync(Guid id, UpdateQuoteRequestStatusDto dto);
+
+        /// <summary>Public: subscribes a phone to monthly cung reminders.</summary>
+        Task<CungReminderDto> CreateReminderAsync(CreateCungReminderDto dto);
+
+        /// <summary>Admin: lists cung reminder subscriptions, newest first.</summary>
+        Task<List<CungReminderDto>> GetRemindersAsync();
+
+        /// <summary>Admin: toggles a reminder subscription on/off.</summary>
+        Task<CungReminderDto> ToggleReminderAsync(Guid id);
     }
 
     public class QuoteRequestAppService : ApplicationService, IQuoteRequestAppService
     {
         private readonly IRepository<QuoteRequest, Guid> _quotes;
+        private readonly IRepository<CungReminder, Guid> _reminders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
         public QuoteRequestAppService(
             IRepository<QuoteRequest, Guid> quotes,
+            IRepository<CungReminder, Guid> reminders,
             IAsyncQueryableExecuter asyncExecuter)
         {
             _quotes = quotes;
+            _reminders = reminders;
             _asyncExecuter = asyncExecuter;
         }
 
@@ -49,6 +61,7 @@ namespace PhuThuongStickyRice.Application.Catalog
                 CustomerPhone = dto.CustomerPhone.Trim(),
                 EventDate = dto.EventDate?.Date,
                 EventLocation = string.IsNullOrWhiteSpace(dto.EventLocation) ? null : dto.EventLocation.Trim(),
+                Budget = string.IsNullOrWhiteSpace(dto.Budget) ? null : dto.Budget.Trim(),
                 QuoteType = string.IsNullOrWhiteSpace(dto.QuoteType) ? null : dto.QuoteType.Trim(),
                 Quantity = Math.Max(1, dto.Quantity),
                 Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim(),
@@ -102,6 +115,74 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapToDto(entity);
         }
 
+        [AllowAnonymous]
+        public async Task<CungReminderDto> CreateReminderAsync(CreateCungReminderDto dto)
+        {
+            if (!IsValidPhone(dto.CustomerPhone))
+            {
+                throw new Domain.Exceptions.DomainException("Số điện thoại không đúng định dạng (VD: 0901234567).");
+            }
+
+            var type = (dto.ReminderType ?? string.Empty).Trim();
+            if (!string.Equals(type, "Ram", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(type, "Mung1", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Domain.Exceptions.DomainException("Loại nhắc không hợp lệ.");
+            }
+
+            var phone = dto.CustomerPhone.Trim();
+            var queryable = await _reminders.GetQueryableAsync();
+            var existing = await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x => x.CustomerPhone == phone && x.IsActive));
+            if (existing != null)
+            {
+                // Already subscribed — just return the existing one.
+                return MapReminderToDto(existing);
+            }
+
+            var entity = new CungReminder
+            {
+                CustomerName = dto.CustomerName.Trim(),
+                CustomerPhone = phone,
+                ReminderType = type,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _reminders.InsertAsync(entity, autoSave: true);
+            return MapReminderToDto(entity);
+        }
+
+        [Authorize(Roles = "Admin")]
+        public async Task<List<CungReminderDto>> GetRemindersAsync()
+        {
+            var queryable = await _reminders.GetQueryableAsync();
+            var items = await _asyncExecuter.ToListAsync(
+                queryable.OrderByDescending(x => x.CreatedAt));
+            return items.Select(MapReminderToDto).ToList();
+        }
+
+        [Authorize(Roles = "Admin")]
+        public async Task<CungReminderDto> ToggleReminderAsync(Guid id)
+        {
+            var entity = await _reminders.GetAsync(id);
+            entity.IsActive = !entity.IsActive;
+            await _reminders.UpdateAsync(entity, autoSave: true);
+            return MapReminderToDto(entity);
+        }
+
+        private static CungReminderDto MapReminderToDto(CungReminder entity)
+        {
+            return new CungReminderDto
+            {
+                Id = entity.Id,
+                CustomerName = entity.CustomerName,
+                CustomerPhone = entity.CustomerPhone,
+                ReminderType = entity.ReminderType,
+                IsActive = entity.IsActive,
+                CreatedAt = entity.CreatedAt
+            };
+        }
+
         private static bool IsValidPhone(string phone) =>
             !string.IsNullOrWhiteSpace(phone)
             && System.Text.RegularExpressions.Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
@@ -115,6 +196,7 @@ namespace PhuThuongStickyRice.Application.Catalog
                 CustomerPhone = entity.CustomerPhone,
                 EventDate = entity.EventDate,
                 EventLocation = entity.EventLocation,
+                Budget = entity.Budget,
                 QuoteType = entity.QuoteType,
                 Quantity = entity.Quantity,
                 Notes = entity.Notes,

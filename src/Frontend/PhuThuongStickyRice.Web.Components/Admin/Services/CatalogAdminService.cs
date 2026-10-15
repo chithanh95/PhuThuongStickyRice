@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Web.Components.Admin.Models;
 using PhuThuongStickyRice.Web.Components.Core.Services;
+using CungReminderModel = PhuThuongStickyRice.Web.Components.Shop.Models.CungReminderModel;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -75,6 +76,18 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         public async Task<QuoteRequestAdminModel> UpdateQuoteStatusAsync(Guid id, string status)
         {
             return await PutAsync<QuoteRequestAdminModel>($"api/quotes/{id}/status", new { Status = status });
+        }
+
+        /// <summary>Admin: lists cung reminder subscriptions.</summary>
+        public async Task<List<CungReminderModel>> GetCungRemindersAsync()
+        {
+            return await GetAsync<List<CungReminderModel>>("api/quotes/cung-reminders");
+        }
+
+        /// <summary>Admin: toggles a cung reminder subscription on/off.</summary>
+        public async Task<CungReminderModel> ToggleCungReminderAsync(Guid id)
+        {
+            return await PutAsync<CungReminderModel>($"api/quotes/cung-reminders/{id}/toggle", new { });
         }
 
         // Dish candidates.
