@@ -1,0 +1,571 @@
+@page "/dat-so-luong-lon"
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Text.RegularExpressions
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject ShopService ShopService
+@inject Wave2Service Wave2Service
+@inject NavigationManager Navigation
+
+<h3>Đặt số lượng lớn &amp; định kỳ</h3>
+<p class="text-muted">
+    Công ty, đám tiệc, cúng giỗ hay quán ăn cần xôi đều đặn mỗi ngày —
+    chọn hình thức phù hợp, để lại thông tin, shop sẽ lo phần còn lại.
+</p>
+
+<style>
+    .bulk-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    @@media (max-width: 576px) { .bulk-opt-grid { grid-template-columns: 1fr; } }
+    .bulk-opt-card {
+        display: block; width: 100%; text-align: center; cursor: pointer;
+        background: #fff; border: 2px solid #e9dfcb; border-radius: 16px;
+        padding: 32px 20px; transition: border-color .15s, box-shadow .15s, transform .15s;
+    }
+    .bulk-opt-card:hover { border-color: #a67c3d; box-shadow: 0 6px 24px rgba(166,124,61,.18); transform: translateY(-2px); }
+    .bulk-opt-icon { font-size: 3rem; line-height: 1; margin-bottom: 12px; }
+    .bulk-opt-card h4 { font-weight: 800; color: #2e2620; margin-bottom: 8px; }
+    .bulk-opt-card p { color: #7d6c58; margin: 0; font-size: .95rem; }
+    .bulk-prod { display: flex; align-items: center; gap: 12px; border: 1px solid #e9dfcb; border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; cursor: pointer; background: #fff; }
+    .bulk-prod.selected { border-color: #a67c3d; background: #fdf8ef; }
+    .bulk-prod img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; flex: none; }
+    .bulk-prod .nm { font-weight: 700; color: #2e2620; }
+    .bulk-prod .pr { color: #7d6c58; font-size: .9rem; }
+    .bulk-prod input { width: 20px; height: 20px; flex: none; }
+    .bulk-back { margin-bottom: 16px; }
+</style>
+
+@if (_kind == null)
+{
+    <div class="bulk-opt-grid">
+        <button type="button" class="bulk-opt-card" @onclick='() => SelectKind("bulk")'>
+            <div class="bulk-opt-icon">📦</div>
+            <h4>Đặt số lượng lớn</h4>
+            <p>Đơn từ 50 gói trở lên — báo giá riêng cho công ty, đám tiệc, cúng lớn.</p>
+        </button>
+        <button type="button" class="bulk-opt-card" @onclick='() => SelectKind("sub")'>
+            <div class="bulk-opt-icon">🔁</div>
+            <h4>Đặt định kỳ</h4>
+            <p>Giao xôi tự động mỗi ngày/tuần — đăng ký một lần, nhận đều đặn.</p>
+        </button>
+    </div>
+}
+else
+{
+    <button type="button" class="btn btn-link bulk-back" @onclick="BackToChoice">← Chọn lại hình thức</button>
+
+    @if (_kind == "bulk")
+    {
+        @* ============ FORM SỐ LƯỢNG LỚN ============ *@
+        @if (_bulkDone)
+        {
+            <div class="alert alert-success">
+                <h4>Cảm ơn bạn!</h4>
+                <p class="mb-0">
+                    Shop đã nhận yêu cầu đặt số lượng lớn và sẽ liên hệ qua số
+                    <strong>@_bulk.CustomerPhone</strong> để báo giá trong thời gian sớm nhất.
+                </p>
+            </div>
+            <a class="btn btn-primary" href="/shop">Xem thực đơn</a>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(_bulkError))
+            {
+                <div class="alert alert-danger">@_bulkError</div>
+            }
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Họ tên *</label>
+                            <input class="form-control" @bind="_bulk.CustomerName" placeholder="Nguyễn Văn A" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Số điện thoại *</label>
+                            <input class="form-control" @bind="_bulk.CustomerPhone" placeholder="0901234567" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Chọn món *</label>
+                        @if (_products.Count == 0)
+                        {
+                            <p class="text-muted">Đang tải danh sách món...</p>
+                        }
+                        @foreach (var p in _products)
+                        {
+                            <label class="bulk-prod @(_bulkProductIds.Contains(p.Id) ? "selected" : "")">
+                                <input type="checkbox" checked="@_bulkProductIds.Contains(p.Id)"
+                                       @onchange="e => ToggleBulkProduct(p.Id, (bool)e.Value)" />
+                                <img loading="lazy" src="@ProductImage(p)" alt="@p.Name" />
+                                <span>
+                                    <span class="nm">@p.Name</span><br />
+                                    <span class="pr">@FormatPrice(p.Price)/gói</span>
+                                </span>
+                            </label>
+                        }
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Ngày cần hàng *</label>
+                            <input type="date" class="form-control" @bind="_bulkDate"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Số lượng dự kiến (gói) *</label>
+                            <input type="number" min="50" class="form-control" @bind="_bulk.Quantity" />
+                            <small class="form-text text-muted">Đơn số lượng lớn từ 50 gói trở lên.</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Ngân sách dự kiến (không bắt buộc)</label>
+                        <input class="form-control" @bind="_bulk.Budget" placeholder="VD: khoảng 2 triệu" />
+                    </div>
+                    <div class="form-group">
+                        <label>Ghi chú thêm</label>
+                        <textarea class="form-control" rows="3" @bind="_bulkNotes"
+                                  placeholder="VD: giao trước 9h sáng, chia 2 đợt, cần hóa đơn..."></textarea>
+                    </div>
+                    <button class="btn btn-success btn-lg" @onclick="SubmitBulk" disabled="@_submitting">
+                        @(_submitting ? "Đang gửi..." : "Gửi yêu cầu báo giá")
+                    </button>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        @* ============ FORM ĐỊNH KỲ ============ *@
+        @if (_subDone)
+        {
+            <div class="alert alert-success">
+                <strong>Đăng ký thành công!</strong> Từ ngày
+                <strong>@_created.StartDate.ToString("dd/MM/yyyy")</strong>,
+                mỗi sáng shop sẽ tự tạo đơn <strong>@_created.Quantity × @_created.ProductName</strong>
+                giao đến địa chỉ của bạn.
+            </div>
+            <button class="btn btn-outline-primary" @onclick="ResetSub">Đăng ký thêm</button>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(_subError))
+            {
+                <div class="alert alert-danger">@_subError</div>
+            }
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Họ tên *</label>
+                            <input class="form-control" @bind="_sub.CustomerName" placeholder="Nguyễn Văn A" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Số điện thoại *</label>
+                            <input class="form-control" @bind="_sub.Phone" placeholder="0901234567" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Món xôi *</label>
+                        <select class="form-control" @onchange="OnSubProductChanged">
+                            <option value="">— Chọn món —</option>
+                            @foreach (var p in _products)
+                            {
+                                <option value="@p.Id" selected="@(p.Id == _sub.ProductId)">@p.Name — @FormatPrice(p.Price)</option>
+                            }
+                        </select>
+                    </div>
+                    @if (_subSelectedProduct?.Sizes?.Any(s => s.IsActive) == true)
+                    {
+                        <div class="form-group">
+                            <label>Cỡ gói</label>
+                            <select class="form-control" @bind="_sub.SizeOptionId">
+                                <option value="">Mặc định</option>
+                                @foreach (var s in _subSelectedProduct.Sizes.Where(x => x.IsActive))
+                                {
+                                    <option value="@s.Id">@s.Name — @FormatPrice(s.Price)</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    @if (_toppings.Count > 0)
+                    {
+                        <div class="form-group">
+                            <label>Ăn kèm</label>
+                            <div>
+                                @foreach (var t in _toppings)
+                                {
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="sub-top-@t.Id"
+                                               checked="@_sub.ToppingIds.Contains(t.Id)"
+                                               @onchange="e => ToggleSubTopping(t.Id, (bool)e.Value)" />
+                                        <label class="form-check-label" for="sub-top-@t.Id">@t.Name (+@FormatPrice(t.ExtraPrice))</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    <div class="form-group">
+                        <label>Tần suất giao *</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="freq" id="freq-daily"
+                                       checked="@(_freq == "daily")" @onchange='() => _freq = "daily"' />
+                                <label class="form-check-label" for="freq-daily">Hằng ngày</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="freq" id="freq-weekdays"
+                                       checked="@(_freq == "weekdays")" @onchange='() => _freq = "weekdays"' />
+                                <label class="form-check-label" for="freq-weekdays">Thứ 2 – 6</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="freq" id="freq-weekly"
+                                       checked="@(_freq == "weekly")" @onchange='() => _freq = "weekly"' />
+                                <label class="form-check-label" for="freq-weekly">Hằng tuần</label>
+                            </div>
+                        </div>
+                        @if (_freq == "weekly")
+                        {
+                            <select class="form-control mt-2" style="max-width: 240px" @bind="_weeklyDay">
+                                <option value="1">Thứ 2</option>
+                                <option value="2">Thứ 3</option>
+                                <option value="3">Thứ 4</option>
+                                <option value="4">Thứ 5</option>
+                                <option value="5">Thứ 6</option>
+                                <option value="6">Thứ 7</option>
+                                <option value="0">Chủ nhật</option>
+                            </select>
+                        }
+                        @if (_freq != "daily")
+                        {
+                            <small class="form-text text-muted">
+                                Hệ thống hiện tự tạo đơn mỗi sáng; với lịch Thứ 2–6 / Hằng tuần,
+                                shop sẽ liên hệ để chốt lịch giao phù hợp.
+                            </small>
+                        }
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label>Số lượng mỗi lần giao *</label>
+                            <input type="number" class="form-control" min="1" max="100" @bind="_sub.Quantity" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Ước tính / lần giao</label>
+                            <input class="form-control" readonly value="@FormatPrice(EstimatedPerDelivery)" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Bắt đầu từ ngày *</label>
+                            <input type="date" class="form-control" @bind="_sub.StartDate"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Địa chỉ giao hàng *</label>
+                        <textarea class="form-control" rows="2" @bind="_sub.DeliveryAddress"
+                                  placeholder="Số nhà, đường, phường..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Ghi chú</label>
+                        <textarea class="form-control" rows="2" @bind="_sub.Notes"
+                                  placeholder="VD: giao trước 7h sáng..."></textarea>
+                    </div>
+                    <button class="btn btn-success" @onclick="SubmitSub" disabled="@_submitting">
+                        @(_submitting ? "Đang đăng ký..." : "Đăng ký đặt định kỳ")
+                    </button>
+                </div>
+            </div>
+        }
+    }
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "loai")]
+    public string Loai { get; set; }
+
+    private string _kind; // null | "bulk" | "sub"
+    private bool _submitting;
+
+    private List<ShopProductModel> _products = new List<ShopProductModel>();
+    private List<ToppingModel> _toppings = new List<ToppingModel>();
+
+    // ---- Bulk (QuoteRequest) ----
+    private readonly QuoteRequestModel _bulk = new QuoteRequestModel { QuoteType = "SoLuongLon", Quantity = 50 };
+    private readonly HashSet<Guid> _bulkProductIds = new HashSet<Guid>();
+    private DateTime? _bulkDate;
+    private string _bulkNotes;
+    private bool _bulkDone;
+    private string _bulkError;
+
+    // ---- Subscription ----
+    private readonly CreateSubscriptionModel _sub = new CreateSubscriptionModel();
+    private ShopProductModel _subSelectedProduct;
+    private SubscriptionModel _created;
+    private bool _subDone;
+    private string _subError;
+    private string _freq = "daily";
+    private int _weeklyDay = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.Equals(Loai, "dinh-ky", StringComparison.OrdinalIgnoreCase))
+        {
+            _kind = "sub";
+        }
+
+        try
+        {
+            var paged = await ShopService.GetProductsAsync();
+            _products = paged?.Items?.Where(p => p.Status == "Active").ToList()
+                ?? new List<ShopProductModel>();
+            _toppings = await ShopService.GetToppingsAsync() ?? new List<ToppingModel>();
+        }
+        catch (Exception)
+        {
+            // Form shows empty state; the user can retry.
+        }
+    }
+
+    private void SelectKind(string kind) => _kind = kind;
+
+    private void BackToChoice()
+    {
+        _kind = null;
+        _bulkDone = false;
+        _subDone = false;
+        _bulkError = null;
+        _subError = null;
+    }
+
+    private void ToggleBulkProduct(Guid id, bool selected)
+    {
+        if (selected) { _bulkProductIds.Add(id); }
+        else { _bulkProductIds.Remove(id); }
+    }
+
+    private async Task SubmitBulk()
+    {
+        _bulkError = null;
+        if (string.IsNullOrWhiteSpace(_bulk.CustomerName))
+        {
+            _bulkError = "Vui lòng nhập họ tên.";
+            return;
+        }
+        if (!IsValidPhone(_bulk.CustomerPhone))
+        {
+            _bulkError = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            return;
+        }
+        if (_bulkProductIds.Count == 0)
+        {
+            _bulkError = "Vui lòng chọn ít nhất một món.";
+            return;
+        }
+        if (_bulkDate == null)
+        {
+            _bulkError = "Vui lòng chọn ngày cần hàng.";
+            return;
+        }
+        if (_bulk.Quantity < 50)
+        {
+            _bulkError = "Đơn số lượng lớn từ 50 gói trở lên. Đơn nhỏ hơn vui lòng đặt tại cửa hàng.";
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            var names = string.Join(", ", _products
+                .Where(p => _bulkProductIds.Contains(p.Id))
+                .Select(p => p.Name));
+            _bulk.EventDate = _bulkDate;
+            _bulk.Notes = $"Món: {names}."
+                + (string.IsNullOrWhiteSpace(_bulkNotes) ? "" : $" Ghi chú: {_bulkNotes.Trim()}");
+            await ShopService.CreateQuoteAsync(_bulk);
+            _bulkDone = true;
+        }
+        catch (Exception)
+        {
+            _bulkError = "Gửi yêu cầu thất bại. Vui lòng thử lại hoặc gọi trực tiếp cho shop.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void OnSubProductChanged(ChangeEventArgs e)
+    {
+        _sub.ToppingIds.Clear();
+        _sub.SizeOptionId = null;
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _sub.ProductId = id;
+            _subSelectedProduct = _products.FirstOrDefault(p => p.Id == id);
+        }
+        else
+        {
+            _sub.ProductId = Guid.Empty;
+            _subSelectedProduct = null;
+        }
+    }
+
+    private void ToggleSubTopping(Guid id, bool selected)
+    {
+        if (selected && !_sub.ToppingIds.Contains(id))
+        {
+            _sub.ToppingIds.Add(id);
+        }
+        else if (!selected)
+        {
+            _sub.ToppingIds.Remove(id);
+        }
+    }
+
+    private decimal EstimatedPerDelivery
+    {
+        get
+        {
+            var unit = _subSelectedProduct?.Price ?? 0;
+            if (_sub.SizeOptionId.HasValue && _subSelectedProduct != null)
+            {
+                var size = _subSelectedProduct.Sizes.FirstOrDefault(s => s.Id == _sub.SizeOptionId.Value);
+                if (size != null)
+                {
+                    unit = size.Price;
+                }
+            }
+
+            unit += _toppings.Where(t => _sub.ToppingIds.Contains(t.Id)).Sum(t => t.ExtraPrice);
+            return unit * Math.Max(1, _sub.Quantity);
+        }
+    }
+
+    private string FrequencyLabel => _freq switch
+    {
+        "weekdays" => "Thứ 2–6",
+        "weekly" => $"Hằng tuần ({DayName(_weeklyDay)})",
+        _ => "Hằng ngày",
+    };
+
+    private static string DayName(int d) => d switch
+    {
+        0 => "Chủ nhật",
+        1 => "Thứ 2",
+        2 => "Thứ 3",
+        3 => "Thứ 4",
+        4 => "Thứ 5",
+        5 => "Thứ 6",
+        6 => "Thứ 7",
+        _ => "",
+    };
+
+    private async Task SubmitSub()
+    {
+        _subError = null;
+        if (string.IsNullOrWhiteSpace(_sub.CustomerName)
+            || string.IsNullOrWhiteSpace(_sub.DeliveryAddress))
+        {
+            _subError = "Vui lòng nhập đầy đủ họ tên và địa chỉ.";
+            return;
+        }
+        if (!IsValidPhone(_sub.Phone))
+        {
+            _subError = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            return;
+        }
+        if (_sub.ProductId == Guid.Empty)
+        {
+            _subError = "Vui lòng chọn món xôi.";
+            return;
+        }
+        if (_sub.StartDate.Date < DateTime.Today)
+        {
+            _subError = "Ngày bắt đầu không được trong quá khứ.";
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            var notes = _sub.Notes?.Trim();
+            _sub.Notes = $"[Tần suất: {FrequencyLabel}]" + (string.IsNullOrEmpty(notes) ? "" : $" {notes}");
+            _created = await Wave2Service.CreateSubscriptionAsync(_sub);
+            _subDone = true;
+        }
+        catch (Exception ex)
+        {
+            _subError = ex.Message.Contains("ngừng bán") || ex.Message.Contains("quá khứ")
+                ? ex.Message
+                : "Không đăng ký được. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void ResetSub()
+    {
+        _subDone = false;
+        _created = null;
+    }
+
+    private static bool IsValidPhone(string phone) =>
+        !string.IsNullOrWhiteSpace(phone)
+        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    private static string ProductImage(ShopProductModel product)
+    {
+        string first = null;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(product?.ImageUrlsJson))
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(product.ImageUrlsJson);
+                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    foreach (var el in doc.RootElement.EnumerateArray())
+                    {
+                        if (el.ValueKind == System.Text.Json.JsonValueKind.String)
+                        {
+                            var url = el.GetString()?.Trim();
+                            if (!string.IsNullOrEmpty(url))
+                            {
+                                first = url;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception) { }
+        if (!string.IsNullOrEmpty(first))
+        {
+            return first;
+        }
+
+        var slug = (product?.Code ?? "").ToLowerInvariant().Replace("_", "-");
+        var file = slug switch
+        {
+            "xoi-gac" => "xoi-gac.jpg",
+            "xoi-do" => "xoi-do.jpg",
+            "xoi-xeo" => "xoi-xeo.jpg",
+            "xoi-vo" => "xoi-vo.jpg",
+            "xoi-lac" => "xoi-lac.jpg",
+            "xoi-gac-kg" => "xoi-gac.jpg",
+            "xoi-do-kg" => "xoi-do.jpg",
+            "xoi-xeo-kg" => "xoi-xeo.jpg",
+            "xoi-vo-kg" => "xoi-vo.jpg",
+            "xoi-lac-kg" => "xoi-lac.jpg",
+            "xoi-ns" => "xoi-ngu-sac.svg",
+            "xoi-ngu-sac" => "xoi-ngu-sac.svg",
+            _ => "xoi-gac.jpg"
+        };
+        return $"_content/PhuThuongStickyRice.Web.Components/images/{file}";
+    }
+}
