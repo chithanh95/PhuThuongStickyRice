@@ -50,6 +50,13 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public List<PhuThuongStickyRice.Application.Customer.CustomerTagDto> CustomerTags { get; set; }
             = new List<PhuThuongStickyRice.Application.Customer.CustomerTagDto>();
 
+        /// <summary>
+        /// Item 130 (đúng): true when this order's customer is marked VIP —
+        /// set together with <see cref="CustomerTags"/> on admin endpoints
+        /// only. Kitchen and order list use it for priority display/sorting.
+        /// </summary>
+        public bool IsVip { get; set; }
+
         public string Notes { get; set; }
 
         /// <summary>
@@ -499,6 +506,11 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Item 149: tags attached to this customer phone.</summary>
         public List<PhuThuongStickyRice.Application.Customer.CustomerTagDto> Tags { get; set; }
             = new List<PhuThuongStickyRice.Application.Customer.CustomerTagDto>();
+
+        /// <summary>
+        /// Item 130 (đúng): true when the phone carries the VIP tag.
+        /// </summary>
+        public bool IsVip { get; set; }
     }
 
     public class GetOrdersInput : PagedAndSortedResultRequestDto
@@ -527,6 +539,11 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// false = chưa thu, null = tất cả.
         /// </summary>
         public bool? CashCollected { get; set; }
+
+        /// <summary>
+        /// Item 130 (đúng): true = chỉ hiện đơn của khách VIP.
+        /// </summary>
+        public bool VipOnly { get; set; }
     }
 
     /// <summary>Wave 6c (item 33): admin edits the internal order note.</summary>

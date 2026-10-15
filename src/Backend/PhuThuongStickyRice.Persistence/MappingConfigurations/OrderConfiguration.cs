@@ -151,6 +151,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Pre-order scheduled pickup time (UTC). Null = ASAP.
             builder.Property(x => x.ScheduledFor);
 
+            // Item 163: cash-collection flag. Defaults to false.
+            builder.Property(x => x.CashCollected).IsRequired();
+            builder.Property(x => x.CashCollectedAt);
+
             // Registered customer account that placed the order (nullable).
             builder.Property(x => x.CustomerUserId);
             builder.HasIndex(x => x.CustomerUserId);

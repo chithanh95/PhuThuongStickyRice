@@ -83,6 +83,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.OwnerPhone).HasMaxLength(30);
             builder.Property(x => x.OwnerZaloUserId).HasMaxLength(100);
             builder.Property(x => x.LastWeeklyReportSentWeek).HasMaxLength(20);
+
+            // Item 180: simple "new order" webhook (plain URL, not a secret).
+            builder.Property(x => x.NewOrderWebhookUrl).HasMaxLength(1000);
+            builder.Property(x => x.NewOrderWebhookEnabled).IsRequired();
         }
     }
 }

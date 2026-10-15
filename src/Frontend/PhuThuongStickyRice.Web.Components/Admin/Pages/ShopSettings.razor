@@ -155,6 +155,29 @@ else
                 <small class="form-text text-muted">Dùng khi chưa có Zalo User ID. Báo cáo tự gửi 08:00 sáng thứ 2 hàng tuần (cần chạy BackgroundServer).</small>
             </div>
 
+            <h5 class="mt-4">Webhook báo đơn mới (mục 180)</h5>
+            <div class="form-row">
+                <div class="form-group col-md-8">
+                    <label>URL webhook</label>
+                    <input class="form-control" @bind="_model.NewOrderWebhookUrl" placeholder="https://..." />
+                    <small class="form-text text-muted">Khi có đơn mới, hệ thống POST JSON <code>{maDon, sdt, tongTien, trangThai, thoiGian}</code> tới URL này (timeout 5 giây, lỗi chỉ ghi log — không làm hỏng việc tạo đơn).</small>
+                </div>
+                <div class="form-group col-md-4">
+                    <label>&nbsp;</label>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="webhook-enabled" @bind="_model.NewOrderWebhookEnabled" />
+                        <label class="form-check-label" for="webhook-enabled">Bật webhook báo đơn mới</label>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="TestWebhookAsync" disabled="@_testingWebhook">
+                        @(_testingWebhook ? "Đang gửi..." : "Gửi thử")
+                    </button>
+                    @if (!string.IsNullOrEmpty(_webhookTestResult))
+                    {
+                        <div class="mt-2"><small class="@(_webhookTestOk ? "text-success" : "text-danger")">@_webhookTestResult</small></div>
+                    }
+                </div>
+            </div>
+
             <h5 class="mt-4">Chuyển khoản & đặt cọc</h5>
             <div class="form-group">
                 <label>Tự động hủy đơn chuyển khoản chưa thanh toán sau (phút)</label>
@@ -363,6 +386,11 @@ else
     private string _error;
     private string _success;
 
+    // Item 180: "Gửi thử" state.
+    private bool _testingWebhook;
+    private string _webhookTestResult;
+    private bool _webhookTestOk;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -372,6 +400,31 @@ else
         catch (Exception)
         {
             _error = "Không tải được cài đặt. Vui lòng thử lại.";
+        }
+    }
+
+    /// <summary>
+    /// Item 180: "Gửi thử" — posts a sample new-order payload to the
+    /// webhook URL (the textbox value, or the saved setting if empty).
+    /// </summary>
+    private async Task TestWebhookAsync()
+    {
+        _testingWebhook = true;
+        _webhookTestResult = null;
+        try
+        {
+            var result = await ShopSettingsService.TestOrderWebhookAsync(_model.NewOrderWebhookUrl);
+            _webhookTestOk = result?.Ok == true;
+            _webhookTestResult = result?.Message ?? "Không có phản hồi.";
+        }
+        catch (Exception ex)
+        {
+            _webhookTestOk = false;
+            _webhookTestResult = "Lỗi: " + ex.Message;
+        }
+        finally
+        {
+            _testingWebhook = false;
         }
     }
 

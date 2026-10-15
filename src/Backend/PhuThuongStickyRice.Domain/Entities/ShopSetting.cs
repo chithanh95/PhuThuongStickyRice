@@ -342,7 +342,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 ShowZaloChatButton = true,
                 GoogleMapsUrl = null,
                 AcceptingOrders = true,
-                MaxOrdersPerPhonePerDay = 10
+                MaxOrdersPerPhonePerDay = 10,
+                NewOrderWebhookUrl = null,
+                NewOrderWebhookEnabled = false
             };
         }
     }

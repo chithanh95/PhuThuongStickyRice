@@ -18,7 +18,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
 
         public async Task<Orders.Models.PagedResult<OrderModel>> GetOrdersAsync(int page = 1, int pageSize = 20,
             string searchTerm = null, string status = null, Guid? shipperId = null,
-            DateTime? fromDate = null, DateTime? toDate = null)
+            DateTime? fromDate = null, DateTime? toDate = null, bool? cashCollected = null,
+            bool vipOnly = false)
         {
             var url = $"api/orders?page={page}&pageSize={pageSize}";
             if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -47,7 +48,41 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
                 url += $"&toDate={toDate.Value:yyyy-MM-dd}";
             }
 
+            // Item 163: cash-collection filter.
+            if (cashCollected.HasValue)
+            {
+                url += $"&cashCollected={cashCollected.Value.ToString().ToLowerInvariant()}";
+            }
+
+            // Item 130 (đúng): only VIP customers' orders.
+            if (vipOnly)
+            {
+                url += "&vipOnly=true";
+            }
+
             return await GetAsync<Orders.Models.PagedResult<OrderModel>>(url);
+        }
+
+        /// <summary>
+        /// Item 163: staff marks cash as collected ("Đã thu tiền").
+        /// </summary>
+        public async Task<OrderModel> MarkCashCollectedAsync(Guid orderId)
+        {
+            return await PostAsync<OrderModel>($"api/admin/orders/{orderId:D}/mark-cash-collected", new { });
+        }
+
+        /// <summary>
+        /// Item 162: renders the message template for an order + status.
+        /// </summary>
+        public async Task<OrderMessagePreviewModel> GetMessagePreviewAsync(Guid orderId, string status)
+        {
+            var url = $"api/admin/orders/{orderId:D}/message-preview";
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                url += $"?status={Uri.EscapeDataString(status)}";
+            }
+
+            return await GetAsync<OrderMessagePreviewModel>(url);
         }
 
         /// <summary>

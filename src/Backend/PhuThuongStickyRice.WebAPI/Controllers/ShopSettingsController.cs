@@ -50,5 +50,27 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             return Ok(await _shopSettingAppService.UpdateAsync(dto));
         }
+
+        public class TestOrderWebhookRequest
+        {
+            /// <summary>
+            /// Optional override URL. Empty = use the saved setting.
+            /// </summary>
+            public string Url { get; set; }
+        }
+
+        /// <summary>
+        /// Item 180: "Gửi thử" — posts a sample new-order payload to the
+        /// configured webhook URL (or the override) with a 5s timeout.
+        /// </summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPost("test-order-webhook")]
+        public async Task<ActionResult> TestOrderWebhook(
+            [FromBody] TestOrderWebhookRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var (ok, message) = await _shopSettingAppService.TestNewOrderWebhookAsync(request?.Url);
+            return Ok(new { ok, message });
+        }
     }
 }

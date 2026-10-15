@@ -50,6 +50,12 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public List<PhuThuongStickyRice.Web.Components.Admin.Models.CustomerTagModel> CustomerTags { get; set; }
             = new List<PhuThuongStickyRice.Web.Components.Admin.Models.CustomerTagModel>();
 
+        /// <summary>
+        /// Item 130 (đúng): true when the customer is marked VIP —
+        /// kitchen and order list use it for priority display/sorting.
+        /// </summary>
+        public bool IsVip { get; set; }
+
         public string Notes { get; set; }
 
         /// <summary>
@@ -78,6 +84,12 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
 
         /// <summary>Pre-order scheduled pickup time (UTC). Null = ASAP.</summary>
         public DateTime? ScheduledFor { get; set; }
+
+        /// <summary>Item 163: true when staff confirmed cash was collected.</summary>
+        public bool CashCollected { get; set; }
+
+        /// <summary>When cash collection was confirmed (UTC).</summary>
+        public DateTime? CashCollectedAt { get; set; }
 
         public decimal TotalAmount { get; set; }
 
@@ -370,5 +382,28 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public string Phone { get; set; }
         public string CustomerName { get; set; }
         public List<OrderModel> Orders { get; set; } = new List<OrderModel>();
+    }
+
+    /// <summary>
+    /// Item 162: rendered message-template preview for an order + status.
+    /// </summary>
+    public class OrderMessagePreviewModel
+    {
+        public string Status { get; set; }
+        public string StatusLabel { get; set; }
+        public string Message { get; set; }
+        public bool HasTemplate { get; set; }
+    }
+
+    /// <summary>
+    /// Item 162: message template (mẫu tin nhắn theo trạng thái đơn).
+    /// </summary>
+    public class OrderMessageTemplateModel
+    {
+        public Guid Id { get; set; }
+        public string Status { get; set; }
+        public string StatusLabel { get; set; }
+        public string Template { get; set; }
+        public bool IsActive { get; set; }
     }
 }

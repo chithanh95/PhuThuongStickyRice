@@ -274,6 +274,38 @@ namespace PhuThuongStickyRice.Domain.Entities
             PickedUpAt = DateTime.UtcNow;
         }
 
+        /// <summary>
+        /// Item 163: true when staff confirmed cash was collected for this
+        /// order (COD / counter sales). False by default; set via the
+        /// "💵 Đã thu tiền" button on the admin order list.
+        /// </summary>
+        public bool CashCollected { get; private set; }
+
+        /// <summary>When cash collection was confirmed (UTC). Null until then.</summary>
+        public DateTime? CashCollectedAt { get; private set; }
+
+        /// <summary>
+        /// Staff marks cash as collected. Idempotent guard: already-collected
+        /// or cancelled orders are rejected. Typically used on COD orders,
+        /// but the server only requires "not cancelled, not yet collected"
+        /// so counter/POS flows keep working.
+        /// </summary>
+        public void MarkCashCollected()
+        {
+            if (Status == OrderStatus.Cancelled)
+            {
+                throw new DomainException("Không thể đánh dấu thu tiền cho đơn đã hủy.");
+            }
+
+            if (CashCollected)
+            {
+                throw new DomainException("Đơn này đã được đánh dấu thu tiền.");
+            }
+
+            CashCollected = true;
+            CashCollectedAt = DateTime.UtcNow;
+        }
+
         public DateTime CreatedAt { get; private set; }
 
         private readonly List<OrderLine> _lines = new List<OrderLine>();

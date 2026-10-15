@@ -32,5 +32,20 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         {
             return await PutAsync<ShopSettingModel>("api/shop-settings", model);
         }
+
+        /// <summary>
+        /// Item 180: "Gửi thử" — posts a sample new-order payload.
+        /// </summary>
+        public async Task<TestOrderWebhookResult> TestOrderWebhookAsync(string url)
+        {
+            return await PostAsync<TestOrderWebhookResult>(
+                "api/shop-settings/test-order-webhook", new { Url = url });
+        }
+
+        public class TestOrderWebhookResult
+        {
+            public bool Ok { get; set; }
+            public string Message { get; set; }
+        }
     }
 }

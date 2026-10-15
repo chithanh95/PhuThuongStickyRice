@@ -262,6 +262,16 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         public string OwnerZaloUserId { get; set; }
 
         /// <summary>
+        /// Item 180: URL nhận webhook khi có đơn mới. POST JSON
+        /// {maDon, sdt, tongTien, trangThai, thoiGian}. Trống = tắt.
+        /// </summary>
+        [StringLength(1000)]
+        public string NewOrderWebhookUrl { get; set; }
+
+        /// <summary>Item 180: bật/tắt webhook báo đơn mới.</summary>
+        public bool NewOrderWebhookEnabled { get; set; }
+
+        /// <summary>
         /// Idempotency marker for the Monday worker ("yyyy-MM-dd" of the
         /// reported week's Monday). Managed by the system; admin read-only.
         /// </summary>

@@ -1,0 +1,154 @@
+@page "/admin/mau-tin-nhan"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Orders.Models
+@inject MessageTemplateService MessageTemplateService
+
+<h3>💬 Mẫu tin nhắn theo trạng thái đơn</h3>
+<p class="text-muted">
+    Khi đổi trạng thái đơn ở trang <strong>Đơn hàng</strong>, nhân viên bấm nút
+    <strong>📋 Copy tin nhắn</strong> để lấy nội dung mẫu đã điền sẵn thông tin đơn,
+    rồi gửi tay qua Zalo/tin nhắn. Hệ thống <strong>không tự gửi</strong> — minh bạch, không giả vờ.
+</p>
+<p class="text-muted">
+    Placeholder dùng được trong mẫu: <code>{MaDon}</code> (mã đơn), <code>{TenKhach}</code> (tên khách),
+    <code>{TongTien}</code> (tổng tiền), <code>{NgayDat}</code> (ngày giờ đặt).
+</p>
+
+@if (_templates == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 140px;">Trạng thái</th>
+                            <th>Nội dung mẫu</th>
+                            <th style="width: 90px;">Bật</th>
+                            <th style="width: 110px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in _templates)
+                        {
+                            <tr>
+                                <td><strong>@t.StatusLabel</strong><br /><small class="text-muted">@t.Status</small></td>
+                                <td>
+                                    @if (_editingId == t.Id)
+                                    {
+                                        <textarea class="form-control" rows="4" maxlength="2000"
+                                                  @bind="_editText"></textarea>
+                                        <small class="text-muted">@_editText?.Length/2000 ký tự</small>
+                                    }
+                                    else
+                                    {
+                                        <div style="white-space: pre-line;">@t.Template</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (_editingId == t.Id)
+                                    {
+                                        <input type="checkbox" @bind="_editActive" />
+                                    }
+                                    else
+                                    {
+                                        @(t.IsActive ? "✅" : "❌")
+                                    }
+                                </td>
+                                <td class="text-right">
+                                    @if (_editingId == t.Id)
+                                    {
+                                        <button class="btn btn-sm btn-primary" @onclick="() => SaveAsync(t)" disabled="@_saving">
+                                            @(_saving ? "..." : "Lưu")
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary ml-1" @onclick="CancelEdit">Hủy</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(t)">Sửa</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-3">@_message</div>
+    }
+}
+
+@code {
+    private List<OrderMessageTemplateModel> _templates;
+    private Guid? _editingId;
+    private string _editText;
+    private bool _editActive;
+    private bool _saving;
+    private string _message;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _templates = await MessageTemplateService.GetListAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = "Lỗi tải mẫu tin nhắn: " + ex.Message;
+            _isError = true;
+            _templates = new List<OrderMessageTemplateModel>();
+        }
+    }
+
+    private void StartEdit(OrderMessageTemplateModel t)
+    {
+        _editingId = t.Id;
+        _editText = t.Template;
+        _editActive = t.IsActive;
+        _message = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _message = null;
+    }
+
+    private async Task SaveAsync(OrderMessageTemplateModel t)
+    {
+        _saving = true;
+        _message = null;
+        try
+        {
+            var updated = await MessageTemplateService.UpdateAsync(t.Id, _editText, _editActive);
+            t.Template = updated.Template;
+            t.IsActive = updated.IsActive;
+            _editingId = null;
+            _message = $"Đã lưu mẫu \"{t.StatusLabel}\".";
+            _isError = false;
+        }
+        catch (Exception ex)
+        {
+            _message = "Lỗi lưu: " + ex.Message;
+            _isError = true;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

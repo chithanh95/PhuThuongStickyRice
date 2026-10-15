@@ -99,6 +99,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] Guid? shipperId = null,
             // Wave 6c (item 35): date-only range filter (Vietnam day boundaries).
             [FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null,
+            // Item 163: filter by cash-collection state.
+            [FromQuery] bool? cashCollected = null,
+            // Item 130 (đúng): true = only VIP customers' orders.
+            [FromQuery] bool vipOnly = false,
             CancellationToken cancellationToken = default)
         {
             var paged = await _orderAppService.GetListAsync(new GetOrdersInput
@@ -109,7 +113,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 Status = status,
                 ShipperId = shipperId,
                 FromDate = fromDate,
-                ToDate = toDate
+                ToDate = toDate,
+                CashCollected = cashCollected,
+                VipOnly = vipOnly
             });
 
             return Ok(paged);

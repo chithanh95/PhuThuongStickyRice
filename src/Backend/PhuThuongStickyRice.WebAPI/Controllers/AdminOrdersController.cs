@@ -148,5 +148,26 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             return Ok(await _orderAppService.GetDuplicateOrderGroupsAsync());
         }
+
+        /// <summary>
+        /// Item 163: staff marks cash as collected ("💵 Đã thu tiền").
+        /// Method-level authorize widens the class-level Admin-only rule
+        /// to Cashiers as well.
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpPost("{id:guid}/mark-cash-collected")]
+        public async Task<ActionResult> MarkCashCollected(
+            Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return Ok(await _orderAppService.MarkCashCollectedAsync(id));
+            }
+            catch (Domain.Exceptions.DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

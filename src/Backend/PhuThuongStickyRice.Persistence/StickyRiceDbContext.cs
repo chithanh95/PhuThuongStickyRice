@@ -69,6 +69,7 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<OrderReviewLine> OrderReviewLines { get; set; }
         public DbSet<OrderRewardRule> OrderRewardRules { get; set; }
         public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; }
+        public DbSet<OrderMessageTemplate> OrderMessageTemplates { get; set; }
         public DbSet<OutboxEvent> OutboxEvents { get; set; }
         public DbSet<PasswordHistory> PasswordHistories { get; set; }
         public DbSet<PolicyPage> PolicyPages { get; set; }
