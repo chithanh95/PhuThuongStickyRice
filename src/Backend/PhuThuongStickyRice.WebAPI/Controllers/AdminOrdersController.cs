@@ -21,10 +21,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public class AdminOrdersController : ControllerBase
     {
         private readonly IOrderReportsAppService _reports;
+        private readonly IOrderForecastAppService _forecast;
 
-        public AdminOrdersController(IOrderReportsAppService reports)
+        public AdminOrdersController(
+            IOrderReportsAppService reports,
+            IOrderForecastAppService forecast)
         {
             _reports = reports;
+            _forecast = forecast;
         }
 
         /// <summary>
@@ -88,6 +92,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return File(bytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"bao-cao-doanh-thu-{from}_{to}.xlsx");
+        }
+        /// <summary>
+        /// Revenue forecast: per-weekday moving averages over recent
+        /// history, next 7 days detail + next 30 days total.
+        /// </summary>
+        [HttpGet("revenue-forecast")]
+        public async Task<ActionResult> GetRevenueForecast(
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _forecast.GetRevenueForecastAsync());
         }
     }
 }

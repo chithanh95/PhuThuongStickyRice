@@ -33,6 +33,9 @@ namespace PhuThuongStickyRice.WebAPI.Services
         /// <summary>Item 126: counter staff (orders / POS / customers, no finance pages).</summary>
         public const string CashierRoleName = "Cashier";
 
+        /// <summary>Registered customer (self-service account).</summary>
+        public const string CustomerRoleName = "Customer";
+
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<AdminSeedHostedService> _logger;
 
@@ -101,7 +104,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
             // Item 126: seed the Kitchen and Cashier roles too (no users
             // assigned — the admin assigns them on the user admin page).
-            foreach (var extraRole in new[] { KitchenRoleName, CashierRoleName })
+            foreach (var extraRole in new[] { KitchenRoleName, CashierRoleName, CustomerRoleName })
             {
                 var exists = await dbContext.Set<Role>()
                     .AnyAsync(r => r.NormalizedName == extraRole.ToUpperInvariant(), cancellationToken);

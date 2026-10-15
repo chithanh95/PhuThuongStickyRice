@@ -91,6 +91,7 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.HasIndex(x => x.Code).IsUnique();
 
             builder.Property(x => x.CreatorPhone).HasMaxLength(GroupOrder.PhoneMaxLength);
+            builder.Property(x => x.GroupName).HasMaxLength(100);
             builder.Property(x => x.Status).HasMaxLength(GroupOrder.StatusMaxLength).IsRequired();
             builder.Property(x => x.CreatedAt).IsRequired();
             builder.Property(x => x.ResultOrderNumber).HasMaxLength(50);

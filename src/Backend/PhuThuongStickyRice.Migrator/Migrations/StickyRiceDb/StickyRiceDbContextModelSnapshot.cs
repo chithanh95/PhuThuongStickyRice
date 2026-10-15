@@ -477,6 +477,62 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("_CustomMigrationHistories", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CustomerAddress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<string>("AddressDetail")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ReceiverName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ReceiverPhone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CustomerAddresses", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.CustomerNote", b =>
                 {
                     b.Property<Guid>("Id")
@@ -827,6 +883,12 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<string>("CreatorPhone")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("CutoffAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GroupName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LinesJson")
                         .HasColumnType("nvarchar(max)");
@@ -1216,6 +1278,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<Guid?>("CustomerUserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("DeliverySlot")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -1416,6 +1481,8 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 
                     b.HasIndex("BranchId");
 
+                    b.HasIndex("CustomerUserId");
+
                     b.HasIndex("IdempotencyKey")
                         .IsUnique()
                         .HasFilter("[IdempotencyKey] IS NOT NULL");
@@ -1549,8 +1616,14 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<string>("PhotoUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Rating")
                         .HasColumnType("int");
+
+                    b.Property<string>("RewardCode")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -1988,6 +2061,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("newsequentialid()");
 
+                    b.Property<string>("Budget")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -2193,10 +2270,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.Property<bool>("AcceptingOrders")
                         .HasColumnType("bit");
 
-                    b.Property<string>("PausedReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<string>("BankAccountName")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -2251,6 +2324,14 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 
                     b.Property<int>("EstimatedDeliveryMinutes")
                         .HasColumnType("int");
+
+                    b.Property<string>("FacebookPageAccessToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("FacebookVerifyToken")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<decimal>("FreeShipThreshold")
                         .HasPrecision(18, 2)

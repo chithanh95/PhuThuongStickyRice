@@ -357,6 +357,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         [StringLength(1000)]
         public string Comment { get; set; }
 
+        /// <summary>Optional photo URL uploaded via track/review/photo.</summary>
+        [StringLength(500)]
+        public string PhotoUrl { get; set; }
+
         /// <summary>
         /// Wave 6b (item 26): optional per-dish star ratings. Each entry
         /// must reference a product of the order; entries for products not
@@ -396,6 +400,12 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public int Rating { get; set; }
 
         public string Comment { get; set; }
+
+        /// <summary>Optional photo attached to the review.</summary>
+        public string PhotoUrl { get; set; }
+
+        /// <summary>Auto-generated reward voucher code (photo reviews only).</summary>
+        public string RewardCode { get; set; }
 
         /// <summary>Hidden reviews are not shown publicly.</summary>
         public bool IsHidden { get; set; }

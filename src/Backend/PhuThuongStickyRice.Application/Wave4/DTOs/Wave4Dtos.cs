@@ -124,6 +124,8 @@ namespace PhuThuongStickyRice.Application.Wave4.DTOs
         public Guid Id { get; set; }
         public string Code { get; set; }
         public string CreatorPhone { get; set; }
+        public string GroupName { get; set; }
+        public DateTime? CutoffAt { get; set; }
         public string Status { get; set; }
         public List<GroupOrderLineDto> Lines { get; set; } = new List<GroupOrderLineDto>();
         public DateTime CreatedAt { get; set; }
@@ -136,6 +138,11 @@ namespace PhuThuongStickyRice.Application.Wave4.DTOs
         [Required]
         [StringLength(30)]
         public string CreatorPhone { get; set; }
+
+        [StringLength(100)]
+        public string GroupName { get; set; }
+
+        public DateTime? CutoffAt { get; set; }
     }
 
     public class AddGroupOrderLineDto

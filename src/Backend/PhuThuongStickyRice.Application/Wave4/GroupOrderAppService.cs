@@ -73,6 +73,8 @@ namespace PhuThuongStickyRice.Application.Wave4
             {
                 Code = await GenerateUniqueCodeAsync(),
                 CreatorPhone = dto.CreatorPhone.Trim(),
+                GroupName = string.IsNullOrWhiteSpace(dto.GroupName) ? null : dto.GroupName.Trim(),
+                CutoffAt = dto.CutoffAt,
                 Status = GroupOrder.StatusOpen,
                 LinesJson = "[]",
                 CreatedAt = _clock.Now
@@ -161,6 +163,7 @@ namespace PhuThuongStickyRice.Application.Wave4
                     : $"Đặt nhóm {entity.Code} — {dto.Notes.Trim()}",
                 PaymentMethod = "Cod",
                 FulfillmentMethod = "Delivery",
+                Source = "Gom đơn",
                 Lines = lines.Select(x => new CreateOrderLineDto
                 {
                     ProductId = x.ProductId,
@@ -243,6 +246,8 @@ namespace PhuThuongStickyRice.Application.Wave4
                 Id = entity.Id,
                 Code = entity.Code,
                 CreatorPhone = entity.CreatorPhone,
+                GroupName = entity.GroupName,
+                CutoffAt = entity.CutoffAt,
                 Status = entity.Status,
                 Lines = ParseLines(entity.LinesJson),
                 CreatedAt = entity.CreatedAt,

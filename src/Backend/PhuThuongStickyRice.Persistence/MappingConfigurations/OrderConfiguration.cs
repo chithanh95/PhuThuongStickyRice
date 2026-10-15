@@ -151,6 +151,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Pre-order scheduled pickup time (UTC). Null = ASAP.
             builder.Property(x => x.ScheduledFor);
 
+            // Registered customer account that placed the order (nullable).
+            builder.Property(x => x.CustomerUserId);
+            builder.HasIndex(x => x.CustomerUserId);
+
             // Delivery shipper assignment (optional).
             builder.Property(x => x.ShipperId);
             builder.HasOne(x => x.Shipper)

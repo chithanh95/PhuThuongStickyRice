@@ -183,6 +183,19 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string ZaloPhone { get; set; }
 
         /// <summary>
+        /// Facebook Page Access Token for the Messenger chatbot (item 53).
+        /// Empty = chatbot runs in "waiting for configuration" mode (webhook
+        /// still verifies, but no replies are sent). Stored data-protected.
+        /// </summary>
+        public string FacebookPageAccessToken { get; set; }
+
+        /// <summary>
+        /// Verify token used when subscribing the Facebook webhook
+        /// (must match the token entered in the Facebook App dashboard).
+        /// </summary>
+        public string FacebookVerifyToken { get; set; }
+
+        /// <summary>
         /// Wave 6b (item 30): when false, checkout is blocked with a
         /// friendly message, even inside open hours. Default true.
         /// </summary>

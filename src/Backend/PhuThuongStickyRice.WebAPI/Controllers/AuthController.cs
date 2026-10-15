@@ -121,6 +121,106 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Customer self-registration with VN phone + password. No paid OTP
+        /// service — phone format is validated, uniqueness is enforced.
+        /// Issues a JWT immediately so the customer is logged in at once.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<ActionResult> Register([FromBody] CustomerRegisterRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            if (model == null)
+            {
+                return BadRequest("Thông tin đăng ký không hợp lệ.");
+            }
+
+            var phone = (model.Phone ?? string.Empty).Trim();
+            if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(0)(3|5|7|8|9)\d{8}$"))
+            {
+                return BadRequest("Số điện thoại không đúng định dạng (VD: 0901234567).");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < 6)
+            {
+                return BadRequest("Mật khẩu phải có ít nhất 6 ký tự.");
+            }
+
+            var existing = await _userManager.FindByNameAsync(phone);
+            if (existing != null)
+            {
+                return Conflict("Số điện thoại này đã được đăng ký. Vui lòng đăng nhập.");
+            }
+
+            var name = string.IsNullOrWhiteSpace(model.FullName) ? phone : model.FullName.Trim();
+            var user = new User
+            {
+                UserName = phone,
+                NormalizedUserName = phone.ToUpperInvariant(),
+                PhoneNumber = phone,
+                PhoneNumberConfirmed = true,
+                Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email.Trim(),
+                SecurityStamp = Guid.NewGuid().ToString(),
+                ConcurrencyStamp = Guid.NewGuid().ToString()
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+            if (!result.Succeeded)
+            {
+                return BadRequest(string.Join("; ", result.Errors.Select(e => e.Description)));
+            }
+
+            // Ensure the Customer role exists, then assign it.
+            var dbContext = HttpContext.RequestServices
+                .GetService(typeof(PhuThuongStickyRice.Persistence.StickyRiceDbContext))
+                as PhuThuongStickyRice.Persistence.StickyRiceDbContext;
+            if (dbContext != null)
+            {
+                var roleName = Services.AdminSeedHostedService.CustomerRoleName;
+                var role = await dbContext.Set<Role>()
+                    .FirstOrDefaultAsync(r => r.NormalizedName == roleName.ToUpperInvariant(), cancellationToken);
+                if (role == null)
+                {
+                    role = new Role
+                    {
+                        Name = roleName,
+                        NormalizedName = roleName.ToUpperInvariant(),
+                        ConcurrencyStamp = Guid.NewGuid().ToString()
+                    };
+                    await dbContext.Set<Role>().AddAsync(role, cancellationToken);
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
+
+                var alreadyInRole = await dbContext.Set<UserRole>()
+                    .AnyAsync(ur => ur.UserId == user.Id && ur.RoleId == role.Id, cancellationToken);
+                if (!alreadyInRole)
+                {
+                    await dbContext.Set<UserRole>().AddAsync(new UserRole
+                    {
+                        UserId = user.Id,
+                        RoleId = role.Id
+                    }, cancellationToken);
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
+            }
+
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _loginAudits.RecordAsync(user.UserName, ip, true, "Đăng ký tài khoản khách hàng.");
+
+            var roles = await GetRoleNamesAsync(user.Id);
+            var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
+
+            return Ok(new LoginResponseModel
+            {
+                AccessToken = token,
+                ExpiresAt = expiresAt,
+                UserName = user.UserName,
+                Email = user.Email,
+                Roles = roles
+            });
+        }
+
+        /// <summary>
         /// Item 98: completes the 2FA login — validates the short-lived
         /// two-factor token plus the 6-digit TOTP code, then issues the JWT.
         /// </summary>
@@ -286,6 +386,19 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         [Required]
         public string Password { get; set; }
+    }
+
+    public sealed class CustomerRegisterRequestModel
+    {
+        [Required]
+        public string Phone { get; set; }
+
+        [Required]
+        public string Password { get; set; }
+
+        public string FullName { get; set; }
+
+        public string Email { get; set; }
     }
 
     public sealed class ChangePasswordRequestModel

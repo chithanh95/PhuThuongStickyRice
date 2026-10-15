@@ -58,6 +58,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
 
         public string EventLocation { get; set; }
 
+        public string Budget { get; set; }
+
         public string QuoteType { get; set; }
 
         public string Status { get; set; }

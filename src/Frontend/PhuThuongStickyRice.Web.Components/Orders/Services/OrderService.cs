@@ -122,6 +122,12 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             return await GetAsync<DailyReconciliationModel>(url);
         }
 
+        /// <summary>Revenue forecast (moving averages + weekday pattern).</summary>
+        public async Task<RevenueForecastModel> GetRevenueForecastAsync()
+        {
+            return await GetAsync<RevenueForecastModel>("api/admin/orders/revenue-forecast");
+        }
+
         /// <summary>Wave 6c (item 33): admin sets/clears the internal note.</summary>
         public async Task<OrderModel> UpdateAdminNoteAsync(Guid orderId, string note)
         {

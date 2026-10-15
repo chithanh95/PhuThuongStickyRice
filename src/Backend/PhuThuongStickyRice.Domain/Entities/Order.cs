@@ -118,6 +118,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Assigned delivery shipper (nullable). Set by the admin.</summary>
         public Guid? ShipperId { get; private set; }
 
+        /// <summary>
+        /// Registered customer account that placed the order (nullable).
+        /// Set server-side from the authenticated user at creation.
+        /// </summary>
+        public Guid? CustomerUserId { get; private set; }
+
         public Shipper Shipper { get; private set; }
 
         /// <summary>
@@ -313,11 +319,13 @@ namespace PhuThuongStickyRice.Domain.Entities
             string deliverySlot = null,
             string pickupShipperName = null,
             string pickupShipperPhone = null,
-            DateTime? scheduledFor = null)
+            DateTime? scheduledFor = null,
+            Guid? customerUserId = null)
         {
             OrderNumber = orderNumber;
             CustomerName = customerName;
             CustomerPhone = customerPhone;
+            CustomerUserId = customerUserId;
             CustomerEmail = customerEmail;
             CustomerAddress = customerAddress;
             Notes = notes;

@@ -595,7 +595,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 string.IsNullOrWhiteSpace(input.DeliverySlot) ? null : input.DeliverySlot.Trim(),
                 string.IsNullOrWhiteSpace(input.PickupShipperName) ? null : input.PickupShipperName.Trim(),
                 string.IsNullOrWhiteSpace(input.PickupShipperPhone) ? null : input.PickupShipperPhone.Trim(),
-                scheduledFor);
+                scheduledFor,
+                // Registered customer: link the order to their account.
+                CurrentUser != null && CurrentUser.IsAuthenticated ? CurrentUser.Id : null);
 
             // Item 140: wallet payment — charge the prepaid balance up front;
             // insufficient balance aborts before the order row is written.
@@ -1093,12 +1095,30 @@ namespace PhuThuongStickyRice.Application.Orders
                 CustomerPhone = order.CustomerPhone,
                 Rating = input.Rating,
                 Comment = string.IsNullOrWhiteSpace(input.Comment) ? null : input.Comment.Trim(),
+                PhotoUrl = string.IsNullOrWhiteSpace(input.PhotoUrl) ? null : input.PhotoUrl.Trim(),
                 CreatedAt = DateTime.UtcNow,
                 // Wave 6b (item 26): per-dish ratings. Only products that
                 // belong to this order are kept; one rating per product.
                 Lines = await BuildReviewLinesAsync(order.Id, input.Lines)
             };
             await _reviews.InsertAsync(review, autoSave: true);
+
+            // Review kèm ảnh được tặng 1 phần xôi: tạo voucher giảm 25.000đ
+            // gắn với SĐT khách, dùng cho đơn sau (hết hạn sau 30 ngày).
+            if (!string.IsNullOrWhiteSpace(review.PhotoUrl))
+            {
+                var phone = _loyalty.NormalizePhone(order.CustomerPhone);
+                var voucher = await _discounts.CreateGeneratedAsync(
+                    new Discounts.DTOs.CreateGeneratedDiscountDto
+                    {
+                        Prefix = "REVIEW",
+                        DiscountAmount = 25000,
+                        ExpiresAt = DateTime.UtcNow.AddDays(30),
+                        OwnerPhone = phone
+                    });
+                review.RewardCode = voucher.Code;
+                await _reviews.UpdateAsync(review, autoSave: true);
+            }
 
             return MapReviewToDto(review);
         }
@@ -1367,6 +1387,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 CustomerPhone = review.CustomerPhone,
                 Rating = review.Rating,
                 Comment = review.Comment,
+                PhotoUrl = review.PhotoUrl,
+                RewardCode = review.RewardCode,
                 IsHidden = review.IsHidden,
                 AdminReply = review.AdminReply,
                 CreatedAt = review.CreatedAt,

@@ -129,6 +129,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         public string Comment { get; set; }
 
+        /// <summary>Optional photo URL uploaded via track/review/photo.</summary>
+        public string PhotoUrl { get; set; }
+
         /// <summary>Wave 6b (item 26): optional per-dish star ratings.</summary>
         public List<ReviewLineRequestModel> Lines { get; set; } = new List<ReviewLineRequestModel>();
     }

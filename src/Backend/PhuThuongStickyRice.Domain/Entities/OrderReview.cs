@@ -25,6 +25,15 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public string Comment { get; set; }
 
+        /// <summary>Optional photo attached to the review (uploaded by customer).</summary>
+        public string PhotoUrl { get; set; }
+
+        /// <summary>
+        /// Auto-generated voucher code rewarding a photo review (1 free xoi portion).
+        /// Null when the review had no photo.
+        /// </summary>
+        public string RewardCode { get; set; }
+
         /// <summary>Hidden reviews are excluded from the public listing.</summary>
         public bool IsHidden { get; set; }
 

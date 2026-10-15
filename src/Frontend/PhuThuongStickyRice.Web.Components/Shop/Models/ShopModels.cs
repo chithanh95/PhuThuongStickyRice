@@ -621,6 +621,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         public string EventLocation { get; set; }
 
+        public string Budget { get; set; }
+
         public string QuoteType { get; set; }
     }
 

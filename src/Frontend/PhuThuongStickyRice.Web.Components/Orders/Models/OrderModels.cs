@@ -232,4 +232,57 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         /// <summary>Pre-orders sorted by scheduled time — kitchen priority.</summary>
         public List<OrderModel> UpcomingPreOrders { get; set; } = new List<OrderModel>();
     }
+
+    /// <summary>Revenue forecast models (admin /admin/du-bao).</summary>
+    public class ForecastHistoryPointModel
+    {
+        public DateTime Date { get; set; }
+        public decimal Revenue { get; set; }
+        public long OrderCount { get; set; }
+        public long Portions { get; set; }
+    }
+
+    public class WeekdayPatternModel
+    {
+        public DayOfWeek DayOfWeek { get; set; }
+        public string WeekdayName { get; set; }
+        public int Occurrences { get; set; }
+        public decimal AvgRevenue { get; set; }
+        public double AvgOrders { get; set; }
+        public double AvgPortions { get; set; }
+        public double RatioVsAverage { get; set; }
+    }
+
+    public class ForecastDayModel
+    {
+        public DateTime Date { get; set; }
+        public string WeekdayName { get; set; }
+        public decimal ForecastRevenue { get; set; }
+        public double ForecastOrders { get; set; }
+        public long SuggestedPortions { get; set; }
+        public bool BasedOnWeekdayPattern { get; set; }
+    }
+
+    public class ForecastTotalModel
+    {
+        public decimal ForecastRevenue { get; set; }
+        public double ForecastOrders { get; set; }
+        public long SuggestedPortions { get; set; }
+    }
+
+    public class RevenueForecastModel
+    {
+        public DateTime GeneratedAt { get; set; }
+        public int HistoryDays { get; set; }
+        public int DaysWithOrders { get; set; }
+        public decimal AvgDailyRevenue7d { get; set; }
+        public decimal AvgDailyRevenue30d { get; set; }
+        public List<ForecastHistoryPointModel> History { get; set; } = new List<ForecastHistoryPointModel>();
+        public List<WeekdayPatternModel> WeekdayPattern { get; set; } = new List<WeekdayPatternModel>();
+        public List<ForecastDayModel> Next7Days { get; set; } = new List<ForecastDayModel>();
+        public ForecastTotalModel Next7DaysTotal { get; set; } = new ForecastTotalModel();
+        public ForecastTotalModel Next30DaysTotal { get; set; } = new ForecastTotalModel();
+        public string MethodNote { get; set; }
+        public string Disclaimer { get; set; }
+    }
 }

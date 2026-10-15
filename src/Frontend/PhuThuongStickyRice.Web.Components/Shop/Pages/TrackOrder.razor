@@ -554,6 +554,47 @@
     </div>
 }
 
+@* Khảo sát hài lòng sau mua: popup nhỏ, không làm phiền, chỉ hiện 1 lần/đơn. *@
+@if (_showSurveyPopup && _order != null)
+{
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 16px;"
+         @onclick="DismissSurveyAsync">
+        <div style="background: #fff; border-radius: 16px; max-width: 420px; width: 100%; padding: 28px 24px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25);"
+             @onclick:stopPropagation="true">
+            <div style="font-size: 40px; margin-bottom: 8px;">😋</div>
+            <h5 style="font-family: Lora, Georgia, serif; color: #763434; font-weight: 700; margin-bottom: 6px;">
+                Bạn hài lòng về món ăn chứ?
+            </h5>
+            <p class="text-muted small mb-3">Đánh giá của bạn giúp Xôi Phú Thượng phục vụ tốt hơn.</p>
+            <div class="mb-3">
+                @for (var star = 1; star <= 5; star++)
+                {
+                    var s = star;
+                    <button type="button" class="btn btn-link p-0 mr-1"
+                            style="font-size: 36px; color: @(s <= _surveyRating ? "#f6c453" : "#ddd"); text-decoration: none;"
+                            @onclick="() => _surveyRating = s">★</button>
+                }
+            </div>
+            <textarea class="form-control form-control-sm mb-3" rows="2" @bind="_surveyComment"
+                      placeholder="Góp ý thêm (tùy chọn)..."></textarea>
+            @if (!string.IsNullOrEmpty(_surveyError))
+            {
+                <div class="alert alert-danger py-1 small">@_surveyError</div>
+            }
+            <div class="d-flex" style="gap: 10px;">
+                <button class="btn flex-fill" style="background: #FFBA31; color: #fff; font-weight: 700; border-radius: 10px;"
+                        @onclick="SubmitSurveyAsync" disabled="@(_surveySubmitting || _surveyRating == 0)">
+                    @(_surveySubmitting ? "Đang gửi..." : "Gửi đánh giá")
+                </button>
+                <button class="btn btn-outline-secondary flex-fill" style="border-radius: 10px;"
+                        @onclick="DismissSurveyAsync" disabled="@_surveySubmitting">
+                    Để sau
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private string _orderNumber;
     private string _phone;
@@ -609,6 +650,16 @@
     private bool _submittingReview;
     private bool _reviewSubmitted;
     private string _reviewError;
+
+    // Khảo sát hài lòng sau mua (popup, hiện 1 lần/đơn đã xong).
+    private bool _showSurveyPopup;
+    private int _surveyRating;
+    private string _surveyComment;
+    private bool _surveySubmitting;
+    private string _surveyError;
+
+    private static string SurveyStorageKey(string orderNumber) =>
+        $"pt_survey_{orderNumber}";
 
     /// <summary>
     /// Wave 6b (item 26): per-dish star ratings keyed by order line id.
@@ -860,6 +911,104 @@
 
         // Item 119: address book for the order phone.
         await LoadAddressBookAsync();
+
+        // Khảo sát hài lòng: chỉ hiện khi đơn đã xong và chưa đánh giá/bỏ qua.
+        await MaybeShowSurveyPopupAsync();
+    }
+
+    /// <summary>
+    /// Hiện popup khảo sát 1 lần cho mỗi đơn đã hoàn thành/đã lấy hàng.
+    /// </summary>
+    private async Task MaybeShowSurveyPopupAsync()
+    {
+        _showSurveyPopup = false;
+        if (_order == null || _reviewSubmitted)
+        {
+            return;
+        }
+
+        var done = string.Equals(_order.Status, "Completed", StringComparison.OrdinalIgnoreCase)
+            || (string.Equals(_order.FulfillmentMethod, "ShipperPickup", StringComparison.OrdinalIgnoreCase)
+                && _order.PickedUpAt.HasValue);
+        if (!done)
+        {
+            return;
+        }
+
+        try
+        {
+            var seen = await JSRuntime.InvokeAsync<string>(
+                "localStorage.getItem", SurveyStorageKey(_order.OrderNumber));
+            if (seen == "done" || seen == "dismissed")
+            {
+                return;
+            }
+        }
+        catch (Exception)
+        {
+            // Best effort only.
+        }
+
+        _surveyRating = 0;
+        _surveyComment = null;
+        _surveyError = null;
+        _showSurveyPopup = true;
+    }
+
+    private async Task SubmitSurveyAsync()
+    {
+        _surveyError = null;
+        if (_surveyRating < 1)
+        {
+            _surveyError = "Vui lòng chọn số sao đánh giá.";
+            return;
+        }
+
+        _surveySubmitting = true;
+        try
+        {
+            await Wave2Service.SubmitReviewAsync(
+                _order.OrderNumber, _order.CustomerPhone, _surveyRating, _surveyComment,
+                new System.Collections.Generic.List<object>());
+            _reviewSubmitted = true;
+            _showSurveyPopup = false;
+            try
+            {
+                await JSRuntime.InvokeVoidAsync(
+                    "localStorage.setItem", SurveyStorageKey(_order.OrderNumber), "done");
+            }
+            catch (Exception) { }
+            Toasts.Show("Cảm ơn bạn đã đánh giá! ⭐");
+        }
+        catch (Exception ex)
+        {
+            _surveyError = ex.Message.Contains("đã được đánh giá")
+                ? ex.Message
+                : "Không gửi được đánh giá. Vui lòng thử lại.";
+            if (ex.Message.Contains("đã được đánh giá"))
+            {
+                _showSurveyPopup = false;
+                _reviewSubmitted = true;
+            }
+        }
+        finally
+        {
+            _surveySubmitting = false;
+        }
+    }
+
+    private async Task DismissSurveyAsync()
+    {
+        _showSurveyPopup = false;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync(
+                "localStorage.setItem", SurveyStorageKey(_order.OrderNumber), "dismissed");
+        }
+        catch (Exception)
+        {
+            // Best effort only.
+        }
     }
 
     /// <summary>Item 119: address book management in the profile section.</summary>

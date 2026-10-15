@@ -20,6 +20,14 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public string CreatorPhone { get; set; }
 
+        /// <summary>Display name of the group, e.g. "Văn phòng tầng 5".</summary>
+        public string GroupName { get; set; }
+
+        /// <summary>
+        /// Optional deadline for joining (giờ chốt đơn). Null = no deadline.
+        /// </summary>
+        public DateTime? CutoffAt { get; set; }
+
         public string Status { get; set; }
 
         /// <summary>

@@ -1,0 +1,240 @@
+@page "/admin/du-bao"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Orders.Models
+@using PhuThuongStickyRice.Web.Components.Orders.Services
+@inject OrderService OrderService
+
+<div class="alert alert-info">
+    <strong>ℹ️ Lưu ý:</strong> @_forecast?.Disclaimer
+    <br /><small class="text-muted">@_forecast?.MethodNote</small>
+</div>
+
+@if (_loading)
+{
+    <p><em>Đang tính toán dự báo...</em></p>
+}
+else if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_forecast != null)
+{
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Dự báo 7 ngày tới</p>
+                <h2 class="lx-mini-value">@FmtMoney(_forecast.Next7DaysTotal.ForecastRevenue)</h2>
+                <span class="lx-mini-foot">@_forecast.Next7DaysTotal.ForecastOrders.ToString("0.#") đơn · @_forecast.Next7DaysTotal.SuggestedPortions.ToString("N0") suất nên chuẩn bị</span>
+                <span class="lx-mini-icon"><span class="oi oi-pulse" aria-hidden="true"></span></span>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Dự báo 30 ngày tới</p>
+                <h2 class="lx-mini-value">@FmtMoney(_forecast.Next30DaysTotal.ForecastRevenue)</h2>
+                <span class="lx-mini-foot">@_forecast.Next30DaysTotal.ForecastOrders.ToString("0.#") đơn · @_forecast.Next30DaysTotal.SuggestedPortions.ToString("N0") suất nên chuẩn bị</span>
+                <span class="lx-mini-icon"><span class="oi oi-calendar" aria-hidden="true"></span></span>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Trung bình ngày (30 ngày qua)</p>
+                <h2 class="lx-mini-value">@FmtMoney(_forecast.AvgDailyRevenue30d)</h2>
+                <span class="lx-mini-foot">7 ngày gần nhất: @FmtMoney(_forecast.AvgDailyRevenue7d) · @_forecast.DaysWithOrders/@_forecast.HistoryDays ngày có đơn</span>
+                <span class="lx-mini-icon"><span class="oi oi-graph" aria-hidden="true"></span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Biểu đồ doanh thu — 30 ngày qua &amp; dự báo 7 ngày tới</h4>
+        </div>
+        <div class="card-body">
+            <div class="d-flex mb-2">
+                <span class="mr-3"><span style="display:inline-block;width:24px;height:3px;background:#7a6fbe;vertical-align:middle"></span> Thực tế</span>
+                <span><span style="display:inline-block;width:24px;height:0;border-top:3px dashed #f5b225;vertical-align:middle"></span> Dự báo</span>
+            </div>
+            <svg viewBox="0 0 720 270" style="width:100%;height:auto" role="img" aria-label="Biểu đồ doanh thu">
+                @foreach (var g in _yGrid)
+                {
+                    <line x1="@PadL" y1="@g.Y" x2="@(W - PadR)" y2="@g.Y" stroke="#e9ecef" stroke-width="1" />
+                    <text x="@(PadL - 8)" y="@(g.Y + 4)" text-anchor="end" font-size="11" fill="#6c757d">@g.Label</text>
+                }
+                <polyline points="@_areaPoints" fill="rgba(122,111,190,0.12)" stroke="none" />
+                <polyline points="@_histPoints" fill="none" stroke="#7a6fbe" stroke-width="2.5" />
+                <polyline points="@_fcPoints" fill="none" stroke="#f5b225" stroke-width="2.5" stroke-dasharray="7 4" />
+                @foreach (var p in _fcDots)
+                {
+                    <circle cx="@p.X" cy="@p.Y" r="4" fill="#f5b225" stroke="#fff" stroke-width="1.5" />
+                }
+                @foreach (var l in _xLabels)
+                {
+                    <text x="@l.X" y="@(H - 8)" text-anchor="middle" font-size="11" fill="#6c757d">@l.Label</text>
+                }
+            </svg>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Mẫu hình theo thứ trong tuần</h4>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Thứ</th>
+                            <th class="text-right">Doanh thu TB</th>
+                            <th class="text-right">Đơn TB</th>
+                            <th class="text-right">Suất TB</th>
+                            <th class="text-right">So với TB chung</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var w in _forecast.WeekdayPattern)
+                        {
+                            <tr>
+                                <td><strong>@w.WeekdayName</strong> <small class="text-muted">(@w.Occurrences lần)</small></td>
+                                <td class="text-right">@FmtMoney(w.AvgRevenue)</td>
+                                <td class="text-right">@w.AvgOrders.ToString("0.#")</td>
+                                <td class="text-right">@w.AvgPortions.ToString("0.#")</td>
+                                <td class="text-right">
+                                    <span class="lx-pill @RatioClass(w.RatioVsAverage)">@w.RatioVsAverage.ToString("0.##")×</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Chi tiết dự báo 7 ngày tới</h4>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Thứ</th>
+                            <th class="text-right">Dự báo doanh thu</th>
+                            <th class="text-right">Dự báo đơn</th>
+                            <th class="text-right">Suất nên chuẩn bị</th>
+                            <th>Cơ sở</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in _forecast.Next7Days)
+                        {
+                            <tr>
+                                <td>@d.Date.ToString("dd/MM/yyyy")</td>
+                                <td>@d.WeekdayName</td>
+                                <td class="text-right"><strong>@FmtMoney(d.ForecastRevenue)</strong></td>
+                                <td class="text-right">@d.ForecastOrders.ToString("0.#")</td>
+                                <td class="text-right"><span class="lx-pill lx-pill-primary">@d.SuggestedPortions.ToString("N0") suất</span></td>
+                                <td><small class="text-muted">@(d.BasedOnWeekdayPattern ? "TB đúng thứ này" : "TB chung 30 ngày")</small></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private RevenueForecastModel _forecast;
+    private bool _loading = true;
+    private string _error;
+
+    // Chart geometry
+    private const double W = 720, H = 270, PadL = 58, PadR = 14, PadT = 16, PadB = 32;
+    private string _histPoints = "";
+    private string _fcPoints = "";
+    private string _areaPoints = "";
+    private List<(double X, double Y)> _fcDots = new List<(double, double)>();
+    private List<(double Y, string Label)> _yGrid = new List<(double, string)>();
+    private List<(double X, string Label)> _xLabels = new List<(double, string)>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _forecast = await OrderService.GetRevenueForecastAsync();
+            BuildChart();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được dự báo: " + ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string FmtMoney(decimal v) => v.ToString("N0") + "₫";
+
+    private static string RatioClass(double r) =>
+        r >= 1.5 ? "lx-pill-success" : r >= 1.0 ? "lx-pill-info" : "lx-pill-warning";
+
+    private void BuildChart()
+    {
+        var hist = _forecast.History.Select(x => (x.Date, x.Revenue)).ToList();
+        var fc = _forecast.Next7Days.Select(x => (x.Date, x.ForecastRevenue)).ToList();
+        var n = hist.Count + fc.Count;
+        if (n == 0) return;
+
+        var maxV = hist.Concat(fc).Max(x => x.Item2);
+        if (maxV <= 0) maxV = 1;
+
+        double X(int i) => PadL + i * (W - PadL - PadR) / Math.Max(n - 1, 1);
+        double Y(decimal v) => PadT + (H - PadT - PadB) * (1 - (double)v / (double)maxV);
+
+        // History polyline (+ area fill down to baseline)
+        _histPoints = string.Join(" ", hist.Select((p, i) => $"{X(i):0.#},{Y(p.Revenue):0.#}"));
+        var lastHist = hist.Count - 1;
+        _areaPoints = _histPoints + $" {X(lastHist):0.#},{H - PadB:0.#} {X(0):0.#},{H - PadB:0.#}";
+
+        // Forecast polyline starts at the last history point for continuity
+        var fcPts = new List<string> { $"{X(lastHist):0.#},{Y(hist[lastHist].Revenue):0.#}" };
+        _fcDots = new List<(double, double)>();
+        for (var i = 0; i < fc.Count; i++)
+        {
+            var x = X(hist.Count + i);
+            var y = Y(fc[i].ForecastRevenue);
+            fcPts.Add($"{x:0.#},{y:0.#}");
+            _fcDots.Add((x, y));
+        }
+        _fcPoints = string.Join(" ", fcPts);
+
+        // Y gridlines (4)
+        _yGrid = new List<(double, string)>();
+        for (var g = 0; g <= 4; g++)
+        {
+            var v = maxV * g / 4;
+            _yGrid.Add((Y((decimal)v), CompactMoney((decimal)v)));
+        }
+
+        // X labels: ~7 evenly spaced
+        _xLabels = new List<(double, string)>();
+        var step = Math.Max(1, n / 7);
+        var all = hist.Select(x => x.Date).Concat(fc.Select(x => x.Date)).ToList();
+        for (var i = 0; i < n; i += step)
+        {
+            _xLabels.Add((X(i), all[i].ToString("dd/MM")));
+        }
+    }
+
+    private static string CompactMoney(decimal v)
+    {
+        if (v >= 1_000_000m) return (v / 1_000_000m).ToString("0.#") + "tr";
+        if (v >= 1_000m) return (v / 1_000m).ToString("0.#") + "K";
+        return v.ToString("0");
+    }
+}

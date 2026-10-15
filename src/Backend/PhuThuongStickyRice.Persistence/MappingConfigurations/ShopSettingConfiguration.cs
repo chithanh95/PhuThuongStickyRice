@@ -64,6 +64,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Wave 6b (items 27, 30): floating contact numbers + pause-orders toggle.
             builder.Property(x => x.Hotline).HasMaxLength(30);
             builder.Property(x => x.ZaloPhone).HasMaxLength(30);
+            builder.Property(x => x.FacebookPageAccessToken).HasMaxLength(500);
+            builder.Property(x => x.FacebookVerifyToken).HasMaxLength(200);
             builder.Property(x => x.AcceptingOrders).IsRequired();
             builder.Property(x => x.PausedReason).HasMaxLength(500);
 

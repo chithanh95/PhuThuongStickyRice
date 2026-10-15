@@ -51,7 +51,7 @@ else
                             <th>SĐT</th>
                             <th>Ngày tiệc</th>
                             <th class="text-right">Số lượng</th>
-                            <th>Địa điểm</th>
+                            <th>Địa điểm / Vốn dự kiến</th>
                             <th>Ghi chú</th>
                             <th>Trạng thái</th>
                             <th></th>
@@ -67,7 +67,7 @@ else
                                 <td style="white-space: nowrap;"><a href="tel:@q.CustomerPhone">@q.CustomerPhone</a></td>
                                 <td>@(q.EventDate?.ToString("dd/MM/yyyy") ?? "—")</td>
                                 <td class="text-right">@q.Quantity</td>
-                                <td><small>@(string.IsNullOrWhiteSpace(q.EventLocation) ? "—" : q.EventLocation)</small></td>
+                                <td><small>@(string.IsNullOrWhiteSpace(q.EventLocation) ? "—" : q.EventLocation)@(string.IsNullOrWhiteSpace(q.Budget) ? "" : $" · Vốn: {q.Budget}")</small></td>
                                 <td><small>@q.Notes</small></td>
                                 <td>@StatusBadge(q.Status)</td>
                                 <td style="white-space: nowrap;">
@@ -145,10 +145,15 @@ else
 
     private static RenderFragment QuoteTypeBadge(string quoteType) => builder =>
     {
-        var isTiec = string.Equals(quoteType, "DatTiec", StringComparison.OrdinalIgnoreCase);
+        var (css, label) = quoteType?.Trim() switch
+        {
+            "DatTiec" => ("lx-pill lx-pill-warning", "🎉 Tiệc"),
+            "NhuongQuyen" => ("lx-pill lx-pill-primary", "🏪 Nhượng quyền"),
+            _ => ("lx-pill lx-pill-secondary", "Web"),
+        };
         builder.OpenElement(0, "span");
-        builder.AddAttribute(1, "class", isTiec ? "lx-pill lx-pill-warning" : "lx-pill lx-pill-secondary");
-        builder.AddContent(2, isTiec ? "🎉 Tiệc" : "Web");
+        builder.AddAttribute(1, "class", css);
+        builder.AddContent(2, label);
         builder.CloseElement();
     };
 
