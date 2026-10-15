@@ -1,6 +1,7 @@
 @page "/admin/bao-cao"
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Orders.Services
+@using PhuThuongStickyRice.Web.Components.Admin.Models
 @inject OrderService OrderService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
@@ -24,6 +25,9 @@
             <div class="col-md-6 col-12 text-right mt-2 mt-md-0">
                 <button class="btn btn-outline-secondary mr-2" @onclick="SetThisMonth">Tháng này</button>
                 <button class="btn btn-outline-secondary mr-2" @onclick="SetLast7Days">7 ngày qua</button>
+                <button class="btn btn-outline-info mr-2" @onclick="ToggleCompare">
+                    @(_compareMode ? "Ẩn so sánh" : "⚖️ So sánh cùng kỳ")
+                </button>
                 <button class="btn btn-primary" @onclick="ExportExcel" disabled="@_exporting">
                     @(_exporting ? "Đang xuất..." : "⬇ Xuất Excel")
                 </button>
@@ -31,6 +35,125 @@
         </div>
     </div>
 </div>
+
+@if (_compareMode)
+{
+    <div class="card mb-3 border-info">
+        <div class="card-body">
+            <h5>⚖️ So sánh cùng kỳ</h5>
+            <p class="text-muted"><small>So sánh doanh thu, số đơn, giá trị TB/đơn và top món giữa 2 kỳ. Đơn đã hủy không tính.</small></p>
+            <div class="mb-2">
+                <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareThisMonth">Tháng này vs tháng trước</button>
+                <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareLast7Days">7 ngày qua vs 7 ngày trước đó</button>
+                <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareThisWeek">Tuần này vs tuần trước</button>
+            </div>
+            @if (!string.IsNullOrEmpty(_compareError))
+            {
+                <div class="alert alert-danger">@_compareError</div>
+            }
+            @if (_comparing)
+            {
+                <p><em>Đang tải số liệu...</em></p>
+            }
+            else if (_current != null && _previous != null)
+            {
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white"><strong>Kỳ hiện tại</strong> — @_currentLabel</div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="h5 mb-0 text-success">@FormatPrice(_current.TotalRevenue)</div>
+                                        <small class="text-muted">Doanh thu</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="h5 mb-0">@_current.OrderCount</div>
+                                        <small class="text-muted">Số đơn</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="h5 mb-0">@FormatPrice(_current.AvgOrderValue)</div>
+                                        <small class="text-muted">TB/đơn</small>
+                                    </div>
+                                </div>
+                                <hr />
+                                <strong>Top món:</strong>
+                                @if (_current.TopProducts.Count == 0)
+                                {
+                                    <p class="text-muted mb-0"><small>Chưa có dữ liệu.</small></p>
+                                }
+                                else
+                                {
+                                    <ol class="mb-0 pl-3">
+                                        @foreach (var p in _current.TopProducts)
+                                        {
+                                            <li><small>@p.ProductName — <strong>@p.Quantity</strong> suất (@FormatPrice(p.Revenue))</small></li>
+                                        }
+                                    </ol>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-secondary text-white"><strong>Kỳ so sánh</strong> — @_previousLabel</div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="h5 mb-0 text-success">@FormatPrice(_previous.TotalRevenue)</div>
+                                        <small class="text-muted">Doanh thu</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="h5 mb-0">@_previous.OrderCount</div>
+                                        <small class="text-muted">Số đơn</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="h5 mb-0">@FormatPrice(_previous.AvgOrderValue)</div>
+                                        <small class="text-muted">TB/đơn</small>
+                                    </div>
+                                </div>
+                                <hr />
+                                <strong>Top món:</strong>
+                                @if (_previous.TopProducts.Count == 0)
+                                {
+                                    <p class="text-muted mb-0"><small>Chưa có dữ liệu.</small></p>
+                                }
+                                else
+                                {
+                                    <ol class="mb-0 pl-3">
+                                        @foreach (var p in _previous.TopProducts)
+                                        {
+                                            <li><small>@p.ProductName — <strong>@p.Quantity</strong> suất (@FormatPrice(p.Revenue))</small></li>
+                                        }
+                                    </ol>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body py-2">
+                        <strong>📊 Chênh lệch (kỳ hiện tại so với kỳ so sánh):</strong>
+                        <div class="row mt-2 text-center">
+                            <div class="col-4">
+                                <div class="h5 mb-0 @ChangeClass(_current.TotalRevenue, _previous.TotalRevenue)">@ChangeText(_current.TotalRevenue, _previous.TotalRevenue)</div>
+                                <small class="text-muted">Doanh thu</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="h5 mb-0 @ChangeClass((decimal)_current.OrderCount, (decimal)_previous.OrderCount)">@ChangeText((decimal)_current.OrderCount, (decimal)_previous.OrderCount)</div>
+                                <small class="text-muted">Số đơn</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="h5 mb-0 @ChangeClass(_current.AvgOrderValue, _previous.AvgOrderValue)">@ChangeText(_current.AvgOrderValue, _previous.AvgOrderValue)</div>
+                                <small class="text-muted">TB/đơn</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -42,6 +165,15 @@
     private DateTime? _toDate;
     private bool _exporting;
     private string _error;
+
+    // Item 169: compare mode.
+    private bool _compareMode;
+    private bool _comparing;
+    private string _compareError;
+    private RevenueSummaryModel _current;
+    private RevenueSummaryModel _previous;
+    private string _currentLabel;
+    private string _previousLabel;
 
     protected override void OnInitialized()
     {
@@ -60,6 +192,100 @@
         _toDate = DateTime.Today;
         _fromDate = DateTime.Today.AddDays(-6);
     }
+
+    private void ToggleCompare()
+    {
+        _compareMode = !_compareMode;
+        _compareError = null;
+        if (_compareMode && _current == null)
+        {
+            _ = CompareThisMonth();
+        }
+    }
+
+    /// <summary>Item 169: this month-to-date vs the same days of last month.</summary>
+    private async Task CompareThisMonth()
+    {
+        var today = DateTime.Today;
+        var curFrom = new DateTime(today.Year, today.Month, 1);
+        var prevMonth = curFrom.AddMonths(-1);
+        var days = (today - curFrom).Days;
+        var prevFrom = prevMonth;
+        var prevTo = prevMonth.AddDays(Math.Min(days, DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month) - 1));
+        await RunCompare(curFrom, today, prevFrom, prevTo,
+            $"{curFrom:dd/MM}–{today:dd/MM}",
+            $"{prevFrom:dd/MM}–{prevTo:dd/MM}");
+    }
+
+    /// <summary>Item 169: last 7 days vs the 7 days before that.</summary>
+    private async Task CompareLast7Days()
+    {
+        var today = DateTime.Today;
+        await RunCompare(today.AddDays(-6), today, today.AddDays(-13), today.AddDays(-7),
+            $"{today.AddDays(-6):dd/MM}–{today:dd/MM}",
+            $"{today.AddDays(-13):dd/MM}–{today.AddDays(-7):dd/MM}");
+    }
+
+    /// <summary>Item 169: this week (Mon–today) vs the same weekdays last week.</summary>
+    private async Task CompareThisWeek()
+    {
+        var today = DateTime.Today;
+        var monday = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
+        var days = (today - monday).Days;
+        var prevMonday = monday.AddDays(-7);
+        await RunCompare(monday, today, prevMonday, prevMonday.AddDays(days),
+            $"{monday:dd/MM}–{today:dd/MM}",
+            $"{prevMonday:dd/MM}–{prevMonday.AddDays(days):dd/MM}");
+    }
+
+    private async Task RunCompare(DateTime curFrom, DateTime curTo,
+        DateTime prevFrom, DateTime prevTo, string curLabel, string prevLabel)
+    {
+        _compareError = null;
+        _comparing = true;
+        _current = null;
+        _previous = null;
+        try
+        {
+            _current = await OrderService.GetRevenueSummaryAsync(curFrom, curTo);
+            _previous = await OrderService.GetRevenueSummaryAsync(prevFrom, prevTo);
+            _currentLabel = curLabel;
+            _previousLabel = prevLabel;
+        }
+        catch (Exception ex)
+        {
+            _compareError = "Tải số liệu thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _comparing = false;
+        }
+    }
+
+    private static decimal ChangePct(decimal current, decimal previous)
+    {
+        if (previous == 0)
+        {
+            return current > 0 ? 100 : 0;
+        }
+
+        return (current - previous) / previous * 100;
+    }
+
+    private static string ChangeText(decimal current, decimal previous)
+    {
+        var pct = ChangePct(current, previous);
+        var sign = pct > 0 ? "+" : "";
+        return $"{sign}{pct:0.0}%";
+    }
+
+    private static string ChangeClass(decimal current, decimal previous)
+    {
+        var pct = ChangePct(current, previous);
+        return pct > 0 ? "text-success" : pct < 0 ? "text-danger" : "text-muted";
+    }
+
+    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
     private async Task ExportExcel()
     {

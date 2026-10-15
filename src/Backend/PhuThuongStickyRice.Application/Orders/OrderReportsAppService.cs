@@ -33,6 +33,14 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Vietnam date range. Capped at 5000 detail rows.
         /// </summary>
         Task<byte[]> ExportRevenueAsync(DateTime? from, DateTime? to);
+
+        /// <summary>
+        /// Item 169: revenue summary of one Vietnam date range — order
+        /// count, total revenue, average order value and top 5 products.
+        /// Cancelled orders are excluded. Used by the compare view (the
+        /// frontend calls it once per period).
+        /// </summary>
+        Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? from, DateTime? to);
     }
 
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
@@ -266,6 +274,59 @@ namespace PhuThuongStickyRice.Application.Orders
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
             return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Item 169: revenue summary of one Vietnam date range (cancelled
+        /// orders excluded). The compare view calls this once per period.
+        /// </summary>
+        public async Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? from, DateTime? to)
+        {
+            var queryable = await _orders.GetQueryableAsync();
+            var startUtc = from.HasValue ? VietnamTime.DayStartUtc(from.Value) : DateTime.MinValue;
+            var endUtc = to.HasValue ? VietnamTime.DayEndExclusiveUtc(to.Value) : DateTime.MaxValue;
+
+            var rows = await _asyncExecuter.ToListAsync(
+                queryable
+                    .Where(x => x.CreatedAt >= startUtc
+                        && x.CreatedAt < endUtc
+                        && x.Status != OrderStatus.Cancelled)
+                    .Select(x => new
+                    {
+                        Total = x.TotalAmount.Amount,
+                        Lines = x.Lines.Select(l => new
+                        {
+                            l.ProductName,
+                            l.Quantity,
+                            LineRevenue = l.LineTotal.Amount
+                        }).ToList()
+                    }));
+
+            var totalRevenue = rows.Sum(x => x.Total);
+            var orderCount = rows.Count;
+
+            var topProducts = rows
+                .SelectMany(x => x.Lines)
+                .GroupBy(l => l.ProductName)
+                .Select(g => new RevenueSummaryTopProductDto
+                {
+                    ProductName = g.Key,
+                    Quantity = g.Sum(l => (long)l.Quantity),
+                    Revenue = g.Sum(l => l.LineRevenue)
+                })
+                .OrderByDescending(x => x.Quantity)
+                .Take(5)
+                .ToList();
+
+            return new RevenueSummaryDto
+            {
+                From = from?.Date,
+                To = to?.Date,
+                OrderCount = orderCount,
+                TotalRevenue = totalRevenue,
+                AvgOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0m,
+                TopProducts = topProducts
+            };
         }
 
         private static void StyleHeader(IXLRow headerRow)

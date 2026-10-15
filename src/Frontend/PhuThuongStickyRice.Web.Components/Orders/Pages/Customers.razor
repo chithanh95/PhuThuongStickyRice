@@ -174,10 +174,110 @@ else
                                             @onclick="() => ToggleNotes(c.CustomerPhone)">
                                         📝 Ghi chú @(_notes.TryGetValue(c.CustomerPhone, out var n) ? $"({n.Count})" : "")
                                     </button>
+                                    <button class="btn btn-sm btn-outline-info mr-1"
+                                            @onclick="() => ToggleDetail(c.CustomerPhone)">
+                                        👤 Chi tiết
+                                    </button>
                                     <a class="btn btn-sm btn-outline-primary"
                                        href="/orders?searchTerm=@Uri.EscapeDataString(c.CustomerPhone)">Xem đơn</a>
                                 </td>
                             </tr>
+                            @if (_detailPhone == c.CustomerPhone)
+                            {
+                                <tr>
+                                    <td colspan="7" class="bg-light">
+                                        <strong>👤 Lịch sử mua hàng — @c.CustomerPhone</strong>
+                                        @if (_loadingDetail)
+                                        {
+                                            <p class="mb-1"><em>Đang tải...</em></p>
+                                        }
+                                        else if (!string.IsNullOrEmpty(_detailError))
+                                        {
+                                            <div class="alert alert-danger py-2 mt-2 mb-0">@_detailError</div>
+                                        }
+                                        else if (_detail != null)
+                                        {
+                                            <div class="row mt-2">
+                                                <div class="col-md-3 col-6 mb-2">
+                                                    <div class="border rounded p-2 bg-white text-center">
+                                                        <div class="h5 mb-0">@_detail.TotalOrders</div>
+                                                        <small class="text-muted">Tổng đơn (không hủy)</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3 col-6 mb-2">
+                                                    <div class="border rounded p-2 bg-white text-center">
+                                                        <div class="h5 mb-0 text-danger">@_detail.CancelledOrders</div>
+                                                        <small class="text-muted">Đơn đã hủy</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3 col-6 mb-2">
+                                                    <div class="border rounded p-2 bg-white text-center">
+                                                        <div class="h5 mb-0 text-success">@FormatPrice(_detail.TotalSpent)</div>
+                                                        <small class="text-muted">Tổng chi tiêu</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3 col-6 mb-2">
+                                                    <div class="border rounded p-2 bg-white text-center">
+                                                        <div class="small mb-0">
+                                                            Đầu: @(_detail.FirstOrderAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")<br />
+                                                            Cuối: @(_detail.LastOrderAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")
+                                                        </div>
+                                                        <small class="text-muted">Lần mua đầu / cuối</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @if (_detail.Tags.Count > 0)
+                                            {
+                                                <div class="mb-2">
+                                                    @foreach (var t in _detail.Tags)
+                                                    {
+                                                        <span class="badge mr-1" style="background-color:@(string.IsNullOrWhiteSpace(t.Color) ? "#6c757d" : t.Color);color:#fff;">@t.TagName</span>
+                                                    }
+                                                </div>
+                                            }
+                                            @if (_detail.TopProducts.Count > 0)
+                                            {
+                                                <strong>🍚 Món hay mua nhất:</strong>
+                                                <ul class="list-unstyled mt-1 mb-2">
+                                                    @foreach (var p in _detail.TopProducts)
+                                                    {
+                                                        <li>• @p.ProductName — <strong>@p.Quantity</strong> suất</li>
+                                                    }
+                                                </ul>
+                                            }
+                                            @if (_detail.RecentOrders.Count > 0)
+                                            {
+                                                <strong>🧾 Đơn gần nhất:</strong>
+                                                <div class="table-responsive mt-1">
+                                                    <table class="table table-sm bg-white mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Mã đơn</th>
+                                                                <th>Ngày đặt</th>
+                                                                <th class="text-right">Tổng tiền</th>
+                                                                <th>Thanh toán</th>
+                                                                <th>Trạng thái</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var o in _detail.RecentOrders)
+                                                            {
+                                                                <tr @key="o.OrderNumber">
+                                                                    <td><strong>@o.OrderNumber</strong></td>
+                                                                    <td>@o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                                                    <td class="text-right">@FormatPrice(o.TotalAmount)</td>
+                                                                    <td>@o.PaymentMethodLabel</td>
+                                                                    <td><span class="badge @(o.Status == "Cancelled" ? "badge-danger" : o.Status == "Completed" ? "badge-success" : "badge-warning")">@o.StatusLabel</span></td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            }
+                                        }
+                                    </td>
+                                </tr>
+                            }
                             @if (_remindPhone == c.CustomerPhone)
                             {
                                 <tr>
@@ -303,6 +403,12 @@ else
     private Guid? _giftingUserId;
     private decimal _giftAmount = 25000;
     private string _giftResult;
+
+    // Item 168: customer purchase-history detail.
+    private string _detailPhone;
+    private PhuThuongStickyRice.Web.Components.Admin.Models.CustomerDetailModel _detail;
+    private bool _loadingDetail;
+    private string _detailError;
 
     private bool IsInactive(Admin.Models.CustomerModel c) =>
         c.LastOrderAt.ToLocalTime() < DateTime.Now.AddDays(-30);
@@ -491,6 +597,37 @@ else
         finally
         {
             _giftingUserId = null;
+        }
+    }
+
+    /// <summary>
+    /// Item 168: toggles the purchase-history detail panel for one customer.
+    /// </summary>
+    private async Task ToggleDetail(string phone)
+    {
+        _detailError = null;
+        if (_detailPhone == phone)
+        {
+            _detailPhone = null;
+            return;
+        }
+
+        _detailPhone = phone;
+        _detail = null;
+        _remindPhone = null;
+        _expandedPhone = null;
+        _loadingDetail = true;
+        try
+        {
+            _detail = await OrderService.GetCustomerDetailAsync(phone);
+        }
+        catch (Exception ex)
+        {
+            _detailError = ex.Message;
+        }
+        finally
+        {
+            _loadingDetail = false;
         }
     }
 

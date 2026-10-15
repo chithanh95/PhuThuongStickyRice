@@ -54,6 +54,98 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public decimal TotalSpent { get; set; }
 
         public DateTime LastOrderAt { get; set; }
+
+        /// <summary>Item 149: tags attached to this customer phone.</summary>
+        public List<CustomerTagModel> Tags { get; set; } = new List<CustomerTagModel>();
+    }
+
+    /// <summary>Item 149: customer tag (VIP, Nợ, Khó tính...).</summary>
+    public class CustomerTagModel
+    {
+        public Guid Id { get; set; }
+
+        public string CustomerPhone { get; set; }
+
+        public string TagName { get; set; }
+
+        public string Color { get; set; }
+
+        public string CreatedBy { get; set; }
+    }
+
+    /// <summary>Item 168: detailed purchase history of one customer.</summary>
+    public class CustomerDetailModel
+    {
+        public string CustomerName { get; set; }
+
+        public string CustomerPhone { get; set; }
+
+        public long TotalOrders { get; set; }
+
+        public long CancelledOrders { get; set; }
+
+        public decimal TotalSpent { get; set; }
+
+        public DateTime? FirstOrderAt { get; set; }
+
+        public DateTime? LastOrderAt { get; set; }
+
+        public List<CustomerTopProductModel> TopProducts { get; set; }
+            = new List<CustomerTopProductModel>();
+
+        public List<CustomerRecentOrderModel> RecentOrders { get; set; }
+            = new List<CustomerRecentOrderModel>();
+
+        public List<CustomerTagModel> Tags { get; set; }
+            = new List<CustomerTagModel>();
+    }
+
+    public class CustomerTopProductModel
+    {
+        public string ProductName { get; set; }
+
+        public long Quantity { get; set; }
+    }
+
+    public class CustomerRecentOrderModel
+    {
+        public string OrderNumber { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public decimal TotalAmount { get; set; }
+
+        public string Status { get; set; }
+
+        public string StatusLabel { get; set; }
+
+        public string PaymentMethodLabel { get; set; }
+    }
+
+    /// <summary>Item 169: revenue summary of one date range.</summary>
+    public class RevenueSummaryModel
+    {
+        public DateTime? From { get; set; }
+
+        public DateTime? To { get; set; }
+
+        public long OrderCount { get; set; }
+
+        public decimal TotalRevenue { get; set; }
+
+        public decimal AvgOrderValue { get; set; }
+
+        public List<RevenueSummaryTopProductModel> TopProducts { get; set; }
+            = new List<RevenueSummaryTopProductModel>();
+    }
+
+    public class RevenueSummaryTopProductModel
+    {
+        public string ProductName { get; set; }
+
+        public long Quantity { get; set; }
+
+        public decimal Revenue { get; set; }
     }
 
     public class TopProductModel
