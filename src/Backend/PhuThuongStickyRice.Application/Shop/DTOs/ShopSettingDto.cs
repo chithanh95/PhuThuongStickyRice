@@ -210,6 +210,14 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         [StringLength(200)]
         public string FacebookVerifyToken { get; set; }
 
+        /// <summary>
+        /// Item 130: Facebook Page ID for auto-posting new products to the
+        /// Page feed. Reuses <see cref="FacebookPageAccessToken"/> (needs
+        /// the pages_manage_posts permission). Empty = auto-post disabled.
+        /// </summary>
+        [StringLength(100)]
+        public string FacebookPageId { get; set; }
+
         /// <summary>When false, checkout is blocked. Default true.</summary>
         public bool AcceptingOrders { get; set; } = true;
 

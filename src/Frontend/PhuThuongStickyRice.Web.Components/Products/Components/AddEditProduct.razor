@@ -145,6 +145,24 @@
     <div class="form-group row">
         <label class="col-sm-2 col-form-label"></label>
         <div class="col-sm-10">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="post-fb" @bind="Product.PostToFacebook" />
+                <label class="form-check-label" for="post-fb">📣 Đăng lên Facebook khi lưu</label>
+            </div>
+            @if (_fbConfigured == false)
+            {
+                <small class="form-text text-muted">Chưa cấu hình Facebook (thiếu Page ID hoặc Page Access Token ở Cài đặt cửa hàng) — bài đăng sẽ được bỏ qua.</small>
+            }
+            else
+            {
+                <small class="form-text text-muted">Đăng tên món + giá + link đặt hàng lên Fanpage.</small>
+            }
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-2 col-form-label"></label>
+        <div class="col-sm-10">
             <button type="submit" class="btn btn-primary">Lưu</button>
         </div>
     </div>
@@ -250,6 +268,10 @@
     // Item 109: branch picker.
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel> _branches;
 
+    // Item 130: FB auto-post configuration (defaults the checkbox).
+    private bool? _fbConfigured;
+    private bool _fbStatusLoaded;
+
     protected override async Task OnParametersSetAsync()
     {
         if (Product?.Id != Guid.Empty)
@@ -266,6 +288,25 @@
             catch (Exception)
             {
                 _branches = new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
+            }
+        }
+
+        // Item 130: default the "Đăng lên Facebook" checkbox once.
+        if (!_fbStatusLoaded)
+        {
+            _fbStatusLoaded = true;
+            try
+            {
+                var status = await ProductService.GetFacebookStatusAsync();
+                _fbConfigured = status?.Configured == true;
+                if (Product != null)
+                {
+                    Product.PostToFacebook = _fbConfigured == true;
+                }
+            }
+            catch (Exception)
+            {
+                _fbConfigured = false;
             }
         }
     }

@@ -210,6 +210,14 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string FacebookVerifyToken { get; set; }
 
         /// <summary>
+        /// Item 130: Facebook Page ID used for auto-posting new products to
+        /// the Page feed. Works together with <see cref="FacebookPageAccessToken"/>
+        /// (the same Page token is reused; it needs the pages_manage_posts
+        /// permission). Empty = auto-post disabled.
+        /// </summary>
+        public string FacebookPageId { get; set; }
+
+        /// <summary>
         /// Wave 6b (item 30): when false, checkout is blocked with a
         /// friendly message, even inside open hours. Default true.
         /// </summary>

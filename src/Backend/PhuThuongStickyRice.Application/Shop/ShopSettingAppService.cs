@@ -180,11 +180,19 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.OwnerPhone = TrimOrNull(dto.OwnerPhone);
             entity.OwnerZaloUserId = TrimOrNull(dto.OwnerZaloUserId);
             entity.LastWeeklyReportSentWeek = TrimOrNull(dto.LastWeeklyReportSentWeek);
+            // Item 130: Page ID for auto-posting new products (not secret).
+            entity.FacebookPageId = TrimOrNull(dto.FacebookPageId);
+            // Item 180: simple new-order webhook (plain URL, not a secret).
+            entity.NewOrderWebhookUrl = NormalizeWebhookUrl(dto.NewOrderWebhookUrl);
+            entity.NewOrderWebhookEnabled = dto.NewOrderWebhookEnabled;
             entity.AcceptingOrders = dto.AcceptingOrders;
             entity.PausedReason = TrimOrNull(dto.PausedReason);
             // Wave 6d (item 39): 0 = unlimited, otherwise cap at 1000.
             entity.MaxOrdersPerPhonePerDay = Math.Min(1000, Math.Max(0, dto.MaxOrdersPerPhonePerDay));
             await _settings.UpdateAsync(entity, autoSave: true);
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.SettingsUpdate, "Sửa cài đặt cửa hàng.");
 
             return MapToDto(entity);
         }
@@ -318,11 +326,16 @@ namespace PhuThuongStickyRice.Application.Shop
                 GoogleMapsUrl = entity.GoogleMapsUrl,
                 FacebookPageAccessToken = UnprotectSecret(entity.FacebookPageAccessToken),
                 FacebookVerifyToken = entity.FacebookVerifyToken,
+                // Item 130: Page ID for auto-posting new products.
+                FacebookPageId = entity.FacebookPageId,
                 // Item 138: weekly owner report via Zalo OA.
                 ZaloOaAccessToken = UnprotectSecret(entity.ZaloOaAccessToken),
                 OwnerPhone = entity.OwnerPhone,
                 OwnerZaloUserId = entity.OwnerZaloUserId,
                 LastWeeklyReportSentWeek = entity.LastWeeklyReportSentWeek,
+                // Item 180: simple new-order webhook.
+                NewOrderWebhookUrl = entity.NewOrderWebhookUrl,
+                NewOrderWebhookEnabled = entity.NewOrderWebhookEnabled,
                 AcceptingOrders = entity.AcceptingOrders,
                 PausedReason = entity.PausedReason,
                 // Wave 6d (item 39): backfilled to 10 for pre-existing rows.
