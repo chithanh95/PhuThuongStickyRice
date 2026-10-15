@@ -87,6 +87,57 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
             return await GetAsync<List<FacebookPostLogModel>>($"api/admin/facebook/posts?maxCount={maxCount}");
         }
 
+        /// <summary>
+        /// Item 166: uploads one (already compressed) product photo.
+        /// Returns the stored image URL (e.g. "/uploads/products/xxx.jpg").
+        /// </summary>
+        public async Task<string> UploadProductImageAsync(
+            System.IO.Stream content, string fileName, string contentType)
+        {
+            await SetBearerToken();
+
+            using var form = new MultipartFormDataContent();
+            var fileContent = new StreamContent(content);
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            form.Add(fileContent, "file", fileName);
+
+            var response = await _httpClient.PostAsync("api/products/images/upload", form);
+            var body = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = "Tải ảnh lên thất bại.";
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    if (doc.RootElement.TryGetProperty("message", out var m))
+                    {
+                        message = m.GetString() ?? message;
+                    }
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                }
+
+                throw new System.InvalidOperationException(message);
+            }
+
+            try
+            {
+                using var okDoc = System.Text.Json.JsonDocument.Parse(body);
+                if (okDoc.RootElement.TryGetProperty("url", out var u))
+                {
+                    return u.GetString();
+                }
+            }
+            catch (System.Text.Json.JsonException)
+            {
+            }
+
+            throw new System.InvalidOperationException("Tải ảnh lên thất bại.");
+        }
+
         public string GetExportPdfUrl()
         {
             return $"{_httpClient.BaseAddress.AbsoluteUri.Trim('/')}/api/products/ExportAsPdf";

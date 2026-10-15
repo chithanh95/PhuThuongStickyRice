@@ -250,6 +250,56 @@ interop.compressImageFromInput = function (elementId, maxDim, quality) {
 };
 
 /**
+ * Item 166: compress ALL files chosen in an <input type="file" multiple>
+ * (by element id) and hand the bytes back to Blazor as an array of
+ * {bytes, fileName, contentType}. Same per-file rules as
+ * compressImageFromInput (GIFs untouched, PNG kept, rest -> JPEG).
+ *
+ * @param {string} elementId - id of the <input type="file" multiple>
+ * @param {number} [maxDim=1600]
+ * @param {number} [quality=0.85]
+ * @returns {Promise<Array<{bytes: number[], fileName: string, contentType: string}>>}
+ */
+interop.compressImagesFromInput = function (elementId, maxDim, quality) {
+    var input = document.getElementById(elementId);
+    var files = (input && input.files) ? Array.prototype.slice.call(input.files) : [];
+    if (files.length === 0) {
+        return Promise.resolve([]);
+    }
+    // Clear the input so the same files can be picked again.
+    input.value = '';
+    var jobs = files.map(function (file) {
+        if (file.type === 'image/gif' || /\.gif$/i.test(file.name)) {
+            return readOne(file, file.name, file.type || 'image/gif');
+        }
+        return interop.compressImage(file, maxDim, quality).then(function (blob) {
+            var ext = blob.type === 'image/png' ? '.png' : '.jpg';
+            var base = file.name.replace(/\.[^.]+$/, '') || 'image';
+            return readOne(blob, base + ext, blob.type || 'image/jpeg');
+        }).catch(function () {
+            return readOne(file, file.name, file.type || 'image/jpeg');
+        });
+    });
+    return Promise.all(jobs);
+
+    function readOne(blob, fileName, contentType) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function () {
+                var bytes = new Uint8Array(reader.result);
+                resolve({
+                    bytes: Array.prototype.slice.call(bytes),
+                    fileName: fileName,
+                    contentType: contentType
+                });
+            };
+            reader.onerror = function () { reject(new Error('Cannot read file')); };
+            reader.readAsArrayBuffer(blob);
+        });
+    }
+};
+
+/**
  * Item 141: keyboard shortcuts for the admin orders page (/orders).
  *
  * start(dotNetRef) attaches a document keydown listener that forwards

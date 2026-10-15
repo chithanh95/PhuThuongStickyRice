@@ -61,5 +61,20 @@ namespace PhuThuongStickyRice.Web.Components.Products.Models
         /// Item 146: manual display order (drag &amp; drop on /products).
         /// </summary>
         public int SortOrder { get; set; }
+
+        /// <summary>
+        /// Item 164: daily sale time windows as JSON, e.g.
+        /// [{"from":"06:00","to":"10:00"}]. Null/empty = sold all day.
+        /// </summary>
+        public string AvailableHoursJson { get; set; }
+
+        /// <summary>Item 165: max portions sold per day. Null = unlimited.</summary>
+        public int? DailyLimit { get; set; }
+
+        /// <summary>
+        /// Item 166: photo gallery as a JSON string array of image URLs
+        /// (first = primary).
+        /// </summary>
+        public string ImageUrlsJson { get; set; }
     }
 }

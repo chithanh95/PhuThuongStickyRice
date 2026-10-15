@@ -39,6 +39,21 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
         /// <summary>Item 81: selling unit — "suất" (per portion) or "kg" (per kilogram).</summary>
         public string Unit { get; set; }
 
+        /// <summary>
+        /// Item 164: daily sale time windows as JSON, e.g.
+        /// [{"from":"06:00","to":"10:00"}]. Null = sold all day.
+        /// </summary>
+        public string AvailableHoursJson { get; set; }
+
+        /// <summary>Item 165: max portions sold per day. Null = unlimited.</summary>
+        public int? DailyLimit { get; set; }
+
+        /// <summary>
+        /// Item 166: photo gallery as a JSON string array of image URLs
+        /// (first = primary).
+        /// </summary>
+        public string ImageUrlsJson { get; set; }
+
         public DateTime? AvailableTo { get; set; }
 
         /// <summary>

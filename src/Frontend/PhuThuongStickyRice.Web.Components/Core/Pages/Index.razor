@@ -198,7 +198,7 @@ else
                             {
                                 <span class="xo-soldout">Tạm hết</span>
                             }
-                            <img loading="lazy" src="@ProductImage(product.Code)" alt="@product.Name" />
+                            <img loading="lazy" src="@ProductImage(product)" alt="@product.Name" />
                         </div>
                         <div class="xo-dish-body">
                             <h3 class="xo-dish-name">@product.Name</h3>
@@ -930,10 +930,19 @@ else
         _upsellVisible = false;
     }
 
-    /// <summary>SVG placeholder per product code (matches the shop page).</summary>
-    private static string ProductImage(string code)
+    /// <summary>
+    /// Item 166: primary gallery photo when uploaded; otherwise the SVG
+    /// placeholder per product code (matches the shop page).
+    /// </summary>
+    private static string ProductImage(ShopProductModel product)
     {
-        var slug = (code ?? "").ToLowerInvariant()
+        var first = FirstImageUrl(product?.ImageUrlsJson);
+        if (!string.IsNullOrEmpty(first))
+        {
+            return first;
+        }
+
+        var slug = (product?.Code ?? "").ToLowerInvariant()
             .Replace("xoi-", "xoi-")
             .Replace("_", "-");
         var file = slug switch
@@ -947,6 +956,40 @@ else
             _ => "xoi-gac.svg"
         };
         return $"_content/PhuThuongStickyRice.Web.Components/images/{file}";
+    }
+
+    private static string FirstImageUrl(string imageUrlsJson)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrlsJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(imageUrlsJson);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+            {
+                return null;
+            }
+
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                if (el.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    var url = el.GetString()?.Trim();
+                    if (!string.IsNullOrEmpty(url))
+                    {
+                        return url;
+                    }
+                }
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+        }
+
+        return null;
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";

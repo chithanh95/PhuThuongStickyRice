@@ -95,6 +95,18 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return model?.QuantitySold ?? 0;
         }
 
+        /// <summary>
+        /// Item 165: daily-limit status of limited products ("Còn N suất").
+        /// Fail-soft — the shop hides the badge when the call fails.
+        /// </summary>
+        public async Task<List<ProductDailyRemainingModel>> GetDailyRemainingAsync()
+        {
+            var response = await _httpClient.GetAsync("api/products/daily-remaining");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAs<List<ProductDailyRemainingModel>>()
+                ?? new List<ProductDailyRemainingModel>();
+        }
+
         /// <summary>Submits a bulk/event quote request (đặt tiệc). No payment.</summary>
         public async Task CreateQuoteAsync(QuoteRequestModel quote)
         {

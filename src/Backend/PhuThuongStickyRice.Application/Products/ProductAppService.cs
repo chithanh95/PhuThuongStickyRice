@@ -1,5 +1,7 @@
 using PhuThuongStickyRice.Application.Products.DTOs;
 using PhuThuongStickyRice.Application.Products.Exceptions;
+using PhuThuongStickyRice.Application.Permissions;
+using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Events;
 using PhuThuongStickyRice.Domain.Repositories;
@@ -70,6 +72,8 @@ namespace PhuThuongStickyRice.Application.Products
         private readonly Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> _reviews;
         private readonly Volo.Abp.Domain.Repositories.IRepository<ProductChangeLog, Guid> _changeLogs;
         private readonly Volo.Abp.Domain.Repositories.IRepository<Order, Guid> _orders;
+        private readonly IPermissionService _permissions;
+        private readonly IStaffActivityLogger _activityLogger;
 
         public ProductAppService(
             IProductRepository products,
@@ -80,7 +84,9 @@ namespace PhuThuongStickyRice.Application.Products
             IProductCatalogCache catalogCache,
             Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> reviews,
             Volo.Abp.Domain.Repositories.IRepository<ProductChangeLog, Guid> changeLogs,
-            Volo.Abp.Domain.Repositories.IRepository<Order, Guid> orders)
+            Volo.Abp.Domain.Repositories.IRepository<Order, Guid> orders,
+            IPermissionService permissions,
+            IStaffActivityLogger activityLogger)
         {
             _products = products;
             _domainEvents = domainEvents;
@@ -91,6 +97,8 @@ namespace PhuThuongStickyRice.Application.Products
             _reviews = reviews;
             _changeLogs = changeLogs;
             _orders = orders;
+            _permissions = permissions;
+            _activityLogger = activityLogger;
         }
 
         public async Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input)
@@ -187,6 +195,9 @@ namespace PhuThuongStickyRice.Application.Products
 
         public async Task<ProductDto> CreateAsync(CreateUpdateProductDto input)
         {
+            // Item 155: adding a product needs products.edit.
+            await _permissions.RequirePermissionAsync(PermissionKeys.ProductsEdit);
+
             var code = ProductCode.Of(input.Code);
 
             if (await _products.ExistsWithCodeAsync(code))
@@ -214,11 +225,18 @@ namespace PhuThuongStickyRice.Application.Products
             await _domainEvents.DispatchAsync(new EntityCreatedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
 
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.ProductCreate,
+                $"Thêm món {product.Name} ({product.Code.Value}).");
+
             return _objectMapper.Map<Product, ProductDto>(product);
         }
 
         public async Task<ProductDto> UpdateAsync(Guid id, CreateUpdateProductDto input)
         {
+            // Item 155: editing a product needs products.edit.
+            await _permissions.RequirePermissionAsync(PermissionKeys.ProductsEdit);
+
             var product = await FindOrThrowAsync(id);
 
             var code = ProductCode.Of(input.Code);
@@ -260,11 +278,18 @@ namespace PhuThuongStickyRice.Application.Products
             await _domainEvents.DispatchAsync(new EntityUpdatedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
 
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.ProductUpdate,
+                $"Sửa món {product.Name} ({product.Code.Value}).");
+
             return _objectMapper.Map<Product, ProductDto>(product);
         }
 
         public async Task<ProductDto> ToggleAvailabilityAsync(Guid id)
         {
+            // Item 155: toggling availability needs products.edit.
+            await _permissions.RequirePermissionAsync(PermissionKeys.ProductsEdit);
+
             var product = await FindOrThrowAsync(id);
             var before = SnapshotFields(product);
 
@@ -287,6 +312,10 @@ namespace PhuThuongStickyRice.Application.Products
             await _domainEvents.DispatchAsync(new EntityUpdatedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
 
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.ProductUpdate,
+                $"Bật/tắt món {product.Name} ({product.Code.Value}) → {product.Status}.");
+
             return _objectMapper.Map<Product, ProductDto>(product);
         }
 
@@ -296,6 +325,9 @@ namespace PhuThuongStickyRice.Application.Products
         /// </summary>
         public async Task ReorderAsync(List<Guid> productIds)
         {
+            // Item 155: reordering products needs products.edit.
+            await _permissions.RequirePermissionAsync(PermissionKeys.ProductsEdit);
+
             if (productIds == null || productIds.Count == 0)
             {
                 return;
@@ -487,11 +519,18 @@ namespace PhuThuongStickyRice.Application.Products
 
         public async Task DeleteAsync(Guid id)
         {
+            // Item 155: deleting a product needs products.delete.
+            await _permissions.RequirePermissionAsync(PermissionKeys.ProductsDelete);
+
             var product = await FindOrThrowAsync(id);
 
             await _products.DeleteAsync(product);
             await _domainEvents.DispatchAsync(new EntityDeletedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
+
+            // Item 156: staff activity log.
+            await _activityLogger.LogAsync(StaffActions.ProductDelete,
+                $"Xóa món {product.Name} ({product.Code.Value}).");
         }
 
         /// <summary>

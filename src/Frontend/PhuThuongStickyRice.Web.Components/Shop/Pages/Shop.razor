@@ -179,13 +179,13 @@ else
                 <div class="col-6 col-md-4 mb-4" @key="product.Id">
                     <div class="card h-100 border-info">
                         <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name">
-                            <img class="card-img-top" src="@ProductImage(product.Code)" alt="@product.Name" loading="lazy" />
+                            <img class="card-img-top" src="@ProductImage(product)" alt="@product.Name" loading="lazy" />
                         </a>
                         <div class="card-body py-2">
                             <a href="javascript:void(0)" class="text-dark" @onclick="() => OpenQuickView(product)"><strong>@product.Name</strong></a>
                             <div class="d-flex justify-content-between align-items-center mt-1">
                                 <strong class="text-danger">@FormatPrice(product.Price)</strong>
-                                <button class="btn btn-sm btn-warning" @onclick="() => AddToCart(product)" disabled="@(OrdersPaused || IsSoldOut(product))">@(IsSoldOut(product) ? "Tạm hết" : "+ Thêm")</button>
+                                <button class="btn btn-sm btn-warning" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">@AddButtonLabel(product, "+ Thêm")</button>
                             </div>
                             @* Item 101: ask about this dish on Zalo. *@
                             @if (ShowZaloButton)
@@ -212,7 +212,7 @@ else
                 <div class="col-6 col-md-4 mb-4" @key="product.Id">
                     <div class="card h-100">
                         <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name">
-                            <img class="card-img-top" src="@ProductImage(product.Code)" alt="@product.Name" loading="lazy" style="height: 200px; object-fit: cover;" />
+                            <img class="card-img-top" src="@ProductImage(product)" alt="@product.Name" loading="lazy" style="height: 200px; object-fit: cover;" />
                         </a>
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title">
@@ -235,6 +235,16 @@ else
                                 @if (IsSoldOut(product))
                                 {
                                     <span class="badge badge-secondary mr-1">Tạm hết</span>
+                                }
+                                @* Item 164: outside the sale time windows. *@
+                                @if (!IsSoldOut(product) && !IsInSaleHours(product))
+                                {
+                                    <span class="badge badge-info mr-1">⏰ Chỉ bán @SaleHoursLabel(product)</span>
+                                }
+                                @* Item 165: low daily stock. *@
+                                @if (!IsSoldOut(product) && product.RemainingToday.HasValue && product.RemainingToday.Value < 10)
+                                {
+                                    <span class="badge badge-warning mr-1">Còn @product.RemainingToday suất</span>
                                 }
                                 @foreach (var tag in ProductTags(product))
                                 {
@@ -259,8 +269,8 @@ else
                             <div class="d-flex align-items-center">
                                 <input type="number" min="1" max="99" class="form-control mr-2" style="width: 80px;"
                                        @bind="_quantities[product.Id]" />
-                                <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)" disabled="@(OrdersPaused || IsSoldOut(product))">
-                                    @(IsSoldOut(product) ? "Tạm hết" : I18n.T("add_to_cart"))
+                                <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">
+                                    @AddButtonLabel(product)
                                 </button>
                             </div>
                             @* Item 101: ask about this dish on Zalo. *@
@@ -299,7 +309,7 @@ else
                     </button>
                 </div>
                 <div class="modal-body">
-                    <img src="@ProductImage(_quickView.Code)" alt="@_quickView.Name" loading="lazy"
+                    <img src="@ProductImage(_quickView)" alt="@_quickView.Name" loading="lazy"
                          class="img-fluid rounded mb-3" style="max-height: 300px; width: 100%; object-fit: cover;" />
                     <p class="text-muted">@_quickView.Description</p>
                     @* Wave 6b (item 26): "★ 4.8 (12)" — hidden when no reviews. *@
@@ -350,6 +360,14 @@ else
                         {
                             <span class="badge badge-secondary ml-2">Tạm hết</span>
                         }
+                        @if (!IsSoldOut(_quickView) && !IsInSaleHours(_quickView))
+                        {
+                            <span class="badge badge-info ml-2">⏰ Chỉ bán @SaleHoursLabel(_quickView)</span>
+                        }
+                        @if (!IsSoldOut(_quickView) && _quickView.RemainingToday.HasValue && _quickView.RemainingToday.Value < 10)
+                        {
+                            <span class="badge badge-warning ml-2">Còn @_quickView.RemainingToday suất</span>
+                        }
                     </p>
                     <div class="d-flex align-items-center">
                         <label class="mr-2 mb-0" for="qv-qty">Số lượng:</label>
@@ -374,8 +392,8 @@ else
                     {
                         <a class="btn btn-outline-success" href="@ZaloChatUrl(_quickView.Name)" target="_blank" rel="noopener">💬 Hỏi qua Zalo</a>
                     }
-                    <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart" disabled="@(OrdersPaused || IsSoldOut(_quickView))">
-                        @(IsSoldOut(_quickView) ? "Tạm hết" : $"{I18n.T("add_to_cart")} — {FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))}")
+                    <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart" disabled="@(!CanOrder(_quickView))">
+                        @(CanOrder(_quickView) ? $"{I18n.T("add_to_cart")} — {FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))}" : AddButtonLabel(_quickView))
                     </button>
                 </div>
                 @if (!string.IsNullOrEmpty(_shortLinkCopied))
@@ -563,6 +581,25 @@ else
             catch (Exception)
             {
                 _ratings = new Dictionary<Guid, (double Avg, int Count)>();
+            }
+
+            // Item 165: daily-limit status ("Còn N suất") — fail-soft, the
+            // badge simply hides when the call fails.
+            try
+            {
+                var remaining = await ShopService.GetDailyRemainingAsync();
+                var byId = (remaining ?? new List<ProductDailyRemainingModel>())
+                    .ToDictionary(r => r.ProductId);
+                foreach (var p in _products)
+                {
+                    if (byId.TryGetValue(p.Id, out var r))
+                    {
+                        p.RemainingToday = r.RemainingToday;
+                    }
+                }
+            }
+            catch (Exception)
+            {
             }
 
             _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
@@ -1060,9 +1097,19 @@ else
         CloseQuickView();
     }
 
-    private static string ProductImage(string code)
+    /// <summary>
+    /// Item 166: primary gallery photo when uploaded; otherwise the
+    /// placeholder SVG by product code.
+    /// </summary>
+    private static string ProductImage(ShopProductModel product)
     {
-        var slug = (code ?? "").ToLowerInvariant()
+        var first = FirstImageUrl(product?.ImageUrlsJson);
+        if (!string.IsNullOrEmpty(first))
+        {
+            return first;
+        }
+
+        var slug = (product?.Code ?? "").ToLowerInvariant()
             .Replace("xoi-", "xoi-")
             .Replace("_", "-");
         var file = slug switch
@@ -1076,6 +1123,162 @@ else
             _ => "xoi-gac.svg"
         };
         return $"_content/PhuThuongStickyRice.Web.Components/images/{file}";
+    }
+
+    private static string FirstImageUrl(string imageUrlsJson)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrlsJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(imageUrlsJson);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+            {
+                return null;
+            }
+
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                if (el.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    var url = el.GetString()?.Trim();
+                    if (!string.IsNullOrEmpty(url))
+                    {
+                        return url;
+                    }
+                }
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Item 164: true when the current browser-local time is inside one of
+    /// the product's sale windows, or when no windows are set. Fails open.
+    /// </summary>
+    private static bool IsInSaleHours(ShopProductModel product)
+    {
+        var json = product?.AvailableHoursJson;
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return true;
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+            {
+                return true;
+            }
+
+            var now = DateTime.Now.TimeOfDay;
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                if (el.ValueKind != System.Text.Json.JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                if (el.TryGetProperty("from", out var fromEl)
+                    && el.TryGetProperty("to", out var toEl)
+                    && TimeSpan.TryParse(fromEl.GetString(), out var from)
+                    && TimeSpan.TryParse(toEl.GetString(), out var to)
+                    && now >= from && now < to)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return true;
+        }
+    }
+
+    /// <summary>Item 164: "6h–10h, 17h–20h" label for the sale-hours badge.</summary>
+    private static string SaleHoursLabel(ShopProductModel product)
+    {
+        var json = product?.AvailableHoursJson;
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+            {
+                return string.Empty;
+            }
+
+            var parts = new System.Collections.Generic.List<string>();
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                if (el.TryGetProperty("from", out var fromEl)
+                    && el.TryGetProperty("to", out var toEl)
+                    && TimeSpan.TryParse(fromEl.GetString(), out var from)
+                    && TimeSpan.TryParse(toEl.GetString(), out var to))
+                {
+                    parts.Add($"{FormatHour(from)}–{FormatHour(to)}");
+                }
+            }
+
+            return string.Join(", ", parts);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return string.Empty;
+        }
+    }
+
+    private static string FormatHour(TimeSpan t) =>
+        t.Minutes == 0 ? $"{t.Hours}h" : $"{t.Hours}:{t.Minutes:D2}";
+
+    /// <summary>Item 165: true when today's portion limit is exhausted.</summary>
+    private static bool IsDailyLimitReached(ShopProductModel product) =>
+        product?.RemainingToday.HasValue == true && product.RemainingToday.Value <= 0;
+
+    /// <summary>
+    /// Items 85/164/165: the add-to-cart button is enabled only when the
+    /// shop accepts orders, the product is not sold out, it is inside its
+    /// sale hours and its daily limit is not exhausted.
+    /// </summary>
+    private bool CanOrder(ShopProductModel product) =>
+        !OrdersPaused && !IsSoldOut(product) && IsInSaleHours(product) && !IsDailyLimitReached(product);
+
+    /// <summary>
+    /// Button label explaining WHY ordering is blocked, or the normal
+    /// "add to cart" text. Items 85/164/165.
+    /// </summary>
+    private string AddButtonLabel(ShopProductModel product, string defaultLabel = null)
+    {
+        if (IsSoldOut(product))
+        {
+            return "Tạm hết";
+        }
+
+        if (!IsInSaleHours(product))
+        {
+            return "Chưa tới giờ bán";
+        }
+
+        if (IsDailyLimitReached(product))
+        {
+            return "Hết suất hôm nay";
+        }
+
+        return defaultLabel ?? I18n.T("add_to_cart");
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";

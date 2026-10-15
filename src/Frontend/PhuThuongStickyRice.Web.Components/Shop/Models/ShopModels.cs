@@ -47,6 +47,27 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         public DateTime? AvailableTo { get; set; }
 
+        /// <summary>
+        /// Item 164: daily sale time windows as JSON, e.g.
+        /// [{"from":"06:00","to":"10:00"}]. Null = sold all day.
+        /// </summary>
+        public string AvailableHoursJson { get; set; }
+
+        /// <summary>Item 165: max portions sold per day. Null = unlimited.</summary>
+        public int? DailyLimit { get; set; }
+
+        /// <summary>
+        /// Item 166: photo gallery as a JSON string array of image URLs
+        /// (first = primary). Null = placeholder SVG.
+        /// </summary>
+        public string ImageUrlsJson { get; set; }
+
+        /// <summary>
+        /// Item 165: portions still sellable today (filled from
+        /// api/products/daily-remaining). Null = no daily limit.
+        /// </summary>
+        public int? RemainingToday { get; set; }
+
         public List<ProductSizeOptionModel> Sizes { get; set; } = new List<ProductSizeOptionModel>();
 
         public DateTimeOffset CreatedDateTime { get; set; }
@@ -65,6 +86,20 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public int SortOrder { get; set; }
 
         public bool IsActive { get; set; }
+    }
+
+    /// <summary>
+    /// Item 165: per-product daily-limit status ("Còn N suất").
+    /// </summary>
+    public class ProductDailyRemainingModel
+    {
+        public Guid ProductId { get; set; }
+
+        public int DailyLimit { get; set; }
+
+        public int SoldToday { get; set; }
+
+        public int RemainingToday { get; set; }
     }
 
     public class ToppingModel
@@ -499,6 +534,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
     /// <summary>Shop commerce settings. Amounts in VND.</summary>
     public class ShopSettingModel
     {
+        /// <summary>Item 180: new-order webhook URL (báo đơn mới).</summary>
+        public string NewOrderWebhookUrl { get; set; }
+
+        /// <summary>Item 180: enable the new-order webhook.</summary>
+        public bool NewOrderWebhookEnabled { get; set; }
+
         public decimal DeliveryFee { get; set; }
 
         public decimal FreeShipThreshold { get; set; }

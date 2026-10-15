@@ -143,6 +143,95 @@
     </div>
 
     <div class="form-group row">
+        <label class="col-sm-2 col-form-label">Khung giờ bán: </label>
+        <div class="col-sm-10">
+            @foreach (var w in _hours)
+            {
+                <div class="form-row align-items-center mb-2" @key="w">
+                    <div class="col-auto">
+                        <input type="time" class="form-control" @bind="w.From" />
+                    </div>
+                    <div class="col-auto">đến</div>
+                    <div class="col-auto">
+                        <input type="time" class="form-control" @bind="w.To" />
+                    </div>
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveHour(w)">Xóa</button>
+                    </div>
+                </div>
+            }
+            @if (_hours.Count < 3)
+            {
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddHour">+ Thêm khung giờ</button>
+            }
+            <small class="form-text text-muted">Để trống = bán cả ngày. VD: 06:00–10:00 thì ngoài giờ shop hiện "Chỉ bán 6h–10h" và tắt nút đặt.</small>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="dailylimit" class="col-sm-2 col-form-label">Giới hạn suất/ngày: </label>
+        <div class="col-sm-10">
+            <InputNumber id="dailylimit" class="form-control" @bind-Value="Product.DailyLimit" placeholder="VD: 50 (để trống = không giới hạn)" />
+            <small class="form-text text-muted">Hết suất trong ngày: đơn mới bị từ chối món này. Shop hiện "Còn N suất" khi sắp hết.</small>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-2 col-form-label">Ảnh món: </label>
+        <div class="col-sm-10">
+            <div class="d-flex flex-wrap mb-2">
+                @for (var i = 0; i < _images.Count; i++)
+                {
+                    var idx = i;
+                    var url = _images[i];
+                    <div class="mr-2 mb-2 text-center" style="width: 110px;" @key="url">
+                        <img src="@url" alt="Ảnh món" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: @(idx == 0 ? "2px solid #28a745" : "1px solid #ddd");" />
+                        <div class="mt-1">
+                            @if (idx == 0)
+                            {
+                                <span class="badge badge-success">Đại diện</span>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-link p-0" @onclick="() => SetPrimaryImage(idx)">Đại diện</button>
+                            }
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ml-1" @onclick="() => RemoveImage(idx)">Xóa</button>
+                        </div>
+                    </div>
+                }
+            </div>
+            <input type="file" id="product-images-input" accept="image/*" multiple class="form-control-file" @onchange="OnImagesSelected" />
+            <small class="form-text text-muted">Chọn nhiều ảnh 1 lần — ảnh tự nén trước khi tải lên. Ảnh đầu tiên là ảnh đại diện hiện ở shop.</small>
+            @if (_uploadingImages)
+            {
+                <div class="text-muted mt-1">Đang tải ảnh lên...</div>
+            }
+            @if (!string.IsNullOrEmpty(_imageError))
+            {
+                <div class="alert alert-danger mt-2 py-1">@_imageError</div>
+            }
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-2 col-form-label"></label>
+        <div class="col-sm-10">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="post-fb" @bind="Product.PostToFacebook" />
+                <label class="form-check-label" for="post-fb">📣 Đăng lên Facebook khi lưu</label>
+            </div>
+            @if (_fbConfigured == false)
+            {
+                <small class="form-text text-muted">Chưa cấu hình Facebook (thiếu Page ID hoặc Page Access Token ở Cài đặt cửa hàng) — bài đăng sẽ được bỏ qua.</small>
+            }
+            else
+            {
+                <small class="form-text text-muted">Đăng tên món + giá + link đặt hàng lên Fanpage.</small>
+            }
+        </div>
+    </div>
+
+    <div class="form-group row">
         <label class="col-sm-2 col-form-label"></label>
         <div class="col-sm-10">
             <div class="form-check">
@@ -274,6 +363,9 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        // Items 164/166: load the hours + gallery editors from the product.
+        SyncFromProduct();
+
         if (Product?.Id != Guid.Empty)
         {
             await LoadSizesAsync();

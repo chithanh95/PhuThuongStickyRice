@@ -176,6 +176,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Item 149: customer tags (shown on customer list + order detail).</summary>
         private readonly ICustomerTagAppService _customerTags;
+        private readonly IVipPriorityAppService _vipPriority;
 
         public OrderAppService(
             IOrderRepository orders,
@@ -203,6 +204,7 @@ namespace PhuThuongStickyRice.Application.Orders
             Wave5.IWalletAppService wallets,
             Volo.Abp.Domain.Repositories.IRepository<OrderStatusHistory, Guid> statusHistory,
             ICustomerTagAppService customerTags,
+            IVipPriorityAppService vipPriority,
             IPermissionService permissions,
             IStaffActivityLogger activityLogger,
             System.Net.Http.IHttpClientFactory httpClientFactory)
@@ -232,6 +234,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _wallets = wallets;
             _statusHistory = statusHistory;
             _customerTags = customerTags;
+            _vipPriority = vipPriority;
             _permissions = permissions;
             _activityLogger = activityLogger;
             _httpClientFactory = httpClientFactory;
@@ -753,6 +756,13 @@ namespace PhuThuongStickyRice.Application.Orders
                 query = query.Where(x => x.CashCollected == collected);
             }
 
+            // Item 130 (đúng): only orders whose customer is marked VIP.
+            if (input.VipOnly)
+            {
+                var vipPhones = await _vipPriority.GetVipPhonesAsync();
+                query = query.Where(x => vipPhones.Contains(x.CustomerPhone));
+            }
+
             var totalCount = await _asyncExecuter.LongCountAsync(query);
             var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
 
@@ -786,6 +796,9 @@ namespace PhuThuongStickyRice.Application.Orders
                     && tagsByPhone.TryGetValue(phone, out var tags))
                 {
                     dto.CustomerTags = tags;
+                    // Item 130 (đúng): VIP flag for priority display/sorting.
+                    dto.IsVip = tags.Any(t =>
+                        string.Equals(t.TagName, "VIP", StringComparison.OrdinalIgnoreCase));
                 }
             }
         }
@@ -1727,6 +1740,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 if (tagsByPhone.TryGetValue(c.CustomerPhone, out var tags))
                 {
                     c.Tags = tags;
+                    // Item 130 (đúng): VIP flag drives the one-tap VIP toggle.
+                    c.IsVip = tags.Any(t =>
+                        string.Equals(t.TagName, "VIP", StringComparison.OrdinalIgnoreCase));
                 }
             }
 

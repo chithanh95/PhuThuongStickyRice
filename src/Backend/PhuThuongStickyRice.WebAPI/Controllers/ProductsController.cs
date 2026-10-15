@@ -41,6 +41,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly ICsvReader<ProductModel> _productCsvReader;
         private readonly PhuThuongStickyRice.Application.Orders.IDashboardAppService _dashboardAppService;
         private readonly IFacebookPostService _facebookPostService;
+        private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _environment;
 
         public ProductsController(IProductAppService productAppService,
             ILogger<ProductsController> logger,
@@ -49,7 +50,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             ICsvWriter<ProductModel> productCsvWriter,
             ICsvReader<ProductModel> productCsvReader,
             PhuThuongStickyRice.Application.Orders.IDashboardAppService dashboardAppService,
-            IFacebookPostService facebookPostService)
+            IFacebookPostService facebookPostService,
+            Microsoft.AspNetCore.Hosting.IWebHostEnvironment environment)
         {
             _productAppService = productAppService;
             _logger = logger;
@@ -59,6 +61,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _productCsvReader = productCsvReader;
             _dashboardAppService = dashboardAppService;
             _facebookPostService = facebookPostService;
+            _environment = environment;
         }
 
         [AllowAnonymous]
@@ -124,7 +127,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     AvailableFrom = model.AvailableFrom,
                     AvailableTo = model.AvailableTo,
                     BranchId = model.BranchId,
-                    Unit = model.Unit
+                    Unit = model.Unit,
+                    AvailableHoursJson = model.AvailableHoursJson,
+                    DailyLimit = model.DailyLimit,
+                    ImageUrlsJson = model.ImageUrlsJson
                 });
                 if (model.PostToFacebook)
                 {
@@ -172,7 +178,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     AvailableFrom = model.AvailableFrom,
                     AvailableTo = model.AvailableTo,
                     BranchId = model.BranchId,
-                    Unit = model.Unit
+                    Unit = model.Unit,
+                    AvailableHoursJson = model.AvailableHoursJson,
+                    DailyLimit = model.DailyLimit,
+                    ImageUrlsJson = model.ImageUrlsJson
                 });
                 if (model.PostToFacebook)
                 {
@@ -279,6 +288,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Public: daily-limit status of limited products ("Còn N suất").
+        /// Item 165. No auth — quantities sold are not sensitive.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("daily-remaining")]
+        public async Task<ActionResult> GetDailyRemaining(
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _productAppService.GetDailyRemainingAsync());
+        }
+
+        /// <summary>
         /// Wave 6b (item 26): public per-product rating aggregates
         /// {ProductId, AverageRating, ReviewCount} from non-hidden reviews.
         /// </summary>
@@ -288,6 +309,52 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             return Ok(await _productAppService.GetProductRatingsAsync());
+        }
+
+        /// <summary>
+        /// Item 166: uploads one product photo (admin). The client compresses
+        /// before sending; this endpoint stores the file and returns its URL.
+        /// The product form collects URLs and saves them via PUT.
+        /// </summary>
+        [Authorize(AuthorizationPolicyNames.AddProductPolicy)]
+        [HttpPost("images/upload")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
+        public async Task<ActionResult> UploadProductImage(
+            [FromForm] IFormFile file,
+            CancellationToken cancellationToken = default)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { message = "Vui lòng chọn một file ảnh." });
+            }
+
+            var extension = Path.GetExtension(file.FileName);
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+            if (string.IsNullOrWhiteSpace(extension)
+                || !allowed.Contains(extension.ToLowerInvariant()))
+            {
+                return BadRequest(new
+                {
+                    message = "Định dạng ảnh không hợp lệ. Chỉ nhận: jpg, jpeg, png, webp, gif."
+                });
+            }
+
+            if (file.Length > 5 * 1024 * 1024)
+            {
+                return BadRequest(new { message = "File ảnh tối đa 5 MB." });
+            }
+
+            var folder = Path.Combine(_environment.WebRootPath, "uploads", "products");
+            Directory.CreateDirectory(folder);
+
+            var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+            var filePath = Path.Combine(folder, fileName);
+            await using (var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write))
+            {
+                await file.CopyToAsync(stream, cancellationToken);
+            }
+
+            return Ok(new { url = $"/uploads/products/{fileName}" });
         }
 
         [HttpGet("exportaspdf")]
