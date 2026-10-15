@@ -23,13 +23,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly ICustomerProfileAppService _profiles;
         private readonly ICustomerTagAppService _tags;
+        private readonly IVipPriorityAppService _vip;
 
         public CustomerCareController(
             ICustomerProfileAppService profiles,
-            ICustomerTagAppService tags)
+            ICustomerTagAppService tags,
+            IVipPriorityAppService vip)
         {
             _profiles = profiles;
             _tags = tags;
+            _vip = vip;
         }
 
         /// <summary>Admin: registered customers with a birthday in a month (1-12).</summary>
@@ -106,6 +109,43 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             await _tags.DeleteTagAsync(id);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Item 130 (đúng): Admin/Cashier: danh sách SĐT đang được đánh dấu VIP.
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpGet("vip")]
+        public async Task<ActionResult<List<CustomerTagDto>>> GetVips(
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _vip.GetVipsAsync());
+        }
+
+        /// <summary>
+        /// Item 130 (đúng): Admin/Cashier: đánh dấu một SĐT là VIP (ưu tiên).
+        /// Idempotent — đánh dấu 2 lần không lỗi.
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpPost("vip/{phone}")]
+        public async Task<ActionResult<CustomerTagDto>> MarkVip(
+            string phone,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _vip.MarkVipAsync(phone));
+        }
+
+        /// <summary>
+        /// Item 130 (đúng): Admin/Cashier: gỡ đánh dấu VIP khỏi một SĐT.
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpDelete("vip/{phone}")]
+        public async Task<ActionResult> UnmarkVip(
+            string phone,
+            CancellationToken cancellationToken = default)
+        {
+            await _vip.UnmarkVipAsync(phone);
             return NoContent();
         }
 

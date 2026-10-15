@@ -5,6 +5,7 @@
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @inject OrderService OrderService
+@inject VipService VipService
 @inject NavigationManager Navigation
 @inject PhuThuongStickyRice.Web.Components.Shop.Services.ShopSettingsService ShopSettingsService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
@@ -224,6 +225,21 @@ else
                                 </td>
                                 <td>@c.LastOrderAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                                 <td class="text-right">
+                                    @* Item 130 (đúng): one-tap VIP mark/unmark. *@
+                                    @if (c.IsVip)
+                                    {
+                                        <button class="btn btn-sm btn-warning mr-1" title="Gỡ VIP"
+                                                @onclick="() => ToggleVip(c)" disabled="@_vipBusy">
+                                            👑 VIP
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-warning mr-1" title="Đánh dấu VIP được ưu tiên"
+                                                @onclick="() => ToggleVip(c)" disabled="@_vipBusy">
+                                            👑 VIP
+                                        </button>
+                                    }
                                     @if (IsInactive(c))
                                     {
                                         <button class="btn btn-sm btn-outline-warning mr-1"
@@ -477,6 +493,9 @@ else
     // Item 151: export customers to Excel.
     private bool _exporting;
     private string _exportError;
+
+    // Item 130 (đúng): one-tap VIP mark/unmark.
+    private bool _vipBusy;
 
     // Item 168: customer purchase-history detail.
     private string _detailPhone;
@@ -769,6 +788,45 @@ else
         catch (Exception)
         {
             // Best effort; the tag list refreshes on next load.
+        }
+    }
+
+    /// <summary>Item 130 (đúng): toggles the VIP mark for a customer.</summary>
+    private async Task ToggleVip(Admin.Models.CustomerModel customer)
+    {
+        if (customer == null || string.IsNullOrWhiteSpace(customer.CustomerPhone))
+        {
+            return;
+        }
+
+        _vipBusy = true;
+        try
+        {
+            if (customer.IsVip)
+            {
+                await VipService.UnmarkVipAsync(customer.CustomerPhone);
+                customer.IsVip = false;
+                customer.Tags?.RemoveAll(t =>
+                    string.Equals(t.TagName, "VIP", StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                var created = await VipService.MarkVipAsync(customer.CustomerPhone);
+                customer.IsVip = true;
+                customer.Tags ??= new List<Admin.Models.CustomerTagModel>();
+                customer.Tags.RemoveAll(t =>
+                    string.Equals(t.TagName, "VIP", StringComparison.OrdinalIgnoreCase));
+                customer.Tags.Add(created);
+                customer.Tags = customer.Tags.OrderBy(t => t.TagName).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            _tagError = ex.Message;
+        }
+        finally
+        {
+            _vipBusy = false;
         }
     }
 

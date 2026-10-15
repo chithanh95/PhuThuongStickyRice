@@ -57,6 +57,11 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
 
         /// <summary>Item 149: tags attached to this customer phone.</summary>
         public List<CustomerTagModel> Tags { get; set; } = new List<CustomerTagModel>();
+
+        /// <summary>
+        /// Item 130 (đúng): true when the phone carries the VIP tag.
+        /// </summary>
+        public bool IsVip { get; set; }
     }
 
     /// <summary>Item 149: customer tag (VIP, Nợ, Khó tính...).</summary>
