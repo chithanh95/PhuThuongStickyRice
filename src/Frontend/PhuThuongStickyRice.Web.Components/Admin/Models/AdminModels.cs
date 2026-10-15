@@ -43,21 +43,6 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public bool IsFreeship { get; set; }
     }
 
-    public class AuditLogEntryModel
-    {
-        public Guid Id { get; set; }
-
-        public Guid UserId { get; set; }
-
-        public string Action { get; set; }
-
-        public string ObjectId { get; set; }
-
-        public string Log { get; set; }
-
-        public DateTimeOffset CreatedDateTime { get; set; }
-    }
-
     public class CustomerModel
     {
         public string CustomerName { get; set; }

@@ -163,42 +163,6 @@
     </div>
 </div>
 
-<div class="row mb-3">
-    @if (_corporateDue != null && _corporateDue.Count > 0)
-    {
-        <div class="col-md-6 mb-3">
-            <div class="card h-100 border-info">
-                <div class="card-body">
-                    <h6 class="card-title">🏢 Đơn doanh nghiệp tuần này <span class="badge badge-info">@_corporateDue.Count</span></h6>
-                    <ul class="list-unstyled mb-2">
-                        @foreach (var c in _corporateDue.Take(5))
-                        {
-                            <li class="mb-1">
-                                <strong>@c.CompanyName</strong> <small class="text-muted">(@c.Phone)</small><br />
-                                <small>@c.ItemsJson</small>
-                            </li>
-                        }
-                    </ul>
-                    <a href="admin/doanh-nghiep" class="btn btn-sm btn-outline-info">Quản lý →</a>
-                </div>
-            </div>
-        </div>
-    }
-    @if (_forecast != null)
-    {
-        <div class="col-md-6 mb-3">
-            <div class="card h-100 border-success">
-                <div class="card-body">
-                    <h6 class="card-title">🌾 Dự báo nếp sáng mai</h6>
-                    <div class="h4 mb-1 text-success">@_forecast.NepKg.ToString("0.#") kg</div>
-                    <small class="text-muted">@_forecast.Heuristic</small><br />
-                    <a href="admin/du-bao-nguyen-lieu" class="btn btn-sm btn-outline-success mt-2">Chi tiết →</a>
-                </div>
-            </div>
-        </div>
-    }
-</div>
-
 <div class="card mb-3">
     <div class="card-body">
         <div class="form-row align-items-end">
@@ -411,8 +375,6 @@ else
     // Wave 5 widgets (items 122/124/133/139).
     private DailyTargetModel _dailyTarget;
     private List<SourceStatModel> _sourceStats;
-    private List<CorporateClientModel> _corporateDue;
-    private IngredientForecastModel _forecast;
     private List<TopProductModel> _topProducts;
     private NewReturningCustomersModel _newReturning;
 
@@ -514,24 +476,6 @@ else
         {
         }
 
-        // Admin-only widgets (server enforces roles; cashier simply sees nothing).
-        try
-        {
-            _corporateDue = await Wave5Service.GetCorporateDueAsync();
-        }
-        catch (Exception)
-        {
-            _corporateDue = null;
-        }
-
-        try
-        {
-            _forecast = await Wave5Service.GetForecastAsync();
-        }
-        catch (Exception)
-        {
-            _forecast = null;
-        }
     }
 
     private void DetectNewOrders(DashboardStatsModel stats)

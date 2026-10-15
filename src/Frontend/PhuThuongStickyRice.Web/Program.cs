@@ -103,15 +103,8 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
-            // Admin: discount codes + audit logs (authenticated).
+            // Admin: discount codes (authenticated).
             builder.Services.AddHttpClient<DiscountService, DiscountService>(client =>
-            {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
-
-            builder.Services.AddHttpClient<AuditLogService, AuditLogService>(client =>
             {
                 client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
                 client.Timeout = new TimeSpan(0, 0, 30);
