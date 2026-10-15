@@ -311,4 +311,58 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public long TotalPortions { get; set; }
         public string Suggestion { get; set; }
     }
+
+    /// <summary>Item 154: gross profit per product.</summary>
+    public class GrossProfitReportModel
+    {
+        public DateTime From { get; set; }
+        public DateTime To { get; set; }
+        public List<GrossProfitRowModel> Rows { get; set; } = new List<GrossProfitRowModel>();
+        public GrossProfitTotalModel Total { get; set; } = new GrossProfitTotalModel();
+        public List<string> Suggestions { get; set; } = new List<string>();
+        public bool HasUnpricedProducts { get; set; }
+        public string CostBasisNote { get; set; }
+    }
+
+    public class GrossProfitRowModel
+    {
+        public Guid ProductId { get; set; }
+        public string ProductName { get; set; }
+        public long QuantitySold { get; set; }
+        public decimal Revenue { get; set; }
+        public decimal Cost { get; set; }
+        public decimal Profit { get; set; }
+        public decimal? MarginPercent { get; set; }
+        public decimal CostPrice { get; set; }
+        public bool CostMissing { get; set; }
+    }
+
+    public class GrossProfitTotalModel
+    {
+        public long QuantitySold { get; set; }
+        public decimal Revenue { get; set; }
+        public decimal Cost { get; set; }
+        public decimal Profit { get; set; }
+        public decimal? MarginPercent { get; set; }
+    }
+
+    public class ProductCostModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Unit { get; set; }
+        public decimal Price { get; set; }
+        public decimal CostPrice { get; set; }
+    }
+
+    /// <summary>
+    /// Item 142: a group of possibly-duplicate orders (same phone,
+    /// placed within the last 30 minutes) for the admin review panel.
+    /// </summary>
+    public class DuplicateOrderGroupModel
+    {
+        public string Phone { get; set; }
+        public string CustomerName { get; set; }
+        public List<OrderModel> Orders { get; set; } = new List<OrderModel>();
+    }
 }

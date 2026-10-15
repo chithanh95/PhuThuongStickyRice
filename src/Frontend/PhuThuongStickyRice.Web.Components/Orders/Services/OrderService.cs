@@ -135,6 +135,43 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             return await GetAsync<HourlySalesReportModel>($"api/admin/orders/hourly-sales?date={d}");
         }
 
+        /// <summary>Item 154: gross profit per product for a date range.</summary>
+        public async Task<GrossProfitReportModel> GetGrossProfitReportAsync(DateTime? from, DateTime? to)
+        {
+            var url = "api/admin/reports/gross-profit";
+            var qs = new List<string>();
+            if (from.HasValue)
+            {
+                qs.Add($"from={from.Value:yyyy-MM-dd}");
+            }
+
+            if (to.HasValue)
+            {
+                qs.Add($"to={to.Value:yyyy-MM-dd}");
+            }
+
+            if (qs.Count > 0)
+            {
+                url += "?" + string.Join("&", qs);
+            }
+
+            return await GetAsync<GrossProfitReportModel>(url);
+        }
+
+        /// <summary>Item 154: all products with their current cost price.</summary>
+        public async Task<List<ProductCostModel>> GetProductCostsAsync()
+        {
+            return await GetAsync<List<ProductCostModel>>("api/admin/reports/gross-profit/products");
+        }
+
+        /// <summary>Item 154: updates one product's cost price (giá vốn).</summary>
+        public async Task<ProductCostModel> UpdateProductCostAsync(Guid id, decimal costPrice)
+        {
+            return await PutAsync<ProductCostModel>(
+                $"api/admin/reports/gross-profit/products/{id}/cost-price",
+                new { CostPrice = costPrice });
+        }
+
         /// <summary>Wave 6c (item 33): admin sets/clears the internal note.</summary>
         public async Task<OrderModel> UpdateAdminNoteAsync(Guid orderId, string note)
         {
@@ -207,6 +244,27 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         {
             return await PutAsync<OrderReviewModel>($"api/orders/reviews/{reviewId}/reply",
                 new { Reply = reply });
+        }
+
+        /// <summary>
+        /// Item 142: groups of possibly-duplicate orders (same phone,
+        /// last 30 minutes, still Pending/Confirmed) for the admin panel.
+        /// </summary>
+        public async Task<List<DuplicateOrderGroupModel>> GetDuplicateOrdersAsync()
+        {
+            return await GetAsync<List<DuplicateOrderGroupModel>>("api/admin/orders/duplicates")
+                ?? new List<DuplicateOrderGroupModel>();
+        }
+
+        /// <summary>
+        /// Item 142: merges the given orders into the primary order
+        /// (their lines are added, they are cancelled with a note).
+        /// Always explicit — never automatic.
+        /// </summary>
+        public async Task<OrderModel> MergeOrdersAsync(Guid primaryOrderId, List<Guid> orderIds)
+        {
+            return await PostAsync<OrderModel>("api/orders/merge",
+                new { PrimaryOrderId = primaryOrderId, OrderIds = orderIds });
         }
     }
 }

@@ -1,0 +1,305 @@
+@page "/admin/lai-gop"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Orders.Models
+@using PhuThuongStickyRice.Web.Components.Orders.Services
+@inject OrderService OrderService
+
+<h3>💰 Báo cáo lãi gộp theo món</h3>
+<p class="text-muted">Doanh thu − giá vốn của từng món. Đơn đã hủy không tính. Sắp xếp theo lãi gộp giảm dần.</p>
+
+<div class="alert alert-info">
+    ℹ️ Giá vốn tính theo giá <strong>hiện tại</strong> của từng món. Hệ thống không lưu lịch sử thay đổi giá vốn,
+    nên nếu bạn sửa giá vốn, số liệu lãi của các kỳ trước cũng sẽ thay đổi theo.
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="form-row align-items-end">
+            <div class="col-md-2 col-6">
+                <label class="mb-1"><small class="text-muted">Từ ngày</small></label>
+                <input type="date" class="form-control" @bind="_from" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-2 col-6">
+                <label class="mb-1"><small class="text-muted">Đến ngày</small></label>
+                <input type="date" class="form-control" @bind="_to" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-8 col-12 text-right mt-2 mt-md-0">
+                <button class="btn btn-outline-secondary mr-2" @onclick="() => SetPreset(1)">Hôm nay</button>
+                <button class="btn btn-outline-secondary mr-2" @onclick="() => SetPreset(7)">7 ngày</button>
+                <button class="btn btn-outline-secondary mr-2" @onclick="() => SetPreset(30)">30 ngày</button>
+                <button class="btn btn-primary" @onclick="LoadAsync" disabled="@_loading">
+                    @(_loading ? "Đang tải..." : "Xem báo cáo")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_report != null)
+{
+    <div class="row mb-4">
+        <div class="col-md-3 col-6 mb-3">
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Tổng doanh thu (@_report.From.ToString("dd/MM") – @_report.To.ToString("dd/MM"))</p>
+                <h2 class="lx-mini-value">@FmtVnd(_report.Total.Revenue)</h2>
+                <span class="lx-mini-foot">@_report.Total.QuantitySold.ToString("N0") suất đã bán</span>
+                <span class="lx-mini-icon"><span class="oi oi-dollar" aria-hidden="true"></span></span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Tổng giá vốn</p>
+                <h2 class="lx-mini-value">@FmtVnd(_report.Total.Cost)</h2>
+                <span class="lx-mini-foot">Theo giá vốn hiện tại</span>
+                <span class="lx-mini-icon"><span class="oi oi-cart" aria-hidden="true"></span></span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Lãi gộp</p>
+                <h2 class="lx-mini-value" style="color:#28a745">@FmtVnd(_report.Total.Profit)</h2>
+                <span class="lx-mini-foot">Doanh thu − giá vốn</span>
+                <span class="lx-mini-icon"><span class="oi oi-graph" aria-hidden="true"></span></span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Biên lãi trung bình</p>
+                <h2 class="lx-mini-value">@FmtPct(_report.Total.MarginPercent)</h2>
+                <span class="lx-mini-foot">Lãi gộp / doanh thu</span>
+                <span class="lx-mini-icon"><span class="oi oi-pie-chart" aria-hidden="true"></span></span>
+            </div>
+        </div>
+    </div>
+
+    @if (_report.Suggestions.Count > 0)
+    {
+        <div class="alert alert-warning">
+            <strong>💡 Gợi ý:</strong>
+            <ul class="mb-0 mt-1">
+                @foreach (var s in _report.Suggestions)
+                {
+                    <li>@s</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4 class="card-title">Lãi gộp theo món</h4>
+            <small class="text-muted">Sắp xếp theo lãi gộp giảm dần</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Món</th>
+                            <th class="text-right">Số suất</th>
+                            <th class="text-right">Doanh thu</th>
+                            <th class="text-right">Giá vốn/suất</th>
+                            <th class="text-right">Tổng giá vốn</th>
+                            <th class="text-right">Lãi gộp</th>
+                            <th class="text-right">Biên lãi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in _report.Rows)
+                        {
+                            <tr>
+                                <td>
+                                    @r.ProductName
+                                    @if (r.CostMissing)
+                                    {
+                                        <span class="badge badge-warning ml-1" title="Chưa nhập giá vốn — lãi đang tính bằng 100% doanh thu">chưa nhập giá vốn</span>
+                                    }
+                                </td>
+                                <td class="text-right">@r.QuantitySold.ToString("N0")</td>
+                                <td class="text-right">@FmtVnd(r.Revenue)</td>
+                                <td class="text-right">@FmtVnd(r.CostPrice)</td>
+                                <td class="text-right">@FmtVnd(r.Cost)</td>
+                                <td class="text-right font-weight-bold" style="color:@(r.Profit >= 0 ? "#28a745" : "#dc3545")">@FmtVnd(r.Profit)</td>
+                                <td class="text-right"><span class="badge" style="@MarginStyle(r.MarginPercent)">@FmtPct(r.MarginPercent)</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="thead-light">
+                        <tr class="font-weight-bold">
+                            <td>Tổng (@_report.Rows.Count món)</td>
+                            <td class="text-right">@_report.Total.QuantitySold.ToString("N0")</td>
+                            <td class="text-right">@FmtVnd(_report.Total.Revenue)</td>
+                            <td class="text-right">–</td>
+                            <td class="text-right">@FmtVnd(_report.Total.Cost)</td>
+                            <td class="text-right" style="color:#28a745">@FmtVnd(_report.Total.Profit)</td>
+                            <td class="text-right">@FmtPct(_report.Total.MarginPercent)</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">✏️ Nhập giá vốn từng món</h4>
+        <small class="text-muted">Lưu xong bấm "Xem báo cáo" để cập nhật số liệu lãi gộp.</small>
+    </div>
+    <div class="card-body p-0">
+        @if (_costs == null)
+        {
+            <div class="p-3 text-muted">Đang tải danh sách món...</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Món</th>
+                            <th class="text-right">Giá bán</th>
+                            <th style="width:180px">Giá vốn (₫/suất)</th>
+                            <th style="width:120px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in _costs)
+                        {
+                            <tr>
+                                <td>@p.Name <small class="text-muted">(@p.Unit)</small></td>
+                                <td class="text-right">@FmtVnd(p.Price)</td>
+                                <td>
+                                    <input type="number" min="0" step="500" class="form-control form-control-sm"
+                                           value="@_editedCosts[p.Id]"
+                                           @onchange="(ChangeEventArgs e) => { _editedCosts[p.Id] = ParseDecimal(e.Value); }" />
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary btn-block"
+                                            @onclick="() => SaveCostAsync(p)"
+                                            disabled="@(_savingCost == p.Id || _editedCosts[p.Id] == p.CostPrice)">
+                                        @(_savingCost == p.Id ? "Đang lưu..." : "Lưu")
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(_costMessage))
+        {
+            <div class="alert alert-success m-3 mb-0">@_costMessage</div>
+        }
+        @if (!string.IsNullOrEmpty(_costError))
+        {
+            <div class="alert alert-danger m-3 mb-0">@_costError</div>
+        }
+    </div>
+</div>
+
+@code {
+    private DateTime? _from = DateTime.Today.AddDays(-6);
+    private DateTime? _to = DateTime.Today;
+    private bool _loading;
+    private string _error;
+    private GrossProfitReportModel _report;
+
+    private List<ProductCostModel> _costs;
+    private Dictionary<Guid, decimal> _editedCosts = new Dictionary<Guid, decimal>();
+    private Guid? _savingCost;
+    private string _costMessage;
+    private string _costError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCostsAsync();
+        await LoadAsync();
+    }
+
+    private void SetPreset(int days)
+    {
+        _to = DateTime.Today;
+        _from = days == 1 ? DateTime.Today : DateTime.Today.AddDays(-(days - 1));
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _report = await OrderService.GetGrossProfitReportAsync(_from, _to);
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được báo cáo. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadCostsAsync()
+    {
+        try
+        {
+            _costs = await OrderService.GetProductCostsAsync();
+            _editedCosts = _costs.ToDictionary(p => p.Id, p => p.CostPrice);
+        }
+        catch (Exception)
+        {
+            _costs = new List<ProductCostModel>();
+        }
+    }
+
+    private async Task SaveCostAsync(ProductCostModel p)
+    {
+        _savingCost = p.Id;
+        _costMessage = null;
+        _costError = null;
+        try
+        {
+            var updated = await OrderService.UpdateProductCostAsync(p.Id, _editedCosts[p.Id]);
+            p.CostPrice = updated.CostPrice;
+            _editedCosts[p.Id] = updated.CostPrice;
+            _costMessage = $"Đã lưu giá vốn món \"{p.Name}\". Bấm \"Xem báo cáo\" để cập nhật số liệu.";
+        }
+        catch (Exception)
+        {
+            _costError = $"Không lưu được giá vốn món \"{p.Name}\". Vui lòng thử lại.";
+        }
+        finally
+        {
+            _savingCost = null;
+        }
+    }
+
+    private static decimal ParseDecimal(object value)
+    {
+        return decimal.TryParse(value?.ToString(), out var d) && d >= 0 ? d : 0m;
+    }
+
+    private static string FmtVnd(decimal d) => d.ToString("N0") + "₫";
+
+    private static string FmtPct(decimal? p) => p.HasValue ? p.Value.ToString("N1") + "%" : "–";
+
+    private static string MarginStyle(decimal? p)
+    {
+        if (!p.HasValue)
+        {
+            return "background:#eee;color:#666;";
+        }
+
+        return p.Value >= 50m
+            ? "background:#d4edda;color:#155724;"
+            : p.Value >= 20m
+                ? "background:#fff3cd;color:#856404;"
+                : "background:#f8d7da;color:#721c24;";
+    }
+}
