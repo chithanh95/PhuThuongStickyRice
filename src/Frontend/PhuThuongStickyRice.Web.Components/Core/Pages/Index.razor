@@ -67,6 +67,14 @@ else
             <button class="xo-theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
                 @(_isDark ? "☀️" : "🌙")
             </button>
+            <AuthorizeView>
+                <Authorized>
+                    <a class="xo-account" href="/tai-khoan" title="Tài khoản của tôi">👤 @context.User.Identity?.Name</a>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="xo-account" href="/dang-nhap">Đăng nhập</a>
+                </NotAuthorized>
+            </AuthorizeView>
             @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
             {
                 <a class="xo-hotline" href="tel:@_content.ContactPhone">Hotline: @_content.ContactPhone</a>
@@ -204,6 +212,17 @@ else
             <a href="/shop" class="xo-btn xo-btn-red">@_content.HeroButtonText</a>
             <a href="/cart" class="xo-btn xo-btn-outline">Xem giỏ hàng →</a>
         </div>
+    </div>
+</section>
+
+<!-- 5b. GOM ĐƠN VĂN PHÒNG (mục 54) -->
+<section class="xo-section xo-gomdon">
+    <div class="xo-gomdon-inner">
+        <div class="xo-gomdon-text">
+            <h2 class="xo-gomdon-title">🏢 Đặt chung cả văn phòng</h2>
+            <p>Trưởng nhóm tạo đơn chung, gửi link cho mọi người — mỗi người tự chọn món của mình, đến giờ chốt là có 1 đơn tổng. Không cần đăng nhập.</p>
+        </div>
+        <a href="/gom-don" class="xo-btn xo-btn-red">Tạo nhóm gom đơn →</a>
     </div>
 </section>
 

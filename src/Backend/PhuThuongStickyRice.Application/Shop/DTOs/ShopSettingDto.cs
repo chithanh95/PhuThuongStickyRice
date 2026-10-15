@@ -192,6 +192,17 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         [StringLength(30)]
         public string ZaloPhone { get; set; }
 
+        /// <summary>
+        /// Facebook Page Access Token for the Messenger chatbot. Empty = chatbot
+        /// disabled (webhook verifies but no replies are sent).
+        /// </summary>
+        [StringLength(500)]
+        public string FacebookPageAccessToken { get; set; }
+
+        /// <summary>Verify token for the Facebook webhook subscription.</summary>
+        [StringLength(200)]
+        public string FacebookVerifyToken { get; set; }
+
         /// <summary>When false, checkout is blocked. Default true.</summary>
         public bool AcceptingOrders { get; set; } = true;
 

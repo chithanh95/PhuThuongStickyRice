@@ -157,7 +157,12 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<GroupOrderModel> CreateGroupOrderAsync(string creatorPhone)
         {
-            return await PostAsync<GroupOrderModel>("api/grouporders", new { CreatorPhone = creatorPhone });
+            return await CreateGroupOrderAsync(creatorPhone, null, null);
+        }
+
+        public async Task<GroupOrderModel> CreateGroupOrderAsync(string creatorPhone, string groupName, DateTime? cutoffAt)
+        {
+            return await PostAsync<GroupOrderModel>("api/grouporders", new { CreatorPhone = creatorPhone, GroupName = groupName, CutoffAt = cutoffAt });
         }
 
         public async Task<GroupOrderModel> GetGroupOrderAsync(string code)

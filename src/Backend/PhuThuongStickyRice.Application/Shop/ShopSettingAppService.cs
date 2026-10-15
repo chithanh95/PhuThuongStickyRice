@@ -117,6 +117,8 @@ namespace PhuThuongStickyRice.Application.Shop
             // Wave 6b (items 27, 30): floating contact numbers + pause toggle.
             entity.Hotline = TrimOrNull(dto.Hotline);
             entity.ZaloPhone = TrimOrNull(dto.ZaloPhone);
+            entity.FacebookPageAccessToken = ProtectSecret(dto.FacebookPageAccessToken);
+            entity.FacebookVerifyToken = TrimOrNull(dto.FacebookVerifyToken);
             entity.AcceptingOrders = dto.AcceptingOrders;
             entity.PausedReason = TrimOrNull(dto.PausedReason);
             // Wave 6d (item 39): 0 = unlimited, otherwise cap at 1000.
@@ -251,6 +253,8 @@ namespace PhuThuongStickyRice.Application.Shop
                 // AcceptingOrders = true for pre-existing rows.
                 Hotline = entity.Hotline,
                 ZaloPhone = entity.ZaloPhone,
+                FacebookPageAccessToken = UnprotectSecret(entity.FacebookPageAccessToken),
+                FacebookVerifyToken = entity.FacebookVerifyToken,
                 AcceptingOrders = entity.AcceptingOrders,
                 PausedReason = entity.PausedReason,
                 // Wave 6d (item 39): backfilled to 10 for pre-existing rows.

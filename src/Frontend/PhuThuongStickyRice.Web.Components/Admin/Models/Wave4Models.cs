@@ -137,6 +137,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public Guid Id { get; set; }
         public string Code { get; set; }
         public string CreatorPhone { get; set; }
+        public string GroupName { get; set; }
+        public DateTime? CutoffAt { get; set; }
         public string Status { get; set; }
         public List<GroupOrderLineModel> Lines { get; set; } = new List<GroupOrderLineModel>();
         public DateTime CreatedAt { get; set; }

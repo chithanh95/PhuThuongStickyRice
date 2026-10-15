@@ -1,0 +1,346 @@
+@page "/gom-don"
+@page "/gom-don/{Code}"
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject Wave4Service Wave4Service
+@inject ShopService ShopService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Gom đơn văn phòng - Xôi Phú Thượng</PageTitle>
+
+<h3>🏢 Gom đơn văn phòng</h3>
+<p class="text-muted">Trưởng nhóm tạo đơn chung, gửi link cho cả văn phòng — mỗi người tự chọn món của mình, đến giờ chốt là có 1 đơn tổng.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+@if (string.IsNullOrEmpty(Code))
+{
+    <div class="card" style="max-width: 520px;">
+        <div class="card-body">
+            <div class="form-group">
+                <label>Tên nhóm * <small class="text-muted">(VD: Văn phòng tầng 5)</small></label>
+                <input class="form-control" @bind="_groupName" maxlength="100" placeholder="VD: Team kế toán" />
+            </div>
+            <div class="form-group">
+                <label>SĐT trưởng nhóm *</label>
+                <input class="form-control" @bind="_creatorPhone" placeholder="09xxxxxxxx" />
+            </div>
+            <div class="form-group">
+                <label>Giờ chốt đơn <small class="text-muted">(không bắt buộc)</small></label>
+                <input type="datetime-local" class="form-control" @bind="_cutoffAt" />
+                <small class="form-text text-muted">Sau giờ này mọi người không thêm món được nữa.</small>
+            </div>
+            <button class="btn btn-primary" @onclick="CreateGroupAsync" disabled="@_creating">
+                @(_creating ? "Đang tạo..." : "Tạo nhóm gom đơn")
+            </button>
+        </div>
+    </div>
+}
+else if (_group == null)
+{
+    <p><em>Đang tải nhóm...</em></p>
+}
+else if (_closedResult != null)
+{
+    <div class="alert alert-success">
+        <h4>✅ Đã chốt đơn thành công!</h4>
+        <p class="mb-1">Mã đơn hàng: <strong>@_closedResult.OrderNumber</strong></p>
+        <p class="mb-0">Tổng tiền: <strong>@FormatPrice(_closedResult.TotalAmount)</strong> — thanh toán khi nhận hàng (COD).</p>
+        <a class="btn btn-primary mt-3" href="/track-order?orderNumber=@_closedResult.OrderNumber">Theo dõi đơn hàng</a>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+        <div>
+            @if (!string.IsNullOrWhiteSpace(_group.GroupName))
+            {
+                <strong>@_group.GroupName</strong>
+            }
+            <span class="text-muted">Mã nhóm: <strong class="text-monospace">@_group.Code</strong></span>
+            @if (_group.IsOpen)
+            {
+                <span class="badge badge-success ml-2">Đang mở</span>
+            }
+            else
+            {
+                <span class="badge badge-secondary ml-2">Đã chốt</span>
+            }
+            @if (_group.CutoffAt.HasValue)
+            {
+                <div class="mt-1">
+                    <span class="badge badge-warning">⏰ Chốt lúc @_group.CutoffAt.Value.ToLocalTime().ToString("HH:mm dd/MM")</span>
+                </div>
+            }
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="CopyShareLinkAsync">📋 Sao chép link nhóm</button>
+    </div>
+    @if (!string.IsNullOrEmpty(_copied))
+    {
+        <div class="alert alert-info py-1">@_copied</div>
+    }
+
+    <h5 class="mt-3">Món đã chọn (@_group.Lines.Sum(x => x.Quantity))</h5>
+    @if (_group.Lines.Count == 0)
+    {
+        <div class="alert alert-info">Chưa có món nào — chọn món bên dưới để thêm.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Món</th>
+                        <th>Người gọi</th>
+                        <th class="text-right">SL</th>
+                        <th class="text-right">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in _group.Lines)
+                    {
+                        <tr>
+                            <td>@line.ProductName @if (!string.IsNullOrWhiteSpace(line.Note)) { <small class="text-muted">(@line.Note)</small> }</td>
+                            <td>@line.AddedBy</td>
+                            <td class="text-right">@line.Quantity</td>
+                            <td class="text-right">@FormatPrice(line.UnitPrice * line.Quantity)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3">Tạm tính</th>
+                        <th class="text-right">@FormatPrice(_group.Lines.Sum(x => x.UnitPrice * x.Quantity))</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+
+    @if (_group.IsOpen)
+    {
+        <div class="card mb-3">
+            <div class="card-header">Thêm món của bạn (không cần đăng nhập)</div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label>Món ăn</label>
+                        <select class="form-control" @bind="_selectedProductId">
+                            <option value="">— Chọn món —</option>
+                            @foreach (var p in _products)
+                            {
+                                <option value="@p.Id">@p.Name — @FormatPrice(p.Price)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Số lượng</label>
+                        <input type="number" min="1" max="100" class="form-control" @bind="_qty" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Tên bạn <small class="text-muted">(hiển thị)</small></label>
+                        <input class="form-control" @bind="_addedBy" placeholder="VD: Lan" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Ghi chú món</label>
+                        <input class="form-control" @bind="_note" placeholder="VD: ít hành" />
+                    </div>
+                </div>
+                <button class="btn btn-primary" @onclick="AddLineAsync" disabled="@(_adding || string.IsNullOrEmpty(_selectedProductId))">
+                    @(_adding ? "Đang thêm..." : "➕ Thêm vào nhóm")
+                </button>
+            </div>
+        </div>
+
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">Chốt đơn (trưởng nhóm)</div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label>Tên người đặt *</label>
+                        <input class="form-control" @bind="_closeName" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>SĐT người đặt *</label>
+                        <input class="form-control" @bind="_closePhone" />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Địa chỉ giao hàng *</label>
+                        <input class="form-control" @bind="_closeAddress" />
+                    </div>
+                </div>
+                <button class="btn btn-success" @onclick="CloseAsync" disabled="@_closing">
+                    @(_closing ? "Đang chốt..." : "✅ Chốt đơn — tạo đơn COD")
+                </button>
+                <small class="form-text text-muted">Chốt đơn sẽ tạo một đơn hàng COD bình thường từ tất cả món đã chọn và đóng nhóm.</small>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public string Code { get; set; }
+
+    private GroupOrderModel _group;
+    private CloseGroupOrderResultModel _closedResult;
+    private List<ShopProductModel> _products = new List<ShopProductModel>();
+    private string _selectedProductId;
+    private int _qty = 1;
+    private string _addedBy;
+    private string _note;
+    private string _closeName;
+    private string _closePhone;
+    private string _closeAddress;
+    private string _error;
+    private string _success;
+    private string _copied;
+    private bool _adding;
+    private bool _closing;
+
+    private string _groupName;
+    private string _creatorPhone;
+    private DateTime? _cutoffAt;
+    private bool _creating;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrEmpty(Code))
+        {
+            return; // /gom-don — just the create form.
+        }
+
+        await LoadAsync();
+        try
+        {
+            var paged = await ShopService.GetProductsAsync();
+            _products = paged.Items?.ToList() ?? new List<ShopProductModel>();
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private async Task CreateGroupAsync()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_creatorPhone))
+        {
+            _error = "Vui lòng nhập số điện thoại trưởng nhóm.";
+            return;
+        }
+
+        if (_cutoffAt.HasValue && _cutoffAt.Value <= DateTime.Now)
+        {
+            _error = "Giờ chốt đơn phải ở tương lai.";
+            return;
+        }
+
+        _creating = true;
+        try
+        {
+            var group = await Wave4Service.CreateGroupOrderAsync(
+                _creatorPhone.Trim(),
+                string.IsNullOrWhiteSpace(_groupName) ? null : _groupName.Trim(),
+                _cutoffAt);
+            NavigationManager.NavigateTo("/gom-don/" + group.Code);
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tạo được nhóm: " + ex.Message;
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _group = await Wave4Service.GetGroupOrderAsync(Code);
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tìm thấy nhóm gom đơn: " + ex.Message;
+        }
+    }
+
+    private async Task AddLineAsync()
+    {
+        _error = null;
+        if (!Guid.TryParse(_selectedProductId, out var productId))
+        {
+            return;
+        }
+
+        _adding = true;
+        try
+        {
+            _group = await Wave4Service.AddGroupOrderLineAsync(Code, productId, Math.Max(1, _qty), _note, _addedBy);
+            _note = null;
+            _qty = 1;
+        }
+        catch (Exception ex)
+        {
+            _error = "Không thêm được món: " + ex.Message;
+        }
+        finally
+        {
+            _adding = false;
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_closeName) || string.IsNullOrWhiteSpace(_closePhone) || string.IsNullOrWhiteSpace(_closeAddress))
+        {
+            _error = "Vui lòng nhập tên, SĐT và địa chỉ giao hàng.";
+            return;
+        }
+
+        _closing = true;
+        try
+        {
+            _closedResult = await Wave4Service.CloseGroupOrderAsync(Code, _closeName.Trim(), _closePhone.Trim(), _closeAddress.Trim(), null);
+        }
+        catch (Exception ex)
+        {
+            _error = "Không chốt đơn được: " + ex.Message;
+        }
+        finally
+        {
+            _closing = false;
+        }
+    }
+
+    private async Task CopyShareLinkAsync()
+    {
+        var url = NavigationManager.BaseUri.TrimEnd('/') + "/gom-don/" + Code;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", url);
+            _copied = "Đã sao chép link nhóm: " + url;
+        }
+        catch (Exception)
+        {
+            _copied = url;
+        }
+    }
+
+    private static string FormatPrice(decimal v) => v.ToString("N0") + " ₫";
+}

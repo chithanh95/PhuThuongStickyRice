@@ -10,20 +10,17 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "PausedReason",
-                table: "ShopSettings",
-                type: "nvarchar(500)",
-                maxLength: 500,
-                nullable: true);
+            // No-op: the ShopSettings.PausedReason column is already added by
+            // the earlier SeedUpsellProducts migration (20261015011700).
+            // Kept as an empty migration so the migration history stays
+            // consistent; do NOT re-add the column here (would fail with
+            // "column already exists" when the user runs the Migrator).
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "PausedReason",
-                table: "ShopSettings");
+            // No-op (see Up). The column is owned by SeedUpsellProducts.
         }
     }
 }

@@ -186,6 +186,23 @@
     text-decoration: none;
 }
 
+.xo-account {
+    color: #ffffff;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    white-space: nowrap;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.xo-account:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
 .xo-theme-toggle {
     background: rgba(255, 255, 255, 0.18);
     border: 1px solid rgba(255, 255, 255, 0.35);
@@ -1658,4 +1675,46 @@ html.dark .xo-fixed-call,
 html.dark .xo-fixed-zalo,
 html.dark .xo-fixed-fb {
     box-shadow: 0 6px 20px rgba(0, 0, 0, .5);
+}
+
+/* ---- 5b. GOM ĐƠN VĂN PHÒNG (mục 54) ---- */
+.xo-gomdon {
+    background: #F5E9D4;
+    padding: 40px 20px;
+}
+.xo-gomdon-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    background: rgba(255, 255, 255, .55);
+    border: 4px double rgba(111, 7, 7, .49);
+    border-radius: 50px 0 50px 0;
+    padding: 28px 36px;
+}
+.xo-gomdon-title {
+    font-family: Lora, serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #763434;
+    margin: 0 0 8px;
+}
+.xo-gomdon-text p {
+    font-family: Lora, serif;
+    font-size: 17px;
+    color: #000;
+    margin: 0;
+    max-width: 520px;
+}
+html.dark .xo-gomdon {
+    background: #262640;
+}
+html.dark .xo-gomdon-inner {
+    background: rgba(255, 255, 255, .06);
+}
+html.dark .xo-gomdon-text p {
+    color: #eee;
 }

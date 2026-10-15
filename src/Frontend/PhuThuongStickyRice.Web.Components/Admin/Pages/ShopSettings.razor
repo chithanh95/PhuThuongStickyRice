@@ -92,6 +92,29 @@ else
             </div>
             <small class="form-text text-muted mb-3">Để trống = dùng số điện thoại trong chân trang landing. Các nút chỉ hiện trên điện thoại.</small>
 
+            <h5 class="mt-4">Chatbot Messenger (mục 53)</h5>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Page Access Token</label>
+                    <input type="password" class="form-control" @bind="_model.FacebookPageAccessToken" autocomplete="off" />
+                    <small class="form-text text-muted">Token của Fanpage (Facebook App → Messenger → Generate Token). Để trống = chatbot chờ cấu hình (không gửi tin nhắn).</small>
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Verify Token</label>
+                    <input class="form-control" @bind="_model.FacebookVerifyToken" />
+                    <small class="form-text text-muted">Chuỗi tự chọn, nhập trùng khi đăng ký webhook trên Facebook.</small>
+                </div>
+            </div>
+            <div class="alert alert-info">
+                <strong>Cách bật chatbot:</strong>
+                <ol class="mb-0">
+                    <li>Tạo App tại <em>developers.facebook.com</em>, thêm sản phẩm Messenger, liên kết Fanpage.</li>
+                    <li>Lấy <em>Page Access Token</em> → dán vào ô trên.</li>
+                    <li>Chọn một <em>Verify Token</em> → dán vào ô trên → <strong>Lưu</strong>.</li>
+                    <li>Trong App → Messenger → Webhooks: Callback URL = <code>https://&lt;tên-miền&gt;/api/webhooks/messenger</code>, Verify Token = chuỗi ở bước 3, đăng ký field <em>messages</em>.</li>
+                </ol>
+            </div>
+
             <h5 class="mt-4">Chuyển khoản & đặt cọc</h5>
             <div class="form-group">
                 <label>Tự động hủy đơn chuyển khoản chưa thanh toán sau (phút)</label>
