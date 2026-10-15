@@ -1,0 +1,149 @@
+@page "/admin/bao-cao-gio"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Orders.Models
+@using PhuThuongStickyRice.Web.Components.Orders.Services
+@inject OrderService OrderService
+
+<h3>⏰ Báo cáo món bán chạy theo giờ</h3>
+<p class="text-muted">Chọn ngày để xem mỗi khung giờ bán được bao nhiêu suất từng món. Đơn đã hủy không tính.</p>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="form-row align-items-end">
+            <div class="col-md-3 col-6">
+                <label class="mb-1"><small class="text-muted">Ngày</small></label>
+                <input type="date" class="form-control" @bind="_date" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-9 col-6 text-right">
+                <button class="btn btn-outline-secondary mr-2" @onclick="SetYesterday">Hôm qua</button>
+                <button class="btn btn-primary" @onclick="LoadAsync" disabled="@_loading">
+                    @(_loading ? "Đang tải..." : "Xem báo cáo")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_report != null)
+{
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="lx-mini-stat">
+                <p class="lx-mini-label">Tổng số đơn (@_report.Date.ToString("dd/MM/yyyy"))</p>
+                <h2 class="lx-mini-value">@_report.TotalOrders.ToString("N0")</h2>
+                <span class="lx-mini-foot">@_report.TotalPortions.ToString("N0") suất đã bán</span>
+                <span class="lx-mini-icon"><span class="oi oi-cart" aria-hidden="true"></span></span>
+            </div>
+        </div>
+        @foreach (var t in _report.TopHours)
+        {
+            var rank = _report.TopHours.IndexOf(t) + 1;
+            <div class="col-md-4 mb-3">
+                <div class="lx-mini-stat">
+                    <p class="lx-mini-label">Top @rank khung giờ đông khách</p>
+                    <h2 class="lx-mini-value">@t.Hour h – @(t.Hour + 1) h</h2>
+                    <span class="lx-mini-foot">@t.Portions.ToString("N0") suất · @t.Orders.ToString("N0") đơn</span>
+                    <span class="lx-mini-icon"><span class="oi oi-clock" aria-hidden="true"></span></span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="alert alert-success">💡 <strong>Gợi ý:</strong> @_report.Suggestion</div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Heatmap — số suất bán theo giờ và món</h4>
+            <small class="text-muted">Ô càng đậm = bán càng nhiều</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm mb-0 text-center">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="min-width:70px">Giờ</th>
+                            @foreach (var p in _report.Products)
+                            {
+                                <th style="min-width:90px">@p</th>
+                            }
+                            <th style="min-width:70px">Tổng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _report.Hours)
+                        {
+                            <tr>
+                                <td class="font-weight-bold align-middle">@row.Hour h</td>
+                                @for (var i = 0; i < _report.Products.Count; i++)
+                                {
+                                    var qty = row.Quantities[i];
+                                    <td style="@CellStyle(qty)">@(qty > 0 ? qty.ToString("N0") : "–")</td>
+                                }
+                                <td class="font-weight-bold align-middle">@row.Total.ToString("N0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DateTime _date = DateTime.Today;
+    private bool _loading;
+    private string _error;
+    private HourlySalesReportModel _report;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private void SetYesterday()
+    {
+        _date = DateTime.Today.AddDays(-1);
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _report = await OrderService.GetHourlySalesReportAsync(_date);
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được báo cáo. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private long MaxQty => _report?.Hours
+        .SelectMany(r => r.Quantities)
+        .DefaultIfEmpty(0)
+        .Max() ?? 0;
+
+    /// <summary>Heatmap cell: purple intensity proportional to quantity.</summary>
+    private string CellStyle(long qty)
+    {
+        if (qty <= 0 || MaxQty <= 0)
+        {
+            return "color:#ccc;";
+        }
+
+        var alpha = 0.08 + 0.82 * qty / (double)MaxQty;
+        var strong = alpha > 0.5;
+        return $"background-color:rgba(122,111,190,{alpha:0.00});" +
+               $"font-weight:{(strong ? "700" : "400")};" +
+               $"color:{(strong ? "#fff" : "#333")};";
+    }
+}

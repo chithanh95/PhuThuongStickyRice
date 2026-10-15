@@ -1,0 +1,152 @@
+@using PhuThuongStickyRice.Web.Components.Orders.Models
+
+@* KDS order card, shared by the scheduled and regular sections of /bep. *@
+<div class="card kds-card @KdsClass(Order.Status)">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong class="h5 mb-0">#@Order.OrderNumber</strong>
+        <span class="badge badge-pill @StatusPill(Order.Status) kds-time">@Elapsed(Order.CreatedAt)</span>
+    </div>
+    <div class="card-body">
+        @if (Order.ScheduledFor.HasValue)
+        {
+            <div class="alert alert-info py-1 px-2 mb-2">
+                📅 Hẹn: <strong class="kds-time">@Order.ScheduledFor.Value.ToLocalTime().ToString("dd/MM HH:mm")</strong>
+                — <strong>@Countdown(Order.ScheduledFor.Value)</strong>
+            </div>
+        }
+        <div class="mb-2">
+            <strong>@Order.CustomerName</strong>
+            <small class="text-muted">• @Order.CustomerPhone</small>
+            @if (!string.IsNullOrWhiteSpace(Order.ShipperName))
+            {
+                <div><small class="text-muted">🚚 @Order.ShipperName</small></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Order.DeliverySlot))
+            {
+                <div><span class="badge badge-info">🕖 Giao @Order.DeliverySlot</span></div>
+            }
+        </div>
+        <ul class="list-unstyled mb-2">
+            @foreach (var line in Order.Lines)
+            {
+                <li class="kds-item border-bottom py-1">
+                    <strong>@line.Quantity×</strong> @line.ProductName
+                    @if (!string.IsNullOrWhiteSpace(line.SizeName))
+                    {
+                        <span class="badge badge-light">@line.SizeName</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(line.ToppingNames))
+                    {
+                        <div><small class="text-muted">+ @line.ToppingNames</small></div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(line.Note))
+                    {
+                        <div><small class="text-danger font-weight-bold">📝 @line.Note</small></div>
+                    }
+                </li>
+            }
+        </ul>
+        @if (!string.IsNullOrWhiteSpace(Order.Notes))
+        {
+            <div class="alert alert-warning py-1 px-2 mb-2"><small><strong>Ghi chú:</strong> @Order.Notes</small></div>
+        }
+        @if (History != null && History.Count > 0)
+        {
+            <ul class="list-unstyled kds-timeline">
+                @foreach (var h in History)
+                {
+                    <li>
+                        <small class="text-muted kds-time">@h.At.ToLocalTime().ToString("HH:mm")</small>
+                        <small>@StatusLabel(h.FromStatus) → <strong>@StatusLabel(h.ToStatus)</strong></small>
+                        @if (!string.IsNullOrWhiteSpace(h.ByUser))
+                        {
+                            <small class="text-muted"> (@h.ByUser)</small>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        <button class="btn btn-primary btn-block kds-advance mt-2" @onclick="() => OnAdvance.InvokeAsync(Order)"
+                disabled="@Advancing">
+            @AdvanceLabel(Order.Status)
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public OrderModel Order { get; set; }
+
+    [Parameter] public List<OrderStatusHistoryModel> History { get; set; }
+
+    [Parameter] public EventCallback<OrderModel> OnAdvance { get; set; }
+
+    [Parameter] public bool Advancing { get; set; }
+
+    private static string KdsClass(string status) => status switch
+    {
+        "Confirmed" => "kds-confirmed",
+        "Preparing" => "kds-preparing",
+        _ => null
+    };
+
+    private static string StatusPill(string status) => status switch
+    {
+        "Pending" => "badge-warning",
+        "Confirmed" => "badge-info",
+        "Preparing" => "badge-primary",
+        _ => "badge-light"
+    };
+
+    private static string AdvanceLabel(string status) => status switch
+    {
+        "Pending" => "✅ Xác nhận → Chuẩn bị",
+        "Confirmed" => "🍳 Bắt đầu làm → Đang chuẩn bị",
+        "Preparing" => "🚚 Giao cho shipper → Đang giao",
+        _ => "Chuyển tiếp"
+    };
+
+    /// <summary>Elapsed time since the order was placed, VN-local.</summary>
+    private static string Elapsed(DateTime createdAtUtc)
+    {
+        var elapsed = DateTime.UtcNow - createdAtUtc.ToUniversalTime();
+        if (elapsed.TotalMinutes < 1)
+        {
+            return "vừa xong";
+        }
+
+        if (elapsed.TotalHours < 1)
+        {
+            return $"{(int)elapsed.TotalMinutes} phút";
+        }
+
+        return $"{(int)elapsed.TotalHours}h{(int)elapsed.Minutes}m";
+    }
+
+    /// <summary>Countdown to the scheduled pickup time, VN-local.</summary>
+    private static string Countdown(DateTime scheduledFor)
+    {
+        var remaining = scheduledFor.ToLocalTime() - DateTime.Now;
+        if (remaining.TotalSeconds <= 0)
+        {
+            return "đến giờ làm rồi!";
+        }
+
+        if (remaining.TotalHours >= 1)
+        {
+            return $"còn {(int)remaining.TotalHours} giờ {(int)remaining.Minutes} phút";
+        }
+
+        return $"còn {(int)remaining.TotalMinutes} phút";
+    }
+
+    private static string StatusLabel(string status) => status switch
+    {
+        "Pending" => "Chờ xác nhận",
+        "Confirmed" => "Đã xác nhận",
+        "Preparing" => "Đang chuẩn bị",
+        "Delivering" => "Đang giao",
+        "Completed" => "Hoàn thành",
+        "Cancelled" => "Đã hủy",
+        _ => status
+    };
+}

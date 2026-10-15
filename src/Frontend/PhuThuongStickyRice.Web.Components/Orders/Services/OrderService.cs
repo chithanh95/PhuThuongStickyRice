@@ -128,6 +128,13 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             return await GetAsync<RevenueForecastModel>("api/admin/orders/revenue-forecast");
         }
 
+        /// <summary>Item 99: hourly best-sellers report for one day.</summary>
+        public async Task<HourlySalesReportModel> GetHourlySalesReportAsync(DateTime date)
+        {
+            var d = date.ToString("yyyy-MM-dd");
+            return await GetAsync<HourlySalesReportModel>($"api/admin/orders/hourly-sales?date={d}");
+        }
+
         /// <summary>Wave 6c (item 33): admin sets/clears the internal note.</summary>
         public async Task<OrderModel> UpdateAdminNoteAsync(Guid orderId, string note)
         {

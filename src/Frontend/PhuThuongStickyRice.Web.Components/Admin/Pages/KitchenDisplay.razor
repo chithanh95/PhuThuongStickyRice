@@ -19,6 +19,7 @@
     .kds-time { font-variant-numeric: tabular-nums; }
     .kds-timeline { border-left: 2px solid #dee2e6; padding-left: 10px; margin: 8px 0 0 2px; }
     .kds-timeline li { padding: 2px 0; }
+    .kds-section-title { font-size: 1.25rem; font-weight: 700; }
 </style>
 
 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
@@ -47,81 +48,46 @@ else if (_orders.Count == 0)
 }
 else
 {
-    <div class="kds-grid">
-        @foreach (var order in _orders)
+    @* Item 98: scheduled (pre-order) orders on top, nearest pickup time first. *@
+    @if (_scheduledOrders.Count > 0)
+    {
+        <div class="d-flex align-items-center mb-2">
+            <span class="kds-section-title">📅 Đơn đặt trước</span>
+            <span class="badge badge-primary ml-2">@_scheduledOrders.Count</span>
+        </div>
+        <div class="kds-grid mb-4">
+            @foreach (var order in _scheduledOrders)
+            {
+                <KdsOrderCard @key="order.Id" Order="order"
+                              History="@HistoryFor(order.Id)"
+                              OnAdvance="Advance" Advancing="_advancing" />
+            }
+        </div>
+        @if (_regularOrders.Count > 0)
         {
-            <div class="card kds-card @KdsClass(order.Status)" @key="order.Id">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong class="h5 mb-0">#@order.OrderNumber</strong>
-                    <span class="badge badge-pill @StatusPill(order.Status) kds-time">@Elapsed(order.CreatedAt)</span>
-                </div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <strong>@order.CustomerName</strong>
-                        <small class="text-muted">• @order.CustomerPhone</small>
-                        @if (!string.IsNullOrWhiteSpace(order.ShipperName))
-                        {
-                            <div><small class="text-muted">🚚 @order.ShipperName</small></div>
-                        }
-                        @* Wave 6a (item 23): scheduled delivery slot. *@
-                        @if (!string.IsNullOrWhiteSpace(order.DeliverySlot))
-                        {
-                            <div><span class="badge badge-info">🕖 Giao @order.DeliverySlot</span></div>
-                        }
-                    </div>
-                    <ul class="list-unstyled mb-2">
-                        @foreach (var line in order.Lines)
-                        {
-                            <li class="kds-item border-bottom py-1">
-                                <strong>@line.Quantity×</strong> @line.ProductName
-                                @if (!string.IsNullOrWhiteSpace(line.SizeName))
-                                {
-                                    <span class="badge badge-light">@line.SizeName</span>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(line.ToppingNames))
-                                {
-                                    <div><small class="text-muted">+ @line.ToppingNames</small></div>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(line.Note))
-                                {
-                                    <div><small class="text-danger font-weight-bold">📝 @line.Note</small></div>
-                                }
-                            </li>
-                        }
-                    </ul>
-                    @if (!string.IsNullOrWhiteSpace(order.Notes))
-                    {
-                        <div class="alert alert-warning py-1 px-2 mb-2"><small><strong>Ghi chú:</strong> @order.Notes</small></div>
-                    }
-                    @* Wave 6c (item 34): compact status timeline. *@
-                    @if (_history.TryGetValue(order.Id, out var history) && history.Count > 0)
-                    {
-                        <ul class="list-unstyled kds-timeline">
-                            @foreach (var h in history)
-                            {
-                                <li>
-                                    <small class="text-muted kds-time">@h.At.ToLocalTime().ToString("HH:mm")</small>
-                                    <small>@StatusLabel(h.FromStatus) → <strong>@StatusLabel(h.ToStatus)</strong></small>
-                                    @if (!string.IsNullOrWhiteSpace(h.ByUser))
-                                    {
-                                        <small class="text-muted"> (@h.ByUser)</small>
-                                    }
-                                </li>
-                            }
-                        </ul>
-                    }
-                    <button class="btn btn-primary btn-block kds-advance mt-2" @onclick="() => Advance(order)"
-                            disabled="@_advancing">
-                        @AdvanceLabel(order.Status)
-                    </button>
-                </div>
+            <div class="d-flex align-items-center mb-2">
+                <span class="kds-section-title">🧾 Đơn thường</span>
+                <span class="badge badge-secondary ml-2">@_regularOrders.Count</span>
             </div>
         }
-    </div>
+    }
+    @if (_regularOrders.Count > 0)
+    {
+        <div class="kds-grid">
+            @foreach (var order in _regularOrders)
+            {
+                <KdsOrderCard @key="order.Id" Order="order"
+                              History="@HistoryFor(order.Id)"
+                              OnAdvance="Advance" Advancing="_advancing" />
+            }
+        </div>
+    }
 }
 
 @code {
     private List<OrderModel> _orders;
+    private List<OrderModel> _scheduledOrders = new List<OrderModel>();
+    private List<OrderModel> _regularOrders = new List<OrderModel>();
     private string _error;
     private bool _autoRefresh = true;
     private bool _advancing;
@@ -144,6 +110,17 @@ else
         try
         {
             _orders = await Wave3Service.GetKitchenOrdersAsync() ?? new List<OrderModel>();
+
+            // Item 98: pre-orders (ScheduledFor set) go on top,
+            // nearest scheduled pickup time first. Status logic unchanged.
+            _scheduledOrders = _orders
+                .Where(o => o.ScheduledFor.HasValue)
+                .OrderBy(o => o.ScheduledFor.Value)
+                .ToList();
+            _regularOrders = _orders
+                .Where(o => !o.ScheduledFor.HasValue)
+                .ToList();
+
             _lastUpdated = DateTime.Now;
             _error = null;
 
@@ -169,6 +146,9 @@ else
             _error = "Không tải được đơn bếp. Vui lòng thử lại.";
         }
     }
+
+    private List<OrderStatusHistoryModel> HistoryFor(Guid orderId) =>
+        _history.TryGetValue(orderId, out var h) ? h : new List<OrderStatusHistoryModel>();
 
     private async Task Advance(OrderModel order)
     {
@@ -211,56 +191,4 @@ else
         _cts?.Cancel();
         _cts?.Dispose();
     }
-
-    private static string KdsClass(string status) => status switch
-    {
-        "Confirmed" => "kds-confirmed",
-        "Preparing" => "kds-preparing",
-        _ => null
-    };
-
-    private static string StatusPill(string status) => status switch
-    {
-        "Pending" => "badge-warning",
-        "Confirmed" => "badge-info",
-        "Preparing" => "badge-primary",
-        _ => "badge-light"
-    };
-
-    private static string AdvanceLabel(string status) => status switch
-    {
-        "Pending" => "✅ Xác nhận → Chuẩn bị",
-        "Confirmed" => "🍳 Bắt đầu làm → Đang chuẩn bị",
-        "Preparing" => "🚚 Giao cho shipper → Đang giao",
-        _ => "Chuyển tiếp"
-    };
-
-    /// <summary>Elapsed time since the order was placed, VN-local.</summary>
-    private static string Elapsed(DateTime createdAtUtc)
-    {
-        var elapsed = DateTime.UtcNow - createdAtUtc.ToUniversalTime();
-        if (elapsed.TotalMinutes < 1)
-        {
-            return "vừa xong";
-        }
-
-        if (elapsed.TotalHours < 1)
-        {
-            return $"{(int)elapsed.TotalMinutes} phút";
-        }
-
-        return $"{(int)elapsed.TotalHours}h{(int)elapsed.Minutes}m";
-    }
-
-    /// <summary>Wave 6c (item 34): Vietnamese labels for the KDS timeline.</summary>
-    private static string StatusLabel(string status) => status switch
-    {
-        "Pending" => "Chờ xác nhận",
-        "Confirmed" => "Đã xác nhận",
-        "Preparing" => "Đang chuẩn bị",
-        "Delivering" => "Đang giao",
-        "Completed" => "Hoàn thành",
-        "Cancelled" => "Đã hủy",
-        _ => status
-    };
 }

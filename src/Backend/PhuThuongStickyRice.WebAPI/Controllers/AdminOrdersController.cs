@@ -22,13 +22,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly IOrderReportsAppService _reports;
         private readonly IOrderForecastAppService _forecast;
+        private readonly IOrderHourlyReportAppService _hourlyReport;
 
         public AdminOrdersController(
             IOrderReportsAppService reports,
-            IOrderForecastAppService forecast)
+            IOrderForecastAppService forecast,
+            IOrderHourlyReportAppService hourlyReport)
         {
             _reports = reports;
             _forecast = forecast;
+            _hourlyReport = hourlyReport;
         }
 
         /// <summary>
@@ -102,6 +105,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             return Ok(await _forecast.GetRevenueForecastAsync());
+        }
+
+        /// <summary>
+        /// Hourly best-sellers report for one Vietnam-local day
+        /// (heatmap source: hours 6h–22h × products).
+        /// </summary>
+        [HttpGet("hourly-sales")]
+        public async Task<ActionResult> GetHourlySales(
+            [FromQuery] DateTime? date,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _hourlyReport.GetHourlySalesReportAsync(date));
         }
     }
 }

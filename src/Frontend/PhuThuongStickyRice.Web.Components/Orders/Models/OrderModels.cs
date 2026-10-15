@@ -285,4 +285,30 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public string MethodNote { get; set; }
         public string Disclaimer { get; set; }
     }
+
+    /// <summary>Item 99: hourly best-sellers report (heatmap source).</summary>
+    public class HourlySalesRowModel
+    {
+        public int Hour { get; set; }
+        public List<long> Quantities { get; set; } = new List<long>();
+        public long Total { get; set; }
+    }
+
+    public class TopHourModel
+    {
+        public int Hour { get; set; }
+        public long Portions { get; set; }
+        public long Orders { get; set; }
+    }
+
+    public class HourlySalesReportModel
+    {
+        public DateTime Date { get; set; }
+        public List<string> Products { get; set; } = new List<string>();
+        public List<HourlySalesRowModel> Hours { get; set; } = new List<HourlySalesRowModel>();
+        public List<TopHourModel> TopHours { get; set; } = new List<TopHourModel>();
+        public long TotalOrders { get; set; }
+        public long TotalPortions { get; set; }
+        public string Suggestion { get; set; }
+    }
 }
