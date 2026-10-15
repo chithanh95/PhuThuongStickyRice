@@ -1,7 +1,14 @@
 /* Xoi Phu Thuong PWA service worker: caches the app shell on
  * install and serves the offline.html fallback for navigations
- * when the network is unavailable. */
-var CACHE = "xoi-phu-thuong-v1";
+ * when the network is unavailable.
+ *
+ * NOTE (2026-10-15): asset strategy is network-first with cache fallback.
+ * The old cache-first strategy served stale CSS/JS forever after a deploy
+ * (cache name was never bumped and sw.js bytes rarely change), so pulling
+ * new code + Ctrl+F5 still showed the old theme. Network-first fixes that
+ * while keeping the offline fallback working.
+ */
+var CACHE = "xoi-phu-thuong-v2";
 var SHELL = [
     "/",
     "/offline.html",
@@ -43,14 +50,18 @@ self.addEventListener("fetch", function (event) {
         return;
     }
 
-    // App shell assets: cache first, then network.
+    // App shell assets: network first, cache fallback.
+    // Cache-first used to pin stale CSS/JS after deploys; network-first
+    // always picks up the latest deploy and still works offline.
     event.respondWith(
-        caches.match(request).then(function (cached) {
-            return cached || fetch(request).then(function (response) {
+        fetch(request).then(function (response) {
+            if (response && (response.ok || response.type === "opaque")) {
                 var copy = response.clone();
                 caches.open(CACHE).then(function (cache) { cache.put(request, copy); });
-                return response;
-            }).catch(function () { return cached; });
+            }
+            return response;
+        }).catch(function () {
+            return caches.match(request);
         })
     );
 });
