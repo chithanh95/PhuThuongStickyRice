@@ -55,24 +55,7 @@ else if (_forecast != null)
                 <span class="mr-3"><span style="display:inline-block;width:24px;height:3px;background:#7a6fbe;vertical-align:middle"></span> Thực tế</span>
                 <span><span style="display:inline-block;width:24px;height:0;border-top:3px dashed #f5b225;vertical-align:middle"></span> Dự báo</span>
             </div>
-            <svg viewBox="0 0 720 270" style="width:100%;height:auto" role="img" aria-label="Biểu đồ doanh thu">
-                @foreach (var g in _yGrid)
-                {
-                    <line x1="@PadL" y1="@g.Y" x2="@(W - PadR)" y2="@g.Y" stroke="#e9ecef" stroke-width="1" />
-                    <text x="@(PadL - 8)" y="@(g.Y + 4)" text-anchor="end" font-size="11" fill="#6c757d">@g.Label</text>
-                }
-                <polyline points="@_areaPoints" fill="rgba(122,111,190,0.12)" stroke="none" />
-                <polyline points="@_histPoints" fill="none" stroke="#7a6fbe" stroke-width="2.5" />
-                <polyline points="@_fcPoints" fill="none" stroke="#f5b225" stroke-width="2.5" stroke-dasharray="7 4" />
-                @foreach (var p in _fcDots)
-                {
-                    <circle cx="@p.X" cy="@p.Y" r="4" fill="#f5b225" stroke="#fff" stroke-width="1.5" />
-                }
-                @foreach (var l in _xLabels)
-                {
-                    <text x="@l.X" y="@(H - 8)" text-anchor="middle" font-size="11" fill="#6c757d">@l.Label</text>
-                }
-            </svg>
+            @((MarkupString)_svgMarkup)
         </div>
     </div>
 
@@ -154,12 +137,7 @@ else if (_forecast != null)
 
     // Chart geometry
     private const double W = 720, H = 270, PadL = 58, PadR = 14, PadT = 16, PadB = 32;
-    private string _histPoints = "";
-    private string _fcPoints = "";
-    private string _areaPoints = "";
-    private List<(double X, double Y)> _fcDots = new List<(double, double)>();
-    private List<(double Y, string Label)> _yGrid = new List<(double, string)>();
-    private List<(double X, string Label)> _xLabels = new List<(double, string)>();
+    private string _svgMarkup = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -183,52 +161,61 @@ else if (_forecast != null)
     private static string RatioClass(double r) =>
         r >= 1.5 ? "lx-pill-success" : r >= 1.0 ? "lx-pill-info" : "lx-pill-warning";
 
+    /// <summary>
+    /// Builds the whole chart as raw SVG. A raw string is used because
+    /// Blazor reserves the &lt;text&gt; tag name and forbids attributes on it.
+    /// </summary>
     private void BuildChart()
     {
+        var sb = new System.Text.StringBuilder();
         var hist = _forecast.History.Select(x => (x.Date, x.Revenue)).ToList();
         var fc = _forecast.Next7Days.Select(x => (x.Date, x.ForecastRevenue)).ToList();
         var n = hist.Count + fc.Count;
-        if (n == 0) return;
 
-        var maxV = hist.Concat(fc).Max(x => x.Item2);
-        if (maxV <= 0) maxV = 1;
-
-        double X(int i) => PadL + i * (W - PadL - PadR) / Math.Max(n - 1, 1);
-        double Y(decimal v) => PadT + (H - PadT - PadB) * (1 - (double)v / (double)maxV);
-
-        // History polyline (+ area fill down to baseline)
-        _histPoints = string.Join(" ", hist.Select((p, i) => $"{X(i):0.#},{Y(p.Revenue):0.#}"));
-        var lastHist = hist.Count - 1;
-        _areaPoints = _histPoints + $" {X(lastHist):0.#},{H - PadB:0.#} {X(0):0.#},{H - PadB:0.#}";
-
-        // Forecast polyline starts at the last history point for continuity
-        var fcPts = new List<string> { $"{X(lastHist):0.#},{Y(hist[lastHist].Revenue):0.#}" };
-        _fcDots = new List<(double, double)>();
-        for (var i = 0; i < fc.Count; i++)
+        sb.Append("<svg viewBox=\"0 0 720 270\" style=\"width:100%;height:auto\" role=\"img\" aria-label=\"Bieu do doanh thu\">");
+        if (n > 0)
         {
-            var x = X(hist.Count + i);
-            var y = Y(fc[i].ForecastRevenue);
-            fcPts.Add($"{x:0.#},{y:0.#}");
-            _fcDots.Add((x, y));
-        }
-        _fcPoints = string.Join(" ", fcPts);
+            var maxV = hist.Concat(fc).Max(x => x.Item2);
+            if (maxV <= 0) maxV = 1;
 
-        // Y gridlines (4)
-        _yGrid = new List<(double, string)>();
-        for (var g = 0; g <= 4; g++)
-        {
-            var v = maxV * g / 4;
-            _yGrid.Add((Y((decimal)v), CompactMoney((decimal)v)));
-        }
+            double X(int i) => PadL + i * (W - PadL - PadR) / Math.Max(n - 1, 1);
+            double Y(decimal v) => PadT + (H - PadT - PadB) * (1 - (double)v / (double)maxV);
+            string F(double d) => d.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
-        // X labels: ~7 evenly spaced
-        _xLabels = new List<(double, string)>();
-        var step = Math.Max(1, n / 7);
-        var all = hist.Select(x => x.Date).Concat(fc.Select(x => x.Date)).ToList();
-        for (var i = 0; i < n; i += step)
-        {
-            _xLabels.Add((X(i), all[i].ToString("dd/MM")));
+            for (var g = 0; g <= 4; g++)
+            {
+                var v = maxV * g / 4;
+                var y = Y((decimal)v);
+                sb.Append($"<line x1=\"{F(PadL)}\" y1=\"{F(y)}\" x2=\"{F(W - PadR)}\" y2=\"{F(y)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
+                sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(y + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)v)}</text>");
+            }
+
+            var histPts = string.Join(" ", hist.Select((p, i) => $"{F(X(i))},{F(Y(p.Revenue))}"));
+            var lastHist = hist.Count - 1;
+            sb.Append($"<polygon points=\"{histPts} {F(X(lastHist))},{F(H - PadB)} {F(X(0))},{F(H - PadB)}\" fill=\"rgba(122,111,190,0.12)\"/>");
+            sb.Append($"<polyline points=\"{histPts}\" fill=\"none\" stroke=\"#7a6fbe\" stroke-width=\"2.5\"/>");
+
+            var fcPts = $"{F(X(lastHist))},{F(Y(hist[lastHist].Revenue))}";
+            var dots = new System.Text.StringBuilder();
+            for (var i = 0; i < fc.Count; i++)
+            {
+                var x = X(hist.Count + i);
+                var y = Y(fc[i].ForecastRevenue);
+                fcPts += $" {F(x)},{F(y)}";
+                dots.Append($"<circle cx=\"{F(x)}\" cy=\"{F(y)}\" r=\"4\" fill=\"#f5b225\" stroke=\"#fff\" stroke-width=\"1.5\"/>");
+            }
+            sb.Append($"<polyline points=\"{fcPts}\" fill=\"none\" stroke=\"#f5b225\" stroke-width=\"2.5\" stroke-dasharray=\"7 4\"/>");
+            sb.Append(dots);
+
+            var all = hist.Select(x => x.Date).Concat(fc.Select(x => x.Date)).ToList();
+            var step = Math.Max(1, n / 7);
+            for (var i = 0; i < n; i += step)
+            {
+                sb.Append($"<text x=\"{F(X(i))}\" y=\"{F(H - 8)}\" text-anchor=\"middle\" font-size=\"11\" fill=\"#6c757d\">{all[i]:dd/MM}</text>");
+            }
         }
+        sb.Append("</svg>");
+        _svgMarkup = sb.ToString();
     }
 
     private static string CompactMoney(decimal v)
