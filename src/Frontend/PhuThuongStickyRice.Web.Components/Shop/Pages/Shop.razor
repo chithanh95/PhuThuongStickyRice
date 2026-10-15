@@ -135,15 +135,6 @@ else
                     }
                 </div>
             </div>
-            <div class="mb-2">
-                <span class="text-muted small mr-2">Khẩu vị:</span>
-                <div class="btn-group btn-group-sm flex-wrap" role="group">
-                    <button class="btn @TagChipClass(null)" @onclick="() => SetTag(null)">Tất cả</button>
-                    <button class="btn @TagChipClass("chay")" @onclick='() => SetTag("chay")'>🥬 Chay</button>
-                    <button class="btn @TagChipClass("man")" @onclick='() => SetTag("man")'>🍖 Mặn</button>
-                    <button class="btn @TagChipClass("cay")" @onclick='() => SetTag("cay")'>🌶️ Cay</button>
-                </div>
-            </div>
             <div class="form-inline">
                 <label class="text-muted small mr-2" for="sort-select">Sắp xếp:</label>
                 <select id="sort-select" class="form-control form-control-sm" @onchange="OnSortChanged">
@@ -430,7 +421,6 @@ else
 
     // Filters.
     private string _categoryFilter;
-    private string _tagFilter;
     private string _sort = "popular";
 
     // Wave 6b (item 29): client-side product search, debounced 300ms.
@@ -720,12 +710,6 @@ else
         ApplyFilters();
     }
 
-    private void SetTag(string tag)
-    {
-        _tagFilter = tag;
-        ApplyFilters();
-    }
-
     private void OnSortChanged(ChangeEventArgs e)
     {
         _sort = e.Value?.ToString() ?? "popular";
@@ -735,7 +719,6 @@ else
     private void ClearFilters()
     {
         _categoryFilter = null;
-        _tagFilter = null;
         _sort = "popular";
         ClearSearch();
     }
@@ -789,11 +772,6 @@ else
             query = query.Where(p => string.Equals(p.Category?.Trim(), _categoryFilter, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (!string.IsNullOrWhiteSpace(_tagFilter))
-        {
-            query = query.Where(p => ProductTags(p).Contains(_tagFilter));
-        }
-
         // Wave 6b (item 29): name search (diacritics-sensitive).
         if (!string.IsNullOrWhiteSpace(_searchTerm))
         {
@@ -817,10 +795,6 @@ else
     private string CategoryChipClass(string category) =>
         string.Equals(_categoryFilter, category, StringComparison.OrdinalIgnoreCase)
             ? "btn-primary" : "btn-outline-primary";
-
-    private string TagChipClass(string tag) =>
-        string.Equals(_tagFilter, tag, StringComparison.OrdinalIgnoreCase)
-            ? "btn-success" : "btn-outline-success";
 
     private static List<string> ProductTags(ShopProductModel product) =>
         (product.Tags ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
