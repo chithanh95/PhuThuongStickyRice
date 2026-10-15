@@ -52,12 +52,6 @@ namespace PhuThuongStickyRice.Web.Components.Products.Models
         public string BranchName { get; set; }
 
         /// <summary>
-        /// Item 130: when true, the product is auto-posted to the Facebook
-        /// Page feed after saving. Defaulted from the FB status endpoint.
-        /// </summary>
-        public bool PostToFacebook { get; set; }
-
-        /// <summary>
         /// Item 146: manual display order (drag &amp; drop on /products).
         /// </summary>
         public int SortOrder { get; set; }

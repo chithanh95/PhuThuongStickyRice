@@ -69,8 +69,6 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.GoogleMapsUrl).HasMaxLength(500);
             builder.Property(x => x.FacebookPageAccessToken).HasMaxLength(500);
             builder.Property(x => x.FacebookVerifyToken).HasMaxLength(200);
-            // Item 130: Facebook Page ID for auto-posting new products.
-            builder.Property(x => x.FacebookPageId).HasMaxLength(100);
             builder.Property(x => x.AcceptingOrders).IsRequired();
             builder.Property(x => x.PausedReason).HasMaxLength(500);
 

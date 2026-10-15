@@ -103,28 +103,18 @@ else
             </div>
             <small class="form-text text-muted mb-3">Để trống = dùng số điện thoại trong chân trang landing. Các nút chỉ hiện trên điện thoại.</small>
 
-            <h5 class="mt-4">Chatbot Messenger (mục 53) + Tự đăng Facebook (mục 130)</h5>
+            <h5 class="mt-4">Chatbot Messenger (mục 53)</h5>
             <div class="form-row">
-                <div class="form-group col-md-4">
-                    <label>Facebook Page ID</label>
-                    <input class="form-control" @bind="_model.FacebookPageId" placeholder="VD: 123456789012345" />
-                    <small class="form-text text-muted">ID của Fanpage (Fanpage → Giới thiệu → ID Trang). Dùng để tự đăng món mới lên Fanpage.</small>
-                </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                     <label>Page Access Token</label>
                     <input type="password" class="form-control" @bind="_model.FacebookPageAccessToken" autocomplete="off" />
                     <small class="form-text text-muted">Token của Fanpage (Facebook App → Messenger → Generate Token). Để trống = chatbot chờ cấu hình (không gửi tin nhắn).</small>
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                     <label>Verify Token</label>
                     <input class="form-control" @bind="_model.FacebookVerifyToken" />
                     <small class="form-text text-muted">Chuỗi tự chọn, nhập trùng khi đăng ký webhook trên Facebook.</small>
                 </div>
-            </div>
-            <div class="alert alert-info">
-                <strong>Tự đăng bài khi có món mới:</strong> cùng Page Access Token trên được dùng để đăng món mới lên Fanpage — token cần quyền <em>pages_manage_posts</em>.
-                Khi tạo/sửa món ở <em>Sản phẩm</em>, tick "📣 Đăng lên Facebook" (mặc định bật nếu đã cấu hình) là bài được đăng ngay: tên món + giá + link đặt hàng.
-                Lịch sử bài đã đăng xem ở <em>Bài viết → Lịch sử đăng Facebook</em>.
             </div>
             <div class="alert alert-info">
                 <strong>Cách bật chatbot:</strong>

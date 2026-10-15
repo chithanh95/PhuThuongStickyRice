@@ -1,7 +1,6 @@
 ﻿using PhuThuongStickyRice.Application.Products;
 using PhuThuongStickyRice.Application.Products.DTOs;
 using PhuThuongStickyRice.Application.Products.Exceptions;
-using PhuThuongStickyRice.Application.Facebook;
 using PhuThuongStickyRice.CrossCuttingConcerns.Csv;
 using PhuThuongStickyRice.CrossCuttingConcerns.HtmlGenerator;
 using PhuThuongStickyRice.CrossCuttingConcerns.PdfConverter;
@@ -40,7 +39,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly ICsvWriter<ProductModel> _productCsvWriter;
         private readonly ICsvReader<ProductModel> _productCsvReader;
         private readonly PhuThuongStickyRice.Application.Orders.IDashboardAppService _dashboardAppService;
-        private readonly IFacebookPostService _facebookPostService;
         private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _environment;
 
         public ProductsController(IProductAppService productAppService,
@@ -50,7 +48,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             ICsvWriter<ProductModel> productCsvWriter,
             ICsvReader<ProductModel> productCsvReader,
             PhuThuongStickyRice.Application.Orders.IDashboardAppService dashboardAppService,
-            IFacebookPostService facebookPostService,
             Microsoft.AspNetCore.Hosting.IWebHostEnvironment environment)
         {
             _productAppService = productAppService;
@@ -60,7 +57,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _productCsvWriter = productCsvWriter;
             _productCsvReader = productCsvReader;
             _dashboardAppService = dashboardAppService;
-            _facebookPostService = facebookPostService;
             _environment = environment;
         }
 
@@ -132,13 +128,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     DailyLimit = model.DailyLimit,
                     ImageUrlsJson = model.ImageUrlsJson
                 });
-                if (model.PostToFacebook)
-                {
-                    // Item 130: auto-post the new product to the Facebook Page
-                    // feed. Runs in "waiting for configuration" mode when the
-                    // Page ID / token is missing — never throws.
-                    await _facebookPostService.PublishProductAsync(created.Id);
-                }
                 return Created($"/api/products/{created.Id}", created);
             }
             catch (DomainException ex)
@@ -183,12 +172,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     DailyLimit = model.DailyLimit,
                     ImageUrlsJson = model.ImageUrlsJson
                 });
-                if (model.PostToFacebook)
-                {
-                    // Item 130: auto-post the updated product to the Facebook
-                    // Page feed (e.g. when re-enabling a hidden product).
-                    await _facebookPostService.PublishProductAsync(dto.Id);
-                }
                 return Ok(dto);
             }
             catch (ProductNotFoundException ex)

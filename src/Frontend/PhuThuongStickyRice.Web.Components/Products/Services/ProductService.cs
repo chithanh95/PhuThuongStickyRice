@@ -69,24 +69,6 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
             return logs ?? new List<ProductChangeLogModel>();
         }
 
-        /// <summary>Item 130: whether FB auto-post is configured (Page ID + token).</summary>
-        public async Task<FacebookStatusModel> GetFacebookStatusAsync()
-        {
-            return await GetAsync<FacebookStatusModel>("api/admin/facebook/status");
-        }
-
-        /// <summary>Item 130: publishes a product announcement to the FB Page feed now.</summary>
-        public async Task<FacebookPublishResultModel> PublishProductToFacebookAsync(Guid id)
-        {
-            return await PostAsync<FacebookPublishResultModel>($"api/admin/facebook/publish-product/{id}", new { });
-        }
-
-        /// <summary>Item 130: recent FB auto-post history, newest first.</summary>
-        public async Task<List<FacebookPostLogModel>> GetFacebookPostHistoryAsync(int maxCount = 50)
-        {
-            return await GetAsync<List<FacebookPostLogModel>>($"api/admin/facebook/posts?maxCount={maxCount}");
-        }
-
         /// <summary>
         /// Item 166: uploads one (already compressed) product photo.
         /// Returns the stored image URL (e.g. "/uploads/products/xxx.jpg").

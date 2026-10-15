@@ -647,9 +647,6 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// <summary>Item 53: verify token for the Facebook webhook subscription.</summary>
         public string FacebookVerifyToken { get; set; }
 
-        /// <summary>Item 130: Facebook Page ID for auto-posting new products.</summary>
-        public string FacebookPageId { get; set; }
-
         /// <summary>Wave 6b (item 30): when false, checkout is blocked.</summary>
         public bool AcceptingOrders { get; set; } = true;
 

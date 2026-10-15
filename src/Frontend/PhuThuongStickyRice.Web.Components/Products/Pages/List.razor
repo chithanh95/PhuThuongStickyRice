@@ -43,14 +43,6 @@
                 </button>
             </div>
         }
-        @if (!string.IsNullOrEmpty(_fbMessage))
-        {
-            <div class="alert alert-success">@_fbMessage</div>
-        }
-        @if (!string.IsNullOrEmpty(_fbError))
-        {
-            <div class="alert alert-warning">@_fbError</div>
-        }
         <div class="table-responsive">
 
             @if (Products == null)
@@ -123,9 +115,6 @@
                                             @(product.Status == "Active" ? "Hết hàng" : "Mở bán")
                                         </button>
                                     }
-                                    <button @onclick="(() => PostToFacebook(product))" class="btn btn-sm btn-outline-info" title="Đăng món này lên Facebook Fanpage" disabled="@_fbPosting">
-                                        📣
-                                    </button>
                                     @if (HasPermission("products.edit"))
                                     {
                                         <button @onclick="(() => EditProduct(product))" class="btn btn-sm btn-primary" title="Sửa">Sửa</button>

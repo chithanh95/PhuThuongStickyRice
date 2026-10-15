@@ -55,12 +55,5 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
         public string ImageUrlsJson { get; set; }
 
         public DateTime? AvailableTo { get; set; }
-
-        /// <summary>
-        /// Item 130: when true, the product is auto-posted to the Facebook
-        /// Page feed after saving (create or update). Ignored silently when
-        /// Facebook is not configured.
-        /// </summary>
-        public bool PostToFacebook { get; set; }
     }
 }

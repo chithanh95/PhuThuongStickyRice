@@ -2,10 +2,7 @@
 @attribute [Authorize]
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Services
-@using PhuThuongStickyRice.Web.Components.Products.Models
-@using PhuThuongStickyRice.Web.Components.Products.Services
 @inject Wave3Service Wave3Service
-@inject ProductService ProductService
 
 <h3>Bài viết — Chuyện nhà xôi</h3>
 <p class="text-muted">Bài viết đã xuất bản hiển thị ở mục "Chuyện nhà xôi" trên trang chủ (3 bài mới nhất).</p>
@@ -95,65 +92,6 @@ else
     }
 }
 
-@* Item 130: Facebook auto-post history *@
-<div class="card mt-4">
-    <div class="card-header">📣 Lịch sử đăng Facebook tự động</div>
-    <div class="card-body">
-        <p class="text-muted"><small>Bài đăng tự động khi tạo/bật món mới (hoặc đăng tay từ danh sách sản phẩm). Cấu hình Page ID + Page Access Token ở <a href="/admin/shop-settings">Cài đặt cửa hàng</a>.</small></p>
-        @if (_fbPosts == null)
-        {
-            <p><em>Đang tải...</em></p>
-        }
-        else if (_fbPosts.Count == 0)
-        {
-            <div class="alert alert-info mb-0">Chưa có bài đăng nào.</div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                    <thead>
-                        <tr><th>Món</th><th>Thời gian</th><th>Trạng thái</th><th>Bài đăng</th></tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var p in _fbPosts)
-                        {
-                            <tr @key="p.Id">
-                                <td>@p.ProductName</td>
-                                <td><small>@p.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td>
-                                <td>
-                                    @if (p.Status == "Posted")
-                                    {
-                                        <span class="badge badge-success">Đã đăng</span>
-                                    }
-                                    else if (p.Status == "Skipped")
-                                    {
-                                        <span class="badge badge-secondary" title="@p.ErrorMessage">Bỏ qua (chưa cấu hình)</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge badge-danger" title="@p.ErrorMessage">Thất bại</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (!string.IsNullOrWhiteSpace(p.PostUrl))
-                                    {
-                                        <a href="@p.PostUrl" target="_blank" rel="noopener">Xem bài đăng</a>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">—</span>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </div>
-</div>
-
 @code {
     private List<ArticleModel> _items;
     private ArticleModel _form = NewForm();
@@ -162,9 +100,6 @@ else
     private string _error;
     private string _message;
     private bool _saving;
-
-    // Item 130: Facebook auto-post history.
-    private List<FacebookPostLogModel> _fbPosts;
 
     private static ArticleModel NewForm() => new ArticleModel { IsPublished = true };
 
@@ -190,17 +125,6 @@ else
         {
             _error = "Không tải được bài viết.";
             _items = new List<ArticleModel>();
-        }
-
-        // Item 130: FB auto-post history (non-blocking).
-        try
-        {
-            _fbPosts = await ProductService.GetFacebookPostHistoryAsync(50)
-                ?? new List<FacebookPostLogModel>();
-        }
-        catch (Exception)
-        {
-            _fbPosts = new List<FacebookPostLogModel>();
         }
     }
 
