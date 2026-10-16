@@ -16,6 +16,7 @@
 @inject CartState CartState
 @inject ToastService Toasts
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave4Service Wave4Service
+@inject Wave2Service Wave2Svc
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 
@@ -58,6 +59,15 @@ else
     </div>
 }
 
+<!-- NHẮC ĐẶT LẠI (item 41) -->
+@if (_showReorderBanner)
+{
+    <div class="sg-reorder-bar">
+        🍚 Thèm xôi chưa bạn? Đã 1 tuần rồi đó — <a href="#dat-xoi">đặt lại 1 chạm →</a>
+        <button @onclick="() => _showReorderBanner = false" aria-label="Đóng">×</button>
+    </div>
+}
+
 <!-- BANNER LỄ/TẾT (item 20) -->
 @if (_nextHoliday != null)
 {
@@ -72,6 +82,14 @@ else
 {
     <div class="sg-weather-bar">
         🥶 Trời lạnh @(_coldTemp)°C — xôi nóng hổi giao ngay cho ấm bụng! <a href="#dat-xoi">Đặt ngay →</a>
+    </div>
+}
+
+<!-- BANNER OFF-PEAK (item 48) -->
+@if (_offpeak != null && _offpeak.IsNow && _offpeak.DiscountAmount > 0)
+{
+    <div class="sg-offpeak-bar">
+        ⏰ Khung giờ vắng khách (@_offpeak.StartHour h – @_offpeak.EndHour h): giảm ngay @_offpeak.DiscountAmount.ToString("N0")đ mỗi đơn! <a href="#dat-xoi">Đặt ngay →</a>
     </div>
 }
 
@@ -710,6 +728,302 @@ else
     </div>
 </section>
 
+<!-- TÍCH ĐIỂM (item 42) -->
+<section class="sg-section sg-loyal-sec">
+    <div class="sg-container sg-loyal-inner">
+        <p class="sg-eyebrow">Tích điểm</p>
+        <h2 class="sg-h2">Mua 10 tặng 1</h2>
+        <p class="sg-lead">Mỗi đơn hàng tích điểm — đủ 10 điểm đổi ngay 1 gói xôi miễn phí!</p>
+        <div class="sg-loyal-form">
+            <input @bind="_loyalPhone" placeholder="Nhập SĐT để xem điểm" inputmode="tel" maxlength="15" />
+            <button class="sg-btn sg-btn-solid" @onclick="CheckLoyalty">Xem điểm</button>
+        </div>
+        @if (!string.IsNullOrEmpty(_loyalMsg))
+        {
+            <p class="sg-form-error">@_loyalMsg</p>
+        }
+        @if (_loyalty != null)
+        {
+            <div class="sg-loyal-progress">
+                <div class="sg-loyal-bar"><div class="sg-loyal-fill" style="width:@(Math.Min(100, _loyalty.Points * 10))%"></div></div>
+                <p>Bạn có <strong>@_loyalty.Points</strong> điểm — còn <strong>@(Math.Max(0, 10 - _loyalty.Points))</strong> điểm nữa là được tặng xôi!</p>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- BLOG ẨM THỰC (item 44) + CÔNG THỨC (item 45) -->
+@if (_articles != null && _articles.Count > 0)
+{
+    <section class="sg-section sg-blog-sec">
+        <div class="sg-container">
+            <p class="sg-eyebrow">Đọc & học</p>
+            <h2 class="sg-h2">Góc ẩm thực</h2>
+            <div class="sg-blog-grid">
+                @foreach (var a in _articles.Take(6))
+                {
+                    <div class="sg-blog-card sg-reveal">
+                        @if (!string.IsNullOrWhiteSpace(a.ImageUrl))
+                        {
+                            <img loading="lazy" decoding="async" src="@a.ImageUrl" alt="@a.Title" />
+                        }
+                        <div class="sg-blog-body">
+                            <h3>@a.Title</h3>
+                            <p>@(a.Body?.Length > 120 ? a.Body.Substring(0, 120) + "..." : a.Body)</p>
+                            <span class="sg-blog-date">@a.PublishedAt.ToString("dd/MM/yyyy")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- ĐẶT XÔI ĐỊNH KỲ (item 47) -->
+<section class="sg-section sg-sub2-sec">
+    <div class="sg-container sg-sub2-grid">
+        <div>
+            <p class="sg-eyebrow">Tiện lợi</p>
+            <h2 class="sg-h2">Xôi sáng mỗi ngày, khỏi cần đặt</h2>
+            <p class="sg-lead">Đăng ký 1 lần — quán giao xôi nóng <strong>đúng 6h30 mỗi sáng</strong>. Hủy bất cứ lúc nào.</p>
+            <ul class="sg-check-list">
+                <li>✓ Không lo hết xôi giờ cao điểm</li>
+                <li>✓ Giảm 5% cho đơn định kỳ</li>
+                <li>✓ Đổi món mỗi tuần thoải mái</li>
+            </ul>
+        </div>
+        <div class="sg-sub2-form">
+            @if (_sub2Done)
+            {
+                <p class="sg-form-ok">✓ Đăng ký thành công! Quán sẽ gọi xác nhận lịch giao.</p>
+            }
+            else
+            {
+                <label class="sg-field"><span>Tên *</span><input @bind="_sub2Name" maxlength="100" /></label>
+                <label class="sg-field"><span>SĐT *</span><input @bind="_sub2Phone" inputmode="tel" maxlength="15" /></label>
+                <label class="sg-field"><span>Món xôi *</span>
+                    <select @bind="_sub2ProductId">
+                        <option value="@Guid.Empty">— Chọn món —</option>
+                        @foreach (var p in XoiProducts) { <option value="@p.Id">@p.Name</option> }
+                    </select>
+                </label>
+                <label class="sg-field"><span>Địa chỉ giao</span><input @bind="_sub2Addr" maxlength="200" /></label>
+                @if (!string.IsNullOrEmpty(_sub2Msg)) { <p class="sg-form-error">@_sub2Msg</p> }
+                <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="SubmitSub2">Đăng ký giao mỗi sáng</button>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- HỢP TÁC KINH DOANH (items 56, 57, 59) -->
+<section class="sg-section sg-biz-sec">
+    <div class="sg-container sg-biz-inner">
+        <p class="sg-eyebrow">Hợp tác</p>
+        <h2 class="sg-h2">Cùng bán xôi Phú Thượng</h2>
+        <div class="sg-tabs" role="tablist">
+            <button class="sg-tab @(_bizTab == "nhuongquyen" ? "active" : "")" @onclick='() => _bizTab = "nhuongquyen"'>Nhượng quyền</button>
+            <button class="sg-tab @(_bizTab == "bansi" ? "active" : "")" @onclick='() => _bizTab = "bansi"'>Bán sỉ</button>
+            <button class="sg-tab @(_bizTab == "quabieu" ? "active" : "")" @onclick='() => _bizTab = "quabieu"'>Quà biếu DN</button>
+        </div>
+        <div class="sg-biz-form">
+            @if (_bizDone)
+            {
+                <p class="sg-form-ok">✓ Đã nhận thông tin! Quán sẽ liên hệ trong 24h.</p>
+            }
+            else
+            {
+                <p class="sg-lead">
+                    @(_bizTab == "nhuongquyen" ? "Mở điểm bán xôi Phú Thượng tại khu vực của bạn — quán hỗ trợ công thức, nguyên liệu, marketing." :
+                      _bizTab == "bansi" ? "Nhà hàng, căng tin, quán ăn cần xôi số lượng lớn mỗi ngày — giá sỉ ưu đãi." :
+                      "Hộp xôi biếu Tết sang trọng, in logo công ty — đặt từ 50 hộp.")
+                </p>
+                <div class="sg-field-row">
+                    <label class="sg-field"><span>Tên *</span><input @bind="_bizName" maxlength="100" /></label>
+                    <label class="sg-field"><span>SĐT *</span><input @bind="_bizPhone" inputmode="tel" maxlength="15" /></label>
+                </div>
+                <label class="sg-field"><span>Nhu cầu cụ thể</span><textarea @bind="_bizNote" rows="3" maxlength="500" placeholder="Khu vực, số lượng dự kiến..."></textarea></label>
+                @if (!string.IsNullOrEmpty(_bizMsg)) { <p class="sg-form-error">@_bizMsg</p> }
+                <button class="sg-btn sg-btn-solid" @onclick="SubmitBiz">Gửi đăng ký hợp tác</button>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- THỬ THÁCH 7 NGÀY (item 53) -->
+<section class="sg-section sg-streak-sec">
+    <div class="sg-container sg-streak-inner">
+        <p class="sg-eyebrow">Thử thách</p>
+        <h2 class="sg-h2">7 ngày ăn xôi liên tiếp</h2>
+        <p class="sg-lead">Điểm danh mỗi ngày bạn đặt xôi — đủ 7 ngày nhận <strong>voucher 50k</strong>!</p>
+        @if (_checkinResult?.Success == true)
+        {
+            <div class="sg-streak-result">
+                <div class="sg-streak-dots">
+                    @for (var i = 1; i <= 7; i++)
+                    {
+                        <span class="sg-dot @(i <= _checkinResult.StreakCount ? "on" : "")">@i</span>
+                    }
+                </div>
+                @if (_checkinResult.IsCompleted)
+                {
+                    <p class="sg-form-ok">🎉 Chúc mừng! Bạn đã hoàn thành thử thách — voucher 50k sẽ được gửi qua SĐT!</p>
+                }
+                else
+                {
+                    <p>Bạn đã điểm danh <strong>@_checkinResult.StreakCount/7</strong> ngày. Cố lên!</p>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="sg-loyal-form">
+                <input @bind="_checkinPhone" placeholder="Nhập SĐT để điểm danh hôm nay" inputmode="tel" maxlength="15" />
+                <button class="sg-btn sg-btn-solid" @onclick="DoCheckIn">Điểm danh</button>
+            </div>
+            @if (!string.IsNullOrEmpty(_checkinMsg)) { <p class="sg-form-error">@_checkinMsg</p> }
+        }
+    </div>
+</section>
+
+<!-- BÌNH CHỌN MÓN MỚI (item 54) -->
+@if (_polls != null && _polls.Count > 0)
+{
+    <section class="sg-section sg-poll-sec">
+        <div class="sg-container">
+            <p class="sg-eyebrow">Bạn quyết định</p>
+            <h2 class="sg-h2">Món mới nào quán nên bán?</h2>
+            <div class="sg-poll-grid">
+                @foreach (var p in _polls)
+                {
+                    <div class="sg-poll-card sg-reveal">
+                        @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                        {
+                            <img loading="lazy" decoding="async" src="@p.ImageUrl" alt="@p.DishName" />
+                        }
+                        <div class="sg-poll-body">
+                            <h3>@p.DishName</h3>
+                            <p>@p.Description</p>
+                            <div class="sg-poll-votes">🗳️ @p.VoteCount lượt bình chọn</div>
+                            <button class="sg-btn sg-btn-outline sg-btn-block" @onclick="() => DoVote(p.Id)">Bình chọn món này</button>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="sg-loyal-form" style="max-width:420px;margin:20px auto 0">
+                <input @bind="_votePhone" placeholder="SĐT của bạn (để bình chọn)" inputmode="tel" maxlength="15" />
+            </div>
+            @if (!string.IsNullOrEmpty(_voteMsg)) { <p class="sg-center">@_voteMsg</p> }
+        </div>
+    </section>
+}
+
+<!-- SINH NHẬT (item 43) + VIP CLUB (item 55) -->
+<section class="sg-section sg-bdvip-sec">
+    <div class="sg-container sg-spin-grid">
+        <div class="sg-spin-box sg-reveal">
+            <h2 class="sg-h2">🎂 Sinh nhật tặng xôi</h2>
+            <p>Nhập ngày sinh — đến sinh nhật nhận <strong>mã giảm 20%</strong>!</p>
+            @if (_bdResult?.Success == true)
+            {
+                <p class="sg-form-ok">✓ @_bdResult.Message
+                @if (!string.IsNullOrEmpty(_bdResult.GiftCode)) { <span>Mã của bạn: <code>@_bdResult.GiftCode</code></span> }</p>
+            }
+            else
+            {
+                <div class="sg-field-row">
+                    <label class="sg-field"><span>SĐT</span><input @bind="_bdPhone" inputmode="tel" maxlength="15" /></label>
+                    <label class="sg-field"><span>Ngày sinh</span><input type="date" @bind="_bdDate" /></label>
+                </div>
+                <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="ClaimBirthday" style="margin-top:10px">Nhận quà sinh nhật</button>
+                @if (!string.IsNullOrEmpty(_bdMsg)) { <p class="sg-form-error">@_bdMsg</p> }
+            }
+        </div>
+        <div class="sg-spin-box sg-reveal">
+            <h2 class="sg-h2">👑 Câu lạc bộ VIP</h2>
+            <p>Khách <strong>hạng Vàng</strong> được vào nhóm Zalo riêng — ưu đãi độc quyền mỗi tuần!</p>
+            @if (_vipStatus != null)
+            {
+                @if (_vipStatus.IsVip && !string.IsNullOrWhiteSpace(_vipStatus.ZaloGroupUrl))
+                {
+                    <p class="sg-form-ok">✓ Bạn là khách @_vipStatus.Tier!</p>
+                    <a class="sg-btn sg-btn-solid sg-btn-block" href="@_vipStatus.ZaloGroupUrl" target="_blank" rel="noopener">Vào nhóm Zalo VIP →</a>
+                }
+                else
+                {
+                    <p>Bạn đang hạng <strong>@_vipStatus.Tier</strong>. Mua thêm để lên Vàng và vào nhóm VIP nhé!</p>
+                }
+            }
+            else
+            {
+                <div class="sg-loyal-form">
+                    <input @bind="_vipPhone" placeholder="Nhập SĐT kiểm tra hạng" inputmode="tel" maxlength="15" />
+                    <button class="sg-btn sg-btn-solid" @onclick="CheckVip">Kiểm tra</button>
+                </div>
+                @if (!string.IsNullOrEmpty(_vipMsg)) { <p class="sg-form-error">@_vipMsg</p> }
+            }
+        </div>
+    </div>
+</section>
+
+<!-- KHÓA HỌC NẤU XÔI (item 60) -->
+@if (_courses != null && _courses.Count > 0)
+{
+    <section class="sg-section sg-course-sec">
+        <div class="sg-container">
+            <p class="sg-eyebrow">Học nghề</p>
+            <h2 class="sg-h2">Dạy nấu xôi online</h2>
+            <p class="sg-lead sg-center">Học bí quyết làng nghề Phú Thượng ngay tại nhà.</p>
+            <div class="sg-poll-grid">
+                @foreach (var course in _courses)
+                {
+                    <div class="sg-poll-card sg-reveal">
+                        @if (!string.IsNullOrWhiteSpace(course.ThumbnailUrl))
+                        {
+                            <img loading="lazy" decoding="async" src="@course.ThumbnailUrl" alt="@course.Title" />
+                        }
+                        <div class="sg-poll-body">
+                            <h3>@course.Title</h3>
+                            <p>@course.Description</p>
+                            <div class="sg-poll-votes">@course.Price.ToString("N0")đ</div>
+                            <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => EnrollCourse(course.Id)">Đăng ký học</button>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="sg-loyal-form" style="max-width:420px;margin:20px auto 0">
+                <input @bind="_coursePhone" placeholder="SĐT để đăng ký học" inputmode="tel" maxlength="15" />
+            </div>
+        </div>
+    </section>
+}
+
+<!-- XÔI GỬI TỈNH (item 58) -->
+<section class="sg-section sg-export-sec">
+    <div class="sg-container sg-export-grid">
+        <div>
+            <p class="sg-eyebrow">Gửi xa</p>
+            <h2 class="sg-h2">Xôi hút chân không — gửi toàn quốc</h2>
+            <p class="sg-lead">Xôi được hút chân không, cấp đông — gửi đi tỉnh vẫn dẻo thơm như mới đồ. Hấp lại 10 phút là ăn ngon.</p>
+            <ul class="sg-check-list">
+                <li>✓ Bảo quản 7 ngày ngăn mát, 30 ngày ngăn đá</li>
+                <li>✓ Đóng gói cẩn thận, không lo bể nát</li>
+                <li>✓ Gửi nhanh 1-2 ngày toàn quốc</li>
+            </ul>
+            <a href="#dat-xoi" class="sg-btn sg-btn-solid" style="margin-top:16px">Đặt xôi gửi tỉnh →</a>
+        </div>
+        <div class="sg-export-box">
+            <h3>📦 Bảng giá gửi tỉnh</h3>
+            <table class="sg-compare-table">
+                <tr><th>Khu vực</th><th>Phí ship</th><th>Thời gian</th></tr>
+                <tr><td>Miền Bắc</td><td>30k</td><td>1 ngày</td></tr>
+                <tr><td>Miền Trung</td><td>45k</td><td>2 ngày</td></tr>
+                <tr><td>Miền Nam</td><td>50k</td><td>2 ngày</td></tr>
+            </table>
+            <p class="sg-muted" style="font-size:13px;margin-top:10px">Miễn phí ship cho đơn từ 500k.</p>
+        </div>
+    </div>
+</section>
+
 <!-- FAQ (item 13) -->
 @if (_faqs != null && _faqs.Count > 0)
 {
@@ -1013,6 +1327,44 @@ else
     private string _chatSession = "";
     private string _chatInput = "";
     private List<ChatMessageModel> _chatMessages = new List<ChatMessageModel>();
+    // 41-60
+    private List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel> _articles = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>();
+    private string _loyalPhone = "";
+    private LoyaltyAccountModel _loyalty;
+    private string _loyalMsg;
+    private bool _showReorderBanner;
+    // 48-54
+    private OffPeakPromoModel _offpeak;
+    private string _checkinPhone = "";
+    private StreakCheckInResult _checkinResult;
+    private string _checkinMsg;
+    private List<DishPollModel> _polls = new List<DishPollModel>();
+    private string _votePhone = "";
+    private string _voteMsg;
+    // 43, 55, 60
+    private string _bdPhone = "";
+    private DateTime _bdDate = DateTime.Today;
+    private BirthdayGiftResult _bdResult;
+    private string _bdMsg;
+    private string _vipPhone = "";
+    private VipStatusModel _vipStatus;
+    private string _vipMsg;
+    private List<CourseModel> _courses = new List<CourseModel>();
+    private string _coursePhone = "";
+    // Đặt định kỳ (47)
+    private string _sub2Name = "";
+    private string _sub2Phone = "";
+    private string _sub2Addr = "";
+    private Guid _sub2ProductId = Guid.Empty;
+    private string _sub2Msg;
+    private bool _sub2Done;
+    // Hợp tác KD (56/57/59)
+    private string _bizTab = "nhuongquyen";
+    private string _bizName = "";
+    private string _bizPhone = "";
+    private string _bizNote = "";
+    private string _bizMsg;
+    private bool _bizDone;
 
     // Dark mode toggle (persisted in localStorage via ptToggleTheme).
     private bool _isDark;
@@ -1129,6 +1481,10 @@ else
         try { _stats = await LandingService.GetStatsAsync() ?? new LandingStatsModel(); } catch { }
         try { _gallery = await LandingService.GetGalleryAsync() ?? new List<GalleryPhotoModel>(); } catch { }
         try { _faqs = await LandingService.GetFaqsAsync() ?? new List<FaqPublicModel>(); } catch { }
+        try { _articles = await LandingService.GetArticlesAsync() ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>(); } catch { }
+        try { _offpeak = await LandingService.GetOffPeakAsync(); } catch { }
+        try { _polls = await LandingService.GetPollsAsync() ?? new List<DishPollModel>(); } catch { }
+        try { _courses = await LandingService.GetCoursesAsync() ?? new List<CourseModel>(); } catch { }
         try
         {
             var holidays = await LandingService.GetUpcomingHolidaysAsync();
@@ -1171,6 +1527,16 @@ else
                 {
                     _coldTemp = temp;
                     _showColdBanner = true;
+                    StateHasChanged();
+                }
+            }
+            catch { }
+            try
+            {
+                var lastOrder = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "pt-last-order");
+                if (!string.IsNullOrEmpty(lastOrder) && DateTime.TryParse(lastOrder, out var d) && (DateTime.Now - d).TotalDays >= 7)
+                {
+                    _showReorderBanner = true;
                     StateHasChanged();
                 }
             }
@@ -1415,6 +1781,130 @@ else
         _quickRating = stars;
         try { await LandingService.QuickRateAsync(stars); _ratedDone = true; }
         catch { }
+    }
+
+    private async Task SubmitSub2()
+    {
+        _sub2Msg = null;
+        var digits = new string((_sub2Phone ?? "").Where(char.IsDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(_sub2Name) || digits.Length < 9 || _sub2ProductId == Guid.Empty)
+        { _sub2Msg = "Vui lòng nhập tên, SĐT và chọn món."; return; }
+        try
+        {
+            await Wave2Svc.CreateSubscriptionAsync(new CreateSubscriptionModel
+            {
+                CustomerName = _sub2Name.Trim(),
+                Phone = digits,
+                ProductId = _sub2ProductId,
+                Quantity = 1,
+                DeliveryAddress = _sub2Addr?.Trim()
+            });
+            _sub2Done = true;
+        }
+        catch { _sub2Msg = "Chưa gửi được, thử lại nhé."; }
+    }
+
+    private async Task SubmitBiz()
+    {
+        _bizMsg = null;
+        var digits = new string((_bizPhone ?? "").Where(char.IsDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(_bizName) || digits.Length < 9)
+        { _bizMsg = "Vui lòng nhập tên và SĐT."; return; }
+        var type = _bizTab == "nhuongquyen" ? "NhuongQuyen" : _bizTab == "bansi" ? "BanSi" : "QuaBieuDN";
+        try
+        {
+            await ShopService.CreateQuoteAsync(new QuoteRequestModel
+            {
+                CustomerName = _bizName.Trim(),
+                CustomerPhone = digits,
+                Quantity = 1,
+                Notes = _bizNote?.Trim(),
+                QuoteType = type
+            });
+            _bizDone = true;
+        }
+        catch { _bizMsg = "Chưa gửi được, thử lại nhé."; }
+    }
+
+    private async Task DoCheckIn()
+    {
+        _checkinMsg = null; _checkinResult = null;
+        var digits = new string((_checkinPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) { _checkinMsg = "Nhập SĐT để điểm danh."; return; }
+        try
+        {
+            _checkinResult = await LandingService.CheckInAsync(digits);
+            if (_checkinResult != null && !_checkinResult.Success) _checkinMsg = _checkinResult.Message;
+        }
+        catch { _checkinMsg = "Chưa điểm danh được, thử lại nhé."; }
+    }
+
+    private async Task DoVote(Guid pollId)
+    {
+        _voteMsg = null;
+        var digits = new string((_votePhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) { _voteMsg = "Nhập SĐT để bình chọn."; return; }
+        try
+        {
+            if (await LandingService.VotePollAsync(pollId, digits))
+            {
+                _polls = await LandingService.GetPollsAsync() ?? new List<DishPollModel>();
+                _voteMsg = "Đã ghi nhận bình chọn của bạn!";
+            }
+            else _voteMsg = "Bạn đã bình chọn món này rồi.";
+        }
+        catch { _voteMsg = "Chưa bình chọn được, thử lại nhé."; }
+    }
+
+    private async Task ClaimBirthday()
+    {
+        _bdMsg = null; _bdResult = null;
+        var digits = new string((_bdPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) { _bdMsg = "Nhập SĐT hợp lệ."; return; }
+        try
+        {
+            _bdResult = await LandingService.ClaimBirthdayGiftAsync(digits, _bdDate);
+            if (_bdResult != null && !_bdResult.Success) _bdMsg = _bdResult.Message;
+        }
+        catch { _bdMsg = "Chưa gửi được, thử lại nhé."; }
+    }
+
+    private async Task CheckVip()
+    {
+        _vipMsg = null; _vipStatus = null;
+        var digits = new string((_vipPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) { _vipMsg = "Nhập SĐT để kiểm tra."; return; }
+        try
+        {
+            _vipStatus = await LandingService.GetVipStatusAsync(digits);
+            if (_vipStatus == null) _vipMsg = "Chưa tìm thấy thông tin.";
+        }
+        catch { _vipMsg = "Chưa tra được, thử lại nhé."; }
+    }
+
+    private async Task EnrollCourse(Guid id)
+    {
+        var digits = new string((_coursePhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) { Toasts.Show("Nhập SĐT để đăng ký khóa học."); return; }
+        try
+        {
+            if (await LandingService.EnrollCourseAsync(id, digits))
+                Toasts.Show("Đăng ký thành công! Quán sẽ liên hệ.");
+        }
+        catch { }
+    }
+
+    private async Task CheckLoyalty()
+    {
+        _loyalMsg = null; _loyalty = null;
+        var digits = new string((_loyalPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) { _loyalMsg = "Nhập SĐT để xem điểm."; return; }
+        try
+        {
+            _loyalty = await Wave2Svc.GetLoyaltyByPhoneAsync(digits);
+            if (_loyalty == null) _loyalMsg = "Chưa tìm thấy tài khoản với SĐT này.";
+        }
+        catch { _loyalMsg = "Chưa tra được, thử lại nhé."; }
     }
 
     private async Task ToggleChat()

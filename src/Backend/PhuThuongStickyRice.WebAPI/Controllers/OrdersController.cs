@@ -622,6 +622,27 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>Item 52: customer rates the shipper (1-5) for an order review.</summary>
+        [AllowAnonymous]
+        [HttpPost("reviews/{id:guid}/shipper-rating")]
+        public async Task<ActionResult> SetShipperRating(Guid id,
+            [FromBody] SetShipperRatingRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var review = await _orderAppService.SetShipperRatingAsync(id, new SetShipperRatingDto
+                {
+                    Rating = model?.Rating ?? 0
+                });
+                return Ok(review);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         /// <summary>Item 87: public non-hidden reviews for the landing page.</summary>
         [AllowAnonymous]
         [HttpGet("reviews/public")]
@@ -645,5 +666,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public sealed class ReplyReviewRequestModel
     {
         public string Reply { get; set; }
+    }
+
+    public sealed class SetShipperRatingRequestModel
+    {
+        public int Rating { get; set; }
     }
 }

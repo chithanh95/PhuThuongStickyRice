@@ -89,6 +89,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Landing conversion tracking IDs (admin-entered, never hardcoded).
             builder.Property(x => x.FacebookPixelId).HasMaxLength(50);
             builder.Property(x => x.GoogleAnalyticsId).HasMaxLength(30);
+
+            // VIP Club (55) + bán sỉ (58).
+            builder.Property(x => x.ZaloVipGroupUrl).HasMaxLength(500);
+            builder.Property(x => x.WholesaleContact).HasMaxLength(200);
         }
     }
 }

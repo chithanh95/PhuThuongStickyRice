@@ -382,6 +382,368 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }));
         }
 
+        // ============ Sinh nhật tặng quà (item 43) ============
+
+        public class BirthdayGiftRequest
+        {
+            public string Phone { get; set; }
+            public DateTime? BirthDate { get; set; }
+        }
+
+        /// <summary>
+        /// Public: lưu ngày sinh; nếu sinh nhật trong 7 ngày tới thì tặng mã quà.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("birthday-gift")]
+        public async Task<ActionResult> BirthdayGift(
+            [FromBody] BirthdayGiftRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var phone = (request?.Phone ?? string.Empty).Trim();
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var birthDate = request?.BirthDate?.Date;
+            if (!birthDate.HasValue || birthDate.Value > DateTime.Today.AddDays(-1)
+                || birthDate.Value < DateTime.Today.AddYears(-120))
+            {
+                return BadRequest(new { success = false, message = "Ngày sinh không hợp lệ." });
+            }
+
+            var account = await _db.LoyaltyAccounts
+                .FirstOrDefaultAsync(a => a.Phone == phone, cancellationToken);
+            if (account == null)
+            {
+                account = new LoyaltyAccount
+                {
+                    Id = Guid.NewGuid(),
+                    Phone = phone,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _db.LoyaltyAccounts.Add(account);
+            }
+
+            account.DateOfBirth = birthDate.Value;
+            account.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(cancellationToken);
+
+            var daysUntil = DaysUntilBirthday(birthDate.Value, DateTime.Today);
+            if (daysUntil <= 7)
+            {
+                var giftCode = "SN-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+                return Ok(new
+                {
+                    success = true,
+                    giftCode,
+                    message = daysUntil == 0
+                        ? "Chúc mừng sinh nhật! Quán tặng bạn mã quà sinh nhật."
+                        : $"Sinh nhật bạn còn {daysUntil} ngày nữa — quán tặng trước mã quà sinh nhật!"
+                });
+            }
+
+            return Ok(new { success = true, message = "Đã lưu ngày sinh. Đến sinh nhật quán sẽ tặng quà!" });
+        }
+
+        private static int DaysUntilBirthday(DateTime birthDate, DateTime today)
+        {
+            var next = new DateTime(today.Year, birthDate.Month, birthDate.Day);
+            if (next < today)
+            {
+                next = next.AddYears(1);
+            }
+            // 29/2 -> 28/2 năm không nhuận.
+            if (birthDate.Month == 2 && birthDate.Day == 29 && !DateTime.IsLeapYear(next.Year))
+            {
+                next = new DateTime(next.Year, 2, 28);
+            }
+            return (next - today).Days;
+        }
+
+        // ============ VIP Club (item 55) ============
+
+        /// <summary>Public: trạng thái VIP theo SĐT (hạng Vàng hoặc chi tiêu &gt; 500k).</summary>
+        [AllowAnonymous]
+        [HttpGet("vip-status")]
+        public async Task<ActionResult> GetVipStatus(
+            [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            phone = (phone ?? string.Empty).Trim();
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var account = await _db.LoyaltyAccounts
+                .FirstOrDefaultAsync(a => a.Phone == phone, cancellationToken);
+            var settings = await _db.ShopSettings.FirstOrDefaultAsync(cancellationToken);
+
+            var totalSpent = account?.TotalSpent ?? 0m;
+            var tier = "Đồng";
+            if (settings != null)
+            {
+                if (settings.TierGoldMin > 0 && totalSpent > settings.TierGoldMin)
+                {
+                    tier = "Vàng";
+                }
+                else if (settings.TierSilverMin > 0 && totalSpent >= settings.TierSilverMin)
+                {
+                    tier = "Bạc";
+                }
+            }
+
+            var isVip = tier == "Vàng" || totalSpent > 500000m;
+            return Ok(new
+            {
+                tier,
+                isVip,
+                totalSpent,
+                zaloGroupUrl = isVip ? settings?.ZaloVipGroupUrl : null
+            });
+        }
+
+        // ============ Bán sỉ / xuất khẩu (item 58) ============
+
+        /// <summary>Public: thông tin liên hệ bán sỉ.</summary>
+        [AllowAnonymous]
+        [HttpGet("wholesale-info")]
+        public async Task<ActionResult> GetWholesaleInfo(CancellationToken cancellationToken = default)
+        {
+            var settings = await _db.ShopSettings.FirstOrDefaultAsync(cancellationToken);
+            return Ok(new
+            {
+                contact = settings?.WholesaleContact,
+                minQty = settings?.WholesaleMinQty ?? 50
+            });
+        }
+
+        // ============ Khóa học (item 60) ============
+
+        /// <summary>Public: danh sách khóa học đang mở.</summary>
+        [AllowAnonymous]
+        [HttpGet("courses")]
+        public async Task<ActionResult> GetCourses(CancellationToken cancellationToken = default)
+        {
+            var courses = await _db.Courses
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.SortOrder)
+                .ThenBy(c => c.Title)
+                .Select(c => new
+                {
+                    id = c.Id,
+                    title = c.Title,
+                    description = c.Description,
+                    price = c.Price,
+                    thumbnailUrl = c.ThumbnailUrl
+                })
+                .ToListAsync(cancellationToken);
+
+            return Ok(courses);
+        }
+
+        public class CourseEnrollRequest
+        {
+            public string Phone { get; set; }
+        }
+
+        /// <summary>Public: đăng ký khóa học bằng SĐT.</summary>
+        [AllowAnonymous]
+        [HttpPost("courses/{id:guid}/enroll")]
+        public async Task<ActionResult> EnrollCourse(
+            Guid id,
+            [FromBody] CourseEnrollRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var phone = (request?.Phone ?? string.Empty).Trim();
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var course = await _db.Courses
+                .FirstOrDefaultAsync(c => c.Id == id && c.IsActive, cancellationToken);
+            if (course == null)
+            {
+                return NotFound(new { success = false, message = "Khóa học không tồn tại." });
+            }
+
+            var exists = await _db.CourseEnrollments
+                .AnyAsync(e => e.CourseId == id && e.Phone == phone, cancellationToken);
+            if (exists)
+            {
+                return Ok(new { success = true, message = "Bạn đã đăng ký khóa học này rồi." });
+            }
+
+            _db.CourseEnrollments.Add(new CourseEnrollment
+            {
+                Id = Guid.NewGuid(),
+                CourseId = id,
+                Phone = phone,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync(cancellationToken);
+
+            return Ok(new { success = true, message = "Đăng ký thành công! Quán sẽ liên hệ hướng dẫn thanh toán." });
+        }
+
+        // ============ Retention: off-peak promo (item 48) ============
+
+        /// <summary>Public: active off-peak promos and whether now is in the window.</summary>
+        [AllowAnonymous]
+        [HttpGet("offpeak")]
+        public async Task<ActionResult> GetOffPeak(CancellationToken cancellationToken = default)
+        {
+            var nowHour = DateTime.Now.Hour;
+            var promos = await _db.OffPeakPromos
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.StartHour)
+                .Select(p => new
+                {
+                    id = p.Id,
+                    startHour = p.StartHour,
+                    endHour = p.EndHour,
+                    discountAmount = p.DiscountAmount,
+                    isNow = nowHour >= p.StartHour && nowHour < p.EndHour
+                })
+                .ToListAsync(cancellationToken);
+
+            return Ok(promos);
+        }
+
+        // ============ Retention: 7-day check-in challenge (item 53) ============
+
+        public class CheckInRequest
+        {
+            public string Phone { get; set; }
+        }
+
+        /// <summary>
+        /// Public: daily check-in. Returns consecutive-day streak ending today
+        /// and whether the 7-day challenge is completed.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("checkin")]
+        public async Task<ActionResult> CheckIn(
+            [FromBody] CheckInRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var phone = (request?.Phone ?? string.Empty).Trim();
+
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var today = DateTime.UtcNow.Date;
+            var exists = await _db.CheckInStreaks
+                .AnyAsync(c => c.Phone == phone && c.CheckInDate == today, cancellationToken);
+
+            if (!exists)
+            {
+                _db.CheckInStreaks.Add(new CheckInStreak
+                {
+                    Id = Guid.NewGuid(),
+                    Phone = phone,
+                    CheckInDate = today,
+                    CreatedAt = DateTime.UtcNow
+                });
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+
+            // Count consecutive days ending today.
+            var dates = await _db.CheckInStreaks
+                .Where(c => c.Phone == phone && c.CheckInDate <= today)
+                .Select(c => c.CheckInDate)
+                .Distinct()
+                .OrderByDescending(d => d)
+                .Take(30)
+                .ToListAsync(cancellationToken);
+
+            var streak = 0;
+            var cursor = today;
+            foreach (var d in dates)
+            {
+                if (d == cursor) { streak++; cursor = cursor.AddDays(-1); }
+                else break;
+            }
+
+            return Ok(new { success = true, streakCount = streak, isCompleted = streak >= 7 });
+        }
+
+        // ============ Retention: dish polls (item 54) ============
+
+        /// <summary>Public: active dish polls for voting.</summary>
+        [AllowAnonymous]
+        [HttpGet("polls")]
+        public async Task<ActionResult> GetPolls(CancellationToken cancellationToken = default)
+        {
+            var polls = await _db.DishPolls
+                .Where(p => p.IsActive)
+                .OrderByDescending(p => p.VoteCount)
+                .ThenByDescending(p => p.CreatedAt)
+                .Select(p => new
+                {
+                    id = p.Id,
+                    dishName = p.DishName,
+                    description = p.Description,
+                    imageUrl = p.ImageUrl,
+                    voteCount = p.VoteCount
+                })
+                .ToListAsync(cancellationToken);
+
+            return Ok(polls);
+        }
+
+        public class VoteRequest
+        {
+            public string Phone { get; set; }
+        }
+
+        /// <summary>Public: vote for a dish poll (one vote per phone per poll).</summary>
+        [AllowAnonymous]
+        [HttpPost("polls/{id:guid}/vote")]
+        public async Task<ActionResult> VotePoll(
+            Guid id,
+            [FromBody] VoteRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var phone = (request?.Phone ?? string.Empty).Trim();
+
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var poll = await _db.DishPolls.FirstOrDefaultAsync(p => p.Id == id && p.IsActive, cancellationToken);
+            if (poll == null)
+            {
+                return NotFound(new { success = false, message = "Bình chọn không tồn tại." });
+            }
+
+            var alreadyVoted = await _db.DishVotes
+                .AnyAsync(v => v.PollId == id && v.Phone == phone, cancellationToken);
+
+            if (alreadyVoted)
+            {
+                return Ok(new { success = false, message = "Bạn đã bình chọn món này rồi." });
+            }
+
+            _db.DishVotes.Add(new DishVote
+            {
+                Id = Guid.NewGuid(),
+                PollId = id,
+                Phone = phone,
+                CreatedAt = DateTime.UtcNow
+            });
+            poll.VoteCount++;
+            await _db.SaveChangesAsync(cancellationToken);
+
+            return Ok(new { success = true, voteCount = poll.VoteCount });
+        }
+
         /// <summary>
         /// Masks a phone number for public display: "0912345678" -&gt; "091***78".
         /// </summary>

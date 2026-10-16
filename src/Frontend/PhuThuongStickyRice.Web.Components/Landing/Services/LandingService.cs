@@ -99,6 +99,54 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             return await GetAsync<List<ChatMessageModel>>($"api/landing/chat/{sessionId}");
         }
 
+        /// <summary>Off-peak promo (item 48).</summary>
+        public async Task<OffPeakPromoModel> GetOffPeakAsync()
+        {
+            return await GetAsync<OffPeakPromoModel>("api/landing/offpeak");
+        }
+
+        /// <summary>Điểm danh thử thách 7 ngày (item 53).</summary>
+        public async Task<StreakCheckInResult> CheckInAsync(string phone)
+        {
+            return await PostAsync<StreakCheckInResult>("api/landing/checkin", new { phone });
+        }
+
+        /// <summary>Bình chọn món mới (item 54).</summary>
+        public async Task<List<DishPollModel>> GetPollsAsync()
+        {
+            return await GetAsync<List<DishPollModel>>("api/landing/polls");
+        }
+
+        public async Task<bool> VotePollAsync(Guid pollId, string phone)
+        {
+            var res = await PostAsync<object>($"api/landing/polls/{pollId}/vote", new { phone });
+            return res != null;
+        }
+
+        /// <summary>Sinh nhật (item 43).</summary>
+        public async Task<BirthdayGiftResult> ClaimBirthdayGiftAsync(string phone, DateTime birthDate)
+        {
+            return await PostAsync<BirthdayGiftResult>("api/landing/birthday-gift", new { phone, birthDate });
+        }
+
+        /// <summary>VIP status (item 55).</summary>
+        public async Task<VipStatusModel> GetVipStatusAsync(string phone)
+        {
+            return await GetAsync<VipStatusModel>($"api/landing/vip-status?phone={phone}");
+        }
+
+        /// <summary>Khóa học (item 60).</summary>
+        public async Task<List<CourseModel>> GetCoursesAsync()
+        {
+            return await GetAsync<List<CourseModel>>("api/landing/courses");
+        }
+
+        public async Task<bool> EnrollCourseAsync(Guid id, string phone)
+        {
+            var res = await PostAsync<object>($"api/landing/courses/{id}/enroll", new { phone });
+            return res != null;
+        }
+
         public async Task<LandingContentModel> UpdateContentAsync(LandingContentModel model)
         {
             return await PutAsync<LandingContentModel>("api/landing/content", model);

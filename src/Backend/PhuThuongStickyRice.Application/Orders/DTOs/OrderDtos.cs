@@ -454,6 +454,13 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string Reply { get; set; }
     }
 
+    /// <summary>Item 52: customer rates the shipper (1-5) for an order review.</summary>
+    public class SetShipperRatingDto
+    {
+        [Range(1, 5)]
+        public int Rating { get; set; }
+    }
+
     /// <summary>Lucky-spin request after checkout.</summary>
     public class SpinInput
     {

@@ -40,6 +40,9 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Admin reply, shown publicly under the review.</summary>
         public string AdminReply { get; set; }
 
+        /// <summary>Item 52: optional 1-5 star rating for the shipper of this order.</summary>
+        public int? ShipperRating { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         /// <summary>

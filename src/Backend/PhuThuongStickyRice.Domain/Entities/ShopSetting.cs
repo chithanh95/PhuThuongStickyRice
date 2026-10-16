@@ -297,6 +297,26 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public string GoogleAnalyticsId { get; set; }
 
+        // ---- VIP Club (55) ----
+
+        /// <summary>
+        /// Link nhóm Zalo VIP cho khách hàng hạng Vàng / chi tiêu cao.
+        /// Empty = không hiển thị.
+        /// </summary>
+        public string ZaloVipGroupUrl { get; set; }
+
+        // ---- Bán sỉ / xuất khẩu (58) ----
+
+        /// <summary>
+        /// Thông tin liên hệ bán sỉ hiển thị trên landing (SĐT/Zalo).
+        /// </summary>
+        public string WholesaleContact { get; set; }
+
+        /// <summary>
+        /// Số lượng tối thiểu cho đơn sỉ (gói).
+        /// </summary>
+        public int WholesaleMinQty { get; set; }
+
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting
@@ -352,7 +372,10 @@ namespace PhuThuongStickyRice.Domain.Entities
                 NewOrderWebhookUrl = null,
                 NewOrderWebhookEnabled = false,
                 FacebookPixelId = null,
-                GoogleAnalyticsId = null
+                GoogleAnalyticsId = null,
+                ZaloVipGroupUrl = null,
+                WholesaleContact = null,
+                WholesaleMinQty = 50
             };
         }
     }

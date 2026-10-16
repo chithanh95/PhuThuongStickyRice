@@ -54,6 +54,9 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Admin: reply to an order review (shown publicly).</summary>
         Task<OrderReviewDto> ReplyReviewAsync(Guid id, ReplyReviewDto input);
 
+        /// <summary>Item 52: customer rates the shipper (1-5) for an order review.</summary>
+        Task<OrderReviewDto> SetShipperRatingAsync(Guid id, SetShipperRatingDto input);
+
         /// <summary>Public: non-hidden reviews for the landing page.</summary>
         Task<List<OrderReviewDto>> GetPublicReviewsAsync();
 
@@ -292,6 +295,20 @@ namespace PhuThuongStickyRice.Application.Orders
                 && !string.IsNullOrWhiteSpace(input.PaymentMethod))
             {
                 throw new Domain.Exceptions.DomainException($"Unknown payment method '{input.PaymentMethod}'.");
+            }
+
+            // Item 50: pay-later requires at least 5 completed orders from this phone.
+            if (paymentMethod == PaymentMethod.PayLater)
+            {
+                var phone = (input.CustomerPhone ?? string.Empty).Trim();
+                var orderQueryable = await _orders.GetQueryableAsync();
+                var completedCount = await _asyncExecuter.CountAsync(
+                    orderQueryable.Where(o => o.CustomerPhone == phone && o.Status == OrderStatus.Completed));
+                if (completedCount < 5)
+                {
+                    throw new Domain.Exceptions.DomainException(
+                        "Trả sau chỉ áp dụng cho khách đã có ít nhất 5 đơn hoàn thành.");
+                }
             }
 
             // Fulfillment: customer-booked shipper pickup (default — the shop
@@ -1204,6 +1221,19 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var review = await _reviews.GetAsync(id);
             review.AdminReply = string.IsNullOrWhiteSpace(input.Reply) ? null : input.Reply.Trim();
+            await _reviews.UpdateAsync(review, autoSave: true);
+            return MapReviewToDto(review);
+        }
+
+        /// <summary>Item 52: customer rates the shipper (1-5) for an order review.</summary>
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public async Task<OrderReviewDto> SetShipperRatingAsync(Guid id, SetShipperRatingDto input)
+        {
+            if (input.Rating < 1 || input.Rating > 5)
+                throw new Domain.Exceptions.DomainException("Đánh giá shipper phải từ 1 đến 5 sao.");
+
+            var review = await _reviews.GetAsync(id);
+            review.ShipperRating = input.Rating;
             await _reviews.UpdateAsync(review, autoSave: true);
             return MapReviewToDto(review);
         }

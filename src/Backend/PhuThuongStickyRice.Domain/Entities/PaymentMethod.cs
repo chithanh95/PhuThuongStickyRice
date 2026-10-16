@@ -15,6 +15,9 @@ namespace PhuThuongStickyRice.Domain.Entities
         MoMo = 2,
 
         /// <summary>Customer prepaid wallet balance (item 140).</summary>
-        Wallet = 3
+        Wallet = 3,
+
+        /// <summary>Pay later — customer pays on next order or via transfer (item 50). Requires >= 5 completed orders.</summary>
+        PayLater = 4
     }
 }

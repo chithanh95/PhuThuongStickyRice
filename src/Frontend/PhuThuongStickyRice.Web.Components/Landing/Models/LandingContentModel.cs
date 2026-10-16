@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Web.Components.Landing.Models
@@ -133,5 +134,59 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
         public string Sender { get; set; }
         public string Message { get; set; }
         public System.DateTime CreatedAt { get; set; }
+    }
+}
+
+namespace PhuThuongStickyRice.Web.Components.Landing.Models
+{
+    public class OffPeakPromoModel
+    {
+        public int StartHour { get; set; }
+        public int EndHour { get; set; }
+        public int DiscountAmount { get; set; }
+        public bool IsNow { get; set; }
+    }
+
+    public class StreakCheckInResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public int StreakCount { get; set; }
+        public bool IsCompleted { get; set; }
+    }
+
+    public class DishPollModel
+    {
+        public Guid Id { get; set; }
+        public string DishName { get; set; }
+        public string Description { get; set; }
+        public string ImageUrl { get; set; }
+        public int VoteCount { get; set; }
+    }
+}
+
+namespace PhuThuongStickyRice.Web.Components.Landing.Models
+{
+    public class BirthdayGiftResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public string GiftCode { get; set; }
+    }
+
+    public class VipStatusModel
+    {
+        public string Tier { get; set; }
+        public bool IsVip { get; set; }
+        public string ZaloGroupUrl { get; set; }
+    }
+
+    public class CourseModel
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public decimal Price { get; set; }
+        public string ThumbnailUrl { get; set; }
     }
 }
