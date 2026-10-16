@@ -4,7 +4,13 @@
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @inject OrderService OrderService
 
-<h3>💰 Báo cáo lãi gộp theo món</h3>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Báo cáo lãi gộp theo món</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Lãi gộp theo món</li>
+    </ol>
+</div>
 <p class="text-muted">Doanh thu − giá vốn của từng món. Đơn đã hủy không tính. Sắp xếp theo lãi gộp giảm dần.</p>
 
 <div class="alert alert-info">
@@ -14,6 +20,7 @@
 
 <div class="card mb-3">
     <div class="card-body">
+        <h4 class="card-title">Khoảng thời gian</h4>
         <div class="form-row align-items-end">
             <div class="col-md-2 col-6">
                 <label class="mb-1"><small class="text-muted">Từ ngày</small></label>
@@ -61,7 +68,7 @@ else if (_report != null)
         <div class="col-md-3 col-6 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Lãi gộp</p>
-                <h2 class="lx-mini-value" style="color:#28a745">@FmtVnd(_report.Total.Profit)</h2>
+                <h2 class="lx-mini-value">@FmtVnd(_report.Total.Profit)</h2>
                 <span class="lx-mini-foot">Doanh thu − giá vốn</span>
                 <span class="lx-mini-icon"><span class="oi oi-graph" aria-hidden="true"></span></span>
             </div>
@@ -90,11 +97,32 @@ else if (_report != null)
     }
 
     <div class="card mb-4">
-        <div class="card-header">
-            <h4 class="card-title">Lãi gộp theo món</h4>
-            <small class="text-muted">Sắp xếp theo lãi gộp giảm dần</small>
+        <div class="card-body">
+            <h4 class="card-title">Biểu đồ lãi gộp theo món</h4>
+            <p class="card-title-desc">Sắp xếp theo lãi gộp giảm dần</p>
+            @{
+                var maxProfit = _report.Rows.Count > 0 ? _report.Rows.Max(r => r.Profit) : 0m;
+            }
+            @foreach (var r in _report.Rows)
+            {
+                var pct = maxProfit > 0 ? Math.Max(0, (double)(r.Profit / maxProfit) * 100) : 0;
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>@r.ProductName</span>
+                        <strong style="color:@(r.Profit >= 0 ? "#28a745" : "#dc3545")">@FmtVnd(r.Profit)</strong>
+                    </div>
+                    <div class="progress" style="height:18px;">
+                        <div class="progress-bar" role="progressbar" style="width:@(pct.ToString("0"))%;background:#7a6fbe;">@(pct.ToString("0"))%</div>
+                    </div>
+                </div>
+            }
         </div>
+    </div>
+
+    <div class="card mb-4">
         <div class="card-body p-0">
+            <h4 class="card-title px-3 pt-3">Lãi gộp theo món</h4>
+            <p class="card-title-desc px-3">Sắp xếp theo lãi gộp giảm dần</p>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="thead-light">
@@ -146,11 +174,9 @@ else if (_report != null)
 }
 
 <div class="card">
-    <div class="card-header">
-        <h4 class="card-title">✏️ Nhập giá vốn từng món</h4>
-        <small class="text-muted">Lưu xong bấm "Xem báo cáo" để cập nhật số liệu lãi gộp.</small>
-    </div>
     <div class="card-body p-0">
+        <h4 class="card-title px-3 pt-3">✏️ Nhập giá vốn từng món</h4>
+        <p class="card-title-desc px-3">Lưu xong bấm "Xem báo cáo" để cập nhật số liệu lãi gộp.</p>
         @if (_costs == null)
         {
             <div class="p-3 text-muted">Đang tải danh sách món...</div>
