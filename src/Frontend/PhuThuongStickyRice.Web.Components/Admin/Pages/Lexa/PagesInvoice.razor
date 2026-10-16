@@ -1,0 +1,91 @@
+@page "/admin/lexa/pages-invoice"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Hóa đơn</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>Extra Pages</li>
+        <li class="current">Invoice</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h3>🍚 Xôi Phú Thượng</h3>
+                        <p class="text-muted mb-0">Làng nghề Phú Thượng, Tây Hồ, Hà Nội<br />SĐT: 0389245468</p>
+                    </div>
+                    <div class="text-right">
+                        <h4 style="color:#7a6fbe;">HÓA ĐƠN</h4>
+                        <p class="mb-0"><strong>Mã:</strong> HD-20261016-001</p>
+                        <p class="mb-0"><strong>Ngày:</strong> 16/10/2026</p>
+                        <p class="mb-0"><span class="badge badge-success">Đã thanh toán</span></p>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <strong>Khách hàng:</strong><br />
+                        Nguyễn Văn A<br />
+                        <span class="text-muted">0901234567<br />123 Đường Láng, Đống Đa, Hà Nội</span>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <strong>Hình thức:</strong> Chuyển khoản<br />
+                        <strong>Người bán:</strong> Minh Anh (Thu ngân)
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead style="background:#f8f8fb;">
+                            <tr><th>#</th><th>Món ăn</th><th class="text-center">SL</th><th class="text-right">Đơn giá</th><th class="text-right">Thành tiền</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var (it, i) in _items.Select((it, i) => (it, i)))
+                            {
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>@it.Name</td>
+                                    <td class="text-center">@it.Qty</td>
+                                    <td class="text-right">@it.Price</td>
+                                    <td class="text-right">@it.Total</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="row">
+                    <div class="col-md-6"></div>
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr><td>Tạm tính:</td><td class="text-right">185.000 ₫</td></tr>
+                            <tr><td>Giảm giá (10%):</td><td class="text-right text-danger">-18.500 ₫</td></tr>
+                            <tr><td><strong>Tổng cộng:</strong></td><td class="text-right"><strong style="color:#7a6fbe;font-size:18px;">166.500 ₫</strong></td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="mt-4 d-flex" style="gap:8px;">
+                    <button class="btn btn-primary" @onclick="() => _printed = true">🖨 In hóa đơn</button>
+                    <button class="btn btn-secondary">📧 Gửi email</button>
+                </div>
+                @if (_printed)
+                {
+                    <div class="alert alert-info mt-3 mb-0">Đã gửi lệnh in (demo).</div>
+                }
+                <p class="text-muted text-center mt-4 mb-0 small">Cảm ơn quý khách đã ủng hộ Xôi Phú Thượng!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _printed;
+    private List<InvItem> _items = new()
+    {
+        new("Xôi gấc đặc biệt", 5, "35.000 ₫", "175.000 ₫"),
+        new("Chả cốm (topping)", 2, "5.000 ₫", "10.000 ₫"),
+    };
+    private record InvItem(string Name, int Qty, string Price, string Total);
+}

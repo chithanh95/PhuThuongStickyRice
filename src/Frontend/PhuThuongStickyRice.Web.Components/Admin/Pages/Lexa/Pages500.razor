@@ -1,0 +1,11 @@
+@page "/admin/lexa/pages-500"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="row justify-content-center" style="margin-top:60px;">
+    <div class="col-md-6 text-center">
+        <div style="font-size:120px;font-weight:700;color:#ec536c;">500</div>
+        <h3>Lỗi máy chủ</h3>
+        <p class="text-muted">Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.</p>
+        <a href="/admin" class="btn btn-primary mt-2">Về trang quản trị</a>
+    </div>
+</div>

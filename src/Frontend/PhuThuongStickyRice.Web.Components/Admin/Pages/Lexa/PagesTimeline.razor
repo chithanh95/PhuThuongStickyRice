@@ -1,0 +1,59 @@
+@page "/admin/lexa/pages-timeline"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Timeline</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>Extra Pages</li>
+        <li class="current">Timeline</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Dòng thời gian hoạt động</h4>
+                <div class="lexa-timeline-v">
+                    @foreach (var e in _events)
+                    {
+                        <div class="lexa-tl-item">
+                            <div class="lexa-tl-dot" style="background:@e.Color;"></div>
+                            <div class="lexa-tl-content">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@e.Title</strong>
+                                    <small class="text-muted">@e.Time</small>
+                                </div>
+                                <p class="text-muted mb-0 small">@e.Desc</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-timeline-v { position: relative; padding-left: 30px; }
+    .lexa-timeline-v:before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: #e9ecef; }
+    html.dark .lexa-timeline-v:before { background: #3a3a58; }
+    .lexa-tl-item { position: relative; padding-bottom: 24px; }
+    .lexa-tl-dot { position: absolute; left: -28px; top: 2px; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px #e9ecef; }
+    html.dark .lexa-tl-dot { border-color: #262640; }
+    .lexa-tl-content { background: #f8f8fb; border-radius: 8px; padding: 12px 16px; }
+    html.dark .lexa-tl-content { background: #20203a; }
+</style>
+
+@code {
+    private List<TlEvent> _events = new()
+    {
+        new("Đơn hàng #12345 đã giao thành công", "Khách hàng Nguyễn Văn A đã nhận 10 suất xôi gấc.", "10:30", "#3ac9d6"),
+        new("Thêm món mới: Xôi cốm", "Món xôi cốm mùa thu đã được thêm vào thực đơn.", "09:15", "#7a6fbe"),
+        new("Cảnh báo tồn kho", "Gạo nếp chỉ còn đủ dùng 2 ngày, cần nhập thêm.", "08:45", "#f5b225"),
+        new("Đơn hàng #12344 bị hủy", "Khách hủy do đổi địa chỉ giao hàng.", "08:00", "#ec536c"),
+        new("Báo cáo tuần đã gửi", "Báo cáo doanh thu tuần 42 đã gửi qua Zalo.", "Hôm qua", "#29bbe3"),
+    };
+    private record TlEvent(string Title, string Desc, string Time, string Color);
+}
