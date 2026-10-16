@@ -1,0 +1,243 @@
+@page "/admin/lexa/form-elements"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Form Elements</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li><a href="/admin/lexa/form-elements">Forms</a></li>
+        <li class="current">Form Elements</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Textual inputs</h4>
+                <p class="card-title-desc">Các ví dụ về <code>.form-control</code> áp dụng cho từng loại thẻ <code>input</code> HTML5.</p>
+
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Text</label>
+                    <div class="col-sm-10"><input class="form-control" type="text" @bind="_text" placeholder="Nhập văn bản" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Search</label>
+                    <div class="col-sm-10"><input class="form-control" type="search" @bind="_search" placeholder="Tìm kiếm..." /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Email</label>
+                    <div class="col-sm-10"><input class="form-control" type="email" @bind="_email" placeholder="vidu@email.com" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">URL</label>
+                    <div class="col-sm-10"><input class="form-control" type="url" @bind="_url" placeholder="https://vidu.com" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Điện thoại</label>
+                    <div class="col-sm-10"><input class="form-control" type="tel" @bind="_phone" placeholder="0901234567" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Mật khẩu</label>
+                    <div class="col-sm-10"><input class="form-control" type="password" @bind="_password" placeholder="••••••" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Số</label>
+                    <div class="col-sm-10"><input class="form-control" type="number" @bind="_number" min="0" max="100" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Ngày giờ</label>
+                    <div class="col-sm-10"><input class="form-control" type="datetime-local" @bind="_datetime" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Ngày</label>
+                    <div class="col-sm-10"><input class="form-control" type="date" @bind="_date" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Tháng</label>
+                    <div class="col-sm-10"><input class="form-control" type="text" @bind="_month" placeholder="VD: 2026-10" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Tuần</label>
+                    <div class="col-sm-10"><input class="form-control" type="text" @bind="_week" placeholder="VD: Tuần 42, 2026" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Giờ</label>
+                    <div class="col-sm-10"><input class="form-control" type="text" @bind="_time" placeholder="VD: 08:30" /></div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Màu sắc</label>
+                    <div class="col-sm-10"><input class="form-control" type="color" @bind="_color" style="height:38px;padding:4px;" /></div>
+                </div>
+                <div class="form-group row mb-0">
+                    <label class="col-sm-2 col-form-label">Disabled</label>
+                    <div class="col-sm-10"><input class="form-control" type="text" disabled placeholder="Input bị vô hiệu hóa" /></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Select</h4>
+                <p class="card-title-desc">Các loại dropdown select.</p>
+                <div class="form-group">
+                    <label>Select thường</label>
+                    <select class="form-control" @bind="_select1">
+                        <option value="">-- Chọn --</option>
+                        <option value="1">Tùy chọn 1</option>
+                        <option value="2">Tùy chọn 2</option>
+                        <option value="3">Tùy chọn 3</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Select nhiều</label>
+                    <select class="form-control" multiple style="height:110px;" @onchange="OnMultiSelect">
+                        <option value="a">Xôi gấc</option>
+                        <option value="b">Xôi đỗ</option>
+                        <option value="c">Xôi xéo</option>
+                        <option value="d">Xôi vò</option>
+                    </select>
+                    <small class="text-muted">Đã chọn: @_multiSelected</small>
+                </div>
+                <div class="form-group mb-0">
+                    <label>Kích thước input</label>
+                    <input class="form-control form-control-lg mb-2" type="text" placeholder="Input lớn (.form-control-lg)" />
+                    <input class="form-control form-control-sm" type="text" placeholder="Input nhỏ (.form-control-sm)" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Textarea & Checkbox</h4>
+                <p class="card-title-desc">Vùng văn bản và các lựa chọn.</p>
+                <div class="form-group">
+                    <label>Ghi chú</label>
+                    <textarea class="form-control" rows="4" @bind="_notes" placeholder="Nhập ghi chú..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Checkbox</label>
+                    <div class="custom-control custom-checkbox mb-2">
+                        <input type="checkbox" class="custom-control-input" id="cb1" @bind="_cb1" />
+                        <label class="custom-control-label" for="cb1">Giao hàng tận nơi</label>
+                    </div>
+                    <div class="custom-control custom-checkbox mb-2">
+                        <input type="checkbox" class="custom-control-input" id="cb2" @bind="_cb2" />
+                        <label class="custom-control-label" for="cb2">Xuất hóa đơn</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="cb3" disabled />
+                        <label class="custom-control-label" for="cb3">Bị vô hiệu hóa</label>
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <label>Radio</label>
+                    <div class="custom-control custom-radio mb-2">
+                        <input type="radio" class="custom-control-input" id="r1" name="paymethod" checked="@(_payMethod == "tienmat")" @onchange="@(() => _payMethod = "tienmat")" />
+                        <label class="custom-control-label" for="r1">Tiền mặt</label>
+                    </div>
+                    <div class="custom-control custom-radio mb-2">
+                        <input type="radio" class="custom-control-input" id="r2" name="paymethod" checked="@(_payMethod == "chuyenkhoan")" @onchange="@(() => _payMethod = "chuyenkhoan")" />
+                        <label class="custom-control-label" for="r2">Chuyển khoản</label>
+                    </div>
+                    <div class="custom-control custom-radio">
+                        <input type="radio" class="custom-control-input" id="r3" name="paymethod" checked="@(_payMethod == "momo")" @onchange="@(() => _payMethod = "momo")" />
+                        <label class="custom-control-label" for="r3">Ví MoMo</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Input groups</h4>
+                <p class="card-title-desc">Kết hợp input với addon hai bên.</p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend"><span class="input-group-text">₫</span></div>
+                            <input type="text" class="form-control" @bind="_amount" placeholder="Số tiền" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" @bind="_search2" placeholder="Tìm món ăn" />
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="button" @onclick="OnSearchClick">Tìm</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend"><span class="input-group-text">@@</span></div>
+                            <input type="text" class="form-control" @bind="_username" placeholder="Tên đăng nhập" />
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary mr-2" @onclick="OnSubmit">Lưu lại</button>
+                <button class="btn btn-secondary" @onclick="OnReset">Đặt lại</button>
+                @if (_submitted)
+                {
+                    <div class="alert alert-success mt-3 mb-0">Đã lưu form demo thành công!</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _text;
+    private string _search;
+    private string _email;
+    private string _url;
+    private string _phone;
+    private string _password;
+    private int _number = 42;
+    private DateTime _datetime = DateTime.Now;
+    private DateTime _date = DateTime.Today;
+    private string _month;
+    private string _week;
+    private string _time;
+    private string _color = "#7a6fbe";
+    private string _select1;
+    private string _multiSelected = "(chưa chọn)";
+    private string _notes;
+    private bool _cb1 = true;
+    private bool _cb2;
+    private string _payMethod = "tienmat";
+    private string _amount;
+    private string _search2;
+    private string _username;
+    private bool _submitted;
+
+    private void OnMultiSelect(ChangeEventArgs e)
+    {
+        _multiSelected = e.Value?.ToString() ?? "(chưa chọn)";
+    }
+
+    private void OnSearchClick()
+    {
+    }
+
+    private void OnSubmit()
+    {
+        _submitted = true;
+    }
+
+    private void OnReset()
+    {
+        _text = _search = _email = _url = _phone = _password = null;
+        _number = 42;
+        _notes = _amount = _search2 = _username = null;
+        _submitted = false;
+    }
+}
