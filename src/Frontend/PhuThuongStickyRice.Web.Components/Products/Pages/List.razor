@@ -2,26 +2,34 @@
 @attribute [Authorize]
 @using System
 
-<div class="card">
-    <div class="card-header d-flex flex-wrap align-items-center">
-        <span>Danh sách sản phẩm</span>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Sản phẩm</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Sản phẩm</li>
+    </ol>
+</div>
 
-        <div class="d-flex flex-wrap ml-md-auto mt-2 mt-md-0">
-            <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsPdf">
-                Xuất PDF
-            </button>
-            <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsCsv">
-                Xuất CSV
-            </button>
-            @if (HasPermission("products.edit"))
-            {
-                <button class="btn btn-primary mb-1" @onclick="QuickAddProduct">
-                    Thêm sản phẩm
-                </button>
-            }
-        </div>
-    </div>
+<div class="card">
     <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center mb-3">
+            <h4 class="card-title mb-0">Danh sách sản phẩm</h4>
+
+            <div class="d-flex flex-wrap ml-md-auto mt-2 mt-md-0">
+                <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsPdf">
+                    Xuất PDF
+                </button>
+                <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsCsv">
+                    Xuất CSV
+                </button>
+                @if (HasPermission("products.edit"))
+                {
+                    <button class="btn btn-primary mb-1" @onclick="QuickAddProduct">
+                        Thêm sản phẩm
+                    </button>
+                }
+            </div>
+        </div>
         @if (!string.IsNullOrEmpty(ToggleError))
         {
             <div class="alert alert-danger">@ToggleError</div>
@@ -51,7 +59,7 @@
             }
             else
             {
-                <table class="table">
+                <table class="table table-hover mb-0">
                     <thead>
                         <tr>
                             <th style="width: 36px;" title="Kéo thả để sắp xếp thứ tự hiển thị"></th>
