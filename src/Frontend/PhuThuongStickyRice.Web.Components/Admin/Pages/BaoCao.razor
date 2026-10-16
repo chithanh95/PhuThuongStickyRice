@@ -5,7 +5,13 @@
 @inject OrderService OrderService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
-<h3>📈 Báo cáo doanh thu</h3>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Báo cáo doanh thu</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Báo cáo doanh thu</li>
+    </ol>
+</div>
 <p class="text-muted">
     Xuất file Excel gồm 2 sheet: <strong>Tổng hợp</strong> (doanh thu, số đơn, giá trị trung bình theo ngày)
     và <strong>Chi tiết đơn</strong>. Đơn đã hủy không tính vào doanh thu.
@@ -13,6 +19,7 @@
 
 <div class="card mb-3">
     <div class="card-body">
+        <h4 class="card-title">Khoảng thời gian</h4>
         <div class="form-row align-items-end">
             <div class="col-md-3 col-6">
                 <label class="mb-1"><small class="text-muted">Từ ngày</small></label>
@@ -40,9 +47,9 @@
 {
     <div class="card mb-3 border-info">
         <div class="card-body">
-            <h5>⚖️ So sánh cùng kỳ</h5>
-            <p class="text-muted"><small>So sánh doanh thu, số đơn, giá trị TB/đơn và top món giữa 2 kỳ. Đơn đã hủy không tính.</small></p>
-            <div class="mb-2">
+            <h4 class="card-title">⚖️ So sánh cùng kỳ</h4>
+            <p class="card-title-desc">So sánh doanh thu, số đơn, giá trị TB/đơn và top món giữa 2 kỳ. Đơn đã hủy không tính.</p>
+            <div class="mb-3">
                 <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareThisMonth">Tháng này vs tháng trước</button>
                 <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareLast7Days">7 ngày qua vs 7 ngày trước đó</button>
                 <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareThisWeek">Tuần này vs tuần trước</button>
@@ -60,8 +67,8 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <div class="card h-100">
-                            <div class="card-header bg-primary text-white"><strong>Kỳ hiện tại</strong> — @_currentLabel</div>
                             <div class="card-body">
+                                <h4 class="card-title text-success">Kỳ hiện tại <small class="text-muted">— @_currentLabel</small></h4>
                                 <div class="row text-center">
                                     <div class="col-4">
                                         <div class="h5 mb-0 text-success">@FormatPrice(_current.TotalRevenue)</div>
@@ -96,8 +103,8 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <div class="card h-100">
-                            <div class="card-header bg-secondary text-white"><strong>Kỳ so sánh</strong> — @_previousLabel</div>
                             <div class="card-body">
+                                <h4 class="card-title text-secondary">Kỳ so sánh <small class="text-muted">— @_previousLabel</small></h4>
                                 <div class="row text-center">
                                     <div class="col-4">
                                         <div class="h5 mb-0 text-success">@FormatPrice(_previous.TotalRevenue)</div>
@@ -132,9 +139,41 @@
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-body py-2">
-                        <strong>📊 Chênh lệch (kỳ hiện tại so với kỳ so sánh):</strong>
-                        <div class="row mt-2 text-center">
+                    <div class="card-body">
+                        <h4 class="card-title">📊 Chênh lệch (kỳ hiện tại so với kỳ so sánh)</h4>
+                        @{
+                            var cmpMaxRev = Math.Max(_current.TotalRevenue, _previous.TotalRevenue);
+                            var cmpMaxOrd = Math.Max((decimal)_current.OrderCount, (decimal)_previous.OrderCount);
+                            var cmpMaxAvg = Math.Max(_current.AvgOrderValue, _previous.AvgOrderValue);
+                        }
+                        <div class="lexa-chart">
+                            <div class="lexa-col-wrap">
+                                <div style="display:flex;align-items:flex-end;gap:3px;">
+                                    <div class="lexa-col" style="height:@((cmpMaxRev > 0 ? (double)(_current.TotalRevenue / cmpMaxRev) * 150 : 4).ToString("0"))px;background:#7a6fbe;" title="Kỳ này: @FormatPrice(_current.TotalRevenue)"></div>
+                                    <div class="lexa-col" style="height:@((cmpMaxRev > 0 ? (double)(_previous.TotalRevenue / cmpMaxRev) * 150 : 4).ToString("0"))px;background:#c9c7dd;" title="Kỳ trước: @FormatPrice(_previous.TotalRevenue)"></div>
+                                </div>
+                                <small>Doanh thu</small>
+                            </div>
+                            <div class="lexa-col-wrap">
+                                <div style="display:flex;align-items:flex-end;gap:3px;">
+                                    <div class="lexa-col" style="height:@((cmpMaxOrd > 0 ? (double)((decimal)_current.OrderCount / cmpMaxOrd) * 150 : 4).ToString("0"))px;background:#7a6fbe;" title="Kỳ này: @_current.OrderCount đơn"></div>
+                                    <div class="lexa-col" style="height:@((cmpMaxOrd > 0 ? (double)((decimal)_previous.OrderCount / cmpMaxOrd) * 150 : 4).ToString("0"))px;background:#c9c7dd;" title="Kỳ trước: @_previous.OrderCount đơn"></div>
+                                </div>
+                                <small>Số đơn</small>
+                            </div>
+                            <div class="lexa-col-wrap">
+                                <div style="display:flex;align-items:flex-end;gap:3px;">
+                                    <div class="lexa-col" style="height:@((cmpMaxAvg > 0 ? (double)(_current.AvgOrderValue / cmpMaxAvg) * 150 : 4).ToString("0"))px;background:#7a6fbe;" title="Kỳ này: @FormatPrice(_current.AvgOrderValue)"></div>
+                                    <div class="lexa-col" style="height:@((cmpMaxAvg > 0 ? (double)(_previous.AvgOrderValue / cmpMaxAvg) * 150 : 4).ToString("0"))px;background:#c9c7dd;" title="Kỳ trước: @FormatPrice(_previous.AvgOrderValue)"></div>
+                                </div>
+                                <small>TB/đơn</small>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="lexa-dot" style="background:#7a6fbe;"></span> Kỳ hiện tại
+                            <span class="lexa-dot ml-3" style="background:#c9c7dd;"></span> Kỳ so sánh
+                        </div>
+                        <div class="row mt-3 text-center">
                             <div class="col-4">
                                 <div class="h5 mb-0 @ChangeClass(_current.TotalRevenue, _previous.TotalRevenue)">@ChangeText(_current.TotalRevenue, _previous.TotalRevenue)</div>
                                 <small class="text-muted">Doanh thu</small>
@@ -159,6 +198,13 @@
 {
     <div class="alert alert-danger">@_error</div>
 }
+
+<style>
+    .lexa-chart { display: flex; align-items: flex-end; justify-content: space-around; height: 200px; padding: 10px 0; gap: 8px; }
+    .lexa-col-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+    .lexa-col { width: 100%; max-width: 44px; border-radius: 4px 4px 0 0; min-height: 4px; transition: height .3s; }
+    .lexa-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+</style>
 
 @code {
     private DateTime? _fromDate;
