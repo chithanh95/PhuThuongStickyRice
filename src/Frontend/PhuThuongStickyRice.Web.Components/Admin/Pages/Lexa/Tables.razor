@@ -1,0 +1,277 @@
+@page "/admin/lexa/tables"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Tables</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Tables</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bảng cơ bản</h4>
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr><th>#</th><th>Món ăn</th><th>Danh mục</th><th>Giá</th><th>Trạng thái</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var (d, i) in _dishes.Select((d, i) => (d, i)))
+                            {
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td><strong>@d.Name</strong></td>
+                                    <td>@d.Category</td>
+                                    <td>@d.Price</td>
+                                    <td><span class="badge @d.Badge">@d.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bảng sọc (striped)</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Tổng tiền</th></tr></thead>
+                        <tbody>
+                            @foreach (var o in _orders)
+                            {
+                                <tr><td>@o.Code</td><td>@o.Customer</td><td>@o.Total</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bảng viền + hover</h4>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mb-0">
+                        <thead class="thead-light"><tr><th>Nhân viên</th><th>Vai trò</th><th>Ca làm</th></tr></thead>
+                        <tbody>
+                            @foreach (var s in _staff)
+                            {
+                                <tr><td>@s.Name</td><td>@s.Role</td><td>@s.Shift</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bảng dữ liệu (tìm kiếm + sắp xếp + phân trang)</h4>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <input class="form-control" @bind="_search" @bind:event="oninput" placeholder="Tìm kiếm món ăn..." />
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <small class="text-muted">Hiển thị @_paged.Count() / @Filtered.Count() món</small>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th style="cursor:pointer;" @onclick='() => SortBy("Name")'>Món ăn @SortIcon("Name")</th>
+                                <th style="cursor:pointer;" @onclick='() => SortBy("Category")'>Danh mục @SortIcon("Category")</th>
+                                <th style="cursor:pointer;" @onclick='() => SortBy("PriceNum")'>Giá @SortIcon("PriceNum")</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var d in _paged)
+                            {
+                                <tr>
+                                    <td><strong>@d.Name</strong></td>
+                                    <td>@d.Category</td>
+                                    <td>@d.Price</td>
+                                    <td><span class="badge @d.Badge">@d.Status</span></td>
+                                </tr>
+                            }
+                            @if (!_paged.Any())
+                            {
+                                <tr><td colspan="4" class="text-center text-muted">Không tìm thấy món ăn.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">Trang @_page / @TotalPages</small>
+                    <div>
+                        <button class="btn btn-sm btn-secondary mr-1" @onclick="PrevPage" disabled="@(_page <= 1)">← Trước</button>
+                        <button class="btn btn-sm btn-secondary" @onclick="NextPage" disabled="@(_page >= TotalPages)">Sau →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bảng chỉnh sửa trực tiếp</h4>
+                <p class="card-title-desc">Bấm vào ô để sửa giá ngay.</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0">
+                        <thead><tr><th>Món ăn</th><th>Giá bán (sửa trực tiếp)</th><th>Thao tác</th></tr></thead>
+                        <tbody>
+                            @foreach (var d in _editable)
+                            {
+                                <tr>
+                                    <td>@d.Name</td>
+                                    <td>
+                                        @if (_editingId == d.Id)
+                                        {
+                                            <div class="input-group input-group-sm" style="max-width:220px;">
+                                                <input class="form-control" @bind="_editPrice" inputmode="numeric" />
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-success" @onclick="() => SavePrice(d)">✓</button>
+                                                    <button class="btn btn-secondary" @onclick="CancelEdit">✕</button>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="lexa-xedit" @onclick="() => StartEdit(d)" title="Bấm để sửa">@d.Price</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => _editable.Remove(d)">Xóa</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn btn-primary btn-sm mt-3" @onclick="AddRow">+ Thêm dòng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-xedit { color: #7a6fbe; border-bottom: 1px dashed #7a6fbe; cursor: pointer; }
+    .lexa-xedit:hover { background: #f0efff; }
+    html.dark .lexa-xedit:hover { background: #2c2c4e; }
+</style>
+
+@code {
+    private List<Dish> _dishes = new()
+    {
+        new(Guid.NewGuid(), "Xôi gấc đặc biệt", "Xôi mặn", "35.000 ₫", 35000, "Đang bán", "badge-success"),
+        new(Guid.NewGuid(), "Xôi đỗ xanh", "Xôi mặn", "15.000 ₫", 15000, "Đang bán", "badge-success"),
+        new(Guid.NewGuid(), "Xôi xéo", "Xôi mặn", "20.000 ₫", 20000, "Tạm hết", "badge-warning"),
+        new(Guid.NewGuid(), "Xôi cốm", "Xôi ngọt", "25.000 ₫", 25000, "Đang bán", "badge-success"),
+        new(Guid.NewGuid(), "Xôi vò", "Xôi ngọt", "20.000 ₫", 20000, "Ngưng bán", "badge-danger"),
+        new(Guid.NewGuid(), "Xôi lạc", "Xôi mặn", "15.000 ₫", 15000, "Đang bán", "badge-success"),
+        new(Guid.NewGuid(), "Xôi đậu đen", "Xôi ngọt", "18.000 ₫", 18000, "Đang bán", "badge-success"),
+        new(Guid.NewGuid(), "Xôi ngũ sắc", "Combo", "40.000 ₫", 40000, "Đang bán", "badge-success"),
+    };
+    private List<Order> _orders = new()
+    {
+        new("#12345", "Nguyễn Văn A", "185.000 ₫"),
+        new("#12346", "Trần Thị B", "320.000 ₫"),
+        new("#12347", "Lê Văn C", "150.000 ₫"),
+    };
+    private List<Staff> _staff = new()
+    {
+        new("Minh Anh", "Thu ngân", "Sáng"),
+        new("Thu Hằng", "Bếp", "Sáng"),
+        new("Đức Anh", "Bếp", "Chiều"),
+    };
+
+    private string _search = "";
+    private string _sortCol = "Name";
+    private bool _sortAsc = true;
+    private int _page = 1;
+    private const int _pageSize = 5;
+
+    private IEnumerable<Dish> Filtered
+    {
+        get
+        {
+            var q = _dishes.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(_search))
+                q = q.Where(d => d.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+            q = _sortCol switch
+            {
+                "Category" => _sortAsc ? q.OrderBy(d => d.Category) : q.OrderByDescending(d => d.Category),
+                "PriceNum" => _sortAsc ? q.OrderBy(d => d.PriceNum) : q.OrderByDescending(d => d.PriceNum),
+                _ => _sortAsc ? q.OrderBy(d => d.Name) : q.OrderByDescending(d => d.Name),
+            };
+            return q;
+        }
+    }
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
+    private IEnumerable<Dish> _paged => Filtered.Skip((_page - 1) * _pageSize).Take(_pageSize);
+
+    private void SortBy(string col)
+    {
+        if (_sortCol == col) _sortAsc = !_sortAsc;
+        else { _sortCol = col; _sortAsc = true; }
+        _page = 1;
+    }
+    private string SortIcon(string col) => _sortCol != col ? "" : (_sortAsc ? "▲" : "▼");
+    private void PrevPage() { if (_page > 1) _page--; }
+    private void NextPage() { if (_page < TotalPages) _page++; }
+
+    private List<Dish> _editable;
+    private Guid? _editingId;
+    private string _editPrice;
+
+    protected override void OnInitialized()
+    {
+        _editable = _dishes.Take(4).Select(d => new Dish(d.Id, d.Name, d.Category, d.Price, d.PriceNum, d.Status, d.Badge)).ToList();
+    }
+    private void StartEdit(Dish d) { _editingId = d.Id; _editPrice = d.PriceNum.ToString(); }
+    private void CancelEdit() => _editingId = null;
+    private void SavePrice(Dish d)
+    {
+        if (int.TryParse(_editPrice, out var p) && p > 0)
+        {
+            d.PriceNum = p;
+            d.Price = p.ToString("N0") + " ₫";
+        }
+        _editingId = null;
+    }
+    private void AddRow() => _editable.Add(new Dish(Guid.NewGuid(), "Món mới", "Xôi mặn", "0 ₫", 0, "Đang bán", "badge-success"));
+
+    private class Dish
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Category { get; set; }
+        public string Price { get; set; }
+        public int PriceNum { get; set; }
+        public string Status { get; set; }
+        public string Badge { get; set; }
+        public Dish(Guid id, string name, string cat, string price, int priceNum, string status, string badge)
+        { Id = id; Name = name; Category = cat; Price = price; PriceNum = priceNum; Status = status; Badge = badge; }
+    }
+    private record Order(string Code, string Customer, string Total);
+    private record Staff(string Name, string Role, string Shift);
+}
