@@ -1,0 +1,78 @@
+@* Lexa-style TouchSpin quantity selector *@
+
+<div class="qty-spinner">
+    <button type="button" class="qty-btn qty-minus" @onclick="Decrement" disabled="@(Value <= Min)">−</button>
+    <input type="text" class="qty-input" value="@Value" readonly />
+    <button type="button" class="qty-btn qty-plus" @onclick="Increment" disabled="@(Value >= Max)">+</button>
+</div>
+
+<style>
+    .qty-spinner {
+        display: inline-flex;
+        align-items: stretch;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #fff;
+    }
+    html.dark .qty-spinner {
+        border-color: #4a4a6e;
+        background: #1e1e36;
+    }
+    .qty-btn {
+        width: 32px;
+        border: none;
+        background: #f0f0f0;
+        color: #333;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .15s;
+    }
+    .qty-btn:hover:not(:disabled) { background: #7a6fbe; color: #fff; }
+    .qty-btn:disabled { opacity: .4; cursor: not-allowed; }
+    html.dark .qty-btn { background: #2c2c4e; color: #f0eef5; }
+    html.dark .qty-btn:hover:not(:disabled) { background: #7a6fbe; }
+    .qty-input {
+        width: 44px;
+        border: none;
+        border-left: 1px solid #ced4da;
+        border-right: 1px solid #ced4da;
+        text-align: center;
+        font-weight: 600;
+        background: transparent;
+    }
+    html.dark .qty-input {
+        border-color: #4a4a6e;
+        color: #f0eef5;
+    }
+    .qty-input:focus { outline: none; }
+</style>
+
+@code {
+    [Parameter] public int Value { get; set; } = 1;
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+    [Parameter] public int Min { get; set; } = 1;
+    [Parameter] public int Max { get; set; } = 99;
+
+    private async Task Increment()
+    {
+        if (Value < Max)
+        {
+            Value++;
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+
+    private async Task Decrement()
+    {
+        if (Value > Min)
+        {
+            Value--;
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+}

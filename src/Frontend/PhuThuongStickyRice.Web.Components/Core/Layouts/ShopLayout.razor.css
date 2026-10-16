@@ -367,3 +367,34 @@ html.dark .shp-account:hover {
 html.dark .shp-nav a.active {
     color: #fff;
 }
+
+/* ---------- Shop dark mode: product cards ---------- */
+html.dark .shp-page .card {
+    background: #262019;
+    border-color: #3a3226;
+    color: #f0e9db;
+}
+html.dark .shp-page .card-title,
+html.dark .shp-page h1,
+html.dark .shp-page h2,
+html.dark .shp-page h3,
+html.dark .shp-page h4,
+html.dark .shp-page h5 {
+    color: #f0eef5;
+}
+html.dark .shp-page .text-muted {
+    color: #b3a48c !important;
+}
+html.dark .shp-page .form-control,
+html.dark .shp-page .form-select {
+    background-color: #1c1712;
+    border-color: #3a3226;
+    color: #f0e9db;
+}
+html.dark .shp-page .form-control::placeholder {
+    color: #7d6c58;
+}
+html.dark .shp-page .btn-primary {
+    background: #7a6fbe;
+    border-color: #7a6fbe;
+}
