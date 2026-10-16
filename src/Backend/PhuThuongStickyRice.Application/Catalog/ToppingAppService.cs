@@ -103,7 +103,12 @@ namespace PhuThuongStickyRice.Application.Catalog
         [Authorize(Roles = "Admin")]
         public async Task DeleteAsync(Guid id)
         {
-            await _toppings.DeleteAsync(id);
+            // Topping lưu tên trong OrderLine.ToppingNames (string, không FK),
+            // nhưng để giữ lịch sử đơn hàng hiển thị đúng thì deactivate
+            // thay vì xóa cứng.
+            var entity = await _toppings.GetAsync(id);
+            entity.IsActive = false;
+            await _toppings.UpdateAsync(entity, autoSave: true);
             _catalogCache.Invalidate();
         }
 

@@ -31,17 +31,20 @@ namespace PhuThuongStickyRice.Application.Catalog
     {
         private readonly IRepository<Combo, Guid> _combos;
         private readonly IRepository<Product, Guid> _products;
+        private readonly IRepository<OrderLine, Guid> _orderLines;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
         public ComboAppService(
             IRepository<Combo, Guid> combos,
             IRepository<Product, Guid> products,
+            IRepository<OrderLine, Guid> orderLines,
             IAsyncQueryableExecuter asyncExecuter,
             Products.IProductCatalogCache catalogCache)
         {
             _combos = combos;
             _products = products;
+            _orderLines = orderLines;
             _asyncExecuter = asyncExecuter;
             _catalogCache = catalogCache;
         }
@@ -129,7 +132,21 @@ namespace PhuThuongStickyRice.Application.Catalog
         [Authorize(Roles = "Admin")]
         public async Task DeleteAsync(Guid id)
         {
-            await _combos.DeleteAsync(id);
+            // OrderLine.ProductId chứa combo id khi IsCombo=true.
+            // Nếu combo đã có trong đơn hàng thì deactivate thay vì xóa cứng.
+            var orderLinesQuery = await _orderLines.GetQueryableAsync();
+            var hasOrderHistory = await _asyncExecuter.AnyAsync(
+                orderLinesQuery.Where(x => x.ProductId == id && x.IsCombo));
+            var entity = await _combos.GetAsync(id);
+            if (hasOrderHistory)
+            {
+                entity.IsActive = false;
+                await _combos.UpdateAsync(entity, autoSave: true);
+            }
+            else
+            {
+                await _combos.DeleteAsync(entity, autoSave: true);
+            }
             _catalogCache.Invalidate();
         }
 

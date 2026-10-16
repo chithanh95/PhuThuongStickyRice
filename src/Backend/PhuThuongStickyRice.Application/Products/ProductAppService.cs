@@ -72,6 +72,7 @@ namespace PhuThuongStickyRice.Application.Products
         private readonly Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> _reviews;
         private readonly Volo.Abp.Domain.Repositories.IRepository<ProductChangeLog, Guid> _changeLogs;
         private readonly Volo.Abp.Domain.Repositories.IRepository<Order, Guid> _orders;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<OrderLine, Guid> _orderLines;
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
 
@@ -85,6 +86,7 @@ namespace PhuThuongStickyRice.Application.Products
             Volo.Abp.Domain.Repositories.IRepository<OrderReview, Guid> reviews,
             Volo.Abp.Domain.Repositories.IRepository<ProductChangeLog, Guid> changeLogs,
             Volo.Abp.Domain.Repositories.IRepository<Order, Guid> orders,
+            Volo.Abp.Domain.Repositories.IRepository<OrderLine, Guid> orderLines,
             IPermissionService permissions,
             IStaffActivityLogger activityLogger)
         {
@@ -97,6 +99,7 @@ namespace PhuThuongStickyRice.Application.Products
             _reviews = reviews;
             _changeLogs = changeLogs;
             _orders = orders;
+            _orderLines = orderLines;
             _permissions = permissions;
             _activityLogger = activityLogger;
         }
@@ -524,23 +527,39 @@ namespace PhuThuongStickyRice.Application.Products
 
             var product = await FindOrThrowAsync(id);
 
-            try
+            // Kiểm tra references TRƯỚC khi xóa để tránh DbUpdateException.
+            // OrderLine.ProductId chứa product id khi IsCombo=false.
+            var orderLinesQuery = await _orderLines.GetQueryableAsync();
+            var hasOrderHistory = await _asyncExecuter.AnyAsync(
+                orderLinesQuery.Where(x => x.ProductId == id && !x.IsCombo));
+            var sizeOptionsQuery = await _sizeOptions.GetQueryableAsync();
+            var hasSizeOptions = await _asyncExecuter.AnyAsync(
+                sizeOptionsQuery.Where(x => x.ProductId == id));
+
+            if (hasOrderHistory)
             {
-                await _products.DeleteAsync(product);
-            }
-            catch (Exception)
-            {
-                // Món đã có trong đơn hàng (khóa ngoại) thì không xóa cứng được,
+                // Món đã có trong đơn hàng thì không xóa cứng được,
                 // chuyển sang ngưng bán để giữ lịch sử đơn hàng.
                 product.Discontinue();
                 await _products.UpdateAsync(product);
+                await _activityLogger.LogAsync(StaffActions.ProductDelete,
+                    $"Món {product.Name} ({product.Code.Value}) có lịch sử đơn hàng nên chuyển sang Ngưng bán.");
             }
+            else
+            {
+                // Xóa các size options liên quan trước (không có FK cascade).
+                var options = await _sizeOptions.GetListAsync(x => x.ProductId == id);
+                foreach (var opt in options)
+                {
+                    await _sizeOptions.DeleteAsync(opt);
+                }
+                await _products.DeleteAsync(product);
+                await _activityLogger.LogAsync(StaffActions.ProductDelete,
+                    $"Xóa món {product.Name} ({product.Code.Value}).");
+            }
+
             await _domainEvents.DispatchAsync(new EntityDeletedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
-
-            // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.ProductDelete,
-                $"Xóa món {product.Name} ({product.Code.Value}).");
         }
 
         /// <summary>
