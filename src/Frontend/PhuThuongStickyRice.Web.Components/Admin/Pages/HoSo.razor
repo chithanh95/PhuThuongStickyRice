@@ -1,0 +1,90 @@
+@page "/admin/ho-so"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Hồ sơ của tôi</h5>
+    </div>
+    <div class="card-body" style="max-width: 500px;">
+        @if (_loading)
+        {
+            <p><em>Đang tải...</em></p>
+        }
+        else
+        {
+            <div class="mb-3">
+                <label class="form-label">Tên đăng nhập</label>
+                <input class="form-control" value="@_userName" disabled />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input class="form-control" value="@_email" disabled />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Số điện thoại</label>
+                <input class="form-control" @bind="_phone" placeholder="VD: 0901234567" />
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="text-danger mt-1">@_error</div>
+                }
+                @if (!string.IsNullOrEmpty(_success))
+                {
+                    <div class="text-success mt-1">@_success</div>
+                }
+            </div>
+            <button class="btn btn-primary" @onclick="Save" disabled="@_saving">
+                @(_saving ? "Đang lưu..." : "Lưu")
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _saving;
+    private string _userName;
+    private string _email;
+    private string _phone;
+    private string _error;
+    private string _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var p = await Http.GetFromJsonAsync<ProfileDto>("api/auth/profile");
+            _userName = p?.UserName;
+            _email = p?.Email;
+            _phone = p?.PhoneNumber;
+        }
+        catch { }
+        _loading = false;
+    }
+
+    private async Task Save()
+    {
+        _error = null; _success = null; _saving = true;
+        try
+        {
+            var res = await Http.PutAsJsonAsync("api/auth/profile", new { PhoneNumber = _phone });
+            if (res.IsSuccessStatusCode)
+                _success = "Đã cập nhật số điện thoại.";
+            else
+                _error = await res.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        _saving = false;
+    }
+
+    private class ProfileDto
+    {
+        public string UserName { get; set; }
+        public string Email { get; set; }
+        public string PhoneNumber { get; set; }
+    }
+}

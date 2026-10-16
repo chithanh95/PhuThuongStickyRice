@@ -306,6 +306,45 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         /// <summary>Item 98: returns the otpauth:// QR to set up 2FA (Admin).</summary>
         [Authorize(Roles = "Admin")]
+        /// <summary>Lấy thông tin tài khoản đang đăng nhập.</summary>
+        [HttpGet("profile")]
+        [Authorize]
+        public async Task<ActionResult> GetProfile()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+            return Ok(new
+            {
+                user.UserName,
+                user.Email,
+                user.PhoneNumber,
+            });
+        }
+
+        /// <summary>Cập nhật SĐT của tài khoản đang đăng nhập.</summary>
+        [HttpPut("profile")]
+        [Authorize]
+        public async Task<ActionResult> UpdateProfile([FromBody] UpdateProfileModel model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
+            {
+                var phone = model.PhoneNumber.Trim();
+                if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(0)(3|5|7|8|9)\d{8}$"))
+                    return BadRequest("Số điện thoại không đúng định dạng (VD: 0901234567).");
+                user.PhoneNumber = phone;
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                return BadRequest(string.Join("; ", result.Errors.Select(e => e.Description)));
+            return Ok(new { message = "Đã cập nhật." });
+        }
+
         [HttpGet("2fa/setup")]
         public async Task<ActionResult> GetTwoFactorSetup(CancellationToken cancellationToken = default)
         {
@@ -546,5 +585,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public bool NewIpWarning { get; set; }
 
         public string NewIpAddress { get; set; }
+    }
+
+    public class UpdateProfileModel
+    {
+        public string PhoneNumber { get; set; }
     }
 }
