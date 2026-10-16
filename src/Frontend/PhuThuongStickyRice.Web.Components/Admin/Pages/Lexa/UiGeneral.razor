@@ -1,0 +1,125 @@
+@page "/admin/lexa/ui-general"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">General UI</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>UI Elements</li>
+        <li class="current">General</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Alerts</h4>
+                <div class="alert alert-primary">Thông báo primary — đơn hàng mới!</div>
+                <div class="alert alert-secondary">Thông báo secondary.</div>
+                <div class="alert alert-success">Thành công! Đã lưu món ăn.</div>
+                <div class="alert alert-danger">Lỗi! Không thể kết nối.</div>
+                <div class="alert alert-warning">Cảnh báo! Sắp hết nguyên liệu.</div>
+                <div class="alert alert-info">Thông tin: giờ mở cửa 6:00 - 22:00.</div>
+                <div class="alert alert-success alert-dismissible mb-0">
+                    Có thể đóng được.
+                    <button type="button" class="close" @onclick="() => _showDismiss = false" aria-label="Đóng"><span aria-hidden="true">×</span></button>
+                </div>
+                @if (!_showDismiss)
+                {
+                    <button class="btn btn-sm btn-secondary mt-2" @onclick="() => _showDismiss = true">Hiện lại alert</button>
+                }
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Badges</h4>
+                <p>
+                    <span class="badge badge-primary">Primary</span>
+                    <span class="badge badge-secondary">Secondary</span>
+                    <span class="badge badge-success">Success</span>
+                    <span class="badge badge-danger">Danger</span>
+                    <span class="badge badge-warning">Warning</span>
+                    <span class="badge badge-info">Info</span>
+                    <span class="badge badge-light">Light</span>
+                    <span class="badge badge-dark">Dark</span>
+                </p>
+                <p class="mb-2">Badge pill:</p>
+                <p>
+                    <span class="badge badge-pill badge-primary">Đơn mới <span class="badge badge-light">5</span></span>
+                    <span class="badge badge-pill badge-success">Đã giao</span>
+                    <span class="badge badge-pill badge-danger">Đã hủy</span>
+                </p>
+                <p class="mb-0">Trạng thái đơn hàng:</p>
+                <p class="mb-0">
+                    <span class="badge badge-warning">Chờ xác nhận</span>
+                    <span class="badge badge-info">Đang chế biến</span>
+                    <span class="badge badge-primary">Đang giao</span>
+                    <span class="badge badge-success">Hoàn tất</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Progress bars</h4>
+                <p class="card-title-desc">Thanh tiến trình.</p>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between"><small>Mục tiêu doanh số</small><small>75%</small></div>
+                    <div class="progress"><div class="progress-bar" style="width:75%;background:#7a6fbe;"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="progress"><div class="progress-bar bg-success" style="width:40%;"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="progress"><div class="progress-bar bg-info" style="width:60%;"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="progress"><div class="progress-bar bg-warning" style="width:80%;"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="progress"><div class="progress-bar bg-danger" style="width:30%;"></div></div>
+                </div>
+                <div class="mb-0">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:55%;background:#7a6fbe;"></div>
+                    </div>
+                    <small class="text-muted">Đang tải (animated + striped)</small>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Typography</h4>
+                <h1>Tiêu đề h1</h1>
+                <h2>Tiêu đề h2</h2>
+                <h3>Tiêu đề h3</h3>
+                <h4>Tiêu đề h4</h4>
+                <h5>Tiêu đề h5</h5>
+                <h6>Tiêu đề h6</h6>
+                <p class="lead">Đoạn văn lead — nổi bật hơn văn bản thường.</p>
+                <p>Văn bản thường với <mark>đánh dấu</mark>, <del>gạch ngang</del>, <u>gạch chân</u>, <strong>in đậm</strong>, <em>in nghiêng</em>.</p>
+                <p class="text-muted mb-0">Văn bản màu muted.</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Spinners</h4>
+                <div class="d-flex align-items-center" style="gap:16px;">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="spinner-border text-success" role="status"></div>
+                    <div class="spinner-grow text-warning" role="status"></div>
+                    <div class="spinner-grow text-danger" role="status"></div>
+                    <button class="btn btn-primary" disabled>
+                        <span class="spinner-border spinner-border-sm mr-1"></span> Đang tải...
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _showDismiss = true;
+}
