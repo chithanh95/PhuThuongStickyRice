@@ -1,0 +1,121 @@
+@page "/admin/lexa/ui-carousel"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Carousel & Media</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>UI Elements</li>
+        <li class="current">Carousel</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Carousel ảnh món ăn</h4>
+                <div class="lexa-carousel">
+                    <div class="lexa-carousel-slide" style="background:@_slides[_slideIdx].Color;">
+                        <div style="font-size:80px;">@_slides[_slideIdx].Icon</div>
+                        <h4 class="text-white mt-2">@_slides[_slideIdx].Title</h4>
+                        <p class="text-white-50">@_slides[_slideIdx].Desc</p>
+                    </div>
+                    <button class="lexa-car-btn lexa-car-prev" @onclick="PrevSlide">‹</button>
+                    <button class="lexa-car-btn lexa-car-next" @onclick="NextSlide">›</button>
+                    <div class="lexa-car-dots">
+                        @for (int i = 0; i < _slides.Count; i++)
+                        {
+                            var idx = i;
+                            <span class="lexa-car-dot @(_slideIdx == idx ? "active" : "")" @onclick="() => _slideIdx = idx"></span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Ảnh & Lightbox</h4>
+                <p class="card-title-desc">Bấm vào ảnh để xem lớn.</p>
+                <div class="row">
+                    @foreach (var img in _gallery)
+                    {
+                        <div class="col-4 mb-3">
+                            <div class="lexa-thumb" style="background:@img.Color;" @onclick="() => _lightbox = img">
+                                <span style="font-size:36px;">@img.Icon</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Video</h4>
+                <div class="lexa-video-box" @onclick="() => _playing = !_playing">
+                    @if (!_playing)
+                    {
+                        <div class="lexa-play-btn">▶</div>
+                        <p class="mb-0 mt-2">Video giới thiệu làng nghề</p>
+                    }
+                    else
+                    {
+                        <p class="mb-0">🎬 Đang phát video demo...</p>
+                        <small class="text-muted">Bấm để tạm dừng</small>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_lightbox != null)
+{
+    <div class="lexa-modal-backdrop" @onclick="() => _lightbox = null">
+        <div @onclick:stopPropagation style="text-align:center;">
+            <div style="width:400px;height:300px;border-radius:12px;background:@_lightbox.Color;display:flex;align-items:center;justify-content:center;font-size:100px;">
+                @_lightbox.Icon
+            </div>
+            <h5 class="text-white mt-3">@_lightbox.Title</h5>
+            <button class="btn btn-light mt-2" @onclick="() => _lightbox = null">Đóng</button>
+        </div>
+    </div>
+}
+
+<style>
+    .lexa-carousel { position: relative; border-radius: 8px; overflow: hidden; height: 280px; }
+    .lexa-carousel-slide { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; transition: background .3s; }
+    .lexa-car-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,255,255,.8); font-size: 24px; cursor: pointer; z-index: 2; }
+    .lexa-car-prev { left: 12px; } .lexa-car-next { right: 12px; }
+    .lexa-car-dots { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; }
+    .lexa-car-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.5); margin: 0 4px; cursor: pointer; }
+    .lexa-car-dot.active { background: #fff; }
+    .lexa-thumb { height: 100px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .15s; }
+    .lexa-thumb:hover { transform: scale(1.05); }
+    .lexa-video-box { height: 180px; border-radius: 8px; background: #2b3a4a; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+    .lexa-play-btn { width: 64px; height: 64px; border-radius: 50%; background: #7a6fbe; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .lexa-modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.85); z-index: 1050; display: flex; align-items: center; justify-content: center; }
+</style>
+
+@code {
+    private int _slideIdx;
+    private bool _playing;
+    private GalleryImg _lightbox;
+    private List<Slide> _slides = new()
+    {
+        new("🍚", "Xôi gấc", "Món bán chạy nhất", "#7a6fbe"),
+        new("🌽", "Xôi ngô", "Béo ngậy thơm ngon", "#3ac9d6"),
+        new("🫘", "Xôi đỗ", "Bùi bùi khó quên", "#f5b225"),
+    };
+    private List<GalleryImg> _gallery = new()
+    {
+        new("🍚", "Xôi gấc", "#7a6fbe"), new("🌽", "Xôi ngô", "#3ac9d6"), new("🫘", "Xôi đỗ", "#f5b225"),
+        new("🥥", "Xôi vò", "#ec536c"), new("🍠", "Xôi khoai", "#29bbe3"), new("🥜", "Xôi lạc", "#6a5fae"),
+    };
+    private void PrevSlide() => _slideIdx = (_slideIdx - 1 + _slides.Count) % _slides.Count;
+    private void NextSlide() => _slideIdx = (_slideIdx + 1) % _slides.Count;
+    private record Slide(string Icon, string Title, string Desc, string Color);
+    private record GalleryImg(string Icon, string Title, string Color);
+}

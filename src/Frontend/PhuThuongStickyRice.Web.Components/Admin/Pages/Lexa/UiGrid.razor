@@ -1,0 +1,88 @@
+@page "/admin/lexa/ui-grid"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Grid & Range Slider</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>UI Elements</li>
+        <li class="current">Grid</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Hệ thống lưới Bootstrap</h4>
+                <div class="lexa-grid-demo">
+                    <div class="row mb-2"><div class="col-12"><div class="lexa-grid-cell">col-12</div></div></div>
+                    <div class="row mb-2"><div class="col-6"><div class="lexa-grid-cell">col-6</div></div><div class="col-6"><div class="lexa-grid-cell">col-6</div></div></div>
+                    <div class="row mb-2"><div class="col-4"><div class="lexa-grid-cell">col-4</div></div><div class="col-4"><div class="lexa-grid-cell">col-4</div></div><div class="col-4"><div class="lexa-grid-cell">col-4</div></div></div>
+                    <div class="row mb-2"><div class="col-3"><div class="lexa-grid-cell">col-3</div></div><div class="col-3"><div class="lexa-grid-cell">col-3</div></div><div class="col-3"><div class="lexa-grid-cell">col-3</div></div><div class="col-3"><div class="lexa-grid-cell">col-3</div></div></div>
+                    <div class="row"><div class="col-md-8"><div class="lexa-grid-cell">col-md-8</div></div><div class="col-md-4"><div class="lexa-grid-cell">col-md-4</div></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Range Slider</h4>
+                <p class="card-title-desc">Thanh trượt chọn giá trị.</p>
+                <div class="form-group">
+                    <label>Khoảng giá: <strong>@_priceMin.ToString("N0") ₫ - @_priceMax.ToString("N0") ₫</strong></label>
+                    <div class="d-flex align-items-center" style="gap:12px;">
+                        <input type="range" class="form-control-range" min="0" max="100000" step="5000" @bind="_priceMin" @bind:event="oninput" style="flex:1;" />
+                    </div>
+                    <div class="d-flex align-items-center mt-2" style="gap:12px;">
+                        <span class="small text-muted">Tối đa:</span>
+                        <input type="range" class="form-control-range" min="0" max="100000" step="5000" @bind="_priceMax" @bind:event="oninput" style="flex:1;" />
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <label>Mức độ cay: <strong>@_spicy/5</strong></label>
+                    <input type="range" class="form-control-range" min="0" max="5" @bind="_spicy" @bind:event="oninput" />
+                    <div style="font-size:24px;">@string.Concat(Enumerable.Repeat("🌶", _spicy))@string.Concat(Enumerable.Repeat("·", 5 - _spicy))</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Session Timeout (demo)</h4>
+                <p class="card-title-desc">Cảnh báo khi sắp hết phiên đăng nhập.</p>
+                <p>Phiên còn lại: <strong>@_sessionSecs giây</strong></p>
+                <div class="progress mb-3" style="height:10px;">
+                    <div class="progress-bar @(_sessionSecs < 30 ? "bg-danger" : "bg-success")" style="width:@(_sessionSecs)%;"></div>
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="ResetSession">Gia hạn phiên</button>
+                <button class="btn btn-secondary btn-sm" @onclick="TickSession">Giảm 10 giây (demo)</button>
+                @if (_sessionSecs <= 0)
+                {
+                    <div class="alert alert-warning mt-3 mb-0">Phiên đã hết! Vui lòng đăng nhập lại.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-grid-cell { background: #f0efff; border: 1px solid #d5d2f0; border-radius: 4px; padding: 12px; text-align: center; font-size: 13px; color: #5a4fae; }
+    html.dark .lexa-grid-cell { background: #2c2c4e; border-color: #4a4a6e; color: #c9c7dd; }
+    input[type="range"].form-control-range { accent-color: #7a6fbe; }
+</style>
+
+@code {
+    private int _priceMin = 15000;
+    private int _priceMax = 50000;
+    private int _spicy = 2;
+    private int _sessionSecs = 100;
+
+    private void ResetSession() => _sessionSecs = 100;
+    private void TickSession() => _sessionSecs = Math.Max(0, _sessionSecs - 10);
+}
