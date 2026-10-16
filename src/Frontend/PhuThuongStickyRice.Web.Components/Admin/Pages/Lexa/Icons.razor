@@ -1,0 +1,127 @@
+@page "/admin/lexa/icons"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Icons</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Icons</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Open Iconic (đang dùng trong web)</h4>
+                <p class="card-title-desc">Bấm vào icon để copy tên class.</p>
+                <div class="row">
+                    @foreach (var ic in _openIconic)
+                    {
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="lexa-icon-box" @onclick="() => CopyIcon(ic.Class)" title="Bấm để copy">
+                                <span class="oi @ic.Class lexa-icon"></span>
+                                <small class="d-block text-muted mt-1 text-truncate">@ic.Name</small>
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (_copied != null)
+                {
+                    <div class="alert alert-success mt-2 mb-0 py-2">Đã copy: <code>@_copied</code></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Emoji icons (dùng cho menu quán ăn)</h4>
+                <p class="card-title-desc">Các icon cảm xúc phù hợp với web bán xôi.</p>
+                <div style="font-size:32px;display:flex;flex-wrap:wrap;gap:12px;">
+                    @foreach (var e in _emojis)
+                    {
+                        <span title="@e" style="cursor:default;">@e</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Kích thước icon</h4>
+                <div class="d-flex align-items-center" style="gap:16px;">
+                    <span class="oi oi-home" style="font-size:16px;"></span>
+                    <span class="oi oi-home" style="font-size:24px;"></span>
+                    <span class="oi oi-home" style="font-size:32px;"></span>
+                    <span class="oi oi-home" style="font-size:48px;color:#7a6fbe;"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Icon trong nút</h4>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-primary"><span class="oi oi-plus"></span></button>
+                    <button class="btn btn-success"><span class="oi oi-check"></span></button>
+                    <button class="btn btn-danger"><span class="oi oi-trash"></span></button>
+                    <button class="btn btn-warning"><span class="oi oi-pencil"></span></button>
+                    <button class="btn btn-info"><span class="oi oi-magnifying-glass"></span></button>
+                    <button class="btn btn-dark"><span class="oi oi-cog"></span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-icon-box { text-align: center; padding: 16px 8px; border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 12px; cursor: pointer; transition: all .15s; }
+    .lexa-icon-box:hover { border-color: #7a6fbe; background: #f5f4fd; }
+    html.dark .lexa-icon-box { border-color: #3a3a58; }
+    html.dark .lexa-icon-box:hover { background: #2c2c4e; }
+    .lexa-icon { font-size: 26px; color: #7a6fbe; }
+</style>
+
+@code {
+    private string _copied;
+    private List<IconItem> _openIconic = new()
+    {
+        new("oi-home", "Trang chủ"), new("oi-cart", "Giỏ hàng"), new("oi-person", "Người dùng"),
+        new("oi-people", "Nhóm"), new("oi-plus", "Thêm"), new("oi-minus", "Trừ"),
+        new("oi-check", "Đúng"), new("oi-x", "Đóng"), new("oi-trash", "Xóa"),
+        new("oi-pencil", "Sửa"), new("oi-eye", "Xem"), new("oi-magnifying-glass", "Tìm kiếm"),
+        new("oi-cog", "Cài đặt"), new("oi-clock", "Đồng hồ"), new("oi-calendar", "Lịch"),
+        new("oi-chart", "Biểu đồ"), new("oi-graph", "Đồ thị"), new("oi-dollar", "Tiền"),
+        new("oi-credit-card", "Thẻ"), new("oi-envelope-closed", "Thư"), new("oi-bell", "Chuông"),
+        new("oi-lock-locked", "Khóa"), new("oi-key", "Chìa khóa"), new("oi-star", "Sao"),
+        new("oi-heart", "Tim"), new("oi-thumb-up", "Thích"), new("oi-comment-square", "Bình luận"),
+        new("oi-image", "Ảnh"), new("oi-video", "Video"), new("oi-musical-note", "Nhạc"),
+        new("oi-map-marker", "Vị trí"), new("oi-phone", "Điện thoại"), new("oi-print", "In"),
+        new("oi-share", "Chia sẻ"), new("oi-cloud-download", "Tải xuống"), new("oi-cloud-upload", "Tải lên"),
+        new("oi-file", "File"), new("oi-folder", "Thư mục"), new("oi-tag", "Nhãn"),
+        new("oi-dashboard", "Bảng điều khiển"), new("oi-list", "Danh sách"), new("oi-grid-three-up", "Lưới"),
+        new("oi-menu", "Menu"), new("oi-account-login", "Đăng nhập"), new("oi-account-logout", "Đăng xuất"),
+    };
+    private List<string> _emojis = new()
+    {
+        "🍚", "🌽", "🫘", "🥥", "🍠", "🥜", "🫓", "🍙",
+        "🔥", "⭐", "❤️", "🎉", "🛒", "💰", "📦", "🚚",
+        "📞", "📍", "⏰", "📊", "✅", "❌", "⚠️", "ℹ️",
+    };
+
+    private void CopyIcon(string cls)
+    {
+        _copied = "oi " + cls;
+    }
+
+    private record IconItem(string Class, string Name);
+}
