@@ -614,15 +614,25 @@
     margin: 0 0 20px;
 }
 
-/* ---------- CTA parallax ---------- */
+/* ---------- CTA parallax (transform-based, GPU-accelerated; không dùng background-attachment:fixed vì gây giật khi cuộn) ---------- */
 .sg-cta {
     position: relative;
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    overflow: hidden;
     padding: 120px 24px;
     text-align: center;
     color: #fff;
+}
+
+.sg-cta-bg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -20%;
+    height: 140%;
+    background-size: cover;
+    background-position: center;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
 }
 
 .sg-cta-overlay {
@@ -1067,7 +1077,7 @@
 
     .sg-footer-grid { grid-template-columns: 1fr 1fr; }
 
-    .sg-cta { background-attachment: scroll; }
+    .sg-cta-bg { transform: none !important; }
 }
 
 @media (max-width: 575.98px) {

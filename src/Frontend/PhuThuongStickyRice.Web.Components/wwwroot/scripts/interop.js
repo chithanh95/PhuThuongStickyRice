@@ -455,3 +455,42 @@ interop.speak = function (text) {
 interop.stopSpeak = function () {
     try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) { }
 };
+
+/* Parallax mượt cho banner CTA landing: dùng rAF + transform (GPU), không gây giật như background-attachment:fixed. */
+(function () {
+    var ticking = false;
+    var cta = null;
+    var bg = null;
+
+    function update() {
+        ticking = false;
+        if (!cta || !bg) return;
+        var rect = cta.getBoundingClientRect();
+        var vh = window.innerHeight || 800;
+        // Chỉ tính khi banner trong/kề viewport.
+        if (rect.bottom < -200 || rect.top > vh + 200) return;
+        // Dịch nền chậm hơn tốc độ cuộn (parallax 0.25).
+        var progress = (rect.top + rect.height / 2 - vh / 2) / (vh / 2 + rect.height / 2);
+        var shift = Math.max(-1, Math.min(1, progress)) * rect.height * 0.18;
+        bg.style.transform = 'translate3d(0,' + shift.toFixed(1) + 'px,0)';
+    }
+
+    function onScroll() {
+        if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+        }
+    }
+
+    window.ptInitCtaParallax = function () {
+        cta = document.querySelector('.sg-cta');
+        bg = cta ? cta.querySelector('.sg-cta-bg') : null;
+        if (!cta || !bg) return;
+        if (!window.__ptParallaxBound) {
+            window.__ptParallaxBound = true;
+            window.addEventListener('scroll', onScroll, { passive: true });
+            window.addEventListener('resize', onScroll, { passive: true });
+        }
+        update();
+    };
+})();

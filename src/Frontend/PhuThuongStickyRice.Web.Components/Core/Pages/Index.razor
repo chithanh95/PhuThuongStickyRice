@@ -218,7 +218,8 @@ else
 </section>
 
 <!-- 7. BANNER ĐẶT XÔI -->
-<section class="sg-cta" style="@CtaBgStyle">
+<section class="sg-cta" id="dat-xoi">
+    <div class="sg-cta-bg" style="@CtaBgStyle"></div>
     <div class="sg-cta-overlay"></div>
     <div class="sg-cta-inner">
         <p class="sg-cta-eyebrow">Giao nóng mỗi sáng</p>
@@ -696,6 +697,10 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            try { await JSRuntime.InvokeVoidAsync("ptInitCtaParallax"); } catch { }
+        }
         if (firstRender && !_popupChecked && _content.PopupActive && _promoPopupEnabled)
         {
             _popupChecked = true;
