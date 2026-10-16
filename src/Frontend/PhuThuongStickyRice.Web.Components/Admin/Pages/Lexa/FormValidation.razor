@@ -1,0 +1,225 @@
+@page "/admin/lexa/form-validation"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Form Validation</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li><a href="/admin/lexa/form-elements">Forms</a></li>
+        <li class="current">Form Validation</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Validation cơ bản</h4>
+                <p class="card-title-desc">Các trường bắt buộc với thông báo lỗi tiếng Việt.</p>
+                <EditForm Model="_model" OnValidSubmit="OnValidSubmit" OnInvalidSubmit="OnInvalidSubmit">
+                    <DataAnnotationsValidator />
+                    <div class="form-group">
+                        <label>Họ tên <span class="text-danger">*</span></label>
+                        <InputText class="form-control" @bind-Value="_model.FullName" placeholder="Nhập họ tên" />
+                        <ValidationMessage For="@(() => _model.FullName)" />
+                    </div>
+                    <div class="form-group">
+                        <label>Email <span class="text-danger">*</span></label>
+                        <InputText class="form-control" @bind-Value="_model.Email" placeholder="vidu@email.com" />
+                        <ValidationMessage For="@(() => _model.Email)" />
+                    </div>
+                    <div class="form-group">
+                        <label>Số điện thoại <span class="text-danger">*</span></label>
+                        <InputText class="form-control" @bind-Value="_model.Phone" placeholder="0901234567" />
+                        <ValidationMessage For="@(() => _model.Phone)" />
+                    </div>
+                    <div class="form-group">
+                        <label>Mật khẩu <span class="text-danger">*</span></label>
+                        <InputText type="password" class="form-control" @bind-Value="_model.Password" placeholder="Tối thiểu 6 ký tự" />
+                        <ValidationMessage For="@(() => _model.Password)" />
+                    </div>
+                    <div class="form-group">
+                        <label>Nhập lại mật khẩu <span class="text-danger">*</span></label>
+                        <InputText type="password" class="form-control" @bind-Value="_model.ConfirmPassword" placeholder="Nhập lại mật khẩu" />
+                        <ValidationMessage For="@(() => _model.ConfirmPassword)" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Xác nhận</button>
+                    <button type="button" class="btn btn-secondary ml-2" @onclick="ResetForm">Đặt lại</button>
+                </EditForm>
+                @if (_submittedOk)
+                {
+                    <div class="alert alert-success mt-3 mb-0">Form hợp lệ! Dữ liệu đã được gửi.</div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Validation tùy chỉnh</h4>
+                <p class="card-title-desc">Kiểm tra bằng code Blazor với thông báo riêng.</p>
+                <div class="form-group">
+                    <label>Tên món ăn <span class="text-danger">*</span></label>
+                    <input class="form-control @(_nameTouched ? (_nameError == null ? "is-valid" : "is-invalid") : "")"
+                           @bind="_dishName" @bind:event="oninput" @onblur="ValidateName" placeholder="VD: Xôi gấc" />
+                    @if (_nameTouched && _nameError != null)
+                    {
+                        <div class="invalid-feedback" style="display:block;">@_nameError</div>
+                    }
+                    @if (_nameTouched && _nameError == null)
+                    {
+                        <div class="valid-feedback" style="display:block;">Tên món hợp lệ!</div>
+                    }
+                </div>
+                <div class="form-group">
+                    <label>Giá bán (₫) <span class="text-danger">*</span></label>
+                    <input class="form-control @(_priceTouched ? (_priceError == null ? "is-valid" : "is-invalid") : "")"
+                           @bind="_priceText" @bind:event="oninput" @onblur="ValidatePrice" placeholder="VD: 35000" inputmode="numeric" />
+                    @if (_priceTouched && _priceError != null)
+                    {
+                        <div class="invalid-feedback" style="display:block;">@_priceError</div>
+                    }
+                </div>
+                <div class="form-group">
+                    <label>Mô tả (tối đa 200 ký tự)</label>
+                    <textarea class="form-control" rows="3" maxlength="200" @bind="_desc" @bind:event="oninput" placeholder="Mô tả món ăn..."></textarea>
+                    <small class="text-muted float-right">@(_desc?.Length ?? 0)/200</small>
+                </div>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="agreeCb" @bind="_agree" />
+                        <label class="custom-control-label" for="agreeCb">Tôi đồng ý với điều khoản <span class="text-danger">*</span></label>
+                    </div>
+                    @if (_agreeTouched && !_agree)
+                    {
+                        <small class="text-danger">Bạn phải đồng ý với điều khoản.</small>
+                    }
+                </div>
+                <button class="btn btn-primary" @onclick="SubmitCustom">Gửi đi</button>
+                @if (_customOk)
+                {
+                    <div class="alert alert-success mt-3 mb-0">Tất cả hợp lệ! Đã lưu món ăn.</div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Tooltip validation</h4>
+                <p class="card-title-desc">Thông báo lỗi dạng tooltip.</p>
+                <div class="form-group position-relative">
+                    <label>Mã giảm giá</label>
+                    <input class="form-control @(_couponTouched ? (string.IsNullOrWhiteSpace(_coupon) ? "is-invalid" : "is-valid") : "")"
+                           @bind="_coupon" @bind:event="oninput" @onblur="() => _couponTouched = true" placeholder="VD: GIAM10" />
+                    @if (_couponTouched)
+                    {
+                        @if (string.IsNullOrWhiteSpace(_coupon))
+                        {
+                            <div class="invalid-tooltip" style="display:block;">Vui lòng nhập mã giảm giá.</div>
+                        }
+                        else
+                        {
+                            <div class="valid-tooltip" style="display:block;">Mã hợp lệ!</div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterModel _model = new();
+    private bool _submittedOk;
+
+    private string _dishName;
+    private bool _nameTouched;
+    private string _nameError;
+    private string _priceText;
+    private bool _priceTouched;
+    private string _priceError;
+    private string _desc;
+    private bool _agree;
+    private bool _agreeTouched;
+    private bool _customOk;
+    private string _coupon;
+    private bool _couponTouched;
+
+    private void OnValidSubmit()
+    {
+        _submittedOk = true;
+    }
+
+    private void OnInvalidSubmit()
+    {
+        _submittedOk = false;
+    }
+
+    private void ResetForm()
+    {
+        _model = new();
+        _submittedOk = false;
+    }
+
+    private void ValidateName()
+    {
+        _nameTouched = true;
+        _nameError = string.IsNullOrWhiteSpace(_dishName)
+            ? "Vui lòng nhập tên món ăn."
+            : _dishName.Trim().Length < 3
+                ? "Tên món phải có ít nhất 3 ký tự."
+                : null;
+    }
+
+    private void ValidatePrice()
+    {
+        _priceTouched = true;
+        if (string.IsNullOrWhiteSpace(_priceText))
+        {
+            _priceError = "Vui lòng nhập giá bán.";
+        }
+        else if (!decimal.TryParse(_priceText, out var p) || p <= 0)
+        {
+            _priceError = "Giá bán phải là số dương.";
+        }
+        else if (p < 1000)
+        {
+            _priceError = "Giá bán tối thiểu 1.000 ₫.";
+        }
+        else
+        {
+            _priceError = null;
+        }
+    }
+
+    private void SubmitCustom()
+    {
+        ValidateName();
+        ValidatePrice();
+        _agreeTouched = true;
+        _customOk = _nameError == null && _priceError == null && _agree;
+    }
+
+    public class RegisterModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập họ tên.")]
+        [System.ComponentModel.DataAnnotations.StringLength(100, MinimumLength = 2, ErrorMessage = "Họ tên phải từ 2 đến 100 ký tự.")]
+        public string FullName { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập email.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
+        public string Email { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
+        [System.ComponentModel.DataAnnotations.RegularExpression(@"^(0)(3|5|7|8|9)\d{8}$", ErrorMessage = "Số điện thoại không đúng định dạng (VD: 0901234567).")]
+        public string Phone { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
+        [System.ComponentModel.DataAnnotations.MinLength(6, ErrorMessage = "Mật khẩu tối thiểu 6 ký tự.")]
+        public string Password { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập lại mật khẩu.")]
+        [System.ComponentModel.DataAnnotations.Compare(nameof(Password), ErrorMessage = "Mật khẩu nhập lại không khớp.")]
+        public string ConfirmPassword { get; set; }
+    }
+}
