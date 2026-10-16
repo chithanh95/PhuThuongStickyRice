@@ -9,8 +9,14 @@
 @inject OrderService OrderService
 @inject Wave5Service Wave5Service
 
-<h3>Đánh giá đơn hàng</h3>
-<p class="text-muted">Đánh giá bị ẩn không hiển thị công khai. Phản hồi của quán hiển thị dưới đánh giá trên trang chủ.</p>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Đánh giá đơn hàng</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>Nội dung</li>
+        <li class="current">Đánh giá</li>
+    </ol>
+</div>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -31,8 +37,14 @@ else if (_reviews.Count == 0)
 }
 else
 {
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Danh sách đánh giá</h4>
+                    <p class="card-title-desc">Đánh giá bị ẩn không hiển thị công khai. Phản hồi của quán hiển thị dưới đánh giá trên trang chủ.</p>
     <div class="table-responsive">
-        <table class="table table-sm table-striped">
+        <table class="table table-hover mb-0">
             <thead>
                 <tr><th>Đơn hàng</th><th>SĐT</th><th>Sao</th><th>Nhận xét</th><th>Ảnh</th><th>Quà tặng</th><th>Phản hồi</th><th>Ngày</th><th></th></tr>
             </thead>
@@ -117,10 +129,18 @@ else
             </tbody>
         </table>
     </div>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
-<h3 class="mt-5">Ảnh check-in chờ duyệt 📸</h3>
-<p class="text-muted">Ảnh khách đăng ở trang <a href="/check-in" target="_blank">/check-in</a>. Duyệt mới hiện trên tường ảnh.</p>
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Ảnh check-in chờ duyệt</h4>
+                <p class="card-title-desc">Ảnh khách đăng ở trang <a href="/check-in" target="_blank">/check-in</a>. Duyệt mới hiện trên tường ảnh.</p>
 
 @if (_pendingPhotos == null)
 {
@@ -161,6 +181,10 @@ else
         }
     </div>
 }
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     private List<OrderReviewModel> _reviews;
