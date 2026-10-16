@@ -1,0 +1,302 @@
+@page "/admin/lich-tong-hop"
+@attribute [Authorize(Roles = "Admin,Cashier")]
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Orders.Models
+@using PhuThuongStickyRice.Web.Components.Orders.Services
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject OrderService OrderService
+@inject HolidayService HolidayService
+@inject Wave3Service Wave3Service
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Lịch tổng hợp</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Vận hành</a></li>
+        <li class="current">Lịch tổng hợp</li>
+    </ol>
+</div>
+
+<div class="d-flex flex-wrap align-items-center mb-3">
+    <button class="btn btn-outline-secondary btn-sm mr-2" @onclick="PrevMonth">← Tháng trước</button>
+    <h5 class="mb-0 mr-2">Tháng @_viewMonth/@_viewYear</h5>
+    <button class="btn btn-outline-secondary btn-sm mr-3" @onclick="NextMonth">Tháng sau →</button>
+    <button class="btn btn-outline-primary btn-sm" @onclick="GoToday">Hôm nay</button>
+    <div class="ml-auto d-flex align-items-center text-muted small">
+        <span class="cal-dot" style="background:#7a6fbe;"></span> Đơn đặt trước
+        <span class="cal-dot ml-3" style="background:#dc3545;"></span> Nghỉ lễ
+        <span class="cal-dot ml-3" style="background:#28a745;"></span> Khuyến mãi
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-2">
+                @if (_loading)
+                {
+                    <p class="p-3"><em>Đang tải lịch...</em></p>
+                }
+                else
+                {
+                    <div class="cal-grid">
+                        @foreach (var d in new[] { "CN", "T2", "T3", "T4", "T5", "T6", "T7" })
+                        {
+                            <div class="cal-dow">@d</div>
+                        }
+                        @foreach (var cell in _cells)
+                        {
+                            <div class="cal-day @(cell.InMonth ? "" : "cal-out") @(cell.Date == DateTime.Today ? "cal-today" : "") @(_selected == cell.Date ? "cal-selected" : "")"
+                                 @onclick="() => SelectDay(cell.Date)">
+                                <div class="cal-num">@cell.Date.Day</div>
+                                <div class="cal-marks">
+                                    @if (HasScheduled(cell.Date))
+                                    {
+                                        <span class="cal-dot" style="background:#7a6fbe;" title="Có đơn đặt trước"></span>
+                                    }
+                                    @if (IsHoliday(cell.Date))
+                                    {
+                                        <span class="cal-dot" style="background:#dc3545;" title="Nghỉ lễ"></span>
+                                    }
+                                    @if (HasPromo(cell.Date))
+                                    {
+                                        <span class="cal-dot" style="background:#28a745;" title="Có khuyến mãi"></span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Chi tiết ngày @_selected.ToString("dd/MM/yyyy")</h4>
+                @if (_loading)
+                {
+                    <p><em>Đang tải...</em></p>
+                }
+                else
+                {
+                    var sched = ScheduledOn(_selected);
+                    var hols = HolidaysOn(_selected);
+                    var promos = PromosOn(_selected);
+
+                    @if (hols.Count > 0)
+                    {
+                        <h6 class="text-danger">🔴 Lịch nghỉ</h6>
+                        @foreach (var h in hols)
+                        {
+                            <div class="mb-2"><strong>@h.Reason</strong><br />
+                                <small class="text-muted">@(h.IsFullDay ? "Nghỉ cả ngày" : "Nghỉ một phần ngày")</small>
+                            </div>
+                        }
+                        <hr />
+                    }
+
+                    @if (sched.Count > 0)
+                    {
+                        <h6 style="color:#7a6fbe;">📅 Đơn đặt trước (@sched.Count)</h6>
+                        @foreach (var o in sched)
+                        {
+                            <div class="cal-order">
+                                <div><strong>#@o.OrderNumber</strong> — @o.CustomerName</div>
+                                <div class="small text-muted">@o.CustomerPhone • Hẹn @ToLocal(o.ScheduledFor.Value).ToString("HH:mm") • @o.TotalAmount.ToString("N0") đ</div>
+                            </div>
+                        }
+                        <hr />
+                    }
+
+                    @if (promos.Count > 0)
+                    {
+                        <h6 class="text-success">🎁 Khuyến mãi đang chạy</h6>
+                        @foreach (var p in promos)
+                        {
+                            <div class="mb-2"><strong>@p.Name</strong><br />
+                                <small class="text-muted">Giảm @p.DiscountPercent% • @p.StartTime - @p.EndTime</small>
+                            </div>
+                        }
+                        <hr />
+                    }
+
+                    @if (hols.Count == 0 && sched.Count == 0 && promos.Count == 0)
+                    {
+                        <p class="text-muted">Không có sự kiện nào trong ngày này.</p>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+    }
+    .cal-dow {
+        text-align: center;
+        font-weight: 600;
+        color: #7a6fbe;
+        padding: 6px 0;
+        font-size: 13px;
+    }
+    .cal-day {
+        min-height: 74px;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 4px 6px;
+        cursor: pointer;
+        background: #fff;
+        transition: box-shadow .15s;
+    }
+    .cal-day:hover { box-shadow: 0 0 0 2px rgba(122,111,190,.35); }
+    .cal-out { opacity: .35; }
+    .cal-today { border: 2px solid #7a6fbe; }
+    .cal-selected { background: #f0edff; }
+    .cal-num { font-weight: 600; font-size: 14px; }
+    .cal-marks { display: flex; gap: 4px; margin-top: 4px; }
+    .cal-dot {
+        display: inline-block;
+        width: 10px; height: 10px;
+        border-radius: 50%;
+    }
+    .cal-order {
+        border-left: 3px solid #7a6fbe;
+        padding: 4px 8px;
+        margin-bottom: 8px;
+        background: #faf9ff;
+        border-radius: 0 4px 4px 0;
+    }
+    html.dark .cal-day { background: #262640; border-color: #3a3a58; color: #f0eef5; }
+    html.dark .cal-selected { background: #34345a; }
+    html.dark .cal-dow { color: #a5a2bd; }
+    html.dark .cal-order { background: #20203a; }
+</style>
+
+@code {
+    private bool _loading = true;
+    private string _error;
+    private int _viewYear = DateTime.Today.Year;
+    private int _viewMonth = DateTime.Today.Month;
+    private DateTime _selected = DateTime.Today;
+    private List<CalCell> _cells = new();
+    private List<OrderModel> _scheduledOrders = new();
+    private List<HolidayModel> _holidays = new();
+    private List<PromotionModel> _promotions = new();
+
+    private sealed record CalCell(DateTime Date, bool InMonth);
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var first = new DateTime(_viewYear, _viewMonth, 1);
+            var last = first.AddMonths(1).AddDays(-1);
+
+            var ordersTask = OrderService.GetOrdersAsync(1, 200, fromDate: first, toDate: last);
+            var holidaysTask = HolidayService.GetListAsync();
+            var promosTask = Wave3Service.GetPromotionsAsync();
+
+            var orders = (await ordersTask)?.Items ?? new List<OrderModel>();
+            _scheduledOrders = orders.Where(o => o.ScheduledFor.HasValue).ToList();
+            _holidays = (await holidaysTask) ?? new List<HolidayModel>();
+            _promotions = ((await promosTask) ?? new List<PromotionModel>()).Where(p => p.IsActive).ToList();
+
+            BuildCells(first);
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được lịch: " + ex.Message;
+        }
+        _loading = false;
+    }
+
+    private void BuildCells(DateTime first)
+    {
+        _cells.Clear();
+        var start = first.AddDays(-(int)first.DayOfWeek);
+        for (int i = 0; i < 42; i++)
+        {
+            var d = start.AddDays(i);
+            _cells.Add(new CalCell(d, d.Month == _viewMonth));
+        }
+        if (_cells.TakeLast(7).All(c => !c.InMonth))
+            _cells = _cells.Take(35).ToList();
+    }
+
+    private async Task PrevMonth()
+    {
+        var d = new DateTime(_viewYear, _viewMonth, 1).AddMonths(-1);
+        _viewYear = d.Year; _viewMonth = d.Month;
+        await LoadAsync();
+    }
+
+    private async Task NextMonth()
+    {
+        var d = new DateTime(_viewYear, _viewMonth, 1).AddMonths(1);
+        _viewYear = d.Year; _viewMonth = d.Month;
+        await LoadAsync();
+    }
+
+    private async Task GoToday()
+    {
+        _viewYear = DateTime.Today.Year;
+        _viewMonth = DateTime.Today.Month;
+        _selected = DateTime.Today;
+        await LoadAsync();
+    }
+
+    private void SelectDay(DateTime d) => _selected = d.Date;
+
+    private static DateTime ToLocal(DateTime dt) => dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
+
+    private bool HasScheduled(DateTime d) =>
+        _scheduledOrders.Any(o => ToLocal(o.ScheduledFor.Value).Date == d.Date);
+
+    private bool IsHoliday(DateTime d) =>
+        _holidays.Any(h => h.HolidayDate.Date == d.Date);
+
+    private bool HasPromo(DateTime d) =>
+        _promotions.Any(p => DayMatches(p.DaysOfWeekFlags, d.DayOfWeek));
+
+    private List<OrderModel> ScheduledOn(DateTime d) =>
+        _scheduledOrders.Where(o => ToLocal(o.ScheduledFor.Value).Date == d.Date)
+            .OrderBy(o => o.ScheduledFor).ToList();
+
+    private List<HolidayModel> HolidaysOn(DateTime d) =>
+        _holidays.Where(h => h.HolidayDate.Date == d.Date).ToList();
+
+    private List<PromotionModel> PromosOn(DateTime d) =>
+        _promotions.Where(p => DayMatches(p.DaysOfWeekFlags, d.DayOfWeek)).ToList();
+
+    // Bit flags: 1=Mon .. 64=Sun
+    private static bool DayMatches(int flags, DayOfWeek dow)
+    {
+        int bit = dow switch
+        {
+            DayOfWeek.Monday => 1,
+            DayOfWeek.Tuesday => 2,
+            DayOfWeek.Wednesday => 4,
+            DayOfWeek.Thursday => 8,
+            DayOfWeek.Friday => 16,
+            DayOfWeek.Saturday => 32,
+            DayOfWeek.Sunday => 64,
+            _ => 0
+        };
+        return (flags & bit) != 0;
+    }
+}
