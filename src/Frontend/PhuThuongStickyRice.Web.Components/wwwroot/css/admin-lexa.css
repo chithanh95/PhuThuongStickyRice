@@ -11,6 +11,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
 
 .lx-admin {
+    width: 100%;
     --lx-primary: #7a6fbe;
     --lx-primary-dark: #625998;
     --lx-sidebar-bg: #2b3a4a;
@@ -50,6 +51,7 @@
 }
 
 .lx-main {
+    width: 100%;
     margin-left: 0;
     margin-top: calc(var(--lx-topbar-h) + var(--lx-hnav-h));
     min-height: calc(100vh - var(--lx-topbar-h) - var(--lx-hnav-h));
