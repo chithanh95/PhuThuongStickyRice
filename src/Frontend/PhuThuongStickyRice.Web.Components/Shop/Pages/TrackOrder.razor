@@ -20,36 +20,6 @@
 
 <h3>Tra cứu đơn hàng</h3>
 
-@* Item 121: daily check-in — one per phone per day, awards loyalty points. *@
-<div class="card mb-3">
-    <div class="card-body py-2 d-flex flex-wrap align-items-center">
-        <strong class="mr-2">📅 Điểm danh hôm nay</strong>
-        <input class="form-control form-control-sm mr-2" style="max-width:160px" @bind="_checkInPhone"
-               placeholder="SĐT của bạn" inputmode="tel" />
-        <button class="btn btn-sm btn-outline-success" @onclick="CheckInAsync" disabled="@_checkingIn">
-            @(_checkingIn ? "Đang điểm danh..." : "Điểm danh")
-        </button>
-        @if (_checkInResult != null)
-        {
-            <span class="ml-2">
-                @if (_checkInResult.AlreadyCheckedIn)
-                {
-                    <span class="badge badge-info">Đã điểm danh hôm nay</span>
-                }
-                else
-                {
-                    <span class="badge badge-success">+@_checkInResult.PointsAwarded điểm</span>
-                }
-                <small class="text-muted ml-1">🔥 @_checkInResult.StreakDays ngày liên tiếp • @_checkInResult.LoyaltyPoints điểm</small>
-            </span>
-        }
-        @if (!string.IsNullOrEmpty(_checkInError))
-        {
-            <small class="text-danger ml-2">@_checkInError</small>
-        }
-    </div>
-</div>
-
 <div class="card mb-3">
     <div class="card-body">
         <div class="form-row">
