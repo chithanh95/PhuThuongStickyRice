@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -80,6 +80,23 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             var body = await response.Content.ReadAsStringAsync();
             throw new InvalidOperationException(ExtractMessage(body));
         }
+        public async Task<ProfileInfo> GetProfileAsync()
+        {
+            await SetBearerToken();
+            return await _httpClient.GetFromJsonAsync<ProfileInfo>("api/auth/profile");
+        }
+
+        public async Task UpdateProfileAsync(string userName, string email, string phoneNumber)
+        {
+            await SetBearerToken();
+            var response = await _httpClient.PutAsJsonAsync(
+                "api/auth/profile",
+                new { UserName = userName, Email = email, PhoneNumber = phoneNumber });
+            if (response.IsSuccessStatusCode) return;
+            var body = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException(ExtractMessage(body));
+        }
+
 
         public async Task RequestPasswordResetOtpAsync(string phone)
         {
@@ -152,5 +169,12 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         public string Email { get; set; }
 
         public string[] Roles { get; set; }
+    }
+
+    public class ProfileInfo
+    {
+        public string UserName { get; set; }
+        public string Email { get; set; }
+        public string PhoneNumber { get; set; }
     }
 }
