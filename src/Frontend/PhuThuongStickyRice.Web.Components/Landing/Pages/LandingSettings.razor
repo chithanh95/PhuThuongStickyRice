@@ -7,8 +7,19 @@
 @inject LandingService LandingService
 @inject IJSRuntime JSRuntime
 
-<h3>Cài đặt trang landing</h3>
-<p class="text-muted">Nội dung bạn sửa ở đây sẽ hiển thị ngay trên trang chủ (landing page) của web.</p>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Cài đặt trang landing</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>Nội dung</li>
+        <li class="current">Landing</li>
+    </ol>
+</div>
+
+<style>
+    .lx-upload-slot { min-height: 120px; background: #f8f9fa; }
+    html.dark .lx-upload-slot { background: #2c2c4e; border-color: #3a3a5c; }
+</style>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -25,9 +36,11 @@
 }
 else
 {
-    <div class="card mb-3">
-        <div class="card-header">Phần mở đầu (Hero)</div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Phần mở đầu (Hero)</h4>
             <div class="form-group">
                 <label>Tên thương hiệu</label>
                 <input class="form-control" @bind="_model.HeroTitle" />
@@ -40,12 +53,16 @@ else
                 <label>Chữ trên nút bấm</label>
                 <input class="form-control" @bind="_model.HeroButtonText" />
             </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Hình ảnh landing</div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Hình ảnh landing</h4>
             <p class="text-muted">Tải ảnh lên để thay ảnh mẫu. Để trống sẽ dùng ảnh mẫu. Định dạng: jpg, png, webp, gif — tối đa 5 MB mỗi ảnh.</p>
             @if (_imageSlots != null)
             {
@@ -54,8 +71,7 @@ else
                     {
                         <div class="col-md-4 col-sm-6 mb-4">
                             <label class="font-weight-bold">@slot.Label</label>
-                            <div class="border rounded p-2 text-center mb-2 d-flex align-items-center justify-content-center"
-                                 style="min-height: 120px; background: #f8f9fa;">
+                            <div class="lx-upload-slot border rounded p-2 text-center mb-2 d-flex align-items-center justify-content-center">
                                 @if (!string.IsNullOrEmpty(slot.Get()))
                                 {
                                     <img src="@LandingService.ResolveImageUrl(slot.Get())"
@@ -87,12 +103,16 @@ else
                     }
                 </div>
             }
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Câu chuyện làng nghề</div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Câu chuyện làng nghề</h4>
             <div class="form-group">
                 <label>Tiêu đề</label>
                 <input class="form-control" @bind="_model.StoryTitle" />
@@ -101,12 +121,16 @@ else
                 <label>Nội dung</label>
                 <textarea class="form-control" rows="6" @bind="_model.StoryBody"></textarea>
             </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Món ngon mỗi sáng</div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Món ngon mỗi sáng</h4>
             <div class="form-group">
                 <label>Tiêu đề</label>
                 <input class="form-control" @bind="_model.MenuTitle" />
@@ -125,12 +149,16 @@ else
                     <input class="form-control" @bind="_model.MenuLabel3" />
                 </div>
             </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Tin tức / chuyện nhà xôi</div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Tin tức / chuyện nhà xôi</h4>
             <div class="form-group">
                 <label>Tiêu đề</label>
                 <input class="form-control" @bind="_model.NewsTitle" />
@@ -154,12 +182,16 @@ else
                     </div>
                 </div>
             }
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Chân trang & liên hệ</div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Chân trang & liên hệ</h4>
             <div class="form-group">
                 <label>Tiêu đề</label>
                 <input class="form-control" @bind="_model.FooterTitle" />
@@ -182,12 +214,16 @@ else
                 <label>Chữ trên nút đặt món</label>
                 <input class="form-control" @bind="_model.FooterButtonText" />
             </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Video giới thiệu</div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Video giới thiệu</h4>
             <div class="form-group">
                 <label>Tiêu đề video</label>
                 <input class="form-control" @bind="_model.VideoTitle" placeholder="VD: Xôi Phú Thượng — hương vị làng nghề" />
@@ -197,26 +233,34 @@ else
                 <input class="form-control" @bind="_model.VideoUrl" placeholder="https://www.youtube.com/watch?v=..." />
                 <small class="form-text text-muted">Dán link YouTube, TikTok hoặc Facebook — trang chủ tự chuyển thành video nhúng. Để trống để ẩn.</small>
             </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Bản đồ</div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Bản đồ</h4>
             <div class="form-group mb-0">
                 <label>Link nhúng Google Maps</label>
                 <input class="form-control" @bind="_model.MapEmbedUrl" placeholder="https://www.google.com/maps/embed?pb=..." />
                 <small class="form-text text-muted">Lấy từ Google Maps → Chia sẻ → Nhúng bản đồ → copy thuộc tính <code>src</code> của iframe. Để trống để ẩn.</small>
             </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Popup khuyến mãi &amp; banner flash (mục 94)</div>
-        <div class="card-body">
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="popup-active" @bind="_model.PopupActive" />
-                <label class="form-check-label" for="popup-active">Bật popup (hiện 1 lần mỗi phiên trên trang chủ)</label>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Popup khuyến mãi &amp; banner flash (mục 94)</h4>
+            <div class="custom-control custom-checkbox mb-2">
+                <input class="custom-control-input" type="checkbox" id="popup-active" @bind="_model.PopupActive" />
+                <label class="custom-control-label" for="popup-active">Bật popup (hiện 1 lần mỗi phiên trên trang chủ)</label>
             </div>
             <div class="form-group">
                 <label>Tiêu đề popup</label>
@@ -232,25 +276,31 @@ else
                 <input class="form-control" @bind="_model.PopupImageUrl" placeholder="/uploads/landing/popup.jpg" />
             </div>
             <hr />
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="flash-active" @bind="_model.FlashBannerActive" />
-                <label class="form-check-label" for="flash-active">Bật banner flash (dải chữ chạy trên đầu trang chủ)</label>
+            <div class="custom-control custom-checkbox mb-2">
+                <input class="custom-control-input" type="checkbox" id="flash-active" @bind="_model.FlashBannerActive" />
+                <label class="custom-control-label" for="flash-active">Bật banner flash (dải chữ chạy trên đầu trang chủ)</label>
             </div>
             <div class="form-group mb-0">
                 <label>Nội dung banner flash</label>
                 <input class="form-control" @bind="_model.FlashBannerText" placeholder="VD: Hôm nay giảm 10% mọi đơn từ 200k!" />
             </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Đánh giá nhúng <span class="badge badge-warning">HTML tin cậy</span></div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Đánh giá nhúng <span class="badge badge-warning">HTML tin cậy</span></h4>
             <div class="form-group mb-0">
                 <label>Mã HTML widget đánh giá</label>
                 <textarea class="form-control" rows="4" @bind="_model.ReviewsEmbedHtml"
                           placeholder="<script ...>...</script>"></textarea>
                 <small class="form-text text-muted">Chỉ dành cho admin — đoạn HTML này được render nguyên văn trên trang chủ (VD: widget Google reviews). Để trống để ẩn. Ngoài ra, đánh giá của khách đặt hàng (không bị ẩn) tự hiện ở mục "Khách hàng nói gì".</small>
+            </div>
+                </div>
             </div>
         </div>
     </div>
