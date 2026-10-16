@@ -1,0 +1,132 @@
+@page "/admin/lexa/ui-buttons"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Buttons</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>UI Elements</li>
+        <li class="current">Buttons</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Nút cơ bản</h4>
+                <div class="button-items" style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-primary">Primary</button>
+                    <button class="btn btn-secondary">Secondary</button>
+                    <button class="btn btn-success">Success</button>
+                    <button class="btn btn-danger">Danger</button>
+                    <button class="btn btn-warning">Warning</button>
+                    <button class="btn btn-info">Info</button>
+                    <button class="btn btn-light">Light</button>
+                    <button class="btn btn-dark">Dark</button>
+                    <button class="btn btn-link">Link</button>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Nút outline</h4>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-outline-primary">Primary</button>
+                    <button class="btn btn-outline-secondary">Secondary</button>
+                    <button class="btn btn-outline-success">Success</button>
+                    <button class="btn btn-outline-danger">Danger</button>
+                    <button class="btn btn-outline-warning">Warning</button>
+                    <button class="btn btn-outline-info">Info</button>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Kích thước nút</h4>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                    <button class="btn btn-primary btn-lg">Nút lớn</button>
+                    <button class="btn btn-primary">Nút thường</button>
+                    <button class="btn btn-primary btn-sm">Nút nhỏ</button>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-primary btn-block">Nút full chiều rộng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Nút với icon</h4>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-primary"><span class="oi oi-plus mr-1"></span> Thêm mới</button>
+                    <button class="btn btn-success"><span class="oi oi-check mr-1"></span> Duyệt đơn</button>
+                    <button class="btn btn-danger"><span class="oi oi-trash mr-1"></span> Xóa</button>
+                    <button class="btn btn-warning"><span class="oi oi-pencil mr-1"></span> Sửa</button>
+                    <button class="btn btn-info"><span class="oi oi-eye mr-1"></span> Xem</button>
+                </div>
+                <div class="mt-3" style="display:flex;gap:8px;">
+                    <button class="btn btn-primary btn-sm" disabled>Đang xử lý...</button>
+                    <button class="btn btn-secondary btn-sm" disabled>Vô hiệu hóa</button>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Nhóm nút</h4>
+                <div class="btn-group mb-3" role="group">
+                    <button class="btn btn-secondary">Trái</button>
+                    <button class="btn btn-secondary">Giữa</button>
+                    <button class="btn btn-secondary">Phải</button>
+                </div>
+                <div class="btn-group mb-3 ml-2" role="group">
+                    <button class="btn btn-primary @(_align == "left" ? "active" : "")" @onclick='() => _align = "left"'>Trái</button>
+                    <button class="btn btn-primary @(_align == "center" ? "active" : "")" @onclick='() => _align = "center"'>Giữa</button>
+                    <button class="btn btn-primary @(_align == "right" ? "active" : "")" @onclick='() => _align = "right"'>Phải</button>
+                </div>
+                <p class="text-muted">Đã chọn căn: <strong>@_align</strong></p>
+                <h4 class="card-title mt-4">Dropdown</h4>
+                <div class="dropdown" style="position:relative;display:inline-block;">
+                    <button class="btn btn-primary dropdown-toggle" @onclick="ToggleDrop">Tác vụ <span class="caret"></span></button>
+                    @if (_dropOpen)
+                    {
+                        <div class="dropdown-menu show" style="position:absolute;">
+                            <button class="dropdown-item" @onclick='() => DropAction("Xem chi tiết")'>Xem chi tiết</button>
+                            <button class="dropdown-item" @onclick='() => DropAction("Chỉnh sửa")'>Chỉnh sửa</button>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item text-danger" @onclick='() => DropAction("Xóa")'>Xóa</button>
+                        </div>
+                    }
+                </div>
+                @if (_dropAction != null)
+                {
+                    <span class="ml-2 text-muted">Đã chọn: @_dropAction</span>
+                }
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Nút tròn (rounded)</h4>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-primary" style="border-radius:50px;">Primary</button>
+                    <button class="btn btn-success" style="border-radius:50px;">Success</button>
+                    <button class="btn btn-outline-danger" style="border-radius:50px;">Danger</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _align = "left";
+    private bool _dropOpen;
+    private string _dropAction;
+
+    private void ToggleDrop() => _dropOpen = !_dropOpen;
+    private void DropAction(string a)
+    {
+        _dropAction = a;
+        _dropOpen = false;
+    }
+}
