@@ -1,0 +1,6 @@
+@page "/admin/doi-mat-khau"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+@layout PhuThuongStickyRice.Web.Components.Core.Layouts.AdminLayout
+@using PhuThuongStickyRice.Web.Components.Core.Pages
+
+<DoiMatKhauForm />
