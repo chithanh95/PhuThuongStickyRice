@@ -120,8 +120,12 @@ else
                 <p class="sg-lead">@StoryBodyText</p>
                 <a href="/shop" class="sg-btn sg-btn-outline">Đặt xôi ngay →</a>
             </div>
-            <div class="sg-intro-img">
+            <div class="sg-intro-img sg-reveal">
                 <img loading="lazy" src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.jpg")" alt="Xôi Phú Thượng" />
+                <div class="sg-intro-badge">
+                    <strong>100+ năm</strong>
+                    <span>Làng nghề Phú Thượng</span>
+                </div>
             </div>
         </div>
     </div>
@@ -178,7 +182,7 @@ else
             {
                 @foreach (var product in SignatureProducts)
                 {
-                    <div class="sg-dish-card" @key="product.Id">
+                    <div class="sg-dish-card sg-reveal" @key="product.Id">
                         <div class="sg-dish-imgwrap">
                             @if (IsBestSeller(product))
                             {
@@ -189,6 +193,12 @@ else
                                 <span class="sg-badge sg-badge-out">Tạm hết</span>
                             }
                             <img loading="lazy" src="@ProductImage(product)" alt="@product.Name" />
+                            @if (!IsSoldOut(product) && !OrdersPaused)
+                            {
+                                <div class="sg-dish-quick">
+                                    <button @onclick="() => AddToCart(product)">+ Thêm nhanh</button>
+                                </div>
+                            }
                         </div>
                         <div class="sg-dish-body">
                             <h3 class="sg-dish-name">@product.Name</h3>
@@ -253,13 +263,19 @@ else
             <div class="sg-dish-grid">
                 @foreach (var product in XoiProducts)
                 {
-                    <div class="sg-dish-card" @key="product.Id">
+                    <div class="sg-dish-card sg-reveal" @key="product.Id">
                         <div class="sg-dish-imgwrap">
                             @if (IsSoldOut(product))
                             {
                                 <span class="sg-badge sg-badge-out">Tạm hết</span>
                             }
                             <img loading="lazy" src="@ProductImage(product)" alt="@product.Name" />
+                            @if (!IsSoldOut(product) && !OrdersPaused)
+                            {
+                                <div class="sg-dish-quick">
+                                    <button @onclick="() => AddToCart(product)">+ Thêm nhanh</button>
+                                </div>
+                            }
                         </div>
                         <div class="sg-dish-body">
                             <h3 class="sg-dish-name">@product.Name</h3>
@@ -281,7 +297,7 @@ else
             <div class="sg-dish-grid">
                 @foreach (var combo in _combos)
                 {
-                    <div class="sg-dish-card" @key="combo.Id">
+                    <div class="sg-dish-card sg-reveal" @key="combo.Id">
                         <div class="sg-dish-body sg-combo-body">
                             <h3 class="sg-dish-name">@combo.Name</h3>
                             @if (!string.IsNullOrWhiteSpace(combo.Description))
@@ -700,6 +716,7 @@ else
         if (firstRender)
         {
             try { await JSRuntime.InvokeVoidAsync("ptInitCtaParallax"); } catch { }
+            try { await JSRuntime.InvokeVoidAsync("ptInitReveal"); } catch { }
         }
         if (firstRender && !_popupChecked && _content.PopupActive && _promoPopupEnabled)
         {

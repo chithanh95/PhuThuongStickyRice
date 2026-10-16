@@ -1130,3 +1130,89 @@ html.dark .sg-book-form {
 }
 
 html.dark .sg-poem { color: var(--sg-accent); }
+
+/* ---------- Điểm nhấn ảnh: reveal khi cuộn ---------- */
+.sg-reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity .7s ease, transform .7s cubic-bezier(.22, .61, .36, 1);
+}
+.sg-reveal.in {
+    opacity: 1;
+    transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sg-reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ---------- Điểm nhấn ảnh món: overlay thêm nhanh khi hover ---------- */
+.sg-dish-quick {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    display: flex;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity .25s, transform .25s;
+    pointer-events: none;
+}
+.sg-dish-card:hover .sg-dish-quick {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+}
+.sg-dish-quick button {
+    background: rgba(255, 255, 255, .96);
+    border: none;
+    border-radius: 999px;
+    padding: 9px 20px;
+    font-weight: 800;
+    font-size: 14px;
+    color: #6F0707;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+    transition: transform .15s;
+}
+.sg-dish-quick button:hover { transform: scale(1.05); }
+.sg-dish-quick button:disabled { opacity: .6; cursor: default; }
+
+/* ---------- Điểm nhấn ảnh giới thiệu: khung + badge nổi ---------- */
+.sg-intro-img {
+    position: relative;
+}
+.sg-intro-img img {
+    border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(46, 38, 32, .18);
+    border: 6px solid #fff;
+    outline: 1px solid var(--sg-line);
+}
+.sg-intro-badge {
+    position: absolute;
+    left: -14px;
+    bottom: 24px;
+    background: #6F0707;
+    color: #fff;
+    border-radius: 12px;
+    padding: 12px 18px;
+    box-shadow: 0 12px 32px rgba(111, 7, 7, .35);
+    text-align: left;
+    animation: sg-float 3.5s ease-in-out infinite;
+}
+.sg-intro-badge strong {
+    display: block;
+    font-size: 20px;
+    line-height: 1.1;
+}
+.sg-intro-badge span {
+    font-size: 12px;
+    opacity: .85;
+}
+@keyframes sg-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sg-intro-badge { animation: none; }
+}
