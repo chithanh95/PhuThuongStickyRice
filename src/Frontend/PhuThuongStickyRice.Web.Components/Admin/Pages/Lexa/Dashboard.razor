@@ -1,0 +1,247 @@
+@page "/admin/lexa/dashboard"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Dashboard</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Dashboard</li>
+    </ol>
+</div>
+
+@* Hàng mini stats trên cùng *@
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="lexa-mini-chart card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Số dư</p>
+                    <h5 class="mb-0">2.317.000 ₫</h5>
+                </div>
+                <div class="lexa-bars">
+                    @foreach (var h in new[] { 8, 14, 10, 18, 12, 20, 16, 24, 14, 22, 18, 26 })
+                    {
+                        <span style="height:@(h)px"></span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="lexa-mini-chart card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Đã bán</p>
+                    <h5 class="mb-0">1.230 suất</h5>
+                </div>
+                <div class="lexa-bars lexa-bars-purple">
+                    @foreach (var h in new[] { 12, 18, 14, 22, 16, 26, 20, 28, 18, 24, 22, 30 })
+                    {
+                        <span style="height:@(h)px"></span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* 4 stat cards tím *@
+<div class="row">
+    <div class="col-md-6 col-xl-3">
+        <div class="card lexa-stat-card">
+            <div class="card-body">
+                <p class="lexa-stat-label">Đơn hàng</p>
+                <h3 class="lexa-stat-value">1.587</h3>
+                <p class="mb-0"><span class="badge badge-success">+11%</span> <small class="text-muted">So với kỳ trước</small></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card lexa-stat-card">
+            <div class="card-body">
+                <p class="lexa-stat-label">Doanh thu</p>
+                <h3 class="lexa-stat-value">46.782.000 ₫</h3>
+                <p class="mb-0"><span class="badge badge-danger">-29%</span> <small class="text-muted">So với kỳ trước</small></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card lexa-stat-card">
+            <div class="card-body">
+                <p class="lexa-stat-label">Giá trung bình</p>
+                <h3 class="lexa-stat-value">35.000 ₫</h3>
+                <p class="mb-0"><span class="badge badge-warning">0%</span> <small class="text-muted">So với kỳ trước</small></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card lexa-stat-card">
+            <div class="card-body">
+                <p class="lexa-stat-label">Đã bán</p>
+                <h3 class="lexa-stat-value">1.890</h3>
+                <p class="mb-0"><span class="badge badge-success">+89%</span> <small class="text-muted">So với kỳ trước</small></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Thu nhập hàng tháng</h4>
+                <div class="d-flex mb-3">
+                    <div class="mr-4"><h5 class="mb-0">56.241.000 ₫</h5><small class="text-muted">Cửa hàng</small></div>
+                    <div><h5 class="mb-0">23.651.000 ₫</h5><small class="text-muted">Tổng thu nhập</small></div>
+                </div>
+                <div class="lexa-area-chart">
+                    @foreach (var h in new[] { 40, 65, 50, 80, 60, 95, 75, 110, 85, 120, 100, 130 })
+                    {
+                        <div class="lexa-area-bar" style="height:@(h)px" title="@(h)"></div>
+                    }
+                </div>
+                <div class="d-flex justify-content-between text-muted small mt-1">
+                    <span>T1</span><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span>
+                    <span>T7</span><span>T8</span><span>T9</span><span>T10</span><span>T11</span><span>T12</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Hộp thư</h4>
+                @foreach (var m in _inbox)
+                {
+                    <div class="d-flex mb-3">
+                        <div class="lexa-avatar mr-3">@m.Name.Substring(0, 1)</div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">@m.Name <small class="text-muted float-right">@m.Time</small></h6>
+                            <p class="text-muted mb-0 small">@m.Preview</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Hoạt động gần đây</h4>
+                <ul class="lexa-timeline">
+                    <li><span class="lexa-timeline-num">1.</span> Đã phản hồi nhu cầu "Đặt tiệc 200 suất"</li>
+                    <li><span class="lexa-timeline-num">2.</span> Đã thêm món mới "Xôi cốm"</li>
+                    <li><span class="lexa-timeline-num">3.</span> Đã duyệt đơn hàng #12345</li>
+                    <li><span class="lexa-timeline-num">4.</span> Đã cập nhật giá "Xôi gấc"</li>
+                </ul>
+                <div class="mt-3 p-3 text-center" style="background:#f8f8fb;border-radius:8px;">
+                    <h5>Doanh số năm</h5>
+                    <h3 style="color:#7a6fbe;">52.345</h3>
+                    <p class="text-muted small">suất xôi đã bán trong năm</p>
+                    <button class="btn btn-primary btn-sm">Xem thêm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Giao dịch mới nhất</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr><th>Khách hàng</th><th>Trạng thái</th><th>Số tiền</th><th>Ngày</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in _transactions)
+                            {
+                                <tr>
+                                    <td>@t.Name</td>
+                                    <td><span class="badge @t.BadgeClass">@t.Status</span></td>
+                                    <td>@t.Amount</td>
+                                    <td class="text-muted">@t.Date</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Đơn hàng mới nhất</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr><th>Mã đơn</th><th>Món ăn</th><th>Trạng thái</th><th>Tổng</th><th>Ngày</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in _orders)
+                            {
+                                <tr>
+                                    <td><a href="#">@o.Code</a></td>
+                                    <td>@o.Product</td>
+                                    <td><span class="badge @o.BadgeClass">@o.Status</span></td>
+                                    <td>@o.Total</td>
+                                    <td class="text-muted">@o.Date</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-stat-card { background: #7a6fbe; border: none; color: #fff; }
+    .lexa-stat-card .card-body { padding: 20px; }
+    .lexa-stat-label { color: rgba(255,255,255,.75); margin-bottom: 5px; font-size: 14px; }
+    .lexa-stat-value { color: #fff; font-weight: 600; margin-bottom: 10px; }
+    .lexa-stat-card .text-muted { color: rgba(255,255,255,.65) !important; }
+    html.dark .lexa-stat-card { background: #6a5fae; }
+    .lexa-bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; }
+    .lexa-bars span { width: 6px; background: #3ac9d6; border-radius: 2px; display: block; }
+    .lexa-bars-purple span { background: #7a6fbe; }
+    .lexa-area-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding: 10px 0; }
+    .lexa-area-bar { flex: 1; background: linear-gradient(180deg, #7a6fbe, #a89df0); border-radius: 4px 4px 0 0; min-width: 12px; }
+    .lexa-avatar { width: 38px; height: 38px; border-radius: 50%; background: #7a6fbe; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
+    .lexa-timeline { list-style: none; padding: 0; }
+    .lexa-timeline li { padding: 8px 0; border-bottom: 1px dashed #e9ecef; }
+    html.dark .lexa-timeline li { border-color: #3a3a58; }
+    .lexa-timeline-num { color: #7a6fbe; font-weight: 600; margin-right: 6px; }
+</style>
+
+@code {
+    private List<InboxMsg> _inbox = new()
+    {
+        new("Minh Anh", "Chị ơi còn xôi gấc không ạ?", "13:40"),
+        new("Thu Hằng", "Em đặt 20 suất cho công ty nhé", "13:34"),
+        new("Đức Anh", "Xôi ngon lắm shop ơi!", "13:17"),
+        new("Lan Phương", "Mai giao sớm giúp em nhé", "12:20"),
+    };
+    private List<Transaction> _transactions = new()
+    {
+        new("Nguyễn Văn Hùng", "Đã xác nhận", "badge-success", "14.584.000 ₫", "12/10/2026"),
+        new("Trần Thị Mai", "Chờ thanh toán", "badge-warning", "8.541.000 ₫", "11/10/2026"),
+        new("Lê Hoàng Nam", "Đã xác nhận", "badge-success", "954.000 ₫", "11/10/2026"),
+        new("Phạm Thu Thảo", "Hết hạn", "badge-danger", "44.584.000 ₫", "11/10/2026"),
+        new("Vũ Minh Đức", "Đã xác nhận", "badge-success", "8.844.000 ₫", "11/10/2026"),
+    };
+    private List<Order> _orders = new()
+    {
+        new("#12354781", "Xôi gấc đặc biệt", "Đã giao", "badge-success", "185.000 ₫", "12/10/2026"),
+        new("#52140300", "Combo xôi 5 món", "Đã giao", "badge-success", "1.024.000 ₫", "12/10/2026"),
+        new("#96254137", "Xôi xéo", "Đã hủy", "badge-danger", "657.000 ₫", "12/10/2026"),
+        new("#12365474", "Xôi thập cẩm", "Đang giao", "badge-info", "8.451.000 ₫", "12/10/2026"),
+        new("#85214796", "Xôi đỗ xanh", "Đã giao", "badge-success", "584.000 ₫", "12/10/2026"),
+    };
+
+    private record InboxMsg(string Name, string Preview, string Time);
+    private record Transaction(string Name, string Status, string BadgeClass, string Amount, string Date);
+    private record Order(string Code, string Product, string Status, string BadgeClass, string Total, string Date);
+}
