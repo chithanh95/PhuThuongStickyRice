@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -185,6 +185,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
                     {
                         await set.AddAsync(new RolePermission
                         {
+                            Id = Guid.NewGuid(),
                             Role = pair.Key,
                             PermissionKey = key,
                             CreatedAt = DateTime.UtcNow,
