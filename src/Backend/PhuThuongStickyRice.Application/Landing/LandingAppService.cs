@@ -91,8 +91,9 @@ namespace PhuThuongStickyRice.Application.Landing
 
         private async Task<LandingPageContent> GetSingleAsync()
         {
-            var queryable = await _contentRepository.GetQueryableAsync();
-            return await _asyncExecuter.FirstOrDefaultAsync(queryable);
+            // Dùng repository trực tiếp thay vì GetQueryableAsync để tránh
+            // DbContext concurrency khi queryable bị giữ qua nhiều await.
+            return await _contentRepository.FirstOrDefaultAsync(x => true);
         }
 
         private static LandingContentDto MapToDto(LandingPageContent entity)
