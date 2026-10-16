@@ -1,0 +1,151 @@
+@page "/quen-mat-khau"
+@using System.Text.RegularExpressions
+@using System.Threading.Tasks
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="container py-5" style="max-width: 480px;">
+    <div class="text-center mb-4">
+        <h3 style="font-family: 'Lora', Georgia, serif; color: #763434;">Quên mật khẩu</h3>
+        <p class="text-muted">Nhập SĐT để nhận mã OTP đặt lại mật khẩu</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_info))
+    {
+        <div class="alert alert-success">@_info</div>
+    }
+
+    @if (_step == 1)
+    {
+        <div class="form-group">
+            <label>Số điện thoại *</label>
+            <input class="form-control" @bind="_phone" inputmode="tel" placeholder="0901234567" />
+            <small class="text-muted">Mã OTP sẽ được gửi qua SMS đến số này.</small>
+        </div>
+        <button class="btn btn-primary btn-block" style="background:#6F0707;border-color:#6F0707;"
+                @onclick="RequestOtpAsync" disabled="@_busy">
+            @(_busy ? "Đang gửi..." : "Gửi mã OTP")
+        </button>
+    }
+    else if (_step == 2)
+    {
+        <div class="form-group">
+            <label>Mã OTP *</label>
+            <input class="form-control" @bind="_otp" inputmode="numeric" placeholder="6 số" maxlength="6" />
+            <small class="text-muted">Mã có hiệu lực 5 phút. Không nhận được? <a href="javascript:void(0)" @onclick="RequestOtpAsync">Gửi lại</a></small>
+        </div>
+        <div class="form-group">
+            <label>Mật khẩu mới * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
+            <input type="password" class="form-control" @bind="_newPassword" placeholder="Mật khẩu mới" />
+        </div>
+        <div class="form-group">
+            <label>Nhập lại mật khẩu mới *</label>
+            <input type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu mới" />
+        </div>
+        <button class="btn btn-primary btn-block" style="background:#6F0707;border-color:#6F0707;"
+                @onclick="ResetPasswordAsync" disabled="@_busy">
+            @(_busy ? "Đang xử lý..." : "Đặt lại mật khẩu")
+        </button>
+        <button class="btn btn-link btn-block" @onclick="() => _step = 1">← Nhập lại SĐT</button>
+    }
+    else
+    {
+        <div class="alert alert-success">
+            Đặt lại mật khẩu thành công! <a href="/dang-nhap">Đăng nhập ngay →</a>
+        </div>
+    }
+
+    <div class="text-center mt-3">
+        <a href="/dang-nhap">← Về đăng nhập</a>
+    </div>
+</div>
+
+@code {
+    private int _step = 1;
+    private string _phone;
+    private string _otp;
+    private string _newPassword;
+    private string _confirmPassword;
+    private string _error;
+    private string _info;
+    private bool _busy;
+
+    private static bool IsValidPhone(string phone) =>
+        !string.IsNullOrWhiteSpace(phone)
+        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+
+    private async Task RequestOtpAsync()
+    {
+        _error = null;
+        _info = null;
+        if (!IsValidPhone(_phone))
+        {
+            _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await AuthService.RequestPasswordResetOtpAsync(_phone.Trim());
+            _info = "Đã gửi mã OTP. Vui lòng kiểm tra SMS.";
+            _step = 2;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Không kết nối được tới máy chủ. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ResetPasswordAsync()
+    {
+        _error = null;
+        _info = null;
+        if (string.IsNullOrWhiteSpace(_otp) || _otp.Trim().Length != 6)
+        {
+            _error = "Vui lòng nhập mã OTP 6 số.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 6)
+        {
+            _error = "Mật khẩu mới phải có ít nhất 6 ký tự.";
+            return;
+        }
+        if (_newPassword != _confirmPassword)
+        {
+            _error = "Mật khẩu nhập lại không khớp.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await AuthService.ResetPasswordWithOtpAsync(_phone.Trim(), _otp.Trim(), _newPassword);
+            _step = 3;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Đặt lại mật khẩu thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}
