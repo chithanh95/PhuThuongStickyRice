@@ -918,6 +918,29 @@ html.dark .lx-icon-btn:hover {
     background: #34345a;
 }
 
+/* ---------- Dark mode: đảm bảo chữ đọc được ---------- */
+html.dark .lx-content {
+    color: #f0eef5;
+}
+html.dark .lx-content h1,
+html.dark .lx-content h2,
+html.dark .lx-content h3,
+html.dark .lx-content h4,
+html.dark .lx-content h5 {
+    color: #f0eef5;
+}
+html.dark .lx-content .text-muted {
+    color: #a5a2bd !important;
+}
+html.dark .lx-content p,
+html.dark .lx-content span,
+html.dark .lx-content div {
+    color: inherit;
+}
+html.dark .lx-page-head {
+    color: #f0eef5;
+}
+
 /* ---------- Items 157-158: global search + notification center ---------- */
 .lx-search-wrap {
     position: relative;
