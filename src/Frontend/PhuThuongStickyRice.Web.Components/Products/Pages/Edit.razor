@@ -2,11 +2,18 @@
 @attribute [Authorize]
 @using PhuThuongStickyRice.Web.Components.Products.Components
 
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Sửa sản phẩm</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li><a href="/products">Sản phẩm</a></li>
+        <li class="current">Sửa sản phẩm</li>
+    </ol>
+</div>
+
 <div class="card">
-    <div class="card-header">
-        Sửa sản phẩm
-    </div>
     <div class="card-body">
+        <h4 class="card-title">Thông tin sản phẩm</h4>
         <AddEditProduct Product="Product"></AddEditProduct>
     </div>
     <div class="card-footer">
@@ -18,10 +25,8 @@
 
 @* Item 148: change history ("ai sửa gì, khi nào"). *@
 <div class="card mt-3">
-    <div class="card-header">
-        🕘 Lịch sử thay đổi
-    </div>
     <div class="card-body">
+        <h4 class="card-title">🕘 Lịch sử thay đổi</h4>
         @if (_changeLog == null)
         {
             <p><em>Đang tải...</em></p>
@@ -33,7 +38,7 @@
         else
         {
             <div class="table-responsive">
-                <table class="table table-sm">
+                <table class="table table-hover table-sm mb-0">
                     <thead>
                         <tr>
                             <th>Thời gian</th>
