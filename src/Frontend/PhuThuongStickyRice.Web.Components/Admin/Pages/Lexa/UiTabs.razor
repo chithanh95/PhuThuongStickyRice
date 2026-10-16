@@ -1,0 +1,155 @@
+@page "/admin/lexa/ui-tabs"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Tabs & Accordions</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>UI Elements</li>
+        <li class="current">Tabs & Accordions</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Tabs cơ bản</h4>
+                <ul class="nav nav-tabs" role="tablist">
+                    @foreach (var t in _tabs)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @(_activeTab == t.Id ? "active" : "")" @onclick="() => _activeTab = t.Id" style="cursor:pointer;">@t.Title</a>
+                        </li>
+                    }
+                </ul>
+                <div class="tab-content p-3 border border-top-0">
+                    @foreach (var t in _tabs)
+                    {
+                        @if (_activeTab == t.Id)
+                        {
+                            <p class="mb-0">@t.Content</p>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Tabs pills</h4>
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    @foreach (var t in _pills)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @(_activePill == t.Id ? "active" : "")" @onclick="() => _activePill = t.Id" style="cursor:pointer;">@t.Title</a>
+                        </li>
+                    }
+                </ul>
+                <div class="p-3 border rounded">
+                    @foreach (var t in _pills)
+                    {
+                        @if (_activePill == t.Id)
+                        {
+                            <p class="mb-0">@t.Content</p>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Accordion</h4>
+                <div class="accordion" id="lexaAcc">
+                    @foreach (var a in _accordions)
+                    {
+                        <div class="card mb-2">
+                            <div class="card-header p-0" style="background:#f8f8fb;">
+                                <button class="btn btn-link btn-block text-left" @onclick="() => ToggleAccordion(a.Id)" style="color:#2b3a4a;text-decoration:none;padding:12px 16px;">
+                                    <strong>@a.Title</strong>
+                                    <span class="float-right">@(_openAcc == a.Id ? "−" : "+")</span>
+                                </button>
+                            </div>
+                            @if (_openAcc == a.Id)
+                            {
+                                <div class="card-body">@a.Content</div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Tabs dọc</h4>
+                <div class="row">
+                    <div class="col-4">
+                        <div class="nav flex-column nav-pills">
+                            @foreach (var t in _vtabs)
+                            {
+                                <a class="nav-link @(_activeVTab == t.Id ? "active" : "") mb-1" @onclick="() => _activeVTab = t.Id" style="cursor:pointer;">@t.Title</a>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-8">
+                        <div class="p-3 border rounded h-100">
+                            @foreach (var t in _vtabs)
+                            {
+                                @if (_activeVTab == t.Id)
+                                {
+                                    <p class="mb-0">@t.Content</p>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    html.dark .nav-tabs .nav-link { color: #c9c7dd; }
+    html.dark .nav-tabs .nav-link.active { background: #262640; border-color: #3a3a58; color: #f0eef5; }
+    html.dark .tab-content.border { border-color: #3a3a58 !important; }
+    html.dark .accordion .card-header { background: #20203a !important; }
+    html.dark .accordion .btn-link { color: #f0eef5 !important; }
+    .nav-pills .nav-link.active { background: #7a6fbe; }
+</style>
+
+@code {
+    private string _activeTab = "home";
+    private string _activePill = "p1";
+    private string _activeVTab = "v1";
+    private string _openAcc = "a1";
+
+    private List<TabItem> _tabs = new()
+    {
+        new("home", "Trang chủ", "Nội dung tab Trang chủ. Hiển thị tổng quan về cửa hàng xôi Phú Thượng."),
+        new("menu", "Thực đơn", "Nội dung tab Thực đơn. Danh sách các món xôi hiện có."),
+        new("contact", "Liên hệ", "Nội dung tab Liên hệ. Số điện thoại: 0389245468."),
+    };
+    private List<TabItem> _pills = new()
+    {
+        new("p1", "Đơn mới", "Danh sách đơn hàng mới cần xác nhận."),
+        new("p2", "Đang làm", "Các đơn đang được bếp chế biến."),
+        new("p3", "Hoàn tất", "Các đơn đã giao thành công."),
+    };
+    private List<TabItem> _vtabs = new()
+    {
+        new("v1", "Cài đặt chung", "Cấu hình tên quán, logo, giờ mở cửa."),
+        new("v2", "Thanh toán", "Cấu hình MoMo, chuyển khoản, tiền mặt."),
+        new("v3", "Thông báo", "Cấu hình Zalo, email thông báo đơn hàng."),
+    };
+    private List<TabItem> _accordions = new()
+    {
+        new("a1", "Chính sách giao hàng", "Quán không giao hàng trực tiếp. Khách tự đến lấy hoặc dùng shipper bên thứ ba (Grab, Be, Ahamove)."),
+        new("a2", "Chính sách đổi trả", "Đơn hàng đã xác nhận không thể hủy trong vòng 30 phút trước giờ giao."),
+        new("a3", "Câu hỏi thường gặp", "Xôi có ship tỉnh không? Có, xôi cấp đông ship toàn quốc."),
+    };
+
+    private void ToggleAccordion(string id) => _openAcc = _openAcc == id ? null : id;
+
+    private record TabItem(string Id, string Title, string Content);
+}
