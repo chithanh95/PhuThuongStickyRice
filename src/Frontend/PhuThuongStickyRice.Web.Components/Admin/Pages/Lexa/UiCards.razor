@@ -1,0 +1,127 @@
+@page "/admin/lexa/ui-cards"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Cards</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>UI Elements</li>
+        <li class="current">Cards</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-xl-3">
+        <div class="card">
+            <img class="card-img-top" src="https://via.placeholder.com/300x180/7a6fbe/ffffff?text=Xoi+gac" alt="Xôi gấc" />
+            <div class="card-body">
+                <h4 class="card-title">Xôi gấc đặc biệt</h4>
+                <p class="card-text">Xôi gấc dẻo thơm, màu đỏ đẹp mắt, chuẩn vị làng nghề Phú Thượng.</p>
+                <p class="card-text"><strong style="color:#ec536c;">35.000 ₫</strong></p>
+                <button class="btn btn-primary">Thêm vào giỏ</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Card chỉ có nội dung</h4>
+                <h6 class="card-subtitle text-muted mb-2">Tiêu đề phụ</h6>
+                <p class="card-text">Nội dung card đơn giản với tiêu đề, phụ đề và đoạn văn bản mô tả.</p>
+                <a href="#" class="card-link">Link 1</a>
+                <a href="#" class="card-link">Link 2</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card text-white" style="background:#7a6fbe;">
+            <div class="card-body">
+                <h4 class="card-title text-white">Card màu tím</h4>
+                <p class="card-text">Card với nền màu chủ đạo Lexa #7a6fbe, chữ trắng.</p>
+                <button class="btn btn-light btn-sm">Tìm hiểu thêm</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-primary">
+            <div class="card-body">
+                <h4 class="card-title">Card viền màu</h4>
+                <p class="card-text">Card với viền màu primary nổi bật.</p>
+            </div>
+            <div class="card-footer text-muted">Footer của card</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Card có header</h4>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Phần header chứa tiêu đề, body chứa nội dung chính của card.</p>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-primary btn-sm">Lưu</button>
+                <button class="btn btn-secondary btn-sm">Hủy</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="lexa-stat-icon mr-3" style="background:#e8e6f7;color:#7a6fbe;">🍚</div>
+                    <div>
+                        <h4 class="card-title mb-1">Card thống kê</h4>
+                        <h2 class="mb-0">1.587</h2>
+                        <small class="text-muted">Tổng đơn hàng tháng này</small>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height:8px;">
+                    <div class="progress-bar" style="width:75%;background:#7a6fbe;"></div>
+                </div>
+                <small class="text-muted">75% so với mục tiêu</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Card deck (nhóm card)</h4>
+                <div class="card-deck">
+                    @foreach (var p in _products)
+                    {
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div style="font-size:40px;">@p.Icon</div>
+                                <h5 class="card-title mt-2">@p.Name</h5>
+                                <p class="card-text text-muted small">@p.Desc</p>
+                                <p class="font-weight-bold" style="color:#ec536c;">@p.Price</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+</style>
+
+@code {
+    private List<Product> _products = new()
+    {
+        new("🍚", "Xôi gấc", "Dẻo thơm", "15.000 ₫"),
+        new("🌽", "Xôi ngô", "Béo ngậy", "15.000 ₫"),
+        new("🫘", "Xôi đỗ", "Bùi bùi", "15.000 ₫"),
+        new("🥥", "Xôi vò", "Thơm nước dừa", "20.000 ₫"),
+    };
+    private record Product(string Icon, string Name, string Desc, string Price);
+}
