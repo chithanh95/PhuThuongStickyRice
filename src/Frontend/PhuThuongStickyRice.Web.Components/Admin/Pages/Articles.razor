@@ -4,8 +4,14 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject Wave3Service Wave3Service
 
-<h3>Bài viết — Chuyện nhà xôi</h3>
-<p class="text-muted">Bài viết đã xuất bản hiển thị ở mục "Chuyện nhà xôi" trên trang chủ (3 bài mới nhất).</p>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Bài viết — Chuyện nhà xôi</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>Nội dung</li>
+        <li class="current">Bài viết</li>
+    </ol>
+</div>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -16,9 +22,12 @@
     <div class="alert alert-success">@_message</div>
 }
 
-<div class="card mb-3">
-    <div class="card-header">@(_editing == null ? "Thêm bài viết" : "Sửa bài viết")</div>
-    <div class="card-body">
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">@(_editing == null ? "Thêm bài viết" : "Sửa bài viết")</h4>
+                <p class="card-title-desc">Bài viết đã xuất bản hiển thị ở mục "Chuyện nhà xôi" trên trang chủ (3 bài mới nhất).</p>
         <div class="form-group">
             <label><small class="text-muted">Tiêu đề *</small></label>
             <input class="form-control" @bind="_form.Title" />
@@ -38,9 +47,9 @@
             </div>
             <div class="col-md-3 mb-2">
                 <label><small class="text-muted">Trạng thái</small></label>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" id="art-pub" @bind="_form.IsPublished" />
-                    <label class="form-check-label" for="art-pub">Xuất bản</label>
+                <div class="custom-control custom-checkbox mt-2">
+                    <input class="custom-control-input" type="checkbox" id="art-pub" @bind="_form.IsPublished" />
+                    <label class="custom-control-label" for="art-pub">Xuất bản</label>
                 </div>
             </div>
         </div>
@@ -49,8 +58,10 @@
         </button>
         @if (_editing != null)
         {
-            <button class="btn btn-outline-secondary" @onclick="CancelEdit">Hủy</button>
+            <button class="btn btn-secondary" @onclick="CancelEdit">Hủy</button>
         }
+            </div>
+        </div>
     </div>
 </div>
 
@@ -64,32 +75,52 @@ else if (_items.Count == 0)
 }
 else
 {
-    @foreach (var a in _items)
-    {
-        <div class="card mb-2" @key="a.Id">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h5 class="card-title mb-1">@a.Title</h5>
-                        <small class="text-muted">@a.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
-                        @if (a.IsPublished)
-                        {
-                            <span class="badge badge-success ml-2">Đã xuất bản</span>
-                        }
-                        else
-                        {
-                            <span class="badge badge-secondary ml-2">Nháp</span>
-                        }
-                    </div>
-                    <div class="text-right">
-                        <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(a)">Sửa</button>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(a)">Xóa</button>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Danh sách bài viết</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Tiêu đề</th>
+                                    <th>Nội dung</th>
+                                    <th>Ngày đăng</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-right">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in _items)
+                                {
+                                    <tr @key="a.Id">
+                                        <td><strong>@a.Title</strong></td>
+                                        <td class="text-muted">@Truncate(a.Body, 220)</td>
+                                        <td style="white-space: nowrap;">@a.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            @if (a.IsPublished)
+                                            {
+                                                <span class="badge badge-success">Đã xuất bản</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-secondary">Nháp</span>
+                                            }
+                                        </td>
+                                        <td class="text-right" style="white-space: nowrap;">
+                                            <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(a)">Sửa</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(a)">Xóa</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <p class="card-text mt-2">@Truncate(a.Body, 220)</p>
             </div>
         </div>
-    }
+    </div>
 }
 
 @code {
