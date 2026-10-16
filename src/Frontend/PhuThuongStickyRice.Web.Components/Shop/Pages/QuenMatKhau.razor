@@ -3,64 +3,128 @@
 @using System.Threading.Tasks
 @inject AuthService AuthService
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
-<div class="container py-5" style="max-width: 480px;">
-    <div class="text-center mb-4">
-        <h3 style="font-family: 'Lora', Georgia, serif; color: #763434;">Quên mật khẩu</h3>
-        <p class="text-muted">Nhập SĐT để nhận mã OTP đặt lại mật khẩu</p>
-    </div>
+<style>
+    .auth-page {
+        min-height: 100vh; width: 100%;
+        background: #f8f8fb;
+        display: flex; align-items: center; justify-content: center;
+        padding: 40px 20px; margin: 0; box-sizing: border-box;
+    }
+    html.dark .auth-page { background: #1a1a2e; }
+    .auth-card {
+        background: #fff; border-radius: 8px;
+        box-shadow: 0 2px 20px rgba(0,0,0,.08);
+        padding: 40px 35px; width: 100%;
+    }
+    html.dark .auth-card { background: #262640; box-shadow: 0 2px 20px rgba(0,0,0,.4); }
+    html.dark .auth-card label { color: #f0eef5 !important; }
+    html.dark .auth-card h4 { color: #f0eef5 !important; }
+    html.dark .auth-card .auth-sub { color: #a5a2bd !important; }
+    html.dark .auth-card .text-muted { color: #a5a2bd !important; }
+    html.dark .auth-card .form-control {
+        background: #1e1e36; border-color: #4a4a6e; color: #f0eef5;
+    }
+    html.dark .auth-card .form-control::placeholder { color: #8a87a3; }
+    .auth-steps { display: flex; justify-content: center; margin-bottom: 25px; }
+    .auth-step {
+        width: 32px; height: 32px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 14px;
+        background: #e9ecef; color: #6c757d; margin: 0 6px;
+    }
+    .auth-step.active { background: #7a6fbe; color: #fff; }
+    .auth-step.done { background: #28a745; color: #fff; }
+    html.dark .auth-step { background: #2c2c4e; color: #a5a2bd; }
+    html.dark .auth-step.active { background: #7a6fbe; color: #fff; }
+    html.dark .auth-step.done { background: #28a745; color: #fff; }
+    .auth-theme-btn {
+        position: fixed; top: 16px; right: 16px; z-index: 1000;
+        width: 40px; height: 40px; border-radius: 50%;
+        border: 1px solid #e0e0e0; background: #fff; cursor: pointer; font-size: 18px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    }
+    html.dark .auth-theme-btn { background: #262640; border-color: #3a3a58; }
+</style>
 
-    @if (!string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-danger">@_error</div>
-    }
-    @if (!string.IsNullOrEmpty(_info))
-    {
-        <div class="alert alert-success">@_info</div>
-    }
+<div class="auth-page">
+    <button class="auth-theme-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
+        @(_isDark ? "☀️" : "🌙")
+    </button>
+    <div style="width:100%;max-width:440px;">
+        <div class="auth-card">
+            <div style="text-align:center;margin-bottom:20px;">
+                <span style="font-size:36px;">🍚</span>
+                <span style="font-size:26px;font-weight:600;color:#2b3a4a;margin-left:8px;vertical-align:middle;">Xôi Phú Thượng</span>
+            </div>
+            <h4 style="text-align:center;color:#1a1a2e;font-weight:600;font-size:22px;margin-bottom:5px;">Quên mật khẩu?</h4>
+            <p class="auth-sub" style="text-align:center;color:#5a6c7d;font-size:14px;margin-bottom:20px;">
+                Nhập SĐT để nhận mã OTP đặt lại mật khẩu.
+            </p>
 
-    @if (_step == 1)
-    {
-        <div class="form-group">
-            <label>Số điện thoại *</label>
-            <input class="form-control" @bind="_phone" inputmode="tel" placeholder="0901234567" />
-            <small class="text-muted">Mã OTP sẽ được gửi qua SMS đến số này.</small>
-        </div>
-        <button class="btn btn-primary btn-block" style="background:#6F0707;border-color:#6F0707;"
-                @onclick="RequestOtpAsync" disabled="@_busy">
-            @(_busy ? "Đang gửi..." : "Gửi mã OTP")
-        </button>
-    }
-    else if (_step == 2)
-    {
-        <div class="form-group">
-            <label>Mã OTP *</label>
-            <input class="form-control" @bind="_otp" inputmode="numeric" placeholder="6 số" maxlength="6" />
-            <small class="text-muted">Mã có hiệu lực 5 phút. Không nhận được? <a href="javascript:void(0)" @onclick="RequestOtpAsync">Gửi lại</a></small>
-        </div>
-        <div class="form-group">
-            <label>Mật khẩu mới * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
-            <input type="password" class="form-control" @bind="_newPassword" placeholder="Mật khẩu mới" />
-        </div>
-        <div class="form-group">
-            <label>Nhập lại mật khẩu mới *</label>
-            <input type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu mới" />
-        </div>
-        <button class="btn btn-primary btn-block" style="background:#6F0707;border-color:#6F0707;"
-                @onclick="ResetPasswordAsync" disabled="@_busy">
-            @(_busy ? "Đang xử lý..." : "Đặt lại mật khẩu")
-        </button>
-        <button class="btn btn-link btn-block" @onclick="() => _step = 1">← Nhập lại SĐT</button>
-    }
-    else
-    {
-        <div class="alert alert-success">
-            Đặt lại mật khẩu thành công! <a href="/dang-nhap">Đăng nhập ngay →</a>
-        </div>
-    }
+            <div class="auth-steps">
+                <div class="auth-step @(_step > 1 ? "done" : _step == 1 ? "active" : "")">1</div>
+                <div class="auth-step @(_step > 2 ? "done" : _step == 2 ? "active" : "")">2</div>
+                <div class="auth-step @(_step == 3 ? "done" : "")">3</div>
+            </div>
 
-    <div class="text-center mt-3">
-        <a href="/dang-nhap">← Về đăng nhập</a>
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-danger py-2">@_error</div>
+            }
+            @if (!string.IsNullOrEmpty(_info))
+            {
+                <div class="alert alert-success py-2">@_info</div>
+            }
+
+            @if (_step == 1)
+            {
+                <div class="form-group">
+                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Số điện thoại *</label>
+                    <input class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
+                    <small class="text-muted">Mã OTP sẽ được gửi qua SMS đến số này.</small>
+                </div>
+                <button class="btn btn-primary btn-block" style="background:#7a6fbe;border-color:#7a6fbe;padding:10px;"
+                        @onclick="RequestOtpAsync" disabled="@_busy">
+                    @(_busy ? "Đang gửi..." : "Gửi mã OTP")
+                </button>
+            }
+            else if (_step == 2)
+            {
+                <div class="form-group">
+                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Mã OTP *</label>
+                    <input class="form-control text-center" @bind="_otp" inputmode="numeric" placeholder="Nhập mã 6 số"
+                           maxlength="6" style="letter-spacing:4px;font-weight:700;font-size:18px;" />
+                    <small class="text-muted">Mã có hiệu lực 5 phút. Không nhận được? <a href="javascript:void(0)" style="color:#7a6fbe;" @onclick="RequestOtpAsync">Gửi lại</a></small>
+                </div>
+                <div class="form-group">
+                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Mật khẩu mới * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
+                    <input type="password" class="form-control" @bind="_newPassword" placeholder="Nhập mật khẩu mới" />
+                </div>
+                <div class="form-group">
+                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Nhập lại mật khẩu mới *</label>
+                    <input type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu mới" />
+                </div>
+                <button class="btn btn-primary btn-block" style="background:#7a6fbe;border-color:#7a6fbe;padding:10px;"
+                        @onclick="ResetPasswordAsync" disabled="@_busy">
+                    @(_busy ? "Đang xử lý..." : "Đặt lại mật khẩu")
+                </button>
+                <button class="btn btn-link btn-block mt-2" style="color:#7a6fbe;" @onclick="() => _step = 1">← Nhập lại SĐT</button>
+            }
+            else
+            {
+                <div class="alert alert-success text-center">
+                    <div style="font-size:40px;">✅</div>
+                    <div class="mt-2"><strong>Đặt lại mật khẩu thành công!</strong></div>
+                    <a href="/dang-nhap" style="color:#7a6fbe;font-weight:600;">Đăng nhập ngay →</a>
+                </div>
+            }
+        </div>
+        <div class="text-center mt-4">
+            <a href="/dang-nhap" class="text-muted small">← Về đăng nhập</a>
+        </div>
+        <p class="text-center text-muted small mt-3 mb-0">© 2026 Xôi Phú Thượng</p>
     </div>
 </div>
 
@@ -73,6 +137,21 @@
     private string _error;
     private string _info;
     private bool _busy;
+    private bool _isDark;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme") == "dark"; } catch { }
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        try { _isDark = await JSRuntime.InvokeAsync<string>("ptToggleTheme") == "dark"; } catch { }
+    }
 
     private static bool IsValidPhone(string phone) =>
         !string.IsNullOrWhiteSpace(phone)
