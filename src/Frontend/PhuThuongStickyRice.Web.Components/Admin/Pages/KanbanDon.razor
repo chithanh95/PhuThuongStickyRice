@@ -1,0 +1,295 @@
+@page "/admin/kanban-don"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+@using PhuThuongStickyRice.Web.Components.Orders.Models
+@using PhuThuongStickyRice.Web.Components.Orders.Services
+@inject OrderService OrderService
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Kanban đơn hàng</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Tổng quan</a></li>
+        <li class="current">Kanban đơn hàng</li>
+    </ol>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="() => LoadAsync()" disabled="@_loading">
+            <span class="oi oi-reload"></span> Tải lại
+        </button>
+        <span class="text-muted ml-2">Tự động làm mới mỗi 30 giây</span>
+    </div>
+    <div>
+        <label class="mb-0 mr-2 text-muted">Hiển thị:</label>
+        <select class="form-control form-control-sm d-inline-block" style="width:auto;" @onchange="OnRangeChanged">
+            <option value="today" selected="@(_range == "today")">Hôm nay</option>
+            <option value="all" selected="@(_range == "all")">Tất cả chưa xong</option>
+        </select>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <p><em>Đang tải đơn hàng...</em></p>
+}
+else
+{
+    <div class="kanban-board">
+        @foreach (var col in _columns)
+        {
+            var orders = OrdersIn(col.Key);
+            <div class="kanban-col">
+                <div class="kanban-col-head" style="border-top: 3px solid @col.Color;">
+                    <strong>@col.Label</strong>
+                    <span class="badge badge-pill" style="background:@col.Color;">@orders.Count</span>
+                </div>
+                <div class="kanban-col-body">
+                    @if (orders.Count == 0)
+                    {
+                        <div class="text-muted text-center py-3 small">Không có đơn</div>
+                    }
+                    @foreach (var o in orders)
+                    {
+                        <div class="kanban-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong class="kanban-code">#@o.OrderNumber</strong>
+                                @if (o.IsVip)
+                                {
+                                    <span class="badge badge-warning">VIP</span>
+                                }
+                            </div>
+                            <div class="kanban-customer">@o.CustomerName</div>
+                            <div class="kanban-phone text-muted">@o.CustomerPhone</div>
+                            @if (o.ScheduledFor.HasValue)
+                            {
+                                <div class="kanban-sched">📅 Hẹn: @ToLocal(o.ScheduledFor.Value).ToString("dd/MM HH:mm")</div>
+                            }
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <strong class="text-danger">@FormatPrice(o.TotalAmount)</strong>
+                                <small class="text-muted">@ToLocal(o.CreatedAt).ToString("HH:mm")</small>
+                            </div>
+                            <div class="kanban-actions">
+                                @if (col.Prev != null)
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary" title="Lùi về: @StatusLabel(col.Prev)"
+                                            @onclick="() => MoveAsync(o, col.Prev)" disabled="@_saving">
+                                        ←
+                                    </button>
+                                }
+                                @if (col.Next != null)
+                                {
+                                    <button class="btn btn-sm btn-primary flex-grow-1 ml-1" style="background:#7a6fbe;border-color:#7a6fbe;"
+                                            @onclick="() => MoveAsync(o, col.Next)" disabled="@_saving">
+                                        @StatusLabel(col.Next) →
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success ml-1">Hoàn thành</span>
+                                }
+                            </div>
+                            @if (col.Key == "Pending")
+                            {
+                                <button class="btn btn-sm btn-link text-danger p-0 mt-1" @onclick="() => CancelAsync(o)" disabled="@_saving">
+                                    Hủy đơn
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (_cancelled.Count > 0)
+    {
+        <div class="card mt-3">
+            <div class="card-body py-2">
+                <button class="btn btn-link p-0 text-muted" @onclick="() => _showCancelled = !_showCancelled">
+                    @(_showCancelled ? "▼" : "▶") Đơn đã hủy (@_cancelled.Count)
+                </button>
+                @if (_showCancelled)
+                {
+                    <div class="mt-2">
+                        @foreach (var o in _cancelled)
+                        {
+                            <span class="badge badge-danger mr-1 mb-1">#@o.OrderNumber</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+<style>
+    .kanban-board {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        align-items: flex-start;
+    }
+    .kanban-col {
+        flex: 1 0 240px;
+        min-width: 240px;
+        max-width: 320px;
+        background: #f4f4f9;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 260px);
+    }
+    .kanban-col-head {
+        padding: 10px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        border-radius: 8px 8px 0 0;
+    }
+    .kanban-col-body {
+        padding: 8px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .kanban-card {
+        background: #fff;
+        border-radius: 6px;
+        padding: 10px 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .kanban-code { color: #2b3a4a; font-size: 14px; }
+    .kanban-customer { font-weight: 600; margin-top: 2px; }
+    .kanban-phone { font-size: 12px; }
+    .kanban-sched { font-size: 12px; color: #7a6fbe; font-weight: 600; margin-top: 2px; }
+    .kanban-actions { display: flex; margin-top: 8px; }
+    html.dark .kanban-col { background: #20203a; }
+    html.dark .kanban-col-head { background: #262640; color: #f0eef5; }
+    html.dark .kanban-card { background: #262640; color: #f0eef5; }
+    html.dark .kanban-code { color: #f0eef5; }
+</style>
+
+@code {
+    private bool _loading = true;
+    private bool _saving;
+    private string _error;
+    private string _range = "today";
+    private bool _showCancelled;
+    private List<OrderModel> _orders = new();
+    private List<OrderModel> _cancelled = new();
+    private System.Threading.Timer _timer;
+
+    private sealed record Column(string Key, string Label, string Color, string Prev, string Next);
+
+    private readonly List<Column> _columns = new()
+    {
+        new("Pending", "Chờ xác nhận", "#f0ad4e", null, "Confirmed"),
+        new("Confirmed", "Đã xác nhận", "#5bc0de", "Pending", "Preparing"),
+        new("Preparing", "Đang chuẩn bị", "#7a6fbe", "Confirmed", "Delivering"),
+        new("Delivering", "Sẵn sàng giao", "#6c757d", "Preparing", "Completed"),
+        new("Completed", "Hoàn thành", "#5cb85c", "Delivering", null),
+    };
+
+    private static readonly string[] KanbanStatuses = { "Pending", "Confirmed", "Preparing", "Delivering", "Completed" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () => { await LoadAsync(silent: true); StateHasChanged(); });
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    private List<OrderModel> OrdersIn(string status) =>
+        _orders.Where(o => string.Equals(o.Status, status, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private static string StatusLabel(string key) => key switch
+    {
+        "Pending" => "Chờ xác nhận",
+        "Confirmed" => "Xác nhận",
+        "Preparing" => "Chuẩn bị",
+        "Delivering" => "Sẵn sàng giao",
+        "Completed" => "Hoàn thành",
+        "Cancelled" => "Hủy",
+        _ => key
+    };
+
+    private async Task OnRangeChanged(ChangeEventArgs e)
+    {
+        _range = e.Value?.ToString() ?? "today";
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync(bool silent = false)
+    {
+        if (!silent) { _loading = true; _error = null; }
+        try
+        {
+            DateTime? from = null, to = null;
+            if (_range == "today")
+            {
+                var today = DateTime.Today;
+                from = today;
+                to = today.AddDays(1).AddTicks(-1);
+            }
+            var result = await OrderService.GetOrdersAsync(page: 1, pageSize: 200, fromDate: from, toDate: to);
+            var all = result?.Items ?? new List<OrderModel>();
+            _cancelled = all.Where(o => string.Equals(o.Status, "Cancelled", StringComparison.OrdinalIgnoreCase)).ToList();
+            _orders = all.Where(o => KanbanStatuses.Contains(o.Status, StringComparer.OrdinalIgnoreCase)).ToList();
+        }
+        catch (Exception ex)
+        {
+            if (!silent) _error = "Không tải được đơn hàng: " + ex.Message;
+        }
+        if (!silent) _loading = false;
+    }
+
+    private async Task MoveAsync(OrderModel order, string nextStatus)
+    {
+        _saving = true;
+        _error = null;
+        try
+        {
+            var updated = await OrderService.UpdateStatusAsync(order.Id, nextStatus);
+            order.Status = updated?.Status ?? nextStatus;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Không chuyển được đơn #{order.OrderNumber}: {ex.Message}";
+        }
+        _saving = false;
+    }
+
+    private async Task CancelAsync(OrderModel order)
+    {
+        _saving = true;
+        _error = null;
+        try
+        {
+            var updated = await OrderService.UpdateStatusAsync(order.Id, "Cancelled");
+            order.Status = updated?.Status ?? "Cancelled";
+            await LoadAsync(silent: true);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Không hủy được đơn #{order.OrderNumber}: {ex.Message}";
+        }
+        _saving = false;
+    }
+
+    private static DateTime ToLocal(DateTime dt) =>
+        dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
+
+    private static string FormatPrice(decimal amount) => $"{amount:N0} đ";
+
+    public void Dispose() => _timer?.Dispose();
+}
