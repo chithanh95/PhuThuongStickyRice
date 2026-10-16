@@ -3,77 +3,103 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject PermissionService PermissionService
 
-<h3>🔐 Phân quyền chi tiết</h3>
-<p class="text-muted">
-    Chọn quyền cho từng vai trò. <strong>Admin</strong> luôn có toàn quyền.
-    Nhân viên phải <strong>đăng nhập lại</strong> sau khi đổi quyền để nhận quyền mới.
-    Mọi thay đổi được ghi vào nhật ký nhân viên.
-</p>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Phân quyền chi tiết</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Quản trị</a></li>
+        <li><a href="/admin/phan-quyen">Hệ thống</a></li>
+        <li class="current">Phân quyền chi tiết</li>
+    </ol>
+</div>
 
 @if (_loading)
 {
-    <p><em>Đang tải...</em></p>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center text-muted"><em>Đang tải...</em></div>
+            </div>
+        </div>
+    </div>
 }
 else if (_matrix == null)
 {
-    <div class="alert alert-danger">Không tải được ma trận phân quyền.</div>
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger">Không tải được ma trận phân quyền.</div>
+        </div>
+    </div>
 }
 else
 {
-    <div class="card">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-bordered mb-0">
-                    <thead>
-                        <tr>
-                            <th style="min-width: 260px;">Quyền</th>
-                            @foreach (var role in _matrix.Roles)
-                            {
-                                <th class="text-center" style="min-width: 140px;">@role.RoleLabel</th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var group in _matrix.Definitions.GroupBy(d => d.Group))
-                        {
-                            <tr class="table-light">
-                                <td colspan="@(_matrix.Roles.Count + 1)"><strong>@group.Key</strong></td>
-                            </tr>
-                            @foreach (var def in group)
-                            {
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Ma trận phân quyền</h4>
+                    <p class="card-title-desc">
+                        Tích chọn quyền cho từng vai trò. <strong>Admin</strong> luôn có toàn quyền.
+                        Nhân viên phải <strong>đăng nhập lại</strong> sau khi đổi quyền để nhận quyền mới.
+                        Mọi thay đổi được ghi vào nhật ký nhân viên.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover mb-0">
+                            <thead class="thead-light">
                                 <tr>
-                                    <td>@def.Label<br /><small class="text-muted">@def.Key</small></td>
+                                    <th style="min-width: 260px;">Quyền</th>
                                     @foreach (var role in _matrix.Roles)
                                     {
-                                        var r = role;
-                                        var d = def;
-                                        <td class="text-center">
-                                            <input type="checkbox"
-                                                   checked="@r.GrantedKeys.Contains(d.Key)"
-                                                   @onchange="(e => OnToggle(r, d.Key, (bool)e.Value))" />
-                                        </td>
+                                        <th class="text-center" style="min-width: 140px;">@role.RoleLabel</th>
                                     }
                                 </tr>
-                            }
-                        }
-                        <tr class="table-light">
-                            <td><strong>Tất cả quyền</strong><br /><small class="text-muted">Admin</small></td>
-                            <td colspan="@_matrix.Roles.Count" class="text-center text-muted">
-                                ✅ Mặc định có toàn quyền, không cần cấu hình
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var group in _matrix.Definitions.GroupBy(d => d.Group))
+                                {
+                                    <tr class="table-light">
+                                        <td colspan="@(_matrix.Roles.Count + 1)"><strong>@group.Key</strong></td>
+                                    </tr>
+                                    @foreach (var def in group)
+                                    {
+                                        <tr>
+                                            <td>@def.Label<br /><small class="text-muted">@def.Key</small></td>
+                                            @foreach (var role in _matrix.Roles)
+                                            {
+                                                var r = role;
+                                                var d = def;
+                                                var cbId = $"pq-{r.Role}-{d.Key}".Replace(".", "-");
+                                                <td class="text-center">
+                                                    <div class="custom-control custom-checkbox d-inline-block">
+                                                        <input type="checkbox" class="custom-control-input" id="@cbId"
+                                                               checked="@r.GrantedKeys.Contains(d.Key)"
+                                                               @onchange="(e => OnToggle(r, d.Key, (bool)e.Value))" />
+                                                        <label class="custom-control-label" for="@cbId"></label>
+                                                    </div>
+                                                </td>
+                                            }
+                                        </tr>
+                                    }
+                                }
+                                <tr class="table-light">
+                                    <td><strong>Tất cả quyền</strong><br /><small class="text-muted">Admin</small></td>
+                                    <td colspan="@_matrix.Roles.Count" class="text-center text-muted">
+                                        ✅ Mặc định có toàn quyền, không cần cấu hình
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center">
+                    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@(_saving || !_dirty)">
+                        @(_saving ? "Đang lưu..." : "💾 Lưu phân quyền")
+                    </button>
+                    @if (!string.IsNullOrEmpty(_message))
+                    {
+                        <span class="ml-3 @(_isError ? "text-danger" : "text-success")">@_message</span>
+                    }
+                </div>
             </div>
-        </div>
-        <div class="card-footer d-flex align-items-center">
-            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@(_saving || !_dirty)">
-                @(_saving ? "Đang lưu..." : "💾 Lưu phân quyền")
-            </button>
-            @if (!string.IsNullOrEmpty(_message))
-            {
-                <span class="ml-3 @(_isError ? "text-danger" : "text-success")">@_message</span>
-            }
         </div>
     </div>
 }
