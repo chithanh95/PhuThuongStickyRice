@@ -4,8 +4,14 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @inject ShopSettingsService ShopSettingsService
 
-<h3>Cài đặt bán hàng</h3>
-<p class="text-muted">Phí giao hàng và đơn tối thiểu áp dụng cho mọi đơn đặt qua web.</p>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Cài đặt bán hàng</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Quản trị</a></li>
+        <li><a href="/admin/shop-settings">Hệ thống</a></li>
+        <li class="current">Cài đặt bán hàng</li>
+    </ol>
+</div>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -18,357 +24,470 @@
 
 @if (_model == null)
 {
-    <p><em>Đang tải...</em></p>
-}
-else
-{
-    <div class="card">
-        <div class="card-body">
-            <div class="form-group">
-                <label>Phí giao hàng (₫)</label>
-                <input type="number" min="0" step="1000" class="form-control" @bind="_model.DeliveryFee" />
-                <small class="form-text text-muted">Đặt 0 để luôn miễn phí giao hàng.</small>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center text-muted"><em>Đang tải...</em></div>
             </div>
-            <div class="form-group">
-                <label>Miễn phí ship cho đơn từ (₫)</label>
-                <input type="number" min="0" step="1000" class="form-control" @bind="_model.FreeShipThreshold" />
-                <small class="form-text text-muted">Đơn có (tạm tính − giảm giá) từ mức này trở lên được miễn phí ship. Đặt 0 để tắt miễn phí ship.</small>
-            </div>
-            <div class="form-group">
-                <label>Giá trị đơn tối thiểu (₫)</label>
-                <input type="number" min="0" step="1000" class="form-control" @bind="_model.MinOrderAmount" />
-                <small class="form-text text-muted">Đặt 0 để không giới hạn. Khách không thể đặt đơn dưới mức này.</small>
-            </div>
-            <div class="form-group">
-                <label>Thời gian giao hàng dự kiến (phút)</label>
-                <input type="number" min="0" max="600" step="5" class="form-control" @bind="_model.EstimatedDeliveryMinutes" />
-                <small class="form-text text-muted">Hiển thị ở trang đặt hàng, VD: 45 → “Dự kiến giao trong 30–45 phút”. Đặt 0 để ẩn.</small>
-            </div>
-
-            <h5 class="mt-4">Giờ mở cửa &amp; nhận đơn (mục 30)</h5>
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="set-accepting" @bind="_model.AcceptingOrders" />
-                <label class="form-check-label" for="set-accepting">
-                    <strong>Nhận đơn hàng</strong> — tắt để tạm ngừng nhận đơn (trang đặt hàng hiển thị thông báo, server từ chối đơn mới)
-                </label>
-            </div>
-            <div class="form-group">
-                <label>Lý do tạm ngưng nhận đơn</label>
-                <input class="form-control" @bind="_model.PausedReason" maxlength="500"
-                       placeholder="VD: Hết nếp, mở lại lúc 14:00" />
-                <small class="form-text text-muted">Hiển thị cho khách khi tắt "Nhận đơn hàng". Bỏ trống thì hiện thông báo chung.</small>
-            </div>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Giờ mở cửa (HH:mm)</label>
-                    <input class="form-control" @bind="_model.OpenTime" placeholder="06:00" />
-                </div>
-                <div class="form-group col-md-6">
-                    <label>Giờ đóng cửa (HH:mm)</label>
-                    <input class="form-control" @bind="_model.CloseTime" placeholder="10:30" />
-                </div>
-            </div>
-            <small class="form-text text-muted mb-3">Ngoài giờ này khách không thể đặt đơn, kể cả khi đang bật "Nhận đơn hàng". Giờ Việt Nam (UTC+7).</small>
-
-            <h5 class="mt-4">Chống spam (mục 39)</h5>
-            <div class="form-group">
-                <label>Số đơn tối đa / SĐT / ngày</label>
-                <input type="number" min="0" max="1000" class="form-control" @bind="_model.MaxOrdersPerPhonePerDay" />
-                <small class="form-text text-muted">Mặc định 10. Đặt 0 = không giới hạn. Đơn đã hủy không tính. Ngày theo giờ Việt Nam.</small>
-            </div>
-
-            <h5 class="mt-4">Nút gọi/Zalo trên di động (mục 27)</h5>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Hotline</label>
-                    <input class="form-control" @bind="_model.Hotline" placeholder="0901 234 567" />
-                    <small class="form-text text-muted">Nút "📞 Gọi ngay" (tel: link).</small>
-                </div>
-                <div class="form-group col-md-6">
-                    <label>SĐT Zalo</label>
-                    <input class="form-control" @bind="_model.ZaloPhone" placeholder="0901 234 567" />
-                    <small class="form-text text-muted">Nút chat Zalo (zalo.me/số-điện-thoại).</small>
-                </div>
-            </div>
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="set-zalo-chat-btn" @bind="_model.ShowZaloChatButton" />
-                <label class="form-check-label" for="set-zalo-chat-btn">
-                    Hiện nút "💬 Hỏi qua Zalo" ở từng món trên trang /shop
-                </label>
-            </div>
-            <div class="form-group">
-                <label>Link Google Maps của quán</label>
-                <input class="form-control" @bind="_model.GoogleMapsUrl" placeholder="https://maps.google.com/?q=Xôi+Phú+Thượng" />
-                <small class="form-text text-muted">Hiện section "Đánh giá trên Google" trên trang chủ, kèm điểm trung bình từ đánh giá thật.</small>
-            </div>
-            <small class="form-text text-muted mb-3">Để trống = dùng số điện thoại trong chân trang landing. Các nút chỉ hiện trên điện thoại.</small>
-
-            <h5 class="mt-4">Chatbot Messenger (mục 53)</h5>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Page Access Token</label>
-                    <input type="password" class="form-control" @bind="_model.FacebookPageAccessToken" autocomplete="off" />
-                    <small class="form-text text-muted">Token của Fanpage (Facebook App → Messenger → Generate Token). Để trống = chatbot chờ cấu hình (không gửi tin nhắn).</small>
-                </div>
-                <div class="form-group col-md-6">
-                    <label>Verify Token</label>
-                    <input class="form-control" @bind="_model.FacebookVerifyToken" />
-                    <small class="form-text text-muted">Chuỗi tự chọn, nhập trùng khi đăng ký webhook trên Facebook.</small>
-                </div>
-            </div>
-            <div class="alert alert-info">
-                <strong>Cách bật chatbot:</strong>
-                <ol class="mb-0">
-                    <li>Tạo App tại <em>developers.facebook.com</em>, thêm sản phẩm Messenger, liên kết Fanpage.</li>
-                    <li>Lấy <em>Page Access Token</em> → dán vào ô trên.</li>
-                    <li>Chọn một <em>Verify Token</em> → dán vào ô trên → <strong>Lưu</strong>.</li>
-                    <li>Trong App → Messenger → Webhooks: Callback URL = <code>https://&lt;tên-miền&gt;/api/webhooks/messenger</code>, Verify Token = chuỗi ở bước 3, đăng ký field <em>messages</em>.</li>
-                </ol>
-            </div>
-
-            <h5 class="mt-4">Báo cáo tuần qua Zalo (mục 138)</h5>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Zalo OA Access Token</label>
-                    <input type="password" class="form-control" @bind="_model.ZaloOaAccessToken" autocomplete="off" />
-                    <small class="form-text text-muted">Token của Zalo Official Account. Để trống = chỉ xem báo cáo trong admin + nút "Sao chép" (không giả vờ đã gửi).</small>
-                </div>
-                <div class="form-group col-md-6">
-                    <label>Zalo User ID của chủ quán</label>
-                    <input class="form-control" @bind="_model.OwnerZaloUserId" placeholder="VD: 1234567890123456789" />
-                    <small class="form-text text-muted">Zalo OA gửi tin theo user ID (không phải SĐT). Chủ quán cần follow OA 1 lần để lấy được ID.</small>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>SĐT chủ quán</label>
-                <input class="form-control" @bind="_model.OwnerPhone" placeholder="0901 234 567" />
-                <small class="form-text text-muted">Dùng khi chưa có Zalo User ID. Báo cáo tự gửi 08:00 sáng thứ 2 hàng tuần (cần chạy BackgroundServer).</small>
-            </div>
-
-            <h5 class="mt-4">Webhook báo đơn mới (mục 180)</h5>
-            <div class="form-row">
-                <div class="form-group col-md-8">
-                    <label>URL webhook</label>
-                    <input class="form-control" @bind="_model.NewOrderWebhookUrl" placeholder="https://..." />
-                    <small class="form-text text-muted">Khi có đơn mới, hệ thống POST JSON <code>{maDon, sdt, tongTien, trangThai, thoiGian}</code> tới URL này (timeout 5 giây, lỗi chỉ ghi log — không làm hỏng việc tạo đơn).</small>
-                </div>
-                <div class="form-group col-md-4">
-                    <label>&nbsp;</label>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="webhook-enabled" @bind="_model.NewOrderWebhookEnabled" />
-                        <label class="form-check-label" for="webhook-enabled">Bật webhook báo đơn mới</label>
-                    </div>
-                    <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="TestWebhookAsync" disabled="@_testingWebhook">
-                        @(_testingWebhook ? "Đang gửi..." : "Gửi thử")
-                    </button>
-                    @if (!string.IsNullOrEmpty(_webhookTestResult))
-                    {
-                        <div class="mt-2"><small class="@(_webhookTestOk ? "text-success" : "text-danger")">@_webhookTestResult</small></div>
-                    }
-                </div>
-            </div>
-
-            <h5 class="mt-4">Chuyển khoản & đặt cọc</h5>
-            <div class="form-group">
-                <label>Tự động hủy đơn chuyển khoản chưa thanh toán sau (phút)</label>
-                <input type="number" min="1" max="10080" class="form-control" @bind="_model.BankTransferExpiryMinutes" />
-                <small class="form-text text-muted">Mặc định 30 phút. Worker chạy mỗi 5 phút.</small>
-            </div>
-
-            <h6 class="mt-3">Tài khoản nhận chuyển khoản QR (VietQR)</h6>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Tên ngân hàng</label>
-                    <input class="form-control" @bind="_model.BankName" placeholder="VD: Vietcombank" />
-                </div>
-                <div class="form-group col-md-6">
-                    <label>Mã ngân hàng VietQR</label>
-                    <input class="form-control" @bind="_model.BankId" placeholder="VD: VCB" />
-                    <small class="form-text text-muted">Mã BIN của ngân hàng theo chuẩn VietQR (VD: VCB, TCB, MBB).</small>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Số tài khoản</label>
-                    <input class="form-control" @bind="_model.BankAccountNumber" placeholder="VD: 0123456789" inputmode="numeric" />
-                </div>
-                <div class="form-group col-md-6">
-                    <label>Chủ tài khoản</label>
-                    <input class="form-control" @bind="_model.BankAccountName" placeholder="VD: NGUYEN VAN A" />
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Mẫu ảnh QR</label>
-                <input class="form-control" @bind="_model.BankQrTemplate" placeholder="compact2" />
-                <small class="form-text text-muted">Để trống = compact2. Các mẫu VietQR: qr_only, compact, compact2.</small>
-            </div>
-            <small class="form-text text-muted mb-3">Để trống các ô trên = tắt thanh toán QR (khách chỉ thấy hướng dẫn chuyển khoản thủ công).</small>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Ngưỡng yêu cầu đặt cọc (₫)</label>
-                    <input type="number" min="0" step="10000" class="form-control" @bind="_model.DepositThreshold" />
-                    <small class="form-text text-muted">Đơn chuyển khoản từ mức này phải đặt cọc. Đặt 0 để tắt.</small>
-                </div>
-                <div class="form-group col-md-6">
-                    <label>Tỷ lệ đặt cọc (%)</label>
-                    <input type="number" min="0" max="100" class="form-control" @bind="_model.DepositPercent" />
-                </div>
-            </div>
-
-            <h5 class="mt-4">Điểm tích lũy</h5>
-            <div class="form-row">
-                <div class="form-group col-md-4">
-                    <label>₫ chi tiêu / 1 điểm</label>
-                    <input type="number" min="1" step="1000" class="form-control" @bind="_model.PointsPerVnd" />
-                </div>
-                <div class="form-group col-md-4">
-                    <label>Điểm cho 1 lần đổi</label>
-                    <input type="number" min="1" class="form-control" @bind="_model.PointsRedeemUnit" />
-                </div>
-                <div class="form-group col-md-4">
-                    <label>₫ giảm / 1 lần đổi</label>
-                    <input type="number" min="0" step="1000" class="form-control" @bind="_model.PointsRedeemValue" />
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Điểm thưởng giới thiệu (cho cả người giới thiệu và người mua)</label>
-                <input type="number" min="0" class="form-control" @bind="_model.ReferralBonusPoints" />
-                <small class="form-text text-muted">Thưởng khi đơn đầu tiên có mã giới thiệu được hoàn thành.</small>
-            </div>
-            <div class="form-row">
-                <div class="form-group col-md-4">
-                    <label>Điểm thưởng điểm danh mỗi ngày</label>
-                    <input type="number" min="0" max="1000" class="form-control" @bind="_model.CheckInPoints" />
-                    <small class="form-text text-muted">Mỗi SĐT điểm danh 1 lần/ngày ở trang tra cứu đơn.</small>
-                </div>
-                <div class="form-group col-md-4">
-                    <label>Định mức nếp (g/suất)</label>
-                    <input type="number" min="1" max="1000" class="form-control" @bind="_model.NepPerPortionGrams" />
-                    <small class="form-text text-muted">Dùng cho dự báo nguyên liệu.</small>
-                </div>
-                <div class="form-group col-md-4">
-                    <label>Mục tiêu doanh thu ngày (₫)</label>
-                    <input type="number" min="0" step="100000" class="form-control" @bind="_model.DailyTargetAmount" />
-                    <small class="form-text text-muted">Hiện thanh tiến độ trên dashboard.</small>
-                </div>
-            </div>
-
-            <h5 class="mt-4">Hạng thành viên</h5>
-            <div class="form-row">
-                <div class="form-group col-md-3">
-                    <label>Chi tiêu hạng Bạc (₫)</label>
-                    <input type="number" min="0" step="100000" class="form-control" @bind="_model.TierSilverMin" />
-                </div>
-                <div class="form-group col-md-3">
-                    <label>Giảm giá hạng Bạc (%)</label>
-                    <input type="number" min="0" max="100" class="form-control" @bind="_model.TierSilverDiscount" />
-                </div>
-                <div class="form-group col-md-3">
-                    <label>Chi tiêu hạng Vàng (₫)</label>
-                    <input type="number" min="0" step="100000" class="form-control" @bind="_model.TierGoldMin" />
-                </div>
-                <div class="form-group col-md-3">
-                    <label>Giảm giá hạng Vàng (%)</label>
-                    <input type="number" min="0" max="100" class="form-control" @bind="_model.TierGoldDiscount" />
-                </div>
-            </div>
-            <small class="form-text text-muted mb-3">Hạng Đồng: dưới ngưỡng Bạc (không giảm giá).</small>
-
-            <h5 class="mt-4">Gói quà</h5>
-            <div class="form-group">
-                <label>Phí gói quà (₫)</label>
-                <input type="number" min="0" step="1000" class="form-control" @bind="_model.GiftFee" />
-            </div>
-
-            <h5 class="mt-4">Báo cáo chủ quán (mục 85)</h5>
-            <div class="form-group">
-                <label>Email nhận báo cáo</label>
-                <input type="email" class="form-control" @bind="_model.OwnerReportEmail" placeholder="chu-quan@example.com" />
-                <small class="form-text text-muted">Báo cáo tự động gửi thứ 2 hàng tuần và mùng 1 hàng tháng lúc 7:00. Để trống = tắt.</small>
-            </div>
-
-            <h5 class="mt-4">Cảnh báo đơn chưa xác nhận (mục 86)</h5>
-            <div class="form-group">
-                <label>Cảnh báo khẩn khi đơn Pending quá (phút)</label>
-                <input type="number" min="1" max="1440" class="form-control" @bind="_model.UnconfirmedAlertMinutes" />
-                <small class="form-text text-muted">Mặc định 15 phút — dashboard hiện banner đỏ + phát âm thanh khẩn.</small>
-            </div>
-
-            <h5 class="mt-4">reCAPTCHA chống spam (mục 96)</h5>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Site key</label>
-                    <input class="form-control" @bind="_model.RecaptchaSiteKey" placeholder="6L..." />
-                </div>
-                <div class="form-group col-md-6">
-                    <label>Secret key</label>
-                    <input type="password" class="form-control" @bind="_model.RecaptchaSecretKey" placeholder="6L..." />
-                </div>
-            </div>
-            <small class="form-text text-muted mb-3">Để trống cả hai = tắt reCAPTCHA. Khi bật, trang đặt hàng chạy reCAPTCHA v3 (yêu cầu điểm ≥ 0.5) trước khi tạo đơn.</small>
-
-            <h5 class="mt-4">Website &amp; QR bàn (mục 95)</h5>
-            <div class="form-group">
-                <label>Địa chỉ web công khai</label>
-                <input class="form-control" @bind="_model.WebBaseUrl" placeholder="https://phuthuong.vn" />
-                <small class="form-text text-muted">Dùng để tạo mã QR bàn — VD: https://phuthuong.vn/shop?ban=5.</small>
-            </div>
-
-            <h5 class="mt-4">Bảo trì &amp; giám sát (mục 103, 111, 113, 114)</h5>
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="set-maintenance" @bind="_model.MaintenanceMode" />
-                <label class="form-check-label" for="set-maintenance">
-                    <strong>Chế độ bảo trì</strong> — trang công khai hiển thị trang bảo trì (/login, /admin/*, /bep vẫn hoạt động)
-                </label>
-            </div>
-            <div class="form-group">
-                <label>Thông báo bảo trì</label>
-                <input class="form-control" @bind="_model.MaintenanceMessage" />
-            </div>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Telegram bot token <small class="text-muted">(để trống = tắt cảnh báo Telegram)</small></label>
-                    <input type="password" class="form-control" @bind="_model.TelegramBotToken" autocomplete="off" />
-                </div>
-                <div class="form-group col-md-6">
-                    <label>Telegram chat id</label>
-                    <input class="form-control" @bind="_model.TelegramChatId" />
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group col-md-4">
-                    <label>Ngưỡng lỗi/giờ để cảnh báo</label>
-                    <input type="number" min="1" class="form-control" @bind="_model.ErrorRateThreshold" />
-                </div>
-                <div class="form-group col-md-4">
-                    <label>Ngưỡng cảnh báo uploads (MB)</label>
-                    <input type="number" min="1" class="form-control" @bind="_model.UploadsSizeWarningMb" />
-                </div>
-                <div class="form-group col-md-4">
-                    <label>Nhà cung cấp sao lưu ảnh</label>
-                    <input class="form-control" @bind="_model.ImageBackupProvider" placeholder="None" />
-                    <small class="form-text text-muted">"None" = không sao lưu. Xem README để thêm S3.</small>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Cấu hình JSON cho sao lưu ảnh</label>
-                <input class="form-control" @bind="_model.ImageBackupSettingsJson" placeholder='{"connectionString": "..."}' />
-            </div>
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="set-health" @bind="_model.HealthAlertsEnabled" />
-                <label class="form-check-label" for="set-health">Gửi cảnh báo sức khỏe (Telegram/email). Tắt = chỉ ghi log.</label>
-            </div>
-            <p class="small text-muted">
-                Cấu hình thanh toán (ngân hàng, MoMo) xem ở trang
-                <a href="/admin/doi-soat-momo">Đối soát MoMo</a>.
-            </p>
-
-            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
-                @(_saving ? "Đang lưu..." : "Lưu thay đổi")
-            </button>
         </div>
     </div>
 }
+else
+{
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Phí giao hàng &amp; đơn hàng</h4>
+                    <p class="card-title-desc">Phí giao hàng và đơn tối thiểu áp dụng cho mọi đơn đặt qua web.</p>
+                    <div class="form-group">
+                        <label>Phí giao hàng (₫)</label>
+                        <input type="number" min="0" step="1000" class="form-control" @bind="_model.DeliveryFee" />
+                        <small class="form-text text-muted">Đặt 0 để luôn miễn phí giao hàng.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Miễn phí ship cho đơn từ (₫)</label>
+                        <input type="number" min="0" step="1000" class="form-control" @bind="_model.FreeShipThreshold" />
+                        <small class="form-text text-muted">Đơn có (tạm tính − giảm giá) từ mức này trở lên được miễn phí ship. Đặt 0 để tắt miễn phí ship.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Giá trị đơn tối thiểu (₫)</label>
+                        <input type="number" min="0" step="1000" class="form-control" @bind="_model.MinOrderAmount" />
+                        <small class="form-text text-muted">Đặt 0 để không giới hạn. Khách không thể đặt đơn dưới mức này.</small>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Thời gian giao hàng dự kiến (phút)</label>
+                        <input type="number" min="0" max="600" step="5" class="form-control" @bind="_model.EstimatedDeliveryMinutes" />
+                        <small class="form-text text-muted">Hiển thị ở trang đặt hàng, VD: 45 → “Dự kiến giao trong 30–45 phút”. Đặt 0 để ẩn.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Chống spam</h4>
+                    <p class="card-title-desc">Giới hạn số đơn mỗi số điện thoại để chặn đơn ảo.</p>
+                    <div class="form-group mb-0">
+                        <label>Số đơn tối đa / SĐT / ngày</label>
+                        <input type="number" min="0" max="1000" class="form-control" @bind="_model.MaxOrdersPerPhonePerDay" />
+                        <small class="form-text text-muted">Mặc định 10. Đặt 0 = không giới hạn. Đơn đã hủy không tính. Ngày theo giờ Việt Nam.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Chatbot Messenger</h4>
+                    <p class="card-title-desc">Tự động trả lời tin nhắn fanpage khi khách inbox.</p>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Page Access Token</label>
+                            <input type="password" class="form-control" @bind="_model.FacebookPageAccessToken" autocomplete="off" />
+                            <small class="form-text text-muted">Token của Fanpage (Facebook App → Messenger → Generate Token). Để trống = chatbot chờ cấu hình (không gửi tin nhắn).</small>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Verify Token</label>
+                            <input class="form-control" @bind="_model.FacebookVerifyToken" />
+                            <small class="form-text text-muted">Chuỗi tự chọn, nhập trùng khi đăng ký webhook trên Facebook.</small>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mb-0">
+                        <strong>Cách bật chatbot:</strong>
+                        <ol class="mb-0">
+                            <li>Tạo App tại <em>developers.facebook.com</em>, thêm sản phẩm Messenger, liên kết Fanpage.</li>
+                            <li>Lấy <em>Page Access Token</em> → dán vào ô trên.</li>
+                            <li>Chọn một <em>Verify Token</em> → dán vào ô trên → <strong>Lưu</strong>.</li>
+                            <li>Trong App → Messenger → Webhooks: Callback URL = <code>https://&lt;tên-miền&gt;/api/webhooks/messenger</code>, Verify Token = chuỗi ở bước 3, đăng ký field <em>messages</em>.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Chuyển khoản &amp; đặt cọc</h4>
+                    <p class="card-title-desc">Tài khoản nhận chuyển khoản QR (VietQR) và quy định đặt cọc.</p>
+                    <div class="form-group">
+                        <label>Tự động hủy đơn chuyển khoản chưa thanh toán sau (phút)</label>
+                        <input type="number" min="1" max="10080" class="form-control" @bind="_model.BankTransferExpiryMinutes" />
+                        <small class="form-text text-muted">Mặc định 30 phút. Worker chạy mỗi 5 phút.</small>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Tên ngân hàng</label>
+                            <input class="form-control" @bind="_model.BankName" placeholder="VD: Vietcombank" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Mã ngân hàng VietQR</label>
+                            <input class="form-control" @bind="_model.BankId" placeholder="VD: VCB" />
+                            <small class="form-text text-muted">Mã BIN của ngân hàng theo chuẩn VietQR (VD: VCB, TCB, MBB).</small>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Số tài khoản</label>
+                            <input class="form-control" @bind="_model.BankAccountNumber" placeholder="VD: 0123456789" inputmode="numeric" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Chủ tài khoản</label>
+                            <input class="form-control" @bind="_model.BankAccountName" placeholder="VD: NGUYEN VAN A" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mẫu ảnh QR</label>
+                        <input class="form-control" @bind="_model.BankQrTemplate" placeholder="compact2" />
+                        <small class="form-text text-muted">Để trống = compact2. Các mẫu VietQR: qr_only, compact, compact2.</small>
+                    </div>
+                    <small class="form-text text-muted mb-3">Để trống các ô trên = tắt thanh toán QR (khách chỉ thấy hướng dẫn chuyển khoản thủ công).</small>
+                    <div class="form-row mb-0">
+                        <div class="form-group col-md-6">
+                            <label>Ngưỡng yêu cầu đặt cọc (₫)</label>
+                            <input type="number" min="0" step="10000" class="form-control" @bind="_model.DepositThreshold" />
+                            <small class="form-text text-muted">Đơn chuyển khoản từ mức này phải đặt cọc. Đặt 0 để tắt.</small>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Tỷ lệ đặt cọc (%)</label>
+                            <input type="number" min="0" max="100" class="form-control" @bind="_model.DepositPercent" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Điểm tích lũy</h4>
+                    <p class="card-title-desc">Quy đổi chi tiêu thành điểm và điểm thành tiền giảm.</p>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label>₫ chi tiêu / 1 điểm</label>
+                            <input type="number" min="1" step="1000" class="form-control" @bind="_model.PointsPerVnd" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Điểm cho 1 lần đổi</label>
+                            <input type="number" min="1" class="form-control" @bind="_model.PointsRedeemUnit" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>₫ giảm / 1 lần đổi</label>
+                            <input type="number" min="0" step="1000" class="form-control" @bind="_model.PointsRedeemValue" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Điểm thưởng giới thiệu (cho cả người giới thiệu và người mua)</label>
+                        <input type="number" min="0" class="form-control" @bind="_model.ReferralBonusPoints" />
+                        <small class="form-text text-muted">Thưởng khi đơn đầu tiên có mã giới thiệu được hoàn thành.</small>
+                    </div>
+                    <div class="form-row mb-0">
+                        <div class="form-group col-md-4">
+                            <label>Điểm thưởng điểm danh mỗi ngày</label>
+                            <input type="number" min="0" max="1000" class="form-control" @bind="_model.CheckInPoints" />
+                            <small class="form-text text-muted">Mỗi SĐT điểm danh 1 lần/ngày ở trang tra cứu đơn.</small>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Định mức nếp (g/suất)</label>
+                            <input type="number" min="1" max="1000" class="form-control" @bind="_model.NepPerPortionGrams" />
+                            <small class="form-text text-muted">Dùng cho dự báo nguyên liệu.</small>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Mục tiêu doanh thu ngày (₫)</label>
+                            <input type="number" min="0" step="100000" class="form-control" @bind="_model.DailyTargetAmount" />
+                            <small class="form-text text-muted">Hiện thanh tiến độ trên dashboard.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Gói quà &amp; báo cáo chủ quán</h4>
+                    <p class="card-title-desc">Phí gói quà và email nhận báo cáo định kỳ.</p>
+                    <div class="form-group">
+                        <label>Phí gói quà (₫)</label>
+                        <input type="number" min="0" step="1000" class="form-control" @bind="_model.GiftFee" />
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Email nhận báo cáo</label>
+                        <input type="email" class="form-control" @bind="_model.OwnerReportEmail" placeholder="chu-quan@example.com" />
+                        <small class="form-text text-muted">Báo cáo tự động gửi thứ 2 hàng tuần và mùng 1 hàng tháng lúc 7:00. Để trống = tắt.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">reCAPTCHA chống spam</h4>
+                    <p class="card-title-desc">Chặn bot tạo đơn ảo ở trang đặt hàng.</p>
+                    <div class="form-row mb-0">
+                        <div class="form-group col-md-6">
+                            <label>Site key</label>
+                            <input class="form-control" @bind="_model.RecaptchaSiteKey" placeholder="6L..." />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Secret key</label>
+                            <input type="password" class="form-control" @bind="_model.RecaptchaSecretKey" placeholder="6L..." />
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Để trống cả hai = tắt reCAPTCHA. Khi bật, trang đặt hàng chạy reCAPTCHA v3 (yêu cầu điểm ≥ 0.5) trước khi tạo đơn.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Giờ mở cửa &amp; nhận đơn</h4>
+                    <p class="card-title-desc">Điều khiển khi nào quán nhận đơn đặt hàng.</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>
+                            <strong>Nhận đơn hàng</strong><br />
+                            <small class="text-muted">Tắt để tạm ngừng nhận đơn (trang đặt hàng hiển thị thông báo, server từ chối đơn mới)</small>
+                        </span>
+                        <label class="lexa-switch lexa-switch-primary mb-0 ml-2 flex-shrink-0">
+                            <input type="checkbox" @bind="_model.AcceptingOrders" />
+                            <span class="lexa-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Lý do tạm ngưng nhận đơn</label>
+                        <input class="form-control" @bind="_model.PausedReason" maxlength="500"
+                               placeholder="VD: Hết nếp, mở lại lúc 14:00" />
+                        <small class="form-text text-muted">Hiển thị cho khách khi tắt "Nhận đơn hàng". Bỏ trống thì hiện thông báo chung.</small>
+                    </div>
+                    <div class="form-row mb-0">
+                        <div class="form-group col-md-6">
+                            <label>Giờ mở cửa (HH:mm)</label>
+                            <input class="form-control" @bind="_model.OpenTime" placeholder="06:00" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Giờ đóng cửa (HH:mm)</label>
+                            <input class="form-control" @bind="_model.CloseTime" placeholder="10:30" />
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Ngoài giờ này khách không thể đặt đơn, kể cả khi đang bật "Nhận đơn hàng". Giờ Việt Nam (UTC+7).</small>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Nút gọi/Zalo trên di động</h4>
+                    <p class="card-title-desc">Các nút liên hệ nhanh hiện trên điện thoại.</p>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Hotline</label>
+                            <input class="form-control" @bind="_model.Hotline" placeholder="0901 234 567" />
+                            <small class="form-text text-muted">Nút "📞 Gọi ngay" (tel: link).</small>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>SĐT Zalo</label>
+                            <input class="form-control" @bind="_model.ZaloPhone" placeholder="0901 234 567" />
+                            <small class="form-text text-muted">Nút chat Zalo (zalo.me/số-điện-thoại).</small>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span><small class="text-muted">Hiện nút "💬 Hỏi qua Zalo" ở từng món trên trang /shop</small></span>
+                        <label class="lexa-switch lexa-switch-primary mb-0 ml-2 flex-shrink-0">
+                            <input type="checkbox" @bind="_model.ShowZaloChatButton" />
+                            <span class="lexa-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Link Google Maps của quán</label>
+                        <input class="form-control" @bind="_model.GoogleMapsUrl" placeholder="https://maps.google.com/?q=Xôi+Phú+Thượng" />
+                        <small class="form-text text-muted">Hiện section "Đánh giá trên Google" trên trang chủ, kèm điểm trung bình từ đánh giá thật.</small>
+                    </div>
+                    <small class="form-text text-muted">Để trống = dùng số điện thoại trong chân trang landing. Các nút chỉ hiện trên điện thoại.</small>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Báo cáo tuần qua Zalo</h4>
+                    <p class="card-title-desc">Tự động gửi báo cáo tuần cho chủ quán qua Zalo OA.</p>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Zalo OA Access Token</label>
+                            <input type="password" class="form-control" @bind="_model.ZaloOaAccessToken" autocomplete="off" />
+                            <small class="form-text text-muted">Token của Zalo Official Account. Để trống = chỉ xem báo cáo trong admin + nút "Sao chép" (không giả vờ đã gửi).</small>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Zalo User ID của chủ quán</label>
+                            <input class="form-control" @bind="_model.OwnerZaloUserId" placeholder="VD: 1234567890123456789" />
+                            <small class="form-text text-muted">Zalo OA gửi tin theo user ID (không phải SĐT). Chủ quán cần follow OA 1 lần để lấy được ID.</small>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>SĐT chủ quán</label>
+                        <input class="form-control" @bind="_model.OwnerPhone" placeholder="0901 234 567" />
+                        <small class="form-text text-muted">Dùng khi chưa có Zalo User ID. Báo cáo tự gửi 08:00 sáng thứ 2 hàng tuần (cần chạy BackgroundServer).</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Webhook báo đơn mới</h4>
+                    <p class="card-title-desc">Gửi thông báo tức thì tới hệ thống khác khi có đơn mới.</p>
+                    <div class="form-group">
+                        <label>URL webhook</label>
+                        <input class="form-control" @bind="_model.NewOrderWebhookUrl" placeholder="https://..." />
+                        <small class="form-text text-muted">Khi có đơn mới, hệ thống POST JSON <code>{maDon, sdt, tongTien, trangThai, thoiGian}</code> tới URL này (timeout 5 giây, lỗi chỉ ghi log — không làm hỏng việc tạo đơn).</small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span><small class="text-muted">Bật webhook báo đơn mới</small></span>
+                        <label class="lexa-switch lexa-switch-primary mb-0 ml-2 flex-shrink-0">
+                            <input type="checkbox" @bind="_model.NewOrderWebhookEnabled" />
+                            <span class="lexa-slider"></span>
+                        </label>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="TestWebhookAsync" disabled="@_testingWebhook">
+                            @(_testingWebhook ? "Đang gửi..." : "Gửi thử")
+                        </button>
+                        @if (!string.IsNullOrEmpty(_webhookTestResult))
+                        {
+                            <small class="ml-2 @(_webhookTestOk ? "text-success" : "text-danger")">@_webhookTestResult</small>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Hạng thành viên</h4>
+                    <p class="card-title-desc">Ngưỡng chi tiêu và mức giảm giá theo hạng.</p>
+                    <div class="form-row mb-0">
+                        <div class="form-group col-md-3">
+                            <label>Chi tiêu hạng Bạc (₫)</label>
+                            <input type="number" min="0" step="100000" class="form-control" @bind="_model.TierSilverMin" />
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label>Giảm giá hạng Bạc (%)</label>
+                            <input type="number" min="0" max="100" class="form-control" @bind="_model.TierSilverDiscount" />
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label>Chi tiêu hạng Vàng (₫)</label>
+                            <input type="number" min="0" step="100000" class="form-control" @bind="_model.TierGoldMin" />
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label>Giảm giá hạng Vàng (%)</label>
+                            <input type="number" min="0" max="100" class="form-control" @bind="_model.TierGoldDiscount" />
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Hạng Đồng: dưới ngưỡng Bạc (không giảm giá).</small>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Cảnh báo đơn chưa xác nhận</h4>
+                    <p class="card-title-desc">Thông báo khẩn khi đơn chờ xác nhận quá lâu.</p>
+                    <div class="form-group mb-0">
+                        <label>Cảnh báo khẩn khi đơn Pending quá (phút)</label>
+                        <input type="number" min="1" max="1440" class="form-control" @bind="_model.UnconfirmedAlertMinutes" />
+                        <small class="form-text text-muted">Mặc định 15 phút — dashboard hiện banner đỏ + phát âm thanh khẩn.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Website &amp; QR bàn</h4>
+                    <p class="card-title-desc">Địa chỉ web công khai dùng tạo mã QR bàn.</p>
+                    <div class="form-group mb-0">
+                        <label>Địa chỉ web công khai</label>
+                        <input class="form-control" @bind="_model.WebBaseUrl" placeholder="https://phuthuong.vn" />
+                        <small class="form-text text-muted">Dùng để tạo mã QR bàn — VD: https://phuthuong.vn/shop?ban=5.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Bảo trì &amp; giám sát</h4>
+                    <p class="card-title-desc">Chế độ bảo trì, cảnh báo Telegram và giới hạn giám sát.</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>
+                            <strong>Chế độ bảo trì</strong><br />
+                            <small class="text-muted">Trang công khai hiển thị trang bảo trì (/login, /admin/*, /bep vẫn hoạt động)</small>
+                        </span>
+                        <label class="lexa-switch lexa-switch-primary mb-0 ml-2 flex-shrink-0">
+                            <input type="checkbox" @bind="_model.MaintenanceMode" />
+                            <span class="lexa-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Thông báo bảo trì</label>
+                        <input class="form-control" @bind="_model.MaintenanceMessage" />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Telegram bot token <small class="text-muted">(để trống = tắt cảnh báo Telegram)</small></label>
+                            <input type="password" class="form-control" @bind="_model.TelegramBotToken" autocomplete="off" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Telegram chat id</label>
+                            <input class="form-control" @bind="_model.TelegramChatId" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label>Ngưỡng lỗi/giờ để cảnh báo</label>
+                            <input type="number" min="1" class="form-control" @bind="_model.ErrorRateThreshold" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Ngưỡng cảnh báo uploads (MB)</label>
+                            <input type="number" min="1" class="form-control" @bind="_model.UploadsSizeWarningMb" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Nhà cung cấp sao lưu ảnh</label>
+                            <input class="form-control" @bind="_model.ImageBackupProvider" placeholder="None" />
+                            <small class="form-text text-muted">"None" = không sao lưu. Xem README để thêm S3.</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Cấu hình JSON cho sao lưu ảnh</label>
+                        <input class="form-control" @bind="_model.ImageBackupSettingsJson" placeholder='{"connectionString": "..."}' />
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><small class="text-muted">Gửi cảnh báo sức khỏe (Telegram/email). Tắt = chỉ ghi log.</small></span>
+                        <label class="lexa-switch lexa-switch-primary mb-0 ml-2 flex-shrink-0">
+                            <input type="checkbox" @bind="_model.HealthAlertsEnabled" />
+                            <span class="lexa-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body d-flex flex-column flex-md-row align-items-md-center">
+                    <div class="mb-3 mb-md-0">
+                        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+                            @(_saving ? "Đang lưu..." : "Lưu thay đổi")
+                        </button>
+                    </div>
+                    <p class="small text-muted mb-0 ml-md-3">
+                        Cấu hình thanh toán (ngân hàng, MoMo) xem ở trang
+                        <a href="/admin/doi-soat-momo">Đối soát MoMo</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .lexa-switch { position: relative; display: inline-block; width: 46px; height: 24px; margin: 0; }
+    .lexa-switch input { opacity: 0; width: 0; height: 0; }
+    .lexa-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 24px; transition: .2s; }
+    .lexa-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+    .lexa-switch input:checked + .lexa-slider { background: #3ac9d6; }
+    .lexa-switch-primary input:checked + .lexa-slider { background: #7a6fbe; }
+    .lexa-switch input:checked + .lexa-slider:before { transform: translateX(22px); }
+    html.dark .lexa-slider { background: #4a4a6e; }
+</style>
 
 @code {
     private ShopSettingModel _model;
