@@ -4,13 +4,20 @@
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @inject OrderService OrderService
 
-<h3>📊 Đối soát theo ngày</h3>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Đối soát theo ngày</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Đối soát theo ngày</li>
+    </ol>
+</div>
 <p class="text-muted">
     Doanh thu theo kênh thanh toán trong ngày (giờ Việt Nam). Đơn đã hủy không tính vào doanh thu.
 </p>
 
 <div class="card mb-3">
     <div class="card-body">
+        <h4 class="card-title">Chọn ngày</h4>
         <div class="form-row align-items-end">
             <div class="col-md-3 col-8">
                 <label class="mb-1"><small class="text-muted">Ngày</small></label>
@@ -39,9 +46,9 @@
 }
 else
 {
-    <h5 class="mb-3">Ngày @_data.Date.ToString("dd/MM/yyyy")</h5>
     <div class="card">
-        <div class="card-body p-0">
+        <div class="card-body">
+            <h4 class="card-title">Đối soát ngày @_data.Date.ToString("dd/MM/yyyy")</h4>
             <div class="table-responsive">
                 <table class="table table-striped mb-0">
                     <thead>
@@ -66,7 +73,7 @@ else
                         }
                     </tbody>
                     <tfoot>
-                        <tr class="table-dark">
+                        <tr class="lx-total-row">
                             <th>Tổng cộng</th>
                             <th class="text-right">@_data.TotalOrderCount</th>
                             <th class="text-right">@FormatPrice(_data.TotalRevenue)</th>
@@ -83,6 +90,11 @@ else
         <div class="alert alert-info mt-3">Không có đơn nào trong ngày đã chọn.</div>
     }
 }
+
+<style>
+    .lx-total-row th { background: #7a6fbe; color: #fff; border-color: #7a6fbe; }
+    html.dark .lx-total-row th { background: #5a4fa0; border-color: #5a4fa0; }
+</style>
 
 @code {
     // Wave 6c (item 31): daily payment-channel reconciliation.
