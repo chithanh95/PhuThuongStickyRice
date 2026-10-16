@@ -524,7 +524,17 @@ namespace PhuThuongStickyRice.Application.Products
 
             var product = await FindOrThrowAsync(id);
 
-            await _products.DeleteAsync(product);
+            try
+            {
+                await _products.DeleteAsync(product);
+            }
+            catch (Exception)
+            {
+                // Món đã có trong đơn hàng (khóa ngoại) thì không xóa cứng được,
+                // chuyển sang ngưng bán để giữ lịch sử đơn hàng.
+                product.Discontinue();
+                await _products.UpdateAsync(product);
+            }
             await _domainEvents.DispatchAsync(new EntityDeletedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
 
