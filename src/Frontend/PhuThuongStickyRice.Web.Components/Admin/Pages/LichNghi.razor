@@ -4,15 +4,21 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @inject HolidayService HolidayService
 
-<h3>🗓️ Lịch nghỉ lễ / Tết</h3>
-<p class="text-muted">
-    Thêm các ngày quán nghỉ. Vào đúng ngày nghỉ <strong>cả ngày</strong>, web tự động
-    chuyển sang chế độ "tạm ngưng nhận đơn" với lý do từ lịch — không cần bật/tắt tay.
-</p>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Lịch nghỉ lễ / Tết</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>Vận hành</li>
+        <li class="current">Lịch nghỉ</li>
+    </ol>
+</div>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <h5 class="card-title">@(_editingId == null ? "Thêm ngày nghỉ" : "Sửa ngày nghỉ")</h5>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">@(_editingId == null ? "Thêm ngày nghỉ" : "Sửa ngày nghỉ")</h4>
+                <p class="card-title-desc">Vào đúng ngày nghỉ <strong>cả ngày</strong>, web tự động chuyển sang chế độ "tạm ngưng nhận đơn" với lý do từ lịch — không cần bật/tắt tay.</p>
         <div class="form-row align-items-end">
             <div class="col-md-3 mb-2">
                 <label class="mb-1"><small class="text-muted">Ngày nghỉ</small></label>
@@ -24,9 +30,9 @@
                        maxlength="200" placeholder="VD: Nghỉ Tết Nguyên đán" />
             </div>
             <div class="col-md-2 mb-2">
-                <div class="form-check mt-4">
-                    <input type="checkbox" class="form-check-input" id="holiday-fullday" @bind="_model.IsFullDay" />
-                    <label class="form-check-label" for="holiday-fullday">Nghỉ cả ngày</label>
+                <div class="custom-control custom-checkbox mt-4">
+                    <input type="checkbox" class="custom-control-input" id="holiday-fullday" @bind="_model.IsFullDay" />
+                    <label class="custom-control-label" for="holiday-fullday">Nghỉ cả ngày</label>
                 </div>
             </div>
             <div class="col-md-2 mb-2 text-right">
@@ -35,23 +41,29 @@
                 </button>
                 @if (_editingId != null)
                 {
-                    <button class="btn btn-outline-secondary ml-2" @onclick="CancelEdit">Hủy</button>
+                    <button class="btn btn-secondary ml-2" @onclick="CancelEdit">Hủy</button>
                 }
             </div>
         </div>
         @if (!string.IsNullOrEmpty(_error))
         {
-            <div class="alert alert-danger mt-2 mb-0">@_error</div>
+            <div class="alert alert-danger mt-3 mb-0">@_error</div>
         }
         @if (!string.IsNullOrEmpty(_success))
         {
-            <div class="alert alert-success mt-2 mb-0">@_success</div>
+            <div class="alert alert-success mt-3 mb-0">@_success</div>
         }
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body p-0">
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Danh sách ngày nghỉ</h4>
+                <p class="card-title-desc">Các ngày nghỉ sắp tới, hôm nay và đã qua.</p>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead>
@@ -107,6 +119,8 @@
                     }
                 </tbody>
             </table>
+        </div>
+            </div>
         </div>
     </div>
 </div>
