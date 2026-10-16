@@ -3,114 +3,131 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject StaffService StaffService
 
-<h3>👥 Nhân viên</h3>
-<p class="text-muted">
-    Quản lý tài khoản đăng nhập trang quản trị. <strong>Admin</strong> thấy tất cả,
-    <strong>Thu ngân (Cashier)</strong> chỉ thấy Đơn hàng, Bán POS và Dashboard cơ bản (không doanh thu),
-    <strong>Bếp (Kitchen)</strong> chỉ thấy Màn hình bếp.
-</p>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Nhân viên</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Quản trị</a></li>
+        <li><a href="/admin/nhan-vien">Hệ thống</a></li>
+        <li class="current">Nhân viên</li>
+    </ol>
+</div>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <h5 class="card-title">➕ Tạo tài khoản mới</h5>
-        <div class="form-row">
-            <div class="form-group col-md-3">
-                <label>Tên đăng nhập</label>
-                <input class="form-control" @bind="_userName" placeholder="thungan1" />
-            </div>
-            <div class="form-group col-md-3">
-                <label>Email</label>
-                <input class="form-control" @bind="_email" placeholder="thungan1@phuthuong.vn" />
-            </div>
-            <div class="form-group col-md-2">
-                <label>Mật khẩu</label>
-                <input type="password" class="form-control" @bind="_password" placeholder="Tối thiểu 6 ký tự" />
-            </div>
-            <div class="form-group col-md-2">
-                <label>Vai trò</label>
-                <select class="form-control" @bind="_role">
-                    <option value="Cashier">Thu ngân (Cashier)</option>
-                    <option value="Kitchen">Bếp (Kitchen)</option>
-                    <option value="Admin">Quản trị (Admin)</option>
-                </select>
-            </div>
-            <div class="form-group col-md-2 d-flex align-items-end">
-                <button class="btn btn-primary btn-block" @onclick="CreateUser" disabled="@_saving">
-                    @(_saving ? "Đang tạo..." : "Tạo tài khoản")
-                </button>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Tạo tài khoản mới</h4>
+                <p class="card-title-desc">
+                    Tài khoản đăng nhập trang quản trị. <strong>Admin</strong> thấy tất cả,
+                    <strong>Thu ngân (Cashier)</strong> chỉ thấy Đơn hàng, Bán POS và Dashboard cơ bản (không doanh thu),
+                    <strong>Bếp (Kitchen)</strong> chỉ thấy Màn hình bếp.
+                </p>
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label>Tên đăng nhập</label>
+                        <input class="form-control" @bind="_userName" placeholder="thungan1" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Email</label>
+                        <input class="form-control" @bind="_email" placeholder="thungan1@phuthuong.vn" />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Mật khẩu</label>
+                        <input type="password" class="form-control" @bind="_password" placeholder="Tối thiểu 6 ký tự" />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Vai trò</label>
+                        <select class="form-control" @bind="_role">
+                            <option value="Cashier">Thu ngân (Cashier)</option>
+                            <option value="Kitchen">Bếp (Kitchen)</option>
+                            <option value="Admin">Quản trị (Admin)</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2 d-flex align-items-end">
+                        <button class="btn btn-primary btn-block" @onclick="CreateUser" disabled="@_saving">
+                            @(_saving ? "Đang tạo..." : "Tạo tài khoản")
+                        </button>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="alert alert-danger mb-0">@_error</div>
+                }
+                @if (!string.IsNullOrEmpty(_success))
+                {
+                    <div class="alert alert-success mb-0">@_success</div>
+                }
             </div>
         </div>
-        @if (!string.IsNullOrEmpty(_error))
-        {
-            <div class="alert alert-danger mb-0">@_error</div>
-        }
-        @if (!string.IsNullOrEmpty(_success))
-        {
-            <div class="alert alert-success mb-0">@_success</div>
-        }
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-striped mb-0">
-                <thead>
-                    <tr>
-                        <th>Tên đăng nhập</th>
-                        <th>Email</th>
-                        <th>Vai trò</th>
-                        <th class="text-center">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (_users == null)
-                    {
-                        <tr><td colspan="4" class="text-center"><em>Đang tải...</em></td></tr>
-                    }
-                    else
-                    {
-                        @foreach (var u in _users)
-                        {
-                            <tr @key="u.Id">
-                                <td>
-                                    <strong>@u.UserName</strong>
-                                    @if (u.Locked)
-                                    {
-                                        <span class="lx-pill lx-pill-danger ml-2">Đã khóa</span>
-                                    }
-                                </td>
-                                <td>@u.Email</td>
-                                <td>
-                                    @foreach (var r in u.Roles)
-                                    {
-                                        <span class="lx-pill @RolePillClass(r) mr-1">
-                                            @RoleLabel(r)
-                                            <button type="button" class="close ml-1" aria-label="Gỡ"
-                                                    style="font-size:14px;line-height:1;" title="Gỡ vai trò @r"
-                                                    @onclick="() => RemoveRole(u, r)">×</button>
-                                        </span>
-                                    }
-                                    @if (u.Roles.Count == 0)
-                                    {
-                                        <span class="text-muted"><em>Chưa có vai trò</em></span>
-                                    }
-                                </td>
-                                <td class="text-center">
-                                    <select class="form-control form-control-sm d-inline-block" style="width:auto;"
-                                            value="" @onchange="(e) => AssignRole(u, e.Value?.ToString())">
-                                        <option value="">+ Gán vai trò...</option>
-                                        @foreach (var r in AllRoles.Where(r => !u.Roles.Contains(r)))
-                                        {
-                                            <option value="@r">@RoleLabel(r)</option>
-                                        }
-                                    </select>
-                                </td>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Danh sách tài khoản</h4>
+                <p class="card-title-desc">Gán thêm hoặc gỡ vai trò của từng tài khoản trực tiếp trên bảng.</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Tên đăng nhập</th>
+                                <th>Email</th>
+                                <th>Vai trò</th>
+                                <th class="text-center">Gán vai trò</th>
                             </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            @if (_users == null)
+                            {
+                                <tr><td colspan="4" class="text-center"><em>Đang tải...</em></td></tr>
+                            }
+                            else
+                            {
+                                @foreach (var u in _users)
+                                {
+                                    <tr @key="u.Id">
+                                        <td>
+                                            <strong>@u.UserName</strong>
+                                            @if (u.Locked)
+                                            {
+                                                <span class="lx-pill lx-pill-danger ml-2">Đã khóa</span>
+                                            }
+                                        </td>
+                                        <td>@u.Email</td>
+                                        <td>
+                                            @foreach (var r in u.Roles)
+                                            {
+                                                <span class="lx-pill @RolePillClass(r) mr-1">
+                                                    @RoleLabel(r)
+                                                    <button type="button" class="close ml-1" aria-label="Gỡ"
+                                                            style="font-size:14px;line-height:1;" title="Gỡ vai trò @r"
+                                                            @onclick="() => RemoveRole(u, r)">×</button>
+                                                </span>
+                                            }
+                                            @if (u.Roles.Count == 0)
+                                            {
+                                                <span class="text-muted"><em>Chưa có vai trò</em></span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <select class="form-control form-control-sm d-inline-block" style="width:auto;"
+                                                    value="" @onchange="(e) => AssignRole(u, e.Value?.ToString())">
+                                                <option value="">+ Gán vai trò...</option>
+                                                @foreach (var r in AllRoles.Where(r => !u.Roles.Contains(r)))
+                                                {
+                                                    <option value="@r">@RoleLabel(r)</option>
+                                                }
+                                            </select>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
