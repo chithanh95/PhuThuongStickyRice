@@ -1,0 +1,217 @@
+@page "/admin/lexa/form-uploads"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Form File Upload</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li><a href="/admin/lexa/form-elements">Forms</a></li>
+        <li class="current">Form File Upload</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Kéo thả upload</h4>
+                <p class="card-title-desc">Kéo file vào vùng bên dưới hoặc bấm để chọn.</p>
+                <label class="lexa-dropzone" @ondrop="OnDrop" @ondragover:preventDefault @ondragenter:preventDefault>
+                    <InputFile OnChange="OnFilesSelected" multiple style="display:none;" id="dzInput" />
+                    <label for="dzInput" style="cursor:pointer;margin:0;">
+                        <div style="font-size:42px;">📁</div>
+                        <h5>Kéo file vào đây</h5>
+                        <p class="text-muted mb-0">hoặc <span style="color:#7a6fbe;font-weight:600;">bấm để chọn file</span></p>
+                        <small class="text-muted">Hỗ trợ: JPG, PNG, PDF (tối đa 10MB/file)</small>
+                    </label>
+                </label>
+                @if (_files.Any())
+                {
+                    <div class="mt-3">
+                        <h6>File đã chọn (@_files.Count)</h6>
+                        @foreach (var f in _files)
+                        {
+                            <div class="lexa-file-item">
+                                <span class="lexa-file-icon">@GetIcon(f.Name)</span>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <strong class="small">@f.Name</strong>
+                                        <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="() => RemoveFile(f)">✕</button>
+                                    </div>
+                                    <div class="progress" style="height:6px;">
+                                        <div class="progress-bar" style="width:@(f.Progress)%;background:#7a6fbe;"></div>
+                                    </div>
+                                    <small class="text-muted">@FormatSize(f.Size) • @(f.Progress)%</small>
+                                </div>
+                            </div>
+                        }
+                        <button class="btn btn-primary mt-2" @onclick="StartUpload" disabled="@_uploading">
+                            @(_uploading ? "Đang tải lên..." : $"Tải lên {_files.Count} file")
+                        </button>
+                        @if (_uploadDone)
+                        {
+                            <div class="alert alert-success mt-2 mb-0">Tải lên hoàn tất!</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Upload đơn giản</h4>
+                <p class="card-title-desc">Chọn từng file một.</p>
+                <div class="form-group">
+                    <label>Ảnh đại diện món ăn</label>
+                    <div class="custom-file">
+                        <InputFile class="custom-file-input" id="singleImg" OnChange="OnSingleImage" accept="image/*" />
+                        <label class="custom-file-label" for="singleImg">@(_singleImageName ?? "Chọn ảnh...")</label>
+                    </div>
+                </div>
+                @if (_previewUrl != null)
+                {
+                    <div class="text-center mb-3">
+                        <img src="@_previewUrl" alt="preview" style="max-width:200px;max-height:200px;border-radius:8px;border:1px solid #e9ecef;" />
+                        <div><small class="text-muted">@_singleImageName</small></div>
+                    </div>
+                }
+                <div class="form-group mb-0">
+                    <label>Tài liệu đính kèm</label>
+                    <div class="custom-file">
+                        <InputFile class="custom-file-input" id="singleDoc" OnChange="OnSingleDoc" />
+                        <label class="custom-file-label" for="singleDoc">@(_singleDocName ?? "Chọn tài liệu...")</label>
+                    </div>
+                    @if (_singleDocName != null)
+                    {
+                        <small class="text-success">Đã chọn: @_singleDocName (@FormatSize(_singleDocSize))</small>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Lịch sử upload</h4>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>File</th><th>Kích thước</th><th>Trạng thái</th></tr></thead>
+                        <tbody>
+                            @foreach (var h in _history)
+                            {
+                                <tr>
+                                    <td><span class="mr-2">@GetIcon(h.Name)</span>@h.Name</td>
+                                    <td class="text-muted">@FormatSize(h.Size)</td>
+                                    <td><span class="badge badge-success">Hoàn tất</span></td>
+                                </tr>
+                            }
+                            @if (!_history.Any())
+                            {
+                                <tr><td colspan="3" class="text-center text-muted">Chưa có file nào.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-dropzone { display: block; border: 2px dashed #7a6fbe; border-radius: 8px; padding: 40px 20px; text-align: center; background: #fafaff; transition: background .2s; }
+    .lexa-dropzone:hover { background: #f0efff; }
+    html.dark .lexa-dropzone { background: #20203a; border-color: #7a6fbe; }
+    .lexa-file-item { display: flex; gap: 12px; padding: 10px; border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 8px; align-items: center; }
+    html.dark .lexa-file-item { border-color: #3a3a58; }
+    .lexa-file-icon { font-size: 28px; }
+</style>
+
+@code {
+    private List<UploadFile> _files = new();
+    private List<UploadFile> _history = new();
+    private bool _uploading;
+    private bool _uploadDone;
+    private string _singleImageName;
+    private string _previewUrl;
+    private string _singleDocName;
+    private long _singleDocSize;
+
+    private void OnFilesSelected(InputFileChangeEventArgs e)
+    {
+        foreach (var f in e.GetMultipleFiles(10))
+        {
+            if (!_files.Any(x => x.Name == f.Name))
+                _files.Add(new UploadFile { Name = f.Name, Size = f.Size });
+        }
+        _uploadDone = false;
+    }
+
+    private void OnDrop(DragEventArgs e) { }
+
+    private void RemoveFile(UploadFile f) => _files.Remove(f);
+
+    private async Task StartUpload()
+    {
+        _uploading = true;
+        _uploadDone = false;
+        foreach (var f in _files)
+        {
+            while (f.Progress < 100)
+            {
+                await Task.Delay(80);
+                f.Progress = Math.Min(100, f.Progress + 20);
+                StateHasChanged();
+            }
+        }
+        _history.AddRange(_files);
+        _files.Clear();
+        _uploading = false;
+        _uploadDone = true;
+    }
+
+    private async Task OnSingleImage(InputFileChangeEventArgs e)
+    {
+        var f = e.File;
+        if (f == null) return;
+        _singleImageName = f.Name;
+        var buffer = new byte[f.Size];
+        await f.OpenReadStream(5 * 1024 * 1024).ReadAsync(buffer);
+        _previewUrl = $"data:{f.ContentType};base64,{Convert.ToBase64String(buffer)}";
+    }
+
+    private void OnSingleDoc(InputFileChangeEventArgs e)
+    {
+        var f = e.File;
+        if (f == null) return;
+        _singleDocName = f.Name;
+        _singleDocSize = f.Size;
+    }
+
+    private string GetIcon(string name)
+    {
+        var ext = System.IO.Path.GetExtension(name)?.ToLowerInvariant();
+        return ext switch
+        {
+            ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" => "🖼️",
+            ".pdf" => "📄",
+            ".doc" or ".docx" => "📝",
+            ".xls" or ".xlsx" => "📊",
+            ".zip" or ".rar" => "📦",
+            _ => "📎",
+        };
+    }
+
+    private string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024.0).ToString("0.0") + " KB";
+        return (bytes / 1024.0 / 1024.0).ToString("0.0") + " MB";
+    }
+
+    private class UploadFile
+    {
+        public string Name { get; set; }
+        public long Size { get; set; }
+        public int Progress { get; set; }
+    }
+}
