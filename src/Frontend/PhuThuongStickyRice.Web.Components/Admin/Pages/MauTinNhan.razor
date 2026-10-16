@@ -4,16 +4,14 @@
 @using PhuThuongStickyRice.Web.Components.Orders.Models
 @inject MessageTemplateService MessageTemplateService
 
-<h3>💬 Mẫu tin nhắn theo trạng thái đơn</h3>
-<p class="text-muted">
-    Khi đổi trạng thái đơn ở trang <strong>Đơn hàng</strong>, nhân viên bấm nút
-    <strong>📋 Copy tin nhắn</strong> để lấy nội dung mẫu đã điền sẵn thông tin đơn,
-    rồi gửi tay qua Zalo/tin nhắn. Hệ thống <strong>không tự gửi</strong> — minh bạch, không giả vờ.
-</p>
-<p class="text-muted">
-    Placeholder dùng được trong mẫu: <code>{MaDon}</code> (mã đơn), <code>{TenKhach}</code> (tên khách),
-    <code>{TongTien}</code> (tổng tiền), <code>{NgayDat}</code> (ngày giờ đặt).
-</p>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Mẫu tin nhắn theo trạng thái đơn</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>Vận hành</li>
+        <li class="current">Mẫu tin nhắn</li>
+    </ol>
+</div>
 
 @if (_templates == null)
 {
@@ -21,9 +19,21 @@
 }
 else
 {
-    <div class="card">
-        <div class="card-body p-0">
-            <div class="table-responsive">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Danh sách mẫu tin nhắn</h4>
+                    <p class="card-title-desc">
+                        Khi đổi trạng thái đơn ở trang <strong>Đơn hàng</strong>, nhân viên bấm nút
+                        <strong>Copy tin nhắn</strong> để lấy nội dung mẫu đã điền sẵn thông tin đơn,
+                        rồi gửi tay qua Zalo/tin nhắn. Hệ thống <strong>không tự gửi</strong> — minh bạch, không giả vờ.
+                    </p>
+                    <p class="card-title-desc">
+                        Placeholder dùng được trong mẫu: <code>{MaDon}</code> (mã đơn), <code>{TenKhach}</code> (tên khách),
+                        <code>{TongTien}</code> (tổng tiền), <code>{NgayDat}</code> (ngày giờ đặt).
+                    </p>
+                    <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
@@ -53,11 +63,18 @@ else
                                 <td>
                                     @if (_editingId == t.Id)
                                     {
-                                        <input type="checkbox" @bind="_editActive" />
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="@($"mt-{t.Id}")" @bind="_editActive" />
+                                            <label class="custom-control-label" for="@($"mt-{t.Id}")">Bật</label>
+                                        </div>
+                                    }
+                                    else if (t.IsActive)
+                                    {
+                                        <span class="badge badge-success">Bật</span>
                                     }
                                     else
                                     {
-                                        @(t.IsActive ? "✅" : "❌")
+                                        <span class="badge badge-secondary">Tắt</span>
                                     }
                                 </td>
                                 <td class="text-right">
@@ -66,7 +83,7 @@ else
                                         <button class="btn btn-sm btn-primary" @onclick="() => SaveAsync(t)" disabled="@_saving">
                                             @(_saving ? "..." : "Lưu")
                                         </button>
-                                        <button class="btn btn-sm btn-outline-secondary ml-1" @onclick="CancelEdit">Hủy</button>
+                                        <button class="btn btn-sm btn-secondary ml-1" @onclick="CancelEdit">Hủy</button>
                                     }
                                     else
                                     {
@@ -77,6 +94,8 @@ else
                         }
                     </tbody>
                 </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
