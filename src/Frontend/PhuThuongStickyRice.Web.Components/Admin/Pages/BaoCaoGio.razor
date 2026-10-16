@@ -4,11 +4,18 @@
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @inject OrderService OrderService
 
-<h3>⏰ Báo cáo món bán chạy theo giờ</h3>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Báo cáo theo giờ</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Báo cáo theo giờ</li>
+    </ol>
+</div>
 <p class="text-muted">Chọn ngày để xem mỗi khung giờ bán được bao nhiêu suất từng món. Đơn đã hủy không tính.</p>
 
 <div class="card mb-3">
     <div class="card-body">
+        <h4 class="card-title">Chọn ngày</h4>
         <div class="form-row align-items-end">
             <div class="col-md-3 col-6">
                 <label class="mb-1"><small class="text-muted">Ngày</small></label>
@@ -56,13 +63,11 @@ else if (_report != null)
     <div class="alert alert-success">💡 <strong>Gợi ý:</strong> @_report.Suggestion</div>
 
     <div class="card">
-        <div class="card-header">
+        <div class="card-body">
             <h4 class="card-title">Heatmap — số suất bán theo giờ và món</h4>
-            <small class="text-muted">Ô càng đậm = bán càng nhiều</small>
-        </div>
-        <div class="card-body p-0">
+            <p class="card-title-desc">Ô càng đậm = bán càng nhiều</p>
             <div class="table-responsive">
-                <table class="table table-bordered table-sm mb-0 text-center">
+                <table class="table table-bordered table-hover table-sm mb-0 text-center">
                     <thead class="thead-light">
                         <tr>
                             <th style="min-width:70px">Giờ</th>
