@@ -1,0 +1,253 @@
+@page "/admin/lexa/form-advanced"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Form Advanced</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li><a href="/admin/lexa/form-elements">Forms</a></li>
+        <li class="current">Form Advanced</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Colorpicker</h4>
+                <p class="card-title-desc">Chọn màu sắc tùy chỉnh.</p>
+                <div class="form-group">
+                    <label>Màu chủ đạo</label>
+                    <div class="d-flex align-items-center">
+                        <input type="color" @bind="_mainColor" @bind:event="oninput" style="width:60px;height:38px;padding:2px;border:1px solid #ced4da;border-radius:4px;cursor:pointer;" />
+                        <input class="form-control ml-2" @bind="_mainColor" style="max-width:120px;" />
+                        <span class="ml-2 px-3 py-2" style="background:@_mainColor;border-radius:4px;color:#fff;">Xem trước</span>
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <label>Bảng màu nhanh</label>
+                    <div class="d-flex" style="gap:8px;">
+                        @foreach (var c in _palette)
+                        {
+                            <button type="button" @onclick="() => _mainColor = c"
+                                    style="width:36px;height:36px;border-radius:50%;border:3px solid @(_mainColor == c ? "#333" : "transparent");background:@c;cursor:pointer;"
+                                    title="@c"></button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bootstrap MaxLength</h4>
+                <p class="card-title-desc">Hiển thị số ký tự còn lại khi nhập.</p>
+                <div class="form-group">
+                    <label>Tiêu đề bài viết</label>
+                    <input class="form-control" maxlength="60" @bind="_title" @bind:event="oninput" placeholder="Tối đa 60 ký tự" />
+                    <small class="@(_titleRemain <= 10 ? "text-danger" : "text-muted") float-right mt-1">
+                        Còn @(_titleRemain) ký tự
+                    </small>
+                </div>
+                <div class="form-group mb-0">
+                    <label>Mô tả ngắn</label>
+                    <textarea class="form-control" rows="3" maxlength="140" @bind="_shortDesc" @bind:event="oninput" placeholder="Tối đa 140 ký tự"></textarea>
+                    <small class="@(_descRemain <= 20 ? "text-danger" : "text-muted") float-right mt-1">
+                        Còn @(_descRemain) ký tự
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Css Switch</h4>
+                <p class="card-title-desc">Các loại công tắc bật/tắt.</p>
+                @foreach (var s in _switches)
+                {
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>@s.Label</span>
+                        <label class="lexa-switch">
+                            <input type="checkbox" @bind="s.Value" />
+                            <span class="lexa-slider"></span>
+                        </label>
+                    </div>
+                }
+                <div class="d-flex justify-content-between align-items-center mb-0">
+                    <span>Switch màu tím (mặc định Lexa)</span>
+                    <label class="lexa-switch lexa-switch-primary">
+                        <input type="checkbox" @bind="_primarySwitch" />
+                        <span class="lexa-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Datepicker</h4>
+                <p class="card-title-desc">Chọn ngày tháng.</p>
+                <div class="form-group">
+                    <label>Ngày mặc định</label>
+                    <input type="date" class="form-control" @bind="_date1" />
+                </div>
+                <div class="form-group">
+                    <label>Ngày giờ</label>
+                    <input type="datetime-local" class="form-control" @bind="_date2" />
+                </div>
+                <div class="form-group mb-0">
+                    <label>Khoảng ngày</label>
+                    <div class="input-group">
+                        <input type="date" class="form-control" @bind="_fromDate" />
+                        <div class="input-group-prepend input-group-append"><span class="input-group-text">đến</span></div>
+                        <input type="date" class="form-control" @bind="_toDate" />
+                    </div>
+                    @if (_fromDate > _toDate)
+                    {
+                        <small class="text-danger">Ngày bắt đầu phải trước ngày kết thúc.</small>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bootstrap TouchSpin</h4>
+                <p class="card-title-desc">Input số lượng với nút tăng/giảm, thân thiện với mobile.</p>
+                <div class="form-group">
+                    <label>Số lượng món</label>
+                    <div>
+                        <div class="lexa-touchspin">
+                            <button type="button" @onclick="() => ChangeQty(-1)">−</button>
+                            <input type="text" value="@_qty" readonly />
+                            <button type="button" @onclick="() => ChangeQty(1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <label>Số lượng (có bước nhảy 5)</label>
+                    <div>
+                        <div class="lexa-touchspin">
+                            <button type="button" @onclick="() => ChangeQtyStep(-5)">−</button>
+                            <input type="text" value="@_qtyStep" readonly />
+                            <button type="button" @onclick="() => ChangeQtyStep(5)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Select2</h4>
+                <p class="card-title-desc">Select có tìm kiếm.</p>
+                <div class="form-group">
+                    <label>Tìm món ăn</label>
+                    <input class="form-control mb-2" @bind="_dishFilter" @bind:event="oninput" placeholder="Gõ để lọc..." />
+                    <select class="form-control" @bind="_selectedDish" size="5">
+                        @foreach (var d in FilteredDishes)
+                        {
+                            <option value="@d">@d</option>
+                        }
+                    </select>
+                    <small class="text-muted">Đã chọn: <strong>@(_selectedDish ?? "(chưa chọn)")</strong></small>
+                </div>
+                <div class="form-group mb-0">
+                    <label>Chọn nhiều (giữ Ctrl)</label>
+                    <select class="form-control" multiple style="height:100px;" @onchange="OnTagsChange">
+                        @foreach (var t in _allTags)
+                        {
+                            <option value="@t">@t</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bootstrap FileStyle</h4>
+                <p class="card-title-desc">Input chọn file đẹp hơn.</p>
+                <div class="form-group mb-0">
+                    <label>Ảnh món ăn</label>
+                    <div class="custom-file">
+                        <InputFile class="custom-file-input" id="lexaFile" OnChange="OnFileChange" />
+                        <label class="custom-file-label" for="lexaFile">@(_fileName ?? "Chọn file...")</label>
+                    </div>
+                    @if (_fileName != null)
+                    {
+                        <small class="text-success">Đã chọn: @_fileName</small>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-switch { position: relative; display: inline-block; width: 46px; height: 24px; margin: 0; }
+    .lexa-switch input { opacity: 0; width: 0; height: 0; }
+    .lexa-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 24px; transition: .2s; }
+    .lexa-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+    .lexa-switch input:checked + .lexa-slider { background: #3ac9d6; }
+    .lexa-switch-primary input:checked + .lexa-slider { background: #7a6fbe; }
+    .lexa-switch input:checked + .lexa-slider:before { transform: translateX(22px); }
+    html.dark .lexa-slider { background: #4a4a6e; }
+    .lexa-touchspin { display: inline-flex; border: 1px solid #ced4da; border-radius: 4px; overflow: hidden; }
+    html.dark .lexa-touchspin { border-color: #4a4a6e; }
+    .lexa-touchspin button { width: 38px; height: 38px; border: none; background: #f0f0f0; font-size: 20px; font-weight: 700; cursor: pointer; color: #333; }
+    .lexa-touchspin button:hover { background: #7a6fbe; color: #fff; }
+    html.dark .lexa-touchspin button { background: #2c2c4e; color: #f0eef5; }
+    .lexa-touchspin input { width: 60px; text-align: center; border: none; border-left: 1px solid #ced4da; border-right: 1px solid #ced4da; font-weight: 600; }
+    html.dark .lexa-touchspin input { background: #1e1e36; color: #f0eef5; border-color: #4a4a6e; }
+</style>
+
+@code {
+    private string _mainColor = "#7a6fbe";
+    private List<string> _palette = new() { "#7a6fbe", "#3ac9d6", "#f5b225", "#ec536c", "#2b3a4a", "#29bbe3" };
+    private string _title = "";
+    private string _shortDesc = "";
+    private int _titleRemain => 60 - (_title?.Length ?? 0);
+    private int _descRemain => 140 - (_shortDesc?.Length ?? 0);
+
+    private List<SwitchItem> _switches = new()
+    {
+        new("Mở bán online", true),
+        new("Cho phép đặt trước", false),
+        new("Hiện giá trên menu", true),
+    };
+    private bool _primarySwitch = true;
+
+    private DateTime _date1 = DateTime.Today;
+    private DateTime _date2 = DateTime.Now;
+    private DateTime _fromDate = DateTime.Today.AddDays(-7);
+    private DateTime _toDate = DateTime.Today;
+
+    private int _qty = 1;
+    private int _qtyStep = 10;
+    private void ChangeQty(int d) => _qty = Math.Clamp(_qty + d, 1, 99);
+    private void ChangeQtyStep(int d) => _qtyStep = Math.Clamp(_qtyStep + d, 0, 500);
+
+    private string _dishFilter = "";
+    private string _selectedDish;
+    private List<string> _allDishes = new() { "Xôi gấc", "Xôi đỗ xanh", "Xôi xéo", "Xôi vò", "Xôi ngũ sắc", "Xôi cốm", "Xôi lạc", "Xôi đậu đen" };
+    private IEnumerable<string> FilteredDishes =>
+        string.IsNullOrWhiteSpace(_dishFilter) ? _allDishes : _allDishes.Where(d => d.Contains(_dishFilter, StringComparison.OrdinalIgnoreCase));
+    private List<string> _allTags = new() { "Món mới", "Bán chạy", "Món chay", "Cay", "Ngọt", "Mặn" };
+    private void OnTagsChange(ChangeEventArgs e) { }
+
+    private string _fileName;
+    private void OnFileChange(InputFileChangeEventArgs e)
+    {
+        _fileName = e.File?.Name;
+    }
+
+    private class SwitchItem
+    {
+        public string Label { get; set; }
+        public bool Value { get; set; }
+        public SwitchItem(string label, bool value) { Label = label; Value = value; }
+    }
+}
