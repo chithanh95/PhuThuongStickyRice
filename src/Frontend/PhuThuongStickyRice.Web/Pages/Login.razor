@@ -13,9 +13,31 @@
 @using Microsoft.AspNetCore.Components.Web
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.PermissionService PermissionService
 
-<div style="min-height:100vh;width:100%;background:#f8f8fb;display:flex;align-items:center;justify-content:center;padding:40px 20px;margin:0;box-sizing:border-box;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;">
+<style>
+    .login-fullscreen {
+        min-height: 100vh; width: 100%;
+        background: #f8f8fb;
+        display: flex; align-items: center; justify-content: center;
+        padding: 40px 20px; margin: 0; box-sizing: border-box;
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;
+    }
+    html.dark .login-fullscreen { background: #1a1a2e; }
+    .login-card-box {
+        background: #fff; border-radius: 8px;
+        box-shadow: 0 2px 20px rgba(0,0,0,.08); padding: 40px 35px;
+    }
+    html.dark .login-card-box { background: #262640; box-shadow: 0 2px 20px rgba(0,0,0,.4); }
+    html.dark .login-card-box label { color: #f0eef5 !important; }
+    html.dark .login-card-box h4 { color: #f0eef5 !important; }
+    html.dark .login-card-box p { color: #a5a2bd !important; }
+    html.dark .login-card-box .form-control {
+        background: #1e1e36; border-color: #4a4a6e; color: #f0eef5;
+    }
+    html.dark .login-card-box .text-muted { color: #a5a2bd !important; }
+</style>
+<div class="login-fullscreen">
     <div style="width:100%;max-width:420px;">
-        <div style="background:#fff;border-radius:8px;box-shadow:0 2px 20px rgba(0,0,0,.08);padding:40px 35px;">
+        <div class="login-card-box">
             <div style="text-align:center;margin-bottom:25px;">
                 <span style="font-size:36px;">🍚</span>
                 <span style="font-size:28px;font-weight:600;color:#2b3a4a;margin-left:8px;vertical-align:middle;">Xôi Phú Thượng</span>
