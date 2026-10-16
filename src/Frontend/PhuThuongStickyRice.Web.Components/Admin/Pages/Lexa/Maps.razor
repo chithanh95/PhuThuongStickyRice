@@ -1,0 +1,79 @@
+@page "/admin/lexa/maps"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Maps</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Maps</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bản đồ cửa hàng</h4>
+                <p class="card-title-desc">Vị trí quán Xôi Phú Thượng (demo placeholder).</p>
+                <div class="lexa-map-placeholder">
+                    <div class="lexa-map-pin">📍</div>
+                    <p class="mb-1"><strong>Xôi Phú Thượng</strong></p>
+                    <p class="text-muted small mb-0">Làng nghề Phú Thượng, Tây Hồ, Hà Nội</p>
+                    <p class="text-muted small">21.0895° N, 105.8190° E</p>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-primary btn-sm" @onclick="() => _zoom++">Phóng to +</button>
+                    <button class="btn btn-secondary btn-sm" @onclick="() => _zoom = Math.Max(1, _zoom - 1)">Thu nhỏ −</button>
+                    <span class="ml-2 text-muted small">Mức zoom: @_zoom</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Khu vực giao hàng</h4>
+                <p class="card-title-desc">Các quận phục vụ (demo).</p>
+                <div class="lexa-map-placeholder lexa-map-dark">
+                    <div style="font-size:40px;">🗺️</div>
+                    <div class="mt-2">
+                        @foreach (var z in _zones)
+                        {
+                            <span class="badge @(z.Active ? "badge-success" : "badge-secondary") mr-1 mb-1">@z.Name</span>
+                        }
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="shipAll" @bind="_shipAll" />
+                        <label class="custom-control-label" for="shipAll">Giao toàn Hà Nội (shipper bên thứ 3)</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-map-placeholder { height: 300px; border-radius: 8px; background: linear-gradient(135deg, #e8f5e9, #c8e6c9); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 1px solid #c8e6c9; position: relative; overflow: hidden; }
+    html.dark .lexa-map-placeholder { background: linear-gradient(135deg, #1e3a2e, #2c2c4e); border-color: #3a3a58; }
+    .lexa-map-placeholder:before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background-image: linear-gradient(#ffffff40 1px, transparent 1px), linear-gradient(90deg, #ffffff40 1px, transparent 1px);
+        background-size: 30px 30px; }
+    .lexa-map-dark { background: linear-gradient(135deg, #2b3a4a, #1a1a2e); border-color: #2b3a4a; color: #fff; }
+    .lexa-map-dark:before { background-image: linear-gradient(#ffffff10 1px, transparent 1px), linear-gradient(90deg, #ffffff10 1px, transparent 1px); }
+    .lexa-map-pin { font-size: 48px; animation: lexaBounce 1.5s infinite; }
+    @@keyframes lexaBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+</style>
+
+@code {
+    private int _zoom = 15;
+    private bool _shipAll = true;
+    private List<Zone> _zones = new()
+    {
+        new("Tây Hồ", true), new("Ba Đình", true), new("Hoàn Kiếm", true),
+        new("Đống Đa", true), new("Cầu Giấy", true), new("Hai Bà Trưng", false),
+        new("Thanh Xuân", false), new("Hoàng Mai", false),
+    };
+    private record Zone(string Name, bool Active);
+}
