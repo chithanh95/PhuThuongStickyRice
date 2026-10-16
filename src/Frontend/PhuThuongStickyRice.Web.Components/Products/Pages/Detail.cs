@@ -21,11 +21,21 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         [Parameter]
         public Guid ProductId { get; set; }
 
-        public ProductModel Product { get; set; } = new ProductModel();
+        public ProductModel Product { get; set; }
+
+        public bool NotFound { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
-            Product = await ProductService.GetProductByIdAsync(ProductId);
+            try
+            {
+                Product = await ProductService.GetProductByIdAsync(ProductId);
+                NotFound = Product == null;
+            }
+            catch
+            {
+                NotFound = true;
+            }
         }
 
     }
