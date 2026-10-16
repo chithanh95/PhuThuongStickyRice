@@ -3475,6 +3475,39 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("StaffActivityLogs", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.StaffChatMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SenderName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("StaffChatMessages");
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.Subscription", b =>
                 {
                     b.Property<Guid>("Id")
