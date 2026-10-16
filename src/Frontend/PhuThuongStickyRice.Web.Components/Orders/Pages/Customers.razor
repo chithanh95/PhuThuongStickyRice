@@ -10,11 +10,18 @@
 @inject PhuThuongStickyRice.Web.Components.Shop.Services.ShopSettingsService ShopSettingsService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
-<h3>Khách hàng</h3>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Khách hàng</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Khách hàng</li>
+    </ol>
+</div>
 <p class="text-muted">Tổng hợp theo số điện thoại (không tính đơn đã hủy).</p>
 
 <div class="card mb-3">
     <div class="card-body">
+        <h4 class="card-title">Bộ lọc khách hàng</h4>
         <div class="form-row align-items-center">
             <div class="col-md-3">
                 <input class="form-control" placeholder="Tìm tên / SĐT..."
@@ -58,7 +65,7 @@
     <div class="card mb-3 border-warning">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0">🎂 Thành viên sinh nhật tháng @_birthdayMonth</h5>
+                <h4 class="card-title mb-0">🎂 Thành viên sinh nhật tháng @_birthdayMonth</h4>
                 <select class="form-control" style="width: 140px;" @bind="_birthdayMonth" @bind:after="LoadBirthdaysAsync">
                     @for (var m = 1; m <= 12; m++)
                     {
@@ -85,7 +92,7 @@
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0">
+                    <table class="table table-hover table-sm mb-0">
                         <thead>
                             <tr>
                                 <th>SĐT</th>
@@ -153,8 +160,9 @@ else
 {
     <div class="card">
         <div class="card-body">
+            <h4 class="card-title">Danh sách khách hàng</h4>
             <div class="table-responsive">
-                <table class="table">
+                <table class="table table-hover mb-0">
                     <thead>
                         <tr>
                             <th>Khách hàng</th>
@@ -326,7 +334,7 @@ else
                                             {
                                                 <strong>🧾 Đơn gần nhất:</strong>
                                                 <div class="table-responsive mt-1">
-                                                    <table class="table table-sm bg-white mb-0">
+                                                    <table class="table table-hover table-sm bg-white mb-0">
                                                         <thead>
                                                             <tr>
                                                                 <th>Mã đơn</th>
