@@ -375,3 +375,7 @@ MigrationBackup/
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# Local dev override: Blazor WASM doc them appsettings.Development.json (khong commit)
+# Dung de gan Endpoint API theo port IIS Express tren tung may, khoi phai sua file commit.
+src/Frontend/PhuThuongStickyRice.Web/wwwroot/appsettings.Development.json
