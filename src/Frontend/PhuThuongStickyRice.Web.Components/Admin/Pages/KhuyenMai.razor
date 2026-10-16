@@ -1,0 +1,242 @@
+@page "/admin/khuyen-mai"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject Wave3Service Wave3Service
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Khuyến mãi</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Tổng quan</a></li>
+        <li class="current">Khuyến mãi</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="card-title mb-0">Chương trình khuyến mãi giờ vàng</h4>
+                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="ShowAdd">
+                        <span class="oi oi-plus"></span> Thêm mới
+                    </button>
+                </div>
+                @if (_loading)
+                {
+                    <p><em>Đang tải...</em></p>
+                }
+                else if (_promotions.Count == 0)
+                {
+                    <div class="alert alert-info">Chưa có chương trình khuyến mãi nào.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Tên chương trình</th>
+                                    <th>Giảm giá</th>
+                                    <th>Giờ áp dụng</th>
+                                    <th>Ngày áp dụng</th>
+                                    <th>Trạng thái</th>
+                                    <th style="width:120px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in _promotions)
+                                {
+                                    <tr>
+                                        <td><strong>@p.Name</strong></td>
+                                        <td><span class="badge badge-success">@p.DiscountPercent%</span></td>
+                                        <td>@p.StartTime - @p.EndTime</td>
+                                        <td>@FormatDays(p.DaysOfWeekFlags)</td>
+                                        <td>
+                                            @if (p.IsActive)
+                                            {
+                                                <span class="badge badge-success">Đang chạy</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-secondary">Tạm dừng</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEdit(p)">Sửa</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(p)">Xóa</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_showForm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editing == null ? "Thêm khuyến mãi" : "Sửa khuyến mãi")</h5>
+                    <button type="button" class="close" @onclick="HideForm"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="alert alert-danger">@_error</div>
+                    }
+                    <div class="form-group">
+                        <label>Tên chương trình</label>
+                        <input class="form-control" @bind="_form.Name" placeholder="VD: Giờ vàng buổi trưa" />
+                    </div>
+                    <div class="form-group">
+                        <label>Giảm giá (%)</label>
+                        <input type="number" class="form-control" @bind="_form.DiscountPercent" min="1" max="100" />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label>Giờ bắt đầu</label>
+                            <input class="form-control" @bind="_form.StartTime" placeholder="11:00" />
+                        </div>
+                        <div class="form-group col-6">
+                            <label>Giờ kết thúc</label>
+                            <input class="form-control" @bind="_form.EndTime" placeholder="14:00" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Ngày áp dụng</label>
+                        <div>
+                            @foreach (var d in _days)
+                            {
+                                <div class="custom-control custom-checkbox custom-control-inline">
+                                    <input type="checkbox" class="custom-control-input" id="day_@d.Value"
+                                           checked="@((_form.DaysOfWeekFlags & d.Value) != 0)"
+                                           @onchange="(e) => ToggleDay(d.Value, (bool)e.Value)" />
+                                    <label class="custom-control-label" for="day_@d.Value">@d.Name</label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="promo_active" @bind="_form.IsActive" />
+                        <label class="custom-control-label" for="promo_active">Kích hoạt</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="HideForm">Hủy</button>
+                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="Save" disabled="@_saving">
+                        @(_saving ? "Đang lưu..." : "Lưu")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _showForm;
+    private bool _saving;
+    private string _error;
+    private List<PromotionModel> _promotions = new();
+    private PromotionModel _editing;
+    private PromotionModel _form = new();
+
+    private readonly List<(int Value, string Name)> _days = new()
+    {
+        (1, "T2"), (2, "T3"), (4, "T4"), (8, "T5"), (16, "T6"), (32, "T7"), (64, "CN")
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        _loading = true;
+        try
+        {
+            _promotions = await Wave3Service.GetPromotionsAsync() ?? new();
+        }
+        catch { _promotions = new(); }
+        _loading = false;
+    }
+
+    private string FormatDays(int flags)
+    {
+        if (flags == 127) return "Cả tuần";
+        var names = _days.Where(d => (flags & d.Value) != 0).Select(d => d.Name);
+        return string.Join(", ", names);
+    }
+
+    private void ShowAdd()
+    {
+        _editing = null;
+        _form = new PromotionModel { IsActive = true, DaysOfWeekFlags = 127, StartTime = "11:00", EndTime = "14:00" };
+        _error = null;
+        _showForm = true;
+    }
+
+    private void ShowEdit(PromotionModel p)
+    {
+        _editing = p;
+        _form = new PromotionModel
+        {
+            Id = p.Id, Name = p.Name, DiscountPercent = p.DiscountPercent,
+            StartTime = p.StartTime, EndTime = p.EndTime,
+            DaysOfWeekFlags = p.DaysOfWeekFlags, IsActive = p.IsActive
+        };
+        _error = null;
+        _showForm = true;
+    }
+
+    private void HideForm() => _showForm = false;
+
+    private void ToggleDay(int value, bool checked_)
+    {
+        if (checked_) _form.DaysOfWeekFlags |= value;
+        else _form.DaysOfWeekFlags &= ~value;
+    }
+
+    private async Task Save()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _error = "Vui lòng nhập tên chương trình.";
+            return;
+        }
+        _saving = true;
+        try
+        {
+            if (_editing == null)
+                await Wave3Service.CreatePromotionAsync(_form);
+            else
+                await Wave3Service.UpdatePromotionAsync(_editing.Id, _form);
+            _showForm = false;
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        _saving = false;
+    }
+
+    private async Task Delete(PromotionModel p)
+    {
+        try
+        {
+            await Wave3Service.DeletePromotionAsync(p.Id);
+            await Load();
+        }
+        catch { }
+    }
+}

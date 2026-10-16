@@ -1,0 +1,197 @@
+@page "/admin/chi-nhanh"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@inject Wave4Service Wave4Service
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Chi nhánh</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Tổng quan</a></li>
+        <li class="current">Chi nhánh</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="card-title mb-0">Danh sách chi nhánh</h4>
+                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="ShowAdd">
+                        <span class="oi oi-plus"></span> Thêm mới
+                    </button>
+                </div>
+                @if (_loading)
+                {
+                    <p><em>Đang tải...</em></p>
+                }
+                else if (_branches.Count == 0)
+                {
+                    <div class="alert alert-info">Chưa có chi nhánh nào.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Tên chi nhánh</th>
+                                    <th>Địa chỉ</th>
+                                    <th>Điện thoại</th>
+                                    <th>Trạng thái</th>
+                                    <th style="width:120px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var b in _branches)
+                                {
+                                    <tr>
+                                        <td><strong>@b.Name</strong></td>
+                                        <td>@b.Address</td>
+                                        <td>@b.Phone</td>
+                                        <td>
+                                            @if (b.IsActive)
+                                            {
+                                                <span class="badge badge-success">Hoạt động</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-secondary">Tạm dừng</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEdit(b)">Sửa</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(b)">Xóa</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_showForm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editing == null ? "Thêm chi nhánh" : "Sửa chi nhánh")</h5>
+                    <button type="button" class="close" @onclick="HideForm"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="alert alert-danger">@_error</div>
+                    }
+                    <div class="form-group">
+                        <label>Tên chi nhánh</label>
+                        <input class="form-control" @bind="_form.Name" placeholder="VD: Chi nhánh Cầu Giấy" />
+                    </div>
+                    <div class="form-group">
+                        <label>Địa chỉ</label>
+                        <input class="form-control" @bind="_form.Address" placeholder="Số nhà, đường, quận..." />
+                    </div>
+                    <div class="form-group">
+                        <label>Điện thoại</label>
+                        <input class="form-control" @bind="_form.Phone" placeholder="0901234567" />
+                    </div>
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="branch_active" @bind="_form.IsActive" />
+                        <label class="custom-control-label" for="branch_active">Hoạt động</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="HideForm">Hủy</button>
+                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="Save" disabled="@_saving">
+                        @(_saving ? "Đang lưu..." : "Lưu")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _showForm;
+    private bool _saving;
+    private string _error;
+    private List<BranchModel> _branches = new();
+    private BranchModel _editing;
+    private BranchModel _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        _loading = true;
+        try
+        {
+            _branches = await Wave4Service.GetBranchesAsync() ?? new();
+        }
+        catch { _branches = new(); }
+        _loading = false;
+    }
+
+    private void ShowAdd()
+    {
+        _editing = null;
+        _form = new BranchModel { IsActive = true };
+        _error = null;
+        _showForm = true;
+    }
+
+    private void ShowEdit(BranchModel b)
+    {
+        _editing = b;
+        _form = new BranchModel { Id = b.Id, Name = b.Name, Address = b.Address, Phone = b.Phone, IsActive = b.IsActive };
+        _error = null;
+        _showForm = true;
+    }
+
+    private void HideForm() => _showForm = false;
+
+    private async Task Save()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _error = "Vui lòng nhập tên chi nhánh.";
+            return;
+        }
+        _saving = true;
+        try
+        {
+            if (_editing == null)
+                await Wave4Service.CreateBranchAsync(_form);
+            else
+                await Wave4Service.UpdateBranchAsync(_editing.Id, _form);
+            _showForm = false;
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        _saving = false;
+    }
+
+    private async Task Delete(BranchModel b)
+    {
+        try
+        {
+            await Wave4Service.DeleteBranchAsync(b.Id);
+            await Load();
+        }
+        catch { }
+    }
+}
