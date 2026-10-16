@@ -105,6 +105,13 @@ namespace PhuThuongStickyRice.WebAPI
             services.Configure<ZaloOaOptions>(Configuration.GetSection("ZaloOa"));
             services.AddSingleton(sp => sp.GetRequiredService<IOptions<ZaloOaOptions>>().Value);
             services.AddTransient<IZaloNotificationService, ZaloNotificationService>();
+            // Quên mật khẩu bằng OTP SMS cho khách hàng: options + sender
+            // pluggable (mặc định chỉ log), OTP lưu IMemoryCache (không migration).
+            services.Configure<SmsOptions>(Configuration.GetSection("Sms"));
+            services.AddSingleton(sp => sp.GetRequiredService<IOptions<SmsOptions>>().Value);
+            services.AddMemoryCache();
+            services.AddSingleton<ISmsSender, LoggingSmsSender>();
+            services.AddScoped<PasswordResetOtpService>();
             services.AddScoped<JwtTokenService>();
             services.AddHttpClient<IMoMoPaymentService, MoMoPaymentService>();
             // Item 96: typed client for reCAPTCHA v3 server verification.

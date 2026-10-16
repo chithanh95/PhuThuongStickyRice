@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Application.Landing.DTOs
@@ -86,5 +87,14 @@ namespace PhuThuongStickyRice.Application.Landing.DTOs
 
         /// <summary>Show the top flash banner on the landing page.</summary>
         public bool FlashBannerActive { get; set; }
+
+        /// <summary>Show the promo countdown banner on the landing page.</summary>
+        public bool PromoCountdownActive { get; set; }
+
+        /// <summary>Promo countdown end time (UTC). Null = no end.</summary>
+        public DateTime? PromoCountdownEnd { get; set; }
+
+        /// <summary>Promo countdown banner text.</summary>
+        public string PromoCountdownText { get; set; }
     }
 }

@@ -283,6 +283,20 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Item 180: bật/tắt webhook báo đơn mới.</summary>
         public bool NewOrderWebhookEnabled { get; set; }
 
+        // ---- Landing conversion tracking (admin nhập ID, không hardcode) ----
+
+        /// <summary>
+        /// Facebook Pixel ID (dạng số, ví dụ "123456789012345").
+        /// Empty = không gắn pixel. Dùng để đo chuyển đổi landing → đặt hàng.
+        /// </summary>
+        public string FacebookPixelId { get; set; }
+
+        /// <summary>
+        /// Google Analytics 4 Measurement ID (dạng "G-XXXXXXXXXX").
+        /// Empty = không gắn GA.
+        /// </summary>
+        public string GoogleAnalyticsId { get; set; }
+
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting
@@ -336,7 +350,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 AcceptingOrders = true,
                 MaxOrdersPerPhonePerDay = 10,
                 NewOrderWebhookUrl = null,
-                NewOrderWebhookEnabled = false
+                NewOrderWebhookEnabled = false,
+                FacebookPixelId = null,
+                GoogleAnalyticsId = null
             };
         }
     }

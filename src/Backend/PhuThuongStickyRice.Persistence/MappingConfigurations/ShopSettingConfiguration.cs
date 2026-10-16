@@ -85,6 +85,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Item 180: simple "new order" webhook (plain URL, not a secret).
             builder.Property(x => x.NewOrderWebhookUrl).HasMaxLength(1000);
             builder.Property(x => x.NewOrderWebhookEnabled).IsRequired();
+
+            // Landing conversion tracking IDs (admin-entered, never hardcoded).
+            builder.Property(x => x.FacebookPixelId).HasMaxLength(50);
+            builder.Property(x => x.GoogleAnalyticsId).HasMaxLength(30);
         }
     }
 }

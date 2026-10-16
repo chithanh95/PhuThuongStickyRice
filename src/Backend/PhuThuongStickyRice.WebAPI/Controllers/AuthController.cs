@@ -37,6 +37,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly ITwoFactorAppService _twoFactor;
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
+        private readonly PasswordResetOtpService _passwordReset;
 
         public AuthController(
             UserManager<User> userManager,
@@ -45,7 +46,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             ILoginAuditAppService loginAudits,
             ITwoFactorAppService twoFactor,
             IPermissionService permissions,
-            IStaffActivityLogger activityLogger)
+            IStaffActivityLogger activityLogger,
+            PasswordResetOtpService passwordReset)
         {
             _userManager = userManager;
             _users = users;
@@ -54,6 +56,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _twoFactor = twoFactor;
             _permissions = permissions;
             _activityLogger = activityLogger;
+            _passwordReset = passwordReset;
         }
 
         [AllowAnonymous]
@@ -381,6 +384,41 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Customer forgot-password: requests a 6-digit OTP via SMS.
+        /// Always returns success — it never reveals whether the phone
+        /// number is registered (anti-enumeration).
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("forgot-password/request")]
+        public async Task<ActionResult> ForgotPasswordRequest(
+            [FromBody] ForgotPasswordRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            await _passwordReset.RequestOtpAsync(model?.Phone, cancellationToken);
+            return Ok(new { message = "Nếu số điện thoại đã được đăng ký, mã OTP sẽ được gửi qua SMS trong ít phút." });
+        }
+
+        /// <summary>
+        /// Customer forgot-password: verifies the OTP and sets a new password.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("forgot-password/reset")]
+        public async Task<ActionResult> ForgotPasswordReset(
+            [FromBody] ForgotPasswordResetModel model,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await _passwordReset.ResetPasswordAsync(
+                model?.Phone, model?.Otp, model?.NewPassword, cancellationToken);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.ErrorMessage);
+            }
+
+            return Ok(new { message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại." });
+        }
+
+        /// <summary>
         /// Item 155: fine-grained permission keys of the current user.
         /// The admin frontend caches this to hide/disable sensitive buttons;
         /// every sensitive API still re-checks server-side.
@@ -439,6 +477,24 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         [Required]
         public string CurrentPassword { get; set; }
+
+        [Required]
+        public string NewPassword { get; set; }
+    }
+
+    public sealed class ForgotPasswordRequestModel
+    {
+        [Required]
+        public string Phone { get; set; }
+    }
+
+    public sealed class ForgotPasswordResetModel
+    {
+        [Required]
+        public string Phone { get; set; }
+
+        [Required]
+        public string Otp { get; set; }
 
         [Required]
         public string NewPassword { get; set; }

@@ -76,5 +76,37 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
         public string FlashBannerText { get; set; }
 
         public bool FlashBannerActive { get; set; }
+
+        /// <summary>Landing item 4: bật countdown khuyến mãi.</summary>
+        public bool PromoCountdownActive { get; set; }
+
+        /// <summary>Landing item 4: thời điểm kết thúc countdown (UTC).</summary>
+        public System.DateTime? PromoCountdownEnd { get; set; }
+
+        /// <summary>Landing item 4: nội dung countdown.</summary>
+        public string PromoCountdownText { get; set; }
+    }
+}
+
+namespace PhuThuongStickyRice.Web.Components.Landing.Models
+{
+    public class LandingStatsModel
+    {
+        public int TotalOrders { get; set; }
+        public double AvgRating { get; set; }
+        public int ReviewCount { get; set; }
+    }
+
+    public class GalleryPhotoModel
+    {
+        public string ImageUrl { get; set; }
+        public string Caption { get; set; }
+        public string Name { get; set; }
+    }
+
+    public class FaqPublicModel
+    {
+        public string Question { get; set; }
+        public string Answer { get; set; }
     }
 }

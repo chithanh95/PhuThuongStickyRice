@@ -45,6 +45,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.PopupActive).IsRequired();
             builder.Property(x => x.FlashBannerText).HasMaxLength(LandingPageContent.FlashBannerTextMaxLength);
             builder.Property(x => x.FlashBannerActive).IsRequired();
+            builder.Property(x => x.PromoCountdownText).HasMaxLength(LandingPageContent.PromoCountdownTextMaxLength);
+            builder.Property(x => x.PromoCountdownActive).IsRequired();
         }
     }
 }

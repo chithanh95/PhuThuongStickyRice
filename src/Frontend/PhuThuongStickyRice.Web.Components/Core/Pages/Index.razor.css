@@ -1216,3 +1216,313 @@ html.dark .sg-poem { color: var(--sg-accent); }
 @media (prefers-reduced-motion: reduce) {
     .sg-intro-badge { animation: none; }
 }
+
+/* ============ LANDING CONVERSION (items 1-20) ============ */
+
+/* Item 4: Countdown khuyến mãi */
+.sg-countdown-bar {
+    background: linear-gradient(90deg, #6F0707, #a31212);
+    color: #fff;
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+}
+.sg-countdown-text { font-weight: 700; }
+.sg-countdown-timer b {
+    background: rgba(255,255,255,.2);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Items 6,7: Trust bar (badge + số liệu) */
+.sg-trustbar {
+    background: var(--sg-cream);
+    border-bottom: 1px solid var(--sg-line);
+    padding: 22px 0;
+}
+.sg-badges {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.sg-qbadge {
+    background: #fff;
+    border: 1px solid var(--sg-line);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #5a4a3a;
+    box-shadow: 0 2px 8px rgba(46,38,32,.06);
+}
+.sg-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+.sg-stat { text-align: center; }
+.sg-stat strong {
+    display: block;
+    font-size: 28px;
+    color: #6F0707;
+    font-variant-numeric: tabular-nums;
+}
+.sg-stat span { font-size: 13px; color: #8a7a68; }
+
+/* Item 8: Timeline */
+.sg-timeline { position: relative; max-width: 640px; margin: 32px auto 0; padding-left: 28px; }
+.sg-timeline::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--sg-line);
+}
+.sg-tl-item { position: relative; margin-bottom: 24px; }
+.sg-tl-dot {
+    position: absolute;
+    left: -26px;
+    top: 4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #6F0707;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #6F0707;
+}
+.sg-tl-card {
+    background: var(--sg-surface);
+    border: 1px solid var(--sg-line);
+    border-radius: 12px;
+    padding: 18px 22px;
+    box-shadow: 0 4px 16px rgba(46,38,32,.06);
+}
+.sg-tl-card strong { color: #6F0707; font-size: 16px; }
+.sg-tl-card p { margin: 6px 0 0; color: #5a4a3a; }
+
+/* Item 5: Reviews carousel */
+.sg-reviews-sec { background: var(--sg-cream); }
+.sg-review-track {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    padding: 8px 4px 20px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+.sg-review-card {
+    flex: 0 0 320px;
+    scroll-snap-align: start;
+    background: var(--sg-surface);
+    border: 1px solid var(--sg-line);
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 4px 18px rgba(46,38,32,.07);
+}
+.sg-review-stars { color: #e8a013; font-size: 18px; letter-spacing: 2px; }
+.sg-review-text { font-style: italic; color: #4a3f33; margin: 10px 0; line-height: 1.6; }
+.sg-review-name { font-weight: 700; font-size: 13px; color: #8a7a68; }
+.sg-review-reply {
+    margin-top: 10px;
+    background: #fdf6ec;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #6b5a45;
+}
+
+/* Item 12: Gallery */
+.sg-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+}
+.sg-g-item {
+    margin: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 1;
+    box-shadow: 0 4px 16px rgba(46,38,32,.08);
+    transition: transform .25s;
+}
+.sg-g-item:hover { transform: scale(1.03); }
+.sg-g-item img { width: 100%; height: 100%; object-fit: cover; }
+.sg-g-item figcaption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,.7));
+    color: #fff;
+    font-size: 13px;
+    padding: 24px 12px 10px;
+}
+
+/* Item 9: Lọc giá */
+.sg-price-filter {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+}
+.sg-price-filter button {
+    border: 1px solid var(--sg-line);
+    background: var(--sg-surface);
+    border-radius: 999px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #5a4a3a;
+    cursor: pointer;
+    transition: all .2s;
+}
+.sg-price-filter button.active {
+    background: #6F0707;
+    border-color: #6F0707;
+    color: #fff;
+}
+.sg-badge-morning { background: #e8a013; }
+
+/* Item 11: Video */
+.sg-video-sec { background: #1a1410; color: #fff; }
+.sg-video-sec .sg-h2 { color: #fff; }
+.sg-video-sec .sg-eyebrow { color: #e8a013; }
+.sg-video-inner { max-width: 860px; margin: 0 auto; text-align: center; }
+.sg-video-wrap {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.4);
+    margin-top: 24px;
+}
+.sg-video-wrap video { width: 100%; display: block; max-height: 70vh; }
+
+/* Item 13: FAQ */
+.sg-faq-inner { max-width: 760px; margin: 0 auto; }
+.sg-faq-list { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+.sg-faq-item {
+    background: var(--sg-surface);
+    border: 1px solid var(--sg-line);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.sg-faq-item summary {
+    padding: 18px 22px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.sg-faq-item summary::-webkit-details-marker { display: none; }
+.sg-faq-item summary::after { content: "+"; font-size: 22px; color: #6F0707; }
+.sg-faq-item[open] summary::after { content: "−"; }
+.sg-faq-item p { padding: 0 22px 18px; margin: 0; color: #5a4a3a; line-height: 1.7; }
+
+/* Items 14, 15: Visit + Zalo */
+.sg-visit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+}
+.sg-map {
+    width: 100%;
+    height: 320px;
+    border: 0;
+    border-radius: 14px;
+    margin: 16px 0;
+    box-shadow: 0 8px 28px rgba(46,38,32,.1);
+}
+.sg-zalo-box {
+    background: linear-gradient(135deg, #0068ff, #004fc4);
+    color: #fff;
+    border-radius: 18px;
+    padding: 32px;
+    box-shadow: 0 16px 44px rgba(0,104,255,.3);
+}
+.sg-zalo-box h3 { margin: 0 0 8px; font-size: 22px; }
+.sg-zalo-box p { opacity: .92; margin: 0 0 18px; }
+.sg-zalo-form { display: flex; gap: 10px; }
+.sg-zalo-form input {
+    flex: 1;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 15px;
+}
+.sg-zalo-form .sg-btn { white-space: nowrap; }
+@media (max-width: 768px) {
+    .sg-visit-grid { grid-template-columns: 1fr; }
+}
+
+/* Item 1: Sticky CTA mobile */
+.sg-sticky-cta {
+    display: none;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 70;
+    gap: 10px;
+}
+.sg-sticky-cta a {
+    flex: 1;
+    text-align: center;
+    padding: 14px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 15px;
+    text-decoration: none;
+    box-shadow: 0 8px 28px rgba(0,0,0,.25);
+}
+.sg-sticky-call { background: #fff; color: #6F0707; border: 2px solid #6F0707; }
+.sg-sticky-order { background: #6F0707; color: #fff; }
+@media (max-width: 768px) {
+    .sg-sticky-cta { display: flex; }
+    body { padding-bottom: 76px; }
+}
+
+/* Form đặt gọn: select món */
+.sg-book-form select {
+    width: 100%;
+    border: 1px solid var(--sg-line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    background: var(--sg-surface);
+    color: inherit;
+}
+.sg-field-qty { max-width: 130px; }
+
+/* Item 20: Banner lễ/Tết */
+.sg-holiday-bar {
+    background: linear-gradient(90deg, #b8860b, #daa520, #b8860b);
+    color: #3a2a00;
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 700;
+}
+.sg-holiday-bar a {
+    color: #6F0707;
+    font-weight: 800;
+    margin-left: 8px;
+}

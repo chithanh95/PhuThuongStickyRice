@@ -81,6 +81,36 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             throw new InvalidOperationException(ExtractMessage(body));
         }
 
+        public async Task RequestPasswordResetOtpAsync(string phone)
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "api/auth/forgot-password/request",
+                new { Phone = phone });
+
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException(ExtractMessage(body));
+        }
+
+        public async Task ResetPasswordWithOtpAsync(string phone, string otp, string newPassword)
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "api/auth/forgot-password/reset",
+                new { Phone = phone, Otp = otp, NewPassword = newPassword });
+
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException(ExtractMessage(body));
+        }
+
         private static string ExtractMessage(string body)
         {
             if (string.IsNullOrWhiteSpace(body))

@@ -641,6 +641,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// <summary>Link tới Google Maps của quán (section "Đánh giá trên Google").</summary>
         public string GoogleMapsUrl { get; set; }
 
+        /// <summary>Landing item 18: Facebook Pixel ID để đo chuyển đổi.</summary>
+        public string FacebookPixelId { get; set; }
+
+        /// <summary>Landing item 18: Google Analytics Measurement ID (G-...).</summary>
+        public string GoogleAnalyticsId { get; set; }
+
         /// <summary>Item 53: Facebook Page Access Token for the Messenger chatbot.</summary>
         public string FacebookPageAccessToken { get; set; }
 

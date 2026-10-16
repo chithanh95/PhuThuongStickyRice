@@ -1,6 +1,7 @@
 using PhuThuongStickyRice.Web.Components.Admin.Models;
 using PhuThuongStickyRice.Web.Components.Core.Services;
 using PhuThuongStickyRice.Web.Components.Landing.Models;
+using PhuThuongStickyRice.Web.Components.Shop.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -33,6 +34,37 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
         public async Task<List<PublicReviewModel>> GetPublicReviewsAsync()
         {
             return await GetAsync<List<PublicReviewModel>>("api/orders/reviews/public");
+        }
+
+        /// <summary>Thống kê landing: tổng đơn, điểm TB, số đánh giá.</summary>
+        public async Task<LandingStatsModel> GetStatsAsync()
+        {
+            return await GetAsync<LandingStatsModel>("api/landing/stats");
+        }
+
+        /// <summary>Ảnh check-in đã duyệt cho gallery landing.</summary>
+        public async Task<List<GalleryPhotoModel>> GetGalleryAsync()
+        {
+            return await GetAsync<List<GalleryPhotoModel>>("api/landing/gallery");
+        }
+
+        /// <summary>Đăng ký nhận ưu đãi qua SĐT.</summary>
+        public async Task<bool> SubscribeAsync(string phone)
+        {
+            var res = await PostAsync<object>("api/landing/subscribe", new { phone });
+            return res != null;
+        }
+
+        /// <summary>FAQ public cho landing.</summary>
+        public async Task<List<Landing.Models.FaqPublicModel>> GetFaqsAsync()
+        {
+            return await GetAsync<List<Landing.Models.FaqPublicModel>>("api/faqs");
+        }
+
+        /// <summary>Lịch nghỉ sắp tới (banner lễ/Tết, item 20).</summary>
+        public async Task<List<HolidayModel>> GetUpcomingHolidaysAsync()
+        {
+            return await GetAsync<List<HolidayModel>>("api/shop/holidays");
         }
 
         public async Task<LandingContentModel> UpdateContentAsync(LandingContentModel model)

@@ -514,3 +514,68 @@ window.ptInitReveal = function () {
         els.forEach(function (el) { io.observe(el); });
     } catch (e) { }
 };
+
+/* Landing item 4: đếm ngược khuyến mãi. */
+window.ptInitCountdown = function () {
+    try {
+        var el = document.querySelector('.sg-countdown-timer');
+        if (!el || el.dataset.done) return;
+        el.dataset.done = "1";
+        var end = new Date(el.dataset.end).getTime();
+        if (isNaN(end)) return;
+        var dEl = el.querySelector('[data-cd="d"]');
+        var hEl = el.querySelector('[data-cd="h"]');
+        var mEl = el.querySelector('[data-cd="m"]');
+        var sEl = el.querySelector('[data-cd="s"]');
+        function pad(n) { return (n < 10 ? "0" : "") + n; }
+        function tick() {
+            var diff = end - Date.now();
+            if (diff <= 0) {
+                var bar = el.closest('.sg-countdown-bar');
+                if (bar) bar.style.display = "none";
+                return;
+            }
+            var d = Math.floor(diff / 86400000);
+            var h = Math.floor(diff % 86400000 / 3600000);
+            var m = Math.floor(diff % 3600000 / 60000);
+            var s = Math.floor(diff % 60000 / 1000);
+            if (dEl) dEl.textContent = d;
+            if (hEl) hEl.textContent = pad(h);
+            if (mEl) mEl.textContent = pad(m);
+            if (sEl) sEl.textContent = pad(s);
+            setTimeout(tick, 1000);
+        }
+        tick();
+    } catch (e) { }
+};
+
+/* Landing item 18: nạp Facebook Pixel + Google Analytics khi có ID (cấu hình trong Cài đặt). */
+window.ptInitTracking = function (pixelId, gaId) {
+    try {
+        if (pixelId && !window.__ptPixelLoaded) {
+            window.__ptPixelLoaded = true;
+            !function (f, b, e, v, n, t, s) {
+                if (f.fbq) return; n = f.fbq = function () {
+                    n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+                };
+                if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+                n.queue = []; t = b.createElement(e); t.async = !0;
+                t.src = v; s = b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t, s);
+            }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', pixelId);
+            fbq('track', 'PageView');
+        }
+        if (gaId && !window.__ptGaLoaded) {
+            window.__ptGaLoaded = true;
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(gaId);
+            document.head.appendChild(s);
+            window.dataLayer = window.dataLayer || [];
+            window.gtag = function () { dataLayer.push(arguments); };
+            gtag('js', new Date());
+            gtag('config', gaId);
+        }
+    } catch (e) { }
+};

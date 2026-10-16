@@ -1,4 +1,4 @@
-using PhuThuongStickyRice.Application.Landing.DTOs;
+﻿using PhuThuongStickyRice.Application.Landing.DTOs;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -60,7 +60,8 @@ namespace PhuThuongStickyRice.Application.Landing
                     dto.VideoTitle, dto.VideoUrl,
                     dto.MapEmbedUrl, dto.ReviewsEmbedHtml,
                     dto.PopupTitle, dto.PopupBody, dto.PopupImageUrl, dto.PopupActive,
-                    dto.FlashBannerText, dto.FlashBannerActive);
+                    dto.FlashBannerText, dto.FlashBannerActive,
+                    dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText);
                 await _contentRepository.InsertAsync(entity, autoSave: true);
             }
             else
@@ -78,7 +79,8 @@ namespace PhuThuongStickyRice.Application.Landing
                     dto.VideoTitle, dto.VideoUrl,
                     dto.MapEmbedUrl, dto.ReviewsEmbedHtml,
                     dto.PopupTitle, dto.PopupBody, dto.PopupImageUrl, dto.PopupActive,
-                    dto.FlashBannerText, dto.FlashBannerActive);
+                    dto.FlashBannerText, dto.FlashBannerActive,
+                    dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText);
                 await _contentRepository.UpdateAsync(entity, autoSave: true);
             }
 
@@ -126,7 +128,10 @@ namespace PhuThuongStickyRice.Application.Landing
                 PopupImageUrl = entity.PopupImageUrl,
                 PopupActive = entity.PopupActive,
                 FlashBannerText = entity.FlashBannerText,
-                FlashBannerActive = entity.FlashBannerActive
+                FlashBannerActive = entity.FlashBannerActive,
+                PromoCountdownActive = entity.PromoCountdownActive,
+                PromoCountdownEnd = entity.PromoCountdownEnd,
+                PromoCountdownText = entity.PromoCountdownText
             };
         }
 

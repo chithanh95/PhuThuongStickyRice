@@ -5,9 +5,12 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Shop.Models
 @inject AuthService AuthService
 @inject CustomerAddressService AddressService
 @inject CustomerProfileService ProfileService
+@inject ShopService ShopService
+@inject Wave2Service Wave2Service
 @inject ITokenManager TokenManager
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
@@ -37,6 +40,85 @@
                     <p class="mb-1"><strong>Email:</strong> @_email</p>
                 }
                 <p class="mb-0"><strong>Vai trò:</strong> @(string.Join(", ", _roles))</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">⭐ Hạng thành viên</h5>
+                @if (_loyalty == null)
+                {
+                    <p class="text-muted"><em>Đang tải hạng thành viên...</em></p>
+                }
+                else
+                {
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge @TierBadgeClass(_loyalty.Tier)" style="font-size: 1rem; padding: 8px 16px;">
+                            @_loyalty.Tier
+                        </span>
+                        @if (_loyalty.TierDiscountPercent > 0)
+                        {
+                            <span class="text-success ml-2">Giảm @_loyalty.TierDiscountPercent.ToString("N0")% mỗi đơn</span>
+                        }
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h5 mb-0 text-primary">@_loyalty.Points.ToString("N0")</div>
+                            <small class="text-muted">Điểm tích lũy</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 mb-0">@_loyalty.TotalSpent.ToString("N0") ₫</div>
+                            <small class="text-muted">Tổng đã mua</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 mb-0">@_loyalty.TotalEarned.ToString("N0")</div>
+                            <small class="text-muted">Tổng điểm đã kiếm</small>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        Hạng Bạc: từ 1.000.000₫ (giảm 2%) • Hạng Vàng: từ 5.000.000₫ (giảm 5%)
+                    </small>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">🧾 Lịch sử đơn hàng</h5>
+                @if (_orders == null)
+                {
+                    <p class="text-muted"><em>Đang tải lịch sử đơn hàng...</em></p>
+                }
+                else if (_orders.Count == 0)
+                {
+                    <p class="text-muted">Bạn chưa có đơn hàng nào. <a href="/shop">Đặt xôi ngay →</a></p>
+                }
+                else
+                {
+                    @foreach (var o in _orders.OrderByDescending(x => x.CreatedAt).Take(20))
+                    {
+                        <div class="border rounded p-3 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@o.OrderNumber</strong>
+                                    <span class="badge @OrderStatusBadge(o.Status) ml-2">@OrderStatusText(o.Status)</span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-weight-bold">@o.TotalAmount.ToString("N0") ₫</div>
+                                    <small class="text-muted">@o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="/track-order?orderNumber=@Uri.EscapeDataString(o.OrderNumber)&phone=@Uri.EscapeDataString(_userName)"
+                                   class="btn btn-sm btn-outline-primary">Xem chi tiết</a>
+                            </div>
+                        </div>
+                    }
+                    @if (_orders.Count > 20)
+                    {
+                        <small class="text-muted">Hiển thị 20 đơn gần nhất (tổng @_orders.Count đơn).</small>
+                    }
+                }
             </div>
         </div>
 
@@ -280,6 +362,10 @@
     private bool _dobOk;
     private bool _dobBusy;
 
+    // Lịch sử đơn hàng + hạng thành viên.
+    private LoyaltyAccountModel _loyalty;
+    private List<TrackedOrderModel> _orders;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -304,6 +390,21 @@
                 catch (Exception)
                 {
                     _profile = new CustomerProfileModel();
+                }
+
+                // Hạng thành viên + lịch sử đơn hàng (theo SĐT đăng nhập).
+                try
+                {
+                    _loyalty = await Wave2Service.GetLoyaltyByPhoneAsync(_userName);
+                }
+                catch (Exception) { }
+                try
+                {
+                    _orders = await ShopService.GetOrdersByPhoneAsync(_userName) ?? new List<TrackedOrderModel>();
+                }
+                catch (Exception)
+                {
+                    _orders = new List<TrackedOrderModel>();
                 }
             }
         }
@@ -511,6 +612,34 @@
     }
 
     // Item 92: birthday.
+
+    private static string TierBadgeClass(string tier) => tier switch
+    {
+        "Vàng" => "badge-warning",
+        "Bạc" => "badge-secondary",
+        _ => "badge-info",
+    };
+
+    private static string OrderStatusBadge(string status) => status switch
+    {
+        "Completed" => "badge-success",
+        "Cancelled" => "badge-danger",
+        "Delivering" => "badge-info",
+        "Preparing" => "badge-warning",
+        "Confirmed" => "badge-primary",
+        _ => "badge-secondary",
+    };
+
+    private static string OrderStatusText(string status) => status switch
+    {
+        "Pending" => "Chờ xác nhận",
+        "Confirmed" => "Đã xác nhận",
+        "Preparing" => "Đang chuẩn bị",
+        "Delivering" => "Đang giao",
+        "Completed" => "Hoàn thành",
+        "Cancelled" => "Đã hủy",
+        _ => status,
+    };
 
     private async Task SaveDobAsync()
     {

@@ -47,6 +47,26 @@ else
     </div>
 }
 
+<!-- COUNTDOWN KHUYẾN MÃI (item 4) -->
+@if (_content.PromoCountdownActive && _content.PromoCountdownEnd > DateTime.Now)
+{
+    <div class="sg-countdown-bar">
+        <span class="sg-countdown-text">🔥 @_content.PromoCountdownText</span>
+        <span class="sg-countdown-timer" data-end="@CountdownEndIso">
+            <b data-cd="d">0</b> ngày <b data-cd="h">00</b>:<b data-cd="m">00</b>:<b data-cd="s">00</b>
+        </span>
+    </div>
+}
+
+<!-- BANNER LỄ/TẾT (item 20) -->
+@if (_nextHoliday != null)
+{
+    <div class="sg-holiday-bar">
+        🎉 @_nextHoliday.Reason — @_nextHoliday.HolidayDate.ToString("dd/MM"): Đặt xôi cúng sớm để quán chuẩn bị chu đáo!
+        <a href="#dat-xoi">Đặt ngay →</a>
+    </div>
+}
+
 <!-- 1. HEADER -->
 <header class="sg-header">
     <div class="sg-header-inner">
@@ -108,6 +128,25 @@ else
         <span class="sg-scroll-text">Cuộn xuống</span>
     </a>
 </section>
+
+<!-- BADGE CHẤT LƯỢNG + SỐ LIỆU (items 6, 7) -->
+<div class="sg-trustbar">
+    <div class="sg-container">
+        <div class="sg-badges">
+            <span class="sg-qbadge">🌾 Gạo nếp cái hoa vàng</span>
+            <span class="sg-qbadge">🔥 Đồ 2 lửa đúng làng nghề</span>
+            <span class="sg-qbadge">🚫 Không chất bảo quản</span>
+        </div>
+        @if (_stats != null && (_stats.TotalOrders > 0 || _stats.ReviewCount > 0))
+        {
+            <div class="sg-stats">
+                <div class="sg-stat"><strong>@_stats.TotalOrders.ToString("N0")</strong><span>đơn đã giao</span></div>
+                <div class="sg-stat"><strong>@_stats.AvgRating.ToString("0.0")/5</strong><span>điểm đánh giá</span></div>
+                <div class="sg-stat"><strong>@_stats.ReviewCount.ToString("N0")</strong><span>lượt đánh giá</span></div>
+            </div>
+        }
+    </div>
+</div>
 
 <!-- 3. GIỚI THIỆU -->
 <section class="sg-section" id="gioi-thieu">
@@ -217,6 +256,22 @@ else
     </div>
 </section>
 
+<!-- VIDEO MÓN ĂN (item 11) -->
+@if (!string.IsNullOrWhiteSpace(_content.VideoUrl))
+{
+    <section class="sg-section sg-video-sec">
+        <div class="sg-container sg-video-inner">
+            <p class="sg-eyebrow">Xem tận mắt</p>
+            <h2 class="sg-h2">@(string.IsNullOrWhiteSpace(_content.VideoTitle) ? "Xôi nóng hổi mỗi sáng" : _content.VideoTitle)</h2>
+            <div class="sg-video-wrap sg-reveal">
+                <video controls preload="none" poster="@Img(_content.HeroImageUrl, null)">
+                    <source src="@_content.VideoUrl" type="video/mp4" />
+                </video>
+            </div>
+        </div>
+    </section>
+}
+
 <!-- 6. CÂU CHUYỆN LÀNG NGHỀ -->
 <section class="sg-section sg-story">
     <div class="sg-container sg-story-inner">
@@ -227,8 +282,87 @@ else
     </div>
 </section>
 
+<!-- TIMELINE LÀNG NGHỀ (item 8) -->
+<section class="sg-section sg-timeline-sec">
+    <div class="sg-container">
+        <p class="sg-eyebrow">Hành trình</p>
+        <h2 class="sg-h2">Hơn 100 năm giữ lửa</h2>
+        <div class="sg-timeline">
+            <div class="sg-tl-item sg-reveal">
+                <div class="sg-tl-dot"></div>
+                <div class="sg-tl-card">
+                    <strong>Đầu thế kỷ 20</strong>
+                    <p>Người Phú Thượng đã nổi tiếng với nghề đồ xôi, gánh hàng rong khắp Hà Nội.</p>
+                </div>
+            </div>
+            <div class="sg-tl-item sg-reveal">
+                <div class="sg-tl-dot"></div>
+                <div class="sg-tl-card">
+                    <strong>1980 – 2000</strong>
+                    <p>Xôi Phú Thượng thành thương hiệu, có mặt trong mâm cỗ cưới hỏi khắp Thủ đô.</p>
+                </div>
+            </div>
+            <div class="sg-tl-item sg-reveal">
+                <div class="sg-tl-dot"></div>
+                <div class="sg-tl-card">
+                    <strong>Hôm nay</strong>
+                    <p>Giữ nguyên cách làm của làng, phục vụ hàng nghìn suất xôi mỗi tháng — cả online lẫn tại quán.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ĐÁNH GIÁ KHÁCH HÀNG (item 5) -->
+@if (_reviews != null && _reviews.Count > 0)
+{
+    <section class="sg-section sg-reviews-sec">
+        <div class="sg-container">
+            <p class="sg-eyebrow">Khách nói gì</p>
+            <h2 class="sg-h2">Đánh giá thật từ khách hàng</h2>
+            <div class="sg-review-track" id="sg-reviews">
+                @foreach (var r in _reviews.Take(12))
+                {
+                    <div class="sg-review-card sg-reveal">
+                        <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, r.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, r.Rating))))</div>
+                        <p class="sg-review-text">"@r.Comment"</p>
+                        <p class="sg-review-name">— @MaskPhone(r.CustomerPhone)</p>
+                        @if (!string.IsNullOrWhiteSpace(r.AdminReply))
+                        {
+                            <p class="sg-review-reply">💬 Quán: @r.AdminReply</p>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- GALLERY ẢNH KHÁCH CHECK-IN (item 12) -->
+@if (_gallery != null && _gallery.Count > 0)
+{
+    <section class="sg-section sg-gallery-sec">
+        <div class="sg-container">
+            <p class="sg-eyebrow">Check-in</p>
+            <h2 class="sg-h2">Khách hàng của quán</h2>
+            <div class="sg-gallery-grid">
+                @foreach (var g in _gallery.Take(8))
+                {
+                    <figure class="sg-g-item sg-reveal">
+                        <img loading="lazy" decoding="async" src="@g.ImageUrl" alt="@g.Caption" />
+                        @if (!string.IsNullOrWhiteSpace(g.Caption))
+                        {
+                            <figcaption>@g.Caption</figcaption>
+                        }
+                    </figure>
+                }
+            </div>
+        </div>
+    </section>
+}
+
 <!-- 7. BANNER ĐẶT XÔI -->
-<section class="sg-cta" id="dat-xoi">
+<section class="sg-cta" id="cta-dat-xoi">
     <div class="sg-cta-bg" style="@CtaBgStyle"></div>
     <div class="sg-cta-overlay"></div>
     <div class="sg-cta-inner">
@@ -260,14 +394,24 @@ else
 
         @if (_menuTab == "xoi")
         {
+            <div class="sg-price-filter">
+                <button class="@(_priceFilter == "all" ? "active" : "")" @onclick='() => _priceFilter = "all"'>Tất cả</button>
+                <button class="@(_priceFilter == "under30" ? "active" : "")" @onclick='() => _priceFilter = "under30"'>Dưới 30k</button>
+                <button class="@(_priceFilter == "30to50" ? "active" : "")" @onclick='() => _priceFilter = "30to50"'>30k – 50k</button>
+                <button class="@(_priceFilter == "over50" ? "active" : "")" @onclick='() => _priceFilter = "over50"'>Trên 50k</button>
+            </div>
             <div class="sg-dish-grid">
-                @foreach (var product in XoiProducts)
+                @foreach (var product in FilteredMenuProducts())
                 {
                     <div class="sg-dish-card sg-reveal" @key="product.Id">
                         <div class="sg-dish-imgwrap">
                             @if (IsSoldOut(product))
                             {
                                 <span class="sg-badge sg-badge-out">Tạm hết</span>
+                            }
+                            else if (IsMorningDish)
+                            {
+                                <span class="sg-badge sg-badge-morning">🌅 Xôi sáng</span>
                             }
                             <img loading="lazy" src="@ProductImage(product)" alt="@product.Name" />
                             @if (!IsSoldOut(product) && !OrdersPaused)
@@ -377,14 +521,20 @@ else
                 </label>
                 <div class="sg-field-row">
                     <label class="sg-field">
-                        <span>Số lượng (gói)</span>
+                        <span>Món xôi</span>
+                        <select @bind="_bookProductId">
+                            <option value="@Guid.Empty">— Chọn món —</option>
+                            @foreach (var p in _allProducts)
+                            {
+                                <option value="@p.Id">@p.Name — @p.Price.ToString("N0")đ</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="sg-field sg-field-qty">
+                        <span>Số lượng</span>
                         <input type="number" @bind="_bookQty" min="1" max="1000" />
                     </label>
                 </div>
-                <label class="sg-field">
-                    <span>Ghi chú</span>
-                    <textarea @bind="_bookNotes" rows="3" placeholder="Giao lúc mấy giờ, địa chỉ..." maxlength="500"></textarea>
-                </label>
                 @if (!string.IsNullOrEmpty(_bookError))
                 {
                     <p class="sg-form-error">@_bookError</p>
@@ -400,6 +550,63 @@ else
                     </button>
                 }
             </form>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ (item 13) -->
+@if (_faqs != null && _faqs.Count > 0)
+{
+    <section class="sg-section sg-faq-sec">
+        <div class="sg-container sg-faq-inner">
+            <p class="sg-eyebrow">Hỏi đáp</p>
+            <h2 class="sg-h2">Câu hỏi thường gặp</h2>
+            <div class="sg-faq-list">
+                @foreach (var f in _faqs.Take(8))
+                {
+                    <details class="sg-faq-item">
+                        <summary>@f.Question</summary>
+                        <p>@f.Answer</p>
+                    </details>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- BẢN ĐỒ + ĐĂNG KÝ ZALO (items 14, 15) -->
+<section class="sg-section sg-visit-sec">
+    <div class="sg-container sg-visit-grid">
+        <div>
+            <p class="sg-eyebrow">Ghé quán</p>
+            <h2 class="sg-h2">Tìm đường tới quán</h2>
+            @if (!string.IsNullOrWhiteSpace(_content.MapEmbedUrl))
+            {
+                <iframe class="sg-map" src="@_content.MapEmbedUrl" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Bản đồ quán"></iframe>
+            }
+            @if (!string.IsNullOrWhiteSpace(_shopSettings?.GoogleMapsUrl))
+            {
+                <a class="sg-btn sg-btn-outline" href="@_shopSettings.GoogleMapsUrl" target="_blank" rel="noopener">📍 Chỉ đường Google Maps</a>
+            }
+        </div>
+        <div class="sg-zalo-box">
+            <h3>🔔 Nhận ưu đãi qua Zalo</h3>
+            <p>Để lại SĐT — quán gửi tin khuyến mãi, món mới mỗi tuần. Không spam.</p>
+            @if (_subDone)
+            {
+                <p class="sg-form-ok">✓ Đăng ký thành công! Hẹn gặp bạn với ưu đãi mới.</p>
+            }
+            else
+            {
+                <form @onsubmit="SubmitSubscribe" class="sg-zalo-form">
+                    <input @bind="_subPhone" placeholder="Số điện thoại" inputmode="tel" maxlength="15" />
+                    <button type="submit" class="sg-btn sg-btn-solid" disabled="@_subSending">@(_subSending ? "..." : "Đăng ký")</button>
+                </form>
+                @if (!string.IsNullOrEmpty(_subMsg))
+                {
+                    <p class="sg-form-error">@_subMsg</p>
+                }
+            }
         </div>
     </div>
 </section>
@@ -462,6 +669,15 @@ else
             <span class="oi oi-phone" aria-hidden="true"></span>
         </a>
     }
+</div>
+
+<!-- STICKY CTA MOBILE (item 1) -->
+<div class="sg-sticky-cta">
+    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
+    {
+        <a href="tel:@_content.ContactPhone" class="sg-sticky-call">📞 Gọi quán</a>
+    }
+    <a href="#dat-xoi" class="sg-sticky-order">Đặt xôi ngay →</a>
 </div>
 
 <!-- POPUP KHUYẾN MÃI (admin-controlled) -->
@@ -577,10 +793,22 @@ else
     private string _bookName = "";
     private string _bookPhone = "";
     private int _bookQty = 10;
-    private string _bookNotes = "";
+    private Guid _bookProductId = Guid.Empty;
     private bool _bookSending;
     private bool _bookSent;
     private string _bookError;
+
+    // Landing conversion features (items 1-20).
+    private List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel> _reviews = new List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel>();
+    private LandingStatsModel _stats = new LandingStatsModel();
+    private List<GalleryPhotoModel> _gallery = new List<GalleryPhotoModel>();
+    private List<FaqPublicModel> _faqs = new List<FaqPublicModel>();
+    private string _priceFilter = "all";
+    private string _subPhone = "";
+    private string _subMsg;
+    private bool _subSending;
+    private bool _subDone;
+    private HolidayModel _nextHoliday;
 
     // Dark mode toggle (persisted in localStorage via ptToggleTheme).
     private bool _isDark;
@@ -645,6 +873,8 @@ else
                 var (isOpen, text) = ShopHours.StatusText(settings.OpenTime, settings.CloseTime);
                 _openNow = isOpen;
                 _openStatusText = text;
+                // Landing item 18: tracking.
+                try { await JSRuntime.InvokeVoidAsync("ptInitTracking", settings.FacebookPixelId, settings.GoogleAnalyticsId); } catch { }
             }
         }
         catch (Exception)
@@ -687,9 +917,20 @@ else
         }
         catch (Exception)
         {
-            _loadFailed = true;
-            _allProducts = new List<ShopProductModel>();
         }
+
+        // Landing conversion features: reviews, stats, gallery, FAQ (fail-soft).
+        try { _reviews = await LandingService.GetPublicReviewsAsync() ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel>(); } catch { }
+        try { _stats = await LandingService.GetStatsAsync() ?? new LandingStatsModel(); } catch { }
+        try { _gallery = await LandingService.GetGalleryAsync() ?? new List<GalleryPhotoModel>(); } catch { }
+        try { _faqs = await LandingService.GetFaqsAsync() ?? new List<FaqPublicModel>(); } catch { }
+        try
+        {
+            var holidays = await LandingService.GetUpcomingHolidaysAsync();
+            _nextHoliday = holidays?.Where(h => (h.HolidayDate.Date - DateTime.Now.Date).TotalDays is >= 0 and <= 14)
+                .OrderBy(h => h.HolidayDate).FirstOrDefault();
+        }
+        catch { }
 
         try
         {
@@ -717,6 +958,7 @@ else
         {
             try { await JSRuntime.InvokeVoidAsync("ptInitCtaParallax"); } catch { }
             try { await JSRuntime.InvokeVoidAsync("ptInitReveal"); } catch { }
+            try { await JSRuntime.InvokeVoidAsync("ptInitCountdown"); } catch { }
         }
         if (firstRender && !_popupChecked && _content.PopupActive && _promoPopupEnabled)
         {
@@ -894,12 +1136,13 @@ else
         _bookSending = true;
         try
         {
+            var product = _allProducts.FirstOrDefault(p => p.Id == _bookProductId);
             await ShopService.CreateQuoteAsync(new QuoteRequestModel
             {
                 CustomerName = _bookName.Trim(),
                 CustomerPhone = digits,
                 Quantity = _bookQty > 0 ? _bookQty : 10,
-                Notes = _bookNotes?.Trim(),
+                Notes = product != null ? $"Món: {product.Name}" : null,
                 QuoteType = "Landing"
             });
             _bookSent = true;
@@ -909,5 +1152,57 @@ else
             _bookError = "Gửi chưa thành công, vui lòng thử lại hoặc gọi hotline cho quán.";
         }
         _bookSending = false;
+    }
+
+    private async Task SubmitSubscribe()
+    {
+        _subMsg = null;
+        if (_subDone) return;
+        var digits = new string((_subPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9)
+        {
+            _subMsg = "Vui lòng nhập số điện thoại hợp lệ.";
+            return;
+        }
+        _subSending = true;
+        try
+        {
+            if (await LandingService.SubscribeAsync(digits))
+            {
+                _subDone = true;
+            }
+            else
+            {
+                _subMsg = "Chưa gửi được, vui lòng thử lại.";
+            }
+        }
+        catch
+        {
+            _subMsg = "Chưa gửi được, vui lòng thử lại.";
+        }
+        _subSending = false;
+    }
+
+    private bool IsMorningDish => DateTime.Now.Hour >= 5 && DateTime.Now.Hour < 10;
+
+    private IEnumerable<ShopProductModel> FilteredMenuProducts()
+    {
+        var q = XoiProducts.AsEnumerable();
+        return _priceFilter switch
+        {
+            "under30" => q.Where(p => p.Price < 30000),
+            "30to50" => q.Where(p => p.Price >= 30000 && p.Price <= 50000),
+            "over50" => q.Where(p => p.Price > 50000),
+            _ => q,
+        };
+    }
+
+    private string CountdownEndIso => _content.PromoCountdownEnd?.ToString("o");
+
+    private string MaskPhone(string phone)
+    {
+        var d = new string((phone ?? "").Where(char.IsDigit).ToArray());
+        if (d.Length < 5) return "Khách hàng";
+        return d.Substring(0, 3) + "***" + d.Substring(d.Length - 2);
     }
 }

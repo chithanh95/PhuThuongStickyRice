@@ -29,6 +29,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int PopupTitleMaxLength = 200;
         public const int PopupBodyMaxLength = 2000;
         public const int FlashBannerTextMaxLength = 300;
+        public const int PromoCountdownTextMaxLength = 200;
 
         public string HeroTitle { get; private set; }
 
@@ -108,6 +109,15 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Show the top flash banner on the landing page.</summary>
         public bool FlashBannerActive { get; private set; }
 
+        /// <summary>Show the promo countdown banner on the landing page.</summary>
+        public bool PromoCountdownActive { get; private set; }
+
+        /// <summary>Promo countdown end time (UTC). Null = no end.</summary>
+        public DateTime? PromoCountdownEnd { get; private set; }
+
+        /// <summary>Promo countdown banner text.</summary>
+        public string PromoCountdownText { get; private set; }
+
         protected LandingPageContent()
         {
         }
@@ -125,7 +135,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string videoTitle = null, string videoUrl = null,
             string mapEmbedUrl = null, string reviewsEmbedHtml = null,
             string popupTitle = null, string popupBody = null, string popupImageUrl = null,
-            bool popupActive = false, string flashBannerText = null, bool flashBannerActive = false)
+            bool popupActive = false, string flashBannerText = null, bool flashBannerActive = false,
+            bool promoCountdownActive = false, DateTime? promoCountdownEnd = null, string promoCountdownText = null)
         {
             var content = new LandingPageContent();
             content.Update(
@@ -141,7 +152,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 videoTitle, videoUrl,
                 mapEmbedUrl, reviewsEmbedHtml,
                 popupTitle, popupBody, popupImageUrl, popupActive,
-                flashBannerText, flashBannerActive);
+                flashBannerText, flashBannerActive,
+                promoCountdownActive, promoCountdownEnd, promoCountdownText);
             return content;
         }
 
@@ -158,7 +170,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string videoTitle = null, string videoUrl = null,
             string mapEmbedUrl = null, string reviewsEmbedHtml = null,
             string popupTitle = null, string popupBody = null, string popupImageUrl = null,
-            bool popupActive = false, string flashBannerText = null, bool flashBannerActive = false)
+            bool popupActive = false, string flashBannerText = null, bool flashBannerActive = false,
+            bool promoCountdownActive = false, DateTime? promoCountdownEnd = null, string promoCountdownText = null)
         {
             VideoTitle = videoTitle;
             VideoUrl = videoUrl;
@@ -170,6 +183,9 @@ namespace PhuThuongStickyRice.Domain.Entities
             PopupActive = popupActive;
             FlashBannerText = flashBannerText;
             FlashBannerActive = flashBannerActive;
+            PromoCountdownActive = promoCountdownActive;
+            PromoCountdownEnd = promoCountdownEnd;
+            PromoCountdownText = promoCountdownText;
             HeroTitle = heroTitle;
             HeroTagline = heroTagline;
             HeroButtonText = heroButtonText;
