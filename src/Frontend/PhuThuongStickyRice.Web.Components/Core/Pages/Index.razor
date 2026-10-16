@@ -553,71 +553,6 @@ else
 </section>
 
 <!-- 9. ĐẶT TRƯỚC -->
-<section class="sg-section sg-book" id="dat-xoi">
-    <div class="sg-container">
-        <div class="sg-book-grid">
-            <div class="sg-book-info">
-                <p class="sg-eyebrow">Đặt trước</p>
-                <h2 class="sg-h2">Đặt xôi số lượng lớn</h2>
-                <p class="sg-lead">Để lại thông tin — quán gọi lại xác nhận trong 15 phút.</p>
-                <ul class="sg-book-contact">
-                    @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
-                    {
-                        <li>📍 @_content.ContactAddress</li>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
-                    {
-                        <li>📞 <a href="tel:@_content.ContactPhone">@_content.ContactPhone</a></li>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(_content.ContactEmail))
-                    {
-                        <li>✉️ @_content.ContactEmail</li>
-                    }
-                </ul>
-            </div>
-            <form class="sg-book-form" @onsubmit="SubmitBooking">
-                <label class="sg-field">
-                    <span>Tên của bạn *</span>
-                    <input @bind="_bookName" placeholder="Nguyễn Văn A" maxlength="100" />
-                </label>
-                <label class="sg-field">
-                    <span>Số điện thoại *</span>
-                    <input @bind="_bookPhone" placeholder="090..." inputmode="tel" maxlength="15" />
-                </label>
-                <div class="sg-field-row">
-                    <label class="sg-field">
-                        <span>Món xôi</span>
-                        <select @bind="_bookProductId">
-                            <option value="@Guid.Empty">— Chọn món —</option>
-                            @foreach (var p in _allProducts)
-                            {
-                                <option value="@p.Id">@p.Name — @p.Price.ToString("N0")đ</option>
-                            }
-                        </select>
-                    </label>
-                    <label class="sg-field sg-field-qty">
-                        <span>Số lượng</span>
-                        <input type="number" @bind="_bookQty" min="1" max="1000" />
-                    </label>
-                </div>
-                @if (!string.IsNullOrEmpty(_bookError))
-                {
-                    <p class="sg-form-error">@_bookError</p>
-                }
-                @if (_bookSent)
-                {
-                    <p class="sg-form-ok">✓ Đặt thành công! Quán sẽ gọi xác nhận.</p>
-                }
-                else
-                {
-                    <button type="submit" class="sg-btn sg-btn-solid sg-btn-block" disabled="@_bookSending">
-                        @(_bookSending ? "Đang gửi..." : "Gửi đặt trước")
-                    </button>
-                }
-            </form>
-        </div>
-    </div>
-</section>
 
 <!-- MÓN BẠN QUAN TÂM (item 24) -->
 @if (_recentlyViewed != null && _recentlyViewed.Count > 0)
@@ -669,121 +604,10 @@ else
 </section>
 
 <!-- VÒNG QUAY MAY MẮN (item 28) + GIỚI THIỆU (item 29) -->
-<section class="sg-section sg-spin-sec">
-    <div class="sg-container sg-spin-grid">
-        <div class="sg-spin-box sg-reveal">
-            <h2 class="sg-h2">🎡 Vòng quay may mắn</h2>
-            <p>Mỗi SĐT được quay <strong>1 lần/ngày</strong> — trúng voucher 5k đến 20k!</p>
-            @if (_spinResult?.Success == true)
-            {
-                <div class="sg-spin-win">
-                    🎉 Chúc mừng! Bạn trúng <strong>@_spinResult.PrizeLabel</strong><br />
-                    Mã voucher: <code>@_spinResult.VoucherCode</code>
-                    <p class="sg-muted">Nhập mã khi đặt hàng để được giảm giá.</p>
-                </div>
-            }
-            else
-            {
-                <div class="sg-spin-form">
-                    <input @bind="_spinPhone" placeholder="Nhập SĐT để quay" inputmode="tel" maxlength="15" />
-                    <button class="sg-btn sg-btn-solid" @onclick="DoSpin" disabled="@_spinning">
-                        @(_spinning ? "Đang quay..." : "Quay ngay!")
-                    </button>
-                </div>
-                @if (!string.IsNullOrEmpty(_spinError))
-                {
-                    <p class="sg-form-error">@_spinError</p>
-                }
-            }
-        </div>
-        <div class="sg-ref-box sg-reveal">
-            <h2 class="sg-h2">👥 Giới thiệu bạn bè</h2>
-            <p>Mời bạn đặt xôi — <strong>cả hai cùng được 10k</strong>!</p>
-            @if (_refDone)
-            {
-                <p class="sg-form-ok">✓ Đã ghi nhận! Bạn của bạn đặt hàng là cả hai cùng nhận ưu đãi.</p>
-            }
-            else
-            {
-                <div class="sg-spin-form">
-                    <input @bind="_refPhone" placeholder="SĐT của bạn bè" inputmode="tel" maxlength="15" />
-                    <button class="sg-btn sg-btn-solid" @onclick="DoRefer">Mời bạn</button>
-                </div>
-                @if (!string.IsNullOrEmpty(_refMsg))
-                {
-                    <p class="sg-form-error">@_refMsg</p>
-                }
-                <p class="sg-muted" style="font-size:13px">Nhập SĐT của bạn ở ô vòng quay trước, rồi nhập SĐT bạn bè ở đây.</p>
-            }
-        </div>
-    </div>
-</section>
 
 <!-- CHẤM SAO NHANH (item 36) -->
-<section class="sg-section sg-rate-sec">
-    <div class="sg-container sg-center">
-        <h2 class="sg-h2">Bạn thấy xôi quán thế nào?</h2>
-        @if (_ratedDone)
-        {
-            <p class="sg-form-ok">Cảm ơn bạn đã đánh giá @_quickRating sao! ❤️</p>
-        }
-        else
-        {
-            <div class="sg-stars-big">
-                @for (var i = 1; i <= 5; i++)
-                {
-                    var s = i;
-                    <button @onclick="() => DoQuickRate(s)" aria-label="@s sao">@(s <= _quickRating ? "★" : "☆")</button>
-                }
-            </div>
-            <p class="sg-muted">Chạm vào số sao — không cần đăng nhập.</p>
-        }
-        <!-- ĐÁNH GIÁ BẰNG GIỌNG NÓI (item 66) -->
-        <div class="sg-voice-review">
-            <h3>🎤 Đánh giá bằng giọng nói</h3>
-            <p class="sg-muted">Bấm nút, nói cảm nhận — tự chuyển thành chữ.</p>
-            <div class="sg-stars-big sg-stars-small">
-                @for (var i = 1; i <= 5; i++)
-                {
-                    var s = i;
-                    <button @onclick="() => _reviewStars = s" aria-label="@s sao">@(s <= _reviewStars ? "★" : "☆")</button>
-                }
-            </div>
-            <div class="sg-voice-row">
-                <textarea @bind="_reviewText" placeholder="Nói hoặc gõ đánh giá..." rows="3"></textarea>
-                <button class="sg-voice-btn @(_voiceReviewing ? "rec" : "")" @onclick="StartVoiceReview" aria-label="Nói đánh giá" disabled="@_voiceReviewing">
-                    @(_voiceReviewing ? "🔴" : "🎤")
-                </button>
-            </div>
-            <button class="sg-btn sg-btn-solid" @onclick="SubmitVoiceReview">Gửi đánh giá</button>
-            @if (!string.IsNullOrEmpty(_reviewMsg)) { <p class="sg-center">@_reviewMsg</p> }
-        </div>
-    </div>
-</section>
 
 <!-- TÍCH ĐIỂM (item 42) -->
-<section class="sg-section sg-loyal-sec">
-    <div class="sg-container sg-loyal-inner">
-        <p class="sg-eyebrow">Tích điểm</p>
-        <h2 class="sg-h2">Mua 10 tặng 1</h2>
-        <p class="sg-lead">Mỗi đơn hàng tích điểm — đủ 10 điểm đổi ngay 1 gói xôi miễn phí!</p>
-        <div class="sg-loyal-form">
-            <input @bind="_loyalPhone" placeholder="Nhập SĐT để xem điểm" inputmode="tel" maxlength="15" />
-            <button class="sg-btn sg-btn-solid" @onclick="CheckLoyalty">Xem điểm</button>
-        </div>
-        @if (!string.IsNullOrEmpty(_loyalMsg))
-        {
-            <p class="sg-form-error">@_loyalMsg</p>
-        }
-        @if (_loyalty != null)
-        {
-            <div class="sg-loyal-progress">
-                <div class="sg-loyal-bar"><div class="sg-loyal-fill" style="width:@(Math.Min(100, _loyalty.Points * 10))%"></div></div>
-                <p>Bạn có <strong>@_loyalty.Points</strong> điểm — còn <strong>@(Math.Max(0, 10 - _loyalty.Points))</strong> điểm nữa là được tặng xôi!</p>
-            </div>
-        }
-    </div>
-</section>
 
 <!-- BLOG ẨM THỰC (item 44) + CÔNG THỨC (item 45) -->
 @if (_articles != null && _articles.Count > 0)
@@ -1053,52 +877,8 @@ else
 }
 
 <!-- GỢI Ý ĐẶT LẠI (item 62) -->
-<section class="sg-section">
-    <div class="sg-container sg-center" style="max-width:560px">
-        <p class="sg-eyebrow">Nhớ bạn</p>
-        <h2 class="sg-h2">🔁 Đặt lại đơn cũ 1 chạm</h2>
-        <p class="sg-lead">Nhập SĐT — web hiện đơn gần nhất, bấm là đặt lại y chang.</p>
-        <div class="sg-loyal-form">
-            <input @bind="_reorderPhone" placeholder="Nhập SĐT" inputmode="tel" maxlength="15" />
-            <button class="sg-btn sg-btn-solid" @onclick="LoadLastOrder">Xem đơn cũ</button>
-        </div>
-        @if (!string.IsNullOrEmpty(_reorderMsg)) { <p class="sg-form-error">@_reorderMsg</p> }
-        @if (_lastOrderItems?.Count > 0)
-        {
-            <div class="sg-reorder-box">
-                @foreach (var i in _lastOrderItems)
-                {
-                    <div class="sg-chat-order-row"><span>@i.Quantity × @i.ProductName</span><b>@((i.Price * i.Quantity).ToString("N0"))đ</b></div>
-                }
-                <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="ReorderAll" style="margin-top:10px">Đặt lại y chang →</button>
-            </div>
-        }
-    </div>
-</section>
 
 <!-- MÓN YÊU THÍCH (item 63) -->
-<section class="sg-section sg-fav-sec">
-    <div class="sg-container sg-center" style="max-width:560px">
-        <p class="sg-eyebrow">Theo dõi</p>
-        <h2 class="sg-h2">❤️ Món yêu thích</h2>
-        <p class="sg-lead">Thả tim món bạn thích — khi nào có lại, quán báo ngay!</p>
-        <div class="sg-loyal-form">
-            <input @bind="_favPhone" placeholder="Nhập SĐT để đồng bộ" inputmode="tel" maxlength="15" />
-            <button class="sg-btn sg-btn-solid" @onclick="LoadFavorites">Xem yêu thích</button>
-        </div>
-        @if (_backInStock?.Count > 0)
-        {
-            <div class="sg-reorder-box">
-                <p><strong>🎉 Món bạn thích đã có lại:</strong></p>
-                @foreach (var p in _backInStock)
-                {
-                    <div class="sg-chat-order-row"><span>@p.ProductName</span><b>@p.Price.ToString("N0")đ</b></div>
-                }
-            </div>
-        }
-        <p class="sg-muted" style="margin-top:10px">Mẹo: bấm ❤️ trên từng món ở menu để thêm vào yêu thích.</p>
-    </div>
-</section>
 
 <!-- ĐẶT QUA SÀN TMĐT (item 75) -->
 @if (!string.IsNullOrWhiteSpace(_marketLinks?.ShopeeFoodUrl) || !string.IsNullOrWhiteSpace(_marketLinks?.GrabFoodUrl))
@@ -1122,39 +902,6 @@ else
 }
 
 <!-- XÔI SỰ KIỆN (item 76) -->
-<section class="sg-section sg-event-sec">
-    <div class="sg-container">
-        <p class="sg-eyebrow">Cưới hỏi — hội nghị</p>
-        <h2 class="sg-h2 sg-center">Xôi cho sự kiện 100–1000 suất</h2>
-        <p class="sg-lead sg-center">Đám cưới, giỗ chạp, hội nghị công ty — quán lo từ A đến Z.</p>
-        <div class="sg-poll-grid">
-            <div class="sg-poll-card sg-reveal">
-                <div class="sg-poll-body">
-                    <h3>🎎 Gói Cưới hỏi</h3>
-                    <p>Xôi gấc đỏ may mắn, trang trí đẹp, giao tận nơi đúng giờ.</p>
-                    <div class="sg-poll-votes">Từ 25k/suất</div>
-                    <a class="sg-btn sg-btn-outline sg-btn-block" href="/dat-tiec">Nhận báo giá</a>
-                </div>
-            </div>
-            <div class="sg-poll-card sg-reveal">
-                <div class="sg-poll-body">
-                    <h3>🏢 Gói Hội nghị</h3>
-                    <p>Xôi hộp văn phòng, ăn sáng hội thảo, hóa đơn VAT đầy đủ.</p>
-                    <div class="sg-poll-votes">Từ 20k/suất</div>
-                    <a class="sg-btn sg-btn-outline sg-btn-block" href="/dat-tiec">Nhận báo giá</a>
-                </div>
-            </div>
-            <div class="sg-poll-card sg-reveal">
-                <div class="sg-poll-body">
-                    <h3>🙏 Gói Giỗ chạp</h3>
-                    <p>Mâm xôi cúng đầy đủ, đúng phong tục, giao sớm trong ngày.</p>
-                    <div class="sg-poll-votes">Từ 150k/mâm</div>
-                    <a class="sg-btn sg-btn-outline sg-btn-block" href="/dat-tiec">Nhận báo giá</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
 
 <!-- BẢN ĐỒ (item 77) -->
 @if (!string.IsNullOrWhiteSpace(_mapsUrl))
@@ -1505,13 +1252,6 @@ else
     private List<PolicyPageSummaryModel> _policies = new List<PolicyPageSummaryModel>();
 
     // Booking form (đặt xôi nhanh) — posts a quote request (api/quotes).
-    private string _bookName = "";
-    private string _bookPhone = "";
-    private int _bookQty = 10;
-    private Guid _bookProductId = Guid.Empty;
-    private bool _bookSending;
-    private bool _bookSent;
-    private string _bookError;
 
     // Landing conversion features (items 1-20).
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel> _reviews = new List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel>();
@@ -1530,14 +1270,7 @@ else
     private List<ShopProductModel> _recentlyViewed = new List<ShopProductModel>();
     private string _lang = "vi";
     // Vòng quay (28)
-    private string _spinPhone = "";
-    private LuckySpinResultModel _spinResult;
-    private bool _spinning;
-    private string _spinError;
     // Giới thiệu (29)
-    private string _refPhone = "";
-    private string _refMsg;
-    private bool _refDone;
     // Chấm sao (36)
     private int _quickRating;
     private bool _ratedDone;
@@ -1552,11 +1285,6 @@ else
     // 64: 360 viewer
     private ShopProductModel _view360Product;
     private int _view360Index;
-    // 66: đánh giá giọng nói
-    private bool _voiceReviewing;
-    private string _reviewText = "";
-    private int _reviewStars = 5;
-    private string _reviewMsg;
     // 67: đặt nhanh
     private string _quickPhone = "";
     private string _quickMsg;
@@ -1579,18 +1307,12 @@ else
     private MarketplaceLinksModel _marketLinks;
     private string _mapsUrl;
     // 62: gợi ý đặt lại
-    private string _reorderPhone = "";
     private List<ParsedOrderItem> _lastOrderItems;
-    private string _reorderMsg;
     // 63: yêu thích
     private HashSet<Guid> _favorites = new HashSet<Guid>();
-    private string _favPhone = "";
     private List<BackInStockItem> _backInStock = new List<BackInStockItem>();
     // 41-60
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel> _articles = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>();
-    private string _loyalPhone = "";
-    private LoyaltyAccountModel _loyalty;
-    private string _loyalMsg;
     private bool _showReorderBanner;
     // 48-54
     private OffPeakPromoModel _offpeak;
@@ -1994,65 +1716,8 @@ else
             ? LandingService.ResolveImageUrl(uploadedUrl)
             : fallbackSvg;
 
-    private async Task SubmitBooking()
-    {
-        _bookError = null;
-        if (_bookSent) return;
-        var digits = new string((_bookPhone ?? "").Where(char.IsDigit).ToArray());
-        if (string.IsNullOrWhiteSpace(_bookName) || digits.Length < 9)
-        {
-            _bookError = "Vui lòng nhập tên và số điện thoại hợp lệ.";
-            return;
-        }
-        _bookSending = true;
-        try
-        {
-            var product = _allProducts.FirstOrDefault(p => p.Id == _bookProductId);
-            await ShopService.CreateQuoteAsync(new QuoteRequestModel
-            {
-                CustomerName = _bookName.Trim(),
-                CustomerPhone = digits,
-                Quantity = _bookQty > 0 ? _bookQty : 10,
-                Notes = product != null ? $"Món: {product.Name}" : null,
-                QuoteType = "Landing"
-            });
-            _bookSent = true;
-        }
-        catch
-        {
-            _bookError = "Gửi chưa thành công, vui lòng thử lại hoặc gọi hotline cho quán.";
-        }
-        _bookSending = false;
-    }
 
-    private async Task DoSpin()
-    {
-        _spinError = null; _spinResult = null;
-        var digits = new string((_spinPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { _spinError = "Nhập SĐT để quay nhé."; return; }
-        _spinning = true;
-        try
-        {
-            _spinResult = await LandingService.SpinAsync(digits);
-            if (_spinResult != null && !_spinResult.Success) _spinError = _spinResult.Message;
-        }
-        catch { _spinError = "Chưa quay được, thử lại nhé."; }
-        _spinning = false;
-    }
 
-    private async Task DoRefer()
-    {
-        _refMsg = null;
-        var a = new string((_spinPhone ?? "").Where(char.IsDigit).ToArray());
-        var b = new string((_refPhone ?? "").Where(char.IsDigit).ToArray());
-        if (a.Length < 9 || b.Length < 9 || a == b) { _refMsg = "Nhập 2 SĐT khác nhau và hợp lệ."; return; }
-        try
-        {
-            if (await LandingService.ReferAsync(a, b)) { _refDone = true; }
-            else _refMsg = "Chưa gửi được, thử lại nhé.";
-        }
-        catch { _refMsg = "Chưa gửi được, thử lại nhé."; }
-    }
 
     private async Task DoQuickRate(int stars)
     {
@@ -2173,18 +1838,6 @@ else
         catch { }
     }
 
-    private async Task CheckLoyalty()
-    {
-        _loyalMsg = null; _loyalty = null;
-        var digits = new string((_loyalPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { _loyalMsg = "Nhập SĐT để xem điểm."; return; }
-        try
-        {
-            _loyalty = await Wave2Svc.GetLoyaltyByPhoneAsync(digits);
-            if (_loyalty == null) _loyalMsg = "Chưa tìm thấy tài khoản với SĐT này.";
-        }
-        catch { _loyalMsg = "Chưa tra được, thử lại nhé."; }
-    }
 
     private async Task ToggleChat()
     {
@@ -2239,35 +1892,7 @@ else
     }
 
     // 66: đánh giá bằng giọng nói (Web Speech API)
-    private async Task StartVoiceReview()
-    {
-        _voiceReviewing = true;
-        try
-        {
-            var text = await JSRuntime.InvokeAsync<string>("ptStartVoiceInput");
-            if (!string.IsNullOrWhiteSpace(text))
-            {
-                _reviewText = text;
-                StateHasChanged();
-            }
-        }
-        catch { Toasts.Show("Trình duyệt không hỗ trợ nhập giọng nói."); }
-        _voiceReviewing = false;
-    }
 
-    private async Task SubmitVoiceReview()
-    {
-        _reviewMsg = null;
-        try
-        {
-            await LandingService.QuickRateAsync(_reviewStars);
-            _reviewMsg = string.IsNullOrWhiteSpace(_reviewText)
-                ? $"Cảm ơn bạn đã đánh giá {_reviewStars} sao! ❤️"
-                : $"Cảm ơn! Quán đã nhận đánh giá {_reviewStars} sao và lời nhắn: \"{_reviewText}\" ❤️";
-            _reviewText = "";
-        }
-        catch { _reviewMsg = "Chưa gửi được, thử lại nhé."; }
-    }
 
     // 67: đặt nhanh 1 chạm
     private async Task QuickOrder()
@@ -2324,19 +1949,6 @@ else
     }
 
     // 62: gợi ý đặt lại theo lịch sử
-    private async Task LoadLastOrder()
-    {
-        _reorderMsg = null; _lastOrderItems = null;
-        var digits = new string((_reorderPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { _reorderMsg = "Nhập SĐT để xem đơn cũ."; return; }
-        try
-        {
-            _lastOrderItems = await LandingService.GetLastOrderItemsAsync(digits);
-            if (_lastOrderItems == null || _lastOrderItems.Count == 0)
-                _reorderMsg = "Chưa tìm thấy đơn nào với SĐT này.";
-        }
-        catch { _reorderMsg = "Chưa tải được, thử lại nhé."; }
-    }
 
     private void ReorderAll()
     {
@@ -2350,6 +1962,7 @@ else
     }
 
     // 63: yêu thích
+    private string _favPhone = "";
     private async Task ToggleFavorite(ShopProductModel p)
     {
         var digits = new string((_favPhone ?? "").Where(char.IsDigit).ToArray());
@@ -2377,18 +1990,6 @@ else
         catch { }
     }
 
-    private async Task LoadFavorites()
-    {
-        var digits = new string((_favPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) return;
-        try
-        {
-            var ids = await LandingService.GetFavoritesAsync(digits);
-            _favorites = new HashSet<Guid>(ids ?? new List<Guid>());
-            _backInStock = await LandingService.GetBackInStockFavoritesAsync(digits) ?? new List<BackInStockItem>();
-        }
-        catch { }
-    }
 
     private void ConfirmChatOrder()
     {
