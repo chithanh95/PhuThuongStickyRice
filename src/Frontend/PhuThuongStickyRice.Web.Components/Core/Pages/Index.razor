@@ -707,40 +707,6 @@ else
 </section>
 
 <!-- THỬ THÁCH 7 NGÀY (item 53) -->
-<section class="sg-section sg-streak-sec">
-    <div class="sg-container sg-streak-inner">
-        <p class="sg-eyebrow">Thử thách</p>
-        <h2 class="sg-h2">7 ngày ăn xôi liên tiếp</h2>
-        <p class="sg-lead">Điểm danh mỗi ngày bạn đặt xôi — đủ 7 ngày nhận <strong>voucher 50k</strong>!</p>
-        @if (_checkinResult?.Success == true)
-        {
-            <div class="sg-streak-result">
-                <div class="sg-streak-dots">
-                    @for (var i = 1; i <= 7; i++)
-                    {
-                        <span class="sg-dot @(i <= _checkinResult.StreakCount ? "on" : "")">@i</span>
-                    }
-                </div>
-                @if (_checkinResult.IsCompleted)
-                {
-                    <p class="sg-form-ok">🎉 Chúc mừng! Bạn đã hoàn thành thử thách — voucher 50k sẽ được gửi qua SĐT!</p>
-                }
-                else
-                {
-                    <p>Bạn đã điểm danh <strong>@_checkinResult.StreakCount/7</strong> ngày. Cố lên!</p>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="sg-loyal-form">
-                <input @bind="_checkinPhone" placeholder="Nhập SĐT để điểm danh hôm nay" inputmode="tel" maxlength="15" />
-                <button class="sg-btn sg-btn-solid" @onclick="DoCheckIn">Điểm danh</button>
-            </div>
-            @if (!string.IsNullOrEmpty(_checkinMsg)) { <p class="sg-form-error">@_checkinMsg</p> }
-        }
-    </div>
-</section>
 
 <!-- BÌNH CHỌN MÓN MỚI (item 54) -->
 @if (_polls != null && _polls.Count > 0)
@@ -775,74 +741,8 @@ else
 }
 
 <!-- ĐẶT NHANH 1 CHẠM (item 67) -->
-<section class="sg-section">
-    <div class="sg-container sg-center" style="max-width:560px">
-        <p class="sg-eyebrow">Tiện lợi</p>
-        <h2 class="sg-h2">⚡ Đặt nhanh 1 chạm</h2>
-        <p class="sg-lead">Web nhớ đơn tủ của bạn — lần sau chỉ cần nhập SĐT là đặt xong.</p>
-        <div class="sg-loyal-form">
-            <input @bind="_quickPhone" placeholder="Nhập SĐT" inputmode="tel" maxlength="15" />
-            <button class="sg-btn sg-btn-solid" @onclick="QuickOrder">Đặt ngay</button>
-        </div>
-        @if (!string.IsNullOrEmpty(_quickMsg)) { <p class="sg-form-error">@_quickMsg</p> }
-        <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-            <button class="sg-btn sg-btn-outline" @onclick="StartVoiceOrder">🎤 Đặt bằng giọng nói</button>
-            <button class="sg-btn sg-btn-outline" @onclick="SaveQuickOrder">💾 Lưu giỏ hiện tại làm đơn tủ</button>
-        </div>
-        @if (_voiceOrderText != null)
-        {
-            <p class="sg-center" style="margin-top:10px">Bạn nói: "<i>@_voiceOrderText</i>"</p>
-        }
-    </div>
-</section>
 
 <!-- SINH NHẬT (item 43) + VIP CLUB (item 55) -->
-<section class="sg-section sg-bdvip-sec">
-    <div class="sg-container sg-spin-grid">
-        <div class="sg-spin-box sg-reveal">
-            <h2 class="sg-h2">🎂 Sinh nhật tặng xôi</h2>
-            <p>Nhập ngày sinh — đến sinh nhật nhận <strong>mã giảm 20%</strong>!</p>
-            @if (_bdResult?.Success == true)
-            {
-                <p class="sg-form-ok">✓ @_bdResult.Message
-                @if (!string.IsNullOrEmpty(_bdResult.GiftCode)) { <span>Mã của bạn: <code>@_bdResult.GiftCode</code></span> }</p>
-            }
-            else
-            {
-                <div class="sg-field-row">
-                    <label class="sg-field"><span>SĐT</span><input @bind="_bdPhone" inputmode="tel" maxlength="15" /></label>
-                    <label class="sg-field"><span>Ngày sinh</span><input type="date" @bind="_bdDate" /></label>
-                </div>
-                <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="ClaimBirthday" style="margin-top:10px">Nhận quà sinh nhật</button>
-                @if (!string.IsNullOrEmpty(_bdMsg)) { <p class="sg-form-error">@_bdMsg</p> }
-            }
-        </div>
-        <div class="sg-spin-box sg-reveal">
-            <h2 class="sg-h2">👑 Câu lạc bộ VIP</h2>
-            <p>Khách <strong>hạng Vàng</strong> được vào nhóm Zalo riêng — ưu đãi độc quyền mỗi tuần!</p>
-            @if (_vipStatus != null)
-            {
-                @if (_vipStatus.IsVip && !string.IsNullOrWhiteSpace(_vipStatus.ZaloGroupUrl))
-                {
-                    <p class="sg-form-ok">✓ Bạn là khách @_vipStatus.Tier!</p>
-                    <a class="sg-btn sg-btn-solid sg-btn-block" href="@_vipStatus.ZaloGroupUrl" target="_blank" rel="noopener">Vào nhóm Zalo VIP →</a>
-                }
-                else
-                {
-                    <p>Bạn đang hạng <strong>@_vipStatus.Tier</strong>. Mua thêm để lên Vàng và vào nhóm VIP nhé!</p>
-                }
-            }
-            else
-            {
-                <div class="sg-loyal-form">
-                    <input @bind="_vipPhone" placeholder="Nhập SĐT kiểm tra hạng" inputmode="tel" maxlength="15" />
-                    <button class="sg-btn sg-btn-solid" @onclick="CheckVip">Kiểm tra</button>
-                </div>
-                @if (!string.IsNullOrEmpty(_vipMsg)) { <p class="sg-form-error">@_vipMsg</p> }
-            }
-        </div>
-    </div>
-</section>
 
 <!-- KHÓA HỌC NẤU XÔI (item 60) -->
 @if (_courses != null && _courses.Count > 0)
@@ -1286,20 +1186,6 @@ else
     private ShopProductModel _view360Product;
     private int _view360Index;
     // 67: đặt nhanh
-    private string _quickPhone = "";
-    private string _quickMsg;
-    private async Task SaveQuickOrder()
-    {
-        if (CartState.Items.Count == 0) { _quickMsg = "Giỏ đang trống — thêm món vào giỏ trước nhé."; return; }
-        try
-        {
-            var data = string.Join(",", CartState.Items.Select(i => $"{i.ProductId}:{i.Quantity}"));
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "pt-quick-order", data);
-            _quickMsg = null;
-            Toasts.Show("Đã lưu đơn tủ! Lần sau chỉ cần nhập SĐT.");
-        }
-        catch { }
-    }
 
     // 80: đặt bằng giọng nói
     private string _voiceOrderText;
@@ -1323,13 +1209,6 @@ else
     private string _votePhone = "";
     private string _voteMsg;
     // 43, 55, 60
-    private string _bdPhone = "";
-    private DateTime _bdDate = DateTime.Today;
-    private BirthdayGiftResult _bdResult;
-    private string _bdMsg;
-    private string _vipPhone = "";
-    private VipStatusModel _vipStatus;
-    private string _vipMsg;
     private List<CourseModel> _courses = new List<CourseModel>();
     private string _coursePhone = "";
     // Đặt định kỳ (47)
@@ -1770,18 +1649,6 @@ else
         catch { _bizMsg = "Chưa gửi được, thử lại nhé."; }
     }
 
-    private async Task DoCheckIn()
-    {
-        _checkinMsg = null; _checkinResult = null;
-        var digits = new string((_checkinPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { _checkinMsg = "Nhập SĐT để điểm danh."; return; }
-        try
-        {
-            _checkinResult = await LandingService.CheckInAsync(digits);
-            if (_checkinResult != null && !_checkinResult.Success) _checkinMsg = _checkinResult.Message;
-        }
-        catch { _checkinMsg = "Chưa điểm danh được, thử lại nhé."; }
-    }
 
     private async Task DoVote(Guid pollId)
     {
@@ -1800,31 +1667,7 @@ else
         catch { _voteMsg = "Chưa bình chọn được, thử lại nhé."; }
     }
 
-    private async Task ClaimBirthday()
-    {
-        _bdMsg = null; _bdResult = null;
-        var digits = new string((_bdPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { _bdMsg = "Nhập SĐT hợp lệ."; return; }
-        try
-        {
-            _bdResult = await LandingService.ClaimBirthdayGiftAsync(digits, _bdDate);
-            if (_bdResult != null && !_bdResult.Success) _bdMsg = _bdResult.Message;
-        }
-        catch { _bdMsg = "Chưa gửi được, thử lại nhé."; }
-    }
 
-    private async Task CheckVip()
-    {
-        _vipMsg = null; _vipStatus = null;
-        var digits = new string((_vipPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { _vipMsg = "Nhập SĐT để kiểm tra."; return; }
-        try
-        {
-            _vipStatus = await LandingService.GetVipStatusAsync(digits);
-            if (_vipStatus == null) _vipMsg = "Chưa tìm thấy thông tin.";
-        }
-        catch { _vipMsg = "Chưa tra được, thử lại nhé."; }
-    }
 
     private async Task EnrollCourse(Guid id)
     {
@@ -1895,33 +1738,6 @@ else
 
 
     // 67: đặt nhanh 1 chạm
-    private async Task QuickOrder()
-    {
-        var digits = new string((_quickPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { _quickMsg = "Nhập SĐT để dùng đặt nhanh."; return; }
-        try
-        {
-            var saved = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "pt-quick-order");
-            if (string.IsNullOrEmpty(saved))
-            {
-                _quickMsg = "Chưa có đơn mẫu. Hãy đặt 1 đơn bình thường trước, web sẽ nhớ để lần sau đặt 1 chạm.";
-                return;
-            }
-            // saved: productId:qty,productId:qty
-            foreach (var part in saved.Split(',', StringSplitOptions.RemoveEmptyEntries))
-            {
-                var kv = part.Split(':');
-                if (kv.Length == 2 && Guid.TryParse(kv[0], out var pid) && int.TryParse(kv[1], out var qty))
-                {
-                    var p = _allProducts.FirstOrDefault(x => x.Id == pid);
-                    if (p != null) CartState.Add(p, qty);
-                }
-            }
-            try { await JSRuntime.InvokeVoidAsync("localStorage.setItem", "pt-checkout-phone", digits); } catch { }
-            Navigation.NavigateTo("/checkout");
-        }
-        catch { _quickMsg = "Chưa đặt nhanh được."; }
-    }
 
     // 80: đặt bằng giọng nói
     private async Task StartVoiceOrder()
