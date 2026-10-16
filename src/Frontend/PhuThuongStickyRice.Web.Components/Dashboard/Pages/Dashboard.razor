@@ -11,9 +11,15 @@
 @inject DashboardService DashboardService
 @inject Wave5Service Wave5Service
 @inject IJSRuntime JSRuntime
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Dashboard</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Lexa</a></li>
+        <li class="current">Tổng quan</li>
+    </ol>
+</div>
 
 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
-    <h3 class="mb-2 mb-md-0">Dashboard</h3>
     <div class="d-flex align-items-center flex-wrap">
         @if (_stats != null)
         {
@@ -113,7 +119,7 @@
     <div class="col-md-6 mb-3">
         <div class="card h-100">
             <div class="card-body">
-                <h6 class="card-title">🎯 Mục tiêu hôm nay</h6>
+                <h4 class="card-title">🎯 Mục tiêu hôm nay</h4>
                 @if (_dailyTarget == null)
                 {
                     <small class="text-muted">Đang tải...</small>
@@ -137,7 +143,7 @@
     <div class="col-md-6 mb-3">
         <div class="card h-100">
             <div class="card-body">
-                <h6 class="card-title">📍 Đơn theo nguồn</h6>
+                <h4 class="card-title">📍 Đơn theo nguồn</h4>
                 @if (_sourceStats == null)
                 {
                     <small class="text-muted">Đang tải...</small>
@@ -149,7 +155,7 @@
                 else
                 {
                     <div class="table-responsive">
-                        <table class="table table-sm mb-0">
+                        <table class="table table-hover table-sm mb-0">
                             <tbody>
                                 @foreach (var s in _sourceStats)
                                 {
@@ -177,7 +183,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">📊 Hôm nay vs hôm qua</h6>
+                <h4 class="card-title">📊 Hôm nay vs hôm qua</h4>
                 @if (_todayVsYesterday == null)
                 {
                     <small class="text-muted">Đang tải...</small>
@@ -211,6 +217,7 @@
 
 <div class="card mb-3">
     <div class="card-body">
+        <h4 class="card-title">Khoảng thời gian</h4>
         <div class="form-row align-items-end">
             <div class="col-6 col-md-3">
                 <label for="dash-from"><small class="text-muted">Từ ngày</small></label>
@@ -220,7 +227,7 @@
                 <label for="dash-to"><small class="text-muted">Đến ngày</small></label>
                 <input id="dash-to" type="date" class="form-control" @bind="_to" />
             </div>
-            <div class="col-12 col-md-3 mt-2 mt-md-0">
+            <div class="col-12 col-md-6 mt-2 mt-md-0">
                 <button class="btn btn-primary mr-2" @onclick="ApplyDateRange" disabled="@_refreshing">Áp dụng</button>
                 <button class="btn btn-outline-secondary" @onclick="ResetDateRange" disabled="@_refreshing">7 ngày qua</button>
             </div>
@@ -234,99 +241,165 @@
 }
 else
 {
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="lx-mini-stat">
-                <p class="lx-mini-label">Tổng đơn hàng</p>
-                <h2 class="lx-mini-value">@_stats.TotalOrders</h2>
-                <span class="lx-mini-foot">Chờ xác nhận: @_stats.PendingOrders</span>
-                <span class="lx-mini-icon"><span class="oi oi-cart" aria-hidden="true"></span></span>
-            </div>
-        </div>
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-        <div class="col-md-3 mb-3">
-            <div class="lx-mini-stat">
-                <p class="lx-mini-label">Doanh thu</p>
-                <h2 class="lx-mini-value">@FormatPrice(_stats.TotalRevenue)</h2>
-                <span class="lx-mini-foot">Không tính đơn đã hủy</span>
-                <span class="lx-mini-icon"><span class="oi oi-dollar" aria-hidden="true"></span></span>
-            </div>
-        </div>
-            </Authorized>
-        </AuthorizeView>
-        <div class="col-md-3 mb-3">
-            <div class="lx-mini-stat">
-                <p class="lx-mini-label">Món xôi đã bán</p>
-                <h2 class="lx-mini-value">@_stats.TotalProductsSold</h2>
-                <span class="lx-mini-foot">@_stats.TotalProducts món đang kinh doanh</span>
-                <span class="lx-mini-icon"><span class="oi oi-tag" aria-hidden="true"></span></span>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="lx-mini-stat">
-                <p class="lx-mini-label">Đơn chờ xử lý</p>
-                <h2 class="lx-mini-value">@_stats.PendingOrders</h2>
-                <span class="lx-mini-foot"><a href="/orders?status=Pending" class="text-white"><u>Xem ngay</u></a></span>
-                <span class="lx-mini-icon"><span class="oi oi-clock" aria-hidden="true"></span></span>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-md-6 mb-3">
-            <div class="card">
-                <div class="card-header">Đơn hàng theo trạng thái</div>
+    @* 4 stat cards tím kiểu Lexa — dữ liệu thật *@
+    <div class="row">
+        <div class="col-md-6 col-xl-3">
+            <div class="card lexa-stat-card">
                 <div class="card-body">
-                    <table class="table table-sm">
-                        <tbody>
-                            @foreach (var item in _stats.OrdersByStatus)
-                            {
-                                <tr>
-                                    <td>@StatusBadge(item.Status)</td>
-                                    <td class="text-right"><strong>@item.Count</strong></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                    <p class="lexa-stat-label">Tổng đơn hàng</p>
+                    <h3 class="lexa-stat-value">@_stats.TotalOrders</h3>
+                    <p class="mb-0">
+                        @if (_todayVsYesterday != null)
+                        {
+                            @DeltaBadge(_todayVsYesterday.OrdersDeltaPercent)
+                        }
+                        <small class="lexa-stat-foot">Chờ xác nhận: @_stats.PendingOrders</small>
+                    </p>
                 </div>
             </div>
         </div>
         <AuthorizeView Roles="Admin">
             <Authorized>
-        <div class="col-md-6 mb-3">
-            <div class="card">
-                <div class="card-header">Doanh thu theo ngày</div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card lexa-stat-card">
                 <div class="card-body">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr><th>Ngày</th><th class="text-right">Đơn</th><th class="text-right">Doanh thu</th></tr>
-                        </thead>
-                        <tbody>
+                    <p class="lexa-stat-label">Doanh thu</p>
+                    <h3 class="lexa-stat-value">@FormatPrice(_stats.TotalRevenue)</h3>
+                    <p class="mb-0">
+                        @if (_todayVsYesterday != null)
+                        {
+                            @DeltaBadge(_todayVsYesterday.RevenueDeltaPercent)
+                        }
+                        <small class="lexa-stat-foot">Không tính đơn đã hủy</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+            </Authorized>
+        </AuthorizeView>
+        <div class="col-md-6 col-xl-3">
+            <div class="card lexa-stat-card">
+                <div class="card-body">
+                    <p class="lexa-stat-label">Món xôi đã bán</p>
+                    <h3 class="lexa-stat-value">@_stats.TotalProductsSold</h3>
+                    <p class="mb-0"><small class="lexa-stat-foot">@_stats.TotalProducts món đang kinh doanh</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card lexa-stat-card">
+                <div class="card-body">
+                    <p class="lexa-stat-label">Đơn chờ xử lý</p>
+                    <h3 class="lexa-stat-value">@_stats.PendingOrders</h3>
+                    <p class="mb-0"><small class="lexa-stat-foot"><a href="/orders?status=Pending" class="text-white"><u>Xem ngay →</u></a></small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Doanh thu theo ngày</h4>
+                    @if (_stats.RevenueByDay == null || _stats.RevenueByDay.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Chưa có dữ liệu trong khoảng thời gian này.</p>
+                    }
+                    else
+                    {
+                        var maxRev = _stats.RevenueByDay.Max(d => d.Revenue);
+                        <div class="lexa-area-chart">
                             @foreach (var day in _stats.RevenueByDay)
                             {
-                                <tr>
-                                    <td>@day.Date.ToString("dd/MM")</td>
-                                    <td class="text-right">@day.Orders</td>
-                                    <td class="text-right">@FormatPrice(day.Revenue)</td>
-                                </tr>
+                                var h = maxRev > 0 ? Math.Max(4, (int)(day.Revenue / maxRev * 130)) : 4;
+                                <div class="lexa-area-bar" style="height:@(h)px" title="@day.Date.ToString("dd/MM"): @FormatPrice(day.Revenue)"></div>
                             }
-                        </tbody>
-                    </table>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            @foreach (var day in _stats.RevenueByDay)
+                            {
+                                <span>@day.Date.ToString("dd/MM")</span>
+                            }
+                        </div>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-hover table-sm mb-0">
+                                <thead>
+                                    <tr><th>Ngày</th><th class="text-right">Đơn</th><th class="text-right">Doanh thu</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var day in _stats.RevenueByDay)
+                                    {
+                                        <tr>
+                                            <td>@day.Date.ToString("dd/MM")</td>
+                                            <td class="text-right">@day.Orders</td>
+                                            <td class="text-right">@FormatPrice(day.Revenue)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
-            </Authorized>
-        </AuthorizeView>
+        <div class="col-xl-4">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Đơn hàng theo trạng thái</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <tbody>
+                                @foreach (var item in _stats.OrdersByStatus)
+                                {
+                                    <tr>
+                                        <td>@StatusBadge(item.Status)</td>
+                                        <td class="text-right"><strong>@item.Count</strong></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+        </Authorized>
+        <NotAuthorized>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Đơn hàng theo trạng thái</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <tbody>
+                                @foreach (var item in _stats.OrdersByStatus)
+                                {
+                                    <tr>
+                                        <td>@StatusBadge(item.Status)</td>
+                                        <td class="text-right"><strong>@item.Count</strong></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </NotAuthorized>
+    </AuthorizeView>
 
-    <div class="row mb-4">
+    <div class="row">
     <AuthorizeView Roles="Admin">
         <Authorized>
         <div class="col-md-6 mb-3">
-            <div class="card">
-                <div class="card-header">Món bán chạy nhất</div>
+            <div class="card h-100">
                 <div class="card-body">
+                    <h4 class="card-title">Món bán chạy nhất</h4>
                     @if (_topProducts == null)
                     {
                         <p class="text-muted mb-0"><em>Đang tải...</em></p>
@@ -337,26 +410,28 @@ else
                     }
                     else
                     {
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr><th>#</th><th>Món</th><th class="text-right">Đã bán</th><th class="text-right">Doanh thu</th></tr>
-                            </thead>
-                            <tbody>
-                                @{
-                                    var rank = 0;
-                                }
-                                @foreach (var p in _topProducts)
-                                {
-                                    rank++;
-                                    <tr>
-                                        <td><strong>@rank</strong></td>
-                                        <td>@p.ProductName</td>
-                                        <td class="text-right">@p.QuantitySold</td>
-                                        <td class="text-right">@FormatPrice(p.Revenue)</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm mb-0">
+                                <thead>
+                                    <tr><th>#</th><th>Món</th><th class="text-right">Đã bán</th><th class="text-right">Doanh thu</th></tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        var rank = 0;
+                                    }
+                                    @foreach (var p in _topProducts)
+                                    {
+                                        rank++;
+                                        <tr>
+                                            <td><strong>@rank</strong></td>
+                                            <td>@p.ProductName</td>
+                                            <td class="text-right">@p.QuantitySold</td>
+                                            <td class="text-right">@FormatPrice(p.Revenue)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     }
                 </div>
             </div>
@@ -364,9 +439,9 @@ else
         </Authorized>
     </AuthorizeView>
         <div class="col-md-6 mb-3">
-            <div class="card">
-                <div class="card-header">Khách mới / khách quay lại</div>
+            <div class="card h-100">
                 <div class="card-body">
+                    <h4 class="card-title">Khách mới / khách quay lại</h4>
                     @if (_newReturning == null)
                     {
                         <p class="text-muted mb-0"><em>Đang tải...</em></p>
@@ -393,16 +468,16 @@ else
     <AuthorizeView Roles="Admin">
         <Authorized>
         <div class="card mb-3">
-            <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
-                <span>📊 Báo cáo tuần — gửi Zalo chủ quán</span>
-                <div class="mt-1 mt-md-0">
-                    <button class="btn btn-sm btn-outline-secondary mr-2" @onclick="CopyWeeklyReportAsync" disabled="@(_weeklyReport == null)">📋 Sao chép nội dung</button>
-                    <button class="btn btn-sm btn-primary" @onclick="SendWeeklyReportAsync" disabled="@(_sendingWeekly || _weeklyReport == null)">
-                        @(_sendingWeekly ? "Đang gửi..." : "📤 Gửi qua Zalo")
-                    </button>
-                </div>
-            </div>
             <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                    <h4 class="card-title mb-0">📊 Báo cáo tuần — gửi Zalo chủ quán</h4>
+                    <div class="mt-1 mt-md-0">
+                        <button class="btn btn-sm btn-outline-secondary mr-2" @onclick="CopyWeeklyReportAsync" disabled="@(_weeklyReport == null)">📋 Sao chép nội dung</button>
+                        <button class="btn btn-sm btn-primary" @onclick="SendWeeklyReportAsync" disabled="@(_sendingWeekly || _weeklyReport == null)">
+                            @(_sendingWeekly ? "Đang gửi..." : "📤 Gửi qua Zalo")
+                        </button>
+                    </div>
+                </div>
                 @if (!string.IsNullOrEmpty(_weeklySendNote))
                 {
                     <div class="alert @(_weeklySendIsError ? "alert-warning" : "alert-success") mb-2">@_weeklySendNote</div>
@@ -454,13 +529,13 @@ else
     </AuthorizeView>
 
     <div class="card">
-        <div class="card-header">
-            Đơn hàng mới nhất
-            <a href="/orders" class="btn btn-sm btn-outline-primary float-right">Xem tất cả</a>
-        </div>
         <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 class="card-title mb-0">Đơn hàng mới nhất</h4>
+                <a href="/orders" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+            </div>
             <div class="table-responsive">
-                <table class="table table-sm">
+                <table class="table table-hover table-sm mb-0">
                     <thead>
                         <tr>
                             <th>Mã đơn</th>
@@ -480,7 +555,7 @@ else
                                 <td>@order.CustomerPhone</td>
                                 <td class="text-right">@FormatPrice(order.TotalAmount)</td>
                                 <td>@StatusBadge(order.Status)</td>
-                                <td>@order.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                <td class="text-muted">@order.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
                             </tr>
                         }
                     </tbody>
@@ -489,6 +564,24 @@ else
         </div>
     </div>
 }
+
+<style>
+    .lexa-stat-card { background: #7a6fbe; border: none; color: #fff; }
+    .lexa-stat-card .card-body { padding: 20px; }
+    .lexa-stat-label { color: rgba(255,255,255,.75); margin-bottom: 5px; font-size: 14px; }
+    .lexa-stat-value { color: #fff; font-weight: 600; margin-bottom: 10px; }
+    .lexa-stat-foot { color: rgba(255,255,255,.65); }
+    .lexa-stat-foot a { color: #fff; }
+    html.dark .lexa-stat-card { background: #6a5fae; }
+    .lexa-area-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding: 10px 0; }
+    .lexa-area-bar { flex: 1; background: linear-gradient(180deg, #7a6fbe, #a89df0); border-radius: 4px 4px 0 0; min-width: 12px; }
+    html.dark .lexa-area-bar { background: linear-gradient(180deg, #8a7fce, #5a4fae); }
+    .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+    html.dark .table { color: #e8e6f0; }
+    html.dark .table thead th { color: #a5a2bd; border-bottom-color: #3a3a58; }
+    html.dark .table td, html.dark .table th { border-color: #3a3a58; }
+    html.dark .table-hover tbody tr:hover { background: rgba(122,111,190,.08); }
+</style>
 
 @code {
     private DashboardStatsModel _stats;
