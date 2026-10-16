@@ -270,6 +270,7 @@
         {
             new("/dashboard", "Dashboard", "oi-dashboard", roles: "Admin,Cashier"),
             new("/orders", "Đơn hàng", "oi-cart", roles: "Admin,Cashier"),
+            new("/admin/kanban-don", "Kanban đơn hàng", "oi-columns", roles: "Admin,Cashier,Kitchen"),
             new("/admin/quotes", "Đơn đặt tiệc", "oi-calendar"),
             new("/customers", "Khách hàng", "oi-people"),
         }),
@@ -282,6 +283,8 @@
         new("ops", "Vận hành", "oi-cog", new()
         {
             new("/admin/lich-nghi", "Lịch nghỉ lễ/Tết", "oi-calendar"),
+            new("/admin/lich-tong-hop", "Lịch tổng hợp", "oi-calendar"),
+            new("/admin/chat-noi-bo", "Chat nội bộ", "oi-chat", roles: "Admin,Cashier,Kitchen"),
             new("/admin/mau-tin-nhan", "Mẫu tin nhắn", "oi-chat"),
         }),
         new("content", "Nội dung", "oi-image", new()

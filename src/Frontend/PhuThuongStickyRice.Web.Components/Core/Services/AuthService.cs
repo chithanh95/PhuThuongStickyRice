@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -97,6 +98,24 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             throw new InvalidOperationException(ExtractMessage(body));
         }
 
+        /// <summary>Staff team chat: recent messages (oldest first).</summary>
+        public async Task<List<StaffChatMsg>> GetStaffChatAsync()
+        {
+            await SetBearerToken();
+            return await _httpClient.GetFromJsonAsync<List<StaffChatMsg>>("api/staff-chat")
+                ?? new List<StaffChatMsg>();
+        }
+
+        /// <summary>Staff team chat: send a message.</summary>
+        public async Task SendStaffChatAsync(string message)
+        {
+            await SetBearerToken();
+            var response = await _httpClient.PostAsJsonAsync("api/staff-chat", new { Message = message });
+            if (response.IsSuccessStatusCode) return;
+            var body = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException(ExtractMessage(body));
+        }
+
 
         public async Task RequestPasswordResetOtpAsync(string phone)
         {
@@ -176,5 +195,14 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         public string UserName { get; set; }
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
+    }
+
+    public class StaffChatMsg
+    {
+        public Guid Id { get; set; }
+        public Guid SenderId { get; set; }
+        public string SenderName { get; set; }
+        public string Message { get; set; }
+        public DateTime SentAt { get; set; }
     }
 }

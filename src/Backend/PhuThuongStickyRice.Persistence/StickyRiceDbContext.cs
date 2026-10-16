@@ -1,4 +1,4 @@
-using PhuThuongStickyRice.Domain.Entities;
+﻿using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using PhuThuongStickyRice.Persistence.Locks;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
@@ -86,6 +86,8 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<QuickRating> QuickRatings { get; set; }
 
         public DbSet<ChatMessage> ChatMessages { get; set; }
+
+        public DbSet<StaffChatMessage> StaffChatMessages { get; set; }
 
         public DbSet<OffPeakPromo> OffPeakPromos { get; set; }
 

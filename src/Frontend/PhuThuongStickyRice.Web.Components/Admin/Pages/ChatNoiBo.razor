@@ -1,0 +1,233 @@
+@page "/admin/chat-noi-bo"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Core.Services
+@inject StaffService StaffService
+@inject AuthService AuthService
+@inject IJSRuntime JS
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Chat nội bộ</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Vận hành</a></li>
+        <li class="current">Chat nội bộ</li>
+    </ol>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Nhân viên (@_staff.Count)</h4>
+                @if (_loadingStaff)
+                {
+                    <p class="text-muted small"><em>Đang tải...</em></p>
+                }
+                else
+                {
+                    <div class="staff-list">
+                        @foreach (var s in _staff)
+                        {
+                            var online = IsOnline(s.Id);
+                            <div class="staff-item">
+                                <span class="staff-avatar">@Initial(s.UserName)</span>
+                                <div class="flex-grow-1">
+                                    <div><strong>@s.UserName</strong></div>
+                                    <small class="text-muted">@string.Join(", ", s.Roles)</small>
+                                </div>
+                                <span class="online-dot @(online ? "on" : "off")" title="@(online ? "Đang hoạt động" : "Ngoại tuyến")"></span>
+                            </div>
+                        }
+                    </div>
+                    <small class="text-muted">🟢 = nhắn tin trong 15 phút qua</small>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Kênh chung ca trực</h4>
+                <div class="chat-box" @ref="_chatBox">
+                    @if (_loadingMsg)
+                    {
+                        <p class="text-muted"><em>Đang tải tin nhắn...</em></p>
+                    }
+                    else if (_messages.Count == 0)
+                    {
+                        <p class="text-muted text-center mt-4">Chưa có tin nhắn nào. Hãy chào ca trực! 👋</p>
+                    }
+                    @foreach (var m in _messages)
+                    {
+                        var mine = m.SenderId == _myId;
+                        <div class="chat-msg @(mine ? "mine" : "")">
+                            <div class="chat-bubble">
+                                @if (!mine)
+                                {
+                                    <div class="chat-sender">@m.SenderName</div>
+                                }
+                                <div>@m.Message</div>
+                                <div class="chat-time">@ToLocal(m.SentAt).ToString("dd/MM HH:mm")</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="input-group mt-3">
+                    <input class="form-control" placeholder="Nhập tin nhắn cho ca trực..."
+                           @bind="_draft" @bind:event="oninput" @onkeyup="OnKeyUp" maxlength="2000" />
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;"
+                                @onclick="SendAsync" disabled="@(_sending || string.IsNullOrWhiteSpace(_draft))">
+                            @(_sending ? "Đang gửi..." : "Gửi")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .staff-list { display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto; }
+    .staff-item { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 6px; background: #f8f9fa; }
+    .staff-avatar {
+        width: 36px; height: 36px; border-radius: 50%;
+        background: #7a6fbe; color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; flex-shrink: 0;
+    }
+    .online-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .online-dot.on { background: #28a745; box-shadow: 0 0 4px #28a745; }
+    .online-dot.off { background: #ccc; }
+    .chat-box {
+        height: 440px; overflow-y: auto;
+        border: 1px solid #e9ecef; border-radius: 8px;
+        padding: 12px; background: #fafbfe;
+        display: flex; flex-direction: column; gap: 8px;
+    }
+    .chat-msg { display: flex; }
+    .chat-msg.mine { justify-content: flex-end; }
+    .chat-bubble {
+        max-width: 75%; padding: 8px 12px; border-radius: 12px;
+        background: #fff; border: 1px solid #e9ecef;
+        word-break: break-word;
+    }
+    .chat-msg.mine .chat-bubble { background: #7a6fbe; color: #fff; border-color: #7a6fbe; }
+    .chat-sender { font-size: 12px; font-weight: 700; color: #7a6fbe; margin-bottom: 2px; }
+    .chat-time { font-size: 11px; opacity: .7; margin-top: 2px; text-align: right; }
+    html.dark .staff-item { background: #20203a; }
+    html.dark .chat-box { background: #1c1c34; border-color: #3a3a58; }
+    html.dark .chat-bubble { background: #262640; border-color: #3a3a58; color: #f0eef5; }
+    html.dark .chat-msg.mine .chat-bubble { background: #7a6fbe; }
+    html.dark .chat-sender { color: #b3a8e8; }
+</style>
+
+@code {
+    private bool _loadingStaff = true;
+    private bool _loadingMsg = true;
+    private bool _sending;
+    private string _error;
+    private string _draft;
+    private Guid _myId;
+    private List<StaffUserModel> _staff = new();
+    private List<StaffChatMsg> _messages = new();
+    private ElementReference _chatBox;
+    private System.Threading.Timer _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStaffAsync();
+        await LoadMessagesAsync();
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () => { await LoadMessagesAsync(silent: true); StateHasChanged(); });
+        }, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
+
+    private async Task LoadStaffAsync()
+    {
+        try
+        {
+            _staff = await StaffService.GetUsersAsync() ?? new List<StaffUserModel>();
+            var me = _staff.FirstOrDefault(s => !string.IsNullOrEmpty(s.UserName));
+            // Xác định id của mình qua profile
+            try
+            {
+                var profile = await AuthService.GetProfileAsync();
+                var mine = _staff.FirstOrDefault(s =>
+                    string.Equals(s.UserName, profile?.UserName, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(s.Email, profile?.Email, StringComparison.OrdinalIgnoreCase));
+                if (mine != null) _myId = mine.Id;
+            }
+            catch { }
+        }
+        catch (Exception ex) { _error = "Không tải được danh sách nhân viên: " + ex.Message; }
+        _loadingStaff = false;
+    }
+
+    private bool IsOnline(Guid staffId)
+    {
+        var cutoff = DateTime.UtcNow.AddMinutes(-15);
+        return _messages.Any(m => m.SenderId == staffId && m.SentAt >= cutoff);
+    }
+
+    private async Task LoadMessagesAsync(bool silent = false)
+    {
+        try
+        {
+            var list = await AuthService.GetStaffChatAsync();
+            var prevCount = _messages.Count;
+            _messages = list ?? new List<StaffChatMsg>();
+            if (_messages.Count > prevCount)
+                await ScrollToBottomAsync();
+        }
+        catch (Exception ex)
+        {
+            if (!silent) _error = "Không tải được tin nhắn: " + ex.Message;
+        }
+        if (!silent) _loadingMsg = false;
+    }
+
+    private async Task SendAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_draft)) return;
+        _sending = true;
+        _error = null;
+        try
+        {
+            await AuthService.SendStaffChatAsync(_draft.Trim());
+            _draft = "";
+            await LoadMessagesAsync(silent: true);
+            await ScrollToBottomAsync();
+        }
+        catch (Exception ex) { _error = "Không gửi được: " + ex.Message; }
+        _sending = false;
+    }
+
+    private async Task OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_sending && !string.IsNullOrWhiteSpace(_draft))
+            await SendAsync();
+    }
+
+    private async Task ScrollToBottomAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", "(function(el){if(el)el.scrollTop=el.scrollHeight;})(document.querySelector('.chat-box'))");
+        }
+        catch { }
+    }
+
+    private static string Initial(string name) =>
+        string.IsNullOrWhiteSpace(name) ? "?" : name.Trim().Substring(0, 1).ToUpperInvariant();
+
+    private static DateTime ToLocal(DateTime dt) => dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
+
+    public void Dispose() => _timer?.Dispose();
+}
