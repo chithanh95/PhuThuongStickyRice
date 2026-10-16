@@ -40,6 +40,7 @@
 
 /* ---------- shell ---------- */
 .lx-wrapper {
+    width: 100%;
     min-height: 100vh;
     background: var(--lx-body-bg);
     color: var(--lx-text);
