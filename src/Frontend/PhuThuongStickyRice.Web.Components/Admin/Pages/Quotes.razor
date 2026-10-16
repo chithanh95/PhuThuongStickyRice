@@ -8,7 +8,13 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @inject CatalogAdminService CatalogService
 
-<h3>Yêu cầu báo giá đặt tiệc</h3>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Yêu cầu báo giá đặt tiệc</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Báo giá</li>
+    </ol>
+</div>
 <p class="text-muted">Đơn đặt cỗ / số lượng lớn từ trang <a href="/dat-tiec">/dat-tiec</a> và form đặt xôi ở trang chủ. Không thu tiền trước — shop gọi lại báo giá.</p>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -42,8 +48,9 @@ else
 {
     <div class="card">
         <div class="card-body">
+            <h4 class="card-title">Danh sách yêu cầu báo giá</h4>
             <div class="table-responsive">
-                <table class="table table-sm">
+                <table class="table table-hover table-sm mb-0">
                     <thead>
                         <tr>
                             <th>Ngày gửi</th>
@@ -94,7 +101,7 @@ else
 
 <hr class="my-4" />
 
-<h3>🔔 Nhắc cúng hàng tháng</h3>
+<h4 class="mb-1">🔔 Nhắc cúng hàng tháng</h4>
 <p class="text-muted">Khách đã đăng ký "Nhắc tôi mỗi tháng" ở trang <a href="/dat-cung">/dat-cung</a>. Tắt khi khách yêu cầu dừng nhắc.</p>
 
 @if (_reminders == null)
@@ -109,8 +116,9 @@ else
 {
     <div class="card">
         <div class="card-body">
+            <h4 class="card-title">🔔 Danh sách đăng ký nhắc cúng</h4>
             <div class="table-responsive">
-                <table class="table table-sm">
+                <table class="table table-hover table-sm mb-0">
                     <thead>
                         <tr>
                             <th>Đăng ký</th>
