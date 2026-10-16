@@ -11,7 +11,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
-    [Route("api/[controller]")]
+    [Route("api/shop-settings")]
     [ApiController]
     public class ShopSettingsController : ControllerBase
     {
