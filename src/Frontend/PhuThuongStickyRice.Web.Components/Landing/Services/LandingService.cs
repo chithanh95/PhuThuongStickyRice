@@ -160,18 +160,21 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
 
         public async Task<List<Guid>> GetFavoritesAsync(string phone)
         {
-            return await GetAsync<List<Guid>>($"api/landing/favorites?phone={phone}") ?? new List<Guid>();
+            var w = await GetAsync<ProductIdsWrapper>($"api/landing/favorites?phone={phone}");
+            return w?.ProductIds ?? new List<Guid>();
         }
 
-        public async Task<List<ShopProductModel>> GetBackInStockFavoritesAsync(string phone)
+        public async Task<List<BackInStockItem>> GetBackInStockFavoritesAsync(string phone)
         {
-            return await GetAsync<List<ShopProductModel>>($"api/landing/favorites/back-in-stock?phone={phone}");
+            var w = await GetAsync<ItemsWrapper<BackInStockItem>>($"api/landing/favorites/back-in-stock?phone={phone}");
+            return w?.Items ?? new List<BackInStockItem>();
         }
 
         /// <summary>Items đơn gần nhất (item 62).</summary>
         public async Task<List<ParsedOrderItem>> GetLastOrderItemsAsync(string phone)
         {
-            return await GetAsync<List<ParsedOrderItem>>($"api/landing/last-order-items?phone={phone}");
+            var w = await GetAsync<ItemsWrapper<ParsedOrderItem>>($"api/landing/last-order-items?phone={phone}");
+            return w?.Items ?? new List<ParsedOrderItem>();
         }
 
         /// <summary>Link sàn TMĐT (item 75).</summary>

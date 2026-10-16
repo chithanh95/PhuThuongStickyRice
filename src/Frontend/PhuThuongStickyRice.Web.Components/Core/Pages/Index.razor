@@ -1092,7 +1092,7 @@ else
                 <p><strong>🎉 Món bạn thích đã có lại:</strong></p>
                 @foreach (var p in _backInStock)
                 {
-                    <div class="sg-chat-order-row"><span>@p.Name</span><b>@p.Price.ToString("N0")đ</b></div>
+                    <div class="sg-chat-order-row"><span>@p.ProductName</span><b>@p.Price.ToString("N0")đ</b></div>
                 }
             </div>
         }
@@ -1585,7 +1585,7 @@ else
     // 63: yêu thích
     private HashSet<Guid> _favorites = new HashSet<Guid>();
     private string _favPhone = "";
-    private List<ShopProductModel> _backInStock = new List<ShopProductModel>();
+    private List<BackInStockItem> _backInStock = new List<BackInStockItem>();
     // 41-60
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel> _articles = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>();
     private string _loyalPhone = "";
@@ -2385,7 +2385,7 @@ else
         {
             var ids = await LandingService.GetFavoritesAsync(digits);
             _favorites = new HashSet<Guid>(ids ?? new List<Guid>());
-            _backInStock = await LandingService.GetBackInStockFavoritesAsync(digits) ?? new List<ShopProductModel>();
+            _backInStock = await LandingService.GetBackInStockFavoritesAsync(digits) ?? new List<BackInStockItem>();
         }
         catch { }
     }

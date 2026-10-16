@@ -214,3 +214,27 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
         public string GrabFoodUrl { get; set; }
     }
 }
+
+namespace PhuThuongStickyRice.Web.Components.Landing.Models
+{
+    internal class ProductIdsWrapper
+    {
+        public List<Guid> ProductIds { get; set; }
+    }
+
+    internal class ItemsWrapper<T>
+    {
+        public List<T> Items { get; set; }
+    }
+}
+
+namespace PhuThuongStickyRice.Web.Components.Landing.Models
+{
+    public class BackInStockItem
+    {
+        public Guid ProductId { get; set; }
+        public string ProductName { get; set; }
+        public decimal Price { get; set; }
+        public string ImageUrlsJson { get; set; }
+    }
+}
