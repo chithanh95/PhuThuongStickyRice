@@ -2,11 +2,18 @@
 @attribute [Authorize]
 @using PhuThuongStickyRice.Web.Components.Products.Components
 
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Thêm sản phẩm</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li><a href="/products">Sản phẩm</a></li>
+        <li class="current">Thêm sản phẩm</li>
+    </ol>
+</div>
+
 <div class="card">
-    <div class="card-header">
-        Thêm sản phẩm
-    </div>
     <div class="card-body">
+        <h4 class="card-title">Thông tin sản phẩm</h4>
         <AddEditProduct Product="Product"></AddEditProduct>
     </div>
     <div class="card-footer">
