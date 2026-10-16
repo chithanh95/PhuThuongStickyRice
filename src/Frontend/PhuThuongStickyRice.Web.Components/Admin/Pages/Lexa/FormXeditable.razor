@@ -1,0 +1,126 @@
+@page "/admin/lexa/form-xeditable"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Form Xeditable</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li><a href="/admin/lexa/form-elements">Forms</a></li>
+        <li class="current">Form Xeditable</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Chỉnh sửa trực tiếp</h4>
+                <p class="card-title-desc">Bấm vào giá trị để sửa ngay tại chỗ.</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0">
+                        <tbody>
+                            <tr>
+                                <td style="width:30%;" class="font-weight-bold">Tên món ăn</td>
+                                <td><InlineEdit Value="@_dish.Name" ValueChanged="v => _dish.Name = v" Placeholder="Nhập tên món" /></td>
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold">Giá bán</td>
+                                <td><InlineEdit Value="@_dish.PriceText" ValueChanged="v => _dish.PriceText = v" Placeholder="VD: 35000" InputType="number" /></td>
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold">Mô tả</td>
+                                <td><InlineEdit Value="@_dish.Description" ValueChanged="v => _dish.Description = v" Placeholder="Nhập mô tả" Multiline="true" /></td>
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold">Danh mục</td>
+                                <td><InlineSelect Value="@_dish.Category" ValueChanged="v => _dish.Category = v" Options="_categories" /></td>
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold">Trạng thái</td>
+                                <td><InlineSelect Value="@_dish.Status" ValueChanged="v => _dish.Status = v" Options="_statuses" /></td>
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold">Ngày áp dụng</td>
+                                <td><InlineEdit Value="@_dish.ApplyDate" ValueChanged="v => _dish.ApplyDate = v" InputType="date" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-primary" @onclick="SaveAll">Lưu tất cả</button>
+                    @if (_saved)
+                    {
+                        <span class="text-success ml-2">Đã lưu thay đổi!</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Danh sách món (sửa nhanh)</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>Tên món</th><th>Giá</th><th>Trạng thái</th></tr></thead>
+                        <tbody>
+                            @foreach (var d in _dishes)
+                            {
+                                <tr>
+                                    <td><InlineEdit Value="@d.Name" ValueChanged="v => d.Name = v" /></td>
+                                    <td><InlineEdit Value="@d.PriceText" ValueChanged="v => d.PriceText = v" InputType="number" /></td>
+                                    <td><InlineSelect Value="@d.Status" ValueChanged="v => d.Status = v" Options="_statuses" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Hướng dẫn</h4>
+                <ul class="mb-0">
+                    <li>Bấm vào <strong>giá trị màu xanh</strong> để chỉnh sửa.</li>
+                    <li>Nhấn <strong>Enter</strong> hoặc bấm <span class="badge badge-success">✓</span> để lưu.</li>
+                    <li>Nhấn <strong>Esc</strong> hoặc bấm <span class="badge badge-danger">✕</span> để hủy.</li>
+                    <li>Ô trống hiển thị <em class="text-muted">chữ mờ</em> — bấm vào để nhập.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private Dish _dish = new() { Name = "Xôi gấc đặc biệt", PriceText = "35000", Description = "Xôi gấc dẻo thơm chuẩn vị làng nghề.", Category = "Xôi mặn", Status = "Đang bán", ApplyDate = "2026-10-01" };
+    private List<string> _categories = new() { "Xôi mặn", "Xôi ngọt", "Combo", "Topping", "Đồ uống" };
+    private List<string> _statuses = new() { "Đang bán", "Tạm hết", "Ngưng bán" };
+    private List<Dish> _dishes = new()
+    {
+        new() { Name = "Xôi gấc", PriceText = "15000", Status = "Đang bán" },
+        new() { Name = "Xôi đỗ xanh", PriceText = "15000", Status = "Đang bán" },
+        new() { Name = "Xôi xéo", PriceText = "20000", Status = "Tạm hết" },
+        new() { Name = "Xôi cốm", PriceText = "25000", Status = "Ngưng bán" },
+    };
+    private bool _saved;
+
+    private void SaveAll()
+    {
+        _saved = true;
+    }
+
+    private class Dish
+    {
+        public string Name { get; set; }
+        public string PriceText { get; set; }
+        public string Description { get; set; }
+        public string Category { get; set; }
+        public string Status { get; set; }
+        public string ApplyDate { get; set; }
+    }
+}

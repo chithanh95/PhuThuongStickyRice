@@ -1,0 +1,60 @@
+@* Component select inline kiểu Xeditable *@
+
+@if (!_editing)
+{
+    <span class="lexa-xedit" @onclick="StartEdit" title="Bấm để sửa">
+        @if (string.IsNullOrWhiteSpace(Value))
+        {
+            <em class="text-muted">Chưa chọn</em>
+        }
+        else
+        {
+            <span class="badge badge-info">@Value</span>
+        }
+    </span>
+}
+else
+{
+    <span class="d-inline-flex align-items-center" style="gap:4px;">
+        <select class="form-control form-control-sm" @bind="_tmp" style="min-width:150px;">
+            @foreach (var o in Options)
+            {
+                <option value="@o">@o</option>
+            }
+        </select>
+        <button type="button" class="btn btn-sm btn-success" @onclick="Confirm" title="Lưu">✓</button>
+        <button type="button" class="btn btn-sm btn-danger" @onclick="Cancel" title="Hủy">✕</button>
+    </span>
+}
+
+<style>
+    .lexa-xedit { color: #7a6fbe; border-bottom: 1px dashed #7a6fbe; cursor: pointer; }
+    .lexa-xedit:hover { color: #5a4fae; background: #f0efff; }
+    html.dark .lexa-xedit:hover { background: #2c2c4e; }
+</style>
+
+@code {
+    [Parameter] public string Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public List<string> Options { get; set; } = new();
+
+    private bool _editing;
+    private string _tmp;
+
+    private void StartEdit()
+    {
+        _tmp = Value ?? Options.FirstOrDefault();
+        _editing = true;
+    }
+
+    private async Task Confirm()
+    {
+        _editing = false;
+        await ValueChanged.InvokeAsync(_tmp);
+    }
+
+    private void Cancel()
+    {
+        _editing = false;
+    }
+}

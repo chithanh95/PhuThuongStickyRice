@@ -1,0 +1,70 @@
+@* Component sửa inline kiểu Xeditable *@
+
+@if (!_editing)
+{
+    <span class="lexa-xedit" @onclick="StartEdit" title="Bấm để sửa">
+        @if (string.IsNullOrWhiteSpace(Value))
+        {
+            <em class="text-muted">@(Placeholder ?? "Trống")</em>
+        }
+        else
+        {
+            @Value
+        }
+    </span>
+}
+else
+{
+    <span class="d-inline-flex align-items-center" style="gap:4px;">
+        @if (Multiline)
+        {
+            <textarea class="form-control form-control-sm" rows="2" @bind="_tmp" @onkeydown="OnKeyDown" style="min-width:200px;"></textarea>
+        }
+        else
+        {
+            <input type="@InputType" class="form-control form-control-sm" @bind="_tmp" @bind:event="oninput" @onkeydown="OnKeyDown" style="min-width:150px;" />
+        }
+        <button type="button" class="btn btn-sm btn-success" @onclick="Confirm" title="Lưu">✓</button>
+        <button type="button" class="btn btn-sm btn-danger" @onclick="Cancel" title="Hủy">✕</button>
+    </span>
+}
+
+<style>
+    .lexa-xedit { color: #7a6fbe; border-bottom: 1px dashed #7a6fbe; cursor: pointer; }
+    .lexa-xedit:hover { color: #5a4fae; background: #f0efff; }
+    html.dark .lexa-xedit:hover { background: #2c2c4e; }
+</style>
+
+@code {
+    [Parameter] public string Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string Placeholder { get; set; }
+    [Parameter] public string InputType { get; set; } = "text";
+    [Parameter] public bool Multiline { get; set; }
+
+    private bool _editing;
+    private string _tmp;
+
+    private void StartEdit()
+    {
+        _tmp = Value;
+        _editing = true;
+    }
+
+    private async Task Confirm()
+    {
+        _editing = false;
+        await ValueChanged.InvokeAsync(_tmp);
+    }
+
+    private void Cancel()
+    {
+        _editing = false;
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !Multiline) await Confirm();
+        else if (e.Key == "Escape") Cancel();
+    }
+}
