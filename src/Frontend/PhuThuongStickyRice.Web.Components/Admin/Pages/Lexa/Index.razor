@@ -1,0 +1,96 @@
+@page "/admin/lexa"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Lexa Template Demos</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Demos</li>
+    </ol>
+</div>
+
+<div class="alert alert-info">
+    <strong>Thư viện mẫu Lexa</strong> — các trang demo đã clone từ template Lexa. Sau này sẽ apply từng mẫu vào các trang thật của web.
+</div>
+
+@foreach (var g in _groups)
+{
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title">@g.Title</h4>
+            <div class="row">
+                @foreach (var p in g.Pages)
+                {
+                    <div class="col-md-4 col-xl-3 mb-2">
+                        <a href="@p.Url" class="btn btn-outline-primary btn-block text-left">
+                            <span class="mr-1">@p.Icon</span> @p.Name
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Group> _groups = new()
+    {
+        new("📊 Dashboard", new()
+        {
+            new("Dashboard demo", "/admin/lexa/dashboard", "📊"),
+        }),
+        new("📝 Forms", new()
+        {
+            new("Form Elements", "/admin/lexa/form-elements", "📝"),
+            new("Form Validation", "/admin/lexa/form-validation", "✅"),
+            new("Form Advanced", "/admin/lexa/form-advanced", "⚙️"),
+            new("Form Editors", "/admin/lexa/form-editors", "✏️"),
+            new("Form File Upload", "/admin/lexa/form-uploads", "📁"),
+            new("Form Xeditable", "/admin/lexa/form-xeditable", "✏️"),
+        }),
+        new("🎨 UI Elements", new()
+        {
+            new("Buttons", "/admin/lexa/ui-buttons", "🔘"),
+            new("Cards", "/admin/lexa/ui-cards", "🃏"),
+            new("Modals & Sweet Alert", "/admin/lexa/ui-modals", "💬"),
+            new("Tabs & Accordions", "/admin/lexa/ui-tabs", "📑"),
+            new("General (Alerts, Badges)", "/admin/lexa/ui-general", "🎨"),
+            new("Carousel & Media", "/admin/lexa/ui-carousel", "🖼️"),
+            new("Grid & Slider", "/admin/lexa/ui-grid", "📐"),
+        }),
+        new("📋 Tables", new()
+        {
+            new("Tables", "/admin/lexa/tables", "📋"),
+        }),
+        new("📈 Charts", new()
+        {
+            new("Charts", "/admin/lexa/charts", "📈"),
+        }),
+        new("🔣 Icons", new()
+        {
+            new("Icons", "/admin/lexa/icons", "🔣"),
+        }),
+        new("🗺️ Maps", new()
+        {
+            new("Maps", "/admin/lexa/maps", "🗺️"),
+        }),
+        new("📄 Extra Pages", new()
+        {
+            new("Timeline", "/admin/lexa/pages-timeline", "📅"),
+            new("Invoice", "/admin/lexa/pages-invoice", "🧾"),
+            new("Directory", "/admin/lexa/pages-directory", "👥"),
+            new("Blank Page", "/admin/lexa/pages-blank", "📄"),
+            new("404", "/admin/lexa/pages-404", "❌"),
+            new("500", "/admin/lexa/pages-500", "⚠️"),
+        }),
+        new("🔐 Authentication (demo)", new()
+        {
+            new("Login", "/admin/lexa/auth-login", "🔑"),
+            new("Register", "/admin/lexa/auth-register", "📝"),
+            new("Recover Password", "/admin/lexa/auth-recover", "🔒"),
+            new("Lock Screen", "/admin/lexa/auth-lock", "🔐"),
+        }),
+    };
+    private record Group(string Title, List<Page> Pages);
+    private record Page(string Name, string Url, string Icon);
+}
