@@ -76,6 +76,14 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<ProductSizeOption> ProductSizeOptions { get; set; }
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<PromoSubscriber> PromoSubscribers { get; set; }
+
+        public DbSet<LuckySpin> LuckySpins { get; set; }
+
+        public DbSet<Referral> Referrals { get; set; }
+
+        public DbSet<QuickRating> QuickRatings { get; set; }
+
+        public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<QuoteRequest> QuoteRequests { get; set; }
         public DbSet<CungReminder> CungReminders { get; set; }
         public DbSet<Role> Roles { get; set; }

@@ -67,6 +67,38 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             return await GetAsync<List<HolidayModel>>("api/shop/holidays");
         }
 
+        /// <summary>Vòng quay may mắn (item 28).</summary>
+        public async Task<LuckySpinResultModel> SpinAsync(string phone)
+        {
+            return await PostAsync<LuckySpinResultModel>("api/landing/spin", new { phone });
+        }
+
+        /// <summary>Giới thiệu bạn bè (item 29).</summary>
+        public async Task<bool> ReferAsync(string referrerPhone, string referredPhone)
+        {
+            var res = await PostAsync<object>("api/landing/referral", new { referrerPhone, referredPhone });
+            return res != null;
+        }
+
+        /// <summary>Chấm sao nhanh (item 36).</summary>
+        public async Task<bool> QuickRateAsync(int rating, Guid? productId = null)
+        {
+            var res = await PostAsync<object>("api/landing/quick-rating", new { rating, productId });
+            return res != null;
+        }
+
+        /// <summary>Chat với quán (item 37).</summary>
+        public async Task<bool> SendChatAsync(string sessionId, string message)
+        {
+            var res = await PostAsync<object>("api/landing/chat", new { sessionId, message });
+            return res != null;
+        }
+
+        public async Task<List<ChatMessageModel>> GetChatMessagesAsync(string sessionId)
+        {
+            return await GetAsync<List<ChatMessageModel>>($"api/landing/chat/{sessionId}");
+        }
+
         public async Task<LandingContentModel> UpdateContentAsync(LandingContentModel model)
         {
             return await PutAsync<LandingContentModel>("api/landing/content", model);

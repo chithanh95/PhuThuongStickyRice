@@ -64,6 +64,10 @@ namespace PhuThuongStickyRice.Application.Landing.DTOs
         /// <summary>YouTube watch/share URL; rendered as an embed.</summary>
         public string VideoUrl { get; set; }
 
+        public string ReviewVideoTitle { get; set; }
+
+        public string ReviewVideoUrl { get; set; }
+
         /// <summary>Google Maps embed URL rendered as an iframe.</summary>
         public string MapEmbedUrl { get; set; }
 

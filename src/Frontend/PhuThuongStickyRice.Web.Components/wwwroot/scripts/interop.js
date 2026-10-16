@@ -579,3 +579,47 @@ window.ptInitTracking = function (pixelId, gaId) {
         }
     } catch (e) { }
 };
+
+/* Landing item 26: banner khi trời Hà Nội lạnh (<20°C) — Open-Meteo miễn phí, không cần key. */
+window.ptCheckColdWeather = function () {
+    try {
+        return fetch("https://api.open-meteo.com/v1/forecast?latitude=21.03&longitude=105.85&current=temperature_2m&timezone=Asia%2FBangkok")
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                var t = j && j.current ? j.current.temperature_2m : null;
+                return t !== null && t < 20 ? String(Math.round(t)) : "";
+            })
+            .catch(function () { return ""; });
+    } catch (e) { return Promise.resolve(""); }
+};
+
+/* Landing item 24: món đã xem (localStorage). */
+window.ptGetRecentViews = function () {
+    try { return JSON.parse(localStorage.getItem("pt-recent-views") || "[]"); }
+    catch (e) { return []; }
+};
+window.ptPushRecentView = function (id) {
+    try {
+        var arr = window.ptGetRecentViews().filter(function (x) { return x !== id; });
+        arr.unshift(id);
+        localStorage.setItem("pt-recent-views", JSON.stringify(arr.slice(0, 6)));
+    } catch (e) { }
+};
+
+/* Landing item 27: chia sẻ. */
+window.ptShare = function (title, text, url) {
+    try {
+        if (navigator.share) {
+            navigator.share({ title: title, text: text, url: url }).catch(function () { });
+            return "shared";
+        }
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).catch(function () { });
+            return "copied";
+        }
+        return "none";
+    } catch (e) { return "none"; }
+};
+
+/* Landing item 31: in/tải menu PDF. */
+window.ptPrintMenu = function () { try { window.print(); } catch (e) { } };

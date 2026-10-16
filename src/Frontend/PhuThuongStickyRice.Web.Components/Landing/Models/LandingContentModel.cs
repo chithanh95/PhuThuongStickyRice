@@ -85,6 +85,12 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
 
         /// <summary>Landing item 4: nội dung countdown.</summary>
         public string PromoCountdownText { get; set; }
+
+        /// <summary>Landing item 38: video review của khách/KOL.</summary>
+        public string ReviewVideoUrl { get; set; }
+
+        /// <summary>Landing item 38: tiêu đề video review.</summary>
+        public string ReviewVideoTitle { get; set; }
     }
 }
 
@@ -108,5 +114,24 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
     {
         public string Question { get; set; }
         public string Answer { get; set; }
+    }
+}
+
+namespace PhuThuongStickyRice.Web.Components.Landing.Models
+{
+    public class LuckySpinResultModel
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public string PrizeLabel { get; set; }
+        public int PrizeValue { get; set; }
+        public string VoucherCode { get; set; }
+    }
+
+    public class ChatMessageModel
+    {
+        public string Sender { get; set; }
+        public string Message { get; set; }
+        public System.DateTime CreatedAt { get; set; }
     }
 }

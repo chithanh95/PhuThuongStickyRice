@@ -82,6 +82,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>YouTube watch/share URL; rendered as an embed.</summary>
         public string VideoUrl { get; private set; }
 
+        /// <summary>Landing item 38: video review của khách/KOL.</summary>
+        public string ReviewVideoTitle { get; private set; }
+
+        /// <summary>Landing item 38: URL video review.</summary>
+        public string ReviewVideoUrl { get; private set; }
+
         /// <summary>Google Maps embed URL rendered as an iframe in the contact section.</summary>
         public string MapEmbedUrl { get; private set; }
 
@@ -136,7 +142,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string mapEmbedUrl = null, string reviewsEmbedHtml = null,
             string popupTitle = null, string popupBody = null, string popupImageUrl = null,
             bool popupActive = false, string flashBannerText = null, bool flashBannerActive = false,
-            bool promoCountdownActive = false, DateTime? promoCountdownEnd = null, string promoCountdownText = null)
+            bool promoCountdownActive = false, DateTime? promoCountdownEnd = null, string promoCountdownText = null,
+            string reviewVideoTitle = null, string reviewVideoUrl = null)
         {
             var content = new LandingPageContent();
             content.Update(
@@ -153,7 +160,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 mapEmbedUrl, reviewsEmbedHtml,
                 popupTitle, popupBody, popupImageUrl, popupActive,
                 flashBannerText, flashBannerActive,
-                promoCountdownActive, promoCountdownEnd, promoCountdownText);
+                promoCountdownActive, promoCountdownEnd, promoCountdownText,
+                reviewVideoTitle, reviewVideoUrl);
             return content;
         }
 
@@ -171,7 +179,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string mapEmbedUrl = null, string reviewsEmbedHtml = null,
             string popupTitle = null, string popupBody = null, string popupImageUrl = null,
             bool popupActive = false, string flashBannerText = null, bool flashBannerActive = false,
-            bool promoCountdownActive = false, DateTime? promoCountdownEnd = null, string promoCountdownText = null)
+            bool promoCountdownActive = false, DateTime? promoCountdownEnd = null, string promoCountdownText = null,
+            string reviewVideoTitle = null, string reviewVideoUrl = null)
         {
             VideoTitle = videoTitle;
             VideoUrl = videoUrl;
@@ -186,6 +195,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             PromoCountdownActive = promoCountdownActive;
             PromoCountdownEnd = promoCountdownEnd;
             PromoCountdownText = promoCountdownText;
+            ReviewVideoTitle = reviewVideoTitle;
+            ReviewVideoUrl = reviewVideoUrl;
             HeroTitle = heroTitle;
             HeroTagline = heroTagline;
             HeroButtonText = heroButtonText;

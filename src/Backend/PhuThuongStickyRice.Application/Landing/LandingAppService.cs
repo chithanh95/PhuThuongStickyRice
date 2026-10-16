@@ -61,7 +61,8 @@ namespace PhuThuongStickyRice.Application.Landing
                     dto.MapEmbedUrl, dto.ReviewsEmbedHtml,
                     dto.PopupTitle, dto.PopupBody, dto.PopupImageUrl, dto.PopupActive,
                     dto.FlashBannerText, dto.FlashBannerActive,
-                    dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText);
+                    dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText,
+                    dto.ReviewVideoTitle, dto.ReviewVideoUrl);
                 await _contentRepository.InsertAsync(entity, autoSave: true);
             }
             else
@@ -80,7 +81,8 @@ namespace PhuThuongStickyRice.Application.Landing
                     dto.MapEmbedUrl, dto.ReviewsEmbedHtml,
                     dto.PopupTitle, dto.PopupBody, dto.PopupImageUrl, dto.PopupActive,
                     dto.FlashBannerText, dto.FlashBannerActive,
-                    dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText);
+                    dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText,
+                    dto.ReviewVideoTitle, dto.ReviewVideoUrl);
                 await _contentRepository.UpdateAsync(entity, autoSave: true);
             }
 
@@ -121,6 +123,8 @@ namespace PhuThuongStickyRice.Application.Landing
                 FooterBackgroundUrl = entity.FooterBackgroundUrl,
                 VideoTitle = entity.VideoTitle,
                 VideoUrl = entity.VideoUrl,
+                ReviewVideoTitle = entity.ReviewVideoTitle,
+                ReviewVideoUrl = entity.ReviewVideoUrl,
                 MapEmbedUrl = entity.MapEmbedUrl,
                 ReviewsEmbedHtml = entity.ReviewsEmbedHtml,
                 PopupTitle = entity.PopupTitle,
