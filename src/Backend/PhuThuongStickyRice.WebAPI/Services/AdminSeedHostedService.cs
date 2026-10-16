@@ -94,6 +94,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
             {
                 role = new Role
                 {
+                    Id = Guid.NewGuid(),
                     Name = AdminRoleName,
                     NormalizedName = AdminRoleName.ToUpperInvariant(),
                     ConcurrencyStamp = Guid.NewGuid().ToString()
@@ -113,6 +114,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 {
                     await dbContext.Set<Role>().AddAsync(new Role
                     {
+                        Id = Guid.NewGuid(),
                         Name = extraRole,
                         NormalizedName = extraRole.ToUpperInvariant(),
                         ConcurrencyStamp = Guid.NewGuid().ToString()
