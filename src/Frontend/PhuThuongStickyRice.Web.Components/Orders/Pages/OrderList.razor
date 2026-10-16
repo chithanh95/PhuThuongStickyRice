@@ -14,14 +14,21 @@
     .timeline-item { position: relative; padding: 4px 0; }
     .timeline-item::before {
         content: ""; position: absolute; left: -17px; top: 9px;
-        width: 9px; height: 9px; border-radius: 50%; background: #007bff;
+        width: 9px; height: 9px; border-radius: 50%; background: #7a6fbe;
     }
 </style>
 
-<h3>Quản lý đơn hàng</h3>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Quản lý đơn hàng</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Đơn hàng</li>
+    </ol>
+</div>
 
 <div class="card mb-3">
     <div class="card-body">
+        <h4 class="card-title">Bộ lọc đơn hàng</h4>
         <div class="form-row">
             <div class="col-md-4">
                 <input id="orderSearchInput" class="form-control" placeholder="Tìm mã đơn / tên / SĐT... (phím /)"
@@ -110,8 +117,8 @@
 @if (_showDuplicates && _duplicateGroups != null && _duplicateGroups.Count > 0)
 {
     <div class="card mb-3 border-warning">
-        <div class="card-header bg-warning text-dark py-2"><strong>⚠️ Đơn trùng SĐT — kiểm tra & gộp</strong></div>
         <div class="card-body">
+            <h4 class="card-title text-warning">⚠️ Đơn trùng SĐT — kiểm tra & gộp</h4>
             @if (!string.IsNullOrEmpty(_mergeMessage))
             {
                 <div class="alert @(_mergeIsError ? "alert-danger" : "alert-success") py-2">@_mergeMessage</div>
@@ -127,7 +134,7 @@
                             </button>
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-sm mb-0">
+                            <table class="table table-hover table-sm mb-0">
                                 <thead>
                                     <tr>
                                         <th style="width:34px" title="Đơn giữ lại sau khi gộp">Giữ</th>
@@ -179,8 +186,9 @@ else
 {
     <div class="card">
         <div class="card-body">
+            <h4 class="card-title">Danh sách đơn hàng</h4>
             <div class="table-responsive">
-                <table class="table">
+                <table class="table table-hover mb-0">
                     <thead>
                         <tr>
                             <th>Mã đơn</th>
@@ -431,7 +439,7 @@ else
                                                 </ul>
                                             </div>
                                         }
-                                        <table class="table table-sm mt-2 mb-0">
+                                        <table class="table table-hover table-sm mt-2 mb-0">
                                             <thead>
                                                 <tr><th>Món</th><th class="text-right">Đơn giá</th><th class="text-right">SL</th><th class="text-right">Thành tiền</th></tr>
                                             </thead>
