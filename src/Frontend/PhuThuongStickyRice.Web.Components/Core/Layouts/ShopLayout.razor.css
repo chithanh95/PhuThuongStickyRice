@@ -5,6 +5,7 @@
    ============================================================ */
 
 .shp-page {
+    width: 100%;
     --shp-bg: #fdfbf7;
     --shp-surface: #ffffff;
     --shp-ink: #2e2620;
@@ -224,11 +225,13 @@
 
 /* ---------- main ---------- */
 .shp-main {
-    flex: 1;
+    flex: 1 0 auto;
     width: 100%;
     max-width: 1200px;
-    margin: 0 auto;
+    margin-left: auto;
+    margin-right: auto;
     padding: 20px 20px 40px;
+    box-sizing: border-box;
 }
 
 /* ---------- footer ---------- */
