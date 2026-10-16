@@ -20,8 +20,8 @@
                 <span style="font-size:36px;">🍚</span>
                 <span style="font-size:28px;font-weight:600;color:#2b3a4a;margin-left:8px;vertical-align:middle;">Xôi Phú Thượng</span>
             </div>
-            <h4 style="text-align:center;color:#2b3a4a;font-weight:500;margin-bottom:5px;">Welcome Back !</h4>
-            <p style="text-align:center;color:#9ca8b3;font-size:14px;margin-bottom:25px;">Sign in to continue to Xôi Phú Thượng.</p>
+            <h4 style="text-align:center;color:#1a1a2e;font-weight:600;font-size:22px;margin-bottom:5px;">Chào mừng trở lại !</h4>
+            <p style="text-align:center;color:#5a6c7d;font-size:14px;margin-bottom:25px;">Đăng nhập để tiếp tục vào Xôi Phú Thượng.</p>
 
             @if (!string.IsNullOrEmpty(_error))
             {
@@ -29,13 +29,13 @@
             }
 
             <div class="form-group">
-                <label>Username</label>
-                <input class="form-control" @bind="_username" placeholder="Enter username"
+                <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Tên đăng nhập</label>
+                <input class="form-control" @bind="_username" placeholder="Nhập tên đăng nhập"
                        disabled="@_awaitingTwoFactor" @onkeyup="HandleEnter" />
             </div>
             <div class="form-group">
-                <label>Password</label>
-                <input type="password" class="form-control" @bind="_password" placeholder="Enter password"
+                <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Mật khẩu</label>
+                <input type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu"
                        disabled="@_awaitingTwoFactor" @onkeyup="HandleEnter" />
             </div>
             @if (_awaitingTwoFactor)
@@ -53,12 +53,12 @@
                 <div class="col-6">
                     <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="rememberMe" @bind="_rememberMe" />
-                        <label class="custom-control-label" for="rememberMe">Remember me</label>
+                        <label class="custom-control-label" for="rememberMe">Ghi nhớ tôi</label>
                     </div>
                 </div>
                 <div class="col-6 text-right">
                     <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;padding:8px 30px;border-radius:4px;" @onclick="LoginAsync" disabled="@_loggingIn">
-                        @(_loggingIn ? "Signing in..." : _awaitingTwoFactor ? "Verify" : "Log In")
+                        @(_loggingIn ? "Đang đăng nhập..." : _awaitingTwoFactor ? "Xác nhận" : "Đăng nhập")
                     </button>
                 </div>
             </div>
@@ -67,7 +67,7 @@
                 <button class="btn btn-link btn-block" @onclick="BackToLogin">← Back to password</button>
             }
             <div class="mt-3 text-center">
-                <a href="/quen-mat-khau" class="text-muted"><i class="oi oi-lock-locked"></i> Forgot your password?</a>
+                <a href="/quen-mat-khau" class="text-muted"><i class="oi oi-lock-locked"></i> Quên mật khẩu?</a>
             </div>
             @if (_showHint)
             {
