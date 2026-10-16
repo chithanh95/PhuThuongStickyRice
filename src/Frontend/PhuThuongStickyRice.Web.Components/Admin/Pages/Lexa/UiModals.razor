@@ -1,0 +1,247 @@
+@page "/admin/lexa/ui-modals"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Modals</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>UI Elements</li>
+        <li class="current">Modals</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Modal cơ bản</h4>
+                <p class="card-title-desc">Các loại modal popup.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-primary" @onclick="OpenBasic">Mở modal</button>
+                    <button class="btn btn-info" @onclick="OpenLarge">Modal lớn</button>
+                    <button class="btn btn-warning" @onclick="OpenSmall">Modal nhỏ</button>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Sweet Alert</h4>
+                <p class="card-title-desc">Thông báo đẹp kiểu SweetAlert.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-success" @onclick="AlertSuccess">Thành công</button>
+                    <button class="btn btn-danger" @onclick="AlertError">Lỗi</button>
+                    <button class="btn btn-warning" @onclick="AlertWarning">Cảnh báo</button>
+                    <button class="btn btn-info" @onclick="AlertInfo">Thông tin</button>
+                    <button class="btn btn-dark" @onclick="AlertConfirm">Xác nhận xóa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Modal form</h4>
+                <p class="card-title-desc">Modal chứa form nhập liệu.</p>
+                <button class="btn btn-primary" @onclick="OpenForm">Thêm món mới</button>
+                @if (_addedDish != null)
+                {
+                    <div class="alert alert-success mt-3 mb-0">Đã thêm món: <strong>@_addedDish</strong></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_showBasic)
+{
+    <div class="lexa-modal-backdrop" @onclick="CloseBasic">
+        <div class="lexa-modal" @onclick:stopPropagation>
+            <div class="lexa-modal-header">
+                <h5>Tiêu đề modal</h5>
+                <button @onclick="CloseBasic">✕</button>
+            </div>
+            <div class="lexa-modal-body">
+                <p>Đây là nội dung của modal cơ bản. Bấm ra ngoài hoặc nút ✕ để đóng.</p>
+            </div>
+            <div class="lexa-modal-footer">
+                <button class="btn btn-secondary" @onclick="CloseBasic">Đóng</button>
+                <button class="btn btn-primary" @onclick="CloseBasic">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showLarge)
+{
+    <div class="lexa-modal-backdrop" @onclick="CloseLarge">
+        <div class="lexa-modal lexa-modal-lg" @onclick:stopPropagation>
+            <div class="lexa-modal-header">
+                <h5>Modal kích thước lớn</h5>
+                <button @onclick="CloseLarge">✕</button>
+            </div>
+            <div class="lexa-modal-body">
+                <p>Modal lớn phù hợp hiển thị bảng dữ liệu hoặc form dài.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>#</th><th>Món ăn</th><th>Giá</th></tr></thead>
+                        <tbody>
+                            <tr><td>1</td><td>Xôi gấc</td><td>15.000 ₫</td></tr>
+                            <tr><td>2</td><td>Xôi đỗ</td><td>15.000 ₫</td></tr>
+                            <tr><td>3</td><td>Xôi xéo</td><td>20.000 ₫</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="lexa-modal-footer">
+                <button class="btn btn-secondary" @onclick="CloseLarge">Đóng</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showSmall)
+{
+    <div class="lexa-modal-backdrop" @onclick="CloseSmall">
+        <div class="lexa-modal lexa-modal-sm" @onclick:stopPropagation>
+            <div class="lexa-modal-header">
+                <h5>Modal nhỏ</h5>
+                <button @onclick="CloseSmall">✕</button>
+            </div>
+            <div class="lexa-modal-body text-center">
+                <p>Xác nhận nhanh.</p>
+                <button class="btn btn-primary btn-sm" @onclick="CloseSmall">OK</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showForm)
+{
+    <div class="lexa-modal-backdrop" @onclick="CloseForm">
+        <div class="lexa-modal" @onclick:stopPropagation>
+            <div class="lexa-modal-header">
+                <h5>Thêm món mới</h5>
+                <button @onclick="CloseForm">✕</button>
+            </div>
+            <div class="lexa-modal-body">
+                <div class="form-group">
+                    <label>Tên món</label>
+                    <input class="form-control" @bind="_newDishName" placeholder="VD: Xôi cốm" />
+                </div>
+                <div class="form-group">
+                    <label>Giá bán</label>
+                    <input class="form-control" @bind="_newDishPrice" placeholder="VD: 25000" />
+                </div>
+                @if (_formError != null)
+                {
+                    <div class="alert alert-danger py-2">@_formError</div>
+                }
+            </div>
+            <div class="lexa-modal-footer">
+                <button class="btn btn-secondary" @onclick="CloseForm">Hủy</button>
+                <button class="btn btn-primary" @onclick="AddDish">Thêm món</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_alertType != null)
+{
+    <div class="lexa-modal-backdrop" @onclick="CloseAlert">
+        <div class="lexa-swal" @onclick:stopPropagation>
+            <div class="lexa-swal-icon lexa-swal-@_alertType">
+                @if (_alertType == "success") { <span>✓</span> }
+                else if (_alertType == "error") { <span>✕</span> }
+                else if (_alertType == "warning") { <span>!</span> }
+                else if (_alertType == "info") { <span>i</span> }
+                else { <span>?</span> }
+            </div>
+            <h4>@_alertTitle</h4>
+            <p class="text-muted">@_alertMsg</p>
+            @if (_alertType == "confirm")
+            {
+                <div class="d-flex justify-content-center" style="gap:8px;">
+                    <button class="btn btn-danger" @onclick="ConfirmDelete">Xóa luôn</button>
+                    <button class="btn btn-secondary" @onclick="CloseAlert">Hủy bỏ</button>
+                </div>
+            }
+            else
+            {
+                <button class="btn btn-primary" @onclick="CloseAlert">OK</button>
+            }
+            @if (_deleted)
+            {
+                <div class="alert alert-info mt-3 mb-0 py-2">Đã xóa (demo)!</div>
+            }
+        </div>
+    </div>
+}
+
+<style>
+    .lexa-modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 1050; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .lexa-modal { background: #fff; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+    html.dark .lexa-modal { background: #262640; color: #f0eef5; }
+    .lexa-modal-lg { max-width: 800px; }
+    .lexa-modal-sm { max-width: 300px; }
+    .lexa-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #e9ecef; }
+    html.dark .lexa-modal-header { border-color: #3a3a58; }
+    .lexa-modal-header h5 { margin: 0; }
+    .lexa-modal-header button { border: none; background: none; font-size: 20px; cursor: pointer; color: #999; }
+    .lexa-modal-body { padding: 20px; }
+    .lexa-modal-footer { padding: 16px 20px; border-top: 1px solid #e9ecef; text-align: right; }
+    html.dark .lexa-modal-footer { border-color: #3a3a58; }
+    .lexa-swal { background: #fff; border-radius: 12px; padding: 36px; text-align: center; max-width: 380px; width: 100%; }
+    html.dark .lexa-swal { background: #262640; color: #f0eef5; }
+    .lexa-swal-icon { width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 700; color: #fff; }
+    .lexa-swal-success { background: #3ac9d6; }
+    .lexa-swal-error { background: #ec536c; }
+    .lexa-swal-warning { background: #f5b225; }
+    .lexa-swal-info { background: #7a6fbe; }
+    .lexa-swal-confirm { background: #ec536c; }
+</style>
+
+@code {
+    private bool _showBasic, _showLarge, _showSmall, _showForm;
+    private string _alertType, _alertTitle, _alertMsg;
+    private bool _deleted;
+    private string _newDishName, _newDishPrice, _formError, _addedDish;
+
+    private void OpenBasic() => _showBasic = true;
+    private void CloseBasic() => _showBasic = false;
+    private void OpenLarge() => _showLarge = true;
+    private void CloseLarge() => _showLarge = false;
+    private void OpenSmall() => _showSmall = true;
+    private void CloseSmall() => _showSmall = false;
+    private void OpenForm() => _showForm = true;
+    private void CloseForm() => _showForm = false;
+
+    private void AlertSuccess() => ShowAlert("success", "Thành công!", "Đã lưu dữ liệu thành công.");
+    private void AlertError() => ShowAlert("error", "Thất bại!", "Đã xảy ra lỗi, vui lòng thử lại.");
+    private void AlertWarning() => ShowAlert("warning", "Cảnh báo!", "Hành động này cần chú ý.");
+    private void AlertInfo() => ShowAlert("info", "Thông tin", "Đây là thông báo thông tin.");
+    private void AlertConfirm() => ShowAlert("confirm", "Bạn chắc chắn?", "Món ăn sẽ bị xóa khỏi menu!");
+
+    private void ShowAlert(string type, string title, string msg)
+    {
+        _deleted = false;
+        _alertType = type;
+        _alertTitle = title;
+        _alertMsg = msg;
+    }
+
+    private void CloseAlert() => _alertType = null;
+    private void ConfirmDelete() => _deleted = true;
+
+    private void AddDish()
+    {
+        if (string.IsNullOrWhiteSpace(_newDishName))
+        {
+            _formError = "Vui lòng nhập tên món.";
+            return;
+        }
+        _addedDish = _newDishName;
+        _showForm = false;
+        _newDishName = _newDishPrice = null;
+        _formError = null;
+    }
+}
