@@ -1222,6 +1222,44 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     b.ToTable("FaqItems", (string)null);
                 });
 
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.FavoriteDish", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("CreatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("Phone", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("FavoriteDishes", (string)null);
+                });
+
             modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.FeatureFlag", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3184,6 +3222,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("GrabFoodUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<bool>("HealthAlertsEnabled")
                         .HasColumnType("bit");
 
@@ -3281,6 +3323,10 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<string>("ShopeeFoodUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("ShowZaloChatButton")
                         .HasColumnType("bit");
@@ -4137,6 +4183,15 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PhuThuongStickyRice.Domain.Entities.FavoriteDish", b =>
+                {
+                    b.HasOne("PhuThuongStickyRice.Domain.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

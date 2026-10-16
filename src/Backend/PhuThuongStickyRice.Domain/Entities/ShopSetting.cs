@@ -317,6 +317,18 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public int WholesaleMinQty { get; set; }
 
+        // ---- Link sàn TMĐT (75) ----
+
+        /// <summary>
+        /// Link gian hàng ShopeeFood. Empty = không hiển thị.
+        /// </summary>
+        public string ShopeeFoodUrl { get; set; }
+
+        /// <summary>
+        /// Link gian hàng GrabFood. Empty = không hiển thị.
+        /// </summary>
+        public string GrabFoodUrl { get; set; }
+
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting
@@ -375,7 +387,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 GoogleAnalyticsId = null,
                 ZaloVipGroupUrl = null,
                 WholesaleContact = null,
-                WholesaleMinQty = 50
+                WholesaleMinQty = 50,
+                ShopeeFoodUrl = null,
+                GrabFoodUrl = null
             };
         }
     }

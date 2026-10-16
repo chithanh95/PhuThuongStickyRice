@@ -190,3 +190,27 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
         public string ThumbnailUrl { get; set; }
     }
 }
+
+namespace PhuThuongStickyRice.Web.Components.Landing.Models
+{
+    public class ParsedOrderItem
+    {
+        public Guid ProductId { get; set; }
+        public string ProductName { get; set; }
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
+    }
+
+    public class ParseOrderResult
+    {
+        public bool IsOrderIntent { get; set; }
+        public List<ParsedOrderItem> Items { get; set; } = new List<ParsedOrderItem>();
+        public string UnmatchedText { get; set; }
+    }
+
+    public class MarketplaceLinksModel
+    {
+        public string ShopeeFoodUrl { get; set; }
+        public string GrabFoodUrl { get; set; }
+    }
+}

@@ -1856,3 +1856,128 @@ html.dark .sg-poem { color: var(--sg-accent); }
 .sg-course-sec .sg-h2, .sg-course-sec .sg-eyebrow { color: #fff; }
 .sg-course-sec .sg-lead { color: #d0c4b4; }
 @media (max-width: 768px) { .sg-export-grid { grid-template-columns: 1fr; } }
+
+/* Item 61: xác nhận đơn trong chat */
+.sg-chat-order {
+    border-top: 1px solid var(--sg-line);
+    padding: 10px 12px;
+    background: #fffdf7;
+}
+.sg-chat-order-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 3px 0;
+}
+.sg-chat-phone {
+    width: 100%;
+    margin: 8px 0;
+    padding: 8px 10px;
+    border: 1px solid var(--sg-line);
+    border-radius: 8px;
+    font-size: 14px;
+}
+.sg-chat-order-btns { display: flex; gap: 8px; }
+.sg-chat-order-btns .sg-btn { flex: 1; padding: 8px; font-size: 13px; }
+
+/* Items 64, 66, 67 */
+.sg-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+}
+.sg-modal-360 {
+    background: #fff;
+    border-radius: 16px;
+    max-width: 520px; width: 100%;
+    padding: 20px;
+    position: relative;
+}
+.sg-modal-close {
+    position: absolute; top: 10px; right: 14px;
+    background: none; border: none;
+    font-size: 28px; cursor: pointer; color: #999;
+}
+.sg-360-stage {
+    background: #f7f3ec;
+    border-radius: 12px;
+    aspect-ratio: 4/3;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; margin: 12px 0;
+}
+.sg-360-stage img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.sg-360-ctrl { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sg-btn-360 {
+    background: rgba(255,255,255,.9);
+    border: 1px solid var(--sg-line);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    cursor: pointer; font-size: 15px;
+    position: absolute; top: 8px; right: 8px;
+}
+.sg-voice-review {
+    margin-top: 28px; padding-top: 24px;
+    border-top: 1px dashed var(--sg-line);
+}
+.sg-voice-review h3 { margin: 0 0 4px; }
+.sg-voice-row { display: flex; gap: 10px; margin: 12px 0; }
+.sg-voice-row textarea {
+    flex: 1; padding: 10px 12px;
+    border: 1px solid var(--sg-line); border-radius: 10px;
+    font-size: 14px; resize: vertical;
+}
+.sg-voice-btn {
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 2px solid var(--sg-line); background: #fff;
+    font-size: 22px; cursor: pointer; flex-shrink: 0;
+}
+.sg-voice-btn.rec { border-color: #d33; animation: pulse 1s infinite; }
+@keyframes pulse { 50% { transform: scale(1.08); } }
+.sg-stars-small button { font-size: 26px; }
+
+/* Items 75, 76 */
+.sg-market-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+.sg-market-btn { min-width: 180px; }
+.sg-market-btn.sg-grab { background: #00b14f; border-color: #00b14f; }
+.sg-event-sec { background: var(--sg-cream); }
+
+/* Items 62, 63 */
+.sg-reorder-box {
+    background: var(--sg-surface);
+    border: 1px solid var(--sg-line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-top: 16px;
+    text-align: left;
+}
+.sg-fav-sec { background: #fff9f5; }
+.sg-btn-fav {
+    background: rgba(255,255,255,.9);
+    border: 1px solid var(--sg-line);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    cursor: pointer; font-size: 15px;
+    position: absolute; top: 8px; left: 8px;
+}
+.sg-btn-fav.on { border-color: #e05050; }
+
+/* Mobile: các section mới */
+@media (max-width: 768px) {
+    .sg-chat-box {
+        width: calc(100vw - 32px);
+        right: 16px; left: 16px;
+        bottom: 90px;
+        max-height: 70vh;
+    }
+    .sg-loyal-form { flex-direction: column; }
+    .sg-loyal-form input, .sg-loyal-form button { width: 100%; }
+    .sg-360-ctrl { flex-wrap: wrap; justify-content: center; }
+    .sg-voice-row { flex-direction: column; }
+    .sg-voice-btn { align-self: center; }
+    .sg-market-btns { flex-direction: column; align-items: stretch; }
+    .sg-market-btn { width: 100%; }
+    .sg-chat-order-btns { flex-direction: column; }
+    .sg-modal-360 { padding: 16px; }
+}

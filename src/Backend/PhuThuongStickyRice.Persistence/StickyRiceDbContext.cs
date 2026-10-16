@@ -93,6 +93,8 @@ namespace PhuThuongStickyRice.Persistence
 
         public DbSet<DishPoll> DishPolls { get; set; }
 
+        public DbSet<FavoriteDish> FavoriteDishes { get; set; }
+
         public DbSet<DishVote> DishVotes { get; set; }
         public DbSet<QuoteRequest> QuoteRequests { get; set; }
         public DbSet<CungReminder> CungReminders { get; set; }

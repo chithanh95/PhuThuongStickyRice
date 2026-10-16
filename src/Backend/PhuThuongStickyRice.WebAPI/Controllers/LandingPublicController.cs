@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Persistence;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -745,6 +747,220 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        // ============ Parse ý định đặt hàng từ text/chatbot/voice (items 61, 80) ============
+
+        public class ParseOrderRequest
+        {
+            public string Text { get; set; }
+            public string Phone { get; set; }
+        }
+
+        /// <summary>
+        /// Public: parse Vietnamese free text into dish lines.
+        /// Does NOT create an order — the frontend confirms before calling the order API.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("parse-order")]
+        public async Task<ActionResult> ParseOrder(
+            [FromBody] ParseOrderRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var text = request?.Text ?? string.Empty;
+            var products = await _db.Products
+                .AsNoTracking()
+                .Where(p => p.Status == ProductStatus.Active)
+                .ToListAsync(cancellationToken);
+
+            var result = OrderIntentParser.Parse(text, products);
+
+            return Ok(new
+            {
+                isOrderIntent = result.IsOrderIntent,
+                items = result.Items.Select(i => new
+                {
+                    productId = i.ProductId,
+                    productName = i.ProductName,
+                    quantity = i.Quantity,
+                    price = i.Price
+                }),
+                unmatchedText = result.UnmatchedText
+            });
+        }
+
+        // ============ Món yêu thích (item 63) ============
+
+        public class FavoriteRequest
+        {
+            public string Phone { get; set; }
+            public Guid ProductId { get; set; }
+        }
+
+        /// <summary>Public: add a favorite dish (idempotent).</summary>
+        [AllowAnonymous]
+        [HttpPost("favorites")]
+        public async Task<ActionResult> AddFavorite(
+            [FromBody] FavoriteRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var phone = (request?.Phone ?? string.Empty).Trim();
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var exists = await _db.FavoriteDishes
+                .AnyAsync(f => f.Phone == phone && f.ProductId == request.ProductId, cancellationToken);
+
+            if (!exists)
+            {
+                _db.FavoriteDishes.Add(new FavoriteDish
+                {
+                    Phone = phone,
+                    ProductId = request.ProductId
+                });
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+
+            return Ok(new { success = true });
+        }
+
+        /// <summary>Public: remove a favorite dish.</summary>
+        [AllowAnonymous]
+        [HttpDelete("favorites")]
+        public async Task<ActionResult> RemoveFavorite(
+            [FromBody] FavoriteRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var phone = (request?.Phone ?? string.Empty).Trim();
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var fav = await _db.FavoriteDishes
+                .FirstOrDefaultAsync(f => f.Phone == phone && f.ProductId == request.ProductId, cancellationToken);
+
+            if (fav != null)
+            {
+                _db.FavoriteDishes.Remove(fav);
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+
+            return Ok(new { success = true });
+        }
+
+        /// <summary>Public: list favorite product ids for a phone.</summary>
+        [AllowAnonymous]
+        [HttpGet("favorites")]
+        public async Task<ActionResult> GetFavorites(
+            [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            phone = (phone ?? string.Empty).Trim();
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var ids = await _db.FavoriteDishes
+                .Where(f => f.Phone == phone)
+                .Select(f => f.ProductId)
+                .ToListAsync(cancellationToken);
+
+            return Ok(new { productIds = ids });
+        }
+
+        /// <summary>
+        /// Public: favorite dishes that are currently available —
+        /// frontend uses this to show "món bạn thích đã có lại".
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("favorites/back-in-stock")]
+        public async Task<ActionResult> GetFavoritesBackInStock(
+            [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            phone = (phone ?? string.Empty).Trim();
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var items = await _db.FavoriteDishes
+                .Where(f => f.Phone == phone)
+                .Join(_db.Products,
+                    f => f.ProductId,
+                    p => p.Id,
+                    (f, p) => p)
+                .Where(p => p.Status == ProductStatus.Active)
+                .Select(p => new
+                {
+                    productId = p.Id,
+                    productName = p.Name,
+                    price = p.Price.Amount,
+                    imageUrlsJson = p.ImageUrlsJson
+                })
+                .ToListAsync(cancellationToken);
+
+            return Ok(new { items });
+        }
+
+        // ============ Link sàn TMĐT (item 75) ============
+
+        /// <summary>Public: marketplace links (only returned when configured).</summary>
+        [AllowAnonymous]
+        [HttpGet("marketplace-links")]
+        public async Task<ActionResult> GetMarketplaceLinks(CancellationToken cancellationToken = default)
+        {
+            var settings = await _db.ShopSettings.FirstOrDefaultAsync(cancellationToken);
+
+            return Ok(new
+            {
+                shopeeFoodUrl = string.IsNullOrWhiteSpace(settings?.ShopeeFoodUrl) ? null : settings.ShopeeFoodUrl,
+                grabFoodUrl = string.IsNullOrWhiteSpace(settings?.GrabFoodUrl) ? null : settings.GrabFoodUrl
+            });
+        }
+
+        // ============ Gợi ý đặt lại theo lịch sử (item 62) ============
+
+        /// <summary>
+        /// Public: items of the most recent order for a phone number,
+        /// so the frontend can offer one-tap reorder. Empty array when no order.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("last-order-items")]
+        public async Task<ActionResult> GetLastOrderItems(
+            [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            phone = (phone ?? string.Empty).Trim();
+            if (!IsValidVnPhone(phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var order = await _db.Orders
+                .AsNoTracking()
+                .Where(o => o.CustomerPhone == phone)
+                .OrderByDescending(o => o.CreatedAt)
+                .Include(o => o.Lines)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var items = order == null
+                ? new List<object>()
+                : order.Lines
+                    .Select(l => (object)new
+                    {
+                        productId = l.ProductId,
+                        productName = l.ProductName,
+                        quantity = l.Quantity,
+                        price = l.UnitPrice.Amount
+                    })
+                    .ToList();
+
+            return Ok(new { items });
+        }
+
         /// Masks a phone number for public display: "0912345678" -&gt; "091***78".
         /// </summary>
         private static string MaskPhone(string phone)

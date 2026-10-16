@@ -93,6 +93,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // VIP Club (55) + bán sỉ (58).
             builder.Property(x => x.ZaloVipGroupUrl).HasMaxLength(500);
             builder.Property(x => x.WholesaleContact).HasMaxLength(200);
+            builder.Property(x => x.ShopeeFoodUrl).HasMaxLength(500);
+            builder.Property(x => x.GrabFoodUrl).HasMaxLength(500);
         }
     }
 }

@@ -623,3 +623,29 @@ window.ptShare = function (title, text, url) {
 
 /* Landing item 31: in/tải menu PDF. */
 window.ptPrintMenu = function () { try { window.print(); } catch (e) { } };
+
+/* Items 66/80: nhập giọng nói (Web Speech API). */
+window.ptStartVoiceInput = function () {
+    return new Promise(function (resolve) {
+        try {
+            var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) { resolve(""); return; }
+            var rec = new SR();
+            rec.lang = "vi-VN";
+            rec.interimResults = false;
+            rec.maxAlternatives = 1;
+            rec.onresult = function (e) {
+                try { resolve(e.results[0][0].transcript || ""); } catch (err) { resolve(""); }
+            };
+            rec.onerror = function () { resolve(""); };
+            rec.onend = function () { resolve(""); };
+            // Tránh resolve 2 lần
+            var done = false;
+            var once = function (t) { if (!done) { done = true; resolve(t); } try { rec.stop(); } catch (e) {} };
+            rec.onresult = function (e) { try { once(e.results[0][0].transcript || ""); } catch (err) { once(""); } };
+            rec.onerror = function () { once(""); };
+            setTimeout(function () { once(""); }, 15000);
+            rec.start();
+        } catch (e) { resolve(""); }
+    });
+};

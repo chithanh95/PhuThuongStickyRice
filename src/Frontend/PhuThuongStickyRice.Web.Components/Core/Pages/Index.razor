@@ -266,6 +266,8 @@ else
                             {
                                 <div class="sg-dish-quick">
                                     <button @onclick="() => AddToCart(product)">+ Thêm nhanh</button>
+                                        <button class="sg-btn-360" @onclick="() => Open360(product)" title="Xem 360°">🔄</button>
+                                        <button class="sg-btn-fav @(_favorites.Contains(product.Id) ? "on" : "")" @onclick="() => ToggleFavorite(product)" title="Yêu thích">@(_favorites.Contains(product.Id) ? "❤️" : "🤍")</button>
                                 </div>
                             }
                         </div>
@@ -386,6 +388,17 @@ else
         </div>
     </section>
 }
+
+<!-- VIDEO UNBOX (item 65) -->
+<section class="sg-section sg-unbox-sec">
+    <div class="sg-container sg-center" style="max-width:640px">
+        <p class="sg-eyebrow">Mở hộp cùng khách</p>
+        <h2 class="sg-h2">📦 Video unbox xôi nóng hổi</h2>
+        <p class="sg-lead">Quay clip mở hộp xôi vừa giao tới — khoảnh khắc hơi nóng bốc lên là "ngon" nhất!</p>
+        <p>Gửi clip unbox qua Zalo quán để được <strong>tặng voucher 20k</strong> cho đơn sau.</p>
+        <a class="sg-btn sg-btn-solid" href="#dat-xoi" style="margin-top:12px">Đặt xôi để unbox →</a>
+    </div>
+</section>
 
 <!-- GALLERY ẢNH KHÁCH CHECK-IN (item 12) -->
 @if (_gallery != null && _gallery.Count > 0)
@@ -725,6 +738,26 @@ else
             </div>
             <p class="sg-muted">Chạm vào số sao — không cần đăng nhập.</p>
         }
+        <!-- ĐÁNH GIÁ BẰNG GIỌNG NÓI (item 66) -->
+        <div class="sg-voice-review">
+            <h3>🎤 Đánh giá bằng giọng nói</h3>
+            <p class="sg-muted">Bấm nút, nói cảm nhận — tự chuyển thành chữ.</p>
+            <div class="sg-stars-big sg-stars-small">
+                @for (var i = 1; i <= 5; i++)
+                {
+                    var s = i;
+                    <button @onclick="() => _reviewStars = s" aria-label="@s sao">@(s <= _reviewStars ? "★" : "☆")</button>
+                }
+            </div>
+            <div class="sg-voice-row">
+                <textarea @bind="_reviewText" placeholder="Nói hoặc gõ đánh giá..." rows="3"></textarea>
+                <button class="sg-voice-btn @(_voiceReviewing ? "rec" : "")" @onclick="StartVoiceReview" aria-label="Nói đánh giá" disabled="@_voiceReviewing">
+                    @(_voiceReviewing ? "🔴" : "🎤")
+                </button>
+            </div>
+            <button class="sg-btn sg-btn-solid" @onclick="SubmitVoiceReview">Gửi đánh giá</button>
+            @if (!string.IsNullOrEmpty(_reviewMsg)) { <p class="sg-center">@_reviewMsg</p> }
+        </div>
     </div>
 </section>
 
@@ -917,6 +950,28 @@ else
     </section>
 }
 
+<!-- ĐẶT NHANH 1 CHẠM (item 67) -->
+<section class="sg-section">
+    <div class="sg-container sg-center" style="max-width:560px">
+        <p class="sg-eyebrow">Tiện lợi</p>
+        <h2 class="sg-h2">⚡ Đặt nhanh 1 chạm</h2>
+        <p class="sg-lead">Web nhớ đơn tủ của bạn — lần sau chỉ cần nhập SĐT là đặt xong.</p>
+        <div class="sg-loyal-form">
+            <input @bind="_quickPhone" placeholder="Nhập SĐT" inputmode="tel" maxlength="15" />
+            <button class="sg-btn sg-btn-solid" @onclick="QuickOrder">Đặt ngay</button>
+        </div>
+        @if (!string.IsNullOrEmpty(_quickMsg)) { <p class="sg-form-error">@_quickMsg</p> }
+        <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button class="sg-btn sg-btn-outline" @onclick="StartVoiceOrder">🎤 Đặt bằng giọng nói</button>
+            <button class="sg-btn sg-btn-outline" @onclick="SaveQuickOrder">💾 Lưu giỏ hiện tại làm đơn tủ</button>
+        </div>
+        @if (_voiceOrderText != null)
+        {
+            <p class="sg-center" style="margin-top:10px">Bạn nói: "<i>@_voiceOrderText</i>"</p>
+        }
+    </div>
+</section>
+
 <!-- SINH NHẬT (item 43) + VIP CLUB (item 55) -->
 <section class="sg-section sg-bdvip-sec">
     <div class="sg-container sg-spin-grid">
@@ -993,6 +1048,123 @@ else
             <div class="sg-loyal-form" style="max-width:420px;margin:20px auto 0">
                 <input @bind="_coursePhone" placeholder="SĐT để đăng ký học" inputmode="tel" maxlength="15" />
             </div>
+        </div>
+    </section>
+}
+
+<!-- GỢI Ý ĐẶT LẠI (item 62) -->
+<section class="sg-section">
+    <div class="sg-container sg-center" style="max-width:560px">
+        <p class="sg-eyebrow">Nhớ bạn</p>
+        <h2 class="sg-h2">🔁 Đặt lại đơn cũ 1 chạm</h2>
+        <p class="sg-lead">Nhập SĐT — web hiện đơn gần nhất, bấm là đặt lại y chang.</p>
+        <div class="sg-loyal-form">
+            <input @bind="_reorderPhone" placeholder="Nhập SĐT" inputmode="tel" maxlength="15" />
+            <button class="sg-btn sg-btn-solid" @onclick="LoadLastOrder">Xem đơn cũ</button>
+        </div>
+        @if (!string.IsNullOrEmpty(_reorderMsg)) { <p class="sg-form-error">@_reorderMsg</p> }
+        @if (_lastOrderItems?.Count > 0)
+        {
+            <div class="sg-reorder-box">
+                @foreach (var i in _lastOrderItems)
+                {
+                    <div class="sg-chat-order-row"><span>@i.Quantity × @i.ProductName</span><b>@((i.Price * i.Quantity).ToString("N0"))đ</b></div>
+                }
+                <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="ReorderAll" style="margin-top:10px">Đặt lại y chang →</button>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- MÓN YÊU THÍCH (item 63) -->
+<section class="sg-section sg-fav-sec">
+    <div class="sg-container sg-center" style="max-width:560px">
+        <p class="sg-eyebrow">Theo dõi</p>
+        <h2 class="sg-h2">❤️ Món yêu thích</h2>
+        <p class="sg-lead">Thả tim món bạn thích — khi nào có lại, quán báo ngay!</p>
+        <div class="sg-loyal-form">
+            <input @bind="_favPhone" placeholder="Nhập SĐT để đồng bộ" inputmode="tel" maxlength="15" />
+            <button class="sg-btn sg-btn-solid" @onclick="LoadFavorites">Xem yêu thích</button>
+        </div>
+        @if (_backInStock?.Count > 0)
+        {
+            <div class="sg-reorder-box">
+                <p><strong>🎉 Món bạn thích đã có lại:</strong></p>
+                @foreach (var p in _backInStock)
+                {
+                    <div class="sg-chat-order-row"><span>@p.Name</span><b>@p.Price.ToString("N0")đ</b></div>
+                }
+            </div>
+        }
+        <p class="sg-muted" style="margin-top:10px">Mẹo: bấm ❤️ trên từng món ở menu để thêm vào yêu thích.</p>
+    </div>
+</section>
+
+<!-- ĐẶT QUA SÀN TMĐT (item 75) -->
+@if (!string.IsNullOrWhiteSpace(_marketLinks?.ShopeeFoodUrl) || !string.IsNullOrWhiteSpace(_marketLinks?.GrabFoodUrl))
+{
+    <section class="sg-section sg-market-sec">
+        <div class="sg-container sg-center">
+            <p class="sg-eyebrow">Tiện đâu đặt đó</p>
+            <h2 class="sg-h2">Đặt xôi qua app giao đồ ăn</h2>
+            <div class="sg-market-btns">
+                @if (!string.IsNullOrWhiteSpace(_marketLinks?.ShopeeFoodUrl))
+                {
+                    <a class="sg-btn sg-btn-solid sg-market-btn" href="@_marketLinks.ShopeeFoodUrl" target="_blank" rel="noopener">🛵 ShopeeFood</a>
+                }
+                @if (!string.IsNullOrWhiteSpace(_marketLinks?.GrabFoodUrl))
+                {
+                    <a class="sg-btn sg-btn-solid sg-market-btn sg-grab" href="@_marketLinks.GrabFoodUrl" target="_blank" rel="noopener">🛵 GrabFood</a>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- XÔI SỰ KIỆN (item 76) -->
+<section class="sg-section sg-event-sec">
+    <div class="sg-container">
+        <p class="sg-eyebrow">Cưới hỏi — hội nghị</p>
+        <h2 class="sg-h2 sg-center">Xôi cho sự kiện 100–1000 suất</h2>
+        <p class="sg-lead sg-center">Đám cưới, giỗ chạp, hội nghị công ty — quán lo từ A đến Z.</p>
+        <div class="sg-poll-grid">
+            <div class="sg-poll-card sg-reveal">
+                <div class="sg-poll-body">
+                    <h3>🎎 Gói Cưới hỏi</h3>
+                    <p>Xôi gấc đỏ may mắn, trang trí đẹp, giao tận nơi đúng giờ.</p>
+                    <div class="sg-poll-votes">Từ 25k/suất</div>
+                    <a class="sg-btn sg-btn-outline sg-btn-block" href="/dat-tiec">Nhận báo giá</a>
+                </div>
+            </div>
+            <div class="sg-poll-card sg-reveal">
+                <div class="sg-poll-body">
+                    <h3>🏢 Gói Hội nghị</h3>
+                    <p>Xôi hộp văn phòng, ăn sáng hội thảo, hóa đơn VAT đầy đủ.</p>
+                    <div class="sg-poll-votes">Từ 20k/suất</div>
+                    <a class="sg-btn sg-btn-outline sg-btn-block" href="/dat-tiec">Nhận báo giá</a>
+                </div>
+            </div>
+            <div class="sg-poll-card sg-reveal">
+                <div class="sg-poll-body">
+                    <h3>🙏 Gói Giỗ chạp</h3>
+                    <p>Mâm xôi cúng đầy đủ, đúng phong tục, giao sớm trong ngày.</p>
+                    <div class="sg-poll-votes">Từ 150k/mâm</div>
+                    <a class="sg-btn sg-btn-outline sg-btn-block" href="/dat-tiec">Nhận báo giá</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- BẢN ĐỒ (item 77) -->
+@if (!string.IsNullOrWhiteSpace(_mapsUrl))
+{
+    <section class="sg-section">
+        <div class="sg-container sg-center">
+            <p class="sg-eyebrow">Tìm quán</p>
+            <h2 class="sg-h2">Bếp online trên bản đồ</h2>
+            <p class="sg-lead">Dù bán online, quán vẫn có mặt trên Google Maps để bạn dễ tìm.</p>
+            <a class="sg-btn sg-btn-solid" href="@_mapsUrl" target="_blank" rel="noopener">📍 Xem trên Google Maps</a>
         </div>
     </section>
 }
@@ -1150,6 +1322,39 @@ else
     <a href="#dat-xoi" class="sg-sticky-order">Đặt xôi ngay →</a>
 </div>
 
+<!-- VIEWER 360° (item 64) -->
+@if (_view360Product != null)
+{
+    <div class="sg-modal-backdrop" @onclick="Close360">
+        <div class="sg-modal-360" @onclick:stopPropagation>
+            <button class="sg-modal-close" @onclick="Close360">×</button>
+            <h3>🔄 @_view360Product.Name — xem 360°</h3>
+            @{
+                var imgs360 = AllImageUrls(_view360Product.ImageUrlsJson);
+            }
+            <div class="sg-360-stage">
+                @if (imgs360.Count > 0)
+                {
+                    <img src="@imgs360[_view360Index % imgs360.Count]" alt="@_view360Product.Name" />
+                }
+                else
+                {
+                    <p class="sg-muted">Chưa có ảnh 360° — xem ảnh món ở menu nhé.</p>
+                }
+            </div>
+            @if (imgs360.Count > 1)
+            {
+                <div class="sg-360-ctrl">
+                    <button class="sg-btn sg-btn-outline" @onclick="() => Rotate360(-1)">◀ Xoay trái</button>
+                    <span>@(_view360Index % imgs360.Count + 1)/@imgs360.Count</span>
+                    <button class="sg-btn sg-btn-outline" @onclick="() => Rotate360(1)">Xoay phải ▶</button>
+                </div>
+            }
+            <p class="sg-muted sg-center">Kéo xem từng góc — ảnh thật từ quán.</p>
+        </div>
+    </div>
+}
+
 <!-- CHAT VỚI QUÁN (item 37) -->
 <button class="sg-chat-fab" @onclick="ToggleChat" aria-label="Chat với quán">💬</button>
 @if (_chatOpen)
@@ -1169,8 +1374,22 @@ else
                 <div class="sg-chat-msg @(m.Sender == "customer" ? "mine" : "theirs")">@m.Message</div>
             }
         </div>
+        @if (_chatOrder?.Items?.Count > 0)
+        {
+            <div class="sg-chat-order">
+                @foreach (var i in _chatOrder.Items)
+                {
+                    <div class="sg-chat-order-row"><span>@i.Quantity × @i.ProductName</span><b>@((i.Price * i.Quantity).ToString("N0"))đ</b></div>
+                }
+                <input @bind="_chatPhone" placeholder="SĐT nhận hàng" inputmode="tel" maxlength="15" class="sg-chat-phone" />
+                <div class="sg-chat-order-btns">
+                    <button class="sg-btn sg-btn-solid" @onclick="ConfirmChatOrder">✓ Đặt đơn này</button>
+                    <button class="sg-btn sg-btn-outline" @onclick="() => _chatOrder = null">Hủy</button>
+                </div>
+            </div>
+        }
         <form class="sg-chat-input" @onsubmit="SendChat">
-            <input @bind="_chatInput" placeholder="Nhắn tin..." maxlength="500" />
+            <input @bind="_chatInput" placeholder="Nhắn tin... (vd: 2 xôi gấc)" maxlength="500" />
             <button type="submit">Gửi</button>
         </form>
     </div>
@@ -1327,6 +1546,46 @@ else
     private string _chatSession = "";
     private string _chatInput = "";
     private List<ChatMessageModel> _chatMessages = new List<ChatMessageModel>();
+    // 61: parse đặt hàng trong chat
+    private ParseOrderResult _chatOrder;
+    private string _chatPhone = "";
+    // 64: 360 viewer
+    private ShopProductModel _view360Product;
+    private int _view360Index;
+    // 66: đánh giá giọng nói
+    private bool _voiceReviewing;
+    private string _reviewText = "";
+    private int _reviewStars = 5;
+    private string _reviewMsg;
+    // 67: đặt nhanh
+    private string _quickPhone = "";
+    private string _quickMsg;
+    private async Task SaveQuickOrder()
+    {
+        if (CartState.Items.Count == 0) { _quickMsg = "Giỏ đang trống — thêm món vào giỏ trước nhé."; return; }
+        try
+        {
+            var data = string.Join(",", CartState.Items.Select(i => $"{i.ProductId}:{i.Quantity}"));
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "pt-quick-order", data);
+            _quickMsg = null;
+            Toasts.Show("Đã lưu đơn tủ! Lần sau chỉ cần nhập SĐT.");
+        }
+        catch { }
+    }
+
+    // 80: đặt bằng giọng nói
+    private string _voiceOrderText;
+    // 75, 77
+    private MarketplaceLinksModel _marketLinks;
+    private string _mapsUrl;
+    // 62: gợi ý đặt lại
+    private string _reorderPhone = "";
+    private List<ParsedOrderItem> _lastOrderItems;
+    private string _reorderMsg;
+    // 63: yêu thích
+    private HashSet<Guid> _favorites = new HashSet<Guid>();
+    private string _favPhone = "";
+    private List<ShopProductModel> _backInStock = new List<ShopProductModel>();
     // 41-60
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel> _articles = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>();
     private string _loyalPhone = "";
@@ -1485,6 +1744,8 @@ else
         try { _offpeak = await LandingService.GetOffPeakAsync(); } catch { }
         try { _polls = await LandingService.GetPollsAsync() ?? new List<DishPollModel>(); } catch { }
         try { _courses = await LandingService.GetCoursesAsync() ?? new List<CourseModel>(); } catch { }
+        try { _marketLinks = await LandingService.GetMarketplaceLinksAsync(); } catch { }
+        try { var s = await ShopSettingsService.GetPublicAsync(); _mapsUrl = s?.GoogleMapsUrl; } catch { }
         try
         {
             var holidays = await LandingService.GetUpcomingHolidaysAsync();
@@ -1667,6 +1928,24 @@ else
             _ => "xoi-gac.jpg"
         };
         return $"_content/PhuThuongStickyRice.Web.Components/images/{file}";
+    }
+
+    private static List<string> AllImageUrls(string imageUrlsJson)
+    {
+        var list = new List<string>();
+        if (string.IsNullOrWhiteSpace(imageUrlsJson)) return list;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(imageUrlsJson);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array) return list;
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                var s = el.GetString();
+                if (!string.IsNullOrWhiteSpace(s)) list.Add(s);
+            }
+        }
+        catch { }
+        return list;
     }
 
     private static string FirstImageUrl(string imageUrlsJson)
@@ -1933,7 +2212,197 @@ else
         var msg = _chatInput.Trim();
         _chatInput = "";
         _chatMessages.Add(new ChatMessageModel { Sender = "customer", Message = msg, CreatedAt = DateTime.Now });
+        // 61: thử parse ý định đặt hàng
+        try
+        {
+            var parsed = await LandingService.ParseOrderAsync(msg);
+            if (parsed != null && parsed.IsOrderIntent && parsed.Items?.Count > 0)
+            {
+                _chatOrder = parsed;
+                _chatMessages.Add(new ChatMessageModel { Sender = "shop", Message = $"Quán hiểu bạn muốn đặt: {string.Join(", ", parsed.Items.Select(i => $"{i.Quantity} {i.ProductName}"))}. Nhập SĐT và bấm xác nhận nhé!", CreatedAt = DateTime.Now });
+                StateHasChanged();
+                return;
+            }
+        }
+        catch { }
         try { await LandingService.SendChatAsync(_chatSession, msg); } catch { }
+    }
+
+    // 64: mở viewer 360
+    private void Open360(ShopProductModel p) { _view360Product = p; _view360Index = 0; }
+    private void Close360() { _view360Product = null; }
+    private void Rotate360(int dir)
+    {
+        var n = AllImageUrls(_view360Product?.ImageUrlsJson).Count;
+        if (n == 0) return;
+        _view360Index = (_view360Index + dir + n) % n;
+    }
+
+    // 66: đánh giá bằng giọng nói (Web Speech API)
+    private async Task StartVoiceReview()
+    {
+        _voiceReviewing = true;
+        try
+        {
+            var text = await JSRuntime.InvokeAsync<string>("ptStartVoiceInput");
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                _reviewText = text;
+                StateHasChanged();
+            }
+        }
+        catch { Toasts.Show("Trình duyệt không hỗ trợ nhập giọng nói."); }
+        _voiceReviewing = false;
+    }
+
+    private async Task SubmitVoiceReview()
+    {
+        _reviewMsg = null;
+        try
+        {
+            await LandingService.QuickRateAsync(_reviewStars);
+            _reviewMsg = string.IsNullOrWhiteSpace(_reviewText)
+                ? $"Cảm ơn bạn đã đánh giá {_reviewStars} sao! ❤️"
+                : $"Cảm ơn! Quán đã nhận đánh giá {_reviewStars} sao và lời nhắn: \"{_reviewText}\" ❤️";
+            _reviewText = "";
+        }
+        catch { _reviewMsg = "Chưa gửi được, thử lại nhé."; }
+    }
+
+    // 67: đặt nhanh 1 chạm
+    private async Task QuickOrder()
+    {
+        var digits = new string((_quickPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) { _quickMsg = "Nhập SĐT để dùng đặt nhanh."; return; }
+        try
+        {
+            var saved = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "pt-quick-order");
+            if (string.IsNullOrEmpty(saved))
+            {
+                _quickMsg = "Chưa có đơn mẫu. Hãy đặt 1 đơn bình thường trước, web sẽ nhớ để lần sau đặt 1 chạm.";
+                return;
+            }
+            // saved: productId:qty,productId:qty
+            foreach (var part in saved.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var kv = part.Split(':');
+                if (kv.Length == 2 && Guid.TryParse(kv[0], out var pid) && int.TryParse(kv[1], out var qty))
+                {
+                    var p = _allProducts.FirstOrDefault(x => x.Id == pid);
+                    if (p != null) CartState.Add(p, qty);
+                }
+            }
+            try { await JSRuntime.InvokeVoidAsync("localStorage.setItem", "pt-checkout-phone", digits); } catch { }
+            Navigation.NavigateTo("/checkout");
+        }
+        catch { _quickMsg = "Chưa đặt nhanh được."; }
+    }
+
+    // 80: đặt bằng giọng nói
+    private async Task StartVoiceOrder()
+    {
+        _voiceOrderText = null;
+        try
+        {
+            var text = await JSRuntime.InvokeAsync<string>("ptStartVoiceInput");
+            if (string.IsNullOrWhiteSpace(text)) { Toasts.Show("Không nghe rõ, thử lại nhé."); return; }
+            _voiceOrderText = text;
+            var parsed = await LandingService.ParseOrderAsync(text);
+            if (parsed != null && parsed.IsOrderIntent && parsed.Items?.Count > 0)
+            {
+                foreach (var item in parsed.Items)
+                {
+                    var p = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
+                    if (p != null) CartState.Add(p, item.Quantity);
+                }
+                Toasts.Show($"Đã thêm: {string.Join(", ", parsed.Items.Select(i => $"{i.Quantity} {i.ProductName}"))}");
+                Navigation.NavigateTo("/checkout");
+            }
+            else Toasts.Show("Chưa hiểu món bạn nói, thử nói rõ hơn nhé.");
+        }
+        catch { Toasts.Show("Trình duyệt không hỗ trợ."); }
+    }
+
+    // 62: gợi ý đặt lại theo lịch sử
+    private async Task LoadLastOrder()
+    {
+        _reorderMsg = null; _lastOrderItems = null;
+        var digits = new string((_reorderPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) { _reorderMsg = "Nhập SĐT để xem đơn cũ."; return; }
+        try
+        {
+            _lastOrderItems = await LandingService.GetLastOrderItemsAsync(digits);
+            if (_lastOrderItems == null || _lastOrderItems.Count == 0)
+                _reorderMsg = "Chưa tìm thấy đơn nào với SĐT này.";
+        }
+        catch { _reorderMsg = "Chưa tải được, thử lại nhé."; }
+    }
+
+    private void ReorderAll()
+    {
+        if (_lastOrderItems == null) return;
+        foreach (var item in _lastOrderItems)
+        {
+            var p = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
+            if (p != null) CartState.Add(p, item.Quantity);
+        }
+        Navigation.NavigateTo("/checkout");
+    }
+
+    // 63: yêu thích
+    private async Task ToggleFavorite(ShopProductModel p)
+    {
+        var digits = new string((_favPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9)
+        {
+            // Lưu local nếu chưa có SĐT
+            try
+            {
+                var key = "pt-fav-local";
+                var cur = await JSRuntime.InvokeAsync<string>("localStorage.getItem", key) ?? "";
+                var ids = cur.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                var id = p.Id.ToString();
+                if (ids.Contains(id)) ids.Remove(id); else ids.Add(id);
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", key, string.Join(",", ids));
+                _favorites = new HashSet<Guid>(ids.Where(x => Guid.TryParse(x, out _)).Select(Guid.Parse));
+            }
+            catch { }
+            return;
+        }
+        try
+        {
+            if (_favorites.Contains(p.Id)) { await LandingService.RemoveFavoriteAsync(digits, p.Id); _favorites.Remove(p.Id); }
+            else { await LandingService.AddFavoriteAsync(digits, p.Id); _favorites.Add(p.Id); }
+        }
+        catch { }
+    }
+
+    private async Task LoadFavorites()
+    {
+        var digits = new string((_favPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) return;
+        try
+        {
+            var ids = await LandingService.GetFavoritesAsync(digits);
+            _favorites = new HashSet<Guid>(ids ?? new List<Guid>());
+            _backInStock = await LandingService.GetBackInStockFavoritesAsync(digits) ?? new List<ShopProductModel>();
+        }
+        catch { }
+    }
+
+    private void ConfirmChatOrder()
+    {
+        if (_chatOrder?.Items == null || _chatOrder.Items.Count == 0) return;
+        var digits = new string((_chatPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 9) { Toasts.Show("Nhập SĐT để đặt hàng."); return; }
+        foreach (var item in _chatOrder.Items)
+        {
+            var p = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
+            if (p != null) CartState.Add(p, item.Quantity);
+        }
+        try { JSRuntime.InvokeVoidAsync("localStorage.setItem", "pt-checkout-phone", digits); } catch { }
+        _chatOrder = null;
+        Navigation.NavigateTo("/checkout");
     }
 
     private async Task ToggleLang()

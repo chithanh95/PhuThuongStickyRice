@@ -141,6 +141,45 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             return await GetAsync<List<CourseModel>>("api/landing/courses");
         }
 
+        /// <summary>Parse ý định đặt hàng từ text (item 61/80).</summary>
+        public async Task<ParseOrderResult> ParseOrderAsync(string text, string phone = null)
+        {
+            return await PostAsync<ParseOrderResult>("api/landing/parse-order", new { text, phone });
+        }
+
+        /// <summary>Món yêu thích (item 63).</summary>
+        public async Task AddFavoriteAsync(string phone, Guid productId)
+        {
+            await PostAsync<object>("api/landing/favorites", new { phone, productId });
+        }
+
+        public async Task RemoveFavoriteAsync(string phone, Guid productId)
+        {
+            await DeleteAsync($"api/landing/favorites?phone={phone}&productId={productId}");
+        }
+
+        public async Task<List<Guid>> GetFavoritesAsync(string phone)
+        {
+            return await GetAsync<List<Guid>>($"api/landing/favorites?phone={phone}") ?? new List<Guid>();
+        }
+
+        public async Task<List<ShopProductModel>> GetBackInStockFavoritesAsync(string phone)
+        {
+            return await GetAsync<List<ShopProductModel>>($"api/landing/favorites/back-in-stock?phone={phone}");
+        }
+
+        /// <summary>Items đơn gần nhất (item 62).</summary>
+        public async Task<List<ParsedOrderItem>> GetLastOrderItemsAsync(string phone)
+        {
+            return await GetAsync<List<ParsedOrderItem>>($"api/landing/last-order-items?phone={phone}");
+        }
+
+        /// <summary>Link sàn TMĐT (item 75).</summary>
+        public async Task<MarketplaceLinksModel> GetMarketplaceLinksAsync()
+        {
+            return await GetAsync<MarketplaceLinksModel>("api/landing/marketplace-links");
+        }
+
         public async Task<bool> EnrollCourseAsync(Guid id, string phone)
         {
             var res = await PostAsync<object>($"api/landing/courses/{id}/enroll", new { phone });
