@@ -1,0 +1,181 @@
+@page "/admin/lexa/charts"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Charts</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li class="current">Charts</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Biểu đồ cột - Doanh thu tuần</h4>
+                <div class="lexa-chart">
+                    @foreach (var d in _weekRevenue)
+                    {
+                        <div class="lexa-col-wrap">
+                            <div class="lexa-col" style="height:@(d.Value * 2)px;" title="@d.Day: @d.Value triệu"></div>
+                            <small>@d.Day</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Biểu đồ đường - Đơn hàng 12 tháng</h4>
+                <svg viewBox="0 0 400 160" class="lexa-line-chart">
+                    <polyline points="@LinePoints" fill="none" stroke="#7a6fbe" stroke-width="3" />
+                    <polygon points="@AreaPoints" fill="#7a6fbe" opacity="0.15" />
+                    @foreach (var p in LineDots)
+                    {
+                        <circle cx="@p.X" cy="@p.Y" r="4" fill="#7a6fbe" />
+                    }
+                </svg>
+                <div class="d-flex justify-content-between text-muted small">
+                    <span>T1</span><span>T4</span><span>T7</span><span>T10</span><span>T12</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h4 class="card-title text-left">Biểu đồ tròn - Cơ cấu món</h4>
+                <div class="lexa-donut" style="--p1:45;--p2:30;--p3:25;">
+                    <div class="lexa-donut-center">
+                        <h4 class="mb-0">1.890</h4>
+                        <small class="text-muted">suất</small>
+                    </div>
+                </div>
+                <div class="text-left mt-3">
+                    <div class="mb-1"><span class="lexa-dot" style="background:#7a6fbe;"></span> Xôi mặn (45%)</div>
+                    <div class="mb-1"><span class="lexa-dot" style="background:#3ac9d6;"></span> Xôi ngọt (30%)</div>
+                    <div><span class="lexa-dot" style="background:#f5b225;"></span> Combo (25%)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Biểu đồ ngang - Top món bán chạy</h4>
+                @foreach (var m in _topDishes)
+                {
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>@m.Name</span>
+                            <strong>@m.Sold suất</strong>
+                        </div>
+                        <div class="progress" style="height:18px;">
+                            <div class="progress-bar" style="width:@(m.Pct)%;background:@m.Color;">@(m.Pct)%</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Sparkline - Xu hướng giờ bán</h4>
+                <div class="lexa-sparkline">
+                    @foreach (var h in _hourly)
+                    {
+                        <span style="height:@(h)px" title="@h đơn"></span>
+                    }
+                </div>
+                <div class="d-flex justify-content-between text-muted small mt-1">
+                    <span>6h</span><span>10h</span><span>14h</span><span>18h</span><span>22h</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Biểu đồ vùng - So sánh 2 kỳ</h4>
+                <div class="lexa-chart">
+                    @foreach (var d in _compare)
+                    {
+                        <div class="lexa-col-wrap">
+                            <div style="display:flex;align-items:flex-end;gap:3px;">
+                                <div class="lexa-col" style="height:@(d.This * 2)px;background:#7a6fbe;" title="Kỳ này: @d.This"></div>
+                                <div class="lexa-col" style="height:@(d.Last * 2)px;background:#c9c7dd;" title="Kỳ trước: @d.Last"></div>
+                            </div>
+                            <small>@d.Day</small>
+                        </div>
+                    }
+                </div>
+                <div class="mt-2">
+                    <span class="lexa-dot" style="background:#7a6fbe;"></span> Kỳ này
+                    <span class="lexa-dot ml-3" style="background:#c9c7dd;"></span> Kỳ trước
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-chart { display: flex; align-items: flex-end; justify-content: space-around; height: 220px; padding: 10px 0; gap: 8px; }
+    .lexa-col-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+    .lexa-col { width: 100%; max-width: 44px; background: linear-gradient(180deg, #7a6fbe, #a89df0); border-radius: 4px 4px 0 0; min-height: 4px; transition: height .3s; }
+    .lexa-col:hover { opacity: .8; }
+    .lexa-line-chart { width: 100%; height: 170px; }
+    .lexa-donut { width: 180px; height: 180px; border-radius: 50%; margin: 0 auto; position: relative;
+        background: conic-gradient(#7a6fbe 0% 45%, #3ac9d6 45% 75%, #f5b225 75% 100%); }
+    .lexa-donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 110px; height: 110px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    html.dark .lexa-donut-center { background: #262640; }
+    .lexa-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+    .lexa-sparkline { display: flex; align-items: flex-end; gap: 2px; height: 80px; }
+    .lexa-sparkline span { flex: 1; background: #7a6fbe; border-radius: 2px 2px 0 0; min-height: 2px; opacity: .85; }
+</style>
+
+@code {
+    private List<DayVal> _weekRevenue = new()
+    {
+        new("T2", 32), new("T3", 45), new("T4", 38), new("T5", 52),
+        new("T6", 68), new("T7", 85), new("CN", 74),
+    };
+    private List<DayVal> _hourly = new List<DayVal>
+    {
+        new DayVal("6", 8), new DayVal("7", 18), new DayVal("8", 32), new DayVal("9", 25), new DayVal("10", 15),
+        new DayVal("11", 28), new DayVal("12", 45), new DayVal("13", 30), new DayVal("14", 18), new DayVal("15", 12),
+        new DayVal("16", 20), new DayVal("17", 35), new DayVal("18", 42), new DayVal("19", 38), new DayVal("20", 25),
+        new DayVal("21", 15), new DayVal("22", 8),
+    };
+    private List<CompareVal> _compare = new()
+    {
+        new("T2", 32, 28), new("T3", 45, 40), new("T4", 38, 42),
+        new("T5", 52, 45), new("T6", 68, 60), new("T7", 85, 78), new("CN", 74, 70),
+    };
+    private List<TopDish> _topDishes = new()
+    {
+        new("Xôi gấc đặc biệt", 486, 100, "#7a6fbe"),
+        new("Xôi đỗ xanh", 392, 81, "#3ac9d6"),
+        new("Xôi xéo", 315, 65, "#f5b225"),
+        new("Xôi cốm", 248, 51, "#ec536c"),
+        new("Xôi vò", 186, 38, "#29bbe3"),
+    };
+
+    private int[] _monthly = { 40, 55, 48, 62, 58, 72, 68, 80, 75, 88, 92, 100 };
+    private string LinePoints => string.Join(" ", _monthly.Select((v, i) => $"{i * (400.0 / 11):0},{150 - v * 1.3:0}"));
+    private string AreaPoints => $"0,160 {LinePoints} 400,160";
+    private List<(double X, double Y)> LineDots => _monthly.Select((v, i) => (X: i * (400.0 / 11), Y: 150 - v * 1.3)).ToList();
+
+    private record DayVal(string Day, int Value);
+    private record CompareVal(string Day, int This, int Last);
+    private record TopDish(string Name, int Sold, int Pct, string Color);
+}
