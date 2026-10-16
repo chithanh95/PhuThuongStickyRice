@@ -322,7 +322,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             });
         }
 
-        /// <summary>Cập nhật SĐT của tài khoản đang đăng nhập.</summary>
+        /// <summary>Cập nhật thông tin tài khoản đang đăng nhập (tên, email, SĐT).</summary>
         [HttpPut("profile")]
         [Authorize]
         public async Task<ActionResult> UpdateProfile([FromBody] UpdateProfileModel model)
@@ -331,17 +331,30 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return NotFound();
 
+            if (!string.IsNullOrWhiteSpace(model.UserName) && model.UserName.Trim() != user.UserName)
+            {
+                var setName = await _userManager.SetUserNameAsync(user, model.UserName.Trim());
+                if (!setName.Succeeded)
+                    return BadRequest(string.Join("; ", setName.Errors.Select(e => e.Description)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Email) && model.Email.Trim() != user.Email)
+            {
+                var setEmail = await _userManager.SetEmailAsync(user, model.Email.Trim());
+                if (!setEmail.Succeeded)
+                    return BadRequest(string.Join("; ", setEmail.Errors.Select(e => e.Description)));
+            }
+
             if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
             {
                 var phone = model.PhoneNumber.Trim();
                 if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(0)(3|5|7|8|9)\d{8}$"))
                     return BadRequest("Số điện thoại không đúng định dạng (VD: 0901234567).");
-                user.PhoneNumber = phone;
+                var setPhone = await _userManager.SetPhoneNumberAsync(user, phone);
+                if (!setPhone.Succeeded)
+                    return BadRequest(string.Join("; ", setPhone.Errors.Select(e => e.Description)));
             }
 
-            var result = await _userManager.UpdateAsync(user);
-            if (!result.Succeeded)
-                return BadRequest(string.Join("; ", result.Errors.Select(e => e.Description)));
             return Ok(new { message = "Đã cập nhật." });
         }
 
@@ -589,6 +602,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
     public class UpdateProfileModel
     {
+        public string UserName { get; set; }
+        public string Email { get; set; }
         public string PhoneNumber { get; set; }
     }
 }

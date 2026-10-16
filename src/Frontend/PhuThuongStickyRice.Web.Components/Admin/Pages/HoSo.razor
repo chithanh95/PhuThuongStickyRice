@@ -17,11 +17,11 @@
         {
             <div class="mb-3">
                 <label class="form-label">Tên đăng nhập</label>
-                <input class="form-control" value="@_userName" disabled />
+                <input class="form-control" @bind="_userName" />
             </div>
             <div class="mb-3">
                 <label class="form-label">Email</label>
-                <input class="form-control" value="@_email" disabled />
+                <input class="form-control" @bind="_email" type="email" />
             </div>
             <div class="mb-3">
                 <label class="form-label">Số điện thoại</label>
@@ -69,9 +69,9 @@
         _error = null; _success = null; _saving = true;
         try
         {
-            var res = await Http.PutAsJsonAsync("api/auth/profile", new { PhoneNumber = _phone });
+            var res = await Http.PutAsJsonAsync("api/auth/profile", new { UserName = _userName, Email = _email, PhoneNumber = _phone });
             if (res.IsSuccessStatusCode)
-                _success = "Đã cập nhật số điện thoại.";
+                _success = "Đã cập nhật thông tin.";
             else
                 _error = await res.Content.ReadAsStringAsync();
         }
