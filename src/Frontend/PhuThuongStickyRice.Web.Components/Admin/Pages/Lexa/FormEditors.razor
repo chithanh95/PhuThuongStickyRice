@@ -1,0 +1,169 @@
+@page "/admin/lexa/form-editors"
+@attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Form Editors</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li><a href="/admin/lexa/form-elements">Forms</a></li>
+        <li class="current">Form Editors</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Trình soạn thảo văn bản</h4>
+                <p class="card-title-desc">Soạn thảo mô tả món ăn / bài viết với thanh công cụ.</p>
+
+                <div class="lexa-editor-toolbar">
+                    <button type="button" @onclick='() => WrapSelection("**", "**")' title="In đậm"><strong>B</strong></button>
+                    <button type="button" @onclick='() => WrapSelection("*", "*")' title="In nghiêng"><em>I</em></button>
+                    <button type="button" @onclick='() => WrapSelection("<u>", "</u>")' title="Gạch chân"><u>U</u></button>
+                    <span class="lexa-tb-sep"></span>
+                    <button type="button" @onclick='() => InsertAtCursor("# ") ' title="Tiêu đề">H1</button>
+                    <button type="button" @onclick='() => InsertAtCursor("## ")' title="Tiêu đề nhỏ">H2</button>
+                    <span class="lexa-tb-sep"></span>
+                    <button type="button" @onclick='() => InsertAtCursor("- ")' title="Danh sách">☰</button>
+                    <button type="button" @onclick='() => InsertAtCursor("1. ")' title="Danh sách số">1.</button>
+                    <span class="lexa-tb-sep"></span>
+                    <button type="button" @onclick='() => WrapSelection("[", "](https://)")' title="Chèn link">🔗</button>
+                    <button type="button" @onclick="ClearAll" title="Xóa hết">🗑</button>
+                </div>
+                <textarea class="form-control lexa-editor-area" rows="10" @bind="_content" @bind:event="oninput"
+                          placeholder="Nhập nội dung bài viết... Hỗ trợ định dạng Markdown cơ bản."></textarea>
+                <div class="d-flex justify-content-between mt-2">
+                    <small class="text-muted">@_wordCount từ • @_charCount ký tự</small>
+                    <div>
+                        <button class="btn btn-secondary btn-sm mr-2" @onclick="LoadSample">Nạp mẫu</button>
+                        <button class="btn btn-primary btn-sm" @onclick="SaveContent">Lưu bài viết</button>
+                    </div>
+                </div>
+                @if (_saved)
+                {
+                    <div class="alert alert-success mt-3 mb-0">Đã lưu nội dung!</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Xem trước</h4>
+                <p class="card-title-desc">Nội dung hiển thị (render đơn giản).</p>
+                <div class="lexa-preview">
+                    @((MarkupString)RenderPreview())
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Cài đặt bài viết</h4>
+                <div class="form-group">
+                    <label>Tiêu đề</label>
+                    <input class="form-control" @bind="_postTitle" placeholder="Tiêu đề bài viết" />
+                </div>
+                <div class="form-group">
+                    <label>Danh mục</label>
+                    <select class="form-control" @bind="_category">
+                        <option value="mon-ngon">Món ngon</option>
+                        <option value="lang-nghe">Làng nghề</option>
+                        <option value="khuyen-mai">Khuyến mãi</option>
+                        <option value="tin-tuc">Tin tức</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Trạng thái</label>
+                    <div>
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" class="custom-control-input" id="st1" name="pstatus" checked="@(_status == "draft")" @onchange='() => _status = "draft"' />
+                            <label class="custom-control-label" for="st1">Nháp</label>
+                        </div>
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" class="custom-control-input" id="st2" name="pstatus" checked="@(_status == "published")" @onchange='() => _status = "published"' />
+                            <label class="custom-control-label" for="st2">Xuất bản</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="featuredCb" @bind="_featured" />
+                        <label class="custom-control-label" for="featuredCb">Bài viết nổi bật</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lexa-editor-toolbar { display: flex; align-items: center; gap: 4px; padding: 8px 10px; background: #f4f4f8; border: 1px solid #ced4da; border-bottom: none; border-radius: 4px 4px 0 0; flex-wrap: wrap; }
+    html.dark .lexa-editor-toolbar { background: #2c2c4e; border-color: #4a4a6e; }
+    .lexa-editor-toolbar button { min-width: 34px; height: 32px; border: 1px solid transparent; background: transparent; border-radius: 4px; cursor: pointer; font-size: 14px; color: #495057; }
+    .lexa-editor-toolbar button:hover { background: #7a6fbe; color: #fff; }
+    html.dark .lexa-editor-toolbar button { color: #c9c7dd; }
+    .lexa-tb-sep { width: 1px; height: 22px; background: #ced4da; margin: 0 4px; }
+    .lexa-editor-area { border-radius: 0 0 4px 4px; font-family: Consolas, monospace; font-size: 14px; }
+    .lexa-preview { min-height: 150px; padding: 12px; border: 1px solid #e9ecef; border-radius: 4px; background: #fcfcfd; }
+    html.dark .lexa-preview { background: #1e1e36; border-color: #3a3a58; color: #e8e6f0; }
+    .lexa-preview h1, .lexa-preview h2 { color: #2b3a4a; }
+    html.dark .lexa-preview h1, html.dark .lexa-preview h2 { color: #f0eef5; }
+</style>
+
+@code {
+    private string _content = "";
+    private string _postTitle = "";
+    private string _category = "mon-ngon";
+    private string _status = "draft";
+    private bool _featured;
+    private bool _saved;
+
+    private int _wordCount => string.IsNullOrWhiteSpace(_content) ? 0 :
+        _content.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
+    private int _charCount => _content?.Length ?? 0;
+
+    private void WrapSelection(string before, string after)
+    {
+        _content = (_content ?? "") + before + "nội dung" + after + " ";
+    }
+
+    private void InsertAtCursor(string text)
+    {
+        _content = (_content ?? "") + text;
+    }
+
+    private void ClearAll()
+    {
+        _content = "";
+        _saved = false;
+    }
+
+    private void LoadSample()
+    {
+        _postTitle = "Xôi gấc Phú Thượng - Món ngon ngày Tết";
+        _content = "# Xôi gấc Phú Thượng\n\n**Xôi gấc** là món ăn truyền thống không thể thiếu trong mâm cỗ ngày Tết.\n\n## Nguyên liệu đặc trưng\n\n- Gạo nếp cái hoa vàng\n- Quả gấc chín đỏ\n- Đường, muối vừng\n\n*Chúc quý khách ngon miệng!*";
+    }
+
+    private void SaveContent()
+    {
+        _saved = true;
+    }
+
+    private string RenderPreview()
+    {
+        if (string.IsNullOrWhiteSpace(_content)) return "<p class='text-muted'>Chưa có nội dung xem trước.</p>";
+        var html = System.Net.WebUtility.HtmlEncode(_content);
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^## (.+)$", "<h2>$1</h2>", System.Text.RegularExpressions.RegexOptions.Multiline);
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^# (.+)$", "<h1>$1</h1>", System.Text.RegularExpressions.RegexOptions.Multiline);
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*(.+?)\*", "<em>$1</em>");
+        html = html.Replace("\n", "<br/>");
+        return html;
+    }
+}
