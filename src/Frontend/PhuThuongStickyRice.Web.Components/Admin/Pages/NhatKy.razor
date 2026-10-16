@@ -4,12 +4,22 @@
 @inject StaffLogService StaffLogService
 @inject StaffService StaffService
 
-<h3>📋 Nhật ký nhân viên</h3>
-<p class="text-muted">Ai đã làm gì, lúc nào: đăng nhập, xác nhận/hủy đơn, sửa giá, tặng quà, đổi quyền...</p>
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Nhật ký nhân viên</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/admin">Lexa</a></li>
+        <li>Vận hành</li>
+        <li class="current">Nhật ký</li>
+    </ol>
+</div>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <div class="form-row">
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Bộ lọc</h4>
+                <p class="card-title-desc">Ai đã làm gì, lúc nào: đăng nhập, xác nhận/hủy đơn, sửa giá, tặng quà, đổi quyền...</p>
+                <div class="form-row">
             <div class="form-group col-md-3">
                 <label>Nhân viên</label>
                 <select class="form-control" @bind="_filterUserId">
@@ -40,8 +50,10 @@
             </div>
             <div class="form-group col-md-2 d-flex align-items-end">
                 <button class="btn btn-primary btn-block" @onclick="ApplyFilter" disabled="@_loading">
-                    🔍 Lọc
+                    Lọc
                 </button>
+            </div>
+                </div>
             </div>
         </div>
     </div>
@@ -53,9 +65,12 @@
 }
 else if (_logs != null)
 {
-    <div class="card">
-        <div class="card-body p-0">
-            <div class="table-responsive">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Lịch sử hoạt động</h4>
+                    <div class="table-responsive">
                 <table class="table table-striped mb-0">
                     <thead>
                         <tr>
@@ -86,9 +101,11 @@ else if (_logs != null)
         <div class="card-footer d-flex justify-content-between align-items-center">
             <span class="text-muted">Tổng @_logs.TotalCount bản ghi</span>
             <div>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="PrevPage" disabled="@(_page == 0 || _loading)">← Trước</button>
+                <button class="btn btn-sm btn-secondary" @onclick="PrevPage" disabled="@(_page == 0 || _loading)">← Trước</button>
                 <span class="mx-2">Trang @(_page + 1)</span>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(_loading || (_page + 1) * _pageSize >= _logs.TotalCount)">Sau →</button>
+                <button class="btn btn-sm btn-secondary" @onclick="NextPage" disabled="@(_loading || (_page + 1) * _pageSize >= _logs.TotalCount)">Sau →</button>
+            </div>
+        </div>
             </div>
         </div>
     </div>
