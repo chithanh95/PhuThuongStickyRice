@@ -13,15 +13,15 @@
 @using Microsoft.AspNetCore.Components.Web
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.PermissionService PermissionService
 
-<div class="lexa-login-page">
-    <div class="lexa-login-wrap">
-        <div class="lexa-login-card">
-            <div class="lexa-login-logo">
-                <span class="lexa-logo-icon">🍚</span>
-                <span class="lexa-logo-text">Xôi Phú Thượng</span>
+<div style="min-height:100vh;background:#f8f8fb;display:flex;align-items:center;justify-content:center;padding:40px 20px;margin:0;">
+    <div style="width:100%;max-width:420px;">
+        <div style="background:#fff;border-radius:8px;box-shadow:0 2px 20px rgba(0,0,0,.08);padding:40px 35px;">
+            <div style="text-align:center;margin-bottom:25px;">
+                <span style="font-size:36px;">🍚</span>
+                <span style="font-size:28px;font-weight:600;color:#2b3a4a;margin-left:8px;vertical-align:middle;">Xôi Phú Thượng</span>
             </div>
-            <h4 class="lexa-login-title">Welcome Back !</h4>
-            <p class="lexa-login-sub">Sign in to continue to Xôi Phú Thượng.</p>
+            <h4 style="text-align:center;color:#2b3a4a;font-weight:500;margin-bottom:5px;">Welcome Back !</h4>
+            <p style="text-align:center;color:#9ca8b3;font-size:14px;margin-bottom:25px;">Sign in to continue to Xôi Phú Thượng.</p>
 
             @if (!string.IsNullOrEmpty(_error))
             {
@@ -57,7 +57,7 @@
                     </div>
                 </div>
                 <div class="col-6 text-right">
-                    <button class="btn btn-primary lexa-btn-login" @onclick="LoginAsync" disabled="@_loggingIn">
+                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;padding:8px 30px;border-radius:4px;" @onclick="LoginAsync" disabled="@_loggingIn">
                         @(_loggingIn ? "Signing in..." : _awaitingTwoFactor ? "Verify" : "Log In")
                     </button>
                 </div>
@@ -79,88 +79,13 @@
                 </div>
             }
         </div>
-        <div class="lexa-login-footer">
+        <div style="text-align:center;margin-top:25px;color:#9ca8b3;font-size:13px;">
             <p>© 2026 Xôi Phú Thượng</p>
         </div>
     </div>
 </div>
 
-<style>
-    .lexa-login-page {
-        min-height: 100vh;
-        background: #f8f8fb;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 40px 20px;
-    }
-    .lexa-login-wrap {
-        width: 100%;
-        max-width: 420px;
-    }
-    .lexa-login-card {
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 20px rgba(0,0,0,.08);
-        padding: 40px 35px;
-    }
-    .lexa-login-logo {
-        text-align: center;
-        margin-bottom: 25px;
-    }
-    .lexa-logo-icon {
-        font-size: 36px;
-    }
-    .lexa-logo-text {
-        font-size: 28px;
-        font-weight: 600;
-        color: #2b3a4a;
-        margin-left: 8px;
-        vertical-align: middle;
-    }
-    .lexa-login-title {
-        text-align: center;
-        color: #2b3a4a;
-        font-weight: 500;
-        margin-bottom: 5px;
-    }
-    .lexa-login-sub {
-        text-align: center;
-        color: #9ca8b3;
-        font-size: 14px;
-        margin-bottom: 25px;
-    }
-    .lexa-login-card .form-group label {
-        font-weight: 500;
-        color: #2b3a4a;
-        font-size: 14px;
-    }
-    .lexa-login-card .form-control {
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        padding: 10px 12px;
-    }
-    .lexa-login-card .form-control:focus {
-        border-color: #7a6fbe;
-        box-shadow: 0 0 0 0.2rem rgba(122,111,190,.15);
-    }
-    .lexa-btn-login {
-        background: #7a6fbe;
-        border-color: #7a6fbe;
-        padding: 8px 30px;
-        border-radius: 4px;
-    }
-    .lexa-btn-login:hover {
-        background: #6a5fae;
-        border-color: #6a5fae;
-    }
-    .lexa-login-footer {
-        text-align: center;
-        margin-top: 25px;
-        color: #9ca8b3;
-        font-size: 13px;
-    }
-</style>
+
 
 @code {
     private string _username;
