@@ -1,3 +1,4 @@
+using System;
 ﻿using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Events;
@@ -28,6 +29,7 @@ namespace PhuThuongStickyRice.Application.Products.EventHandlers
         {
             await _auditSerivce.AddOrUpdateAsync(new AuditLogEntry
             {
+                Id = Guid.NewGuid(),
                 UserId = _currentUser.IsAuthenticated ? _currentUser.UserId : Guid.Empty,
                 CreatedDateTime = domainEvent.EventDateTime,
                 Action = "CREATED_PRODUCT",
