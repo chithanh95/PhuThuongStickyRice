@@ -8,15 +8,64 @@
 <link href="_content/PhuThuongStickyRice.Web.Components/css/admin-lexa.css" rel="stylesheet" />
 
 <div class="lx-admin">
-    <div class="lx-wrapper @(_navOpen ? "lx-hnav-open" : "")">
-        @* ============ TOPBAR (full width, fixed) ============ *@
-        <header class="lx-topbar">
+    <div class="lx-wrapper @(_collapsed ? "lx-collapsed" : "") @(_mobileOpen ? "lx-mobile-open" : "")">
+        @* ============ SIDEBAR TRÁI (Lexa style, fixed) ============ *@
+        <aside class="lx-sidebar" aria-label="Menu quản trị">
             <div class="lx-brand-box">
                 <a class="lx-logo-text" href="/dashboard">
                     <span class="lx-logo-clock"><span class="oi oi-clock" aria-hidden="true"></span></span>
-                    Xôi Phú Thượng
+                    <span class="lx-brand-name">Xôi Phú Thượng</span>
                 </a>
             </div>
+            <nav class="lx-hnav">
+                @if (!string.IsNullOrWhiteSpace(_search))
+                {
+                    <div class="lx-hnav-search">
+                        <span class="lx-hnav-label">Kết quả tìm kiếm</span>
+                        @foreach (var item in FilteredItems)
+                        {
+                            <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile">
+                                <span class="oi @item.Icon" aria-hidden="true"></span>
+                                <span class="lx-hnav-text">@item.Label</span>
+                            </a>
+                        }
+                        @if (!FilteredItems.Any())
+                        {
+                            <span class="lx-hnav-label">Không tìm thấy mục nào</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    @foreach (var (group, items) in VisibleMenu())
+                    {
+                        <div class="lx-hnav-group @(IsGroupActive(group) ? "active" : "") @(IsGroupOpen(group.Key) ? "open" : "")">
+                            <button type="button" class="lx-hnav-toggle" @onclick="() => ToggleGroup(group.Key)" aria-haspopup="true">
+                                <span class="oi @group.Icon" aria-hidden="true"></span>
+                                <span class="lx-hnav-text">@group.Label</span>
+                                <span class="oi oi-chevron-bottom lx-hnav-caret" aria-hidden="true"></span>
+                            </button>
+                            <div class="lx-hnav-drop">
+                                @foreach (var item in items)
+                                {
+                                    <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile">
+                                        <span class="oi @item.Icon" aria-hidden="true"></span>
+                                        <span class="lx-hnav-text">@item.Label</span>
+                                        @if (!string.IsNullOrEmpty(item.Badge))
+                                        {
+                                            <span class="lx-nav-badge @item.BadgeClass">@item.Badge</span>
+                                        }
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </nav>
+        </aside>
+
+        @* ============ TOPBAR (trắng, bên phải sidebar) ============ *@
+        <header class="lx-topbar">
             <div class="lx-topbar-left">
                 <button class="lx-icon-btn lx-hamburger" @onclick="ToggleNav" title="Menu">
                     <span class="oi oi-menu" aria-hidden="true"></span>
@@ -177,53 +226,6 @@
             </div>
         </header>
 
-        @* ============ HORIZONTAL NAV (below topbar, Lexa horizontal style) ============ *@
-        @* Hover vào nhóm trên desktop thì thả dropdown; mobile bấm hamburger để mở dọc. *@
-        <nav class="lx-hnav" aria-label="Menu quản trị">
-            @if (!string.IsNullOrWhiteSpace(_search))
-            {
-                <div class="lx-hnav-search">
-                    <span class="lx-hnav-label">Kết quả tìm kiếm</span>
-                    @foreach (var item in FilteredItems)
-                    {
-                        <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile">
-                            <span class="oi @item.Icon" aria-hidden="true"></span>
-                            <span>@item.Label</span>
-                        </a>
-                    }
-                    @if (!FilteredItems.Any())
-                    {
-                        <span class="lx-hnav-label">Không tìm thấy mục nào</span>
-                    }
-                </div>
-            }
-            else
-            {
-                @foreach (var (group, items) in VisibleMenu())
-                {
-                    <div class="lx-hnav-group @(IsGroupActive(group) ? "active" : "") @(IsGroupOpen(group.Key) ? "open" : "")">
-                        <button type="button" class="lx-hnav-toggle" @onclick="() => ToggleGroup(group.Key)" aria-haspopup="true">
-                            <span class="oi @group.Icon" aria-hidden="true"></span>
-                            <span class="lx-hnav-text">@group.Label</span>
-                            <span class="oi oi-chevron-bottom lx-hnav-caret" aria-hidden="true"></span>
-                        </button>
-                        <div class="lx-hnav-drop">
-                            @foreach (var item in items)
-                            {
-                                <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile">
-                                    <span class="oi @item.Icon" aria-hidden="true"></span>
-                                    <span class="lx-hnav-text">@item.Label</span>
-                                    @if (!string.IsNullOrEmpty(item.Badge))
-                                    {
-                                        <span class="lx-nav-badge @item.BadgeClass">@item.Badge</span>
-                                    }
-                                </a>
-                            }
-                        </div>
-                    </div>
-                }
-            }
-        </nav>
         <div class="lx-backdrop" @onclick="CloseNavMobile"></div>
 
         @* ============ MAIN ============ *@
@@ -238,7 +240,8 @@
 </div>
 
 @code {
-    private bool _navOpen;
+    private bool _collapsed;      // desktop: thu gọn sidebar còn icon
+    private bool _mobileOpen;     // mobile: mở sidebar dạng drawer
     private bool _isDark;
 
     private async Task ToggleTheme()
@@ -396,8 +399,14 @@
         if (!_openGroups.Remove(key)) _openGroups.Add(key);
     }
 
-    private void ToggleNav() => _navOpen = !_navOpen;
-    private void CloseNavMobile() => _navOpen = false;
+    private async Task ToggleNav()
+    {
+        bool isMobile = false;
+        try { isMobile = await JS.InvokeAsync<bool>("eval", "window.innerWidth < 992"); } catch { }
+        if (isMobile) _mobileOpen = !_mobileOpen;
+        else _collapsed = !_collapsed;
+    }
+    private void CloseNavMobile() => _mobileOpen = false;
     private void ToggleUserMenu() => _userMenuOpen = !_userMenuOpen;
     private void CloseUserMenu() => _userMenuOpen = false;
 
