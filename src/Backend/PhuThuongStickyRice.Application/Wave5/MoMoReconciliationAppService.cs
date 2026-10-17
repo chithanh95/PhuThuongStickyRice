@@ -41,7 +41,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<MoMoOrderDto>> GetMoMoOrdersAsync(bool? matched)
+        public virtual async Task<List<MoMoOrderDto>> GetMoMoOrdersAsync(bool? matched)
         {
             var queryable = await _orders.GetQueryableAsync();
             IQueryable<Order> query = queryable
@@ -68,7 +68,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             }).ToList();
         }
 
-        public async Task MarkMatchedAsync(Guid orderId)
+        public virtual async Task MarkMatchedAsync(Guid orderId)
         {
             var order = await _orders.GetAsync(orderId);
             order.MarkMoMoMatched();

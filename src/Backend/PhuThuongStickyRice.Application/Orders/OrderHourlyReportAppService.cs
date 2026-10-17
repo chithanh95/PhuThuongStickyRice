@@ -41,7 +41,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<HourlySalesReportDto> GetHourlySalesReportAsync(DateTime? date)
+        public virtual async Task<HourlySalesReportDto> GetHourlySalesReportAsync(DateTime? date)
         {
             var day = (date?.Date ?? VietnamTime.Today);
             var fromUtc = VietnamTime.DayStartUtc(day);

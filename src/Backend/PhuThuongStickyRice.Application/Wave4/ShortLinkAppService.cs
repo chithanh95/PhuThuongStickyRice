@@ -37,7 +37,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<ShortLinkDto>> GetListAsync()
+        public virtual async Task<List<ShortLinkDto>> GetListAsync()
         {
             var queryable = await _links.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -51,7 +51,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         /// creates a fresh 6-char code. Rate-limited at the controller.
         /// </summary>
         [AllowAnonymous]
-        public async Task<ShortLinkDto> CreateAsync(CreateShortLinkDto dto)
+        public virtual async Task<ShortLinkDto> CreateAsync(CreateShortLinkDto dto)
         {
             var target = dto.TargetUrl.Trim();
             var queryable = await _links.GetQueryableAsync();
@@ -69,13 +69,13 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _links.DeleteAsync(id, autoSave: true);
         }
 
         [AllowAnonymous]
-        public async Task<string> ResolveAsync(string code)
+        public virtual async Task<string> ResolveAsync(string code)
         {
             if (string.IsNullOrWhiteSpace(code))
             {

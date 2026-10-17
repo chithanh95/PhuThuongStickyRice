@@ -33,14 +33,14 @@ namespace PhuThuongStickyRice.Application.Landing
         }
 
         [AllowAnonymous]
-        public async Task<LandingContentDto> GetContentAsync()
+        public virtual async Task<LandingContentDto> GetContentAsync()
         {
             var entity = await GetSingleAsync();
             return entity == null ? LandingContentDefaults.GetDefaultDto() : MapToDto(entity);
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<LandingContentDto> UpdateContentAsync(LandingContentDto dto)
+        public virtual async Task<LandingContentDto> UpdateContentAsync(LandingContentDto dto)
         {
             var entity = await GetSingleAsync();
             var newsJson = JsonSerializer.Serialize(dto.NewsItems ?? new List<LandingNewsItemDto>());

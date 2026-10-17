@@ -30,7 +30,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             _orders = orders;
         }
 
-        public async Task<OrderDto> CreateOrderAsync(CreatePosOrderInput input)
+        public virtual async Task<OrderDto> CreateOrderAsync(CreatePosOrderInput input)
         {
             if (input?.Lines == null || input.Lines.Count == 0)
             {

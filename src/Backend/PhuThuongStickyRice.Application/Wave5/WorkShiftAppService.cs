@@ -37,7 +37,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<WorkShiftDto>> GetWeekAsync(DateTime dateInWeek)
+        public virtual async Task<List<WorkShiftDto>> GetWeekAsync(DateTime dateInWeek)
         {
             var date = dateInWeek.Date;
             // Monday-first week.
@@ -53,7 +53,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return list.Select(MapToDto).ToList();
         }
 
-        public async Task<WorkShiftDto> CreateAsync(CreateUpdateWorkShiftDto input)
+        public virtual async Task<WorkShiftDto> CreateAsync(CreateUpdateWorkShiftDto input)
         {
             Validate(input);
             var entity = new WorkShift
@@ -69,7 +69,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return MapToDto(entity);
         }
 
-        public async Task<WorkShiftDto> UpdateAsync(Guid id, CreateUpdateWorkShiftDto input)
+        public virtual async Task<WorkShiftDto> UpdateAsync(Guid id, CreateUpdateWorkShiftDto input)
         {
             Validate(input);
             var entity = await _shifts.GetAsync(id);
@@ -82,7 +82,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return MapToDto(entity);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _shifts.DeleteAsync(id, autoSave: true);
         }

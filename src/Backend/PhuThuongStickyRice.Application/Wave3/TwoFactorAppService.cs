@@ -39,7 +39,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _users = users;
         }
 
-        public async Task<TwoFactorSetupDto> GetSetupAsync()
+        public virtual async Task<TwoFactorSetupDto> GetSetupAsync()
         {
             var user = await GetCurrentUserAsync();
 
@@ -63,7 +63,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             };
         }
 
-        public async Task<TwoFactorSetupDto> EnableAsync(EnableTwoFactorDto input)
+        public virtual async Task<TwoFactorSetupDto> EnableAsync(EnableTwoFactorDto input)
         {
             if (string.IsNullOrWhiteSpace(input.Secret))
             {
@@ -83,7 +83,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return new TwoFactorSetupDto { IsEnabled = true };
         }
 
-        public async Task DisableAsync(VerifyTwoFactorDto input)
+        public virtual async Task DisableAsync(VerifyTwoFactorDto input)
         {
             var user = await GetCurrentUserAsync();
             if (user.TwoFactorEnabled && !string.IsNullOrWhiteSpace(user.TotpSecret))
@@ -101,7 +101,7 @@ namespace PhuThuongStickyRice.Application.Wave3
 
         /// <summary>Internal — no Admin policy so the login flow can call it.</summary>
         [AllowAnonymous]
-        public async Task<bool> VerifyCodeAsync(Guid userId, string code)
+        public virtual async Task<bool> VerifyCodeAsync(Guid userId, string code)
         {
             var user = await _users.FindAsync(userId);
             if (user == null || !user.TwoFactorEnabled || string.IsNullOrWhiteSpace(user.TotpSecret))

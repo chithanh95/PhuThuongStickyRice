@@ -47,7 +47,7 @@ namespace PhuThuongStickyRice.Application.Wave4
             _clock = clock;
         }
 
-        public async Task DispatchAsync(string eventName, object payload)
+        public virtual async Task DispatchAsync(string eventName, object payload)
         {
             var queryable = await _endpoints.GetQueryableAsync();
             var endpoints = await _asyncExecuter.ToListAsync(
@@ -68,7 +68,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         /// <summary>Admin "Gửi thử" button: posts a ping event.</summary>
-        public async Task<WebhookDeliveryDto> SendTestAsync(Guid endpointId)
+        public virtual async Task<WebhookDeliveryDto> SendTestAsync(Guid endpointId)
         {
             var endpoint = await _endpoints.GetAsync(endpointId);
             return await SendAsync(endpoint, "Ping", new
@@ -191,7 +191,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<WebhookEndpointDto>> GetListAsync()
+        public virtual async Task<List<WebhookEndpointDto>> GetListAsync()
         {
             var queryable = await _endpoints.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -200,13 +200,13 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<WebhookEndpointDto> GetAsync(Guid id)
+        public virtual async Task<WebhookEndpointDto> GetAsync(Guid id)
         {
             return MapToDto(await _endpoints.GetAsync(id));
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<WebhookEndpointDto> CreateAsync(CreateUpdateWebhookEndpointDto dto)
+        public virtual async Task<WebhookEndpointDto> CreateAsync(CreateUpdateWebhookEndpointDto dto)
         {
             var entity = new WebhookEndpoint
             {
@@ -221,7 +221,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<WebhookEndpointDto> UpdateAsync(Guid id, CreateUpdateWebhookEndpointDto dto)
+        public virtual async Task<WebhookEndpointDto> UpdateAsync(Guid id, CreateUpdateWebhookEndpointDto dto)
         {
             var entity = await _endpoints.GetAsync(id);
             entity.Name = dto.Name.Trim();
@@ -238,19 +238,19 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _endpoints.DeleteAsync(id, autoSave: true);
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<WebhookDeliveryDto> SendTestAsync(Guid id)
+        public virtual async Task<WebhookDeliveryDto> SendTestAsync(Guid id)
         {
             return await _dispatcher.SendTestAsync(id);
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<WebhookDeliveryDto>> GetDeliveriesAsync(Guid? endpointId, int maxCount)
+        public virtual async Task<List<WebhookDeliveryDto>> GetDeliveriesAsync(Guid? endpointId, int maxCount)
         {
             var queryable = await _deliveries.GetQueryableAsync();
             if (endpointId.HasValue)

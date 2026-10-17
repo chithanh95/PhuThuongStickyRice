@@ -54,7 +54,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return CurrentUser.Id.Value;
         }
 
-        public async Task<List<CustomerAddressDto>> GetMyAsync()
+        public virtual async Task<List<CustomerAddressDto>> GetMyAsync()
         {
             var userId = RequireUserId();
             var queryable = await _addresses.GetQueryableAsync();
@@ -65,7 +65,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return entities.Select(MapToDto).ToList();
         }
 
-        public async Task<CustomerAddressDto> CreateAsync(CreateCustomerAddressDto dto)
+        public virtual async Task<CustomerAddressDto> CreateAsync(CreateCustomerAddressDto dto)
         {
             var userId = RequireUserId();
             Validate(dto);
@@ -90,7 +90,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return MapToDto(entity);
         }
 
-        public async Task<CustomerAddressDto> UpdateAsync(Guid id, UpdateCustomerAddressDto dto)
+        public virtual async Task<CustomerAddressDto> UpdateAsync(Guid id, UpdateCustomerAddressDto dto)
         {
             var userId = RequireUserId();
             Validate(dto);
@@ -116,14 +116,14 @@ namespace PhuThuongStickyRice.Application.Customer
             return MapToDto(entity);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             var userId = RequireUserId();
             var entity = await GetOwnedAsync(id, userId);
             await _addresses.DeleteAsync(entity);
         }
 
-        public async Task SetDefaultAsync(Guid id)
+        public virtual async Task SetDefaultAsync(Guid id)
         {
             var userId = RequireUserId();
             var entity = await GetOwnedAsync(id, userId);

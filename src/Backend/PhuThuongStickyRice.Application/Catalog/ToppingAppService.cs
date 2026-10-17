@@ -44,7 +44,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [AllowAnonymous]
-        public async Task<List<ToppingDto>> GetActiveAsync()
+        public virtual async Task<List<ToppingDto>> GetActiveAsync()
         {
             var queryable = await _toppings.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -55,7 +55,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<ToppingDto>> GetListAsync()
+        public virtual async Task<List<ToppingDto>> GetListAsync()
         {
             var queryable = await _toppings.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -64,13 +64,13 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<ToppingDto> GetAsync(Guid id)
+        public virtual async Task<ToppingDto> GetAsync(Guid id)
         {
             return MapToDto(await _toppings.GetAsync(id));
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<ToppingDto> CreateAsync(CreateUpdateToppingDto dto)
+        public virtual async Task<ToppingDto> CreateAsync(CreateUpdateToppingDto dto)
         {
             var entity = new Topping
             {
@@ -86,7 +86,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<ToppingDto> UpdateAsync(Guid id, CreateUpdateToppingDto dto)
+        public virtual async Task<ToppingDto> UpdateAsync(Guid id, CreateUpdateToppingDto dto)
         {
             var entity = await _toppings.GetAsync(id);
 
@@ -101,7 +101,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             // Topping lưu tên trong OrderLine.ToppingNames (string, không FK),
             // nhưng để giữ lịch sử đơn hàng hiển thị đúng thì deactivate

@@ -67,7 +67,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [AllowAnonymous]
-        public async Task<GroupOrderDto> CreateAsync(CreateGroupOrderDto dto)
+        public virtual async Task<GroupOrderDto> CreateAsync(CreateGroupOrderDto dto)
         {
             var entity = new GroupOrder
             {
@@ -84,13 +84,13 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [AllowAnonymous]
-        public async Task<GroupOrderDto> GetByCodeAsync(string code)
+        public virtual async Task<GroupOrderDto> GetByCodeAsync(string code)
         {
             return MapToDto(await FindByCodeOrThrowAsync(code));
         }
 
         [AllowAnonymous]
-        public async Task<GroupOrderDto> AddLineAsync(string code, AddGroupOrderLineDto dto)
+        public virtual async Task<GroupOrderDto> AddLineAsync(string code, AddGroupOrderLineDto dto)
         {
             var entity = await FindByCodeOrThrowAsync(code);
             if (entity.Status != GroupOrder.StatusOpen)
@@ -139,7 +139,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [AllowAnonymous]
-        public async Task<CloseGroupOrderResultDto> CloseAsync(string code, CloseGroupOrderDto dto)
+        public virtual async Task<CloseGroupOrderResultDto> CloseAsync(string code, CloseGroupOrderDto dto)
         {
             var entity = await FindByCodeOrThrowAsync(code);
             if (entity.Status != GroupOrder.StatusOpen)

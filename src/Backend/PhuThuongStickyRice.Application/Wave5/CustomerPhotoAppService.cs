@@ -45,7 +45,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [AllowAnonymous]
-        public async Task<List<CustomerPhotoDto>> GetApprovedAsync()
+        public virtual async Task<List<CustomerPhotoDto>> GetApprovedAsync()
         {
             var queryable = await _photos.GetQueryableAsync();
             var list = await _asyncExecuter.ToListAsync(
@@ -55,7 +55,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [AllowAnonymous]
-        public async Task<CustomerPhotoDto> RegisterAsync(string imageUrl, CreateCustomerPhotoDto input)
+        public virtual async Task<CustomerPhotoDto> RegisterAsync(string imageUrl, CreateCustomerPhotoDto input)
         {
             if (string.IsNullOrWhiteSpace(imageUrl))
             {
@@ -82,7 +82,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<CustomerPhotoDto>> GetListAsync(bool pendingOnly)
+        public virtual async Task<List<CustomerPhotoDto>> GetListAsync(bool pendingOnly)
         {
             var queryable = await _photos.GetQueryableAsync();
             IQueryable<CustomerPhoto> query = queryable.OrderByDescending(x => x.CreatedAt);
@@ -96,7 +96,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task ApproveAsync(Guid id)
+        public virtual async Task ApproveAsync(Guid id)
         {
             var photo = await _photos.GetAsync(id);
             photo.IsApproved = true;
@@ -104,7 +104,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<CustomerPhotoDto> RejectAsync(Guid id)
+        public virtual async Task<CustomerPhotoDto> RejectAsync(Guid id)
         {
             var photo = await _photos.GetAsync(id);
             await _photos.DeleteAsync(photo, autoSave: true);

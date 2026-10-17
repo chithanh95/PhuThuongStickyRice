@@ -89,7 +89,7 @@ namespace PhuThuongStickyRice.Application.Orders
         };
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<OrderMessageTemplateDto>> GetListAsync()
+        public virtual async Task<List<OrderMessageTemplateDto>> GetListAsync()
         {
             var queryable = await _templates.GetQueryableAsync();
             var list = await _asyncExecuter.ToListAsync(queryable.OrderBy(x => x.Status));
@@ -97,7 +97,7 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<OrderMessageTemplateDto> UpdateAsync(Guid id, CreateUpdateOrderMessageTemplateDto dto)
+        public virtual async Task<OrderMessageTemplateDto> UpdateAsync(Guid id, CreateUpdateOrderMessageTemplateDto dto)
         {
             var entity = await _templates.GetAsync(id);
 
@@ -122,7 +122,7 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         [Authorize(Roles = "Admin,Cashier")]
-        public async Task<OrderMessagePreviewDto> GetPreviewAsync(Guid orderId, string status)
+        public virtual async Task<OrderMessagePreviewDto> GetPreviewAsync(Guid orderId, string status)
         {
             var order = await _orders.GetAsync(orderId);
 

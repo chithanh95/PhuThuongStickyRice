@@ -82,7 +82,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         }
 
         [AllowAnonymous]
-        public async Task<LoyaltyAccountDto> GetByPhoneAsync(string phone)
+        public virtual async Task<LoyaltyAccountDto> GetByPhoneAsync(string phone)
         {
             var normalized = NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
@@ -100,7 +100,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         }
 
         [AllowAnonymous]
-        public async Task<LoyaltyAccountDto> UpdateBirthdayAsync(string phone, UpdateBirthdayInput input)
+        public virtual async Task<LoyaltyAccountDto> UpdateBirthdayAsync(string phone, UpdateBirthdayInput input)
         {
             var account = await GetOrCreateAsync(phone);
             account.DateOfBirth = input?.DateOfBirth?.Date;
@@ -110,7 +110,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<LoyaltyAccountDto>> GetListAsync(string searchTerm)
+        public virtual async Task<List<LoyaltyAccountDto>> GetListAsync(string searchTerm)
         {
             var queryable = await _accounts.GetQueryableAsync();
             IQueryable<LoyaltyAccount> query = queryable.OrderByDescending(x => x.TotalSpent);
@@ -127,7 +127,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<LoyaltyAccountDto> AdjustAsync(string phone, AdjustPointsInput input)
+        public virtual async Task<LoyaltyAccountDto> AdjustAsync(string phone, AdjustPointsInput input)
         {
             var account = await GetOrCreateAsync(phone);
             var next = account.Points + input.PointsDelta;
@@ -148,7 +148,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<LoyaltyAccountDto>> GetUpcomingBirthdaysAsync(int daysAhead)
+        public virtual async Task<List<LoyaltyAccountDto>> GetUpcomingBirthdaysAsync(int daysAhead)
         {
             if (daysAhead < 0)
             {
@@ -182,7 +182,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return upcoming.Select(x => MapToDto(x, settings)).ToList();
         }
 
-        public async Task<LoyaltyAccount> GetOrCreateAsync(string phone)
+        public virtual async Task<LoyaltyAccount> GetOrCreateAsync(string phone)
         {
             var normalized = NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
@@ -210,7 +210,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return account;
         }
 
-        public async Task<LoyaltyAccount> FindByReferralCodeAsync(string referralCode)
+        public virtual async Task<LoyaltyAccount> FindByReferralCodeAsync(string referralCode)
         {
             if (string.IsNullOrWhiteSpace(referralCode))
             {
@@ -223,7 +223,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 queryable.Where(x => x.ReferralCode == code));
         }
 
-        public async Task AwardCompletedOrderAsync(Order order)
+        public virtual async Task AwardCompletedOrderAsync(Order order)
         {
             var settings = await _shopSettings.GetAsync();
             var buyer = await GetOrCreateAsync(order.CustomerPhone);
@@ -274,7 +274,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             await _accounts.UpdateAsync(buyer, autoSave: true);
         }
 
-        public async Task<(int Points, decimal VndOff)> RedeemAsync(
+        public virtual async Task<(int Points, decimal VndOff)> RedeemAsync(
             string phone, int pointsRequested, ShopSettingDto settings)
         {
             if (pointsRequested <= 0)
@@ -309,7 +309,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return (points, steps * value);
         }
 
-        public async Task RefundRedeemedPointsAsync(Order order)
+        public virtual async Task RefundRedeemedPointsAsync(Order order)
         {
             if (order.LoyaltyPointsRedeemed <= 0)
             {

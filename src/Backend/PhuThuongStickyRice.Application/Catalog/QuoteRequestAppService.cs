@@ -48,7 +48,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [AllowAnonymous]
-        public async Task<QuoteRequestDto> CreateAsync(CreateQuoteRequestDto dto)
+        public virtual async Task<QuoteRequestDto> CreateAsync(CreateQuoteRequestDto dto)
         {
             if (!IsValidPhone(dto.CustomerPhone))
             {
@@ -74,7 +74,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<PagedResultDto<QuoteRequestDto>> GetListAsync(GetQuoteRequestsInput input)
+        public virtual async Task<PagedResultDto<QuoteRequestDto>> GetListAsync(GetQuoteRequestsInput input)
         {
             var queryable = await _quotes.GetQueryableAsync();
             System.Linq.IQueryable<QuoteRequest> query = queryable.OrderByDescending(x => x.CreatedAt);
@@ -101,7 +101,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<QuoteRequestDto> UpdateStatusAsync(Guid id, UpdateQuoteRequestStatusDto dto)
+        public virtual async Task<QuoteRequestDto> UpdateStatusAsync(Guid id, UpdateQuoteRequestStatusDto dto)
         {
             if (!Enum.TryParse<QuoteStatus>(dto.Status, ignoreCase: true, out var status))
             {
@@ -116,7 +116,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [AllowAnonymous]
-        public async Task<CungReminderDto> CreateReminderAsync(CreateCungReminderDto dto)
+        public virtual async Task<CungReminderDto> CreateReminderAsync(CreateCungReminderDto dto)
         {
             if (!IsValidPhone(dto.CustomerPhone))
             {
@@ -153,7 +153,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<CungReminderDto>> GetRemindersAsync()
+        public virtual async Task<List<CungReminderDto>> GetRemindersAsync()
         {
             var queryable = await _reminders.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -162,7 +162,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<CungReminderDto> ToggleReminderAsync(Guid id)
+        public virtual async Task<CungReminderDto> ToggleReminderAsync(Guid id)
         {
             var entity = await _reminders.GetAsync(id);
             entity.IsActive = !entity.IsActive;

@@ -50,7 +50,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [AllowAnonymous]
-        public async Task<List<ComboDto>> GetActiveAsync()
+        public virtual async Task<List<ComboDto>> GetActiveAsync()
         {
             var queryable = await _combos.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -59,7 +59,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<ComboDto>> GetListAsync()
+        public virtual async Task<List<ComboDto>> GetListAsync()
         {
             var queryable = await _combos.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -68,14 +68,14 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<ComboDto> GetAsync(Guid id)
+        public virtual async Task<ComboDto> GetAsync(Guid id)
         {
             var entity = await _combos.GetAsync(id);
             return (await MapToDtosAsync(new[] { entity })).First();
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<ComboDto> CreateAsync(CreateUpdateComboDto dto)
+        public virtual async Task<ComboDto> CreateAsync(CreateUpdateComboDto dto)
         {
             await EnsureItemsValidAsync(dto);
 
@@ -102,7 +102,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<ComboDto> UpdateAsync(Guid id, CreateUpdateComboDto dto)
+        public virtual async Task<ComboDto> UpdateAsync(Guid id, CreateUpdateComboDto dto)
         {
             await EnsureItemsValidAsync(dto);
 
@@ -130,7 +130,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             // OrderLine.ProductId chứa combo id khi IsCombo=true.
             // Nếu combo đã có trong đơn hàng thì deactivate thay vì xóa cứng.

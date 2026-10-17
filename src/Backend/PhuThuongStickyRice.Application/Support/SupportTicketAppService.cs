@@ -37,7 +37,7 @@ namespace PhuThuongStickyRice.Application.Support
         }
 
         [AllowAnonymous]
-        public async Task<SupportTicketDto> CreateAsync(CreateSupportTicketDto dto)
+        public virtual async Task<SupportTicketDto> CreateAsync(CreateSupportTicketDto dto)
         {
             var ticket = new SupportTicket
             {
@@ -53,7 +53,7 @@ namespace PhuThuongStickyRice.Application.Support
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<SupportTicketDto>> GetListAsync(string status)
+        public virtual async Task<List<SupportTicketDto>> GetListAsync(string status)
         {
             var queryable = await _tickets.GetQueryableAsync();
             IQueryable<SupportTicket> query = queryable.OrderByDescending(x => x.CreatedAt);
@@ -69,7 +69,7 @@ namespace PhuThuongStickyRice.Application.Support
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<SupportTicketDto> ReplyAsync(Guid id, ReplySupportTicketDto dto)
+        public virtual async Task<SupportTicketDto> ReplyAsync(Guid id, ReplySupportTicketDto dto)
         {
             var ticket = await _tickets.GetAsync(id);
 

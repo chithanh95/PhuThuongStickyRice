@@ -59,7 +59,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<DailyReconciliationDto> GetDailyReconciliationAsync(DateTime? date)
+        public virtual async Task<DailyReconciliationDto> GetDailyReconciliationAsync(DateTime? date)
         {
             var day = (date ?? VietnamTime.Today).Date;
             var startUtc = VietnamTime.DayStartUtc(day);
@@ -117,7 +117,7 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
-        public async Task<byte[]> ExportOrdersAsync(GetOrdersInput input)
+        public virtual async Task<byte[]> ExportOrdersAsync(GetOrdersInput input)
         {
             var query = await _orders.GetQueryableAsync();
             var filtered = ApplyFilters(query, input ?? new GetOrdersInput());
@@ -185,7 +185,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return stream.ToArray();
         }
 
-        public async Task<byte[]> ExportRevenueAsync(DateTime? from, DateTime? to)
+        public virtual async Task<byte[]> ExportRevenueAsync(DateTime? from, DateTime? to)
         {
             var queryable = await _orders.GetQueryableAsync();
             var startUtc = from.HasValue ? VietnamTime.DayStartUtc(from.Value) : DateTime.MinValue;
@@ -280,7 +280,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Item 169: revenue summary of one Vietnam date range (cancelled
         /// orders excluded). The compare view calls this once per period.
         /// </summary>
-        public async Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? from, DateTime? to)
+        public virtual async Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? from, DateTime? to)
         {
             var queryable = await _orders.GetQueryableAsync();
             var startUtc = from.HasValue ? VietnamTime.DayStartUtc(from.Value) : DateTime.MinValue;

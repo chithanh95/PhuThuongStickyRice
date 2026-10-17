@@ -50,7 +50,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<GrossProfitReportDto> GetGrossProfitReportAsync(DateTime? from, DateTime? to)
+        public virtual async Task<GrossProfitReportDto> GetGrossProfitReportAsync(DateTime? from, DateTime? to)
         {
             var today = VietnamTime.Today;
             var toDate = (to?.Date ?? today).Date;
@@ -147,7 +147,7 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
-        public async Task<List<ProductCostDto>> GetProductCostsAsync()
+        public virtual async Task<List<ProductCostDto>> GetProductCostsAsync()
         {
             var productQueryable = await _products.GetQueryableAsync();
             return await _asyncExecuter.ToListAsync(
@@ -163,7 +163,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     }));
         }
 
-        public async Task<ProductCostDto> UpdateCostPriceAsync(Guid productId, decimal costPrice)
+        public virtual async Task<ProductCostDto> UpdateCostPriceAsync(Guid productId, decimal costPrice)
         {
             var product = await _products.GetAsync(productId);
             product.ChangeCostPrice(costPrice);

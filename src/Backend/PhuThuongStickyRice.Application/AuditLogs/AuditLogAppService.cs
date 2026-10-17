@@ -30,7 +30,7 @@ namespace PhuThuongStickyRice.Application.AuditLogs
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<PagedResultDto<AuditLogEntryDto>> GetListAsync(
+        public virtual async Task<PagedResultDto<AuditLogEntryDto>> GetListAsync(
             string searchTerm, int skipCount, int maxResultCount)
         {
             var queryable = await _auditLogs.GetQueryableAsync();

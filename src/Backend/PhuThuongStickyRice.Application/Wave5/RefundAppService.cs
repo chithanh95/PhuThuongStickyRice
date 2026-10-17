@@ -59,7 +59,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             _activityLogger = activityLogger;
         }
 
-        public async Task<List<RefundReportRowDto>> GetReportAsync()
+        public virtual async Task<List<RefundReportRowDto>> GetReportAsync()
         {
             var queryable = await _orders.GetQueryableAsync();
             var list = await _asyncExecuter.ToListAsync(
@@ -80,7 +80,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             }).ToList();
         }
 
-        public async Task RequestRefundAsync(Guid orderId, RequestRefundInput input)
+        public virtual async Task RequestRefundAsync(Guid orderId, RequestRefundInput input)
         {
             // Item 155: refunds need orders.refund.
             await _permissions.RequirePermissionAsync(PermissionKeys.OrdersRefund);
@@ -94,7 +94,7 @@ namespace PhuThuongStickyRice.Application.Wave5
                 $"Yêu cầu hoàn tiền đơn {order.OrderNumber}.");
         }
 
-        public async Task ConfirmRefundAsync(Guid orderId)
+        public virtual async Task ConfirmRefundAsync(Guid orderId)
         {
             // Item 155: refunds need orders.refund.
             await _permissions.RequirePermissionAsync(PermissionKeys.OrdersRefund);

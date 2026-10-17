@@ -61,7 +61,7 @@ namespace PhuThuongStickyRice.Application.Customer
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<bool> IsVipAsync(string phone)
+        public virtual async Task<bool> IsVipAsync(string phone)
         {
             phone = NormalizePhone(phone);
             if (string.IsNullOrEmpty(phone))
@@ -75,7 +75,7 @@ namespace PhuThuongStickyRice.Application.Customer
                     && x.TagName.ToLower() == "vip"));
         }
 
-        public async Task<Dictionary<string, bool>> IsVipByPhonesAsync(IEnumerable<string> phones)
+        public virtual async Task<Dictionary<string, bool>> IsVipByPhonesAsync(IEnumerable<string> phones)
         {
             var list = (phones ?? Enumerable.Empty<string>())
                 .Select(NormalizePhone)
@@ -101,7 +101,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return result;
         }
 
-        public async Task<HashSet<string>> GetVipPhonesAsync()
+        public virtual async Task<HashSet<string>> GetVipPhonesAsync()
         {
             var queryable = await _tagRepo.GetQueryableAsync();
             var phones = await _asyncExecuter.ToListAsync(
@@ -110,7 +110,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return new HashSet<string>(phones.Distinct());
         }
 
-        public async Task<List<CustomerTagDto>> GetVipsAsync()
+        public virtual async Task<List<CustomerTagDto>> GetVipsAsync()
         {
             var queryable = await _tagRepo.GetQueryableAsync();
             var rows = await _asyncExecuter.ToListAsync(
@@ -127,7 +127,7 @@ namespace PhuThuongStickyRice.Application.Customer
             }).ToList();
         }
 
-        public async Task<CustomerTagDto> MarkVipAsync(string phone)
+        public virtual async Task<CustomerTagDto> MarkVipAsync(string phone)
         {
             phone = NormalizePhone(phone);
             if (string.IsNullOrEmpty(phone))
@@ -152,7 +152,7 @@ namespace PhuThuongStickyRice.Application.Customer
             });
         }
 
-        public async Task UnmarkVipAsync(string phone)
+        public virtual async Task UnmarkVipAsync(string phone)
         {
             phone = NormalizePhone(phone);
             if (string.IsNullOrEmpty(phone))

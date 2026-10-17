@@ -43,7 +43,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<IngredientForecastDto> GetForecastAsync()
+        public virtual async Task<IngredientForecastDto> GetForecastAsync()
         {
             var settings = await _shopSettings.GetAsync();
             var gramsPerPortion = settings.NepPerPortionGrams > 0 ? settings.NepPerPortionGrams : 150;

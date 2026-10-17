@@ -52,7 +52,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<RevenueForecastDto> GetRevenueForecastAsync()
+        public virtual async Task<RevenueForecastDto> GetRevenueForecastAsync()
         {
             var today = VietnamTime.Today;
             var patternStart = today.AddDays(-PatternDays); // inclusive

@@ -39,7 +39,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<CorporateClientDto>> GetListAsync()
+        public virtual async Task<List<CorporateClientDto>> GetListAsync()
         {
             var queryable = await _clients.GetQueryableAsync();
             var list = await _asyncExecuter.ToListAsync(
@@ -47,12 +47,12 @@ namespace PhuThuongStickyRice.Application.Wave5
             return list.Select(MapToDto).ToList();
         }
 
-        public async Task<CorporateClientDto> GetAsync(Guid id)
+        public virtual async Task<CorporateClientDto> GetAsync(Guid id)
         {
             return MapToDto(await _clients.GetAsync(id));
         }
 
-        public async Task<CorporateClientDto> CreateAsync(CreateUpdateCorporateClientDto input)
+        public virtual async Task<CorporateClientDto> CreateAsync(CreateUpdateCorporateClientDto input)
         {
             var entity = new CorporateClient
             {
@@ -70,7 +70,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return MapToDto(entity);
         }
 
-        public async Task<CorporateClientDto> UpdateAsync(Guid id, CreateUpdateCorporateClientDto input)
+        public virtual async Task<CorporateClientDto> UpdateAsync(Guid id, CreateUpdateCorporateClientDto input)
         {
             var entity = await _clients.GetAsync(id);
             entity.CompanyName = input.CompanyName.Trim();
@@ -85,12 +85,12 @@ namespace PhuThuongStickyRice.Application.Wave5
             return MapToDto(entity);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _clients.DeleteAsync(id, autoSave: true);
         }
 
-        public async Task<List<CorporateClientDto>> GetDueTodayAsync()
+        public virtual async Task<List<CorporateClientDto>> GetDueTodayAsync()
         {
             var weekday = (int)VietnamTime.Today().DayOfWeek;
             var queryable = await _clients.GetQueryableAsync();

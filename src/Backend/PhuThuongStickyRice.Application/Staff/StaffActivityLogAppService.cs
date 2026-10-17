@@ -30,7 +30,7 @@ namespace PhuThuongStickyRice.Application.Staff
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<StaffActivityLogListDto> GetListAsync(GetStaffActivityLogsInput input)
+        public virtual async Task<StaffActivityLogListDto> GetListAsync(GetStaffActivityLogsInput input)
         {
             input ??= new GetStaffActivityLogsInput();
 

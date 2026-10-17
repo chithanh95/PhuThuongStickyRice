@@ -76,7 +76,7 @@ namespace PhuThuongStickyRice.Application.Shop
 
         /// <summary>Public — the checkout page needs the fee rules.</summary>
         [AllowAnonymous]
-        public async Task<ShopSettingDto> GetAsync()
+        public virtual async Task<ShopSettingDto> GetAsync()
         {
             var entity = await GetSingleAsync();
             return MapToDto(entity ?? ShopSetting.CreateDefault());
@@ -89,7 +89,7 @@ namespace PhuThuongStickyRice.Application.Shop
         /// (AcceptingOrders = false) always wins over the holiday reason.
         /// </summary>
         [AllowAnonymous]
-        public async Task<ShopSettingDto> GetPublicAsync()
+        public virtual async Task<ShopSettingDto> GetPublicAsync()
         {
             var dto = await GetAsync();
             if (dto.AcceptingOrders)
@@ -124,7 +124,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<ShopSettingDto> UpdateAsync(ShopSettingDto dto)
+        public virtual async Task<ShopSettingDto> UpdateAsync(ShopSettingDto dto)
         {
             // Item 155: editing shop settings needs settings.edit.
             await _permissions.RequirePermissionAsync(PermissionKeys.SettingsEdit);
@@ -245,7 +245,7 @@ namespace PhuThuongStickyRice.Application.Shop
         /// the admin UI shows the returned message.
         /// </summary>
         [Authorize(Roles = "Admin")]
-        public async Task<(bool Ok, string Message)> TestNewOrderWebhookAsync(string url)
+        public virtual async Task<(bool Ok, string Message)> TestNewOrderWebhookAsync(string url)
         {
             var target = NormalizeWebhookUrl(url);
             if (target == null)

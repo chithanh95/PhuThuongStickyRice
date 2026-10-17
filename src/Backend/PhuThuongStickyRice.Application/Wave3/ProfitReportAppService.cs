@@ -39,7 +39,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<ProfitReportDto> GetReportAsync(DateTime? from = null, DateTime? to = null)
+        public virtual async Task<ProfitReportDto> GetReportAsync(DateTime? from = null, DateTime? to = null)
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
 

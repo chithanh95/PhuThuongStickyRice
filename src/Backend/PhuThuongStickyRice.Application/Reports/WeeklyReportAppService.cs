@@ -31,10 +31,10 @@ namespace PhuThuongStickyRice.Application.Reports
             _sender = sender;
         }
 
-        public Task<WeeklyReportDto> GetWeeklyReportAsync() =>
+        public virtual Task<WeeklyReportDto> GetWeeklyReportAsync() =>
             _sender.BuildReportAsync();
 
-        public Task<WeeklyReportSendResultDto> SendWeeklyReportAsync() =>
+        public virtual Task<WeeklyReportSendResultDto> SendWeeklyReportAsync() =>
             _sender.SendAsync();
     }
 }

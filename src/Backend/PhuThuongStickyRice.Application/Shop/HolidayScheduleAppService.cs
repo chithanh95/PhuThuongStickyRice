@@ -48,7 +48,7 @@ namespace PhuThuongStickyRice.Application.Shop
         internal static DateTime VietnamToday() => DateTime.UtcNow.AddHours(7).Date;
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<HolidayScheduleDto>> GetListAsync()
+        public virtual async Task<List<HolidayScheduleDto>> GetListAsync()
         {
             var queryable = await _holidays.GetQueryableAsync();
             var list = await _asyncExecuter.ToListAsync(
@@ -57,7 +57,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<HolidayScheduleDto> CreateAsync(CreateHolidayScheduleDto dto)
+        public virtual async Task<HolidayScheduleDto> CreateAsync(CreateHolidayScheduleDto dto)
         {
             var (date, reason) = Validate(dto.HolidayDate, dto.Reason);
 
@@ -82,7 +82,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<HolidayScheduleDto> UpdateAsync(Guid id, UpdateHolidayScheduleDto dto)
+        public virtual async Task<HolidayScheduleDto> UpdateAsync(Guid id, UpdateHolidayScheduleDto dto)
         {
             var entity = await _holidays.GetAsync(id);
             var (date, reason) = Validate(dto.HolidayDate, dto.Reason);
@@ -104,13 +104,13 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _holidays.DeleteAsync(id, autoSave: true);
         }
 
         [AllowAnonymous]
-        public async Task<List<HolidayScheduleDto>> GetUpcomingAsync()
+        public virtual async Task<List<HolidayScheduleDto>> GetUpcomingAsync()
         {
             var today = VietnamToday();
             var limit = today.AddDays(30);

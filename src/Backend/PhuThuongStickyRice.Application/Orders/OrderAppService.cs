@@ -243,7 +243,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<OrderDto> CreateAsync(CreateOrderDto input)
+        public virtual async Task<OrderDto> CreateAsync(CreateOrderDto input)
         {
             if (input.Lines == null || input.Lines.Count == 0)
             {
@@ -725,7 +725,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return _objectMapper.Map<Order, OrderDto>(order);
         }
 
-        public async Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInput input)
+        public virtual async Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInput input)
         {
             var queryable = await _orders.GetQueryableAsync();
             System.Linq.IQueryable<Order> query = queryable.OrderByDescending(x => x.CreatedAt);
@@ -851,7 +851,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
         }
 
-        public async Task<OrderDto> GetAsync(Guid id)
+        public virtual async Task<OrderDto> GetAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
             var dto = _objectMapper.Map<Order, OrderDto>(order);
@@ -860,7 +860,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return dto;
         }
 
-        public async Task<OrderDto> UpdateStatusAsync(Guid id, UpdateOrderStatusDto input)
+        public virtual async Task<OrderDto> UpdateStatusAsync(Guid id, UpdateOrderStatusDto input)
         {
             var order = await FindOrThrowAsync(id);
 
@@ -995,7 +995,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Item 82: admin assigns (or unassigns) a delivery shipper.</summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
-        public async Task<OrderDto> AssignShipperAsync(Guid id, AssignShipperDto input)
+        public virtual async Task<OrderDto> AssignShipperAsync(Guid id, AssignShipperDto input)
         {
             var order = await FindOrThrowAsync(id);
 
@@ -1024,7 +1024,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Item 81: kitchen display — Pending/Confirmed/Preparing, oldest first.</summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Kitchen")]
-        public async Task<List<OrderDto>> GetKitchenOrdersAsync()
+        public virtual async Task<List<OrderDto>> GetKitchenOrdersAsync()
         {
             var kitchenStatuses = new[]
                 { OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.Preparing };
@@ -1045,7 +1045,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Pending→Confirmed→Preparing→Delivering.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Kitchen")]
-        public async Task<OrderDto> AdvanceKitchenStatusAsync(Guid id)
+        public virtual async Task<OrderDto> AdvanceKitchenStatusAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
             var fromStatus = order.Status;
@@ -1109,7 +1109,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Wave 6c (item 33): admin sets or clears the internal note.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
-        public async Task<OrderDto> UpdateAdminNoteAsync(Guid id, UpdateAdminNoteDto input)
+        public virtual async Task<OrderDto> UpdateAdminNoteAsync(Guid id, UpdateAdminNoteDto input)
         {
             var order = await FindOrThrowAsync(id);
             order.SetAdminNote(input?.Note);
@@ -1127,7 +1127,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Delivering (the shipper is now transporting it).
         /// </summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
-        public async Task<OrderDto> MarkPickedUpAsync(Guid id, MarkPickedUpDto input)
+        public virtual async Task<OrderDto> MarkPickedUpAsync(Guid id, MarkPickedUpDto input)
         {
             // Item 155: confirming a pickup needs orders.confirm.
             await _permissions.RequirePermissionAsync(PermissionKeys.OrdersConfirm);
@@ -1165,7 +1165,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// cancelled, not yet collected".
         /// </summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
-        public async Task<OrderDto> MarkCashCollectedAsync(Guid id)
+        public virtual async Task<OrderDto> MarkCashCollectedAsync(Guid id)
         {
             // Item 155: cash handling needs orders.confirm-payment.
             await _permissions.RequirePermissionAsync(PermissionKeys.OrdersConfirmPayment);
@@ -1184,7 +1184,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Wave 6c (item 34): status-transition timeline, oldest first.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier,Kitchen")]
-        public async Task<List<OrderStatusHistoryDto>> GetStatusHistoryAsync(Guid id)
+        public virtual async Task<List<OrderStatusHistoryDto>> GetStatusHistoryAsync(Guid id)
         {
             // Throw when the order does not exist (also guards against
             // probing arbitrary ids from the kitchen role).
@@ -1207,7 +1207,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Item 87: admin hides/unhides an order review.</summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-        public async Task<OrderReviewDto> SetReviewHiddenAsync(Guid id, SetReviewHiddenDto input)
+        public virtual async Task<OrderReviewDto> SetReviewHiddenAsync(Guid id, SetReviewHiddenDto input)
         {
             var review = await _reviews.GetAsync(id);
             review.IsHidden = input.IsHidden;
@@ -1217,7 +1217,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Item 87: admin replies to a review (shown publicly).</summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-        public async Task<OrderReviewDto> ReplyReviewAsync(Guid id, ReplyReviewDto input)
+        public virtual async Task<OrderReviewDto> ReplyReviewAsync(Guid id, ReplyReviewDto input)
         {
             var review = await _reviews.GetAsync(id);
             review.AdminReply = string.IsNullOrWhiteSpace(input.Reply) ? null : input.Reply.Trim();
@@ -1227,7 +1227,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Item 52: customer rates the shipper (1-5) for an order review.</summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
-        public async Task<OrderReviewDto> SetShipperRatingAsync(Guid id, SetShipperRatingDto input)
+        public virtual async Task<OrderReviewDto> SetShipperRatingAsync(Guid id, SetShipperRatingDto input)
         {
             if (input.Rating < 1 || input.Rating > 5)
                 throw new Domain.Exceptions.DomainException("Đánh giá shipper phải từ 1 đến 5 sao.");
@@ -1240,7 +1240,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Item 87: public non-hidden reviews, newest first.</summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
-        public async Task<List<OrderReviewDto>> GetPublicReviewsAsync()
+        public virtual async Task<List<OrderReviewDto>> GetPublicReviewsAsync()
         {
             var reviewQueryable = await _reviews.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -1250,7 +1250,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return items.Select(MapReviewToDto).ToList();
         }
 
-        public async Task<OrderDto> CancelByCustomerAsync(CancelOrderByCustomerInput input)
+        public virtual async Task<OrderDto> CancelByCustomerAsync(CancelOrderByCustomerInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
 
@@ -1280,7 +1280,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return dto;
         }
 
-        public async Task<OrderDto> UpdateLinesByCustomerAsync(UpdateOrderLinesInput input)
+        public virtual async Task<OrderDto> UpdateLinesByCustomerAsync(UpdateOrderLinesInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
 
@@ -1303,7 +1303,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return linesDto;
         }
 
-        public async Task<OrderReviewDto> SubmitReviewAsync(SubmitReviewInput input)
+        public virtual async Task<OrderReviewDto> SubmitReviewAsync(SubmitReviewInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
 
@@ -1413,7 +1413,7 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-        public async Task<List<OrderReviewDto>> GetReviewsAsync()
+        public virtual async Task<List<OrderReviewDto>> GetReviewsAsync()
         {
             var reviewQueryable = await _reviews.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -1427,7 +1427,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// frontend only animates the wheel to the returned segment.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
-        public async Task<SpinResultDto> SpinAsync(SpinInput input)
+        public virtual async Task<SpinResultDto> SpinAsync(SpinInput input)
         {
             // Item 105: feature-flagged. The frontend hides the wheel, but
             // the backend is the real gate.
@@ -1528,7 +1528,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Cancels Pending bank-transfer orders that stayed unpaid past the
         /// configured expiry (worker entry point).
         /// </summary>
-        public async Task<int> AutoCancelExpiredBankTransfersAsync()
+        public virtual async Task<int> AutoCancelExpiredBankTransfersAsync()
         {
             var settings = await _shopSettings.GetAsync();
             var expiryMinutes = settings.BankTransferExpiryMinutes < 1
@@ -1681,7 +1681,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return "Miss";
         }
 
-        public async Task<OrderDto> MarkTransferredAsync(Guid id, MarkTransferredDto input)
+        public virtual async Task<OrderDto> MarkTransferredAsync(Guid id, MarkTransferredDto input)
         {
             var order = await FindOrThrowAsync(id);
 
@@ -1699,7 +1699,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return transferredDto;
         }
 
-        public async Task<OrderDto> ConfirmPaymentAsync(Guid id)
+        public virtual async Task<OrderDto> ConfirmPaymentAsync(Guid id)
         {
             // Item 155: confirming "money received" needs orders.confirm-payment.
             await _permissions.RequirePermissionAsync(PermissionKeys.OrdersConfirmPayment);
@@ -1715,13 +1715,13 @@ namespace PhuThuongStickyRice.Application.Orders
             return _objectMapper.Map<Order, OrderDto>(order);
         }
 
-        public async Task<MoMoCreatePaymentResultDto> CreateMoMoPaymentAsync(Guid id)
+        public virtual async Task<MoMoCreatePaymentResultDto> CreateMoMoPaymentAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
             return await _momo.CreatePaymentAsync(order);
         }
 
-        public async Task<OrderDto> TrackOrderAsync(TrackOrderInput input)
+        public virtual async Task<OrderDto> TrackOrderAsync(TrackOrderInput input)
         {
             var order = await _orders.GetByOrderNumberAsync(input.OrderNumber?.Trim());
             if (order == null || !PhonesMatch(order.CustomerPhone, input.CustomerPhone))
@@ -1741,7 +1741,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Admin: customers aggregated by phone number (order count, total
         /// spent, last order). Cancelled orders are excluded from the totals.
         /// </summary>
-        public async Task<List<CustomerDto>> GetCustomersAsync(string searchTerm)
+        public virtual async Task<List<CustomerDto>> GetCustomersAsync(string searchTerm)
         {
             var orderQueryable = await _orders.GetQueryableAsync();
             var query = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled);
@@ -1789,7 +1789,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// this list only feeds the admin review panel.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-        public async Task<List<DuplicateOrderGroupDto>> GetDuplicateOrderGroupsAsync()
+        public virtual async Task<List<DuplicateOrderGroupDto>> GetDuplicateOrderGroupsAsync()
         {
             var cutoff = DateTime.UtcNow.AddMinutes(-30);
             var orderQueryable = await _orders.GetQueryableAsync();
@@ -1826,7 +1826,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Always explicit — the shop must press the button.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
-        public async Task<OrderDto> MergeOrdersAsync(MergeOrdersInput input)
+        public virtual async Task<OrderDto> MergeOrdersAsync(MergeOrdersInput input)
         {
             if (input == null || input.OrderIds == null || input.OrderIds.Count == 0)
             {
@@ -1917,7 +1917,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// so the checkout form can offer one-click address re-fill.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
-        public async Task<LastOrderInfoDto> GetLastOrderInfoByPhoneAsync(string phone)
+        public virtual async Task<LastOrderInfoDto> GetLastOrderInfoByPhoneAsync(string phone)
         {
             if (string.IsNullOrWhiteSpace(phone))
             {
@@ -1961,7 +1961,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Returns an empty list when the phone has no orders.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
-        public async Task<List<OrderDto>> GetOrdersByPhoneAsync(string phone)
+        public virtual async Task<List<OrderDto>> GetOrdersByPhoneAsync(string phone)
         {
             var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
             if (!System.Text.RegularExpressions.Regex.IsMatch(digits, @"^(0)(3|5|7|8|9)\d{8}$"))

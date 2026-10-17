@@ -44,7 +44,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<PagedResultDto<LoginAuditDto>> GetListAsync(int skipCount = 0, int maxResultCount = 50)
+        public virtual async Task<PagedResultDto<LoginAuditDto>> GetListAsync(int skipCount = 0, int maxResultCount = 50)
         {
             var queryable = await _audits.GetQueryableAsync();
             var query = queryable.OrderByDescending(x => x.At);
@@ -66,7 +66,7 @@ namespace PhuThuongStickyRice.Application.Wave3
 
         /// <summary>Internal — no Admin policy so the login flow can call it.</summary>
         [AllowAnonymous]
-        public async Task RecordAsync(string userName, string ipAddress, bool success, string failureReason = null)
+        public virtual async Task RecordAsync(string userName, string ipAddress, bool success, string failureReason = null)
         {
             try
             {
@@ -91,7 +91,7 @@ namespace PhuThuongStickyRice.Application.Wave3
         /// this user (the current attempt is not yet recorded).
         /// </summary>
         [AllowAnonymous]
-        public async Task<bool> IsNewIpForUserAsync(string userName, string ipAddress)
+        public virtual async Task<bool> IsNewIpForUserAsync(string userName, string ipAddress)
         {
             if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(ipAddress))
             {

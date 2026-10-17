@@ -37,7 +37,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<ShipperDto>> GetListAsync(bool activeOnly = false)
+        public virtual async Task<List<ShipperDto>> GetListAsync(bool activeOnly = false)
         {
             var queryable = await _shippers.GetQueryableAsync();
             System.Linq.IQueryable<Shipper> query = queryable.OrderBy(x => x.Name);
@@ -50,7 +50,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return items.Select(Map).ToList();
         }
 
-        public async Task<ShipperDto> CreateAsync(CreateShipperDto input)
+        public virtual async Task<ShipperDto> CreateAsync(CreateShipperDto input)
         {
             var shipper = new Shipper
             {
@@ -63,7 +63,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return Map(shipper);
         }
 
-        public async Task<ShipperDto> UpdateAsync(Guid id, UpdateShipperDto input)
+        public virtual async Task<ShipperDto> UpdateAsync(Guid id, UpdateShipperDto input)
         {
             var shipper = await _shippers.GetAsync(id);
             shipper.Name = input.Name.Trim();
@@ -73,7 +73,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return Map(shipper);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _shippers.DeleteAsync(id, autoSave: true);
         }

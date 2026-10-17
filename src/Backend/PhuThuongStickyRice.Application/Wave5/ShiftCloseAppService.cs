@@ -42,7 +42,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<decimal> GetExpectedCodAsync(DateTime date)
+        public virtual async Task<decimal> GetExpectedCodAsync(DateTime date)
         {
             var day = date.Date;
             var startUtc = day.AddHours(-7); // VN 00:00 → UTC
@@ -57,7 +57,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return orders.Sum(x => x.TotalAmount.Amount);
         }
 
-        public async Task<ShiftCloseDto> GetByDateAsync(DateTime date)
+        public virtual async Task<ShiftCloseDto> GetByDateAsync(DateTime date)
         {
             var day = date.Date;
             var queryable = await _closes.GetQueryableAsync();
@@ -66,7 +66,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return entity == null ? null : MapToDto(entity);
         }
 
-        public async Task<ShiftCloseDto> CloseAsync(CloseShiftInput input)
+        public virtual async Task<ShiftCloseDto> CloseAsync(CloseShiftInput input)
         {
             var day = input.Date.Date;
             var expected = await GetExpectedCodAsync(day);
@@ -94,7 +94,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return MapToDto(existing);
         }
 
-        public async Task<List<ShiftCloseDto>> GetListAsync(int take = 30)
+        public virtual async Task<List<ShiftCloseDto>> GetListAsync(int take = 30)
         {
             var queryable = await _closes.GetQueryableAsync();
             var list = await _asyncExecuter.ToListAsync(

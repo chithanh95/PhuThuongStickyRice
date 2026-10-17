@@ -35,7 +35,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<CustomerNoteDto>> GetByPhoneAsync(string phone)
+        public virtual async Task<List<CustomerNoteDto>> GetByPhoneAsync(string phone)
         {
             var normalized = (phone ?? string.Empty).Trim();
             var queryable = await _notes.GetQueryableAsync();
@@ -45,7 +45,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return items.Select(Map).ToList();
         }
 
-        public async Task<CustomerNoteDto> CreateAsync(CreateCustomerNoteDto input)
+        public virtual async Task<CustomerNoteDto> CreateAsync(CreateCustomerNoteDto input)
         {
             var note = new CustomerNote
             {
@@ -58,7 +58,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return Map(note);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _notes.DeleteAsync(id, autoSave: true);
         }

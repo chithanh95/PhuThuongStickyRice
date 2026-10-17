@@ -46,7 +46,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _shopSettings = shopSettings;
         }
 
-        public async Task<List<TableQrDto>> GetListAsync()
+        public virtual async Task<List<TableQrDto>> GetListAsync()
         {
             var queryable = await _tableQrs.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -54,7 +54,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return items.Select(Map).ToList();
         }
 
-        public async Task<TableQrGeneratedDto> GenerateAsync(CreateTableQrDto input)
+        public virtual async Task<TableQrGeneratedDto> GenerateAsync(CreateTableQrDto input)
         {
             var label = input.Label.Trim();
             var url = await BuildUrlAsync(label);
@@ -92,12 +92,12 @@ namespace PhuThuongStickyRice.Application.Wave3
             };
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _tableQrs.DeleteAsync(id, autoSave: true);
         }
 
-        public async Task<byte[]> RenderPngAsync(Guid id)
+        public virtual async Task<byte[]> RenderPngAsync(Guid id)
         {
             var row = await _tableQrs.GetAsync(id);
             return RenderPng(row.EncodedUrl);

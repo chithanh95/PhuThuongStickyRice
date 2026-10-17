@@ -185,7 +185,7 @@
                 <div class="lx-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
                 <div class="lx-dropzone-hint">Chọn nhiều ảnh 1 lần — ảnh tự nén trước khi tải lên.</div>
             </label>
-            <input type="file" id="product-images-input" accept="image/*" multiple class="d-none" @onchange="OnImagesSelected" />
+            <input type="file" id="product-images-input" accept="image/*" multiple style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" @onchange="OnImagesSelected" />
             <small class="form-text text-muted">Ảnh đầu tiên là ảnh đại diện hiện ở shop.</small>
             @if (_uploadingImages)
             {

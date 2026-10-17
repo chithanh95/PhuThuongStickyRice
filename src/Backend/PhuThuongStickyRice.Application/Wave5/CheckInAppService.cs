@@ -42,7 +42,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [AllowAnonymous]
-        public async Task<CheckInResultDto> CheckInAsync(string phone)
+        public virtual async Task<CheckInResultDto> CheckInAsync(string phone)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
@@ -91,7 +91,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [AllowAnonymous]
-        public async Task<CheckInResultDto> GetStatusAsync(string phone)
+        public virtual async Task<CheckInResultDto> GetStatusAsync(string phone)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
             var today = VietnamTime.Today();

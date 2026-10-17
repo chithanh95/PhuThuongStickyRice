@@ -43,7 +43,7 @@ namespace PhuThuongStickyRice.Application.Faq
         }
 
         [AllowAnonymous]
-        public async Task<List<FaqItemDto>> GetPublicAsync(string searchTerm)
+        public virtual async Task<List<FaqItemDto>> GetPublicAsync(string searchTerm)
         {
             var queryable = await _faqs.GetQueryableAsync();
             IQueryable<FaqItem> query = queryable
@@ -62,7 +62,7 @@ namespace PhuThuongStickyRice.Application.Faq
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<FaqItemDto>> GetListAsync()
+        public virtual async Task<List<FaqItemDto>> GetListAsync()
         {
             var queryable = await _faqs.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -71,7 +71,7 @@ namespace PhuThuongStickyRice.Application.Faq
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<FaqItemDto> CreateAsync(CreateFaqItemDto dto)
+        public virtual async Task<FaqItemDto> CreateAsync(CreateFaqItemDto dto)
         {
             var entity = new FaqItem
             {
@@ -85,7 +85,7 @@ namespace PhuThuongStickyRice.Application.Faq
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<FaqItemDto> UpdateAsync(Guid id, CreateFaqItemDto dto)
+        public virtual async Task<FaqItemDto> UpdateAsync(Guid id, CreateFaqItemDto dto)
         {
             var entity = await _faqs.GetAsync(id);
             entity.Question = dto.Question.Trim();
@@ -97,7 +97,7 @@ namespace PhuThuongStickyRice.Application.Faq
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _faqs.DeleteAsync(id, autoSave: true);
         }

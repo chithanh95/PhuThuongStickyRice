@@ -47,7 +47,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<PromotionDto>> GetListAsync()
+        public virtual async Task<List<PromotionDto>> GetListAsync()
         {
             var queryable = await _promotions.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -55,7 +55,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return items.Select(Map).ToList();
         }
 
-        public async Task<PromotionDto> CreateAsync(CreatePromotionDto input)
+        public virtual async Task<PromotionDto> CreateAsync(CreatePromotionDto input)
         {
             var promotion = new Promotion
             {
@@ -70,7 +70,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return Map(promotion);
         }
 
-        public async Task<PromotionDto> UpdateAsync(Guid id, CreatePromotionDto input)
+        public virtual async Task<PromotionDto> UpdateAsync(Guid id, CreatePromotionDto input)
         {
             var promotion = await _promotions.GetAsync(id);
             promotion.Name = input.Name.Trim();
@@ -83,14 +83,14 @@ namespace PhuThuongStickyRice.Application.Wave3
             return Map(promotion);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _promotions.DeleteAsync(id, autoSave: true);
         }
 
         /// <summary>Public: the checkout page previews the active promotion.</summary>
         [AllowAnonymous]
-        public async Task<PromotionDto> GetBestActiveAsync(DateTime? vnNow = null)
+        public virtual async Task<PromotionDto> GetBestActiveAsync(DateTime? vnNow = null)
         {
             var now = vnNow ?? DateTime.UtcNow.AddHours(7);
             var queryable = await _promotions.GetQueryableAsync();

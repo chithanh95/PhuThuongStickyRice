@@ -42,7 +42,7 @@ namespace PhuThuongStickyRice.Application.Inventory
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task SaveAsync(SaveDailyInventoryInput input)
+        public virtual async Task SaveAsync(SaveDailyInventoryInput input)
         {
             if (input == null || input.Lines == null)
             {
@@ -97,7 +97,7 @@ namespace PhuThuongStickyRice.Application.Inventory
             }
         }
 
-        public async Task<List<DailyInventoryDayDto>> GetHistoryAsync(int days = 30)
+        public virtual async Task<List<DailyInventoryDayDto>> GetHistoryAsync(int days = 30)
         {
             if (days < 1) days = 1;
             if (days > 90) days = 90;

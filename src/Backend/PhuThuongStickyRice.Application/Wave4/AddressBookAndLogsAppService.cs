@@ -38,7 +38,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [AllowAnonymous]
-        public async Task<List<AddressBookDto>> GetByPhoneAsync(string phone)
+        public virtual async Task<List<AddressBookDto>> GetByPhoneAsync(string phone)
         {
             var normalized = NormalizePhone(phone);
             if (normalized == null)
@@ -54,7 +54,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [AllowAnonymous]
-        public async Task<AddressBookDto> SaveAsync(SaveAddressDto dto)
+        public virtual async Task<AddressBookDto> SaveAsync(SaveAddressDto dto)
         {
             var phone = NormalizePhone(dto.Phone);
             if (phone == null)
@@ -87,7 +87,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [AllowAnonymous]
-        public async Task DeleteAsync(Guid id, string phone)
+        public virtual async Task DeleteAsync(Guid id, string phone)
         {
             var entity = await _addresses.GetAsync(id);
             var normalized = NormalizePhone(phone);
@@ -142,7 +142,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<PagedResultDto<AppLogDto>> GetListAsync(GetAppLogsInput input)
+        public virtual async Task<PagedResultDto<AppLogDto>> GetListAsync(GetAppLogsInput input)
         {
             var queryable = await _logs.GetQueryableAsync();
             System.Linq.IQueryable<AppLog> query = queryable.OrderByDescending(x => x.At);
@@ -203,7 +203,7 @@ namespace PhuThuongStickyRice.Application.Wave4
             _clock = clock;
         }
 
-        public async Task WriteAsync(string level, string source, string message)
+        public virtual async Task WriteAsync(string level, string source, string message)
         {
             // Never log the writer itself — that would recurse forever.
             if (!string.IsNullOrEmpty(source)

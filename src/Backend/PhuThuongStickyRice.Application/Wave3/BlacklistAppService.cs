@@ -38,7 +38,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<BlacklistedPhoneDto>> GetListAsync()
+        public virtual async Task<List<BlacklistedPhoneDto>> GetListAsync()
         {
             var queryable = await _blacklist.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -52,7 +52,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             }).ToList();
         }
 
-        public async Task<BlacklistedPhoneDto> CreateAsync(CreateBlacklistedPhoneDto input)
+        public virtual async Task<BlacklistedPhoneDto> CreateAsync(CreateBlacklistedPhoneDto input)
         {
             var normalized = NormalizePhone(input.Phone);
             var queryable = await _blacklist.GetQueryableAsync();
@@ -80,13 +80,13 @@ namespace PhuThuongStickyRice.Application.Wave3
             };
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _blacklist.DeleteAsync(id, autoSave: true);
         }
 
         [AllowAnonymous]
-        public async Task<bool> IsBlacklistedAsync(string phone)
+        public virtual async Task<bool> IsBlacklistedAsync(string phone)
         {
             var normalized = NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))

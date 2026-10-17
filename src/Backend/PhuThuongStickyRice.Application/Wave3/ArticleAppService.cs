@@ -43,7 +43,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<ArticleDto>> GetListAsync()
+        public virtual async Task<List<ArticleDto>> GetListAsync()
         {
             var queryable = await _articles.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -51,7 +51,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return items.Select(Map).ToList();
         }
 
-        public async Task<ArticleDto> CreateAsync(CreateArticleDto input)
+        public virtual async Task<ArticleDto> CreateAsync(CreateArticleDto input)
         {
             var article = new Article
             {
@@ -65,7 +65,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             return Map(article);
         }
 
-        public async Task<ArticleDto> UpdateAsync(Guid id, CreateArticleDto input)
+        public virtual async Task<ArticleDto> UpdateAsync(Guid id, CreateArticleDto input)
         {
             var article = await _articles.GetAsync(id);
             article.Title = input.Title.Trim();
@@ -81,13 +81,13 @@ namespace PhuThuongStickyRice.Application.Wave3
             return Map(article);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _articles.DeleteAsync(id, autoSave: true);
         }
 
         [AllowAnonymous]
-        public async Task<List<ArticleDto>> GetPublishedAsync()
+        public virtual async Task<List<ArticleDto>> GetPublishedAsync()
         {
             var queryable = await _articles.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(

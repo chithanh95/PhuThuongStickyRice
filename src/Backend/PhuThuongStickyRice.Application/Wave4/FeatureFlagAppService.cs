@@ -48,7 +48,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<FeatureFlagDto>> GetListAsync()
+        public virtual async Task<List<FeatureFlagDto>> GetListAsync()
         {
             await EnsureDefaultsAsync();
             var queryable = await _flags.GetQueryableAsync();
@@ -57,7 +57,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<FeatureFlagDto> SetEnabledAsync(string key, bool enabled)
+        public virtual async Task<FeatureFlagDto> SetEnabledAsync(string key, bool enabled)
         {
             await EnsureDefaultsAsync();
             var entity = await FindOrThrowAsync(key);
@@ -67,7 +67,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [AllowAnonymous]
-        public async Task<Dictionary<string, bool>> GetEnabledMapAsync()
+        public virtual async Task<Dictionary<string, bool>> GetEnabledMapAsync()
         {
             await EnsureDefaultsAsync();
             var queryable = await _flags.GetQueryableAsync();
@@ -75,7 +75,7 @@ namespace PhuThuongStickyRice.Application.Wave4
             return entities.ToDictionary(x => x.Key, x => x.IsEnabled);
         }
 
-        public async Task<bool> IsEnabledAsync(string key)
+        public virtual async Task<bool> IsEnabledAsync(string key)
         {
             var queryable = await _flags.GetQueryableAsync();
             var entity = await _asyncExecuter.FirstOrDefaultAsync(

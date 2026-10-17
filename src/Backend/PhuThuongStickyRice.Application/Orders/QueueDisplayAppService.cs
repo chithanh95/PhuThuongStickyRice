@@ -35,7 +35,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<QueueTicketDto>> GetNowServingAsync()
+        public virtual async Task<List<QueueTicketDto>> GetNowServingAsync()
         {
             // Vietnam day bounds (UTC+7, no DST). CreatedAt is stored as UTC.
             var vnNow = DateTime.UtcNow.AddHours(7);

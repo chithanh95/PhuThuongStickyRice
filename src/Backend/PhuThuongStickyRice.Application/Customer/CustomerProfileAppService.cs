@@ -72,7 +72,7 @@ namespace PhuThuongStickyRice.Application.Customer
             _activityLogger = activityLogger;
         }
 
-        public async Task<CustomerProfileDto> GetMyAsync()
+        public virtual async Task<CustomerProfileDto> GetMyAsync()
         {
             var user = await GetCurrentUserAsync();
             var dto = new CustomerProfileDto();
@@ -96,7 +96,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return dto;
         }
 
-        public async Task<CustomerProfileDto> UpdateAsync(UpdateCustomerProfileDto dto)
+        public virtual async Task<CustomerProfileDto> UpdateAsync(UpdateCustomerProfileDto dto)
         {
             var user = await GetCurrentUserAsync();
             dto ??= new UpdateCustomerProfileDto();
@@ -151,7 +151,7 @@ namespace PhuThuongStickyRice.Application.Customer
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<BirthdayMemberDto>> GetBirthdaysAsync(int month)
+        public virtual async Task<List<BirthdayMemberDto>> GetBirthdaysAsync(int month)
         {
             if (month < 1 || month > 12)
             {
@@ -185,7 +185,7 @@ namespace PhuThuongStickyRice.Application.Customer
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<BirthdayGiftResultDto> GrantBirthdayGiftAsync(Guid userId, GrantBirthdayGiftDto dto)
+        public virtual async Task<BirthdayGiftResultDto> GrantBirthdayGiftAsync(Guid userId, GrantBirthdayGiftDto dto)
         {
             var user = await _users.GetAsync(userId);
             var phone = (user.PhoneNumber ?? string.Empty).Trim();
@@ -241,7 +241,7 @@ namespace PhuThuongStickyRice.Application.Customer
         }
 
         [Authorize(Roles = "Admin,Cashier")]
-        public async Task<CustomerReminderDto> CreateReminderAsync(CreateReminderDto dto)
+        public virtual async Task<CustomerReminderDto> CreateReminderAsync(CreateReminderDto dto)
         {
             if (dto == null)
             {
@@ -278,7 +278,7 @@ namespace PhuThuongStickyRice.Application.Customer
         }
 
         [Authorize(Roles = "Admin,Cashier")]
-        public async Task<List<CustomerReminderDto>> GetRemindersAsync(string phone)
+        public virtual async Task<List<CustomerReminderDto>> GetRemindersAsync(string phone)
         {
             phone = (phone ?? string.Empty).Trim();
             var queryable = await _reminders.GetQueryableAsync();

@@ -39,7 +39,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<ProductSizeOptionDto>> GetByProductAsync(Guid productId)
+        public virtual async Task<List<ProductSizeOptionDto>> GetByProductAsync(Guid productId)
         {
             var queryable = await _options.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -49,7 +49,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             return entities.Select(MapToDto).ToList();
         }
 
-        public async Task<ProductSizeOptionDto> CreateAsync(CreateUpdateProductSizeOptionDto dto)
+        public virtual async Task<ProductSizeOptionDto> CreateAsync(CreateUpdateProductSizeOptionDto dto)
         {
             await EnsureProductExistsAsync(dto.ProductId);
 
@@ -66,7 +66,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapToDto(entity);
         }
 
-        public async Task<ProductSizeOptionDto> UpdateAsync(Guid id, CreateUpdateProductSizeOptionDto dto)
+        public virtual async Task<ProductSizeOptionDto> UpdateAsync(Guid id, CreateUpdateProductSizeOptionDto dto)
         {
             var entity = await _options.GetAsync(id);
 
@@ -79,7 +79,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapToDto(entity);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _options.DeleteAsync(id);
         }

@@ -51,7 +51,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [AllowAnonymous]
-        public async Task<WalletAccountDto> GetBalanceAsync(string phone)
+        public virtual async Task<WalletAccountDto> GetBalanceAsync(string phone)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
@@ -66,7 +66,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<WalletAccountDto>> GetListAsync(string searchTerm)
+        public virtual async Task<List<WalletAccountDto>> GetListAsync(string searchTerm)
         {
             var queryable = await _wallets.GetQueryableAsync();
             IQueryable<WalletAccount> query = queryable.OrderByDescending(x => x.Balance);
@@ -81,7 +81,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<WalletAccountDto> AdjustAsync(AdjustWalletInput input)
+        public virtual async Task<WalletAccountDto> AdjustAsync(AdjustWalletInput input)
         {
             var normalized = VietnamTime.NormalizePhone(input?.Phone);
             if (string.IsNullOrEmpty(normalized))
@@ -112,7 +112,7 @@ namespace PhuThuongStickyRice.Application.Wave5
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<WalletTransactionDto>> GetTransactionsAsync(string phone)
+        public virtual async Task<List<WalletTransactionDto>> GetTransactionsAsync(string phone)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
@@ -128,7 +128,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return list.Select(MapToTransactionDto).ToList();
         }
 
-        public async Task ChargeAsync(string phone, decimal amount, string orderNumber)
+        public virtual async Task ChargeAsync(string phone, decimal amount, string orderNumber)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
@@ -156,7 +156,7 @@ namespace PhuThuongStickyRice.Application.Wave5
                 $"Thanh toán đơn {orderNumber}", "system");
         }
 
-        public async Task RefundAsync(string phone, decimal amount, string orderNumber)
+        public virtual async Task RefundAsync(string phone, decimal amount, string orderNumber)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized) || amount <= 0)

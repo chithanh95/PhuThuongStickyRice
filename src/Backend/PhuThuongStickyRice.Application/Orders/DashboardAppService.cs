@@ -77,7 +77,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _shopSettings = shopSettings;
         }
 
-        public async Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null)
+        public virtual async Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null)
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
 
@@ -146,7 +146,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return stats;
         }
 
-        public async Task<DailyTargetDto> GetDailyTargetAsync()
+        public virtual async Task<DailyTargetDto> GetDailyTargetAsync()
         {
             var settings = await _shopSettings.GetAsync();
             var target = settings.DailyTargetAmount > 0 ? settings.DailyTargetAmount : 2000000;
@@ -170,7 +170,7 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
-        public async Task<List<SourceStatDto>> GetSourceStatsAsync(DateTime? from = null, DateTime? to = null)
+        public virtual async Task<List<SourceStatDto>> GetSourceStatsAsync(DateTime? from = null, DateTime? to = null)
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
             var orderQueryable = await _orders.GetQueryableAsync();
@@ -191,7 +191,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return rows;
         }
 
-        public async Task<NewReturningCustomersDto> GetNewReturningCustomersAsync(
+        public virtual async Task<NewReturningCustomersDto> GetNewReturningCustomersAsync(
             DateTime? from = null, DateTime? to = null)
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
@@ -234,7 +234,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return result;
         }
 
-        public async Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5)
+        public virtual async Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5)
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
 
@@ -257,7 +257,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     .Take(top < 1 ? 5 : top));
         }
 
-        public async Task<List<Guid>> GetBestSellerProductIdsAsync(int top)
+        public virtual async Task<List<Guid>> GetBestSellerProductIdsAsync(int top)
         {
             var products = await GetTopProductsAsync(null, null, top < 1 ? 100 : top);
             return products.Select(x => x.ProductId).ToList();
@@ -267,7 +267,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Wave 6d (item 36): today's vs yesterday's revenue + order count
         /// using Vietnam day boundaries (CreatedAt is UTC).
         /// </summary>
-        public async Task<TodayVsYesterdayDto> GetTodayVsYesterdayAsync()
+        public virtual async Task<TodayVsYesterdayDto> GetTodayVsYesterdayAsync()
         {
             var todayVn = Wave5.VietnamTime.Today();
             var startUtc = todayVn.AddHours(-7); // VN 00:00 today → UTC
@@ -306,7 +306,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return (double)(today - yesterday) / (double)yesterday * 100;
         }
 
-        public async Task<long> GetTodaySoldCountAsync()
+        public virtual async Task<long> GetTodaySoldCountAsync()
         {
             // The shop runs on Vietnam time (UTC+7); CreatedAt is UTC.
             var startOfTodayUtc = DateTime.UtcNow.AddHours(7).Date.AddHours(-7);

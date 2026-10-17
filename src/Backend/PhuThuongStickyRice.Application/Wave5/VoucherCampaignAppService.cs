@@ -50,7 +50,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<VoucherCampaignAudienceDto>> GetAudiencesAsync(string tier)
+        public virtual async Task<List<VoucherCampaignAudienceDto>> GetAudiencesAsync(string tier)
         {
             var inactive = await GetInactivePhonesAsync();
             var tierPhones = await GetTierPhonesAsync(tier);
@@ -64,7 +64,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             };
         }
 
-        public async Task<List<GeneratedVoucherDto>> GenerateAsync(CreateVoucherCampaignInput input)
+        public virtual async Task<List<GeneratedVoucherDto>> GenerateAsync(CreateVoucherCampaignInput input)
         {
             List<string> phones;
             switch ((input.Audience ?? string.Empty).Trim().ToLowerInvariant())

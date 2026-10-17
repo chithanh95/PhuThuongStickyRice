@@ -53,7 +53,7 @@ namespace PhuThuongStickyRice.Application.Customer
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<CustomerTagDto>> GetTagsAsync(string phone)
+        public virtual async Task<List<CustomerTagDto>> GetTagsAsync(string phone)
         {
             phone = NormalizePhone(phone);
             if (string.IsNullOrEmpty(phone))
@@ -68,7 +68,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return rows.Select(ToDto).ToList();
         }
 
-        public async Task<Dictionary<string, List<CustomerTagDto>>> GetTagsByPhonesAsync(IEnumerable<string> phones)
+        public virtual async Task<Dictionary<string, List<CustomerTagDto>>> GetTagsByPhonesAsync(IEnumerable<string> phones)
         {
             var list = (phones ?? Enumerable.Empty<string>())
                 .Select(NormalizePhone)
@@ -98,7 +98,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return result;
         }
 
-        public async Task<CustomerTagDto> AddTagAsync(CreateCustomerTagDto dto)
+        public virtual async Task<CustomerTagDto> AddTagAsync(CreateCustomerTagDto dto)
         {
             var phone = NormalizePhone(dto?.CustomerPhone);
             var name = dto?.TagName?.Trim();
@@ -141,13 +141,13 @@ namespace PhuThuongStickyRice.Application.Customer
             return ToDto(entity);
         }
 
-        public async Task DeleteTagAsync(Guid id)
+        public virtual async Task DeleteTagAsync(Guid id)
         {
             var entity = await _tags.GetAsync(id);
             await _tags.DeleteAsync(entity);
         }
 
-        public async Task<byte[]> ExportCustomersAsync(string searchTerm, string tag, bool inactiveOnly)
+        public virtual async Task<byte[]> ExportCustomersAsync(string searchTerm, string tag, bool inactiveOnly)
         {
             var rows = await GetCustomerRowsAsync(searchTerm, tag, inactiveOnly, MaxExportRows);
 

@@ -42,7 +42,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _customerTags = customerTags;
         }
 
-        public async Task<CustomerDetailDto> GetDetailAsync(string phone)
+        public virtual async Task<CustomerDetailDto> GetDetailAsync(string phone)
         {
             var normalized = (phone ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(normalized))

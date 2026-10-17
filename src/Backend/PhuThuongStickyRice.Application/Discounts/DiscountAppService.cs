@@ -85,7 +85,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<DiscountCodeDto>> GetListAsync()
+        public virtual async Task<List<DiscountCodeDto>> GetListAsync()
         {
             var queryable = await _discounts.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -94,14 +94,14 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<DiscountCodeDto> GetAsync(Guid id)
+        public virtual async Task<DiscountCodeDto> GetAsync(Guid id)
         {
             var entity = await _discounts.GetAsync(id);
             return MapToDto(entity);
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<DiscountCodeDto> CreateAsync(CreateDiscountCodeDto dto)
+        public virtual async Task<DiscountCodeDto> CreateAsync(CreateDiscountCodeDto dto)
         {
             // Item 155: managing discount codes needs discounts.manage.
             await _permissions.RequirePermissionAsync(PermissionKeys.DiscountsManage);
@@ -131,7 +131,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<DiscountCodeDto> UpdateAsync(Guid id, CreateDiscountCodeDto dto)
+        public virtual async Task<DiscountCodeDto> UpdateAsync(Guid id, CreateDiscountCodeDto dto)
         {
             // Item 155: managing discount codes needs discounts.manage.
             await _permissions.RequirePermissionAsync(PermissionKeys.DiscountsManage);
@@ -158,7 +158,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             // Item 155: managing discount codes needs discounts.manage.
             await _permissions.RequirePermissionAsync(PermissionKeys.DiscountsManage);
@@ -171,13 +171,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         [AllowAnonymous]
-        public async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input)
+        public virtual async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input)
         {
             return await ValidateAsync(input, null);
         }
 
         [AllowAnonymous]
-        public async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string customerPhone)
+        public virtual async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string customerPhone)
         {
             var code = NormalizeCode(input.Code);
             var queryable = await _discounts.GetQueryableAsync();
@@ -196,7 +196,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             };
         }
 
-        public async Task<bool> IsFreeshipAsync(string code, decimal subtotal, string customerPhone)
+        public virtual async Task<bool> IsFreeshipAsync(string code, decimal subtotal, string customerPhone)
         {
             var normalized = NormalizeCode(code);
             var queryable = await _discounts.GetQueryableAsync();
@@ -217,12 +217,12 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// usage counter. Throws <see cref="Domain.Exceptions.DomainException"/>
         /// when the code cannot be applied.
         /// </summary>
-        public async Task<decimal> ApplyAsync(string code, decimal subtotal)
+        public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal)
         {
             return await ApplyAsync(code, subtotal, null);
         }
 
-        public async Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone)
+        public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone)
         {
             var normalized = NormalizeCode(code);
             var queryable = await _discounts.GetQueryableAsync();
@@ -241,7 +241,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             return amount;
         }
 
-        public async Task<DiscountCodeDto> CreateGeneratedAsync(CreateGeneratedDiscountDto dto)
+        public virtual async Task<DiscountCodeDto> CreateGeneratedAsync(CreateGeneratedDiscountDto dto)
         {
             if (!dto.DiscountPercent.HasValue && !dto.DiscountAmount.HasValue)
             {
@@ -268,7 +268,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             return MapToDto(entity);
         }
 
-        public async Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone)
+        public virtual async Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone)
         {
             if (string.IsNullOrWhiteSpace(codePrefix) || string.IsNullOrWhiteSpace(ownerPhone))
             {

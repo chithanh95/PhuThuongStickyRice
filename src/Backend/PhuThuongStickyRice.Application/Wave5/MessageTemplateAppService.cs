@@ -35,7 +35,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             _asyncExecuter = asyncExecuter;
         }
 
-        public async Task<List<MessageTemplateDto>> GetListAsync(string channel)
+        public virtual async Task<List<MessageTemplateDto>> GetListAsync(string channel)
         {
             var queryable = await _templates.GetQueryableAsync();
             IQueryable<MessageTemplate> query = queryable.OrderBy(x => x.Name);
@@ -49,7 +49,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return list.Select(MapToDto).ToList();
         }
 
-        public async Task<MessageTemplateDto> CreateAsync(CreateUpdateMessageTemplateDto input)
+        public virtual async Task<MessageTemplateDto> CreateAsync(CreateUpdateMessageTemplateDto input)
         {
             var channel = NormalizeChannel(input.Channel);
             var entity = new MessageTemplate
@@ -64,7 +64,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return MapToDto(entity);
         }
 
-        public async Task<MessageTemplateDto> UpdateAsync(Guid id, CreateUpdateMessageTemplateDto input)
+        public virtual async Task<MessageTemplateDto> UpdateAsync(Guid id, CreateUpdateMessageTemplateDto input)
         {
             var entity = await _templates.GetAsync(id);
             entity.Name = input.Name.Trim();
@@ -75,7 +75,7 @@ namespace PhuThuongStickyRice.Application.Wave5
             return MapToDto(entity);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _templates.DeleteAsync(id, autoSave: true);
         }

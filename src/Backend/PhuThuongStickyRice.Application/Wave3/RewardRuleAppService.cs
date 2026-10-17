@@ -50,7 +50,7 @@ namespace PhuThuongStickyRice.Application.Wave3
             _discounts = discounts;
         }
 
-        public async Task<List<OrderRewardRuleDto>> GetListAsync()
+        public virtual async Task<List<OrderRewardRuleDto>> GetListAsync()
         {
             var queryable = await _rules.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -58,14 +58,14 @@ namespace PhuThuongStickyRice.Application.Wave3
             return items.Select(Map).ToList();
         }
 
-        public async Task<OrderRewardRuleDto> CreateAsync(CreateOrderRewardRuleDto input)
+        public virtual async Task<OrderRewardRuleDto> CreateAsync(CreateOrderRewardRuleDto input)
         {
             var rule = Build(input);
             await _rules.InsertAsync(rule, autoSave: true);
             return Map(rule);
         }
 
-        public async Task<OrderRewardRuleDto> UpdateAsync(Guid id, CreateOrderRewardRuleDto input)
+        public virtual async Task<OrderRewardRuleDto> UpdateAsync(Guid id, CreateOrderRewardRuleDto input)
         {
             var rule = await _rules.GetAsync(id);
             Apply(rule, input);
@@ -73,14 +73,14 @@ namespace PhuThuongStickyRice.Application.Wave3
             return Map(rule);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _rules.DeleteAsync(id, autoSave: true);
         }
 
         /// <summary>Internal: runs outside the Admin policy via the order service.</summary>
         [AllowAnonymous]
-        public async Task ApplyOnOrderCompletedAsync(Order order)
+        public virtual async Task ApplyOnOrderCompletedAsync(Order order)
         {
             if (order == null)
             {

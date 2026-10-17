@@ -35,7 +35,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<BranchDto>> GetListAsync()
+        public virtual async Task<List<BranchDto>> GetListAsync()
         {
             var queryable = await _branches.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -44,7 +44,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [AllowAnonymous]
-        public async Task<List<BranchDto>> GetActiveAsync()
+        public virtual async Task<List<BranchDto>> GetActiveAsync()
         {
             var queryable = await _branches.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
@@ -53,13 +53,13 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<BranchDto> GetAsync(Guid id)
+        public virtual async Task<BranchDto> GetAsync(Guid id)
         {
             return MapToDto(await _branches.GetAsync(id));
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<BranchDto> CreateAsync(CreateUpdateBranchDto dto)
+        public virtual async Task<BranchDto> CreateAsync(CreateUpdateBranchDto dto)
         {
             var entity = new Branch
             {
@@ -73,7 +73,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<BranchDto> UpdateAsync(Guid id, CreateUpdateBranchDto dto)
+        public virtual async Task<BranchDto> UpdateAsync(Guid id, CreateUpdateBranchDto dto)
         {
             var entity = await _branches.GetAsync(id);
             entity.Name = dto.Name.Trim();
@@ -85,7 +85,7 @@ namespace PhuThuongStickyRice.Application.Wave4
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             await _branches.DeleteAsync(id, autoSave: true);
         }

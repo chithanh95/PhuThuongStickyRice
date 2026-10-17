@@ -62,7 +62,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         }
 
         [AllowAnonymous]
-        public async Task<SubscriptionDto> CreateAsync(CreateSubscriptionDto dto)
+        public virtual async Task<SubscriptionDto> CreateAsync(CreateSubscriptionDto dto)
         {
             var (productName, unitPrice, sizeName, toppingNames) =
                 await ResolveSnapshotAsync(dto.ProductId, dto.SizeOptionId, dto.ToppingIds);
@@ -94,7 +94,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<SubscriptionDto>> GetListAsync(bool? activeOnly)
+        public virtual async Task<List<SubscriptionDto>> GetListAsync(bool? activeOnly)
         {
             var queryable = await _subscriptions.GetQueryableAsync();
             IQueryable<Subscription> query = queryable.OrderByDescending(x => x.CreatedAt);
@@ -109,7 +109,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<SubscriptionDto> SetActiveAsync(Guid id, bool active)
+        public virtual async Task<SubscriptionDto> SetActiveAsync(Guid id, bool active)
         {
             var entity = await _subscriptions.GetAsync(id);
             entity.Active = active;
@@ -117,7 +117,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             return MapToDto(entity);
         }
 
-        public async Task<int> CreateDueOrdersAsync()
+        public virtual async Task<int> CreateDueOrdersAsync()
         {
             var today = DateTime.UtcNow.Date;
             var settings = await _shopSettings.GetAsync();

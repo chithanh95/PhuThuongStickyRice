@@ -44,7 +44,7 @@ namespace PhuThuongStickyRice.Application.Policies
         }
 
         [AllowAnonymous]
-        public async Task<List<PolicyPageSummaryDto>> GetPublicListAsync()
+        public virtual async Task<List<PolicyPageSummaryDto>> GetPublicListAsync()
         {
             var queryable = await _pages.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -57,7 +57,7 @@ namespace PhuThuongStickyRice.Application.Policies
         }
 
         [AllowAnonymous]
-        public async Task<PolicyPageDto> GetPublicAsync(string slug)
+        public virtual async Task<PolicyPageDto> GetPublicAsync(string slug)
         {
             var normalized = slug?.Trim().ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(normalized))
@@ -72,7 +72,7 @@ namespace PhuThuongStickyRice.Application.Policies
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<List<PolicyPageDto>> GetListAsync()
+        public virtual async Task<List<PolicyPageDto>> GetListAsync()
         {
             var queryable = await _pages.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
@@ -81,7 +81,7 @@ namespace PhuThuongStickyRice.Application.Policies
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<PolicyPageDto> UpdateAsync(Guid id, UpdatePolicyPageDto dto)
+        public virtual async Task<PolicyPageDto> UpdateAsync(Guid id, UpdatePolicyPageDto dto)
         {
             var page = await _pages.GetAsync(id);
             page.Title = dto.Title.Trim();

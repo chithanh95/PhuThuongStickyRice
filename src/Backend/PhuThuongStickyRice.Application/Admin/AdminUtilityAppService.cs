@@ -41,7 +41,7 @@ namespace PhuThuongStickyRice.Application.Admin
             _customerProfile = customerProfile;
         }
 
-        public async Task<GlobalSearchResultDto> SearchAsync(string q)
+        public virtual async Task<GlobalSearchResultDto> SearchAsync(string q)
         {
             var result = new GlobalSearchResultDto();
             if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
@@ -102,7 +102,7 @@ namespace PhuThuongStickyRice.Application.Admin
             return result;
         }
 
-        public async Task<List<NotificationDto>> GetNotificationsAsync()
+        public virtual async Task<List<NotificationDto>> GetNotificationsAsync()
         {
             var notifications = new List<NotificationDto>();
             var nowVn = DateTime.UtcNow.AddHours(7);

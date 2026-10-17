@@ -42,7 +42,7 @@ namespace PhuThuongStickyRice.Application.Wave3
 
         /// <summary>Internal — the background worker calls this.</summary>
         [AllowAnonymous]
-        public async Task<OwnerReportResultDto> SendAsync(string period)
+        public virtual async Task<OwnerReportResultDto> SendAsync(string period)
         {
             var settings = await _shopSettings.GetAsync();
             var to = (settings.OwnerReportEmail ?? string.Empty).Trim();
