@@ -185,7 +185,8 @@ namespace PhuThuongStickyRice.Application.Products
             var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
 
             var dtos = _objectMapper.Map<List<Product>, List<ProductDto>>(items);
-            await AttachSizesAsync(dtos);
+            // TEMP DISABLED 2026-10-17: isolate ObjectDisposedException
+            // await AttachSizesAsync(dtos);
 
             return new PagedResultDto<ProductDto>(totalCount, dtos);
         }
