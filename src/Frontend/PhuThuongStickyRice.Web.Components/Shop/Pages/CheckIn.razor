@@ -112,7 +112,7 @@
         {
             var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
                 "interop.compressImageFromInput", "checkin-photo-input", 1600, 0.85);
-            using var stream = new System.IO.MemoryStream(compressed.Bytes);
+            using var stream = new System.IO.MemoryStream(Convert.FromBase64String(compressed.Base64));
             await Wave5Service.UploadCustomerPhotoAsync(
                 stream, compressed.FileName, compressed.ContentType,
                 phone: null, caption: null, name: _name);
@@ -135,7 +135,7 @@
     /// <summary>Shape of the object returned by interop.compressImageFromInput.</summary>
     private sealed class CompressedImage
     {
-        public byte[] Bytes { get; set; } = Array.Empty<byte>();
+        public string Base64 { get; set; } = "";
         public string FileName { get; set; } = "image.jpg";
         public string ContentType { get; set; } = "image/jpeg";
     }

@@ -378,7 +378,7 @@ else
             // Compress client-side (GIFs are passed through untouched to keep animation).
             var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
                 "interop.compressImageFromInput", $"upload-{slot.Key}", 1600, 0.85);
-            using var stream = new System.IO.MemoryStream(compressed.Bytes);
+            using var stream = new System.IO.MemoryStream(Convert.FromBase64String(compressed.Base64));
             var url = await LandingService.UploadImageAsync(stream, compressed.FileName, compressed.ContentType);
             slot.Set(url);
         }
@@ -418,7 +418,7 @@ else
     /// <summary>Shape of the object returned by interop.compressImageFromInput.</summary>
     private sealed class CompressedImage
     {
-        public byte[] Bytes { get; set; } = Array.Empty<byte>();
+        public string Base64 { get; set; } = "";
         public string FileName { get; set; } = "image.jpg";
         public string ContentType { get; set; } = "image/jpeg";
     }

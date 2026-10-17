@@ -1308,7 +1308,7 @@
                 Wave2Service.SetReviewPhotoContext(_order.OrderNumber, _order.CustomerPhone);
                 var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
                     "interop.compressImageFromInput", "review-photo-input", 1600, 0.85);
-                using var stream = new System.IO.MemoryStream(compressed.Bytes);
+                using var stream = new System.IO.MemoryStream(Convert.FromBase64String(compressed.Base64));
                 photoUrl = await Wave2Service.UploadReviewPhotoAsync(
                     stream, compressed.FileName, compressed.ContentType);
             }
@@ -1586,7 +1586,7 @@
             // Compress client-side (same helper as the landing image upload).
             var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
                 "interop.compressImageFromInput", "share-photo-input", 1600, 0.85);
-            using var stream = new System.IO.MemoryStream(compressed.Bytes);
+            using var stream = new System.IO.MemoryStream(Convert.FromBase64String(compressed.Base64));
             await Wave5Service.UploadCustomerPhotoAsync(
                 stream, compressed.FileName, compressed.ContentType,
                 _order.CustomerPhone, _photoCaption);
@@ -1608,7 +1608,7 @@
     /// <summary>Shape of the object returned by interop.compressImageFromInput.</summary>
     private sealed class CompressedImage
     {
-        public byte[] Bytes { get; set; } = Array.Empty<byte>();
+        public string Base64 { get; set; } = "";
         public string FileName { get; set; } = "image.jpg";
         public string ContentType { get; set; } = "image/jpeg";
     }

@@ -378,6 +378,12 @@
                 _email = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
                 _roles = authState.User.FindAll(System.Security.Claims.ClaimTypes.Role)
                     .Select(c => c.Value).Distinct().ToArray();
+                // Nhân viên (Admin/Cashier/Kitchen) dùng trang hồ sơ admin riêng
+                if (_roles.Any(r => r == "Admin" || r == "Cashier" || r == "Kitchen"))
+                {
+                    Navigation.NavigateTo("/admin/ho-so", replace: true);
+                    return;
+                }
                 _addresses = await AddressService.GetMineAsync();
 
                 // Item 90+92: load taste preferences + birthday.

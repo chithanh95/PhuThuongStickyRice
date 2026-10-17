@@ -239,13 +239,12 @@ interop.compressImageFromInput = function (elementId, maxDim, quality) {
     function readAsBytes(blob, fileName, contentType, resolve, reject) {
         var reader = new FileReader();
         reader.onload = function () {
-            var buffer = reader.result;
-            var bytes = new Uint8Array(buffer);
-            var jsArray = Array.prototype.slice.call(bytes);
-            resolve({ bytes: jsArray, fileName: fileName, contentType: contentType });
+            // Trả về base64 để Blazor deserialize thành byte[] được
+            var base64 = reader.result.split(',')[1];
+            resolve({ base64: base64, fileName: fileName, contentType: contentType });
         };
         reader.onerror = function () { reject(new Error('Cannot read file')); };
-        reader.readAsArrayBuffer(blob);
+        reader.readAsDataURL(blob);
     }
 };
 

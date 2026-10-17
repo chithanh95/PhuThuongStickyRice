@@ -73,7 +73,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         /// <summary>Shape of one item returned by interop.compressImagesFromInput.</summary>
         private sealed class CompressedImage
         {
-            public byte[] Bytes { get; set; } = Array.Empty<byte>();
+            public string Base64 { get; set; } = "";
 
             public string FileName { get; set; } = "image.jpg";
 
@@ -214,7 +214,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             {
                 foreach (var f in files)
                 {
-                    using var stream = new MemoryStream(f.Bytes);
+                    using var stream = new MemoryStream(Convert.FromBase64String(f.Base64));
                     var url = await ProductService.UploadProductImageAsync(
                         stream, f.FileName, f.ContentType);
                     if (!string.IsNullOrEmpty(url))
