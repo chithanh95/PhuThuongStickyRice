@@ -927,8 +927,8 @@
 /* ---------- fixed buttons ---------- */
 .sg-fixed-btns {
     position: fixed;
-    right: 16px;
-    bottom: 80px;
+    left: 16px;
+    bottom: 24px;
     display: flex;
     flex-direction: column;
     gap: 10px;
