@@ -88,6 +88,24 @@
                         </div>
                     }
                 </div>
+                <div class="lx-dropdown lx-lang-wrap">
+                    <button class="lx-lang-btn" @onclick="ToggleLangMenu" title="Ngôn ngữ">
+                        <span class="lx-flag">@(_lang == "en" ? "🇺🇸" : "🇻🇳")</span>
+                        <span>@(_lang == "en" ? "English" : "Tiếng Việt")</span>
+                        <span class="oi oi-chevron-bottom" aria-hidden="true" style="font-size:10px"></span>
+                    </button>
+                    @if (_langMenuOpen)
+                    {
+                        <div class="lx-dropdown-menu lx-lang-menu">
+                            <button class="lx-dropdown-item" @onclick='() => SetLang("vi")'>
+                                <span class="lx-flag">🇻🇳</span> Tiếng Việt
+                            </button>
+                            <button class="lx-dropdown-item" @onclick='() => SetLang("en")'>
+                                <span class="lx-flag">🇺🇸</span> English
+                            </button>
+                        </div>
+                    }
+                </div>
                 <button class="lx-icon-btn" title="Toàn màn hình" @onclick="ToggleFullscreen">
                     <span class="oi oi-fullscreen-enter" aria-hidden="true"></span>
                 </button>
@@ -251,6 +269,8 @@
 
     @* Item 158: notification center. *@
     private bool _notifOpen;
+    private bool _langMenuOpen;
+    private string _lang = "vi";
     private List<NotificationModel> _notifications;
     private readonly HashSet<string> _readNotifIds = new();
     private const string NotifReadKey = "pt-notif-read";
@@ -494,6 +514,19 @@
                 System.Text.Json.JsonSerializer.Serialize(_readNotifIds.ToArray()));
         }
         catch { }
+    }
+
+    private void ToggleLangMenu()
+    {
+        _langMenuOpen = !_langMenuOpen;
+        _notifOpen = false;
+        _userMenuOpen = false;
+    }
+
+    private void SetLang(string lang)
+    {
+        _lang = lang;
+        _langMenuOpen = false;
     }
 
     private async Task ToggleNotifications()

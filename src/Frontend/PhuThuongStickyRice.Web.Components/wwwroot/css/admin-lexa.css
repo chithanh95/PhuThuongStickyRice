@@ -1030,3 +1030,16 @@ html.dark .lx-notif-unread {
 @keyframes lx-spin {
     to { transform: rotate(360deg); }
 }
+
+/* Language selector kiểu Lexa */
+.lx-lang-wrap { position: relative; }
+.lx-lang-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; cursor: pointer;
+    padding: 8px 10px; border-radius: 8px;
+    color: var(--lx-topbar-icon); font-size: 14px;
+}
+.lx-lang-btn:hover { background: rgba(0,0,0,.05); }
+.lx-flag { font-size: 18px; line-height: 1; }
+.lx-lang-menu { min-width: 160px; }
+.lx-lang-menu .lx-dropdown-item { display: flex; align-items: center; gap: 8px; }
