@@ -1,0 +1,80 @@
+/* Footer đồng bộ với landing page (Index.razor.css). */
+.sg-footer {
+    background: #211a13;
+    color: #d8cbb6;
+    padding: 72px 0 0;
+    margin-top: 48px;
+}
+
+.sg-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.sg-footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 48px;
+    padding-bottom: 48px;
+}
+
+.sg-footer-brand {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 24px;
+    color: #fff;
+    margin: 0 0 14px;
+}
+
+.sg-footer-about {
+    font-size: 15px;
+    line-height: 1.75;
+    margin: 0 0 16px;
+    color: #b7a88f;
+}
+
+.sg-footer-line {
+    font-size: 14px;
+    margin: 0 0 8px;
+}
+
+.sg-footer-h {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #f3e3c2;
+    margin: 0 0 18px;
+}
+
+.sg-footer-col a {
+    display: block;
+    color: #d8cbb6;
+    text-decoration: none;
+    font-size: 15px;
+    margin-bottom: 12px;
+}
+
+.sg-footer-col a:hover { color: #fff; }
+
+.sg-footer-hotline {
+    font-size: 20px !important;
+    font-weight: 800;
+    color: #fff !important;
+}
+
+.sg-bottom-bar {
+    border-top: 1px solid rgba(255, 255, 255, .12);
+    padding: 20px 0 28px;
+    text-align: center;
+    font-size: 14px;
+    color: #9a8b73;
+}
+
+@media (max-width: 991.98px) {
+    .sg-footer-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 575.98px) {
+    .sg-footer-grid { grid-template-columns: 1fr; gap: 32px; }
+}
