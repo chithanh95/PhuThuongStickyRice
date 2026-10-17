@@ -50,7 +50,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             // product model before saving.
             Product.AvailableHoursJson = SerializeHours();
             Product.ImageUrlsJson = SerializeImages();
-            await (Product.Id == Guid.Empty ? ProductService.CreateProductAsync(Product) : ProductService.UpdateProductAsync(Product.Id, Product));
+            var isNew = Product.Id == Guid.Empty;
+            await (isNew ? ProductService.CreateProductAsync(Product) : ProductService.UpdateProductAsync(Product.Id, Product));
+            Toasts.Show(isNew ? "Đã thêm sản phẩm thành công!" : "Đã lưu sản phẩm thành công!");
             NavManager.NavigateTo("/products");
         }
 

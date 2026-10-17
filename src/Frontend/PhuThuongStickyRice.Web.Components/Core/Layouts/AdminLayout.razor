@@ -2,6 +2,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminUtilityService UtilityService
+@inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @implements IDisposable
 
@@ -159,7 +160,7 @@
                     <span class="oi oi-fullscreen-enter" aria-hidden="true"></span>
                 </button>
                 <div class="lx-dropdown">
-                    <button class="lx-icon-btn" @onclick="ToggleNotifications" title="Thông báo">
+                    <button class="lx-icon-btn @(_bellRinging ? "lx-bell-ring" : "")" @onclick="ToggleNotifications" title="Thông báo">
                         <span class="oi oi-bell" aria-hidden="true"></span>
                         @if (UnreadCount > 0)
                         {
@@ -237,6 +238,22 @@
             <footer class="lx-footer">&copy; 2026 Xôi Phú Thượng &mdash; Crafted with care.</footer>
         </div>
     </div>
+
+    @* Toast notifications (top-right, auto-dismiss) *@
+    <div class="lx-toast-container">
+        @foreach (var toast in _toasts)
+        {
+            <div class="lx-toast show" @key="toast.Id">
+                <div class="lx-toast-body">
+                    <i class="fa-solid fa-circle-check text-success me-2"></i>
+                    @toast.Message
+                </div>
+                <button type="button" class="lx-toast-close" @onclick="() => DismissToast(toast.Id)" aria-label="Đóng">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        }
+    </div>
 </div>
 
 @code {
@@ -266,6 +283,10 @@
     private bool _notifOpen;
     private bool _langMenuOpen;
     private string _lang = "vi";
+    private bool _bellRinging;
+
+    @* Toast notifications (top-right auto-dismiss). *@
+    private readonly List<PhuThuongStickyRice.Web.Components.Core.Services.ToastMessage> _toasts = new();
     private List<NotificationModel> _notifications;
     private readonly HashSet<string> _readNotifIds = new();
     private const string NotifReadKey = "pt-notif-read";
@@ -348,6 +369,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Toast: subscribe to show notifications top-right + bell.
+        Toasts.OnShow += OnToastShow;
+
         // Dark mode: sync toggle icon with saved theme (JS already applied the class pre-paint).
         try { _isDark = await JS.InvokeAsync<string>("ptGetTheme", "pt-theme-admin") == "dark"; } catch { }
         try
@@ -556,7 +580,49 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+        Toasts.OnShow -= OnToastShow;
         try { _searchCts?.Cancel(); _searchCts?.Dispose(); } catch { }
+    }
+
+    private void OnToastShow(PhuThuongStickyRice.Web.Components.Core.Services.ToastMessage toast)
+    {
+        _toasts.Add(toast);
+        // Add to notification center + ring the bell.
+        _notifications ??= new List<NotificationModel>();
+        _notifications.Insert(0, new NotificationModel
+        {
+            Id = toast.Id.ToString(),
+            Title = toast.Message,
+            Detail = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+            Kind = "success"
+        });
+        _bellRinging = true;
+        StateHasChanged();
+        // Auto-dismiss after 4 seconds.
+        _ = Task.Delay(4000).ContinueWith(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                _toasts.RemoveAll(t => t.Id == toast.Id);
+                _bellRinging = false;
+                StateHasChanged();
+            });
+        });
+        // Stop bell ringing after 1.5s.
+        _ = Task.Delay(1500).ContinueWith(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                _bellRinging = false;
+                StateHasChanged();
+            });
+        });
+    }
+
+    private void DismissToast(Guid id)
+    {
+        _toasts.RemoveAll(t => t.Id == id);
+        StateHasChanged();
     }
 
     private sealed class MenuGroup

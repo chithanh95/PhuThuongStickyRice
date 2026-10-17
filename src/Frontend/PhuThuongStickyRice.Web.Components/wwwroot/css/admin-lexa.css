@@ -1494,3 +1494,73 @@ html.dark .lx-admin .form-label {
 .lx-admin .lx-btn-icon i {
     font-size: 13px;
 }
+
+/* Toast notifications (top-right) */
+.lx-toast-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 350px;
+}
+.lx-toast {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-left: 4px solid #28a745;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: lx-toast-in 0.3s ease;
+}
+html.dark .lx-toast {
+    background: #2b2b4a;
+    border-color: #3a3a5c;
+    border-left-color: #28a745;
+    color: #f0eef5;
+}
+.lx-toast-body {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+.lx-toast-close {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: 8px;
+}
+.lx-toast-close:hover {
+    color: #333;
+}
+@keyframes lx-toast-in {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Bell ringing animation */
+.lx-bell-ring {
+    animation: lx-bell-ring 0.5s ease;
+}
+.lx-bell-ring .oi-bell {
+    animation: lx-bell-shake 0.5s ease;
+}
+@keyframes lx-bell-ring {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(15deg); }
+    50% { transform: rotate(-15deg); }
+    75% { transform: rotate(10deg); }
+}
+@keyframes lx-bell-shake {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(20deg); }
+    50% { transform: rotate(-20deg); }
+    75% { transform: rotate(10deg); }
+}
