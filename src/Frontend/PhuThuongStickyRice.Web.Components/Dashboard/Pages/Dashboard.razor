@@ -12,11 +12,14 @@
 @inject Wave5Service Wave5Service
 @inject IJSRuntime JSRuntime
 <div class="lx-page-head">
-    <h4 class="lx-page-title">Dashboard</h4>
-    <ol class="lx-breadcrumb">
-        <li><a href="/dashboard">Trang chủ</a></li>
-        <li class="current">Tổng quan</li>
-    </ol>
+    <div>
+        <h4 class="lx-page-title">Dashboard</h4>
+        <ol class="lx-breadcrumb">
+            <li><a href="/dashboard">Xôi Phú Thượng</a></li>
+            <li><a href="/dashboard">Tổng quan</a></li>
+            <li class="current">Dashboard</li>
+        </ol>
+    </div>
 </div>
 
 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
@@ -186,18 +189,32 @@ else
                 {
                     <small class="text-muted">Đang tải...</small>
                 }
+                else if (_dailyTarget.Target <= 0)
+                {
+                    <div class="lx-empty-state">
+                        <small class="text-muted">Chưa thiết lập mục tiêu doanh thu ngày.</small>
+                    </div>
+                }
                 else
                 {
                     var pct = Math.Min(100, _dailyTarget.Percent);
-                    <div class="d-flex justify-content-between mb-1">
-                        <small>@_dailyTarget.TodayRevenue.ToString("N0") ₫ / @_dailyTarget.Target.ToString("N0") ₫</small>
-                        <small><strong>@_dailyTarget.Percent.ToString("0")%</strong></small>
+                    var barClass = pct >= 100 ? "lx-progress-success" : pct >= 70 ? "lx-progress-warning" : "lx-progress-primary";
+                    <div class="d-flex justify-content-between align-items-baseline mb-2">
+                        <div>
+                            <h5 class="mb-0">@_dailyTarget.TodayRevenue.ToString("N0") ₫</h5>
+                            <small class="text-muted">Mục tiêu: @_dailyTarget.Target.ToString("N0") ₫</small>
+                        </div>
+                        <span class="lx-target-pct">@_dailyTarget.Percent.ToString("0")%</span>
                     </div>
-                    <div class="progress" style="height: 20px;">
-                        <div class="progress-bar @(pct >= 100 ? "bg-success" : "bg-primary")" role="progressbar"
+                    <div class="progress lx-target-progress">
+                        <div class="progress-bar @barClass" role="progressbar"
                              style="width: @pct.ToString("0")%" aria-valuenow="@pct.ToString("0")" aria-valuemin="0" aria-valuemax="100">
                         </div>
                     </div>
+                    @if (pct >= 100)
+                    {
+                        <small class="text-success mt-1 d-block">🎉 Đã đạt mục tiêu!</small>
+                    }
                 }
             </div>
         </div>
@@ -212,7 +229,11 @@ else
                 }
                 else if (_sourceStats.Count == 0)
                 {
-                    <small class="text-muted">Chưa có đơn trong kỳ.</small>
+                    <div class="lx-empty-state">
+                        <div class="lx-empty-icon">📭</div>
+                        <p class="mb-0">Chưa có đơn hàng trong kỳ</p>
+                        <small class="text-muted">Dữ liệu sẽ hiển thị khi có đơn hàng mới.</small>
+                    </div>
                 }
                 else
                 {

@@ -16,7 +16,7 @@
     --lx-primary-dark: #625998;
     --lx-sidebar-bg: #2b3a4a;
     --lx-sidebar-active: #263442;
-    --lx-sidebar-text: #8699ad;
+    --lx-sidebar-text: #a9bcd0;
     --lx-body-bg: #f5f5f5;
     --lx-card-bg: #ffffff;
     --lx-text: #1f2431;
@@ -73,6 +73,7 @@
     height: var(--lx-topbar-h);
     background: #ffffff;
     box-shadow: var(--lx-topbar-shadow);
+    border-bottom: 1px solid var(--lx-border);
     display: flex;
     align-items: center;
     z-index: 1030;
@@ -128,7 +129,7 @@
     margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
     padding-right: 16px;
 }
 
@@ -136,19 +137,25 @@
     width: 38px;
     height: 38px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     background: transparent;
     color: var(--lx-topbar-icon);
-    font-size: 22px;
+    font-size: 20px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     position: relative;
+    transition: background-color .18s ease, color .18s ease, transform .15s ease;
 }
 
 .lx-icon-btn:hover {
     background: var(--lx-tertiary);
+    color: var(--lx-primary);
+}
+
+.lx-icon-btn:active {
+    transform: scale(.93);
 }
 
 .lx-icon-btn .lx-dot {
@@ -182,6 +189,7 @@
     align-items: center;
     gap: 6px;
     font-family: "Poppins", sans-serif;
+    transition: background-color .18s ease;
 }
 
 .lx-btn-create:hover {
@@ -219,6 +227,10 @@
     color: var(--lx-muted-2);
 }
 
+.lx-search:focus-within {
+    box-shadow: 0 0 0 2px rgba(122, 111, 190, .28);
+}
+
 .lx-lang {
     display: flex;
     align-items: center;
@@ -247,6 +259,14 @@
     border: none;
     cursor: pointer;
     font-family: "Poppins", sans-serif;
+}
+
+.lx-avatar {
+    transition: box-shadow .18s ease;
+}
+
+.lx-avatar:hover {
+    box-shadow: 0 0 0 3px rgba(122, 111, 190, .3);
 }
 
 .lx-user-wrap {
@@ -290,31 +310,53 @@
 .lx-hnav-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 18px;
+    gap: 10px;
+    padding: 0 20px;
+    min-height: 48px;
     background: transparent;
     border: none;
+    border-bottom: 3px solid transparent;
     color: var(--lx-sidebar-text);
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     font-family: inherit;
     white-space: nowrap;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
 .lx-hnav-toggle:hover,
 .lx-hnav-group.active .lx-hnav-toggle {
-    color: #ffffff;
-    background: var(--lx-sidebar-active);
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, .06) !important;
+}
+.lx-hnav-group.active .lx-hnav-toggle {
+    border-bottom-color: var(--lx-primary);
+    color: #ffffff !important;
+}
+.lx-hnav-group.active .lx-hnav-toggle .oi {
+    color: var(--lx-primary) !important;
 }
 
 .lx-hnav-toggle .oi {
-    font-size: 15px;
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.lx-hnav-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .lx-hnav-caret {
     font-size: 10px;
-    opacity: .7;
+    opacity: .8;
+    transition: transform .2s ease;
+    flex-shrink: 0;
+}
+.lx-hnav-group.open .lx-hnav-caret {
+    transform: rotate(180deg);
 }
 
 .lx-hnav-drop {
@@ -339,27 +381,30 @@ html.dark .lx-hnav-drop {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 18px;
+    padding: 11px 20px;
+    min-height: 42px;
     color: var(--lx-text);
-    font-size: 13px;
+    font-size: 13.5px;
     text-decoration: none;
     white-space: nowrap;
+    transition: background-color .15s ease, color .15s ease;
 }
 
 .lx-hnav-link:hover {
-    background: var(--lx-tertiary);
-    color: var(--lx-primary);
+    background: var(--lx-tertiary) !important;
+    color: var(--lx-primary) !important;
     text-decoration: none;
 }
 
 html.dark .lx-hnav-link:hover {
-    background: rgba(255, 255, 255, .06);
+    background: rgba(255, 255, 255, .06) !important;
 }
 
 .lx-hnav-link.active {
-    color: var(--lx-primary);
+    color: var(--lx-primary) !important;
     font-weight: 600;
-    background: rgba(122, 111, 190, .1);
+    background: rgba(122, 111, 190, .14) !important;
+    box-shadow: inset 3px 0 0 var(--lx-primary);
 }
 
 .lx-hnav-link .oi {
@@ -727,7 +772,16 @@ html.dark .lx-hnav-link:hover {
     .lx-hnav-toggle {
         width: 100%;
         justify-content: flex-start;
-        padding: 13px 20px;
+        padding: 0 20px;
+        min-height: 50px;
+        border-bottom: none;
+        border-left: 3px solid transparent;
+    }
+
+    .lx-hnav-group.active .lx-hnav-toggle {
+        border-bottom: none;
+        border-left-color: var(--lx-primary);
+        background: rgba(255, 255, 255, .06) !important;
     }
 
     .lx-hnav-group .lx-hnav-drop {
@@ -746,17 +800,19 @@ html.dark .lx-hnav-link:hover {
 
     .lx-hnav-group .lx-hnav-link {
         color: var(--lx-sidebar-text);
-        padding: 10px 20px 10px 46px;
+        padding: 0 20px 0 50px;
+        min-height: 44px;
     }
 
     .lx-hnav-group .lx-hnav-link:hover {
-        color: #ffffff;
-        background: rgba(255, 255, 255, .05);
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, .06) !important;
     }
 
     .lx-hnav-group .lx-hnav-link.active {
-        color: #ffffff;
-        background: rgba(255, 255, 255, .08);
+        color: #ffffff !important;
+        background: rgba(122, 111, 190, .25) !important;
+        box-shadow: inset 3px 0 0 var(--lx-primary);
     }
 
     .lx-hnav-group .lx-hnav-link .oi {
@@ -795,6 +851,44 @@ html.dark .lx-hnav-link:hover {
 
     .lx-user-name {
         display: none;
+    }
+}
+
+/* ---------- topbar: small phones (<768px) ---------- */
+@media (max-width: 767.98px) {
+    .lx-topbar-left {
+        padding-left: 8px;
+        gap: 4px;
+    }
+    .lx-topbar-right {
+        padding-right: 8px;
+        gap: 2px;
+    }
+    .lx-icon-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+    .lx-btn-create {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+    .lx-lang-btn {
+        padding: 6px 8px;
+        min-height: 36px;
+    }
+    .lx-lang-btn span:not(.lx-flag):not(.oi) {
+        display: none;
+    }
+    .lx-avatar {
+        width: 34px;
+        height: 34px;
+    }
+    .lx-brand-box {
+        padding: 0 .75rem;
+    }
+    .lx-brand-box .lx-logo-text {
+        font-size: 17px;
     }
 }
 
@@ -1038,15 +1132,19 @@ html.dark .lx-notif-unread {
     background: none; border: none; cursor: pointer;
     padding: 8px 10px; border-radius: 8px;
     color: var(--lx-topbar-icon); font-size: 14px;
+    min-height: 38px;
+    font-family: "Poppins", sans-serif;
+    transition: background-color .18s ease, color .18s ease;
 }
-.lx-lang-btn:hover { background: rgba(0,0,0,.05); }
+.lx-lang-btn:hover { background: var(--lx-tertiary); color: var(--lx-primary); }
 .lx-flag { font-size: 18px; line-height: 1; }
 .lx-lang-menu { min-width: 160px; }
 .lx-lang-menu .lx-dropdown-item { display: flex; align-items: center; gap: 8px; }
 
 /* Dashboard Lexa stat cards */
-.card.lexa-stat-card { background-color: #7a6fbe !important; border: none !important; color: #fff !important; }
-.card.lexa-stat-card .card-body { padding: 20px; background: transparent; }
+.card.lexa-stat-card { background-color: #7a6fbe !important; border: none !important; color: #fff !important; height: 100%; transition: transform .15s ease, box-shadow .15s ease; }
+.card.lexa-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(122,111,190,.35); }
+.card.lexa-stat-card .card-body { padding: 20px; background: transparent; display: flex; flex-direction: column; justify-content: center; min-height: 130px; }
 .lexa-stat-label { color: rgba(255,255,255,.75) !important; margin-bottom: 5px; font-size: 14px; }
 .lexa-stat-label .oi { margin-right: 6px; font-size: 16px; opacity: .9; }
 .lexa-stat-value { color: #fff !important; font-weight: 600; margin-bottom: 10px; }
@@ -1061,3 +1159,14 @@ html.dark .card.lexa-stat-card { background-color: #6a5fae !important; }
     html.dark .table thead th { color: #a5a2bd; border-bottom-color: #3a3a58; }
     html.dark .table td, html.dark .table th { border-color: #3a3a58; }
     html.dark .table-hover tbody tr:hover { background: rgba(122,111,190,.08); }
+
+/* Widget Mục tiêu hôm nay */
+.lx-target-progress { height: 12px; border-radius: 6px; background: #f0eef5; }
+.lx-target-progress .lx-progress-primary { background-color: #7a6fbe; }
+.lx-target-progress .lx-progress-warning { background-color: #f0a35e; }
+.lx-target-progress .lx-progress-success { background-color: #34c38f; }
+.lx-target-pct { font-size: 1.25rem; font-weight: 700; color: #7a6fbe; }
+html.dark .lx-target-progress { background: #3a3a58; }
+html.dark .lx-target-pct { color: #a89df0; }
+.lx-empty-state { text-align: center; padding: 20px 10px; color: #98a6ad; }
+.lx-empty-icon { font-size: 2.5rem; margin-bottom: 8px; opacity: .6; }
