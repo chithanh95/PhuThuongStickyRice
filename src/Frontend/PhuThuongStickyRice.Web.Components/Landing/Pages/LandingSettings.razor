@@ -6,6 +6,7 @@
 @using PhuThuongStickyRice.Web.Components.Landing.Services
 @inject LandingService LandingService
 @inject IJSRuntime JSRuntime
+@inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Cài đặt trang landing</h4>
@@ -404,6 +405,7 @@ else
                 .ToList();
             await LandingService.UpdateContentAsync(_model);
             _success = "Đã lưu. Mở trang chủ để xem thay đổi.";
+            Toasts.Show("Đã lưu cài đặt landing thành công!");
         }
         catch (Exception)
         {

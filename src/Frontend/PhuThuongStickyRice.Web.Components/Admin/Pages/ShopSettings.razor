@@ -3,6 +3,7 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @inject ShopSettingsService ShopSettingsService
+@inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Cài đặt bán hàng</h4>
@@ -563,6 +564,7 @@ else
         {
             _model = await ShopSettingsService.UpdateAsync(_model);
             _success = "Đã lưu cài đặt bán hàng.";
+            Toasts.Show("Đã lưu cài đặt bán hàng thành công!");
         }
         catch (Exception)
         {

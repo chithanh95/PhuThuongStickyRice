@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject PermissionService PermissionService
+@inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Phân quyền chi tiết</h4>
@@ -160,6 +161,7 @@ else
 
             _dirty = false;
             _message = "Đã lưu phân quyền.";
+            Toasts.Show("Đã lưu phân quyền thành công!");
             _isError = false;
         }
         catch (Exception ex)

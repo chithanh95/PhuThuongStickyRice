@@ -3,6 +3,7 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @using PhuThuongStickyRice.Web.Components.Orders.Models
 @inject MessageTemplateService MessageTemplateService
+@inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Mẫu tin nhắn theo trạng thái đơn</h4>
@@ -158,6 +159,7 @@ else
             t.IsActive = updated.IsActive;
             _editingId = null;
             _message = $"Đã lưu mẫu \"{t.StatusLabel}\".";
+            Toasts.Show($"Đã lưu mẫu tin nhắn \"{t.StatusLabel}\" thành công!");
             _isError = false;
         }
         catch (Exception ex)

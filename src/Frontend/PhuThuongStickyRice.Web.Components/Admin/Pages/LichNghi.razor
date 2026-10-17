@@ -3,6 +3,7 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @inject HolidayService HolidayService
+@inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Lịch nghỉ lễ / Tết</h4>
@@ -195,11 +196,13 @@
             {
                 await HolidayService.CreateAsync(_model);
                 _success = "Đã thêm ngày nghỉ.";
+                Toasts.Show("Đã thêm ngày nghỉ thành công!");
             }
             else
             {
                 await HolidayService.UpdateAsync(_editingId.Value, _model);
                 _success = "Đã cập nhật ngày nghỉ.";
+                Toasts.Show("Đã cập nhật ngày nghỉ thành công!");
             }
             CancelEdit();
             await LoadAsync();
