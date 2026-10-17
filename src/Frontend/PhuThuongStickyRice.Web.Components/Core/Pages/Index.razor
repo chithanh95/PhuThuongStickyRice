@@ -505,29 +505,6 @@ else
     </section>
 }
 
-<!-- SO SÁNH XÔI (item 35) + TẢI MENU (item 31) -->
-<section class="sg-section sg-compare-sec">
-    <div class="sg-container sg-compare-inner">
-        <p class="sg-eyebrow">Chọn món</p>
-        <h2 class="sg-h2">Xôi nào hợp bạn?</h2>
-        <div class="sg-compare-wrap">
-            <table class="sg-compare-table">
-                <thead><tr><th>Món</th><th>Vị</th><th>Giá</th><th>Hợp với</th></tr></thead>
-                <tbody>
-                    <tr><td><strong>Xôi gấc</strong></td><td>Ngọt nhẹ, béo</td><td>35k</td><td>Tiệc, cúng, biếu</td></tr>
-                    <tr><td><strong>Xôi xéo</strong></td><td>Mặn, thơm hành</td><td>25k</td><td>Ăn sáng mỗi ngày</td></tr>
-                    <tr><td><strong>Xôi đỗ</strong></td><td>Bùi, dẻo</td><td>25k</td><td>Người thích vị quê</td></tr>
-                    <tr><td><strong>Xôi vò</strong></td><td>Tơi, không ngán</td><td>30k</td><td>Ăn trưa văn phòng</td></tr>
-                    <tr><td><strong>Xôi ngũ sắc</strong></td><td>Đẹp mắt, dẻo</td><td>40k</td><td>Mâm cỗ, chụp ảnh</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="sg-center" style="margin-top:20px">
-            <button class="sg-btn sg-btn-outline" @onclick="PrintMenu">📄 Tải thực đơn PDF</button>
-        </div>
-    </div>
-</section>
-
 <!-- VÒNG QUAY MAY MẮN (item 28) + GIỚI THIỆU (item 29) -->
 
 <!-- CHẤM SAO NHANH (item 36) -->
@@ -544,7 +521,7 @@ else
             <div class="sg-blog-grid">
                 @foreach (var a in _articles.Take(6))
                 {
-                    <div class="sg-blog-card sg-reveal">
+                    <div class="sg-blog-card">
                         @if (!string.IsNullOrWhiteSpace(a.ImageUrl))
                         {
                             <img loading="lazy" decoding="async" src="@a.ImageUrl" alt="@a.Title" />
