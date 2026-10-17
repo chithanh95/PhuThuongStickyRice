@@ -495,19 +495,15 @@
 
 /* ---------- page head ---------- */
 .lx-page-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
+    display: block;
     padding-bottom: 1.5rem;
-    flex-wrap: wrap;
 }
 
 .lx-page-title {
     font-size: 18px;
     font-weight: 500;
     color: var(--lx-text);
-    margin: 0;
+    margin: 0 0 4px 0;
 }
 
 .lx-admin .lx-breadcrumb,
