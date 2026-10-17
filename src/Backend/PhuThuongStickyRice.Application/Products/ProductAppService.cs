@@ -104,7 +104,7 @@ namespace PhuThuongStickyRice.Application.Products
             _activityLogger = activityLogger;
         }
 
-        public async Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input)
+        public virtual async Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input)
         {
             // Item 101: the public shop path (status=Active) is served from a
             // 5-minute in-memory cache. The admin list (no status filter)
