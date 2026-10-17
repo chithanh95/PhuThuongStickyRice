@@ -66,7 +66,14 @@
     <div class="form-group row">
         <label for="category" class="col-sm-2 col-form-label">Danh mục: </label>
         <div class="col-sm-10">
-            <InputText id="category" class="form-control" @bind-Value="Product.Category" placeholder="VD: Xôi mặn / Xôi ngọt / Món ăn kèm"></InputText>
+            <InputSelect id="category" class="form-control" @bind-Value="Product.Category">
+                <option value="">-- Chọn danh mục --</option>
+                <option value="Xôi mặn">Xôi mặn</option>
+                <option value="Xôi ngọt">Xôi ngọt</option>
+                <option value="Combo">Combo</option>
+                <option value="Topping">Topping</option>
+                <option value="Đồ uống">Đồ uống</option>
+            </InputSelect>
         </div>
     </div>
 
@@ -88,14 +95,6 @@
     </div>
 
     <div class="form-group row">
-        <label for="allergens" class="col-sm-2 col-form-label">Dị ứng: </label>
-        <div class="col-sm-10">
-            <InputText id="allergens" class="form-control" @bind-Value="Product.AllergenInfo" placeholder="VD: đậu phộng, tôm"></InputText>
-            <small class="form-text text-muted">Hiển thị trong cửa sổ xem nhanh để khách dị ứng lưu ý.</small>
-        </div>
-    </div>
-
-    <div class="form-group row">
         <label class="col-sm-2 col-form-label">Huy hiệu: </label>
         <div class="col-sm-10">
             <div class="form-check form-check-inline">
@@ -106,52 +105,6 @@
                 <input class="form-check-input" type="checkbox" id="badge-signature" @bind="Product.IsSignature" />
                 <label class="form-check-label" for="badge-signature">Signature</label>
             </div>
-        </div>
-    </div>
-
-    <div class="form-group row">
-        <label class="col-sm-2 col-form-label">Bán theo mùa: </label>
-        <div class="col-sm-5">
-            <InputDate id="availFrom" class="form-control" @bind-Value="Product.AvailableFrom" />
-            <small class="form-text text-muted">Từ ngày (để trống = quanh năm)</small>
-        </div>
-        <div class="col-sm-5">
-            <InputDate id="availTo" class="form-control" @bind-Value="Product.AvailableTo" />
-            <small class="form-text text-muted">Đến ngày (để trống = quanh năm)</small>
-        </div>
-    </div>
-
-    <div class="form-group row">
-        <label class="col-sm-2 col-form-label">Khung giờ bán: </label>
-        <div class="col-sm-10">
-            @foreach (var w in _hours)
-            {
-                <div class="form-row align-items-center mb-2" @key="w">
-                    <div class="col-auto">
-                        <input type="time" class="form-control" @bind="w.From" />
-                    </div>
-                    <div class="col-auto">đến</div>
-                    <div class="col-auto">
-                        <input type="time" class="form-control" @bind="w.To" />
-                    </div>
-                    <div class="col-auto">
-                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveHour(w)">Xóa</button>
-                    </div>
-                </div>
-            }
-            @if (_hours.Count < 3)
-            {
-                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddHour">+ Thêm khung giờ</button>
-            }
-            <small class="form-text text-muted">Để trống = bán cả ngày. VD: 06:00–10:00 thì ngoài giờ shop hiện "Chỉ bán 6h–10h" và tắt nút đặt.</small>
-        </div>
-    </div>
-
-    <div class="form-group row">
-        <label for="dailylimit" class="col-sm-2 col-form-label">Giới hạn suất/ngày: </label>
-        <div class="col-sm-10">
-            <InputNumber id="dailylimit" class="form-control" @bind-Value="Product.DailyLimit" placeholder="VD: 50 (để trống = không giới hạn)" />
-            <small class="form-text text-muted">Hết suất trong ngày: đơn mới bị từ chối món này. Shop hiện "Còn N suất" khi sắp hết.</small>
         </div>
     </div>
 
