@@ -695,21 +695,9 @@ else
     </section>
 }
 
-<!-- BẢN ĐỒ + ĐĂNG KÝ ZALO (items 14, 15) -->
+<!-- ĐĂNG KÝ ZALO (item 15) -->
 <section class="sg-section sg-visit-sec">
-    <div class="sg-container sg-visit-grid">
-        <div>
-            <p class="sg-eyebrow">Ghé quán</p>
-            <h2 class="sg-h2">Tìm đường tới quán</h2>
-            @if (!string.IsNullOrWhiteSpace(_content.MapEmbedUrl))
-            {
-                <iframe class="sg-map" src="@_content.MapEmbedUrl" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Bản đồ quán"></iframe>
-            }
-            @if (!string.IsNullOrWhiteSpace(_shopSettings?.GoogleMapsUrl))
-            {
-                <a class="sg-btn sg-btn-outline" href="@_shopSettings.GoogleMapsUrl" target="_blank" rel="noopener">📍 Chỉ đường Google Maps</a>
-            }
-        </div>
+    <div class="sg-container" style="max-width: 600px; margin: 0 auto;">
         <div class="sg-zalo-box">
             <h3>🔔 Nhận ưu đãi qua Zalo</h3>
             <p>Để lại SĐT — quán gửi tin khuyến mãi, món mới mỗi tuần. Không spam.</p>
