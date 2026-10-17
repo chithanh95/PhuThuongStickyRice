@@ -161,14 +161,14 @@
     {
         if (firstRender)
         {
-            try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme") == "dark"; } catch { }
+            try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") == "dark"; } catch { }
             StateHasChanged();
         }
     }
 
     private async Task ToggleTheme()
     {
-        try { _isDark = await JSRuntime.InvokeAsync<string>("ptToggleTheme") == "dark"; } catch { }
+        try { _isDark = await JSRuntime.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop") == "dark"; } catch { }
     }
 
     private static bool IsValidPhone(string phone) =>

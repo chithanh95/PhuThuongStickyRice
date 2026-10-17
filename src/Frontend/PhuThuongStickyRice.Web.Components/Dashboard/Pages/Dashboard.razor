@@ -14,7 +14,7 @@
 <div class="lx-page-head">
     <h4 class="lx-page-title">Dashboard</h4>
     <ol class="lx-breadcrumb">
-        <li><a href="/dashboard">Lexa</a></li>
+        <li><a href="/dashboard">Trang chủ</a></li>
         <li class="current">Tổng quan</li>
     </ol>
 </div>
@@ -123,7 +123,7 @@ else
         <div class="col-md-6 col-xl-3">
             <div class="card lexa-stat-card">
                 <div class="card-body">
-                    <p class="lexa-stat-label">Tổng đơn hàng</p>
+                    <p class="lexa-stat-label"><span class="oi oi-cart" aria-hidden="true"></span> Tổng đơn hàng</p>
                     <h3 class="lexa-stat-value">@_stats.TotalOrders</h3>
                     <p class="mb-0">
                         @if (_todayVsYesterday != null)
@@ -140,7 +140,7 @@ else
         <div class="col-md-6 col-xl-3">
             <div class="card lexa-stat-card">
                 <div class="card-body">
-                    <p class="lexa-stat-label">Doanh thu</p>
+                    <p class="lexa-stat-label"><span class="oi oi-dollar" aria-hidden="true"></span> Doanh thu</p>
                     <h3 class="lexa-stat-value">@FormatPrice(_stats.TotalRevenue)</h3>
                     <p class="mb-0">
                         @if (_todayVsYesterday != null)
@@ -157,7 +157,7 @@ else
         <div class="col-md-6 col-xl-3">
             <div class="card lexa-stat-card">
                 <div class="card-body">
-                    <p class="lexa-stat-label">Món xôi đã bán</p>
+                    <p class="lexa-stat-label"><span class="oi oi-tag" aria-hidden="true"></span> Món xôi đã bán</p>
                     <h3 class="lexa-stat-value">@_stats.TotalProductsSold</h3>
                     <p class="mb-0"><small class="lexa-stat-foot">@_stats.TotalProducts món đang kinh doanh</small></p>
                 </div>
@@ -166,7 +166,7 @@ else
         <div class="col-md-6 col-xl-3">
             <div class="card lexa-stat-card">
                 <div class="card-body">
-                    <p class="lexa-stat-label">Đơn chờ xử lý</p>
+                    <p class="lexa-stat-label"><span class="oi oi-clock" aria-hidden="true"></span> Đơn chờ xử lý</p>
                     <h3 class="lexa-stat-value">@_stats.PendingOrders</h3>
                     <p class="mb-0"><small class="lexa-stat-foot"><a href="/orders?status=Pending" class="text-white"><u>Xem ngay →</u></a></small></p>
                 </div>

@@ -12,15 +12,24 @@
                 }
             } catch (e) { }
         })();
-        window.ptGetTheme = function () {
-            try { return localStorage.getItem('pt-theme') === 'dark' ? 'dark' : 'light'; }
+        window.ptGetTheme = function (key) {
+            key = key || 'pt-theme';
+            try { return localStorage.getItem(key) === 'dark' ? 'dark' : 'light'; }
             catch (e) { return 'light'; }
         };
-        window.ptToggleTheme = function () {
+        window.ptToggleTheme = function (key) {
+            key = key || 'pt-theme';
             var dark = !document.documentElement.classList.contains('dark');
             document.documentElement.classList.toggle('dark', dark);
-            try { localStorage.setItem('pt-theme', dark ? 'dark' : 'light'); } catch (e) { }
+            try { localStorage.setItem(key, dark ? 'dark' : 'light'); } catch (e) { }
             return dark ? 'dark' : 'light';
+        };
+        window.ptApplyTheme = function (key) {
+            key = key || 'pt-theme';
+            try {
+                var dark = localStorage.getItem(key) === 'dark';
+                document.documentElement.classList.toggle('dark', dark);
+            } catch (e) { }
         };
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />

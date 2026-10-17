@@ -1048,6 +1048,7 @@ html.dark .lx-notif-unread {
 .card.lexa-stat-card { background-color: #7a6fbe !important; border: none !important; color: #fff !important; }
 .card.lexa-stat-card .card-body { padding: 20px; background: transparent; }
 .lexa-stat-label { color: rgba(255,255,255,.75) !important; margin-bottom: 5px; font-size: 14px; }
+.lexa-stat-label .oi { margin-right: 6px; font-size: 16px; opacity: .9; }
 .lexa-stat-value { color: #fff !important; font-weight: 600; margin-bottom: 10px; }
 .lexa-stat-foot { color: rgba(255,255,255,.65) !important; }
 .lexa-stat-foot a { color: #fff !important; }

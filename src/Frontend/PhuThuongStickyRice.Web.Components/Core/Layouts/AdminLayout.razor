@@ -253,7 +253,7 @@
     {
         try
         {
-            var theme = await JS.InvokeAsync<string>("ptToggleTheme");
+            var theme = await JS.InvokeAsync<string>("ptToggleTheme", "pt-theme-admin");
             _isDark = theme == "dark";
         }
         catch { }
@@ -357,7 +357,7 @@
     protected override async Task OnInitializedAsync()
     {
         // Dark mode: sync toggle icon with saved theme (JS already applied the class pre-paint).
-        try { _isDark = await JS.InvokeAsync<string>("ptGetTheme") == "dark"; } catch { }
+        try { _isDark = await JS.InvokeAsync<string>("ptGetTheme", "pt-theme-admin") == "dark"; } catch { }
         try
         {
             _user = (await AuthStateTask)?.User;

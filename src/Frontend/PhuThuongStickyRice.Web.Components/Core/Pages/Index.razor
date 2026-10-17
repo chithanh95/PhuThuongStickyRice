@@ -1233,7 +1233,7 @@ else
     {
         try
         {
-            var theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme");
+            var theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop");
             _isDark = theme == "dark";
         }
         catch { }
@@ -1278,7 +1278,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme") == "dark"; } catch { }
+        try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") == "dark"; } catch { }
         try { _lang = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "pt-lang") == "en" ? "en" : "vi"; } catch { }
 
         try
