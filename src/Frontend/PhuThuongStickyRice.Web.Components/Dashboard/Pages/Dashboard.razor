@@ -112,6 +112,68 @@
     </div>
 }
 
+@if (_stats == null)
+{
+    <p><em>Đang tải thống kê...</em></p>
+}
+else
+{
+    @* 4 stat cards tím kiểu Lexa — dữ liệu thật *@
+    <div class="row">
+        <div class="col-md-6 col-xl-3">
+            <div class="card lexa-stat-card">
+                <div class="card-body">
+                    <p class="lexa-stat-label">Tổng đơn hàng</p>
+                    <h3 class="lexa-stat-value">@_stats.TotalOrders</h3>
+                    <p class="mb-0">
+                        @if (_todayVsYesterday != null)
+                        {
+                            @DeltaBadge(_todayVsYesterday.OrdersDeltaPercent)
+                        }
+                        <small class="lexa-stat-foot">Chờ xác nhận: @_stats.PendingOrders</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+        <div class="col-md-6 col-xl-3">
+            <div class="card lexa-stat-card">
+                <div class="card-body">
+                    <p class="lexa-stat-label">Doanh thu</p>
+                    <h3 class="lexa-stat-value">@FormatPrice(_stats.TotalRevenue)</h3>
+                    <p class="mb-0">
+                        @if (_todayVsYesterday != null)
+                        {
+                            @DeltaBadge(_todayVsYesterday.RevenueDeltaPercent)
+                        }
+                        <small class="lexa-stat-foot">Không tính đơn đã hủy</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+            </Authorized>
+        </AuthorizeView>
+        <div class="col-md-6 col-xl-3">
+            <div class="card lexa-stat-card">
+                <div class="card-body">
+                    <p class="lexa-stat-label">Món xôi đã bán</p>
+                    <h3 class="lexa-stat-value">@_stats.TotalProductsSold</h3>
+                    <p class="mb-0"><small class="lexa-stat-foot">@_stats.TotalProducts món đang kinh doanh</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card lexa-stat-card">
+                <div class="card-body">
+                    <p class="lexa-stat-label">Đơn chờ xử lý</p>
+                    <h3 class="lexa-stat-value">@_stats.PendingOrders</h3>
+                    <p class="mb-0"><small class="lexa-stat-foot"><a href="/orders?status=Pending" class="text-white"><u>Xem ngay →</u></a></small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @* Wave 5 widgets: daily target, source stats — revenue, Admin only. *@
 <AuthorizeView Roles="Admin">
     <Authorized>
@@ -215,67 +277,6 @@
     </Authorized>
 </AuthorizeView>
 
-@if (_stats == null)
-{
-    <p><em>Đang tải thống kê...</em></p>
-}
-else
-{
-    @* 4 stat cards tím kiểu Lexa — dữ liệu thật *@
-    <div class="row">
-        <div class="col-md-6 col-xl-3">
-            <div class="card lexa-stat-card">
-                <div class="card-body">
-                    <p class="lexa-stat-label">Tổng đơn hàng</p>
-                    <h3 class="lexa-stat-value">@_stats.TotalOrders</h3>
-                    <p class="mb-0">
-                        @if (_todayVsYesterday != null)
-                        {
-                            @DeltaBadge(_todayVsYesterday.OrdersDeltaPercent)
-                        }
-                        <small class="lexa-stat-foot">Chờ xác nhận: @_stats.PendingOrders</small>
-                    </p>
-                </div>
-            </div>
-        </div>
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-        <div class="col-md-6 col-xl-3">
-            <div class="card lexa-stat-card">
-                <div class="card-body">
-                    <p class="lexa-stat-label">Doanh thu</p>
-                    <h3 class="lexa-stat-value">@FormatPrice(_stats.TotalRevenue)</h3>
-                    <p class="mb-0">
-                        @if (_todayVsYesterday != null)
-                        {
-                            @DeltaBadge(_todayVsYesterday.RevenueDeltaPercent)
-                        }
-                        <small class="lexa-stat-foot">Không tính đơn đã hủy</small>
-                    </p>
-                </div>
-            </div>
-        </div>
-            </Authorized>
-        </AuthorizeView>
-        <div class="col-md-6 col-xl-3">
-            <div class="card lexa-stat-card">
-                <div class="card-body">
-                    <p class="lexa-stat-label">Món xôi đã bán</p>
-                    <h3 class="lexa-stat-value">@_stats.TotalProductsSold</h3>
-                    <p class="mb-0"><small class="lexa-stat-foot">@_stats.TotalProducts món đang kinh doanh</small></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="card lexa-stat-card">
-                <div class="card-body">
-                    <p class="lexa-stat-label">Đơn chờ xử lý</p>
-                    <h3 class="lexa-stat-value">@_stats.PendingOrders</h3>
-                    <p class="mb-0"><small class="lexa-stat-foot"><a href="/orders?status=Pending" class="text-white"><u>Xem ngay →</u></a></small></p>
-                </div>
-            </div>
-        </div>
-    </div>
 
 <div class="card mb-3">
     <div class="card-body">
