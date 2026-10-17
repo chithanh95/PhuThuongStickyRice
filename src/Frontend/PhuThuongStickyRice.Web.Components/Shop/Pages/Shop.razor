@@ -51,6 +51,37 @@
     </div>
 </div>
 
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link @(_activeTab == "products" ? "active" : "")" @onclick='() => _activeTab = "products"' style="cursor: pointer;">🍚 Tất cả món</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(_activeTab == "compare" ? "active" : "")" @onclick='() => _activeTab = "compare"' style="cursor: pointer;">📊 Xôi nào hợp bạn?</a>
+    </li>
+</ul>
+
+@if (_activeTab == "compare")
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4 class="card-title">Xôi nào hợp bạn?</h4>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="thead-dark"><tr><th>Món</th><th>Vị</th><th>Giá</th><th>Hợp với</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Xôi gấc</strong></td><td>Ngọt nhẹ, béo</td><td>35k</td><td>Tiệc, cúng, biếu</td></tr>
+                        <tr><td><strong>Xôi xéo</strong></td><td>Mặn, thơm hành</td><td>25k</td><td>Ăn sáng mỗi ngày</td></tr>
+                        <tr><td><strong>Xôi đỗ</strong></td><td>Bùi, dẻo</td><td>25k</td><td>Người thích vị quê</td></tr>
+                        <tr><td><strong>Xôi vò</strong></td><td>Tơi, không ngán</td><td>30k</td><td>Ăn trưa văn phòng</td></tr>
+                        <tr><td><strong>Xôi ngũ sắc</strong></td><td>Đẹp mắt, dẻo</td><td>40k</td><td>Mâm cỗ, chụp ảnh</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
 @if (_loadFailed)
 {
     @* Wave 6d (item 38): friendly full-page error, PWA offline.html look. *@
@@ -403,8 +434,10 @@ else
     OnAdd="AddUpsell"
     OnClose="CloseUpsell" />
 } @* /_loadFailed else *@
+} @* /_activeTab else *@
 
 @code {
+    private string _activeTab = "products";
     private List<ShopProductModel> _products;
     private List<ShopProductModel> _filtered = new List<ShopProductModel>();
     private List<string> _categories = new List<string>();
