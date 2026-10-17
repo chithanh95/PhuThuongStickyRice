@@ -675,26 +675,6 @@ else
     </div>
 </section>
 
-<!-- FAQ (item 13) -->
-@if (_faqs != null && _faqs.Count > 0)
-{
-    <section class="sg-section sg-faq-sec">
-        <div class="sg-container sg-faq-inner">
-            <p class="sg-eyebrow">Hỏi đáp</p>
-            <h2 class="sg-h2">Câu hỏi thường gặp</h2>
-            <div class="sg-faq-list">
-                @foreach (var f in _faqs.Take(8))
-                {
-                    <details class="sg-faq-item">
-                        <summary>@f.Question</summary>
-                        <p>@f.Answer</p>
-                    </details>
-                }
-            </div>
-        </div>
-    </section>
-}
-
 <!-- ĐĂNG KÝ ZALO (item 15) -->
 <section class="sg-section sg-visit-sec">
     <div class="sg-container" style="max-width: 600px; margin: 0 auto;">
