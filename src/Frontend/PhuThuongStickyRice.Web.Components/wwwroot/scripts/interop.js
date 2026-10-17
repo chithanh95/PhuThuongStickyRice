@@ -497,20 +497,31 @@ interop.stopSpeak = function () {
 /* Hiệu ứng hiện dần khi cuộn tới (IntersectionObserver) cho landing. */
 window.ptInitReveal = function () {
     try {
-        var els = document.querySelectorAll('.sg-reveal');
-        if (!('IntersectionObserver' in window) || els.length === 0) {
+        if (!window._ptRevealObserver) {
+            window._ptRevealObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('in');
+                        window._ptRevealObserver.unobserve(e.target);
+                    }
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+            // Tự động observe các .sg-reveal mới thêm vào DOM sau này (Blazor render async).
+            if ('MutationObserver' in window) {
+                new MutationObserver(function () { window.ptInitReveal(); })
+                    .observe(document.body, { childList: true, subtree: true });
+            }
+        }
+        var io = window._ptRevealObserver;
+        var els = document.querySelectorAll('.sg-reveal:not(.in):not([data-reveal-observed])');
+        if (!('IntersectionObserver' in window)) {
             els.forEach(function (el) { el.classList.add('in'); });
             return;
         }
-        var io = new IntersectionObserver(function (entries) {
-            entries.forEach(function (e) {
-                if (e.isIntersecting) {
-                    e.target.classList.add('in');
-                    io.unobserve(e.target);
-                }
-            });
-        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-        els.forEach(function (el) { io.observe(el); });
+        els.forEach(function (el) {
+            el.setAttribute('data-reveal-observed', '1');
+            io.observe(el);
+        });
     } catch (e) { }
 };
 

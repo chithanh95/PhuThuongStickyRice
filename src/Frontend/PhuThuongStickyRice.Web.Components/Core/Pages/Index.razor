@@ -393,7 +393,7 @@ else
             <div class="sg-dish-grid">
                 @foreach (var product in FilteredMenuProducts())
                 {
-                    <div class="sg-dish-card" @key="product.Id">
+                    <div class="sg-dish-card sg-reveal" @key="product.Id">
                         <div class="sg-dish-imgwrap">
                             @if (IsSoldOut(product))
                             {
@@ -431,7 +431,7 @@ else
             <div class="sg-dish-grid">
                 @foreach (var combo in _combos)
                 {
-                    <div class="sg-dish-card" @key="combo.Id">
+                    <div class="sg-dish-card sg-reveal" @key="combo.Id">
                         <div class="sg-dish-body sg-combo-body">
                             <h3 class="sg-dish-name">@combo.Name</h3>
                             @if (!string.IsNullOrWhiteSpace(combo.Description))
@@ -521,7 +521,7 @@ else
             <div class="sg-blog-grid">
                 @foreach (var a in _articles.Take(6))
                 {
-                    <div class="sg-blog-card">
+                    <div class="sg-blog-card sg-reveal">
                         @if (!string.IsNullOrWhiteSpace(a.ImageUrl))
                         {
                             <img loading="lazy" decoding="async" src="@a.ImageUrl" alt="@a.Title" />
