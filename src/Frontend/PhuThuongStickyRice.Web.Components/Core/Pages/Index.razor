@@ -389,17 +389,6 @@ else
     </section>
 }
 
-<!-- VIDEO UNBOX (item 65) -->
-<section class="sg-section sg-unbox-sec">
-    <div class="sg-container sg-center" style="max-width:640px">
-        <p class="sg-eyebrow">Mở hộp cùng khách</p>
-        <h2 class="sg-h2">📦 Video unbox xôi nóng hổi</h2>
-        <p class="sg-lead">Quay clip mở hộp xôi vừa giao tới — khoảnh khắc hơi nóng bốc lên là "ngon" nhất!</p>
-        <p>Gửi clip unbox qua Zalo quán để được <strong>tặng voucher 20k</strong> cho đơn sau.</p>
-        <a class="sg-btn sg-btn-solid" href="#dat-xoi" style="margin-top:12px">Đặt xôi để unbox →</a>
-    </div>
-</section>
-
 <!-- GALLERY ẢNH KHÁCH CHECK-IN (item 12) -->
 @if (_gallery != null && _gallery.Count > 0)
 {
@@ -667,40 +656,6 @@ else
                 <label class="sg-field"><span>Địa chỉ giao</span><input @bind="_sub2Addr" maxlength="200" /></label>
                 @if (!string.IsNullOrEmpty(_sub2Msg)) { <p class="sg-form-error">@_sub2Msg</p> }
                 <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="SubmitSub2">Đăng ký giao mỗi sáng</button>
-            }
-        </div>
-    </div>
-</section>
-
-<!-- HỢP TÁC KINH DOANH (items 56, 57, 59) -->
-<section class="sg-section sg-biz-sec">
-    <div class="sg-container sg-biz-inner">
-        <p class="sg-eyebrow">Hợp tác</p>
-        <h2 class="sg-h2">Cùng bán xôi Phú Thượng</h2>
-        <div class="sg-tabs" role="tablist">
-            <button class="sg-tab @(_bizTab == "nhuongquyen" ? "active" : "")" @onclick='() => _bizTab = "nhuongquyen"'>Nhượng quyền</button>
-            <button class="sg-tab @(_bizTab == "bansi" ? "active" : "")" @onclick='() => _bizTab = "bansi"'>Bán sỉ</button>
-            <button class="sg-tab @(_bizTab == "quabieu" ? "active" : "")" @onclick='() => _bizTab = "quabieu"'>Quà biếu DN</button>
-        </div>
-        <div class="sg-biz-form">
-            @if (_bizDone)
-            {
-                <p class="sg-form-ok">✓ Đã nhận thông tin! Quán sẽ liên hệ trong 24h.</p>
-            }
-            else
-            {
-                <p class="sg-lead">
-                    @(_bizTab == "nhuongquyen" ? "Mở điểm bán xôi Phú Thượng tại khu vực của bạn — quán hỗ trợ công thức, nguyên liệu, marketing." :
-                      _bizTab == "bansi" ? "Nhà hàng, căng tin, quán ăn cần xôi số lượng lớn mỗi ngày — giá sỉ ưu đãi." :
-                      "Hộp xôi biếu Tết sang trọng, in logo công ty — đặt từ 50 hộp.")
-                </p>
-                <div class="sg-field-row">
-                    <label class="sg-field"><span>Tên *</span><input @bind="_bizName" maxlength="100" /></label>
-                    <label class="sg-field"><span>SĐT *</span><input @bind="_bizPhone" inputmode="tel" maxlength="15" /></label>
-                </div>
-                <label class="sg-field"><span>Nhu cầu cụ thể</span><textarea @bind="_bizNote" rows="3" maxlength="500" placeholder="Khu vực, số lượng dự kiến..."></textarea></label>
-                @if (!string.IsNullOrEmpty(_bizMsg)) { <p class="sg-form-error">@_bizMsg</p> }
-                <button class="sg-btn sg-btn-solid" @onclick="SubmitBiz">Gửi đăng ký hợp tác</button>
             }
         </div>
     </div>
