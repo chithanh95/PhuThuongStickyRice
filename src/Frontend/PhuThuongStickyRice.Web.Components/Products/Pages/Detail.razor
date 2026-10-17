@@ -1,6 +1,14 @@
 ﻿@page "/products/{ProductId:guid}"
 @attribute [Authorize]
 
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Chi tiết sản phẩm</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Xôi Phú Thượng</a></li>
+        <li><a href="/products">Sản phẩm</a></li>
+        <li class="current">Chi tiết sản phẩm</li>
+    </ol>
+</div>
 @if (NotFound)
 {
     <div class="text-center py-5">

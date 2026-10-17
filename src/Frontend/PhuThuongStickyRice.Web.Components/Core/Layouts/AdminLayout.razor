@@ -229,14 +229,6 @@
         @* ============ MAIN ============ *@
         <div class="lx-main">
             <div class="lx-content">
-                <div class="lx-page-head">
-                    <div>
-                        <h1 class="lx-page-title">@_pageTitle</h1>
-                        <p class="lx-breadcrumb">
-                            <a href="/dashboard">Xôi Phú Thượng</a><span class="sep">/</span><span>@_pageGroup</span><span class="sep">/</span><span class="current">@_pageTitle</span>
-                        </p>
-                    </div>
-                </div>
                 @Body
             </div>
 
@@ -279,9 +271,6 @@
 
     private static string UserInitial(string name) =>
         string.IsNullOrWhiteSpace(name) ? "A" : name.Trim().Substring(0, 1).ToUpperInvariant();
-    private string _pageTitle = "Bảng điều khiển";
-    private string _pageGroup = "Tổng quan";
-
     private readonly HashSet<string> _openGroups = new();
 
     private List<MenuGroup> MenuGroups = new()
@@ -367,7 +356,6 @@
             _user = new System.Security.Claims.ClaimsPrincipal();
         }
         Navigation.LocationChanged += OnLocationChanged;
-        UpdatePageHead();
         // Mở sẵn nhóm chứa trang hiện tại
         var group = MenuGroups.FirstOrDefault(g => g.Items.Any(i => IsVisible(i) && IsHrefActive(i.Href)));
         if (group != null) _openGroups.Add(group.Key);
@@ -383,30 +371,11 @@
 
     private void OnLocationChanged(object sender, LocationChangedEventArgs e)
     {
-        UpdatePageHead();
         _notifOpen = false;
         _searchFocused = false;
         var group = MenuGroups.FirstOrDefault(g => g.Items.Any(i => IsHrefActive(i.Href)));
         if (group != null) _openGroups.Add(group.Key);
         InvokeAsync(StateHasChanged);
-    }
-
-    private void UpdatePageHead()
-    {
-        var path = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
-        foreach (var g in MenuGroups)
-        {
-            var item = g.Items.FirstOrDefault(i =>
-                string.Equals(i.Href, path, StringComparison.OrdinalIgnoreCase));
-            if (item != null)
-            {
-                _pageTitle = item.Label;
-                _pageGroup = g.Label;
-                return;
-            }
-        }
-        _pageTitle = "Bảng điều khiển";
-        _pageGroup = "Tổng quan";
     }
 
     private bool IsHrefActive(string href)
