@@ -648,3 +648,29 @@ window.ptStartVoiceInput = function () {
         } catch (e) { resolve(""); }
     });
 };
+
+/* Export CSV/PDF: download file from API with bearer token. */
+interop.downloadFile = function (url, token, fileName) {
+    return fetch(url, {
+        headers: token ? { "Authorization": "Bearer " + token } : {}
+    })
+    .then(function (resp) {
+        if (!resp.ok) { throw new Error("Download failed: " + resp.status); }
+        return resp.blob();
+    })
+    .then(function (blob) {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName || "download";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+            URL.revokeObjectURL(a.href);
+            a.remove();
+        }, 1000);
+    })
+    .catch(function (err) {
+        console.error("downloadFile error:", err);
+        alert("Không tải được file: " + err.message);
+    });
+};

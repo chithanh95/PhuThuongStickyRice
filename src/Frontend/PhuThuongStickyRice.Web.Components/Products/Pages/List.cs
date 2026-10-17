@@ -125,14 +125,12 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         protected async Task ExportAsPdf()
         {
             var token = await ProductService.GetAccessToken();
-            await JSRuntime.Log(token);
             await JSRuntime.InvokeVoidAsync("interop.downloadFile", ProductService.GetExportPdfUrl(), token, "Products.pdf");
         }
 
         protected async Task ExportAsCsv()
         {
             var token = await ProductService.GetAccessToken();
-            await JSRuntime.Log(token);
             await JSRuntime.InvokeVoidAsync("interop.downloadFile", ProductService.GetExportCsvUrl(), token, "Products.csv");
         }
     }

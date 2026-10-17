@@ -375,7 +375,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             var paged = await _productAppService.GetListAsync(new GetProductsInput
             {
-                MaxResultCount = int.MaxValue,
+                MaxResultCount = 1000,
                 SkipCount = 0
             });
             return paged.Items.Select(x => new ProductModel
