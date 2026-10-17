@@ -185,8 +185,10 @@ namespace PhuThuongStickyRice.Application.Products
             var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
 
             var dtos = _objectMapper.Map<List<Product>, List<ProductDto>>(items);
-            // TEMP DISABLED 2026-10-17: isolate ObjectDisposedException
-            // await AttachSizesAsync(dtos);
+            // Restored 2026-10-17: isolation concluded the CRUD failures were
+            // caused by the empty-GUID root cause (fixed in Repository.AddAsync),
+            // not by AttachSizesAsync — size options are needed for the shop list.
+            await AttachSizesAsync(dtos);
 
             return new PagedResultDto<ProductDto>(totalCount, dtos);
         }
