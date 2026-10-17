@@ -28,9 +28,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Item 109: optional branch filter (products of the branch + global products).</summary>
         public async Task<PagedResult<ShopProductModel>> GetProductsAsync(Guid? branchId)
         {
-            // Item 85: includeInactive=true so sold-out products come back
-            // too — the shop/landing renders them with a "Tạm hết" badge.
-            var url = "api/products?page=1&pageSize=100&status=Active&includeInactive=true";
+            // Only show Active products; Inactive (sold-out) are hidden.
+            var url = "api/products?page=1&pageSize=100&status=Active&includeInactive=false";
             if (branchId.HasValue)
             {
                 url += $"&branch={branchId.Value}";
