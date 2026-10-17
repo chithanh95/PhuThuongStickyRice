@@ -119,17 +119,17 @@
                                 <td class="text-right text-nowrap">
                                     @if (HasPermission("products.edit"))
                                     {
-                                        <button @onclick="(() => ToggleAvailability(product))" class="btn btn-sm btn-outline-warning" title="Bật/tắt bán (hết hàng)">
-                                            @(product.Status == "Active" ? "Hết hàng" : "Mở bán")
+                                        <button @onclick="(() => ToggleAvailability(product))" class="btn btn-sm lx-btn-icon btn-outline-warning" title="Bật/tắt bán (hết hàng)">
+                                            <i class="fas @(product.Status == "Active" ? "fa-eye-slash" : "fa-eye")"></i>
                                         </button>
                                     }
                                     @if (HasPermission("products.edit"))
                                     {
-                                        <button @onclick="(() => EditProduct(product))" class="btn btn-sm btn-primary" title="Sửa">Sửa</button>
+                                        <button @onclick="(() => EditProduct(product))" class="btn btn-sm lx-btn-icon btn-primary" title="Sửa"><i class="fas fa-pen"></i></button>
                                     }
                                     @if (HasPermission("products.delete"))
                                     {
-                                        <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm btn-danger" title="Xóa">Xóa</button>
+                                        <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm lx-btn-icon btn-danger" title="Xóa"><i class="fas fa-trash"></i></button>
                                     }
                                 </td>
                             </tr>
