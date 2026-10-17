@@ -71,7 +71,7 @@
     left: 0;
     right: 0;
     height: var(--lx-topbar-h);
-    background: #ffffff;
+    background: linear-gradient(to bottom, #ffffff 0%, #f8f9fb 100%);
     box-shadow: var(--lx-topbar-shadow);
     border-bottom: 1px solid var(--lx-border);
     display: flex;
