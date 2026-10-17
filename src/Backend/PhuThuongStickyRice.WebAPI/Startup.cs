@@ -219,7 +219,11 @@ namespace PhuThuongStickyRice.WebAPI
             services.AddScoped(typeof(ICsvWriter<>), typeof(CsvWriter<>));
 
             // Item 104: persists Warning+ log entries to the AppLogs table.
-            services.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider, Services.AppLogLoggerProvider>();
+            // TEMP DISABLED 2026-10-17: AppLogLoggerProvider causes DbContext
+            // concurrency crash (duplicate PK on AppLogs + "second operation"
+            // on StickyRiceDbContext). Re-enable after fixing the GUID/
+            // concurrency issue in AppLogWriter.
+            // services.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider, Services.AppLogLoggerProvider>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
