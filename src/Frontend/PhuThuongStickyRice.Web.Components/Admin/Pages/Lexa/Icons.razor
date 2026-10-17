@@ -13,14 +13,14 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <h4 class="card-title">Open Iconic (đang dùng trong web)</h4>
+                <h4 class="card-title">Font Awesome 6 Free (đang dùng trong web)</h4>
                 <p class="card-title-desc">Bấm vào icon để copy tên class.</p>
                 <div class="row">
                     @foreach (var ic in _openIconic)
                     {
                         <div class="col-6 col-sm-4 col-md-3 col-xl-2">
                             <div class="lexa-icon-box" @onclick="() => CopyIcon(ic.Class)" title="Bấm để copy">
-                                <span class="oi @ic.Class lexa-icon"></span>
+                                <span class="@ic.Class lexa-icon"></span>
                                 <small class="d-block text-muted mt-1 text-truncate">@ic.Name</small>
                             </div>
                         </div>
@@ -95,21 +95,21 @@
     private string _copied;
     private List<IconItem> _openIconic = new()
     {
-        new("oi-home", "Trang chủ"), new("oi-cart", "Giỏ hàng"), new("oi-person", "Người dùng"),
-        new("oi-people", "Nhóm"), new("oi-plus", "Thêm"), new("oi-minus", "Trừ"),
-        new("oi-check", "Đúng"), new("oi-x", "Đóng"), new("oi-trash", "Xóa"),
-        new("oi-pencil", "Sửa"), new("oi-eye", "Xem"), new("oi-magnifying-glass", "Tìm kiếm"),
-        new("oi-cog", "Cài đặt"), new("oi-clock", "Đồng hồ"), new("oi-calendar", "Lịch"),
-        new("oi-chart", "Biểu đồ"), new("oi-graph", "Đồ thị"), new("oi-dollar", "Tiền"),
-        new("oi-credit-card", "Thẻ"), new("oi-envelope-closed", "Thư"), new("oi-bell", "Chuông"),
-        new("oi-lock-locked", "Khóa"), new("oi-key", "Chìa khóa"), new("oi-star", "Sao"),
-        new("oi-heart", "Tim"), new("oi-thumb-up", "Thích"), new("oi-comment-square", "Bình luận"),
-        new("oi-image", "Ảnh"), new("oi-video", "Video"), new("oi-musical-note", "Nhạc"),
-        new("oi-map-marker", "Vị trí"), new("oi-phone", "Điện thoại"), new("oi-print", "In"),
-        new("oi-share", "Chia sẻ"), new("oi-cloud-download", "Tải xuống"), new("oi-cloud-upload", "Tải lên"),
-        new("oi-file", "File"), new("oi-folder", "Thư mục"), new("oi-tag", "Nhãn"),
-        new("oi-dashboard", "Bảng điều khiển"), new("oi-list", "Danh sách"), new("oi-grid-three-up", "Lưới"),
-        new("oi-menu", "Menu"), new("oi-account-login", "Đăng nhập"), new("oi-account-logout", "Đăng xuất"),
+        new("fa-solid fa-house", "Trang chủ"), new("fa-solid fa-cart-shopping", "Giỏ hàng"), new("fa-solid fa-user", "Người dùng"),
+        new("fa-solid fa-users", "Nhóm"), new("fa-solid fa-plus", "Thêm"), new("fa-solid fa-minus", "Trừ"),
+        new("fa-solid fa-check", "Đúng"), new("fa-solid fa-xmark", "Đóng"), new("fa-solid fa-trash", "Xóa"),
+        new("fa-solid fa-pencil", "Sửa"), new("fa-solid fa-eye", "Xem"), new("fa-solid fa-magnifying-glass", "Tìm kiếm"),
+        new("fa-solid fa-gear", "Cài đặt"), new("fa-solid fa-clock", "Đồng hồ"), new("fa-solid fa-calendar", "Lịch"),
+        new("fa-solid fa-chart-column", "Biểu đồ"), new("fa-solid fa-chart-line", "Đồ thị"), new("fa-solid fa-dollar-sign", "Tiền"),
+        new("fa-solid fa-credit-card", "Thẻ"), new("fa-solid fa-envelope", "Thư"), new("fa-solid fa-bell", "Chuông"),
+        new("fa-solid fa-lock", "Khóa"), new("fa-solid fa-key", "Chìa khóa"), new("fa-solid fa-star", "Sao"),
+        new("fa-solid fa-heart", "Tim"), new("fa-solid fa-thumbs-up", "Thích"), new("fa-solid fa-comment", "Bình luận"),
+        new("fa-solid fa-image", "Ảnh"), new("fa-solid fa-video", "Video"), new("fa-solid fa-music", "Nhạc"),
+        new("fa-solid fa-location-dot", "Vị trí"), new("fa-solid fa-phone", "Điện thoại"), new("fa-solid fa-print", "In"),
+        new("fa-solid fa-share", "Chia sẻ"), new("fa-solid fa-cloud-arrow-down", "Tải xuống"), new("fa-solid fa-cloud-arrow-up", "Tải lên"),
+        new("fa-solid fa-file", "File"), new("fa-solid fa-folder", "Thư mục"), new("fa-solid fa-tag", "Nhãn"),
+        new("fa-solid fa-gauge-high", "Bảng điều khiển"), new("fa-solid fa-list", "Danh sách"), new("fa-solid fa-table-cells", "Lưới"),
+        new("fa-solid fa-bars", "Menu"), new("fa-solid fa-right-to-bracket", "Đăng nhập"), new("fa-solid fa-right-from-bracket", "Đăng xuất"),
     };
     private List<string> _emojis = new()
     {
@@ -120,7 +120,7 @@
 
     private void CopyIcon(string cls)
     {
-        _copied = "oi " + cls;
+        _copied = cls;
     }
 
     private record IconItem(string Class, string Name);
