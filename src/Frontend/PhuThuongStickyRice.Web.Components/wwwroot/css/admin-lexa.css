@@ -1392,6 +1392,57 @@ html.dark .lx-admin .img-thumbnail {
     background-color: #7a6fbe !important;
     border-color: #7a6fbe !important;
 }
+/* Colored switches (Lexa Form Advanced) */
+.lx-admin .form-switch.switch-success .form-check-input:checked {
+    background-color: #34c38f !important;
+    border-color: #34c38f !important;
+}
+.lx-admin .form-switch.switch-info .form-check-input:checked {
+    background-color: #50a5f1 !important;
+    border-color: #50a5f1 !important;
+}
+.lx-admin .form-switch.switch-warning .form-check-input:checked {
+    background-color: #f1b44c !important;
+    border-color: #f1b44c !important;
+}
+.lx-admin .form-switch.switch-danger .form-check-input:checked {
+    background-color: #f46a6a !important;
+    border-color: #f46a6a !important;
+}
+.lx-admin .form-switch.switch-dark .form-check-input:checked {
+    background-color: #343a40 !important;
+    border-color: #343a40 !important;
+}
+
+/* TouchSpin -/+ buttons purple (Lexa Form Advanced) */
+.lx-admin .lexa-touchspin button,
+.lx-admin .touchspin-btn {
+    background-color: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    color: #fff !important;
+}
+.lx-admin .lexa-touchspin button:hover,
+.lx-admin .touchspin-btn:hover {
+    background-color: #625998 !important;
+    border-color: #625998 !important;
+}
+
+/* Form validation (Lexa Form Validation - Blazor EditForm) */
+.lx-admin .form-control.invalid,
+.lx-admin .form-select.invalid {
+    border-color: #f46a6a !important;
+}
+.lx-admin .form-control.invalid:focus,
+.lx-admin .form-select.invalid:focus {
+    border-color: #f46a6a !important;
+    box-shadow: 0 0 0 .2rem rgba(244,106,106,.25) !important;
+}
+.lx-admin .validation-message {
+    color: #f46a6a !important;
+    font-size: .875rem;
+    margin-top: .25rem;
+    display: block;
+}
 .lx-admin input[type="color"].form-control-color,
 .lx-admin input[type="color"] {
     width: 100% !important;
