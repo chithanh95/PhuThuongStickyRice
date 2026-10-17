@@ -30,6 +30,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         [Inject]
         public IJSRuntime JSRuntime { get; set; }
 
+        [Inject]
+        public PhuThuongStickyRice.Web.Components.Admin.Services.Wave5Service Wave5Service { get; set; }
+
         [Parameter]
         public ProductModel Product { get; set; }
 

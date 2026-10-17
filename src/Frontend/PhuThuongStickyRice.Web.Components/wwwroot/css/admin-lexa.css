@@ -498,12 +498,31 @@ html.dark .lx-hnav-link:hover {
     margin: 0;
 }
 
+.lx-admin .lx-breadcrumb,
 .lx-breadcrumb {
     font-size: 13px;
     color: var(--lx-muted);
     margin: 4px 0 0;
     padding: 0;
     background: transparent;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.lx-admin .lx-breadcrumb li,
+.lx-breadcrumb li {
+    display: inline-flex;
+    align-items: center;
+}
+
+.lx-admin .lx-breadcrumb li + li::before,
+.lx-breadcrumb li + li::before {
+    content: ">";
+    margin: 0 8px;
+    color: var(--lx-muted-2);
+    font-size: 12px;
 }
 
 .lx-breadcrumb a {
@@ -1442,6 +1461,52 @@ html.dark .lx-admin .img-thumbnail {
     font-size: .875rem;
     margin-top: .25rem;
     display: block;
+}
+
+/* Dropzone file upload (Lexa Form File Upload) */
+.lx-admin .lx-dropzone {
+    display: block;
+    border: 2px dashed #d0d4dc;
+    border-radius: 8px;
+    background: #fafbfc;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    margin-bottom: .5rem;
+}
+.lx-admin .lx-dropzone:hover {
+    border-color: #7a6fbe;
+    background: #f5f4fc;
+}
+.lx-admin .lx-dropzone-icon {
+    font-size: 2.5rem;
+    color: #6c757d;
+    margin-bottom: .75rem;
+}
+.lx-admin .lx-dropzone:hover .lx-dropzone-icon {
+    color: #7a6fbe;
+}
+.lx-admin .lx-dropzone-text {
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: #212529;
+    margin-bottom: .25rem;
+}
+.lx-admin .lx-dropzone-hint {
+    font-size: .875rem;
+    color: #6c757d;
+}
+html.dark .lx-admin .lx-dropzone {
+    background: #1e1e36;
+    border-color: #4a4a6e;
+}
+html.dark .lx-admin .lx-dropzone:hover {
+    border-color: #7a6fbe;
+    background: #252542;
+}
+html.dark .lx-admin .lx-dropzone-text {
+    color: #f0eef5;
 }
 .lx-admin input[type="color"].form-control-color,
 .lx-admin input[type="color"] {
