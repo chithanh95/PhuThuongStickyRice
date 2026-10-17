@@ -146,6 +146,7 @@
                     </button>
                     @if (_langMenuOpen)
                     {
+                        <div class="lx-dropdown-backdrop" @onclick="() => _langMenuOpen = false"></div>
                         <div class="lx-dropdown-menu lx-lang-menu">
                             <button class="lx-dropdown-item" @onclick='() => SetLang("vi")'>
                                 <span class="lx-flag">🇻🇳</span> Tiếng Việt
@@ -169,6 +170,7 @@
                     </button>
                     @if (_notifOpen)
                     {
+                        <div class="lx-dropdown-backdrop" @onclick="() => _notifOpen = false"></div>
                         <div class="lx-dropdown-menu lx-notif-menu">
                             <div class="d-flex justify-content-between align-items-center px-2 py-1">
                                 <strong>Thông báo</strong>
@@ -211,6 +213,7 @@
                     </span>
                     @if (_userMenuOpen)
                     {
+                        <div class="lx-dropdown-backdrop" @onclick="CloseUserMenu"></div>
                         <div class="lx-dropdown-menu">
                             <a class="lx-dropdown-item" href="/admin/ho-so" @onclick="CloseUserMenu">
                                 <span class="oi oi-person" aria-hidden="true"></span> Hồ sơ
