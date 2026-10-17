@@ -16,9 +16,7 @@
             <h4 class="card-title mb-0">Danh sách sản phẩm</h4>
 
             <div class="d-flex flex-wrap ml-md-auto mt-2 mt-md-0">
-                <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsPdf">
-                    Xuất PDF
-                </button>
+                @* Tạm ẩn Xuất PDF: thiếu native libwkhtmltox của DinkToPdf *@
                 <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsCsv">
                     Xuất CSV
                 </button>
