@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
+using Volo.Abp.Uow;
 using Volo.Abp.ObjectMapping;
 
 namespace PhuThuongStickyRice.Application.Products
@@ -104,6 +105,7 @@ namespace PhuThuongStickyRice.Application.Products
             _activityLogger = activityLogger;
         }
 
+        [UnitOfWork]
         public virtual async Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input)
         {
             // Item 101: the public shop path (status=Active) is served from a
