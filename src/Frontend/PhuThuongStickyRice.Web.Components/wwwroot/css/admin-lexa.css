@@ -1531,6 +1531,8 @@ html.dark .lx-toast {
 }
 .lx-toast-body .fa-circle-check {
     color: #fff !important;
+    margin-right: 12px;
+    font-size: 18px;
 }
 .lx-toast-close {
     background: none;
