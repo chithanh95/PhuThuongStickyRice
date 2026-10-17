@@ -442,7 +442,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = "Không tìm thấy đơn hàng." });
             }
 
-            var folder = Path.Combine((_environment.WebRootPath ?? _environment.ContentRootPath), "uploads", "review-photos");
+            var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "review-photos");
             Directory.CreateDirectory(folder);
 
             var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";

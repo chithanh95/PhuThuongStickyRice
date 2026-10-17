@@ -87,7 +87,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = "File ảnh tối đa 5 MB." });
             }
 
-            var folder = Path.Combine((_environment.WebRootPath ?? _environment.ContentRootPath), "uploads", "customer-photos");
+            var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "customer-photos");
             Directory.CreateDirectory(folder);
 
             var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
@@ -140,7 +140,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (!string.IsNullOrEmpty(fileName))
             {
                 var path = Path.Combine(
-                    (_environment.WebRootPath ?? _environment.ContentRootPath), "uploads", "customer-photos", fileName);
+                    (_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "customer-photos", fileName);
                 if (System.IO.File.Exists(path))
                 {
                     System.IO.File.Delete(path);

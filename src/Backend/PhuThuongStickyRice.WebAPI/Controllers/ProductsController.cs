@@ -327,7 +327,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = "File ảnh tối đa 5 MB." });
             }
 
-            var folder = Path.Combine((_environment.WebRootPath ?? _environment.ContentRootPath), "uploads", "products");
+            var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "products");
             Directory.CreateDirectory(folder);
 
             var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";

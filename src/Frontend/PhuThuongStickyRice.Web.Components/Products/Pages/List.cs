@@ -47,68 +47,6 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         public string ToggleError { get; private set; }
 
-        /// <summary>Item 146: drag &amp; drop manual ordering.</summary>
-        protected ProductModel _draggedProduct { get; private set; }
-
-        protected bool _orderChanged { get; private set; }
-
-        protected bool _reordering { get; private set; }
-
-        protected string _reorderMessage { get; private set; }
-
-        protected string _reorderError { get; private set; }
-
-        protected void OnDragStart(ProductModel product)
-        {
-            _draggedProduct = product;
-            _reorderMessage = null;
-            _reorderError = null;
-        }
-
-        protected void OnDragEnd()
-        {
-            _draggedProduct = null;
-        }
-
-        protected void OnDrop(ProductModel target)
-        {
-            var dragged = _draggedProduct;
-            _draggedProduct = null;
-            if (dragged == null || target == null || dragged.Id == target.Id || Products == null)
-            {
-                return;
-            }
-
-            Products.Remove(dragged);
-            var index = Products.FindIndex(p => p.Id == target.Id);
-            Products.Insert(index < 0 ? Products.Count : index, dragged);
-            _orderChanged = true;
-            _reorderMessage = null;
-            _reorderError = null;
-        }
-
-        /// <summary>Item 146: persists the dragged order (one call).</summary>
-        protected async Task SaveOrderAsync()
-        {
-            _reorderError = null;
-            _reorderMessage = null;
-            _reordering = true;
-            try
-            {
-                await ProductService.ReorderAsync(Products.Select(p => p.Id).ToList());
-                _orderChanged = false;
-                _reorderMessage = "Đã lưu thứ tự hiển thị. Trang bán hàng sẽ xếp món theo thứ tự này.";
-            }
-            catch (System.Exception)
-            {
-                _reorderError = "Không lưu được thứ tự. Vui lòng thử lại.";
-            }
-            finally
-            {
-                _reordering = false;
-            }
-        }
-
         /// <summary>One-click sold-out toggle (Active &lt;-&gt; Inactive).</summary>
         protected async Task ToggleAvailability(ProductModel product)
         {
