@@ -1,0 +1,14 @@
+/* Product image hover zoom */
+.card-img-top {
+    transition: transform 0.3s ease;
+    cursor: zoom-in;
+}
+
+.card:hover .card-img-top {
+    transform: scale(1.08);
+}
+
+/* Ensure the card image container clips the zoom */
+.card {
+    overflow: hidden;
+}
