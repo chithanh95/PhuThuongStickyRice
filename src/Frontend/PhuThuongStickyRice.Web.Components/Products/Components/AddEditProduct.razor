@@ -164,7 +164,8 @@
                     var idx = i;
                     var url = _images[i];
                     <div class="mr-2 mb-2 text-center" style="width: 110px;" @key="url">
-                        <img src="@Wave5Service.ResolveImageUrl(url)" alt="Ảnh món" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: @(idx == 0 ? "2px solid #28a745" : "1px solid #ddd");" />
+                        <img src="@Wave5Service.ResolveImageUrl(url)" alt="Ảnh món" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: @(idx == 0 ? "2px solid #28a745" : "1px solid #ddd");"
+                             onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIxMiI+Tm8gaW1hZ2U8L3RleHQ+PC9zdmc+';" />
                         <div class="mt-1">
                             @if (idx == 0)
                             {
