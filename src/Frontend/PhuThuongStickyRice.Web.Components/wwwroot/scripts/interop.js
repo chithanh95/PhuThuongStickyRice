@@ -285,15 +285,15 @@ interop.compressImagesFromInput = function (elementId, maxDim, quality) {
         return new Promise(function (resolve, reject) {
             var reader = new FileReader();
             reader.onload = function () {
-                var bytes = new Uint8Array(reader.result);
+                var base64 = reader.result.split(',')[1];
                 resolve({
-                    bytes: Array.prototype.slice.call(bytes),
+                    base64: base64,
                     fileName: fileName,
                     contentType: contentType
                 });
             };
             reader.onerror = function () { reject(new Error('Cannot read file')); };
-            reader.readAsArrayBuffer(blob);
+            reader.readAsDataURL(blob);
         });
     }
 };

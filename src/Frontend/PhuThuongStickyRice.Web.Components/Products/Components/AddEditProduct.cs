@@ -214,6 +214,8 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             {
                 foreach (var f in files)
                 {
+                    if (string.IsNullOrEmpty(f.Base64))
+                        continue;
                     using var stream = new MemoryStream(Convert.FromBase64String(f.Base64));
                     var url = await ProductService.UploadProductImageAsync(
                         stream, f.FileName, f.ContentType);
