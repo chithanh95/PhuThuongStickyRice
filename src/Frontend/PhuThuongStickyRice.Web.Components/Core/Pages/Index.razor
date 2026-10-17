@@ -115,14 +115,6 @@ else
             <button class="sg-theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
                 @(_isDark ? "☀️" : "🌙")
             </button>
-            <AuthorizeView>
-                <Authorized>
-                    <a class="sg-account" href="/tai-khoan" title="Tài khoản của tôi">👤 Tài khoản</a>
-                </Authorized>
-                <NotAuthorized>
-                    <a class="sg-account" href="/dang-nhap">Đăng nhập</a>
-                </NotAuthorized>
-            </AuthorizeView>
             @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
             {
                 <a class="sg-hotline" href="tel:@_content.ContactPhone">📞 @_content.ContactPhone</a>
