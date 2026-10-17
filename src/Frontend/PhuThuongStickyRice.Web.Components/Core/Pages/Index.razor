@@ -538,42 +538,6 @@ else
     </section>
 }
 
-<!-- ĐẶT XÔI ĐỊNH KỲ (item 47) -->
-<section class="sg-section sg-sub2-sec">
-    <div class="sg-container sg-sub2-grid">
-        <div>
-            <p class="sg-eyebrow">Tiện lợi</p>
-            <h2 class="sg-h2">Xôi sáng mỗi ngày, khỏi cần đặt</h2>
-            <p class="sg-lead">Đăng ký 1 lần — quán giao xôi nóng <strong>đúng 6h30 mỗi sáng</strong>. Hủy bất cứ lúc nào.</p>
-            <ul class="sg-check-list">
-                <li>✓ Không lo hết xôi giờ cao điểm</li>
-                <li>✓ Giảm 5% cho đơn định kỳ</li>
-                <li>✓ Đổi món mỗi tuần thoải mái</li>
-            </ul>
-        </div>
-        <div class="sg-sub2-form">
-            @if (_sub2Done)
-            {
-                <p class="sg-form-ok">✓ Đăng ký thành công! Quán sẽ gọi xác nhận lịch giao.</p>
-            }
-            else
-            {
-                <label class="sg-field"><span>Tên *</span><input @bind="_sub2Name" maxlength="100" /></label>
-                <label class="sg-field"><span>SĐT *</span><input @bind="_sub2Phone" inputmode="tel" maxlength="15" /></label>
-                <label class="sg-field"><span>Món xôi *</span>
-                    <select @bind="_sub2ProductId">
-                        <option value="@Guid.Empty">— Chọn món —</option>
-                        @foreach (var p in XoiProducts) { <option value="@p.Id">@p.Name</option> }
-                    </select>
-                </label>
-                <label class="sg-field"><span>Địa chỉ giao</span><input @bind="_sub2Addr" maxlength="200" /></label>
-                @if (!string.IsNullOrEmpty(_sub2Msg)) { <p class="sg-form-error">@_sub2Msg</p> }
-                <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="SubmitSub2">Đăng ký giao mỗi sáng</button>
-            }
-        </div>
-    </div>
-</section>
-
 <!-- THỬ THÁCH 7 NGÀY (item 53) -->
 
 <!-- BÌNH CHỌN MÓN MỚI (item 54) -->
