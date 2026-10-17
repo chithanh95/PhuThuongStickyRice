@@ -51,6 +51,8 @@ namespace PhuThuongStickyRice.Persistence.Repositories
 
         public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
         {
+            if (typeof(TKey) == typeof(Guid) && entity.Id.Equals(default(TKey)))
+                entity.Id = (TKey)(object)Guid.NewGuid();
             entity.CreatedDateTime = _dateTimeProvider.OffsetNow;
             await DbSet.AddAsync(entity, cancellationToken);
         }
@@ -93,11 +95,27 @@ namespace PhuThuongStickyRice.Persistence.Repositories
 
         public void BulkInsert(IEnumerable<T> entities)
         {
+            if (typeof(TKey) == typeof(Guid))
+            {
+                foreach (var entity in entities)
+                {
+                    if (entity.Id.Equals(default(TKey)))
+                        entity.Id = (TKey)(object)Guid.NewGuid();
+                }
+            }
             _dbContext.BulkInsert(entities);
         }
 
         public void BulkInsert(IEnumerable<T> entities, Expression<Func<T, object>> columnNamesSelector)
         {
+            if (typeof(TKey) == typeof(Guid))
+            {
+                foreach (var entity in entities)
+                {
+                    if (entity.Id.Equals(default(TKey)))
+                        entity.Id = (TKey)(object)Guid.NewGuid();
+                }
+            }
             _dbContext.BulkInsert(entities, columnNamesSelector);
         }
 
