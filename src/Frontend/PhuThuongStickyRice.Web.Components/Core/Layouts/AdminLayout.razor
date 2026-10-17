@@ -248,8 +248,8 @@
         {
             <div class="lx-toast show" @key="toast.Id">
                 <div class="lx-toast-body">
-                    <i class="fa-solid fa-circle-check text-success me-2"></i>
-                    @toast.Message
+                    <i class="fa-solid fa-circle-check me-3"></i>
+                    <span>@toast.Message</span>
                 </div>
                 <button type="button" class="lx-toast-close" @onclick="() => DismissToast(toast.Id)" aria-label="Đóng">
                     <i class="fa-solid fa-xmark"></i>
