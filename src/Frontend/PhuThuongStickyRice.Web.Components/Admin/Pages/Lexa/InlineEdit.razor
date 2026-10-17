@@ -5,7 +5,14 @@
     <span class="lexa-xedit" @onclick="StartEdit" title="Bấm để sửa">
         @if (string.IsNullOrWhiteSpace(Value))
         {
-            <em class="text-muted">@(Placeholder ?? "Trống")</em>
+            @if (Required)
+            {
+                <em class="lexa-xedit-empty">Empty</em>
+            }
+            else
+            {
+                <em class="text-muted">@(Placeholder ?? "Trống")</em>
+            }
         }
         else
         {
@@ -33,6 +40,7 @@ else
     .lexa-xedit { color: #7a6fbe; border-bottom: 1px dashed #7a6fbe; cursor: pointer; }
     .lexa-xedit:hover { color: #5a4fae; background: #f0efff; }
     html.dark .lexa-xedit:hover { background: #2c2c4e; }
+    .lexa-xedit-empty { color: #f46a6a; border-bottom: 1px dashed #f46a6a; font-style: italic; }
 </style>
 
 @code {
@@ -41,6 +49,7 @@ else
     [Parameter] public string Placeholder { get; set; }
     [Parameter] public string InputType { get; set; } = "text";
     [Parameter] public bool Multiline { get; set; }
+    [Parameter] public bool Required { get; set; }
 
     private bool _editing;
     private string _tmp;
