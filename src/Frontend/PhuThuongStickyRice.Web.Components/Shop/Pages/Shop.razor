@@ -10,6 +10,7 @@
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
 @inject Wave4Service Wave4Service
+@inject Wave5Service Wave5Service
 @inject CartState CartState
 @inject ShopI18n I18n
 @implements IDisposable
@@ -1071,15 +1072,15 @@ else
     }
 
     /// <summary>
-    /// Primary gallery photo when uploaded; otherwise a generic
-    /// "no image" placeholder (no hardcoded product images).
+    /// Primary gallery photo when uploaded (resolved to API base URL);
+    /// otherwise a generic "no image" placeholder (no hardcoded product images).
     /// </summary>
-    private static string ProductImage(ShopProductModel product)
+    private string ProductImage(ShopProductModel product)
     {
         var first = FirstImageUrl(product?.ImageUrlsJson);
         if (!string.IsNullOrEmpty(first))
         {
-            return first;
+            return Wave5Service.ResolveImageUrl(first);
         }
 
         // Generic placeholder when admin has not set an image
