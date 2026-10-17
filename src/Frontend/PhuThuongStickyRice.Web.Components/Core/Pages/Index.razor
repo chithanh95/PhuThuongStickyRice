@@ -251,7 +251,7 @@ else
             {
                 @foreach (var product in SignatureProducts)
                 {
-                    <div class="sg-dish-card sg-reveal" @key="product.Id">
+                    <div class="sg-dish-card" @key="product.Id">
                         <div class="sg-dish-imgwrap">
                             @if (IsBestSeller(product))
                             {
@@ -457,7 +457,7 @@ else
             <div class="sg-dish-grid">
                 @foreach (var product in FilteredMenuProducts())
                 {
-                    <div class="sg-dish-card sg-reveal" @key="product.Id">
+                    <div class="sg-dish-card" @key="product.Id">
                         <div class="sg-dish-imgwrap">
                             @if (IsSoldOut(product))
                             {
@@ -495,7 +495,7 @@ else
             <div class="sg-dish-grid">
                 @foreach (var combo in _combos)
                 {
-                    <div class="sg-dish-card sg-reveal" @key="combo.Id">
+                    <div class="sg-dish-card" @key="combo.Id">
                         <div class="sg-dish-body sg-combo-body">
                             <h3 class="sg-dish-name">@combo.Name</h3>
                             @if (!string.IsNullOrWhiteSpace(combo.Description))
