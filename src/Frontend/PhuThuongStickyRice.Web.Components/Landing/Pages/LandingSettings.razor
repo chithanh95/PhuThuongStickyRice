@@ -71,19 +71,26 @@ else
                     {
                         <div class="col-md-4 col-sm-6 mb-4">
                             <label class="font-weight-bold">@slot.Label</label>
-                            <div class="lx-upload-slot border rounded p-2 text-center mb-2 d-flex align-items-center justify-content-center">
-                                @if (!string.IsNullOrEmpty(slot.Get()))
-                                {
+                            @if (!string.IsNullOrEmpty(slot.Get()))
+                            {
+                                <div class="mb-2 text-center">
                                     <img src="@LandingService.ResolveImageUrl(slot.Get())"
-                                         alt="@slot.Label" class="img-fluid" style="max-height: 150px;" />
-                                }
-                                else
-                                {
-                                    <span class="text-muted"><small>Đang dùng ảnh mẫu</small></span>
-                                }
-                            </div>
+                                         alt="@slot.Label" class="img-thumbnail" style="max-height: 150px;" />
+                                    <div class="mt-1">
+                                        <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                                                @onclick="() => slot.Set(null)">
+                                            Xóa
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                            <label for="@($"upload-{slot.Key}")" class="lx-dropzone">
+                                <div class="lx-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                                <div class="lx-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
+                                <div class="lx-dropzone-hint">Ảnh tự nén trước khi tải lên.</div>
+                            </label>
                             <InputFile id="@($"upload-{slot.Key}")" OnChange="@(e => OnImageSelected(e, slot))" accept="image/*"
-                                       class="form-control-file mb-2" />
+                                       style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" />
                             @if (_uploadingSlot == slot.Key)
                             {
                                 <div class="text-info"><small>Đang tải lên...</small></div>
@@ -91,13 +98,6 @@ else
                             @if (_uploadErrors.TryGetValue(slot.Key, out var uploadError))
                             {
                                 <div class="text-danger"><small>@uploadError</small></div>
-                            }
-                            @if (!string.IsNullOrEmpty(slot.Get()) && _uploadingSlot != slot.Key)
-                            {
-                                <button class="btn btn-sm btn-outline-secondary mt-1"
-                                        @onclick="() => slot.Set(null)">
-                                    Dùng lại ảnh mẫu
-                                </button>
                             }
                         </div>
                     }
