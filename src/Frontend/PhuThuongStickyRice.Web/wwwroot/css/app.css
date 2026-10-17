@@ -351,3 +351,35 @@ html.dark .toast {
     color: #f0eef5;
     border-color: #3a3a58;
 }
+
+/* Shop dropzone (sync with admin lx-dropzone style) */
+.shop-dropzone {
+    display: block;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+    background: #fafafa;
+}
+.shop-dropzone:hover {
+    border-color: #7a6fbe;
+    background: #f5f3ff;
+}
+.shop-dropzone-icon {
+    font-size: 32px;
+    color: #999;
+    margin-bottom: 8px;
+}
+.shop-dropzone:hover .shop-dropzone-icon {
+    color: #7a6fbe;
+}
+.shop-dropzone-text {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+.shop-dropzone-hint {
+    font-size: 12px;
+    color: #999;
+}

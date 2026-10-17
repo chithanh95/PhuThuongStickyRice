@@ -386,7 +386,11 @@
                                 🎁 <strong>Đánh giá kèm ảnh được tặng 1 phần xôi</strong> cho đơn sau!
                             </div>
                             <div class="mb-2">
-                                <InputFile id="review-photo-input" OnChange="OnReviewPhotoSelected" accept="image/*" class="form-control-file" />
+                                <label for="review-photo-input" class="shop-dropzone">
+                                    <div class="shop-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                                    <div class="shop-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
+                                </label>
+                                <InputFile id="review-photo-input" OnChange="OnReviewPhotoSelected" accept="image/*" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" />
                                 @if (!string.IsNullOrEmpty(_reviewPhotoPreviewUrl))
                                 {
                                     <img src="@_reviewPhotoPreviewUrl" alt="Ảnh đánh giá" class="mt-2 rounded"
@@ -527,7 +531,11 @@
             }
             <div class="form-row align-items-end">
                 <div class="col-md-5 mb-2">
-                    <InputFile id="share-photo-input" OnChange="OnPhotoSelected" accept="image/*" class="form-control-file" />
+                    <label for="share-photo-input" class="shop-dropzone">
+                        <div class="shop-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <div class="shop-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
+                    </label>
+                    <InputFile id="share-photo-input" OnChange="OnPhotoSelected" accept="image/*" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" />
                     <small class="text-muted">Ảnh sẽ được duyệt trước khi hiện ở gallery.</small>
                 </div>
                 <div class="col-md-5 mb-2">
