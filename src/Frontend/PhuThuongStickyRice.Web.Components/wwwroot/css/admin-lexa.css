@@ -1316,6 +1316,19 @@ html.dark .lx-admin .modal-footer {
 .lx-admin .badge-danger {
     background-color: #f46a6a !important;
 }
+.lx-admin .badge-light {
+    background-color: #f1f5f7 !important;
+    color: #495057 !important;
+}
+.lx-admin .badge-dark {
+    background-color: #343a40 !important;
+    color: #fff !important;
+}
+.lx-admin .badge-pill {
+    border-radius: 10rem !important;
+    padding-right: .6em !important;
+    padding-left: .6em !important;
+}
 
 /* ---------- images (Lexa) ---------- */
 .lx-admin .img-thumbnail {
