@@ -190,7 +190,7 @@ else
                 <a href="/shop" class="sg-btn sg-btn-outline">Đặt xôi ngay →</a>
             </div>
             <div class="sg-intro-img sg-reveal">
-                <img loading="lazy" src="@Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.jpg")" alt="Xôi Phú Thượng" />
+                <img loading="lazy" src="@Img(_content.HeroImageUrl, PlaceholderImage)" alt="Xôi Phú Thượng" />
                 <div class="sg-intro-badge">
                     <strong>100+ năm</strong>
                     <span>Làng nghề Phú Thượng</span>
@@ -1262,7 +1262,7 @@ else
     {
         get
         {
-            var url = Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-gac.jpg");
+            var url = Img(_content.HeroImageUrl, PlaceholderImage);
             return $"background-image: url('{url}');";
         }
     }
@@ -1271,7 +1271,7 @@ else
     {
         get
         {
-            var url = Img(_content.HeroImageUrl, "_content/PhuThuongStickyRice.Web.Components/images/xoi-xeo.jpg");
+            var url = Img(_content.HeroImageUrl, PlaceholderImage);
             return $"background-image: url('{url}');";
         }
     }
@@ -1502,33 +1502,17 @@ else
         _upsellVisible = false;
     }
 
-    /// <summary>Primary gallery photo when uploaded; otherwise the SVG placeholder per product code.</summary>
-    private static string ProductImage(ShopProductModel product)
+    /// <summary>Primary gallery photo when uploaded (resolved to API base URL);
+    /// otherwise the generic placeholder (no hardcoded product images).</summary>
+    private string ProductImage(ShopProductModel product)
     {
         var first = FirstImageUrl(product?.ImageUrlsJson);
         if (!string.IsNullOrEmpty(first))
         {
-            return first;
+            return LandingService.ResolveImageUrl(first);
         }
 
-        var slug = (product?.Code ?? "").ToLowerInvariant().Replace("_", "-");
-        var file = slug switch
-        {
-            "xoi-gac" => "xoi-gac.jpg",
-            "xoi-do" => "xoi-do.jpg",
-            "xoi-xeo" => "xoi-xeo.jpg",
-            "xoi-vo" => "xoi-vo.jpg",
-            "xoi-lac" => "xoi-lac.jpg",
-            "xoi-gac-kg" => "xoi-gac.jpg",
-            "xoi-do-kg" => "xoi-do.jpg",
-            "xoi-xeo-kg" => "xoi-xeo.jpg",
-            "xoi-vo-kg" => "xoi-vo.jpg",
-            "xoi-lac-kg" => "xoi-lac.jpg",
-            "xoi-ns" => "xoi-ngu-sac.svg",
-            "xoi-ngu-sac" => "xoi-ngu-sac.svg",
-            _ => "xoi-gac.jpg"
-        };
-        return $"_content/PhuThuongStickyRice.Web.Components/images/{file}";
+        return PlaceholderImage;
     }
 
     private static List<string> AllImageUrls(string imageUrlsJson)
@@ -1590,6 +1574,9 @@ else
         string.Equals(product?.Unit, "kg", StringComparison.OrdinalIgnoreCase) ? "/kg" : "/suất";
 
     /// <summary>Uploaded image URL if set, otherwise the SVG placeholder.</summary>
+    private const string PlaceholderImage =
+        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjIwMCIgeT0iMTUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjE2Ij5DaMawYSBjw7Mg4bqjbmg8L3RleHQ+PC9zdmc+";
+
     private string Img(string uploadedUrl, string fallbackSvg) =>
         !string.IsNullOrWhiteSpace(uploadedUrl)
             ? LandingService.ResolveImageUrl(uploadedUrl)
