@@ -1510,29 +1510,32 @@ html.dark .lx-admin .form-label {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-left: 4px solid #28a745;
-    border-radius: 8px;
+    background: #34c38f;
+    border: 1px solid #34c38f;
+    border-radius: 6px;
     padding: 12px 16px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     animation: lx-toast-in 0.3s ease;
+    color: #fff;
 }
 html.dark .lx-toast {
-    background: #2b2b4a;
-    border-color: #3a3a5c;
-    border-left-color: #28a745;
-    color: #f0eef5;
+    background: #34c38f;
+    border-color: #34c38f;
+    color: #fff;
 }
 .lx-toast-body {
     display: flex;
     align-items: center;
     flex: 1;
+    color: #fff;
+}
+.lx-toast-body .fa-circle-check {
+    color: #fff !important;
 }
 .lx-toast-close {
     background: none;
     border: none;
-    color: #999;
+    color: rgba(255,255,255,0.8);
     cursor: pointer;
     padding: 4px;
     margin-left: 8px;
