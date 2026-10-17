@@ -56,7 +56,6 @@
                         @foreach (var product in Products)
                         {
                             <tr @key="product.Id">
-                                <td></td>
                                 <td>
                                     <a href="@($"/products/{product.Id}")">@product.Name</a>
                                     @if (product.IsNew)
