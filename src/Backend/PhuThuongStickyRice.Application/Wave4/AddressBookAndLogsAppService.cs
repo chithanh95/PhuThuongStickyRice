@@ -214,6 +214,7 @@ namespace PhuThuongStickyRice.Application.Wave4
 
             await _logs.InsertAsync(new AppLog
             {
+                Id = Guid.NewGuid(),
                 At = _clock.Now,
                 Level = level,
                 Source = source == null || source.Length <= AppLog.SourceMaxLength
