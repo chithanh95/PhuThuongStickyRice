@@ -188,7 +188,7 @@ namespace PhuThuongStickyRice.Application.Products
             return new PagedResultDto<ProductDto>(totalCount, dtos);
         }
 
-        public async Task<ProductDto> GetAsync(Guid id)
+        public virtual async Task<ProductDto> GetAsync(Guid id)
         {
             var product = await FindOrThrowAsync(id);
             var dto = _objectMapper.Map<Product, ProductDto>(product);
@@ -196,7 +196,7 @@ namespace PhuThuongStickyRice.Application.Products
             return dto;
         }
 
-        public async Task<ProductDto> CreateAsync(CreateUpdateProductDto input)
+        public virtual async Task<ProductDto> CreateAsync(CreateUpdateProductDto input)
         {
             // Item 155: adding a product needs products.edit.
             await _permissions.RequirePermissionAsync(PermissionKeys.ProductsEdit);
@@ -235,7 +235,7 @@ namespace PhuThuongStickyRice.Application.Products
             return _objectMapper.Map<Product, ProductDto>(product);
         }
 
-        public async Task<ProductDto> UpdateAsync(Guid id, CreateUpdateProductDto input)
+        public virtual async Task<ProductDto> UpdateAsync(Guid id, CreateUpdateProductDto input)
         {
             // Item 155: editing a product needs products.edit.
             await _permissions.RequirePermissionAsync(PermissionKeys.ProductsEdit);
@@ -288,7 +288,7 @@ namespace PhuThuongStickyRice.Application.Products
             return _objectMapper.Map<Product, ProductDto>(product);
         }
 
-        public async Task<ProductDto> ToggleAvailabilityAsync(Guid id)
+        public virtual async Task<ProductDto> ToggleAvailabilityAsync(Guid id)
         {
             // Item 155: toggling availability needs products.edit.
             await _permissions.RequirePermissionAsync(PermissionKeys.ProductsEdit);
@@ -326,7 +326,7 @@ namespace PhuThuongStickyRice.Application.Products
         /// Item 146: saves the manual display order. Unknown ids are
         /// ignored; products not in the list keep their current order.
         /// </summary>
-        public async Task ReorderAsync(List<Guid> productIds)
+        public virtual async Task ReorderAsync(List<Guid> productIds)
         {
             // Item 155: reordering products needs products.edit.
             await _permissions.RequirePermissionAsync(PermissionKeys.ProductsEdit);
@@ -358,7 +358,7 @@ namespace PhuThuongStickyRice.Application.Products
         /// shop ("Còn N suất"). One grouped query over today's
         /// non-cancelled orders; products without a DailyLimit are skipped.
         /// </summary>
-        public async Task<List<ProductDailyRemainingDto>> GetDailyRemainingAsync()
+        public virtual async Task<List<ProductDailyRemainingDto>> GetDailyRemainingAsync()
         {
             var productQueryable = await _products.GetQueryableAsync();
             var limited = await _asyncExecuter.ToListAsync(
@@ -405,7 +405,7 @@ namespace PhuThuongStickyRice.Application.Products
         /// <summary>
         /// Item 148: change history of a product, newest first.
         /// </summary>
-        public async Task<List<ProductChangeLogDto>> GetChangeLogAsync(Guid productId)
+        public virtual async Task<List<ProductChangeLogDto>> GetChangeLogAsync(Guid productId)
         {
             var queryable = await _changeLogs.GetQueryableAsync();
             var logs = await _asyncExecuter.ToListAsync(
@@ -520,7 +520,7 @@ namespace PhuThuongStickyRice.Application.Products
             }
         }
 
-        public async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(Guid id)
         {
             // Item 155: deleting a product needs products.delete.
             await _permissions.RequirePermissionAsync(PermissionKeys.ProductsDelete);
@@ -568,7 +568,7 @@ namespace PhuThuongStickyRice.Application.Products
         /// cached for 5 minutes like the public catalog.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
-        public async Task<List<ProductRatingDto>> GetProductRatingsAsync()
+        public virtual async Task<List<ProductRatingDto>> GetProductRatingsAsync()
         {
             return await _catalogCache.GetOrAddAsync(
                 "product-ratings",
