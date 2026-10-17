@@ -631,22 +631,23 @@ html.dark .lx-hnav-link:hover {
 
 /* ---------- buttons ---------- */
 .lx-admin .btn-primary {
-    background: var(--lx-primary);
-    border-color: var(--lx-primary);
-    border-radius: var(--lx-radius);
+    background: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    border-radius: 4px !important;
     font-size: 13px;
 }
 
 .lx-admin .btn-primary:hover,
-.lx-admin .btn-primary:focus {
-    background: var(--lx-primary-dark);
-    border-color: var(--lx-primary-dark);
+.lx-admin .btn-primary:focus,
+.lx-admin .btn-primary:active {
+    background: #625998 !important;
+    border-color: #625998 !important;
 }
 
 .lx-admin .btn-outline-primary {
-    color: var(--lx-primary);
-    border-color: var(--lx-primary);
-    border-radius: var(--lx-radius);
+    color: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    border-radius: 4px !important;
 }
 
 .lx-admin .btn-outline-primary:hover {
@@ -665,13 +666,15 @@ html.dark .lx-hnav-link:hover {
 }
 
 .lx-admin .page-link {
-    color: var(--lx-primary);
-    border-radius: var(--lx-radius);
+    color: #7a6fbe !important;
 }
-
+.lx-admin .page-link:hover {
+    color: #625998 !important;
+}
 .lx-admin .page-item.active .page-link {
-    background: var(--lx-primary);
-    border-color: var(--lx-primary);
+    background: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    color: #fff !important;
 }
 
 /* ---------- status pills ---------- */
@@ -1170,3 +1173,227 @@ html.dark .lx-target-progress { background: #3a3a58; }
 html.dark .lx-target-pct { color: #a89df0; }
 .lx-empty-state { text-align: center; padding: 20px 10px; color: #98a6ad; }
 .lx-empty-icon { font-size: 2.5rem; margin-bottom: 8px; opacity: .6; }
+
+/* ============================================================
+   Lexa UI components sync (buttons, alerts, progress,
+   pagination, dropdowns, modals, badges, images)
+   ============================================================ */
+
+/* ---------- alerts (Lexa tones) ---------- */
+.lx-admin .alert-primary {
+    background-color: #e9e6f7 !important;
+    border-color: #d3cdf0 !important;
+    color: #5a4fae !important;
+}
+.lx-admin .alert-success {
+    background-color: #d3f1e2 !important;
+    border-color: #b3e7cf !important;
+    color: #1e7a52 !important;
+}
+.lx-admin .alert-info {
+    background-color: #dbeafa !important;
+    border-color: #bcd9f7 !important;
+    color: #2b7bbb !important;
+}
+.lx-admin .alert-warning {
+    background-color: #fdefd3 !important;
+    border-color: #fae3ae !important;
+    color: #a8761a !important;
+}
+.lx-admin .alert-danger {
+    background-color: #fbdddd !important;
+    border-color: #f8c2c2 !important;
+    color: #bd4a4a !important;
+}
+.lx-admin .alert .close {
+    color: inherit;
+    opacity: .6;
+}
+.lx-admin .alert .close:hover {
+    opacity: 1;
+}
+
+/* ---------- progress bars (Lexa tones) ---------- */
+.lx-admin .progress {
+    background-color: #f0eef5;
+    border-radius: 6px;
+}
+.lx-admin .progress-bar {
+    background-color: #7a6fbe !important;
+}
+.lx-admin .progress-bar.bg-success {
+    background-color: #34c38f !important;
+}
+.lx-admin .progress-bar.bg-info {
+    background-color: #50a5f1 !important;
+}
+.lx-admin .progress-bar.bg-warning {
+    background-color: #f1b44c !important;
+}
+.lx-admin .progress-bar.bg-danger {
+    background-color: #f46a6a !important;
+}
+html.dark .lx-admin .progress {
+    background-color: #3a3a58;
+}
+
+/* ---------- dropdowns (Lexa) ---------- */
+.lx-admin .dropdown-menu {
+    border-radius: 8px !important;
+    border: 1px solid #e9ecef !important;
+    box-shadow: 0 6px 24px rgba(0,0,0,.08) !important;
+    padding: 6px;
+    font-size: 13px;
+}
+.lx-admin .dropdown-item {
+    border-radius: 5px;
+    padding: 8px 12px;
+}
+.lx-admin .dropdown-item:hover,
+.lx-admin .dropdown-item:focus {
+    background-color: #efeef9 !important;
+    color: #5a4fae !important;
+}
+.lx-admin .dropdown-item.active,
+.lx-admin .dropdown-item:active {
+    background-color: #7a6fbe !important;
+    color: #fff !important;
+}
+html.dark .lx-admin .dropdown-menu {
+    background-color: #2b2b45;
+    border-color: #3a3a58 !important;
+}
+html.dark .lx-admin .dropdown-item {
+    color: #e8e6f0;
+}
+html.dark .lx-admin .dropdown-item:hover,
+html.dark .lx-admin .dropdown-item:focus {
+    background-color: rgba(122,111,190,.18) !important;
+    color: #cfc9f2 !important;
+}
+
+/* ---------- modals (Lexa) ---------- */
+.lx-admin .modal-content {
+    border-radius: 8px !important;
+    border: none !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,.16) !important;
+}
+.lx-admin .modal-header {
+    border-bottom: 1px solid #eef0f4 !important;
+    padding: 16px 20px;
+}
+.lx-admin .modal-footer {
+    border-top: 1px solid #eef0f4 !important;
+    padding: 14px 20px;
+}
+.lx-admin .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+html.dark .lx-admin .modal-content {
+    background-color: #2b2b45;
+    color: #e8e6f0;
+}
+html.dark .lx-admin .modal-header,
+html.dark .lx-admin .modal-footer {
+    border-color: #3a3a58 !important;
+}
+
+/* ---------- badges (Lexa) ---------- */
+.lx-admin .badge-primary {
+    background-color: #7a6fbe !important;
+}
+.lx-admin .badge-success {
+    background-color: #34c38f !important;
+}
+.lx-admin .badge-info {
+    background-color: #50a5f1 !important;
+}
+.lx-admin .badge-warning {
+    background-color: #f1b44c !important;
+    color: #212529 !important;
+}
+.lx-admin .badge-danger {
+    background-color: #f46a6a !important;
+}
+
+/* ---------- images (Lexa) ---------- */
+.lx-admin .img-thumbnail {
+    border-radius: 8px !important;
+    border-color: #e9ecef;
+    padding: 4px;
+}
+.lx-admin .rounded {
+    border-radius: 8px !important;
+}
+html.dark .lx-admin .img-thumbnail {
+    background-color: #2b2b45;
+    border-color: #3a3a58;
+}
+
+/* ---------- form elements (Lexa) ---------- */
+.lx-admin .form-control {
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
+    padding: .47rem .75rem !important;
+    font-size: 13px;
+}
+.lx-admin .form-control:focus {
+    border-color: #7a6fbe !important;
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25) !important;
+}
+.lx-admin .form-control-lg {
+    padding: .5rem 1rem !important;
+    font-size: .925rem !important;
+    border-radius: 4px !important;
+}
+.lx-admin .form-control-sm {
+    padding: .25rem .5rem !important;
+    font-size: .82rem !important;
+    border-radius: 4px !important;
+}
+.lx-admin .form-select {
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
+    padding: .47rem .75rem !important;
+    font-size: 13px;
+}
+.lx-admin .form-select:focus {
+    border-color: #7a6fbe !important;
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25) !important;
+}
+.lx-admin .form-label {
+    font-weight: 500 !important;
+    color: #495057 !important;
+    margin-bottom: .5rem;
+}
+.lx-admin .form-check-input:checked {
+    background-color: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+}
+.lx-admin .form-check-input:focus {
+    border-color: #7a6fbe !important;
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25) !important;
+}
+.lx-admin .form-switch .form-check-input:checked {
+    background-color: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+}
+.lx-admin input[type="color"].form-control-color,
+.lx-admin input[type="color"] {
+    width: 100% !important;
+    height: 38px;
+    padding: 4px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
+    background-color: #7a6fbe;
+}
+html.dark .lx-admin .form-control,
+html.dark .lx-admin .form-select {
+    background-color: #2b2b45;
+    border-color: #3a3a58 !important;
+    color: #e8e6f0;
+}
+html.dark .lx-admin .form-label {
+    color: #cfc9e2 !important;
+}
