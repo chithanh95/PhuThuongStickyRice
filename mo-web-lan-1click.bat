@@ -23,26 +23,17 @@ echo  IP LAN: %IP%
 echo.
 
 REM --- Publish WebAPI ---
-echo  [1/4] Publishing WebAPI...
+echo  [1/3] Publishing WebAPI...
 dotnet publish "%ROOT%src\Backend\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" -c Release -o "%PUB%\api" --nologo -v q
 if errorlevel 1 goto :fail
 
 REM --- Publish Web (Blazor WASM -> file tinh) ---
-echo  [2/4] Publishing Web...
+echo  [2/3] Publishing Web...
 dotnet publish "%ROOT%src\Frontend\PhuThuongStickyRice.Web\PhuThuongStickyRice.Web.csproj" -c Release -o "%PUB%\web" --nologo -v q
 if errorlevel 1 goto :fail
 
-REM --- Cau hinh Web tro ve API tren LAN ---
-echo  [3/4] Cau hinh Web -^> API...
-powershell -NoProfile -Command ^
-  "$p='%PUB%\web\wwwroot\appsettings.json';" ^
-  "$j=Get-Content $p -Raw | ConvertFrom-Json;" ^
-  "$u='http://%IP%:5000';" ^
-  "if ($j.ResourceServer) { $j.ResourceServer.Endpoint=$u; $j.ResourceServer.PublicEndpoint=$u };" ^
-  "$j | ConvertTo-Json -Depth 10 | Set-Content $p -Encoding UTF8"
-
-REM --- Cau hinh API: connection string + CORS + serve Blazor ---
-echo  [4/4] Cau hinh API cho LAN...
+REM --- Cau hinh API: connection string + CORS ---
+echo  [3/3] Cau hinh API cho LAN...
 powershell -NoProfile -Command ^
   "$dev=Get-Content '%ROOT%src\Backend\PhuThuongStickyRice.WebAPI\appsettings.json' -Raw | ConvertFrom-Json;" ^
   "$p='%PUB%\api\appsettings.Production.json';" ^
