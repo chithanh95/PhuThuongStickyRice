@@ -698,7 +698,7 @@ else
         <div class="sg-footer-grid">
             <div class="sg-footer-col">
                 <h3 class="sg-footer-brand">Xôi Phú Thượng</h3>
-                <p class="sg-footer-about">Gói xôi nóng hổi mỗi sáng từ làng nghề Phú Thượng — dẻo thơm, đúng vị Hà Nội.</p>
+                <p class="sg-footer-about">@(string.IsNullOrWhiteSpace(_content.FooterAboutText) ? "Gói xôi nóng hổi mỗi sáng từ làng nghề Phú Thượng — dẻo thơm, đúng vị Hà Nội." : _content.FooterAboutText)</p>
                 @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
                 {
                     <p class="sg-footer-line">📍 @_content.ContactAddress</p>
@@ -736,7 +736,7 @@ else
                 }
             </div>
         }
-        <div class="sg-bottom-bar">&copy; 2026 Xôi Phú Thượng &mdash; Thổi hồn vào từng gói xôi</div>
+        <div class="sg-bottom-bar">@(string.IsNullOrWhiteSpace(_content.FooterCopyrightText) ? "© 2026 Xôi Phú Thượng — Thổi hồn vào từng gói xôi" : _content.FooterCopyrightText)</div>
     </div>
 </footer>
 

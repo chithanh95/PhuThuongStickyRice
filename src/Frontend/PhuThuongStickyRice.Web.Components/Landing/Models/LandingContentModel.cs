@@ -38,6 +38,10 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
 
         public string FooterTitle { get; set; }
 
+        public string FooterAboutText { get; set; }
+
+        public string FooterCopyrightText { get; set; }
+
         public string ContactAddress { get; set; }
 
         public string ContactPhone { get; set; }

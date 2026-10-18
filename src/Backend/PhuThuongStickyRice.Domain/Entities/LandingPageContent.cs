@@ -18,6 +18,8 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int NewsTitleMaxLength = 200;
         public const int NewsItemsJsonMaxLength = 4000;
         public const int FooterTitleMaxLength = 200;
+        public const int FooterAboutMaxLength = 500;
+        public const int FooterCopyrightMaxLength = 300;
         public const int ContactAddressMaxLength = 500;
         public const int ContactPhoneMaxLength = 100;
         public const int ContactEmailMaxLength = 254;
@@ -54,6 +56,10 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string NewsItemsJson { get; private set; }
 
         public string FooterTitle { get; private set; }
+
+        public string FooterAboutText { get; private set; }
+
+        public string FooterCopyrightText { get; private set; }
 
         public string ContactAddress { get; private set; }
 
@@ -133,7 +139,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string storyTitle, string storyBody,
             string menuTitle, string menuLabel1, string menuLabel2, string menuLabel3,
             string newsTitle, string newsItemsJson,
-            string footerTitle, string contactAddress, string contactPhone, string contactEmail,
+            string footerTitle, string footerAboutText, string footerCopyrightText,
+            string contactAddress, string contactPhone, string contactEmail,
             string footerButtonText,
             string heroImageUrl = null, string bannerImageUrl = null,
             string menuImage1Url = null, string menuImage2Url = null, string menuImage3Url = null,
@@ -151,7 +158,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 storyTitle, storyBody,
                 menuTitle, menuLabel1, menuLabel2, menuLabel3,
                 newsTitle, newsItemsJson,
-                footerTitle, contactAddress, contactPhone, contactEmail,
+                footerTitle, footerAboutText, footerCopyrightText,
+                contactAddress, contactPhone, contactEmail,
                 footerButtonText,
                 heroImageUrl, bannerImageUrl,
                 menuImage1Url, menuImage2Url, menuImage3Url,
@@ -170,7 +178,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string storyTitle, string storyBody,
             string menuTitle, string menuLabel1, string menuLabel2, string menuLabel3,
             string newsTitle, string newsItemsJson,
-            string footerTitle, string contactAddress, string contactPhone, string contactEmail,
+            string footerTitle, string footerAboutText, string footerCopyrightText,
+            string contactAddress, string contactPhone, string contactEmail,
             string footerButtonText,
             string heroImageUrl = null, string bannerImageUrl = null,
             string menuImage1Url = null, string menuImage2Url = null, string menuImage3Url = null,
@@ -209,6 +218,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             NewsTitle = newsTitle;
             NewsItemsJson = newsItemsJson;
             FooterTitle = footerTitle;
+            FooterAboutText = footerAboutText;
+            FooterCopyrightText = footerCopyrightText;
             ContactAddress = contactAddress;
             ContactPhone = contactPhone;
             ContactEmail = contactEmail;

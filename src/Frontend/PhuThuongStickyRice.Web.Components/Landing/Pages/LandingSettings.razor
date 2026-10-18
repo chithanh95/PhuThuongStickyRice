@@ -215,6 +215,14 @@ else
                 </div>
             </div>
             <div class="form-group">
+                <label>Mô tả ngắn footer</label>
+                <textarea class="form-control" rows="2" @bind="_model.FooterAboutText" maxlength="500"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Dòng copyright</label>
+                <input class="form-control" @bind="_model.FooterCopyrightText" maxlength="300" />
+            </div>
+            <div class="form-group">
                 <label>Chữ trên nút đặt món</label>
                 <input class="form-control" @bind="_model.FooterButtonText" />
             </div>
