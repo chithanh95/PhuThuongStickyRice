@@ -725,3 +725,22 @@ window.ptInitImageGuard = function () {
         }
     } catch (e) { }
 };
+
+/* Nút về đầu trang: hiện khi cuộn quá 400px, bấm thì cuộn mượt lên đầu. */
+window.ptInitBackToTop = function () {
+    try {
+        var btn = document.getElementById('sg-top-btn');
+        if (!btn || btn.dataset.ptBound) return;
+        btn.dataset.ptBound = '1';
+        var onScroll = function () {
+            var y = window.scrollY || document.documentElement.scrollTop;
+            if (y > 400) btn.classList.add('show');
+            else btn.classList.remove('show');
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        btn.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        onScroll();
+    } catch (e) { }
+};

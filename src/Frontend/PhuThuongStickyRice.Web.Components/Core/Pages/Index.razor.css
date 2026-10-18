@@ -245,8 +245,6 @@
     margin-left: auto;
 }
 
-.sg-nav + .sg-header-right { margin-left: 0; }
-
 .sg-theme-toggle {
     background: transparent;
     border: 1px solid var(--sg-line);
@@ -955,6 +953,37 @@
 .sg-fb-btn { background: #1877f2; }
 .sg-zalo-btn { background: #0068ff; }
 .sg-call-btn { background: var(--sg-accent); }
+
+/* Nút về đầu trang (góc phải, hiện khi cuộn xuống) */
+.sg-top-btn {
+    position: fixed;
+    right: 18px;
+    bottom: 160px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--sg-ink, #4a2c2c);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+    z-index: 800;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: transform .15s, opacity .2s;
+}
+.sg-top-btn.show { display: flex; }
+.sg-top-btn:hover { transform: scale(1.08); }
+
+@media (max-width: 768px) {
+    /* Mobile: nút social nhỏ lại, nằm trên thanh sticky CTA */
+    .sg-fixed-btns { left: 12px; bottom: 92px; gap: 8px; }
+    .sg-fixed-btns a { width: 44px; height: 44px; font-size: 17px; }
+    .sg-top-btn { right: 14px; bottom: 160px; width: 44px; height: 44px; font-size: 20px; }
+}
 
 /* ---------- popup ---------- */
 .sg-popup-overlay {

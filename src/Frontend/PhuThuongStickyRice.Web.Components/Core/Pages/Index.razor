@@ -790,6 +790,9 @@ else
     }
 </div>
 
+<!-- NÚT VỀ ĐẦU TRANG (góc phải) -->
+<button class="sg-top-btn" id="sg-top-btn" aria-label="Về đầu trang" title="Về đầu trang">↑</button>
+
 <!-- LD1: NÚT GIỎ HÀNG NỔI — chỉ hiện khi giỏ có món -->
 @if (CartState.TotalQuantity > 0)
 {
@@ -1231,6 +1234,7 @@ else
             try { await JSRuntime.InvokeVoidAsync("ptInitCtaParallax"); } catch { }
             try { await JSRuntime.InvokeVoidAsync("ptInitReveal"); } catch { }
             try { await JSRuntime.InvokeVoidAsync("ptInitCountdown"); } catch { }
+            try { await JSRuntime.InvokeVoidAsync("ptInitBackToTop"); } catch { }
             try
             {
                 var temp = await JSRuntime.InvokeAsync<string>("ptCheckColdWeather");
