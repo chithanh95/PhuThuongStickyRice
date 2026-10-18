@@ -479,10 +479,6 @@ else
                     </div>
                 </div>
                 <div class="modal-footer">
-                    @* Item 116: short link to /shop?tim={code} *@
-                    <button type="button" class="btn btn-outline-secondary" @onclick="CreateQuickViewShortLink" disabled="@_creatingShortLink">
-                        @(_creatingShortLink ? "Đang tạo..." : "🔗 Link ngắn")
-                    </button>
                     <button type="button" class="btn btn-secondary" @onclick="CloseQuickView">Đóng</button>
                     @* Item 101: ask about this dish on Zalo. *@
                     @if (ShowZaloButton)
@@ -493,10 +489,6 @@ else
                         @(CanOrder(_quickView) ? $"{I18n.T("add_to_cart")} — {FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))}" : AddButtonLabel(_quickView))
                     </button>
                 </div>
-                @if (!string.IsNullOrEmpty(_shortLinkCopied))
-                {
-                    <div class="alert alert-success m-3">@_shortLinkCopied</div>
-                }
             </div>
         </div>
     </div>
@@ -574,11 +566,6 @@ else
 
     // Item 95: table QR — ?ban={label} shows a "đang đặt tại bàn" chip.
     private string _tableLabel;
-
-    // Item 116: short link for the quick-viewed product.
-    private string _quickViewShortLink;
-    private bool _creatingShortLink;
-    private string _shortLinkCopied;
 
     // Quick-view state.
     private ShopProductModel _quickView;
@@ -1207,51 +1194,11 @@ else
         _quickViewSizeId = SelectedSizeId(product);
         _quickViewToppings = new HashSet<Guid>();
         _quickViewNote = null;
-        _quickViewShortLink = null;
-        _shortLinkCopied = null;
     }
 
     private void CloseQuickView()
     {
         _quickView = null;
-    }
-
-    /// <summary>
-    /// Item 116: creates a short link to /shop?tim={code} and copies it.
-    /// </summary>
-    private async Task CreateQuickViewShortLink()
-    {
-        if (_quickView == null || _creatingShortLink)
-        {
-            return;
-        }
-
-        _creatingShortLink = true;
-        _shortLinkCopied = null;
-        try
-        {
-            var baseUrl = Navigation.BaseUri.TrimEnd('/');
-            var target = $"{baseUrl}/shop?tim={Uri.EscapeDataString(_quickView.Code)}";
-            var link = await Wave4Service.CreateShortLinkAsync(target);
-            _quickViewShortLink = $"{baseUrl}/s/{link.Code}";
-            try
-            {
-                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _quickViewShortLink);
-                _shortLinkCopied = "Đã sao chép link ngắn: " + _quickViewShortLink;
-            }
-            catch (Exception)
-            {
-                _shortLinkCopied = _quickViewShortLink;
-            }
-        }
-        catch (Exception)
-        {
-            _shortLinkCopied = "Không tạo được link ngắn, vui lòng thử lại.";
-        }
-        finally
-        {
-            _creatingShortLink = false;
-        }
     }
 
     private void ToggleQuickViewTopping(Guid toppingId, bool on)
