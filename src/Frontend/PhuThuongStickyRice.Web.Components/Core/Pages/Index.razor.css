@@ -1100,7 +1100,7 @@
     .sg-header-right { gap: 8px; }
     .sg-logo-main { font-size: 17px; }
     .sg-logo-sub { display: none; }
-    .sg-lang-select { padding: 5px 6px; font-size: 12px; max-width: 110px; }
+    .sg-lang-select { padding: 6px 4px; font-size: 16px; max-width: 52px; text-align: center; }
     .sg-theme-toggle { width: 34px; height: 34px; font-size: 15px; }
     .sg-hamburger { padding: 6px; }
 

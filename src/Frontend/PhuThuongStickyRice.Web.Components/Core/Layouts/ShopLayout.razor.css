@@ -418,5 +418,5 @@ html.dark .shp-page .btn-primary {
 }
 
 @media (max-width: 768px) {
-    .shp-lang-select { padding: 5px 6px; font-size: 12px; max-width: 110px; }
+    .shp-lang-select { padding: 6px 4px; font-size: 16px; max-width: 52px; text-align: center; }
 }
