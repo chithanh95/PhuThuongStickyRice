@@ -326,3 +326,39 @@ html.dark .shop-size-chip.active {
 .shp-page .text-primary { color: #7a6fbe !important; }
 .shp-page a { color: #7a6fbe; }
 .shp-page a:hover { color: #625998; }
+
+/* ============ Lexa-style dropdown (sort) ============ */
+.shop-sort-dropdown { position: relative; display: inline-block; }
+.shop-sort-dropdown .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    display: none;
+    min-width: 10rem;
+    padding: 0.5rem 0;
+    margin: 0.125rem 0 0;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.15);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+.shop-sort-dropdown .dropdown-menu.show { display: block; }
+.shop-sort-dropdown .dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.45rem 1.2rem;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 0.9rem;
+    color: #212529;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.shop-sort-dropdown .dropdown-item:hover { background: #f1f0fa; color: #7a6fbe; }
+.shop-sort-dropdown .dropdown-item.active { background: #7a6fbe; color: #fff; }
+html.dark .shop-sort-dropdown .dropdown-menu { background: #2b2f36; border-color: #3a3f47; }
+html.dark .shop-sort-dropdown .dropdown-item { color: #e8e8e8; }
+html.dark .shop-sort-dropdown .dropdown-item:hover { background: #3a3f47; color: #b3a8e8; }
+html.dark .shop-sort-dropdown .dropdown-item.active { background: #7a6fbe; color: #fff; }

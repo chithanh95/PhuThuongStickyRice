@@ -183,13 +183,19 @@ else
                 </div>
             </div>
             <div class="form-inline">
-                <label class="text-muted small mr-2" for="sort-select">Sắp xếp:</label>
-                <select id="sort-select" class="form-control form-control-sm" @onchange="OnSortChanged">
-                    <option value="popular" selected="@(_sort == "popular")">Bán chạy</option>
-                    <option value="priceAsc" selected="@(_sort == "priceAsc")">Giá tăng dần</option>
-                    <option value="priceDesc" selected="@(_sort == "priceDesc")">Giá giảm dần</option>
-                    <option value="newest" selected="@(_sort == "newest")">Mới nhất</option>
-                </select>
+                <label class="text-muted small mr-2">Sắp xếp:</label>
+                @* Lexa-style dropdown thay cho select native (bị lỗi hiển thị trên mobile). *@
+                <div class="dropdown shop-sort-dropdown">
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle" @onclick="() => _sortOpen = !_sortOpen" aria-haspopup="true" aria-expanded="@_sortOpen">
+                        @SortLabel(_sort)
+                    </button>
+                    <div class="dropdown-menu @(_sortOpen ? "show" : "")" aria-labelledby="sort-dropdown">
+                        <button type="button" class="dropdown-item @(_sort == "popular" ? "active" : "")" @onclick='() => SetSort("popular")'>Bán chạy</button>
+                        <button type="button" class="dropdown-item @(_sort == "priceAsc" ? "active" : "")" @onclick='() => SetSort("priceAsc")'>Giá tăng dần</button>
+                        <button type="button" class="dropdown-item @(_sort == "priceDesc" ? "active" : "")" @onclick='() => SetSort("priceDesc")'>Giá giảm dần</button>
+                        <button type="button" class="dropdown-item @(_sort == "newest" ? "active" : "")" @onclick='() => SetSort("newest")'>Mới nhất</button>
+                    </div>
+                </div>
             </div>
             @* Wave 6b (item 29): client-side search by name, debounced. *@
             <div class="mt-2" style="max-width: 420px;">
@@ -822,11 +828,22 @@ else
         return string.Join(" · ", parts);
     }
 
-    private void OnSortChanged(ChangeEventArgs e)
+    private bool _sortOpen;
+
+    private void SetSort(string sort)
     {
-        _sort = e.Value?.ToString() ?? "popular";
+        _sort = sort;
+        _sortOpen = false;
         ApplyFilters();
     }
+
+    private static string SortLabel(string sort) => sort switch
+    {
+        "priceAsc" => "Giá tăng dần",
+        "priceDesc" => "Giá giảm dần",
+        "newest" => "Mới nhất",
+        _ => "Bán chạy",
+    };
 
     private void ClearFilters()
     {
