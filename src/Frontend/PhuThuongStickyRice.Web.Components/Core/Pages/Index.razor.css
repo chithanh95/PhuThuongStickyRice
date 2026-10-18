@@ -931,6 +931,13 @@
     flex-direction: column;
     gap: 10px;
     z-index: 800;
+    transition: opacity .25s ease;
+}
+
+/* Ẩn 3 nút nổi khi đang ở đầu trang hero để khỏi đè chữ */
+body.sg-at-top .sg-fixed-btns {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .sg-fixed-btns a {

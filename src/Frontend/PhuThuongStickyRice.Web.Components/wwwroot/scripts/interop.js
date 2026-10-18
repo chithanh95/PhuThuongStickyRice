@@ -736,6 +736,9 @@ window.ptInitBackToTop = function () {
             var y = window.scrollY || document.documentElement.scrollTop;
             if (y > 400) btn.classList.add('show');
             else btn.classList.remove('show');
+            /* Ẩn 3 nút nổi (FB/Zalo/gọi) khi đang ở đầu trang hero để khỏi đè chữ */
+            if (y < 320) document.body.classList.add('sg-at-top');
+            else document.body.classList.remove('sg-at-top');
         };
         window.addEventListener('scroll', onScroll, { passive: true });
         btn.addEventListener('click', function () {

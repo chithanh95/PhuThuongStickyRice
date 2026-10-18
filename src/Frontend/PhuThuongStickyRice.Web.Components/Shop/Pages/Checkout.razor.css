@@ -110,6 +110,11 @@
         font-size: 14px;
     }
 
+    /* Bảng tóm tắt đơn không bao giờ làm vỡ trang: cuộn ngang bên trong card */
+    .co-summary .card-body {
+        overflow-x: auto;
+    }
+
     /* Easier-to-tap radios / checkboxes */
     .form-check {
         padding-top: 6px;
