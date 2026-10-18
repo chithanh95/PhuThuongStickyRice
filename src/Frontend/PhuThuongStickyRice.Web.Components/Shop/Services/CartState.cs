@@ -117,7 +117,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             string toppingNames,
             decimal toppingsTotal,
             bool isCombo,
-            string note = null)
+            string note = null,
+            string imageUrl = null)
         {
             toppingIds ??= new List<Guid>();
             var key = BuildLineKey(productId, sizeOptionId, toppingIds, isCombo);
@@ -139,7 +140,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                     ToppingNames = toppingNames,
                     ToppingsTotal = toppingsTotal,
                     IsCombo = isCombo,
-                    Note = TrimNote(note)
+                    Note = TrimNote(note),
+                    ImageUrl = imageUrl
                 });
             }
             else

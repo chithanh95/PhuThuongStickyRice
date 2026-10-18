@@ -21,10 +21,6 @@
 
 <h1>@AppI18n.T("common.cart")</h1>
 
-@if (!string.IsNullOrEmpty(_shareMessage))
-{
-    <div class="alert alert-success">@_shareMessage</div>
-}
 @if (!string.IsNullOrEmpty(_error))
 {
     <div class="alert alert-danger">@_error</div>
@@ -132,9 +128,6 @@ else
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 cart-actions">
         <div>
             <a class="btn btn-secondary mb-2 mr-2" href="/shop">@AppI18n.T("shop.continue_shopping")</a>
-            <button class="btn btn-outline-primary mb-2" @onclick="ShareCartAsync" disabled="@_sharing">
-                @(_sharing ? AppI18n.T("shop.creating_link") : AppI18n.T("shop.share_cart"))
-            </button>
         </div>
         <button class="btn btn-success btn-lg mb-2 cart-checkout-flow" @onclick="GoToCheckout">
             @AppI18n.T("common.checkout") (@CartState.TotalQuantity)
@@ -180,8 +173,6 @@ else
 @code {
     private List<ShopProductModel> _suggestions;
     private string _error;
-    private string _shareMessage;
-    private bool _sharing;
 
     // GH1: freeship progress bar (0 = not configured → hidden).
     private decimal _freeShipThreshold;
@@ -320,42 +311,6 @@ else
     }
 
     /// <summary>
-    /// Copies a shareable cart link: /cart?share=&lt;base64 of "id:qty;id:qty"&gt;.
-    /// </summary>
-    private async Task ShareCartAsync()
-    {
-        _shareMessage = null;
-        _error = null;
-
-        if (CartState.Items.Count == 0)
-        {
-            return;
-        }
-
-        _sharing = true;
-        try
-        {
-            var payload = string.Join(";",
-                CartState.Items
-                    .Where(x => !x.IsCombo)
-                    .Select(x => $"{x.ProductId:N}:{x.Quantity}"));
-            var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(payload))
-                .Replace('+', '-').Replace('/', '_').TrimEnd('=');
-            var link = $"{Navigation.BaseUri.TrimEnd('/')}/cart?share={base64}";
-
-            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", link);
-            _shareMessage = "Đã sao chép link giỏ hàng! Gửi link này cho bạn bè để họ đặt cùng.";
-        }
-        catch (Exception)
-        {
-            _error = "Không sao chép được link. Vui lòng thử lại.";
-        }
-        finally
-        {
-            _sharing = false;
-        }
-    }
-
     /// <summary>
     /// On page load, merges ?share= items into the cart (product ids are
     /// validated against the API).

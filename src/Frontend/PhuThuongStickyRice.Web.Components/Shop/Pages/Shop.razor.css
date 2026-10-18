@@ -403,3 +403,177 @@ html.dark .shp-page .form-control::placeholder {
 html.dark .shop-filters-sticky {
     background: #241d17;
 }
+
+/* ============ Mobile kiểu ShopeeFood (ẩn trên PC) ============ */
+.shop-mobile-wrap { display: none; }
+
+@media (max-width: 768px) {
+    /* Ẩn grid card desktop, hiện list ngang */
+    .shop-desktop-grid { display: none; }
+    .shop-mobile-wrap { display: block; }
+    /* Danh mục đã có ở sidebar */
+    .shop-filter-cat { display: none; }
+
+    .shop-mobile-body {
+        display: flex;
+        gap: 0;
+        align-items: flex-start;
+    }
+    /* Sidebar danh mục */
+    .shop-cat-sidebar {
+        position: sticky;
+        top: 120px;
+        flex: 0 0 88px;
+        display: flex;
+        flex-direction: column;
+        background: #f5f3ef;
+        border-radius: 10px;
+        padding: 6px 0;
+        margin-right: 10px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+    .shop-cat-item {
+        border: none;
+        background: none;
+        padding: 12px 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #5a4f43;
+        text-align: center;
+        cursor: pointer;
+        border-left: 3px solid transparent;
+    }
+    .shop-cat-item.active {
+        background: #fff;
+        color: #7a6fbe;
+        border-left-color: #7a6fbe;
+    }
+    /* Danh sách món */
+    .shop-mobile-items {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .shop-row-item {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        background: #fff;
+        border-radius: 12px;
+        padding: 8px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .shop-row-img {
+        position: relative;
+        flex: 0 0 96px;
+        width: 96px;
+        height: 96px;
+        border-radius: 10px;
+        overflow: hidden;
+        display: block;
+    }
+    .shop-row-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .shop-row-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .shop-row-name {
+        font-weight: 700;
+        font-size: 15px;
+        color: #212529;
+        text-decoration: none;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .shop-row-desc {
+        font-size: 12px;
+        color: #8a7a63;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+    }
+    .shop-row-meta {
+        font-size: 12px;
+        color: #8a7a63;
+        margin-top: 4px;
+    }
+    .shop-row-dot { margin: 0 4px; }
+    .shop-row-price {
+        font-size: 17px;
+        font-weight: 800;
+        color: #e8590c;
+        margin-top: 4px;
+    }
+    .shop-row-price small {
+        font-size: 12px;
+        font-weight: 400;
+        color: #8a7a63;
+    }
+    .shop-row-action {
+        flex-shrink: 0;
+        align-self: flex-end;
+    }
+    /* Nút + đỏ cam kiểu ShopeeFood */
+    .shop-row-add {
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 10px;
+        background: #e8590c;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(232,89,12,.35);
+    }
+    .shop-row-add:disabled {
+        opacity: .4;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+    /* Stepper − qty + */
+    .shop-row-stepper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .shop-row-stepper button {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1.5px solid #e8590c;
+        background: #fff;
+        color: #e8590c;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .shop-row-stepper button:last-child {
+        background: #e8590c;
+        color: #fff;
+        border-color: #e8590c;
+    }
+    .shop-row-stepper span {
+        font-weight: 700;
+        font-size: 15px;
+        min-width: 20px;
+        text-align: center;
+    }
+    html.dark .shop-row-item { background: #241d17; }
+    html.dark .shop-row-name { color: #f0e8dc; }
+    html.dark .shop-cat-sidebar { background: #241d17; }
+    html.dark .shop-cat-item { color: #b8a88f; }
+    html.dark .shop-cat-item.active { background: #2e2620; color: #b3a8e8; }
+}

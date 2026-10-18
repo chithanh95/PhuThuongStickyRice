@@ -171,6 +171,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         public bool IsCombo { get; set; }
 
+        public string ImageUrl { get; set; }
+
         /// <summary>
         /// Per-item note from the customer ("ghi chú món"), e.g. "ít hành".
         /// Flows into the order line at checkout (wave 6a, item 24).

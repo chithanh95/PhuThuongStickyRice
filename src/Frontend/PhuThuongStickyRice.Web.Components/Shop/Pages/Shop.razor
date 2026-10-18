@@ -174,7 +174,7 @@ else
                     <li class="nav-item"><button class="nav-link @NeedTabClass("itbeo")" @onclick='() => SetNeedFilter("itbeo")'>🥬 Ít béo</button></li>
                 </ul>
             </div>
-            <div class="mb-3">
+            <div class="mb-3 shop-filter-cat">
                 <div class="small text-muted mb-1">Danh mục:</div>
                 <ul class="nav nav-pills shop-filter-tabs">
                     <li class="nav-item"><button class="nav-link @CategoryTabClass(null)" @onclick="() => SetCategory(null)">Tất cả</button></li>
@@ -247,7 +247,7 @@ else
     }
     else
     {
-        <div class="row">
+        <div class="row shop-desktop-grid">
             @foreach (var product in _filtered)
             {
                 <div class="col-6 col-md-4 col-lg-3 mb-4" @key="product.Id">
@@ -314,6 +314,68 @@ else
                     </div>
                 </div>
             }
+        </div>
+
+        @* Mobile kiểu ShopeeFood: sidebar danh mục + món hàng ngang (ẩn trên PC). *@
+        <div class="shop-mobile-wrap">
+            <div class="shop-mobile-body">
+                <aside class="shop-cat-sidebar">
+                    <button type="button" class="shop-cat-item @CategoryTabClass(null)" @onclick="() => SetCategory(null)">Tất cả</button>
+                    @foreach (var cat in _categories)
+                    {
+                        <button type="button" class="shop-cat-item @CategoryTabClass(cat)" @onclick="() => SetCategory(cat)">@cat</button>
+                    }
+                </aside>
+                <div class="shop-mobile-items">
+                    @foreach (var product in _filtered)
+                    {
+                        <div class="shop-row-item" @key="product.Id">
+                            <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" class="shop-row-img">
+                                <img src="@ProductImage(product)" alt="@product.Name" loading="lazy" />
+                                @if (!CanOrder(product))
+                                {
+                                    <span class="shop-soldout-overlay">Hết</span>
+                                }
+                            </a>
+                            <div class="shop-row-info">
+                                <a href="javascript:void(0)" class="shop-row-name" @onclick="() => OpenQuickView(product)">@product.Name</a>
+                                @if (!string.IsNullOrWhiteSpace(product.Description))
+                                {
+                                    <div class="shop-row-desc">@product.Description</div>
+                                }
+                                <div class="shop-row-meta">
+                                    @if (_soldQuantities.TryGetValue(product.Id, out var sq) && sq > 0)
+                                    {
+                                        <span>@FormatSoldShort(sq) đã bán</span>
+                                    }
+                                    @if (RatingText(product) is string r)
+                                    {
+                                        <span class="shop-row-dot">·</span><span>@r</span>
+                                    }
+                                </div>
+                                <div class="shop-row-price">@FormatPrice(DisplayPrice(product))<small>@UnitSuffix(product)</small></div>
+                            </div>
+                            <div class="shop-row-action">
+                                @{
+                                    var cartQty = CartQtyFor(product.Id);
+                                }
+                                @if (cartQty > 0)
+                                {
+                                    <div class="shop-row-stepper">
+                                        <button type="button" @onclick="() => DecRowQty(product)" aria-label="Giảm">−</button>
+                                        <span>@cartQty</span>
+                                        <button type="button" @onclick="() => IncRowQty(product)" aria-label="Tăng">+</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <button type="button" class="shop-row-add" @onclick="() => QuickAddRow(product)" disabled="@(!CanOrder(product))" aria-label="Thêm @product.Name">+</button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     }
 
@@ -830,6 +892,38 @@ else
         ApplyFilters();
     }
 
+    // ---------- Mobile ShopeeFood-style row ----------
+
+    private int CartQtyFor(Guid productId) =>
+        CartState.Items.Where(x => x.ProductId == productId).Sum(x => x.Quantity);
+
+    private static string FormatSoldShort(long qty) =>
+        qty >= 1000 ? $"{qty / 1000.0:0.#}K+" : qty.ToString("N0");
+
+    /// <summary>Nút + trên hàng mobile: món đơn giản thêm nhanh, món có size/topping mở quick view.</summary>
+    private void QuickAddRow(ShopProductModel product)
+    {
+        if ((product.Sizes?.Count ?? 0) > 0 || HasToppings(product))
+        {
+            OpenQuickView(product);
+            return;
+        }
+        AddToCart(product);
+    }
+
+    private bool HasToppings(ShopProductModel product) => false; // topping chọn trong quick view
+
+    private void IncRowQty(ShopProductModel product) => QuickAddRow(product);
+
+    private void DecRowQty(ShopProductModel product)
+    {
+        var line = CartState.Items.LastOrDefault(x => x.ProductId == product.Id);
+        if (line != null)
+        {
+            CartState.UpdateQuantity(line.LineKey, line.Quantity - 1);
+        }
+    }
+
     private void ClearFilters()
     {
         _categoryFilter = null;
@@ -1041,7 +1135,8 @@ else
             size?.Price ?? product.Price, qty,
             size?.Id, size?.Name,
             toppingIds: null, toppingNames: null, toppingsTotal: 0,
-            isCombo: false);
+            isCombo: false,
+            imageUrl: ProductImage(product));
 
         // Upsell: when a xôi is added, suggest Chả cốm / Chả giò.
         if (IsXoi(product))
@@ -1227,7 +1322,8 @@ else
             size?.Id, size?.Name,
             toppingIds, toppingNames, toppingsTotal,
             isCombo: false,
-            note: _quickViewNote);
+            note: _quickViewNote,
+            imageUrl: ProductImage(_quickView));
 
         _quantities[_quickView.Id] = qty;
         if (size != null)
