@@ -101,9 +101,12 @@
                         <label>Điện thoại</label>
                         <input class="form-control" @bind="_form.Phone" placeholder="0901234567" />
                     </div>
-                    <div class="custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="branch_active" @bind="_form.IsActive" />
-                        <label class="custom-control-label" for="branch_active">Hoạt động</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="lexa-switch lexa-switch-success mb-0">
+                            <input type="checkbox" id="branch_active" @bind="_form.IsActive" />
+                            <span class="lexa-slider"></span>
+                        </label>
+                        <label class="mb-0" for="branch_active">Hoạt động</label>
                     </div>
                 </div>
                 <div class="modal-footer">
