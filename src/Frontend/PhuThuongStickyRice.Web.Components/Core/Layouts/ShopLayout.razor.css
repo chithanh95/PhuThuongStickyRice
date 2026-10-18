@@ -338,6 +338,10 @@
         justify-content: flex-end;
     }
 
+    /* Mobile gọn: ẩn nút Đặt hàng ngay (đã có sticky CTA), ẩn login (vào menu) */
+    .shp-order-btn { display: none; }
+    .shp-header-right .shp-account { display: none; }
+
     .shp-footer-inner {
         grid-template-columns: 1fr;
     }

@@ -147,7 +147,7 @@ else
 else
 {
     <!-- Filters: categories + dietary tags + sort + branch -->
-    <div class="card mb-4">
+    <div class="card mb-4 shop-filters-sticky">
         <div class="card-body py-3">
             @if (_branches != null && _branches.Count > 0)
             {
@@ -249,8 +249,12 @@ else
             {
                 <div class="col-6 col-md-4 mb-4" @key="product.Id">
                     <div class="card h-100">
-                        <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name">
+                        <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name" class="shop-img-wrap">
                             <img class="card-img-top" src="@ProductImage(product)" alt="@product.Name" loading="lazy" style="height: 200px; object-fit: cover;" />
+                            @if (!CanOrder(product))
+                            {
+                                <span class="shop-soldout-overlay">Hết hôm nay 😢</span>
+                            }
                         </a>
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title">
@@ -262,36 +266,9 @@ else
                                 <div class="small text-muted mb-1">@cardRating</div>
                             }
                             <div class="mb-1">
-                                @if (product.IsNew)
+                                @foreach (var badge in GetCardBadges(product).Take(2))
                                 {
-                                    <span class="badge badge-success mr-1">Món mới</span>
-                                }
-                                @if (product.IsSignature)
-                                {
-                                    <span class="badge badge-warning mr-1">Signature</span>
-                                }
-                                @if (IsSoldOut(product))
-                                {
-                                    <span class="badge badge-secondary mr-1">Tạm hết</span>
-                                }
-                                else if (IsDailyLimitReached(product))
-                                {
-                                    @* SH4: daily limit exhausted but product still Active. *@
-                                    <span class="badge badge-secondary mr-1">Hết hôm nay</span>
-                                }
-                                @* Item 164: outside the sale time windows. *@
-                                @if (!IsSoldOut(product) && !IsInSaleHours(product))
-                                {
-                                    <span class="badge badge-info mr-1">⏰ Chỉ bán @SaleHoursLabel(product)</span>
-                                }
-                                @* Item 165: low daily stock (only when some portions remain). *@
-                                @if (!IsSoldOut(product) && !IsDailyLimitReached(product) && product.RemainingToday.HasValue && product.RemainingToday.Value < 10)
-                                {
-                                    <span class="badge badge-warning mr-1">Còn @product.RemainingToday suất</span>
-                                }
-                                @foreach (var tag in ProductTags(product))
-                                {
-                                    <span class="badge badge-info mr-1">@TagLabel(tag)</span>
+                                    <span class="badge @badge.Css mr-1">@badge.Text</span>
                                 }
                             </div>
                             <p class="card-text text-muted small flex-grow-1">@product.Description</p>
@@ -903,11 +880,17 @@ else
             query = query.Where(p => MatchesNeed(p, _needFilter));
         }
 
-        // Wave 6b (item 29): name search (diacritics-sensitive).
+        // Tìm kiếm: tên + mô tả + tag + danh mục (không dấu vẫn ra).
         if (!string.IsNullOrWhiteSpace(_searchTerm))
         {
             var term = _searchTerm.Trim();
-            query = query.Where(p => (p.Name ?? string.Empty).IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0);
+            var termNoDiacritics = RemoveDiacritics(term);
+            query = query.Where(p =>
+                (p.Name ?? string.Empty).IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (p.Description ?? string.Empty).IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (p.Tags ?? string.Empty).IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (p.Category ?? string.Empty).IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                RemoveDiacritics(p.Name ?? string.Empty).IndexOf(termNoDiacritics, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         _filtered = _sort switch
@@ -926,6 +909,30 @@ else
     private string CategoryChipClass(string category) =>
         string.Equals(_categoryFilter, category, StringComparison.OrdinalIgnoreCase)
             ? "btn-primary" : "btn-outline-primary";
+
+    /// <summary>Badge ưu tiên cao nhất trước; card chỉ hiện tối đa 2.</summary>
+    private List<(string Text, string Css)> GetCardBadges(ShopProductModel product)
+    {
+        var badges = new List<(string, string)>();
+        // 1. Tình trạng hàng (quan trọng nhất)
+        if (IsSoldOut(product))
+            badges.Add(("Tạm hết", "badge-secondary"));
+        else if (IsDailyLimitReached(product))
+            badges.Add(("Hết hôm nay", "badge-secondary"));
+        else if (!IsInSaleHours(product))
+            badges.Add(($"⏰ Chỉ bán {SaleHoursLabel(product)}", "badge-info"));
+        else if (product.RemainingToday.HasValue && product.RemainingToday.Value < 10)
+            badges.Add(($"Còn {product.RemainingToday} suất", "badge-warning"));
+        // 2. Marketing
+        if (product.IsNew)
+            badges.Add(("Món mới", "badge-success"));
+        if (product.IsSignature)
+            badges.Add(("Signature", "badge-warning"));
+        // 3. Tag ăn chay/mặn/cay
+        foreach (var tag in ProductTags(product))
+            badges.Add((TagLabel(tag), "badge-info"));
+        return badges;
+    }
 
     private static List<string> ProductTags(ShopProductModel product) =>
         (product.Tags ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
@@ -978,6 +985,11 @@ else
         {
             _cardSizes[product.Id] = sizeId;
         }
+    }
+
+    private void SelectCardSize(ShopProductModel product, Guid sizeId)
+    {
+        _cardSizes[product.Id] = sizeId;
     }
 
     private decimal DisplayPrice(ShopProductModel product)
@@ -1387,6 +1399,22 @@ else
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    /// <summary>Bỏ dấu tiếng Việt để tìm kiếm không dấu vẫn ra.</summary>
+    private static string RemoveDiacritics(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        var normalized = text.Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in normalized)
+        {
+            var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (uc != System.Globalization.UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+        return sb.ToString().Normalize(System.Text.NormalizationForm.FormC)
+            .Replace('đ', 'd').Replace('Đ', 'D');
+    }
 
     /// <summary>Item 81: "/kg" for weight products, "/suất" otherwise.</summary>
     private static string UnitSuffix(ShopProductModel product) =>
