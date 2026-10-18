@@ -255,3 +255,74 @@ html.dark .shop-size-chip.active {
     text-align: center;
     padding: 8px;
 }
+
+/* ============ Lexa buttons cho shop ============ */
+.shp-page .btn-primary {
+    background: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    border-radius: 6px !important;
+}
+.shp-page .btn-primary:hover,
+.shp-page .btn-primary:focus,
+.shp-page .btn-primary:active {
+    background: #625998 !important;
+    border-color: #625998 !important;
+}
+.shp-page .btn-outline-primary {
+    color: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    border-radius: 6px !important;
+}
+.shp-page .btn-outline-primary:hover {
+    background: #7a6fbe !important;
+    color: #fff !important;
+}
+.shp-page .btn-success {
+    background: #34c38f !important;
+    border-color: #34c38f !important;
+    border-radius: 6px !important;
+}
+.shp-page .btn-success:hover {
+    background: #2aa67c !important;
+    border-color: #2aa67c !important;
+}
+.shp-page .btn-warning {
+    background: #f1b44c !important;
+    border-color: #f1b44c !important;
+    border-radius: 6px !important;
+    color: #fff !important;
+}
+.shp-page .btn-warning:hover {
+    background: #df9d34 !important;
+    border-color: #df9d34 !important;
+}
+.shp-page .btn-danger {
+    background: #f46a6a !important;
+    border-color: #f46a6a !important;
+    border-radius: 6px !important;
+}
+.shp-page .btn-info {
+    background: #50a5f1 !important;
+    border-color: #50a5f1 !important;
+    border-radius: 6px !important;
+    color: #fff !important;
+}
+.shp-page .btn {
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+/* ============ Lexa colors cho shop ============ */
+.shp-page .badge-success { background: #34c38f !important; }
+.shp-page .badge-warning { background: #f1b44c !important; color: #fff !important; }
+.shp-page .badge-danger { background: #f46a6a !important; }
+.shp-page .badge-info { background: #50a5f1 !important; }
+.shp-page .badge-primary { background: #7a6fbe !important; }
+.shp-page .badge-secondary { background: #6c757d !important; }
+.shp-page .text-danger { color: #f46a6a !important; }
+.shp-page .text-success { color: #34c38f !important; }
+.shp-page .text-warning { color: #f1b44c !important; }
+.shp-page .text-info { color: #50a5f1 !important; }
+.shp-page .text-primary { color: #7a6fbe !important; }
+.shp-page a { color: #7a6fbe; }
+.shp-page a:hover { color: #625998; }
