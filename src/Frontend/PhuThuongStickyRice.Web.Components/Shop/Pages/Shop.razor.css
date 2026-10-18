@@ -513,7 +513,7 @@ html.dark .shop-filters-sticky {
     .shop-row-price {
         font-size: 17px;
         font-weight: 800;
-        color: #e8590c;
+        color: #7a6fbe;
         margin-top: 4px;
     }
     .shop-row-price small {
@@ -531,13 +531,13 @@ html.dark .shop-filters-sticky {
         height: 40px;
         border: none;
         border-radius: 10px;
-        background: #e8590c;
+        background: #7a6fbe;
         color: #fff;
         font-size: 24px;
         font-weight: 700;
         line-height: 1;
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(232,89,12,.35);
+        box-shadow: 0 2px 8px rgba(122,111,190,.35);
     }
     .shop-row-add:disabled {
         opacity: .4;
@@ -554,18 +554,18 @@ html.dark .shop-filters-sticky {
         width: 32px;
         height: 32px;
         border-radius: 8px;
-        border: 1.5px solid #e8590c;
+        border: 1.5px solid #7a6fbe;
         background: #fff;
-        color: #e8590c;
+        color: #7a6fbe;
         font-size: 18px;
         font-weight: 700;
         cursor: pointer;
         line-height: 1;
     }
     .shop-row-stepper button:last-child {
-        background: #e8590c;
+        background: #7a6fbe;
         color: #fff;
-        border-color: #e8590c;
+        border-color: #7a6fbe;
     }
     .shop-row-stepper span {
         font-weight: 700;
