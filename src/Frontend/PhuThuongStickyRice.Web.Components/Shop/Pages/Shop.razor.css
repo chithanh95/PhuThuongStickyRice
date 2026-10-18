@@ -215,7 +215,8 @@ html.dark .shop-size-chip.active {
     color: #f0c0a0;
 }
 
-/* Sticky filter bar trên mobile */
+/* Sticky filter bar trên mobile — KHÔNG giới hạn chiều cao/scroll
+   (dropdown Sắp xếp cần tràn ra ngoài, không bị kẹt trong card). */
 @media (max-width: 768px) {
     .shop-filters-sticky {
         position: sticky;
@@ -225,8 +226,11 @@ html.dark .shop-size-chip.active {
     }
     .shop-filters-sticky .card-body {
         padding: 10px 12px !important;
-        max-height: 38vh;
-        overflow-y: auto;
+    }
+    /* Dropdown menu nổi trên danh sách món, không bị card cắt */
+    .shop-sort-dropdown .dropdown-menu {
+        position: absolute;
+        z-index: 1000;
     }
 }
 
@@ -362,3 +366,17 @@ html.dark .shop-sort-dropdown .dropdown-menu { background: #2b2f36; border-color
 html.dark .shop-sort-dropdown .dropdown-item { color: #e8e8e8; }
 html.dark .shop-sort-dropdown .dropdown-item:hover { background: #3a3f47; color: #b3a8e8; }
 html.dark .shop-sort-dropdown .dropdown-item.active { background: #7a6fbe; color: #fff; }
+
+/* Mobile: cụm pill filter cuộn ngang 1 hàng, không rớt dòng */
+@media (max-width: 768px) {
+    .shop-filters-sticky .btn-group.flex-wrap {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        max-width: 100%;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .shop-filters-sticky .btn-group.flex-wrap .btn {
+        flex-shrink: 0;
+    }
+}
