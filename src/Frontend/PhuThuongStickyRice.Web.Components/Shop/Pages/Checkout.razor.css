@@ -136,3 +136,8 @@ html.dark .co-mobile-bar {
 html.dark .co-mobile-bar .co-total small {
     color: #a5a2bd;
 }
+
+/* Mobile: ẩn nút đặt hàng trong luồng, giữ sticky bar */
+@media (max-width: 767.98px) {
+    .co-flow-submit { display: none; }
+}

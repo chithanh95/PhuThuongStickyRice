@@ -33,7 +33,7 @@ else if (_forecast != null)
                 <p class="lx-mini-label">Dự báo 7 ngày tới</p>
                 <h2 class="lx-mini-value">@FmtMoney(_forecast.Next7DaysTotal.ForecastRevenue)</h2>
                 <span class="lx-mini-foot">@_forecast.Next7DaysTotal.ForecastOrders.ToString("0.#") đơn · @_forecast.Next7DaysTotal.SuggestedPortions.ToString("N0") suất nên chuẩn bị</span>
-                <span class="lx-mini-icon"><span class="oi oi-pulse" aria-hidden="true"></span></span>
+                <span class="lx-mini-icon"><span class="fa-solid fa-heart-pulse" aria-hidden="true"></span></span>
             </div>
         </div>
         <div class="col-md-4 mb-3">
@@ -41,7 +41,7 @@ else if (_forecast != null)
                 <p class="lx-mini-label">Dự báo 30 ngày tới</p>
                 <h2 class="lx-mini-value">@FmtMoney(_forecast.Next30DaysTotal.ForecastRevenue)</h2>
                 <span class="lx-mini-foot">@_forecast.Next30DaysTotal.ForecastOrders.ToString("0.#") đơn · @_forecast.Next30DaysTotal.SuggestedPortions.ToString("N0") suất nên chuẩn bị</span>
-                <span class="lx-mini-icon"><span class="oi oi-calendar" aria-hidden="true"></span></span>
+                <span class="lx-mini-icon"><span class="fa-solid fa-calendar" aria-hidden="true"></span></span>
             </div>
         </div>
         <div class="col-md-4 mb-3">
@@ -49,7 +49,7 @@ else if (_forecast != null)
                 <p class="lx-mini-label">Trung bình ngày (30 ngày qua)</p>
                 <h2 class="lx-mini-value">@FmtMoney(_forecast.AvgDailyRevenue30d)</h2>
                 <span class="lx-mini-foot">7 ngày gần nhất: @FmtMoney(_forecast.AvgDailyRevenue7d) · @_forecast.DaysWithOrders/@_forecast.HistoryDays ngày có đơn</span>
-                <span class="lx-mini-icon"><span class="oi oi-graph" aria-hidden="true"></span></span>
+                <span class="lx-mini-icon"><span class="fa-solid fa-chart-line" aria-hidden="true"></span></span>
             </div>
         </div>
     </div>

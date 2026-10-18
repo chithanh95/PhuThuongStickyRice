@@ -43,7 +43,7 @@ else if (_report != null)
                 <p class="lx-mini-label">Tổng số đơn (@_report.Date.ToString("dd/MM/yyyy"))</p>
                 <h2 class="lx-mini-value">@_report.TotalOrders.ToString("N0")</h2>
                 <span class="lx-mini-foot">@_report.TotalPortions.ToString("N0") suất đã bán</span>
-                <span class="lx-mini-icon"><span class="oi oi-cart" aria-hidden="true"></span></span>
+                <span class="lx-mini-icon"><span class="fa-solid fa-cart-shopping" aria-hidden="true"></span></span>
             </div>
         </div>
         @foreach (var t in _report.TopHours)
@@ -54,7 +54,7 @@ else if (_report != null)
                     <p class="lx-mini-label">Top @rank khung giờ đông khách</p>
                     <h2 class="lx-mini-value">@t.Hour h – @(t.Hour + 1) h</h2>
                     <span class="lx-mini-foot">@t.Portions.ToString("N0") suất · @t.Orders.ToString("N0") đơn</span>
-                    <span class="lx-mini-icon"><span class="oi oi-clock" aria-hidden="true"></span></span>
+                    <span class="lx-mini-icon"><span class="fa-solid fa-clock" aria-hidden="true"></span></span>
                 </div>
             </div>
         }

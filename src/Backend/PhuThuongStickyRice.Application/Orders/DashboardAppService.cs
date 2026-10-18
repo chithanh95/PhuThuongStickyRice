@@ -73,19 +73,22 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IObjectMapper _objectMapper;
         private readonly IShopSettingAppService _shopSettings;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public DashboardAppService(
             IOrderRepository orders,
             IProductRepository products,
             IAsyncQueryableExecuter asyncExecuter,
             IObjectMapper objectMapper,
-            IShopSettingAppService shopSettings)
+            IShopSettingAppService shopSettings,
+            Products.IProductCatalogCache catalogCache)
         {
             _orders = orders;
             _products = products;
             _asyncExecuter = asyncExecuter;
             _objectMapper = objectMapper;
             _shopSettings = shopSettings;
+            _catalogCache = catalogCache;
         }
 
         public virtual async Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null)
@@ -275,6 +278,11 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         public virtual async Task<Dictionary<Guid, long>> GetSoldQuantitiesAsync()
+        {
+            return await _catalogCache.GetOrAddAsync("sold-quantities", QuerySoldQuantitiesAsync);
+        }
+
+        private async Task<Dictionary<Guid, long>> QuerySoldQuantitiesAsync()
         {
             var orderQueryable = await _orders.GetQueryableAsync();
             var billable = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled);

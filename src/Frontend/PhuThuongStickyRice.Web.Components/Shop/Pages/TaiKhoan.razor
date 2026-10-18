@@ -149,7 +149,7 @@
                     <label>Ghi chú thêm</label>
                     <input class="form-control" @bind="_profile.TasteNote" placeholder="VD: xôi dẻo một chút" />
                 </div>
-                <button class="btn btn-primary" style="background:#6F0707;border-color:#6F0707;"
+                <button class="btn btn-primary"
                         @onclick="SaveTasteAsync" disabled="@_tasteBusy">
                     @(_tasteBusy ? "Đang lưu..." : "Lưu khẩu vị")
                 </button>
@@ -189,7 +189,7 @@
                         </small>
                     </div>
                     <div class="form-group col-md-6 mb-2">
-                        <button class="btn btn-primary" style="background:#6F0707;border-color:#6F0707;"
+                        <button class="btn btn-primary"
                                 @onclick="SaveDobAsync" disabled="@(_dobBusy || !_profile.CanChangeDateOfBirth)">
                             @(_dobBusy ? "Đang lưu..." : "Lưu ngày sinh")
                         </button>
@@ -217,7 +217,7 @@
                     <label>Mật khẩu mới (ít nhất 6 ký tự)</label>
                     <input type="password" class="form-control" @bind="_newPw" />
                 </div>
-                <button class="btn btn-primary" style="background:#6F0707;border-color:#6F0707;"
+                <button class="btn btn-primary"
                         @onclick="ChangePasswordAsync" disabled="@_pwBusy">
                     @(_pwBusy ? "Đang đổi..." : "Đổi mật khẩu")
                 </button>
@@ -269,7 +269,7 @@
                             <label>Ghi chú</label>
                             <input class="form-control" @bind="_form.Note" placeholder="VD: gọi trước khi đến" />
                         </div>
-                        <button class="btn btn-primary mr-2" style="background:#6F0707;border-color:#6F0707;"
+                        <button class="btn btn-primary mr-2"
                                 @onclick="SaveAddressAsync" disabled="@_addrBusy">
                             @(_addrBusy ? "Đang lưu..." : "Lưu địa chỉ")
                         </button>

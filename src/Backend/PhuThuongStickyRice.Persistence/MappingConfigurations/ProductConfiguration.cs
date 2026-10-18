@@ -77,6 +77,7 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             // NOTE: EF Core does not support HasIndex() over complex-type members.
             // Code uniqueness is enforced by CreateProductCommand via IProductRepository.ExistsWithCodeAsync.
+            builder.HasIndex(x => x.Status);
         }
     }
 }

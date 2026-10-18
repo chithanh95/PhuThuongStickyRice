@@ -54,7 +54,7 @@ else if (_report != null)
                 <p class="lx-mini-label">Tổng doanh thu (@_report.From.ToString("dd/MM") – @_report.To.ToString("dd/MM"))</p>
                 <h2 class="lx-mini-value">@FmtVnd(_report.Total.Revenue)</h2>
                 <span class="lx-mini-foot">@_report.Total.QuantitySold.ToString("N0") suất đã bán</span>
-                <span class="lx-mini-icon"><span class="oi oi-dollar" aria-hidden="true"></span></span>
+                <span class="lx-mini-icon"><span class="fa-solid fa-dollar-sign" aria-hidden="true"></span></span>
             </div>
         </div>
         <div class="col-md-3 col-6 mb-3">
@@ -62,7 +62,7 @@ else if (_report != null)
                 <p class="lx-mini-label">Tổng giá vốn</p>
                 <h2 class="lx-mini-value">@FmtVnd(_report.Total.Cost)</h2>
                 <span class="lx-mini-foot">Theo giá vốn hiện tại</span>
-                <span class="lx-mini-icon"><span class="oi oi-cart" aria-hidden="true"></span></span>
+                <span class="lx-mini-icon"><span class="fa-solid fa-cart-shopping" aria-hidden="true"></span></span>
             </div>
         </div>
         <div class="col-md-3 col-6 mb-3">
@@ -70,7 +70,7 @@ else if (_report != null)
                 <p class="lx-mini-label">Lãi gộp</p>
                 <h2 class="lx-mini-value">@FmtVnd(_report.Total.Profit)</h2>
                 <span class="lx-mini-foot">Doanh thu − giá vốn</span>
-                <span class="lx-mini-icon"><span class="oi oi-graph" aria-hidden="true"></span></span>
+                <span class="lx-mini-icon"><span class="fa-solid fa-chart-line" aria-hidden="true"></span></span>
             </div>
         </div>
         <div class="col-md-3 col-6 mb-3">
@@ -78,7 +78,7 @@ else if (_report != null)
                 <p class="lx-mini-label">Biên lãi trung bình</p>
                 <h2 class="lx-mini-value">@FmtPct(_report.Total.MarginPercent)</h2>
                 <span class="lx-mini-foot">Lãi gộp / doanh thu</span>
-                <span class="lx-mini-icon"><span class="oi oi-pie-chart" aria-hidden="true"></span></span>
+                <span class="lx-mini-icon"><span class="fa-solid fa-chart-pie" aria-hidden="true"></span></span>
             </div>
         </div>
     </div>

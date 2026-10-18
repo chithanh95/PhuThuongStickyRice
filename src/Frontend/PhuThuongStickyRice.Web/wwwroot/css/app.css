@@ -441,3 +441,16 @@ html.dark .main > .top-row:not(.auth) .theme-toggle {
     background: rgba(38, 38, 64, .94);
     border-color: #4a4a6e;
 }
+
+/* === Lexa palette global (fix CSS isolation: màu tím đồng nhất mọi trang shop) === */
+.btn-primary { background:#7a6fbe !important; border-color:#7a6fbe !important; }
+.btn-primary:hover, .btn-primary:focus { background:#625998 !important; border-color:#625998 !important; }
+.btn-success { background:#34c38f !important; border-color:#34c38f !important; }
+.btn-warning { background:#f1b44c !important; border-color:#f1b44c !important; }
+.btn-danger { background:#f46a6a !important; border-color:#f46a6a !important; }
+.btn-info { background:#50a5f1 !important; border-color:#50a5f1 !important; }
+a { color:#7a6fbe; }
+
+/* Brand name dark mode */
+.brand-name { color:#2b3a4a; }
+html.dark .brand-name { color:#e0e0e0; }

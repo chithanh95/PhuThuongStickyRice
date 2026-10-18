@@ -702,7 +702,7 @@ else
                         </div>
                     }
 
-                    <button class="btn btn-success btn-block btn-lg" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
+                    <button class="btn btn-success btn-block btn-lg co-flow-submit" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
                         @(_submitting ? AppI18n.T("shop.processing") : AppI18n.T("shop.order_now"))
                     </button>
                     @if (_orderingBlocked && !string.IsNullOrEmpty(_closedNotice))

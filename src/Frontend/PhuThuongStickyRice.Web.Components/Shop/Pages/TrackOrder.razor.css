@@ -264,3 +264,8 @@ html.dark .to-info-card {
 html.dark .to-total-row {
     border-color: #3a3226;
 }
+
+/* Touch target 44px mobile */
+@media (max-width: 767.98px) {
+    .to-copy-btn { min-width: 44px; min-height: 44px; }
+}

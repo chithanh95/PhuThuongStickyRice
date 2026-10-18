@@ -158,6 +158,7 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Registered customer account that placed the order (nullable).
             builder.Property(x => x.CustomerUserId);
             builder.HasIndex(x => x.CustomerUserId);
+            builder.HasIndex(x => new { x.Status, x.CreatedAt });
 
             // Delivery shipper assignment (optional).
             builder.Property(x => x.ShipperId);

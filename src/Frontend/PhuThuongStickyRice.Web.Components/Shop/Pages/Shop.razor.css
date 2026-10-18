@@ -780,3 +780,10 @@ html.dark .shop-filters-sticky {
     html.dark .qv-sheet-opt { border-color: #3a3226; }
     html.dark .qv-sheet-footer { background: #241d17; border-color: #3a3226; }
 }
+
+/* Touch target 44px mobile */
+@media (max-width: 767.98px) {
+    .shop-row-stepper button { min-width: 44px; min-height: 44px; }
+    .shop-row-add { min-width: 44px; min-height: 44px; }
+    .shop-size-chip { min-height: 44px; }
+}

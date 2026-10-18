@@ -28,10 +28,10 @@
     --lx-tertiary: #f8f9fa;
     --lx-footer-bg: #fafafa;
     --lx-footer-text: #5b626b;
-    --lx-success: #58db83;
-    --lx-info: #0dcaf0;
-    --lx-warning: #f5b225;
-    --lx-danger: #ec536c;
+    --lx-success: #34c38f;
+    --lx-info: #50a5f1;
+    --lx-warning: #f1b44c;
+    --lx-danger: #f46a6a;
     --lx-radius: 4px;
     --lx-topbar-h: 70px;
     --lx-sidebar-w: 240px;
@@ -837,8 +837,10 @@
         gap: 2px;
     }
     .lx-icon-btn {
-        width: 36px;
-        height: 36px;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
         font-size: 18px;
     }
     .lx-btn-create {
@@ -1999,3 +2001,21 @@ html.dark .lx-toast {
 .custom-radio.radio-info .custom-control-input:checked ~ .custom-control-label::before {
     background-color: #50a5f1; border-color: #50a5f1;
 }
+
+/* Touch target 44px mobile */
+@media (max-width: 767.98px) {
+    .lx-btn-icon { min-width: 44px; min-height: 44px; }
+}
+
+/* Pill dark mode */
+html.dark .lx-pill-success { background: rgba(52, 195, 143, 0.2); color: #7dd3a8; }
+html.dark .lx-pill-warning { background: rgba(241, 180, 76, 0.2); color: #f5c86e; }
+html.dark .lx-pill-danger { background: rgba(244, 106, 106, 0.2); color: #ff8a8a; }
+html.dark .lx-pill-info { background: rgba(80, 165, 241, 0.2); color: #7cc4f5; }
+html.dark .lx-pill-primary { background: rgba(122, 111, 190, 0.25); color: #b3a8e8; }
+
+/* Alert dark variant */
+html.dark .lx-admin .alert-success { background-color: #1e3a2f !important; border-color: #2d5a45 !important; color: #7dd3a8 !important; }
+html.dark .lx-admin .alert-info { background-color: #1a2f45 !important; border-color: #2a4a6b !important; color: #7cc4f5 !important; }
+html.dark .lx-admin .alert-warning { background-color: #3a2f1a !important; border-color: #5a4a2a !important; color: #f5c86e !important; }
+html.dark .lx-admin .alert-danger { background-color: #3a1e24 !important; border-color: #5a2d36 !important; color: #ff8a8a !important; }

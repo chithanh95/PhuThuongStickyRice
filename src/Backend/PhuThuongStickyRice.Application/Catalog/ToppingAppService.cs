@@ -46,6 +46,11 @@ namespace PhuThuongStickyRice.Application.Catalog
         [AllowAnonymous]
         public virtual async Task<List<ToppingDto>> GetActiveAsync()
         {
+            return await _catalogCache.GetOrAddAsync("toppings:active", QueryActiveAsync);
+        }
+
+        private async Task<List<ToppingDto>> QueryActiveAsync()
+        {
             var queryable = await _toppings.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.IsActive)

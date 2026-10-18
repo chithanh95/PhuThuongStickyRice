@@ -44,6 +44,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                     .HasMaxLength(3)
                     .IsRequired();
             });
+
+            builder.HasIndex(x => x.ProductId);
         }
     }
 }

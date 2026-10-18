@@ -537,3 +537,8 @@ html.dark .shp-back:hover {
         font-size: 18px;
     }
 }
+
+/* Touch target 44px mobile */
+@media (max-width: 767.98px) {
+    .shp-back { min-width: 44px; min-height: 44px; }
+}

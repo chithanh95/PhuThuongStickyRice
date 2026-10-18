@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
@@ -77,6 +78,7 @@ namespace PhuThuongStickyRice.Application.Products
         private readonly Volo.Abp.Domain.Repositories.IRepository<OrderLine, Guid> _orderLines;
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
+        private readonly IMemoryCache _memoryCache;
 
         public ProductAppService(
             IProductRepository products,
@@ -90,7 +92,8 @@ namespace PhuThuongStickyRice.Application.Products
             Volo.Abp.Domain.Repositories.IRepository<Order, Guid> orders,
             Volo.Abp.Domain.Repositories.IRepository<OrderLine, Guid> orderLines,
             IPermissionService permissions,
-            IStaffActivityLogger activityLogger)
+            IStaffActivityLogger activityLogger,
+            IMemoryCache memoryCache)
         {
             _products = products;
             _domainEvents = domainEvents;
@@ -104,6 +107,7 @@ namespace PhuThuongStickyRice.Application.Products
             _orderLines = orderLines;
             _permissions = permissions;
             _activityLogger = activityLogger;
+            _memoryCache = memoryCache;
         }
 
         [UnitOfWork]
@@ -367,6 +371,21 @@ namespace PhuThuongStickyRice.Application.Products
         /// non-cancelled orders; products without a DailyLimit are skipped.
         /// </summary>
         public virtual async Task<List<ProductDailyRemainingDto>> GetDailyRemainingAsync()
+        {
+            const string cacheKey = "daily-remaining";
+            if (_memoryCache.TryGetValue(cacheKey, out List<ProductDailyRemainingDto> cached))
+            {
+                return cached;
+            }
+            var result = await QueryDailyRemainingAsync();
+            _memoryCache.Set(cacheKey, result, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60)
+            });
+            return result;
+        }
+
+        private async Task<List<ProductDailyRemainingDto>> QueryDailyRemainingAsync()
         {
             var productQueryable = await _products.GetQueryableAsync();
             var limited = await _asyncExecuter.ToListAsync(

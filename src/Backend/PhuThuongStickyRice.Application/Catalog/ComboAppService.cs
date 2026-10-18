@@ -52,6 +52,11 @@ namespace PhuThuongStickyRice.Application.Catalog
         [AllowAnonymous]
         public virtual async Task<List<ComboDto>> GetActiveAsync()
         {
+            return await _catalogCache.GetOrAddAsync("combos:active", QueryActiveAsync);
+        }
+
+        private async Task<List<ComboDto>> QueryActiveAsync()
+        {
             var queryable = await _combos.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.IsActive).OrderBy(x => x.Price));

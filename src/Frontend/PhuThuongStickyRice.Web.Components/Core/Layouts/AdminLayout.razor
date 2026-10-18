@@ -14,7 +14,7 @@
         <aside class="lx-sidebar" aria-label="Menu quản trị">
             <div class="lx-brand-box">
                 <a class="lx-logo-text" href="/dashboard">
-                    <span class="lx-logo-clock"><span class="oi oi-clock" aria-hidden="true"></span></span>
+                    <span class="lx-logo-clock"><span class="fa-solid fa-clock" aria-hidden="true"></span></span>
                     <span class="lx-brand-name">Xôi Phú Thượng</span>
                 </a>
             </div>
@@ -44,7 +44,7 @@
                             <button type="button" class="lx-hnav-toggle" @onclick="() => ToggleGroup(group.Key)" aria-haspopup="true">
                                 <span class="oi @group.Icon" aria-hidden="true"></span>
                                 <span class="lx-hnav-text">@group.Label</span>
-                                <span class="oi oi-chevron-bottom lx-hnav-caret" aria-hidden="true"></span>
+                                <span class="fa-solid fa-chevron-down lx-hnav-caret" aria-hidden="true"></span>
                             </button>
                             <div class="lx-hnav-drop">
                                 @foreach (var item in items)
@@ -69,15 +69,15 @@
         <header class="lx-topbar">
             <div class="lx-topbar-left">
                 <button class="lx-icon-btn lx-hamburger" @onclick="ToggleNav" title="Menu">
-                    <span class="oi oi-menu" aria-hidden="true"></span>
+                    <span class="fa-solid fa-bars" aria-hidden="true"></span>
                 </button>
                 <button class="lx-btn-create" title="Tạo mới">
-                    Tạo mới <span class="oi oi-chevron-bottom" aria-hidden="true" style="font-size:11px"></span>
+                    Tạo mới <span class="fa-solid fa-chevron-down" aria-hidden="true" style="font-size:11px"></span>
                 </button>
             </div>
             <div class="lx-topbar-right">
                 <a class="lx-icon-btn" href="/shop" target="_blank" rel="noopener" title="Xem cửa hàng (giao diện khách)">
-                    <span class="oi oi-external-link" aria-hidden="true"></span>
+                    <span class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></span>
                 </a>
                 <button class="lx-icon-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng">
                     <span aria-hidden="true">@(_isDark ? "☀️" : "🌙")</span>
@@ -86,7 +86,7 @@
                     <div class="lx-search">
                         <input placeholder="Tìm chức năng, đơn, món, khách..." value="@_search"
                                @oninput="OnSearchInput" @onfocus="() => _searchFocused = true" @onfocusout="OnSearchBlur" />
-                        <span class="oi oi-magnifying-glass" aria-hidden="true"></span>
+                        <span class="fa-solid fa-magnifying-glass" aria-hidden="true"></span>
                     </div>
                     @if (_searchFocused && _search.Trim().Length >= 2)
                     {
@@ -103,7 +103,7 @@
                                     @foreach (var r in _searchResult.Orders)
                                     {
                                         <button class="lx-search-item" @onclick="() => GoSearch(r.Link)">
-                                            <span class="oi oi-cart" aria-hidden="true"></span>
+                                            <span class="fa-solid fa-cart-shopping" aria-hidden="true"></span>
                                             <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
                                         </button>
                                     }
@@ -114,7 +114,7 @@
                                     @foreach (var r in _searchResult.Products)
                                     {
                                         <button class="lx-search-item" @onclick="() => GoSearch(r.Link)">
-                                            <span class="oi oi-tag" aria-hidden="true"></span>
+                                            <span class="fa-solid fa-tag" aria-hidden="true"></span>
                                             <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
                                         </button>
                                     }
@@ -125,7 +125,7 @@
                                     @foreach (var r in _searchResult.Customers)
                                     {
                                         <button class="lx-search-item" @onclick="() => GoSearch(r.Link)">
-                                            <span class="oi oi-person" aria-hidden="true"></span>
+                                            <span class="fa-solid fa-user" aria-hidden="true"></span>
                                             <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
                                         </button>
                                     }
@@ -142,7 +142,7 @@
                     <button class="lx-lang-btn" @onclick="ToggleLangMenu" title="Ngôn ngữ">
                         <img src="/images/flags/@(_lang == "en" ? "gb" : "vn").png" alt="" style="width:20px;height:14px;border-radius:2px;" />
                         <span>@(_lang == "en" ? "English" : "Tiếng Việt")</span>
-                        <span class="oi oi-chevron-bottom" aria-hidden="true" style="font-size:10px"></span>
+                        <span class="fa-solid fa-chevron-down" aria-hidden="true" style="font-size:10px"></span>
                     </button>
                     @if (_langMenuOpen)
                     {
@@ -158,11 +158,11 @@
                     }
                 </div>
                 <button class="lx-icon-btn" title="Toàn màn hình" @onclick="ToggleFullscreen">
-                    <span class="oi oi-fullscreen-enter" aria-hidden="true"></span>
+                    <span class="fa-solid fa-expand" aria-hidden="true"></span>
                 </button>
                 <div class="lx-dropdown">
                     <button class="lx-icon-btn @(_bellRinging ? "lx-bell-ring" : "")" @onclick="ToggleNotifications" title="Thông báo">
-                        <span class="oi oi-bell" aria-hidden="true"></span>
+                        <span class="fa-solid fa-bell" aria-hidden="true"></span>
                         @if (UnreadCount > 0)
                         {
                             <span class="lx-dot">@UnreadCount</span>
@@ -216,13 +216,13 @@
                         <div class="lx-dropdown-backdrop" @onclick="CloseUserMenu"></div>
                         <div class="lx-dropdown-menu">
                             <a class="lx-dropdown-item" href="/admin/ho-so" @onclick="CloseUserMenu">
-                                <span class="oi oi-person" aria-hidden="true"></span> Hồ sơ
+                                <span class="fa-solid fa-user" aria-hidden="true"></span> Hồ sơ
                             </a>
                             <a class="lx-dropdown-item" href="/admin/doi-mat-khau" @onclick="CloseUserMenu">
-                                <span class="oi oi-key" aria-hidden="true"></span> Đổi mật khẩu
+                                <span class="fa-solid fa-key" aria-hidden="true"></span> Đổi mật khẩu
                             </a>
                             <button class="lx-dropdown-item" @onclick="SignOut">
-                                <span class="oi oi-account-logout" aria-hidden="true"></span> Đăng xuất
+                                <span class="fa-solid fa-right-from-bracket" aria-hidden="true"></span> Đăng xuất
                             </button>
                         </div>
                     }
