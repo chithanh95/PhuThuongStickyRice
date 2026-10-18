@@ -224,11 +224,6 @@ html.dark .shop-size-chip.active {
     .shop-filters-sticky .card-body {
         padding: 10px 12px !important;
     }
-    /* Dropdown menu nổi trên danh sách món, không bị card cắt */
-    .shop-sort-dropdown .dropdown-menu {
-        position: absolute;
-        z-index: 1000;
-    }
 }
 
 /* Ảnh card đồng đều tỉ lệ 4:3 */
@@ -328,52 +323,55 @@ html.dark .shop-size-chip.active {
 .shp-page a { color: #7a6fbe; }
 .shp-page a:hover { color: #625998; }
 
-/* ============ Lexa-style dropdown (sort) ============ */
-.shop-sort-dropdown { position: relative; display: inline-block; }
-.shop-sort-dropdown .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 1000;
-    display: none;
-    min-width: 10rem;
-    padding: 0.5rem 0;
-    margin: 0.125rem 0 0;
-    background: #fff;
-    border: 1px solid rgba(0,0,0,.15);
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+/* ============ Lexa nav-pills cho filter shop ============ */
+.shop-filter-tabs {
+    gap: 6px;
 }
-.shop-sort-dropdown .dropdown-menu.show { display: block; }
-.shop-sort-dropdown .dropdown-item {
-    display: block;
-    width: 100%;
-    padding: 0.45rem 1.2rem;
-    border: none;
-    background: none;
-    text-align: left;
-    font-size: 0.9rem;
-    color: #212529;
+.shop-filter-tabs .nav-link {
+    border: 1.5px solid #dee2e6;
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #495057;
+    background: #fff;
     cursor: pointer;
     white-space: nowrap;
+    transition: all .15s;
 }
-.shop-sort-dropdown .dropdown-item:hover { background: #f1f0fa; color: #7a6fbe; }
-.shop-sort-dropdown .dropdown-item.active { background: #7a6fbe; color: #fff; }
-html.dark .shop-sort-dropdown .dropdown-menu { background: #2b2f36; border-color: #3a3f47; }
-html.dark .shop-sort-dropdown .dropdown-item { color: #e8e8e8; }
-html.dark .shop-sort-dropdown .dropdown-item:hover { background: #3a3f47; color: #b3a8e8; }
-html.dark .shop-sort-dropdown .dropdown-item.active { background: #7a6fbe; color: #fff; }
-
-/* Mobile: cụm pill filter cuộn ngang 1 hàng, không rớt dòng */
+.shop-filter-tabs .nav-link:hover {
+    border-color: #7a6fbe;
+    color: #7a6fbe;
+}
+.shop-filter-tabs .nav-link.active {
+    background: #7a6fbe;
+    border-color: #7a6fbe;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(122,111,190,.35);
+}
+html.dark .shop-filter-tabs .nav-link {
+    background: #262019;
+    border-color: #3a3226;
+    color: #e8ddc9;
+}
+html.dark .shop-filter-tabs .nav-link:hover {
+    border-color: #7a6fbe;
+    color: #b3a8e8;
+}
+html.dark .shop-filter-tabs .nav-link.active {
+    background: #7a6fbe;
+    border-color: #7a6fbe;
+    color: #fff;
+}
+/* Mobile: tabs cuộn ngang */
 @media (max-width: 768px) {
-    .shop-filters-sticky .btn-group.flex-wrap {
+    .shop-filter-tabs {
         flex-wrap: nowrap !important;
         overflow-x: auto;
-        max-width: 100%;
         padding-bottom: 4px;
         -webkit-overflow-scrolling: touch;
     }
-    .shop-filters-sticky .btn-group.flex-wrap .btn {
+    .shop-filter-tabs .nav-link {
         flex-shrink: 0;
     }
 }
