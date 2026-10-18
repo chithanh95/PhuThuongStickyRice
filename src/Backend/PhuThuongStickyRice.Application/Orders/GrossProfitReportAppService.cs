@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
@@ -52,7 +53,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         public virtual async Task<GrossProfitReportDto> GetGrossProfitReportAsync(DateTime? from, DateTime? to)
         {
-            var today = VietnamTime.Today;
+            var today = VietnamTime.Today();
             var toDate = (to?.Date ?? today).Date;
             var fromDate = (from?.Date ?? toDate.AddDays(-6)).Date;
             if (fromDate > toDate)

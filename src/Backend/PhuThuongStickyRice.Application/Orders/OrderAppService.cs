@@ -12,7 +12,7 @@ using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Loyalty;
 using PhuThuongStickyRice.Application.Customer;
 using PhuThuongStickyRice.Application.Zalo;
-using PhuThuongStickyRice.Application.Wave3;
+
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using PhuThuongStickyRice.Domain.ValueObjects;
@@ -25,6 +25,23 @@ using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
 using Volo.Abp.ObjectMapping;
+using PhuThuongStickyRice.Application.Customer;
+using PhuThuongStickyRice.Application.Discounts;
+using PhuThuongStickyRice.Application.Discounts.DTOs;
+using PhuThuongStickyRice.Application.Loyalty;
+using PhuThuongStickyRice.Application.Orders;
+using PhuThuongStickyRice.Application.Orders.DTOs;
+using PhuThuongStickyRice.Application.Orders.Email;
+using PhuThuongStickyRice.Application.Orders.Exceptions;
+using PhuThuongStickyRice.Application.Orders.Payments;
+using PhuThuongStickyRice.Application.Permissions;
+using PhuThuongStickyRice.Application.Products.Exceptions;
+using PhuThuongStickyRice.Application.Shop;
+using PhuThuongStickyRice.Application.Shop.DTOs;
+using PhuThuongStickyRice.Application.Staff;
+using PhuThuongStickyRice.Application.Zalo;
+using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.Application.Security;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
@@ -155,7 +172,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IObjectMapper _objectMapper;
         private readonly IEmailMessageRepository _emailMessages;
-        private readonly Wave4.IPaymentConfigProvider _paymentConfig;
+        private readonly IPaymentConfigProvider _paymentConfig;
         private readonly IMoMoPaymentService _momo;
         private readonly IShopSettingAppService _shopSettings;
         private readonly IDiscountAppService _discounts;
@@ -170,9 +187,9 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IRecaptchaService _recaptcha;
         private readonly IRewardRuleAppService _rewardRules;
         private readonly Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> _shippers;
-        private readonly Wave4.IWebhookDispatcher _webhooks;
+        private readonly IWebhookDispatcher _webhooks;
         private readonly Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> _branches;
-        private readonly Wave5.IWalletAppService _wallets;
+        private readonly IWalletAppService _wallets;
         private readonly System.Net.Http.IHttpClientFactory _httpClientFactory;
 
         /// <summary>Wave 6c (item 34): status-transition audit trail.</summary>
@@ -190,7 +207,7 @@ namespace PhuThuongStickyRice.Application.Orders
             IAsyncQueryableExecuter asyncExecuter,
             IObjectMapper objectMapper,
             IEmailMessageRepository emailMessages,
-            Wave4.IPaymentConfigProvider paymentConfig,
+            IPaymentConfigProvider paymentConfig,
             IMoMoPaymentService momo,
             IShopSettingAppService shopSettings,
             IDiscountAppService discounts,
@@ -205,9 +222,9 @@ namespace PhuThuongStickyRice.Application.Orders
             IRecaptchaService recaptcha,
             IRewardRuleAppService rewardRules,
             Volo.Abp.Domain.Repositories.IRepository<Shipper, Guid> shippers,
-            Wave4.IWebhookDispatcher webhooks,
+            IWebhookDispatcher webhooks,
             Volo.Abp.Domain.Repositories.IRepository<Branch, Guid> branches,
-            Wave5.IWalletAppService wallets,
+            IWalletAppService wallets,
             Volo.Abp.Domain.Repositories.IRepository<OrderStatusHistory, Guid> statusHistory,
             ICustomerTagAppService customerTags,
             IVipPriorityAppService vipPriority,
@@ -464,7 +481,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Item 105: feature flags for the checkout extras (UI hides them
             // too; the backend is the real gate).
-            var flags = LazyServiceProvider.LazyGetRequiredService<Wave4.IFeatureFlagAppService>();
+            var flags = LazyServiceProvider.LazyGetRequiredService<IFeatureFlagAppService>();
             var giftWrapEnabled = await flags.IsEnabledAsync(FeatureFlag.GiftWrap);
             var referralsEnabled = await flags.IsEnabledAsync(FeatureFlag.Referrals);
 
@@ -1447,7 +1464,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             // Item 105: feature-flagged. The frontend hides the wheel, but
             // the backend is the real gate.
-            var flags = LazyServiceProvider.LazyGetRequiredService<Wave4.IFeatureFlagAppService>();
+            var flags = LazyServiceProvider.LazyGetRequiredService<IFeatureFlagAppService>();
             if (!await flags.IsEnabledAsync(FeatureFlag.LuckySpin))
             {
                 throw new Domain.Exceptions.DomainException("Vòng quay may mắn hiện đang tắt.");
@@ -2063,7 +2080,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return;
             }
 
-            var startOfTodayUtc = Wave5.VietnamTime.Today().AddHours(-7); // VN 00:00 → UTC
+            var startOfTodayUtc = VietnamTime.Today().AddHours(-7); // VN 00:00 → UTC
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var phonesToday = await _asyncExecuter.ToListAsync(
@@ -2114,7 +2131,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return;
             }
 
-            var today = VietnamTime.Today;
+            var today = VietnamTime.Today();
             var fromUtc = VietnamTime.DayStartUtc(today);
             var toUtc = VietnamTime.DayEndExclusiveUtc(today);
 

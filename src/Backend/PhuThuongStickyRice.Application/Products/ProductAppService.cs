@@ -15,6 +15,7 @@ using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
 using Volo.Abp.Uow;
 using Volo.Abp.ObjectMapping;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Products
 {
@@ -376,9 +377,9 @@ namespace PhuThuongStickyRice.Application.Products
                 return new List<ProductDailyRemainingDto>();
             }
 
-            var today = Orders.VietnamTime.Today;
-            var fromUtc = Orders.VietnamTime.DayStartUtc(today);
-            var toUtc = Orders.VietnamTime.DayEndExclusiveUtc(today);
+            var today = VietnamTime.Today();
+            var fromUtc = VietnamTime.DayStartUtc(today);
+            var toUtc = VietnamTime.DayEndExclusiveUtc(today);
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var soldRows = await _asyncExecuter.ToListAsync(

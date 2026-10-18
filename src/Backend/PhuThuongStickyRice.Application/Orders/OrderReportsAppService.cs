@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
@@ -61,7 +62,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         public virtual async Task<DailyReconciliationDto> GetDailyReconciliationAsync(DateTime? date)
         {
-            var day = (date ?? VietnamTime.Today).Date;
+            var day = (date ?? VietnamTime.Today()).Date;
             var startUtc = VietnamTime.DayStartUtc(day);
             var endUtc = VietnamTime.DayEndExclusiveUtc(day);
 

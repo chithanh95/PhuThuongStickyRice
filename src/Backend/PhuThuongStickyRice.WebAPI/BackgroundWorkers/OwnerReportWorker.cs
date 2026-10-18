@@ -1,10 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PhuThuongStickyRice.Application.Wave3;
+
 using System;
 using System.Threading.Tasks;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
+using PhuThuongStickyRice.Application.Reports;
 
 namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
 {
@@ -88,7 +89,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 || _lastMonthlySentUtc.Value.AddHours(7).Date < monthStart;
         }
 
-        private static async Task<Application.Wave3.DTOs.OwnerReportResultDto> SendAsync(
+        private static async Task<Application.Reports.OwnerReportResultDto> SendAsync(
             PeriodicBackgroundWorkerContext workerContext,
             string period)
         {

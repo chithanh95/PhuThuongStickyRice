@@ -1,5 +1,5 @@
 using PhuThuongStickyRice.Application.Orders;
-using PhuThuongStickyRice.Application.Wave5;
+
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using PhuThuongStickyRice.Application.Orders;
+using PhuThuongStickyRice.Application.Customer;
+using PhuThuongStickyRice.Application.Inventory;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {

@@ -1,5 +1,5 @@
-using PhuThuongStickyRice.Application.Wave3;
-using PhuThuongStickyRice.Application.Wave3.DTOs;
+
+
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using PhuThuongStickyRice.Application.Content;
+using PhuThuongStickyRice.Application.Content;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {

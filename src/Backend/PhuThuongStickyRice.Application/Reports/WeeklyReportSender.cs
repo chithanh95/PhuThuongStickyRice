@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Reports
 {
@@ -86,7 +87,7 @@ namespace PhuThuongStickyRice.Application.Reports
 
         public async Task<WeeklyReportDto> BuildReportAsync()
         {
-            var (start, end) = LastFullWeek(VietnamTime.Today);
+            var (start, end) = LastFullWeek(VietnamTime.Today());
             var current = await AggregateWeekAsync(start, end);
             var (prevStart, prevEnd) = (start.AddDays(-7), end.AddDays(-7));
             var previous = await AggregateWeekAsync(prevStart, prevEnd);

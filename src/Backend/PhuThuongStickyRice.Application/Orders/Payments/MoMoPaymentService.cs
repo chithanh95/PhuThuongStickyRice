@@ -1,6 +1,6 @@
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Orders.Exceptions;
-using PhuThuongStickyRice.Application.Wave4;
+
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.Repositories;
@@ -9,6 +9,9 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using PhuThuongStickyRice.Application.Orders.DTOs;
+using PhuThuongStickyRice.Application.Orders.Exceptions;
+using PhuThuongStickyRice.Application.Orders.Payments;
 
 namespace PhuThuongStickyRice.Application.Orders.Payments
 {

@@ -1,5 +1,5 @@
 using PhuThuongStickyRice.Application.Shop;
-using PhuThuongStickyRice.Application.Wave4.ImageBackup;
+using PhuThuongStickyRice.Application.Common.ImageBackup;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
@@ -54,7 +55,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         public virtual async Task<RevenueForecastDto> GetRevenueForecastAsync()
         {
-            var today = VietnamTime.Today;
+            var today = VietnamTime.Today();
             var patternStart = today.AddDays(-PatternDays); // inclusive
             var fetchFromUtc = patternStart.AddDays(-1); // margin for tz
 

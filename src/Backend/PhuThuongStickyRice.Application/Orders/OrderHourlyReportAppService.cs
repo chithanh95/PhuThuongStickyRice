@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
@@ -43,7 +44,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         public virtual async Task<HourlySalesReportDto> GetHourlySalesReportAsync(DateTime? date)
         {
-            var day = (date?.Date ?? VietnamTime.Today);
+            var day = (date?.Date ?? VietnamTime.Today());
             var fromUtc = VietnamTime.DayStartUtc(day);
             var toUtc = VietnamTime.DayEndExclusiveUtc(day);
 

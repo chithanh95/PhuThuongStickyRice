@@ -1,7 +1,6 @@
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Shop;
-using PhuThuongStickyRice.Application.Wave3.DTOs;
-using PhuThuongStickyRice.Application.Wave5.DTOs;
+
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using System;
@@ -11,6 +10,11 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
 using Volo.Abp.ObjectMapping;
+using PhuThuongStickyRice.Application.Orders;
+using PhuThuongStickyRice.Application.Orders.DTOs;
+using PhuThuongStickyRice.Application.Reports;
+using PhuThuongStickyRice.Application.Shop;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
@@ -151,7 +155,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var settings = await _shopSettings.GetAsync();
             var target = settings.DailyTargetAmount > 0 ? settings.DailyTargetAmount : 2000000;
 
-            var todayVn = Wave5.VietnamTime.Today();
+            var todayVn = VietnamTime.Today();
             var startUtc = todayVn.AddHours(-7); // VN 00:00 → UTC
             var endUtc = startUtc.AddDays(1);
 
@@ -269,7 +273,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         public virtual async Task<TodayVsYesterdayDto> GetTodayVsYesterdayAsync()
         {
-            var todayVn = Wave5.VietnamTime.Today();
+            var todayVn = VietnamTime.Today();
             var startUtc = todayVn.AddHours(-7); // VN 00:00 today → UTC
             var yesterdayStartUtc = startUtc.AddDays(-1);
             var endUtc = startUtc.AddDays(1);
