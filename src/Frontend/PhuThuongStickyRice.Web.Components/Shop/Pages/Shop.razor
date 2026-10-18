@@ -148,67 +148,7 @@ else
 else
 {
     <!-- Filters: categories + dietary tags + sort + branch -->
-    <div class="card mb-4 shop-filters-sticky">
-        <div class="card-body py-3">
-            @if (_branches != null && _branches.Count > 0)
-            {
-                <div class="mb-3">
-                    <div class="small text-muted mb-1">Chi nhánh:</div>
-                    <ul class="nav nav-pills shop-filter-tabs">
-                        <li class="nav-item"><button class="nav-link @BranchTabClass(null)" @onclick="() => SetBranch(null)">Tất cả</button></li>
-                        @foreach (var b in _branches)
-                        {
-                            <li class="nav-item"><button class="nav-link @BranchTabClass(b.Id)" @onclick="() => SetBranch(b.Id)">@b.Name</button></li>
-                        }
-                    </ul>
-                </div>
-            }
-            <div class="mb-3">
-                <div class="small text-muted mb-1">Nhu cầu:</div>
-                @* Lexa nav-pills thay cho btn-group. *@
-                <ul class="nav nav-pills shop-filter-tabs">
-                    <li class="nav-item"><button class="nav-link @NeedTabClass(null)" @onclick="() => SetNeedFilter(null)">Tất cả</button></li>
-                    <li class="nav-item"><button class="nav-link @NeedTabClass("ansang")" @onclick='() => SetNeedFilter("ansang")'>☀️ Ăn sáng</button></li>
-                    <li class="nav-item"><button class="nav-link @NeedTabClass("cungtiec")" @onclick='() => SetNeedFilter("cungtiec")'>🕯️ Cúng &amp; tiệc</button></li>
-                    <li class="nav-item"><button class="nav-link @NeedTabClass("bieutang")" @onclick='() => SetNeedFilter("bieutang")'>🎁 Biếu tặng</button></li>
-                    <li class="nav-item"><button class="nav-link @NeedTabClass("itbeo")" @onclick='() => SetNeedFilter("itbeo")'>🥬 Ít béo</button></li>
-                </ul>
-            </div>
-            <div class="mb-3 shop-filter-cat">
-                <div class="small text-muted mb-1">Danh mục:</div>
-                <ul class="nav nav-pills shop-filter-tabs">
-                    <li class="nav-item"><button class="nav-link @CategoryTabClass(null)" @onclick="() => SetCategory(null)">Tất cả</button></li>
-                    @foreach (var cat in _categories)
-                    {
-                        <li class="nav-item"><button class="nav-link @CategoryTabClass(cat)" @onclick="() => SetCategory(cat)">@cat</button></li>
-                    }
-                </ul>
-            </div>
-            <div class="mb-2">
-                <div class="small text-muted mb-1">Sắp xếp:</div>
-                @* Lexa nav-pills thay cho dropdown (dropdown bị cắt trong card). *@
-                <ul class="nav nav-pills shop-filter-tabs">
-                    <li class="nav-item"><button class="nav-link @( _sort == "popular" ? "active" : "" )" @onclick='() => SetSort("popular")'>Bán chạy</button></li>
-                    <li class="nav-item"><button class="nav-link @( _sort == "priceAsc" ? "active" : "" )" @onclick='() => SetSort("priceAsc")'>Giá tăng dần</button></li>
-                    <li class="nav-item"><button class="nav-link @( _sort == "priceDesc" ? "active" : "" )" @onclick='() => SetSort("priceDesc")'>Giá giảm dần</button></li>
-                    <li class="nav-item"><button class="nav-link @( _sort == "newest" ? "active" : "" )" @onclick='() => SetSort("newest")'>Mới nhất</button></li>
-                </ul>
-            </div>
-            @* Wave 6b (item 29): client-side search by name, debounced. *@
-            <div class="mt-2" style="max-width: 420px;">
-                <div class="input-group input-group-sm">
-                    <input class="form-control" placeholder="Tìm món ăn..." aria-label="Tìm món ăn"
-                           value="@_searchTerm" @oninput="OnSearchInput" />
-                    @if (!string.IsNullOrWhiteSpace(_searchTerm))
-                    {
-                        <div class="input-group-append">
-                            <button class="btn btn-outline-secondary" type="button" title="Xóa tìm kiếm" @onclick="ClearSearch">✕</button>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
+    
 
     @* Item 118: time-based suggestions — pure client-side by hour. *@
     @if (_suggestions.Count > 0)
