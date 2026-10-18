@@ -8,8 +8,9 @@
     transform: scale(1.08);
 }
 
-/* Ensure the card image container clips the zoom */
-.card {
+/* Ensure the product card image container clips the zoom
+   (chỉ card sản phẩm — card filter cần overflow visible cho dropdown) */
+.card.h-100 {
     overflow: hidden;
 }
 
