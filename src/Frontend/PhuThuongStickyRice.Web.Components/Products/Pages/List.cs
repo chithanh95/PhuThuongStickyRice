@@ -37,6 +37,36 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         public List<ProductModel> Products { get; set; }
 
+        /// <summary>Tìm kiếm + phân trang (kiểu Lexa).</summary>
+        protected string SearchText { get; set; } = "";
+        protected int CurrentPage { get; set; } = 1;
+        protected int PageSize { get; set; } = 10;
+
+        protected IEnumerable<ProductModel> FilteredProducts =>
+            string.IsNullOrWhiteSpace(SearchText)
+                ? (Products ?? Enumerable.Empty<ProductModel>())
+                : Products.Where(p =>
+                    p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                    (p.Code != null && p.Code.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
+
+        protected int TotalPages =>
+            Math.Max(1, (int)Math.Ceiling(FilteredProducts.Count() / (double)PageSize));
+
+        protected IEnumerable<ProductModel> PagedProducts =>
+            FilteredProducts.Skip((CurrentPage - 1) * PageSize).Take(PageSize);
+
+        protected void OnSearchChanged(ChangeEventArgs e)
+        {
+            SearchText = e.Value?.ToString() ?? "";
+            CurrentPage = 1;
+        }
+
+        protected void GoToPage(int page)
+        {
+            if (page >= 1 && page <= TotalPages)
+                CurrentPage = page;
+        }
+
         /// <summary>Item 155: fine-grained permission keys of the current user.</summary>
         public HashSet<string> Permissions { get; set; } =
             new(StringComparer.OrdinalIgnoreCase);
