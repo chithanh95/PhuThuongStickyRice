@@ -38,13 +38,8 @@
             </nav>
 
             <div class="shp-header-right">
-                @* GL3: language dropdown, same as landing. *@
-                <select class="shp-lang-select" value="@AppI18n.CurrentLang" @onchange="OnLangSelectChanged" aria-label="Language / Ngôn ngữ" title="Ngôn ngữ / Language">
-                    <option value="vi">🇻🇳</option>
-                    <option value="en">🇬🇧</option>
-                    <option value="zh">🇨🇳</option>
-                    <option value="ja">🇯🇵</option>
-                </select>
+                @* GL3: language dropdown cờ quốc gia, đồng bộ mọi màn hình. *@
+                <LanguageSelector Compact="true" />
                 @if (!string.IsNullOrEmpty(_hotline))
                 {
                     <a class="shp-hotline" href="tel:@_hotline" title="Gọi cho quán">
@@ -220,9 +215,6 @@
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
 
     private async Task SetLang(string lang) => await AppI18n.SetLangAsync(lang);
-
-    private async Task OnLangSelectChanged(ChangeEventArgs e) =>
-        await SetLang(e.Value?.ToString() ?? "vi");
 
     private async Task SignOut()
     {

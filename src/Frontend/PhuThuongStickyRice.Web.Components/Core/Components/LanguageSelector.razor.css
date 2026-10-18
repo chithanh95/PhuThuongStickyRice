@@ -1,0 +1,85 @@
+/* LanguageSelector: dropdown cờ quốc gia (ảnh PNG, hiển thị tốt trên mọi thiết bị) */
+.lang-selector {
+    position: relative;
+    display: inline-block;
+}
+.lang-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--shp-surface, #fff);
+    border: 1px solid var(--shp-line, #e8ddd0);
+    border-radius: 10px;
+    padding: 5px 8px;
+    cursor: pointer;
+}
+.lang-btn:hover {
+    background: #f4ecdc;
+}
+html.dark .lang-btn:hover {
+    background: #2b2f36;
+}
+.lang-flag {
+    width: 22px;
+    height: 16px;
+    object-fit: cover;
+    border-radius: 3px;
+    display: block;
+}
+.lang-caret {
+    font-size: 10px;
+    color: #8a7a63;
+}
+.lang-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 150px;
+    background: #fff;
+    border: 1px solid #e8ddd0;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    z-index: 1050;
+    overflow: hidden;
+}
+html.dark .lang-menu {
+    background: #241d17;
+    border-color: #3a3226;
+}
+.lang-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    border: none;
+    background: none;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #212529;
+    text-align: left;
+}
+html.dark .lang-item { color: #f0e8dc; }
+.lang-item:hover {
+    background: #f4ecdc;
+}
+html.dark .lang-item:hover {
+    background: #2e2620;
+}
+.lang-item.active {
+    background: #efe9fb;
+    font-weight: 700;
+}
+html.dark .lang-item.active {
+    background: #2e2620;
+}
+.lang-item .lang-flag {
+    width: 24px;
+    height: 18px;
+}
+/* Bản gọn cho mobile: chỉ cờ, không tên */
+@media (max-width: 768px) {
+    .lang-compact .lang-menu { min-width: 0; }
+    .lang-compact .lang-name { display: none; }
+    .lang-compact .lang-item { padding: 10px 12px; }
+}

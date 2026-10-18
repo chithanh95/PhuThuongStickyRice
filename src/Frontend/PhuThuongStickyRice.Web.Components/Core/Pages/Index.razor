@@ -114,12 +114,7 @@ else
         </nav>
         <div class="sg-header-right">
             <div class="sg-lang-dropdown">
-                <select class="sg-lang-select" value="@AppI18n.CurrentLang" @onchange="OnLangSelectChanged" aria-label="Language / Ngôn ngữ" title="Ngôn ngữ / Language">
-                    <option value="vi">🇻🇳</option>
-                    <option value="en">🇬🇧</option>
-                    <option value="zh">🇨🇳</option>
-                    <option value="ja">🇯🇵</option>
-                </select>
+                <LanguageSelector Compact="true" />
             </div>
             <button class="sg-theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
                 @(_isDark ? "☀️" : "🌙")

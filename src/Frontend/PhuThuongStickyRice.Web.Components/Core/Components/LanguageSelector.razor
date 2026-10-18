@@ -1,0 +1,56 @@
+@* Component chọn ngôn ngữ dùng ảnh cờ (hiển thị được trên mọi thiết bị, kể cả Windows).
+   Dùng chung cho landing + shop, mobile + PC. *@
+@inject NavigationManager Navigation
+@inject AppI18n AppI18n
+
+<div class="lang-selector @(Compact ? "lang-compact" : "")">
+    <button type="button" class="lang-btn" @onclick="ToggleOpen" aria-label="Language / Ngôn ngữ" aria-haspopup="true" aria-expanded="@_open">
+        <img src="@FlagUrl(AppI18n.CurrentLang)" alt="@AppI18n.CurrentLang" class="lang-flag" />
+        <span class="lang-caret">▾</span>
+    </button>
+    @if (_open)
+    {
+        <div class="lang-menu" role="menu">
+            @foreach (var lang in Langs)
+            {
+                <button type="button" class="lang-item @(AppI18n.CurrentLang == lang.Code ? "active" : "")"
+                        @onclick="() => SelectLang(lang.Code)" role="menuitem">
+                    <img src="@FlagUrl(lang.Code)" alt="@lang.Name" class="lang-flag" />
+                    <span class="lang-name">@lang.Name</span>
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Compact { get; set; }
+
+    private bool _open;
+
+    private record LangOption(string Code, string Flag, string Name);
+    private static readonly LangOption[] Langs = new[]
+    {
+        new LangOption("vi", "vn", "Tiếng Việt"),
+        new LangOption("en", "gb", "English"),
+        new LangOption("zh", "cn", "中文"),
+        new LangOption("ja", "jp", "日本語"),
+    };
+
+    private static string FlagUrl(string code)
+    {
+        var flag = Langs.FirstOrDefault(l => l.Code == code)?.Flag ?? "vn";
+        return $"/images/flags/{flag}.png";
+    }
+
+    private void ToggleOpen() => _open = !_open;
+
+    private async Task SelectLang(string code)
+    {
+        _open = false;
+        if (AppI18n.CurrentLang == code) return;
+        await AppI18n.SetLangAsync(code);
+        // Reload để áp dụng ngôn ngữ cho toàn trang.
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+}
