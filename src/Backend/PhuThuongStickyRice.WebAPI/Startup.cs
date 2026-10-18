@@ -291,7 +291,9 @@ namespace PhuThuongStickyRice.WebAPI
                     "/swagger/PhuThuongStickyRice/swagger.json",
                     "PhuThuongStickyRice API");
 
-                setupAction.RoutePrefix = string.Empty;
+                // One-click LAN: Blazor chiếm route "/" nên Swagger dời sang "/swagger".
+                // Bình thường (không serve Blazor) Swagger vẫn ở root như cũ.
+                setupAction.RoutePrefix = blazorFileProvider != null ? "swagger" : string.Empty;
 
                 setupAction.DefaultModelExpandDepth(2);
                 setupAction.DefaultModelRendering(ModelRendering.Model);
