@@ -64,7 +64,16 @@ echo.
 
 start "Xoi API :5000" cmd /k "cd /d %PUB%\api && dotnet PhuThuongStickyRice.WebAPI.dll --urls http://0.0.0.0:5000"
 timeout /t 5 /nobreak >nul
-start "Xoi Web :5001" cmd /k "cd /d %PUB%\web && dotnet PhuThuongStickyRice.Web.dll --urls http://0.0.0.0:5001"
+REM Web la Blazor WebAssembly (file tinh) -> dung Python http.server, khong chay dotnet duoc
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo  KHONG TIM THAY PYTHON. Cai Python tu python.org roi chay lai file nay.
+    echo.
+    pause
+    exit /b 1
+)
+start "Xoi Web :5001" cmd /k "cd /d %PUB%\web\wwwroot && python -m http.server 5001 --bind 0.0.0.0"
 
 echo  Da mo 2 cua so server. De nguyen de web chay.
 echo  Dong 2 cua so de dung web.
