@@ -33,6 +33,17 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
         }
 
+        /// <summary>
+        /// 404 → về trang không tìm thấy.
+        /// </summary>
+        protected void HandleNotFound(HttpResponseMessage response)
+        {
+            if (response.StatusCode == HttpStatusCode.NotFound && _navigation != null)
+            {
+                _navigation.NavigateTo("/not-found");
+            }
+        }
+
         public async Task<string> GetAccessToken()
         {
             var token = await _tokenManager.GetToken();
@@ -70,6 +81,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
             var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);
+            HandleNotFound(response);
             response.EnsureSuccessStatusCode();
 
             var data = await response.Content.ReadAs<T>();
@@ -90,6 +102,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);
+            HandleNotFound(response);
             response.EnsureSuccessStatusCode();
             var createdObject = await response.Content.ReadAs<T>();
             return createdObject;
@@ -106,6 +119,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);
+            HandleNotFound(response);
             response.EnsureSuccessStatusCode();
             var updatedObject = await response.Content.ReadAs<T>();
             return updatedObject;
@@ -120,6 +134,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);
+            HandleNotFound(response);
             response.EnsureSuccessStatusCode();
         }
     }
