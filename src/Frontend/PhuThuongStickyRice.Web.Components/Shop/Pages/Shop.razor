@@ -6,6 +6,7 @@
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Shop.Components
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject ShopService ShopService
@@ -405,9 +406,8 @@ else
                         }
                     </p>
                     <div class="d-flex align-items-center">
-                        <label class="mr-2 mb-0" for="qv-qty">Số lượng:</label>
-                        <input id="qv-qty" type="number" min="1" max="99" class="form-control" style="width: 90px;"
-                               @bind="_quickViewQty" />
+                        <label class="mr-2 mb-0">Số lượng:</label>
+                        <QuantitySpinner @bind-Value="_quickViewQty" Min="1" Max="99" />
                     </div>
                     @* Wave 6a (item 24): per-item note flows into the order line. *@
                     <div class="form-group mt-2 mb-0">
