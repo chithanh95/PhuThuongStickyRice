@@ -258,10 +258,19 @@ namespace PhuThuongStickyRice.WebAPI
                 if (System.IO.Directory.Exists(fullPath))
                 {
                     blazorFileProvider = new PhysicalFileProvider(fullPath);
+                    // Blazor WASM cần serve mọi file trong wwwroot (gồm .dat, .wasm, .dll...)
+                    // mà StaticFiles mặc định chặn file không rõ MIME type.
+                    var contentTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+                    contentTypeProvider.Mappings[".dat"] = "application/octet-stream";
+                    contentTypeProvider.Mappings[".wasm"] = "application/wasm";
+                    contentTypeProvider.Mappings[".dll"] = "application/octet-stream";
+                    contentTypeProvider.Mappings[".blat"] = "application/octet-stream";
                     app.UseStaticFiles(new StaticFileOptions
                     {
                         FileProvider = blazorFileProvider,
-                        RequestPath = ""
+                        RequestPath = "",
+                        ContentTypeProvider = contentTypeProvider,
+                        ServeUnknownFileTypes = true
                     });
                     System.Console.WriteLine($"[LAN] Serving Blazor WASM from: {fullPath}");
                 }
