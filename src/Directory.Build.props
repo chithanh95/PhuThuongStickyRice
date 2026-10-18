@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    Suppress NuGet warnings that break EF Core PMC commands (Update-Database etc.)
+    because Package Manager Console runs with $ErrorActionPreference = "Stop",
+    turning any warning into a terminating error even though the build succeeds.
+
+    NU1901 to NU1904: known vulnerability advisories on (transitive) packages.
+    NU1510: "package will not be pruned / automatically available" suggestions.
+    Neither blocks a working build; review them separately via dotnet list package.
+  -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU1901;NU1902;NU1903;NU1904;NU1510</NoWarn>
+  </PropertyGroup>
+</Project>

@@ -4,9 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <AnalysisMode>Recommended</AnalysisMode>
     <AnalysisModeSecurity>All</AnalysisModeSecurity>
-    <!-- NU1901-NU1904: known-vulnerability warnings on transitive packages;
-         not actionable locally, and they break Update-Database in PMC (ErrorActionPreference=Stop). -->
-    <NoWarn>$(NoWarn);NU1901;NU1902;NU1903;NU1904</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
