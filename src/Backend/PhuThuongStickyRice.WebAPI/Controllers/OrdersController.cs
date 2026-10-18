@@ -348,6 +348,33 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Customer self-service: change address / delivery slot of a Pending
+        /// order. The order number + phone in the body must match the order.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPut("track/address")]
+        public async Task<ActionResult> UpdateAddressByCustomer(
+            [FromBody] UpdateOrderAddressRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.UpdateAddressByCustomerAsync(new UpdateOrderAddressByCustomerInput
+                {
+                    OrderNumber = model?.OrderNumber,
+                    CustomerPhone = model?.CustomerPhone,
+                    CustomerAddress = model?.CustomerAddress,
+                    DeliverySlot = model?.DeliverySlot
+                });
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Public: submit a star rating for a completed order.
         /// </summary>
         [AllowAnonymous]

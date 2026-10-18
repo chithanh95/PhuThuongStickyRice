@@ -18,6 +18,7 @@
 @inject ToastService Toasts
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject FunnelService Funnel
 
 <div class="jumbotron jumbotron-fluid bg-warning text-dark rounded p-4 mb-4">
     <div class="container">
@@ -51,6 +52,9 @@
         </div>
     </div>
 </div>
+
+@* SH3: delivery info strip from shop settings (fail-soft defaults). *@
+<div class="shop-info-strip mb-3">🚚 @DeliveryInfoText()</div>
 
 <ul class="nav nav-tabs mb-4">
     <li class="nav-item">
@@ -159,6 +163,16 @@ else
                 </div>
             }
             <div class="mb-2">
+                <span class="text-muted small mr-2">Nhu cầu:</span>
+                <div class="btn-group btn-group-sm flex-wrap" role="group">
+                    <button class="btn @NeedChipClass(null)" @onclick="() => SetNeedFilter(null)">Tất cả</button>
+                    <button class="btn @NeedChipClass("ansang")" @onclick='() => SetNeedFilter("ansang")'>☀️ Ăn sáng</button>
+                    <button class="btn @NeedChipClass("cungtiec")" @onclick='() => SetNeedFilter("cungtiec")'>🕯️ Cúng &amp; tiệc</button>
+                    <button class="btn @NeedChipClass("bieutang")" @onclick='() => SetNeedFilter("bieutang")'>🎁 Biếu tặng</button>
+                    <button class="btn @NeedChipClass("itbeo")" @onclick='() => SetNeedFilter("itbeo")'>🥬 Ít béo</button>
+                </div>
+            </div>
+            <div class="mb-2">
                 <span class="text-muted small mr-2">Danh mục:</span>
                 <div class="btn-group btn-group-sm flex-wrap" role="group">
                     <button class="btn @CategoryChipClass(null)" @onclick="() => SetCategory(null)">Tất cả</button>
@@ -260,13 +274,18 @@ else
                                 {
                                     <span class="badge badge-secondary mr-1">Tạm hết</span>
                                 }
+                                else if (IsDailyLimitReached(product))
+                                {
+                                    @* SH4: daily limit exhausted but product still Active. *@
+                                    <span class="badge badge-secondary mr-1">Hết hôm nay</span>
+                                }
                                 @* Item 164: outside the sale time windows. *@
                                 @if (!IsSoldOut(product) && !IsInSaleHours(product))
                                 {
                                     <span class="badge badge-info mr-1">⏰ Chỉ bán @SaleHoursLabel(product)</span>
                                 }
-                                @* Item 165: low daily stock. *@
-                                @if (!IsSoldOut(product) && product.RemainingToday.HasValue && product.RemainingToday.Value < 10)
+                                @* Item 165: low daily stock (only when some portions remain). *@
+                                @if (!IsSoldOut(product) && !IsDailyLimitReached(product) && product.RemainingToday.HasValue && product.RemainingToday.Value < 10)
                                 {
                                     <span class="badge badge-warning mr-1">Còn @product.RemainingToday suất</span>
                                 }
@@ -383,11 +402,17 @@ else
                         {
                             <span class="badge badge-secondary ml-2">Tạm hết</span>
                         }
+                        else if (IsDailyLimitReached(_quickView))
+                        {
+                            @* SH4: daily limit exhausted but product still Active. *@
+                            <span class="badge badge-secondary ml-2">Hết hôm nay</span>
+                        }
                         @if (!IsSoldOut(_quickView) && !IsInSaleHours(_quickView))
                         {
                             <span class="badge badge-info ml-2">⏰ Chỉ bán @SaleHoursLabel(_quickView)</span>
                         }
-                        @if (!IsSoldOut(_quickView) && _quickView.RemainingToday.HasValue && _quickView.RemainingToday.Value < 10)
+                        @* Item 165: low daily stock (only when some portions remain). *@
+                        @if (!IsSoldOut(_quickView) && !IsDailyLimitReached(_quickView) && _quickView.RemainingToday.HasValue && _quickView.RemainingToday.Value < 10)
                         {
                             <span class="badge badge-warning ml-2">Còn @_quickView.RemainingToday suất</span>
                         }
@@ -437,6 +462,16 @@ else
 } @* /_loadFailed else *@
 } @* /_activeTab else *@
 
+@* SH1: sticky cart bar — visible whenever the cart has items. *@
+@if (CartState.TotalQuantity > 0)
+{
+    <a href="/cart" class="shop-sticky-cart">
+        <span class="shop-sticky-cart-info">🛒 @CartState.TotalQuantity món · @FormatPrice(CartState.TotalAmount)</span>
+        <span class="shop-sticky-cart-cta">Xem giỏ →</span>
+    </a>
+    <div class="shop-sticky-cart-spacer" aria-hidden="true"></div>
+}
+
 @code {
     private string _activeTab = "products";
     private List<ShopProductModel> _products;
@@ -456,6 +491,9 @@ else
     // Filters.
     private string _categoryFilter;
     private string _sort = "popular";
+
+    // SH2: quick-filter preset by customer need (null = off).
+    private string _needFilter;
 
     // Wave 6b (item 29): client-side product search, debounced 300ms.
     private string _searchTerm = string.Empty;
@@ -530,7 +568,10 @@ else
     protected override async Task OnInitializedAsync()
     {
         I18n.OnChange += OnLangChanged;
+        // SH1: re-render the sticky cart bar when items are added/removed.
+        CartState.OnChange += OnCartChanged;
         await I18n.InitializeAsync();
+        Funnel.Track(FunnelService.Events.ShopView, new Uri(Navigation.Uri).AbsolutePath);
         _tableLabel = GetQueryValue(Navigation.Uri, "ban");
 
         // Item 133: order source from shop entry params.
@@ -744,6 +785,52 @@ else
         ApplyFilters();
     }
 
+    /// <summary>
+    /// SH2: "Lọc theo nhu cầu" presets — client-side only, mapped onto
+    /// existing product data (tags / IsSignature / price). A preset with no
+    /// matching products simply shows the existing empty state.
+    /// </summary>
+    private void SetNeedFilter(string need)
+    {
+        _needFilter = need;
+        ApplyFilters();
+    }
+
+    private string NeedChipClass(string need) =>
+        string.Equals(_needFilter, need, StringComparison.OrdinalIgnoreCase)
+            ? "btn-primary" : "btn-outline-primary";
+
+    private static bool MatchesNeed(ShopProductModel product, string need) => need switch
+    {
+        // Savory breakfast items (same rule as the morning suggestions).
+        "ansang" => ProductTags(product).Contains("man"),
+        // Đẹp mắt, hợp mâm cỗ / tiệc.
+        "cungtiec" => product?.IsSignature == true,
+        // Món cao cấp để biếu tặng.
+        "bieutang" => MinPrice(product) >= 35000,
+        // Chay = nhẹ, ít béo.
+        "itbeo" => ProductTags(product).Contains("chay"),
+        _ => true,
+    };
+
+    /// <summary>
+    /// SH3: delivery info line from shop settings. Fail-soft — when settings
+    /// failed to load, sensible defaults are shown.
+    /// </summary>
+    private string DeliveryInfoText()
+    {
+        var parts = new List<string>();
+        var fee = _shopSettings?.DeliveryFee ?? 10000;
+        parts.Add(fee > 0 ? $"Phí giao từ {FormatPrice(fee)}" : "Miễn phí giao hàng");
+        var freeShip = _shopSettings?.FreeShipThreshold ?? 200000;
+        if (freeShip > 0)
+        {
+            parts.Add($"Miễn phí đơn từ {FormatPrice(freeShip)}");
+        }
+        parts.Add($"Giao {FormatHour(ShopHours.ParseOpen(_shopSettings?.OpenTime))}–{FormatHour(ShopHours.ParseClose(_shopSettings?.CloseTime))}");
+        return string.Join(" · ", parts);
+    }
+
     private void OnSortChanged(ChangeEventArgs e)
     {
         _sort = e.Value?.ToString() ?? "popular";
@@ -753,6 +840,7 @@ else
     private void ClearFilters()
     {
         _categoryFilter = null;
+        _needFilter = null;
         _sort = "popular";
         ClearSearch();
     }
@@ -804,6 +892,12 @@ else
         if (!string.IsNullOrWhiteSpace(_categoryFilter))
         {
             query = query.Where(p => string.Equals(p.Category?.Trim(), _categoryFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // SH2: quick-filter by customer need, mapped onto existing product data.
+        if (!string.IsNullOrWhiteSpace(_needFilter))
+        {
+            query = query.Where(p => MatchesNeed(p, _needFilter));
         }
 
         // Wave 6b (item 29): name search (diacritics-sensitive).
@@ -902,6 +996,12 @@ else
         if (IsSoldOut(product))
         {
             Toasts.Show($"'{product?.Name}' tạm hết, vui lòng chọn món khác.");
+            return;
+        }
+        // SH4: same as sold-out — the button is already disabled via CanOrder.
+        if (IsDailyLimitReached(product))
+        {
+            Toasts.Show($"'{product?.Name}' đã hết suất hôm nay, vui lòng quay lại ngày mai.");
             return;
         }
         var qty = _quantities.TryGetValue(product.Id, out var q) && q > 0 ? q : 1;
@@ -1074,6 +1174,12 @@ else
         if (IsSoldOut(_quickView))
         {
             Toasts.Show($"'{_quickView.Name}' tạm hết, vui lòng chọn món khác.");
+            return;
+        }
+        // SH4: same as sold-out — the button is already disabled via CanOrder.
+        if (IsDailyLimitReached(_quickView))
+        {
+            Toasts.Show($"'{_quickView.Name}' đã hết suất hôm nay, vui lòng quay lại ngày mai.");
             return;
         }
 
@@ -1322,9 +1428,12 @@ else
 
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
 
+    private void OnCartChanged() => InvokeAsync(StateHasChanged);
+
     public void Dispose()
     {
         I18n.OnChange -= OnLangChanged;
+        CartState.OnChange -= OnCartChanged;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
     }

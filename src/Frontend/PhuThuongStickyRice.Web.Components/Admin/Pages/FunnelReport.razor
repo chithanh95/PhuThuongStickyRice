@@ -1,0 +1,124 @@
+@page "/admin/funnel"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@using static PhuThuongStickyRice.Web.Components.Shop.Services.FunnelService
+@inject FunnelService Funnel
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Phễu khách hàng</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Xôi Phú Thượng</a></li>
+        <li>Tài chính</li>
+        <li class="current">Phễu khách hàng</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Lượt xem theo bước <small class="text-muted">— hôm nay &amp; 7 ngày qua</small></h4>
+                <p class="card-title-desc">
+                    Đo lường ẩn danh, không lưu thông tin cá nhân.
+                    Landing → Thực đơn → Giỏ hàng → Đặt hàng → Đặt thành công, kèm tra cứu đơn.
+                </p>
+
+                @if (_loading)
+                {
+                    <p><em>Đang tải...</em></p>
+                }
+                else if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="alert alert-danger">@_error</div>
+                }
+                else if (_rows == null || _rows.Count == 0)
+                {
+                    <div class="alert alert-info">Chưa có dữ liệu phễu.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Bước</th>
+                                    <th class="text-right">Hôm nay</th>
+                                    <th class="text-right">7 ngày qua</th>
+                                    <th class="text-right">Tỉ lệ chuyển đổi*</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in _rows)
+                                {
+                                    <tr>
+                                        <td><strong>@StepLabel(r.EventName)</strong><br /><small class="text-muted">@r.EventName</small></td>
+                                        <td class="text-right">@r.Today.ToString("N0")</td>
+                                        <td class="text-right">@r.Last7Days.ToString("N0")</td>
+                                        <td class="text-right">@ConversionLabel(r)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-muted"><small>* Tỉ lệ so với bước Landing (7 ngày qua).</small></p>
+                }
+
+                <button class="btn btn-outline-primary" @onclick="LoadAsync" disabled="@_loading">
+                    @(_loading ? "Đang tải..." : "↻ Tải lại")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<FunnelReportRow> _rows;
+    private bool _loading;
+    private string _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _rows = await Funnel.GetReportAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Không tải được báo cáo phễu. Vui lòng thử lại.";
+            _rows = new List<FunnelReportRow>();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string StepLabel(string eventName) => eventName switch
+    {
+        FunnelService.Events.LandingView => "🏠 Landing",
+        FunnelService.Events.ShopView => "🍚 Thực đơn",
+        FunnelService.Events.CartView => "🛒 Giỏ hàng",
+        FunnelService.Events.CheckoutView => "💳 Trang đặt hàng",
+        FunnelService.Events.OrderPlaced => "✅ Đặt thành công",
+        FunnelService.Events.TrackView => "🔍 Tra cứu đơn",
+        _ => eventName,
+    };
+
+    private string ConversionLabel(FunnelReportRow row)
+    {
+        var landing = _rows?.FirstOrDefault(r => r.EventName == FunnelService.Events.LandingView);
+        if (landing == null || landing.Last7Days <= 0 || row.EventName == FunnelService.Events.LandingView)
+        {
+            return "—";
+        }
+        var pct = (double)row.Last7Days / landing.Last7Days * 100;
+        return pct.ToString("0.0") + "%";
+    }
+}

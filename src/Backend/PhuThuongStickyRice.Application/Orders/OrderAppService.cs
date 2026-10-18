@@ -115,6 +115,9 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Customer self-service: edit quantities of a Pending order (phone must match).</summary>
         Task<OrderDto> UpdateLinesByCustomerAsync(UpdateOrderLinesInput input);
 
+        /// <summary>Customer self-service: change address / delivery slot of a Pending order (phone must match).</summary>
+        Task<OrderDto> UpdateAddressByCustomerAsync(UpdateOrderAddressByCustomerInput input);
+
         /// <summary>
         /// Item 142 (Admin): groups of possibly-duplicate orders — same
         /// phone, placed within the last 30 minutes, still Pending/Confirmed.
@@ -1301,6 +1304,19 @@ namespace PhuThuongStickyRice.Application.Orders
             var linesDto = _objectMapper.Map<Order, OrderDto>(order);
             linesDto.AdminNote = null;
             return linesDto;
+        }
+
+        public virtual async Task<OrderDto> UpdateAddressByCustomerAsync(UpdateOrderAddressByCustomerInput input)
+        {
+            var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
+
+            order.UpdateAddressByCustomer(input.CustomerAddress, input.DeliverySlot);
+
+            await _orders.UpdateAsync(order);
+            // Wave 6c (item 33): internal note is never serialized publicly.
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            dto.AdminNote = null;
+            return dto;
         }
 
         public virtual async Task<OrderReviewDto> SubmitReviewAsync(SubmitReviewInput input)

@@ -1,6 +1,7 @@
 @inject NavigationManager NavigationManager
 @inject PhuThuongStickyRice.Web.Components.Shop.Services.CartState CartState
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave4Service Wave4Service
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @implements IDisposable
 
 @using PhuThuongStickyRice.Web.Shared
@@ -115,6 +116,8 @@ else
             // Restore the persisted cart from localStorage now that
             // JS interop is available.
             await CartState.InitializeAsync();
+            // GL4: bật chống ảnh gãy toàn site (chỉ 1 lần).
+            try { await JSRuntime.InvokeVoidAsync("ptInitImageGuard"); } catch { }
         }
     }
 

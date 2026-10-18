@@ -247,3 +247,43 @@
         width: 60px;
     }
 }
+
+/* NQ4: franchise FAQ accordion. */
+.nq-faq-card {
+    border: 1px solid #e8dcc3;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.nq-faq-card .card-header {
+    background: #fffdf7;
+    border-bottom: none;
+}
+
+.nq-faq-q {
+    color: #763434;
+    font-size: 1rem;
+    text-decoration: none;
+}
+
+.nq-faq-q:hover {
+    color: #6F0707;
+    text-decoration: none;
+}
+
+.nq-faq-a {
+    color: #4a2b1a;
+    line-height: 1.7;
+}
+
+html.dark .nq-faq-card .card-header {
+    background: #2b2118;
+}
+
+html.dark .nq-faq-q {
+    color: #f0d9b5;
+}
+
+html.dark .nq-faq-a {
+    color: #e8dcc3;
+}

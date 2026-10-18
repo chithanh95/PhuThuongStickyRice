@@ -364,6 +364,21 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public List<UpdateOrderLineQtyDto> Lines { get; set; } = new List<UpdateOrderLineQtyDto>();
     }
 
+    /// <summary>Customer self-service: change address / delivery slot of a Pending order.</summary>
+    public class UpdateOrderAddressByCustomerInput
+    {
+        [Required]
+        public string OrderNumber { get; set; }
+
+        [Required]
+        public string CustomerPhone { get; set; }
+
+        [Required]
+        public string CustomerAddress { get; set; }
+
+        public string DeliverySlot { get; set; }
+    }
+
     /// <summary>Post-delivery survey for a completed order.</summary>
     public class SubmitReviewInput
     {

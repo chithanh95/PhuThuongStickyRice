@@ -230,6 +230,14 @@ namespace PhuThuongStickyRice.Web
             // App-wide i18n (VI default, EN/ZH/JA) for the public web chrome.
             builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Core.Services.AppI18n>();
 
+            // GL1: anonymous funnel measurement.
+            builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Shop.Services.FunnelService, PhuThuongStickyRice.Web.Components.Shop.Services.FunnelService>(client =>
+            {
+                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Item 87: end-of-day inventory counts (kiểm kê cuối ngày).
             builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService, PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService>(client =>
             {

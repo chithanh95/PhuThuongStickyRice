@@ -61,6 +61,40 @@
         "openingHours": "Mo-Su 05:00-21:00"
     }
     </script>
+    <!-- FQ4: FAQPage structured data — đồng bộ với nội dung trang /faq (admin sửa FAQ thì cập nhật thêm). -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "Đặt hàng tối thiểu bao nhiêu?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Không giới hạn số lượng tối thiểu cho đơn lẻ — đặt 1 gói cũng được." }
+            },
+            {
+                "@type": "Question",
+                "name": "Thanh toán bằng hình thức nào?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Thanh toán khi nhận hàng (tự đến lấy hoặc shipper), hoặc chuyển khoản theo hướng dẫn ở bước thanh toán." }
+            },
+            {
+                "@type": "Question",
+                "name": "Nhận hàng như thế nào?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Tự đến quán lấy, hoặc book shipper bên thứ ba đến lấy giúp bạn — shop không giao hàng trực tiếp." }
+            },
+            {
+                "@type": "Question",
+                "name": "Đặt số lượng lớn tối thiểu bao nhiêu?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Từ 30 gói/mâm trở lên. Đơn nhỏ hơn vui lòng đặt trực tiếp tại cửa hàng." }
+            },
+            {
+                "@type": "Question",
+                "name": "Tra cứu đơn hàng bằng gì?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Nhập mã đơn tại trang Tra cứu đơn hàng để xem trạng thái mới nhất." }
+            }
+        ]
+    }
+    </script>
     <!-- PWA (item 115) -->
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#7a1b2e" />

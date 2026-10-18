@@ -692,3 +692,36 @@ interop.downloadFile = function (url, token, fileName) {
         alert("Không tải được file: " + err.message);
     });
 };
+
+/* GL4: chống ảnh gãy toàn site — thay ảnh lỗi bằng placeholder "Chưa có ảnh".
+   Gọi 1 lần khi app khởi động (App.razor firstRender).
+   - Capture-phase listener: sự kiện error của <img> không bubble nên phải bắt ở capture.
+   - Không tranh với handler onerror riêng của component: nếu img đã có
+     onerror (attribute hoặc property) thì để component tự xử lý.
+   - Đánh dấu ảnh đã thay bằng data-pt-img-guarded để không thay 2 lần. */
+window.ptInitImageGuard = function () {
+    if (window.__ptImageGuard) { return; }
+    window.__ptImageGuard = true;
+    try {
+        var PLACEHOLDER = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMzAwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjIwMCIgeT0iMTUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjE2Ij5DaMawYSBjw7Mg4bqjbmg8L3RleHQ+PC9zdmc+";
+        var guardOne = function (img) {
+            if (!img || img.tagName !== "IMG") { return; }
+            if (img.dataset.ptImgGuarded) { return; }
+            // Component đã tự gắn onerror -> không tranh giành.
+            if (img.getAttribute("onerror") || img.onerror) { return; }
+            img.dataset.ptImgGuarded = "1";
+            img.src = PLACEHOLDER;
+        };
+        document.addEventListener("error", function (e) {
+            guardOne(e.target);
+        }, true);
+        // Quét ảnh đã gãy trước khi guard được bật (cache lỗi, render trước init).
+        var imgs = document.querySelectorAll("img");
+        for (var i = 0; i < imgs.length; i++) {
+            var img = imgs[i];
+            if (img.complete && img.naturalWidth === 0 && img.src) {
+                guardOne(img);
+            }
+        }
+    } catch (e) { }
+};

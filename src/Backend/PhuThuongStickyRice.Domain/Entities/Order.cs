@@ -743,6 +743,40 @@ namespace PhuThuongStickyRice.Domain.Entities
             RecalculateTotals();
         }
 
+        /// <summary>
+        /// Customer self-service: changes the delivery address / time slot of
+        /// a still-Pending order (track-order "Đổi địa chỉ"). Only address and
+        /// slot — totals are unaffected.
+        /// </summary>
+        public void UpdateAddressByCustomer(string customerAddress, string deliverySlot)
+        {
+            if (Status != OrderStatus.Pending)
+            {
+                throw new DomainException("Chỉ đơn hàng đang chờ xác nhận mới được đổi địa chỉ / giờ giao.");
+            }
+
+            var address = (customerAddress ?? "").Trim();
+            var slot = (deliverySlot ?? "").Trim();
+
+            if (string.IsNullOrEmpty(address))
+            {
+                throw new DomainException("Vui lòng nhập địa chỉ nhận hàng.");
+            }
+
+            if (address.Length > CustomerAddressMaxLength)
+            {
+                throw new DomainException($"Địa chỉ không được vượt quá {CustomerAddressMaxLength} ký tự.");
+            }
+
+            if (slot.Length > DeliverySlotMaxLength)
+            {
+                throw new DomainException($"Giờ giao không được vượt quá {DeliverySlotMaxLength} ký tự.");
+            }
+
+            CustomerAddress = address;
+            DeliverySlot = string.IsNullOrEmpty(slot) ? null : slot;
+        }
+
         private void RecalculateTotals()
         {
             var currency = TotalAmount.Currency;

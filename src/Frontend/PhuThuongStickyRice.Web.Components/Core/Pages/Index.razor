@@ -21,6 +21,7 @@
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 @inject AppI18n AppI18n
+@inject FunnelService Funnel
 @implements IDisposable
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -151,6 +152,19 @@ else
             <a href="/shop" class="sg-btn sg-btn-solid sg-btn-lg">@T("Đặt xôi ngay", "Order now")</a>
             <a href="#thuc-don" class="sg-btn sg-btn-ghost sg-btn-lg">@T("Xem thực đơn", "View menu")</a>
         </div>
+        @* LD4: đếm ngược chốt đơn (fail-soft — ẩn khi không tính được) *@
+        @if (!string.IsNullOrEmpty(_cutoffText))
+        {
+            <p class="sg-cutoff-pill">⏰ @_cutoffText</p>
+        }
+        @* LD2: lối tắt đặt theo nhu cầu *@
+        <div class="sg-hero-quicklinks">
+            <a href="/dat-tiec">@T("Đặt tiệc", "Party catering")</a>
+            <span aria-hidden="true">·</span>
+            <a href="/dat-so-luong-lon">@T("Đặt số lượng lớn", "Bulk order")</a>
+            <span aria-hidden="true">·</span>
+            <a href="/dat-so-luong-lon?loai=dinh-ky">@T("Giao mỗi sáng", "Daily delivery")</a>
+        </div>
     </div>
     <a class="sg-scroll" href="#gioi-thieu" aria-label="Cuộn xuống">
         <span class="sg-scroll-mouse"><span class="sg-scroll-wheel"></span></span>
@@ -172,6 +186,20 @@ else
                 <div class="sg-stat"><strong>@_stats.TotalOrders.ToString("N0")</strong><span>đơn đã giao</span></div>
                 <div class="sg-stat"><strong>@_stats.AvgRating.ToString("0.0")/5</strong><span>điểm đánh giá</span></div>
                 <div class="sg-stat"><strong>@_stats.ReviewCount.ToString("N0")</strong><span>lượt đánh giá</span></div>
+            </div>
+        }
+        @* LD3: 3 đánh giá thật ngay dưới hero — chỉ hiện khi DB có review *@
+        @if (_reviews != null && _reviews.Count > 0)
+        {
+            <div class="sg-trust-reviews">
+                @foreach (var r in _reviews.Take(3))
+                {
+                    <div class="sg-trust-review">
+                        <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, r.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, r.Rating))))</div>
+                        <p class="sg-trust-review-text">"@r.Comment"</p>
+                        <p class="sg-trust-review-name">— @MaskPhone(r.CustomerPhone)</p>
+                    </div>
+                }
             </div>
         }
     </div>
@@ -760,6 +788,14 @@ else
     }
 </div>
 
+<!-- LD1: NÚT GIỎ HÀNG NỔI — chỉ hiện khi giỏ có món -->
+@if (CartState.TotalQuantity > 0)
+{
+    <a class="sg-cart-float" href="/cart" aria-label="Xem giỏ hàng" title="Xem giỏ hàng">
+        🛒 <strong>@CartState.TotalQuantity</strong> @T("món", "items") · @CartState.TotalAmount.ToString("N0")₫
+    </a>
+}
+
 <!-- STICKY CTA MOBILE (item 1) -->
 <div class="sg-sticky-cta">
     @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
@@ -1080,7 +1116,10 @@ else
         try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") == "dark"; } catch { }
         AppI18n.OnChange -= OnLangChanged;
         AppI18n.OnChange += OnLangChanged;
+        CartState.OnChange -= OnCartChanged;
+        CartState.OnChange += OnCartChanged;
         await AppI18n.InitializeAsync();
+        Funnel.Track(FunnelService.Events.LandingView, new Uri(Navigation.Uri).AbsolutePath);
 
         try
         {
@@ -1091,6 +1130,13 @@ else
                 var (isOpen, text) = ShopHours.StatusText(settings.OpenTime, settings.CloseTime);
                 _openNow = isOpen;
                 _openStatusText = text;
+                // LD4: đếm ngược chốt đơn — cập nhật mỗi phút.
+                UpdateCutoffText();
+                _cutoffTimer?.Dispose();
+                _cutoffTimer = new System.Threading.Timer(_ =>
+                {
+                    try { InvokeAsync(() => { UpdateCutoffText(); StateHasChanged(); }); } catch { }
+                }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
                 // Landing item 18: tracking.
                 try { await JSRuntime.InvokeVoidAsync("ptInitTracking", settings.FacebookPixelId, settings.GoogleAnalyticsId); } catch { }
             }
@@ -1617,6 +1663,57 @@ else
 
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
 
+    // LD1: giỏ hàng thay đổi (thêm/xóa từ tab khác) → cập nhật nút giỏ nổi.
+    private void OnCartChanged() => InvokeAsync(StateHasChanged);
+
+    // LD4: đếm ngược chốt đơn, tính từ giờ mở/đóng trong shop settings.
+    // - Quán đang mở: đếm tới giờ đóng (kịp giao sáng nay).
+    // - Quán đã nghỉ: đếm tới giờ giao sáng mai (giờ mở + 30 phút).
+    // Fail-soft: không tính được thì ẩn.
+    private string _cutoffText;
+    private System.Threading.Timer _cutoffTimer;
+
+    private void UpdateCutoffText()
+    {
+        _cutoffText = null;
+        try
+        {
+            if (_shopSettings == null || !_shopSettings.AcceptingOrders) return;
+            var now = ShopHours.NowInVietnam();
+            var open = ShopHours.ParseOpen(_shopSettings.OpenTime);
+            var close = ShopHours.ParseClose(_shopSettings.CloseTime);
+            var isOpen = ShopHours.IsOpen(_shopSettings.OpenTime, _shopSettings.CloseTime, now);
+            if (isOpen)
+            {
+                var remain = close - now;
+                if (remain <= TimeSpan.Zero) return;
+                _cutoffText = T(
+                    $"Đặt trong {(int)remain.TotalHours} giờ {remain.Minutes:D2} phút để kịp giao sáng nay",
+                    $"Order within {(int)remain.TotalHours}h {remain.Minutes:D2}m for delivery this morning");
+            }
+            else
+            {
+                // Giao sáng: giờ mở + 30 phút (mặc định 6:30).
+                var delivery = open.Add(TimeSpan.FromMinutes(30));
+                var nowVn = DateTimeOffset.UtcNow.AddHours(7).DateTime;
+                var target = nowVn.Date.Add(delivery);
+                var isTomorrow = false;
+                if (target <= nowVn)
+                {
+                    target = target.AddDays(1);
+                    isTomorrow = true;
+                }
+                var remain = target - nowVn;
+                if (remain <= TimeSpan.Zero || remain.TotalHours > 24) return;
+                var deliveryLabel = $"{(int)delivery.TotalHours}h{delivery.Minutes:D2}";
+                _cutoffText = T(
+                    $"Đặt trong {(int)remain.TotalHours} giờ {remain.Minutes:D2} phút để kịp giao {deliveryLabel} {(isTomorrow ? "sáng mai" : "sáng nay")}",
+                    $"Order within {(int)remain.TotalHours}h {remain.Minutes:D2}m for {deliveryLabel} delivery {(isTomorrow ? "tomorrow morning" : "this morning")}");
+            }
+        }
+        catch { _cutoffText = null; }
+    }
+
     private async Task PrintMenu()
     {
         try { await JSRuntime.InvokeVoidAsync("ptPrintMenu"); } catch { }
@@ -1715,5 +1812,7 @@ else
     public void Dispose()
     {
         AppI18n.OnChange -= OnLangChanged;
+        CartState.OnChange -= OnCartChanged;
+        try { _cutoffTimer?.Dispose(); } catch { }
     }
 }

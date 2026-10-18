@@ -1,0 +1,44 @@
+@* FQ2: mini-FAQ dùng chung — nhúng vào các trang quy trình.
+   Context: "checkout" | "track" | "bulk". Không đụng Checkout.razor. *@
+
+<div class="card faq-mini mb-4">
+    <div class="card-body">
+        <h5 class="card-title">❓ Hỏi đáp nhanh</h5>
+        @foreach (var item in Items)
+        {
+            <div class="faq-mini-item">
+                <strong class="faq-mini-q">@item.Question</strong>
+                <p class="faq-mini-a text-muted mb-2">@item.Answer</p>
+            </div>
+        }
+        <a href="/faq">Xem tất cả câu hỏi →</a>
+    </div>
+</div>
+
+@code {
+    /// <summary>"checkout" | "track" | "bulk" — nội dung 3 Q&A thay đổi theo ngữ cảnh.</summary>
+    [Parameter]
+    public string Context { get; set; } = "checkout";
+
+    private List<(string Question, string Answer)> Items => Context switch
+    {
+        "track" => new List<(string, string)>
+        {
+            ("Tra cứu đơn hàng bằng gì?", "Nhập mã đơn (VD: PX-20261018-1234) tại trang Tra cứu đơn hàng để xem trạng thái mới nhất."),
+            ("Muốn đổi hoặc hủy đơn thì làm sao?", "Đơn ở trạng thái chờ xác nhận có thể hủy trực tiếp; đơn đã xác nhận vui lòng gọi hotline hoặc chat Zalo để được hỗ trợ."),
+            ("Đơn của tôi bị chậm, phải làm sao?", "Kiểm tra trạng thái ở trang tra cứu; nếu quá giờ hẹn, liên hệ shop qua hotline/Zalo để được xử lý ưu tiên.")
+        },
+        "bulk" => new List<(string, string)>
+        {
+            ("Đặt số lượng lớn tối thiểu bao nhiêu?", "Từ 30 gói/mâm trở lên. Đơn nhỏ hơn vui lòng đặt trực tiếp tại cửa hàng."),
+            ("Có cần thanh toán trước không?", "Không cần thanh toán trước khi gửi yêu cầu — shop gọi lại báo giá, thống nhất xong mới chốt đơn."),
+            ("Đặt tiệc có giao đúng giờ không?", "Có. Ghi rõ giờ cần giao trong ghi chú (VD: giao trước 10h sáng), shop sắp xếp lịch giao phù hợp.")
+        },
+        _ => new List<(string, string)>
+        {
+            ("Đặt hàng tối thiểu bao nhiêu?", "Không giới hạn số lượng tối thiểu cho đơn lẻ — đặt 1 gói cũng được."),
+            ("Thanh toán bằng hình thức nào?", "Thanh toán khi nhận hàng (tự đến lấy hoặc shipper), hoặc chuyển khoản theo hướng dẫn ở bước thanh toán."),
+            ("Nhận hàng như thế nào?", "Tự đến quán lấy, hoặc book shipper bên thứ ba đến lấy giúp bạn — shop không giao hàng trực tiếp.")
+        }
+    };
+}

@@ -91,6 +91,17 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
+        /// TC3: customer self-service — change address / delivery slot of a
+        /// still-Pending order (order number + phone must match).
+        /// </summary>
+        public async Task<TrackedOrderModel> UpdateAddressByCustomerAsync(
+            string orderNumber, string phone, string address, string deliverySlot)
+        {
+            return await PutAsync<TrackedOrderModel>("api/orders/track/address",
+                new { OrderNumber = orderNumber, CustomerPhone = phone, CustomerAddress = address, DeliverySlot = deliverySlot });
+        }
+
+        /// <summary>
         /// Submits the post-delivery survey. dishRatings: optional per-dish
         /// stars as {ProductId, Rating} objects (Wave 6b, item 26).
         /// </summary>

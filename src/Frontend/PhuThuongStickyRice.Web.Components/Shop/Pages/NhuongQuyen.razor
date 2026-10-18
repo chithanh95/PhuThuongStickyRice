@@ -1,6 +1,7 @@
 @page "/nhuong-quyen"
 <PageTitle>Nhượng quyền — Xôi Phú Thượng</PageTitle>
 @using System
+@using System.Collections.Generic
 @using System.Text.RegularExpressions
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
@@ -76,11 +77,13 @@
             <div class="col-md-8">
                 <table class="table nq-table">
                     <tbody>
-                        <tr><td>Phí nhượng quyền thương hiệu</td><td class="text-right"><strong>Liên hệ</strong></td></tr>
+                        @* NQ1: chi phí minh bạch — chưa chốt thì ghi "Liên hệ", không bịa số. *@
+                        <tr><td>Phí nhượng quyền một lần</td><td class="text-right"><strong>Liên hệ</strong></td></tr>
+                        <tr><td>Phí duy trì thương hiệu hàng tháng</td><td class="text-right"><strong>Liên hệ</strong></td></tr>
+                        <tr><td>Chia sẻ doanh thu</td><td class="text-right"><strong>Liên hệ</strong></td></tr>
                         <tr><td>Setup quầy kệ, biển hiệu, thiết bị</td><td class="text-right"><strong>80 – 150 triệu</strong></td></tr>
                         <tr><td>Nguyên liệu & vốn lưu động ban đầu</td><td class="text-right"><strong>20 – 40 triệu</strong></td></tr>
                         <tr><td>Đào tạo & chuyển giao công thức</td><td class="text-right"><strong class="nq-free">Miễn phí</strong></td></tr>
-                        <tr class="nq-total"><td><strong>Tổng vốn dự kiến</strong></td><td class="text-right"><strong>100 – 200 triệu</strong></td></tr>
                     </tbody>
                 </table>
                 <p class="text-muted small text-center">* Chi phí thực tế tùy diện tích mặt bằng và khu vực. Để lại thông tin để được tư vấn chi tiết.</p>
@@ -92,12 +95,39 @@
 <div class="xo-container nq-section">
     <h2 class="xo-sec-title">Quy trình 5 bước</h2>
     <div class="xo-sec-div"><span></span><em>Nhanh gọn trong 30 ngày</em><span></span></div>
+    @* NQ2: quy trình hợp tác 5 bước dạng stepper. *@
     <div class="nq-steps">
-        <div class="nq-step"><div class="nq-step-num">1</div><h5>Đăng ký tư vấn</h5><p>Để lại thông tin, đội ngũ liên hệ trong 24h.</p></div>
-        <div class="nq-step"><div class="nq-step-num">2</div><h5>Khảo sát mặt bằng</h5><p>Đánh giá vị trí, lưu lượng khách tiềm năng.</p></div>
-        <div class="nq-step"><div class="nq-step-num">3</div><h5>Ký hợp đồng</h5><p>Thống nhất điều khoản, thanh toán phí nhượng quyền.</p></div>
-        <div class="nq-step"><div class="nq-step-num">4</div><h5>Setup & đào tạo</h5><p>Thi công quầy kệ, đào tạo đội ngũ 7–10 ngày.</p></div>
-        <div class="nq-step"><div class="nq-step-num">5</div><h5>Khai trương</h5><p>Hỗ trợ truyền thông và vận hành tuần đầu.</p></div>
+        <div class="nq-step"><div class="nq-step-num">1</div><h5>Tìm hiểu</h5><p>Để lại thông tin, đội ngũ gửi tài liệu & gọi tư vấn trong 24h.</p></div>
+        <div class="nq-step"><div class="nq-step-num">2</div><h5>Gặp gỡ</h5><p>Gặp trực tiếp, trao đổi mô hình và khảo sát mặt bằng dự kiến.</p></div>
+        <div class="nq-step"><div class="nq-step-num">3</div><h5>Ký kết</h5><p>Thống nhất điều khoản, ký hợp đồng nhượng quyền.</p></div>
+        <div class="nq-step"><div class="nq-step-num">4</div><h5>Setup & đào tạo</h5><p>Thi công quầy kệ, đào tạo đội ngũ 7–10 ngày tại quán chính.</p></div>
+        <div class="nq-step"><div class="nq-step-num">5</div><h5>Khai trương</h5><p>Hỗ trợ truyền thông và vận hành tuần đầu tiên.</p></div>
+    </div>
+</div>
+
+<div class="xo-container nq-section">
+    @* NQ4: hỏi đáp nhượng quyền. *@
+    <h2 class="xo-sec-title">Hỏi đáp nhượng quyền</h2>
+    <div class="xo-sec-div"><span></span><em>Giải đáp trước khi quyết định</em><span></span></div>
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            @foreach (var faq in _nqFaqs)
+            {
+                var open = _nqOpenIndex == faq.Key;
+                <div class="card mb-2 nq-faq-card" @key="faq.Key">
+                    <div class="card-header p-2">
+                        <button class="btn btn-link btn-block text-left p-1 nq-faq-q" type="button"
+                                @onclick="() => _nqOpenIndex = open ? -1 : faq.Key">
+                            <strong>@(open ? "▾" : "▸") @faq.Value.Question</strong>
+                        </button>
+                    </div>
+                    @if (open)
+                    {
+                        <div class="card-body nq-faq-a">@faq.Value.Answer</div>
+                    }
+                </div>
+            }
+        </div>
     </div>
 </div>
 
@@ -142,14 +172,38 @@
                                     @if (!string.IsNullOrEmpty(_provinceError)) { <small class="text-danger">@_provinceError</small> }
                                 </div>
                                 <div class="form-group col-md-6">
-                                    <label>Vốn dự kiến</label>
-                                    <select class="form-control" @bind="_model.Budget">
+                                    <label>Vốn dự kiến *</label>
+                                    <select class="form-control @FieldClass(_budgetError)" @bind="_model.Budget">
                                         <option value="">— Chọn mức vốn —</option>
                                         <option>Dưới 100 triệu</option>
                                         <option>100 – 200 triệu</option>
                                         <option>200 – 500 triệu</option>
                                         <option>Trên 500 triệu</option>
                                     </select>
+                                    @if (!string.IsNullOrEmpty(_budgetError)) { <small class="text-danger">@_budgetError</small> }
+                                </div>
+                            </div>
+                            @* NQ3: câu hỏi sàng lọc trước khi tư vấn. *@
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label>Tình trạng mặt bằng *</label>
+                                    <select class="form-control @FieldClass(_premisesError)" @bind="_premises">
+                                        <option value="">— Chọn tình trạng —</option>
+                                        <option>Đã có mặt bằng</option>
+                                        <option>Đang tìm mặt bằng</option>
+                                        <option>Chưa có mặt bằng</option>
+                                    </select>
+                                    @if (!string.IsNullOrEmpty(_premisesError)) { <small class="text-danger">@_premisesError</small> }
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Kinh nghiệm F&B *</label>
+                                    <select class="form-control @FieldClass(_experienceError)" @bind="_experience">
+                                        <option value="">— Chọn mức kinh nghiệm —</option>
+                                        <option>Đang kinh doanh ăn uống</option>
+                                        <option>Đã từng kinh doanh ăn uống</option>
+                                        <option>Chưa có kinh nghiệm</option>
+                                    </select>
+                                    @if (!string.IsNullOrEmpty(_experienceError)) { <small class="text-danger">@_experienceError</small> }
                                 </div>
                             </div>
                             <div class="form-group">
@@ -177,6 +231,33 @@
     private string _nameError;
     private string _phoneError;
     private string _provinceError;
+    private string _budgetError;
+    private string _premisesError;
+    private string _experienceError;
+
+    // NQ3: câu hỏi sàng lọc (gộp vào Notes vì model không có field riêng).
+    private string _premises;
+    private string _experience;
+
+    // NQ4: hỏi đáp nhượng quyền (không bịa số — chưa chốt thì ghi liên hệ).
+    private int _nqOpenIndex = -1;
+    private readonly Dictionary<int, (string Question, string Answer)> _nqFaqs = new()
+    {
+        [0] = ("Phí nhượng quyền bao gồm những gì?",
+               "Bao gồm: quyền sử dụng thương hiệu Xôi Phú Thượng, toàn bộ công thức & định lượng, đào tạo đội ngũ 7–10 ngày tại quán chính, hỗ trợ thiết kế mặt bằng & biển hiệu, kế hoạch marketing khai trương. Mức phí cụ thể vui lòng liên hệ để được tư vấn chi tiết."),
+        [1] = ("Tôi chưa có kinh nghiệm kinh doanh ăn uống, có làm được không?",
+               "Được. Mô hình quán xôi tinh gọn, quy trình chuẩn hóa sẵn; bạn và nhân sự được đào tạo tận nơi 7–10 ngày kèm tài liệu vận hành chi tiết. Điều quan trọng là sự nghiêm túc và mặt bằng phù hợp."),
+        [2] = ("Yêu cầu mặt bằng như thế nào?",
+               "Phù hợp mặt bằng nhỏ, khu dân cư, trường học, văn phòng — nơi có lưu lượng người qua lại vào buổi sáng. Nếu chưa có mặt bằng, đội ngũ sẽ tư vấn tiêu chí chọn điểm khi gặp gỡ."),
+        [3] = ("Bao lâu thì hoàn vốn?",
+               "Tùy vị trí, quy mô và cách vận hành của từng điểm bán. Mô hình vốn đầu tư hợp lý nên thời gian hoàn vốn thường nhanh hơn mặt bằng chung ngành F&B — liên hệ để được tư vấn chi tiết theo khu vực của bạn."),
+        [4] = ("Nguyên liệu có phải nhập từ hệ thống không?",
+               "Hệ thống kết nối nhà cung cấp nếp, đậu, thịt giá gốc để đảm bảo chất lượng đồng đều. Chi tiết cơ chế cung ứng sẽ được thống nhất khi ký kết."),
+        [5] = ("Tôi có được độc quyền khu vực không?",
+               "Chính sách độc quyền khu vực được trao đổi cụ thể theo từng trường hợp — vui lòng liên hệ để biết chi tiết."),
+        [6] = ("Sau khai trương có được hỗ trợ tiếp không?",
+               "Có. Tuần đầu khai trương được hỗ trợ vận hành trực tiếp; sau đó đội ngũ đồng hành qua kênh tư vấn thường xuyên khi bạn cần.")
+    };
 
     private async Task SubmitAsync()
     {
@@ -184,11 +265,22 @@
         _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
         _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
         _provinceError = string.IsNullOrWhiteSpace(_model.EventLocation) ? "Vui lòng nhập tỉnh/thành phố dự kiến." : null;
+        _budgetError = string.IsNullOrWhiteSpace(_model.Budget) ? "Vui lòng chọn mức vốn dự kiến." : null;
+        _premisesError = string.IsNullOrWhiteSpace(_premises) ? "Vui lòng chọn tình trạng mặt bằng." : null;
+        _experienceError = string.IsNullOrWhiteSpace(_experience) ? "Vui lòng chọn mức kinh nghiệm F&B." : null;
 
-        if (_nameError != null || _phoneError != null || _provinceError != null)
+        if (_nameError != null || _phoneError != null || _provinceError != null
+            || _budgetError != null || _premisesError != null || _experienceError != null)
         {
             _error = "Vui lòng kiểm tra lại các thông tin được đánh dấu.";
             return;
+        }
+
+        // NQ3: gộp câu trả lời sàng lọc vào ghi chú.
+        var screen = $"[Sàng lọc] Mặt bằng: {_premises}; Kinh nghiệm F&B: {_experience}.";
+        if (_model.Notes == null || !_model.Notes.Contains("[Sàng lọc]"))
+        {
+            _model.Notes = screen + "\n" + (_model.Notes ?? "");
         }
 
         _submitting = true;

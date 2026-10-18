@@ -10,6 +10,7 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @using Microsoft.JSInterop
 @inject ShopService ShopService
+@inject ShopSettingsService ShopSettingsService
 @inject CartState CartState
 @inject ToastService Toasts
 @inject Wave2Service Wave2Service
@@ -17,24 +18,26 @@
 @inject Wave5Service Wave5Service
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject AppI18n AppI18n
+@inject FunnelService Funnel
 @implements IDisposable
 
-<h1>Tra cứu đơn hàng</h1>
+<h1>@AppI18n.T("shop.track_title")</h1>
 
 <div class="card mb-3 to-lookup">
     <div class="card-body">
         <div class="form-row">
             <div class="col-md-4">
-                <label>Mã đơn hàng</label>
+                <label>@AppI18n.T("shop.order_number")</label>
                 <input class="form-control" @bind="_orderNumber" placeholder="PX-20261014-0001" />
             </div>
             <div class="col-md-4">
-                <label>Số điện thoại đặt hàng</label>
+                <label>@AppI18n.T("shop.order_phone")</label>
                 <input class="form-control" @bind="_phone" placeholder="0901234567" />
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button class="btn btn-primary" @onclick="Lookup" disabled="@_loading">
-                    @(_loading ? "Đang tra cứu..." : "Tra cứu")
+                    @(_loading ? AppI18n.T("shop.looking_up") : AppI18n.T("shop.lookup"))
                 </button>
             </div>
         </div>
@@ -48,15 +51,15 @@
 @* Lịch sử đơn hàng theo SĐT — không cần đăng nhập. *@
 <div class="card mb-3 to-history">
     <div class="card-body">
-        <h5>📋 Lịch sử đơn hàng</h5>
-        <p class="text-muted"><small>Nhập số điện thoại đã dùng để đặt hàng để xem toàn bộ đơn cũ và đặt lại 1 chạm.</small></p>
+        <h5>@AppI18n.T("shop.order_history")</h5>
+        <p class="text-muted"><small>@AppI18n.T("shop.history_hint")</small></p>
         <div class="form-row">
             <div class="col-md-4">
                 <input class="form-control" @bind="_historyPhone" placeholder="0901234567" inputmode="tel" />
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button class="btn btn-outline-primary" @onclick="LoadHistoryAsync" disabled="@_historyLoading">
-                    @(_historyLoading ? "Đang tải..." : "Xem lịch sử")
+                    @(_historyLoading ? AppI18n.T("common.loading") : AppI18n.T("shop.view_history"))
                 </button>
             </div>
         </div>
@@ -68,14 +71,14 @@
         {
             if (_history.Count == 0)
             {
-                <p class="text-muted mt-3 mb-0"><em>Số này chưa có đơn hàng nào.</em></p>
+                <p class="text-muted mt-3 mb-0"><em>@AppI18n.T("shop.no_orders")</em></p>
             }
             else
             {
                 <div class="table-responsive mt-3">
                     <table class="table table-sm">
                         <thead>
-                            <tr><th>Mã đơn</th><th>Ngày đặt</th><th class="text-right">Tổng tiền</th><th>Trạng thái</th><th></th></tr>
+                            <tr><th>@AppI18n.T("shop.order_number")</th><th>@AppI18n.T("shop.order_date")</th><th class="text-right">@AppI18n.T("shop.order_total")</th><th>@AppI18n.T("common.status")</th><th></th></tr>
                         </thead>
                         <tbody>
                             @foreach (var h in _history)
@@ -86,8 +89,8 @@
                                     <td class="text-right">@FormatPrice(h.TotalAmount)</td>
                                     <td>@OrderStatusBadge(h.Status)</td>
                                     <td class="text-right text-nowrap">
-                                        <button class="btn btn-sm btn-outline-info mr-1" @onclick="() => ViewHistoryDetail(h)">Chi tiết</button>
-                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ReorderAsync(h)" disabled="@_reordering">🔄 Đặt lại</button>
+                                        <button class="btn btn-sm btn-outline-info mr-1" @onclick="() => ViewHistoryDetail(h)">@AppI18n.T("shop.detail")</button>
+                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ReorderAsync(h)" disabled="@_reordering">@AppI18n.T("shop.reorder")</button>
                                     </td>
                                 </tr>
                             }
@@ -107,10 +110,52 @@
             <span class="float-right">@OrderStatusBadge(_order.Status)</span>
         </div>
         <div class="card-body">
+            @* TC2: visual status timeline. *@
+            @if (string.Equals(_order.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="to-timeline to-timeline-cancelled">
+                    <div class="to-tl-step to-tl-cancelled">
+                        <span class="to-tl-dot"><i class="fa-solid fa-xmark"></i></span>
+                        <span class="to-tl-label">Đơn hàng đã bị hủy</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="to-timeline">
+                    @for (var stepIndex = 0; stepIndex < StatusSteps.Length; stepIndex++)
+                    {
+                        var stepState = stepIndex < CurrentStatusIndex ? "done"
+                            : stepIndex == CurrentStatusIndex ? "current" : "todo";
+                        <div class="to-tl-step to-tl-@stepState">
+                            <span class="to-tl-dot">
+                                @if (stepState == "done")
+                                {
+                                    <i class="fa-solid fa-check"></i>
+                                }
+                                else
+                                {
+                                    <i class="fa-solid @StatusSteps[stepIndex].Icon"></i>
+                                }
+                            </span>
+                            <span class="to-tl-label">@StatusSteps[stepIndex].Label</span>
+                        </div>
+                        @if (stepIndex < StatusSteps.Length - 1)
+                        {
+                            var lineState = stepIndex < CurrentStatusIndex ? "done" : "todo";
+                            <div class="to-tl-line to-tl-@lineState"></div>
+                        }
+                    }
+                </div>
+                @if (!string.IsNullOrWhiteSpace(ExpectedDeliveryText))
+                {
+                    <p class="text-muted mb-2"><small>📅 Dự kiến giao: <strong>@ExpectedDeliveryText</strong></small></p>
+                }
+            }
             @* Wave 6a (item 21): reorder — restores the order's lines into the cart. *@
             <div class="mb-2">
                 <button class="btn btn-outline-success btn-sm" @onclick="() => ReorderAsync(_order)" disabled="@_reordering">
-                    @(_reordering ? "Đang khôi phục..." : "🔄 Đặt lại đơn này")
+                    @(_reordering ? AppI18n.T("shop.reordering") : AppI18n.T("shop.reorder"))
                 </button>
                 @if (!string.IsNullOrEmpty(_reorderMessage))
                 {
@@ -287,9 +332,10 @@
             @if (_order.Status == "Pending")
             {
                 <div class="mb-3">
-                    @if (!_editingLines)
+                    @if (!_editingLines && !_editingAddress)
                     {
                         <button class="btn btn-outline-secondary btn-sm" @onclick="StartEditLines">✏️ Sửa đơn (số lượng)</button>
+                        <button class="btn btn-outline-info btn-sm ml-2" @onclick="StartEditAddress">📍 Đổi địa chỉ / giờ giao</button>
                         <button class="btn btn-outline-danger btn-sm ml-2" @onclick="CancelOrder" disabled="@_cancelling">
                             @(_cancelling ? "Đang hủy..." : "Hủy đơn")
                         </button>
@@ -297,6 +343,33 @@
                         {
                             <div class="alert alert-danger mt-2 mb-0">@_cancelError</div>
                         }
+                    }
+                    else if (_editingAddress)
+                    {
+                        @* TC3: đổi địa chỉ / giờ giao khi đơn còn chờ xác nhận. *@
+                        <div class="card">
+                            <div class="card-header py-2"><strong>📍 Đổi địa chỉ / giờ giao</strong></div>
+                            <div class="card-body py-2">
+                                <div class="form-group mb-2">
+                                    <label><small>Địa chỉ nhận hàng</small></label>
+                                    <input class="form-control form-control-sm" @bind="_editAddress"
+                                           maxlength="500" placeholder="Số nhà, đường, phường..." />
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label><small>Giờ giao mong muốn <span class="text-muted">(tùy chọn)</span></small></label>
+                                    <input class="form-control form-control-sm" @bind="_editDeliverySlot"
+                                           maxlength="50" placeholder="VD: 6h30–7h00" />
+                                </div>
+                                @if (!string.IsNullOrEmpty(_editAddressError))
+                                {
+                                    <div class="alert alert-danger mt-2 mb-1">@_editAddressError</div>
+                                }
+                                <button class="btn btn-success btn-sm mt-1" @onclick="SaveEditedAddress" disabled="@_savingAddrForm">
+                                    @(_savingAddrForm ? "Đang lưu..." : "Lưu thay đổi")
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm mt-1 ml-2" @onclick="() => _editingAddress = false">Bỏ qua</button>
+                            </div>
+                        </div>
                     }
                     else
                     {
@@ -325,6 +398,13 @@
                             </div>
                         </div>
                     }
+                </div>
+            }
+            else if (IsActivePipelineStatus(_order.Status))
+            {
+                @* TC3: đơn đã được shop xác nhận — chỉ còn cách gọi hotline. *@
+                <div class="alert alert-info py-2 mb-3">
+                    <small>📞 Đơn đã được shop xác nhận. @ChangeHotlineNote</small>
                 </div>
             }
 
@@ -640,6 +720,123 @@
     private bool _savingLines;
     private string _editError;
 
+    // TC3: customer self-service — change address / delivery slot (Pending only).
+    private bool _editingAddress;
+    private string _editAddress;
+    private string _editDeliverySlot;
+    private bool _savingAddrForm;
+    private string _editAddressError;
+
+    // TC3: shop hotline for the "call hotline to change" note (fail-soft).
+    private string _hotline;
+
+    /// <summary>TC2: status timeline steps for the 5-step order pipeline.</summary>
+    private sealed record StatusStep(string Status, string Label, string Icon);
+
+    private static readonly StatusStep[] StatusSteps =
+    {
+        new StatusStep("Pending", "Chờ xác nhận", "fa-hourglass-half"),
+        new StatusStep("Confirmed", "Đã xác nhận", "fa-check"),
+        new StatusStep("Preparing", "Đang chuẩn bị", "fa-fire"),
+        new StatusStep("Delivering", "Đang giao", "fa-motorcycle"),
+        new StatusStep("Completed", "Hoàn thành", "fa-circle-check"),
+    };
+
+    /// <summary>TC2: 0-based index of the order's current step in the pipeline.</summary>
+    private int CurrentStatusIndex
+    {
+        get
+        {
+            if (_order == null)
+            {
+                return 0;
+            }
+
+            for (var i = 0; i < StatusSteps.Length; i++)
+            {
+                if (string.Equals(StatusSteps[i].Status, _order.Status, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// TC2: expected delivery text. Uses the order's delivery slot first,
+    /// then the scheduled pickup time; omitted when unknown.
+    /// </summary>
+    private string ExpectedDeliveryText
+    {
+        get
+        {
+            if (_order == null || string.Equals(_order.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_order.DeliverySlot))
+            {
+                return _order.DeliverySlot;
+            }
+
+            if (_order.ScheduledFor.HasValue)
+            {
+                return _order.ScheduledFor.Value.ToLocalTime().ToString("HH:mm dd/MM");
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>TC3: true for statuses where the shop has taken over the order.</summary>
+    private static bool IsActivePipelineStatus(string status) =>
+        string.Equals(status, "Confirmed", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(status, "Preparing", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(status, "Delivering", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>TC3: hotline note shown when self-service is no longer available.</summary>
+    private string ChangeHotlineNote =>
+        string.IsNullOrWhiteSpace(_hotline)
+            ? "Vui lòng gọi hotline để thay đổi."
+            : $"Vui lòng gọi hotline {_hotline} để thay đổi.";
+
+    /// <summary>TC3: opens the address / delivery-slot form.</summary>
+    private void StartEditAddress()
+    {
+        _editAddressError = null;
+        _editAddress = _order.CustomerAddress;
+        _editDeliverySlot = _order.DeliverySlot;
+        _editingLines = false;
+        _editingAddress = true;
+    }
+
+    /// <summary>TC3: saves the new address / delivery slot (Pending only, server-enforced).</summary>
+    private async Task SaveEditedAddress()
+    {
+        _editAddressError = null;
+        _savingAddrForm = true;
+        try
+        {
+            _order = await Wave2Service.UpdateAddressByCustomerAsync(
+                _order.OrderNumber, _order.CustomerPhone, _editAddress, _editDeliverySlot);
+            _editingAddress = false;
+            Toasts.Show("Đã cập nhật địa chỉ / giờ giao.");
+        }
+        catch (Exception ex)
+        {
+            _editAddressError = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Không lưu được thay đổi. Vui lòng thử lại."
+                : ex.Message;
+        }
+        finally
+        {
+            _savingAddrForm = false;
+        }
+    }
+
     // Wave 6a (item 21): reorder.
     private bool _reordering;
     private string _reorderMessage;
@@ -725,6 +922,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        AppI18n.OnChange += OnLangChanged;
+        await AppI18n.InitializeAsync();
+        Funnel.Track(FunnelService.Events.TrackView, new Uri(Navigation.Uri).AbsolutePath);
         var query = ParseQuery(Navigation.Uri);
         if (query.TryGetValue("orderNumber", out var orderNumber))
         {
@@ -809,6 +1009,8 @@
         _reviewRewardCode = null;
         _lineRatings.Clear();
         _editingLines = false;
+        _editingAddress = false;
+        _editAddressError = null;
         _loyalty = null;
         _birthdayInput = null;
         _birthdayMessage = null;
@@ -919,6 +1121,16 @@
 
         // Item 119: address book for the order phone.
         await LoadAddressBookAsync();
+
+        // TC3: shop hotline for the "call hotline to change" note (fail-soft).
+        try
+        {
+            _hotline = (await ShopSettingsService.GetPublicAsync())?.Hotline;
+        }
+        catch (Exception)
+        {
+            _hotline = null;
+        }
 
         // Khảo sát hài lòng: chỉ hiện khi đơn đã xong và chưa đánh giá/bỏ qua.
         await MaybeShowSurveyPopupAsync();
@@ -1502,8 +1714,11 @@
 
     public void Dispose()
     {
+        AppI18n.OnChange -= OnLangChanged;
         StopPolling();
     }
+
+    private void OnLangChanged() => InvokeAsync(StateHasChanged);
 
     // ---------- Item 121: daily check-in ----------
 

@@ -1,11 +1,13 @@
 @page "/dat-tiec"
 <PageTitle>Đặt tiệc — Xôi Phú Thượng</PageTitle>
 @using System
+@using System.Linq
 @using System.Text.RegularExpressions
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @inject ShopService ShopService
+@inject ShopSettingsService ShopSettingsService
 
 <h1>Đặt tiệc / Đặt số lượng lớn</h1>
 <p class="text-muted">
@@ -24,6 +26,11 @@
         </p>
     </div>
     <a class="btn btn-primary" href="/shop">Xem thực đơn</a>
+    @* DT3: chat Zalo ngay sau khi đặt tiệc thành công. *@
+    @if (!string.IsNullOrWhiteSpace(_zaloUrl))
+    {
+        <a class="btn btn-success ml-2 mt-2 mt-sm-0" href="@_zaloUrl" target="_blank" rel="noopener">💬 Trao đổi thêm qua Zalo</a>
+    }
 }
 else
 {
@@ -50,6 +57,22 @@ else
                     <small class="text-danger">@_phoneError</small>
                 }
             </div>
+            @* DT2: loại tiệc điều chỉnh gợi ý & placeholder. *@
+            <div class="form-group">
+                <label>Loại tiệc</label>
+                <select class="form-control" @bind="_partyType">
+                    <option value="">— Chọn loại tiệc —</option>
+                    <option>Cưới hỏi</option>
+                    <option>Giỗ</option>
+                    <option>Sinh nhật</option>
+                    <option>Công ty / Liên hoan</option>
+                    <option>Khác</option>
+                </select>
+                @if (!string.IsNullOrEmpty(PartyTypeHint))
+                {
+                    <small class="form-text text-muted">@PartyTypeHint</small>
+                }
+            </div>
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label>Ngày tổ chức (dự kiến)</label>
@@ -57,6 +80,14 @@ else
                 </div>
                 <div class="form-group col-md-6">
                     <label>Số lượng (gói/mâm) *</label>
+                    @* DT1: gói mẫu theo số khách — điền sẵn, sửa lại được. *@
+                    <div class="mb-2">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Gói mẫu theo số khách">
+                            <button type="button" class="btn btn-outline-primary" @onclick="() => ApplyGuestPreset(30)">30 khách</button>
+                            <button type="button" class="btn btn-outline-primary" @onclick="() => ApplyGuestPreset(50)">50 khách</button>
+                            <button type="button" class="btn btn-outline-primary" @onclick="() => ApplyGuestPreset(100)">100 khách</button>
+                        </div>
+                    </div>
                     <input type="number" min="30" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity" />
                     @if (!string.IsNullOrEmpty(_qtyError))
                     {
@@ -71,7 +102,7 @@ else
             <div class="form-group">
                 <label>Ghi chú món ăn</label>
                 <textarea class="form-control" rows="3" @bind="_model.Notes"
-                          placeholder="VD: tiệc cưới 30 mâm, cần giao trước 10h sáng, 20 mâm xôi gấc + 10 mâm xôi xéo..."></textarea>
+                          placeholder="@NotesPlaceholder"></textarea>
             </div>
             <button class="btn btn-success btn-lg" @onclick="SubmitAsync" disabled="@_submitting">
                 @(_submitting ? "Đang gửi..." : "Gửi yêu cầu báo giá")
@@ -89,6 +120,80 @@ else
     private string _phoneError;
     private string _qtyError;
 
+    // DT2: loại tiệc điều chỉnh gợi ý.
+    private string _partyType;
+    private ShopSettingModel _shopSettings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _shopSettings = await ShopSettingsService.GetPublicAsync();
+        }
+        catch (Exception)
+        {
+            _shopSettings = null;
+        }
+    }
+
+    private string PartyTypeHint => _partyType switch
+    {
+        "Cưới hỏi" => "Tiệc cưới thường chọn xôi gấc (màu đỏ may mắn) kết hợp xôi ngũ sắc — shop sẽ gợi ý tỉ lệ theo số mâm.",
+        "Giỗ" => "Mâm giỗ thường chọn xôi đỗ, xôi vò — dẻo bùi, hợp cúng gia tiên.",
+        "Sinh nhật" => "Tiệc sinh nhật hay chọn xôi ngũ sắc — màu sắc đẹp, lên hình bắt mắt.",
+        "Công ty / Liên hoan" => "Liên hoan công ty thường chọn xôi xéo, xôi vò — gọn nhẹ, dễ chia suất.",
+        _ => null
+    };
+
+    private string NotesPlaceholder => _partyType switch
+    {
+        "Cưới hỏi" => "VD: tiệc cưới 30 mâm, cần giao trước 10h sáng, 20 mâm xôi gấc + 10 mâm xôi ngũ sắc...",
+        "Giỗ" => "VD: giỗ 50 khách, 30 gói xôi đỗ + 20 gói xôi vò, giao trước 9h...",
+        "Sinh nhật" => "VD: sinh nhật bé 20 khách, 20 gói xôi ngũ sắc, trang trí thêm...",
+        "Công ty / Liên hoan" => "VD: liên hoan 100 suất văn phòng, 60 xôi xéo + 40 xôi vò, giao 11h30...",
+        _ => "VD: tiệc cưới 30 mâm, cần giao trước 10h sáng, 20 mâm xôi gấc + 10 mâm xôi xéo..."
+    };
+
+    // DT1: gói mẫu theo số khách — số lượng + gợi ý món điền sẵn (sửa được).
+    private void ApplyGuestPreset(int guests)
+    {
+        _model.Quantity = guests;
+        var suggestion = _partyType switch
+        {
+            "Cưới hỏi" => $"Gói mẫu {guests} khách (cưới hỏi): ~{(guests * 3 / 5)} gói xôi gấc + ~{(guests * 2 / 5)} gói xôi ngũ sắc — bạn sửa lại cho hợp ý nhé.",
+            "Giỗ" => $"Gói mẫu {guests} khách (giỗ): ~{(guests / 2)} gói xôi đỗ + ~{(guests / 2)} gói xôi vò — bạn sửa lại cho hợp ý nhé.",
+            "Sinh nhật" => $"Gói mẫu {guests} khách (sinh nhật): {guests} gói xôi ngũ sắc — bạn sửa lại cho hợp ý nhé.",
+            "Công ty / Liên hoan" => $"Gói mẫu {guests} suất (liên hoan): ~{(guests / 2)} xôi xéo + ~{(guests / 2)} xôi vò — bạn sửa lại cho hợp ý nhé.",
+            _ => $"Gói mẫu {guests} khách: gợi ý {guests} gói xôi (VD: xôi gấc, xôi xéo, xôi ngũ sắc) — bạn sửa lại cho hợp ý nhé."
+        };
+        if (string.IsNullOrWhiteSpace(_model.Notes))
+        {
+            _model.Notes = suggestion;
+        }
+    }
+
+    // DT3: Zalo chat sau khi gửi thành công (pattern từ Shop.razor).
+    private string ZaloPhone => !string.IsNullOrWhiteSpace(_shopSettings?.ZaloPhone)
+        ? _shopSettings.ZaloPhone
+        : _shopSettings?.Hotline;
+
+    private string _zaloUrl;
+    private void BuildZaloUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ZaloPhone))
+        {
+            _zaloUrl = null;
+            return;
+        }
+        var digits = new string(ZaloPhone.Where(char.IsDigit).ToArray());
+        if (digits.StartsWith("0"))
+            digits = "84" + digits.Substring(1);
+        else if (!digits.StartsWith("84"))
+            digits = "84" + digits;
+        var text = Uri.EscapeDataString($"Chào quán, mình vừa gửi yêu cầu đặt tiệc ({_partyType ?? "tiệc"}, {_model.Quantity} gói/mâm), cần trao đổi thêm");
+        _zaloUrl = $"https://zalo.me/{digits}?text={text}";
+    }
+
     private async Task SubmitAsync()
     {
         _error = null;
@@ -102,10 +207,18 @@ else
             return;
         }
 
+        // Gắn loại tiệc vào ghi chú (model không có field riêng).
+        if (!string.IsNullOrWhiteSpace(_partyType)
+            && (_model.Notes == null || !_model.Notes.Contains("Loại tiệc:")))
+        {
+            _model.Notes = $"Loại tiệc: {_partyType}\n" + (_model.Notes ?? "");
+        }
+
         _submitting = true;
         try
         {
             await ShopService.CreateQuoteAsync(_model);
+            BuildZaloUrl();
             _submitted = true;
         }
         catch (Exception)

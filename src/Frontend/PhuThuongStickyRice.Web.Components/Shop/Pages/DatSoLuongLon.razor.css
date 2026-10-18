@@ -1,0 +1,111 @@
+/* DatSoLuongLon — bulk 3-step form + deposit panel + subscription weekdays */
+
+/* ---- SL3: step progress indicator ---- */
+.bulk-steps {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.bulk-step {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #e9dfcb;
+    border-radius: 12px;
+    background: #fff;
+    color: #7d6c58;
+    font-size: .9rem;
+}
+
+.bulk-step span {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9dfcb;
+    color: #5c4f3f;
+    font-weight: 800;
+}
+
+.bulk-step em {
+    font-style: normal;
+    font-weight: 600;
+}
+
+.bulk-step.active {
+    border-color: #a67c3d;
+    background: #fdf8ef;
+    color: #2e2620;
+}
+
+.bulk-step.active span {
+    background: #a67c3d;
+    color: #fff;
+}
+
+.bulk-step.done span {
+    background: #34c38f;
+    color: #fff;
+}
+
+@@media (max-width: 576px) {
+    .bulk-steps {
+        flex-direction: column;
+        gap: 6px;
+    }
+}
+
+/* ---- SL2: deposit QR + bank table ---- */
+.bulk-qr {
+    max-width: 280px;
+    width: 100%;
+    height: auto;
+    border: 1px solid #e9dfcb;
+    border-radius: 12px;
+    padding: 8px;
+    background: #fff;
+}
+
+.bulk-bank-table {
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+/* ---- SL1: estimate total ---- */
+.bulk-total {
+    font-size: 1.2rem;
+}
+
+/* ---- dark mode ---- */
+html.dark .bulk-step {
+    background: #1f1b16;
+    border-color: #3a3226;
+    color: #b8a98f;
+}
+
+html.dark .bulk-step span {
+    background: #3a3226;
+    color: #d8cbb2;
+}
+
+html.dark .bulk-step.active {
+    border-color: #a67c3d;
+    background: #2a241a;
+    color: #f0e8d8;
+}
+
+html.dark .bulk-step.active span {
+    background: #a67c3d;
+    color: #fff;
+}
+
+html.dark .bulk-qr {
+    background: #fff;
+    border-color: #3a3226;
+}

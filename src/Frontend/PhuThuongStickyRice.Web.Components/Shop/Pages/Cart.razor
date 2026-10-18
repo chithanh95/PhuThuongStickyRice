@@ -10,13 +10,15 @@
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @inject CartState CartState
 @inject ShopService ShopService
+@inject ShopSettingsService ShopSettingsService
 @inject ToastService Toasts
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
-@inject ShopI18n I18n
+@inject AppI18n AppI18n
+@inject FunnelService Funnel
 @implements IDisposable
 
-<h1>@I18n.T("cart")</h1>
+<h1>@AppI18n.T("common.cart")</h1>
 
 @if (!string.IsNullOrEmpty(_shareMessage))
 {
@@ -30,19 +32,43 @@
 @if (CartState.Items.Count == 0)
 {
     <div class="alert alert-info">
-        @I18n.T("cart_empty") <a href="/shop">@I18n.T("cart_browse")</a>
+        @AppI18n.T("shop.cart_empty") <a href="/shop">@AppI18n.T("shop.cart_browse")</a>
     </div>
 }
 else
 {
+    @* GH1: freeship progress bar — hidden when the shop hasn't configured a threshold. *@
+    @if (_freeShipThreshold > 0)
+    {
+        var ghRemaining = _freeShipThreshold - CartState.TotalAmount;
+        var ghPct = ghRemaining <= 0 ? 100 : Math.Min(100, (int)Math.Round(CartState.TotalAmount / _freeShipThreshold * 100));
+        <div class="gh-freeship mb-3">
+            @if (ghRemaining <= 0)
+            {
+                <div class="alert alert-success mb-0 py-2">🎉 Đơn của bạn được <strong>miễn phí giao hàng</strong>!</div>
+            }
+            else
+            {
+                <div class="d-flex justify-content-between align-items-baseline mb-1">
+                    <small>Còn <strong class="text-danger">@FormatPrice(ghRemaining)</strong> nữa được miễn phí giao hàng</small>
+                    <small class="text-muted">@ghPct%</small>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-success progress-bar-striped" role="progressbar"
+                         style="width: @ghPct%" aria-valuenow="@ghPct" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            }
+        </div>
+    }
+
     <div class="table-responsive">
         <table class="table cart-lines">
             <thead>
                 <tr>
-                    <th>Sản phẩm</th>
-                    <th class="text-right">Đơn giá</th>
-                    <th class="text-center">Số lượng</th>
-                    <th class="text-right">Thành tiền</th>
+                    <th>@AppI18n.T("shop.product")</th>
+                    <th class="text-right">@AppI18n.T("shop.unit_price")</th>
+                    <th class="text-center">@AppI18n.T("common.quantity")</th>
+                    <th class="text-right">@AppI18n.T("shop.line_total")</th>
                     <th></th>
                 </tr>
             </thead>
@@ -62,7 +88,7 @@ else
                             }
                             @if (!string.IsNullOrWhiteSpace(item.ToppingNames))
                             {
-                                <br /><small class="text-muted">Ăn kèm: @item.ToppingNames</small>
+                                <br /><small class="text-muted">@AppI18n.T("shop.toppings_label"): @item.ToppingNames</small>
                             }
                             @if (!item.IsCombo)
                             {
@@ -71,7 +97,7 @@ else
                             @* Wave 6a (item 24): per-item note ("ghi chú món"). *@
                             <br />
                             <input class="form-control form-control-sm mt-1" style="max-width: 230px;"
-                                   maxlength="500" placeholder="📝 Ghi chú món (vd: ít hành)"
+                                   maxlength="500" placeholder="@AppI18n.T("shop.item_note_placeholder")"
                                    value="@item.Note"
                                    @onchange="(e) => CartState.UpdateNote(item.LineKey, e.Value?.ToString())" />
                         </td>
@@ -83,14 +109,14 @@ else
                         </td>
                         <td class="text-right"><strong>@FormatPrice(item.LineTotal)</strong></td>
                         <td class="text-right">
-                            <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(item.LineKey)">@I18n.T("remove")</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(item.LineKey)">@AppI18n.T("common.delete")</button>
                         </td>
                     </tr>
                 }
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="3" class="text-right"><strong>@I18n.T("total"):</strong></td>
+                    <td colspan="3" class="text-right"><strong>@AppI18n.T("common.total"):</strong></td>
                     <td class="text-right"><strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(CartState.TotalAmount)</strong></td>
                     <td></td>
                 </tr>
@@ -98,22 +124,29 @@ else
         </table>
     </div>
 
+    @* GH2: optional phone — carried over to checkout (?phone=) and saved for next time. *@
+    <div class="form-group gh-cart-phone mb-3" style="max-width: 340px;">
+        <label for="cart-phone"><small class="text-muted">📱 SĐT của bạn <span class="text-muted">(tùy chọn — tự điền sẵn ở bước thanh toán)</span></small></label>
+        <input id="cart-phone" class="form-control" inputmode="tel" placeholder="0901234567"
+               value="@_phone" @oninput="OnPhoneInput" maxlength="11" />
+    </div>
+
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 cart-actions">
         <div>
-            <a class="btn btn-secondary mb-2 mr-2" href="/shop">@I18n.T("continue_shopping")</a>
+            <a class="btn btn-secondary mb-2 mr-2" href="/shop">@AppI18n.T("shop.continue_shopping")</a>
             <button class="btn btn-outline-primary mb-2" @onclick="ShareCartAsync" disabled="@_sharing">
-                @(_sharing ? "Đang tạo link..." : "🔗 Chia sẻ giỏ hàng")
+                @(_sharing ? AppI18n.T("shop.creating_link") : AppI18n.T("shop.share_cart"))
             </button>
         </div>
-        <button class="btn btn-success btn-lg mb-2" @onclick='() => Navigation.NavigateTo("/checkout")'>
-            @I18n.T("checkout") (@CartState.TotalQuantity)
+        <button class="btn btn-success btn-lg mb-2" @onclick="GoToCheckout">
+            @AppI18n.T("common.checkout") (@CartState.TotalQuantity)
         </button>
     </div>
 
     @if (_suggestions != null && _suggestions.Count > 0)
     {
         <div class="card mt-2">
-            <div class="card-header">🍢 Ăn kèm gợi ý</div>
+            <div class="card-header">@AppI18n.T("shop.suggested_sides")</div>
             <div class="card-body">
                 <div class="row">
                     @foreach (var s in _suggestions)
@@ -124,7 +157,7 @@ else
                                     <strong>@s.Name</strong><br />
                                     <span class="text-danger">@FormatPrice(s.Price)</span>
                                 </div>
-                                <button class="btn btn-sm btn-primary" @onclick="() => QuickAddSuggestion(s)">+ Thêm</button>
+                                <button class="btn btn-sm btn-primary" @onclick="() => QuickAddSuggestion(s)">@AppI18n.T("shop.add")</button>
                             </div>
                         </div>
                     }
@@ -140,13 +173,42 @@ else
     private string _shareMessage;
     private bool _sharing;
 
+    // GH1: freeship progress bar (0 = not configured → hidden).
+    private decimal _freeShipThreshold;
+
+    // GH2: optional phone carried over to checkout.
+    private const string PhoneStorageKey = "phuthuong.phone.v1";
+    private string _phone;
+
     protected override async Task OnInitializedAsync()
     {
-        I18n.OnChange += OnLangChanged;
-        await I18n.InitializeAsync();
+        AppI18n.OnChange += OnLangChanged;
+        await AppI18n.InitializeAsync();
+        Funnel.Track(FunnelService.Events.CartView, new Uri(Navigation.Uri).AbsolutePath);
         CartState.OnChange += OnCartChanged;
         await MergeSharedCartAsync();
         await LoadSuggestionsAsync();
+
+        // GH1: freeship threshold (fail-soft — the bar hides when unset).
+        try
+        {
+            var settings = await ShopSettingsService.GetPublicAsync();
+            _freeShipThreshold = settings?.FreeShipThreshold ?? 0;
+        }
+        catch (Exception)
+        {
+            _freeShipThreshold = 0;
+        }
+
+        // GH2: prefill the phone from the last visit (fail-soft).
+        try
+        {
+            _phone = await JSRuntime.InvokeAsync<string>("localStorage.getItem", PhoneStorageKey);
+        }
+        catch (Exception)
+        {
+            _phone = null;
+        }
     }
 
     private void OnCartChanged()
@@ -166,9 +228,35 @@ else
         Toasts.Show($"Đã thêm {product.Name} vào giỏ");
     }
 
+    private void OnPhoneInput(ChangeEventArgs e)
+    {
+        _phone = e.Value?.ToString();
+    }
+
     /// <summary>
-    /// "Ăn kèm gợi ý": 3 products not already in the cart, preferring
-    /// side dishes ("Món ăn kèm") when available.
+    /// GH2: saves the phone for next time and carries it to checkout (?phone=).
+    /// </summary>
+    private void GoToCheckout()
+    {
+        var phone = (_phone ?? "").Trim();
+        try
+        {
+            _ = JSRuntime.InvokeVoidAsync("localStorage.setItem", PhoneStorageKey, phone);
+        }
+        catch (Exception)
+        {
+        }
+
+        var url = string.IsNullOrWhiteSpace(phone)
+            ? "/checkout"
+            : $"/checkout?phone={Uri.EscapeDataString(phone)}";
+        Navigation.NavigateTo(url);
+    }
+
+    /// <summary>
+    /// GH3: "Thường được mua cùng" — best-sellers not already in the cart
+    /// (same best-seller ordering as Shop.razor), backfilled with side
+    /// dishes when fewer than 3 best-sellers are available.
     /// </summary>
     private async Task LoadSuggestionsAsync()
     {
@@ -176,14 +264,44 @@ else
         {
             var inCart = new HashSet<Guid>(CartState.Items.Select(x => x.ProductId));
             var paged = await ShopService.GetProductsAsync();
-            var all = paged.Items ?? new List<ShopProductModel>();
-
-            _suggestions = all
+            var available = (paged.Items ?? new List<ShopProductModel>())
                 .Where(p => !inCart.Contains(p.Id))
-                .OrderByDescending(p => (p.Category ?? "").Contains("kèm") ? 1 : 0)
-                .ThenBy(p => p.Name)
-                .Take(3)
                 .ToList();
+
+            var picks = new List<ShopProductModel>();
+            try
+            {
+                var bestIds = await ShopService.GetBestSellerIdsAsync() ?? new List<Guid>();
+                var byId = available.ToDictionary(p => p.Id);
+                foreach (var id in bestIds)
+                {
+                    if (picks.Count >= 3)
+                    {
+                        break;
+                    }
+
+                    if (byId.TryGetValue(id, out var p))
+                    {
+                        picks.Add(p);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Best-seller ranking is nice-to-have — fall through to the backfill.
+            }
+
+            if (picks.Count < 3)
+            {
+                var pickedIds = new HashSet<Guid>(picks.Select(p => p.Id));
+                picks.AddRange(available
+                    .Where(p => !pickedIds.Contains(p.Id))
+                    .OrderByDescending(p => (p.Category ?? "").Contains("kèm") ? 1 : 0)
+                    .ThenBy(p => p.Name)
+                    .Take(3 - picks.Count));
+            }
+
+            _suggestions = picks;
         }
         catch (Exception)
         {
@@ -324,6 +442,6 @@ else
     public void Dispose()
     {
         CartState.OnChange -= OnCartChanged;
-        I18n.OnChange -= OnLangChanged;
+        AppI18n.OnChange -= OnLangChanged;
     }
 }

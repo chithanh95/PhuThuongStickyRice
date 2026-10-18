@@ -119,6 +119,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public List<UpdateOrderLineRequestModel> Lines { get; set; } = new List<UpdateOrderLineRequestModel>();
     }
 
+    public sealed class UpdateOrderAddressRequestModel
+    {
+        public string OrderNumber { get; set; }
+
+        public string CustomerPhone { get; set; }
+
+        public string CustomerAddress { get; set; }
+
+        public string DeliverySlot { get; set; }
+    }
+
     public sealed class SubmitReviewRequestModel
     {
         public string OrderNumber { get; set; }

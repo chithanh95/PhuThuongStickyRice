@@ -7,9 +7,11 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Core.Services
 @implements IDisposable
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
+@inject ToastService Toasts
 @inject DiscountService DiscountService
 @inject Wave2Service Wave2Service
 @inject Wave3Service Wave3Service
@@ -18,12 +20,13 @@
 @inject CartState CartState
 @inject NavigationManager Navigation
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
-@inject ShopI18n I18n
+@inject AppI18n AppI18n
+@inject FunnelService Funnel
 @inject CustomerAddressService CustomerAddressService
 @inject CustomerProfileService CustomerProfileService
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
-<h1>@I18n.T("checkout")</h1>
+<h1>@AppI18n.T("common.checkout")</h1>
 
 @* Gợi ý nhẹ cho khách vãng lai — không bắt buộc, checkout vẫn chạy bình thường khi chưa đăng nhập. *@
 <AuthorizeView>
@@ -44,7 +47,7 @@
         <p>Mã đơn hàng của bạn: <strong>@_placedOrder.OrderNumber</strong></p>
         <table class="table table-sm mb-2">
             <tbody>
-                <tr><td>@I18n.T("subtotal")</td><td class="text-right">@FormatPrice(_placedOrder.Subtotal)</td></tr>
+                <tr><td>@AppI18n.T("shop.subtotal")</td><td class="text-right">@FormatPrice(_placedOrder.Subtotal)</td></tr>
                 @if (_placedOrder.PromotionDiscountAmount > 0)
                 {
                     <tr>
@@ -55,7 +58,7 @@
                 @if (_placedOrder.DiscountAmount > 0)
                 {
                     <tr>
-                        <td>@I18n.T("discount") @(!string.IsNullOrWhiteSpace(_placedOrder.DiscountCode) ? $"({_placedOrder.DiscountCode})" : "")</td>
+                        <td>@AppI18n.T("shop.discount") @(!string.IsNullOrWhiteSpace(_placedOrder.DiscountCode) ? $"({_placedOrder.DiscountCode})" : "")</td>
                         <td class="text-right text-success">−@FormatPrice(_placedOrder.DiscountAmount)</td>
                     </tr>
                 }
@@ -303,7 +306,7 @@ else
     <div class="row">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">@I18n.T("your_info")</div>
+                <div class="card-header">@AppI18n.T("shop.your_info")</div>
                 <div class="card-body">
                     <div class="form-group">
                         <label>Hình thức nhận hàng *</label>
@@ -318,6 +321,17 @@ else
                             <label class="form-check-label" for="fm-pickup">🏪 Tôi tự đến quán lấy <small class="text-success">(miễn phí ship)</small></label>
                         </div>
                         <small class="text-muted d-block mt-1">Quán chuẩn bị sẵn, shipper đến đọc mã đơn để lấy.</small>
+                    </div>
+                    @* TT3: shipping fee + estimated time, visible as soon as the
+                       fulfillment method is known (before the submit button). *@
+                    <div class="alert alert-success py-2 mb-3 tt-shipinfo">
+                        <small>
+                            🚚 Phí giao hàng: <strong>Miễn phí</strong>
+                            @if (_shopSettings.EstimatedDeliveryMinutes > 0)
+                            {
+                                <span> · ⏱ Quán chuẩn bị trong ~@_shopSettings.EstimatedDeliveryMinutes phút</span>
+                            }
+                        </small>
                     </div>
                     @if (_fulfillment == "ShipperPickup")
                     {
@@ -402,16 +416,21 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label>@I18n.T("full_name") *</label>
+                        <label>@AppI18n.T("common.name") *</label>
                         <input class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
                         @if (!string.IsNullOrEmpty(_nameError))
                         {
                             <small class="text-danger">@_nameError</small>
                         }                    </div>
                     <div class="form-group">
-                        <label>@I18n.T("phone") *</label>
-                        <input class="form-control @FieldClass(_phoneError)" @bind="_order.CustomerPhone"
-                               @onblur="LookupLastOrderAsync" placeholder="0901234567" />
+                        <label>@AppI18n.T("common.phone") *</label>
+                        <input class="form-control @FieldClass(_phoneError)" value="@_order.CustomerPhone"
+                               @oninput="OnPhoneInputAsync" @onblur="LookupLastOrderAsync"
+                               placeholder="0901234567" inputmode="tel" maxlength="11" />
+                        @if (_lookingUpPhone)
+                        {
+                            <small class="text-muted d-block">⏳ Đang tìm thông tin đơn cũ...</small>
+                        }
                         @if (!string.IsNullOrEmpty(_phoneError))
                         {
                             <small class="text-danger">@_phoneError</small>
@@ -438,14 +457,14 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label>@I18n.T("note")</label>
+                        <label>@AppI18n.T("shop.note")</label>
                         <textarea class="form-control" @bind="_order.Notes" rows="2"
                                   placeholder="Ví dụ: giao giờ hành chính..."></textarea>
                     </div>
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" id="recipient-toggle"
                                @bind="_orderForSomeoneElse" />
-                        <label class="form-check-label" for="recipient-toggle">Người nhận khác người đặt</label>
+                        <label class="form-check-label" for="recipient-toggle">@AppI18n.T("shop.other_recipient")</label>
                     </div>
                     @if (_orderForSomeoneElse)
                     {
@@ -518,21 +537,21 @@ else
                         }
                     }
                     <div class="form-group">
-                        <label>@I18n.T("payment_method") *</label>
+                        <label>@AppI18n.T("shop.payment_method") *</label>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-cod"
                                    checked="@(_order.PaymentMethod == "Cod")" @onchange="@(() => _order.PaymentMethod = "Cod")" />
-                            <label class="form-check-label" for="pm-cod">@I18n.T("pay_cod")</label>
+                            <label class="form-check-label" for="pm-cod">@AppI18n.T("shop.pay_cod")</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-bank"
                                    checked="@(_order.PaymentMethod == "BankTransfer")" @onchange="@(() => _order.PaymentMethod = "BankTransfer")" />
-                            <label class="form-check-label" for="pm-bank">@I18n.T("pay_bank")</label>
+                            <label class="form-check-label" for="pm-bank">@AppI18n.T("shop.pay_bank")</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-momo"
                                    checked="@(_order.PaymentMethod == "MoMo")" @onchange="@(() => _order.PaymentMethod = "MoMo")" />
-                            <label class="form-check-label" for="pm-momo">@I18n.T("pay_momo") <span class="badge badge-warning">TEST</span></label>
+                            <label class="form-check-label" for="pm-momo">@AppI18n.T("shop.pay_momo") <span class="badge badge-warning">TEST</span></label>
                         </div>
                         @* Item 140: wallet payment — shown when the balance covers the total. *@
                         @if (_walletBalance >= _estimatedTotal && _estimatedTotal > 0)
@@ -541,7 +560,7 @@ else
                                 <input class="form-check-input" type="radio" name="paymentMethod" id="pm-wallet"
                                        checked="@(_order.PaymentMethod == "Wallet")" @onchange="@(() => _order.PaymentMethod = "Wallet")" />
                                 <label class="form-check-label" for="pm-wallet">
-                                    💰 @I18n.T("pay_wallet") <small class="text-muted">(số dư @_walletBalance.ToString("N0") ₫)</small>
+                                    💰 @AppI18n.T("shop.pay_wallet") <small class="text-muted">(số dư @_walletBalance.ToString("N0") ₫)</small>
                                 </label>
                             </div>
                         }
@@ -551,11 +570,11 @@ else
         </div>
         <div class="col-md-6">
             <div class="card co-summary">
-                <div class="card-header">Đơn hàng của bạn</div>
+                <div class="card-header">@AppI18n.T("shop.order_summary")</div>
                 <div class="card-body">
                     <table class="table table-sm">
                         <thead>
-                            <tr><th>Món</th><th class="text-center">SL</th><th class="text-right">Thành tiền</th></tr>
+                            <tr><th>Món</th><th class="text-center">SL</th><th class="text-right">Thành tiền</th><th></th></tr>
                         </thead>
                         <tbody>
                             @foreach (var item in CartState.Items)
@@ -588,58 +607,66 @@ else
                                                 @onclick="() => ChangeQty(item, 1)" title="Thêm 1">+</button>
                                     </td>
                                     <td class="text-right">@FormatPrice(item.LineTotal)</td>
+                                    <td class="text-right" style="white-space: nowrap;">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => CartState.Remove(item.LineKey)" title="Xóa món khỏi đơn">×</button>
+                                    </td>
                                 </tr>
                             }
                             <tr>
-                                <td class="text-muted" colspan="2">@I18n.T("subtotal")</td>
+                                <td class="text-muted" colspan="3">@AppI18n.T("shop.subtotal")</td>
                                 <td class="text-right text-muted">@FormatPrice(_subtotal)</td>
                             </tr>
                             @if (_activePromotion != null)
                             {
                                 <tr>
-                                    <td class="text-success" colspan="2">🏷 Khuyến mãi giờ vàng (@_activePromotion.Name) −@_activePromotion.DiscountPercent%</td>
+                                    <td class="text-success" colspan="3">🏷 Khuyến mãi giờ vàng (@_activePromotion.Name) −@_activePromotion.DiscountPercent%</td>
                                     <td class="text-right text-success">−@FormatPrice(_promotionDiscountPreview)</td>
                                 </tr>
                             }
                             @if (_discountAmount > 0)
                             {
                                 <tr>
-                                    <td class="text-success" colspan="2">Giảm giá (@_appliedCode)</td>
+                                    <td class="text-success" colspan="3">Giảm giá (@_appliedCode)</td>
                                     <td class="text-right text-success">−@FormatPrice(_discountAmount)</td>
                                 </tr>
                             }
                             @if (_isFreeship)
                             {
                                 <tr>
-                                    <td class="text-success" colspan="2">🚚 Miễn phí ship (@_appliedCode)</td>
+                                    <td class="text-success" colspan="3">🚚 Miễn phí ship (@_appliedCode)</td>
                                     <td class="text-right text-success">−@FormatPrice(_shopSettings.DeliveryFee)</td>
                                 </tr>
                             }
                             @if (_tierDiscountPreview > 0)
                             {
                                 <tr>
-                                    <td class="text-success" colspan="2">Ưu đãi hạng @_loyalty.Tier (@_loyalty.TierDiscountPercent%)</td>
+                                    <td class="text-success" colspan="3">Ưu đãi hạng @_loyalty.Tier (@_loyalty.TierDiscountPercent%)</td>
                                     <td class="text-right text-success">−@FormatPrice(_tierDiscountPreview)</td>
                                 </tr>
                             }
                             @if (_redeemDiscountPreview > 0)
                             {
                                 <tr>
-                                    <td class="text-success" colspan="2">Đổi @_redeemPoints điểm</td>
+                                    <td class="text-success" colspan="3">Đổi @_redeemPoints điểm</td>
                                     <td class="text-right text-success">−@FormatPrice(_redeemDiscountPreview)</td>
                                 </tr>
                             }
                             @if (_giftFeePreview > 0)
                             {
                                 <tr>
-                                    <td class="text-muted" colspan="2">🎁 Phí gói quà</td>
+                                    <td class="text-muted" colspan="3">🎁 Phí gói quà</td>
                                     <td class="text-right text-muted">+@FormatPrice(_giftFeePreview)</td>
                                 </tr>
                             }
                             <tr>
-                                <td class="text-muted" colspan="2">
-                                    Phí giao hàng
-                                    <small class="d-block text-success">Quán không giao hàng — miễn phí</small>
+                                <td class="text-muted" colspan="3">
+                                    🚚 Phí giao hàng
+                                    <small class="d-block text-success">Quán không giao hàng — miễn phí ship</small>
+                                    @if (_shopSettings.EstimatedDeliveryMinutes > 0)
+                                    {
+                                        <small class="d-block text-muted">⏱ Dự kiến chuẩn bị: ~@_shopSettings.EstimatedDeliveryMinutes phút</small>
+                                    }
                                 </td>
                                 <td class="text-right text-success">
                                     Miễn phí
@@ -648,14 +675,14 @@ else
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="2"><strong>@I18n.T("total")</strong></td>
+                                <td colspan="3"><strong>@AppI18n.T("common.total")</strong></td>
                                 <td class="text-right"><strong class="text-danger">@FormatPrice(_grandTotal)</strong></td>
                             </tr>
                         </tfoot>
                     </table>
 
                     <div class="form-group">
-                        <label>Mã giảm giá</label>
+                        <label>@AppI18n.T("shop.discount_code")</label>
                         <div class="input-group">
                             <input class="form-control" @bind="_discountCodeInput" placeholder="Nhập mã (nếu có)"
                                    disabled="@_applyingDiscount" />
@@ -725,7 +752,7 @@ else
                     }
 
                     <button class="btn btn-success btn-block btn-lg" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
-                        @(_submitting ? "Đang xử lý..." : I18n.T("order_now"))
+                        @(_submitting ? AppI18n.T("shop.processing") : AppI18n.T("shop.order_now"))
                     </button>
                     @if (_orderingBlocked && !string.IsNullOrEmpty(_closedNotice))
                     {
@@ -739,11 +766,11 @@ else
     @* Mobile: fixed bottom order bar (CSS shows it only on small screens). *@
     <div class="co-mobile-bar">
         <div class="co-total">
-            <small>@I18n.T("total")</small>
+            <small>@AppI18n.T("common.total")</small>
             <strong class="text-danger">@FormatPrice(_grandTotal)</strong>
         </div>
         <button class="btn btn-success" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
-            @(_submitting ? "Đang xử lý..." : I18n.T("order_now"))
+            @(_submitting ? AppI18n.T("shop.processing") : AppI18n.T("shop.order_now"))
         </button>
     </div>
 }
@@ -852,6 +879,10 @@ else
 
     // Address auto-fill from phone history.
     private string _suggestedPhone;
+
+    // GH2/TT2: debounced phone lookup (cancels when the user keeps typing).
+    private System.Threading.CancellationTokenSource _phoneLookupCts;
+    private bool _lookingUpPhone;
 
     // Discount state.
     private string _discountCodeInput;
@@ -1003,16 +1034,66 @@ else
         }
 
         RefreshMinOrderState();
+
+        // GH2: phone carried over from the cart (?phone=) — prefill and run
+        // the last-order auto-fill (fail-soft).
+        try
+        {
+            var query = ParseQuery(Navigation.Uri);
+            if (string.IsNullOrWhiteSpace(_order.CustomerPhone)
+                && query.TryGetValue("phone", out var carriedPhone)
+                && IsValidPhone(carriedPhone))
+            {
+                _order.CustomerPhone = carriedPhone.Trim();
+                await DoPhoneLookupAsync();
+            }
+        }
+        catch (Exception)
+        {
+        }
+
         // Wave 6b (item 30): pause/hours notice for the submit button.
         RefreshOrderingState();
         CartState.OnChange += OnCartChanged;
-        I18n.OnChange += OnLangChanged;
-        await I18n.InitializeAsync();
+        AppI18n.OnChange += OnLangChanged;
+        await AppI18n.InitializeAsync();
+        Funnel.Track(FunnelService.Events.CheckoutView, new Uri(Navigation.Uri).AbsolutePath);
     }
 
     private static bool GetFlag(System.Collections.Generic.Dictionary<string, bool> flags, string key, bool fallback)
     {
         return flags != null && flags.TryGetValue(key, out var enabled) ? enabled : fallback;
+    }
+
+    private static Dictionary<string, string> ParseQuery(string uri)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var question = uri.IndexOf('?');
+        if (question < 0)
+        {
+            return result;
+        }
+
+        var query = uri.Substring(question + 1);
+        var hash = query.IndexOf('#');
+        if (hash >= 0)
+        {
+            query = query.Substring(0, hash);
+        }
+
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            result[Uri.UnescapeDataString(pair.Substring(0, eq))] =
+                Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
+        }
+
+        return result;
     }
 
     /// <summary>Item 109: branch picker.</summary>
@@ -1093,10 +1174,46 @@ else
     }
 
     /// <summary>
-    /// When the phone field loses focus, load the loyalty summary, wallet
-    /// balance and address book for that phone.
+    /// GH2/TT2: while the user types the phone, wait 600ms after the last
+    /// keystroke before looking up (debounce).
+    /// </summary>
+    private async Task OnPhoneInputAsync(ChangeEventArgs e)
+    {
+        _order.CustomerPhone = e.Value?.ToString();
+        _phoneLookupCts?.Cancel();
+        _phoneLookupCts?.Dispose();
+        _phoneLookupCts = new System.Threading.CancellationTokenSource();
+        var token = _phoneLookupCts.Token;
+        try
+        {
+            await Task.Delay(600, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (!token.IsCancellationRequested)
+        {
+            await DoPhoneLookupAsync();
+        }
+    }
+
+    /// <summary>
+    /// Blur: run the pending lookup immediately instead of waiting out the debounce.
     /// </summary>
     private async Task LookupLastOrderAsync()
+    {
+        _phoneLookupCts?.Cancel();
+        await DoPhoneLookupAsync();
+    }
+
+    /// <summary>
+    /// Loads the loyalty summary, wallet balance and last-order name for the
+    /// entered phone. Auto-filled fields never overwrite text the user
+    /// already typed.
+    /// </summary>
+    private async Task DoPhoneLookupAsync()
     {
         var phone = (_order.CustomerPhone ?? "").Trim();
         if (phone == _suggestedPhone || !IsValidPhone(phone))
@@ -1105,29 +1222,57 @@ else
         }
 
         _suggestedPhone = phone;
+        _lookingUpPhone = true;
+        StateHasChanged();
 
-        // Loyalty summary (points, tier, referral code) for the phone.
         try
         {
-            _loyalty = await Wave2Service.GetLoyaltyByPhoneAsync(phone);
-            _redeemPoints = 0;
-            _redeemPointsInput = 0;
-            _redeemMessage = null;
-        }
-        catch (Exception)
-        {
-            _loyalty = null;
-        }
+            // Loyalty summary (points, tier, referral code) for the phone.
+            try
+            {
+                _loyalty = await Wave2Service.GetLoyaltyByPhoneAsync(phone);
+                _redeemPoints = 0;
+                _redeemPointsInput = 0;
+                _redeemMessage = null;
+            }
+            catch (Exception)
+            {
+                _loyalty = null;
+            }
 
-        // Item 140: wallet balance for this phone (enables the ví option).
-        try
-        {
-            var wallet = await Wave5Service.GetWalletBalanceAsync(phone);
-            _walletBalance = wallet?.Balance ?? 0;
+            // Item 140: wallet balance for this phone (enables the ví option).
+            try
+            {
+                var wallet = await Wave5Service.GetWalletBalanceAsync(phone);
+                _walletBalance = wallet?.Balance ?? 0;
+            }
+            catch (Exception)
+            {
+                _walletBalance = 0;
+            }
+
+            // TT2: auto-fill the name from the most recent order — never
+            // overwrite a name the user already typed. (This checkout has no
+            // delivery-address field: the shop doesn't deliver — the order is
+            // ShipperPickup or customer Pickup.)
+            try
+            {
+                var last = await ShopService.GetLastOrderInfoAsync(phone);
+                if (last != null
+                    && string.IsNullOrWhiteSpace(_order.CustomerName)
+                    && !string.IsNullOrWhiteSpace(last.CustomerName))
+                {
+                    _order.CustomerName = last.CustomerName;
+                }
+            }
+            catch (Exception)
+            {
+            }
         }
-        catch (Exception)
+        finally
         {
-            _walletBalance = 0;
+            _lookingUpPhone = false;
+            StateHasChanged();
         }
     }
 
@@ -1426,8 +1571,23 @@ else
                 .ToList();
 
             _placedOrder = await ShopService.CreateOrderAsync(_order);
+            Funnel.Track(FunnelService.Events.OrderPlaced, new Uri(Navigation.Uri).AbsolutePath);
             CartState.Clear();
             CartState.OnChange -= OnCartChanged;
+
+            // TT4: jump straight to order tracking for payment methods that
+            // need no further action on this screen (Cod / Wallet). The
+            // success toast confirms the order; the order number is prefilled
+            // in the track-order lookup.
+            var needsPaymentUi = _placedOrder.PaymentMethod == "BankTransfer"
+                || _placedOrder.PaymentMethod == "MoMo";
+            Toasts.Show($"🎉 Đặt hàng thành công! Mã đơn của bạn: {_placedOrder.OrderNumber}");
+            if (!needsPaymentUi)
+            {
+                Navigation.NavigateTo(
+                    $"/track-order?orderNumber={Uri.EscapeDataString(_placedOrder.OrderNumber)}");
+                return;
+            }
 
             if (_placedOrder.PaymentMethod == "BankTransfer")
             {
@@ -1581,6 +1741,8 @@ else
     public void Dispose()
     {
         CartState.OnChange -= OnCartChanged;
-        I18n.OnChange -= OnLangChanged;
+        AppI18n.OnChange -= OnLangChanged;
+        _phoneLookupCts?.Cancel();
+        _phoneLookupCts?.Dispose();
     }
 }

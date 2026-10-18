@@ -398,3 +398,33 @@ html.dark .shp-page .btn-primary {
     background: #7a6fbe;
     border-color: #7a6fbe;
 }
+
+/* GL3: compact language switcher in the shop header (same look as landing). */
+.shp-lang-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.shp-lang-toggle {
+    border: 1px solid var(--shp-line);
+    background: var(--shp-surface);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--shp-ink);
+}
+
+.shp-lang-toggle:hover,
+.shp-lang-toggle.active {
+    background: #6F0707;
+    color: #fff;
+    border-color: #6F0707;
+}
+
+@media (max-width: 768px) {
+    .shp-lang-group { gap: 3px; }
+    .shp-lang-toggle { padding: 5px 7px; font-size: 11px; }
+}
