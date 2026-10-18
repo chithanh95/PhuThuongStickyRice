@@ -607,3 +607,166 @@ html.dark .shop-filters-sticky {
         white-space: nowrap;
     }
 }
+
+/* ============ Quick view bottom sheet (mobile, kiểu ShopeeFood) ============ */
+.qv-sheet { display: none; }
+
+@media (max-width: 768px) {
+    /* Ẩn modal thường, hiện bottom sheet */
+    .shop-quickview-dialog .modal-content { display: none; }
+    .shop-quickview-dialog {
+        margin: 0;
+        max-width: 100%;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        transform: none !important;
+    }
+    .qv-sheet {
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border-radius: 20px 20px 0 0;
+        max-height: 92vh;
+        overflow: hidden;
+        animation: qvSlideUp .25s ease-out;
+    }
+    @keyframes qvSlideUp {
+        from { transform: translateY(40px); opacity: .5; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .qv-sheet-banner img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+    }
+    .qv-sheet-top {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        padding: 14px 16px;
+        border-bottom: 1px solid #f0ebe2;
+    }
+    .qv-sheet-title {
+        font-size: 18px;
+        font-weight: 700;
+    }
+    .qv-sheet-close {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: none;
+        font-size: 32px;
+        color: #8a7a63;
+        cursor: pointer;
+        line-height: 1;
+        padding: 4px 8px;
+    }
+    .qv-sheet-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+    }
+    .qv-sheet-product {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #f0ebe2;
+    }
+    .qv-sheet-thumb {
+        width: 72px;
+        height: 72px;
+        border-radius: 12px;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+    .qv-sheet-pinfo { flex: 1; min-width: 0; }
+    .qv-sheet-pname {
+        font-weight: 700;
+        font-size: 16px;
+    }
+    .qv-sheet-meta {
+        font-size: 13px;
+        color: #8a7a63;
+        margin-top: 2px;
+    }
+    .qv-sheet-price {
+        font-size: 18px;
+        font-weight: 800;
+        color: #7a6fbe;
+        margin-top: 4px;
+    }
+    .qv-sheet-section {
+        background: #f5f3ef;
+        margin: 0 -16px;
+        padding: 10px 16px;
+        font-size: 14px;
+        color: #8a7a63;
+        font-weight: 600;
+    }
+    .qv-sheet-opt {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 0;
+        border-bottom: 1px solid #f0ebe2;
+        font-size: 15px;
+        cursor: pointer;
+        margin: 0;
+    }
+    .qv-sheet-opt-price {
+        color: #8a7a63;
+        font-size: 14px;
+    }
+    .qv-sheet-opt input {
+        width: 22px;
+        height: 22px;
+        accent-color: #7a6fbe;
+    }
+    .qv-sheet-note {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 0;
+    }
+    .qv-sheet-note-icon { font-size: 20px; }
+    .qv-sheet-note-input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 15px;
+        padding: 8px 0;
+    }
+    .qv-sheet-note-input::placeholder { color: #b8a88f; }
+    .qv-sheet-footer {
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+        background: #fff;
+        border-top: 1px solid #f0ebe2;
+    }
+    .qv-sheet-add {
+        width: 100%;
+        border: none;
+        border-radius: 12px;
+        background: #7a6fbe;
+        color: #fff;
+        font-size: 17px;
+        font-weight: 700;
+        padding: 14px;
+        cursor: pointer;
+    }
+    .qv-sheet-add:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+    html.dark .qv-sheet { background: #241d17; }
+    html.dark .qv-sheet-top { border-color: #3a3226; }
+    html.dark .qv-sheet-section { background: #2e2620; }
+    html.dark .qv-sheet-opt { border-color: #3a3226; }
+    html.dark .qv-sheet-footer { background: #241d17; border-color: #3a3226; }
+}

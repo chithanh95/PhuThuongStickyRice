@@ -490,6 +490,64 @@ else
                     </button>
                 </div>
             </div>
+            @* Mobile bottom sheet kiểu ShopeeFood (ẩn trên PC). *@
+            <div class="qv-sheet" @onclick:stopPropagation="true">
+                <div class="qv-sheet-banner">
+                    <img src="@ProductImage(_quickView)" alt="@_quickView.Name" />
+                </div>
+                <div class="qv-sheet-top">
+                    <span class="qv-sheet-title">Thêm món mới</span>
+                    <button type="button" class="qv-sheet-close" @onclick="CloseQuickView" aria-label="Đóng">×</button>
+                </div>
+                <div class="qv-sheet-body">
+                    <div class="qv-sheet-product">
+                        <img src="@ProductImage(_quickView)" alt="@_quickView.Name" class="qv-sheet-thumb" />
+                        <div class="qv-sheet-pinfo">
+                            <div class="qv-sheet-pname">@_quickView.Name</div>
+                            @if (_soldQuantities.TryGetValue(_quickView.Id, out var qvSold) && qvSold > 0)
+                            {
+                                <div class="qv-sheet-meta">@FormatSoldShort(qvSold) đã bán</div>
+                            }
+                            <div class="qv-sheet-price">@FormatPrice(QuickViewUnitPrice())</div>
+                        </div>
+                        <QuantitySpinner @bind-Value="_quickViewQty" Min="1" Max="99" />
+                    </div>
+                    @if (_quickView.Sizes != null && _quickView.Sizes.Count > 0)
+                    {
+                        <div class="qv-sheet-section">Chọn size</div>
+                        @foreach (var size in _quickView.Sizes)
+                        {
+                            <label class="qv-sheet-opt" @key="size.Id">
+                                <span>@size.Name <span class="qv-sheet-opt-price">@FormatPrice(size.Price)</span></span>
+                                <input type="radio" name="qv-sheet-size" checked="@(_quickViewSizeId == size.Id)"
+                                       @onchange="() => _quickViewSizeId = size.Id" />
+                            </label>
+                        }
+                    }
+                    @if (_toppings != null && _toppings.Count > 0)
+                    {
+                        <div class="qv-sheet-section">Thêm (Topping)</div>
+                        @foreach (var topping in _toppings)
+                        {
+                            <label class="qv-sheet-opt" @key="topping.Id">
+                                <span>@topping.Name <span class="qv-sheet-opt-price">@FormatPrice(topping.ExtraPrice)</span></span>
+                                <input type="checkbox" checked="@_quickViewToppings.Contains(topping.Id)"
+                                       @onchange="(e) => ToggleQuickViewTopping(topping.Id, (bool)e.Value)" />
+                            </label>
+                        }
+                    }
+                    <div class="qv-sheet-note">
+                        <span class="qv-sheet-note-icon">📝</span>
+                        <input class="qv-sheet-note-input" maxlength="500"
+                               placeholder="Ghi chú cho quán" @bind="_quickViewNote" />
+                    </div>
+                </div>
+                <div class="qv-sheet-footer">
+                    <button type="button" class="qv-sheet-add" @onclick="AddQuickViewToCart" disabled="@(!CanOrder(_quickView))">
+                        Thêm vào giỏ hàng - @FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     <div class="modal-backdrop fade show"></div>
