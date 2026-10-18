@@ -55,7 +55,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             var queryable = await _combos.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.IsActive).OrderBy(x => x.Price));
-            return await MapToDtosAsync(entities);
+            return await MapToDtosAsync(entities, includeInvalidItems: false);
         }
 
         [Authorize(Roles = "Admin")]
@@ -168,7 +168,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             }
         }
 
-        private async Task<List<ComboDto>> MapToDtosAsync(IEnumerable<Combo> entities)
+        private async Task<List<ComboDto>> MapToDtosAsync(IEnumerable<Combo> entities, bool includeInvalidItems = true)
         {
             var list = entities.ToList();
             var productIds = list.SelectMany(x => x.Items).Select(x => x.ProductId).Distinct().ToList();
@@ -185,21 +185,31 @@ namespace PhuThuongStickyRice.Application.Catalog
                 }
             }
 
-            return list.Select(e => new ComboDto
+            var dtos = list.Select(e => new ComboDto
             {
                 Id = e.Id,
                 Name = e.Name,
                 Description = e.Description,
                 Price = e.Price,
                 IsActive = e.IsActive,
-                Items = e.Items.Select(i => new ComboItemDto
-                {
-                    ProductId = i.ProductId,
-                    ProductName = names.TryGetValue(i.ProductId, out var n) ? n.Name : "(Món đã ngừng bán)",
-                    ProductPrice = names.TryGetValue(i.ProductId, out var n2) ? n2.Price : 0,
-                    Quantity = i.Quantity
-                }).ToList()
-            }).ToList();
+                Items = e.Items
+                    .Where(i => includeInvalidItems || names.ContainsKey(i.ProductId))
+                    .Select(i => new ComboItemDto
+                    {
+                        ProductId = i.ProductId,
+                        ProductName = names.TryGetValue(i.ProductId, out var n) ? n.Name : "(Món đã ngừng bán)",
+                        ProductPrice = names.TryGetValue(i.ProductId, out var n2) ? n2.Price : 0,
+                        Quantity = i.Quantity
+                    }).ToList()
+            });
+
+            // Shop: ẩn combo không còn món hợp lệ nào (VD: món bị xóa ở admin).
+            if (!includeInvalidItems)
+            {
+                dtos = dtos.Where(d => d.Items.Count > 0);
+            }
+
+            return dtos.ToList();
         }
     }
 }

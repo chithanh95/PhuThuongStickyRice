@@ -300,14 +300,17 @@ else
                             </p>
                             @if (product.Sizes != null && product.Sizes.Count > 0)
                             {
-                                <select class="form-control form-control-sm mb-2" @onchange="(e) => OnCardSizeChanged(product, e)">
+                                <div class="shop-size-chips mb-2">
                                     @foreach (var size in product.Sizes)
                                     {
-                                        <option value="@size.Id" selected="@(SelectedSizeId(product) == size.Id)">
-                                            @size.Name — @FormatPrice(size.Price)
-                                        </option>
+                                        <button type="button"
+                                                class="shop-size-chip @(SelectedSizeId(product) == size.Id ? "active" : "")"
+                                                @onclick="() => SelectCardSize(product, size.Id)"
+                                                title="@size.Name">
+                                            @size.Name <span class="shop-size-price">@FormatPrice(size.Price)</span>
+                                        </button>
                                     }
-                                </select>
+                                </div>
                             }
                             <div class="d-flex align-items-center shop-add-row">
                                 <input type="number" min="1" max="99" class="form-control mr-2" style="width: 80px;"
