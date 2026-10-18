@@ -64,7 +64,7 @@ else
                                 <td>
                                     @if (_editingId == t.Id)
                                     {
-                                        <div class="custom-control custom-checkbox">
+                                        <div class="custom-control custom-switch">
                                             <input type="checkbox" class="custom-control-input" id="@($"mt-{t.Id}")" @bind="_editActive" />
                                             <label class="custom-control-label" for="@($"mt-{t.Id}")">Bật</label>
                                         </div>

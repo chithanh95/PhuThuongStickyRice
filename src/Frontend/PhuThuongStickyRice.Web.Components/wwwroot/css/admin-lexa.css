@@ -1861,3 +1861,70 @@ html.dark .lx-toast {
 .lx-admin .lexa-switch-info input:checked + .lexa-slider { background-color: #50a5f1; }
 .lx-admin .lexa-switch-dark input:checked + .lexa-slider { background-color: #343a40; }
 .lx-admin .lexa-switch-secondary input:checked + .lexa-slider { background-color: #6c757d; }
+
+/* ============ Bootstrap custom-switch kiểu Lexa (dùng toàn web) ============ */
+.custom-switch .custom-control-label::before {
+    background-color: #ced4da;
+    border-color: #ced4da;
+}
+.custom-switch .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #7a6fbe;
+    border-color: #7a6fbe;
+}
+.custom-switch .custom-control-input:focus ~ .custom-control-label::before {
+    box-shadow: 0 0 0 0.2rem rgba(122, 111, 190, .25);
+    border-color: #7a6fbe;
+}
+.custom-switch .custom-control-input:disabled ~ .custom-control-label {
+    color: #adb5bd;
+}
+.custom-switch .custom-control-input:disabled ~ .custom-control-label::before {
+    background-color: #e9ecef;
+}
+
+/* Cỡ switch */
+.custom-switch.custom-switch-sm .custom-control-label::before {
+    width: 1.75rem;
+    height: 1rem;
+    border-radius: 1rem;
+    top: 0.25rem;
+}
+.custom-switch.custom-switch-sm .custom-control-label::after {
+    width: calc(1rem - 4px);
+    height: calc(1rem - 4px);
+    border-radius: calc(1rem - 2px);
+    top: calc(0.25rem + 2px);
+    left: calc(-2.25rem + 2px);
+}
+.custom-switch.custom-switch-sm .custom-control-input:checked ~ .custom-control-label::after {
+    transform: translateX(0.75rem);
+}
+.custom-switch.custom-switch-lg .custom-control-label::before {
+    width: 3rem;
+    height: 1.5rem;
+    border-radius: 1.5rem;
+    top: 0.125rem;
+}
+.custom-switch.custom-switch-lg .custom-control-label::after {
+    width: calc(1.5rem - 4px);
+    height: calc(1.5rem - 4px);
+    border-radius: calc(1.5rem - 2px);
+    top: calc(0.125rem + 2px);
+    left: calc(-2.25rem + 2px);
+}
+.custom-switch.custom-switch-lg .custom-control-input:checked ~ .custom-control-label::after {
+    transform: translateX(1.5rem);
+}
+/* Màu sắc */
+.custom-switch.switch-success .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #34c38f; border-color: #34c38f;
+}
+.custom-switch.switch-danger .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #f46a6a; border-color: #f46a6a;
+}
+.custom-switch.switch-warning .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #f1b44c; border-color: #f1b44c;
+}
+.custom-switch.switch-info .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #50a5f1; border-color: #50a5f1;
+}
