@@ -1537,6 +1537,10 @@ html.pt-reveal .sg-reveal.in {
 .sg-zalo-form .sg-btn { white-space: nowrap; }
 @media (max-width: 768px) {
     .sg-visit-grid { grid-template-columns: 1fr; }
+    /* Form Zalo xếp dọc trên mobile */
+    .sg-zalo-box { padding: 24px 20px; }
+    .sg-zalo-form { flex-direction: column; }
+    .sg-zalo-form .sg-btn { width: 100%; }
 }
 
 /* Item 1: Sticky CTA mobile */
