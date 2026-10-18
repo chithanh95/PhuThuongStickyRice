@@ -579,3 +579,30 @@ html.dark .shop-filters-sticky {
     html.dark .shop-cat-item { color: #b8a88f; }
     html.dark .shop-cat-item.active { background: #2e2620; color: #b3a8e8; }
 }
+
+/* Quick view modal không vỡ trên mobile */
+@media (max-width: 768px) {
+    .shop-quickview-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+    .shop-quickview-dialog .modal-content {
+        max-height: calc(100vh - 1rem);
+        border-radius: 14px;
+    }
+    .shop-quickview-dialog .modal-body {
+        overflow-y: auto;
+    }
+    .shop-quickview-dialog .modal-body img {
+        max-height: 220px;
+        width: 100%;
+        object-fit: cover;
+        border-radius: 10px;
+    }
+    .shop-quickview-dialog .modal-footer {
+        flex-wrap: nowrap;
+    }
+    .shop-quickview-dialog .modal-footer .btn {
+        white-space: nowrap;
+    }
+}
