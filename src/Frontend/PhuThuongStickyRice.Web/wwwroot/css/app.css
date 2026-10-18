@@ -4,6 +4,8 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     scroll-behavior: smooth;
+    overflow-x: hidden; /* Chặn tràn ngang toàn web */
+    max-width: 100vw;
 }
 
 /* Blazor WASM root element: the index.html uses a custom <app> tag
