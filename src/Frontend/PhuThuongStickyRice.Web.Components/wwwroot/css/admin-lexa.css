@@ -966,6 +966,12 @@ html.dark .lx-admin .form-select {
     border-color: #4a4a6e;
     color: #f0eef5;
 }
+html.dark .lx-admin .form-control:focus,
+html.dark .lx-admin .form-select:focus {
+    background-color: #1e1e36;
+    border-color: #7a6fbe;
+    color: #ffffff;
+}
 
 html.dark .lx-admin .form-control::placeholder {
     color: #8a87a3;
