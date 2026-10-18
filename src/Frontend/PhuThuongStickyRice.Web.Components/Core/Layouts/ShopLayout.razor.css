@@ -6,6 +6,7 @@
 
 .shp-page {
     width: 100%;
+    overflow-x: clip; /* Chặn tràn ngang trên mobile */
     --shp-bg: #fdfbf7;
     --shp-surface: #ffffff;
     --shp-ink: #2e2620;
