@@ -105,35 +105,22 @@
     <div class="form-group row">
         <label class="col-sm-2 col-form-label">Ảnh món: </label>
         <div class="col-sm-10">
-            <div class="d-flex flex-wrap mb-2">
-                @for (var i = 0; i < _images.Count; i++)
-                {
-                    var idx = i;
-                    var url = _images[i];
-                    <div class="mr-2 mb-2 text-center" style="width: 110px;" @key="url">
-                        <img src="@Wave5Service.ResolveImageUrl(url)" alt="Ảnh món" class="img-thumbnail" style="width: 100px; height: 100px; object-fit: cover; @(idx == 0 ? "border: 2px solid #28a745;" : "")"
-                             onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIxMiI+Tm8gaW1hZ2U8L3RleHQ+PC9zdmc+';" />
-                        <div class="mt-1">
-                            @if (idx == 0)
-                            {
-                                <span class="badge badge-success">Đại diện</span>
-                            }
-                            else
-                            {
-                                <button type="button" class="btn btn-sm btn-link p-0" @onclick="() => SetPrimaryImage(idx)">Đại diện</button>
-                            }
-                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ml-1" @onclick="() => RemoveImage(idx)">Xóa</button>
-                        </div>
+            @if (!string.IsNullOrEmpty(_imageUrl))
+            {
+                <div class="mb-2 text-center" style="width: 150px;">
+                    <img src="@Wave5Service.ResolveImageUrl(_imageUrl)" alt="Ảnh món" class="img-thumbnail" style="width: 140px; height: 140px; object-fit: cover;"
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQwIiBoZWlnaHQ9IjE0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTQwIiBoZWlnaHQ9IjE0MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjcwIiB5PSI3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIxNCI+Tm8gaW1hZ2U8L3RleHQ+PC9zdmc+';" />
+                    <div class="mt-1">
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="RemoveImage">Xóa</button>
                     </div>
-                }
-            </div>
+                </div>
+            }
             <label for="product-images-input" class="lx-dropzone">
                 <div class="lx-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                 <div class="lx-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
-                <div class="lx-dropzone-hint">Chọn nhiều ảnh 1 lần — ảnh tự nén trước khi tải lên.</div>
+                <div class="lx-dropzone-hint">Ảnh tự nén trước khi tải lên.</div>
             </label>
-            <input type="file" id="product-images-input" accept="image/*" multiple style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" @onchange="OnImagesSelected" />
-            <small class="form-text text-muted">Ảnh đầu tiên là ảnh đại diện hiện ở shop.</small>
+            <input type="file" id="product-images-input" accept="image/*" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" @onchange="OnImagesSelected" />
             @if (_uploadingImages)
             {
                 <div class="text-muted mt-1">Đang tải ảnh lên...</div>

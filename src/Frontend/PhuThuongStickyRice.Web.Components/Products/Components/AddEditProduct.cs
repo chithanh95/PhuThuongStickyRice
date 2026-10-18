@@ -60,7 +60,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
 
         private readonly List<HourWindow> _hours = new List<HourWindow>();
 
-        private readonly List<string> _images = new List<string>();
+        private string _imageUrl;
 
         private Guid _syncedProductId = Guid.Empty;
 
@@ -98,7 +98,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
 
             _syncedProductId = Product.Id;
             _hours.Clear();
-            _images.Clear();
+            _imageUrl = null;
             _imageError = null;
 
             if (!string.IsNullOrWhiteSpace(Product.AvailableHoursJson))
@@ -138,17 +138,13 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                     {
                         foreach (var el in doc.RootElement.EnumerateArray())
                         {
-                            if (_images.Count >= 10)
-                            {
-                                break;
-                            }
-
                             if (el.ValueKind == JsonValueKind.String)
                             {
                                 var url = el.GetString()?.Trim();
                                 if (!string.IsNullOrEmpty(url))
                                 {
-                                    _images.Add(url);
+                                    _imageUrl = url;
+                                    break;
                                 }
                             }
                         }
@@ -174,7 +170,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         }
 
         private string SerializeImages() =>
-            _images.Count == 0 ? null : JsonSerializer.Serialize(_images);
+            string.IsNullOrEmpty(_imageUrl) ? null : JsonSerializer.Serialize(new[] { _imageUrl });
 
         private void AddHour()
         {
@@ -208,26 +204,28 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 return;
             }
 
-            if (_images.Count + files.Count > 10)
+            var f = files[0];
+            if (string.IsNullOrEmpty(f.Base64))
             {
-                _imageError = "Tối đa 10 ảnh cho mỗi món.";
+                _imageError = "Không đọc được ảnh đã chọn.";
                 return;
+            }
+
+            // Xóa ảnh cũ trên server trước khi upload ảnh mới
+            if (!string.IsNullOrEmpty(_imageUrl))
+            {
+                try { await ProductService.DeleteProductImageAsync(_imageUrl); } catch { }
             }
 
             _uploadingImages = true;
             try
             {
-                foreach (var f in files)
+                using var stream = new MemoryStream(Convert.FromBase64String(f.Base64));
+                var url = await ProductService.UploadProductImageAsync(
+                    stream, f.FileName, f.ContentType);
+                if (!string.IsNullOrEmpty(url))
                 {
-                    if (string.IsNullOrEmpty(f.Base64))
-                        continue;
-                    using var stream = new MemoryStream(Convert.FromBase64String(f.Base64));
-                    var url = await ProductService.UploadProductImageAsync(
-                        stream, f.FileName, f.ContentType);
-                    if (!string.IsNullOrEmpty(url))
-                    {
-                        _images.Add(url);
-                    }
+                    _imageUrl = url;
                 }
             }
             catch (Exception ex)
@@ -240,21 +238,12 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             }
         }
 
-        private void RemoveImage(int index)
+        private async Task RemoveImage()
         {
-            if (index >= 0 && index < _images.Count)
+            if (!string.IsNullOrEmpty(_imageUrl))
             {
-                _images.RemoveAt(index);
-            }
-        }
-
-        private void SetPrimaryImage(int index)
-        {
-            if (index > 0 && index < _images.Count)
-            {
-                var url = _images[index];
-                _images.RemoveAt(index);
-                _images.Insert(0, url);
+                try { await ProductService.DeleteProductImageAsync(_imageUrl); } catch { }
+                _imageUrl = null;
             }
         }
     }

@@ -352,6 +352,35 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { url = $"/uploads/products/{fileName}" });
         }
 
+        /// <summary>
+        /// Xóa file ảnh sản phẩm khỏi disk. Client gọi khi user bấm nút Xóa ảnh.
+        /// </summary>
+        [Authorize(AuthorizationPolicyNames.DeleteProductPolicy)]
+        [HttpDelete("images")]
+        public IActionResult DeleteProductImage([FromQuery] string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return BadRequest(new { message = "Thiếu đường dẫn ảnh." });
+            }
+
+            // Chỉ cho phép xóa file trong thư mục uploads/products để tránh path traversal.
+            var fileName = Path.GetFileName(url);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return BadRequest(new { message = "Đường dẫn ảnh không hợp lệ." });
+            }
+
+            var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "products");
+            var filePath = Path.Combine(folder, fileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+            }
+
+            return Ok(new { message = "Đã xóa ảnh." });
+        }
+
         [HttpGet("exportaspdf")]
         public async Task<IActionResult> ExportAsPdf(CancellationToken cancellationToken = default)
         {

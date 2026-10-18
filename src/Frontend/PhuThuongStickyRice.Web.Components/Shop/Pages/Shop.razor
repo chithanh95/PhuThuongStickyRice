@@ -457,10 +457,10 @@ else
                         <div class="qv-sheet-section">Chọn size</div>
                         @foreach (var size in _quickView.Sizes)
                         {
-                            <label class="qv-sheet-opt" @key="size.Id">
+                            <label class="qv-sheet-opt" @key="size.Id" @onclick:stopPropagation="true">
                                 <span>@size.Name <span class="qv-sheet-opt-price">@FormatPrice(size.Price)</span></span>
                                 <input type="radio" name="qv-sheet-size" checked="@(_quickViewSizeId == size.Id)"
-                                       @onchange="() => _quickViewSizeId = size.Id" />
+                                       @onchange="() => _quickViewSizeId = size.Id" @onclick:stopPropagation="true" />
                             </label>
                         }
                     }
@@ -469,10 +469,10 @@ else
                         <div class="qv-sheet-section">Thêm (Topping)</div>
                         @foreach (var topping in _toppings)
                         {
-                            <label class="qv-sheet-opt" @key="topping.Id">
+                            <label class="qv-sheet-opt" @key="topping.Id" @onclick:stopPropagation="true">
                                 <span>@topping.Name <span class="qv-sheet-opt-price">@FormatPrice(topping.ExtraPrice)</span></span>
                                 <input type="checkbox" checked="@_quickViewToppings.Contains(topping.Id)"
-                                       @onchange="(e) => ToggleQuickViewTopping(topping.Id, (bool)e.Value)" />
+                                       @onchange="(e) => ToggleQuickViewTopping(topping.Id, (bool)e.Value)" @onclick:stopPropagation="true" />
                             </label>
                         }
                     }

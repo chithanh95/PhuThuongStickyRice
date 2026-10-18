@@ -120,6 +120,14 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
             throw new System.InvalidOperationException("Tải ảnh lên thất bại.");
         }
 
+        public async Task DeleteProductImageAsync(string url)
+        {
+            await SetBearerToken();
+            var response = await _httpClient.DeleteAsync(
+                $"api/products/images?url={Uri.EscapeDataString(url)}");
+            response.EnsureSuccessStatusCode();
+        }
+
         public string GetExportPdfUrl()
         {
             return $"{_httpClient.BaseAddress.AbsoluteUri.Trim('/')}/api/products/ExportAsPdf";
