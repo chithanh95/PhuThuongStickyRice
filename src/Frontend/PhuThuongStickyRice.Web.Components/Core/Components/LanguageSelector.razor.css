@@ -82,4 +82,10 @@ html.dark .lang-item.active {
     .lang-compact .lang-menu { min-width: 0; }
     .lang-compact .lang-name { display: none; }
     .lang-compact .lang-item { padding: 10px 12px; }
+    /* Tap target 44px cho nút cờ trong header mobile */
+    .lang-btn {
+        min-width: 44px;
+        min-height: 44px;
+        justify-content: center;
+    }
 }

@@ -724,6 +724,8 @@ else
             @(_submitting ? AppI18n.T("shop.processing") : AppI18n.T("shop.order_now"))
         </button>
     </div>
+    @* In-flow spacer so the fixed bar never covers the page bottom *@
+    <div class="co-mobile-spacer" aria-hidden="true"></div>
 }
 
 @code {

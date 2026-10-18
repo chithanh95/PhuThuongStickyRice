@@ -1224,7 +1224,8 @@ html.pt-reveal .sg-reveal.in {
     transition: opacity .25s, transform .25s;
     pointer-events: none;
 }
-.sg-dish-card:hover .sg-dish-quick {
+.sg-dish-card:hover .sg-dish-quick,
+.sg-dish-card:focus-within .sg-dish-quick {
     opacity: 1;
     transform: none;
     pointer-events: auto;
@@ -1980,8 +1981,9 @@ html.pt-reveal .sg-reveal.in {
 .sg-modal-close {
     position: absolute; top: 10px; right: 14px;
     background: none; border: none;
-    font-size: 28px; cursor: pointer; color: #999;
+    font-size: 28px; cursor: pointer; color: #666;
 }
+.sg-modal-close:hover { color: #333; }
 .sg-360-stage {
     background: #f7f3ec;
     border-radius: 12px;
@@ -2176,3 +2178,47 @@ html.dark .sg-trust-review-name { color: var(--sg-muted); }
 @media (min-width: 768px) and (max-width: 991.98px) {
     .sg-dish-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
 }
+
+/* ============================================================
+   uiux-dark-2026-10-19 — Landing dark mode: remap biến nền/chữ +
+   ghi đè các nền sáng hardcode. (html.dark)
+   ============================================================ */
+html.dark .sg-page {
+    --sg-bg: #1a1410;
+    --sg-surface: #262019;
+    --sg-cream: #262019;
+    --sg-ink: #f0e8d8;
+    --sg-muted: #b7a88f;
+    --sg-line: #3d3325;
+    --sg-accent: #c99a55;
+    --sg-accent-dark: #e0b267;
+}
+
+html.dark .sg-header { background: rgba(26, 20, 16, .92); }
+html.dark .sg-theme-toggle { color: #f0e8d8; }
+
+html.dark .sg-fav-sec { background: #211a13; }
+html.dark .sg-spin-sec { background: linear-gradient(135deg, #262019, #1a1410); }
+html.dark .sg-spin-win { background: #14241a; border-color: #2d5a45; color: #cdeeda; }
+html.dark .sg-spin-win code { background: #1a1410; }
+
+html.dark .sg-paused { background: #2c231a; border-color: var(--sg-line); color: #e8a013; }
+
+html.dark .sg-review-text { color: #d0c4b4; }
+html.dark .sg-review-name { color: #a08c78; }
+html.dark .sg-review-reply { background: #2c231a; color: #b3a48a; }
+
+html.dark .sg-chat-msg.theirs { background: #3a2f23; color: #e8ded0; }
+html.dark .sg-chat-order { background: #262019; }
+
+html.dark .sg-modal-360 { background: #262019; color: #f0e8d8; }
+html.dark .sg-modal-close { color: #b7a88f; }
+html.dark .sg-360-stage { background: #1a1410; }
+html.dark .sg-btn-360,
+html.dark .sg-btn-fav { background: rgba(38, 32, 25, .9); color: #f0e8d8; }
+
+html.dark .sg-voice-review textarea { background: #1a1410; border-color: var(--sg-line); color: #f0e8d8; }
+html.dark .sg-voice-btn { background: #262019; color: #f0e8d8; }
+
+html.dark .sg-intro-img img { border-color: #262019; }
+html.dark .sg-dish-card { border-color: #3d3325; }

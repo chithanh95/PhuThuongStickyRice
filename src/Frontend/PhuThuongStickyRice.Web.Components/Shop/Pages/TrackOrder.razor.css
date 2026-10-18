@@ -268,4 +268,17 @@ html.dark .to-total-row {
 /* Touch target 44px mobile */
 @media (max-width: 767.98px) {
     .to-copy-btn { min-width: 44px; min-height: 44px; }
+
+    /* Mobile: label nằm trên, giá trị xuống dòng — ghi chú dài không bị ép */
+    .to-info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 8px 0;
+    }
+    .to-info-value {
+        text-align: left;
+        word-break: break-word;
+        min-width: 0;
+    }
 }

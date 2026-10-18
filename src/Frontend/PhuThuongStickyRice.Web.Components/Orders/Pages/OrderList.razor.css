@@ -1,0 +1,6 @@
+.timeline { border-left: 3px solid #dee2e6; padding-left: 12px; margin-left: 4px; }
+.timeline-item { position: relative; padding: 4px 0; }
+.timeline-item::before {
+    content: ""; position: absolute; left: -17px; top: 9px;
+    width: 9px; height: 9px; border-radius: 50%; background: #7a6fbe;
+}

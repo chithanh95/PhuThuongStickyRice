@@ -810,7 +810,7 @@ else
 {
     <div class="sg-modal-backdrop" @onclick="Close360">
         <div class="sg-modal-360" @onclick:stopPropagation>
-            <button class="sg-modal-close" @onclick="Close360">×</button>
+            <button class="sg-modal-close" @onclick="Close360" aria-label="Đóng">×</button>
             <h3>🔄 @_view360Product.Name — xem 360°</h3>
             @{
                 var imgs360 = AllImageUrls(_view360Product.ImageUrlsJson);

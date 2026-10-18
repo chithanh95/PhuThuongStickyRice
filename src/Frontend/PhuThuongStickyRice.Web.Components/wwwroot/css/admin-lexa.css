@@ -2019,3 +2019,60 @@ html.dark .lx-admin .alert-success { background-color: #1e3a2f !important; borde
 html.dark .lx-admin .alert-info { background-color: #1a2f45 !important; border-color: #2a4a6b !important; color: #7cc4f5 !important; }
 html.dark .lx-admin .alert-warning { background-color: #3a2f1a !important; border-color: #5a4a2a !important; color: #f5c86e !important; }
 html.dark .lx-admin .alert-danger { background-color: #3a1e24 !important; border-color: #5a2d36 !important; color: #ff8a8a !important; }
+
+/* uiux-a11y-2026-10-19 — focus-visible ring cho keyboard navigation (admin) */
+.lx-admin :focus-visible {
+    outline: 2px solid #7a6fbe !important;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+.lx-admin button:focus:not(:focus-visible),
+.lx-admin a:focus:not(:focus-visible),
+.lx-admin input:focus:not(:focus-visible),
+.lx-admin select:focus:not(:focus-visible),
+.lx-admin textarea:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ============================================================
+   uiux-dark-2026-10-19 — Admin dark-mode bổ sung: input-group-text
+   (search box MaGiamGia), badge-light (KDS/Quotes), checkbox chưa
+   check, btn-outline-secondary.
+   ============================================================ */
+
+/* Input group addon còn nền trắng (vd. icon search ở MaGiamGia) */
+html.dark .lx-admin .input-group-text {
+    background-color: #1e1e36;
+    border-color: #4a4a6e;
+    color: #a5a2bd;
+}
+
+/* badge-light chói trên nền tối (KdsOrderCard, Quotes) */
+html.dark .lx-admin .badge-light {
+    background-color: #3a3a58 !important;
+    color: #e8e6f0 !important;
+}
+
+/* Checkbox/radio chưa check: trắng xóa trên nền tối */
+html.dark .lx-admin .form-check-input {
+    background-color: #1e1e36;
+    border-color: #4a4a6e;
+}
+
+/* btn-outline-secondary: chữ xám chìm trên nền tối */
+html.dark .lx-admin .btn-outline-secondary {
+    color: #a5a2bd;
+    border-color: #6b6b8c;
+}
+html.dark .lx-admin .btn-outline-secondary:hover {
+    color: #ffffff;
+    background-color: #6b6b8c;
+    border-color: #6b6b8c;
+}
+
+/* uiux-hunt 2026-10-19 — Kanban đơn hàng dark mode: chuyển từ <style> inline sang global
+   vì scoped CSS (.razor.css) không tác dụng lên selector html.dark */
+html.dark .lx-admin .kanban-col { background: #20203a; }
+html.dark .lx-admin .kanban-col-head { background: #262640; color: #f0eef5; }
+html.dark .lx-admin .kanban-card { background: #262640; color: #f0eef5; }
+html.dark .lx-admin .kanban-code { color: #f0eef5; }

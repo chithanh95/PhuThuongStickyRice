@@ -148,7 +148,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">@(_editing == null ? "Thêm mã giảm giá" : "Sửa mã giảm giá")</h5>
-                    <button type="button" class="close" @onclick="HideForm"><span>&times;</span></button>
+                    <button type="button" class="close" @onclick="HideForm" aria-label="Đóng"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     @if (!string.IsNullOrEmpty(_formError))

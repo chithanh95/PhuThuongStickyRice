@@ -161,7 +161,8 @@
 
     .cart-sticky-spacer {
         display: block;
-        height: 84px;
+        /* Bar cao ~68px + safe-area (iPhone notch 34px) — spacer phải theo */
+        height: calc(84px + env(safe-area-inset-bottom, 0px));
     }
 
     html.dark .cart-sticky-checkout {

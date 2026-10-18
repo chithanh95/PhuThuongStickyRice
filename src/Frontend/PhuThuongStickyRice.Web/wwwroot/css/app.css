@@ -454,3 +454,45 @@ a { color:#7a6fbe; }
 /* Brand name dark mode */
 .brand-name { color:#2b3a4a; }
 html.dark .brand-name { color:#e0e0e0; }
+
+/* ============================================================
+   uiux-dark-2026-10-19 — Shop dark-mode bổ sung: dropzone, nút ×
+   modal (.close), utility leaks (bg-light/bg-white/text-dark,
+   badge-light), nav-tabs active, icon lịch date/time.
+   ============================================================ */
+
+/* Dropzone upload (đồng bộ style lx-dropzone admin) */
+html.dark .shop-dropzone { background: #1e1e36; border-color: #4a4a6e; }
+html.dark .shop-dropzone:hover { background: #262640; border-color: #7a6fbe; }
+html.dark .shop-dropzone-icon { color: #8a87a3; }
+html.dark .shop-dropzone-hint { color: #8a87a3; }
+
+/* Nút × đóng modal (dùng class .close + &times;) */
+html.dark .close { color: #e8e6f0; text-shadow: none; opacity: .8; }
+html.dark .close:hover { color: #ffffff; opacity: 1; }
+
+/* Utility Bootstrap còn nền/trắng chữ đen lọt trong dark */
+html.dark .bg-light { background-color: #262640 !important; }
+html.dark .bg-white { background-color: #262640 !important; }
+html.dark .text-dark { color: #f0eef5 !important; }
+/* Ngoại lệ: text-dark trên nền vàng sáng vẫn phải chữ đen */
+html.dark .jumbotron.bg-warning .text-dark,
+html.dark .bg-warning .text-dark { color: #3a2a00 !important; }
+html.dark .badge-light { background-color: #3a3a58 !important; color: #e8e6f0 !important; }
+
+/* nav-tabs (Shop.razor): tab active không còn nền trắng chói */
+html.dark .nav-tabs { border-bottom-color: #3a3a58; }
+html.dark .nav-tabs .nav-link { color: #b9b6c9; border-color: transparent; }
+html.dark .nav-tabs .nav-link:hover { border-color: #3a3a58; color: #e8e6f0; }
+html.dark .nav-tabs .nav-link.active {
+    color: #d5cdf5;
+    background-color: #262640;
+    border-color: #3a3a58 #3a3a58 transparent;
+}
+
+/* Icon lịch của input date/time tàng hình trên nền tối */
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.dark input[type="time"]::-webkit-calendar-picker-indicator,
+html.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(.75);
+}

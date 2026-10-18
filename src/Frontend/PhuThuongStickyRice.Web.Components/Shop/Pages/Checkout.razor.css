@@ -140,4 +140,14 @@ html.dark .co-mobile-bar .co-total small {
 /* Mobile: ẩn nút đặt hàng trong luồng, giữ sticky bar */
 @media (max-width: 767.98px) {
     .co-flow-submit { display: none; }
+
+    /* In-flow spacer so the fixed bar never covers the page bottom */
+    .co-mobile-spacer {
+        display: block;
+        height: calc(88px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+.co-mobile-spacer {
+    display: none;
 }
