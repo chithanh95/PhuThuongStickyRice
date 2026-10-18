@@ -5,8 +5,8 @@ REM Yeu cau: da chay publish-lan.ps1 1 lan truoc do
 set PUB=%~dp0publish-lan
 set IP=
 
-REM Lay IP LAN dau tien
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
+REM Lay IP LAN dau tien (tim "IPv4" thay vi "IPv4 Address" de chay duoc ca Windows tieng Anh va tieng Viet)
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr "IPv4"') do (
     set IP=%%a
     goto :found
 )
