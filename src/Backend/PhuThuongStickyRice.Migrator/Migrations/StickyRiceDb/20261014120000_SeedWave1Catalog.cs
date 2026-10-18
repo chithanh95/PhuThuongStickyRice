@@ -36,10 +36,6 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
         private static readonly Guid ComboGiaDinhId = new Guid("c1b2c3d4-0001-4000-8000-000000000001");
         private static readonly Guid ComboSumVayId = new Guid("c1b2c3d4-0002-4000-8000-000000000002");
 
-        private static readonly Guid VoteComId = new Guid("d1b2c3d4-0001-4000-8000-000000000001");
-        private static readonly Guid VoteLacVungId = new Guid("d1b2c3d4-0002-4000-8000-000000000002");
-        private static readonly Guid VoteSanId = new Guid("d1b2c3d4-0003-4000-8000-000000000003");
-
         private const string SeededAt = "2026-10-14T12:00:00+00:00";
 
         /// <inheritdoc />
@@ -57,14 +53,18 @@ UPDATE Products SET Tags = N'man', Category = N'Xôi mặn', AllergenInfo = N'T�
 UPDATE Products SET Tags = N'chay', Category = N'Xôi ngọt', IsNew = 1 WHERE Id = '{XoiVoId}';
 UPDATE Products SET Tags = N'chay', Category = N'Xôi ngọt', AllergenInfo = N'Đậu phộng', IsSignature = 1 WHERE Id = '{XoiNguSacId}';");
 
-            // Default toppings.
+            // Default toppings (bỏ qua nếu đã có topping cùng tên).
             migrationBuilder.Sql($@"
-INSERT INTO Toppings (Id, Name, ExtraPrice, SortOrder, IsActive, CreatedDateTime) VALUES
-('{ChaLuaId}', N'Chả lụa', 10000, 1, 1, '{SeededAt}'),
-('{TrungOpLaId}', N'Trứng ốp la', 8000, 2, 1, '{SeededAt}'),
-('{HanhPhiId}', N'Hành phi thêm', 5000, 3, 1, '{SeededAt}'),
-('{RuocId}', N'Ruốc', 7000, 4, 1, '{SeededAt}'),
-('{DuaGopId}', N'Dưa góp', 5000, 5, 1, '{SeededAt}');");
+INSERT INTO Toppings (Id, Name, ExtraPrice, SortOrder, IsActive, CreatedDateTime)
+SELECT '{ChaLuaId}', N'Chả lụa', 10000, 1, 1, '{SeededAt}' WHERE NOT EXISTS (SELECT 1 FROM Toppings WHERE Name = N'Chả lụa');
+INSERT INTO Toppings (Id, Name, ExtraPrice, SortOrder, IsActive, CreatedDateTime)
+SELECT '{TrungOpLaId}', N'Trứng ốp la', 8000, 2, 1, '{SeededAt}' WHERE NOT EXISTS (SELECT 1 FROM Toppings WHERE Name = N'Trứng ốp la');
+INSERT INTO Toppings (Id, Name, ExtraPrice, SortOrder, IsActive, CreatedDateTime)
+SELECT '{HanhPhiId}', N'Hành phi thêm', 5000, 3, 1, '{SeededAt}' WHERE NOT EXISTS (SELECT 1 FROM Toppings WHERE Name = N'Hành phi thêm');
+INSERT INTO Toppings (Id, Name, ExtraPrice, SortOrder, IsActive, CreatedDateTime)
+SELECT '{RuocId}', N'Ruốc', 7000, 4, 1, '{SeededAt}' WHERE NOT EXISTS (SELECT 1 FROM Toppings WHERE Name = N'Ruốc');
+INSERT INTO Toppings (Id, Name, ExtraPrice, SortOrder, IsActive, CreatedDateTime)
+SELECT '{DuaGopId}', N'Dưa góp', 5000, 5, 1, '{SeededAt}' WHERE NOT EXISTS (SELECT 1 FROM Toppings WHERE Name = N'Dưa góp');");
 
             // Size options: Nhỏ = base - 5000, Vừa = base, Lớn = base + 10000.
             InsertSizes(migrationBuilder, XoiGacId, 35000m);
@@ -73,41 +73,52 @@ INSERT INTO Toppings (Id, Name, ExtraPrice, SortOrder, IsActive, CreatedDateTime
             InsertSizes(migrationBuilder, XoiVoId, 30000m);
             InsertSizes(migrationBuilder, XoiNguSacId, 40000m);
 
-            // Family combos.
+            // Family combos (bỏ qua nếu đã có combo cùng tên).
             migrationBuilder.Sql($@"
-INSERT INTO Combos (Id, Name, Description, Price, IsActive, CreatedAt, CreatedDateTime) VALUES
-('{ComboGiaDinhId}', N'Combo Gia Đình 4 Người', N'2 xôi gấc + 2 xôi xéo — đủ cho cả nhà 4 người, tiết kiệm hơn gọi lẻ.', 119000, 1, '2026-10-14T12:00:00', '{SeededAt}'),
-('{ComboSumVayId}', N'Combo Xôi Ngũ Sắc Sum Vầy', N'2 xôi ngũ sắc + 1 xôi đỗ — mâm xôi rực rỡ cho buổi sum họp.', 99000, 1, '2026-10-14T12:00:00', '{SeededAt}');");
+INSERT INTO Combos (Id, Name, Description, Price, IsActive, CreatedAt, CreatedDateTime)
+SELECT '{ComboGiaDinhId}', N'Combo Gia Đình 4 Người', N'2 xôi gấc + 2 xôi xéo — đủ cho cả nhà 4 người, tiết kiệm hơn gọi lẻ.', 119000, 1, '2026-10-14T12:00:00', '{SeededAt}'
+WHERE NOT EXISTS (SELECT 1 FROM Combos WHERE Name = N'Combo Gia Đình 4 Người');
+INSERT INTO Combos (Id, Name, Description, Price, IsActive, CreatedAt, CreatedDateTime)
+SELECT '{ComboSumVayId}', N'Combo Xôi Ngũ Sắc Sum Vầy', N'2 xôi ngũ sắc + 1 xôi đỗ — mâm xôi rực rỡ cho buổi sum họp.', 99000, 1, '2026-10-14T12:00:00', '{SeededAt}'
+WHERE NOT EXISTS (SELECT 1 FROM Combos WHERE Name = N'Combo Xôi Ngũ Sắc Sum Vầy');");
 
             migrationBuilder.Sql($@"
-INSERT INTO ComboItems (Id, ComboId, ProductId, Quantity, CreatedDateTime) VALUES
-(NEWID(), '{ComboGiaDinhId}', '{XoiGacId}', 2, '{SeededAt}'),
-(NEWID(), '{ComboGiaDinhId}', '{XoiXeoId}', 2, '{SeededAt}'),
-(NEWID(), '{ComboSumVayId}', '{XoiNguSacId}', 2, '{SeededAt}'),
-(NEWID(), '{ComboSumVayId}', '{XoiDoId}', 1, '{SeededAt}');");
+INSERT INTO ComboItems (Id, ComboId, ProductId, Quantity, CreatedDateTime)
+SELECT NEWID(), '{ComboGiaDinhId}', '{XoiGacId}', 2, '{SeededAt}'
+WHERE EXISTS (SELECT 1 FROM Combos WHERE Id = '{ComboGiaDinhId}') AND NOT EXISTS (SELECT 1 FROM ComboItems WHERE ComboId = '{ComboGiaDinhId}' AND ProductId = '{XoiGacId}');
+INSERT INTO ComboItems (Id, ComboId, ProductId, Quantity, CreatedDateTime)
+SELECT NEWID(), '{ComboGiaDinhId}', '{XoiXeoId}', 2, '{SeededAt}'
+WHERE EXISTS (SELECT 1 FROM Combos WHERE Id = '{ComboGiaDinhId}') AND NOT EXISTS (SELECT 1 FROM ComboItems WHERE ComboId = '{ComboGiaDinhId}' AND ProductId = '{XoiXeoId}');
+INSERT INTO ComboItems (Id, ComboId, ProductId, Quantity, CreatedDateTime)
+SELECT NEWID(), '{ComboSumVayId}', '{XoiNguSacId}', 2, '{SeededAt}'
+WHERE EXISTS (SELECT 1 FROM Combos WHERE Id = '{ComboSumVayId}') AND NOT EXISTS (SELECT 1 FROM ComboItems WHERE ComboId = '{ComboSumVayId}' AND ProductId = '{XoiNguSacId}');
+INSERT INTO ComboItems (Id, ComboId, ProductId, Quantity, CreatedDateTime)
+SELECT NEWID(), '{ComboSumVayId}', '{XoiDoId}', 1, '{SeededAt}'
+WHERE EXISTS (SELECT 1 FROM Combos WHERE Id = '{ComboSumVayId}') AND NOT EXISTS (SELECT 1 FROM ComboItems WHERE ComboId = '{ComboSumVayId}' AND ProductId = '{XoiDoId}');");
 
-            // Dish-vote candidates.
-            migrationBuilder.Sql($@"
-INSERT INTO DishCandidates (Id, Name, Description, Votes, IsActive, CreatedAt, CreatedDateTime) VALUES
-('{VoteComId}', N'Xôi cốm', N'Xôi cốm dẻo thơm mùa thu, ăn kèm dừa nạo và đậu xanh.', 0, 1, '2026-10-14T12:00:00', '{SeededAt}'),
-('{VoteLacVungId}', N'Xôi lạc vừng', N'Xôi lạc bùi béo rắc vừng đen — món ăn dân dã khó quên.', 0, 1, '2026-10-14T12:00:00', '{SeededAt}'),
-('{VoteSanId}', N'Xôi sắn mỡ hành', N'Xôi sắn dẻo quánh chan mỡ hành thơm lừng.', 0, 1, '2026-10-14T12:00:00', '{SeededAt}');");
+            // Dish-vote candidates: BỎ QUA — bảng DishCandidates đã bị migration
+            // RemoveDishVoting (15/10) xóa, tính năng bình chọn món đã loại bỏ.
         }
 
         private static void InsertSizes(MigrationBuilder migrationBuilder, Guid productId, decimal basePrice)
         {
+            // Bỏ qua nếu sản phẩm đã có size options.
             migrationBuilder.Sql($@"
-INSERT INTO ProductSizeOptions (Id, ProductId, Name, Price, SortOrder, IsActive, CreatedDateTime) VALUES
-(NEWID(), '{productId}', N'Nhỏ', {basePrice - 5000m}, 1, 1, '{SeededAt}'),
-(NEWID(), '{productId}', N'Vừa', {basePrice}, 2, 1, '{SeededAt}'),
-(NEWID(), '{productId}', N'Lớn', {basePrice + 10000m}, 3, 1, '{SeededAt}');");
+INSERT INTO ProductSizeOptions (Id, ProductId, Name, Price, SortOrder, IsActive, CreatedDateTime)
+SELECT NEWID(), '{productId}', N'Nhỏ', {basePrice - 5000m}, 1, 1, '{SeededAt}'
+WHERE EXISTS (SELECT 1 FROM Products WHERE Id = '{productId}') AND NOT EXISTS (SELECT 1 FROM ProductSizeOptions WHERE ProductId = '{productId}');
+INSERT INTO ProductSizeOptions (Id, ProductId, Name, Price, SortOrder, IsActive, CreatedDateTime)
+SELECT NEWID(), '{productId}', N'Vừa', {basePrice}, 2, 1, '{SeededAt}'
+WHERE EXISTS (SELECT 1 FROM Products WHERE Id = '{productId}') AND NOT EXISTS (SELECT 1 FROM ProductSizeOptions WHERE ProductId = '{productId}' AND Name = N'Vừa');
+INSERT INTO ProductSizeOptions (Id, ProductId, Name, Price, SortOrder, IsActive, CreatedDateTime)
+SELECT NEWID(), '{productId}', N'Lớn', {basePrice + 10000m}, 3, 1, '{SeededAt}'
+WHERE EXISTS (SELECT 1 FROM Products WHERE Id = '{productId}') AND NOT EXISTS (SELECT 1 FROM ProductSizeOptions WHERE ProductId = '{productId}' AND Name = N'Lớn');");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql($@"
-DELETE FROM DishCandidates WHERE Id IN ('{VoteComId}', '{VoteLacVungId}', '{VoteSanId}');
 DELETE FROM ComboItems WHERE ComboId IN ('{ComboGiaDinhId}', '{ComboSumVayId}');
 DELETE FROM Combos WHERE Id IN ('{ComboGiaDinhId}', '{ComboSumVayId}');
 DELETE FROM Toppings WHERE Id IN ('{ChaLuaId}', '{TrungOpLaId}', '{HanhPhiId}', '{RuocId}');
