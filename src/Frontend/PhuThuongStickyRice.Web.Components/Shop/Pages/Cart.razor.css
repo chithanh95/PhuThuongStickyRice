@@ -197,3 +197,32 @@ html.dark .gh-freeship .progress {
         font-size: 16px;
     }
 }
+
+/* Ảnh thumbnail trong giỏ hàng */
+.cart-item-main {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+.cart-item-img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+.cart-item-info {
+    min-width: 0;
+    flex: 1;
+}
+@media (max-width: 768px) {
+    .cart-item-img {
+        width: 64px;
+        height: 64px;
+    }
+    /* Mobile: ẩn nút Xóa (giảm về 0 là tự xóa) */
+    .cart-lines thead th:nth-child(5),
+    .cart-lines tbody td:nth-child(5) {
+        display: none;
+    }
+}

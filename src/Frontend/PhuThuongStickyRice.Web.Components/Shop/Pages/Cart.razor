@@ -74,7 +74,13 @@ else
                 {
                     <tr @key="item.LineKey">
                         <td>
-                            <strong>@item.ProductName</strong>
+                            <div class="cart-item-main">
+                                @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                {
+                                    <img class="cart-item-img" src="@item.ImageUrl" alt="@item.ProductName" loading="lazy" />
+                                }
+                                <div class="cart-item-info">
+                                    <strong>@item.ProductName</strong>
                             @if (item.IsCombo)
                             {
                                 <span class="badge badge-warning ml-1">COMBO</span>
@@ -94,6 +100,8 @@ else
                                    maxlength="500" placeholder="@AppI18n.T("shop.item_note_placeholder")"
                                    value="@item.Note"
                                    @onchange="(e) => CartState.UpdateNote(item.LineKey, e.Value?.ToString())" />
+                                </div>
+                            </div>
                         </td>
                         <td class="text-right">@FormatPrice(item.UnitPrice)</td>
                         <td class="text-right"><strong>@FormatPrice(item.LineTotal)</strong></td>
