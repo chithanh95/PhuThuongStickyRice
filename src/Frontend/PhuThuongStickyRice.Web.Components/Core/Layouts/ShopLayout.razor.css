@@ -485,3 +485,9 @@ html.dark .shp-lang-select {
     color: #f0e8dc;
     border-color: #3a3226;
 }
+
+/* Link Đăng nhập trong nav chỉ dành cho menu hamburger mobile —
+   PC đã có nút Đăng nhập ở header-right nên ẩn đi tránh trùng. */
+@media (min-width: 992px) {
+    .shp-nav .shp-nav-login { display: none; }
+}
