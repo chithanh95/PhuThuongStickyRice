@@ -128,6 +128,16 @@ html.dark .shop-info-strip {
         min-height: 42px;
         font-size: 13px;
         padding: 6px 8px;
+        white-space: nowrap;
+    }
+
+    /* Nút thêm giỏ trên card mobile: full-width, không tràn */
+    .shop-add-row {
+        flex-wrap: wrap;
+    }
+    .shop-add-row .btn {
+        font-size: 12px;
+        flex: 1 1 100%;
     }
 
     /* Filter chips: comfortable tap targets */
