@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -8,10 +9,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 {
     /// <summary>
-    /// Seeds the Wave 2 FAQ with common questions, and backfills the new
-    /// ShopSetting columns on rows created before Wave 2.
+    /// Seeds the FAQ with common questions, and backfills the new
+    /// ShopSetting columns on rows created before this migration.
+    /// NOTE: hand-written migration without a Designer file, so data
+    /// operations use raw SQL — InsertData/DeleteData need the EF model
+    /// to resolve column types and throw without it.
     /// </summary>
-    public partial class SeedWave2Faq : Migration
+    public partial class SeedFaqItems : Migration
     {
         private static readonly (Guid Id, string Question, string Answer)[] Faqs =
         {
@@ -84,28 +88,32 @@ UPDATE ShopSettings SET
 WHERE BankTransferExpiryMinutes = 0");
 
             // Base Entity.CreatedDateTime is non-nullable with no SQL default,
-            // so the seed rows must set it explicitly.
-            var seedDate = new DateTimeOffset(2026, 10, 14, 12, 0, 0, TimeSpan.Zero);
-
+            // so the seed rows must set it explicitly. Raw SQL: InsertData
+            // needs the EF model to resolve column types.
+            var seedDate = "2026-10-14T12:00:00+00:00";
+            var sb = new StringBuilder();
             for (var i = 0; i < Faqs.Length; i++)
             {
-                migrationBuilder.InsertData(
-                    table: "FaqItems",
-                    columns: new[] { "Id", "Question", "Answer", "SortOrder", "IsActive", "CreatedDateTime" },
-                    values: new object[] { Faqs[i].Id, Faqs[i].Question, Faqs[i].Answer, i + 1, true, seedDate });
+                sb.Append("INSERT INTO FaqItems (Id, Question, Answer, SortOrder, IsActive, CreatedDateTime) ");
+                sb.Append($"SELECT '{Faqs[i].Id}', {SqlStr(Faqs[i].Question)}, {SqlStr(Faqs[i].Answer)}, {i + 1}, 1, '{seedDate}' ");
+                sb.Append($"WHERE NOT EXISTS (SELECT 1 FROM FaqItems WHERE Id = '{Faqs[i].Id}'); ");
             }
+            migrationBuilder.Sql(sb.ToString());
         }
+
+        private static string SqlStr(string s) => "N'" + s.Replace("'", "''") + "'";
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            foreach (var (id, _, _) in Faqs)
+            var sb = new StringBuilder("DELETE FROM FaqItems WHERE Id IN (");
+            for (var i = 0; i < Faqs.Length; i++)
             {
-                migrationBuilder.DeleteData(
-                    table: "FaqItems",
-                    keyColumn: "Id",
-                    keyValue: id);
+                if (i > 0) sb.Append(", ");
+                sb.Append($"'{Faqs[i].Id}'");
             }
+            sb.Append(");");
+            migrationBuilder.Sql(sb.ToString());
         }
     }
 }

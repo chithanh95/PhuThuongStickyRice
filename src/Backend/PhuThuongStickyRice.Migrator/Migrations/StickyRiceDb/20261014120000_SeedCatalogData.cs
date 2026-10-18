@@ -18,8 +18,8 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
     /// model to resolve column types and throw without it.
     /// </summary>
     [DbContext(typeof(StickyRiceDbContext))]
-    [Migration("20261014120000_SeedWave1Catalog")]
-    public partial class SeedWave1Catalog : Migration
+    [Migration("20261014120000_SeedCatalogData")]
+    public partial class SeedCatalogData : Migration
     {
         private static readonly Guid XoiGacId = new Guid("a1b2c3d4-0001-4000-8000-000000000001");
         private static readonly Guid XoiDoId = new Guid("a1b2c3d4-0002-4000-8000-000000000002");

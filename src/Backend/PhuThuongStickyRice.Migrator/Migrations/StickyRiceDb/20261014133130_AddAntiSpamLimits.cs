@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 {
     /// <inheritdoc />
-    public partial class Wave6dAntiSpam : Migration
+    public partial class AddAntiSpamLimits : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

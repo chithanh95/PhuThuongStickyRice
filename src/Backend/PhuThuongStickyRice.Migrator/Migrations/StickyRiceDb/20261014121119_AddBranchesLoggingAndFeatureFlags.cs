@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 {
     /// <inheritdoc />
-    public partial class Wave4Features : Migration
+    public partial class AddBranchesLoggingAndFeatureFlags : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
