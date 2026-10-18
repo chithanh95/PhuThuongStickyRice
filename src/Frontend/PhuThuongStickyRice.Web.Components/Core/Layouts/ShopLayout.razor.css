@@ -328,15 +328,25 @@
     }
 
     .shp-header-inner {
-        flex-wrap: wrap;
-        gap: 10px;
+        flex-wrap: nowrap;
+        gap: 8px;
+        align-items: center;
     }
 
+    /* Mobile: logo trái, ngôn ngữ + giỏ hàng + hamburger cùng hàng bên phải */
     .shp-header-right {
-        flex-wrap: wrap;
-        width: 100%;
+        flex-wrap: nowrap;
+        width: auto;
         justify-content: flex-end;
+        margin-left: auto;
+        order: 2;
+        gap: 8px;
     }
+    .shp-hamburger {
+        order: 3;
+        margin-left: 0;
+    }
+    .shp-logo { order: 1; }
 
     /* Mobile gọn: ẩn nút Đặt hàng ngay (đã có sticky CTA), ẩn login (vào menu) */
     .shp-order-btn { display: none; }
