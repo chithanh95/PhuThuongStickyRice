@@ -16,17 +16,14 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Xóa topping Chả giò
-            migrationBuilder.DeleteData(
-                table: "Toppings",
-                keyColumn: "Id",
-                keyValue: ToppingChaGioId);
+            // Xóa topping Chả giò (raw SQL: DeleteData cần model EF để tra kiểu cột,
+            // migration viết tay không có Designer nên dùng SQL thuần)
+            migrationBuilder.Sql(
+                $"DELETE FROM Toppings WHERE Id = '{ToppingChaGioId}'");
 
             // Xóa product Chả giò (nếu chưa có đơn hàng nào dùng thì xóa được)
-            migrationBuilder.DeleteData(
-                table: "Products",
-                keyColumn: "Id",
-                keyValue: ProductChaGioId);
+            migrationBuilder.Sql(
+                $"DELETE FROM Products WHERE Id = '{ProductChaGioId}'");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

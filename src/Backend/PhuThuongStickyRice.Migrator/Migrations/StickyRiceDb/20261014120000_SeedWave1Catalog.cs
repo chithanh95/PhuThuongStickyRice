@@ -13,6 +13,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
     /// Seeds the Wave 1 catalog: default toppings, size options for the five
     /// seeded xôi products, two family combos, dish-vote candidates, and
     /// catalog fields (tags / category / badges) for the seeded products.
+    /// NOTE: hand-written migration without a Designer file, so all data
+    /// operations use raw SQL — InsertData/UpdateData/DeleteData need the EF
+    /// model to resolve column types and throw without it.
     /// </summary>
     [DbContext(typeof(StickyRiceDbContext))]
     [Migration("20261014120000_SeedWave1Catalog")]
@@ -37,8 +40,7 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
         private static readonly Guid VoteLacVungId = new Guid("d1b2c3d4-0002-4000-8000-000000000002");
         private static readonly Guid VoteSanId = new Guid("d1b2c3d4-0003-4000-8000-000000000003");
 
-        private static readonly DateTimeOffset SeededAt =
-            new DateTimeOffset(new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc), TimeSpan.Zero);
+        private const string SeededAt = "2026-10-14T12:00:00+00:00";
 
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -48,49 +50,21 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                 "UPDATE ShopSettings SET EstimatedDeliveryMinutes = 45 WHERE EstimatedDeliveryMinutes = 0");
 
             // Catalog fields for the five seeded products.
-            migrationBuilder.UpdateData(
-                table: "Products",
-                keyColumn: "Id",
-                keyValue: XoiGacId,
-                columns: new[] { "Tags", "Category", "IsSignature" },
-                values: new object[] { "man", "Xôi mặn", true });
-            migrationBuilder.UpdateData(
-                table: "Products",
-                keyColumn: "Id",
-                keyValue: XoiDoId,
-                columns: new[] { "Tags", "Category" },
-                values: new object[] { "chay", "Xôi mặn" });
-            migrationBuilder.UpdateData(
-                table: "Products",
-                keyColumn: "Id",
-                keyValue: XoiXeoId,
-                columns: new[] { "Tags", "Category", "AllergenInfo" },
-                values: new object[] { "man", "Xôi mặn", "Tôm (trong ruốc ăn kèm)" });
-            migrationBuilder.UpdateData(
-                table: "Products",
-                keyColumn: "Id",
-                keyValue: XoiVoId,
-                columns: new[] { "Tags", "Category", "IsNew" },
-                values: new object[] { "chay", "Xôi ngọt", true });
-            migrationBuilder.UpdateData(
-                table: "Products",
-                keyColumn: "Id",
-                keyValue: XoiNguSacId,
-                columns: new[] { "Tags", "Category", "AllergenInfo", "IsSignature" },
-                values: new object[] { "chay", "Xôi ngọt", "Đậu phộng", true });
+            migrationBuilder.Sql($@"
+UPDATE Products SET Tags = N'man', Category = N'Xôi mặn', IsSignature = 1 WHERE Id = '{XoiGacId}';
+UPDATE Products SET Tags = N'chay', Category = N'Xôi mặn' WHERE Id = '{XoiDoId}';
+UPDATE Products SET Tags = N'man', Category = N'Xôi mặn', AllergenInfo = N'Tôm (trong ruốc ăn kèm)' WHERE Id = '{XoiXeoId}';
+UPDATE Products SET Tags = N'chay', Category = N'Xôi ngọt', IsNew = 1 WHERE Id = '{XoiVoId}';
+UPDATE Products SET Tags = N'chay', Category = N'Xôi ngọt', AllergenInfo = N'Đậu phộng', IsSignature = 1 WHERE Id = '{XoiNguSacId}';");
 
             // Default toppings.
-            migrationBuilder.InsertData(
-                table: "Toppings",
-                columns: new[] { "Id", "Name", "ExtraPrice", "SortOrder", "IsActive", "CreatedDateTime" },
-                values: new object[,]
-                {
-                    { ChaLuaId, "Chả lụa", 10000m, 1, true, SeededAt },
-                    { TrungOpLaId, "Trứng ốp la", 8000m, 2, true, SeededAt },
-                    { HanhPhiId, "Hành phi thêm", 5000m, 3, true, SeededAt },
-                    { RuocId, "Ruốc", 7000m, 4, true, SeededAt },
-                    { DuaGopId, "Dưa góp", 5000m, 5, true, SeededAt }
-                });
+            migrationBuilder.Sql($@"
+INSERT INTO Toppings (Id, Name, ExtraPrice, SortOrder, IsActive, CreatedDateTime) VALUES
+('{ChaLuaId}', N'Chả lụa', 10000, 1, 1, '{SeededAt}'),
+('{TrungOpLaId}', N'Trứng ốp la', 8000, 2, 1, '{SeededAt}'),
+('{HanhPhiId}', N'Hành phi thêm', 5000, 3, 1, '{SeededAt}'),
+('{RuocId}', N'Ruốc', 7000, 4, 1, '{SeededAt}'),
+('{DuaGopId}', N'Dưa góp', 5000, 5, 1, '{SeededAt}');");
 
             // Size options: Nhỏ = base - 5000, Vừa = base, Lớn = base + 10000.
             InsertSizes(migrationBuilder, XoiGacId, 35000m);
@@ -100,93 +74,44 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             InsertSizes(migrationBuilder, XoiNguSacId, 40000m);
 
             // Family combos.
-            migrationBuilder.InsertData(
-                table: "Combos",
-                columns: new[] { "Id", "Name", "Description", "Price", "IsActive", "CreatedAt", "CreatedDateTime" },
-                values: new object[,]
-                {
-                    {
-                        ComboGiaDinhId, "Combo Gia Đình 4 Người",
-                        "2 xôi gấc + 2 xôi xéo — đủ cho cả nhà 4 người, tiết kiệm hơn gọi lẻ.",
-                        119000m, true,
-                        new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc), SeededAt
-                    },
-                    {
-                        ComboSumVayId, "Combo Xôi Ngũ Sắc Sum Vầy",
-                        "2 xôi ngũ sắc + 1 xôi đỗ — mâm xôi rực rỡ cho buổi sum họp.",
-                        99000m, true,
-                        new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc), SeededAt
-                    }
-                });
+            migrationBuilder.Sql($@"
+INSERT INTO Combos (Id, Name, Description, Price, IsActive, CreatedAt, CreatedDateTime) VALUES
+('{ComboGiaDinhId}', N'Combo Gia Đình 4 Người', N'2 xôi gấc + 2 xôi xéo — đủ cho cả nhà 4 người, tiết kiệm hơn gọi lẻ.', 119000, 1, '2026-10-14T12:00:00', '{SeededAt}'),
+('{ComboSumVayId}', N'Combo Xôi Ngũ Sắc Sum Vầy', N'2 xôi ngũ sắc + 1 xôi đỗ — mâm xôi rực rỡ cho buổi sum họp.', 99000, 1, '2026-10-14T12:00:00', '{SeededAt}');");
 
-            migrationBuilder.InsertData(
-                table: "ComboItems",
-                columns: new[] { "Id", "ComboId", "ProductId", "Quantity", "CreatedDateTime" },
-                values: new object[,]
-                {
-                    { Guid.NewGuid(), ComboGiaDinhId, XoiGacId, 2, SeededAt },
-                    { Guid.NewGuid(), ComboGiaDinhId, XoiXeoId, 2, SeededAt },
-                    { Guid.NewGuid(), ComboSumVayId, XoiNguSacId, 2, SeededAt },
-                    { Guid.NewGuid(), ComboSumVayId, XoiDoId, 1, SeededAt }
-                });
+            migrationBuilder.Sql($@"
+INSERT INTO ComboItems (Id, ComboId, ProductId, Quantity, CreatedDateTime) VALUES
+(NEWID(), '{ComboGiaDinhId}', '{XoiGacId}', 2, '{SeededAt}'),
+(NEWID(), '{ComboGiaDinhId}', '{XoiXeoId}', 2, '{SeededAt}'),
+(NEWID(), '{ComboSumVayId}', '{XoiNguSacId}', 2, '{SeededAt}'),
+(NEWID(), '{ComboSumVayId}', '{XoiDoId}', 1, '{SeededAt}');");
 
             // Dish-vote candidates.
-            migrationBuilder.InsertData(
-                table: "DishCandidates",
-                columns: new[] { "Id", "Name", "Description", "Votes", "IsActive", "CreatedAt", "CreatedDateTime" },
-                values: new object[,]
-                {
-                    {
-                        VoteComId, "Xôi cốm",
-                        "Xôi cốm dẻo thơm mùa thu, ăn kèm dừa nạo và đậu xanh.",
-                        0L, true,
-                        new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc), SeededAt
-                    },
-                    {
-                        VoteLacVungId, "Xôi lạc vừng",
-                        "Xôi lạc bùi béo rắc vừng đen — món ăn dân dã khó quên.",
-                        0L, true,
-                        new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc), SeededAt
-                    },
-                    {
-                        VoteSanId, "Xôi sắn mỡ hành",
-                        "Xôi sắn dẻo quánh chan mỡ hành thơm lừng.",
-                        0L, true,
-                        new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc), SeededAt
-                    }
-                });
+            migrationBuilder.Sql($@"
+INSERT INTO DishCandidates (Id, Name, Description, Votes, IsActive, CreatedAt, CreatedDateTime) VALUES
+('{VoteComId}', N'Xôi cốm', N'Xôi cốm dẻo thơm mùa thu, ăn kèm dừa nạo và đậu xanh.', 0, 1, '2026-10-14T12:00:00', '{SeededAt}'),
+('{VoteLacVungId}', N'Xôi lạc vừng', N'Xôi lạc bùi béo rắc vừng đen — món ăn dân dã khó quên.', 0, 1, '2026-10-14T12:00:00', '{SeededAt}'),
+('{VoteSanId}', N'Xôi sắn mỡ hành', N'Xôi sắn dẻo quánh chan mỡ hành thơm lừng.', 0, 1, '2026-10-14T12:00:00', '{SeededAt}');");
         }
 
         private static void InsertSizes(MigrationBuilder migrationBuilder, Guid productId, decimal basePrice)
         {
-            migrationBuilder.InsertData(
-                table: "ProductSizeOptions",
-                columns: new[] { "Id", "ProductId", "Name", "Price", "SortOrder", "IsActive", "CreatedDateTime" },
-                values: new object[,]
-                {
-                    { Guid.NewGuid(), productId, "Nhỏ", basePrice - 5000m, 1, true, SeededAt },
-                    { Guid.NewGuid(), productId, "Vừa", basePrice, 2, true, SeededAt },
-                    { Guid.NewGuid(), productId, "Lớn", basePrice + 10000m, 3, true, SeededAt }
-                });
+            migrationBuilder.Sql($@"
+INSERT INTO ProductSizeOptions (Id, ProductId, Name, Price, SortOrder, IsActive, CreatedDateTime) VALUES
+(NEWID(), '{productId}', N'Nhỏ', {basePrice - 5000m}, 1, 1, '{SeededAt}'),
+(NEWID(), '{productId}', N'Vừa', {basePrice}, 2, 1, '{SeededAt}'),
+(NEWID(), '{productId}', N'Lớn', {basePrice + 10000m}, 3, 1, '{SeededAt}');");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DeleteData(table: "DishCandidates", keyColumn: "Id", keyValue: VoteComId);
-            migrationBuilder.DeleteData(table: "DishCandidates", keyColumn: "Id", keyValue: VoteLacVungId);
-            migrationBuilder.DeleteData(table: "DishCandidates", keyColumn: "Id", keyValue: VoteSanId);
-
-            migrationBuilder.DeleteData(table: "Combos", keyColumn: "Id", keyValue: ComboGiaDinhId);
-            migrationBuilder.DeleteData(table: "Combos", keyColumn: "Id", keyValue: ComboSumVayId);
-
-            migrationBuilder.DeleteData(table: "Toppings", keyColumn: "Id", keyValue: ChaLuaId);
-            migrationBuilder.DeleteData(table: "Toppings", keyColumn: "Id", keyValue: TrungOpLaId);
-            migrationBuilder.DeleteData(table: "Toppings", keyColumn: "Id", keyValue: HanhPhiId);
-            migrationBuilder.DeleteData(table: "Toppings", keyColumn: "Id", keyValue: RuocId);
-            migrationBuilder.DeleteData(table: "Toppings", keyColumn: "Id", keyValue: DuaGopId);
-
-            migrationBuilder.Sql("DELETE FROM ProductSizeOptions WHERE Name IN (N'Nhỏ', N'Vừa', N'Lớn')");
+            migrationBuilder.Sql($@"
+DELETE FROM DishCandidates WHERE Id IN ('{VoteComId}', '{VoteLacVungId}', '{VoteSanId}');
+DELETE FROM ComboItems WHERE ComboId IN ('{ComboGiaDinhId}', '{ComboSumVayId}');
+DELETE FROM Combos WHERE Id IN ('{ComboGiaDinhId}', '{ComboSumVayId}');
+DELETE FROM Toppings WHERE Id IN ('{ChaLuaId}', '{TrungOpLaId}', '{HanhPhiId}', '{RuocId}');
+DELETE FROM ProductSizeOptions WHERE Name IN (N'Nhỏ', N'Vừa', N'Lớn');");
         }
     }
 }
