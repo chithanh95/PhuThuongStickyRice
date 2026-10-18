@@ -28,18 +28,20 @@ namespace PhuThuongStickyRice.Web
             builder.Configuration.Bind(appSettings);
             builder.Services.AddSingleton(appSettings);
 
-            // API endpoint: dùng config nếu hợp lệ, nếu không fallback về same-origin
-            // (LAN one-click: API và Web chung 1 địa chỉ nên luôn đúng).
-            var apiEndpoint = appSettings.ResourceServer?.Endpoint?.Trim();
-            if (string.IsNullOrWhiteSpace(apiEndpoint))
+            // API endpoint:
+            // - Dev (localhost): dùng config (Web và API khác port).
+            // - LAN/deploy (không phải localhost): API và Web chung origin -> dùng same-origin.
+            var baseAddress = builder.HostEnvironment.BaseAddress;
+            var isLocalhost = baseAddress.Contains("localhost", System.StringComparison.OrdinalIgnoreCase)
+                || baseAddress.Contains("127.0.0.1");
+            var apiEndpoint = isLocalhost
+                ? appSettings.ResourceServer?.Endpoint?.Trim()
+                : baseAddress.TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(apiEndpoint) || !System.Uri.TryCreate(apiEndpoint, System.UriKind.Absolute, out _))
             {
-                apiEndpoint = builder.HostEnvironment.BaseAddress.TrimEnd('/');
+                apiEndpoint = baseAddress.TrimEnd('/');
             }
-            else if (!Uri.TryCreate(apiEndpoint, UriKind.Absolute, out _))
-            {
-                apiEndpoint = builder.HostEnvironment.BaseAddress.TrimEnd('/');
-            }
-            var apiBaseUri = new Uri(apiEndpoint);
+            var apiBaseUri = new System.Uri(apiEndpoint);
 
             // In-repo JWT admin login (no OIDC / external IdentityServer).
             builder.Services.AddAuthorizationCore();

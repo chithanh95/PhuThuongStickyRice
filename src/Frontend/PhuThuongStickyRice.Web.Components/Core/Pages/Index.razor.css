@@ -1012,12 +1012,14 @@
 
 /* ---------- load fail ---------- */
 .sg-loadfail {
-    min-height: 100vh;
+    position: fixed;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--sg-cream);
     padding: 24px;
+    z-index: 50;
 }
 
 .sg-loadfail-card {
