@@ -49,7 +49,6 @@ powershell -NoProfile -Command ^
   "$j=Get-Content $p -Raw | ConvertFrom-Json;" ^
   "if ($dev.ConnectionStrings) { $j | Add-Member -NotePropertyName 'ConnectionStrings' -NotePropertyValue $dev.ConnectionStrings -Force };" ^
   "if ($j.CORS) { $j.CORS.AllowAnyOrigin=$true };" ^
-  "$j | Add-Member -NotePropertyName 'BlazorWwwRoot' -NotePropertyValue '..\web\wwwroot' -Force;" ^
   "$j | ConvertTo-Json -Depth 10 | Set-Content $p -Encoding UTF8"
 
 echo.
@@ -64,7 +63,7 @@ echo  (Phai cung WiFi voi may nay)
 echo ============================================
 echo.
 
-start "Xoi Server :5000" cmd /k "cd /d %PUB%\api && set ASPNETCORE_ENVIRONMENT=Production && dotnet PhuThuongStickyRice.WebAPI.dll --urls http://0.0.0.0:5000"
+start "Xoi Server :5000" cmd /k "cd /d %PUB%\api && set ASPNETCORE_ENVIRONMENT=Production && set BlazorWwwRoot=%PUB%\web\wwwroot && dotnet PhuThuongStickyRice.WebAPI.dll --urls http://0.0.0.0:5000"
 
 echo  Da mo cua so server. De nguyen de web chay.
 echo  Dong cua so de dung web.
