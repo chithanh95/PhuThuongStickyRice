@@ -1588,17 +1588,23 @@ html.pt-reveal .sg-reveal.in {
 }
 
 /* Item 40: nút đổi ngôn ngữ */
+.sg-lang-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
 .sg-lang-toggle {
     border: 1px solid var(--sg-line);
     background: var(--sg-surface);
     border-radius: 8px;
-    padding: 6px 12px;
+    padding: 6px 10px;
     font-weight: 800;
     font-size: 13px;
     cursor: pointer;
     color: inherit;
 }
 .sg-lang-toggle:hover { background: #6F0707; color: #fff; border-color: #6F0707; }
+.sg-lang-toggle.active { background: #6F0707; color: #fff; border-color: #6F0707; }
 
 /* Items 28, 29, 36, 37 */
 .sg-spin-sec { background: linear-gradient(135deg, #fff8f0, #fdf0e0); }

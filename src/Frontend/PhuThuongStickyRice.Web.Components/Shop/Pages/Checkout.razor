@@ -1,4 +1,5 @@
 @page "/checkout"
+<PageTitle>Thanh toán — Xôi Phú Thượng</PageTitle>
 @using System
 @using System.Linq
 @using System.Text.RegularExpressions
@@ -22,7 +23,7 @@
 @inject CustomerProfileService CustomerProfileService
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
-<h3>@I18n.T("checkout")</h3>
+<h1>@I18n.T("checkout")</h1>
 
 @* Gợi ý nhẹ cho khách vãng lai — không bắt buộc, checkout vẫn chạy bình thường khi chưa đăng nhập. *@
 <AuthorizeView>

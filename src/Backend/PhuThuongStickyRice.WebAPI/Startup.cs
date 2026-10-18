@@ -253,6 +253,8 @@ namespace PhuThuongStickyRice.WebAPI
 
             app.UseCors(AppSettings.CORS.AllowAnyOrigin ? "AllowAnyOrigin" : "AllowedOrigins");
 
+            app.UseHttpsRedirection();
+
             app.UseSecurityHeaders(AppSettings.SecurityHeaders);
 
             app.UseSwagger();

@@ -1,6 +1,9 @@
 @using PhuThuongStickyRice.Web.Components.Landing.Models
 @using PhuThuongStickyRice.Web.Components.Landing.Services
+@using PhuThuongStickyRice.Web.Components.Core.Services
 @inject LandingService LandingService
+@inject AppI18n AppI18n
+@implements IDisposable
 
 <footer class="sg-footer">
     <div class="sg-container">
@@ -14,16 +17,16 @@
                 }
             </div>
             <div class="sg-footer-col">
-                <h4 class="sg-footer-h">Khám phá</h4>
-                <a href="/">Giới thiệu</a>
-                <a href="/shop">Thực đơn</a>
-                <a href="/dat-so-luong-lon">Đặt số lượng lớn</a>
-                <a href="/dat-tiec">Đặt tiệc</a>
-                <a href="/nhuong-quyen">Nhượng quyền</a>
-                <a href="/faq">Câu hỏi thường gặp</a>
+                <h4 class="sg-footer-h">@AppI18n.T("footer.explore")</h4>
+                <a href="/">@AppI18n.T("nav.about")</a>
+                <a href="/shop">@AppI18n.T("nav.menu")</a>
+                <a href="/dat-so-luong-lon">@AppI18n.T("nav.bulk_order")</a>
+                <a href="/dat-tiec">@AppI18n.T("nav.party_order")</a>
+                <a href="/nhuong-quyen">@AppI18n.T("nav.franchise")</a>
+                <a href="/faq">@AppI18n.T("footer.faq")</a>
             </div>
             <div class="sg-footer-col">
-                <h4 class="sg-footer-h">Liên hệ</h4>
+                <h4 class="sg-footer-h">@AppI18n.T("footer.contact_us")</h4>
                 @if (!string.IsNullOrWhiteSpace(_content?.ContactPhone))
                 {
                     <a class="sg-footer-hotline" href="tel:@_content.ContactPhone">📞 @_content.ContactPhone</a>
@@ -43,6 +46,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        AppI18n.OnChange -= OnLangChanged;
+        AppI18n.OnChange += OnLangChanged;
         try
         {
             _content = await LandingService.GetContentAsync();
@@ -51,5 +56,12 @@
         {
             // Fail-soft: footer renders without contact info.
         }
+    }
+
+    private void OnLangChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        AppI18n.OnChange -= OnLangChanged;
     }
 }

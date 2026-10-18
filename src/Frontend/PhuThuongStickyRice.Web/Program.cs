@@ -227,6 +227,9 @@ namespace PhuThuongStickyRice.Web
             // Item 134: VI/EN dictionary for the shop pages' chrome.
             builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Shop.Services.ShopI18n>();
 
+            // App-wide i18n (VI default, EN/ZH/JA) for the public web chrome.
+            builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Core.Services.AppI18n>();
+
             // Item 87: end-of-day inventory counts (kiểm kê cuối ngày).
             builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService, PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService>(client =>
             {

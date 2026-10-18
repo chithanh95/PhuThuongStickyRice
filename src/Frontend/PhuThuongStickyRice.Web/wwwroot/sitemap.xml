@@ -1,23 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- TODO: replace https://xoiphuthuong.vn with the real production domain -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>/</loc>
+        <loc>https://xoiphuthuong.vn/</loc>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>/shop</loc>
+        <loc>https://xoiphuthuong.vn/shop</loc>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
-        <loc>/track-order</loc>
+        <loc>https://xoiphuthuong.vn/dat-so-luong-lon</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://xoiphuthuong.vn/dat-dinh-ky</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://xoiphuthuong.vn/dat-tiec</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://xoiphuthuong.vn/nhuong-quyen</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    <url>
+        <loc>https://xoiphuthuong.vn/track-order</loc>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
     <url>
-        <loc>/login</loc>
+        <loc>https://xoiphuthuong.vn/faq</loc>
         <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://xoiphuthuong.vn/menu-print</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    <url>
+        <loc>https://xoiphuthuong.vn/dang-nhap</loc>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
+    <url>
+        <loc>https://xoiphuthuong.vn/quen-mat-khau</loc>
+        <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 </urlset>
