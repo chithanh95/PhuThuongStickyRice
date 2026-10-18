@@ -14,25 +14,28 @@
     <div class="card-body">
         <div class="d-flex flex-wrap align-items-center mb-3">
             <h4 class="card-title mb-0">Danh sách sản phẩm</h4>
-
-            <div class="d-flex flex-wrap ml-md-auto mt-2 mt-md-0 align-items-center">
-                <div class="input-group mr-2 mb-1" style="max-width: 260px;">
+            <div class="ml-auto d-flex flex-wrap">
+                @* Tạm ẩn Xuất PDF: thiếu native libwkhtmltox của DinkToPdf *@
+                <button type="button" class="btn btn-secondary mr-2" @onclick="ExportAsCsv">
+                    Xuất CSV
+                </button>
+                @if (HasPermission("products.edit"))
+                {
+                    <button class="btn btn-primary" @onclick="QuickAddProduct">
+                        <i class="fas fa-plus mr-1"></i>Thêm sản phẩm
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4 col-sm-6">
+                <div class="input-group">
                     <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                     </div>
                     <input type="text" class="form-control" placeholder="Tìm tên, mã món..."
                            value="@SearchText" @oninput="OnSearchChanged" />
                 </div>
-                @* Tạm ẩn Xuất PDF: thiếu native libwkhtmltox của DinkToPdf *@
-                <button type="button" class="btn btn-secondary mr-2 mb-1" @onclick="ExportAsCsv">
-                    Xuất CSV
-                </button>
-                @if (HasPermission("products.edit"))
-                {
-                    <button class="btn btn-primary mb-1" @onclick="QuickAddProduct">
-                        Thêm sản phẩm
-                    </button>
-                }
             </div>
         </div>
         @if (!string.IsNullOrEmpty(ToggleError))
