@@ -7,16 +7,13 @@
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave4Service Wave4Service
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
-<EditForm Model="Product" OnValidSubmit="HandleValidSubmit">
+<EditForm Model="Product" OnSubmit="HandleValidSubmit">
 
-    <DataAnnotationsValidator />
-    <ValidationSummary />
 
     <div class="form-group row">
         <label for="productName" class="col-sm-2 col-form-label">Tên món: </label>
         <div class="col-sm-10">
             <InputText id="productName" class="form-control" @bind-Value="Product.Name" placeholder="Nhập tên món"></InputText>
-            <ValidationMessage For="@(() => Product.Name)" />
         </div>
     </div>
 
@@ -24,7 +21,6 @@
         <label for="code" class="col-sm-2 col-form-label">Mã: </label>
         <div class="col-sm-10">
             <InputText id="code" class="form-control" @bind-Value="Product.Code" placeholder="Nhập mã (VD: xoi-gac)"></InputText>
-            <ValidationMessage For="@(() => Product.Code)" />
         </div>
     </div>
 
@@ -32,7 +28,6 @@
         <label for="price" class="col-sm-2 col-form-label">Giá (₫): </label>
         <div class="col-sm-10">
             <InputNumber id="price" class="form-control" @bind-Value="Product.Price" placeholder="VD: 35000"></InputNumber>
-            <ValidationMessage For="@(() => Product.Price)" />
         </div>
     </div>
 
@@ -51,7 +46,6 @@
         <label for="costprice" class="col-sm-2 col-form-label">Giá vốn (₫): </label>
         <div class="col-sm-10">
             <InputNumber id="costprice" class="form-control" @bind-Value="Product.CostPrice" placeholder="VD: 20000"></InputNumber>
-            <ValidationMessage For="@(() => Product.CostPrice)" />
             <small class="form-text text-muted">Dùng để tính lợi nhuận trên mỗi món.</small>
         </div>
     </div>
@@ -60,7 +54,6 @@
         <label for="description" class="col-sm-2 col-form-label">Mô tả: </label>
         <div class="col-sm-10">
             <InputText id="description" class="form-control" @bind-Value="Product.Description" placeholder="Nhập mô tả"></InputText>
-            <ValidationMessage For="@(() => Product.Description)" />
         </div>
     </div>
 
