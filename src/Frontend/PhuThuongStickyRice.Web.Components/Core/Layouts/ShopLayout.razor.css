@@ -45,6 +45,8 @@
     text-decoration: none;
     line-height: 1.15;
     margin-right: 8px;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .shp-logo:hover {
@@ -57,6 +59,7 @@
     font-weight: 700;
     font-size: 21px;
     color: var(--shp-ink);
+    white-space: nowrap;
 }
 
 .shp-logo-sub {
