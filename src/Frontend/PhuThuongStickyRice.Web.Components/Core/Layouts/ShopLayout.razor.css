@@ -300,8 +300,8 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 991.98px) {
-    .shp-hamburger {
-        display: flex;
+    .shp-main {
+        padding: 16px 12px 32px;
     }
 
     .shp-nav {
