@@ -263,7 +263,16 @@ namespace PhuThuongStickyRice.WebAPI
                         FileProvider = blazorFileProvider,
                         RequestPath = ""
                     });
+                    System.Console.WriteLine($"[LAN] Serving Blazor WASM from: {fullPath}");
                 }
+                else
+                {
+                    System.Console.WriteLine($"[LAN] BlazorWwwRoot NOT FOUND: {fullPath}");
+                }
+            }
+            else
+            {
+                System.Console.WriteLine("[LAN] BlazorWwwRoot not configured - API only mode");
             }
 
             app.UseAccessTokenFromFormMiddleware();
