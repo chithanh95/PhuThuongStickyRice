@@ -5,6 +5,9 @@
     <AnalysisMode>Recommended</AnalysisMode>
     <AnalysisModeSecurity>All</AnalysisModeSecurity>
     <UserSecretsId>b8df572d-5be2-4f41-b55a-8f4e2ef2b569</UserSecretsId>
+    <!-- NU1902: known-vulnerability warning on transitive System.Security.Cryptography.Pkcs;
+         not actionable locally, and it breaks Update-Database in PMC (ErrorActionPreference=Stop). -->
+    <NoWarn>$(NoWarn);NU1902</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

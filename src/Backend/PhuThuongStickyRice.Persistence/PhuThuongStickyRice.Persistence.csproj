@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <AnalysisMode>Recommended</AnalysisMode>
     <AnalysisModeSecurity>All</AnalysisModeSecurity>
+    <!-- NU1902: known-vulnerability warning on transitive System.Security.Cryptography.Pkcs;
+         not actionable locally, and it breaks Update-Database in PMC (ErrorActionPreference=Stop). -->
+    <NoWarn>$(NoWarn);NU1902</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
