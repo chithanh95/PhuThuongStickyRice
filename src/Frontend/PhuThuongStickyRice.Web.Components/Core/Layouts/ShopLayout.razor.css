@@ -500,9 +500,13 @@ html.dark .shp-lang-select {
     border-radius: 10px;
     font-size: 20px;
     font-weight: 700;
-    padding: 4px 12px;
+    padding: 0 12px;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    line-height: 1.4;
+    line-height: 1;
     color: var(--shp-ink);
     flex-shrink: 0;
 }
