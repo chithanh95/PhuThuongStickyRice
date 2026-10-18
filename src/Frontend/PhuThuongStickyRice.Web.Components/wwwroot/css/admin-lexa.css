@@ -1131,6 +1131,9 @@ html.dark .card.lexa-stat-card { background-color: #6a5fae !important; }
     html.dark .table thead th { color: #a5a2bd; border-bottom-color: #3a3a58; }
     html.dark .table td, html.dark .table th { border-color: #3a3a58; }
     html.dark .table-hover tbody tr:hover { background: rgba(122,111,190,.08); }
+    /* Link trong bảng dark mode: sáng dễ đọc */
+    html.dark .table a { color: #b3a8e8; }
+    html.dark .table a:hover { color: #d5cdf5; }
 
 /* Widget Mục tiêu hôm nay */
 .lx-target-progress { height: 12px; border-radius: 6px; background: #f0eef5; }

@@ -569,5 +569,11 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             return parts.Count == 0 ? null : string.Join(",", parts);
         }
+
+        /// <summary>Ngày tạo (UTC). Null với dữ liệu cũ.</summary>
+        public DateTime? CreatedAt { get; set; }
+
+        /// <summary>Ngày sửa gần nhất (UTC). Null với dữ liệu cũ.</summary>
+        public DateTime? UpdatedAt { get; set; }
     }
 }
