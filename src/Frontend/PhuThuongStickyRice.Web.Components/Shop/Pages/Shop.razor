@@ -265,6 +265,11 @@ else
                             {
                                 <div class="small text-muted mb-1">@cardRating</div>
                             }
+                            @* BA shop item 4: social proof — "Đã bán N suất". *@
+                            @if (_soldQuantities.TryGetValue(product.Id, out var soldQty) && soldQty > 0)
+                            {
+                                <div class="small text-muted mb-1">🔥 Đã bán @soldQty.ToString("N0") suất</div>
+                            }
                             <div class="mb-1">
                                 @foreach (var badge in GetCardBadges(product).Take(2))
                                 {
@@ -482,6 +487,9 @@ else
     // Wave 6b (item 26): per-product rating aggregates {avg, count}.
     private Dictionary<Guid, (double Avg, int Count)> _ratings = new Dictionary<Guid, (double Avg, int Count)>();
 
+    // BA shop item 4: total quantity sold per product ("Đã bán N suất").
+    private Dictionary<Guid, long> _soldQuantities = new Dictionary<Guid, long>();
+
     private string RatingText(ShopProductModel product)
     {
         if (product == null || !_ratings.TryGetValue(product.Id, out var r) || r.Count <= 0)
@@ -627,6 +635,9 @@ else
             {
                 _ratings = new Dictionary<Guid, (double Avg, int Count)>();
             }
+
+            // BA shop item 4: sold quantities for "Đã bán N suất" — fail-soft.
+            _soldQuantities = await ShopService.GetSoldQuantitiesAsync();
 
             // Item 165: daily-limit status ("Còn N suất") — fail-soft, the
             // badge simply hides when the call fails.

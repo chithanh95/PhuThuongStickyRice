@@ -48,6 +48,13 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<DailyTargetDto> GetDailyTargetAsync();
 
         /// <summary>
+        /// BA shop item 4: total quantity sold per product (all time,
+        /// non-cancelled orders). Powers the "Đã bán N suất" social proof
+        /// on product cards. Quantities sold are not sensitive.
+        /// </summary>
+        Task<Dictionary<Guid, long>> GetSoldQuantitiesAsync();
+
+        /// <summary>
         /// Item 133: orders + revenue grouped by order source over a range.
         /// </summary>
         Task<List<SourceStatDto>> GetSourceStatsAsync(DateTime? from = null, DateTime? to = null);
@@ -265,6 +272,18 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var products = await GetTopProductsAsync(null, null, top < 1 ? 100 : top);
             return products.Select(x => x.ProductId).ToList();
+        }
+
+        public virtual async Task<Dictionary<Guid, long>> GetSoldQuantitiesAsync()
+        {
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var billable = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled);
+
+            var rows = await _asyncExecuter.ToListAsync(
+                billable.SelectMany(x => x.Lines)
+                    .GroupBy(x => x.ProductId)
+                    .Select(g => new { ProductId = g.Key, Qty = g.Sum(x => (long)x.Quantity) }));
+            return rows.ToDictionary(x => x.ProductId, x => x.Qty);
         }
 
         /// <summary>

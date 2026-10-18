@@ -73,6 +73,25 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
+        /// BA shop item 4: total quantity sold per product, for the
+        /// "Đã bán N suất" social proof on product cards. Fail-soft.
+        /// </summary>
+        public async Task<Dictionary<Guid, long>> GetSoldQuantitiesAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/products/sold-quantities");
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAs<Dictionary<Guid, long>>()
+                    ?? new Dictionary<Guid, long>();
+            }
+            catch
+            {
+                return new Dictionary<Guid, long>();
+            }
+        }
+
+        /// <summary>
         /// Wave 6b (item 26): per-product rating aggregates
         /// {ProductId, AverageRating, ReviewCount}. Fail-soft: the shop
         /// page hides the stars when this call fails.

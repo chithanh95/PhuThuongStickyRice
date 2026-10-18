@@ -271,6 +271,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Public: total quantity sold per product (all time, non-cancelled).
+        /// BA shop item 4 — "Đã bán N suất" social proof on product cards.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("sold-quantities")]
+        public async Task<ActionResult> GetSoldQuantities(
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _dashboardAppService.GetSoldQuantitiesAsync());
+        }
+
+        /// <summary>
         /// Public: daily-limit status of limited products ("Còn N suất").
         /// Item 165. No auth — quantities sold are not sensitive.
         /// </summary>
