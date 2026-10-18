@@ -146,3 +146,29 @@ html.dark .shop-info-strip {
         font-size: 1rem;
     }
 }
+
+/* Card sản phẩm đều nhau: nút "Thêm vào giỏ" thẳng hàng */
+.card.h-100 {
+    display: flex;
+    flex-direction: column;
+}
+.card.h-100 .card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+.card.h-100 .shop-add-row {
+    margin-top: auto;
+    padding-top: 8px;
+}
+.card.h-100 .shop-add-row .btn {
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+.card.h-100 .shop-add-row input[type="number"] {
+    height: 42px;
+    text-align: center;
+}
