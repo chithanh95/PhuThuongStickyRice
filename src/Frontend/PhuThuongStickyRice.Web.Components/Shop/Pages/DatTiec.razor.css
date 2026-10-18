@@ -1,0 +1,10 @@
+/* ============================================================
+   DatTiec page — mobile (<=575px): full-width submit button.
+   ============================================================ */
+@media (max-width: 575.98px) {
+    .btn-success.btn-lg {
+        width: 100%;
+        min-height: 50px;
+        font-size: 1.05rem;
+    }
+}

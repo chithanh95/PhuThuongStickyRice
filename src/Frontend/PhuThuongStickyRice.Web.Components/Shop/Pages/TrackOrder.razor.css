@@ -1,0 +1,29 @@
+/* ============================================================
+   Track-order page — mobile (<=575px).
+   ============================================================ */
+@media (max-width: 575.98px) {
+    /* Lookup form: full-width tappable buttons */
+    .to-lookup .btn {
+        width: 100%;
+        min-height: 46px;
+        margin-top: 8px;
+    }
+
+    /* History table: let the action buttons wrap instead of
+       forcing a horizontal scroll */
+    .to-history td:last-child {
+        white-space: normal !important;
+        min-width: 120px;
+    }
+
+    .to-history td:last-child .btn {
+        min-height: 40px;
+        margin-bottom: 6px;
+        width: 100%;
+    }
+
+    /* All small buttons on this page get a decent touch target */
+    .btn-sm {
+        min-height: 40px;
+    }
+}

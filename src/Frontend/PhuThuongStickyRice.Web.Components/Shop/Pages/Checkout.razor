@@ -550,7 +550,7 @@ else
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card">
+            <div class="card co-summary">
                 <div class="card-header">Đơn hàng của bạn</div>
                 <div class="card-body">
                     <table class="table table-sm">
@@ -734,6 +734,17 @@ else
                 </div>
             </div>
         </div>
+    </div>
+
+    @* Mobile: fixed bottom order bar (CSS shows it only on small screens). *@
+    <div class="co-mobile-bar">
+        <div class="co-total">
+            <small>@I18n.T("total")</small>
+            <strong class="text-danger">@FormatPrice(_grandTotal)</strong>
+        </div>
+        <button class="btn btn-success" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
+            @(_submitting ? "Đang xử lý..." : I18n.T("order_now"))
+        </button>
     </div>
 }
 

@@ -12,3 +12,55 @@
 .card {
     overflow: hidden;
 }
+
+/* ============================================================
+   MOBILE (<=575px): 2-col grid stays, cards get tighter and
+   every tap target reaches ~42px.
+   ============================================================ */
+@media (max-width: 575.98px) {
+    /* Shorter images: 200px dominates a ~170px-wide card */
+    .card-img-top {
+        height: 150px !important;
+    }
+
+    .card-body {
+        padding: 12px;
+    }
+
+    .card-title {
+        font-size: 1rem;
+        margin-bottom: 6px;
+    }
+
+    /* Hide long descriptions on the small cards (full text stays in quick view) */
+    .card-text.small {
+        display: none;
+    }
+
+    /* Quantity + add-to-cart row */
+    .shop-add-row input[type="number"] {
+        width: 58px !important;
+        min-height: 42px;
+        padding: 6px 4px;
+    }
+
+    .shop-add-row .btn {
+        min-height: 42px;
+        font-size: 13px;
+        padding: 6px 8px;
+    }
+
+    /* Filter chips: comfortable tap targets */
+    .btn-group-sm .btn {
+        min-height: 40px;
+    }
+
+    /* Hero */
+    .jumbotron .display-5 {
+        font-size: 1.6rem;
+    }
+
+    .jumbotron .lead {
+        font-size: 1rem;
+    }
+}

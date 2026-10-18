@@ -1,0 +1,119 @@
+/* ============================================================
+   Cart page — mobile (<=575px): cart lines become stacked cards
+   instead of a squeezed 5-column table. Desktop untouched.
+   ============================================================ */
+@media (max-width: 575.98px) {
+    .cart-lines thead {
+        display: none;
+    }
+
+    .cart-lines,
+    .cart-lines tbody,
+    .cart-lines tfoot {
+        display: block;
+    }
+
+    .cart-lines tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        padding: 12px;
+        background: #fff;
+    }
+
+    .cart-lines tbody td {
+        display: block;
+        border: 0;
+        padding: 4px 0;
+    }
+
+    /* 1: product name + badges + note */
+    .cart-lines tbody td:nth-child(1) {
+        flex: 1 1 100%;
+    }
+
+    .cart-lines tbody td:nth-child(1) input.form-control {
+        max-width: none !important;
+        width: 100%;
+        min-height: 42px;
+    }
+
+    /* 2: unit price — hidden on mobile (line total is what matters) */
+    .cart-lines tbody td:nth-child(2) {
+        display: none;
+    }
+
+    /* 3: quantity stepper */
+    .cart-lines tbody td:nth-child(3) {
+        flex: 1 1 auto;
+        text-align: left !important;
+    }
+
+    .cart-lines tbody td:nth-child(3) .btn {
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 18px;
+    }
+
+    /* 4: line total */
+    .cart-lines tbody td:nth-child(4) {
+        flex: 1 1 auto;
+        text-align: right !important;
+        font-size: 1.05rem;
+    }
+
+    /* 5: remove — full-width button, easy to tap, hard to mis-tap */
+    .cart-lines tbody td:nth-child(5) {
+        flex: 1 1 100%;
+        text-align: right !important;
+    }
+
+    .cart-lines tbody td:nth-child(5) .btn {
+        width: 100%;
+        min-height: 44px;
+        margin-top: 6px;
+    }
+
+    /* Footer total row */
+    .cart-lines tfoot tr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .cart-lines tfoot td {
+        border: 0;
+    }
+
+    .cart-lines tfoot td:nth-child(1) {
+        text-align: left !important;
+    }
+
+    .cart-lines tfoot td:nth-child(3):empty {
+        display: none;
+    }
+
+    /* Action buttons: checkout first, full width */
+    .cart-actions .btn-success {
+        flex: 1 1 100%;
+        order: -1;
+        min-height: 52px;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+
+    .cart-actions .btn-secondary,
+    .cart-actions .btn-outline-primary {
+        flex: 1 1 auto;
+        min-height: 44px;
+    }
+}
+
+/* Dark mode: stacked cards follow the dark card palette */
+html.dark .cart-lines tbody tr {
+    background: #262640;
+    border-color: #3a3a58;
+}

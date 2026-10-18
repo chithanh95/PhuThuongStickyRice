@@ -1580,7 +1580,72 @@ html.dark .lx-toast {
     z-index: 999;
     background: transparent;
 }
-.lx-dropdown-menu {
-    z-index: 1000;
-    position: relative;
+
+/* ============================================================
+   MOBILE ADMIN — toi uu cho dien thoai (nguoi dung quan ly
+   shop chu yeu bang dien thoai).
+   ============================================================ */
+@media (max-width: 767.98px) {
+    /* Bang du lieu: cuon ngang muot tren cam ung */
+    .lx-admin .table-responsive {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+    }
+
+    /* Cot dau sticky (opt-in: them class lx-table-sticky-first vao <table>) */
+    .lx-admin table.lx-table-sticky-first thead th:first-child,
+    .lx-admin table.lx-table-sticky-first tbody td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: var(--lx-card-bg);
+        box-shadow: 1px 0 0 var(--lx-border);
+    }
+    .lx-admin table.lx-table-sticky-first thead th:first-child {
+        z-index: 3;
+    }
+
+    /* Nut fullscreen khong co tac dung tren mobile -> an de gon topbar */
+    .lx-topbar .lx-icon-btn[title="Toàn màn hình"] {
+        display: none;
+    }
+
+    /* Modal vua viewport dien thoai */
+    .lx-admin .modal-dialog {
+        margin: .5rem;
+        max-width: calc(100vw - 1rem);
+    }
+
+    /* Card tieu de: giam padding cho gon */
+    .lx-admin .card-body {
+        padding: 1rem .875rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    /* Dropdown thong bao: mo full-width ngay duoi topbar, khong tran man hinh */
+    .lx-admin .lx-notif-menu {
+        position: fixed;
+        top: calc(var(--lx-topbar-h) + 8px);
+        left: 12px;
+        right: 12px;
+        min-width: 0;
+        max-width: none;
+    }
+
+    /* Toast: full-width, khong tran man hinh */
+    .lx-toast-container {
+        left: 12px;
+        right: 12px;
+        max-width: none;
+        top: calc(var(--lx-topbar-h) + 12px);
+    }
+
+    /* Page head gon hon tren dien thoai */
+    .lx-page-head {
+        padding-bottom: 1rem;
+    }
+    .lx-page-title {
+        font-size: 16px;
+    }
 }

@@ -383,3 +383,59 @@ html.dark .toast {
     font-size: 12px;
     color: #999;
 }
+
+/* ============================================================
+   MOBILE STOREFRONT POLISH (<=767px)
+   ============================================================ */
+@media (max-width: 767.98px) {
+    /* Prevent iOS Safari auto-zoom when focusing small inputs */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+
+    /* Shop pages: the MainLayout top-row (with the theme toggle) is
+       hidden on mobile — keep only the toggle as a floating button so
+       light/dark mode stays reachable on every screen. */
+    .main > .top-row:not(.auth) {
+        display: flex !important;
+        position: fixed;
+        top: 76px;
+        right: 10px;
+        z-index: 1030;
+        background: transparent;
+        border: none;
+        height: auto;
+        padding: 0;
+    }
+
+    .main > .top-row:not(.auth) > a,
+    .main > .top-row:not(.auth) span {
+        display: none;
+    }
+
+    .main > .top-row:not(.auth) .theme-toggle {
+        background: rgba(255, 255, 255, .94);
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+        line-height: 1;
+        margin: 0;
+        padding: 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Room for the fixed mobile order bar on /checkout */
+    body:has(.co-mobile-bar) {
+        padding-bottom: 84px;
+    }
+}
+
+html.dark .main > .top-row:not(.auth) .theme-toggle {
+    background: rgba(38, 38, 64, .94);
+    border-color: #4a4a6e;
+}

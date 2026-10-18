@@ -20,7 +20,10 @@
 
 <style>
     .bulk-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
-    @@media (max-width: 576px) { .bulk-opt-grid { grid-template-columns: 1fr; } }
+    @@media (max-width: 576px) {
+        .bulk-opt-grid { grid-template-columns: 1fr; }
+        .bulk-submit { width: 100%; min-height: 50px; font-size: 1.05rem; }
+    }
     .bulk-opt-card {
         display: block; width: 100%; text-align: center; cursor: pointer;
         background: #fff; border: 2px solid #e9dfcb; border-radius: 16px;
@@ -130,7 +133,7 @@ else
                         <textarea class="form-control" rows="3" @bind="_bulkNotes"
                                   placeholder="VD: giao trước 9h sáng, chia 2 đợt, cần hóa đơn..."></textarea>
                     </div>
-                    <button class="btn btn-success btn-lg" @onclick="SubmitBulk" disabled="@_submitting">
+                    <button class="btn btn-success btn-lg bulk-submit" @onclick="SubmitBulk" disabled="@_submitting">
                         @(_submitting ? "Đang gửi..." : "Gửi yêu cầu báo giá")
                     </button>
                 </div>
@@ -272,7 +275,7 @@ else
                         <textarea class="form-control" rows="2" @bind="_sub.Notes"
                                   placeholder="VD: giao trước 7h sáng..."></textarea>
                     </div>
-                    <button class="btn btn-success" @onclick="SubmitSub" disabled="@_submitting">
+                    <button class="btn btn-success bulk-submit" @onclick="SubmitSub" disabled="@_submitting">
                         @(_submitting ? "Đang đăng ký..." : "Đăng ký đặt định kỳ")
                     </button>
                 </div>

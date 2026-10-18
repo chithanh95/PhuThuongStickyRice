@@ -56,3 +56,78 @@
         font-size: 11px;
     }
 }
+
+/* ============================================================
+   MOBILE (<=767px): fixed bottom order bar + bigger touch targets.
+   Desktop keeps the in-flow "Đặt hàng" button.
+   ============================================================ */
+.co-mobile-bar {
+    display: none;
+}
+
+@media (max-width: 767.98px) {
+    .co-mobile-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1030;
+        background: #fff;
+        border-top: 1px solid #dee2e6;
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, .08);
+    }
+
+    .co-mobile-bar .co-total small {
+        display: block;
+        color: #6c757d;
+        font-size: 12px;
+    }
+
+    .co-mobile-bar .co-total strong {
+        font-size: 1.3rem;
+    }
+
+    .co-mobile-bar .btn {
+        min-height: 50px;
+        padding: 10px 28px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        flex: 0 0 auto;
+    }
+
+    /* Quantity steppers in the order summary: tappable */
+    .co-summary .btn {
+        min-height: 42px;
+        min-width: 42px;
+    }
+
+    .co-summary table {
+        font-size: 14px;
+    }
+
+    /* Easier-to-tap radios / checkboxes */
+    .form-check {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    .form-check-label {
+        padding: 8px 0;
+        display: inline-block;
+    }
+}
+
+/* Dark mode: the fixed bar follows the dark card palette */
+html.dark .co-mobile-bar {
+    background: #262640;
+    border-top-color: #3a3a58;
+}
+
+html.dark .co-mobile-bar .co-total small {
+    color: #a5a2bd;
+}

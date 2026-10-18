@@ -290,7 +290,7 @@ else
                                     }
                                 </select>
                             }
-                            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center shop-add-row">
                                 <input type="number" min="1" max="99" class="form-control mr-2" style="width: 80px;"
                                        @bind="_quantities[product.Id]" />
                                 <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">

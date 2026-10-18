@@ -1092,6 +1092,24 @@
     .sg-hero-cta .sg-btn { width: 100%; }
 
     .sg-book-form { padding: 24px; }
+
+    /* Header must fit 390px with the 4-language switcher */
+    .sg-header-inner { gap: 8px; padding: 0 12px; }
+    .sg-header-right { gap: 8px; }
+    .sg-logo-main { font-size: 17px; }
+    .sg-logo-sub { display: none; }
+    .sg-lang-group { gap: 3px; }
+    .sg-lang-toggle { padding: 5px 6px; font-size: 11px; }
+    .sg-theme-toggle { width: 34px; height: 34px; font-size: 15px; }
+    .sg-hamburger { padding: 6px; }
+
+    /* Hero title: tighter letter-spacing so it wraps gracefully */
+    .sg-hero-title { letter-spacing: 2px; font-size: clamp(34px, 12vw, 44px); }
+    .sg-hero-inner { padding: 40px 20px 90px; }
+
+    /* Floating social buttons: sit above the sticky mobile CTA bar */
+    .sg-fixed-btns { bottom: 96px; }
+    .sg-fixed-btns a { width: 46px; height: 46px; font-size: 18px; }
 }
 
 /* ============================================================
