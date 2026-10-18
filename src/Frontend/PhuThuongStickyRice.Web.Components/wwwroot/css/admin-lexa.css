@@ -1649,3 +1649,162 @@ html.dark .lx-toast {
         font-size: 16px;
     }
 }
+
+/* ============================================================
+   MOBILE ADMIN UI OVERHAUL (<768px) — 2026-10-18
+   Muc tieu: gon, doc duoc, thao tac 1 tay tren dien thoai
+   ============================================================ */
+@media (max-width: 767.98px) {
+    /* ---- Page head: title + nut hanh dong xep chong ---- */
+    .lx-admin .lx-page-head {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: .5rem;
+        padding: .875rem .875rem 1rem;
+    }
+    .lx-admin .lx-page-title {
+        font-size: 17px;
+        line-height: 1.35;
+        margin: 0;
+    }
+    .lx-admin .lx-page-head .btn,
+    .lx-admin .lx-page-head .lx-btn-create {
+        width: 100%;
+        min-height: 44px;
+        justify-content: center;
+    }
+    .lx-admin .lx-page-head .d-flex,
+    .lx-admin .lx-page-head .btn-group {
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    /* ---- Stat cards: 2 cot gon tren dien thoai ---- */
+    .lx-admin .card.lexa-stat-card .card-body {
+        padding: 14px 12px;
+        min-height: 0;
+    }
+    .lx-admin .card.lexa-stat-card h2,
+    .lx-admin .card.lexa-stat-card .h2 {
+        font-size: 1.35rem;
+    }
+    .lx-admin .card.lexa-stat-card p,
+    .lx-admin .card.lexa-stat-card small {
+        font-size: .72rem;
+    }
+
+    /* ---- Card chung: giam padding, bo goc mem ---- */
+    .lx-admin .card {
+        border-radius: 12px;
+    }
+    .lx-admin .card-header {
+        padding: .75rem .875rem;
+        font-size: .9rem;
+    }
+
+    /* ---- Table: chu nho hon, padding chat, cot dau sticky mac dinh ---- */
+    .lx-admin .table {
+        font-size: .82rem;
+    }
+    .lx-admin .table th,
+    .lx-admin .table td {
+        padding: .55rem .6rem;
+        white-space: nowrap;
+    }
+    .lx-admin .table thead th:first-child,
+    .lx-admin .table tbody td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: var(--lx-card-bg);
+        box-shadow: 1px 0 0 var(--lx-border);
+    }
+    .lx-admin .table thead th:first-child {
+        z-index: 3;
+    }
+    /* Nut hanh dong trong bang: gon lai */
+    .lx-admin .table .btn {
+        padding: .3rem .5rem;
+        font-size: .75rem;
+        min-height: 36px;
+    }
+    .lx-admin .table .btn .oi,
+    .lx-admin .table .btn .fa,
+    .lx-admin .table .btn .fas {
+        margin-right: 0;
+    }
+    .lx-admin .table .btn span:not(.oi):not(.fa):not(.fas) {
+        display: none;
+    }
+
+    /* ---- Form: full-width, input cao de bam ---- */
+    .lx-admin .form-control,
+    .lx-admin .form-select {
+        min-height: 44px;
+        font-size: 16px; /* chong iOS zoom */
+    }
+    .lx-admin .form-label {
+        font-size: .85rem;
+        margin-bottom: .3rem;
+    }
+    .lx-admin .modal-footer .btn,
+    .lx-admin form .btn[type="submit"],
+    .lx-admin .card-body > .btn-primary {
+        min-height: 46px;
+    }
+
+    /* ---- Pagination: gon giua ---- */
+    .lx-admin .pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+    .lx-admin .page-link {
+        min-width: 40px;
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ---- Badge/chip: khong vo dong ---- */
+    .lx-admin .badge {
+        font-size: .72rem;
+        white-space: nowrap;
+    }
+
+    /* ---- Kanban: card full-width khi mo drawer ---- */
+    .lx-admin .kanban-board {
+        scroll-snap-type: x mandatory;
+    }
+
+    /* ---- Dashboard charts: full-width, khong tran ---- */
+    .lx-admin canvas {
+        max-width: 100%;
+    }
+}
+
+/* ---- Dien thoai rat nho (<380px): 1 cot cho stat ---- */
+@media (max-width: 379.98px) {
+    .lx-admin .lx-page-title {
+        font-size: 15px;
+    }
+    .lx-admin .table {
+        font-size: .78rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    /* Stat cards: 2 cot thay vi xep doc 1 cot dai */
+    .lx-admin .row > div:has(> .card.lexa-stat-card) {
+        flex: 0 0 50%;
+        max-width: 50%;
+        padding-left: .375rem;
+        padding-right: .375rem;
+    }
+    .lx-admin .row:has(> div > .card.lexa-stat-card) {
+        margin-left: -.375rem;
+        margin-right: -.375rem;
+    }
+}
