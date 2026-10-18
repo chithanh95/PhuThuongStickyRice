@@ -1,10 +1,14 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using PhuThuongStickyRice.Persistence;
 
 #nullable disable
 
 namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 {
     /// <inheritdoc />
+    [DbContext(typeof(StickyRiceDbContext))]
+    [Migration("20261018082100_AddFooterAboutAndCopyright")]
     public partial class AddFooterAboutAndCopyright : Migration
     {
         /// <inheritdoc />

@@ -1,10 +1,14 @@
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using PhuThuongStickyRice.Persistence;
 
 #nullable disable
 
 namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 {
+    [DbContext(typeof(StickyRiceDbContext))]
+    [Migration("20261016153034_RemoveChaGioCompletely")]
     public partial class RemoveChaGioCompletely : Migration
     {
         private static readonly Guid ProductChaGioId = new Guid("b2c3d4e5-0002-4000-8000-000000000002");

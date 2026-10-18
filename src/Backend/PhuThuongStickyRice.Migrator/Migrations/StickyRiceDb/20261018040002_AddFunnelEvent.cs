@@ -1,11 +1,15 @@
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using PhuThuongStickyRice.Persistence;
 
 #nullable disable
 
 namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
 {
     /// <inheritdoc />
+    [DbContext(typeof(StickyRiceDbContext))]
+    [Migration("20261018040002_AddFunnelEvent")]
     public partial class AddFunnelEvent : Migration
     {
         /// <inheritdoc />

@@ -1,5 +1,7 @@
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using PhuThuongStickyRice.Persistence;
 
 #nullable disable
 
@@ -12,6 +14,8 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
     /// seeded xôi products, two family combos, dish-vote candidates, and
     /// catalog fields (tags / category / badges) for the seeded products.
     /// </summary>
+    [DbContext(typeof(StickyRiceDbContext))]
+    [Migration("20261014120000_SeedWave1Catalog")]
     public partial class SeedWave1Catalog : Migration
     {
         private static readonly Guid XoiGacId = new Guid("a1b2c3d4-0001-4000-8000-000000000001");
