@@ -1150,9 +1150,11 @@ body.sg-at-top .sg-fixed-btns {
     .sg-hero-countdown { margin-bottom: 12px; }
     .sg-hero-links { margin-bottom: 8px; }
 
-    /* Floating social buttons: sit above the sticky mobile CTA bar */
-    .sg-fixed-btns { bottom: 170px; }
-    .sg-fixed-btns a { width: 46px; height: 46px; font-size: 18px; }
+    /* Footer: chừa chỗ cho nút nổi bên trái */
+    .sg-footer .container,
+    .sg-footer-grid {
+        padding-left: 70px;
+    }
 }
 
 /* ============================================================
