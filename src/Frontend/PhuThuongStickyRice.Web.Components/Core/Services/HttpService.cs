@@ -1,4 +1,7 @@
 ﻿using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
+using Microsoft.AspNetCore.Components;
+using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -9,11 +12,25 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
     {
         protected readonly HttpClient _httpClient;
         protected readonly ITokenManager _tokenManager;
+        protected readonly NavigationManager _navigation;
 
-        public HttpService(HttpClient httpClient, ITokenManager tokenManager)
+        public HttpService(HttpClient httpClient, ITokenManager tokenManager, NavigationManager navigation = null)
         {
             _httpClient = httpClient;
             _tokenManager = tokenManager;
+            _navigation = navigation;
+        }
+
+        /// <summary>
+        /// 401 → session hết hạn: về trang đăng nhập.
+        /// </summary>
+        protected void HandleUnauthorized(HttpResponseMessage response)
+        {
+            if (response.StatusCode == HttpStatusCode.Unauthorized && _navigation != null)
+            {
+                var returnUrl = Uri.EscapeDataString(_navigation.ToBaseRelativePath(_navigation.Uri));
+                _navigation.NavigateTo($"/dang-nhap?returnUrl={returnUrl}");
+            }
         }
 
         public async Task<string> GetAccessToken()
@@ -52,6 +69,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             await SetBearerToken();
 
             var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            HandleUnauthorized(response);
             response.EnsureSuccessStatusCode();
 
             var data = await response.Content.ReadAs<T>();
@@ -71,6 +89,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
 
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            HandleUnauthorized(response);
             response.EnsureSuccessStatusCode();
             var createdObject = await response.Content.ReadAs<T>();
             return createdObject;
@@ -86,6 +105,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             request.Content = data.AsJsonContent();
 
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            HandleUnauthorized(response);
             response.EnsureSuccessStatusCode();
             var updatedObject = await response.Content.ReadAs<T>();
             return updatedObject;
@@ -99,6 +119,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            HandleUnauthorized(response);
             response.EnsureSuccessStatusCode();
         }
     }
