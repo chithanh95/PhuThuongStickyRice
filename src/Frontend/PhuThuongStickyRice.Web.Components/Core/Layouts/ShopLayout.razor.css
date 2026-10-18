@@ -491,3 +491,29 @@ html.dark .shp-lang-select {
 @media (min-width: 992px) {
     .shp-nav .shp-nav-login { display: none; }
 }
+
+/* Nút quay lại trang trước */
+.shp-back {
+    background: none;
+    border: 1px solid var(--shp-line, #e8ddd0);
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 4px 12px;
+    cursor: pointer;
+    line-height: 1.4;
+    color: var(--shp-ink);
+    flex-shrink: 0;
+}
+.shp-back:hover {
+    background: #f4ecdc;
+}
+html.dark .shp-back:hover {
+    background: #2b2f36;
+}
+@media (max-width: 991.98px) {
+    .shp-back {
+        padding: 4px 10px;
+        font-size: 18px;
+    }
+}
