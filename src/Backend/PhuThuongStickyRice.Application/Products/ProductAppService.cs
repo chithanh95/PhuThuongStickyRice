@@ -230,6 +230,7 @@ namespace PhuThuongStickyRice.Application.Products
                 input.IsNew, input.IsSignature,
                 input.AvailableFrom, input.AvailableTo);
 
+            product.CreatedAt = DateTime.UtcNow;
             await _products.InsertAsync(product);
             await _domainEvents.DispatchAsync(new EntityCreatedEvent<Product>(product, DateTime.UtcNow));
             _catalogCache.Invalidate();
@@ -282,6 +283,7 @@ namespace PhuThuongStickyRice.Application.Products
                 ApplyStatus(product, status);
             }
 
+            product.UpdatedAt = DateTime.UtcNow;
             await _products.UpdateAsync(product);
             await LogFieldChangesAsync(id, before, SnapshotFields(product));
             await _domainEvents.DispatchAsync(new EntityUpdatedEvent<Product>(product, DateTime.UtcNow));

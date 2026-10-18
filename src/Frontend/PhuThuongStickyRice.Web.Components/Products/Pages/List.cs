@@ -43,11 +43,12 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         protected int PageSize { get; set; } = 10;
 
         protected IEnumerable<ProductModel> FilteredProducts =>
-            string.IsNullOrWhiteSpace(SearchText)
+            (string.IsNullOrWhiteSpace(SearchText)
                 ? (Products ?? Enumerable.Empty<ProductModel>())
                 : Products.Where(p =>
                     p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                    (p.Code != null && p.Code.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
+                    (p.Code != null && p.Code.Contains(SearchText, StringComparison.OrdinalIgnoreCase))))
+            .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt ?? DateTime.MinValue);
 
         protected int TotalPages =>
             Math.Max(1, (int)Math.Ceiling(FilteredProducts.Count() / (double)PageSize));

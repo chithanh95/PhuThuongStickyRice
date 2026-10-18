@@ -70,5 +70,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Models
         /// (first = primary).
         /// </summary>
         public string ImageUrlsJson { get; set; }
+
+        public DateTime? CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
     }
 }

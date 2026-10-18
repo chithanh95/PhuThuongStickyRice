@@ -49,6 +49,10 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
 
         public string Status { get; set; }
 
+        public DateTime? CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
         public string Tags { get; set; }
 
