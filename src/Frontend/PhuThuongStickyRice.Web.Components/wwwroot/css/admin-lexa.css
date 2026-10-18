@@ -1928,3 +1928,46 @@ html.dark .lx-toast {
 .custom-switch.switch-info .custom-control-input:checked ~ .custom-control-label::before {
     background-color: #50a5f1; border-color: #50a5f1;
 }
+
+/* ============ Checkbox & Radio tím Lexa (toàn web) ============ */
+/* Bootstrap custom-control */
+.custom-checkbox .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #7a6fbe;
+    border-color: #7a6fbe;
+}
+.custom-checkbox .custom-control-input:focus ~ .custom-control-label::before {
+    box-shadow: 0 0 0 0.2rem rgba(122, 111, 190, .25);
+    border-color: #7a6fbe;
+}
+.custom-checkbox .custom-control-input:focus:not(:checked) ~ .custom-control-label::before {
+    border-color: #b3a8e8;
+}
+.custom-radio .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #7a6fbe;
+    border-color: #7a6fbe;
+}
+.custom-radio .custom-control-input:focus ~ .custom-control-label::before {
+    box-shadow: 0 0 0 0.2rem rgba(122, 111, 190, .25);
+    border-color: #7a6fbe;
+}
+/* Checkbox/radio thường (form-check-input) */
+.form-check-input {
+    accent-color: #7a6fbe;
+}
+/* Màu sắc */
+.custom-checkbox.checkbox-success .custom-control-input:checked ~ .custom-control-label::before,
+.custom-radio.radio-success .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #34c38f; border-color: #34c38f;
+}
+.custom-checkbox.checkbox-danger .custom-control-input:checked ~ .custom-control-label::before,
+.custom-radio.radio-danger .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #f46a6a; border-color: #f46a6a;
+}
+.custom-checkbox.checkbox-warning .custom-control-input:checked ~ .custom-control-label::before,
+.custom-radio.radio-warning .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #f1b44c; border-color: #f1b44c;
+}
+.custom-checkbox.checkbox-info .custom-control-input:checked ~ .custom-control-label::before,
+.custom-radio.radio-info .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #50a5f1; border-color: #50a5f1;
+}
