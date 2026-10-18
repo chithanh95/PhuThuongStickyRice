@@ -68,8 +68,8 @@ else
                 <tr>
                     <th>@AppI18n.T("shop.product")</th>
                     <th class="text-right">@AppI18n.T("shop.unit_price")</th>
-                    <th class="text-center">@AppI18n.T("common.quantity")</th>
                     <th class="text-right">@AppI18n.T("shop.line_total")</th>
+                    <th class="text-center">@AppI18n.T("common.quantity")</th>
                     <th></th>
                 </tr>
             </thead>
@@ -100,12 +100,12 @@ else
                                    @onchange="(e) => CartState.UpdateNote(item.LineKey, e.Value?.ToString())" />
                         </td>
                         <td class="text-right">@FormatPrice(item.UnitPrice)</td>
+                        <td class="text-right"><strong>@FormatPrice(item.LineTotal)</strong></td>
                         <td class="text-center">
                             <QuantitySpinner Value="@item.Quantity"
                                              ValueChanged="@(q => CartState.UpdateQuantity(item.LineKey, q))"
                                              Min="0" Max="99" />
                         </td>
-                        <td class="text-right"><strong>@FormatPrice(item.LineTotal)</strong></td>
                         <td class="text-right">
                             <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(item.LineKey)">@AppI18n.T("common.delete")</button>
                         </td>

@@ -206,7 +206,14 @@
         try
         {
             var client = HttpClientFactory.CreateClient();
-            client.BaseAddress = new Uri(AppSettings.ResourceServer.Endpoint.TrimEnd('/') + "/");
+            // LAN/deploy: dùng same-origin, không dùng cứng localhost:44312.
+            var baseAddr = Navigation.BaseUri;
+            var isLocal = baseAddr.Contains("localhost", StringComparison.OrdinalIgnoreCase)
+                || baseAddr.Contains("127.0.0.1");
+            var endpoint = isLocal
+                ? AppSettings.ResourceServer.Endpoint.TrimEnd('/') + "/"
+                : baseAddr;
+            client.BaseAddress = new Uri(endpoint);
             var response = await client.PostAsJsonAsync("api/auth/login", new
             {
                 UsernameOrEmail = _username.Trim(),
@@ -260,7 +267,12 @@
         try
         {
             var client = HttpClientFactory.CreateClient();
-            client.BaseAddress = new Uri(AppSettings.ResourceServer.Endpoint.TrimEnd('/') + "/");
+            var baseAddr2 = Navigation.BaseUri;
+            var isLocal2 = baseAddr2.Contains("localhost", StringComparison.OrdinalIgnoreCase)
+                || baseAddr2.Contains("127.0.0.1");
+            client.BaseAddress = new Uri(isLocal2
+                ? AppSettings.ResourceServer.Endpoint.TrimEnd('/') + "/"
+                : baseAddr2);
             var response = await client.PostAsJsonAsync("api/auth/2fa/verify", new
             {
                 TwoFactorToken = _twoFactorToken,

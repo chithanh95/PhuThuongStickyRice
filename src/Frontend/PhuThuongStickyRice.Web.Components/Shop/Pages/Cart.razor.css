@@ -46,23 +46,21 @@
         display: none;
     }
 
-    /* 3: quantity stepper */
+    /* 3: line total */
     .cart-lines tbody td:nth-child(3) {
         flex: 1 1 auto;
         text-align: left !important;
+        font-size: 1.05rem;
     }
 
-    .cart-lines tbody td:nth-child(3) .btn {
-        min-width: 44px;
-        min-height: 44px;
-        font-size: 18px;
-    }
-
-    /* 4: line total */
+    /* 4: quantity stepper */
     .cart-lines tbody td:nth-child(4) {
         flex: 1 1 auto;
         text-align: right !important;
-        font-size: 1.05rem;
+    }
+
+    .cart-lines tbody td:nth-child(4) .qty-spinner {
+        margin-left: auto;
     }
 
     /* 5: remove — gọn, căn phải, không full-width */
