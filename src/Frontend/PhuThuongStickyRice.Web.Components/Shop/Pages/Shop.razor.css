@@ -100,11 +100,7 @@ html.dark .shop-info-strip {
    every tap target reaches ~42px.
    ============================================================ */
 @media (max-width: 575.98px) {
-    /* Shorter images: 200px dominates a ~170px-wide card */
-    .card-img-top {
-        height: 150px !important;
-    }
-
+    /* Ảnh dùng chung aspect-ratio 4/3 (không đè height cố định) */
     .card-body {
         padding: 12px;
     }
@@ -379,4 +375,32 @@ html.dark .shop-sort-dropdown .dropdown-item.active { background: #7a6fbe; color
     .shop-filters-sticky .btn-group.flex-wrap .btn {
         flex-shrink: 0;
     }
+}
+
+/* ============ Dark mode cho card sản phẩm & filter ============ */
+html.dark .shp-page .card {
+    background: #241d17;
+    border-color: #3a3226;
+    color: #f0e8dc;
+}
+html.dark .shp-page .card .text-muted {
+    color: #b8a88f !important;
+}
+html.dark .shp-page .card .text-dark {
+    color: #f0e8dc !important;
+}
+html.dark .shp-page .jumbotron {
+    background: #241d17;
+    color: #f0e8dc;
+}
+html.dark .shp-page .form-control {
+    background: #2e2620;
+    border-color: #3a3226;
+    color: #f0e8dc;
+}
+html.dark .shp-page .form-control::placeholder {
+    color: #8a7a63;
+}
+html.dark .shop-filters-sticky {
+    background: #241d17;
 }

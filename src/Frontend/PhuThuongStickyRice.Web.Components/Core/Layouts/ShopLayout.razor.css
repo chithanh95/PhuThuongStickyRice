@@ -439,3 +439,49 @@ html.dark .shp-page .btn-primary {
 @media (max-width: 768px) {
     .shp-lang-select { padding: 6px 4px; font-size: 16px; max-width: 52px; text-align: center; }
 }
+
+/* Nút dark mode — đồng bộ với landing */
+.shp-theme-toggle {
+    background: none;
+    border: 1px solid var(--shp-line, #e8ddd0);
+    border-radius: 10px;
+    font-size: 18px;
+    padding: 6px 10px;
+    cursor: pointer;
+    line-height: 1;
+}
+.shp-theme-toggle:hover {
+    background: #f4ecdc;
+}
+html.dark .shp-theme-toggle {
+    border-color: #3a3f47;
+}
+html.dark .shp-theme-toggle:hover {
+    background: #2b2f36;
+}
+
+/* ============ Dark mode cho toàn bộ khu vực shop ============ */
+html.dark .shp-page {
+    --shp-bg: #1a1512;
+    --shp-surface: #241d17;
+    --shp-ink: #f0e8dc;
+    --shp-muted: #b8a88f;
+    --shp-line: #3a3226;
+    --shp-accent: #d08b8b;
+    --shp-accent-dark: #b56e6e;
+    --shp-dark: #f0e8dc;
+}
+html.dark .shp-header {
+    background: rgba(26, 21, 18, .96);
+}
+html.dark .shp-nav a:hover {
+    background: #2e2620;
+}
+html.dark .shp-footer {
+    background: #14100d;
+}
+html.dark .shp-lang-select {
+    background: #241d17;
+    color: #f0e8dc;
+    border-color: #3a3226;
+}

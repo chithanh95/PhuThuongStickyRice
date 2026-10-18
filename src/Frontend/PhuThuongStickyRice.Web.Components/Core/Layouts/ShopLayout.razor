@@ -54,6 +54,10 @@
                         <span class="shp-cart-badge">@CartState.TotalQuantity</span>
                     }
                 </a>
+                @* Dark mode toggle — đồng bộ với landing. *@
+                <button type="button" class="shp-theme-toggle" @onclick="ToggleTheme" title="Sáng/tối" aria-label="Chế độ sáng/tối">
+                    @(_isDark ? "☀️" : "🌙")
+                </button>
                 <a class="shp-order-btn" href="/cart">@AppI18n.T("shop.order_now")</a>
 
                 <AuthorizeView>
@@ -127,6 +131,31 @@
     private string _hotline;
     private string _address;
     private string _email;
+    private bool _isDark;
+
+    private async Task ToggleTheme()
+    {
+        try
+        {
+            var theme = await JS.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop");
+            _isDark = theme == "dark";
+        }
+        catch { }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("ptApplyTheme", "pt-theme-shop");
+                _isDark = await JS.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") == "dark";
+                StateHasChanged();
+            }
+            catch { }
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
