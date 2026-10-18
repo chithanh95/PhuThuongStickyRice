@@ -135,10 +135,22 @@ else
                 @(_sharing ? AppI18n.T("shop.creating_link") : AppI18n.T("shop.share_cart"))
             </button>
         </div>
-        <button class="btn btn-success btn-lg mb-2" @onclick="GoToCheckout">
+        <button class="btn btn-success btn-lg mb-2 cart-checkout-flow" @onclick="GoToCheckout">
             @AppI18n.T("common.checkout") (@CartState.TotalQuantity)
         </button>
     </div>
+
+    @* Mobile: thanh thanh toán sticky dưới cùng — gọn hơn nút full-width. *@
+    <div class="cart-sticky-checkout">
+        <div class="cart-sticky-total">
+            <small class="text-muted">@AppI18n.T("common.total")</small>
+            <strong class="text-danger">@FormatPrice(CartState.TotalAmount)</strong>
+        </div>
+        <button class="btn btn-success" @onclick="GoToCheckout">
+            @AppI18n.T("common.checkout") →
+        </button>
+    </div>
+    <div class="cart-sticky-spacer" aria-hidden="true"></div>
 
     @if (_suggestions != null && _suggestions.Count > 0)
     {

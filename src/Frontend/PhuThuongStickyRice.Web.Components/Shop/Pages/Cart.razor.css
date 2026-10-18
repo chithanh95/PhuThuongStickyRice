@@ -65,16 +65,26 @@
         font-size: 1.05rem;
     }
 
-    /* 5: remove — full-width button, easy to tap, hard to mis-tap */
+    /* 5: remove — gọn, căn phải, không full-width */
     .cart-lines tbody td:nth-child(5) {
-        flex: 1 1 100%;
+        flex: 0 0 auto;
+        margin-left: auto;
         text-align: right !important;
     }
 
     .cart-lines tbody td:nth-child(5) .btn {
-        width: 100%;
-        min-height: 44px;
-        margin-top: 6px;
+        width: auto;
+        min-height: 40px;
+        margin-top: 0;
+        background: none;
+        border: none;
+        color: #c0392b;
+        font-weight: 600;
+        padding: 8px 4px;
+    }
+
+    .cart-lines tbody td:nth-child(5) .btn::before {
+        content: "🗑 ";
     }
 
     /* Footer total row */
@@ -96,19 +106,69 @@
         display: none;
     }
 
-    /* Action buttons: checkout first, full width */
-    .cart-actions .btn-success {
-        flex: 1 1 100%;
-        order: -1;
-        min-height: 52px;
-        font-size: 1.1rem;
-        margin-bottom: 10px;
-    }
-
+    /* Action buttons: "Tiếp tục mua" + "Chia sẻ" gọn 2 cột */
     .cart-actions .btn-secondary,
     .cart-actions .btn-outline-primary {
         flex: 1 1 auto;
         min-height: 44px;
+    }
+
+    /* Ẩn nút checkout trong luồng — dùng thanh sticky dưới cùng */
+    .cart-actions .cart-checkout-flow {
+        display: none;
+    }
+}
+
+/* Thanh checkout sticky mobile — hiện khi giỏ có món */
+.cart-sticky-checkout,
+.cart-sticky-spacer {
+    display: none;
+}
+
+@media (max-width: 575.98px) {
+    .cart-sticky-checkout {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1030;
+        background: #fff;
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+        box-shadow: 0 -2px 12px rgba(0, 0, 0, .12);
+        border-top: 1px solid #e9ecef;
+    }
+
+    .cart-sticky-total small {
+        display: block;
+        font-size: 12px;
+    }
+
+    .cart-sticky-total strong {
+        font-size: 1.2rem;
+    }
+
+    .cart-sticky-checkout .btn-success {
+        min-height: 48px;
+        padding: 10px 28px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        border-radius: 12px;
+        background: #34c38f;
+        border-color: #34c38f;
+    }
+
+    .cart-sticky-spacer {
+        display: block;
+        height: 84px;
+    }
+
+    html.dark .cart-sticky-checkout {
+        background: #241d17;
+        border-top-color: #3a3226;
     }
 }
 
