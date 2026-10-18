@@ -195,7 +195,7 @@ namespace PhuThuongStickyRice.Application.Catalog
                 Items = e.Items.Select(i => new ComboItemDto
                 {
                     ProductId = i.ProductId,
-                    ProductName = names.TryGetValue(i.ProductId, out var n) ? n.Name : i.ProductId.ToString(),
+                    ProductName = names.TryGetValue(i.ProductId, out var n) ? n.Name : "(Món đã ngừng bán)",
                     ProductPrice = names.TryGetValue(i.ProductId, out var n2) ? n2.Price : 0,
                     Quantity = i.Quantity
                 }).ToList()
