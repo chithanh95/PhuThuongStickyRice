@@ -1131,18 +1131,21 @@ html.dark .sg-book-form {
 
 html.dark .sg-poem { color: var(--sg-accent); }
 
-/* ---------- Điểm nhấn ảnh: reveal khi cuộn ---------- */
-.sg-reveal {
+/* ---------- Điểm nhấn ảnh: reveal khi cuộn ----------
+   AN TOÀN: mặc định luôn hiển thị. Chỉ khi JS chạy thành công
+   (thêm class pt-reveal vào <html>) thì .sg-reveal mới ẩn để chờ reveal.
+   Nếu JS lỗi hoặc không chạy, nội dung không bao giờ kẹt ở trạng thái vô hình. */
+html.pt-reveal .sg-reveal {
     opacity: 0;
     transform: translateY(28px);
     transition: opacity .7s ease, transform .7s cubic-bezier(.22, .61, .36, 1);
 }
-.sg-reveal.in {
+html.pt-reveal .sg-reveal.in {
     opacity: 1;
     transform: none;
 }
 @media (prefers-reduced-motion: reduce) {
-    .sg-reveal { opacity: 1; transform: none; transition: none; }
+    html.pt-reveal .sg-reveal { opacity: 1; transform: none; transition: none; }
 }
 
 /* ---------- Điểm nhấn ảnh món: overlay thêm nhanh khi hover ---------- */

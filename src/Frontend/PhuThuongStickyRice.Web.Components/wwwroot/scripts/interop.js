@@ -494,9 +494,17 @@ interop.stopSpeak = function () {
     };
 })();
 
-/* Hiệu ứng hiện dần khi cuộn tới (IntersectionObserver) cho landing. */
+/* Hiệu ứng hiện dần khi cuộn tới (IntersectionObserver) cho landing.
+   AN TOÀN: CSS chỉ ẩn .sg-reveal khi <html> có class pt-reveal (do chính JS này thêm).
+   Mọi đường lỗi đều gỡ class đó -> nội dung luôn hiển thị, không bao giờ kẹt vô hình. */
 window.ptInitReveal = function () {
     try {
+        document.documentElement.classList.add('pt-reveal');
+        // Trình duyệt không hỗ trợ IntersectionObserver: hiện hết, không ẩn gì cả.
+        if (!('IntersectionObserver' in window)) {
+            document.querySelectorAll('.sg-reveal').forEach(function (el) { el.classList.add('in'); });
+            return;
+        }
         if (!window._ptRevealObserver) {
             window._ptRevealObserver = new IntersectionObserver(function (entries) {
                 entries.forEach(function (e) {
@@ -514,15 +522,14 @@ window.ptInitReveal = function () {
         }
         var io = window._ptRevealObserver;
         var els = document.querySelectorAll('.sg-reveal:not(.in):not([data-reveal-observed])');
-        if (!('IntersectionObserver' in window)) {
-            els.forEach(function (el) { el.classList.add('in'); });
-            return;
-        }
         els.forEach(function (el) {
             el.setAttribute('data-reveal-observed', '1');
             io.observe(el);
         });
-    } catch (e) { }
+    } catch (e) {
+        // Lưới an toàn cuối cùng: gỡ trạng thái ẩn để nội dung luôn hiển thị.
+        document.documentElement.classList.remove('pt-reveal');
+    }
 };
 
 /* Landing item 4: đếm ngược khuyến mãi. */
