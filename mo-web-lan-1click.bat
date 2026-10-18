@@ -3,6 +3,7 @@ REM ============================================================
 REM  XOI PHU THUONG - ONE CLICK CHAY WEB CHO MANG LAN
 REM  Double-click file nay: tu publish + chay server
 REM  Dien thoai/may tinh khac cung WiFi mo dia chi hien ra
+REM  (WebAPI serve luon Blazor WASM - chi can 1 server)
 REM ============================================================
 setlocal
 
@@ -26,7 +27,7 @@ echo  [1/4] Publishing WebAPI...
 dotnet publish "%ROOT%src\Backend\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" -c Release -o "%PUB%\api" --nologo -v q
 if errorlevel 1 goto :fail
 
-REM --- Publish Web ---
+REM --- Publish Web (Blazor WASM -> file tinh) ---
 echo  [2/4] Publishing Web...
 dotnet publish "%ROOT%src\Frontend\PhuThuongStickyRice.Web\PhuThuongStickyRice.Web.csproj" -c Release -o "%PUB%\web" --nologo -v q
 if errorlevel 1 goto :fail
@@ -40,7 +41,7 @@ powershell -NoProfile -Command ^
   "if ($j.ResourceServer) { $j.ResourceServer.Endpoint=$u; $j.ResourceServer.PublicEndpoint=$u };" ^
   "$j | ConvertTo-Json -Depth 10 | Set-Content $p -Encoding UTF8"
 
-REM --- Cau hinh API: connection string + CORS ---
+REM --- Cau hinh API: connection string + CORS + serve Blazor ---
 echo  [4/4] Cau hinh API cho LAN...
 powershell -NoProfile -Command ^
   "$dev=Get-Content '%ROOT%src\Backend\PhuThuongStickyRice.WebAPI\appsettings.json' -Raw | ConvertFrom-Json;" ^
@@ -48,6 +49,7 @@ powershell -NoProfile -Command ^
   "$j=Get-Content $p -Raw | ConvertFrom-Json;" ^
   "if ($dev.ConnectionStrings) { $j | Add-Member -NotePropertyName 'ConnectionStrings' -NotePropertyValue $dev.ConnectionStrings -Force };" ^
   "if ($j.CORS) { $j.CORS.AllowAnyOrigin=$true };" ^
+  "$j | Add-Member -NotePropertyName 'BlazorWwwRoot' -NotePropertyValue '..\web\wwwroot' -Force;" ^
   "$j | ConvertTo-Json -Depth 10 | Set-Content $p -Encoding UTF8"
 
 echo.
@@ -56,27 +58,16 @@ echo.
 echo ============================================
 echo  Dien thoai / may khac mo:
 echo.
-echo    http://%IP%:5001
+echo    http://%IP%:5000
 echo.
 echo  (Phai cung WiFi voi may nay)
 echo ============================================
 echo.
 
-start "Xoi API :5000" cmd /k "cd /d %PUB%\api && dotnet PhuThuongStickyRice.WebAPI.dll --urls http://0.0.0.0:5000"
-timeout /t 5 /nobreak >nul
-REM Web la Blazor WebAssembly (file tinh) -> dung Python http.server, khong chay dotnet duoc
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo  KHONG TIM THAY PYTHON. Cai Python tu python.org roi chay lai file nay.
-    echo.
-    pause
-    exit /b 1
-)
-start "Xoi Web :5001" cmd /k "cd /d %PUB%\web\wwwroot && python -m http.server 5001 --bind 0.0.0.0"
+start "Xoi Server :5000" cmd /k "cd /d %PUB%\api && set ASPNETCORE_ENVIRONMENT=Production && dotnet PhuThuongStickyRice.WebAPI.dll --urls http://0.0.0.0:5000"
 
-echo  Da mo 2 cua so server. De nguyen de web chay.
-echo  Dong 2 cua so de dung web.
+echo  Da mo cua so server. De nguyen de web chay.
+echo  Dong cua so de dung web.
 echo.
 echo  Luu y: lan dau Windows hoi Firewall thi bam Allow.
 echo.

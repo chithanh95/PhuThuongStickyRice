@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -244,6 +245,27 @@ namespace PhuThuongStickyRice.WebAPI
             // Serves wwwroot, including /uploads/landing/* for landing page images.
             app.UseStaticFiles();
 
+            // One-click LAN: serve Blazor WASM static files (publish-lan/web/wwwroot)
+            // Cấu hình qua appsettings "BlazorWwwRoot" (đường dẫn tương đối từ folder API).
+            // Không ảnh hưởng API routes (/api/*) hay Swagger.
+            var blazorWwwRoot = Configuration["BlazorWwwRoot"];
+            PhysicalFileProvider blazorFileProvider = null;
+            if (!string.IsNullOrWhiteSpace(blazorWwwRoot))
+            {
+                var fullPath = System.IO.Path.IsPathRooted(blazorWwwRoot)
+                    ? blazorWwwRoot
+                    : System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, blazorWwwRoot));
+                if (System.IO.Directory.Exists(fullPath))
+                {
+                    blazorFileProvider = new PhysicalFileProvider(fullPath);
+                    app.UseStaticFiles(new StaticFileOptions
+                    {
+                        FileProvider = blazorFileProvider,
+                        RequestPath = ""
+                    });
+                }
+            }
+
             app.UseAccessTokenFromFormMiddleware();
 
             app.UseLoggingStatusCodeMiddleware();
@@ -288,6 +310,26 @@ namespace PhuThuongStickyRice.WebAPI
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+
+                // SPA fallback: mọi route không phải /api/* và không phải file tĩnh
+                // thì trả về index.html của Blazor (để client-side routing hoạt động).
+                if (blazorFileProvider != null)
+                {
+                    endpoints.MapFallback(async context =>
+                    {
+                        var path = context.Request.Path.Value ?? "";
+                        if (path.StartsWith("/api/", System.StringComparison.OrdinalIgnoreCase)
+                            || path.Equals("/api", System.StringComparison.OrdinalIgnoreCase)
+                            || path.StartsWith("/swagger", System.StringComparison.OrdinalIgnoreCase)
+                            || System.IO.Path.HasExtension(path))
+                        {
+                            context.Response.StatusCode = 404;
+                            return;
+                        }
+                        context.Response.ContentType = "text/html";
+                        await context.Response.SendFileAsync(blazorFileProvider.GetFileInfo("index.html"));
+                    });
+                }
             });
         }
     }
