@@ -220,7 +220,7 @@ else
         <div class="row">
             @foreach (var product in _suggestions)
             {
-                <div class="col-6 col-md-4 mb-4" @key="product.Id">
+                <div class="col-6 col-md-4 col-lg-3 mb-4" @key="product.Id">
                     <div class="card h-100 border-info">
                         <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name">
                             <img class="card-img-top" src="@ProductImage(product)" alt="@product.Name" loading="lazy" />
@@ -253,7 +253,7 @@ else
         <div class="row">
             @foreach (var product in _filtered)
             {
-                <div class="col-6 col-md-4 mb-4" @key="product.Id">
+                <div class="col-6 col-md-4 col-lg-3 mb-4" @key="product.Id">
                     <div class="card h-100">
                         <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name" class="shop-img-wrap">
                             <img class="card-img-top" src="@ProductImage(product)" alt="@product.Name" loading="lazy" style="height: 200px; object-fit: cover;" />
