@@ -90,10 +90,7 @@ else
                             {
                                 <br /><small class="text-muted">@AppI18n.T("shop.toppings_label"): @item.ToppingNames</small>
                             }
-                            @if (!item.IsCombo)
-                            {
-                                <br /><small class="text-muted">@item.ProductCode</small>
-                            }
+                            @* BA cart: bỏ mã sản phẩm nội bộ (XOI-DO...) — khách không cần thấy. *@
                             @* Wave 6a (item 24): per-item note ("ghi chú món"). *@
                             <br />
                             <input class="form-control form-control-sm mt-1" style="max-width: 230px;"
