@@ -1098,8 +1098,7 @@
     .sg-header-right { gap: 8px; }
     .sg-logo-main { font-size: 17px; }
     .sg-logo-sub { display: none; }
-    .sg-lang-group { gap: 3px; }
-    .sg-lang-toggle { padding: 5px 6px; font-size: 11px; }
+    .sg-lang-select { padding: 5px 6px; font-size: 12px; max-width: 110px; }
     .sg-theme-toggle { width: 34px; height: 34px; font-size: 15px; }
     .sg-hamburger { padding: 6px; }
 
@@ -1605,24 +1604,26 @@ html.pt-reveal .sg-reveal.in {
     header, footer, .sg-popup-overlay { display: none !important; }
 }
 
-/* Item 40: nút đổi ngôn ngữ */
-.sg-lang-group {
+/* Item 40: dropdown đổi ngôn ngữ */
+.sg-lang-dropdown {
     display: flex;
-    gap: 4px;
     align-items: center;
 }
-.sg-lang-toggle {
+.sg-lang-select {
     border: 1px solid var(--sg-line);
     background: var(--sg-surface);
     border-radius: 8px;
-    padding: 6px 10px;
-    font-weight: 800;
+    padding: 6px 8px;
+    font-weight: 700;
     font-size: 13px;
     cursor: pointer;
     color: inherit;
+    max-width: 130px;
 }
-.sg-lang-toggle:hover { background: #6F0707; color: #fff; border-color: #6F0707; }
-.sg-lang-toggle.active { background: #6F0707; color: #fff; border-color: #6F0707; }
+.sg-lang-select:focus {
+    outline: none;
+    border-color: #6F0707;
+}
 
 /* Items 28, 29, 36, 37 */
 .sg-spin-sec { background: linear-gradient(135deg, #fff8f0, #fdf0e0); }
