@@ -4,7 +4,7 @@ REM  XOI PHU THUONG - ONE CLICK CHAY WEB CHO MANG LAN
 REM  Double-click file nay: tu publish (neu can) + chay server
 REM  Dien thoai/may tinh khac cung WiFi mo dia chi hien ra
 REM ============================================================
-setlocal EnableDelayedExpansion
+setlocal
 
 set ROOT=%~dp0
 set PUB=%ROOT%publish-lan
@@ -14,49 +14,35 @@ echo  XOI PHU THUONG - One-click LAN server
 echo ============================================
 echo.
 
-REM --- Lay IP LAN ---
+REM --- Lay IP LAN bang PowerShell (on dinh hon findstr) ---
 set IP=
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr "IPv4"') do (
-    set IP=%%a
-    goto :found
-)
-:found
-set IP=%IP: =%
-REM Chi lay IP 192.168.x hoac 10.x (bo qua 127.0.0.1)
-echo %IP% | findstr /r "^192\.168\." >nul
-if %errorlevel%==0 goto :ipok
-echo %IP% | findstr /r "^10\." >nul
-if %errorlevel%==0 goto :ipok
-REM Tim lai IP LAN neu IP dau tien khong phai LAN
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr "IPv4"') do (
-    set _ip=%%a
-    set _ip=!_ip: =!
-    echo !_ip! | findstr /r "^192\.168\." >nul
-    if !errorlevel!==0 ( set IP=!_ip! & goto :ipok )
-    echo !_ip! | findstr /r "^10\." >nul
-    if !errorlevel!==0 ( set IP=!_ip! & goto :ipok )
-)
-:ipok
+for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -like '192.168.*' -or $_.IPAddress -like '10.*' } | Select-Object -First 1).IPAddress"`) do set IP=%%a
+if "%IP%"=="" set IP=localhost
 
-REM --- Publish neu chua co hoac code moi hon ban publish ---
-set NEED_PUBLISH=0
-if not exist "%PUB%\api\PhuThuongStickyRice.WebAPI.dll" set NEED_PUBLISH=1
-if not exist "%PUB%\web\PhuThuongStickyRice.Web.dll" set NEED_PUBLISH=1
+echo  IP LAN: %IP%
+echo.
 
-if %NEED_PUBLISH%==1 (
-    echo  [1/2] Chua co ban publish - dang publish (mat 1-2 phut)...
+REM --- Publish neu chua co ---
+if not exist "%PUB%\api\PhuThuongStickyRice.WebAPI.dll" goto :dopublish
+if not exist "%PUB%\web\PhuThuongStickyRice.Web.dll" goto :dopublish
+echo  [1/2] Da co ban publish - bo qua.
+goto :runserver
+
+:dopublish
+echo  [1/2] Chua co ban publish - dang publish (mat 1-2 phut)...
+echo.
+powershell -ExecutionPolicy Bypass -File "%ROOT%publish-lan.ps1"
+if errorlevel 1 (
     echo.
-    powershell -ExecutionPolicy Bypass -File "%ROOT%publish-lan.ps1"
-    if %errorlevel% neq 0 (
-        echo.
-        echo  Publish THAT BAI. Nhan phim bat ky de thoat.
-        pause >nul
-        exit /b 1
-    )
-) else (
-    echo  [1/2] Da co ban publish - bo qua (xoa thu muc publish-lan de publish lai).
+    echo  Publish THAT BAI. Xem loi o tren.
+    echo  Nhan phim bat ky de thoat.
+    pause >nul
+    exit /b 1
 )
+echo.
+echo  Publish xong.
 
+:runserver
 echo.
 echo  [2/2] Dang khoi dong server...
 echo.
@@ -77,4 +63,5 @@ echo  Da mo 2 cua so server. De nguyen de web chay.
 echo  Dong 2 cua so de dung web.
 echo.
 echo  Luu y: lan dau Windows hoi Firewall thi bam Allow.
+echo.
 pause
