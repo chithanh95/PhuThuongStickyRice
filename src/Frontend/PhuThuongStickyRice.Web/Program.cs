@@ -28,6 +28,19 @@ namespace PhuThuongStickyRice.Web
             builder.Configuration.Bind(appSettings);
             builder.Services.AddSingleton(appSettings);
 
+            // API endpoint: dùng config nếu hợp lệ, nếu không fallback về same-origin
+            // (LAN one-click: API và Web chung 1 địa chỉ nên luôn đúng).
+            var apiEndpoint = appSettings.ResourceServer?.Endpoint?.Trim();
+            if (string.IsNullOrWhiteSpace(apiEndpoint))
+            {
+                apiEndpoint = builder.HostEnvironment.BaseAddress.TrimEnd('/');
+            }
+            else if (!Uri.TryCreate(apiEndpoint, UriKind.Absolute, out _))
+            {
+                apiEndpoint = builder.HostEnvironment.BaseAddress.TrimEnd('/');
+            }
+            var apiBaseUri = new Uri(apiEndpoint);
+
             // In-repo JWT admin login (no OIDC / external IdentityServer).
             builder.Services.AddAuthorizationCore();
             builder.Services.AddScoped<JwtTokenManager>();
@@ -42,7 +55,7 @@ namespace PhuThuongStickyRice.Web
             // Admin services attach the JWT via HttpService + ITokenManager.
             builder.Services.AddHttpClient<ProductService, ProductService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -50,7 +63,7 @@ namespace PhuThuongStickyRice.Web
             // Public storefront (anonymous).
             builder.Services.AddHttpClient<ShopService, ShopService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -59,7 +72,7 @@ namespace PhuThuongStickyRice.Web
             // Admin: orders + dashboard (authenticated).
             builder.Services.AddHttpClient<OrderService, OrderService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -67,14 +80,14 @@ namespace PhuThuongStickyRice.Web
             // Item 130 (đúng): VIP marking + priority.
             builder.Services.AddHttpClient<VipService, VipService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
 
             builder.Services.AddHttpClient<DashboardService, DashboardService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -82,7 +95,7 @@ namespace PhuThuongStickyRice.Web
             // Landing page content (public GET, admin PUT via JWT).
             builder.Services.AddHttpClient<LandingService, LandingService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -90,7 +103,7 @@ namespace PhuThuongStickyRice.Web
             // Wave 6d (item 37): change-password (any authenticated user).
             builder.Services.AddHttpClient<AuthService, AuthService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -98,7 +111,7 @@ namespace PhuThuongStickyRice.Web
             // Customer account: saved addresses (authenticated).
             builder.Services.AddHttpClient<CustomerAddressService, CustomerAddressService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -106,7 +119,7 @@ namespace PhuThuongStickyRice.Web
             // Item 90+92: customer profile (taste preferences, birthday).
             builder.Services.AddHttpClient<CustomerProfileService, CustomerProfileService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -114,7 +127,7 @@ namespace PhuThuongStickyRice.Web
             // Item 91+92: admin customer care (reminders, birthday gifts).
             builder.Services.AddHttpClient<CustomerCareService, CustomerCareService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -122,7 +135,7 @@ namespace PhuThuongStickyRice.Web
             // Wave 6b (item 28): policy pages (public GET, admin PUT via JWT).
             builder.Services.AddHttpClient<PolicyService, PolicyService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -130,7 +143,7 @@ namespace PhuThuongStickyRice.Web
             // Shop commerce settings (public GET, admin PUT via JWT).
             builder.Services.AddHttpClient<ShopSettingsService, ShopSettingsService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -138,7 +151,7 @@ namespace PhuThuongStickyRice.Web
             // Item 117: holiday schedule (public upcoming + admin CRUD).
             builder.Services.AddHttpClient<HolidayService, HolidayService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -146,7 +159,7 @@ namespace PhuThuongStickyRice.Web
             // Item 178: public queue-number display (/cho, no login).
             builder.Services.AddHttpClient<QueueService, QueueService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -154,7 +167,7 @@ namespace PhuThuongStickyRice.Web
             // Admin: discount codes (authenticated).
             builder.Services.AddHttpClient<DiscountService, DiscountService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -162,7 +175,7 @@ namespace PhuThuongStickyRice.Web
             // Admin: staff accounts & roles (authenticated, Admin only).
             builder.Services.AddHttpClient<StaffService, StaffService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -170,13 +183,13 @@ namespace PhuThuongStickyRice.Web
             // Items 155/156: fine-grained permissions + staff activity log.
             builder.Services.AddHttpClient<PermissionService, PermissionService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
             builder.Services.AddHttpClient<StaffLogService, StaffLogService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -184,7 +197,7 @@ namespace PhuThuongStickyRice.Web
             // Admin: catalog features (toppings, combos, quotes, dish votes, size options).
             builder.Services.AddHttpClient<CatalogAdminService, CatalogAdminService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -192,7 +205,7 @@ namespace PhuThuongStickyRice.Web
             // Wave 2: loyalty, spin, support, FAQ, subscriptions, reviews, integrations.
             builder.Services.AddHttpClient<Wave2Service, Wave2Service>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -201,7 +214,7 @@ namespace PhuThuongStickyRice.Web
             // articles, table QRs, profit report, login audit, 2FA.
             builder.Services.AddHttpClient<Wave3Service, Wave3Service>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -210,7 +223,7 @@ namespace PhuThuongStickyRice.Web
             // logs, disk usage, payment config, group orders, address book.
             builder.Services.AddHttpClient<Wave4Service, Wave4Service>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -219,7 +232,7 @@ namespace PhuThuongStickyRice.Web
             // wallet, reconciliation, refunds, templates, campaigns, POS.
             builder.Services.AddHttpClient<Wave5Service, Wave5Service>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -233,7 +246,7 @@ namespace PhuThuongStickyRice.Web
             // GL1: anonymous funnel measurement.
             builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Shop.Services.FunnelService, PhuThuongStickyRice.Web.Components.Shop.Services.FunnelService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -241,7 +254,7 @@ namespace PhuThuongStickyRice.Web
             // Item 87: end-of-day inventory counts (kiểm kê cuối ngày).
             builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService, PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -249,7 +262,7 @@ namespace PhuThuongStickyRice.Web
             // Items 157–158: admin global search + notification center.
             builder.Services.AddHttpClient<AdminUtilityService, AdminUtilityService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
@@ -257,7 +270,7 @@ namespace PhuThuongStickyRice.Web
             // Item 162: order message templates (mẫu tin nhắn theo trạng thái đơn).
             builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.MessageTemplateService, PhuThuongStickyRice.Web.Components.Admin.Services.MessageTemplateService>(client =>
             {
-                client.BaseAddress = new Uri(appSettings.ResourceServer.Endpoint);
+                client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
