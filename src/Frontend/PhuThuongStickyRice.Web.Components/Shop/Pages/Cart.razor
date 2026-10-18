@@ -9,10 +9,12 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @using PhuThuongStickyRice.Web.Components.Shop.Components
 @using PhuThuongStickyRice.Web.Components.Core.Services
+@using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject CartState CartState
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
 @inject ToastService Toasts
+@inject Wave5Service Wave5Service
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject AppI18n AppI18n
@@ -75,10 +77,8 @@ else
                     <tr @key="item.LineKey">
                         <td>
                             <div class="cart-item-main">
-                                @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
-                                {
-                                    <img class="cart-item-img" src="@item.ImageUrl" alt="@item.ProductName" loading="lazy" />
-                                }
+                                <img class="cart-item-img" src="@CartItemImage(item)" alt="@item.ProductName" loading="lazy"
+                                     onerror="this.onerror=null;this.style.display='none';" />
                                 <div class="cart-item-info">
                                     <strong>@item.ProductName</strong>
                             @if (item.IsCombo)
@@ -164,9 +164,14 @@ else
                     {
                         <div class="col-12 col-sm-6 col-lg-4 mb-2" @key="s.Id">
                             <div class="d-flex align-items-center justify-content-between border rounded p-2">
-                                <div>
-                                    <strong>@s.Name</strong><br />
-                                    <span class="text-danger">@FormatPrice(s.Price)</span>
+                                <div class="d-flex align-items-center">
+                                    <img src="@SuggestionImage(s)" alt="@s.Name" loading="lazy"
+                                         style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; margin-right: 8px;"
+                                         onerror="this.onerror=null;this.style.display='none';" />
+                                    <div>
+                                        <strong>@s.Name</strong><br />
+                                        <span class="text-danger">@FormatPrice(s.Price)</span>
+                                    </div>
                                 </div>
                                 <button class="btn btn-sm btn-primary" @onclick="() => QuickAddSuggestion(s)">@AppI18n.T("shop.add")</button>
                             </div>
@@ -181,6 +186,47 @@ else
 @code {
     private List<ShopProductModel> _suggestions;
     private string _error;
+
+    private const string PlaceholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIxMiI+Tm8gaW1hZ2U8L3RleHQ+PC9zdmc+";
+
+    private string CartItemImage(CartItemModel item)
+    {
+        if (!string.IsNullOrWhiteSpace(item?.ImageUrl))
+            return item.ImageUrl;
+        return PlaceholderImage;
+    }
+
+    private string SuggestionImage(ShopProductModel s)
+    {
+        var first = FirstImageUrl(s?.ImageUrlsJson);
+        if (!string.IsNullOrEmpty(first))
+            return Wave5Service.ResolveImageUrl(first);
+        return PlaceholderImage;
+    }
+
+    private static string FirstImageUrl(string imageUrlsJson)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrlsJson))
+            return null;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(imageUrlsJson);
+            if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    if (el.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        var url = el.GetString()?.Trim();
+                        if (!string.IsNullOrEmpty(url))
+                            return url;
+                    }
+                }
+            }
+        }
+        catch { }
+        return null;
+    }
 
     // GH1: freeship progress bar (0 = not configured → hidden).
     private decimal _freeShipThreshold;
