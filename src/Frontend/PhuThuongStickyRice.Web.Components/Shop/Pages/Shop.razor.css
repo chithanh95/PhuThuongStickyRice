@@ -413,6 +413,8 @@ html.dark .shop-filters-sticky {
     .shop-mobile-wrap { display: block; }
     /* Danh mục đã có ở sidebar */
     .shop-filter-cat { display: none; }
+    /* Ít món → ẩn cả cục filter trên mobile */
+    .shop-filters-sticky { display: none; }
 
     .shop-mobile-body {
         display: flex;
