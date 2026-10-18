@@ -110,7 +110,7 @@
                 }
                 else
                 {
-                    <tr><td>Nhận hàng</td><td class="text-right text-success">🛵 Shipper đến lấy tại quán (miễn phí ship)</td></tr>
+                    <tr><td>Nhận hàng</td><td class="text-right text-success">🛵 Tôi tự book shipper đến lấy (miễn phí ship)</td></tr>
                     <tr><td colspan="2"><small class="text-muted">Quán chuẩn bị sẵn — shipper đến đọc mã đơn <strong>@_placedOrder.OrderNumber</strong> để lấy.</small></td></tr>
                 }
                 @if (_placedOrder.ScheduledFor.HasValue)
@@ -313,14 +313,14 @@ else
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="fulfillment" id="fm-shipper"
                                    checked="@(_fulfillment == "ShipperPickup")" @onchange="@(() => _fulfillment = "ShipperPickup")" />
-                            <label class="form-check-label" for="fm-shipper">🛵 Shipper đến lấy tại quán <small class="text-success">(miễn phí ship)</small></label>
+                            <label class="form-check-label" for="fm-shipper">🛵 Tôi tự book shipper đến lấy <small class="text-success">(miễn phí ship)</small></label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="fulfillment" id="fm-pickup"
                                    checked="@(_fulfillment == "Pickup")" @onchange="@(() => _fulfillment = "Pickup")" />
                             <label class="form-check-label" for="fm-pickup">🏪 Tôi tự đến quán lấy <small class="text-success">(miễn phí ship)</small></label>
                         </div>
-                        <small class="text-muted d-block mt-1">Quán chuẩn bị sẵn, shipper đến đọc mã đơn để lấy.</small>
+                        <small class="text-muted d-block mt-1">Quán chuẩn bị sẵn theo mã đơn. Bạn tự đặt xe (Grab/Ahamove...) và báo tài xế đọc mã đơn để lấy — phí ship bạn trả trực tiếp cho tài xế.</small>
                     </div>
                     @* TT3: shipping fee + estimated time, visible as soon as the
                        fulfillment method is known (before the submit button). *@
@@ -333,14 +333,6 @@ else
                             }
                         </small>
                     </div>
-                    @if (_fulfillment == "ShipperPickup")
-                    {
-                        <div class="form-group">
-                            <label>Thông tin shipper <small class="text-muted">(tùy chọn — có thể bổ sung sau)</small></label>
-                            <input class="form-control mb-2" @bind="_shipperName" placeholder="Tên shipper (VD: Grab — Anh Tuấn)" />
-                            <input class="form-control" @bind="_shipperPhone" placeholder="SĐT shipper" />
-                        </div>
-                    }
                     <div class="form-group">
                         <label>Thời gian nhận hàng *</label>
                         <div class="form-check">
@@ -826,10 +818,6 @@ else
     // Fulfillment: "ShipperPickup" (default) or "Pickup". The shop does
     // not deliver — no address, no delivery fee, no time slot.
     private string _fulfillment = "ShipperPickup";
-
-    // Optional customer-booked shipper info (ShipperPickup only).
-    private string _shipperName;
-    private string _shipperPhone;
 
     // Pre-order (đặt trước theo giờ): false = nhận ngay (ASAP).
     private bool _isPreOrder;
@@ -1506,14 +1494,6 @@ else
 
             // Pre-order scheduled pickup time (local → server normalizes to UTC).
             _order.ScheduledFor = scheduledFor;
-
-            // Customer-booked shipper info (optional, ShipperPickup only).
-            _order.PickupShipperName = _fulfillment == "ShipperPickup"
-                ? _shipperName?.Trim()
-                : null;
-            _order.PickupShipperPhone = _fulfillment == "ShipperPickup"
-                ? _shipperPhone?.Trim()
-                : null;
 
             // Item 133: order source captured at shop entry.
             _order.Source = CartState.Source;

@@ -168,3 +168,99 @@ html.dark .to-tl-current .to-tl-label {
         min-height: 40px;
     }
 }
+
+/* ============ Tóm tắt + Thông tin đơn hàng kiểu ShopeeFood ============ */
+.to-summary-card,
+.to-info-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.06);
+}
+.to-card-title {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+.to-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+}
+.to-item-main {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+.to-item-qty {
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.to-item-name {
+    flex: 1;
+    min-width: 0;
+}
+.to-item-price {
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.to-total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 14px 0 8px;
+    border-top: 1px solid #f0ebe2;
+    margin-top: 8px;
+    font-size: 17px;
+}
+.to-fee-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 15px;
+}
+.to-grand-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+}
+.to-grand-price {
+    font-size: 24px;
+    font-weight: 800;
+}
+.to-info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    font-size: 15px;
+}
+.to-info-label {
+    color: #6c757d;
+    flex-shrink: 0;
+}
+.to-info-value {
+    text-align: right;
+    font-weight: 500;
+}
+.to-copy-btn {
+    border: none;
+    background: none;
+    color: #e8590c;
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 8px;
+    padding: 0;
+    font-size: 15px;
+}
+html.dark .to-summary-card,
+html.dark .to-info-card {
+    background: #241d17;
+}
+html.dark .to-total-row {
+    border-color: #3a3226;
+}

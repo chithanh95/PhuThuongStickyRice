@@ -254,16 +254,15 @@
                     }
                 </div>
             </div>
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr><th>Món</th><th class="text-right">Đơn giá</th><th class="text-right">SL</th><th class="text-right">Thành tiền</th></tr>
-                    </thead>
-                <tbody>
-                    @foreach (var line in _order.Lines)
-                    {
-                        <tr>
-                            <td>
+            @* Tóm tắt đơn hàng kiểu ShopeeFood *@
+            <div class="to-summary-card">
+                <h5 class="to-card-title">Tóm tắt đơn hàng</h5>
+                @foreach (var line in _order.Lines)
+                {
+                    <div class="to-item-row" @key="line.Id">
+                        <div class="to-item-main">
+                            <span class="to-item-qty">@line.Quantity x</span>
+                            <span class="to-item-name">
                                 @line.ProductName
                                 @if (line.IsCombo)
                                 {
@@ -271,63 +270,84 @@
                                 }
                                 @if (!string.IsNullOrWhiteSpace(line.SizeName))
                                 {
-                                    <br /><small class="text-muted">Size: @line.SizeName</small>
+                                    <small class="text-muted d-block">Size: @line.SizeName</small>
                                 }
                                 @if (!string.IsNullOrWhiteSpace(line.ToppingNames))
                                 {
-                                    <br /><small class="text-muted">Ăn kèm: @line.ToppingNames</small>
+                                    <small class="text-muted d-block">Ăn kèm: @line.ToppingNames</small>
                                 }
                                 @if (!string.IsNullOrWhiteSpace(line.Note))
                                 {
-                                    <br /><small class="text-info">📝 @line.Note</small>
+                                    <small class="text-info d-block">📝 @line.Note</small>
                                 }
-                            </td>
-                            <td class="text-right">@FormatPrice(line.UnitPrice)</td>
-                            <td class="text-right">@line.Quantity</td>
-                            <td class="text-right">@FormatPrice(line.LineTotal)</td>
-                        </tr>
-                    }
-                </tbody>
-                <tfoot>
-                    @if (_order.DiscountAmount > 0)
-                    {
-                        <tr>
-                            <td colspan="3" class="text-success">Giảm giá @(!string.IsNullOrWhiteSpace(_order.DiscountCode) ? $"({_order.DiscountCode})" : "")</td>
-                            <td class="text-right text-success">−@FormatPrice(_order.DiscountAmount)</td>
-                        </tr>
-                    }
-                    @if (_order.TierDiscount > 0)
-                    {
-                        <tr>
-                            <td colspan="3" class="text-success">Ưu đãi hạng thành viên</td>
-                            <td class="text-right text-success">−@FormatPrice(_order.TierDiscount)</td>
-                        </tr>
-                    }
-                    @if (_order.LoyaltyDiscount > 0)
-                    {
-                        <tr>
-                            <td colspan="3" class="text-success">Đổi @_order.LoyaltyPointsRedeemed điểm</td>
-                            <td class="text-right text-success">−@FormatPrice(_order.LoyaltyDiscount)</td>
-                        </tr>
-                    }
-                    @if (_order.GiftFee > 0)
-                    {
-                        <tr>
-                            <td colspan="3" class="text-muted">🎁 Phí gói quà</td>
-                            <td class="text-right text-muted">+@FormatPrice(_order.GiftFee)</td>
-                        </tr>
-                    }
-                    <tr>
-                        <td colspan="3"><strong>Tổng cộng</strong></td>
-                        <td class="text-right"><strong class="text-danger">@FormatPrice(_order.TotalAmount)</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
+                            </span>
+                        </div>
+                        <span class="to-item-price">@FormatPrice(line.LineTotal)</span>
+                    </div>
+                }
+                <div class="to-total-row">
+                    <span><strong>Tổng (@_order.Lines.Sum(l => l.Quantity) món)</strong></span>
+                    <span><strong>@FormatPrice(_order.Lines.Sum(l => l.LineTotal))</strong></span>
+                </div>
+                @if (_order.DiscountAmount > 0)
+                {
+                    <div class="to-fee-row text-success">
+                        <span>Giảm giá @(!string.IsNullOrWhiteSpace(_order.DiscountCode) ? $"({_order.DiscountCode})" : "")</span>
+                        <span>−@FormatPrice(_order.DiscountAmount)</span>
+                    </div>
+                }
+                @if (_order.TierDiscount > 0)
+                {
+                    <div class="to-fee-row text-success">
+                        <span>Ưu đãi hạng thành viên</span>
+                        <span>−@FormatPrice(_order.TierDiscount)</span>
+                    </div>
+                }
+                @if (_order.LoyaltyDiscount > 0)
+                {
+                    <div class="to-fee-row text-success">
+                        <span>Đổi @_order.LoyaltyPointsRedeemed điểm</span>
+                        <span>−@FormatPrice(_order.LoyaltyDiscount)</span>
+                    </div>
+                }
+                @if (_order.GiftFee > 0)
+                {
+                    <div class="to-fee-row text-muted">
+                        <span>🎁 Phí gói quà</span>
+                        <span>+@FormatPrice(_order.GiftFee)</span>
+                    </div>
+                }
+                <div class="to-grand-row">
+                    <span></span>
+                    <span class="to-grand-price">@FormatPrice(_order.TotalAmount)</span>
+                </div>
             </div>
-            @if (!string.IsNullOrWhiteSpace(_order.Notes))
-            {
-                <p><em>Ghi chú: @_order.Notes</em></p>
-            }
+            @* Thông tin đơn hàng kiểu ShopeeFood *@
+            <div class="to-info-card">
+                <h5 class="to-card-title">Thông tin đơn hàng</h5>
+                <div class="to-info-row">
+                    <span class="to-info-label">Mã đơn hàng</span>
+                    <span class="to-info-value">
+                        @_order.OrderNumber
+                        <button type="button" class="to-copy-btn" @onclick="CopyOrderNumber">Sao chép</button>
+                    </span>
+                </div>
+                <div class="to-info-row">
+                    <span class="to-info-label">Thời gian đặt hàng</span>
+                    <span class="to-info-value">@FormatOrderTime(_order.CreatedAt)</span>
+                </div>
+                <div class="to-info-row">
+                    <span class="to-info-label">Thanh toán</span>
+                    <span class="to-info-value">@PaymentMethodLabel(_order.PaymentMethod)</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_order.Notes))
+                {
+                    <div class="to-info-row">
+                        <span class="to-info-label">Ghi chú</span>
+                        <span class="to-info-value">@_order.Notes</span>
+                    </div>
+                }
+            </div>
 
             @if (_order.Status == "Pending")
             {
@@ -1661,6 +1681,27 @@
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
+
+    private static string FormatOrderTime(DateTime createdAt)
+    {
+        var today = DateTime.Today;
+        var date = createdAt.Date;
+        var time = createdAt.ToString("HH:mm");
+        if (date == today) return $"Hôm nay {time}";
+        if (date == today.AddDays(-1)) return $"Hôm qua {time}";
+        return createdAt.ToString("dd/MM/yyyy HH:mm");
+    }
+
+    private async Task CopyOrderNumber()
+    {
+        if (_order == null) return;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _order.OrderNumber);
+            Toasts.Show("Đã sao chép mã đơn hàng");
+        }
+        catch { }
+    }
 
     private static string PaymentMethodLabel(string method) => method switch
     {
