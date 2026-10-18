@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================
 REM  XOI PHU THUONG - ONE CLICK CHAY WEB CHO MANG LAN
-REM  Double-click file nay: tu publish (neu can) + chay server
+REM  Double-click file nay: tu publish + chay server
 REM  Dien thoai/may tinh khac cung WiFi mo dia chi hien ra
 REM ============================================================
 setlocal
@@ -14,37 +14,44 @@ echo  XOI PHU THUONG - One-click LAN server
 echo ============================================
 echo.
 
-REM --- Lay IP LAN bang PowerShell (on dinh hon findstr) ---
+REM --- Lay IP LAN ---
 set IP=
 for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -like '192.168.*' -or $_.IPAddress -like '10.*' } | Select-Object -First 1).IPAddress"`) do set IP=%%a
 if "%IP%"=="" set IP=localhost
-
 echo  IP LAN: %IP%
 echo.
 
-REM --- Publish neu chua co ---
-if not exist "%PUB%\api\PhuThuongStickyRice.WebAPI.dll" goto :dopublish
-if not exist "%PUB%\web\PhuThuongStickyRice.Web.dll" goto :dopublish
-echo  [1/2] Da co ban publish - bo qua.
-goto :runserver
+REM --- Publish WebAPI ---
+echo  [1/4] Publishing WebAPI...
+dotnet publish "%ROOT%src\Backend\PhuThuongStickyRice.WebAPI\PhuThuongStickyRice.WebAPI.csproj" -c Release -o "%PUB%\api" --nologo -v q
+if errorlevel 1 goto :fail
 
-:dopublish
-echo  [1/2] Chua co ban publish - dang publish (mat 1-2 phut)...
-echo.
-powershell -ExecutionPolicy Bypass -File "%ROOT%publish-lan.ps1"
-if errorlevel 1 (
-    echo.
-    echo  Publish THAT BAI. Xem loi o tren.
-    echo  Nhan phim bat ky de thoat.
-    pause >nul
-    exit /b 1
-)
-echo.
-echo  Publish xong.
+REM --- Publish Web ---
+echo  [2/4] Publishing Web...
+dotnet publish "%ROOT%src\Frontend\PhuThuongStickyRice.Web\PhuThuongStickyRice.Web.csproj" -c Release -o "%PUB%\web" --nologo -v q
+if errorlevel 1 goto :fail
 
-:runserver
+REM --- Cau hinh Web tro ve API tren LAN ---
+echo  [3/4] Cau hinh Web -^> API...
+powershell -NoProfile -Command ^
+  "$p='%PUB%\web\wwwroot\appsettings.json';" ^
+  "$j=Get-Content $p -Raw | ConvertFrom-Json;" ^
+  "$u='http://%IP%:5000';" ^
+  "if ($j.ResourceServer) { $j.ResourceServer.Endpoint=$u; $j.ResourceServer.PublicEndpoint=$u };" ^
+  "$j | ConvertTo-Json -Depth 10 | Set-Content $p -Encoding UTF8"
+
+REM --- Cau hinh API: connection string + CORS ---
+echo  [4/4] Cau hinh API cho LAN...
+powershell -NoProfile -Command ^
+  "$dev=Get-Content '%ROOT%src\Backend\PhuThuongStickyRice.WebAPI\appsettings.json' -Raw | ConvertFrom-Json;" ^
+  "$p='%PUB%\api\appsettings.Production.json';" ^
+  "$j=Get-Content $p -Raw | ConvertFrom-Json;" ^
+  "if ($dev.ConnectionStrings) { $j | Add-Member -NotePropertyName 'ConnectionStrings' -NotePropertyValue $dev.ConnectionStrings -Force };" ^
+  "if ($j.CORS) { $j.CORS.AllowAnyOrigin=$true };" ^
+  "$j | ConvertTo-Json -Depth 10 | Set-Content $p -Encoding UTF8"
+
 echo.
-echo  [2/2] Dang khoi dong server...
+echo  Publish xong. Dang khoi dong server...
 echo.
 echo ============================================
 echo  Dien thoai / may khac mo:
@@ -65,3 +72,10 @@ echo.
 echo  Luu y: lan dau Windows hoi Firewall thi bam Allow.
 echo.
 pause
+exit /b 0
+
+:fail
+echo.
+echo  THAT BAI. Xem loi o tren.
+pause
+exit /b 1
