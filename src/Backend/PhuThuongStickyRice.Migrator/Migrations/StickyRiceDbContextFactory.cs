@@ -1,13 +1,16 @@
+using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 using PhuThuongStickyRice.Persistence;
 
 namespace PhuThuongStickyRice.Migrator.Migrations
 {
     /// <summary>
-    /// Design-time factory so <c>dotnet ef migrations add</c> can build the
-    /// model without running the app or needing a live database. The
-    /// connection string is never used during scaffolding.
+    /// Design-time factory so EF Core tools (Update-Database, migrations add)
+    /// can build the DbContext without running the app. The connection string
+    /// is read from the Migrator's appsettings.json, so editing that file is
+    /// enough for both PMC and dotnet run scenarios.
     /// Usage (from the repo root):
     /// <code>
     /// dotnet ef migrations add &lt;Name&gt; \
@@ -21,9 +24,21 @@ namespace PhuThuongStickyRice.Migrator.Migrations
     {
         public StickyRiceDbContext CreateDbContext(string[] args)
         {
+            // At design time the assembly lives in bin/<Config>/net10.0,
+            // where appsettings.json is copied by the build.
+            var basePath = Path.GetDirectoryName(typeof(StickyRiceDbContextFactory).Assembly.Location)
+                ?? Directory.GetCurrentDirectory();
+
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(basePath)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                .Build();
+
+            var connectionString = configuration.GetConnectionString("PhuThuongStickyRice");
+
             var optionsBuilder = new DbContextOptionsBuilder<StickyRiceDbContext>();
             optionsBuilder.UseSqlServer(
-                "Server=(local);Database=PhuThuongStickyRice;Trusted_Connection=True;TrustServerCertificate=True",
+                connectionString,
                 sql => sql.MigrationsAssembly("PhuThuongStickyRice.Migrator"));
 
             return new StickyRiceDbContext(optionsBuilder.Options);
