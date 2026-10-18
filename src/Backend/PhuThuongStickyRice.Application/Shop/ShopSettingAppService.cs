@@ -53,6 +53,7 @@ namespace PhuThuongStickyRice.Application.Shop
         private readonly Microsoft.Extensions.Logging.ILogger<ShopSettingAppService> _logger;
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public ShopSettingAppService(
             IRepository<ShopSetting, Guid> settings,
@@ -62,7 +63,8 @@ namespace PhuThuongStickyRice.Application.Shop
             System.Net.Http.IHttpClientFactory httpClientFactory,
             Microsoft.Extensions.Logging.ILogger<ShopSettingAppService> logger,
             IPermissionService permissions,
-            IStaffActivityLogger activityLogger)
+            IStaffActivityLogger activityLogger,
+            Products.IProductCatalogCache catalogCache)
         {
             _settings = settings;
             _holidays = holidays;
@@ -72,14 +74,19 @@ namespace PhuThuongStickyRice.Application.Shop
             _logger = logger;
             _permissions = permissions;
             _activityLogger = activityLogger;
+            _catalogCache = catalogCache;
         }
 
         /// <summary>Public — the checkout page needs the fee rules.</summary>
         [AllowAnonymous]
         public virtual async Task<ShopSettingDto> GetAsync()
         {
-            var entity = await GetSingleAsync();
-            return MapToDto(entity ?? ShopSetting.CreateDefault());
+            // Perf: shop settings are read on every checkout + public pages.
+            return await _catalogCache.GetOrAddAsync("shop-settings", async () =>
+            {
+                var entity = await GetSingleAsync();
+                return MapToDto(entity ?? ShopSetting.CreateDefault());
+            });
         }
 
         /// <summary>
@@ -209,6 +216,7 @@ namespace PhuThuongStickyRice.Application.Shop
             // Wave 6d (item 39): 0 = unlimited, otherwise cap at 1000.
             entity.MaxOrdersPerPhonePerDay = Math.Min(1000, Math.Max(0, dto.MaxOrdersPerPhonePerDay));
             await _settings.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
 
             return MapToDto(entity);
         }

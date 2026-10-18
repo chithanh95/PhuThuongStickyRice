@@ -92,8 +92,8 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Public order lookup by order number + phone.</summary>
         Task<OrderDto> TrackOrderAsync(TrackOrderInput input);
 
-        /// <summary>Admin: customers aggregated by phone number.</summary>
-        Task<List<CustomerDto>> GetCustomersAsync(string searchTerm);
+        /// <summary>Admin: customers aggregated by phone number (paginated).</summary>
+        Task<List<CustomerDto>> GetCustomersAsync(string searchTerm, int skip = 0, int take = 50);
 
         /// <summary>
         /// Public: last order info for a phone number (name + address only),
@@ -499,7 +499,9 @@ namespace PhuThuongStickyRice.Application.Orders
             bool isFreeship = false;
             if (!string.IsNullOrWhiteSpace(input.DiscountCode))
             {
-                discountValue = await _discounts.ApplyAsync(
+                // Validate only here — usage is bumped after the order row
+                // is written (see below), so a failed order never burns a use.
+                discountValue = await _discounts.ValidateAndComputeAsync(
                     input.DiscountCode, subtotal - promotionDiscount, input.CustomerPhone);
                 appliedCode = input.DiscountCode.Trim().ToUpperInvariant();
 
@@ -700,6 +702,12 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             await _orders.InsertAsync(order);
+
+            // Discount usage is counted only now that the order exists.
+            if (!string.IsNullOrWhiteSpace(appliedCode))
+            {
+                await _discounts.IncrementUsageAsync(appliedCode);
+            }
 
             // Item 110: fire the OrderCreated webhook (fire-and-log — a
             // failing endpoint never breaks the order flow).
@@ -1051,7 +1059,8 @@ namespace PhuThuongStickyRice.Application.Orders
             var queryable = await _orders.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => kitchenStatuses.Contains(x.Status))
-                    .OrderBy(x => x.CreatedAt));
+                    .OrderBy(x => x.CreatedAt)
+                    .Take(200));
             var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
             // Wave 6c (item 33): internal note stays in the admin UI.
             dtos.ForEach(x => x.AdminNote = null);
@@ -1700,7 +1709,7 @@ namespace PhuThuongStickyRice.Application.Orders
             };
 
             var total = segments.Sum(x => x.Weight);
-            var roll = new Random().Next(total);
+            var roll = Random.Shared.Next(total);
             var acc = 0;
             foreach (var (key, weight) in segments)
             {
@@ -1774,7 +1783,8 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Admin: customers aggregated by phone number (order count, total
         /// spent, last order). Cancelled orders are excluded from the totals.
         /// </summary>
-        public virtual async Task<List<CustomerDto>> GetCustomersAsync(string searchTerm)
+        public virtual async Task<List<CustomerDto>> GetCustomersAsync(
+            string searchTerm, int skip = 0, int take = 50)
         {
             var orderQueryable = await _orders.GetQueryableAsync();
             var query = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled);
@@ -1796,7 +1806,9 @@ namespace PhuThuongStickyRice.Application.Orders
                         TotalSpent = g.Sum(x => x.TotalAmount.Amount),
                         LastOrderAt = g.Max(x => x.CreatedAt)
                     })
-                    .OrderByDescending(x => x.TotalSpent));
+                    .OrderByDescending(x => x.TotalSpent)
+                    .Skip(Math.Max(0, skip))
+                    .Take(Math.Clamp(take, 1, 200)));
 
             // Item 149: attach tags (single lookup, no N+1).
             var tagsByPhone = await _customerTags.GetTagsByPhonesAsync(
@@ -1869,15 +1881,22 @@ namespace PhuThuongStickyRice.Application.Orders
             var primary = await FindOrThrowAsync(input.PrimaryOrderId);
             EnsureMergeable(primary);
 
+            // P9: batch load all secondaries in 1 query instead of N FindOrThrowAsync calls.
+            var secondaryIds = input.OrderIds.Distinct()
+                .Where(x => x != primary.Id).ToList();
+            var withDetails = await _orders.WithDetailsAsync(x => x.Lines);
+            var secondaryDict = (await _asyncExecuter.ToListAsync(
+                    withDetails.Where(x => secondaryIds.Contains(x.Id))))
+                .ToDictionary(x => x.Id);
+
             var secondaries = new List<Order>();
-            foreach (var id in input.OrderIds.Distinct())
+            foreach (var id in secondaryIds)
             {
-                if (id == primary.Id)
+                if (!secondaryDict.TryGetValue(id, out var other))
                 {
-                    continue;
+                    throw new OrderNotFoundException(id);
                 }
 
-                var other = await FindOrThrowAsync(id);
                 EnsureMergeable(other);
                 secondaries.Add(other);
             }
@@ -2024,7 +2043,11 @@ namespace PhuThuongStickyRice.Application.Orders
 
         private async Task<Order> FindOrThrowAsync(Guid id)
         {
-            var order = await _orders.FindAsync(id);
+            // P6: WithDetailsAsync loads Lines explicitly,
+            // replacing the removed global AutoInclude.
+            var queryable = await _orders.WithDetailsAsync(x => x.Lines);
+            var order = await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x => x.Id == id));
             if (order == null)
             {
                 throw new OrderNotFoundException(id);
@@ -2047,7 +2070,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         private async Task<string> GenerateOrderNumberAsync()
         {
-            var random = new Random();
+            var random = Random.Shared;
 
             for (var attempt = 0; attempt < 10; attempt++)
             {

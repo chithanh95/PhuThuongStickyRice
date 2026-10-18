@@ -145,12 +145,22 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
             DeleteDialog.Show();
         }
 
-        public async void ConfirmedDeleteProduct()
+        public async Task ConfirmedDeleteProduct()
         {
-            await ProductService.DeleteProductAsync(DeletingProduct.Id);
-            DeleteDialog.Close();
-            Products = await ProductService.GetProductsAsync();
-            StateHasChanged();
+            try
+            {
+                await ProductService.DeleteProductAsync(DeletingProduct.Id);
+                DeleteDialog.Close();
+                Products = await ProductService.GetProductsAsync();
+                StateHasChanged();
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError(ex, "Xóa sản phẩm thất bại.");
+                DeleteDialog.Close();
+                ToggleError = $"Không xóa được '{DeletingProduct?.Name}'. Vui lòng thử lại.";
+                StateHasChanged();
+            }
         }
 
         protected async Task ExportAsPdf()

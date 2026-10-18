@@ -1,0 +1,418 @@
+@page "/admin/ma-giam-gia"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Core.Components
+@inject DiscountService DiscountService
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Mã giảm giá</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Xôi Phú Thượng</a></li>
+        <li class="current">Mã giảm giá</li>
+    </ol>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center mb-3">
+            <h4 class="card-title mb-0">Danh sách mã giảm giá</h4>
+            <div class="ml-auto">
+                <button class="btn btn-primary" @onclick="ShowAdd">
+                    <i class="fa-solid fa-plus mr-1"></i>Thêm mã
+                </button>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4 col-sm-6">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    </div>
+                    <input type="text" class="form-control" placeholder="Tìm mã..."
+                           value="@SearchText" @oninput="OnSearchChanged" />
+                </div>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+        <div class="table-responsive">
+            @if (_codes == null)
+            {
+                <p><em>Đang tải...</em></p>
+            }
+            else if (!PagedCodes.Any())
+            {
+                <p><em>Chưa có mã giảm giá nào.</em></p>
+            }
+            else
+            {
+                <table class="table table-hover mb-0 lx-table-sticky-first">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Loại</th>
+                            <th>Giá trị</th>
+                            <th class="text-right">Đơn tối thiểu (₫)</th>
+                            <th class="text-center">Đã dùng</th>
+                            <th>Hết hạn</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in PagedCodes)
+                        {
+                            <tr @key="c.Id">
+                                <td><strong>@c.Code</strong></td>
+                                <td>
+                                    @if (c.VoucherType == 1)
+                                    {
+                                        <span class="badge badge-info">Freeship</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-primary">Giảm giá</span>
+                                    }
+                                </td>
+                                <td>@c.DisplayValue</td>
+                                <td class="text-right">@c.MinOrderAmount.ToString("N0")</td>
+                                <td class="text-center">
+                                    @c.UsedCount@(c.MaxUses.HasValue ? $"/{c.MaxUses.Value}" : "")
+                                </td>
+                                <td>
+                                    @if (c.ExpiresAt.HasValue)
+                                    {
+                                        @c.ExpiresAt.Value.ToString("dd/MM/yyyy")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (c.IsActive)
+                                    {
+                                        <span class="badge badge-success">Đang bật</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Đã tắt</span>
+                                    }
+                                </td>
+                                <td class="text-right text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary mr-1" title="Sửa"
+                                            @onclick="() => ShowEdit(c)">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa"
+                                            @onclick="() => AskDelete(c)">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (TotalPages > 1)
+                {
+                    <nav class="mt-3">
+                        <ul class="pagination justify-content-center mb-0">
+                            <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(CurrentPage - 1)">Trước</button>
+                            </li>
+                            @for (int p = 1; p <= TotalPages; p++)
+                            {
+                                var pageNum = p;
+                                <li class="page-item @(CurrentPage == pageNum ? "active" : "")">
+                                    <button class="page-link" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                                </li>
+                            }
+                            <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(CurrentPage + 1)">Sau</button>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@if (_showForm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editing == null ? "Thêm mã giảm giá" : "Sửa mã giảm giá")</h5>
+                    <button type="button" class="close" @onclick="HideForm"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_formError))
+                    {
+                        <div class="alert alert-danger">@_formError</div>
+                    }
+                    <div class="form-group">
+                        <label>Mã <span class="text-danger">*</span></label>
+                        <input class="form-control text-uppercase" @bind="_form.Code" placeholder="VD: GIAM10K" maxlength="50" />
+                    </div>
+                    <div class="form-group">
+                        <label>Loại voucher</label>
+                        <select class="form-control" @bind="_form.VoucherType">
+                            <option value="0">Giảm giá</option>
+                            <option value="1">Miễn phí ship</option>
+                        </select>
+                    </div>
+                    @if (_form.VoucherType == 0)
+                    {
+                        <div class="form-group">
+                            <label>Kiểu giảm</label>
+                            <div>
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" class="custom-control-input" id="dt_percent"
+                                           checked="@_isPercent" @onchange="() => _isPercent = true" />
+                                    <label class="custom-control-label" for="dt_percent">Theo %</label>
+                                </div>
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" class="custom-control-input" id="dt_amount"
+                                           checked="@(!_isPercent)" @onchange="() => _isPercent = false" />
+                                    <label class="custom-control-label" for="dt_amount">Số tiền (₫)</label>
+                                </div>
+                            </div>
+                        </div>
+                        @if (_isPercent)
+                        {
+                            <div class="form-group">
+                                <label>Giảm (%) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" @bind="_form.DiscountPercent" min="1" max="100" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="form-group">
+                                <label>Giảm (₫) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" @bind="_form.DiscountAmount" min="1000" step="1000" />
+                            </div>
+                        }
+                    }
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label>Đơn tối thiểu (₫)</label>
+                            <input type="number" class="form-control" @bind="_form.MinOrderAmount" min="0" step="1000" />
+                        </div>
+                        <div class="form-group col-6">
+                            <label>Max lượt dùng</label>
+                            <input type="number" class="form-control" @bind="_form.MaxUses" min="1" placeholder="Trống = không giới hạn" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Ngày hết hạn</label>
+                        <input type="date" class="form-control" @bind="_form.ExpiresAt" @bind:format="yyyy-MM-dd" />
+                        <small class="form-text text-muted">Để trống = không hết hạn.</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <label class="lexa-switch mb-0 mr-2">
+                            <input type="checkbox" @bind="_form.IsActive" />
+                            <span class="lexa-slider"></span>
+                        </label>
+                        <span>Kích hoạt</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="HideForm">Hủy</button>
+                    <button class="btn btn-primary" @onclick="Save" disabled="@_saving">
+                        @(_saving ? "Đang lưu..." : "Lưu")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog @ref="DeleteDialog" Title="Xóa mã giảm giá" YesText="Xóa" NoText="Hủy" ConfirmEventCallback="ConfirmedDelete">
+    <Message>
+        Bạn có chắc muốn xóa mã <strong>@_deleting?.Code</strong>?
+    </Message>
+</ConfirmDialog>
+
+@code {
+    private List<DiscountCodeModel> _codes;
+    private string _error;
+    private string SearchText = "";
+    private int CurrentPage = 1;
+    private int PageSize = 10;
+
+    private bool _showForm;
+    private bool _saving;
+    private string _formError;
+    private DiscountCodeModel _editing;
+    private DiscountCodeModel _form = new();
+    private bool _isPercent = true;
+
+    private ConfirmDialog DeleteDialog;
+    private DiscountCodeModel _deleting;
+
+    private IEnumerable<DiscountCodeModel> FilteredCodes =>
+        string.IsNullOrWhiteSpace(SearchText)
+            ? (_codes ?? Enumerable.Empty<DiscountCodeModel>())
+            : _codes.Where(c => c.Code != null && c.Code.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+    private int TotalPages =>
+        Math.Max(1, (int)Math.Ceiling(FilteredCodes.Count() / (double)PageSize));
+
+    private IEnumerable<DiscountCodeModel> PagedCodes =>
+        FilteredCodes.Skip((CurrentPage - 1) * PageSize).Take(PageSize);
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        SearchText = e.Value?.ToString() ?? "";
+        CurrentPage = 1;
+    }
+
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+            CurrentPage = page;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _codes = await DiscountService.GetListAsync() ?? new List<DiscountCodeModel>();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Không tải được danh sách mã: {ex.Message}";
+            _codes = new List<DiscountCodeModel>();
+        }
+    }
+
+    private void ShowAdd()
+    {
+        _editing = null;
+        _form = new DiscountCodeModel { IsActive = true };
+        _isPercent = true;
+        _formError = null;
+        _showForm = true;
+    }
+
+    private void ShowEdit(DiscountCodeModel c)
+    {
+        _editing = c;
+        _form = new DiscountCodeModel
+        {
+            Id = c.Id,
+            Code = c.Code,
+            DiscountPercent = c.DiscountPercent,
+            DiscountAmount = c.DiscountAmount,
+            MinOrderAmount = c.MinOrderAmount,
+            ExpiresAt = c.ExpiresAt,
+            MaxUses = c.MaxUses,
+            IsActive = c.IsActive,
+            VoucherType = c.VoucherType
+        };
+        _isPercent = c.DiscountPercent.HasValue;
+        _formError = null;
+        _showForm = true;
+    }
+
+    private void HideForm() => _showForm = false;
+
+    private async Task Save()
+    {
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_form.Code))
+        {
+            _formError = "Vui lòng nhập mã.";
+            return;
+        }
+        _form.Code = _form.Code.Trim().ToUpperInvariant();
+
+        if (_form.VoucherType == 0)
+        {
+            if (_isPercent)
+            {
+                _form.DiscountAmount = null;
+                if (!_form.DiscountPercent.HasValue || _form.DiscountPercent < 1 || _form.DiscountPercent > 100)
+                {
+                    _formError = "Phần trăm giảm phải từ 1 đến 100.";
+                    return;
+                }
+            }
+            else
+            {
+                _form.DiscountPercent = null;
+                if (!_form.DiscountAmount.HasValue || _form.DiscountAmount <= 0)
+                {
+                    _formError = "Số tiền giảm phải lớn hơn 0.";
+                    return;
+                }
+            }
+        }
+        else
+        {
+            _form.DiscountPercent = null;
+            _form.DiscountAmount = null;
+        }
+
+        if (_form.MinOrderAmount < 0)
+            _form.MinOrderAmount = 0;
+
+        _saving = true;
+        try
+        {
+            if (_editing == null)
+                await DiscountService.CreateAsync(_form);
+            else
+                await DiscountService.UpdateAsync(_editing.Id, _form);
+
+            _showForm = false;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _formError = $"Lưu thất bại: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void AskDelete(DiscountCodeModel c)
+    {
+        _deleting = c;
+        DeleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete()
+    {
+        if (_deleting == null)
+            return;
+        try
+        {
+            await DiscountService.DeleteAsync(_deleting.Id);
+            DeleteDialog.Close();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Xóa thất bại: {ex.Message}";
+        }
+        finally
+        {
+            _deleting = null;
+        }
+    }
+}

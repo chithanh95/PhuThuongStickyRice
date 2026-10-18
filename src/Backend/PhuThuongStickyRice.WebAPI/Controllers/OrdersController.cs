@@ -125,9 +125,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet("customers")]
         public async Task<ActionResult> GetCustomers(
             [FromQuery] string searchTerm = null,
+            [FromQuery] int skip = 0,
+            [FromQuery] int take = 50,
             CancellationToken cancellationToken = default)
         {
-            var customers = await _orderAppService.GetCustomersAsync(searchTerm);
+            var customers = await _orderAppService.GetCustomersAsync(searchTerm, skip, take);
             return Ok(customers);
         }
 

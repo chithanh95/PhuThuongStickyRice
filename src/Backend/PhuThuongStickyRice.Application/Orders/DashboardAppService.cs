@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Shop;
 
@@ -74,6 +75,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IObjectMapper _objectMapper;
         private readonly IShopSettingAppService _shopSettings;
         private readonly Products.IProductCatalogCache _catalogCache;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _memoryCache;
 
         public DashboardAppService(
             IOrderRepository orders,
@@ -81,7 +83,8 @@ namespace PhuThuongStickyRice.Application.Orders
             IAsyncQueryableExecuter asyncExecuter,
             IObjectMapper objectMapper,
             IShopSettingAppService shopSettings,
-            Products.IProductCatalogCache catalogCache)
+            Products.IProductCatalogCache catalogCache,
+            Microsoft.Extensions.Caching.Memory.IMemoryCache memoryCache)
         {
             _orders = orders;
             _products = products;
@@ -89,10 +92,19 @@ namespace PhuThuongStickyRice.Application.Orders
             _objectMapper = objectMapper;
             _shopSettings = shopSettings;
             _catalogCache = catalogCache;
+            _memoryCache = memoryCache;
         }
 
         public virtual async Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null)
         {
+            // P7: cache dashboard stats 45s (11 queries -> 0 on hit).
+            var cacheKey = $"dashboard-stats:{from:yyyyMMddHHmm}:{to:yyyyMMddHHmm}";
+            if (_memoryCache.TryGetValue(cacheKey, out object cachedObj)
+                && cachedObj is DashboardStatsDto cachedStats)
+            {
+                return cachedStats;
+            }
+
             var (fromDate, toDate) = NormalizeRange(from, to);
 
             var orderQueryable = await _orders.GetQueryableAsync();
@@ -157,6 +169,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 orderQueryable.Where(x => x.Status == OrderStatus.Pending && x.CreatedAt < staleCutoff));
             stats.StalePendingMinutes = staleMinutes;
 
+            _memoryCache.Set(cacheKey, stats, TimeSpan.FromSeconds(45));
             return stats;
         }
 

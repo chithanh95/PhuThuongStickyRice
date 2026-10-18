@@ -189,7 +189,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .HasForeignKey(x => x.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Navigation(x => x.Lines).AutoInclude();
+            // P6: AutoInclude removed — Lines are loaded explicitly via
+            // .Include() only where needed (FindOrThrowAsync for detail views).
+            // List/dashboard queries use SelectMany (SQL JOIN) without loading
+            // full entities.
         }
     }
 }

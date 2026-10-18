@@ -48,6 +48,18 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone);
 
         /// <summary>
+        /// Validates a code and returns the discount amount WITHOUT bumping
+        /// the usage counter. Call <see cref="IncrementUsageAsync"/> after the
+        /// order is successfully created.
+        /// </summary>
+        Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string customerPhone);
+
+        /// <summary>
+        /// Bumps the usage counter for a code. Call after order creation succeeds.
+        /// </summary>
+        Task IncrementUsageAsync(string code);
+
+        /// <summary>
         /// Public: checks a code against a cart subtotal for a given phone.
         /// </summary>
         Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string customerPhone);
@@ -224,6 +236,13 @@ namespace PhuThuongStickyRice.Application.Discounts
 
         public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone)
         {
+            var amount = await ValidateAndComputeAsync(code, subtotal, customerPhone);
+            await IncrementUsageAsync(code);
+            return amount;
+        }
+
+        public virtual async Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string customerPhone)
+        {
             var normalized = NormalizeCode(code);
             var queryable = await _discounts.GetQueryableAsync();
             var entity = await _asyncExecuter.FirstOrDefaultAsync(
@@ -235,10 +254,22 @@ namespace PhuThuongStickyRice.Application.Discounts
                 throw new Domain.Exceptions.DomainException(message);
             }
 
-            var amount = ComputeDiscount(entity, subtotal);
+            return ComputeDiscount(entity, subtotal);
+        }
+
+        public virtual async Task IncrementUsageAsync(string code)
+        {
+            var normalized = NormalizeCode(code);
+            var queryable = await _discounts.GetQueryableAsync();
+            var entity = await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x => x.Code == normalized));
+            if (entity == null)
+            {
+                return;
+            }
+
             entity.UsedCount += 1;
             await _discounts.UpdateAsync(entity, autoSave: true);
-            return amount;
         }
 
         public virtual async Task<DiscountCodeDto> CreateGeneratedAsync(CreateGeneratedDiscountDto dto)
