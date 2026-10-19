@@ -1,1 +1,3 @@
 .lexa-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+.lexa-dot-primary { background: #7a6fbe; } /* UIUX-1019 A3: legend thực tế — màu primary Lexa */
+.lexa-dash-line { display: inline-block; width: 24px; height: 0; border-top: 3px dashed #f1b44c; vertical-align: middle; margin-right: 6px; } /* UIUX-1019 A3: legend dự báo — vàng warning Lexa */

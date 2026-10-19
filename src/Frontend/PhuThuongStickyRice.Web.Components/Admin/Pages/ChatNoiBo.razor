@@ -82,8 +82,7 @@
                     <input class="form-control" placeholder="Nhập tin nhắn cho ca trực..."
                            @bind="_draft" @bind:event="oninput" @onkeyup="OnKeyUp" maxlength="2000" />
                     <div class="input-group-append">
-                        <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;"
-                                @onclick="SendAsync" disabled="@(_sending || string.IsNullOrWhiteSpace(_draft))">
+                        <button class="btn btn-primary" @onclick="SendAsync" disabled="@(_sending || string.IsNullOrWhiteSpace(_draft))">
                             @(_sending ? "Đang gửi..." : "Gửi")
                         </button>
                     </div>
