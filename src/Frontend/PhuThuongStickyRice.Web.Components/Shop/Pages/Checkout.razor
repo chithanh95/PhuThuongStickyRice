@@ -520,7 +520,12 @@ else
                         }
                     }
                     <div class="form-group">
-                        <label>@AppI18n.T("shop.payment_method") *</label>
+                        @* A11y-1019: gộp radio thanh toán thành radiogroup có label —
+                           trước đây <label> mồ côi không gắn input nào, trình đọc
+                           màn hình không đọc được tên nhóm (đồng bộ pattern
+                           fulfillment ở trên). *@
+                        <label id="co-payment-label">@AppI18n.T("shop.payment_method") *</label>
+                        <div role="radiogroup" aria-labelledby="co-payment-label">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-cod"
                                    checked="@(_order.PaymentMethod == "Cod")" @onchange="@(() => _order.PaymentMethod = "Cod")" />
@@ -547,6 +552,7 @@ else
                                 </label>
                             </div>
                         }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -582,7 +588,7 @@ else
                                             <br /><small class="text-info">📝 @item.Note</small>
                                         }
                                     </td>
-                                    <td class="text-center" style="white-space: nowrap;">
+                                    <td class="text-center text-nowrap">
                                         <button type="button" class="btn btn-sm btn-outline-secondary"
                                                 @onclick="() => ChangeQty(item, -1)" title="Bớt 1"
                                                 aria-label="Bớt 1 @item.ProductName">−</button>
@@ -592,7 +598,7 @@ else
                                                 aria-label="Thêm 1 @item.ProductName">+</button>
                                     </td>
                                     <td class="text-right">@FormatPrice(item.LineTotal)</td>
-                                    <td class="text-right" style="white-space: nowrap;">
+                                    <td class="text-right text-nowrap">
                                         <button type="button" class="btn btn-sm btn-outline-danger"
                                                 @onclick="() => CartState.Remove(item.LineKey)" title="Xóa món khỏi đơn"
                                                 aria-label="Xóa @item.ProductName khỏi đơn">×</button>

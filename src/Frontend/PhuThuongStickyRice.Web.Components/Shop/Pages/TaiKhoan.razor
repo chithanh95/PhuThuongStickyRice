@@ -314,7 +314,7 @@
                             <div class="btn-group btn-group-sm">
                                 @if (!a.IsDefault)
                                 {
-                                    <button class="btn btn-outline-secondary" title="Đặt mặc định" @onclick="() => SetDefaultAsync(a.Id)">★</button>
+                                    <button class="btn btn-outline-secondary" title="Đặt mặc định" aria-label="Đặt làm địa chỉ mặc định" @onclick="() => SetDefaultAsync(a.Id)">★</button>
                                 }
                                 <button class="btn btn-outline-primary" @onclick="() => StartEdit(a)">Sửa</button>
                                 <button class="btn btn-outline-danger" @onclick="() => DeleteAsync(a.Id)">Xóa</button>

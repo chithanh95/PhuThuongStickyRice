@@ -145,7 +145,7 @@
                 <div class="lx-dropdown lx-lang-wrap">
                     <button class="lx-lang-btn" @onclick="ToggleLangMenu" title="Ngôn ngữ" aria-label="Ngôn ngữ — chọn ngôn ngữ hiển thị"
                             aria-expanded="@_langMenuOpen" aria-haspopup="true">
-                        <img src="/images/flags/@(_lang == "en" ? "gb" : "vn").png" alt="" style="width:20px;height:14px;border-radius:2px;" />
+                        <img src="/images/flags/@(_lang == "en" ? "gb" : "vn").png" alt="" class="lx-flag" />
                         <span>@(_lang == "en" ? "English" : "Tiếng Việt")</span>
                         <span class="fa-solid fa-chevron-down" aria-hidden="true" style="font-size:10px"></span>
                     </button>
@@ -154,10 +154,10 @@
                         <div class="lx-dropdown-backdrop" @onclick="() => _langMenuOpen = false"></div>
                         <div class="lx-dropdown-menu lx-lang-menu">
                             <button class="lx-dropdown-item" @onclick='() => SetLang("vi")'>
-                                <img src="/images/flags/vn.png" alt="" style="width:20px;height:14px;border-radius:2px;" /> Tiếng Việt
+                                <img src="/images/flags/vn.png" alt="" class="lx-flag" /> Tiếng Việt
                             </button>
                             <button class="lx-dropdown-item" @onclick='() => SetLang("en")'>
-                                <img src="/images/flags/gb.png" alt="" style="width:20px;height:14px;border-radius:2px;" /> English
+                                <img src="/images/flags/gb.png" alt="" class="lx-flag" /> English
                             </button>
                         </div>
                     }

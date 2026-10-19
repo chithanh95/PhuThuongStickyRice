@@ -9,16 +9,14 @@
     <ul class="nav nav-pills mb-4" style="gap: 8px;" role="tablist" aria-label="Loại gói trả trước">
         <li class="nav-item" role="presentation">
             <button type="button" role="tab" aria-selected="@(_tab == "the")"
-                    class="nav-link @(_tab == "the" ? "active" : "")"
-                    style="min-height: 48px; font-size: 1.05rem; padding: 10px 20px;"
+                    class="nav-link lx-tabbtn @(_tab == "the" ? "active" : "")"
                     @onclick='() => _tab = "the"'>
                 🎫 Thẻ xôi (20/30 suất)
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button type="button" role="tab" aria-selected="@(_tab == "tuan")"
-                    class="nav-link @(_tab == "tuan" ? "active" : "")"
-                    style="min-height: 48px; font-size: 1.05rem; padding: 10px 20px;"
+                    class="nav-link lx-tabbtn @(_tab == "tuan" ? "active" : "")"
                     @onclick='() => _tab = "tuan"'>
                 📅 Gói ăn sáng cả tuần
             </button>

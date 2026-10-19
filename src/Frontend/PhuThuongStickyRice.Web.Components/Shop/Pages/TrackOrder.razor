@@ -66,7 +66,7 @@
         </div>
         @if (!string.IsNullOrEmpty(_historyError))
         {
-            <div class="alert alert-danger mt-3 mb-0">@_historyError</div>
+            <div class="alert alert-danger mt-3 mb-0" role="alert">@_historyError</div>
         }
         @if (_history != null)
         {
@@ -371,7 +371,7 @@
                         </button>
                         @if (!string.IsNullOrEmpty(_cancelError))
                         {
-                            <div class="alert alert-danger mt-2 mb-0">@_cancelError</div>
+                            <div class="alert alert-danger mt-2 mb-0" role="alert">@_cancelError</div>
                         }
                     }
                     else if (_editingAddress)
@@ -392,7 +392,7 @@
                                 </div>
                                 @if (!string.IsNullOrEmpty(_editAddressError))
                                 {
-                                    <div class="alert alert-danger mt-2 mb-1">@_editAddressError</div>
+                                    <div class="alert alert-danger mt-2 mb-1" role="alert">@_editAddressError</div>
                                 }
                                 <button class="btn btn-success btn-sm mt-1" @onclick="SaveEditedAddress" disabled="@_savingAddrForm">
                                     @(_savingAddrForm ? "Đang lưu..." : "Lưu thay đổi")
@@ -419,7 +419,7 @@
                                 </div>
                                 @if (!string.IsNullOrEmpty(_editContactError))
                                 {
-                                    <div class="alert alert-danger mt-2 mb-1">@_editContactError</div>
+                                    <div class="alert alert-danger mt-2 mb-1" role="alert">@_editContactError</div>
                                 }
                                 <button class="btn btn-success btn-sm mt-1" @onclick="SaveEditedContact" disabled="@_savingContactForm">
                                     @(_savingContactForm ? "Đang lưu..." : "Lưu thay đổi")
@@ -447,7 +447,7 @@
                                 }
                                 @if (!string.IsNullOrEmpty(_editError))
                                 {
-                                    <div class="alert alert-danger mt-2 mb-1">@_editError</div>
+                                    <div class="alert alert-danger mt-2 mb-1" role="alert">@_editError</div>
                                 }
                                 <button class="btn btn-success btn-sm mt-2" @onclick="SaveEditedLines" disabled="@_savingLines">
                                     @(_savingLines ? "Đang lưu..." : "Lưu thay đổi")
@@ -498,7 +498,7 @@
                                     var orderLine = line;
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <span class="small text-truncate mr-2" style="max-width: 60%;">@orderLine.ProductName</span>
-                                        <span style="white-space: nowrap;">
+                                        <span class="text-nowrap">
                                             @for (var star = 1; star <= 5; star++)
                                             {
                                                 var starNumber = star;
@@ -547,7 +547,7 @@
                             </div>
                             @if (!string.IsNullOrEmpty(_reviewError))
                             {
-                                <div class="alert alert-danger py-1">@_reviewError</div>
+                                <div class="alert alert-danger py-1" role="alert">@_reviewError</div>
                             }
                             <button class="btn btn-primary btn-sm" @onclick="SubmitReview" disabled="@(_submittingReview || _rating == 0)">
                                 @(_submittingReview ? "Đang gửi..." : "Gửi đánh giá")
@@ -628,7 +628,7 @@
                         }
                         @if (!string.IsNullOrEmpty(_transferError))
                         {
-                            <div class="alert alert-danger">@_transferError</div>
+                            <div class="alert alert-danger" role="alert">@_transferError</div>
                         }
                         <button class="btn btn-success" @onclick="MarkTransferred" disabled="@_markingTransferred">
                             @(_markingTransferred ? "Đang gửi..." : "Tôi đã chuyển khoản")

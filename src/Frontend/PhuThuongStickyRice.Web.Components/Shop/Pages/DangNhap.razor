@@ -82,8 +82,11 @@
             </p>
 
             <div class="auth-tabs" role="tablist" aria-label="Chọn chức năng tài khoản">
-                <button type="button" role="tab" aria-selected="@(_tab == "login")" class="auth-tab @(_tab == "login" ? "active" : "")" @onclick='() => _tab = "login"'>Đăng nhập</button>
-                <button type="button" role="tab" aria-selected="@(_tab == "register")" class="auth-tab @(_tab == "register" ? "active" : "")" @onclick='() => _tab = "register"'>Đăng ký</button>
+                @* A11y-1019: tab gắn với panel qua aria-controls — trước đây tablist
+                   không có tabpanel, trình đọc màn hình không liên kết được nội dung
+                   form với tab đã chọn. *@
+                <button type="button" role="tab" id="dn-tab-login" aria-controls="dn-panel-login" aria-selected="@(_tab == "login")" class="auth-tab @(_tab == "login" ? "active" : "")" @onclick='() => _tab = "login"'>Đăng nhập</button>
+                <button type="button" role="tab" id="dn-tab-register" aria-controls="dn-panel-register" aria-selected="@(_tab == "register")" class="auth-tab @(_tab == "register" ? "active" : "")" @onclick='() => _tab = "register"'>Đăng ký</button>
             </div>
 
             @if (!string.IsNullOrEmpty(_error))
@@ -97,6 +100,7 @@
 
             @if (_tab == "login")
             {
+                <div role="tabpanel" id="dn-panel-login" aria-labelledby="dn-tab-login">
                 <div class="form-group">
                     <label class="auth-label" for="dn-login-phone">Số điện thoại</label>
                     <input id="dn-login-phone" name="phone" autocomplete="tel" class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
@@ -113,9 +117,11 @@
                 <div class="text-center mt-3">
                     <a href="/quen-mat-khau" class="auth-link">🔒 Quên mật khẩu?</a>
                 </div>
+                </div>
             }
             else
             {
+                <div role="tabpanel" id="dn-panel-register" aria-labelledby="dn-tab-register">
                 <div class="form-group">
                     <label class="auth-label" for="dn-reg-name">Họ tên</label>
                     <input id="dn-reg-name" name="fullname" autocomplete="name" class="form-control" @bind="_fullName" placeholder="Nhập họ tên" />
@@ -137,6 +143,7 @@
                         @onclick="RegisterAsync" disabled="@_busy">
                     @(_busy ? "Đang xử lý..." : "Đăng ký")
                 </button>
+                </div>
             }
         </div>
         <div class="text-center mt-4">

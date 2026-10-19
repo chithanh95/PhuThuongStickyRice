@@ -4,3 +4,9 @@
 .lexa-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
 .lexa-dot-primary { background: #7a6fbe; } /* UIUX-1019 A3: legend kỳ hiện tại — màu primary Lexa */
 .lexa-dot-compare { background: #c9c7dd; } /* UIUX-1019 A3: legend kỳ so sánh — màu primary nhạt Lexa */
+
+/* UIUX run 17:36 — Agent2 Dark mode
+   FIX — Legend "Kỳ so sánh" (#c9c7dd) là xám-lavender sáng, trên nền tối
+   trông chói và khó phân biệt ý nghĩa với cột kỳ hiện tại (#7a6fbe).
+   Dùng màu muted #8a87a3 đúng palette dark của admin-lexa.css. */
+html.dark .lexa-dot-compare { background: #8a87a3; }

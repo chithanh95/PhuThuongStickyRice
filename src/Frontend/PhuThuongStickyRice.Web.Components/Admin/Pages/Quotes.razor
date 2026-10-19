@@ -69,17 +69,17 @@ else
                         @foreach (var q in _quotes)
                         {
                             <tr @key="q.Id">
-                                <td style="white-space: nowrap;">@q.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                <td class="text-nowrap">@q.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
                                 <td>@QuoteTypeBadge(q.QuoteType)</td>
                                 <td><strong>@q.CustomerName</strong></td>
-                                <td style="white-space: nowrap;"><a href="tel:@q.CustomerPhone">@q.CustomerPhone</a></td>
+                                <td class="text-nowrap"><a href="tel:@q.CustomerPhone">@q.CustomerPhone</a></td>
                                 <td>@(q.EventDate?.ToString("dd/MM/yyyy") ?? "—")</td>
                                 <td class="text-right">@q.Quantity</td>
                                 <td><small>@(string.IsNullOrWhiteSpace(q.EventLocation) ? "—" : q.EventLocation)@(string.IsNullOrWhiteSpace(q.Budget) ? "" : $" · Vốn: {q.Budget}")</small></td>
                                 <td><small>@q.Notes</small></td>
                                 <td>@StatusBadge(q.Status)@if (q.Status == "Confirmed" && q.DepositAmount > 0)
                                     {<br /><span class="badge badge-warning">Cọc @q.DepositAmount.Value.ToString("N0")đ</span>}</td>
-                                <td style="white-space: nowrap;">
+                                <td class="text-nowrap">
                                     <a class="btn btn-sm btn-outline-primary mr-1" href="tel:@q.CustomerPhone">📞 Gọi</a>
                                     @if (q.Status == "New")
                                     {
@@ -134,9 +134,9 @@ else
                         @foreach (var r in _reminders)
                         {
                             <tr @key="r.Id">
-                                <td style="white-space: nowrap;">@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                <td class="text-nowrap">@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
                                 <td><strong>@r.CustomerName</strong></td>
-                                <td style="white-space: nowrap;"><a href="tel:@r.CustomerPhone">@r.CustomerPhone</a></td>
+                                <td class="text-nowrap"><a href="tel:@r.CustomerPhone">@r.CustomerPhone</a></td>
                                 <td>@(r.ReminderType == "Mung1" ? "🌑 Mùng 1" : "🌕 Rằm")</td>
                                 <td>
                                     @if (r.IsActive)
@@ -148,7 +148,7 @@ else
                                         <span class="badge badge-secondary">Đã tắt</span>
                                     }
                                 </td>
-                                <td style="white-space: nowrap;">
+                                <td class="text-nowrap">
                                     <a class="btn btn-sm btn-outline-primary mr-1" href="tel:@r.CustomerPhone">📞 Gọi</a>
                                     <button class="btn btn-sm @(r.IsActive ? "btn-outline-secondary" : "btn-outline-success")"
                                             @onclick="() => ToggleReminderAsync(r)">
@@ -167,7 +167,7 @@ else
 @* Item 161: modal duyệt & gửi link cọc *@
 @if (_depositQuote != null)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.5);">
+    <div class="modal fade show d-block lx-modal-veil" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">

@@ -56,7 +56,8 @@
         border-color: #4a4a6e;
         color: #f0eef5;
     }
-    .qty-input:focus { outline: none; }
+    /* uiux-20261019: focus visible cho người dùng bàn phím (không xóa outline mà không thay thế) */
+    .qty-input:focus { outline: 2px solid #7a6fbe; outline-offset: 1px; }
 </style>
 
 @code {

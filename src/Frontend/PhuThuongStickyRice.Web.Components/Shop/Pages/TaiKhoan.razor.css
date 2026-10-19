@@ -27,3 +27,94 @@ html.dark .tk-addr-panel {
     background: #262019;
     border-color: #3d3325;
 }
+
+/* ===== UIUX run 17:36 — Agent1 Mobile =====
+   FIX 1 — Lịch sử đơn hàng: hàng header (mã đơn+badge | tổng tiền+ngày) tổng
+   ~330px > ~290px nội dung ở màn 320px → badge/tổng tiền bị ép vỡ.
+   Mobile: mã đơn dòng 1 (ellipsis nếu dài), tổng tiền+ngày dòng 2 căn trái;
+   mọi .btn-sm trên trang (Xem chi tiết, 🔁 Đặt lại, tag khẩu vị, ★/Sửa/Xóa,
+   + Thêm địa chỉ) chỉ ~31px → nâng lên 44px chuẩn chạm.
+   (Verify: TaiKhoan.razor — div.d-flex...align-items-center là con trực tiếp
+   của card đơn duy nhất (outer card đơn KHÔNG có d-flex trên chính nó),
+   nên không chạm card địa chỉ.) */
+@media (max-width: 767.98px) {
+    .tk-page .card-body > .border.rounded.p-3.mb-2 > .d-flex.justify-content-between.align-items-center {
+        flex-wrap: wrap;
+        row-gap: 4px;
+    }
+    .tk-page .card-body > .border.rounded.p-3.mb-2 > .d-flex.justify-content-between.align-items-center > div:first-child {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+    .tk-page .card-body > .border.rounded.p-3.mb-2 > .d-flex.justify-content-between.align-items-center > div:first-child strong {
+        display: inline-block;
+        max-width: 100%;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .tk-page .card-body > .border.rounded.p-3.mb-2 > .d-flex.justify-content-between.align-items-center > .text-right {
+        flex: 1 1 100%;
+        text-align: left !important;
+    }
+    .tk-page .btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+/* ===== END UIUX run 17:36 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 17:36 — Agent1 Mobile =====
+   FIX 2 — Sổ địa chỉ: mỗi dòng là flex (nội dung | cụm nút ★/Sửa/Xóa), khối
+   nội dung không có min-width:0 nên địa chỉ dài đẩy cụm nút tràn khỏi card
+   ở màn 320px. Cho nội dung co lại (xuống dòng), cụm nút giữ nguyên vị trí.
+   (Verify: TaiKhoan.razor — outer card địa chỉ có d-flex trên chính nó, khác
+   card lịch sử đơn (d-flex nằm ở div con) nên selector không chạm card đơn.) */
+@media (max-width: 767.98px) {
+    .tk-page .card-body > .border.rounded.p-3.mb-2.d-flex.justify-content-between.align-items-start > div:first-child {
+        flex: 1;
+        min-width: 0;
+        word-break: break-word;
+    }
+    .tk-page .card-body > .border.rounded.p-3.mb-2.d-flex.justify-content-between.align-items-start > .btn-group {
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+}
+/* ===== END UIUX run 17:36 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 17:36 — Agent1 Mobile =====
+   FIX 3 — Form trang tài khoản: input <16px khiến iOS tự zoom khi focus
+   (giật layout, khó chịu với người lớn tuổi); ô nhập ~38px khó bấm.
+   Mobile: chữ 16px, cao 44px. Các nút hành động chính (Lưu khẩu vị, Lưu ngày
+   sinh, Đổi mật khẩu, Lưu địa chỉ, Đăng xuất) full-width 48px cho to rõ,
+   dễ bấm — đồng bộ chuẩn CTA mobile các trang shop/cart/checkout. */
+@media (max-width: 767.98px) {
+    .tk-page .form-control {
+        font-size: 16px; /* iOS không auto-zoom khi focus input >=16px */
+        min-height: 44px;
+    }
+    .tk-page .card-body > .btn-primary:not(.btn-sm),
+    .tk-page .form-row .btn-primary:not(.btn-sm),
+    .tk-page .tk-addr-panel .btn-primary:not(.btn-sm) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+        margin-right: 0 !important; /* đè .mr-2 của nút "Lưu địa chỉ" kẻo tràn 8px */
+    }
+    .tk-page > .btn-outline-secondary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+    }
+}
+/* ===== END UIUX run 17:36 - Agent1 FIX 3 ===== */

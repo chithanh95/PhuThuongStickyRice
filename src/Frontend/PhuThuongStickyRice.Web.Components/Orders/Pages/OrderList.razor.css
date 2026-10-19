@@ -4,3 +4,10 @@
     content: ""; position: absolute; left: -17px; top: 9px;
     width: 9px; height: 9px; border-radius: 50%; background: #7a6fbe;
 }
+
+/* UIUX run 17:36 — Agent2 Dark mode
+   FIX — Đường timeline trạng thái đơn hàng (#dee2e6) là màu xám sáng,
+   trên nền tối trông chói và lạc tone so với theme dark admin Lexa.
+   Đổi sang border #3a3a58 cho đồng bộ. (Chấm mốc #7a6fbe giữ nguyên,
+   vẫn đọc rõ trên nền tối.) */
+html.dark .timeline { border-left-color: #3a3a58; }

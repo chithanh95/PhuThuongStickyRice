@@ -36,7 +36,9 @@
     @* Item 123: giỏ trống → gợi ý món bán chạy để cứu phiên thoát. *@
     @if (_suggestions != null && _suggestions.Count > 0)
     {
-        <h5 class="mt-3 mb-2">🔥 Món bán chạy — thêm nhanh vào giỏ</h5>
+        @* A11y-1019: h5 -> h2 (class .h5 giữ nguyên kiểu dáng Bootstrap) —
+           trước đây h1 nhảy thẳng xuống h5, trình đọc màn hình mất cấu trúc. *@
+        <h2 class="h5 mt-3 mb-2">🔥 Món bán chạy — thêm nhanh vào giỏ</h2>
         <div class="row cart-empty-suggest">
             @foreach (var s in _suggestions.Take(6))
             {

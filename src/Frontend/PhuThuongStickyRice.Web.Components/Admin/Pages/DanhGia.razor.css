@@ -16,3 +16,10 @@
     height: 160px;
     object-fit: cover;
 }
+
+/* UIUX run 17:36 — Agent2 Dark mode
+   FIX — Sao "chưa bật" (.dg-stars-off) màu #ddd: trên nền tối trông
+   gần như sao đã sáng, đánh giá 2/5 sao nhìn thành 4/5 sao — gây hiểu
+   nhầm khi duyệt đánh giá. Mờ xuống #4a4a66 cho đúng trạng thái "tắt"
+   trên nền tối. */
+html.dark .dg-stars .dg-stars-off { color: #4a4a66; }

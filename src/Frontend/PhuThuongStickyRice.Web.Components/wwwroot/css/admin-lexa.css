@@ -2193,3 +2193,15 @@ html.dark .lx-admin .kanban-code { color: #f0eef5; }
 .lx-admin .bg-success { background-color: #34c38f !important; }
 .lx-admin .bg-danger { background-color: #f46a6a !important; }
 /* ===== END UIUX-0855 A3 ===== */
+
+/* ===== UIUX run 2026-10-19 17:35 - Agent3 Lexa (5 fix) ===== */
+/* Fix 1: cờ ngôn ngữ topbar admin — gom 3 inline style width/height/border-radius thành class dùng chung
+   (trước lặp lại style="width:20px;height:14px;border-radius:2px;" ở AdminLayout.razor) */
+.lx-flag { width: 20px; height: 14px; border-radius: 2px; }
+/* Fix 3: lớp phủ mờ sau modal (Quotes.razor) — thay inline style="background: rgba(0,0,0,.5);"
+   để tái dùng cho mọi modal tự dựng kiểu Bootstrap trong admin */
+.lx-modal-veil { background: rgba(0,0,0,.5); }
+/* Fix 5: nút tab lớn trang /goi-tra-truoc (shop) — gom inline style min-height/font-size/padding
+   lặp 2 lần thành class dùng chung (nút ≥48px giữ nguyên theo chuẩn mobile) */
+.lx-tabbtn { min-height: 48px; font-size: 1.05rem; padding: 10px 20px; }
+/* ===== END UIUX run 2026-10-19 17:35 - Agent3 Lexa ===== */

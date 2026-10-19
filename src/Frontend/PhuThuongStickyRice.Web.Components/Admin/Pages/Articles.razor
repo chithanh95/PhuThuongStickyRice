@@ -98,7 +98,7 @@ else
                                     <tr @key="a.Id">
                                         <td><strong>@a.Title</strong></td>
                                         <td class="text-muted">@Truncate(a.Body, 220)</td>
-                                        <td style="white-space: nowrap;">@a.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                        <td class="text-nowrap">@a.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
                                         <td>
                                             @if (a.IsPublished)
                                             {
@@ -109,7 +109,7 @@ else
                                                 <span class="badge badge-secondary">Nháp</span>
                                             }
                                         </td>
-                                        <td class="text-right" style="white-space: nowrap;">
+                                        <td class="text-right text-nowrap">
                                             <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(a)">Sửa</button>
                                             <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(a)">Xóa</button>
                                         </td>
