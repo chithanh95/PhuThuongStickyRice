@@ -1,4 +1,4 @@
-using Microsoft.JSInterop;
+﻿using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -192,7 +192,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
                     ["shop.order_summary"] = "Đơn hàng của bạn",
                     ["shop.discount_code"] = "Mã giảm giá",
                     ["shop.recipient"] = "Người nhận",
-                    ["shop.other_recipient"] = "Người nhận khác người đặt",
+                    ["shop.other_recipient"] = "Đặt hộ",
                     ["shop.track_title"] = "Tra cứu đơn hàng",
                     ["shop.order_number"] = "Mã đơn hàng",
                     ["shop.order_phone"] = "Số điện thoại đặt hàng",
