@@ -877,3 +877,23 @@ html.dark .lx-total-row th { background-color: #7a6fbe; border-color: #7a6fbe; }
    MauTinNhan.razor.css (CSS isolation, scope đúng 2 trang). */
 
 /* ===== end UIUX run 2026-10-19 22:25 - Agent3 Lexa (2 fix) ===== */
+
+/* ===== UIUX 22:45 A3 =====
+   Đã quét: mọi file .razor/.razor.css frontend đổi trong 24h qua
+   (git log, so với ~15 đợt Agent 3 trước). Kết luận: codebase gần như
+   sạch — hex lạ còn lại đều đã xử lý từ các đợt trước (QuenMatKhau #28a745
+   chỉ còn trong comment; <code> #e83e8c đã fix; oi-* còn sót toàn là
+   false positive từ tiếng Việt "doi-soat/mat-khau/thieu"; palette nâu ấm
+   của màn bảo trì App.razor là brand chủ ý). Duy nhất 1 khe hở thật: */
+
+/* ---------- Fix 1: tăng specificity cho fix 19:25 (hàng tổng DoiSoatNgay dark mode) ----------
+   Verify: rule gốc trong DoiSoatNgay.razor.css:3 sau CSS isolation thành
+     `html.dark .lx-total-row th[b-fg9selihjz] { background: #5a4fa0; ... }`
+   (bundle: Components.styles.css, specificity (0,3,2)).
+   Override của fix 19:25 trong file này: `html.dark .lx-total-row th`
+   chỉ (0,2,2) — THUA dù load sau (index.html:172 sau bundle:166), nên
+   hàng tổng vẫn tím đậm tự chế #5a4fa0 ở dark mode. Thêm !important để
+   thắng chắc, không đổi layout/chức năng. */
+html.dark .lx-total-row th { background-color: #7a6fbe !important; border-color: #7a6fbe !important; }
+
+/* ===== END UIUX 22:45 A3 ===== */
