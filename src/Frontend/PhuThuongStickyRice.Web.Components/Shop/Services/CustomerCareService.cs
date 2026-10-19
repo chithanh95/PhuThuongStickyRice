@@ -28,7 +28,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         public async Task<BirthdayGiftResultModel> GrantBirthdayGiftAsync(Guid userId, decimal amount)
         {
             await SetBearerToken();
-            var response = await _httpClient.PostAsJsonAsync(
+            // Dispose response để trả connection về pool ngay sau khi đọc xong.
+            using var response = await _httpClient.PostAsJsonAsync(
                 $"api/admin/customer-care/birthdays/{userId}/gift",
                 new { DiscountAmount = amount });
             if (!response.IsSuccessStatusCode)
@@ -45,7 +46,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         public async Task<BirthdayVoucherResultModel> GenerateBirthdayVouchersAsync()
         {
             await SetBearerToken();
-            var response = await _httpClient.PostAsync("api/loyalty/birthdays/vouchers?daysAhead=7", null);
+            // Dispose response để trả connection về pool ngay sau khi đọc xong.
+            using var response = await _httpClient.PostAsync("api/loyalty/birthdays/vouchers?daysAhead=7", null);
             if (!response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException("Không tạo được voucher. Vui lòng thử lại.");
@@ -57,7 +59,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         public async Task<CustomerReminderModel> CreateReminderAsync(string phone, string customerName, string message)
         {
             await SetBearerToken();
-            var response = await _httpClient.PostAsJsonAsync(
+            // Dispose response để trả connection về pool ngay sau khi đọc xong.
+            using var response = await _httpClient.PostAsJsonAsync(
                 "api/admin/customer-care/reminders",
                 new { Phone = phone, CustomerName = customerName, Message = message });
             if (!response.IsSuccessStatusCode)

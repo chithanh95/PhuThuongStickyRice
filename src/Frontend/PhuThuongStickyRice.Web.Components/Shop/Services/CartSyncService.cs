@@ -182,7 +182,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             {
                 await SetBearerTokenAsync();
                 var itemsJson = JsonSerializer.Serialize(_cartState.Items);
-                var content = new StringContent(
+                // StringContent giữ buffer/memory stream: dispose sau khi PUT xong.
+                using var content = new StringContent(
                     JsonSerializer.Serialize(new { ItemsJson = itemsJson }),
                     Encoding.UTF8, "application/json");
                 // Dispose response để trả connection về pool ngay sau khi PUT xong.
