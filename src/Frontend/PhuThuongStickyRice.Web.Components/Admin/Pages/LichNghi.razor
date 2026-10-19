@@ -113,7 +113,7 @@
                                 </td>
                                 <td class="text-right">
                                     <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(holiday)">Sửa</button>
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(holiday)">Xóa</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(holiday)">Xóa</button>
                                 </td>
                             </tr>
                         }
@@ -126,8 +126,19 @@
     </div>
 </div>
 
+@* Bug-hunt 2026-10-20: hỏi xác nhận trước khi xóa ngày nghỉ (tránh bấm nhầm
+   mất lịch nghỉ khiến web không tự chuyển chế độ tạm ngưng nhận đơn),
+   dùng chung ConfirmDialog như trang Chi nhánh. *@
+<ConfirmDialog @ref="DeleteDialog" Title="Xóa ngày nghỉ" YesText="Xóa" NoText="Hủy" ConfirmEventCallback="ConfirmedDelete">
+    <Message>
+        Bạn có chắc muốn xóa ngày nghỉ <strong>@_deleting?.HolidayDate.ToString("dd/MM/yyyy")</strong>? Thao tác này không thể hoàn tác.
+    </Message>
+</ConfirmDialog>
+
 @code {
     private List<HolidayModel> _holidays = new();
+    private HolidayModel _deleting;
+    private ConfirmDialog DeleteDialog;
     private CreateHolidayModel _model = new() { HolidayDate = DateTime.Today };
     private Guid? _editingId;
     private bool _loading = true;
@@ -217,13 +228,30 @@
         }
     }
 
-    private async Task DeleteAsync(HolidayModel holiday)
+    /// <summary>
+    /// Hỏi xác nhận trước khi xóa ngày nghỉ (tránh bấm nhầm).
+    /// </summary>
+    private void AskDelete(HolidayModel holiday)
     {
+        _deleting = holiday;
+        _error = null;
+        DeleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete()
+    {
+        if (_deleting == null)
+        {
+            return;
+        }
+
         _error = null;
         try
         {
-            await HolidayService.DeleteAsync(holiday.Id);
-            _success = $"Đã xóa ngày nghỉ {holiday.HolidayDate:dd/MM/yyyy}.";
+            await HolidayService.DeleteAsync(_deleting.Id);
+            DeleteDialog.Close();
+            _success = $"Đã xóa ngày nghỉ {_deleting.HolidayDate:dd/MM/yyyy}.";
+            _deleting = null;
             await LoadAsync();
         }
         catch (Exception ex)

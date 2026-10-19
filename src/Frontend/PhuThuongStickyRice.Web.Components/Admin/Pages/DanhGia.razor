@@ -238,7 +238,7 @@ else
                     </div>
                     <div class="card-footer p-2 d-flex">
                         <button class="btn btn-sm btn-success flex-fill mr-1" @onclick="() => ApprovePhoto(p)">Duyệt</button>
-                        <button class="btn btn-sm btn-outline-danger flex-fill" @onclick="() => RejectPhoto(p)">Xóa</button>
+                        <button class="btn btn-sm btn-outline-danger flex-fill" @onclick="() => AskRejectPhoto(p)">Xóa</button>
                     </div>
                 </div>
             </div>
@@ -259,6 +259,14 @@ else
     </Message>
 </ConfirmDialog>
 
+@* Bug-hunt 2026-10-20: hỏi xác nhận trước khi xóa ảnh check-in của khách —
+   trước đây bấm Xóa là xóa vĩnh viễn ngay, không hỏi. *@
+<ConfirmDialog @ref="RejectPhotoDialog" Title="Xóa ảnh check-in" YesText="Xóa ảnh" NoText="Giữ lại" ConfirmEventCallback="ConfirmedRejectPhoto">
+    <Message>
+        Bạn có chắc muốn xóa ảnh check-in@(string.IsNullOrWhiteSpace(_pendingRejectPhoto?.Name) ? "" : $" của <strong>{_pendingRejectPhoto.Name}</strong>")? Thao tác này không thể hoàn tác.
+    </Message>
+</ConfirmDialog>
+
 @code {
     private List<OrderReviewModel> _reviews;
     private string _error;
@@ -272,6 +280,11 @@ else
     // "Xóa phản hồi") — tránh bấm Lưu với ô trống xóa nhầm phản hồi cũ.
     private ConfirmDialog EmptyReplyDialog;
     private OrderReviewModel _pendingEmptyReply;
+
+    // Bug-hunt 2026-10-20: ảnh check-in đang chờ xác nhận xóa (dialog
+    // "Xóa ảnh check-in") — tránh bấm nhầm mất ảnh của khách.
+    private ConfirmDialog RejectPhotoDialog;
+    private CustomerPhotoModel _pendingRejectPhoto;
 
     // Check-in photos pending moderation (item 93).
     private List<CustomerPhotoModel> _pendingPhotos;
@@ -348,12 +361,29 @@ else
         }
     }
 
-    private async Task RejectPhoto(CustomerPhotoModel p)
+    /// <summary>
+    /// Hỏi xác nhận trước khi xóa ảnh check-in của khách (tránh bấm nhầm).
+    /// </summary>
+    private void AskRejectPhoto(CustomerPhotoModel p)
     {
+        _pendingRejectPhoto = p;
+        _error = null;
+        RejectPhotoDialog.Show();
+    }
+
+    private async Task ConfirmedRejectPhoto()
+    {
+        if (_pendingRejectPhoto == null)
+        {
+            return;
+        }
+
         try
         {
-            await AdminCommerceService.RejectCustomerPhotoAsync(p.Id);
-            _pendingPhotos.Remove(p);
+            await AdminCommerceService.RejectCustomerPhotoAsync(_pendingRejectPhoto.Id);
+            _pendingPhotos.Remove(_pendingRejectPhoto);
+            RejectPhotoDialog.Close();
+            _pendingRejectPhoto = null;
             _message = "Đã xóa ảnh check-in.";
         }
         catch (Exception ex)

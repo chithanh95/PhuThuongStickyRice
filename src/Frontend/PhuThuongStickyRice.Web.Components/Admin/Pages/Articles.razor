@@ -111,7 +111,7 @@ else
                                         </td>
                                         <td class="text-right text-nowrap">
                                             <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(article)">Sửa</button>
-                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(article)">Xóa</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(article)">Xóa</button>
                                         </td>
                                     </tr>
                                 }
@@ -124,10 +124,20 @@ else
     </div>
 }
 
+@* Bug-hunt 2026-10-20: hỏi xác nhận trước khi xóa bài viết (tránh bấm nhầm
+   mất bài đã xuất bản), dùng chung ConfirmDialog như trang Chi nhánh. *@
+<ConfirmDialog @ref="DeleteDialog" Title="Xóa bài viết" YesText="Xóa" NoText="Hủy" ConfirmEventCallback="ConfirmedDelete">
+    <Message>
+        Bạn có chắc muốn xóa bài viết <strong>@_deleting?.Title</strong>? Thao tác này không thể hoàn tác.
+    </Message>
+</ConfirmDialog>
+
 @code {
     private List<ArticleModel> _items;
     private ArticleModel _form = NewForm();
     private ArticleModel _editing;
+    private ArticleModel _deleting;
+    private ConfirmDialog DeleteDialog;
     private DateTime _publishedDate = DateTime.Today;
     private string _error;
     private string _message;
@@ -233,12 +243,29 @@ else
         }
     }
 
-    private async Task DeleteAsync(ArticleModel article)
+    /// <summary>
+    /// Hỏi xác nhận trước khi xóa bài viết (tránh bấm nhầm mất bài đã xuất bản).
+    /// </summary>
+    private void AskDelete(ArticleModel article)
     {
+        _deleting = article;
+        _error = null;
+        DeleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete()
+    {
+        if (_deleting == null)
+        {
+            return;
+        }
+
         _error = null;
         try
         {
-            await AdminOperationsService.DeleteArticleAsync(article.Id);
+            await AdminOperationsService.DeleteArticleAsync(_deleting.Id);
+            DeleteDialog.Close();
+            _deleting = null;
             await LoadAsync();
         }
         catch (Exception ex)
