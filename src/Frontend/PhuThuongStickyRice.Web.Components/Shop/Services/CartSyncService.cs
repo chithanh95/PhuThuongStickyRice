@@ -68,6 +68,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
             catch
             {
+                // An toàn khi bỏ qua: không đọc được trạng thái đăng nhập thì
+                // coi như chưa đăng nhập — giỏ hàng local vẫn hoạt động bình
+                // thường (fail-safe, không chặn user mua hàng).
                 return false;
             }
         }
@@ -87,7 +90,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             try
             {
                 await SetBearerTokenAsync();
-                var response = await _httpClient.GetAsync("api/cart");
+                using var response = await _httpClient.GetAsync("api/cart");
                 if (!response.IsSuccessStatusCode)
                 {
                     // Fail-soft: giữ giỏ local, không chặn user mua hàng.

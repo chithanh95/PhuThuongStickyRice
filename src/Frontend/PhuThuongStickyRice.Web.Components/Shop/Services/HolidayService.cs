@@ -41,7 +41,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         public async Task DeleteAsync(Guid id)
         {
             await SetBearerToken();
-            var response = await _httpClient.DeleteAsync($"api/shop/admin/holidays/{id}");
+            using var response = await _httpClient.DeleteAsync($"api/shop/admin/holidays/{id}");
             response.EnsureSuccessStatusCode();
         }
     }

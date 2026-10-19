@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Inventory
 {
@@ -44,51 +45,81 @@ namespace PhuThuongStickyRice.Application.Inventory
 
         public virtual async Task SaveAsync(SaveDailyInventoryInput input)
         {
+            var date = ValidateAndGetDate(input);
+            var productNamesById = await LoadProductNamesAsync(input.Lines);
+            ValidateLines(input.Lines, productNamesById);
+
+            // Replace-all for the date: delete existing lines, then insert.
+            await DeleteExistingLinesAsync(date);
+            await InsertLinesAsync(date, input.Lines, productNamesById);
+        }
+
+        /// <summary>Kiểm tra đầu vào hợp lệ và trả về ngày kiểm kê (không nhận ngày trong tương lai).</summary>
+        private static DateTime ValidateAndGetDate(SaveDailyInventoryInput input)
+        {
             if (input == null || input.Lines == null)
             {
                 throw new Domain.Exceptions.DomainException("Dữ liệu kiểm kê không hợp lệ.");
             }
 
             var date = input.Date.Date;
-            if (date > DateTime.UtcNow.AddHours(7).Date.AddDays(1))
+            if (date > VietnamTime.Today().AddDays(1))
             {
                 throw new Domain.Exceptions.DomainException("Không thể kiểm kê cho ngày trong tương lai.");
             }
 
-            var productIds = input.Lines.Select(l => l.ProductId).Distinct().ToList();
+            return date;
+        }
+
+        /// <summary>Nạp tên sản phẩm cho các dòng kiểm kê (dùng khi validate và khi ghi ProductName).</summary>
+        private async Task<Dictionary<Guid, string>> LoadProductNamesAsync(List<InventoryLineInput> lines)
+        {
+            var productIds = lines.Select(l => l.ProductId).Distinct().ToList();
             var products = await _asyncExecuter.ToListAsync(
                 (await _products.GetQueryableAsync()).Where(p => productIds.Contains(p.Id)));
-            var byId = products.ToDictionary(p => p.Id, p => p.Name);
+            return products.ToDictionary(p => p.Id, p => p.Name);
+        }
 
-            foreach (var line in input.Lines)
+        /// <summary>Kiểm tra số lượng không âm và sản phẩm tồn tại cho từng dòng kiểm kê.</summary>
+        private static void ValidateLines(List<InventoryLineInput> lines, Dictionary<Guid, string> productNamesById)
+        {
+            foreach (var line in lines)
             {
                 if (line.RemainingQty < 0)
                 {
                     throw new Domain.Exceptions.DomainException("Số lượng còn lại không được âm.");
                 }
 
-                if (!byId.ContainsKey(line.ProductId))
+                if (!productNamesById.ContainsKey(line.ProductId))
                 {
                     throw new Domain.Exceptions.DomainException("Sản phẩm không tồn tại.");
                 }
             }
+        }
 
-            // Replace-all for the date: delete existing lines, then insert.
+        /// <summary>Xóa toàn bộ dòng kiểm kê đã lưu của một ngày (để ghi đè khi kiểm kê lại).</summary>
+        private async Task DeleteExistingLinesAsync(DateTime date)
+        {
             var existing = await _asyncExecuter.ToListAsync(
                 (await _inventories.GetQueryableAsync()).Where(x => x.Date == date));
             foreach (var e in existing)
             {
                 await _inventories.DeleteAsync(e);
             }
+        }
 
+        /// <summary>Chèn các dòng kiểm kê mới cho một ngày.</summary>
+        private async Task InsertLinesAsync(
+            DateTime date, List<InventoryLineInput> lines, Dictionary<Guid, string> productNamesById)
+        {
             var byUser = CurrentUser?.UserName;
-            foreach (var line in input.Lines)
+            foreach (var line in lines)
             {
                 await _inventories.InsertAsync(new DailyInventory
                 {
                     Date = date,
                     ProductId = line.ProductId,
-                    ProductName = byId[line.ProductId],
+                    ProductName = productNamesById[line.ProductId],
                     RemainingQty = line.RemainingQty,
                     Note = string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim(),
                     CreatedBy = byUser,

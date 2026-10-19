@@ -840,6 +840,12 @@ namespace PhuThuongStickyRice.Application.Orders
             return _objectMapper.Map<Order, OrderDto>(order);
         }
 
+        /// <summary>
+        /// Lấy danh sách đơn hàng phân trang cho admin, mới nhất lên trước;
+        /// hỗ trợ tìm kiếm theo mã đơn, SĐT, tên khách và lọc theo trạng thái/khoảng ngày.
+        /// </summary>
+        /// <param name="input">Điều kiện tìm kiếm, lọc, phân trang và sắp xếp.</param>
+        /// <returns>Trang đơn hàng hiện tại.</returns>
         public virtual async Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInput input)
         {
             var queryable = await _orders.GetQueryableAsync();
@@ -966,6 +972,11 @@ namespace PhuThuongStickyRice.Application.Orders
             }
         }
 
+        /// <summary>
+        /// Lấy chi tiết một đơn hàng cho admin, kèm tên shipper và tag khách hàng.
+        /// </summary>
+        /// <param name="id">Id đơn hàng.</param>
+        /// <returns>Chi tiết đơn hàng.</returns>
         public virtual async Task<OrderDto> GetAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
@@ -1444,6 +1455,13 @@ namespace PhuThuongStickyRice.Application.Orders
             return digits.Substring(0, 3) + "***" + digits.Substring(digits.Length - 2);
         }
 
+        /// <summary>
+        /// Khách tự hủy đơn bằng mã đơn + SĐT (SĐT đóng vai trò xác thực thay đăng nhập).
+        /// Chỉ hủy được khi đơn còn ở trạng thái Pending; khi hủy sẽ hoàn điểm loyalty
+        /// đã đổi và hoàn tiền ví (nếu đơn đã thanh toán bằng ví).
+        /// </summary>
+        /// <param name="input">Mã đơn và SĐT khách dùng để xác thực.</param>
+        /// <returns>Đơn hàng sau khi hủy.</returns>
         public virtual async Task<OrderDto> CancelByCustomerAsync(CancelOrderByCustomerInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
@@ -1474,6 +1492,13 @@ namespace PhuThuongStickyRice.Application.Orders
             return dto;
         }
 
+        /// <summary>
+        /// Khách tự sửa số lượng món sau khi đặt (xác thực bằng mã đơn + SĐT).
+        /// Tính lại tổng đơn, kiểm tra lại đơn tối thiểu, và đối soát lại ví khi đơn
+        /// đã trả bằng ví — vì tổng đơn thay đổi mà ví vẫn trừ theo tổng cũ sẽ gây thiếu/thừa tiền.
+        /// </summary>
+        /// <param name="input">Mã đơn, SĐT khách và danh sách món với số lượng mới.</param>
+        /// <returns>Đơn hàng sau khi cập nhật.</returns>
         public virtual async Task<OrderDto> UpdateLinesByCustomerAsync(UpdateOrderLinesInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
@@ -1535,6 +1560,12 @@ namespace PhuThuongStickyRice.Application.Orders
             return linesDto;
         }
 
+        /// <summary>
+        /// Khách tự đổi địa chỉ giao hàng / khung giờ nhận của đơn còn Pending.
+        /// Ghi chú nội bộ (AdminNote) không bao giờ trả về cho khách.
+        /// </summary>
+        /// <param name="input">Mã đơn, SĐT khách, địa chỉ và khung giờ mới.</param>
+        /// <returns>Đơn hàng sau khi cập nhật.</returns>
         public virtual async Task<OrderDto> UpdateAddressByCustomerAsync(UpdateOrderAddressByCustomerInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
@@ -1548,6 +1579,12 @@ namespace PhuThuongStickyRice.Application.Orders
             return dto;
         }
 
+        /// <summary>
+        /// Khách tự đổi SĐT người nhận và ghi chú của đơn còn Pending.
+        /// Ghi chú nội bộ (AdminNote) không bao giờ trả về cho khách.
+        /// </summary>
+        /// <param name="input">Mã đơn, SĐT khách, SĐT người nhận và ghi chú mới.</param>
+        /// <returns>Đơn hàng sau khi cập nhật.</returns>
         public virtual async Task<OrderDto> UpdateContactByCustomerAsync(UpdateOrderContactByCustomerInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
@@ -1560,6 +1597,11 @@ namespace PhuThuongStickyRice.Application.Orders
             return dto;
         }
 
+        /// <summary>
+        /// Khách gửi đánh giá cho đơn đã hoàn thành; mỗi đơn chỉ được đánh giá một lần.
+        /// </summary>
+        /// <param name="input">Mã đơn, SĐT khách, điểm sao và nhận xét.</param>
+        /// <returns>Đánh giá vừa tạo.</returns>
         public virtual async Task<OrderReviewDto> SubmitReviewAsync(SubmitReviewInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
@@ -1692,6 +1734,10 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        /// <summary>
+        /// Lấy 200 đánh giá mới nhất để admin kiểm duyệt, trả lời hoặc ẩn.
+        /// </summary>
+        /// <returns>Danh sách đánh giá, mới nhất lên trước.</returns>
         public virtual async Task<List<OrderReviewDto>> GetReviewsAsync()
         {
             var reviewQueryable = await _reviews.GetQueryableAsync();
@@ -1959,6 +2005,14 @@ namespace PhuThuongStickyRice.Application.Orders
             return "Miss";
         }
 
+        /// <summary>
+        /// Khách bấm "Đã nhận" cho đơn gói tuần. Bắt buộc SĐT nhập vào phải khớp SĐT
+        /// trên đơn để không ai bấm hộ gói của khách khác.
+        /// Ghi chú nội bộ (AdminNote) không trả về cho khách.
+        /// </summary>
+        /// <param name="id">Id đơn hàng.</param>
+        /// <param name="input">SĐT khách dùng để xác thực.</param>
+        /// <returns>Đơn hàng sau khi đánh dấu đã nhận.</returns>
         public virtual async Task<OrderDto> MarkTransferredAsync(Guid id, MarkTransferredDto input)
         {
             var order = await FindOrThrowAsync(id);
@@ -1977,6 +2031,12 @@ namespace PhuThuongStickyRice.Application.Orders
             return transferredDto;
         }
 
+        /// <summary>
+        /// Nhân viên xác nhận đã nhận tiền cho đơn (cần quyền orders.confirm-payment);
+        /// hành động được ghi vào nhật ký hoạt động nhân viên để đối soát thu chi.
+        /// </summary>
+        /// <param name="id">Id đơn hàng.</param>
+        /// <returns>Đơn hàng sau khi xác nhận thanh toán.</returns>
         public virtual async Task<OrderDto> ConfirmPaymentAsync(Guid id)
         {
             // Item 155: confirming "money received" needs orders.confirm-payment.
@@ -1993,6 +2053,12 @@ namespace PhuThuongStickyRice.Application.Orders
             return _objectMapper.Map<Order, OrderDto>(order);
         }
 
+        /// <summary>
+        /// Tạo link thanh toán MoMo cho đơn. Đơn đã hủy không được tạo link mới để khách
+        /// không trả tiền thật cho đơn không còn hiệu lực (hoàn tiền lúc đó phải xử lý tay).
+        /// </summary>
+        /// <param name="id">Id đơn hàng.</param>
+        /// <returns>Kết quả tạo thanh toán MoMo (link QR / deeplink).</returns>
         public virtual async Task<MoMoCreatePaymentResultDto> CreateMoMoPaymentAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
@@ -2007,6 +2073,13 @@ namespace PhuThuongStickyRice.Application.Orders
             return await _momo.CreatePaymentAsync(order);
         }
 
+        /// <summary>
+        /// Khách tra cứu đơn bằng mã đơn + SĐT. Trường hợp "không tìm thấy" và
+        /// "SĐT không khớp" trả cùng một message để không bị lợi dụng dò mã đơn.
+        /// Ghi chú nội bộ (AdminNote) không trả về cho khách.
+        /// </summary>
+        /// <param name="input">Mã đơn và SĐT khách.</param>
+        /// <returns>Đơn hàng tra cứu được.</returns>
         public virtual async Task<OrderDto> TrackOrderAsync(TrackOrderInput input)
         {
             var order = await _orders.GetByOrderNumberAsync(input.OrderNumber?.Trim());
@@ -2071,6 +2144,13 @@ namespace PhuThuongStickyRice.Application.Orders
             return customers;
         }
 
+        /// <summary>
+        /// Lấy danh sách khách không phát sinh đơn trong N ngày (gom theo SĐT) để chăm sóc
+        /// lại / remarketing. Đơn đã hủy không tính vào lần mua cuối.
+        /// </summary>
+        /// <param name="days">Số ngày không hoạt động tối thiểu.</param>
+        /// <param name="take">Số lượng tối đa trả về.</param>
+        /// <returns>Danh sách khách kèm tổng chi tiêu và ngày đặt gần nhất.</returns>
         public virtual async Task<List<CustomerDto>> GetInactiveCustomersAsync(int days, int take = 50)
         {
             var cutoff = DateTime.UtcNow.AddDays(-Math.Max(1, days));

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Reports;
 
@@ -42,6 +43,13 @@ namespace PhuThuongStickyRice.Application.Reports
             _emailMessages = emailMessages;
         }
 
+        // Báo cáo tuần lấy 7 ngày (thứ 2 tuần trước 00:00 → thứ 2 tuần này 00:00).
+        private const int WeeklyReportDays = 7;
+        // Số món bán chạy nhất đưa vào báo cáo.
+        private const int TopProductsCount = 5;
+        // Địa chỉ gửi của báo cáo qua pipeline EmailMessage.
+        private const string ReportSenderAddress = "no-reply@phuthuong.vn";
+
         /// <summary>Internal — the background worker calls this.</summary>
         [AllowAnonymous]
         public virtual async Task<OwnerReportResultDto> SendAsync(string period)
@@ -58,44 +66,47 @@ namespace PhuThuongStickyRice.Application.Reports
                 };
             }
 
-            // Vietnam time range: weekly = last Mon 00:00 -> this Mon 00:00,
-            // monthly = last month.
-            var vnNow = DateTime.UtcNow.AddHours(7);
-            DateTime fromVn, toVn;
-            string periodLabel;
-            if (string.Equals(period, "monthly", StringComparison.OrdinalIgnoreCase))
-            {
-                var firstOfThisMonth = new DateTime(vnNow.Year, vnNow.Month, 1);
-                fromVn = firstOfThisMonth.AddMonths(-1);
-                toVn = firstOfThisMonth;
-                periodLabel = $"tháng {fromVn:MM/yyyy}";
-            }
-            else
-            {
-                period = "weekly";
-                var daysSinceMonday = ((int)vnNow.DayOfWeek + 6) % 7;
-                toVn = vnNow.Date.AddDays(-daysSinceMonday);
-                fromVn = toVn.AddDays(-7);
-                periodLabel = $"tuần {fromVn:dd/MM} – {toVn.AddDays(-1):dd/MM/yyyy}";
-            }
-
-            var fromUtc = fromVn.AddHours(-7);
-            var toUtc = toVn.AddHours(-7);
+            var (fromVn, toVn, periodLabel, normalizedPeriod) = ResolvePeriodRange(period);
+            var fromUtc = fromVn.AddHours(-VietnamTime.UtcOffsetHours);
+            var toUtc = toVn.AddHours(-VietnamTime.UtcOffsetHours);
 
             var stats = await _dashboard.GetStatsAsync(fromUtc, toUtc);
-            var topProducts = await _dashboard.GetTopProductsAsync(fromUtc, toUtc, 5);
+            var topProducts = await _dashboard.GetTopProductsAsync(fromUtc, toUtc, TopProductsCount);
 
             var body = ComposeBody(periodLabel, stats, topProducts);
             await _emailMessages.AddAsync(new EmailMessage
             {
-                From = "no-reply@phuthuong.vn",
+                From = ReportSenderAddress,
                 Tos = to,
                 Subject = $"[Xôi Phú Thượng] Báo cáo {periodLabel}",
                 Body = body
             });
             await _emailMessages.UnitOfWork.SaveChangesAsync();
 
-            return new OwnerReportResultDto { Period = period, Sent = true };
+            return new OwnerReportResultDto { Period = normalizedPeriod, Sent = true };
+        }
+
+        /// <summary>
+        /// Chuẩn hóa kỳ báo cáo theo giờ Việt Nam: "monthly" = tháng trước,
+        /// còn lại = tuần trước (thứ 2 00:00 → thứ 2 00:00).
+        /// </summary>
+        private static (DateTime FromVn, DateTime ToVn, string PeriodLabel, string NormalizedPeriod)
+            ResolvePeriodRange(string period)
+        {
+            var vnNow = DateTime.UtcNow.AddHours(VietnamTime.UtcOffsetHours);
+            if (string.Equals(period, "monthly", StringComparison.OrdinalIgnoreCase))
+            {
+                var firstOfThisMonth = new DateTime(vnNow.Year, vnNow.Month, 1);
+                var monthFromVn = firstOfThisMonth.AddMonths(-1);
+                var monthToVn = firstOfThisMonth;
+                return (monthFromVn, monthToVn, $"tháng {monthFromVn:MM/yyyy}", "monthly");
+            }
+
+            var daysSinceMonday = ((int)vnNow.DayOfWeek + 6) % 7;
+            var weekToVn = vnNow.Date.AddDays(-daysSinceMonday);
+            var weekFromVn = weekToVn.AddDays(-WeeklyReportDays);
+            return (weekFromVn, weekToVn,
+                $"tuần {weekFromVn:dd/MM} – {weekToVn.AddDays(-1):dd/MM/yyyy}", "weekly");
         }
 
         private static string ComposeBody(

@@ -48,6 +48,11 @@ namespace PhuThuongStickyRice.Application.Customer
         Task UnmarkVipAsync(string phone);
     }
 
+        /// <summary>
+        /// Quản lý khách VIP dựa trên tag "VIP" của hệ thống tag khách hàng.
+        /// SĐT luôn được chuẩn hóa trước khi so sánh để "090..." và "+84..."
+        /// được nhận diện là cùng một khách.
+        /// </summary>
     public class VipPriorityAppService : ApplicationService, IVipPriorityAppService
     {
         public const string VipTagName = "VIP";
@@ -66,6 +71,11 @@ namespace PhuThuongStickyRice.Application.Customer
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Kiểm tra một SĐT có đang được gắn tag VIP không.
+        /// </summary>
+        /// <param name="phone">Số điện thoại cần kiểm tra.</param>
+        /// <returns>True nếu là khách VIP.</returns>
         public virtual async Task<bool> IsVipAsync(string phone)
         {
             phone = NormalizePhone(phone);
@@ -80,6 +90,12 @@ namespace PhuThuongStickyRice.Application.Customer
                     && x.TagName == VipTagName));
         }
 
+        /// <summary>
+        /// Kiểm tra VIP cho nhiều SĐT trong một lần gọi — gom thành một query duy nhất
+        /// thay vì gọi lẻ từng SĐT để tránh N+1 query khi xử lý danh sách đơn.
+        /// </summary>
+        /// <param name="phones">Danh sách SĐT cần kiểm tra.</param>
+        /// <returns>Dictionary SĐT → có phải VIP không (SĐT lạ/không hợp lệ trả false).</returns>
         public virtual async Task<Dictionary<string, bool>> IsVipByPhonesAsync(IEnumerable<string> phones)
         {
             var list = (phones ?? Enumerable.Empty<string>())
@@ -106,6 +122,11 @@ namespace PhuThuongStickyRice.Application.Customer
             return result;
         }
 
+        /// <summary>
+        /// Lấy toàn bộ SĐT đang gắn tag VIP (dạng tập hợp, đã loại trùng) để ưu tiên
+        /// xử lý đơn / áp chính sách ưu đãi cho khách VIP.
+        /// </summary>
+        /// <returns>Tập hợp SĐT VIP.</returns>
         public virtual async Task<HashSet<string>> GetVipPhonesAsync()
         {
             var queryable = await _tagRepo.GetQueryableAsync();
@@ -115,6 +136,10 @@ namespace PhuThuongStickyRice.Application.Customer
             return new HashSet<string>(phones.Distinct());
         }
 
+        /// <summary>
+        /// Lấy danh sách khách VIP đầy đủ thông tin tag, mới gắn nhất lên trước (admin).
+        /// </summary>
+        /// <returns>Danh sách tag VIP.</returns>
         public virtual async Task<List<CustomerTagDto>> GetVipsAsync()
         {
             var queryable = await _tagRepo.GetQueryableAsync();
@@ -132,6 +157,12 @@ namespace PhuThuongStickyRice.Application.Customer
             }).ToList();
         }
 
+        /// <summary>
+        /// Gắn tag VIP cho khách. Idempotent — khách đã là VIP thì trả về tag hiện có,
+        /// không tạo tag trùng.
+        /// </summary>
+        /// <param name="phone">Số điện thoại khách.</param>
+        /// <returns>Tag VIP của khách.</returns>
         public virtual async Task<CustomerTagDto> MarkVipAsync(string phone)
         {
             phone = NormalizePhone(phone);
@@ -157,6 +188,11 @@ namespace PhuThuongStickyRice.Application.Customer
             });
         }
 
+        /// <summary>
+        /// Gỡ tag VIP khỏi khách; SĐT trống hoặc khách không phải VIP thì bỏ qua,
+        /// không báo lỗi.
+        /// </summary>
+        /// <param name="phone">Số điện thoại khách.</param>
         public virtual async Task UnmarkVipAsync(string phone)
         {
             phone = NormalizePhone(phone);

@@ -9,6 +9,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
 {
+        /// <summary>
+        /// Client gọi API dashboard của admin: thống kê tổng quan, món bán chạy,
+        /// khách mới/cũ, doanh thu hôm nay so với hôm qua, báo cáo tuần và trạng thái Zalo OA.
+        /// Các URL tự gắn tham số chống cache (_=timestamp) để luôn lấy số liệu mới nhất.
+        /// </summary>
     public class DashboardService : HttpService
     {
         public DashboardService(HttpClient httpClient, ITokenManager tokenManager)
@@ -16,11 +21,25 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
         {
         }
 
+        /// <summary>
+        /// Lấy số liệu tổng quan dashboard (doanh thu, số đơn, món bán...) trong khoảng ngày;
+        /// bỏ trống from/to để dùng khoảng mặc định của server.
+        /// </summary>
+        /// <param name="from">Từ ngày (tùy chọn).</param>
+        /// <param name="to">Đến ngày (tùy chọn).</param>
+        /// <returns>Số liệu thống kê tổng quan.</returns>
         public async Task<DashboardStatsModel> GetStatsAsync(DateTime? from = null, DateTime? to = null)
         {
             return await GetAsync<DashboardStatsModel>(BuildUrl("api/dashboard/stats", from, to));
         }
 
+        /// <summary>
+        /// Lấy top N món bán chạy nhất trong khoảng ngày (mặc định 5).
+        /// </summary>
+        /// <param name="from">Từ ngày (tùy chọn).</param>
+        /// <param name="to">Đến ngày (tùy chọn).</param>
+        /// <param name="top">Số món lấy, mặc định 5.</param>
+        /// <returns>Danh sách món bán chạy.</returns>
         public async Task<List<TopProductModel>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5)
         {
             return await GetAsync<List<TopProductModel>>(BuildUrl("api/dashboard/top-products", from, to) + $"&top={top}");

@@ -32,7 +32,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Lấy gói "Ăn sáng cả tuần" đang mở bán (null nếu chưa có).</summary>
         public async Task<WeeklyPlanModel> GetActiveAsync()
         {
-            var response = await _httpClient.GetAsync("api/weekly-plans/active");
+            using var response = await _httpClient.GetAsync("api/weekly-plans/active");
             if (response.StatusCode == HttpStatusCode.NoContent)
             {
                 return null;
@@ -44,7 +44,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Mua gói tuần cho khách hàng theo tên và SĐT.</summary>
         public async Task<WeeklyPlanOrderModel> BuyAsync(Guid weeklyPlanId, string customerName, string customerPhone)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/weekly-plans/buy",
+            using var response = await _httpClient.PostAsJsonAsync("api/weekly-plans/buy",
                 new { WeeklyPlanId = weeklyPlanId, CustomerName = customerName, CustomerPhone = customerPhone });
             return await ReadOrThrowAsync<WeeklyPlanOrderModel>(response);
         }
@@ -52,7 +52,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Lấy các đơn gói tuần của khách theo SĐT.</summary>
         public async Task<List<WeeklyPlanOrderModel>> GetMyOrdersAsync(string phone)
         {
-            var response = await _httpClient.GetAsync(
+            using var response = await _httpClient.GetAsync(
                 "api/weekly-plans/my-orders?phone=" + Uri.EscapeDataString(phone ?? string.Empty));
             return await ReadOrThrowAsync<List<WeeklyPlanOrderModel>>(response)
                 ?? new List<WeeklyPlanOrderModel>();
@@ -61,7 +61,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Khách "nhận" suất ăn của 1 ngày trong gói tuần.</summary>
         public async Task<WeeklyPlanOrderModel> ClaimAsync(Guid orderId, string day, string phone)
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            using var response = await _httpClient.PostAsJsonAsync(
                 $"api/weekly-plans/orders/{orderId}/claim", new { day, phone });
             return await ReadOrThrowAsync<WeeklyPlanOrderModel>(response);
         }

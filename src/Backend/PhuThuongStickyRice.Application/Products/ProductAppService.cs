@@ -64,6 +64,12 @@ namespace PhuThuongStickyRice.Application.Products
         Task<List<ProductRatingDto>> GetProductRatingsAsync();
     }
 
+        /// <summary>
+        /// AppService quản lý catalog sản phẩm: danh sách phân trang, CRUD món,
+        /// bật/tắt trạng thái bán. Đường public (shop) dùng cache 5 phút, đường admin
+        /// luôn đọc DB. Mọi thao tác thêm/sửa/xóa cần quyền products.edit/products.delete
+        /// và được ghi vào nhật ký hoạt động nhân viên.
+        /// </summary>
     public class ProductAppService : ApplicationService, IProductAppService
     {
         private const string DailyRemainingCacheKey = "daily-remaining";
@@ -118,6 +124,13 @@ namespace PhuThuongStickyRice.Application.Products
         }
 
         [UnitOfWork]
+        /// <summary>
+        /// Lấy danh sách món có phân trang. Đường public (status=Active) đọc từ cache
+        /// 5 phút để chịu tải trang shop; đường admin (không lọc status) luôn đọc DB
+        /// để thấy dữ liệu mới nhất ngay sau khi sửa.
+        /// </summary>
+        /// <param name="input">Điều kiện tìm kiếm, lọc chi nhánh/trạng thái, phân trang.</param>
+        /// <returns>Trang sản phẩm hiện tại.</returns>
         public virtual async Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input)
         {
             // Item 101: the public shop path (status=Active) is served from a
@@ -242,6 +255,11 @@ namespace PhuThuongStickyRice.Application.Products
             return query;
         }
 
+        /// <summary>
+        /// Lấy chi tiết một món kèm các lựa chọn size đã cấu hình.
+        /// </summary>
+        /// <param name="id">Id món.</param>
+        /// <returns>Chi tiết món.</returns>
         public virtual async Task<ProductDto> GetAsync(Guid id)
         {
             var product = await FindOrThrowAsync(id);
@@ -250,6 +268,12 @@ namespace PhuThuongStickyRice.Application.Products
             return dto;
         }
 
+        /// <summary>
+        /// Tạo món mới; mã món (code) không được trùng với món đã có.
+        /// Cần quyền products.edit.
+        /// </summary>
+        /// <param name="input">Thông tin món cần tạo.</param>
+        /// <returns>Món vừa tạo.</returns>
         public virtual async Task<ProductDto> CreateAsync(CreateUpdateProductDto input)
         {
             // Item 155: adding a product needs products.edit.
@@ -277,6 +301,14 @@ namespace PhuThuongStickyRice.Application.Products
             return _objectMapper.Map<Product, ProductDto>(product);
         }
 
+        /// <summary>
+        /// Cập nhật thông tin món. Mã món không được đổi sau khi tạo vì sẽ gãy liên kết
+        /// với đơn hàng/combo cũ đang tham chiếu mã đó. Chụp snapshot trước khi sửa để
+        /// chỉ ghi log những trường thật sự thay đổi. Cần quyền products.edit.
+        /// </summary>
+        /// <param name="id">Id món.</param>
+        /// <param name="input">Thông tin món mới.</param>
+        /// <returns>Món sau khi cập nhật.</returns>
         public virtual async Task<ProductDto> UpdateAsync(Guid id, CreateUpdateProductDto input)
         {
             // Item 155: editing a product needs products.edit.
@@ -317,6 +349,12 @@ namespace PhuThuongStickyRice.Application.Products
             return _objectMapper.Map<Product, ProductDto>(product);
         }
 
+        /// <summary>
+        /// Bật/tắt trạng thái còn bán của món (Active ↔ Inactive) mà không xóa món,
+        /// để giữ nguyên lịch sử đơn hàng cũ. Cần quyền products.edit.
+        /// </summary>
+        /// <param name="id">Id món.</param>
+        /// <returns>Món sau khi đổi trạng thái.</returns>
         public virtual async Task<ProductDto> ToggleAvailabilityAsync(Guid id)
         {
             // Item 155: toggling availability needs products.edit.
@@ -590,6 +628,12 @@ namespace PhuThuongStickyRice.Application.Products
                 input.AvailableFrom, input.AvailableTo);
         }
 
+        /// <summary>
+        /// Xóa món. Kiểm tra tham chiếu (đơn hàng, combo...) TRƯỚC khi xóa để tránh lỗi DB;
+        /// món đã có lịch sử bán nên dùng "Ngưng bán" (ToggleAvailabilityAsync) thay vì xóa cứng.
+        /// Cần quyền products.delete.
+        /// </summary>
+        /// <param name="id">Id món cần xóa.</param>
         public virtual async Task DeleteAsync(Guid id)
         {
             // Item 155: deleting a product needs products.delete.

@@ -132,15 +132,15 @@ namespace PhuThuongStickyRice.Application.Orders
                 .ToList();
 
             var hours = new List<HourlySalesRowDto>();
-            for (var h = DayStartHour; h <= DayEndHour; h++)
+            for (var hour = DayStartHour; hour <= DayEndHour; hour++)
             {
-                buckets.QuantitiesPerHour.TryGetValue(h, out var products);
+                buckets.QuantitiesPerHour.TryGetValue(hour, out var products);
                 var quantities = productsOrdered
-                    .Select(p => products != null && products.TryGetValue(p, out var q) ? q : 0L)
+                    .Select(p => products != null && products.TryGetValue(p, out var quantity) ? quantity : 0L)
                     .ToList();
                 hours.Add(new HourlySalesRowDto
                 {
-                    Hour = h,
+                    Hour = hour,
                     Quantities = quantities,
                     Total = quantities.Sum()
                 });

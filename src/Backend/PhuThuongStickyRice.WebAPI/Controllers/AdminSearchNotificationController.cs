@@ -31,10 +31,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// </summary>
         [HttpGet("search")]
         public async Task<ActionResult<GlobalSearchResultDto>> Search(
-            [FromQuery] string q,
+            [FromQuery(Name = "q")] string query,
             CancellationToken cancellationToken = default)
         {
-            return Ok(await _searchNotification.SearchAsync(q));
+            return Ok(await _searchNotification.SearchAsync(query));
         }
 
         /// <summary>

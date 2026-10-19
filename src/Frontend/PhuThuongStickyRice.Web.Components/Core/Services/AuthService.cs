@@ -30,7 +30,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         /// </summary>
         public async Task<CustomerAuthResult> LoginAsync(string usernameOrEmail, string password)
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            using var response = await _httpClient.PostAsJsonAsync(
                 "api/auth/login",
                 new { UsernameOrEmail = usernameOrEmail?.Trim(), Password = password });
 
@@ -52,7 +52,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         /// </summary>
         public async Task<CustomerAuthResult> RegisterAsync(string phone, string password, string fullName)
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            using var response = await _httpClient.PostAsJsonAsync(
                 "api/auth/register",
                 new { Phone = phone?.Trim(), Password = password, FullName = fullName?.Trim() });
 
@@ -75,7 +75,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         {
             await SetBearerToken();
 
-            var response = await _httpClient.PostAsJsonAsync(
+            using var response = await _httpClient.PostAsJsonAsync(
                 "api/auth/change-password",
                 new { CurrentPassword = currentPassword, NewPassword = newPassword });
 
@@ -96,7 +96,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         public async Task UpdateProfileAsync(string userName, string email, string phoneNumber)
         {
             await SetBearerToken();
-            var response = await _httpClient.PutAsJsonAsync(
+            using var response = await _httpClient.PutAsJsonAsync(
                 "api/auth/profile",
                 new { UserName = userName, Email = email, PhoneNumber = phoneNumber });
             if (response.IsSuccessStatusCode) return;
@@ -116,7 +116,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         public async Task SendStaffChatAsync(string message)
         {
             await SetBearerToken();
-            var response = await _httpClient.PostAsJsonAsync("api/staff-chat", new { Message = message });
+            using var response = await _httpClient.PostAsJsonAsync("api/staff-chat", new { Message = message });
             if (response.IsSuccessStatusCode) return;
             var body = await response.Content.ReadAsStringAsync();
             throw new InvalidOperationException(ExtractMessage(body));
@@ -125,7 +125,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
         public async Task RequestPasswordResetOtpAsync(string phone)
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            using var response = await _httpClient.PostAsJsonAsync(
                 "api/auth/forgot-password/request",
                 new { Phone = phone });
 
@@ -140,7 +140,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
         public async Task ResetPasswordWithOtpAsync(string phone, string otp, string newPassword)
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            using var response = await _httpClient.PostAsJsonAsync(
                 "api/auth/forgot-password/reset",
                 new { Phone = phone, Otp = otp, NewPassword = newPassword });
 

@@ -154,11 +154,11 @@ namespace PhuThuongStickyRice.Application.Common
         private async Task<PostResult> PostAsync(
             WebhookEndpoint endpoint, string eventName, object payload)
         {
-            var at = _clock.Now;
+            var sentAt = _clock.Now;
             var body = System.Text.Json.JsonSerializer.Serialize(new
             {
                 @event = eventName,
-                at,
+                at = sentAt,
                 data = payload
             });
 
@@ -188,7 +188,7 @@ namespace PhuThuongStickyRice.Application.Common
             return new PostResult
             {
                 Endpoint = endpoint,
-                At = at,
+                At = sentAt,
                 Success = success,
                 StatusCode = statusCode,
                 Error = error

@@ -51,35 +51,81 @@ namespace PhuThuongStickyRice.Application.Orders
             _asyncExecuter = asyncExecuter;
         }
 
+        // Báo cáo mặc định lùi về trước bao nhiêu ngày (6 = hôm nay + 6 ngày trước = 7 ngày).
+        private const int DefaultReportLookbackDays = 6;
+        // Biên lãi tính theo phần trăm, làm tròn đến 1 chữ số thập phân.
+        private const decimal PercentFactor = 100m;
+        private const int MarginRoundDecimals = 1;
+        // Biên lãi dưới ngưỡng này được gợi ý "tăng giá / tìm nguyên liệu rẻ hơn".
+        private const decimal LowMarginPercentThreshold = 30m;
+        // Số tên món tối đa liệt kê trong gợi ý "chưa nhập giá vốn".
+        private const int MaxUnpricedNamesInSuggestion = 3;
+
         public virtual async Task<GrossProfitReportDto> GetGrossProfitReportAsync(DateTime? from, DateTime? to)
         {
-            var today = VietnamTime.Today();
-            var toDate = (to?.Date ?? today).Date;
-            var fromDate = (from?.Date ?? toDate.AddDays(-6)).Date;
-            if (fromDate > toDate)
-            {
-                fromDate = toDate.AddDays(-6);
-            }
-
+            var (fromDate, toDate) = ResolveReportDateRange(from, to);
             var fromUtc = VietnamTime.DayStartUtc(fromDate);
             var toUtc = VietnamTime.DayEndExclusiveUtc(toDate);
 
+            var lineGroups = await QueryLineAggregatesAsync(fromUtc, toUtc);
+            var rows = BuildRowDtos(lineGroups);
+
+            return new GrossProfitReportDto
+            {
+                From = fromDate,
+                To = toDate,
+                Rows = rows,
+                Total = BuildReportTotal(rows),
+                Suggestions = BuildSuggestions(rows),
+                HasUnpricedProducts = rows.Any(r => r.CostMissing),
+                CostBasisNote = "Giá vốn tính theo giá hiện tại của từng món. " +
+                    "Hệ thống không lưu lịch sử thay đổi giá vốn, nên nếu bạn sửa giá vốn, " +
+                    "số liệu lãi của các kỳ trước cũng sẽ thay đổi theo."
+            };
+        }
+
+        /// <summary>Kết quả tổng hợp doanh thu/số lượng/giá vốn theo từng món, tính ngay trong SQL.</summary>
+        private sealed class LineAggregate
+        {
+            public Guid ProductId { get; set; }
+            public string? ProductName { get; set; }
+            public long QuantitySold { get; set; }
+            public decimal Revenue { get; set; }
+            public decimal UnitCost { get; set; }
+        }
+
+        /// <summary>Chuẩn hóa khoảng ngày báo cáo: mặc định 7 ngày gần nhất (tính cả hôm nay).</summary>
+        private static (DateTime FromDate, DateTime ToDate) ResolveReportDateRange(DateTime? from, DateTime? to)
+        {
+            var today = VietnamTime.Today();
+            var toDate = (to?.Date ?? today).Date;
+            var fromDate = (from?.Date ?? toDate.AddDays(-DefaultReportLookbackDays)).Date;
+            if (fromDate > toDate)
+            {
+                fromDate = toDate.AddDays(-DefaultReportLookbackDays);
+            }
+
+            return (fromDate, toDate);
+        }
+
+        /// <summary>
+        /// Tổng hợp doanh thu/số lượng theo từng món ngay trong SQL thay vì nạp
+        /// toàn bộ order + line vào bộ nhớ (khoảng ngày không giới hạn — admin
+        /// có thể yêu cầu cả năm). Giá vốn dùng giá HIỆN TẠI của từng món
+        /// (tính hồi tố, giống lookup costMap trước đây). Dòng nào không có
+        /// product row (combo) join NULL → giá vốn bằng 0.
+        /// </summary>
+        private async Task<List<LineAggregate>> QueryLineAggregatesAsync(DateTime fromUtc, DateTime toUtc)
+        {
             var orderQueryable = await _orders.GetQueryableAsync();
             var rangeOrders = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled
                 && x.CreatedAt >= fromUtc
                 && x.CreatedAt < toUtc);
 
-            // Perf: aggregate lines in SQL instead of materializing every order
-            // + line in range (range is unbounded — admin can request a full
-            // year). Same numbers as before; cost uses each product's CURRENT
-            // cost price (retroactive, like the old costMap lookup). Lines
-            // whose id has no product row (combos) join NULL → zero cost.
-            // NOTE: ProductName comes from the product's current name map via
-            // the lines' names (Max in SQL); the old code took the first line's
-            // name in arbitrary order, so any deterministic choice is
-            // equivalent — row count and all numbers are unchanged.
+            // NOTE: ProductName lấy Max trong SQL cho xác định; code cũ lấy tên
+            // dòng đầu theo thứ tự bất kỳ nên mọi lựa chọn xác định đều tương đương.
             var productQueryable = await _products.GetQueryableAsync();
-            var lineGroups = await _asyncExecuter.ToListAsync(
+            return await _asyncExecuter.ToListAsync(
                 from o in rangeOrders
                 from l in o.Lines
                 join p in productQueryable on l.ProductId equals p.Id into ps
@@ -92,7 +138,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     ProductName = l.ProductName
                 }
                 by l.ProductId into g
-                select new
+                select new LineAggregate
                 {
                     ProductId = g.Key,
                     ProductName = g.Max(x => x.ProductName),
@@ -100,8 +146,12 @@ namespace PhuThuongStickyRice.Application.Orders
                     Revenue = g.Sum(x => x.Revenue),
                     UnitCost = g.Max(x => x.UnitCost)
                 });
+        }
 
-            var rows = lineGroups
+        /// <summary>Ánh xạ kết quả tổng hợp sang DTO từng dòng, sắp xếp theo lãi giảm dần.</summary>
+        private static List<GrossProfitRowDto> BuildRowDtos(List<LineAggregate> lineGroups)
+        {
+            return lineGroups
                 .Select(g =>
                 {
                     var cost = g.QuantitySold * g.UnitCost;
@@ -116,7 +166,7 @@ namespace PhuThuongStickyRice.Application.Orders
                         Cost = cost,
                         Profit = profit,
                         MarginPercent = g.Revenue > 0
-                            ? Math.Round(profit / g.Revenue * 100m, 1)
+                            ? Math.Round(profit / g.Revenue * PercentFactor, MarginRoundDecimals)
                             : (decimal?)null,
                         CostPrice = g.UnitCost,
                         CostMissing = g.UnitCost <= 0m
@@ -125,32 +175,25 @@ namespace PhuThuongStickyRice.Application.Orders
                 .OrderByDescending(r => r.Profit)
                 .ThenByDescending(r => r.Revenue)
                 .ToList();
+        }
 
+        /// <summary>Tính dòng tổng cộng của báo cáo từ các dòng chi tiết.</summary>
+        private static GrossProfitTotalDto BuildReportTotal(List<GrossProfitRowDto> rows)
+        {
             var totalQty = rows.Sum(r => r.QuantitySold);
             var totalRevenue = rows.Sum(r => r.Revenue);
             var totalCost = rows.Sum(r => r.Cost);
             var totalProfit = rows.Sum(r => r.Profit);
 
-            return new GrossProfitReportDto
+            return new GrossProfitTotalDto
             {
-                From = fromDate,
-                To = toDate,
-                Rows = rows,
-                Total = new GrossProfitTotalDto
-                {
-                    QuantitySold = totalQty,
-                    Revenue = totalRevenue,
-                    Cost = totalCost,
-                    Profit = totalProfit,
-                    MarginPercent = totalRevenue > 0
-                        ? Math.Round(totalProfit / totalRevenue * 100m, 1)
-                        : (decimal?)null
-                },
-                Suggestions = BuildSuggestions(rows),
-                HasUnpricedProducts = rows.Any(r => r.CostMissing),
-                CostBasisNote = "Giá vốn tính theo giá hiện tại của từng món. " +
-                    "Hệ thống không lưu lịch sử thay đổi giá vốn, nên nếu bạn sửa giá vốn, " +
-                    "số liệu lãi của các kỳ trước cũng sẽ thay đổi theo."
+                QuantitySold = totalQty,
+                Revenue = totalRevenue,
+                Cost = totalCost,
+                Profit = totalProfit,
+                MarginPercent = totalRevenue > 0
+                    ? Math.Round(totalProfit / totalRevenue * PercentFactor, MarginRoundDecimals)
+                    : (decimal?)null
             };
         }
 
@@ -201,8 +244,8 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 suggestions.Add(
                     $"Có {unpriced.Count} món chưa nhập giá vốn " +
-                    $"({string.Join(", ", unpriced.Take(3).Select(r => r.ProductName))}" +
-                    $"{(unpriced.Count > 3 ? ",…" : "")}) — lãi các món này đang tính bằng 100% doanh thu. " +
+                    $"({string.Join(", ", unpriced.Take(MaxUnpricedNamesInSuggestion).Select(r => r.ProductName))}" +
+                    $"{(unpriced.Count > MaxUnpricedNamesInSuggestion ? ",…" : "")}) — lãi các món này đang tính bằng 100% doanh thu. " +
                     "Nhập giá vốn ở bảng bên dưới để số liệu chính xác.");
             }
 
@@ -226,7 +269,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     .Where(r => r.MarginPercent.HasValue)
                     .OrderBy(r => r.MarginPercent)
                     .FirstOrDefault();
-                if (lowestMargin != null && lowestMargin.MarginPercent < 30m
+                if (lowestMargin != null && lowestMargin.MarginPercent < LowMarginPercentThreshold
                     && (highMarginLowVolume == null || lowestMargin.ProductId != highMarginLowVolume.ProductId))
                 {
                     suggestions.Add(

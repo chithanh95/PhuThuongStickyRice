@@ -96,6 +96,10 @@ namespace PhuThuongStickyRice.Application.Orders
             public decimal PriceAmount { get; set; }
         }
 
+        // Số lượng mỗi dòng món bị kẹp trong khoảng này khi parse từ text tự do.
+        private const int MinParsedQuantity = 1;
+        private const int MaxParsedQuantity = 99;
+
         public static ParseOrderResult Parse(string text, IEnumerable<ParseProductCandidate> products)
         {
             var result = new ParseOrderResult();
@@ -109,58 +113,88 @@ namespace PhuThuongStickyRice.Application.Orders
             result.IsOrderIntent = OrderKeywords.Any(k =>
                 Regex.IsMatch(normalized, @"\b" + Regex.Escape(k) + @"\b"));
 
-            var candidates = (products ?? Enumerable.Empty<ParseProductCandidate>())
-                .Where(p => p != null && !string.IsNullOrWhiteSpace(p.Name))
-                .Select(p => new { Product = p, Key = Normalize(p.Name) })
-                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
-                // Longest names first so "xôi ngũ sắc" wins over "xôi".
-                .OrderByDescending(x => x.Key.Length)
-                .ToList();
-
+            var candidates = BuildCandidates(products);
             var consumed = new StringBuilder(normalized);
 
             foreach (var c in candidates)
             {
-                var pattern = $@"(?<qty>\d+|{string.Join("|", TextNumbers.Keys)})\s*{Regex.Escape(c.Key)}|\b{Regex.Escape(c.Key)}\b";
-                var match = Regex.Match(consumed.ToString(), pattern);
-                if (!match.Success)
+                if (TryParseCandidate(c, consumed, out var item))
                 {
-                    continue;
+                    result.Items.Add(item);
+                    result.IsOrderIntent = true;
                 }
-
-                var qty = 1;
-                var qtyGroup = match.Groups["qty"];
-                if (qtyGroup.Success)
-                {
-                    if (int.TryParse(qtyGroup.Value, out var n))
-                    {
-                        qty = n;
-                    }
-                    else if (TextNumbers.TryGetValue(qtyGroup.Value, out var t))
-                    {
-                        qty = t;
-                    }
-                }
-
-                result.Items.Add(new ParsedOrderItem
-                {
-                    ProductId = c.Product.Id,
-                    ProductName = c.Product.Name,
-                    Quantity = Math.Max(1, Math.Min(99, qty)),
-                    Price = c.Product.PriceAmount
-                });
-
-                // Blank out the matched span so shorter names can't re-match it.
-                for (var i = match.Index; i < match.Index + match.Length && i < consumed.Length; i++)
-                {
-                    consumed[i] = ' ';
-                }
-
-                result.IsOrderIntent = true;
             }
 
             result.UnmatchedText = Regex.Replace(consumed.ToString(), @"\s+", " ").Trim();
             return result;
+        }
+
+        /// <summary>
+        /// Chuẩn bị danh sách ứng viên: chuẩn hóa tên món, tên dài khớp trước
+        /// để "xôi ngũ sắc" thắng "xôi".
+        /// </summary>
+        private static List<(ParseProductCandidate Product, string Key)> BuildCandidates(
+            IEnumerable<ParseProductCandidate> products)
+        {
+            return (products ?? Enumerable.Empty<ParseProductCandidate>())
+                .Where(p => p != null && !string.IsNullOrWhiteSpace(p.Name))
+                .Select(p => (Product: p, Key: Normalize(p.Name)))
+                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+                // Tên dài khớp trước để "xôi ngũ sắc" thắng "xôi".
+                .OrderByDescending(x => x.Key.Length)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Thử khớp một món trong text: parse số lượng, thêm dòng món, rồi xóa
+        /// vùng đã khớp khỏi text để tên ngắn hơn không khớp lại nó.
+        /// </summary>
+        private static bool TryParseCandidate(
+            (ParseProductCandidate Product, string Key) candidate,
+            StringBuilder consumed,
+            out ParsedOrderItem item)
+        {
+            item = null;
+
+            var pattern = $@"(?<qty>\d+|{string.Join("|", TextNumbers.Keys)})\s*{Regex.Escape(candidate.Key)}|\b{Regex.Escape(candidate.Key)}\b";
+            var match = Regex.Match(consumed.ToString(), pattern);
+            if (!match.Success)
+            {
+                return false;
+            }
+
+            var qty = ParseQuantity(match.Groups["qty"]);
+            item = new ParsedOrderItem
+            {
+                ProductId = candidate.Product.Id,
+                ProductName = candidate.Product.Name,
+                Quantity = Math.Max(MinParsedQuantity, Math.Min(MaxParsedQuantity, qty)),
+                Price = candidate.Product.PriceAmount
+            };
+
+            // Xóa vùng đã khớp (thay bằng khoảng trắng) để tên món ngắn hơn không khớp lại nó.
+            for (var i = match.Index; i < match.Index + match.Length && i < consumed.Length; i++)
+            {
+                consumed[i] = ' ';
+            }
+
+            return true;
+        }
+
+        /// <summary>Đọc số lượng từ nhóm regex: số ("3") hoặc chữ ("ba"); mặc định 1.</summary>
+        private static int ParseQuantity(Group qtyGroup)
+        {
+            if (!qtyGroup.Success)
+            {
+                return MinParsedQuantity;
+            }
+
+            if (int.TryParse(qtyGroup.Value, out var n))
+            {
+                return n;
+            }
+
+            return TextNumbers.TryGetValue(qtyGroup.Value, out var t) ? t : MinParsedQuantity;
         }
     }
 }
