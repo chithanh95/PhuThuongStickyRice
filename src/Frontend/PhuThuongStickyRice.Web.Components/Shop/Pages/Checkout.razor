@@ -378,31 +378,40 @@ else
                     }
                     <div class="form-group">
                         <label for="co-name">@AppI18n.T("common.name") *</label>
-                        <input id="co-name" class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
+                        @* A11y-1610: lỗi validation gắn với input qua aria-describedby +
+                           aria-invalid để trình đọc màn hình đọc được lỗi khi focus.
+                           Áp dụng cùng pattern cho mọi field có lỗi bên dưới. *@
+                        <input id="co-name" class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A"
+                               aria-invalid="@(!string.IsNullOrEmpty(_nameError) ? "true" : null)"
+                               aria-describedby="@(!string.IsNullOrEmpty(_nameError) ? "co-name-error" : null)" />
                         @if (!string.IsNullOrEmpty(_nameError))
                         {
-                            <small class="text-danger">@_nameError</small>
+                            <small class="text-danger" id="co-name-error">@_nameError</small>
                         }                    </div>
                     <div class="form-group">
                         <label for="co-phone">@AppI18n.T("common.phone") *</label>
                         <input id="co-phone" class="form-control @FieldClass(_phoneError)" value="@_order.CustomerPhone"
                                @oninput="OnPhoneInputAsync" @onblur="LookupLastOrderAsync"
-                               placeholder="0901234567" inputmode="tel" maxlength="11" />
+                               placeholder="0901234567" inputmode="tel" maxlength="11"
+                               aria-invalid="@(!string.IsNullOrEmpty(_phoneError) ? "true" : null)"
+                               aria-describedby="@(!string.IsNullOrEmpty(_phoneError) ? "co-phone-error" : null)" />
                         @if (_lookingUpPhone)
                         {
-                            <small class="text-muted d-block">⏳ Đang tìm thông tin đơn cũ...</small>
+                            <small class="text-muted d-block" role="status">⏳ Đang tìm thông tin đơn cũ...</small>
                         }
                         @if (!string.IsNullOrEmpty(_phoneError))
                         {
-                            <small class="text-danger">@_phoneError</small>
+                            <small class="text-danger" id="co-phone-error">@_phoneError</small>
                         }
                     </div>
                     <div class="form-group">
                         <label for="co-email">Email (tùy chọn — để nhận mail xác nhận đơn)</label>
-                        <input id="co-email" class="form-control @FieldClass(_emailError)" @bind="_order.CustomerEmail" placeholder="ban@example.com" />
+                        <input id="co-email" class="form-control @FieldClass(_emailError)" @bind="_order.CustomerEmail" placeholder="ban@example.com"
+                               aria-invalid="@(!string.IsNullOrEmpty(_emailError) ? "true" : null)"
+                               aria-describedby="@(!string.IsNullOrEmpty(_emailError) ? "co-email-error" : null)" />
                         @if (!string.IsNullOrEmpty(_emailError))
                         {
-                            <small class="text-danger">@_emailError</small>
+                            <small class="text-danger" id="co-email-error">@_emailError</small>
                         }
                     </div>
                     @if (_fulfillment == "ShipperPickup")
@@ -432,19 +441,23 @@ else
                         <div class="form-group">
                             <label for="co-recipient-name">Tên người nhận *</label>
                             <input id="co-recipient-name" class="form-control @FieldClass(_recipientNameError)" @bind="_order.RecipientName"
-                                   placeholder="Tên người nhận hàng" />
+                                   placeholder="Tên người nhận hàng"
+                                   aria-invalid="@(!string.IsNullOrEmpty(_recipientNameError) ? "true" : null)"
+                                   aria-describedby="@(!string.IsNullOrEmpty(_recipientNameError) ? "co-recipient-name-error" : null)" />
                             @if (!string.IsNullOrEmpty(_recipientNameError))
                             {
-                                <small class="text-danger">@_recipientNameError</small>
+                                <small class="text-danger" id="co-recipient-name-error">@_recipientNameError</small>
                             }
                         </div>
                         <div class="form-group">
                             <label for="co-recipient-phone">SĐT người nhận *</label>
                             <input id="co-recipient-phone" class="form-control @FieldClass(_recipientPhoneError)" @bind="_order.RecipientPhone"
-                                   placeholder="0901234567" />
+                                   placeholder="0901234567"
+                                   aria-invalid="@(!string.IsNullOrEmpty(_recipientPhoneError) ? "true" : null)"
+                                   aria-describedby="@(!string.IsNullOrEmpty(_recipientPhoneError) ? "co-recipient-phone-error" : null)" />
                             @if (!string.IsNullOrEmpty(_recipientPhoneError))
                             {
-                                <small class="text-danger">@_recipientPhoneError</small>
+                                <small class="text-danger" id="co-recipient-phone-error">@_recipientPhoneError</small>
                             }
                         </div>
                     }
@@ -461,19 +474,23 @@ else
                                 <div class="form-group mb-2">
                                     <label for="co-tax-code">Mã số thuế *</label>
                                     <input id="co-tax-code" class="form-control @FieldClass(_taxCodeError)" @bind="_order.TaxCode"
-                                           placeholder="0101234567" />
+                                           placeholder="0101234567"
+                                           aria-invalid="@(!string.IsNullOrEmpty(_taxCodeError) ? "true" : null)"
+                                           aria-describedby="@(!string.IsNullOrEmpty(_taxCodeError) ? "co-tax-code-error" : null)" />
                                     @if (!string.IsNullOrEmpty(_taxCodeError))
                                     {
-                                        <small class="text-danger">@_taxCodeError</small>
+                                        <small class="text-danger" id="co-tax-code-error">@_taxCodeError</small>
                                     }
                                 </div>
                                 <div class="form-group mb-1">
                                     <label for="co-company-name">Tên công ty *</label>
                                     <input id="co-company-name" class="form-control @FieldClass(_companyNameError)" @bind="_order.CompanyName"
-                                           placeholder="Công ty TNHH ..." />
+                                           placeholder="Công ty TNHH ..."
+                                           aria-invalid="@(!string.IsNullOrEmpty(_companyNameError) ? "true" : null)"
+                                           aria-describedby="@(!string.IsNullOrEmpty(_companyNameError) ? "co-company-name-error" : null)" />
                                     @if (!string.IsNullOrEmpty(_companyNameError))
                                     {
-                                        <small class="text-danger">@_companyNameError</small>
+                                        <small class="text-danger" id="co-company-name-error">@_companyNameError</small>
                                     }
                                 </div>
                             </div>

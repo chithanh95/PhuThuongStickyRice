@@ -14,7 +14,8 @@
             @foreach (var lang in Langs)
             {
                 <button type="button" class="lang-item @(AppI18n.CurrentLanguage == lang.Code ? "active" : "")"
-                        @onclick="() => SelectLang(lang.Code)" role="menuitem">
+                        @onclick="() => SelectLang(lang.Code)" role="menuitem"
+                        aria-current="@(AppI18n.CurrentLanguage == lang.Code ? "true" : null)">
                     <img src="@FlagUrl(lang.Code)" alt="@lang.Name" class="lang-flag" />
                     <span class="lang-name">@lang.Name</span>
                 </button>

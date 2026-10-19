@@ -150,6 +150,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 throw new DomainException("Số tiền phải khác 0.");
             }
 
+            // Giữ đúng hợp đồng trong docstring AdjustWalletInput: trị tuyệt
+            // đối của số tiền nằm trong 1.000đ – 100.000.000đ (số âm = trừ tay).
+            if (Math.Abs(input.Amount) < 1000)
+            {
+                throw new DomainException("Số tiền điều chỉnh tối thiểu 1.000đ.");
+            }
+
             var account = await GetOrCreateAsync(normalized);
             var newBalance = account.Balance + input.Amount;
             if (newBalance < 0)

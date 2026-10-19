@@ -1,7 +1,9 @@
 ﻿
 @if (ShowDialog)
 {
-    <div class="modal fade show d-block" id="exampleModal" tabindex="-1" role="dialog">
+    @* A11y-1610: aria-modal + aria-labelledby (trỏ tới #titleLabel) để trình đọc
+       màn hình biết đây là hộp thoại modal và đọc đúng tiêu đề. *@
+    <div class="modal fade show d-block" id="exampleModal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="titleLabel">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">

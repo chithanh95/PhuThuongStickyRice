@@ -95,13 +95,21 @@ namespace PhuThuongStickyRice.Application.Shop
                     loyaltyPoints: current?.Points ?? loyalty.Points);
             }
 
-            loyalty.Points += points;
-            loyalty.TotalEarned += points;
-            loyalty.UpdatedAt = DateTime.UtcNow;
-            await _loyaltyAccounts.UpdateAsync(loyalty, autoSave: true);
+            // Cộng điểm nguyên tử tại DB (bug-hunt run 16:05): bản cũ đọc
+            // loyalty.Points vào memory rồi += và UpdateAsync — nếu cùng lúc
+            // có luồng khác đổi điểm của SĐT này (tích điểm khi đơn hoàn
+            // thành, đổi điểm ở checkout, thưởng giới thiệu) thì 1 bên ghi
+            // đè làm mất phần cộng của bên kia. TryIncrementPointsAsync chạy
+            // UPDATE ... SET Points = Points + @points ... nên không mất mát;
+            // 3 field cộng/ghi giống hệt bản cũ (Points, TotalEarned, UpdatedAt).
+            var incremented = await _loyaltyAccounts.TryIncrementPointsAsync(normalized, points);
+            if (!incremented)
+            {
+                throw new DomainException("Không cộng được điểm tích lũy, vui lòng thử lại.");
+            }
 
             return await BuildResultAsync(normalized, today,
-                alreadyCheckedIn: false, pointsAwarded: points, loyaltyPoints: loyalty.Points);
+                alreadyCheckedIn: false, pointsAwarded: points, loyaltyPoints: loyalty.Points + points);
         }
 
         /// <summary>

@@ -141,7 +141,11 @@
 
     .form-check-label {
         padding: 8px 0;
-        display: inline-block;
+        /* UIUX run 16:10 Agent1 FIX 3: inline-block -> block — cả hàng
+           (không chỉ phần chữ) đều bấm được để chọn hình thức nhận hàng /
+           thanh toán, người lớn tuổi dễ chọn hơn. Input radio/checkbox đang
+           position:absolute nên không xô layout. */
+        display: block;
     }
 
     /* iOS không auto-zoom khi focus input >=16px; input cao 44px dễ bấm */
@@ -295,3 +299,17 @@ html.dark .co-mobile-bar .co-total small {
     }
 }
 /* ===== END UIUX run 15:52 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 16:10 — Agent1 Mobile =====
+   FIX 4 — Cụm mã giảm giá (Checkout.razor:668): input #co-discount cao 44px
+   (rule mobile chung cho .form-control) trong khi nút "Áp dụng" bên cạnh có
+   inline style min-height:48px → 2 ô lệch chiều cao, cụm input-group trông
+   gãy trên mobile. Nâng input lên 48px cho ngang hàng nút.
+   (Scope #co-discount nên không chạm ô "Số điểm muốn đổi" của input-group
+   đổi điểm — ô đó nút "Đổi điểm" đã 44px theo rule .co-summary .btn.) */
+@media (max-width: 767.98px) {
+    #co-discount {
+        min-height: 48px;
+    }
+}
+/* ===== END UIUX run 16:10 - Agent1 FIX 4 ===== */

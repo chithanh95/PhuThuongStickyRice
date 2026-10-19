@@ -535,7 +535,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             var photoUrl = await SaveReviewPhotoAsync(file, cancellationToken);
-            return Ok(new { photoUrl });
+            // Trả key "url" (không phải "photoUrl") cho khớp với 2 endpoint
+            // upload ảnh còn lại (products, landing) và property Url phía
+            // frontend (ShopEngagementService.ReviewPhotoUploadResult) —
+            // bug-hunt run 16:05: key "photoUrl" không map được vào Url nên
+            // frontend luôn nhận null, ảnh đánh giá không bao giờ đính kèm.
+            return Ok(new { url = photoUrl });
         }
 
         /// <summary>

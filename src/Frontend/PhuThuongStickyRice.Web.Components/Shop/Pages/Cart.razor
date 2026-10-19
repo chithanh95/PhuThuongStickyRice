@@ -136,7 +136,9 @@ else
                                              Min="0" Max="99" />
                         </td>
                         <td class="text-right">
-                            <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(item.LineKey)">@AppI18n.T("common.delete")</button>
+                            @* A11y-1610: aria-label kèm tên món — trước đây mọi dòng đều đọc
+                               chung chung là "Xóa", người dùng bàn phím không biết xóa món nào. *@
+                            <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(item.LineKey)" aria-label="Xóa @item.ProductName khỏi giỏ hàng">@AppI18n.T("common.delete")</button>
                         </td>
                     </tr>
                 }

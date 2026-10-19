@@ -952,3 +952,15 @@ html.dark .shop-filters-sticky {
     }
 }
 /* ===== END UIUX run 15:38 - Agent1 FIX 5 ===== */
+
+/* ===== UIUX run 16:10 — Agent1 Mobile =====
+   FIX 5 — Dải thông tin giao hàng .shop-info-strip (Shop.razor:77): chữ
+   0.85rem (~13.6px) — thông tin quan trọng (tự book shipper/tự đến lấy,
+   miễn phí ship) nhưng hơi nhỏ với khách lớn tuổi trên mobile. Nâng lên
+   0.95rem trên mobile, giữ nguyên PC. */
+@media (max-width: 767.98px) {
+    .shop-info-strip {
+        font-size: 0.95rem;
+    }
+}
+/* ===== END UIUX run 16:10 - Agent1 FIX 5 ===== */

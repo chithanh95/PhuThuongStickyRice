@@ -57,8 +57,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
             [StringLength(30)]
             public string Phone { get; set; }
 
-            /// <summary>Số dương = nạp tiền, số âm = trừ tay. Phải khác 0 và nằm trong 1.000đ – 100.000.000đ.</summary>
-            [Range(1000, 100000000)]
+            /// <summary>Số dương = nạp tiền, số âm = trừ tay. Phải khác 0 và trị tuyệt đối nằm trong 1.000đ – 100.000.000đ.</summary>
+            [Range(-100000000, 100000000)]
             public decimal Amount { get; set; }
 
             /// <summary>Lý do điều chỉnh (ghi vào lịch sử giao dịch để đối soát).</summary>
