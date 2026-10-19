@@ -848,3 +848,59 @@ html.dark .lx-admin input[type="date"]::-webkit-calendar-picker-indicator {
 html.dark .lx-admin .text-secondary {
     color: #a5a2bd !important;
 }
+
+/* ===== UIUX run 14:05 - Agent2 Dark =====
+   (14 đợt trước đã phủ gần hết; đợt này quét toàn bộ .razor.css + <style>
+   trong .razor + inline style bằng script đối chiếu selector: chỉ còn 3 lỗi
+   MỚI thật — cùng 1 họ: ô input KHÔNG set background/color nên ở dark mode
+   trình duyệt vẽ nền trắng mặc định (UA stylesheet, trang không set
+   color-scheme: dark) lọt thỏm trên nền tối. Không có rule [style*=] nào
+   chết đợt này — đã grep xác minh tất cả còn match markup. */
+
+/* uiux-a2-1405-fix1: ô SĐT trong panel đặt hàng qua chat (landing) */
+   /* Vấn đề: Index.razor:865 .sg-chat-phone — không set background/color,
+   nằm trong .sg-chat-box nền var(--sg-surface) (#262019 ở dark) → trình
+   duyệt vẽ ô trắng chói giữa khung chat tối (đã grep: không rule dark nào
+   phủ selector này). Ô nhập chat bên cạnh (.sg-chat-input input) đã có
+   background:transparent + color:inherit nên không bị.
+   Fix: theo đúng mẫu ô textarea dark đã có trong Index.razor.css:2228
+   (.sg-voice-review textarea): nền #1a1410, chữ #f0e8d8; placeholder
+   #b8a88f (~7.9:1 trên #1a1410) đồng bộ các fix placeholder trước. */
+html.dark .sg-chat-phone {
+    background: #1a1410;
+    border-color: var(--sg-line);
+    color: #f0e8d8;
+}
+html.dark .sg-chat-phone::placeholder {
+    color: #b8a88f;
+}
+
+/* uiux-a2-1405-fix2: 2 ô SĐT form bình chọn món + đăng ký lớp học (landing) */
+   /* Vấn đề: Index.razor:589/626 .sg-loyal-form input — không set
+   background/color, nằm trên nền trang dark #1c1712 (html.dark .sg-page)
+   → 2 ô trắng lọt giữa section tối. Đã grep: không rule dark nào phủ.
+   Fix: cùng mẫu fix1. */
+html.dark .sg-loyal-form input {
+    background: #1a1410;
+    border-color: var(--sg-line);
+    color: #f0e8d8;
+}
+html.dark .sg-loyal-form input::placeholder {
+    color: #b8a88f;
+}
+
+/* uiux-a2-1405-fix3: ô SĐT vòng quay may mắn (landing) */
+   /* Vấn đề: Index.razor.css:1698 .sg-spin-form input — không set
+   background/color, nằm trong .sg-spin-box nền var(--sg-surface)
+   (#262019 ở dark) → ô trắng lọt giữa box tối. Đã grep: không rule
+   dark nào phủ. Fix: cùng mẫu fix1. */
+html.dark .sg-spin-form input {
+    background: #1a1410;
+    border-color: var(--sg-line);
+    color: #f0e8d8;
+}
+html.dark .sg-spin-form input::placeholder {
+    color: #b8a88f;
+}
+
+/* ===== END UIUX run 14:05 - Agent2 ===== */
