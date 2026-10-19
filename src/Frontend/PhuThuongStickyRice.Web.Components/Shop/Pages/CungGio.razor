@@ -132,8 +132,15 @@ else
         }
 
         var ngayGio = _model.EventDate.Value.ToString("dd/MM/yyyy");
-        _model.Notes = $"[Cúng giỗ — ngày {ngayGio} — {_model.Quantity} mâm — Mâm {_loaiMam}]"
-            + (string.IsNullOrWhiteSpace(_model.Notes) ? string.Empty : " " + _model.Notes.Trim());
+        // Bug-hunt 2026-10-19: SubmitAsync gắn prefix vào _model.Notes TRƯỚC khi gọi API —
+        // nếu request lỗi mạng và khách bấm "Gửi lại", prefix bị gắn 2 lần vào ghi chú.
+        // Guard Contains (cùng pattern DatTiec.razor) để chỉ gắn 1 lần.
+        var cungGioPrefix = $"[Cúng giỗ — ngày {ngayGio} — {_model.Quantity} mâm — Mâm {_loaiMam}]";
+        if (_model.Notes == null || !_model.Notes.Contains("[Cúng giỗ"))
+        {
+            _model.Notes = cungGioPrefix
+                + (string.IsNullOrWhiteSpace(_model.Notes) ? string.Empty : " " + _model.Notes.Trim());
+        }
 
         _submitting = true;
         try

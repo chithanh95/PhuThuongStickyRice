@@ -603,17 +603,28 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         private static int DaysUntilBirthday(DateTime birthDate, DateTime today)
         {
-            var next = new DateTime(today.Year, birthDate.Month, birthDate.Day);
+            // Bug-hunt 2026-10-19: new DateTime(today.Year, 2, 29) ném
+            // ArgumentOutOfRangeException trong năm không nhuận (vd 2026) — block
+            // xử lý 29/2 cũ đặt SAU constructor nên không bao giờ chạy tới, endpoint
+            // quà sinh nhật crash 500 với khách sinh ngày 29/2. Dùng SafeBirthdayDate
+            // (cùng pattern LoyaltyAppService.NextBirthday): 29/2 → 28/2 năm không nhuận.
+            var next = SafeBirthdayDate(birthDate.Month, birthDate.Day, today.Year);
             if (next < today)
             {
-                next = next.AddYears(1);
-            }
-            // 29/2 -> 28/2 năm không nhuận.
-            if (birthDate.Month == 2 && birthDate.Day == 29 && !DateTime.IsLeapYear(next.Year))
-            {
-                next = new DateTime(next.Year, 2, 28);
+                next = SafeBirthdayDate(birthDate.Month, birthDate.Day, today.Year + 1);
             }
             return (next - today).Days;
+        }
+
+        /// <summary>Dựng DateTime an toàn cho ngày sinh: 29/2 → 28/2 vào năm không nhuận.</summary>
+        private static DateTime SafeBirthdayDate(int month, int day, int year)
+        {
+            if (month == 2 && day == 29 && !DateTime.IsLeapYear(year))
+            {
+                day = 28;
+            }
+
+            return new DateTime(year, month, day);
         }
 
         // ============ VIP Club (item 55) ============

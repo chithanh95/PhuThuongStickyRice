@@ -29,6 +29,11 @@
     /// <summary>Thời gian toast tự ẩn sau khi hiện (giây).</summary>
     private static readonly TimeSpan AutoDismissDelay = TimeSpan.FromSeconds(3);
 
+    // Bug-hunt 2026-10-19: guard dispose (cùng pattern HangCho.razor/Faq.razor) —
+    // AutoDismissAsync chạy sau 3s, nếu user đã rời trang thì component đã dispose,
+    // gọi Dismiss → InvokeAsync(StateHasChanged) trên renderer đã hủy.
+    private bool _disposed;
+
     protected override void OnInitialized()
     {
         Toasts.OnShow += HandleShow;
@@ -44,6 +49,7 @@
     private async Task AutoDismissAsync(Guid id)
     {
         await Task.Delay(AutoDismissDelay);
+        if (_disposed) return;
         Dismiss(id);
     }
 
@@ -57,6 +63,7 @@
 
     public void Dispose()
     {
+        _disposed = true;
         Toasts.OnShow -= HandleShow;
     }
 }
