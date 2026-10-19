@@ -220,8 +220,7 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>
         /// Gom đơn (trừ đơn đã hủy) theo SĐT ngay trên SQL: lọc tìm kiếm và
         /// khách ngủ đông (&gt; <see cref="InactiveCutoffDays"/> ngày không mua).
-        /// Có filter tag thì materialize toàn bộ để lọc tag ở memory (lọc tag
-        /// phải đọc bảng tag trước), không thì dừng ở maxRows ngay trên SQL.
+        /// Cả hai nhánh (có/không filter tag) đều dừng ở maxRows ngay trên SQL.
         /// </summary>
         private async Task<List<CustomerAggregateRow>> QueryCustomerAggregatesAsync(
             string searchTerm, bool inactiveOnly, string tag, int maxRows)
@@ -263,10 +262,29 @@ namespace PhuThuongStickyRice.Application.Customer
                     grouped.OrderByDescending(x => x.TotalSpent).Take(maxRows));
             }
 
-            // Tag filter needs the tag rows first; keep the old order:
-            // materialize groups, filter by tag in memory, then Take.
+            // perf-hunt 2026-10-19: tag filter cũng chạy trên SQL thay vì nạp
+            // toàn bộ nhóm khách hàng vào memory. Tên tag do admin tạo thủ
+            // công nên số lượng tên khác nhau rất nhỏ — so khớp tên không phân
+            // biệt hoa/thường trong memory (giữ đúng ngữ nghĩa OrdinalIgnoreCase
+            // trên mọi provider), rồi lọc nhóm khách bằng subquery EXISTS trên
+            // bảng tag. SĐT trong bảng tag đã chuẩn hóa lúc lưu, so với
+            // CustomerPhone thô của đơn nên chỉ khớp khi hai bên bằng nhau —
+            // đúng y hệt FilterByTag cũ (TryGetValue theo SĐT thô).
+            var wanted = tag.Trim();
+            var tagQueryable = await _tags.GetQueryableAsync();
+            var distinctNames = await _asyncExecuter.ToListAsync(
+                tagQueryable.Select(x => x.TagName).Distinct());
+            var matchedNames = distinctNames
+                .Where(n => string.Equals(n, wanted, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            var tagPhones = tagQueryable
+                .Where(x => matchedNames.Contains(x.TagName))
+                .Select(x => x.CustomerPhone);
+
             return await _asyncExecuter.ToListAsync(
-                grouped.OrderByDescending(x => x.TotalSpent));
+                grouped.Where(x => tagPhones.Contains(x.CustomerPhone))
+                    .OrderByDescending(x => x.TotalSpent)
+                    .Take(maxRows));
         }
 
         /// <summary>Giữ lại các dòng có tag trùng tên (không phân biệt hoa/thường).</summary>

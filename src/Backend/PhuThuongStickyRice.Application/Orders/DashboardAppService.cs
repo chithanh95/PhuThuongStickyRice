@@ -308,16 +308,20 @@ namespace PhuThuongStickyRice.Application.Orders
             var (fromDate, toDate) = NormalizeRange(from, to);
             var orderQueryable = await _orders.GetQueryableAsync();
 
-            // Phones (normalized) with at least one non-cancelled order in range.
-            var inRange = await _asyncExecuter.ToListAsync(
+            // perf-hunt 2026-10-19: gộp theo SĐT ngay trên SQL (1 dòng/SĐT kèm
+            // số đơn) thay vì nạp toàn bộ đơn trong khoảng ngày vào memory —
+            // khoảng ngày càng rộng thì bản cũ càng nặng. Tập SĐT (đã Trim,
+            // loại rỗng) GIONG HET bản cũ nên phân loại mới/cũ và số đơn theo
+            // từng nhóm không đổi; FindReturningPhonesAsync giữ nguyên.
+            var inRangeGroups = await _asyncExecuter.ToListAsync(
                 orderQueryable
                     .Where(x => x.Status != OrderStatus.Cancelled
                         && x.CreatedAt >= fromDate && x.CreatedAt < toDate)
-                    .Select(x => new { x.CustomerPhone, x.CreatedAt }));
-            var inRangePhones = inRange
-                .Select(x => (x.CustomerPhone ?? string.Empty).Trim())
-                .Where(x => x.Length > 0)
-                .Distinct()
+                    .GroupBy(x => x.CustomerPhone.Trim())
+                    .Select(g => new { Phone = g.Key, OrderCount = g.LongCount() }));
+            var inRangePhones = inRangeGroups
+                .Where(x => !string.IsNullOrEmpty(x.Phone))
+                .Select(x => x.Phone)
                 .ToList();
 
             var result = new NewReturningCustomersDto();
@@ -333,8 +337,10 @@ namespace PhuThuongStickyRice.Application.Orders
 
             result.NewCustomers = newPhones.Count;
             result.ReturningCustomers = returningPhones.Count;
-            result.NewCustomerOrders = inRange.Count(x => newPhones.Contains((x.CustomerPhone ?? string.Empty).Trim()));
-            result.ReturningCustomerOrders = inRange.Count(x => returningPhones.Contains((x.CustomerPhone ?? string.Empty).Trim()));
+            result.NewCustomerOrders = inRangeGroups
+                .Where(x => newPhones.Contains(x.Phone)).Sum(x => x.OrderCount);
+            result.ReturningCustomerOrders = inRangeGroups
+                .Where(x => returningPhones.Contains(x.Phone)).Sum(x => x.OrderCount);
             return result;
         }
 
