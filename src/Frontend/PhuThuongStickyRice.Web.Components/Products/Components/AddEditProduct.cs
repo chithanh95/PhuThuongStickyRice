@@ -242,16 +242,6 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         private string SerializeImages() =>
             string.IsNullOrEmpty(_imageUrl) ? null : JsonSerializer.Serialize(new[] { _imageUrl });
 
-        private void AddHour()
-        {
-            if (_hours.Count < MaxHourWindows)
-            {
-                _hours.Add(new HourWindow());
-            }
-        }
-
-        private void RemoveHour(HourWindow w) => _hours.Remove(w);
-
         private async Task OnImagesSelected()
         {
             _imageError = null;
