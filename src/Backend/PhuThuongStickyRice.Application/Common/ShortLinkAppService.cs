@@ -29,6 +29,9 @@ namespace PhuThuongStickyRice.Application.Common
         private readonly IRepository<ShortLink, Guid> _links;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Giới hạn server-side cho màn hình admin (bảng tăng dần).</summary>
+        private const int MaxListRows = 500;
+
         public ShortLinkAppService(
             IRepository<ShortLink, Guid> links,
             IAsyncQueryableExecuter asyncExecuter)
@@ -41,8 +44,11 @@ namespace PhuThuongStickyRice.Application.Common
         public virtual async Task<List<ShortLinkDto>> GetListAsync()
         {
             var queryable = await _links.GetQueryableAsync();
+            // perf-hunt 2026-10-19: Take(500) server-side — bảng link ngắn
+            // tăng theo thời gian, không bao giờ materialize toàn bộ cho
+            // màn hình admin (pattern đã dùng ở RefundAppService.GetReportAsync).
             var entities = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.CreatedDateTime));
+                queryable.OrderByDescending(x => x.CreatedDateTime).Take(MaxListRows));
             return entities.Select(MapToDto).ToList();
         }
 

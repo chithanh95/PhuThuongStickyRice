@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Domain.Entities;
@@ -27,16 +28,37 @@ namespace PhuThuongStickyRice.Application.Orders
     {
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IMemoryCache _memoryCache;
+
+        // perf-hunt 2026-10-19: màn hình chờ /cho poll endpoint này mỗi 15s.
+        // Cache 15s — stale tối đa đúng 1 chu kỳ poll, không cần logic
+        // invalidate vì queue number luôn tính lại từ chuỗi đơn trong ngày.
+        private const string NowServingCacheKey = "queue:now-serving";
+        private static readonly TimeSpan NowServingCacheTtl = TimeSpan.FromSeconds(15);
 
         public QueueDisplayAppService(
             IRepository<Order, Guid> orders,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            IMemoryCache memoryCache)
         {
             _orders = orders;
             _asyncExecuter = asyncExecuter;
+            _memoryCache = memoryCache;
         }
 
         public virtual async Task<List<QueueTicketDto>> GetNowServingAsync()
+        {
+            if (_memoryCache.TryGetValue(NowServingCacheKey, out List<QueueTicketDto> cached))
+            {
+                return cached;
+            }
+
+            var result = await QueryNowServingAsync();
+            _memoryCache.Set(NowServingCacheKey, result, NowServingCacheTtl);
+            return result;
+        }
+
+        private async Task<List<QueueTicketDto>> QueryNowServingAsync()
         {
             // Vietnam day bounds (UTC+7, no DST). CreatedAt is stored as UTC.
             var vnNow = VietnamTime.ToVietnamTime(DateTime.UtcNow);
