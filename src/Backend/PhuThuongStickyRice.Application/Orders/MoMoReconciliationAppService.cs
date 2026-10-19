@@ -82,14 +82,29 @@ namespace PhuThuongStickyRice.Application.Orders
                 query = query.Where(x => x.MoMoMatched == matched.Value);
             }
 
-            var list = await _asyncExecuter.ToListAsync(query.Take(MaxReportRows));
+            // perf-hunt 2026-10-19 (run 17:55): project scalar ngay trong SQL thay
+            // vì materialize full entity Order (tracked) — DTO chỉ dùng 8 cột.
+            // Enum.ToString() không translate được nên map sau ToListAsync.
+            var list = await _asyncExecuter.ToListAsync(
+                query.Take(MaxReportRows)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.OrderNumber,
+                        x.CustomerName,
+                        x.CustomerPhone,
+                        TotalAmount = x.TotalAmount.Amount,
+                        x.PaymentStatus,
+                        x.MoMoMatched,
+                        x.CreatedAt
+                    }));
             return list.Select(x => new MoMoOrderDto
             {
                 Id = x.Id,
                 OrderNumber = x.OrderNumber,
                 CustomerName = x.CustomerName,
                 CustomerPhone = x.CustomerPhone,
-                TotalAmount = x.TotalAmount.Amount,
+                TotalAmount = x.TotalAmount,
                 PaymentStatus = x.PaymentStatus.ToString(),
                 MoMoMatched = x.MoMoMatched,
                 CreatedAt = x.CreatedAt

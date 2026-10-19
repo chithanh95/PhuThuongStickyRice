@@ -108,10 +108,25 @@ namespace PhuThuongStickyRice.Application.Orders
             // perf-hunt 2026-10-19: Take(500) server-side — bảng Orders tăng
             // không giới hạn, không bao giờ materialize toàn bộ lịch sử hoàn
             // tiền. Có index IX_Orders_RefundStatus phục vụ filter này.
+            // perf-hunt 2026-10-19 (run 17:55): project scalar ngay trong SQL thay
+            // vì materialize full entity Order (tracked) — DTO chỉ dùng 9 cột.
+            // Enum.ToString() không translate được nên map sau ToListAsync.
             var list = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.RefundStatus != RefundStatus.None)
                     .OrderByDescending(x => x.CreatedAt)
-                    .Take(MaxReportRows));
+                    .Take(MaxReportRows)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.OrderNumber,
+                        x.CustomerName,
+                        x.CustomerPhone,
+                        TotalAmount = x.TotalAmount.Amount,
+                        x.RefundStatus,
+                        x.RefundAmount,
+                        x.PaymentMethod,
+                        x.CreatedAt
+                    }));
 
             return list.Select(x => new RefundReportRowDto
             {
@@ -119,7 +134,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 OrderNumber = x.OrderNumber,
                 CustomerName = x.CustomerName,
                 CustomerPhone = x.CustomerPhone,
-                TotalAmount = x.TotalAmount.Amount,
+                TotalAmount = x.TotalAmount,
                 RefundStatus = x.RefundStatus.ToString(),
                 RefundAmount = x.RefundAmount,
                 PaymentMethod = x.PaymentMethod.ToString(),

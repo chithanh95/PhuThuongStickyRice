@@ -166,10 +166,22 @@ namespace PhuThuongStickyRice.Application.Orders
             var query = await _orders.GetQueryableAsync();
             var filtered = await ApplyFiltersAsync(query, input ?? new GetOrdersInput());
 
+            // perf-hunt 2026-10-19 (run 17:55): project OrderExportRow ngay trong
+            // SQL thay vì materialize full entity Order — WriteOrderRow chỉ
+            // dùng các scalar này; tổng giảm cộng 4 loại được tính ngay trong
+            // projection để SQL làm 1 lần, kết quả Excel không đổi.
             var items = await _asyncExecuter.ToListAsync(
                 filtered
                     .OrderByDescending(x => x.CreatedAt)
-                    .Take(MaxExportRows));
+                    .Take(MaxExportRows)
+                    .Select(x => new OrderExportRow(
+                        x.Id, x.OrderNumber, x.CreatedAt,
+                        x.CustomerName, x.CustomerPhone, x.CustomerAddress,
+                        x.TotalAmount.Amount, x.DeliveryFee.Amount,
+                        x.DiscountAmount.Amount + x.LoyaltyDiscount.Amount
+                            + x.TierDiscount.Amount + x.PromotionDiscountAmount,
+                        x.PaymentMethod, x.PaymentStatus, x.Status,
+                        x.Notes, x.AdminNote)));
             var linesByOrder = await GetLinesByOrderAsync(items.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
@@ -188,7 +200,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <param name="items">Đơn hàng cần xuất, mới nhất lên trước.</param>
         /// <param name="linesByOrder">Dòng món theo Id đơn (load 1 query gộp).</param>
         private static void WriteOrdersSheet(
-            IXLWorksheet sheet, List<Order> items, Dictionary<Guid, List<OrderLine>> linesByOrder)
+            IXLWorksheet sheet, List<OrderExportRow> items, Dictionary<Guid, List<OrderLine>> linesByOrder)
         {
             var headers = new[]
             {
@@ -217,24 +229,17 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Ghi một dòng đơn hàng vào sheet: text món, tổng giảm cộng cả 4 loại
-        /// (mã giảm giá + điểm đổi + giảm hạng thành viên + khuyến mãi —
-        /// trong DB chúng lưu riêng), giờ VN, và trạng thái.
+        /// Ghi một dòng đơn hàng vào sheet: text món, tổng giảm (đã cộng cả 4 loại
+        /// trong projection), giờ VN, và trạng thái.
         /// </summary>
         private static void WriteOrderRow(
-            IXLWorksheet sheet, int rowIndex, Order order,
+            IXLWorksheet sheet, int rowIndex, OrderExportRow order,
             Dictionary<Guid, List<OrderLine>> linesByOrder)
         {
             var itemsText = FormatLines(
                 linesByOrder.TryGetValue(order.Id, out var ol)
                     ? ol
                     : Enumerable.Empty<OrderLine>());
-            // Tổng tiền giảm của 1 đơn = cộng cả 4 loại: mã giảm giá + điểm
-            // đổi + giảm hạng thành viên + khuyến mãi (trong DB chúng lưu riêng).
-            var discountTotal = order.DiscountAmount.Amount
-                + order.LoyaltyDiscount.Amount
-                + order.TierDiscount.Amount
-                + order.PromotionDiscountAmount;
 
             sheet.Cell(rowIndex, 1).Value = order.OrderNumber;
             // Giờ VN cho file Excel (CreatedAt lưu UTC).
@@ -244,9 +249,11 @@ namespace PhuThuongStickyRice.Application.Orders
             sheet.Cell(rowIndex, 4).Value = order.CustomerPhone;
             sheet.Cell(rowIndex, 5).Value = order.CustomerAddress;
             sheet.Cell(rowIndex, 6).Value = itemsText;
-            sheet.Cell(rowIndex, 7).Value = order.TotalAmount.Amount;
-            sheet.Cell(rowIndex, 8).Value = order.DeliveryFee.Amount;
-            sheet.Cell(rowIndex, 9).Value = discountTotal;
+            sheet.Cell(rowIndex, 7).Value = order.TotalAmount;
+            sheet.Cell(rowIndex, 8).Value = order.DeliveryFee;
+            // Tổng tiền giảm của 1 đơn = cộng cả 4 loại: mã giảm giá + điểm
+            // đổi + giảm hạng thành viên + khuyến mãi (đã cộng sẵn trong projection).
+            sheet.Cell(rowIndex, 9).Value = order.DiscountTotal;
             sheet.Cell(rowIndex, 10).Value = OrderLabels.PaymentMethod(order.PaymentMethod);
             sheet.Cell(rowIndex, 11).Value = OrderLabels.PaymentStatus(order.PaymentStatus);
             sheet.Cell(rowIndex, 12).Value = OrderLabels.OrderStatus(order.Status);
@@ -262,6 +269,20 @@ namespace PhuThuongStickyRice.Application.Orders
         /// thay cho anonymous type.
         /// </summary>
         private sealed record DailyRevenueRow(DateTime Date, long OrderCount, decimal Revenue);
+
+        /// <summary>
+        /// Dòng đơn rút gọn cho export Excel: chỉ các cột cần in. Tránh
+        /// materialize full entity Order (tracked, ~49 field + owned Money —
+        /// change-tracker snapshot nặng) cho tối đa 5000 dòng mỗi lần xuất.
+        /// Các enum giữ nguyên để map label (OrderLabels) ở client-side,
+        /// vì enum.ToString() không translate được trong EF Core.
+        /// </summary>
+        private sealed record OrderExportRow(
+            Guid Id, string OrderNumber, DateTime CreatedAt,
+            string CustomerName, string CustomerPhone, string CustomerAddress,
+            decimal TotalAmount, decimal DeliveryFee, decimal DiscountTotal,
+            PaymentMethod PaymentMethod, PaymentStatus PaymentStatus, OrderStatus Status,
+            string Notes, string AdminNote);
 
         /// <summary>
         /// Ghi sheet "Tổng hợp" của file Excel doanh thu: 1 dòng/ngày (số đơn,
@@ -310,7 +331,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <param name="details">Danh sách đơn trong kỳ, mới nhất lên trước.</param>
         /// <param name="linesByOrder">Dòng món theo Id đơn (load 1 query gộp).</param>
         private static void WriteRevenueDetailSheet(
-            XLWorkbook workbook, List<Order> details, Dictionary<Guid, List<OrderLine>> linesByOrder)
+            XLWorkbook workbook, List<OrderExportRow> details, Dictionary<Guid, List<OrderLine>> linesByOrder)
         {
             var sheet = workbook.Worksheets.Add("Chi tiết đơn");
             var headers = new[]
@@ -336,7 +357,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 sheet.Cell(rowIndex, 3).Value = order.CustomerName;
                 sheet.Cell(rowIndex, 4).Value = order.CustomerPhone;
                 sheet.Cell(rowIndex, 5).Value = itemsText;
-                sheet.Cell(rowIndex, 6).Value = order.TotalAmount.Amount;
+                sheet.Cell(rowIndex, 6).Value = order.TotalAmount;
                 sheet.Cell(rowIndex, 6).Style.NumberFormat.Format = "#,##0";
                 sheet.Cell(rowIndex, 7).Value = OrderLabels.PaymentMethod(order.PaymentMethod);
                 sheet.Cell(rowIndex, 8).Value = OrderLabels.OrderStatus(order.Status);
@@ -372,8 +393,19 @@ namespace PhuThuongStickyRice.Application.Orders
                         g.Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m))
                     .OrderBy(x => x.Date));
 
+            // perf-hunt 2026-10-19 (run 17:55): project OrderExportRow ngay trong
+            // SQL thay vì materialize full entity Order (tracked) cho tối đa
+            // 5000 dòng — WriteRevenueDetailSheet chỉ dùng các scalar này.
             var details = await _asyncExecuter.ToListAsync(
-                ranged.OrderByDescending(x => x.CreatedAt).Take(MaxExportRows));
+                ranged.OrderByDescending(x => x.CreatedAt).Take(MaxExportRows)
+                    .Select(x => new OrderExportRow(
+                        x.Id, x.OrderNumber, x.CreatedAt,
+                        x.CustomerName, x.CustomerPhone, x.CustomerAddress,
+                        x.TotalAmount.Amount, x.DeliveryFee.Amount,
+                        x.DiscountAmount.Amount + x.LoyaltyDiscount.Amount
+                            + x.TierDiscount.Amount + x.PromotionDiscountAmount,
+                        x.PaymentMethod, x.PaymentStatus, x.Status,
+                        x.Notes, x.AdminNote)));
             var linesByOrder = await GetLinesByOrderAsync(details.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
