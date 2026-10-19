@@ -39,13 +39,14 @@ else
             <div class="card mb-2" @key="faq.Id">
                 <div class="card-header p-2">
                     <button class="btn btn-link btn-block text-left p-1" type="button"
-                            @onclick="() => Toggle(faq.Id)" aria-expanded="@isOpen">
+                            id="@($"faq-q-{faq.Id}")" aria-expanded="@isOpen" aria-controls="@($"faq-a-{faq.Id}")"
+                            @onclick="() => Toggle(faq.Id)">
                         <strong>@(isOpen ? "▾" : "▸") @faq.Question</strong>
                     </button>
                 </div>
                 @if (isOpen)
                 {
-                    <div class="card-body">@faq.Answer</div>
+                    <div class="card-body" id="@($"faq-a-{faq.Id}")" role="region" aria-labelledby="@($"faq-q-{faq.Id}")">@faq.Answer</div>
                 }
             </div>
         }
@@ -68,7 +69,7 @@ else
 @* FQ3: chưa giải đáp được → hotline + Zalo. *@
 <div class="card mt-4 faq-contact">
     <div class="card-body text-center">
-        <h4>Chưa giải đáp được?</h4>
+        <h2>Chưa giải đáp được?</h2>
         <p class="text-muted">Liên hệ trực tiếp, shop trả lời nhanh trong giờ mở cửa.</p>
         <div>
             @if (!string.IsNullOrWhiteSpace(_hotline))
