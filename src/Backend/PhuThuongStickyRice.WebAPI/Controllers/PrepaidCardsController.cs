@@ -17,16 +17,27 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     // quản lý thẻ trả trước bị 404.
     [Route("api/prepaid-cards")]
     [ApiController]
+    /// <summary>
+    /// API thẻ trả trước: khách mua thẻ (public), tra cứu thẻ theo SĐT (public),
+    /// và nhân viên quản lý danh sách/đổi thẻ tại quán (chỉ Admin).
+    /// </summary>
     public class PrepaidCardsController : ControllerBase
     {
         private readonly IPrepaidCardAppService _prepaidCardAppService;
 
+        /// <summary>Khởi tạo controller thẻ trả trước.</summary>
+        /// <param name="prepaidCardAppService">AppService xử lý nghiệp vụ thẻ trả trước.</param>
         public PrepaidCardsController(IPrepaidCardAppService prepaidCardAppService)
         {
             _prepaidCardAppService = prepaidCardAppService;
         }
 
-        /// <summary>Public: customer buys a prepaid card package.</summary>
+        /// <summary>
+        /// Khách mua một gói thẻ trả trước (không cần đăng nhập).
+        /// Lỗi nghiệp vụ (DomainException) trả 400 với message thân thiện để hiển thị cho khách.
+        /// </summary>
+        /// <param name="dto">Gói thẻ muốn mua và thông tin người mua.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpPost("buy")]
         public async Task<ActionResult> Buy(
@@ -43,7 +54,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
-        /// <summary>Public: list cards of a phone number.</summary>
+        /// <summary>
+        /// Khách tra cứu các thẻ trả trước của mình bằng số điện thoại (không cần đăng nhập).
+        /// </summary>
+        /// <param name="phone">Số điện thoại đã mua thẻ.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpGet("my")]
         public async Task<ActionResult> GetMyCards(
@@ -53,7 +68,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _prepaidCardAppService.GetMyCardsAsync(phone));
         }
 
-        /// <summary>Admin: paged card list, search by name/phone/code.</summary>
+        /// <summary>
+        /// Admin: danh sách thẻ trả trước phân trang, tìm theo tên/SĐT/mã thẻ.
+        /// </summary>
+        /// <param name="searchTerm">Chuỗi tìm kiếm (tên, SĐT hoặc mã thẻ).</param>
+        /// <param name="skip">Số dòng bỏ qua (phân trang).</param>
+        /// <param name="take">Số dòng lấy mỗi trang.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult> GetList(
@@ -65,7 +86,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _prepaidCardAppService.GetListAsync(searchTerm, skip, take));
         }
 
-        /// <summary>Admin: redeem one suit from a card code.</summary>
+        /// <summary>
+        /// Admin: đổi (redeem) 1 lượt trên thẻ bằng mã thẻ — khi khách đến quán dùng thẻ.
+        /// Lỗi nghiệp vụ (thẻ không tồn tại, hết lượt, đã khóa...) trả 400 với message thân thiện.
+        /// </summary>
+        /// <param name="code">Mã thẻ trả trước.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpPost("{code}/redeem")]
         public async Task<ActionResult> Redeem(

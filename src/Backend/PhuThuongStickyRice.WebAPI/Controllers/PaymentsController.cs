@@ -27,18 +27,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IPaymentConfigProvider _paymentConfig;
         private readonly IMoMoPaymentService _momo;
 
-        public PaymentsController(
+    public PaymentsController(
             IPaymentConfigProvider paymentConfig,
             IMoMoPaymentService momo)
         {
+            // MoMo create nằm ở OrdersController: POST /api/orders/{id}/momo/create —
+            // controller này chỉ nhận callback từ MoMo và cung cấp thông tin chuyển khoản.
             _paymentConfig = paymentConfig;
             _momo = momo;
         }
 
         /// <summary>
-        /// Public bank-transfer details shown at checkout (account info + VietQR).
-        /// Item 106: admin-editable at /admin/thanh-toan (ShopSetting), falling
-        /// back to appsettings.
+        /// Thông tin chuyển khoản hiển thị ở checkout (số TK, tên TK, VietQR).
+        /// Item 106: admin tự sửa ở /admin/thanh-toan (lưu vào ShopSetting),
+        /// chưa cấu hình thì lấy từ appsettings.
         /// </summary>
         [AllowAnonymous]
         [HttpGet("bank-transfer-info")]
@@ -57,9 +59,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// MoMo return / IPN. The real MoMo posts a signed IPN; the TEST
-        /// simulator posts the echoed create-signature. Both are verified.
+        /// Callback MoMo: MoMo thật post IPN kèm chữ ký số; bản mô phỏng (test)
+        /// post chữ ký lấy từ bước create. Cả hai đều được verify trong HandleCallbackAsync.
+        /// Lỗi nghiệp vụ (DomainException) trả 400 để phía gọi biết xử lý.
         /// </summary>
+        /// <param name="callback">Dữ liệu MoMo gửi về (đơn hàng, trạng thái, chữ ký).</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpPost("momo/callback")]
         public async Task<ActionResult> MoMoCallback([FromBody] MoMoCallbackDto callback,

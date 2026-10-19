@@ -32,6 +32,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             private readonly IRefundAppService _refunds;
 
+            /// <summary>Khởi tạo controller hoàn tiền.</summary>
+            /// <param name="refunds">AppService ghi nhận yêu cầu/xác nhận hoàn tiền.</param>
             public RefundsController(IRefundAppService refunds)
             {
                 _refunds = refunds;
@@ -44,6 +46,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [HttpGet]
             public async Task<ActionResult> GetReport(CancellationToken cancellationToken = default)
             {
+                // Giới hạn 500 dòng đặt ở tầng AppService: báo cáo chỉ để đối soát tay,
+                // lấy toàn bộ sẽ nặng bộ nhớ khi số lượng yêu cầu hoàn tiền lớn.
                 return Ok(await _refunds.GetReportAsync());
             }
 

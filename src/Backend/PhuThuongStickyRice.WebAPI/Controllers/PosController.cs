@@ -26,19 +26,29 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         // Admin/Cashier" — controller để Admin-only thì thu ngân gọi
         // POST api/pos/orders bị 403 ngay ở cổng, không bao giờ tới service.
         [Authorize(Roles = "Admin,Cashier")]
+        /// <summary>
+        /// API bán hàng tại quán (POS): nhân viên tạo đơn cho khách đến mua
+        /// trực tiếp — thanh toán tiền mặt, nhận hàng ngay, đơn hoàn tất luôn.
+        /// Admin và Thu ngân (Cashier) được gọi.
+        /// </summary>
         public class PosController : ControllerBase
         {
             private readonly IPosAppService _pos;
 
+            /// <summary>Khởi tạo controller POS.</summary>
+            /// <param name="pos">AppService tạo đơn bán hàng tại quán.</param>
             public PosController(IPosAppService pos)
             {
                 _pos = pos;
             }
 
             /// <summary>
-            /// Walk-in order: COD + pickup, paid and Completed immediately.
-            /// Returns the finished order (print the receipt via /in-hoa-don).
+            /// Tạo đơn bán tại quán: COD (tiền mặt) + khách tự mang về,
+            /// đơn được đánh dấu đã thanh toán và Hoàn tất ngay (không chờ giao).
             /// </summary>
+            /// <param name="input">Thông tin đơn (món, số lượng, số tiền khách đưa...).</param>
+            /// <param name="cancellationToken">Token hủy request.</param>
+            /// <returns>Đơn hàng đã hoàn tất — in hóa đơn tại /in-hoa-don.</returns>
             [HttpPost("orders")]
             public async Task<ActionResult> CreateOrder(
                 [FromBody] CreatePosOrderInput input,

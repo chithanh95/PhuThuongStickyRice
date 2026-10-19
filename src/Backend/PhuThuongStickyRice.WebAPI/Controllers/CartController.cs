@@ -7,7 +7,8 @@ using Volo.Abp.AspNetCore.Mvc;
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     /// <summary>
-    /// Item 137: server-side cart sync for logged-in users.
+    /// Đồng bộ giỏ hàng lên server cho khách đã đăng nhập (Item 137):
+    /// khi đổi thiết bị/trình duyệt, giỏ hàng được khôi phục từ server.
     /// </summary>
     [ApiController]
     [Route("api/cart")]
@@ -16,11 +17,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly ICartAppService _cartAppService;
 
+        /// <summary>Khởi tạo controller đồng bộ giỏ hàng.</summary>
+        /// <param name="cartAppService">AppService đọc/ghi giỏ hàng của khách hiện tại.</param>
         public CartController(ICartAppService cartAppService)
         {
             _cartAppService = cartAppService;
         }
 
+        /// <summary>
+        /// Lấy giỏ hàng đã lưu của khách hiện tại (trả về JSON các dòng giỏ).
+        /// </summary>
+        /// <returns>JSON chứa <c>ItemsJson</c> — chuỗi JSON các dòng giỏ hàng.</returns>
         [HttpGet]
         public async Task<ActionResult<string>> Get()
         {
@@ -28,16 +35,25 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { ItemsJson = itemsJson });
         }
 
+        /// <summary>
+        /// Lưu đè toàn bộ giỏ hàng hiện tại của khách lên server.
+        /// </summary>
+        /// <param name="model">Body chứa <c>ItemsJson</c> — JSON các dòng giỏ cần lưu.</param>
         [HttpPut]
         public async Task<ActionResult> Save([FromBody] SaveCartRequestModel model)
         {
+            // Ghi đè bằng null vẫn hợp lệ: AppService xử lý như giỏ trống.
             await _cartAppService.SaveAsync(model?.ItemsJson);
             return Ok();
         }
     }
 
+    /// <summary>
+    /// Request body cho API lưu giỏ hàng (PUT /api/cart).
+    /// </summary>
     public sealed class SaveCartRequestModel
     {
+        /// <summary>Chuỗi JSON chứa các dòng giỏ hàng cần lưu.</summary>
         public string ItemsJson { get; set; }
     }
 }
