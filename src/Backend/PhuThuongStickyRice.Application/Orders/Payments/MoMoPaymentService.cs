@@ -14,23 +14,41 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application.Orders.Payments
 {
+    /// <summary>
+    /// Hợp đồng thanh toán MoMo: tạo yêu cầu thanh toán (trả URL để khách
+    /// chuyển sang trang MoMo thanh toán) và xử lý callback MoMo gửi về
+    /// để ghi nhận trạng thái đã trả/tiền bị từ chối.
+    /// </summary>
     public interface IMoMoPaymentService
     {
+        /// <summary>
+        /// Tạo yêu cầu thanh toán MoMo cho đơn hàng và trả về URL để khách
+        /// tiếp tục thanh toán. Ở TestMode thì trả URL trang giả lập trong
+        /// app thay vì gọi API thật của MoMo.
+        /// </summary>
+        /// <param name="order">Đơn hàng cần thanh toán (phải dùng phương thức MoMo và chưa trả tiền).</param>
+        /// <returns>Thông tin thanh toán gồm URL chuyển hướng.</returns>
         Task<MoMoCreatePaymentResultDto> CreatePaymentAsync(Order order);
 
+        /// <summary>
+        /// Xử lý callback MoMo gửi về (IPN thật) hoặc callback giả lập (TestMode):
+        /// kiểm tra chữ ký, kiểm tra số tiền khớp với đơn, rồi cập nhật trạng
+        /// thái thanh toán của đơn (đã trả / thất bại).
+        /// </summary>
+        /// <param name="callback">Dữ liệu callback MoMo gửi về.</param>
+        /// <returns>Đơn hàng sau khi cập nhật trạng thái thanh toán.</returns>
         Task<Order> HandleCallbackAsync(MoMoCallbackDto callback);
     }
 
     /// <summary>
-    /// MoMo payment flow. In TestMode the real MoMo endpoint is never called:
-    /// the buyer is sent to the in-app simulator page, whose callback echoes
-    /// the create-signature for verification. With real credentials
-    /// (TestMode = false) the service posts the signed create request to MoMo
-    /// and verifies the signed IPN callback the same way.
-    ///
-    /// Item 106: non-secret values (PartnerCode, Endpoint) are read from the
-    /// database first (admin-editable at /admin/thanh-toan), falling back to
-    /// appsettings. Secrets stay in appsettings only.
+    /// Luồng thanh toán MoMo. Ở TestMode không bao giờ gọi endpoint thật của
+    /// MoMo: khách được chuyển tới trang giả lập trong app, và callback của
+    /// trang giả lập sẽ echo lại chữ ký tạo đơn để service đối chiếu. Với
+    /// thông tin thật (TestMode = false), service gửi yêu cầu tạo đơn đã ký
+    /// HMAC tới MoMo và xác minh callback IPN có chữ ký theo cùng cách.
+    /// Item 106: các giá trị không phải secret (PartnerCode, Endpoint) đọc từ
+    /// DB trước (admin sửa ở /admin/thanh-toan), thiếu thì mới lấy từ
+    /// appsettings. Secret chỉ lưu ở appsettings.
     /// </summary>
     public partial class MoMoPaymentService : IMoMoPaymentService
     {
@@ -60,6 +78,13 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             _httpClient = httpClient;
         }
 
+        /// <summary>
+        /// Tạo yêu cầu thanh toán MoMo cho đơn hàng: ký HMAC rồi trả URL cho
+        /// khách đi thanh toán. TestMode → trang giả lập trong app; không phải
+        /// TestMode → gọi API thật của MoMo.
+        /// </summary>
+        /// <param name="order">Đơn hàng cần thanh toán (phải dùng MoMo, chưa trả tiền).</param>
+        /// <returns>URL chuyển hướng thanh toán và cờ TestMode.</returns>
         public async Task<MoMoCreatePaymentResultDto> CreatePaymentAsync(Order order)
         {
             ValidateMoMoOrder(order);
@@ -220,6 +245,13 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             return root.GetProperty("payUrl").GetString();
         }
 
+        /// <summary>
+        /// Xử lý callback MoMo: callback giả lập (chỉ chấp nhận ở TestMode) hoặc
+        /// callback IPN thật. Cả hai đều phải qua kiểm tra chữ ký — callback không
+        /// ký đúng không bao giờ được đổi trạng thái đơn.
+        /// </summary>
+        /// <param name="callback">Dữ liệu callback MoMo gửi về.</param>
+        /// <returns>Đơn hàng sau khi cập nhật trạng thái thanh toán.</returns>
         public async Task<Order> HandleCallbackAsync(MoMoCallbackDto callback)
         {
             var _options = await _paymentConfig.GetMoMoAsync();
@@ -237,6 +269,12 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             return await HandleRealCallbackAsync(callback, _options);
         }
 
+        /// <summary>
+        /// Xử lý callback giả lập ở TestMode: không có chữ ký MoMo thật nên
+        /// chỉ chấp nhận khi TestMode đang bật, và chữ ký echo từ trang giả
+        /// lập phải đúng chữ ký tạo đơn — ngăn việc ai đó dựng 1 callback giả
+        /// tự ý đổi trạng thái thanh toán.
+        /// </summary>
         private async Task<Order> HandleSimulatedCallbackAsync(MoMoCallbackDto callback, MoMoOptions options)
         {
             if (!options.TestMode)
@@ -270,6 +308,11 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             return await ApplyResultAsync(order, callback.ResultCode);
         }
 
+        /// <summary>
+        /// Xử lý callback IPN thật của MoMo: tìm đơn theo số đơn, kiểm tra số
+        /// tiền gửi về phải đúng tổng đơn (chống việc giả callback với số
+        /// tiền khác), xác minh chữ ký HMAC, rồi cập nhật trạng thái.
+        /// </summary>
         private async Task<Order> HandleRealCallbackAsync(MoMoCallbackDto callback, MoMoOptions options)
         {
             // In a real IPN, MoMo's orderId is our merchant order number.
@@ -310,9 +353,15 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             return await ApplyResultAsync(order, callback.ResultCode);
         }
 
+        /// <summary>
+        /// Áp kết quả thanh toán vào đơn. Idempotent: MoMo có thể gửi lại
+        /// callback nhiều lần (mạng retry) — đơn đã ở trạng thái cuối (Paid /
+        /// Failed) thì trả về nguyên trạng, không ghi đè.
+        /// </summary>
         private async Task<Order> ApplyResultAsync(Order order, int resultCode)
         {
-            // MoMo may resend callbacks — already-final states are idempotent.
+            // MoMo có thể gửi lại callback khi timeout/mất mạng — đơn đã chốt
+            // trạng thái cuối thì bỏ qua để không flip qua lại.
             if (resultCode == 0 && order.PaymentStatus == PaymentStatus.Paid)
             {
                 return order;

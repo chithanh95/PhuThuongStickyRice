@@ -13,28 +13,31 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng dự báo doanh thu cho admin: doanh thu trung bình các ngày đã
+    /// qua, pattern theo thứ trong tuần, và dự báo 7/30 ngày tới (heuristic,
+    /// chỉ là ước tính).
+    /// </summary>
     public interface IOrderForecastAppService : IApplicationService
     {
         /// <summary>
-        /// Admin: revenue forecast based on historical daily averages.
+        /// Admin: dự báo doanh thu dựa trên trung bình ngày lịch sử (đơn đã
+        /// hủy bị loại; ngày không có đơn tính là 0).
         /// </summary>
+        /// <returns>Số liệu lịch sử, pattern theo thứ và dự báo 7/30 ngày tới.</returns>
         Task<RevenueForecastDto> GetRevenueForecastAsync();
     }
 
     /// <summary>
-    /// Revenue forecast. Heuristic, deliberately simple and documented:
+    /// Dự báo doanh thu. Heuristic, cố ý đơn giản và được ghi lại:
     /// <list type="bullet">
-    /// <item>Look back 56 completed days (8 full weeks) of non-cancelled orders.</item>
-    /// <item>Compute per-weekday averages (Thứ 2..Chủ nhật) — e.g. Saturdays
-    /// are often ~2x a normal day.</item>
-    /// <item>Forecast each future day from its weekday average; when a
-    /// weekday has fewer than 2 data points, fall back to the 30-day
-    /// overall daily average.</item>
-    /// <item>Moving averages (7d/30d) are computed over completed days only —
-    /// today is partial and excluded.</item>
+    /// <item>Nhìn lại 56 ngày có dữ liệu đầy đủ gần nhất (8 tuần trọn) của các đơn không bị hủy.</item>
+    /// <item>Tính trung bình theo từng thứ trong tuần (Thứ 2..Chủ nhật) — ví dụ Thứ 7 thường gấp ~2 lần ngày thường.</item>
+    /// <item>Dự báo mỗi ngày tương lai từ trung bình của đúng thứ đó; khi một thứ có ít hơn 2 điểm dữ liệu thì fallback sang trung bình ngày 30 ngày gần nhất.</item>
+    /// <item>Trung bình trượt (7d/30d) chỉ tính trên các ngày đã hoàn tất — hôm nay chưa bán xong nên bị loại.</item>
     /// </list>
-    /// Zero-revenue days count as 0 (the shop is assumed open daily); the
-    /// method note on the DTO says so. This is an estimate, not a guarantee.
+    /// Ngày không có doanh thu tính là 0 (quán mở cửa hàng ngày); ghi chú phương
+    /// pháp nằm ở DTO. Đây là ước tính, không phải cam kết.
     /// </summary>
     [Authorize(Roles = "Admin")]
     public class OrderForecastAppService : ApplicationService, IOrderForecastAppService
@@ -76,6 +79,12 @@ namespace PhuThuongStickyRice.Application.Orders
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Dự báo doanh thu dựa trên trung bình ngày lịch sử (đơn đã hủy bị
+        /// loại; ngày không có đơn tính là 0). Bao gồm chuỗi lịch sử 30 ngày,
+        /// pattern theo thứ, và dự báo 7/30 ngày tới kèm ghi chú phương pháp.
+        /// </summary>
+        /// <returns>Số liệu lịch sử, pattern theo thứ và dự báo.</returns>
         public virtual async Task<RevenueForecastDto> GetRevenueForecastAsync()
         {
             var today = VietnamTime.Today();

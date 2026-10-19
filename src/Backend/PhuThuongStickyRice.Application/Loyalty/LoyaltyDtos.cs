@@ -9,6 +9,7 @@ namespace PhuThuongStickyRice.Application.Loyalty.DTOs
     /// </summary>
     public class LoyaltyAccountDto
     {
+        /// <summary>SĐT đã chuẩn hóa (khóa chính của tài khoản loyalty).</summary>
         public string Phone { get; set; }
 
         /// <summary>
@@ -29,19 +30,20 @@ namespace PhuThuongStickyRice.Application.Loyalty.DTOs
         /// <summary>Mã giới thiệu của chính tài khoản này (để giới thiệu người khác).</summary>
         public string ReferralCode { get; set; }
 
+        /// <summary>Ngày sinh của khách (dùng để tặng quà sinh nhật); null khi chưa nhập.</summary>
         public DateTime? DateOfBirth { get; set; }
 
-        /// <summary>Đồng / Bạc / Vàng, computed from TotalSpent.</summary>
+        /// <summary>Hạng thành viên: Đồng / Bạc / Vàng, tính từ TotalSpent.</summary>
         public string Tier { get; set; }
 
-        /// <summary>Tier discount percent applied at checkout.</summary>
+        /// <summary>% giảm giá theo hạng, tự áp vào đơn ở checkout.</summary>
         public decimal TierDiscountPercent { get; set; }
     }
 
     /// <summary>Admin cộng/trừ điểm thủ công cho 1 SĐT (kèm lý do để đối soát).</summary>
     public class AdjustPointsInput
     {
-        /// <summary>Positive to add, negative to subtract.</summary>
+        /// <summary>Số điểm điều chỉnh: dương để cộng, âm để trừ.</summary>
         [Range(-1000000, 1000000)]
         public int PointsDelta { get; set; }
 
@@ -53,6 +55,7 @@ namespace PhuThuongStickyRice.Application.Loyalty.DTOs
     /// <summary>Khách tự cập nhật ngày sinh của mình (dùng để tặng quà sinh nhật).</summary>
     public class UpdateBirthdayInput
     {
+        /// <summary>Ngày sinh mới; null để xóa ngày sinh đã lưu.</summary>
         public DateTime? DateOfBirth { get; set; }
     }
 }

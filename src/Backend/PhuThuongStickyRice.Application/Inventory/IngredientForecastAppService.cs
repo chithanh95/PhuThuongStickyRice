@@ -13,19 +13,26 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Inventory
 {
+    /// <summary>
+    /// Hợp đồng dự báo nguyên liệu cho admin: lượng nếp (kg) cần chuẩn bị
+    /// cho sáng mai, ước tính từ lịch sử cùng thứ trong tuần.
+    /// </summary>
     public interface IIngredientForecastAppService : IApplicationService
     {
-        /// <summary>Admin: forecasts nếp (kg) needed for tomorrow morning.</summary>
+        /// <summary>
+        /// Admin: dự báo lượng nếp (kg) cần cho sáng mai, từ số suất trung
+        /// bình bán được vào cùng thứ trong 4 tuần gần nhất.
+        /// </summary>
+        /// <returns>Lượng nếp gợi ý (làm tròn lên 0.5kg) kèm giải thích cách tính.</returns>
         Task<IngredientForecastDto> GetForecastAsync();
     }
 
     /// <summary>
-    /// Item 124: ingredient forecast.
-    /// Heuristic (documented, deliberately simple): average portions sold on
-    /// the same weekday over the last 4 weeks × NepPerPortionGrams, rounded
-    /// up to the nearest 0.5 kg. Cancelled orders are excluded. The cook
-    /// should still add a safety margin on holidays — this is an estimate,
-    /// not a guarantee.
+    /// Item 124: dự báo nguyên liệu.
+    /// Heuristic (được ghi lại, cố ý đơn giản): trung bình số suất bán được
+    /// vào cùng thứ trong 4 tuần gần nhất × số gram nếp/suất, làm tròn lên
+    /// bước 0.5 kg. Đơn bị hủy bị loại. Người nấu vẫn nên cộng thêm dự phòng
+    /// vào ngày lễ — đây chỉ là ước tính, không phải cam kết.
     /// </summary>
     [Authorize(Roles = "Admin")]
     public class IngredientForecastAppService : ApplicationService, IIngredientForecastAppService
@@ -53,6 +60,12 @@ namespace PhuThuongStickyRice.Application.Inventory
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Dự báo lượng nếp (kg) cần cho sáng mai: lấy gram nếp/suất từ cài đặt
+        /// shop (chưa cài thì dùng giá trị ước lượng), nhân với số suất trung
+        /// bình của cùng thứ trong 4 tuần gần nhất.
+        /// </summary>
+        /// <returns>Lượng nếp gợi ý (làm tròn lên 0.5kg) kèm giải thích cách tính.</returns>
         public virtual async Task<IngredientForecastDto> GetForecastAsync()
         {
             var settings = await _shopSettings.GetAsync();
@@ -111,11 +124,14 @@ namespace PhuThuongStickyRice.Application.Inventory
             var seen = new bool[LookbackWeeks];
             foreach (var row in dayRows)
             {
+                // Chỉ lấy các ngày cùng thứ với ngày mai (ví dụ Thứ 7) — pattern
+                // bán hàng phụ thuộc mạnh vào thứ trong tuần.
                 if ((int)row.Day.DayOfWeek != weekday)
                 {
                     continue;
                 }
 
+                // Chỉ số tuần lịch sử: 0 = tuần vừa rồi, 3 = 4 tuần trước.
                 var weekIndex = (int)((tomorrow - row.Day).TotalDays / 7);
                 if (weekIndex < 0 || weekIndex >= LookbackWeeks)
                 {

@@ -19,13 +19,13 @@ namespace PhuThuongStickyRice.Application.Discounts
             /// <summary>% giảm giá áp vào đơn (0.01–100).</summary>
             public decimal DiscountPercent { get; set; }
 
-            /// <summary>Local start time "HH:mm".</summary>
+            /// <summary>Giờ bắt đầu áp dụng (giờ địa phương VN), dạng "HH:mm".</summary>
             public string StartTime { get; set; }
 
-            /// <summary>Local end time "HH:mm".</summary>
+            /// <summary>Giờ kết thúc áp dụng (không bao gồm mốc này, giờ địa phương VN), dạng "HH:mm".</summary>
             public string EndTime { get; set; }
 
-            /// <summary>Bit flags of PromotionDay (1=Mon .. 64=Sun, 127=all).</summary>
+            /// <summary>Ngày trong tuần áp dụng (bit flags PromotionDay: 1=T2 .. 64=CN, 127=cả tuần).</summary>
             public int DaysOfWeekFlags { get; set; }
 
             /// <summary>Khuyến mãi có đang được áp dụng không.</summary>

@@ -18,28 +18,37 @@ using PhuThuongStickyRice.Application.Common;
 namespace PhuThuongStickyRice.Application.Reports
 {
     /// <summary>
-    /// Item 138: builds and delivers the Monday-morning weekly owner
-    /// report. Deliberately NOT an <c>ApplicationService</c> and carries
-    /// no <c>[Authorize]</c> attributes so the BackgroundServer worker
-    /// (unauthenticated) can call it; the HTTP surface
-    /// (<see cref="IWeeklyReportAppService"/>) is Admin-only.
+    /// Item 138: dựng và gửi báo cáo tuần sáng Thứ Hai cho chủ quán. Cố ý KHÔNG
+    /// kế thừa <c>ApplicationService</c> và không gắn <c>[Authorize]</c> để
+    /// worker BackgroundServer (không cần đăng nhập) có thể gọi; mặt HTTP
+    /// (<see cref="IWeeklyReportAppService"/>) chỉ cho Admin.
     /// </summary>
     public interface IWeeklyReportSender : ITransientDependency
     {
-        /// <summary>Aggregates the last full Monday–Sunday week (Vietnam time).</summary>
+        /// <summary>Tổng hợp số liệu của tuần đầy đủ Thứ Hai–Chủ Nhật vừa rồi (giờ Việt Nam).</summary>
+        /// <returns>DTO số liệu tuần.</returns>
         Task<WeeklyReportDto> BuildReportAsync();
 
-        /// <summary>Renders the report as plain text for Zalo / copy-paste.</summary>
+        /// <summary>Render báo cáo thành text thuần cho Zalo / copy tay.</summary>
+        /// <param name="report">Số liệu tuần đã tổng hợp.</param>
+        /// <returns>Nội dung text của báo cáo.</returns>
         string BuildMessageText(WeeklyReportDto report);
 
         /// <summary>
-        /// Builds the report, delivers it via Zalo OA when configured, and
-        /// records the idempotency marker. Never throws for a missing token —
-        /// it returns <c>Sent = false</c> with the text to copy manually.
+        /// Dựng báo cáo, gửi qua Zalo OA khi đã cấu hình, và lưu marker chống
+        /// gửi trùng. Không ném lỗi khi thiếu token — trả về <c>Sent = false</c>
+        /// kèm text để copy thủ công.
         /// </summary>
+        /// <returns>Kết quả gửi (đã gửi hay chưa + nội dung).</returns>
         Task<WeeklyReportSendResultDto> SendAsync();
     }
 
+    /// <summary>
+    /// Hiện thực dựng và gửi báo cáo tuần (item 138): gom đơn của tuần vừa rồi
+    /// theo giờ Việt Nam, so sánh với tuần trước, rồi gửi qua Zalo OA. Token
+    /// Zalo đọc từ ShopSetting dưới dạng mã hóa (DataProtection), giải mã
+    /// trước khi gửi.
+    /// </summary>
     public class WeeklyReportSender : IWeeklyReportSender
     {
         private const string EncryptedPrefix = "DPv1:";
@@ -77,10 +86,11 @@ namespace PhuThuongStickyRice.Application.Reports
         }
 
         /// <summary>
-        /// The last full Monday–Sunday week (Vietnam dates) before
-        /// <paramref name="vnToday"/>. On a Monday morning this is the week
-        /// that just ended.
+        /// Tuần đầy đủ Thứ Hai–Chủ Nhật gần nhất (theo ngày Việt Nam) tính từ
+        /// <paramref name="vnToday"/>. Vào sáng Thứ Hai thì đây là tuần vừa kết thúc.
         /// </summary>
+        /// <param name="vnToday">Ngày hôm nay theo giờ Việt Nam.</param>
+        /// <returns>Ngày bắt đầu (Thứ Hai) và ngày kết thúc (Chủ Nhật) của tuần.</returns>
         public static (DateTime Start, DateTime End) LastFullWeek(DateTime vnToday)
         {
             var today = vnToday.Date;
@@ -89,10 +99,20 @@ namespace PhuThuongStickyRice.Application.Reports
             return (start, start.AddDays(DaysPerWeek - 1));
         }
 
-        /// <summary>Idempotency marker stored on ShopSetting.</summary>
+        /// <summary>
+        /// Marker chống gửi trùng tuần, lưu ở ShopSetting — tuần nào đã gửi thì
+        /// worker Thứ Hai bỏ qua, không gửi lại.
+        /// </summary>
+        /// <param name="weekStart">Ngày bắt đầu tuần.</param>
+        /// <returns>Chuỗi marker theo dạng yyyy-MM-dd.</returns>
         public static string WeekMarker(DateTime weekStart) =>
             weekStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
+        /// <summary>
+        /// Dựng số liệu tuần đầy đủ vừa rồi và so sánh với tuần trước đó để
+        /// tính % thay đổi doanh thu / số đơn.
+        /// </summary>
+        /// <returns>DTO số liệu tuần kèm nội dung text gửi Zalo.</returns>
         public async Task<WeeklyReportDto> BuildReportAsync()
         {
             var (start, end) = LastFullWeek(VietnamTime.Today());
@@ -161,6 +181,13 @@ namespace PhuThuongStickyRice.Application.Reports
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Gửi báo cáo tuần qua Zalo OA cho chủ quán. Chưa cấu hình token thì
+        /// vẫn đánh dấu tuần đã xử lý (để worker Thứ Hai không retry liên tục
+        /// suốt buổi sáng) và trả nội dung text để admin copy gửi tay — không
+        /// "giả vờ" đã gửi.
+        /// </summary>
+        /// <returns>Kết quả gửi kèm nội dung báo cáo.</returns>
         public async Task<WeeklyReportSendResultDto> SendAsync()
         {
             var report = await BuildReportAsync();
@@ -169,14 +196,15 @@ namespace PhuThuongStickyRice.Application.Reports
 
             var settings = await GetSingleSettingAsync();
             var token = Unprotect(settings?.ZaloOaAccessToken);
+            // Ưu tiên gửi tới Zalo User ID đã lưu; chưa có thì dùng SĐT chủ quán.
             var recipient = string.IsNullOrWhiteSpace(settings?.OwnerZaloUserId)
                 ? settings?.OwnerPhone?.Trim()
                 : settings.OwnerZaloUserId.Trim();
 
             if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(recipient))
             {
-                // Still mark the week so the Monday worker doesn't retry
-                // every 10 minutes all morning.
+                // Vẫn đánh dấu tuần đã xử lý để worker Thứ Hai không retry
+                // mỗi 10 phút suốt buổi sáng chỉ vì thiếu cấu hình.
                 await MarkSentAsync(settings, marker);
                 _logger.LogInformation(
                     "Weekly report {Week}: Zalo OA not configured — returning text for manual copy.",
@@ -230,6 +258,15 @@ namespace PhuThuongStickyRice.Application.Reports
         /// <summary>Dòng hàng rút gọn: tên sản phẩm + số lượng đã bán.</summary>
         private sealed record OrderWeekLine(string ProductName, int Quantity);
 
+        /// <summary>
+        /// Gom số liệu của 1 tuần theo giờ Việt Nam: đổi khoảng [start, end] ngày
+        /// VN sang UTC để so với cột <c>CreatedAt</c> (lưu UTC), lấy các dòng
+        /// đơn rút gọn rồi tổng hợp doanh thu / số đơn / top món. Đơn hủy không
+        /// tính vào doanh thu nhưng vẫn đếm riêng để chủ quán biết.
+        /// </summary>
+        /// <param name="weekStartVn">Ngày đầu tuần (Thứ Hai, giờ VN).</param>
+        /// <param name="weekEndVn">Ngày cuối tuần (Chủ Nhật, giờ VN).</param>
+        /// <returns>Số liệu tổng hợp của tuần.</returns>
         private async Task<WeekAggregate> AggregateWeekAsync(DateTime weekStartVn, DateTime weekEndVn)
         {
             var fromUtc = VietnamTime.DayStartUtc(weekStartVn);
@@ -286,12 +323,19 @@ namespace PhuThuongStickyRice.Application.Reports
             return productQty;
         }
 
+        /// <summary>
+        /// % thay đổi của tuần này so với tuần trước, làm tròn 1 số lẻ. Tuần
+        /// trước = 0 thì trả null (không thể chia) — người đọc sẽ thấy chữ
+        /// "tuần trước chưa có dữ liệu" thay vì con số vô nghĩa.
+        /// </summary>
         private static decimal? ChangePercent(decimal current, decimal previous) =>
             previous == 0 ? (decimal?)null : Math.Round((current - previous) / previous * 100, 1);
 
+        /// <summary>% thay đổi cho chỉ số nguyên (số đơn); tuần trước = 0 → null.</summary>
         private static decimal? ChangePercent(long current, long previous) =>
             previous == 0 ? (decimal?)null : Math.Round((decimal)(current - previous) / previous * 100, 1);
 
+        /// <summary>Hậu tố "% so với tuần trước" với mũi tên ▲/▼ cho báo cáo text.</summary>
         private static string ChangeSuffix(decimal? changePercent, string metric)
         {
             if (!changePercent.HasValue)
@@ -304,15 +348,21 @@ namespace PhuThuongStickyRice.Application.Reports
             return $" ({arrow}{sign}{changePercent.Value.ToString("N1", CultureInfo.InvariantCulture)}% so với tuần trước)";
         }
 
+        /// <summary>Định dạng số tiền VNĐ (phân cách hàng nghìn, ký hiệu ₫).</summary>
         private static string FormatVnd(decimal amount) =>
             $"{amount.ToString("N0", new CultureInfo("vi-VN"))}₫";
 
+        /// <summary>Đọc bản ghi ShopSetting duy nhất (chứa token Zalo, SĐT chủ quán).</summary>
         private async Task<ShopSetting?> GetSingleSettingAsync()
         {
             var queryable = await _settings.GetQueryableAsync();
             return await _asyncExecuter.FirstOrDefaultAsync(queryable);
         }
 
+        /// <summary>
+        /// Đánh dấu tuần đã xử lý vào ShopSetting để worker Thứ Hai không gửi
+        /// trùng. Thiếu bản ghi setting thì bỏ qua (không lỗi).
+        /// </summary>
         private async Task MarkSentAsync(ShopSetting settings, string marker)
         {
             if (settings == null)
@@ -324,6 +374,14 @@ namespace PhuThuongStickyRice.Application.Reports
             await _settings.UpdateAsync(settings, autoSave: true);
         }
 
+        /// <summary>
+        /// Giải mã token Zalo đã lưu ở ShopSetting (DataProtection, tiền tố
+        /// "DPv1:"). Giá trị cũ lưu plaintext (không tiền tố) trả về nguyên —
+        /// tương thích dữ liệu trước khi có mã hóa. Giải mã lỗi → null và ghi
+        /// warning, không ném (báo cáo vẫn gửi được ở dạng copy tay).
+        /// </summary>
+        /// <param name="stored">Chuỗi token đã lưu (mã hóa hoặc plaintext).</param>
+        /// <returns>Token thật để gọi Zalo API, hoặc null khi không giải được.</returns>
         private string Unprotect(string stored)
         {
             if (string.IsNullOrWhiteSpace(stored))

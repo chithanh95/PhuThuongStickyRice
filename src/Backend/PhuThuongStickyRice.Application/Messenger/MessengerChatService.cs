@@ -21,15 +21,28 @@ using Volo.Abp.DependencyInjection;
 
 namespace PhuThuongStickyRice.Application.Messenger
 {
+    /// <summary>
+    /// Hợp đồng chatbot Messenger: xác minh webhook của Facebook, xác minh
+    /// chữ ký chống giả mạo, và xử lý tin nhắn khách nhắn tới Fanpage.
+    /// </summary>
     public interface IMessengerChatService : ITransientDependency
     {
         /// <summary>
-        /// Handles the Facebook webhook verification handshake (GET).
-        /// Returns the challenge when the verify token matches, else null.
+        /// Xử lý bước xác minh webhook của Facebook (GET): trả về challenge
+        /// khi verify token khớp, ngược lại trả null.
         /// </summary>
+        /// <param name="mode">Chế độ verify Facebook gửi sang ("subscribe").</param>
+        /// <param name="verifyToken">Token Facebook gửi sang để đối chiếu.</param>
+        /// <param name="challenge">Chuỗi challenge cần echo lại khi khớp.</param>
+        /// <returns>Challenge khi xác minh thành công, null khi thất bại.</returns>
         Task<string> VerifyWebhookAsync(string mode, string verifyToken, string challenge);
 
-        /// <summary>Handles an incoming Messenger webhook payload (POST).</summary>
+        /// <summary>
+        /// Xử lý payload webhook Messenger gửi tới (POST): duyệt từng tin nhắn
+        /// text và phản hồi theo kịch bản; tin không phải text (postback,
+        /// đính kèm) bị bỏ qua.
+        /// </summary>
+        /// <param name="payload">Payload JSON từ Facebook.</param>
         Task HandleWebhookAsync(JsonDocument payload);
 
         /// <summary>
@@ -38,36 +51,39 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// đã cấu hình App Secret mà chữ ký thiếu/sai. Khi chưa cấu hình secret
         /// thì log cảnh báo và trả về true để webhook đang chạy không bị gãy.
         /// </summary>
+        /// <param name="body">Body thô của request.</param>
+        /// <param name="signatureHeader">Giá trị header X-Hub-Signature-256.</param>
+        /// <returns>True khi chữ ký hợp lệ (hoặc chưa cấu hình secret).</returns>
         Task<bool> VerifyWebhookSignatureAsync(byte[] body, string signatureHeader);
     }
 
     /// <summary>
-    /// Simple rule-based Messenger chatbot for Xôi Phú Thượng (item 53).
+    /// Chatbot Messenger dạng rule-based cho Xôi Phú Thượng (item 53).
     ///
-    /// Conversation script:
-    ///   greeting / "menu"  -> sends the menu (text) + ordering instructions
-    ///   "đặt &lt;tên món&gt; x &lt;số lượng&gt;" -> order summary + asks to confirm
-    ///   "ok"               -> asks for name + phone (+ shipper/self pickup)
-    ///   "&lt;Tên&gt; - &lt;SĐT&gt;"       -> creates a COD order (Source = "Messenger")
-    ///   "hủy"              -> cancels the current draft
+    /// Kịch bản hội thoại:
+    ///   chào / "menu"     → gửi thực đơn (text) + hướng dẫn đặt hàng
+    ///   "đặt &lt;tên món&gt; x &lt;số lượng&gt;" → tóm tắt đơn + hỏi xác nhận
+    ///   "ok"              → hỏi tên + SĐT (+ shipper/tự lấy)
+    ///   "&lt;Tên&gt; - &lt;SĐT&gt;"       → tạo đơn COD (Source = "Messenger")
+    ///   "hủy"             → hủy nháp đơn đang soạn
     ///
-    /// Setup (Facebook App dashboard):
-    ///   1. Create an App, add the Messenger product, connect the Fanpage.
-    ///   2. Generate a Page Access Token -> paste into
-    ///      Admin &gt; Cài đặt cửa hàng &gt; Chatbot Messenger &gt; Page Access Token.
-    ///   3. Pick any Verify Token string -&gt; paste it in the same place.
-    ///   4. In "Webhooks", subscribe the Page to the "messages" field with
-    ///      callback URL: https://&lt;domain&gt;/api/webhooks/messenger
-    ///      and the verify token from step 3.
+    /// Cài đặt (Facebook App dashboard):
+    ///   1. Tạo App, thêm sản phẩm Messenger, kết nối Fanpage.
+    ///   2. Tạo Page Access Token → dán vào Admin &gt; Cài đặt cửa hàng &gt;
+    ///      Chatbot Messenger &gt; Page Access Token.
+    ///   3. Chọn 1 chuỗi Verify Token bất kỳ → dán ở cùng chỗ.
+    ///   4. Ở "Webhooks", subscribe Page vào field "messages" với callback URL:
+    ///      https://&lt;domain&gt;/api/webhooks/messenger và verify token ở bước 3.
     ///
-    /// Without a Page Access Token the service runs in "waiting for
-    /// configuration" mode: webhook verification still works, incoming
-    /// messages are logged, but no replies are sent (never crashes).
-    /// Sessions are kept in memory (single-instance friendly).
+    /// Chưa có Page Access Token thì service chạy ở chế độ "chờ cấu hình":
+    /// verify webhook vẫn làm việc, tin nhắn tới chỉ log, không trả lời (không
+    /// bao giờ crash). Session hội thoại giữ trong memory (phù hợp chạy 1 instance).
     /// </summary>
     public partial class MessengerChatService : ApplicationService, IMessengerChatService
     {
+        /// <summary>Phiên bản Graph API dùng để gửi tin nhắn trả lời khách.</summary>
         private const string GraphApiVersion = "v18.0";
+        /// <summary>Thời gian hội thoại nháp được giữ trong memory (30 phút không nhắn thì reset).</summary>
         private static readonly TimeSpan SessionTimeout = TimeSpan.FromMinutes(30);
 
         // .NET source-generated regexes (C# 13): compiled at build time, no
@@ -132,6 +148,14 @@ namespace PhuThuongStickyRice.Application.Messenger
             _httpClientFactory = httpClientFactory;
         }
 
+        /// <summary>
+        /// Xử lý bước xác minh webhook của Facebook (GET): chỉ echo challenge
+        /// khi mode đúng "subscribe" và verify token khớp với cấu hình shop.
+        /// </summary>
+        /// <param name="mode">Chế độ verify Facebook gửi sang ("subscribe").</param>
+        /// <param name="verifyToken">Token Facebook gửi sang để đối chiếu.</param>
+        /// <param name="challenge">Chuỗi challenge cần echo lại khi khớp.</param>
+        /// <returns>Challenge khi xác minh thành công, null khi thất bại.</returns>
         public async Task<string> VerifyWebhookAsync(string mode, string verifyToken, string challenge)
         {
             if (!string.Equals(mode, "subscribe", StringComparison.OrdinalIgnoreCase)
@@ -153,6 +177,15 @@ namespace PhuThuongStickyRice.Application.Messenger
             return challenge;
         }
 
+        /// <summary>
+        /// Verify chữ ký X-Hub-Signature-256 (HMAC-SHA256 bằng App Secret) của
+        /// webhook POST — chỉ đơn tạo từ Facebook thật mới được chấp nhận.
+        /// Chưa cấu hình App Secret thì log cảnh báo và cho qua (true) để
+        /// webhook đang chạy theo hướng dẫn cũ không bị gãy.
+        /// </summary>
+        /// <param name="body">Body thô của request.</param>
+        /// <param name="signatureHeader">Giá trị header X-Hub-Signature-256.</param>
+        /// <returns>True khi chữ ký hợp lệ (hoặc chưa cấu hình secret).</returns>
         public async Task<bool> VerifyWebhookSignatureAsync(byte[] body, string signatureHeader)
         {
             var settings = await _shopSettings.GetAsync();

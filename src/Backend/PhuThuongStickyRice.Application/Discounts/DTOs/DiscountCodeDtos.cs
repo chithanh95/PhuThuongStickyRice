@@ -18,11 +18,11 @@ namespace PhuThuongStickyRice.Application.Discounts.DTOs
         [StringLength(50)]
         public string Code { get; set; }
 
-        /// <summary>0-100. Null when fixed-amount.</summary>
+        /// <summary>% giảm (0–100). Null khi dùng số tiền giảm cố định.</summary>
         [Range(0, 100)]
         public decimal? DiscountPercent { get; set; }
 
-        /// <summary>Fixed VND amount. Null when percent-based.</summary>
+        /// <summary>Số tiền giảm cố định (VNĐ). Null khi dùng % giảm.</summary>
         [Range(0, double.MaxValue)]
         public decimal? DiscountAmount { get; set; }
 
