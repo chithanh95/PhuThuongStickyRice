@@ -537,22 +537,23 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>
         /// True khi khách CHƯA từng có đơn hoàn thành nào trước đó (trừ đơn
         /// hiện tại) — điều kiện để nhận bonus giới thiệu cho "đơn đầu tiên".
+        /// So sánh tolerant theo 9 số cuối (pattern như HasOrderedBeforeAsync):
+        /// Order.CustomerPhone lưu raw theo cách khách gõ, buyer.Phone đã
+        /// chuẩn hóa digits — so raw trực tiếp cho phép đổi format SĐT để
+        /// farm bonus nhiều lần. Dùng EXISTS thay vì tải toàn bộ SĐT về bộ
+        /// nhớ: mọi dòng qua được bộ lọc SQL (CustomerPhoneNorm == 9 số cuối
+        /// của buyer) đều thỏa PhoneNumber.PhonesMatch nên AnyAsync tương
+        /// đương ngữ nghĩa với Any trên C#.
         /// </summary>
         private async Task<bool> HasNoPriorCompletedOrderAsync(
             IQueryable<Order> orderQueryable, Order order, LoyaltyAccount buyer)
         {
-            // So sánh tolerant theo 9 số cuối (pattern như HasOrderedBeforeAsync):
-            // Order.CustomerPhone lưu raw theo cách khách gõ, buyer.Phone đã
-            // chuẩn hóa digits — so raw trực tiếp cho phép đổi format SĐT để
-            // farm bonus nhiều lần.
             var buyerKey = LastNineDigits(buyer.Phone);
-            var candidatePhones = await _asyncExecuter.ToListAsync(
+            return !await _asyncExecuter.AnyAsync(
                 orderQueryable
                     .Where(x => x.Id != order.Id
                         && x.Status == OrderStatus.Completed
-                        && x.CustomerPhoneNorm == buyerKey)
-                    .Select(x => x.CustomerPhone));
-            return !candidatePhones.Any(p => PhoneNumber.PhonesMatch(p, buyer.Phone));
+                        && x.CustomerPhoneNorm == buyerKey));
         }
 
         /// <summary>

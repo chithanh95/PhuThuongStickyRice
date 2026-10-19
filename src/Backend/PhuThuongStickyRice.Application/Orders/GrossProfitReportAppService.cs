@@ -232,6 +232,10 @@ namespace PhuThuongStickyRice.Application.Orders
             return await _asyncExecuter.ToListAsync(
                 productQueryable
                     .OrderBy(x => x.Name)
+                    // Giới hạn server-side: bảng sản phẩm admin quản lý thủ
+                    // công, không bao giờ chạm ngưỡng nhưng tránh materialize
+                    // toàn bảng (pattern như PromotionAppService).
+                    .Take(500)
                     .Select(x => new ProductCostDto
                     {
                         Id = x.Id,
