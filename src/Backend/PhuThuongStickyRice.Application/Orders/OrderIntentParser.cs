@@ -79,7 +79,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 var category = CharUnicodeInfo.GetUnicodeCategory(c);
                 if (category != UnicodeCategory.NonSpacingMark)
                 {
-                    sb.Append(c);
+                    // 'đ' (U+0111) không có phân rã FormD nên rớt qua vòng lọc dấu.
+                    // Không map tay thì "đặt" -> "đat" không khớp keyword "dat",
+                    // và tên món chứa đ (vd "Xôi Đậu") không khớp khi khách gõ
+                    // không dấu "xoi dau". (bug-hunt 2026-10-20)
+                    sb.Append(c == 'đ' ? 'd' : c);
                 }
             }
 

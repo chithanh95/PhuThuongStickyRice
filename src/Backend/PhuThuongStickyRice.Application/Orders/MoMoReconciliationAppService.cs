@@ -1,5 +1,6 @@
 
 using PhuThuongStickyRice.Domain.Entities;
+using PhuThuongStickyRice.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
@@ -125,6 +126,12 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task MarkMatchedAsync(Guid orderId)
         {
             var order = await _orders.GetAsync(orderId);
+            // Danh sách đối soát chỉ liệt kê đơn MoMo đã thanh toán; chặn đánh
+            // dấu nhầm cho đơn phương thức khác/chưa thanh toán (bug-hunt 2026-10-20).
+            if (order.PaymentMethod != PaymentMethod.MoMo || order.PaymentStatus != PaymentStatus.Paid)
+            {
+                throw new DomainException("Chỉ đơn MoMo đã thanh toán mới được đánh dấu đối soát.");
+            }
             order.MarkMoMoMatched();
             await _orders.UpdateAsync(order, autoSave: true);
         }

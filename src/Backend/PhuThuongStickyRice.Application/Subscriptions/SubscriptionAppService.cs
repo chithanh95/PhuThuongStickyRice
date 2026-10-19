@@ -314,7 +314,10 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         /// </summary>
         private async Task<List<string>> GenerateUniqueOrderNumbersAsync(int count)
         {
-            var day = DateTime.UtcNow.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
+            // Mã đơn mang ngày VN (khớp VietnamTime.Today() dùng ở
+            // CreateDueOrdersAsync); dùng UtcNow sẽ ghi nhầm ngày hôm trước
+            // khi worker chạy trong khung 00:00-06:59 giờ VN. (bug-hunt 2026-10-20)
+            var day = VietnamTime.Today().ToString("yyyyMMdd", CultureInfo.InvariantCulture);
             var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var numbers = BuildCandidateNumbers(count, day, used);
 
