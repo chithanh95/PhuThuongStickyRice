@@ -148,12 +148,12 @@ else
         var now = DateTime.Now;
         for (var i = 0; i < 3; i++)
         {
-            var d = now.AddMonths(i);
-            var value = $"{d.Year}-{d.Month:D2}";
+            var optionMonth = now.AddMonths(i);
+            var value = $"{optionMonth.Year}-{optionMonth.Month:D2}";
             _thangOptions.Add(new ThangOption
             {
                 Value = value,
-                Text = $"Tháng {d.Month}/{d.Year}" + (i == 0 ? " (tháng này)" : string.Empty)
+                Text = $"Tháng {optionMonth.Month}/{optionMonth.Year}" + (i == 0 ? " (tháng này)" : string.Empty)
             });
         }
         _thangCung = _thangOptions[0].Value;

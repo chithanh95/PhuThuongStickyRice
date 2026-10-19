@@ -1539,9 +1539,9 @@ else
     private void Close360() { _view360Product = null; }
     private void Rotate360(int dir)
     {
-        var n = AllImageUrls(_view360Product?.ImageUrlsJson).Count;
-        if (n == 0) return;
-        _view360Index = (_view360Index + dir + n) % n;
+        var imageCount = AllImageUrls(_view360Product?.ImageUrlsJson).Count;
+        if (imageCount == 0) return;
+        _view360Index = (_view360Index + dir + imageCount) % imageCount;
     }
 
     // 66: đánh giá bằng giọng nói (Web Speech API)
@@ -1750,13 +1750,13 @@ else
 
     private IEnumerable<ShopProductModel> FilteredMenuProducts()
     {
-        var q = SearchedProducts(XoiProducts).AsEnumerable();
+        var searchedProducts = SearchedProducts(XoiProducts).AsEnumerable();
         return _priceFilter switch
         {
-            "under30" => q.Where(p => p.Price < 30000),
-            "30to50" => q.Where(p => p.Price >= 30000 && p.Price <= 50000),
-            "over50" => q.Where(p => p.Price > 50000),
-            _ => q,
+            "under30" => searchedProducts.Where(p => p.Price < 30000),
+            "30to50" => searchedProducts.Where(p => p.Price >= 30000 && p.Price <= 50000),
+            "over50" => searchedProducts.Where(p => p.Price > 50000),
+            _ => searchedProducts,
         };
     }
 

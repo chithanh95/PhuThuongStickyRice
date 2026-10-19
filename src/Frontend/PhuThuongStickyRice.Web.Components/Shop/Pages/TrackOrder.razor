@@ -495,20 +495,20 @@
                                 <p class="mb-1"><strong>Đánh giá từng món:</strong> <small class="text-muted">(tùy chọn)</small></p>
                                 @foreach (var line in _order.Lines)
                                 {
-                                    var l = line;
+                                    var orderLine = line;
                                     <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="small text-truncate mr-2" style="max-width: 60%;">@l.ProductName</span>
+                                        <span class="small text-truncate mr-2" style="max-width: 60%;">@orderLine.ProductName</span>
                                         <span style="white-space: nowrap;">
                                             @for (var star = 1; star <= 5; star++)
                                             {
-                                                var s = star;
+                                                var starNumber = star;
                                                 <button type="button" class="btn btn-link p-0"
-                                                        aria-label="Đánh giá món @l.ProductName: @s sao"
-                                                        style="font-size: 20px; color: @(s <= LineRating(l.Id) ? "#f1b44c" : "#8f8f8f"); text-decoration: none;"
+                                                        aria-label="Đánh giá món @orderLine.ProductName: @starNumber sao"
+                                                        style="font-size: 20px; color: @(starNumber <= LineRating(orderLine.Id) ? "#f1b44c" : "#8f8f8f"); text-decoration: none;"
                                                         @* A11y-1705: sao chưa chọn #ccc trên nền trắng chỉ ~1.6:1
                                                            (< 3:1 WCAG 1.4.11 cho icon có ý nghĩa). Đổi #8f8f8f
                                                            (~3.23:1), vẫn xám phân biệt với sao vàng đã chọn. *@
-                                                        @onclick="() => SetLineRating(l.Id, s)">★</button>
+                                                        @onclick="() => SetLineRating(orderLine.Id, starNumber)">★</button>
                                             }
                                         </span>
                                     </div>
@@ -519,12 +519,12 @@
                             <div class="mb-2" role="radiogroup" aria-label="Chọn số sao đánh giá chung">
                                 @for (var star = 1; star <= 5; star++)
                                 {
-                                    var s = star;
+                                    var starNumber = star;
                                     <button type="button" class="btn btn-link p-0 mr-1"
-                                            role="radio" aria-checked="@(s == _rating)"
-                                            aria-label="Đánh giá @s sao"
-                                            style="font-size: 28px; color: @(s <= _rating ? "#f1b44c" : "#ccc"); text-decoration: none;"
-                                            @onclick="() => _rating = s">★</button>
+                                            role="radio" aria-checked="@(starNumber == _rating)"
+                                            aria-label="Đánh giá @starNumber sao"
+                                            style="font-size: 28px; color: @(starNumber <= _rating ? "#f1b44c" : "#ccc"); text-decoration: none;"
+                                            @onclick="() => _rating = starNumber">★</button>
                                 }
                             </div>
                             <textarea class="form-control form-control-sm mb-2" rows="2" @bind="_reviewComment"
@@ -716,11 +716,11 @@
             <div class="mb-3" role="radiogroup" aria-label="Chọn số sao đánh giá món ăn">
                 @for (var star = 1; star <= 5; star++)
                 {
-                    var s = star;
-                    <button type="button" class="btn btn-link p-0 mr-1 to-survey-star @(s <= _surveyRating ? "on" : "")"
-                            role="radio" aria-checked="@(s == _surveyRating)"
-                            aria-label="@($"Đánh giá {s} sao")"
-                            @onclick="() => _surveyRating = s">★</button>
+                    var starNumber = star;
+                    <button type="button" class="btn btn-link p-0 mr-1 to-survey-star @(starNumber <= _surveyRating ? "on" : "")"
+                            role="radio" aria-checked="@(starNumber == _surveyRating)"
+                            aria-label="@($"Đánh giá {starNumber} sao")"
+                            @onclick="() => _surveyRating = starNumber">★</button>
                 }
             </div>
             <textarea class="form-control form-control-sm mb-3" rows="2" @bind="_surveyComment"
@@ -1705,8 +1705,8 @@
 
             // Wave 6b (item 26): per-dish stars for lines the customer rated.
             var dishRatings = _order.Lines?
-                .Where(l => _lineRatings.TryGetValue(l.Id, out var r) && r >= 1)
-                .Select(l => (object)new { ProductId = l.ProductId, Rating = _lineRatings[l.Id] })
+                .Where(line => _lineRatings.TryGetValue(line.Id, out var r) && r >= 1)
+                .Select(line => (object)new { ProductId = line.ProductId, Rating = _lineRatings[line.Id] })
                 .ToList() ?? new List<object>();
             var review = await ShopEngagementService.SubmitReviewAsync(
                 _order.OrderNumber, _order.CustomerPhone, _rating, _reviewComment, dishRatings, photoUrl);

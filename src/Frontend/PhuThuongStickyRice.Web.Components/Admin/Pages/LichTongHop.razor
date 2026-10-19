@@ -238,8 +238,8 @@
         var start = first.AddDays(-(int)first.DayOfWeek);
         for (int i = 0; i < 42; i++)
         {
-            var d = start.AddDays(i);
-            _cells.Add(new CalCell(d, d.Month == _viewMonth));
+            var cellDate = start.AddDays(i);
+            _cells.Add(new CalCell(cellDate, cellDate.Month == _viewMonth));
         }
         if (_cells.TakeLast(7).All(c => !c.InMonth))
             _cells = _cells.Take(35).ToList();
@@ -247,15 +247,15 @@
 
     private async Task PrevMonth()
     {
-        var d = new DateTime(_viewYear, _viewMonth, 1).AddMonths(-1);
-        _viewYear = d.Year; _viewMonth = d.Month;
+        var previousMonthStart = new DateTime(_viewYear, _viewMonth, 1).AddMonths(-1);
+        _viewYear = previousMonthStart.Year; _viewMonth = previousMonthStart.Month;
         await LoadAsync();
     }
 
     private async Task NextMonth()
     {
-        var d = new DateTime(_viewYear, _viewMonth, 1).AddMonths(1);
-        _viewYear = d.Year; _viewMonth = d.Month;
+        var nextMonthStart = new DateTime(_viewYear, _viewMonth, 1).AddMonths(1);
+        _viewYear = nextMonthStart.Year; _viewMonth = nextMonthStart.Month;
         await LoadAsync();
     }
 
