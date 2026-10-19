@@ -32,7 +32,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             IServiceScopeFactory serviceScopeFactory)
             : base(timer, serviceScopeFactory)
         {
-            Timer.Period = (int)TimeSpan.FromDays(7).TotalMilliseconds;
+            Timer.Period = (int)OrphanAge.TotalMilliseconds;
             Timer.RunOnStart = false;
         }
 

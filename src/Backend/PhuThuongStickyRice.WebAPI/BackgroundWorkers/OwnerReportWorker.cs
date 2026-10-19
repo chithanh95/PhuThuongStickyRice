@@ -21,6 +21,10 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
     /// </summary>
     public class OwnerReportWorker : AsyncPeriodicBackgroundWorkerBase
     {
+        // Worker chỉ kiểm tra "đến giờ gửi chưa" — chạy mỗi 30 phút là đủ
+        // (báo cáo tuần gửi sáng thứ 2, báo cáo tháng gửi mùng 1).
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(30);
+
         private DateTime? _lastWeeklySentUtc;
         private DateTime? _lastMonthlySentUtc;
 
@@ -29,7 +33,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             IServiceScopeFactory serviceScopeFactory)
             : base(timer, serviceScopeFactory)
         {
-            Timer.Period = 30 * 60 * 1000; // every 30 minutes
+            Timer.Period = (int)CheckInterval.TotalMilliseconds;
             Timer.RunOnStart = false;
         }
 

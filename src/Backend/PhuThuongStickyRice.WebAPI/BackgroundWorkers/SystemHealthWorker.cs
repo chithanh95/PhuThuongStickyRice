@@ -37,6 +37,10 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
     {
         private const long LowDiskBytes = 500L * 1024 * 1024; // 500 MB
         private static readonly TimeSpan AlertCooldown = TimeSpan.FromHours(1);
+        // Chu kỳ kiểm tra sức khỏe hệ thống (DB, ổ đĩa, tỉ lệ lỗi log).
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
+        // Hệ số đổi byte → MB khi hiển thị dung lượng còn trống.
+        private const long BytesPerMegabyte = 1024L * 1024L;
 
         private readonly IHttpClientFactory _httpClientFactory;
 
@@ -51,7 +55,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             : base(timer, serviceScopeFactory)
         {
             _httpClientFactory = httpClientFactory;
-            Timer.Period = 5 * 60 * 1000; // 5 minutes
+            Timer.Period = (int)CheckInterval.TotalMilliseconds;
             Timer.RunOnStart = false;
         }
 
@@ -93,7 +97,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             if (freeBytes.HasValue && freeBytes.Value < LowDiskBytes)
             {
                 _lastDiskAlert = await AlertAsync(provider, settings, "disk", _lastDiskAlert,
-                    $"🚨 *Xôi Phú Thượng — health alert*\nỔ đĩa uploads sắp đầy: còn {freeBytes.Value / 1024 / 1024} MB trống.");
+                    $"🚨 *Xôi Phú Thượng — health alert*\nỔ đĩa uploads sắp đầy: còn {freeBytes.Value / BytesPerMegabyte} MB trống.");
             }
 
             // 3. Recent error-log rate.

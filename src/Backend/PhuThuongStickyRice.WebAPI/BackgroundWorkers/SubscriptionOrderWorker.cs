@@ -17,12 +17,16 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
     /// </summary>
     public class SubscriptionOrderWorker : AsyncPeriodicBackgroundWorkerBase
     {
+        // Mỗi subscription có guard LastOrderDate nên chạy 6 giờ/lần vẫn
+        // đảm bảo tối đa 1 đơn/ngày — không cần tick dày hơn.
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(6);
+
         public SubscriptionOrderWorker(
             AbpAsyncTimer timer,
             IServiceScopeFactory serviceScopeFactory)
             : base(timer, serviceScopeFactory)
         {
-            Timer.Period = 6 * 60 * 60 * 1000; // 6 hours
+            Timer.Period = (int)CheckInterval.TotalMilliseconds;
             Timer.RunOnStart = false;
         }
 
