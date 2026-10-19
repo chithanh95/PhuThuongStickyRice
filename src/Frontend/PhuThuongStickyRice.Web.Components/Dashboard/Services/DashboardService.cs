@@ -16,6 +16,7 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
         /// </summary>
     public class DashboardService : ApiClientBase
     {
+        /// <summary>Khởi tạo client dashboard (dùng HttpClient đã có token của admin).</summary>
         public DashboardService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)
         {
@@ -45,28 +46,44 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
             return await GetAsync<List<TopProductModel>>(BuildUrl("api/dashboard/top-products", from, to) + $"&top={top}");
         }
 
-        /// <summary>Item 90: new vs returning customers over the date range.</summary>
+        /// <summary>
+        /// Item 90: khách mới (đơn đầu tiên trong khoảng) so với khách quay
+        /// lại (đã mua trước đó) trong khoảng ngày.
+        /// </summary>
+        /// <param name="from">Từ ngày (tùy chọn).</param>
+        /// <param name="to">Đến ngày (tùy chọn).</param>
+        /// <returns>Số lượng khách mới/cũ.</returns>
         public async Task<NewAndReturningCustomersModel> GetNewReturningCustomersAsync(DateTime? from = null, DateTime? to = null)
         {
             return await GetAsync<NewAndReturningCustomersModel>(
                 BuildUrl("api/dashboard/customers/new-vs-returning", from, to));
         }
 
-        /// <summary>Wave 6d (item 36): today's vs yesterday's revenue and orders.</summary>
+        /// <summary>
+        /// Item 36 (wave 6d): so sánh doanh thu và số đơn hôm nay với hôm qua.
+        /// </summary>
+        /// <returns>Doanh thu/đơn hôm nay và hôm qua.</returns>
         public async Task<TodayVsYesterdayModel> GetTodayVsYesterdayAsync()
         {
             return await GetAsync<TodayVsYesterdayModel>(
                 "api/dashboard/today-vs-yesterday?_=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         }
 
-        /// <summary>Item 138: aggregated numbers for the last full week.</summary>
+        /// <summary>
+        /// Item 138: số liệu tổng hợp của tuần đầy đủ gần nhất (doanh thu,
+        /// số đơn, món bán chạy...) để gửi báo cáo.
+        /// </summary>
+        /// <returns>Báo cáo tuần.</returns>
         public async Task<WeeklyReportModel> GetWeeklyReportAsync()
         {
             return await GetAsync<WeeklyReportModel>(
                 "api/admin/reports/weekly?_=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         }
 
-        /// <summary>Item 138: trigger a Zalo OA delivery of the weekly report (Admin).</summary>
+        /// <summary>
+        /// Item 138: kích hoạt gửi báo cáo tuần qua Zalo OA cho admin.
+        /// </summary>
+        /// <returns>Kết quả gửi báo cáo.</returns>
         public async Task<WeeklyReportSendResultModel> SendWeeklyReportAsync()
         {
             return await PostAsync<WeeklyReportSendResultModel>("api/admin/reports/weekly/send");

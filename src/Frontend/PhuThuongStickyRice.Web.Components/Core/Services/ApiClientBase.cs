@@ -19,6 +19,11 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         protected readonly ITokenStore _tokenStore;
         protected readonly NavigationManager _navigation;
 
+        /// <summary>
+        /// Khởi tạo client gọi API. <paramref name="navigation"/> chỉ có ở
+        /// các service Blazor có NavigationManager (để xử lý 401/404);
+        /// HttpClient thô truyền null.
+        /// </summary>
         public ApiClientBase(HttpClient httpClient, ITokenStore tokenStore, NavigationManager navigation = null)
         {
             _httpClient = httpClient;
@@ -70,6 +75,10 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             return token?.AccessToken;
         }
 
+        /// <summary>
+        /// Gắn bearer token vào HttpClient trước mỗi request. Bỏ qua khi
+        /// token store đã tự gắn token ở mức handler (HttpClientFactory).
+        /// </summary>
         protected async Task SetBearerToken()
         {
             if (_tokenStore.AttachTokenAutomatically)
@@ -84,6 +93,12 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
         }
 
+        /// <summary>
+        /// Gửi GET với bearer token, xử lý 401/404 chung, và giải mã response JSON.
+        /// </summary>
+        /// <typeparam name="T">Kiểu DTO của response.</typeparam>
+        /// <param name="url">API endpoint tương đối (vd "api/orders/stats").</param>
+        /// <returns>DTO đã giải mã từ response.</returns>
         protected async Task<T> GetAsync<T>(string url)
         {
             await SetBearerToken();
@@ -99,6 +114,14 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             return data;
         }
 
+        /// <summary>
+        /// Gửi POST với JSON body, gắn bearer token, xử lý 401/404 chung,
+        /// và giải mã response JSON. Bỏ qua body khi <paramref name="data"/> null.
+        /// </summary>
+        /// <typeparam name="T">Kiểu DTO của response.</typeparam>
+        /// <param name="url">API endpoint tương đối (vd "api/orders").</param>
+        /// <param name="data">Body gửi lên (serialize JSON); null thì không gửi body.</param>
+        /// <returns>DTO đã giải mã từ response.</returns>
         protected async Task<T> PostAsync<T>(string url, object data = null)
         {
             await SetBearerToken();
@@ -143,6 +166,10 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             return updatedObject;
         }
 
+        /// <summary>
+        /// Gửi DELETE với bearer token, xử lý 401/404 chung.
+        /// </summary>
+        /// <param name="url">API endpoint tương đối (vd "api/customer-tags/{id}").</param>
         protected async Task DeleteAsync(string url)
         {
             await SetBearerToken();

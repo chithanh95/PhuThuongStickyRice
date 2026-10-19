@@ -17,6 +17,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     {
         private readonly HttpClient _httpClient;
 
+        /// <summary>Khởi tạo service gọi các endpoint public của cửa hàng (không cần token đăng nhập).</summary>
         public ShopService(HttpClient httpClient)
         {
             _httpClient = httpClient;

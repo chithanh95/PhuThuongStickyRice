@@ -24,6 +24,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
         private readonly HttpClient _httpClient;
 
+        /// <summary>Khởi tạo service gói "Ăn sáng cả tuần" (các endpoint public, không cần đăng nhập).</summary>
         public WeeklyPlanService(HttpClient httpClient)
         {
             _httpClient = httpClient;

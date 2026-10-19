@@ -30,6 +30,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         private readonly List<CartItemModel> _items = new List<CartItemModel>();
         private bool _loaded;
 
+        /// <summary>
+        /// Khởi tạo trạng thái giỏ hàng client. <paramref name="commerceService"/>
+        /// dùng để resolve ảnh món khi thêm nhanh từ trang shop.
+        /// </summary>
         public CartState(IJSRuntime jsRuntime, AdminCommerceService commerceService)
         {
             _jsRuntime = jsRuntime;
