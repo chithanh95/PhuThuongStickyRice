@@ -945,3 +945,46 @@ html.dark .shp-page .alert-success .text-warning.text-warning {
 }
 
 /* ===== END Run 2026-10-19 17:15 — Agent 4 ===== */
+
+/* ===== uiux-team run 2026-10-19 18:35 - Agent 4 A11y: nút × đóng modal admin (.lx-modal-veil) ===== */
+
+/* Fix 5 — WCAG 2.4.7 (Focus Visible) + 1.4.11 (Non-text Contrast, cần 3:1)
+   + polish hover: nút × `.close` của Bootstrap trên 4 modal admin
+   (Mã giảm giá / Chi nhánh / Khuyến mãi / Duyệt cọc) mặc định chỉ có
+   opacity .5 (~#808080 trên nền trắng ≈ 3.9:1, sát ngưỡng, nhân viên
+   lớn tuổi khó thấy), không có vòng focus riêng và hover chỉ tăng
+   opacity nên không rõ là nút bấm. Nâng opacity cơ bản lên .75 cho dễ
+   nhìn, hover cho nền tròn tím nhạt + opacity 1 (affordance rõ), và vẽ
+   vòng focus tím #7a6fbe khi tab bằng bàn phím (đậm hơn ở dark mode
+   #a49de0 vì nền modal tối). Scope `.lx-admin` nên không chạm demo
+   Lexa hay modal shop. Không đổi layout/kích thước. */
+.lx-admin .lx-modal-veil .modal-header .close.close {
+    opacity: .75;
+    text-shadow: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color .15s ease, opacity .15s ease, color .15s ease;
+}
+.lx-admin .lx-modal-veil .modal-header .close.close:hover {
+    opacity: 1;
+    background: rgba(122, 111, 190, .12);
+    color: #5b54a3;
+}
+.lx-admin .lx-modal-veil .modal-header .close.close:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+    opacity: 1;
+}
+html.dark .lx-admin .lx-modal-veil .modal-header .close.close:hover {
+    background: rgba(164, 157, 224, .18);
+    color: #cfc9f2;
+}
+html.dark .lx-admin .lx-modal-veil .modal-header .close.close:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* ===== END uiux-team run 2026-10-19 18:35 - Agent 4 ===== */

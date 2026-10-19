@@ -77,11 +77,13 @@
 
 @if (_showForm)
 {
-    <div class="modal show d-block lx-modal-veil" tabindex="-1">
+    @* UIUX-1019 Agent4 (run 18:35): role="dialog" + aria-modal + aria-labelledby
+       để trình đọc màn hình nhận diện đây là hộp thoại và đọc đúng tiêu đề. *@
+    <div class="modal show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cn-modal-title">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">@(_editing == null ? "Thêm chi nhánh" : "Sửa chi nhánh")</h5>
+                    <h5 class="modal-title" id="cn-modal-title">@(_editing == null ? "Thêm chi nhánh" : "Sửa chi nhánh")</h5>
                     <button type="button" class="close" @onclick="HideForm" aria-label="Đóng"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">

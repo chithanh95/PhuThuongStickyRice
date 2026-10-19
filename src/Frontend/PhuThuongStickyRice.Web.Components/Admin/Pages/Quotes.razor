@@ -167,12 +167,15 @@ else
 @* Item 161: modal duyệt & gửi link cọc *@
 @if (_depositQuote != null)
 {
-    <div class="modal fade show d-block lx-modal-veil" tabindex="-1">
+    @* UIUX-1019 Agent4 (run 18:35): role="dialog" + aria-modal + aria-labelledby
+       để trình đọc màn hình nhận diện đây là hộp thoại và đọc đúng tiêu đề;
+       span × thêm aria-hidden để SR không đọc "times". *@
+    <div class="modal fade show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="quotes-deposit-modal-title">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Duyệt &amp; gửi cọc — @_depositQuote.CustomerName</h5>
-                    <button type="button" class="close" aria-label="Đóng" @onclick="CloseDepositModal"><span>&times;</span></button>
+                    <h5 class="modal-title" id="quotes-deposit-modal-title">Duyệt &amp; gửi cọc — @_depositQuote.CustomerName</h5>
+                    <button type="button" class="close" aria-label="Đóng" @onclick="CloseDepositModal"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     @if (!_depositSaved)
