@@ -556,3 +556,38 @@ a:hover, a:focus { color: #625998; }
 }
 
 /* ===== END UIUX-1225 A3 ===== */
+
+/* ===== UI/UX run 2026-10-19 12:35 - Agent3 Lexa =====
+   2 fix MỚI (đã verify bằng grep, không trùng 8 đợt trước).
+   8 đợt trước đã xử lý: text-*/bg-*/badge-*/alert-*/border-*/table-*
+   utilities, btn solid + outline (shop+admin), btn-link, nav pills/tabs,
+   pagination admin, validation, btn focus glow, a:hover, ::selection,
+   accent-color checkbox/radio, lx-pill, .fc-call, auth-step.done,
+   online-dot.on, inline LaiGop. Không còn icon oi-* nào trong markup
+   (chỉ còn comment, route URL và file thư viện open-iconic — không sửa). */
+
+/* ---------- Fix 1: màu cột trạng thái KanbanDon -> palette Lexa ----------
+   Verify: Admin/Pages/KanbanDon.razor:154-158 — _columns dùng màu
+   Bootstrap 3 cũ: Pending #f0ad4e (cam), Confirmed #5bc0de (cyan),
+   Completed #5cb85c (xanh lá), render qua inline style
+   `border-top: 3px solid @col.Color` (dòng 48) và badge
+   `background:@col.Color` (dòng 50). Delivering #6c757d là xám trung
+   tính nên giữ nguyên. Dùng attribute selector + !important (pattern
+   đã dùng cho LaiGop ở đợt 08:35) để đè inline style mà không sửa .razor. */
+.kanban-col-head[style*="#f0ad4e"] { border-top-color: #f1b44c !important; }
+.kanban-col-head[style*="#5bc0de"] { border-top-color: #50a5f1 !important; }
+.kanban-col-head[style*="#5cb85c"] { border-top-color: #34c38f !important; }
+.kanban-col-head .badge[style*="#f0ad4e"] { background-color: #f1b44c !important; }
+.kanban-col-head .badge[style*="#5bc0de"] { background-color: #50a5f1 !important; }
+.kanban-col-head .badge[style*="#5cb85c"] { background-color: #34c38f !important; }
+
+/* ---------- Fix 2: màu link cơ bản #0366d6 -> tím Lexa ----------
+   Verify: app.css:21 `a, .btn-link { color: #0366d6; }` — xanh GitHub
+   lệch palette, lại mâu thuẫn với chính `a:hover { color: #625998 }`
+   đã set toàn cục ở đợt 10:55 (link thường xanh, hover tím).
+   Đổi base về #7a6fbe cho đồng nhất. Landing an toàn: .sg-nav a và
+   .sg-footer-col a có màu scoped riêng trong Index.razor.css nên
+   không đổi; .shp-page a cũng đã có rule riêng. */
+a { color: #7a6fbe; }
+
+/* ===== end UI/UX run 2026-10-19 12:35 - Agent3 Lexa ===== */

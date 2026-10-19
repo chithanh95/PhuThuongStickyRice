@@ -72,7 +72,7 @@
                 <button class="lx-icon-btn lx-hamburger" @onclick="ToggleNav" title="Menu" aria-label="Mở hoặc đóng menu điều hướng">
                     <span class="fa-solid fa-bars" aria-hidden="true"></span>
                 </button>
-                <button class="lx-btn-create" title="Tạo mới">
+                <button class="lx-btn-create" title="Tạo mới" aria-label="Tạo mới">
                     Tạo mới <span class="fa-solid fa-chevron-down" aria-hidden="true" style="font-size:11px"></span>
                 </button>
             </div>
@@ -140,7 +140,7 @@
                     }
                 </div>
                 <div class="lx-dropdown lx-lang-wrap">
-                    <button class="lx-lang-btn" @onclick="ToggleLangMenu" title="Ngôn ngữ">
+                    <button class="lx-lang-btn" @onclick="ToggleLangMenu" title="Ngôn ngữ" aria-label="Ngôn ngữ — chọn ngôn ngữ hiển thị">
                         <img src="/images/flags/@(_lang == "en" ? "gb" : "vn").png" alt="" style="width:20px;height:14px;border-radius:2px;" />
                         <span>@(_lang == "en" ? "English" : "Tiếng Việt")</span>
                         <span class="fa-solid fa-chevron-down" aria-hidden="true" style="font-size:10px"></span>
@@ -200,7 +200,7 @@
                     }
                 </div>
                 <div class="lx-dropdown lx-user-wrap">
-                    <button class="lx-avatar" @onclick="ToggleUserMenu" title="Tài khoản">
+                    <button class="lx-avatar" @onclick="ToggleUserMenu" title="Tài khoản" aria-label="Tài khoản — mở menu người dùng">
                         <AuthorizeView>
                             <Authorized>@UserInitial(context.User.Identity?.Name)</Authorized>
                             <NotAuthorized>A</NotAuthorized>

@@ -629,3 +629,47 @@ html.dark .validation-message {
 }
 
 /* ===== END UIUX-1225 A2 ===== */
+
+/* ===== UIUX run 2026-10-19 12:35 - Agent2 Dark =====
+   (các đợt trước đã phủ gần như toàn bộ shop/admin/landing:
+   kanban, nhuong-quyen, check-in, the-xoi, cart/checkout sticky bar,
+   survey popup, tai-khoan, error/404/maint, QuantitySpinner, nq-form label,
+   to-info-label, shp-logout hover, svg DuBao, shop size price, qv-sheet,
+   stepper mobile, lexa auth, poll/spin/share, stats, review, bulk-prod,
+   chat, lang menu, modal/alert/table toàn cục, auth pages, print pages
+   giữ trắng có chủ đích. Đợt này quét lại toàn bộ .razor + .razor.css +
+   inline style: chỉ còn 2 lỗi MỚI thật, đều đã grep xác minh.) */
+
+/* ---------- FIX 1 — Landing: chữ báo lỗi form đăng ký nhận tin (.sg-form-error) ----------
+   Vấn đề: Core/Pages/Index.razor.css:829 — .sg-form-error { color: #b3402e }
+   (thông báo lỗi khi nhập email sai ở form subscribe chân trang chủ).
+   Không có rule dark nào phủ (đã grep "sg-form-error" toàn bộ css = chỉ
+   rule gốc). Ở dark mode nền trang là #1c1712 → tương phản chỉ ~2.5:1,
+   chữ báo lỗi gần như chìm hẳn, đúng lúc người dùng cần đọc nhất.
+   Fix: đỏ sáng #ff9a8a cùng tone fix .validation-message đợt 12:25
+   (~7:1 trên nền tối). Không cần !important: html.dark .sg-form-error
+   (0,2,1) thắng rule scoped .sg-form-error[b-xxx] (0,2,0). */
+html.dark .sg-form-error {
+    color: #ff9a8a; /* was #b3402e */
+}
+
+/* ---------- FIX 2 — Bootstrap .bg-light trắng lọt ở dark mode (admin + shop) ----------
+   Vấn đề: Bootstrap .bg-light (= #f8f9fa, có !important) không có rule dark
+   nào phủ (đã grep toàn bộ css = 0 kết quả). 5 chỗ dùng đều lọt mảng trắng:
+   - Admin: Orders/Pages/OrderList.razor:265, Customers.razor:289/385/425 —
+     dòng <td class="bg-light"> trạng thái rỗng giữa bảng tối.
+   - Shop: Shop/Pages/DatSoLuongLon.razor:183 — <div class="card bg-light">
+     form nhập số lượng đặt lớn, card trắng toát giữa trang tối.
+   Fix: 2 rule theo palette từng khu vực (đã xác minh _Imports.razor:
+   Orders/Pages dùng AdminLayout (.lx-admin), Shop/Pages dùng ShopLayout
+   (.shp-page)). !important để thắng Bootstrap (.bg-light có !important). */
+html.dark .lx-admin .bg-light {
+    background-color: #262640 !important; /* was #f8f9fa */
+    color: #f0eef5;
+}
+html.dark .shp-page .bg-light {
+    background-color: #2e2620 !important; /* was #f8f9fa */
+    color: #f0e8dc;
+}
+
+/* === end Agent 2 run 12:35 === */

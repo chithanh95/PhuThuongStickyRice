@@ -918,3 +918,114 @@
 }
 
 /* ===== END UIUX-1225 A1 ===== */
+
+/* ===== UI/UX run 2026-10-19 12:35 - Agent1 Mobile ===== */
+
+/* ------------------------------------------------------------
+   FIX 1 — /checkout: 3 nút điều hướng sau khi đặt đơn thành công
+   (.co-success-nav: "🏠 Về trang chủ", "🍚 Xem thực đơn",
+   "Tra cứu đơn hàng").
+   Vấn đề: cả 3 là `btn-sm` chỉ ~31px, xếp ngang sát nhau — khách
+   vừa đặt xong khó bấm chính xác trên điện thoại, nhất là người già.
+   (Các nút btn-sm khác của checkout — VAT, co-summary, bước chốt —
+   đã được fix ở các đợt trước.)
+   Giải pháp: xếp dọc full-width, mỗi nút ≥48px, chữ đậm.
+   (Verify: Checkout.razor:131-134; .co-success-nav chỉ tồn tại ở
+   đúng block này nên selector an toàn)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .co-success-nav .btn-sm {
+        width: 100%;
+        min-height: 48px;
+        margin-left: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .co-success-nav .btn-sm:not(:first-child) {
+        margin-top: 8px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — Landing, widget chat đặt xôi: nút "✓ Đặt đơn này" và "Hủy"
+   (.sg-chat-order-btns .sg-btn).
+   Vấn đề: scoped CSS Index.razor.css:1972 ép padding 8px,
+   font-size 13px → cao chỉ ~31px, trong khi "Đặt đơn này" là nút
+   chốt đơn trong chat — thao tác quan trọng với người già.
+   Giải pháp: cao ≥48px, chữ 1rem canh giữa. Dùng doubled-class để
+   thắng specificity của scoped CSS (file này load sau cùng nên
+   hòa specificity vẫn thắng theo cascade).
+   (Verify: Core/Pages/Index.razor:866-869; Index.razor.css:1972)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-chat-order-btns.sg-chat-order-btns .sg-btn.sg-btn {
+        min-height: 48px;
+        padding: 12px 16px;
+        font-size: 1rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — Landing, widget chat: ô nhập "Nhắn tin..." và ô SĐT
+   (.sg-chat-input input, .sg-chat-phone).
+   Vấn đề: font-size 14px — iOS Safari TỰ ĐỘNG ZOOM khi focus input
+   <16px, làm vỡ layout chat box trên iPhone; ô SĐT cũng chỉ ~34px.
+   (Mẫu lỗi tương tự đã fix ở checkout/track-order các đợt trước.)
+   Giải pháp: nâng lên 16px trên mobile, ô SĐT cao 44px.
+   (Verify: Core/Pages/Index.razor.css:1793 input, 1965 .sg-chat-phone;
+   doubled-class để thắng scoped CSS)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-chat-input.sg-chat-input input {
+        font-size: 16px;
+    }
+    .sg-chat-phone.sg-chat-phone {
+        font-size: 16px;
+        min-height: 44px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — Landing: pill giỏ hàng nổi (.sg-cart-float).
+   Vấn đề: trên mobile scoped CSS set padding 12px 18px, font 14px
+   → cao chỉ ~41px, dưới chuẩn chạm 44px; đây là CTA chính của
+   landing (khách bấm để quay lại giỏ hàng).
+   Giải pháp: min-height 44px, chữ canh giữa dọc. doubled-class để
+   thắng 2 rule @media ≤768px ở Index.razor.css:994 và 2104.
+   (Verify: Core/Pages/Index.razor — pill giỏ hàng nổi landing)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-cart-float.sg-cart-float {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — Landing, hero: 2 link tắt "Đặt tiệc" / "Đặt số lượng lớn"
+   (.sg-hero-quicklinks a).
+   Vấn đề: link text thường 14px, vùng bấm chỉ cao ~20px — khách
+   lớn tuổi dễ bấm trượt các lối tắt đặt hàng ngay dưới nút hero.
+   Giải pháp: inline-block + padding 12px 8px → vùng bấm ≥44px,
+   gạch chân vẫn chỉ ôm chữ nên không xấu đi.
+   (Verify: Core/Pages/Index.razor:158-161;
+   Index.razor.css:2111; dùng a[href] để thắng scoped CSS)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-hero-quicklinks.sg-hero-quicklinks a[href] {
+        display: inline-block;
+        padding: 12px 10px;
+    }
+}
+
+/* ===== END UI/UX run 2026-10-19 12:35 - Agent1 Mobile ===== */

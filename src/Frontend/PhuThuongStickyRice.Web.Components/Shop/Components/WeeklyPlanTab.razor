@@ -68,7 +68,7 @@
         <h3 class="wpt-title">Gói của tôi</h3>
         <p class="wpt-big">Nhập số điện thoại đã mua gói:</p>
         <input class="wpt-input" @bind="_lookupPhone" maxlength="10" inputmode="numeric"
-               placeholder="Ví dụ: 0912345678" autocomplete="tel" />
+               placeholder="Ví dụ: 0912345678" autocomplete="tel" aria-label="Số điện thoại đã dùng mua gói tuần" />
         <div>
             <button type="button" class="wpt-btn wpt-btn-outline" @onclick="LookupAsync" disabled="@_lookingUp">
                 @(_lookingUp ? "Đang xem..." : "Xem gói của tôi")

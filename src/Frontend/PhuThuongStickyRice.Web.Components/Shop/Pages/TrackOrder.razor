@@ -509,6 +509,7 @@
                                 {
                                     var s = star;
                                     <button type="button" class="btn btn-link p-0 mr-1"
+                                            aria-label="Đánh giá @s sao"
                                             style="font-size: 28px; color: @(s <= _rating ? "#f6c453" : "#ccc"); text-decoration: none;"
                                             @onclick="() => _rating = s">★</button>
                                 }

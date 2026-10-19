@@ -158,24 +158,24 @@
                     <div class="card nq-form-card">
                         <div class="card-body">
                             <div class="form-group">
-                                <label>Họ tên *</label>
-                                <input class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
+                                <label for="nq-fullname">Họ tên *</label>
+                                <input id="nq-fullname" class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
                                 @if (!string.IsNullOrEmpty(_nameError)) { <small class="text-danger">@_nameError</small> }
                             </div>
                             <div class="form-group">
-                                <label>Số điện thoại *</label>
-                                <input class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
+                                <label for="nq-phone">Số điện thoại *</label>
+                                <input id="nq-phone" type="tel" inputmode="tel" class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
                                 @if (!string.IsNullOrEmpty(_phoneError)) { <small class="text-danger">@_phoneError</small> }
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-md-6">
-                                    <label>Tỉnh / Thành phố dự kiến mở *</label>
-                                    <input class="form-control @FieldClass(_provinceError)" @bind="_model.EventLocation" placeholder="VD: Hà Nội" />
+                                    <label for="nq-province">Tỉnh / Thành phố dự kiến mở *</label>
+                                    <input id="nq-province" class="form-control @FieldClass(_provinceError)" @bind="_model.EventLocation" placeholder="VD: Hà Nội" />
                                     @if (!string.IsNullOrEmpty(_provinceError)) { <small class="text-danger">@_provinceError</small> }
                                 </div>
                                 <div class="form-group col-md-6">
-                                    <label>Vốn dự kiến *</label>
-                                    <select class="form-control @FieldClass(_budgetError)" @bind="_model.Budget">
+                                    <label for="nq-budget">Vốn dự kiến *</label>
+                                    <select id="nq-budget" class="form-control @FieldClass(_budgetError)" @bind="_model.Budget">
                                         <option value="">— Chọn mức vốn —</option>
                                         <option>Dưới 100 triệu</option>
                                         <option>100 – 200 triệu</option>
@@ -188,8 +188,8 @@
                             @* NQ3: câu hỏi sàng lọc trước khi tư vấn. *@
                             <div class="form-row">
                                 <div class="form-group col-md-6">
-                                    <label>Tình trạng mặt bằng *</label>
-                                    <select class="form-control @FieldClass(_premisesError)" @bind="_premises">
+                                    <label for="nq-premises">Tình trạng mặt bằng *</label>
+                                    <select id="nq-premises" class="form-control @FieldClass(_premisesError)" @bind="_premises">
                                         <option value="">— Chọn tình trạng —</option>
                                         <option>Đã có mặt bằng</option>
                                         <option>Đang tìm mặt bằng</option>
@@ -198,8 +198,8 @@
                                     @if (!string.IsNullOrEmpty(_premisesError)) { <small class="text-danger">@_premisesError</small> }
                                 </div>
                                 <div class="form-group col-md-6">
-                                    <label>Kinh nghiệm F&B *</label>
-                                    <select class="form-control @FieldClass(_experienceError)" @bind="_experience">
+                                    <label for="nq-experience">Kinh nghiệm F&B *</label>
+                                    <select id="nq-experience" class="form-control @FieldClass(_experienceError)" @bind="_experience">
                                         <option value="">— Chọn mức kinh nghiệm —</option>
                                         <option>Đang kinh doanh ăn uống</option>
                                         <option>Đã từng kinh doanh ăn uống</option>
@@ -209,8 +209,8 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Lời nhắn</label>
-                                <textarea class="form-control" rows="3" @bind="_model.Notes"
+                                <label for="nq-notes">Lời nhắn</label>
+                                <textarea id="nq-notes" class="form-control" rows="3" @bind="_model.Notes"
                                           placeholder="VD: Tôi có mặt bằng 30m² ở mặt phố, muốn tìm hiểu thêm..."></textarea>
                             </div>
                             <button class="btn btn-block nq-submit" @onclick="SubmitAsync" disabled="@_submitting">
