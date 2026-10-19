@@ -2185,25 +2185,38 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var cutoff = DateTime.UtcNow.AddDays(-30);
 
-            // WithDetailsAsync load Lines (rating theo món) — GetQueryableAsync
-            // không include navigation nên Lines sẽ rỗng.
-            var reviewQueryable = await _reviews.WithDetailsAsync(x => x.Lines);
+            var reviewQueryable = await _reviews.GetQueryableAsync();
 
-            // Lấy đánh giá thấp (≤2 sao, không bị ẩn) trong 30 ngày cùng
-            // rating theo món — Take(2000) chặn trước khi group trong memory.
-            var badReviews = await _asyncExecuter.ToListAsync(
+            // perf-hunt 2026-10-19 (run 19:15): giữ Take(2000) ở cấp review như
+            // bản cũ (chặn trước khi group trong memory), nhưng chỉ project 4
+            // cột thật sự dùng (Comment, CreatedAt, ProductName, Rating) thay
+            // vì WithDetailsAsync + nạp full entity review (kèm cột text dài
+            // như Comment/AdminReply...) — bảng đánh giá tăng vô hạn theo đơn.
+            // Tập ứng viên, thứ tự group, công thức DTO giữ nguyên 100%.
+            var badReviewIds = await _asyncExecuter.ToListAsync(
                 reviewQueryable
                     .Where(x => !x.IsHidden && x.CreatedAt >= cutoff && x.Rating <= 2)
                     .OrderByDescending(x => x.CreatedAt)
+                    .Select(x => x.Id)
                     .Take(2000));
 
+            var rows = await _asyncExecuter.ToListAsync(
+                reviewQueryable
+                    .Where(x => badReviewIds.Contains(x.Id))
+                    .SelectMany(x => x.Lines
+                        .Where(l => l.Rating <= 2)
+                        .Select(l => new
+                        {
+                            x.Comment,
+                            x.CreatedAt,
+                            l.ProductName,
+                            l.Rating
+                        })));
+
             var result = new List<PoorlyRatedDishDto>();
-            foreach (var group in badReviews
-                .SelectMany(r => (r.Lines ?? new List<OrderReviewLine>())
-                    .Where(l => l.Rating <= 2)
-                    .Select(l => new { Review = r, Line = l }))
-                .GroupBy(x => string.IsNullOrWhiteSpace(x.Line.ProductName)
-                    ? "(không rõ món)" : x.Line.ProductName.Trim()))
+            foreach (var group in rows
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.ProductName)
+                    ? "(không rõ món)" : x.ProductName.Trim()))
             {
                 var items = group.ToList();
                 if (items.Count < 3)
@@ -2215,14 +2228,14 @@ namespace PhuThuongStickyRice.Application.Orders
                 {
                     ProductName = group.Key,
                     BadCount = items.Count,
-                    AvgRating = Math.Round(items.Average(x => x.Line.Rating), 1),
+                    AvgRating = Math.Round(items.Average(x => x.Rating), 1),
                     SampleComments = items
-                        .Where(x => !string.IsNullOrWhiteSpace(x.Review.Comment))
-                        .Select(x => x.Review.Comment.Trim())
+                        .Where(x => !string.IsNullOrWhiteSpace(x.Comment))
+                        .Select(x => x.Comment.Trim())
                         .Distinct()
                         .Take(3)
                         .ToList(),
-                    LastBadAt = items.Max(x => x.Review.CreatedAt)
+                    LastBadAt = items.Max(x => x.CreatedAt)
                 });
             }
 

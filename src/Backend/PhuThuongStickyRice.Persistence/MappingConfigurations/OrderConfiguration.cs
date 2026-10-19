@@ -27,13 +27,22 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.CustomerPhoneNorm)
                 .HasMaxLength(Order.CustomerPhoneNormMaxLength)
                 .IsRequired();
-            builder.HasIndex(x => x.CustomerPhoneNorm);
-            // perf-hunt 2026-10-19: LoyaltyAppService.HasNoPriorCompletedOrderAsync
-            // (chạy mỗi khi đơn dùng mã giới thiệu hoàn thành) lọc bằng cả 2
-            // điều kiện bằng: CustomerPhoneNorm == 9 số cuối AND Status == Completed.
-            // Composite index cho full seek 2 điều kiện; index đơn CustomerPhoneNorm
-            // còn lại phục vụ các truy vấn chỉ lọc theo SĐT (không đổi).
             builder.HasIndex(x => new { x.CustomerPhoneNorm, x.Status });
+            // perf-hunt 2026-10-19 (run 19:15): index đơn CustomerPhoneNorm bị
+            // loại bỏ vì dư thừa — mọi truy vấn lọc bằng trên norm đều được
+            // phục vụ qua prefix trái của 2 composite index dưới
+            // (HasOrderedBefore / EnsurePhoneDailyLimit / CountCompletedOrders /
+            // HasNoPriorCompletedOrder / tra cứu đơn theo SĐT đều lọc bằng
+            // CustomerPhoneNorm trước khi so khoan dung trong memory).
+            // (1) (CustomerPhoneNorm, Status): full seek 2 điều kiện bằng cho
+            // LoyaltyAppService.HasNoPriorCompletedOrderAsync (mỗi khi đơn dùng
+            // mã giới thiệu hoàn thành) và CountCompletedOrdersByPhoneAsync.
+            // (2) (CustomerPhoneNorm, CreatedAt): seek theo SĐT + sort ngày tạo
+            // ngay trên index cho 2 đường nóng public: tra cứu đơn theo SĐT
+            // (LoadOrderCandidatesAsync) và prefill tên/địa chỉ checkout
+            // (GetLastOrderInfoByPhoneAsync) — đều OrderByDescending(CreatedAt)
+            // + Take(100). Thay index đơn dư thừa nên write cost không tăng.
+            builder.HasIndex(x => new { x.CustomerPhoneNorm, x.CreatedAt });
             builder.Property(x => x.CustomerEmail).HasMaxLength(Order.CustomerEmailMaxLength);
             builder.Property(x => x.CustomerAddress).HasMaxLength(Order.CustomerAddressMaxLength);
             builder.Property(x => x.Notes).HasMaxLength(Order.NotesMaxLength);
