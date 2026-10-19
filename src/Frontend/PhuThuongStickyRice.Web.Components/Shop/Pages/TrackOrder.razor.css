@@ -163,11 +163,6 @@ html.dark .to-tl-current .to-tl-label {
         width: 100%;
     }
 
-    /* All small buttons on this page get a decent touch target */
-    .btn-sm {
-        min-height: 44px;
-    }
-
     /* Nút "Xem lịch sử" (form-row) chỉ ~38px và không full-width — đồng bộ
        với nút "Tra cứu" ở trên: full-width, cao 46px */
     .to-history .form-row .btn {
@@ -282,6 +277,23 @@ html.dark .to-total-row {
 /* Touch target 44px mobile */
 @media (max-width: 767.98px) {
     .to-copy-btn { min-width: 44px; min-height: 44px; }
+
+    /* UIUX-Mobile-A1: gom rule .btn-sm 44px cũ (≤575px) lên đây để phủ cả
+       khoảng 576–767px — mọi nút nhỏ đều đủ chuẩn chạm, căn giữa chữ bằng
+       inline-flex. */
+    .btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* UIUX-Mobile-A1: input số trong nhóm tự phục vụ (đổi SĐT/số lượng):
+       chữ 16px chống iOS auto-zoom, cao 44px ngang hàng nút bên cạnh. */
+    .to-selfservice input[type="number"] {
+        min-height: 44px;
+        font-size: 16px;
+    }
 
     /* 4 nút tự phục vụ đơn ("✏️ Sửa đơn / 📍 Đổi địa chỉ / 📞 Sửa SĐT / Hủy đơn")
        xếp ngang chật trên màn nhỏ — nút "Hủy đơn" (xóa đơn, nguy hiểm) nằm sát

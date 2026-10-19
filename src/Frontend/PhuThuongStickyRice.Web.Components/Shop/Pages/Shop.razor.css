@@ -628,6 +628,13 @@ html.dark .shop-filters-sticky {
     .shop-quickview-dialog {
         margin: 0.5rem;
         max-width: calc(100% - 1rem);
+        /* UIUX-Mobile-A1: Bootstrap .modal-dialog-centered/.modal-dialog-scrollable
+           để lại flex centering → dialog "xem nhanh" bị treo giữa màn hình trên
+           mobile. Hạ xuống dạng bottom sheet: không min-height, canh đáy. */
+        min-height: 0;
+        height: auto;
+        justify-content: flex-end;
+        align-items: stretch;
     }
     .shop-quickview-dialog .modal-content {
         max-height: calc(100vh - 1rem);

@@ -88,6 +88,15 @@
         font-size: 12px;
     }
 
+    /* UIUX-Mobile-A1: nút "🎡 Quay ngay" (lucky spin) chỉ ~38px — nâng lên 48px
+       cho chuẩn chạm, căn giữa chữ dọc bằng inline-flex. */
+    .card-body > .btn-warning {
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     /* UIUX-Mobile-A1: tổng đơn lớn làm chữ dài, đẩy nút "Đặt hàng" tràn khỏi
        màn 320px — cho chữ co lại (ellipsis), nút giữ nguyên. */
     .co-mobile-bar .co-total {

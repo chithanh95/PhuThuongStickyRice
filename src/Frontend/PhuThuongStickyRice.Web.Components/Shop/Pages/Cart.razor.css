@@ -210,7 +210,8 @@ html.dark .gh-freeship .progress {
 }
 
 /* GH2: phone input — full width on mobile */
-@media (max-width: 575.98px) {
+/* UIUX-Mobile-A1: nới từ ≤575px lên ≤767px cho phủ cả điện thoại ngang/tablet nhỏ */
+@media (max-width: 767.98px) {
     .gh-cart-phone {
         max-width: none !important;
     }
