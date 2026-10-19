@@ -25,6 +25,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         public decimal Price { get; set; }
 
+        /// <summary>
+        /// Item 256: giá khuyến mãi (VND). Null = không KM. Card hiện
+        /// "giá gốc → giá KM" khi có giá trị và nhỏ hơn giá bán.
+        /// </summary>
+        public decimal? PromoPrice { get; set; }
+
         public string Currency { get; set; }
 
         /// <summary>Item 81: selling unit — "suất" (per portion) or "kg" (per kilogram).</summary>
@@ -483,6 +489,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public string Notes { get; set; }
 
         public string Status { get; set; }
+
+        /// <summary>Item 233: lý do hủy đơn (hiện cho khách xem đơn của mình).</summary>
+        public string CancelReason { get; set; }
 
         public string PaymentMethod { get; set; }
 

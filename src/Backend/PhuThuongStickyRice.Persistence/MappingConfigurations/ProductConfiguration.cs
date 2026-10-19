@@ -15,6 +15,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.Description).HasMaxLength(Product.DescriptionMaxLength);
             builder.Property(x => x.CostPrice).HasPrecision(18, 2).IsRequired();
 
+            // Item 256: giá khuyến mãi. Nullable — null = không có KM.
+            builder.Property(x => x.PromoPrice).HasPrecision(18, 2);
+
             // Item 81: selling unit — "suất" (portion) or "kg" (per kilogram).
             builder.Property(x => x.Unit)
                 .HasMaxLength(Product.UnitMaxLength)

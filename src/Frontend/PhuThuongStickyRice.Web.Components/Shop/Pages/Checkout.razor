@@ -49,6 +49,20 @@
     </NotAuthorized>
 </AuthorizeView>
 
+@* Item 243: checkout 1 chạm cho khách quen — đã lưu thông tin + địa chỉ
+   mặc định thì đặt ngay, bỏ qua form nhập (vẫn xem lại được bên dưới). *@
+@if (_placedOrder == null && CanQuickOrder)
+{
+    <div class="alert alert-success mb-3" role="note">
+        <div class="font-weight-bold mb-2" style="font-size: 1.1rem;">👋 Chào @_order.CustomerName!</div>
+        <button type="button" class="btn btn-success btn-block" style="min-height: 52px; font-size: 1.15rem; font-weight: bold;"
+                @onclick="PlaceOrder" disabled="@_submitting">
+            @(_submitting ? "Đang đặt..." : "⚡ Đặt ngay với thông tin đã lưu")
+        </button>
+        <small class="text-muted d-block mt-2">Thông tin bên dưới đã điền sẵn — bạn vẫn có thể sửa trước khi đặt.</small>
+    </div>
+}
+
 @if (_placedOrder != null)
 {
     <div class="alert alert-success">
@@ -406,6 +420,22 @@ else
                         @if (!string.IsNullOrEmpty(_phoneError))
                         {
                             <small class="text-danger" id="co-phone-error">@_phoneError</small>
+                        }
+                    </div>
+                    @* Item 236: "Nhớ tôi" cho khách vãng lai — không cần tài khoản. *@
+                    <div class="form-group">
+                        <div class="form-check" style="min-height: 44px; display: flex; align-items: center;">
+                            <input class="form-check-input" type="checkbox" id="co-remember"
+                                   @bind="_rememberMe" style="width: 20px; height: 20px;" />
+                            <label class="form-check-label ml-2 mb-0" for="co-remember" style="font-size: 1.05rem;">
+                                Nhớ tên &amp; SĐT của tôi cho lần sau <small class="text-muted">(lưu trên máy này)</small>
+                            </label>
+                        </div>
+                        @if (_rememberedGuestLoaded)
+                        {
+                            <button type="button" class="btn btn-link btn-sm p-0" @onclick="ClearRememberedGuestAsync">
+                                🗑 Xóa thông tin đã nhớ
+                            </button>
                         }
                     </div>
                     <div class="form-group">
@@ -800,6 +830,22 @@ else
     private readonly CreateOrderModel _order = new CreateOrderModel();
     private PlacedOrderModel _placedOrder;
 
+    /// <summary>
+    /// Item 236: "Nhớ tôi" cho khách vãng lai — lưu tên + SĐT vào localStorage
+    /// của máy khi khách tick và đặt đơn thành công. Không cần tài khoản.
+    /// </summary>
+    private const string GuestInfoStorageKey = "pt-guest-info";
+    private bool _rememberMe;
+    private bool _rememberedGuestLoaded;
+
+    /// <summary>
+    /// Item 243: đủ điều kiện đặt 1 chạm — khách vãng lai đã nhớ thông tin,
+    /// hoặc khách đăng nhập có địa chỉ mặc định.
+    /// </summary>
+    private bool CanQuickOrder =>
+        (_rememberedGuestLoaded && !string.IsNullOrWhiteSpace(_order.CustomerPhone))
+        || _savedAddresses.Any(a => a.IsDefault);
+
     /// <summary>Customer's saved addresses (empty when anonymous).</summary>
     private List<CustomerAddressModel> _savedAddresses = new List<CustomerAddressModel>();
 
@@ -1001,6 +1047,7 @@ else
         await LoadFeatureFlagsAsync();
         await LoadBranchesAsync();
         await LoadCustomerContextAsync();
+        await LoadRememberedGuestAsync();
 
         RefreshMinOrderState();
 
@@ -1092,6 +1139,23 @@ else
                     _order.CustomerPhone = phone;
                 }
 
+                // Item 243: tự điền địa chỉ mặc định để nút "đặt 1 chạm" dùng được ngay.
+                var defaultAddr = _savedAddresses.FirstOrDefault(a => a.IsDefault);
+                if (defaultAddr != null
+                    && string.IsNullOrWhiteSpace(_order.CustomerName)
+                    && !string.IsNullOrWhiteSpace(defaultAddr.ReceiverName))
+                {
+                    _order.CustomerName = defaultAddr.ReceiverName;
+                    if (IsValidPhone(defaultAddr.ReceiverPhone))
+                    {
+                        _order.CustomerPhone = defaultAddr.ReceiverPhone.Trim();
+                    }
+                    if (!string.IsNullOrWhiteSpace(defaultAddr.AddressDetail))
+                    {
+                        _order.CustomerAddress = defaultAddr.AddressDetail;
+                    }
+                }
+
                 // Item 90: prefill the customer's taste preferences into the
                 // order note (editable — the customer can change it).
                 try
@@ -1113,6 +1177,99 @@ else
         {
             _savedAddresses = new List<CustomerAddressModel>();
         }
+    }
+
+    /// <summary>
+    /// Item 236: đọc thông tin khách đã nhớ (khách vãng lai, chưa đăng nhập)
+    /// để tự điền tên/SĐT. Chỉ điền khi form còn trống — không ghi đè thông
+    /// tin từ tài khoản hoặc ?phone=.
+    /// </summary>
+    private async Task LoadRememberedGuestAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                return;
+            }
+
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", GuestInfoStorageKey);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            var saved = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, string>>(json);
+            if (saved == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_order.CustomerName)
+                && saved.TryGetValue("name", out var name)
+                && !string.IsNullOrWhiteSpace(name))
+            {
+                _order.CustomerName = name.Trim();
+            }
+            if (string.IsNullOrWhiteSpace(_order.CustomerPhone)
+                && saved.TryGetValue("phone", out var phone)
+                && IsValidPhone(phone))
+            {
+                _order.CustomerPhone = phone.Trim();
+            }
+            _rememberedGuestLoaded = true;
+            _rememberMe = true;
+        }
+        catch (Exception)
+        {
+            // Fail-soft: không nhớ được thì khách nhập tay như bình thường.
+        }
+    }
+
+    /// <summary>
+    /// Item 236: lưu tên + SĐT sau khi đặt đơn thành công (khách đã tick
+    /// "Nhớ tôi"). Bỏ tick = không lưu (và xóa bản cũ nếu có).
+    /// </summary>
+    private async Task PersistRememberedGuestAsync()
+    {
+        try
+        {
+            if (_rememberMe
+                && !string.IsNullOrWhiteSpace(_order.CustomerName)
+                && IsValidPhone(_order.CustomerPhone))
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(
+                    new System.Collections.Generic.Dictionary<string, string>
+                    {
+                        ["name"] = _order.CustomerName.Trim(),
+                        ["phone"] = _order.CustomerPhone.Trim()
+                    });
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", GuestInfoStorageKey, json);
+            }
+            else if (!_rememberMe)
+            {
+                await JSRuntime.InvokeVoidAsync("localStorage.removeItem", GuestInfoStorageKey);
+            }
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    /// <summary>Item 236: xóa thông tin đã nhớ khỏi máy này.</summary>
+    private async Task ClearRememberedGuestAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.removeItem", GuestInfoStorageKey);
+        }
+        catch (Exception)
+        {
+        }
+        _rememberedGuestLoaded = false;
+        _rememberMe = false;
+        Toasts.Show("Đã xóa thông tin đã nhớ trên máy này.");
     }
 
     /// <summary>
@@ -1673,6 +1830,8 @@ else
             // mints a fresh one (CartState.Clear below also triggers
             // OnCartChanged, which resets it as well).
             _order.IdempotencyKey = null;
+            // Item 236: đặt đơn thành công + khách tick "Nhớ tôi" → lưu tên/SĐT.
+            await PersistRememberedGuestAsync();
             Funnel.Track(FunnelService.Events.OrderPlaced, new Uri(Navigation.Uri).AbsolutePath);
             CartState.Clear();
             CartState.OnChange -= OnCartChanged;

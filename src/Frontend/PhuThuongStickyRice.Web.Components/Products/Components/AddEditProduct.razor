@@ -52,6 +52,15 @@
         </div>
     </div>
 
+    @* Item 256: giá khuyến mãi — để 0 hoặc trống là không KM. *@
+    <div class="form-group row">
+        <label for="promoprice" class="col-sm-2 col-form-label">Giá KM (₫): </label>
+        <div class="col-sm-10">
+            <InputNumber id="promoprice" class="form-control" @bind-Value="Product.PromoPrice" placeholder="VD: 28000 (để trống = không KM)"></InputNumber>
+            <small class="form-text text-muted">Khi có giá KM nhỏ hơn giá bán, card món hiện "giá gốc → giá KM" cho khách thấy.</small>
+        </div>
+    </div>
+
     <div class="form-group row">
         <label for="description" class="col-sm-2 col-form-label">Mô tả: </label>
         <div class="col-sm-10">

@@ -113,15 +113,17 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         // ---- Order self-service ----
 
         /// <summary>
-        /// Khách tự hủy đơn bằng mã đơn + SĐT.
+        /// Khách tự hủy đơn bằng mã đơn + SĐT. Item 233: bắt buộc chọn lý do hủy.
         /// </summary>
         /// <param name="orderNumber">Mã đơn hàng.</param>
         /// <param name="phone">SĐT khách để xác thực.</param>
+        /// <param name="cancelReason">Lý do hủy đơn (bắt buộc).</param>
         /// <returns>Đơn hàng sau khi hủy.</returns>
-        public async Task<TrackedOrderModel> CancelOrderByCustomerAsync(string orderNumber, string phone)
+        public async Task<TrackedOrderModel> CancelOrderByCustomerAsync(
+            string orderNumber, string phone, string cancelReason)
         {
             return await PostAsync<TrackedOrderModel>("api/orders/track/cancel",
-                new { OrderNumber = orderNumber, CustomerPhone = phone });
+                new { OrderNumber = orderNumber, CustomerPhone = phone, CancelReason = cancelReason });
         }
 
         /// <summary>

@@ -181,6 +181,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public sealed class UpdateOrderStatusRequestModel
     {
         public string Status { get; set; }
+
+        /// <summary>Item 233: lý do hủy — nhân viên chọn khi hủy đơn.</summary>
+        public string CancelReason { get; set; }
     }
 
     public sealed class MarkTransferredRequestModel

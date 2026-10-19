@@ -137,12 +137,105 @@ else
     }
 }
 
+@* Item 233: modal chọn lý do khi hủy đơn từ Kanban. *@
+@if (_cancelTarget != null)
+{
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-label="Chọn lý do hủy đơn" style="background: rgba(0,0,0,.45);">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title mb-0">Hủy đơn @_cancelTarget.OrderNumber</h6>
+                    <button type="button" class="close" aria-label="Đóng" @onclick="CloseCancelModal"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body py-2">
+                    <p class="mb-2">Chọn lý do hủy (bắt buộc) để báo cáo:</p>
+                    @foreach (var reason in CancelReasons)
+                    {
+                        <div class="form-check mb-2" @key="reason">
+                            <input class="form-check-input" type="radio" name="kanbanCancelReason"
+                                   id="kcr-@reason.GetHashCode()" value="@reason"
+                                   checked="@(_cancelReason == reason)"
+                                   @onchange="() => _cancelReason = reason" />
+                            <label class="form-check-label" for="kcr-@reason.GetHashCode()">@reason</label>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(_cancelReasonError))
+                    {
+                        <div class="alert alert-danger mt-2 mb-0" role="alert">@_cancelReasonError</div>
+                    }
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseCancelModal">Không hủy</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmCancelModal" disabled="@_saving" style="min-height: 44px;">
+                        @(_saving ? "Đang hủy..." : "Xác nhận hủy đơn")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool _loading = true;
     private bool _saving;
     private string _error;
     private string _range = "today";
     private bool _showCancelled;
+
+    /// <summary>
+    /// Item 233: lý do hủy đơn cho nhân viên chọn — đồng bộ với backend.
+    /// </summary>
+    private static readonly string[] CancelReasons = new[]
+    {
+        "Đổi ý", "Đặt nhầm món", "Chờ quá lâu", "Món hết hàng", "Lý do khác"
+    };
+
+    private OrderModel _cancelTarget;
+    private string _cancelReason;
+    private string _cancelReasonError;
+
+    private void OpenCancelModal(OrderModel order)
+    {
+        _cancelTarget = order;
+        _cancelReason = null;
+        _cancelReasonError = null;
+    }
+
+    private void CloseCancelModal()
+    {
+        _cancelTarget = null;
+        _cancelReason = null;
+        _cancelReasonError = null;
+    }
+
+    private async Task ConfirmCancelModal()
+    {
+        if (_cancelTarget == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_cancelReason))
+        {
+            _cancelReasonError = "Vui lòng chọn một lý do hủy đơn.";
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            var updated = await OrderService.UpdateStatusAsync(_cancelTarget.Id, "Cancelled", _cancelReason);
+            _cancelTarget.Status = updated?.Status ?? "Cancelled";
+            CloseCancelModal();
+            await LoadAsync(silent: true);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Không hủy được đơn #{_cancelTarget.OrderNumber}: {ex.Message}";
+        }
+        _saving = false;
+    }
     private List<OrderModel> _orders = new();
     private List<OrderModel> _cancelled = new();
     private System.Threading.Timer _timer;
@@ -229,21 +322,13 @@ else
         _saving = false;
     }
 
-    private async Task CancelAsync(OrderModel order)
+    /// <summary>
+    /// Item 233: mở modal chọn lý do hủy thay vì hủy thẳng.
+    /// </summary>
+    private void CancelAsync(OrderModel order)
     {
-        _saving = true;
         _error = null;
-        try
-        {
-            var updated = await OrderService.UpdateStatusAsync(order.Id, "Cancelled");
-            order.Status = updated?.Status ?? "Cancelled";
-            await LoadAsync(silent: true);
-        }
-        catch (Exception ex)
-        {
-            _error = $"Không hủy được đơn #{order.OrderNumber}: {ex.Message}";
-        }
-        _saving = false;
+        OpenCancelModal(order);
     }
 
     private static DateTime ToLocal(DateTime dt) =>

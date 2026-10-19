@@ -23,6 +23,9 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         /// <summary>
         /// Tăng UsedCount nguyên tử bằng ExecuteUpdateAsync (1 câu UPDATE ...
         /// WHERE Code = ... AND (MaxUses IS NULL OR UsedCount &lt; MaxUses)).
+        /// Item 252: cùng câu UPDATE tự tắt mã (IsActive = false) khi lượt
+        /// tăng này chạm trần MaxUses — chống "vỡ ngân sách KM" khi mã bị
+        /// share lan, admin xem mã tự tạm dừng ở trung tâm thông báo.
         /// Chạy trong DbContext/UoW hiện tại nên tham gia cùng transaction với
         /// phần còn lại của nghiệp vụ (đơn hàng).
         /// </summary>
@@ -34,7 +37,11 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                 .Where(x => x.Code == normalizedCode
                     && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(x => x.UsedCount, x => x.UsedCount + 1),
+                    .SetProperty(x => x.UsedCount, x => x.UsedCount + 1)
+                    .SetProperty(x => x.IsActive,
+                        x => x.MaxUses.HasValue && x.UsedCount + 1 >= x.MaxUses.Value
+                            ? false
+                            : x.IsActive),
                     cancellationToken);
             return affected > 0;
         }

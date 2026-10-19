@@ -207,7 +207,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             var order = await _orderAppService.UpdateStatusAsync(id, new UpdateOrderStatusDto
             {
-                Status = model.Status
+                Status = model.Status,
+                CancelReason = model.CancelReason
             });
 
             return Ok(order);
@@ -532,6 +533,26 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> GetReviews(CancellationToken cancellationToken = default)
         {
             return Ok(await _orderAppService.GetReviewsAsync());
+        }
+
+        /// <summary>Item 233 (Admin): báo cáo số đơn hủy theo lý do.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("cancel-reason-report")]
+        public async Task<ActionResult> GetCancelReasonReport(
+            [FromQuery] DateTime? from, [FromQuery] DateTime? to,
+            CancellationToken cancellationToken = default)
+        {
+            var toUtc = (to ?? DateTime.UtcNow).ToUniversalTime();
+            var fromUtc = (from ?? toUtc.AddDays(-30)).ToUniversalTime();
+            return Ok(await _orderAppService.GetCancelReasonReportAsync(fromUtc, toUtc));
+        }
+
+        /// <summary>Item 234 (Admin): món có ≥3 đánh giá 1–2 sao trong 30 ngày.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("poorly-rated-dishes")]
+        public async Task<ActionResult> GetPoorlyRatedDishes(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _orderAppService.GetPoorlyRatedDishesAsync());
         }
 
         /// <summary>

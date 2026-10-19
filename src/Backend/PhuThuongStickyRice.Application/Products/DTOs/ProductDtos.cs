@@ -20,6 +20,12 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         /// <summary>Cost price (giá vốn) in VND, for the profit report.</summary>
         public decimal CostPrice { get; set; }
 
+        /// <summary>
+        /// Item 256: giá khuyến mãi (VND). Null = không có KM. Card món hiện
+        /// "giá gốc → giá KM" khi có giá trị và nhỏ hơn giá bán.
+        /// </summary>
+        public decimal? PromoPrice { get; set; }
+
         /// <summary>Selling unit: "suất" (per portion) or "kg" (per kilogram).</summary>
         public string Unit { get; set; }
 
@@ -97,6 +103,12 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         /// <summary>Cost price (giá vốn) in VND, for the profit report.</summary>
         [Range(0, double.MaxValue)]
         public decimal CostPrice { get; set; }
+
+        /// <summary>
+        /// Item 256: giá khuyến mãi (VND). Null/0 = không KM.
+        /// </summary>
+        [Range(0, double.MaxValue)]
+        public decimal? PromoPrice { get; set; }
 
         /// <summary>Selling unit: "suất" (per portion) or "kg" (per kilogram).</summary>
         [StringLength(20)]

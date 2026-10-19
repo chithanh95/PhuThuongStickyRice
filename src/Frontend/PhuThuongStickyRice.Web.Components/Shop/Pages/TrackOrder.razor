@@ -120,6 +120,11 @@
                         <span class="to-tl-label">Đơn hàng đã bị hủy</span>
                     </div>
                 </div>
+                @* Item 233: hiện lý do hủy cho khách (nếu có). *@
+                @if (!string.IsNullOrWhiteSpace(_order.CancelReason))
+                {
+                    <p class="text-muted small mb-3">Lý do hủy: @_order.CancelReason</p>
+                }
             }
             else
             {
@@ -366,12 +371,52 @@
                         <button class="btn btn-outline-secondary btn-sm" @onclick="StartEditLines">✏️ Sửa đơn (số lượng)</button>
                         <button class="btn btn-outline-info btn-sm ml-2" @onclick="StartEditAddress">📍 Đổi địa chỉ / giờ giao</button>
                         <button class="btn btn-outline-primary btn-sm ml-2" @onclick="StartEditContact">📞 Sửa SĐT / ghi chú</button>
-                        <button class="btn btn-outline-danger btn-sm ml-2" @onclick="CancelOrder" disabled="@_cancelling">
+                        <button class="btn btn-outline-danger btn-sm ml-2" @onclick="OpenCancelModal" disabled="@_cancelling">
                             @(_cancelling ? "Đang hủy..." : "Hủy đơn")
                         </button>
                         @if (!string.IsNullOrEmpty(_cancelError))
                         {
                             <div class="alert alert-danger mt-2 mb-0" role="alert">@_cancelError</div>
+                        }
+                        @* Item 233: modal chọn lý do hủy đơn (bắt buộc). *@
+                        @if (_showCancelModal)
+                        {
+                            <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-label="Chọn lý do hủy đơn">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Hủy đơn hàng @_order.OrderNumber</h5>
+                                            <button type="button" class="close" @onclick="CloseCancelModal" aria-label="Đóng">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p class="mb-2">Vui lòng cho quán biết lý do để phục vụ tốt hơn:</p>
+                                            @foreach (var reason in CancelReasons)
+                                            {
+                                                <div class="form-check mb-2" @key="reason">
+                                                    <input class="form-check-input" type="radio" name="cancelReason"
+                                                           id="cr-@reason.GetHashCode()" value="@reason"
+                                                           checked="@(_cancelReason == reason)"
+                                                           @onchange="() => _cancelReason = reason" />
+                                                    <label class="form-check-label" for="cr-@reason.GetHashCode()">@reason</label>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(_cancelReasonError))
+                                            {
+                                                <div class="alert alert-danger mt-2 mb-0" role="alert">@_cancelReasonError</div>
+                                            }
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" @onclick="CloseCancelModal">Không hủy nữa</button>
+                                            <button type="button" class="btn btn-danger" @onclick="ConfirmCancelOrder" disabled="@_cancelling" style="min-height: 48px;">
+                                                @(_cancelling ? "Đang hủy..." : "Xác nhận hủy đơn")
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-backdrop show"></div>
                         }
                     }
                     else if (_editingAddress)
@@ -781,6 +826,19 @@
     // Customer self-service: cancel.
     private bool _cancelling;
     private string _cancelError;
+
+    /// <summary>
+    /// Item 233: lý do hủy đơn cho khách chọn — đồng bộ với backend
+    /// (OrderCancelReasons.All).
+    /// </summary>
+    private static readonly string[] CancelReasons = new[]
+    {
+        "Đổi ý", "Đặt nhầm món", "Chờ quá lâu", "Món hết hàng", "Lý do khác"
+    };
+
+    private bool _showCancelModal;
+    private string _cancelReason;
+    private string _cancelReasonError;
 
     // Customer self-service: edit quantities.
     private bool _editingLines;
@@ -1462,25 +1520,45 @@
         }
     }
 
-    private async Task CancelOrder()
+    /// <summary>Item 233: mở modal chọn lý do hủy (thay confirm trình duyệt).</summary>
+    private void OpenCancelModal()
     {
         _cancelError = null;
+        _cancelReasonError = null;
+        _cancelReason = null;
+        _showCancelModal = true;
+    }
+
+    private void CloseCancelModal()
+    {
+        _showCancelModal = false;
+        _cancelReasonError = null;
+    }
+
+    /// <summary>
+    /// Item 233: xác nhận hủy — bắt buộc đã chọn lý do, gửi kèm lên server.
+    /// </summary>
+    private async Task ConfirmCancelOrder()
+    {
+        _cancelError = null;
+        _cancelReasonError = null;
         if (_order == null)
         {
             return;
         }
 
-        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm",
-            $"Bạn chắc chắn muốn hủy đơn hàng {_order.OrderNumber}?");
-        if (!confirmed)
+        if (string.IsNullOrWhiteSpace(_cancelReason))
         {
+            _cancelReasonError = "Vui lòng chọn một lý do hủy đơn.";
             return;
         }
 
         _cancelling = true;
         try
         {
-            _order = await ShopEngagementService.CancelOrderByCustomerAsync(_order.OrderNumber, _order.CustomerPhone);
+            _order = await ShopEngagementService.CancelOrderByCustomerAsync(
+                _order.OrderNumber, _order.CustomerPhone, _cancelReason);
+            _showCancelModal = false;
         }
         catch (Exception ex)
         {

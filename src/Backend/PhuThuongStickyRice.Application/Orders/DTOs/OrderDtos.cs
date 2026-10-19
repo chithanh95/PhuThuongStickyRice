@@ -66,6 +66,12 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// </summary>
         public string AdminNote { get; set; }
 
+        /// <summary>
+        /// Item 233: lý do hủy đơn. Hiện ở admin; endpoint public (track-order)
+        /// vẫn thấy được lý do đơn của chính mình.
+        /// </summary>
+        public string CancelReason { get; set; }
+
         public string Status { get; set; }
 
         public string PaymentMethod { get; set; }

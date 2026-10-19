@@ -34,6 +34,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public Money Price { get; private set; }
 
         /// <summary>
+        /// Item 256: giá khuyến mãi (VND). Null = không có KM. Khi có giá trị
+        /// và nhỏ hơn <see cref="Price"/>, card món hiện "giá gốc → giá KM".
+        /// </summary>
+        public decimal? PromoPrice { get; private set; }
+
+        /// <summary>
         /// Cost price (giá vốn) in VND, admin-editable. Powers the
         /// /admin/loi-nhuan profit report (revenue − cost).
         /// </summary>
@@ -218,6 +224,21 @@ namespace PhuThuongStickyRice.Domain.Entities
             }
 
             CostPrice = costPrice;
+        }
+
+        /// <summary>
+        /// Item 256: đặt/xóa giá khuyến mãi. Null hoặc ≤ 0 = xóa KM.
+        /// Giá KM phải nhỏ hơn giá bán thì card mới hiện (không validate cứng
+        /// ở đây để admin linh hoạt — UI chỉ hiện khi PromoPrice &lt; Price).
+        /// </summary>
+        public void ChangePromoPrice(decimal? promoPrice)
+        {
+            if (promoPrice.HasValue && promoPrice.Value < 0)
+            {
+                throw new DomainException("Giá khuyến mãi không được âm.");
+            }
+
+            PromoPrice = promoPrice is > 0 ? promoPrice : null;
         }
 
         /// <summary>

@@ -265,20 +265,54 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         /// <summary>
         /// Chuyển trạng thái đơn (vd Pending → Confirmed). Server tự validate
         /// luồng chuyển trạng thái hợp lệ — đổi sai quy trình sẽ bị server từ chối.
+        /// Item 233: khi hủy đơn, truyền lý do hủy để báo cáo.
         /// </summary>
         /// <param name="orderId">Id đơn hàng.</param>
         /// <param name="status">Trạng thái mới.</param>
+        /// <param name="cancelReason">Lý do hủy (chỉ dùng khi status = Cancelled).</param>
         /// <returns>Đơn hàng sau khi đổi trạng thái.</returns>
-        public async Task<OrderModel> UpdateStatusAsync(Guid orderId, string status)
+        public async Task<OrderModel> UpdateStatusAsync(
+            Guid orderId, string status, string cancelReason = null)
         {
             return await PutAsync<OrderModel>($"api/orders/{orderId}/status",
-                new UpdateOrderStatusModel { Status = status });
+                new UpdateOrderStatusModel { Status = status, CancelReason = cancelReason });
         }
 
         /// <summary>Admin confirms a bank-transfer payment.</summary>
         public async Task<OrderModel> ConfirmPaymentAsync(Guid orderId)
         {
             return await PutAsync<OrderModel>($"api/orders/{orderId}/confirm-payment", new { });
+        }
+
+        /// <summary>
+        /// Item 233 (Admin): báo cáo số đơn hủy theo lý do trong khoảng thời gian.
+        /// </summary>
+        public async Task<List<CancelReasonReportModel>> GetCancelReasonReportAsync(
+            DateTime? from, DateTime? to)
+        {
+            var url = "api/orders/cancel-reason-report";
+            var q = new List<string>();
+            if (from.HasValue)
+            {
+                q.Add($"from={from.Value:yyyy-MM-dd}");
+            }
+            if (to.HasValue)
+            {
+                q.Add($"to={to.Value:yyyy-MM-dd}");
+            }
+            if (q.Count > 0)
+            {
+                url += "?" + string.Join("&", q);
+            }
+            return await GetAsync<List<CancelReasonReportModel>>(url);
+        }
+
+        /// <summary>
+        /// Item 234 (Admin): món có ≥3 đánh giá 1–2 sao trong 30 ngày qua.
+        /// </summary>
+        public async Task<List<PoorlyRatedDishModel>> GetPoorlyRatedDishesAsync()
+        {
+            return await GetAsync<List<PoorlyRatedDishModel>>("api/orders/poorly-rated-dishes");
         }
 
         /// <summary>Admin: get a single order by id (used by the print page).</summary>

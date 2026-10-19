@@ -536,6 +536,10 @@ namespace PhuThuongStickyRice.Application.Products
                 ["Tên món"] = product.Name,
                 ["Mô tả"] = Truncate(product.Description, 200),
                 ["Giá bán"] = FormatMoney(product.Price.Amount),
+                // Item 256: log cả giá KM để tra "sao hôm nay đắt hơn".
+                ["Giá KM"] = product.PromoPrice.HasValue
+                    ? FormatMoney(product.PromoPrice.Value)
+                    : "Không KM",
                 ["Giá vốn"] = FormatMoney(product.CostPrice),
                 ["Đơn vị"] = product.Unit,
                 ["Trạng thái"] = StatusLabel(product.Status),
@@ -642,6 +646,8 @@ namespace PhuThuongStickyRice.Application.Products
         private static void ApplyEditableFields(Product product, CreateUpdateProductDto input)
         {
             product.ChangeCostPrice(input.CostPrice);
+            // Item 256: giá KM (null/0 = xóa KM).
+            product.ChangePromoPrice(input.PromoPrice);
             if (!string.IsNullOrWhiteSpace(input.Unit))
             {
                 product.ChangeUnit(input.Unit);

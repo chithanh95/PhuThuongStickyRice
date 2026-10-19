@@ -546,7 +546,96 @@ else
     </div>
 }
 
+@* Item 233: modal chọn lý do khi nhân viên hủy đơn. *@
+@if (_cancelTarget != null)
+{
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-label="Chọn lý do hủy đơn" style="background: rgba(0,0,0,.45);">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title mb-0">Hủy đơn @_cancelTarget.OrderNumber</h6>
+                    <button type="button" class="close" aria-label="Đóng" @onclick="CloseCancelModal"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body py-2">
+                    <p class="mb-2">Chọn lý do hủy (bắt buộc) để báo cáo:</p>
+                    @foreach (var reason in CancelReasons)
+                    {
+                        <div class="form-check mb-2" @key="reason">
+                            <input class="form-check-input" type="radio" name="adminCancelReason"
+                                   id="acr-@reason.GetHashCode()" value="@reason"
+                                   checked="@(_cancelReason == reason)"
+                                   @onchange="() => _cancelReason = reason" />
+                            <label class="form-check-label" for="acr-@reason.GetHashCode()">@reason</label>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(_cancelReasonError))
+                    {
+                        <div class="alert alert-danger mt-2 mb-0" role="alert">@_cancelReasonError</div>
+                    }
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseCancelModal">Không hủy</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmCancelModal" disabled="@_cancelling" style="min-height: 44px;">
+                        @(_cancelling ? "Đang hủy..." : "Xác nhận hủy đơn")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
+    /// <summary>
+    /// Item 233: lý do hủy đơn cho nhân viên chọn — đồng bộ với backend.
+    /// </summary>
+    private static readonly string[] CancelReasons = new[]
+    {
+        "Đổi ý", "Đặt nhầm món", "Chờ quá lâu", "Món hết hàng", "Lý do khác"
+    };
+
+    private OrderModel _cancelTarget;
+    private string _cancelReason;
+    private string _cancelReasonError;
+    private bool _cancelling;
+
+    private void OpenCancelModal(OrderModel order)
+    {
+        _cancelTarget = order;
+        _cancelReason = null;
+        _cancelReasonError = null;
+    }
+
+    private void CloseCancelModal()
+    {
+        _cancelTarget = null;
+        _cancelReason = null;
+        _cancelReasonError = null;
+    }
+
+    private async Task ConfirmCancelModal()
+    {
+        if (_cancelTarget == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_cancelReason))
+        {
+            _cancelReasonError = "Vui lòng chọn một lý do hủy đơn.";
+            return;
+        }
+
+        _cancelling = true;
+        try
+        {
+            await ChangeStatus(_cancelTarget, "Cancelled", _cancelReason);
+            CloseCancelModal();
+        }
+        finally
+        {
+            _cancelling = false;
+        }
+    }
     private PagedResult<OrderModel> _paged;
     private int _page = 1;
 
@@ -868,12 +957,8 @@ else
                     var order = items[_selectedIndex];
                     if (order.Status == "Pending" || order.Status == "Confirmed")
                     {
-                        var ok = await JSRuntime.InvokeAsync<bool>("confirm",
-                            $"Hủy đơn {order.OrderNumber} của {order.CustomerName}?");
-                        if (ok)
-                        {
-                            await ChangeStatus(order, "Cancelled");
-                        }
+                        // Item 233: mở modal chọn lý do thay vì confirm trình duyệt.
+                        OpenCancelModal(order);
                     }
                 }
                 break;
@@ -1029,12 +1114,12 @@ else
     /// </summary>
     /// <param name="order">Đơn cần đổi trạng thái.</param>
     /// <param name="status">Trạng thái mới (trong luồng Statuses).</param>
-    private async Task ChangeStatus(OrderModel order, string status)
+    private async Task ChangeStatus(OrderModel order, string status, string cancelReason = null)
     {
         _actionError = null;
         try
         {
-            await OrderService.UpdateStatusAsync(order.Id, status);
+            await OrderService.UpdateStatusAsync(order.Id, status, cancelReason);
             await LoadOrders(_page);
         }
         catch (Exception ex)
@@ -1070,12 +1155,9 @@ else
     {
         if (status == "Cancelled")
         {
-            var ok = await JSRuntime.InvokeAsync<bool>("confirm",
-                $"Hủy đơn {order.OrderNumber} của {order.CustomerName}?");
-            if (!ok)
-            {
-                return;
-            }
+            // Item 233: mở modal chọn lý do thay vì confirm trình duyệt.
+            OpenCancelModal(order);
+            return;
         }
 
         await ChangeStatus(order, status);

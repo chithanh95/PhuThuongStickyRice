@@ -195,6 +195,62 @@
     </div>
 }
 
+@* Item 233: báo cáo lý do hủy đơn theo khoảng thời gian đã chọn. *@
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="card-title mb-0">🚫 Lý do hủy đơn</h4>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="LoadCancelReport" disabled="@_loadingCancelReport">
+                @(_loadingCancelReport ? "Đang tải..." : "↻ Tải lại")
+            </button>
+        </div>
+        <p class="card-title-desc">Biết chính xác vì sao mất đơn để sửa đúng chỗ. Theo khoảng thời gian đã chọn ở trên.</p>
+        @if (_loadingCancelReport)
+        {
+            <p><em>Đang tải...</em></p>
+        }
+        else if (_cancelReport == null || _cancelReport.Count == 0)
+        {
+            <p class="text-muted mb-0">Không có đơn hủy nào trong kỳ này. 🎉</p>
+        }
+        else
+        {
+            var cancelTotal = _cancelReport.Sum(x => x.Count);
+            var cancelMax = _cancelReport.Max(x => x.Count);
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Lý do</th>
+                            <th style="width: 90px;" class="text-right">Số đơn</th>
+                            <th style="width: 45%;">Tỉ lệ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _cancelReport)
+                        {
+                            <tr @key="row.Reason">
+                                <td>@row.Reason</td>
+                                <td class="text-right font-weight-bold">@row.Count</td>
+                                <td>
+                                    <div class="progress" style="height: 18px;">
+                                        <div class="progress-bar bg-warning" role="progressbar"
+                                             style="width: @((cancelMax > 0 ? (double)row.Count / cancelMax * 100 : 0).ToString("0"))%;"
+                                             aria-valuenow="@row.Count" aria-valuemin="0" aria-valuemax="@cancelMax">
+                                            @((cancelTotal > 0 ? (double)row.Count / cancelTotal * 100 : 0).ToString("0"))%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted small mb-0 mt-2">Tổng: <strong>@cancelTotal</strong> đơn hủy trong kỳ.</p>
+        }
+    </div>
+</div>
+
 @if (!string.IsNullOrEmpty(_error))
 {
     <div class="alert alert-danger">@_error</div>
@@ -205,6 +261,10 @@
     private DateTime? _toDate;
     private bool _exporting;
     private string _error;
+
+    // Item 233: báo cáo lý do hủy đơn.
+    private List<PhuThuongStickyRice.Web.Components.Orders.Models.CancelReasonReportModel> _cancelReport;
+    private bool _loadingCancelReport;
 
     // Item 169: compare mode.
     private bool _compareMode;
@@ -220,17 +280,48 @@
         SetThisMonth();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCancelReport();
+        }
+    }
+
+    /// <summary>
+    /// Item 233: tải báo cáo hủy đơn theo khoảng thời gian đang chọn.
+    /// </summary>
+    private async Task LoadCancelReport()
+    {
+        _loadingCancelReport = true;
+        try
+        {
+            _cancelReport = await OrderService.GetCancelReasonReportAsync(_fromDate, _toDate);
+        }
+        catch
+        {
+            _cancelReport = new List<PhuThuongStickyRice.Web.Components.Orders.Models.CancelReasonReportModel>();
+        }
+        finally
+        {
+            _loadingCancelReport = false;
+            StateHasChanged();
+        }
+    }
+
     private void SetThisMonth()
     {
         var today = DateTime.Today;
         _fromDate = new DateTime(today.Year, today.Month, 1);
         _toDate = today;
+        _ = LoadCancelReport();
     }
 
     private void SetLast7Days()
     {
         _toDate = DateTime.Today;
         _fromDate = DateTime.Today.AddDays(-6);
+        _ = LoadCancelReport();
     }
 
     private void ToggleCompare()

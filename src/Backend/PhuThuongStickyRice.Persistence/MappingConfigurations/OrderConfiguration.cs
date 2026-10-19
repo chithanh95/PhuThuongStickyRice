@@ -41,6 +41,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Wave 6c (item 33): internal staff note. Nullable, never public.
             builder.Property(x => x.AdminNote).HasMaxLength(Order.AdminNoteMaxLength);
 
+            // Item 233: lý do hủy đơn. Nullable — chỉ có giá trị với đơn đã hủy.
+            builder.Property(x => x.CancelReason).HasMaxLength(Order.CancelReasonMaxLength);
+            builder.HasIndex(x => x.CancelReason);
+
             // Nullable: self-pickup orders have no delivery address.
             builder.Property(x => x.FulfillmentMethod)
                 .HasConversion<int>()

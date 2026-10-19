@@ -22,12 +22,18 @@
 @inject FunnelService Funnel
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
-@* Item 141: banner đếm ngược giờ chốt đơn theo ca bếp. *@
-<OrderCountdownBanner Settings="_shopSettings" />
+@* Item 238: chế độ "Gọn" — ẩn banner KM/ticker/gợi ý, chỉ còn menu + nút đặt. *@
+@if (!_compactMode)
+{
+    @* Item 141: banner đếm ngược giờ chốt đơn theo ca bếp. *@
+    <OrderCountdownBanner Settings="_shopSettings" />
+}
 
-@* #199: Banner trạng thái quán đang mở/nghỉ. *@
+@* #199: Banner trạng thái quán đang mở/nghỉ — luôn hiện (thông tin quan trọng). *@
 <ShopStatusBanner />
 
+@if (!_compactMode)
+{
 <div class="jumbotron jumbotron-fluid bg-warning text-dark rounded p-4 mb-4">
     <div class="container">
         <div class="d-flex flex-wrap align-items-center justify-content-between">
@@ -60,10 +66,12 @@
         </div>
     </div>
 </div>
+}
 
 @* Item 143 (UX người già): banner mã giảm giá đơn đầu tiên — chữ to,
-   mã hiện to rõ, nút "Dùng ngay" lớn (≥48px), 1 chạm sang checkout. *@
-@if (_firstOrderVoucher != null)
+   mã hiện to rõ, nút "Dùng ngay" lớn (≥48px), 1 chạm sang checkout.
+   Item 238: ẩn ở chế độ "Gọn". *@
+@if (_firstOrderVoucher != null && !_compactMode)
 {
     <div class="alert alert-info mb-3" role="alert" style="border-width: 2px;">
         <div class="font-weight-bold" style="font-size: 1.25rem;">🎉 Chào bạn mới! Quán tặng bạn mã giảm giá cho đơn đầu tiên:</div>
@@ -73,8 +81,22 @@
     </div>
 }
 
-@* SH3: delivery info strip from shop settings (fail-soft defaults). *@
-<div class="shop-info-strip mb-3">🚚 @DeliveryInfoText()</div>
+@* SH3: delivery info strip from shop settings (fail-soft defaults).
+   Item 238: ẩn ở chế độ "Gọn". *@
+@if (!_compactMode)
+{
+    <div class="shop-info-strip mb-3">🚚 @DeliveryInfoText()</div>
+}
+
+@* Item 238: nút bật/tắt chế độ "Gọn" — nhớ lựa chọn cho lần sau. *@
+<div class="d-flex justify-content-end mb-2">
+    <button type="button" class="btn btn-sm @(_compactMode ? "btn-primary" : "btn-outline-secondary")"
+            @onclick="ToggleCompactMode" aria-pressed="@_compactMode"
+            title="Chế độ Gọn: ẩn banner khuyến mãi, chỉ hiện menu để đặt nhanh"
+            style="min-height: 44px;">
+        @(_compactMode ? "☑ Chế độ Gọn: Bật" : "☐ Chế độ Gọn")
+    </button>
+</div>
 
 <ul class="nav nav-tabs mb-4" role="tablist">
     <li class="nav-item">
@@ -239,8 +261,18 @@ else
                                 }
                             </div>
                             <p class="card-text text-muted small flex-grow-1">@product.Description</p>
+                            @* Item 256: giá KM hiện ngay trên card: "giá gốc → giá KM". *@
                             <p class="card-text mb-1">
-                                <strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(DisplayPrice(product))<small class="text-muted">@UnitSuffix(product)</small></strong>
+                                @if (CardPromoPrice(product) is decimal promo)
+                                {
+                                    <s class="text-muted mr-1" style="font-size: 1rem;">@FormatPrice(DisplayPrice(product))</s>
+                                    <strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(promo)<small class="text-muted">@UnitSuffix(product)</small></strong>
+                                    <span class="badge badge-danger ml-1">−@((int)Math.Round((1 - promo / DisplayPrice(product)) * 100))%</span>
+                                }
+                                else
+                                {
+                                    <strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(DisplayPrice(product))<small class="text-muted">@UnitSuffix(product)</small></strong>
+                                }
                             </p>
                             @if (product.Sizes != null && product.Sizes.Count > 0)
                             {
@@ -314,7 +346,19 @@ else
                                         <span class="shop-row-dot">·</span><span>@r</span>
                                     }
                                 </div>
-                                <div class="shop-row-price">@FormatPrice(DisplayPrice(product))<small>@UnitSuffix(product)</small></div>
+                                @* Item 256: giá KM trên hàng mobile. *@
+                                <div class="shop-row-price">
+                                    @if (CardPromoPrice(product) is decimal rowPromo)
+                                    {
+                                        <s class="text-muted mr-1" style="font-size: 0.85rem;">@FormatPrice(DisplayPrice(product))</s>
+                                        <span class="text-danger font-weight-bold">@FormatPrice(rowPromo)</span>
+                                    }
+                                    else
+                                    {
+                                        @FormatPrice(DisplayPrice(product))
+                                    }
+                                    <small>@UnitSuffix(product)</small>
+                                </div>
                             </div>
                             <div class="shop-row-action">
                                 @{
@@ -441,6 +485,29 @@ else
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="CloseQuickView">Đóng</button>
+                    @* Item 237: chia sẻ món lên Zalo/Facebook. *@
+                    <div class="btn-group" role="group" aria-label="Chia sẻ món">
+                        <button type="button" class="btn btn-outline-primary" @onclick="ShareDishAsync" title="Chia sẻ món này">
+                            📤 Chia sẻ
+                        </button>
+                    </div>
+                    @if (_showShareRow)
+                    {
+                        <div class="w-100 d-flex mt-2" style="gap: 8px;">
+                            <a class="btn btn-sm btn-outline-primary flex-fill" style="min-height: 44px; display: flex; align-items: center; justify-content: center;"
+                               href="@FacebookShareUrl(_quickView)" target="_blank" rel="noopener" title="Chia sẻ lên Facebook">
+                                <i class="fa-brands fa-facebook mr-1"></i> Facebook
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-info flex-fill" style="min-height: 44px;"
+                                    @onclick="ShareToZaloAsync" title="Chia sẻ lên Zalo">
+                                💬 Zalo
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" style="min-height: 44px;"
+                                    @onclick="CopyDishLinkAsync" title="Sao chép link món">
+                                🔗 Copy link
+                            </button>
+                        </div>
+                    }
                     @* Item 101: ask about this dish on Zalo. *@
                     @if (ShowZaloButton)
                     {
@@ -469,7 +536,18 @@ else
                             {
                                 <div class="qv-sheet-meta">@FormatSoldShort(qvSold) đã bán</div>
                             }
-                            <div class="qv-sheet-price">@FormatPrice(QuickViewUnitPrice())</div>
+                            @* Item 256: giá KM trong popup xem nhanh. *@
+                            <div class="qv-sheet-price">
+                                @if (CardPromoPrice(_quickView) is decimal qvPromo)
+                                {
+                                    <s class="text-muted mr-1" style="font-size: 0.9rem;">@FormatPrice(QuickViewUnitPrice())</s>
+                                    <span class="text-danger">@FormatPrice(qvPromo)</span>
+                                }
+                                else
+                                {
+                                    @FormatPrice(QuickViewUnitPrice())
+                                }
+                            </div>
                         </div>
                         <QuantitySpinner @bind-Value="_quickViewQty" Min="1" Max="99" />
                     </div>
@@ -506,10 +584,24 @@ else
                     </div>
                 </div>
                 <div class="qv-sheet-footer">
+                    @* Item 237: chia sẻ món (mobile). *@
+                    <button type="button" class="qv-sheet-share" @onclick="ShareDishAsync" aria-label="Chia sẻ món này" title="Chia sẻ">
+                        📤
+                    </button>
                     <button type="button" class="qv-sheet-add" @onclick="AddQuickViewToCart" disabled="@(!CanOrder(_quickView))">
                         Thêm vào giỏ hàng - @FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))
                     </button>
                 </div>
+                @if (_showShareRow)
+                {
+                    <div class="qv-sheet-share-row">
+                        <a class="qv-sheet-share-btn" href="@FacebookShareUrl(_quickView)" target="_blank" rel="noopener">
+                            <i class="fa-brands fa-facebook"></i> Facebook
+                        </a>
+                        <button type="button" class="qv-sheet-share-btn" @onclick="ShareToZaloAsync">💬 Zalo</button>
+                        <button type="button" class="qv-sheet-share-btn" @onclick="CopyDishLinkAsync">🔗 Copy link</button>
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -647,6 +739,18 @@ else
         await I18n.InitializeAsync();
         Funnel.Track(FunnelService.Events.ShopView, new Uri(Navigation.Uri).AbsolutePath);
         _tableLabel = GetQueryValue(Navigation.Uri, "ban");
+
+        // Item 238: nhớ lựa chọn chế độ "Gọn" cho lần sau.
+        try
+        {
+            _compactMode = string.Equals(
+                await JSRuntime.InvokeAsync<string>("localStorage.getItem", CompactModeStorageKey),
+                "1", StringComparison.Ordinal);
+        }
+        catch (Exception)
+        {
+            _compactMode = false;
+        }
 
         // Item 133: order source from shop entry params.
         // ?ban= → "QR bàn", ?share= → "Link chia sẻ", ?nhom= → "Nhóm", else "Web".
@@ -1165,6 +1269,19 @@ else
         return size?.Price ?? product.Price;
     }
 
+    /// <summary>
+    /// Item 256: giá KM hiển thị trên card — chỉ khi có giá trị và rẻ hơn
+    /// giá đang hiện (giá gốc hoặc giá size đã chọn).
+    /// </summary>
+    private decimal? CardPromoPrice(ShopProductModel product)
+    {
+        var price = DisplayPrice(product);
+        return product.PromoPrice.HasValue && product.PromoPrice.Value > 0
+            && product.PromoPrice.Value < price
+            ? product.PromoPrice.Value
+            : null;
+    }
+
     // ---------- Cart ----------
 
     private void AddToCart(ShopProductModel product)
@@ -1226,8 +1343,13 @@ else
         {
             return;
         }
+        // bug-hunt 2026-10-19 (run 12:35): popup upsell trước đây chỉ lọc
+        // Status == "Active" nên vẫn đề xuất món đã "Hết hôm nay" (hết suất
+        // ngày) hoặc ngoài giờ bán, trong khi nút thêm trên card đã bị disable
+        // bởi CanOrder. Dùng đúng CanOrder để popup không bao giờ đề xuất
+        // món khách không đặt được.
         _upsellProducts = _products
-            .Where(p => !IsXoi(p) && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            .Where(p => !IsXoi(p) && CanOrder(p))
             .OrderBy(p => p.Code == "CHA-COM" ? 0 : p.Code == "CHA-GIO" ? 1 : 2)
             .ThenBy(p => p.Price)
             .Take(4)
@@ -1242,6 +1364,13 @@ else
 
     private void AddUpsell(ShopProductModel product)
     {
+        // bug-hunt 2026-10-19 (run 12:35): guard phòng thủ — nếu món vừa hết
+        // suất/giờ bán sau khi popup đã mở, từ chối thay vì cho vào giỏ.
+        if (!CanOrder(product))
+        {
+            Toasts.Show("Món này vừa hết suất hôm nay, bạn chọn món khác nhé.");
+            return;
+        }
         CartState.Add(product, 1);
         Toasts.Show($"Đã thêm {product.Name} × 1 vào giỏ", "Xem giỏ hàng", "/cart");
     }
@@ -1273,11 +1402,118 @@ else
         _quickViewSizeId = SelectedSizeId(product);
         _quickViewToppings = new HashSet<Guid>();
         _quickViewNote = null;
+        _showShareRow = false;
     }
 
     private void CloseQuickView()
     {
         _quickView = null;
+        _showShareRow = false;
+    }
+
+    /// <summary>Item 237: hiện/ẩn hàng nút chia sẻ món.</summary>
+    private bool _showShareRow;
+
+    /// <summary>
+    /// Item 238: chế độ "Gọn" — ẩn banner KM/ticker/gợi ý, chỉ còn menu +
+    /// nút đặt. Lưu localStorage để nhớ cho lần sau.
+    /// </summary>
+    private const string CompactModeStorageKey = "pt-compact-mode";
+    private bool _compactMode;
+
+    private async Task ToggleCompactMode()
+    {
+        _compactMode = !_compactMode;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem",
+                CompactModeStorageKey, _compactMode ? "1" : "0");
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Item 237: link chia sẻ món — mở /shop với ?tim={mã món} để hiện
+    /// thẳng popup món đó (dùng sẵn item 116).
+    /// </summary>
+    private string DishShareUrl(ShopProductModel product)
+    {
+        if (product == null)
+        {
+            return Navigation.BaseUri;
+        }
+
+        var baseUri = Navigation.BaseUri.TrimEnd('/');
+        return $"{baseUri}/shop?tim={Uri.EscapeDataString(product.Code ?? string.Empty)}";
+    }
+
+    /// <summary>Item 237: link chia sẻ Facebook (sharer chính thức).</summary>
+    private string FacebookShareUrl(ShopProductModel product) =>
+        $"https://www.facebook.com/sharer/sharer.php?u={Uri.EscapeDataString(DishShareUrl(product))}";
+
+    private void ShareDishAsync()
+    {
+        _showShareRow = !_showShareRow;
+    }
+
+    /// <summary>
+    /// Item 237: chia sẻ lên Zalo. Zalo không có share-URL web chính thức nên
+    /// ưu tiên Web Share API (trên điện thoại hiện luôn app Zalo trong bảng
+    /// chia sẻ); không có thì copy link để khách dán vào Zalo.
+    /// </summary>
+    private async Task ShareToZaloAsync()
+    {
+        var shared = await TryNativeShareAsync();
+        if (!shared)
+        {
+            await CopyDishLinkAsync();
+            Toasts.Show("Đã sao chép link món — bạn dán vào Zalo để chia sẻ nhé.");
+        }
+    }
+
+    /// <summary>
+    /// Item 237: Web Share API (mobile hiện Zalo/Facebook/Messenger...).
+    /// Trả về false khi trình duyệt không hỗ trợ.
+    /// </summary>
+    private async Task<bool> TryNativeShareAsync()
+    {
+        if (_quickView == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            return await JSRuntime.InvokeAsync<bool>("ptShareDish",
+                _quickView.Name,
+                $"{FormatPrice(DisplayPrice(_quickView))}{UnitSuffix(_quickView)}",
+                DishShareUrl(_quickView));
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Item 237: sao chép link món vào clipboard.</summary>
+    private async Task CopyDishLinkAsync()
+    {
+        if (_quickView == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", DishShareUrl(_quickView));
+            Toasts.Show("Đã sao chép link món.");
+        }
+        catch (Exception)
+        {
+            Toasts.Show("Không sao chép được link. Vui lòng thử lại.");
+        }
     }
 
     private void ToggleQuickViewTopping(Guid toppingId, bool on)

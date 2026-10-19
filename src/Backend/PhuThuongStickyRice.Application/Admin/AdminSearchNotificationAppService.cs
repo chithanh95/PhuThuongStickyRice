@@ -1,5 +1,7 @@
 using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Customer;
+using PhuThuongStickyRice.Application.Discounts;
+using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Products;
@@ -54,6 +56,7 @@ namespace PhuThuongStickyRice.Application.Admin
         private readonly IProductAppService _products;
         private readonly IDashboardAppService _dashboard;
         private readonly ICustomerProfileAppService _customerProfile;
+        private readonly IDiscountAppService _discounts;
 
         /// <summary>
         /// Khởi tạo service tìm kiếm và thông báo admin.
@@ -62,16 +65,19 @@ namespace PhuThuongStickyRice.Application.Admin
         /// <param name="products">Service sản phẩm (tìm sản phẩm).</param>
         /// <param name="dashboard">Service dashboard (số liệu cho thông báo).</param>
         /// <param name="customerProfile">Service khách hàng (tìm khách, sinh nhật).</param>
+        /// <param name="discounts">Service mã giảm giá (item 252: mã hết lượt).</param>
         public AdminSearchNotificationAppService(
             IOrderAppService orders,
             IProductAppService products,
             IDashboardAppService dashboard,
-            ICustomerProfileAppService customerProfile)
+            ICustomerProfileAppService customerProfile,
+            IDiscountAppService discounts)
         {
             _orders = orders;
             _products = products;
             _dashboard = dashboard;
             _customerProfile = customerProfile;
+            _discounts = discounts;
         }
 
         /// <summary>
@@ -177,14 +183,42 @@ namespace PhuThuongStickyRice.Application.Admin
             var stats = await _dashboard.GetStatsAsync();
             var reviewsResult = await _orders.GetReviewsAsync();
             var birthdaysResult = await _customerProfile.GetBirthdaysAsync(nowVn.Month);
+            var exhaustedCodes = await _discounts.GetExhaustedCodesAsync();
 
             AddStalePendingNotification(notifications, stats);
             AddPendingOrdersNotification(notifications, stats);
             AddUpcomingPreOrderNotification(notifications, stats);
             AddBadReviewNotifications(notifications, reviewsResult, nowVn);
             AddBirthdayNotification(notifications, birthdaysResult, nowVn);
+            AddExhaustedDiscountNotifications(notifications, exhaustedCodes);
 
             return notifications;
+        }
+
+        /// <summary>
+        /// Item 252: mã giảm giá bị hệ thống tự tạm dừng vì dùng hết lượt —
+        /// warning để admin nạp thêm ngân sách hoặc tạo mã mới.
+        /// </summary>
+        private static void AddExhaustedDiscountNotifications(
+            List<NotificationDto> notifications,
+            List<DiscountCodeDto> exhaustedCodes)
+        {
+            var codes = exhaustedCodes ?? new List<DiscountCodeDto>();
+            if (codes.Count == 0)
+            {
+                return;
+            }
+
+            var shown = codes.Take(3).Select(x => x.Code);
+            notifications.Add(new NotificationDto
+            {
+                Id = "exhausted-discounts",
+                Kind = "warning",
+                Title = $"{codes.Count} mã giảm giá đã tự tạm dừng vì hết lượt dùng",
+                Detail = "Các mã: " + string.Join(", ", shown)
+                    + ". Tăng giới hạn lượt dùng hoặc tạo mã mới.",
+                Link = "/admin/khuyen-mai"
+            });
         }
 
         /// <summary>Stale pending orders — urgent.</summary>

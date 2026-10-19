@@ -26,6 +26,13 @@ namespace PhuThuongStickyRice.Web.Components.Products.Models
         [Range(0, double.MaxValue)]
         public decimal CostPrice { get; set; }
 
+        /// <summary>
+        /// Item 256: giá khuyến mãi (VND). Null/0 = không KM. Card món hiện
+        /// "giá gốc → giá KM" khi có giá trị và nhỏ hơn giá bán.
+        /// </summary>
+        [Range(0, double.MaxValue)]
+        public decimal? PromoPrice { get; set; }
+
         /// <summary>Item 81: selling unit — "suất" (per portion) or "kg" (per kilogram).</summary>
         public string Unit { get; set; } = "suất";
 

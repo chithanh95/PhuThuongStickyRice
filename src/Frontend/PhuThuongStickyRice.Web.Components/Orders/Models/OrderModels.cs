@@ -64,6 +64,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         /// </summary>
         public string AdminNote { get; set; }
 
+        /// <summary>Item 233: lý do hủy đơn.</summary>
+        public string CancelReason { get; set; }
+
         public string Status { get; set; }
 
         public string PaymentMethod { get; set; }
@@ -158,6 +161,31 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
     public class UpdateOrderStatusModel
     {
         public string Status { get; set; }
+
+        /// <summary>Item 233: lý do hủy đơn (nhân viên chọn khi hủy).</summary>
+        public string CancelReason { get; set; }
+    }
+
+    /// <summary>Item 233: một dòng báo cáo hủy đơn theo lý do.</summary>
+    public class CancelReasonReportModel
+    {
+        public string Reason { get; set; }
+
+        public int Count { get; set; }
+    }
+
+    /// <summary>Item 234: món bị đánh giá thấp nhiều lần.</summary>
+    public class PoorlyRatedDishModel
+    {
+        public string ProductName { get; set; }
+
+        public int BadCount { get; set; }
+
+        public double AvgRating { get; set; }
+
+        public List<string> SampleComments { get; set; } = new List<string>();
+
+        public DateTime LastBadAt { get; set; }
     }
 
     /// <summary>Wave 6c (item 34): one recorded status transition.</summary>

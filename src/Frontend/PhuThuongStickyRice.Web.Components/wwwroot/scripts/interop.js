@@ -747,3 +747,20 @@ window.ptInitBackToTop = function () {
         onScroll();
     } catch (e) { }
 };
+
+/* Item 237: chia sẻ món qua Web Share API (trên điện thoại hiện luôn Zalo,
+   Facebook, Messenger... trong bảng chia sẻ hệ thống). Trả về true khi đã
+   mở bảng chia sẻ, false khi trình duyệt không hỗ trợ để Blazor fallback. */
+window.ptShareDish = function (name, priceText, url) {
+    try {
+        if (navigator.share) {
+            navigator.share({
+                title: name,
+                text: name + ' - ' + priceText + ' | Xôi Phú Thượng',
+                url: url
+            }).catch(function () { /* khách đóng bảng chia sẻ: bỏ qua */ });
+            return true;
+        }
+    } catch (e) { }
+    return false;
+};

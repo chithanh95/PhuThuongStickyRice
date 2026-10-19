@@ -25,6 +25,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <returns>Danh sách mã giảm giá dưới dạng DTO.</returns>
         Task<List<DiscountCodeDto>> GetListAsync();
 
+        /// <summary>
+        /// Item 252 (Admin): mã đã bị hệ thống tự tạm dừng vì dùng hết lượt
+        /// (IsActive = false, UsedCount &gt;= MaxUses) — hiện ở trung tâm
+        /// thông báo để admin biết mà nạp thêm ngân sách hoặc tạo mã mới.
+        /// </summary>
+        Task<List<DiscountCodeDto>> GetExhaustedCodesAsync();
+
         /// <summary>Admin: chi tiết 1 mã giảm giá theo Id.</summary>
         /// <param name="id">Id của mã giảm giá.</param>
         /// <returns>Thông tin mã giảm giá.</returns>
@@ -238,6 +245,25 @@ namespace PhuThuongStickyRice.Application.Discounts
         {
             var entity = await _discounts.GetAsync(id);
             return MapToDto(entity);
+        }
+
+        /// <summary>
+        /// Item 252 (Admin): mã tự tạm dừng vì hết lượt dùng. Query SQL trực
+        /// tiếp (không qua GetListAsync) để không bị giới hạn 500 mã mới nhất
+        /// che mất mã cũ đã hết lượt.
+        /// </summary>
+        [Authorize(Roles = "Admin")]
+        public virtual async Task<List<DiscountCodeDto>> GetExhaustedCodesAsync()
+        {
+            var queryable = await _discounts.GetQueryableAsync();
+            var entities = await _asyncExecuter.ToListAsync(
+                queryable
+                    .Where(x => !x.IsActive
+                        && x.MaxUses.HasValue
+                        && x.UsedCount >= x.MaxUses.Value)
+                    .OrderByDescending(x => x.CreatedDateTime)
+                    .Take(50));
+            return entities.Select(MapToDto).ToList();
         }
 
         /// <summary>

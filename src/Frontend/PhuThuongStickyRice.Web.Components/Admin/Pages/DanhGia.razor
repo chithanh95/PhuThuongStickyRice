@@ -27,6 +27,69 @@
     <div class="alert alert-success">@_message</div>
 }
 
+@* Item 234: món bị chê nhiều (≥3 đánh giá 1–2 sao trong 30 ngày). *@
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="card-title mb-0">⚠️ Món bị chê nhiều</h4>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="LoadPoorlyRated" disabled="@_loadingPoorlyRated">
+                @(_loadingPoorlyRated ? "Đang tải..." : "↻ Tải lại")
+            </button>
+        </div>
+        <p class="card-title-desc">Món có từ 3 đánh giá 1–2 sao trở lên trong 30 ngày qua — nên xem lại công thức/chất lượng sớm.</p>
+        @if (_loadingPoorlyRated)
+        {
+            <p><em>Đang tải...</em></p>
+        }
+        else if (_poorlyRated == null || _poorlyRated.Count == 0)
+        {
+            <p class="text-success mb-0">✅ Không có món nào bị chê nhiều trong 30 ngày qua.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Món</th>
+                            <th style="width: 110px;">Lượt chê</th>
+                            <th style="width: 90px;">Điểm TB</th>
+                            <th>Khách chê gì</th>
+                            <th style="width: 150px;">Gần nhất</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var dish in _poorlyRated)
+                        {
+                            <tr @key="dish.ProductName">
+                                <td class="font-weight-bold">@dish.ProductName</td>
+                                <td><span class="badge badge-danger">@dish.BadCount lượt</span></td>
+                                <td>@dish.AvgRating.ToString("0.0") ★</td>
+                                <td>
+                                    @if (dish.SampleComments.Count == 0)
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                    else
+                                    {
+                                        <ul class="mb-0 pl-3">
+                                            @foreach (var c in dish.SampleComments)
+                                            {
+                                                <li class="small">@c</li>
+                                            }
+                                        </ul>
+                                    }
+                                </td>
+                                <td class="text-nowrap small">@dish.LastBadAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
 @if (_reviews == null)
 {
     <p><em>Đang tải...</em></p>
@@ -196,7 +259,35 @@ else
     // Check-in photos pending moderation (item 93).
     private List<CustomerPhotoModel> _pendingPhotos;
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
+    // Item 234: món bị chê nhiều.
+    private List<PhuThuongStickyRice.Web.Components.Orders.Models.PoorlyRatedDishModel> _poorlyRated;
+    private bool _loadingPoorlyRated;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        await LoadPoorlyRated();
+    }
+
+    /// <summary>Item 234: tải danh sách món bị chê nhiều.</summary>
+    private async Task LoadPoorlyRated()
+    {
+        _loadingPoorlyRated = true;
+        try
+        {
+            _poorlyRated = await OrderService.GetPoorlyRatedDishesAsync()
+                ?? new List<PhuThuongStickyRice.Web.Components.Orders.Models.PoorlyRatedDishModel>();
+        }
+        catch
+        {
+            _poorlyRated = new List<PhuThuongStickyRice.Web.Components.Orders.Models.PoorlyRatedDishModel>();
+        }
+        finally
+        {
+            _loadingPoorlyRated = false;
+            StateHasChanged();
+        }
+    }
 
     private async Task LoadAsync()
     {
