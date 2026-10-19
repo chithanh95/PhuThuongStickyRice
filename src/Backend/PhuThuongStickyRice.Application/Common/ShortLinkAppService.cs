@@ -1,4 +1,4 @@
-
+﻿
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
@@ -58,6 +58,15 @@ namespace PhuThuongStickyRice.Application.Common
         /// không bị nhầm lẫn ký tự giống nhau.
         /// </summary>
         private const string CodeChars = "abcdefghjkmnpqrstuvwxyz23456789";
+
+        /// <summary>Độ dài mã rút gọn (số ký tự).</summary>
+        private const int CodeLength = 6;
+
+        /// <summary>
+        /// Số lần thử tối đa khi sinh mã ngẫu nhiên trước khi dùng fallback GUID —
+        /// tránh vòng lặp vô hạn nếu (gần như không thể) mã 6 ký tự liên tục trùng.
+        /// </summary>
+        private const int MaxCodeGenerationAttempts = 20;
 
         private readonly IRepository<ShortLink, Guid> _links;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -185,19 +194,20 @@ namespace PhuThuongStickyRice.Application.Common
         }
 
         /// <summary>
-        /// Sinh mã rút gọn 6 ký tự duy nhất. Thử tối đa 20 lần để tránh trùng;
-        /// nếu vẫn trùng (gần như không thể) thì lấy 6 ký tự đầu của GUID để
-        /// đảm bảo không bao giờ lỗi khi tạo link.
+        /// Sinh mã rút gọn 6 ký tự duy nhất. Thử tối đa <see cref="MaxCodeGenerationAttempts"/>
+        /// lần để tránh trùng; nếu vẫn trùng (gần như không thể) thì lấy
+        /// <see cref="CodeLength"/> ký tự đầu của GUID để đảm bảo không bao giờ
+        /// lỗi khi tạo link.
         /// </summary>
         private async Task<string> GenerateUniqueCodeAsync()
         {
             // Dùng RNG an toàn mật mã thay vì Random.Shared để mã short-link
             // không đoán được từ các mã đã lộ (RandomNumberGenerator.GetInt32
             // là thread-safe nên vẫn an toàn khi nhiều request đồng thời).
-            for (var attempt = 0; attempt < 20; attempt++)
+            for (var attempt = 0; attempt < MaxCodeGenerationAttempts; attempt++)
             {
                 var code = new string(
-                    Enumerable.Range(0, 6).Select(_ => CodeChars[RandomNumberGenerator.GetInt32(CodeChars.Length)]).ToArray());
+                    Enumerable.Range(0, CodeLength).Select(_ => CodeChars[RandomNumberGenerator.GetInt32(CodeChars.Length)]).ToArray());
 
                 var queryable = await _links.GetQueryableAsync();
                 var exists = await _asyncExecuter.FirstOrDefaultAsync(
@@ -208,10 +218,10 @@ namespace PhuThuongStickyRice.Application.Common
                 }
             }
 
-            // Range operator [..6] thay Substring(0, 6): ngắn gọn, đúng idiom C# 8+
+            // Range operator [..CodeLength] thay Substring(0, CodeLength): ngắn gọn, đúng idiom C# 8+
             // (cùng cách ProductAppService.Truncate đã dùng), không sợ nhầm
             // startIndex/length.
-            return Guid.NewGuid().ToString("N")[..6].ToLowerInvariant();
+            return Guid.NewGuid().ToString("N")[..CodeLength].ToLowerInvariant();
         }
 
         private static ShortLinkDto MapToDto(ShortLink entity)

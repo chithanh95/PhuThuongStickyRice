@@ -171,53 +171,7 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
         public static IWebHostBuilder UsePhuThuongStickyRiceLogger(this IWebHostBuilder builder, Func<IConfiguration, LoggingOptions> logOptions)
         {
             builder.ConfigureLogging((context, logging) =>
-            {
-                logging.Configure(options =>
-                {
-                    // options.ActivityTrackingOptions = ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId;
-                });
-
-                logging.AddAzureWebAppDiagnostics();
-
-                logging.AddSerilog();
-
-                LoggingOptions options = SetDefault(logOptions(context.Configuration));
-
-                if (options.EventLog != null && options.EventLog.IsEnabled && OperatingSystem.IsWindows())
-                {
-                    logging.AddEventLog(new EventLogSettings
-                    {
-                        LogName = options.EventLog.LogName,
-                        SourceName = options.EventLog.SourceName,
-                    });
-                }
-
-                if (options?.ApplicationInsights?.IsEnabled ?? false)
-                {
-                    logging.AddApplicationInsights(
-                        configureTelemetryConfiguration: (config) =>
-                        {
-                            config.ConnectionString = options.ApplicationInsights.InstrumentationKey;
-                        },
-                        configureApplicationInsightsLoggerOptions: (options) => { });
-                }
-
-                if (options?.OpenTelemetry?.IsEnabled ?? false)
-                {
-                    var resourceBuilder = ResourceBuilder.CreateDefault().AddService(options.OpenTelemetry.ServiceName);
-
-                    logging.AddOpenTelemetry(configure =>
-                    {
-                        configure.SetResourceBuilder(resourceBuilder)
-                        .AddOtlpExporter(otlpOptions =>
-                        {
-                            otlpOptions.Endpoint = new Uri(options.OpenTelemetry.Otlp.Endpoint);
-                        });
-                    });
-                }
-
-                context.HostingEnvironment.UsePhuThuongStickyRiceLogger(options);
-            });
+                ApplySerilogConfiguration(logging, context.Configuration, context.HostingEnvironment, logOptions));
 
             return builder;
         }
@@ -225,55 +179,67 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
         public static IHostBuilder UsePhuThuongStickyRiceLogger(this IHostBuilder builder, Func<IConfiguration, LoggingOptions> logOptions)
         {
             builder.ConfigureLogging((context, logging) =>
-            {
-                logging.Configure(options =>
-                {
-                    // options.ActivityTrackingOptions = ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId;
-                });
-
-                logging.AddAzureWebAppDiagnostics();
-
-                logging.AddSerilog();
-
-                LoggingOptions options = SetDefault(logOptions(context.Configuration));
-
-                if (options.EventLog != null && options.EventLog.IsEnabled && OperatingSystem.IsWindows())
-                {
-                    logging.AddEventLog(new EventLogSettings
-                    {
-                        LogName = options.EventLog.LogName,
-                        SourceName = options.EventLog.SourceName,
-                    });
-                }
-
-                if (options?.ApplicationInsights?.IsEnabled ?? false)
-                {
-                    logging.AddApplicationInsights(
-                        configureTelemetryConfiguration: (config) =>
-                        {
-                            config.ConnectionString = options.ApplicationInsights.InstrumentationKey;
-                        },
-                        configureApplicationInsightsLoggerOptions: (options) => { });
-                }
-
-                if (options?.OpenTelemetry?.IsEnabled ?? false)
-                {
-                    var resourceBuilder = ResourceBuilder.CreateDefault().AddService(options.OpenTelemetry.ServiceName);
-
-                    logging.AddOpenTelemetry(configure =>
-                    {
-                        configure.SetResourceBuilder(resourceBuilder)
-                        .AddOtlpExporter(otlpOptions =>
-                        {
-                            otlpOptions.Endpoint = new Uri(options.OpenTelemetry.Otlp.Endpoint);
-                        });
-                    });
-                }
-
-                context.HostingEnvironment.UsePhuThuongStickyRiceLogger(options);
-            });
+                ApplySerilogConfiguration(logging, context.Configuration, context.HostingEnvironment, logOptions));
 
             return builder;
+        }
+
+        /// <summary>
+        /// Cấu hình Serilog dùng chung cho cả WebHost (context.HostingEnvironment là
+        /// <see cref="IWebHostEnvironment"/>) và Host thường — tránh trùng lặp vì 2 loại
+        /// context đều lộ <see cref="IConfiguration"/> + <see cref="IHostEnvironment"/>.
+        /// </summary>
+        private static void ApplySerilogConfiguration(
+            ILoggingBuilder logging,
+            IConfiguration configuration,
+            IHostEnvironment hostingEnvironment,
+            Func<IConfiguration, LoggingOptions> logOptions)
+        {
+            logging.Configure(options =>
+            {
+                // options.ActivityTrackingOptions = ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId;
+            });
+
+            logging.AddAzureWebAppDiagnostics();
+
+            logging.AddSerilog();
+
+            LoggingOptions options = SetDefault(logOptions(configuration));
+
+            if (options.EventLog != null && options.EventLog.IsEnabled && OperatingSystem.IsWindows())
+            {
+                logging.AddEventLog(new EventLogSettings
+                {
+                    LogName = options.EventLog.LogName,
+                    SourceName = options.EventLog.SourceName,
+                });
+            }
+
+            if (options?.ApplicationInsights?.IsEnabled ?? false)
+            {
+                logging.AddApplicationInsights(
+                    configureTelemetryConfiguration: (config) =>
+                    {
+                        config.ConnectionString = options.ApplicationInsights.InstrumentationKey;
+                    },
+                    configureApplicationInsightsLoggerOptions: (options) => { });
+            }
+
+            if (options?.OpenTelemetry?.IsEnabled ?? false)
+            {
+                var resourceBuilder = ResourceBuilder.CreateDefault().AddService(options.OpenTelemetry.ServiceName);
+
+                logging.AddOpenTelemetry(configure =>
+                {
+                    configure.SetResourceBuilder(resourceBuilder)
+                    .AddOtlpExporter(otlpOptions =>
+                    {
+                        otlpOptions.Endpoint = new Uri(options.OpenTelemetry.Otlp.Endpoint);
+                    });
+                });
+            }
+
+            hostingEnvironment.UsePhuThuongStickyRiceLogger(options);
         }
 
         private static void UsePhuThuongStickyRiceLogger(this IHostEnvironment env, LoggingOptions options)

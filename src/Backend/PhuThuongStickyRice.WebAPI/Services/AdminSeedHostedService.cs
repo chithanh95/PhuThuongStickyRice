@@ -89,21 +89,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             _logger.LogInformation("Admin seed: database connection OK.");
 
-            var role = await dbContext.Set<Role>()
-                .FirstOrDefaultAsync(r => r.NormalizedName == AdminRoleName.ToUpperInvariant(), cancellationToken);
-            if (role == null)
-            {
-                role = new Role
-                {
-                    Id = Guid.NewGuid(),
-                    Name = AdminRoleName,
-                    NormalizedName = AdminRoleName.ToUpperInvariant(),
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
-                };
-                await dbContext.Set<Role>().AddAsync(role, cancellationToken);
-                await dbContext.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Admin seed: role '{Role}' created.", AdminRoleName);
-            }
+            var role = await EnsureRoleExistsAsync(dbContext, AdminRoleName, cancellationToken);
 
             // Item 126: seed the Kitchen and Cashier roles too (no users
             // assigned — the admin assigns them on the user admin page).
@@ -119,14 +105,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
             {
                 if (!existingRoleNames.Contains(extraRole.ToUpperInvariant()))
                 {
-                    await dbContext.Set<Role>().AddAsync(new Role
-                    {
-                        Id = Guid.NewGuid(),
-                        Name = extraRole,
-                        NormalizedName = extraRole.ToUpperInvariant(),
-                        ConcurrencyStamp = Guid.NewGuid().ToString()
-                    }, cancellationToken);
-                    _logger.LogInformation("Admin seed: role '{Role}' created.", extraRole);
+                    await EnsureRoleExistsAsync(dbContext, extraRole, cancellationToken);
                 }
             }
 
@@ -174,6 +153,33 @@ namespace PhuThuongStickyRice.WebAPI.Services
             // only missing role/key pairs are added; admin edits at
             // /admin/phan-quyen are never overwritten).
             await SeedDefaultPermissionsAsync(dbContext, cancellationToken);
+        }
+
+        /// <summary>
+        /// Tạo role nếu chưa tồn tại (tìm theo NormalizedName), trả về role.
+        /// Idempotent nên gọi lại nhiều lần hoặc song song từ 2 khối seed đều an toàn.
+        /// </summary>
+        private async Task<Role> EnsureRoleExistsAsync(
+            StickyRiceDbContext dbContext, string roleName, CancellationToken cancellationToken)
+        {
+            var normalizedName = roleName.ToUpperInvariant();
+            var role = await dbContext.Set<Role>()
+                .FirstOrDefaultAsync(r => r.NormalizedName == normalizedName, cancellationToken);
+            if (role == null)
+            {
+                role = new Role
+                {
+                    Id = Guid.NewGuid(),
+                    Name = roleName,
+                    NormalizedName = normalizedName,
+                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                };
+                await dbContext.Set<Role>().AddAsync(role, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Admin seed: role '{Role}' created.", roleName);
+            }
+
+            return role;
         }
 
         /// <summary>

@@ -47,6 +47,15 @@ namespace PhuThuongStickyRice.Application.Shop
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>Cửa sổ "ngày nghỉ sắp tới" hiển thị cho khách (số ngày kể từ hôm nay).</summary>
+        private const int UpcomingWindowDays = 30;
+
+        /// <summary>
+        /// Dung sai khi từ chối ngày quá khứ: cho phép lùi 1 ngày vì admin có thể
+        /// nhập muộn trong đêm theo giờ UTC trong khi ở Việt Nam vẫn là "hôm nay".
+        /// </summary>
+        private const int PastDateToleranceDays = 1;
+
         /// <summary>Khởi tạo dịch vụ lịch nghỉ lễ.</summary>
         /// <param name="holidays">Repository lịch nghỉ.</param>
         /// <param name="asyncExecuter">Thực thi truy vấn async.</param>
@@ -176,7 +185,7 @@ namespace PhuThuongStickyRice.Application.Shop
         private async Task<List<HolidayScheduleDto>> QueryUpcomingAsync()
         {
             var today = VietnamToday();
-            var limit = today.AddDays(30);
+            var limit = today.AddDays(UpcomingWindowDays);
             var queryable = await _holidays.GetQueryableAsync();
             var list = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.HolidayDate >= today && x.HolidayDate <= limit)
@@ -196,7 +205,7 @@ namespace PhuThuongStickyRice.Application.Shop
         private static (DateTime date, string reason) Validate(DateTime holidayDate, string reason)
         {
             var date = holidayDate.Date;
-            if (date < VietnamToday().AddDays(-1))
+            if (date < VietnamToday().AddDays(-PastDateToleranceDays))
             {
                 throw new Domain.Exceptions.DomainException("Không thể thêm ngày nghỉ trong quá khứ.");
             }

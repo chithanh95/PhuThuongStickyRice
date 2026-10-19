@@ -94,6 +94,17 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         // Số khung giờ bán tối đa cho phép trên 1 sản phẩm.
         private const int MaxHourWindows = 3;
 
+        // Chiều rộng tối đa (px) khi nén ảnh sản phẩm bằng JS interop trước upload —
+        // ảnh chụp điện thoại thường 3000–4000px, nén xuống 1600px vẫn đủ nét
+        // hiển thị mà giảm hẳn dung lượng upload/lưu trữ.
+        private const int CompressedImageMaxWidth = 1600;
+
+        // Chất lượng JPEG khi nén ảnh (0–1): 0.85 là điểm cân bằng nét/dung lượng.
+        private const double CompressedImageQuality = 0.85;
+
+        // Thông báo khi file ảnh chọn từ input không đọc được (file hỏng/không phải ảnh).
+        private const string UnreadableImageError = "Không đọc được ảnh đã chọn.";
+
         private readonly List<HourWindow> _hours = new List<HourWindow>();
 
         private string _imageUrl;
@@ -250,12 +261,12 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             try
             {
                 files = await JSRuntime.InvokeAsync<List<CompressedImage>>(
-                        "interop.compressImagesFromInput", "product-images-input", 1600, 0.85)
+                        "interop.compressImagesFromInput", "product-images-input", CompressedImageMaxWidth, CompressedImageQuality)
                     ?? new List<CompressedImage>();
             }
             catch (Exception)
             {
-                _imageError = "Không đọc được ảnh đã chọn.";
+                _imageError = UnreadableImageError;
                 return;
             }
 
@@ -267,7 +278,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             var file = files[0];
             if (string.IsNullOrEmpty(file.Base64))
             {
-                _imageError = "Không đọc được ảnh đã chọn.";
+                _imageError = UnreadableImageError;
                 return;
             }
 
