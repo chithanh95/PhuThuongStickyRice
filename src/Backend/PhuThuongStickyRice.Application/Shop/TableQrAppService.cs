@@ -15,21 +15,39 @@ using Volo.Abp.Linq;
 namespace PhuThuongStickyRice.Application.Shop
 {
     /// <summary>
-    /// Item 95: table QR codes encoding {WebBaseUrl}/shop?ban={Label}.
-    /// PNG generation is fully offline via QRCoder.
+    /// Item 95: mã QR cho từng bàn, mã hóa URL {WebBaseUrl}/shop?ban={Label}.
+    /// Khách quét QR ở bàn thì vào shop với tham số bàn để đơn gắn đúng bàn.
+    /// Render PNG hoàn toàn offline bằng QRCoder (không gọi dịch vụ ngoài).
     /// </summary>
     public interface ITableQrAppService : IApplicationService
     {
+        /// <summary>Admin: liệt kê toàn bộ QR bàn, sắp theo nhãn bàn.</summary>
+        /// <returns>Danh sách QR bàn.</returns>
         Task<List<TableQrDto>> GetListAsync();
 
+        /// <summary>
+        /// Admin: tạo QR cho 1 nhãn bàn. Nhãn đã tồn tại thì ghi đè URL mới
+        /// (URL phụ thuộc WebBaseUrl, đổi WebBaseUrl thì URL cũ hết hiệu lực).
+        /// </summary>
+        /// <param name="input">Nhãn bàn (vd "Bàn 1").</param>
+        /// <returns>Thông tin QR vừa tạo/cập nhật kèm PNG base64.</returns>
         Task<TableQrGeneratedDto> GenerateAsync(CreateTableQrDto input);
 
+        /// <summary>Admin: xóa QR bàn và xóa luôn PNG đang cache.</summary>
+        /// <param name="id">Id QR bàn cần xóa.</param>
         Task DeleteAsync(Guid id);
 
-        /// <summary>Re-renders the PNG for a saved QR (download button).</summary>
+        /// <summary>Render lại PNG cho QR đã lưu (nút tải xuống).</summary>
+        /// <param name="id">Id QR bàn.</param>
+        /// <returns>Byte PNG của mã QR.</returns>
         Task<byte[]> RenderPngAsync(Guid id);
     }
 
+    /// <summary>
+    /// Quản lý mã QR bàn cho quán (item 95). PNG của QR là hàm thuần túy theo
+    /// EncodedUrl đã lưu nên được cache 24 giờ trong memory; mỗi lần tạo lại
+    /// hoặc xóa QR đều xóa entry cache để lần tải sau render lại từ URL mới.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class TableQrAppService : ApplicationService, ITableQrAppService
     {
@@ -53,6 +71,10 @@ namespace PhuThuongStickyRice.Application.Shop
             _cache = cache;
         }
 
+        /// <summary>
+        /// Admin: liệt kê toàn bộ QR bàn, sắp theo nhãn bàn.
+        /// </summary>
+        /// <returns>Danh sách QR bàn.</returns>
         public virtual async Task<List<TableQrDto>> GetListAsync()
         {
             var queryable = await _tableQrs.GetQueryableAsync();
@@ -61,6 +83,14 @@ namespace PhuThuongStickyRice.Application.Shop
             return items.Select(Map).ToList();
         }
 
+        /// <summary>
+        /// Admin: tạo QR cho 1 nhãn bàn (nhãn trùng thì cập nhật URL mới).
+        /// URL phụ thuộc WebBaseUrl trong cài đặt — đổi WebBaseUrl thì phải
+        /// tạo lại QR, nên sau khi lưu luôn xóa cache PNG theo id để lần tải
+        /// sau render lại từ URL mới.
+        /// </summary>
+        /// <param name="input">Nhãn bàn (vd "Bàn 1").</param>
+        /// <returns>Thông tin QR vừa tạo/cập nhật kèm PNG base64.</returns>
         public virtual async Task<TableQrGeneratedDto> GenerateAsync(CreateTableQrDto input)
         {
             var label = input.Label.Trim();
@@ -103,18 +133,29 @@ namespace PhuThuongStickyRice.Application.Shop
             };
         }
 
+        /// <summary>
+        /// Admin: xóa QR bàn và xóa luôn PNG đang cache để không còn tải được
+        /// ảnh QR của bàn đã xóa.
+        /// </summary>
+        /// <param name="id">Id QR bàn cần xóa.</param>
         public virtual async Task DeleteAsync(Guid id)
         {
             _cache.Remove(PngCacheKey(id));
             await _tableQrs.DeleteAsync(id, autoSave: true);
         }
 
+        /// <summary>
+        /// Render lại PNG cho QR đã lưu (nút tải xuống). PNG được cache 24 giờ
+        /// vì render QR tốn CPU mà bytes PNG chỉ phụ thuộc EncodedUrl đã lưu;
+        /// cache bị xóa mỗi khi QR được tạo lại hoặc xóa.
+        /// </summary>
+        /// <param name="id">Id QR bàn.</param>
+        /// <returns>Byte PNG của mã QR.</returns>
         public virtual async Task<byte[]> RenderPngAsync(Guid id)
         {
-            // perf-hunt 2026-10-19: the anonymous /png download re-rendered the
-            // QR on every request (CPU-bound, no input change). PNG bytes are a
-            // pure function of the saved EncodedUrl, so cache them; the entry is
-            // evicted whenever the row is regenerated or deleted below.
+            // Render QR tốn CPU nhưng bytes PNG chỉ phụ thuộc EncodedUrl đã lưu
+            // (không đổi theo request) nên cache lại; entry bị xóa mỗi khi QR
+            // được tạo lại hoặc xóa ở các method trên.
             return await _cache.GetOrCreateAsync(PngCacheKey(id), async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(PngCacheHours);
@@ -146,11 +187,19 @@ namespace PhuThuongStickyRice.Application.Shop
             CreatedAt = tableQr.CreatedAt
         };
 
-        /// <summary>Renders a QR code as PNG bytes (offline, QRCoder).</summary>
+        /// <summary>
+        /// Render mã QR thành byte PNG (offline, dùng QRCoder).
+        /// </summary>
+        /// <param name="content">Nội dung mã hóa vào QR (URL của bàn).</param>
+        /// <returns>Byte PNG của mã QR.</returns>
         public static byte[] RenderPng(string content)
         {
             using var generator = new QRCodeGenerator();
+            // ECCLevel.M: mức sửa lỗi trung bình — QR vẫn đọc được khi ~15%
+            // diện tích bị che/bẩn (thực tế tem dán bàn dễ bị dính nước/bụi).
             var qrCodeData = generator.CreateQrCode(content, QRCodeGenerator.ECCLevel.M);
+            // 20 pixel cho mỗi module QR — đủ nét để in tem dán bàn và điện
+            // thoại quét nhanh, không cần ảnh lớn hơn gây tốn dung lượng.
             return new PngByteQRCode(qrCodeData).GetGraphic(20);
         }
     }

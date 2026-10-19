@@ -83,6 +83,11 @@ namespace PhuThuongStickyRice.Application.Customer
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Admin: danh sách công ty sắp theo tên, tối đa 200 dòng (server-side) —
+        /// bảng khách hàng doanh nghiệp tăng theo thời gian nên không materialize toàn bộ.
+        /// </summary>
+        /// <returns>Danh sách khách hàng doanh nghiệp.</returns>
         public virtual async Task<List<CorporateClientDto>> GetListAsync()
         {
             var queryable = await _clients.GetQueryableAsync();
@@ -94,11 +99,23 @@ namespace PhuThuongStickyRice.Application.Customer
             return list.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: xem chi tiết một công ty.
+        /// </summary>
+        /// <param name="id">Id khách hàng doanh nghiệp.</param>
+        /// <returns>Thông tin chi tiết công ty; ném exception khi Id không tồn tại.</returns>
         public virtual async Task<CorporateClientDto> GetAsync(Guid id)
         {
             return MapToDto(await _clients.GetAsync(id));
         }
 
+        /// <summary>
+        /// Admin: thêm công ty mới. SĐT được chuẩn hóa về dạng chữ số; nếu SĐT
+        /// nhập vào chưa đủ 9 chữ số (chuẩn hóa thất bại) thì giữ nguyên chuỗi
+        /// gốc để không mất dữ liệu — admin có thể sửa lại sau.
+        /// </summary>
+        /// <param name="input">Thông tin công ty (tên, liên hệ, SĐT, thứ giao, món đặt).</param>
+        /// <returns>Công ty vừa tạo.</returns>
         public virtual async Task<CorporateClientDto> CreateAsync(CreateUpdateCorporateClientDto input)
         {
             var entity = new CorporateClient
@@ -117,6 +134,12 @@ namespace PhuThuongStickyRice.Application.Customer
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: cập nhật thông tin công ty (kể cả bật/tắt trạng thái hoạt động).
+        /// </summary>
+        /// <param name="id">Id công ty.</param>
+        /// <param name="input">Thông tin mới.</param>
+        /// <returns>Công ty sau khi cập nhật.</returns>
         public virtual async Task<CorporateClientDto> UpdateAsync(Guid id, CreateUpdateCorporateClientDto input)
         {
             var entity = await _clients.GetAsync(id);
@@ -132,11 +155,21 @@ namespace PhuThuongStickyRice.Application.Customer
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: xóa công ty khỏi danh sách đặt định kỳ.
+        /// </summary>
+        /// <param name="id">Id công ty.</param>
         public virtual async Task DeleteAsync(Guid id)
         {
             await _clients.DeleteAsync(id, autoSave: true);
         }
 
+        /// <summary>
+        /// Lấy các công ty đang hoạt động có thứ giao món trùng với thứ hôm nay
+        /// (tính theo giờ Việt Nam, vì khách lên lịch theo ngày họ nhìn thấy).
+        /// Hệ thống gọi mỗi sáng để biết cần chuẩn bị đơn cho những công ty nào.
+        /// </summary>
+        /// <returns>Danh sách công ty "đến hẹn" hôm nay, sắp theo tên.</returns>
         public virtual async Task<List<CorporateClientDto>> GetDueTodayAsync()
         {
             // Tính "hôm nay" theo giờ Việt Nam: khách lên lịch giao món theo
@@ -159,6 +192,8 @@ namespace PhuThuongStickyRice.Application.Customer
                 Phone = x.Phone,
                 Address = x.Address,
                 Weekday = x.Weekday,
+                // Tên thứ hiển thị bằng tiếng Việt (Thứ hai…Chủ nhật) để admin
+                // đọc lịch giao món của công ty cho dễ, thay vì DayOfWeek tiếng Anh.
                 WeekdayName = CultureInfo.GetCultureInfo("vi-VN").DateTimeFormat.DayNames[x.Weekday],
                 ItemsJson = x.ItemsJson,
                 IsActive = x.IsActive

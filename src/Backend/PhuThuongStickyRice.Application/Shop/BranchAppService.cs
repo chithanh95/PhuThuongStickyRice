@@ -58,6 +58,9 @@ namespace PhuThuongStickyRice.Application.Shop
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Admin: liệt kê toàn bộ chi nhánh, sắp xếp theo tên (kể cả chi nhánh đã tắt).
+        /// </summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<BranchDto>> GetListAsync()
         {
@@ -67,12 +70,17 @@ namespace PhuThuongStickyRice.Application.Shop
             return entities.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Public: chi nhánh đang hoạt động cho khách chọn nơi nhận hàng.
+        /// Kết quả được cache 5 phút; mọi CRUD của admin đều invalidate cache
+        /// để shop thấy thay đổi ngay.
+        /// </summary>
         [AllowAnonymous]
         public virtual async Task<List<BranchDto>> GetActiveAsync()
         {
-            // perf-hunt 2026-10-19: GET /api/branches is public (branch picker
-            // on shop pages). The active list is tiny; cache it 5 minutes and
-            // invalidate on admin CRUD below.
+            // Danh sách chi nhánh đang hoạt động rất ngắn nhưng được gọi public
+            // (khách chọn chi nhánh ở trang shop) nên cache 5 phút để đỡ tải
+            // DB; mỗi thao tác tạo/sửa/xóa của admin bên dưới đều invalidate.
             return await _catalogCache.GetOrAddAsync("branches:active-list", async () =>
             {
                 var queryable = await _branches.GetQueryableAsync();
@@ -82,12 +90,23 @@ namespace PhuThuongStickyRice.Application.Shop
             });
         }
 
+        /// <summary>
+        /// Admin: xem chi tiết một chi nhánh. Ném exception khi Id không tồn tại.
+        /// </summary>
+        /// <param name="id">Id chi nhánh.</param>
+        /// <returns>Thông tin chi nhánh.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<BranchDto> GetAsync(Guid id)
         {
             return MapToDto(await _branches.GetAsync(id));
         }
 
+        /// <summary>
+        /// Admin: tạo chi nhánh mới. Tên/địa chỉ/SĐT được trim khoảng trắng;
+        /// địa chỉ/SĐT bỏ trống thì lưu null (không lưu chuỗi rỗng).
+        /// </summary>
+        /// <param name="dto">Tên, địa chỉ, SĐT, trạng thái hoạt động.</param>
+        /// <returns>Chi nhánh vừa tạo.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<BranchDto> CreateAsync(CreateUpdateBranchDto dto)
         {
@@ -103,6 +122,13 @@ namespace PhuThuongStickyRice.Application.Shop
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: cập nhật thông tin chi nhánh (ghi đè toàn bộ trường bằng DTO
+        /// mới) và invalidate cache danh sách đang hoạt động.
+        /// </summary>
+        /// <param name="id">Id chi nhánh cần cập nhật.</param>
+        /// <param name="dto">Thông tin mới của chi nhánh.</param>
+        /// <returns>Chi nhánh sau khi cập nhật.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<BranchDto> UpdateAsync(Guid id, CreateUpdateBranchDto dto)
         {
@@ -116,6 +142,10 @@ namespace PhuThuongStickyRice.Application.Shop
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: xóa chi nhánh và invalidate cache danh sách đang hoạt động.
+        /// </summary>
+        /// <param name="id">Id chi nhánh cần xóa.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task DeleteAsync(Guid id)
         {

@@ -17,7 +17,7 @@ namespace PhuThuongStickyRice.Application.Catalog
     /// </summary>
     public interface IToppingAppService : IApplicationService
     {
-        /// <summary>Public: active toppings for the quick-view checkboxes.</summary>
+        /// <summary>Public: danh sách topping đang bật cho khách tick chọn khi đặt món.</summary>
         Task<List<ToppingDto>> GetActiveAsync();
 
         /// <summary>Admin: toàn bộ topping (kể cả đã tắt), sắp xếp theo thứ tự hiển thị.</summary>
@@ -75,6 +75,11 @@ namespace PhuThuongStickyRice.Application.Catalog
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Public: topping đang bật, sắp xếp theo thứ tự hiển thị rồi theo tên.
+        /// Kết quả cache qua <c>IProductCatalogCache</c> vì checkout của khách
+        /// gọi rất thường xuyên.
+        /// </summary>
         [AllowAnonymous]
         public virtual async Task<List<ToppingDto>> GetActiveAsync()
         {
@@ -91,6 +96,9 @@ namespace PhuThuongStickyRice.Application.Catalog
             return entities.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: toàn bộ topping (kể cả đã tắt), sắp xếp theo thứ tự hiển thị rồi theo tên.
+        /// </summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<ToppingDto>> GetListAsync()
         {
@@ -100,12 +108,24 @@ namespace PhuThuongStickyRice.Application.Catalog
             return entities.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: chi tiết 1 topping.
+        /// </summary>
+        /// <param name="id">Id topping.</param>
+        /// <returns>Topping tìm được; ném exception khi Id không tồn tại.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<ToppingDto> GetAsync(Guid id)
         {
             return MapToDto(await _toppings.GetAsync(id));
         }
 
+        /// <summary>
+        /// Admin: tạo topping mới. Giá phụ thu bị kẹp ≥ 0 (giá âm sẽ làm giảm
+        /// tiền đơn hàng nên không cho phép); tạo xong invalidate cache topping
+        /// đang bật để shop thấy ngay.
+        /// </summary>
+        /// <param name="dto">Tên, giá phụ thu, thứ tự hiển thị, trạng thái bật/tắt.</param>
+        /// <returns>Topping vừa tạo.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<ToppingDto> CreateAsync(CreateUpdateToppingDto dto)
         {
@@ -122,6 +142,13 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: cập nhật topping (ghi đè toàn bộ trường bằng DTO mới, giá phụ
+        /// thu kẹp ≥ 0) và invalidate cache topping đang bật.
+        /// </summary>
+        /// <param name="id">Id topping cần cập nhật.</param>
+        /// <param name="dto">Thông tin mới của topping.</param>
+        /// <returns>Topping sau khi cập nhật.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<ToppingDto> UpdateAsync(Guid id, CreateUpdateToppingDto dto)
         {
@@ -137,6 +164,13 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: "xóa" topping bằng cách tắt trạng thái (soft-delete) thay vì
+        /// xóa cứng — tên topping đã lưu dạng text trong OrderLine của các đơn
+        /// cũ nên xóa cứng sẽ không ảnh hưởng đơn cũ, nhưng tắt trạng thái giữ
+        /// danh sách gọn và tránh nhầm lẫn nếu topping được tạo lại sau này.
+        /// </summary>
+        /// <param name="id">Id topping cần tắt.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task DeleteAsync(Guid id)
         {
