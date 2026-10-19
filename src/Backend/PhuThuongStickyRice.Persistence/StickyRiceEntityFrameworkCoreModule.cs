@@ -58,6 +58,8 @@ namespace PhuThuongStickyRice.Persistence
             context.Services.AddScoped<IProductRepository, ProductRepository>();
             context.Services.AddScoped<IOrderRepository, OrderRepository>();
             context.Services.AddScoped<IWalletAccountRepository, WalletAccountRepository>();
+            context.Services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
+            context.Services.AddScoped<ICheckInRepository, CheckInRepository>();
             context.Services.AddScoped<IDiscountCodeRepository, DiscountCodeRepository>();
 
             // Template repositories + template IUnitOfWork for the legacy

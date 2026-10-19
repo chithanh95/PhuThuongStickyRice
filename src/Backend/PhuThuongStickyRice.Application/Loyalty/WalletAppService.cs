@@ -6,9 +6,10 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
-using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using PhuThuongStickyRice.Application.Loyalty;
 using PhuThuongStickyRice.Application.Common;
@@ -68,7 +69,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
     public class WalletAppService : ApplicationService, IWalletAppService
     {
         private readonly IWalletAccountRepository _wallets;
-        private readonly Volo.Abp.Domain.Repositories.IRepository<WalletTransaction, Guid> _transactions;
+        private readonly IWalletTransactionRepository _transactions;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
         /// <summary>Số ví tối đa liệt kê ở màn hình admin (tránh materialize toàn bảng).</summary>
@@ -79,7 +80,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>Khởi tạo service ví tiền với repository tài khoản và lịch sử giao dịch.</summary>
         public WalletAppService(
             IWalletAccountRepository wallets,
-            Volo.Abp.Domain.Repositories.IRepository<WalletTransaction, Guid> transactions,
+            IWalletTransactionRepository transactions,
             IAsyncQueryableExecuter asyncExecuter)
         {
             _wallets = wallets;
@@ -247,33 +248,61 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return;
             }
 
-            // Idempotent: cùng mã đơn chỉ hoàn đúng 1 lần cho cùng một lý do.
-            // Luồng hủy đơn có thể được gọi lặp (webhook gọi lại, customer +
-            // staff cùng hủy) — kiểm tra lịch sử giao dịch trước khi cộng tiền
-            // để tránh hoàn trùng. Lý do phân biệt loại hoàn tiền: hoàn từng
-            // phần khi bớt món không được dùng lý do "hủy đơn", nếu không lần
-            // hoàn đó sẽ chặn nhầm lần hoàn tiền thật khi đơn bị hủy sau đó.
             var reason = refundReason ?? $"Hoàn tiền hủy đơn {orderNumber}";
-            var txQueryable = await _transactions.GetQueryableAsync();
-            var alreadyRefunded = await _asyncExecuter.AnyAsync(
-                txQueryable.Where(x => x.Phone == normalized && x.Reason == reason));
-            if (alreadyRefunded)
+
+            // Idempotent + chống race hoàn trùng (bug-hunt run 15:35). Bản cũ
+            // check AnyAsync(Phone, Reason) rồi mới cộng tiền: 2 lần hủy đơn
+            // đồng thời (khách + staff cùng bấm hủy, webhook hủy gọi lặp)
+            // cùng qua bước check rồi cùng IncrementBalanceAsync -> ví được
+            // cộng tiền 2 lần (mất tiền thật), check-then-insert không nguyên tử.
+            // Bản mới: insert dòng guard với IdempotencyKey DUY NHẤT trước khi
+            // cộng tiền; unique index trên IdempotencyKey làm trọng tài nguyên
+            // tử — chỉ bên insert guard thành công được cộng tiền, bên thua
+            // return ngay mà không chạm số dư. Không dùng unique (Phone,
+            // Reason): các lần charge hợp lệ lặp lại cùng lý do "Thanh toán
+            // đơn {mã đơn}" (khách sửa đơn thêm món nhiều lần) sẽ bị chặn oan.
+            // Lý do vẫn phân biệt loại hoàn tiền như cũ: hoàn từng phần khi
+            // bớt món không được dùng lý do "hủy đơn", nếu không lần hoàn đó
+            // sẽ chặn nhầm lần hoàn tiền thật khi đơn bị hủy sau đó.
+            var guard = new WalletTransaction
             {
-                return;
+                Phone = normalized,
+                Amount = amount,
+                Reason = reason,
+                BalanceAfter = 0, // tạm — set đúng sau khi cộng số dư nguyên tử
+                CreatedBy = "system",
+                CreatedAt = DateTime.UtcNow,
+                IdempotencyKey = BuildRefundIdempotencyKey(normalized, reason)
+            };
+            var inserted = await _transactions.TryInsertRefundGuardAsync(guard);
+            if (inserted == null)
+            {
+                return; // đã hoàn rồi — bên thắng race hoặc lần gọi trước đó
             }
 
             var account = await GetOrCreateAsync(normalized);
 
-            // Bug fix (bug-hunt run 14:25): cộng số dư bằng UPDATE nguyên tử
-            // (Balance = Balance + amount) thay vì read-modify-write
-            // (account.Balance += amount rồi UpdateAsync). Bản cũ: 2 refund
-            // đồng thời đều đọc số dư cũ, cộng rồi ghi đè → số dư tăng thiếu;
-            // refund chạy song song ChargeAsync (đã nguyên tử) có thể ghi đè
-            // phần trừ của Charge → thừa tiền. Bản mới trả về số dư mới để
-            // lịch sử giao dịch ghi đúng BalanceAfter.
+            // Cộng số dư bằng UPDATE nguyên tử (Balance = Balance + amount)
+            // thay vì read-modify-write (bản fix run 14:25): chống mất cập
+            // nhật khi chạy đồng thời với ChargeAsync hoặc refund khác.
             var newBalance = await _wallets.IncrementBalanceAsync(account.Id, amount);
 
-            await LogAsync(normalized, amount, newBalance, reason, "system");
+            // Guard insert trước với BalanceAfter tạm — cập nhật đúng để
+            // lịch sử ví đối soát được (không thì ghi sai số dư sau giao dịch).
+            await _transactions.UpdateRefundBalanceAfterAsync(inserted.IdempotencyKey, newBalance);
+        }
+
+        /// <summary>
+        /// Dựng khóa chống hoàn trùng cho 1 lần hoàn tiền: "refund|{sđt}|{16 ký tự
+        /// đầu của SHA-256(reason)}". Băm reason vì reason dài tới 500 ký tự,
+        /// không nhét vừa unique index (SQL Server giới hạn 900 bytes); 64 bit
+        /// đầu của SHA-256 đủ để va chạm thực tế không xảy ra.
+        /// </summary>
+        private static string BuildRefundIdempotencyKey(string normalizedPhone, string reason)
+        {
+            using var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(reason ?? string.Empty));
+            return $"refund|{normalizedPhone}|{Convert.ToHexString(hash, 0, 8)}";
         }
 
         /// <summary>Tìm ví theo SĐT đã chuẩn hóa; null nếu SĐT chưa từng có ví.</summary>

@@ -7,7 +7,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
-using Volo.Abp.Domain.Repositories;
+using PhuThuongStickyRice.Domain.Repositories;
 using Volo.Abp.Linq;
 using PhuThuongStickyRice.Application.Common;
 
@@ -28,14 +28,14 @@ namespace PhuThuongStickyRice.Application.Shop
         /// <summary>Số điểm tặng mặc định mỗi lần điểm danh khi cài đặt chưa cấu hình.</summary>
         private const int DefaultCheckInPoints = 5;
 
-        private readonly IRepository<CheckIn, Guid> _checkIns;
-        private readonly IRepository<LoyaltyAccount, Guid> _loyaltyAccounts;
+        private readonly ICheckInRepository _checkIns;
+        private readonly ILoyaltyAccountRepository _loyaltyAccounts;
         private readonly IShopSettingAppService _shopSettings;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
         public CheckInAppService(
-            IRepository<CheckIn, Guid> checkIns,
-            IRepository<LoyaltyAccount, Guid> loyaltyAccounts,
+            ICheckInRepository checkIns,
+            ILoyaltyAccountRepository loyaltyAccounts,
             IShopSettingAppService shopSettings,
             IAsyncQueryableExecuter asyncExecuter)
         {
@@ -74,13 +74,26 @@ namespace PhuThuongStickyRice.Application.Shop
             var settings = await _shopSettings.GetAsync();
             var points = settings.CheckInPoints > 0 ? settings.CheckInPoints : DefaultCheckInPoints;
 
-            await _checkIns.InsertAsync(new CheckIn
+            // Ghi nhận điểm danh nguyên tử (bug-hunt run 15:35): 2 request
+            // điểm danh đồng thời cùng SĐT cùng ngày đều qua bước check
+            // (existing == null) rồi cùng insert — unique (Phone, Date) chỉ
+            // cho 1 bên insert, bên thua cũ nhận DbUpdateException -> 500.
+            // TryInsertAsync trả false cho bên thua -> trả kết quả "đã điểm
+            // danh" thay vì lỗi, và KHÔNG cộng điểm lần 2.
+            var inserted = await _checkIns.TryInsertAsync(new CheckIn
             {
                 Phone = normalized,
                 Date = today,
                 PointsAwarded = points,
                 CreatedAt = DateTime.UtcNow
-            }, autoSave: true);
+            });
+            if (!inserted)
+            {
+                var current = await FindLoyaltyAsync(normalized);
+                return await BuildResultAsync(normalized, today,
+                    alreadyCheckedIn: true, pointsAwarded: 0,
+                    loyaltyPoints: current?.Points ?? loyalty.Points);
+            }
 
             loyalty.Points += points;
             loyalty.TotalEarned += points;
@@ -163,8 +176,19 @@ namespace PhuThuongStickyRice.Application.Shop
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-            await _loyaltyAccounts.InsertAsync(account, autoSave: true);
-            return account;
+            // Tạo tài khoản nguyên tử (bug-hunt run 15:35): 2 request đồng
+            // thời cho SĐT mới đều thấy chưa có tài khoản rồi cùng insert —
+            // unique (Phone) chỉ cho 1 bên, bên thua cũ nhận DbUpdateException
+            // -> 500. TryInsertAsync trả null cho bên thua -> đọc lại tài
+            // khoản bên thắng vừa tạo.
+            var inserted = await _loyaltyAccounts.TryInsertAsync(account);
+            if (inserted != null)
+            {
+                return inserted;
+            }
+
+            return await FindLoyaltyAsync(phone)
+                ?? throw new DomainException("Không tạo được tài khoản tích điểm, vui lòng thử lại.");
         }
 
         /// <summary>

@@ -2452,6 +2452,8 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var primary = await FindOrThrowAsync(input.PrimaryOrderId);
             EnsureMergeable(primary);
+            // Tổng đơn chính TRƯỚC khi gộp — dùng để tính chênh lệch thu/hoàn ví sau gộp.
+            var primaryTotalBefore = primary.TotalAmount.Amount;
 
             // P9: batch load all secondaries in 1 query instead of N FindOrThrowAsync calls.
             var secondaryIds = input.OrderIds.Distinct()
@@ -2481,6 +2483,34 @@ namespace PhuThuongStickyRice.Application.Orders
             foreach (var other in secondaries)
             {
                 await MergeOneSecondaryAsync(primary, other);
+            }
+
+            // bug-hunt 2026-10-19 (run 15:35): đối soát ví đơn chính sau gộp.
+            // MergeOneSecondaryAsync đã hoàn TRỌN tiền ví của từng đơn phụ,
+            // nhưng các dòng hàng của chúng đã chuyển sang đơn chính làm tổng
+            // đơn chính tăng — đơn chính trả bằng ví mà không thu thêm phần
+            // chênh lệch thì quán mất đúng số tiền đó (khách nhận hàng nhưng
+            // chỉ trả theo tổng cũ). Mirror luồng khách tự sửa đơn đã thanh
+            // toán ví (delta > 0 thu thêm, delta < 0 hoàn lại): ChargeAsync
+            // ném lỗi khi số dư không đủ -> cả vụ gộp rollback, admin thấy
+            // message rõ ràng thay vì gộp xong quán mất tiền im lặng.
+            if (primary.PaymentMethod == PaymentMethod.Wallet
+                && primary.PaymentStatus == PaymentStatus.Paid)
+            {
+                var delta = primary.TotalAmount.Amount - primaryTotalBefore;
+                if (delta > 0)
+                {
+                    await _wallets.ChargeAsync(primary.CustomerPhone, delta, primary.OrderNumber);
+                }
+                else if (delta < 0)
+                {
+                    // Như hoàn bớt món: lý do phải RIÊNG CHO MỖI LẦN gộp
+                    // (kèm timestamp) — nếu dùng lý do tĩnh theo mã đơn, lần
+                    // gộp thứ 2 trên cùng đơn chính sẽ bị idempotency chặn nhầm
+                    // và khách mất phần chênh lệch.
+                    await _wallets.RefundAsync(primary.CustomerPhone, -delta, primary.OrderNumber,
+                        $"Hoàn tiền chênh lệch gộp đơn {primary.OrderNumber} {DateTime.UtcNow:yyyyMMddHHmmssfff}");
+                }
             }
 
             await _orders.UpdateAsync(primary);

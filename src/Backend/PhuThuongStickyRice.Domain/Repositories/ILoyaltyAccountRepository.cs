@@ -36,5 +36,19 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// <param name="cancellationToken">Token hủy.</param>
         Task<bool> TryIncrementPointsAsync(
             string phone, int points, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Tạo tài khoản loyalty nguyên tử: chỉ insert khi chưa có tài khoản
+        /// cùng Phone. Trả về tài khoản đã tạo, null nếu đã tồn tại — chống
+        /// race 2 request đồng thời tạo tài khoản cho SĐT mới (unique index
+        /// trên Phone chỉ cho 1 bên insert; bên thua nhận null thay vì
+        /// DbUpdateException -> 500). Pre-check <c>AnyAsync</c> cho đường
+        /// nhanh, catch <c>DbUpdateException</c> cho trường hợp cùng qua
+        /// pre-check — entity lỗi được detach để UoW hiện tại vẫn dùng được.
+        /// </summary>
+        /// <param name="account">Tài khoản cần tạo (Phone đã chuẩn hóa).</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        Task<LoyaltyAccount> TryInsertAsync(
+            LoyaltyAccount account, CancellationToken cancellationToken = default);
     }
 }

@@ -59,5 +59,43 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                     cancellationToken);
             return affected > 0;
         }
+
+        /// <summary>
+        /// Tạo tài khoản loyalty nguyên tử (xem <see cref="ILoyaltyAccountRepository.TryInsertAsync"/>).
+        /// </summary>
+        public async Task<LoyaltyAccount> TryInsertAsync(
+            LoyaltyAccount account, CancellationToken cancellationToken = default)
+        {
+            var dbContext = await GetDbContextAsync();
+            if (account.Id == Guid.Empty)
+            {
+                account.Id = Guid.NewGuid();
+            }
+
+            var exists = await dbContext.Set<LoyaltyAccount>()
+                .AnyAsync(x => x.Phone == account.Phone, cancellationToken);
+            if (exists)
+            {
+                return null;
+            }
+
+            try
+            {
+                await dbContext.Set<LoyaltyAccount>().AddAsync(account, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+                return account;
+            }
+            catch (DbUpdateException)
+            {
+                dbContext.Entry(account).State = EntityState.Detached;
+                var winnerExists = await dbContext.Set<LoyaltyAccount>()
+                    .AnyAsync(x => x.Phone == account.Phone, cancellationToken);
+                if (winnerExists)
+                {
+                    return null;
+                }
+                throw;
+            }
+        }
     }
 }

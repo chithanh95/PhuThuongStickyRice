@@ -133,6 +133,15 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Composite (Phone, CreatedAt): seek equality trên Phone rồi sort ngay
             // trên index, thay index đơn IX_WalletTransactions_Phone (redundant).
             builder.HasIndex(x => new { x.Phone, x.CreatedAt });
+            // bug-hunt 2026-10-19 (run 15:35): khóa chống hoàn tiền ví trùng.
+            // RefundAsync insert dòng guard với IdempotencyKey trước khi cộng
+            // tiền; unique index này làm 2 lần hủy đơn đồng thời (khách + staff,
+            // webhook gọi lặp) chỉ có đúng 1 bên insert được — bên thua return
+            // mà không chạm số dư. NULL không va chạm nên các dòng charge/nạp/
+            // trừ tay (không đặt khóa) không bị ảnh hưởng.
+            builder.Property(x => x.IdempotencyKey)
+                .HasMaxLength(WalletTransaction.IdempotencyKeyMaxLength);
+            builder.HasIndex(x => x.IdempotencyKey).IsUnique();
         }
     }
 
