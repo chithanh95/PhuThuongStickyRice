@@ -436,8 +436,6 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var (promotionName, promotionDiscount) = await ComputeHappyHourPromotionAsync(subtotal);
 
-            // Minimum order amount (shop setting).
-
             // Item 105: feature flags for the checkout extras (UI hides them
             // too; the backend is the real gate).
             var flags = LazyServiceProvider.LazyGetRequiredService<IFeatureFlagAppService>();
@@ -511,9 +509,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 branchId,
                 branchName,
                 input.Source,
-                string.IsNullOrWhiteSpace(input.DeliverySlot) ? null : input.DeliverySlot.Trim(),
-                string.IsNullOrWhiteSpace(input.PickupShipperName) ? null : input.PickupShipperName.Trim(),
-                string.IsNullOrWhiteSpace(input.PickupShipperPhone) ? null : input.PickupShipperPhone.Trim(),
+                TrimToNull(input.DeliverySlot),
+                TrimToNull(input.PickupShipperName),
+                TrimToNull(input.PickupShipperPhone),
                 scheduledFor,
                 // Registered customer: link the order to their account.
                 CurrentUser != null && CurrentUser.IsAuthenticated ? CurrentUser.Id : null);
@@ -640,6 +638,15 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException(
                     $"Đơn hàng tối thiểu {shopSetting.MinOrderAmount:N0} ₫. Vui lòng thêm món vào giỏ.");
             }
+        }
+
+        // [codequality-smell 2026-10-19] Gom pattern lặp lại
+        // "TrimToNull(x)" (12 chỗ) thành một
+        // helper: chuỗi rỗng/khoảng trắng → null, còn lại trim. Giữ nguyên
+        // ngữ nghĩa: DB lưu null thay vì chuỗi trắng.
+        private static string TrimToNull(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
         /// <summary>
@@ -776,8 +783,8 @@ namespace PhuThuongStickyRice.Application.Orders
             NormalizeVatAndRecipient(CreateOrderDto input)
         {
             // VAT invoice fields.
-            var taxCode = string.IsNullOrWhiteSpace(input.TaxCode) ? null : input.TaxCode.Trim();
-            var companyName = string.IsNullOrWhiteSpace(input.CompanyName) ? null : input.CompanyName.Trim();
+            var taxCode = TrimToNull(input.TaxCode);
+            var companyName = TrimToNull(input.CompanyName);
             if (taxCode != null && companyName == null)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -785,8 +792,8 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // Recipient (ordering for someone else).
-            var recipientName = string.IsNullOrWhiteSpace(input.RecipientName) ? null : input.RecipientName.Trim();
-            var recipientPhone = string.IsNullOrWhiteSpace(input.RecipientPhone) ? null : input.RecipientPhone.Trim();
+            var recipientName = TrimToNull(input.RecipientName);
+            var recipientPhone = TrimToNull(input.RecipientPhone);
             if ((recipientName == null) != (recipientPhone == null))
             {
                 throw new Domain.Exceptions.DomainException(
@@ -1027,7 +1034,7 @@ namespace PhuThuongStickyRice.Application.Orders
                         null,
                         0,
                         true,
-                        string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim()));
+                        TrimToNull(line.Note)));
                     continue;
                 }
 
@@ -1086,7 +1093,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
                 lines.Add((product.Id, product.Name, unitPrice, line.Quantity,
                     sizeName, toppingNames, toppingsExtra, false,
-                    string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim()));
+                    TrimToNull(line.Note)));
             }
 
             return lines;
@@ -1708,7 +1715,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<OrderReviewDto> ReplyReviewAsync(Guid id, ReplyReviewDto input)
         {
             var review = await _reviews.GetAsync(id);
-            review.AdminReply = string.IsNullOrWhiteSpace(input.Reply) ? null : input.Reply.Trim();
+            review.AdminReply = TrimToNull(input.Reply);
             await _reviews.UpdateAsync(review, autoSave: true);
             // Perf: bust the cached public review listing.
             _catalogCache.Invalidate();
@@ -1864,14 +1871,12 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         private async Task ValidateMinOrderAmountAsync(Order order)
         {
-            // Re-check the minimum order amount against the new subtotal.
+            // [codequality-smell 2026-10-19] Tải lại cấu hình shop mới nhất rồi
+            // dùng chung logic chặn đơn dưới mức tối thiểu với lúc tạo đơn
+            // (EnsureMinOrderAmount) — trước đây copy nguyên khối if/throw.
             var shopSetting = await _shopSettings.GetAsync();
             var subtotal = order.Lines.Sum(x => x.LineTotal.Amount);
-            if (shopSetting.MinOrderAmount > 0 && subtotal < shopSetting.MinOrderAmount)
-            {
-                throw new Domain.Exceptions.DomainException(
-                    $"Đơn hàng tối thiểu {shopSetting.MinOrderAmount:N0} ₫. Vui lòng thêm món vào giỏ.");
-            }
+            EnsureMinOrderAmount(shopSetting, subtotal);
         }
 
         /// <summary>
@@ -2020,8 +2025,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 OrderNumber = order.OrderNumber,
                 CustomerPhone = order.CustomerPhone,
                 Rating = input.Rating,
-                Comment = string.IsNullOrWhiteSpace(input.Comment) ? null : input.Comment.Trim(),
-                PhotoUrl = string.IsNullOrWhiteSpace(input.PhotoUrl) ? null : input.PhotoUrl.Trim(),
+                Comment = TrimToNull(input.Comment),
+                PhotoUrl = TrimToNull(input.PhotoUrl),
                 CreatedAt = DateTime.UtcNow,
                 // Wave 6b (item 26): per-dish ratings. Only products that
                 // belong to this order are kept; one rating per product.
