@@ -261,6 +261,10 @@ else
     private const string PhoneStorageKey = "phuthuong.phone.v1";
     private string _phone;
 
+    // Snapshot of the cart's product-id set the suggestions were built from;
+    // OnCartChanged only refetches when this changes (quantity changes don't).
+    private string _lastSuggestionCartKey = string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
         AppI18n.OnChange += OnLangChanged;
@@ -294,7 +298,16 @@ else
 
     private void OnCartChanged()
     {
-        _ = LoadSuggestionsAsync();
+        // Suggestion list ("Thường được mua cùng") only depends on the SET of
+        // product ids in the cart — quantity changes never alter it. Reloading
+        // on every +/- click wastes 2 API calls per click (products + best-sellers),
+        // so only reload when the product-id set actually changes.
+        var key = string.Join(",", CartState.Items.Select(x => x.ProductId).OrderBy(g => g));
+        if (key != _lastSuggestionCartKey)
+        {
+            _lastSuggestionCartKey = key;
+            _ = LoadSuggestionsAsync();
+        }
         InvokeAsync(StateHasChanged);
     }
 

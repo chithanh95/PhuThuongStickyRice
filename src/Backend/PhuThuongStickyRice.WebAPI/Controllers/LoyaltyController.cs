@@ -117,6 +117,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 try
                 {
+                    // Mỗi khách chỉ 1 mã SN còn dùng được — cùng pattern dedup
+                    // như BirthdayVoucherWorker (HasUsableCodeAsync "BDAY").
+                    // Không có check này, admin bấm nút 2 lần sẽ sinh 2 mã/khách.
+                    if (await _discountAppService.HasUsableCodeAsync("SN", b.Phone))
+                    {
+                        continue;
+                    }
                     var voucher = await _discountAppService.CreateGeneratedAsync(
                         new CreateGeneratedDiscountDto
                         {
