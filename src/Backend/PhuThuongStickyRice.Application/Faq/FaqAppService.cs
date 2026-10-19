@@ -11,6 +11,9 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Faq
 {
+    // [codequality-docs 2026-10-19]
+
+    /// <summary>Hợp đồng dịch vụ quản lý câu hỏi thường gặp (FAQ) của quán.</summary>
     public interface IFaqAppService : IApplicationService
     {
         /// <summary>Public: active FAQs, optionally filtered by a search term.</summary>
@@ -29,12 +32,21 @@ namespace PhuThuongStickyRice.Application.Faq
         Task DeleteAsync(Guid id);
     }
 
+    /// <summary>
+    /// Dịch vụ quản lý câu hỏi thường gặp (FAQ) của quán: phục vụ danh sách FAQ
+    /// công khai cho trang FAQ và cung cấp bộ CRUD cho admin. Danh sách công khai
+    /// được cache vì trang FAQ được truy cập trên mọi lượt xem.
+    /// </summary>
     public class FaqAppService : ApplicationService, IFaqAppService
     {
         private readonly IRepository<FaqItem, Guid> _faqs;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>Khởi tạo dịch vụ FAQ.</summary>
+        /// <param name="faqs">Repository entity FAQ.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn async.</param>
+        /// <param name="catalogCache">Cache dùng chung; invalidate khi FAQ thay đổi.</param>
         public FaqAppService(
             IRepository<FaqItem, Guid> faqs,
             IAsyncQueryableExecuter asyncExecuter,

@@ -15,6 +15,9 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Customer
 {
+    // [codequality-docs 2026-10-19]
+
+    /// <summary>Hợp đồng dịch vụ tag khách hàng (gắn nhãn thủ công theo SĐT).</summary>
     public interface ICustomerTagAppService : IApplicationService
     {
         /// <summary>Admin/Cashier: tags for one phone number.</summary>
@@ -36,8 +39,14 @@ namespace PhuThuongStickyRice.Application.Customer
         Task<byte[]> ExportCustomersAsync(string searchTerm, string tag, bool inactiveOnly);
     }
 
+    /// <summary>
+    /// Dịch vụ tag khách hàng: admin/cashier gắn nhãn thủ công cho SĐT khách hàng
+    /// (VD: "khách quen", "khó tính"), tra cứu tag theo SĐT, và xuất file Excel
+    /// danh sách khách hàng tổng hợp theo SĐT (trừ đơn đã hủy) kèm tổng chi tiêu.
+    /// </summary>
     public class CustomerTagAppService : ApplicationService, ICustomerTagAppService
     {
+        /// <summary>Số dòng tối đa của file Excel xuất khách hàng — giới hạn để không sinh file quá nặng.</summary>
         private const int MaxExportRows = 5000;
 
         /// <summary>Số ngày không mua thì coi là khách ngủ đông (inactive).</summary>
@@ -47,6 +56,10 @@ namespace PhuThuongStickyRice.Application.Customer
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Khởi tạo dịch vụ tag khách hàng.</summary>
+        /// <param name="tags">Repository tag theo SĐT.</param>
+        /// <param name="orders">Repository đơn hàng (để tổng hợp khách hàng xuất Excel).</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn async.</param>
         public CustomerTagAppService(
             Volo.Abp.Domain.Repositories.IRepository<CustomerTag, Guid> tags,
             IOrderRepository orders,
@@ -57,6 +70,9 @@ namespace PhuThuongStickyRice.Application.Customer
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>Lấy các tag của một SĐT (đã chuẩn hóa), sắp xếp theo tên.</summary>
+        /// <param name="phone">SĐT khách hàng; rỗng thì trả về danh sách rỗng.</param>
+        /// <returns>Danh sách tag.</returns>
         public virtual async Task<List<CustomerTagDto>> GetTagsAsync(string phone)
         {
             phone = NormalizePhone(phone);
@@ -72,6 +88,12 @@ namespace PhuThuongStickyRice.Application.Customer
             return rows.Select(ToDto).ToList();
         }
 
+        /// <summary>
+        /// Lấy tag cho nhiều SĐT trong một lần gọi (tránh N+1). SĐT được chuẩn hóa,
+        /// loại trùng; câu IN được chia batch vì SQL Server giới hạn số tham số.
+        /// </summary>
+        /// <param name="phones">Danh sách SĐT cần tra tag.</param>
+        /// <returns>Dictionary SĐT → danh sách tag (SĐT không có tag không có key).</returns>
         public virtual async Task<Dictionary<string, List<CustomerTagDto>>> GetTagsByPhonesAsync(IEnumerable<string> phones)
         {
             var list = (phones ?? Enumerable.Empty<string>())
@@ -110,6 +132,12 @@ namespace PhuThuongStickyRice.Application.Customer
             return result;
         }
 
+        /// <summary>
+        /// Gắn tag mới cho SĐT: validate SĐT + tên tag, chặn trùng (cùng SĐT + tên tag),
+        /// tự gán màu theo tên nếu admin không chọn màu.
+        /// </summary>
+        /// <param name="dto">SĐT, tên tag và màu.</param>
+        /// <returns>Tag vừa tạo.</returns>
         public virtual async Task<CustomerTagDto> AddTagAsync(CreateCustomerTagDto dto)
         {
             var phone = NormalizePhone(dto?.CustomerPhone);
@@ -153,12 +181,23 @@ namespace PhuThuongStickyRice.Application.Customer
             return ToDto(entity);
         }
 
+        /// <summary>Xóa một tag theo id.</summary>
+        /// <param name="id">Id của tag.</param>
         public virtual async Task DeleteTagAsync(Guid id)
         {
             var entity = await _tags.GetAsync(id);
             await _tags.DeleteAsync(entity);
         }
 
+        /// <summary>
+        /// Xuất danh sách khách hàng ra file .xlsx: mỗi SĐT một dòng gồm tên, tổng đơn,
+        /// tổng chi tiêu, lần mua cuối (hiển thị giờ VN) và các tag. Dùng cùng bộ lọc
+        /// với trang khách hàng admin; giới hạn ở <see cref="MaxExportRows"/> dòng.
+        /// </summary>
+        /// <param name="searchTerm">Tìm theo SĐT hoặc tên.</param>
+        /// <param name="tag">Chỉ khách có tag này.</param>
+        /// <param name="inactiveOnly">Chỉ khách ngủ đông (&gt;<see cref="InactiveCutoffDays"/> ngày không mua).</param>
+        /// <returns>Nội dung file .xlsx.</returns>
         public virtual async Task<byte[]> ExportCustomersAsync(string searchTerm, string tag, bool inactiveOnly)
         {
             var rows = await GetCustomerRowsAsync(searchTerm, tag, inactiveOnly, MaxExportRows);
@@ -185,6 +224,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 worksheet.Cell(rowIndex, 3).Value = r.OrderCount;
                 worksheet.Cell(rowIndex, 4).Value = r.TotalSpent;
                 worksheet.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
+                // Lần mua cuối lưu ở DB là UTC — cộng offset giờ VN để hiển thị đúng giờ địa phương trong Excel.
                 worksheet.Cell(rowIndex, 5).Value = r.LastOrderAt.AddHours(VietnamTime.UtcOffsetHours);
                 worksheet.Cell(rowIndex, 5).Style.NumberFormat.Format = "dd/mm/yyyy hh:mm";
                 worksheet.Cell(rowIndex, 6).Value = string.Join(", ", r.Tags.Select(t => t.TagName));
@@ -334,6 +374,7 @@ namespace PhuThuongStickyRice.Application.Customer
             CreatedAt = x.CreatedAt,
         };
 
+        /// <summary>Một dòng dữ liệu của file Excel xuất khách hàng (đã tổng hợp theo SĐT).</summary>
         internal class CustomerExportRow
         {
             public string CustomerName { get; set; }

@@ -69,7 +69,7 @@ namespace PhuThuongStickyRice.Application.Reports
         /// <returns>Doanh thu/giá vốn/lãi theo ngày, theo món và tổng cộng.</returns>
         public virtual async Task<ProfitReportDto> GetReportAsync(DateTime? from = null, DateTime? to = null)
         {
-            var (fromDate, toDate) = DateRangeHelper.NormalizeRange(from, to);
+            var (fromDate, toDate) = DateRangeNormalizer.NormalizeRange(from, to);
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var rangeOrders = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled
