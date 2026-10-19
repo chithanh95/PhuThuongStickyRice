@@ -503,7 +503,7 @@
                                             {
                                                 var s = star;
                                                 <button type="button" class="btn btn-link p-0"
-                                                        style="font-size: 20px; color: @(s <= LineRating(l.Id) ? "#f6c453" : "#ccc"); text-decoration: none;"
+                                                        style="font-size: 20px; color: @(s <= LineRating(l.Id) ? "#f1b44c" : "#ccc"); text-decoration: none;"
                                                         @onclick="() => SetLineRating(l.Id, s)">★</button>
                                             }
                                         </span>
@@ -519,7 +519,7 @@
                                     <button type="button" class="btn btn-link p-0 mr-1"
                                             role="radio" aria-checked="@(s == _rating)"
                                             aria-label="Đánh giá @s sao"
-                                            style="font-size: 28px; color: @(s <= _rating ? "#f6c453" : "#ccc"); text-decoration: none;"
+                                            style="font-size: 28px; color: @(s <= _rating ? "#f1b44c" : "#ccc"); text-decoration: none;"
                                             @onclick="() => _rating = s">★</button>
                                 }
                             </div>

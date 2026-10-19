@@ -563,3 +563,19 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 14:58 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 15:38 — Agent1 Mobile =====
+   FIX 3 — Ô nhập .form-control-sm (ngày sinh, nhãn/địa chỉ mới trong "Sổ địa
+   chỉ", các ô sửa đơn / SĐT / ghi chú khi tự phục vụ) chỉ cao ~31-34px trên
+   mobile, trong khi nút "Lưu"/"Bỏ qua" bên cạnh đã 44px (btn-sm) — cụm
+   input-group bị lệch hàng, ô nhập khó bấm với người lớn tuổi. Nâng input
+   lên 44px cho ngang hàng nút (rule font-size:16px cho .form-control-sm đã
+   có ở block survey bên trên).
+   (Verify: TrackOrder.razor:199 ô ngày sinh; :242/:246 sổ địa chỉ;
+   :385/:390/:412/:417/:441 form tự phục vụ sửa đơn.) */
+@media (max-width: 767.98px) {
+    .form-control-sm {
+        min-height: 44px;
+    }
+}
+/* ===== END UIUX run 15:38 - Agent1 FIX 3 ===== */

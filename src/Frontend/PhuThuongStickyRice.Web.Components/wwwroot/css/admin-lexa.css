@@ -1214,7 +1214,7 @@ html.dark .card.lexa-stat-card { background-color: #6a5fae !important; }
 /* Widget Mục tiêu hôm nay */
 .lx-target-progress { height: 12px; border-radius: 6px; background: #f0eef5; }
 .lx-target-progress .lx-progress-primary { background-color: #7a6fbe; }
-.lx-target-progress .lx-progress-warning { background-color: #f0a35e; }
+.lx-target-progress .lx-progress-warning { background-color: #f1b44c; } /* UIUX-1019 A3: vàng warning Lexa (trước #f0a35e lệch tông) — đồng nhất với badge/alert/pill/table-warning trên dashboard */
 .lx-target-progress .lx-progress-success { background-color: #34c38f; }
 .lx-target-pct { font-size: 1.25rem; font-weight: 700; color: #7a6fbe; }
 html.dark .lx-target-progress { background: #3a3a58; }

@@ -2250,3 +2250,16 @@ html.dark .sg-modal-close:hover { color: #fff; }
     color: #6f5f4c;
 }
 /* ===== END UIUX-0855 A4 ===== */
+
+/* ===== UIUX-1538 A4 blog-dark-contrast ===== */
+/* Dark mode: `--sg-surface` thành #262019 nhưng `.sg-blog-body p` (#5a4a3a)
+   và `.sg-blog-date` (#6f5f4c) vẫn là chữ nâu đậm → chỉ ~1.9:1/~2.6:1,
+   gần như không đọc được. Dùng tông sáng tương đương các review
+   (`.sg-review-text` #d0c4b4, `--sg-muted` #b3a48a). */
+html.dark .sg-blog-body p {
+    color: #d0c4b4;
+}
+html.dark .sg-blog-date {
+    color: #b3a48a;
+}
+/* ===== END UIUX-1538 A4 ===== */

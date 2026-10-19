@@ -287,3 +287,25 @@ html.dark .gh-freeship .progress {
     }
 }
 /* ===== END UIUX run 14:58 - Agent1 FIX 4+5 ===== */
+
+/* ===== UIUX run 15:38 — Agent1 Mobile =====
+   FIX 4 — Nút "Tiếp tục mua hàng" trên mobile: rule cũ đặt `flex: 1 1 auto`
+   lên chính nút, nhưng nút nằm trong thẻ <div> bọc ngoài (Cart.razor, div
+   con của .cart-actions) nên flex không có tác dụng — nút vẫn nhỏ theo độ
+   dài chữ, lệch chuẩn mobile (mọi CTA khác đều full-width, ≥48px). Cho div
+   bọc chiếm full hàng, nút full-width 48px; bỏ margin-right thừa của .mr-2
+   (kẻo cộng với width:100% gây tràn 8px).
+   (Verify: Cart.razor .cart-actions — nút checkout trong luồng đã
+   display:none ở mobile nên chỉ còn nút này trong hàng.) */
+@media (max-width: 767.98px) {
+    .cart-actions > div {
+        flex: 1 1 100%;
+    }
+    .cart-actions .btn-secondary {
+        width: 100%;
+        margin-right: 0 !important; /* đè .mr-2 của Bootstrap */
+        min-height: 48px;
+        font-size: 1.05rem;
+    }
+}
+/* ===== END UIUX run 15:38 - Agent1 FIX 4 ===== */

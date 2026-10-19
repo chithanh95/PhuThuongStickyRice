@@ -24,9 +24,9 @@
     <button class="btn btn-outline-secondary btn-sm mr-3" @onclick="NextMonth">Tháng sau →</button>
     <button class="btn btn-outline-primary btn-sm" @onclick="GoToday">Hôm nay</button>
     <div class="ml-auto d-flex align-items-center text-muted small">
-        <span class="cal-dot" style="background:#7a6fbe;"></span> Đơn đặt trước
-        <span class="cal-dot ml-3" style="background:#f46a6a;"></span> Nghỉ lễ
-        <span class="cal-dot ml-3" style="background:#34c38f;"></span> Khuyến mãi
+        <span class="cal-dot cal-dot-sched"></span> Đơn đặt trước
+        <span class="cal-dot ml-3 cal-dot-hol"></span> Nghỉ lễ
+        <span class="cal-dot ml-3 cal-dot-promo"></span> Khuyến mãi
     </div>
 </div>
 
@@ -60,15 +60,15 @@
                                 <div class="cal-marks">
                                     @if (HasScheduled(cell.Date))
                                     {
-                                        <span class="cal-dot" style="background:#7a6fbe;" title="Có đơn đặt trước"></span>
+                                        <span class="cal-dot cal-dot-sched" title="Có đơn đặt trước"></span>
                                     }
                                     @if (IsHoliday(cell.Date))
                                     {
-                                        <span class="cal-dot" style="background:#f46a6a;" title="Nghỉ lễ"></span>
+                                        <span class="cal-dot cal-dot-hol" title="Nghỉ lễ"></span>
                                     }
                                     @if (HasPromo(cell.Date))
                                     {
-                                        <span class="cal-dot" style="background:#34c38f;" title="Có khuyến mãi"></span>
+                                        <span class="cal-dot cal-dot-promo" title="Có khuyến mãi"></span>
                                     }
                                 </div>
                             </div>
@@ -106,7 +106,7 @@
 
                     @if (sched.Count > 0)
                     {
-                        <h6 style="color:#7a6fbe;">📅 Đơn đặt trước (@sched.Count)</h6>
+                        <h6 class="cal-sched-title">📅 Đơn đặt trước (@sched.Count)</h6>
                         @foreach (var o in sched)
                         {
                             <div class="cal-order">
@@ -172,6 +172,11 @@
         width: 10px; height: 10px;
         border-radius: 50%;
     }
+    /* UIUX-1019 A3: gom 7 style inline background/color vào class (đồng bộ Lexa, dễ maintain) */
+    .cal-dot-sched { background: #7a6fbe; }
+    .cal-dot-hol { background: #f46a6a; }
+    .cal-dot-promo { background: #34c38f; }
+    .cal-sched-title { color: #7a6fbe; }
     .cal-order {
         border-left: 3px solid #7a6fbe;
         padding: 4px 8px;

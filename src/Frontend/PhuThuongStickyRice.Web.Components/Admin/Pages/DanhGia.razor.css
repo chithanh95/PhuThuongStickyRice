@@ -1,0 +1,18 @@
+/* UIUX-1019 A3: gom style inline vào class (đồng bộ Lexa, dễ maintain) */
+.dg-stars {
+    color: #f1b44c;
+    font-size: 16px;
+    white-space: nowrap;
+}
+.dg-stars .dg-stars-off { color: #ddd; }
+.dg-photo-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+.dg-actions { white-space: nowrap; }
+.dg-checkin-photo {
+    height: 160px;
+    object-fit: cover;
+}

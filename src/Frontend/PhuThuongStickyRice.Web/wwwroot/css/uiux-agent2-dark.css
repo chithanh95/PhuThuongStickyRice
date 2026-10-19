@@ -1108,3 +1108,69 @@ html.dark .shp-page .btn-outline-primary {
 }
 
 /* ===== END UIUX run 15:15 - Agent2 ===== */
+
+/* ===== UIUX run 15:38 - Agent2: Dark mode (3 fix mới) =====
+   Phương pháp: quét property-level toàn bộ .razor.css + <style> trong .razor
+   + inline style trong markup + wwwroot/css, đối chiếu từng selector với
+   ~434 selector đã có rule html.dark (10 đợt Agent 2 trước + admin-lexa +
+   app.css). Đa số đã phủ kín (kanban, auth pages, survey popup, sticky bars,
+   qv-sheet, stepper, spin wheel, tables, alerts, badges, placeholders...).
+   Còn đúng 3 lỗi MỚI thật, đều đã verify markup + specificity + contrast. */
+
+/* ---------- FIX 1 — /shop: chữ hero banner vàng tàng hình ở dark mode ----------
+   Vấn đề: Shop.razor:31 — <div class="jumbotron ... bg-warning text-dark">
+   (cả 2 class TRÊN CÙNG 1 element). app.css:486-492 đã có ngoại lệ
+   `html.dark .bg-warning .text-dark { color:#3a2a00 }` nhưng selector này là
+   descendant (phần tử .text-dark NẰM TRONG .bg-warning) — KHÔNG match chính
+   div jumbotron. Kết quả: div vẫn ăn `html.dark .text-dark { color:#f0eef5 }`
+   → chữ trắng ngà trên nền vàng #ffc107, tương phản chỉ ~1.5:1 — cả tiêu đề
+   "Xôi Làng Nghề Phú Thượng" + mô tả tàng hình ở dark mode.
+   Đã grep: đây là chỗ DUY NHẤT gộp bg-warning + text-dark trên cùng element.
+   Fix: selector gộp class (không descendant). Specificity (0,3,1) thắng
+   `html.dark .text-dark` (0,2,1). Màu #3a2a00 đúng giá trị ngoại lệ đã duyệt. */
+html.dark .bg-warning.text-dark {
+    color: #3a2a00 !important; /* was #f0eef5 — ~1.5:1 → ~9:1 trên #ffc107 */
+}
+
+/* ---------- FIX 2 — Trang /error + 404 + /dang-nhap (MainLayout, desktop):
+   thanh top-row trắng lọt ở dark mode ----------
+   Vấn đề: app.css (template Blazor, trong @media min-width:768px) —
+   `.main .top-row { background-color:#f7f7f7; border-bottom:1px solid #d6d5d5 }`,
+   KHÔNG có rule dark nào phủ (đã grep toàn bộ css). Các trang dùng MainLayout
+   (Router DefaultLayout: /error, 404 NotFound, /dang-nhap, /quen-mat-khau —
+   đã verify App.razor + DefaultLayout) ở dark mode desktop hiện dải xám sáng
+   ngang đỉnh trang, lạc khỏi nền tối #1a1a2e. Link "Đặt xôi" màu xanh
+   Bootstrap #007bff trên nền mới cũng mờ (~2.6:1).
+   Fix: nền/viền theo palette dark; link sáng lên #b3a8e8 (đồng nhất
+   `html.dark .shp-page a`). Nút theme-toggle đã có rule dark riêng
+   (app.css:452) nên không đụng. Đặt trong cùng media query vì rule gốc chỉ
+   tồn tại ở desktop (mobile .top-row không có nền). */
+@media (min-width: 768px) {
+    html.dark .main .top-row {
+        background-color: #1a1a2e; /* was #f7f7f7 */
+        border-bottom-color: #3a3a58; /* was #d6d5d5 */
+    }
+    html.dark .main .top-row > a,
+    html.dark .main .top-row .btn-link {
+        color: #b3a8e8; /* was #007bff — ~2.6:1 → ~6.5:1 */
+    }
+}
+
+/* ---------- FIX 3 — Nút .btn-outline-secondary ngoài admin/shop: chữ xám mờ ----------
+   Vấn đề: chỉ có 3 rule dark cho .btn-outline-secondary, đều scoped hẹp:
+   `.lx-admin` (admin-lexa.css:2122), `.shp-page` (file này, run 15:15),
+   `.to-survey-sheet` (TrackOrder.razor.css:474). Nút "Về trang chủ" ở trang
+   404 (App.razor:88, render trong MainLayout — không thuộc scope nào trên)
+   giữ color:#6c757d trên nền tối #1a1a2e → ~3.1:1, chữ mờ.
+   Đã grep: mọi chỗ dùng .btn-outline-secondary khác đều nằm trong admin
+   (.lx-admin) hoặc shop (.shp-page) hoặc trang in (giữ trắng chủ ý) — rule
+   fallback toàn cục này KHÔNG đổi gì ở các chỗ đó vì 3 rule scoped kia có
+   specificity cao hơn (0,3,1 > 0,2,1) và đều có !important.
+   Fix: đúng convention màu đã duyệt — chữ #a5a2bd, viền #6b6b8c.
+   Hover giữ nguyên (chữ trắng trên nền #6c757d, đọc tốt ở dark). */
+html.dark .btn-outline-secondary {
+    color: #a5a2bd !important; /* was #6c757d */
+    border-color: #6b6b8c !important; /* was #6c757d */
+}
+
+/* ===== END UIUX run 15:38 - Agent2 ===== */

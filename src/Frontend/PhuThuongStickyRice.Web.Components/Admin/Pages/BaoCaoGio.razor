@@ -70,12 +70,12 @@ else if (_report != null)
                 <table class="table table-bordered table-hover table-sm mb-0 text-center">
                     <thead class="thead-light">
                         <tr>
-                            <th style="min-width:70px">Giờ</th>
+                            <th scope="col" style="min-width:70px">Giờ</th>
                             @foreach (var p in _report.Products)
                             {
-                                <th style="min-width:90px">@p</th>
+                                <th scope="col" style="min-width:90px">@p</th>
                             }
-                            <th style="min-width:70px">Tổng</th>
+                            <th scope="col" style="min-width:70px">Tổng</th>
                         </tr>
                     </thead>
                     <tbody>

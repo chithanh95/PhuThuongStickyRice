@@ -54,8 +54,8 @@ else
                     <tr class="@(r.IsHidden ? "table-secondary" : "")">
                         <td><a href="/orders">@r.OrderNumber</a></td>
                         <td>@r.CustomerPhone</td>
-                        <td style="color: #f1b44c; font-size: 16px; white-space: nowrap;">
-                            @(new string('★', r.Rating))<span style="color: #ddd;">@(new string('★', 5 - r.Rating))</span>
+                        <td class="dg-stars">
+                            @(new string('★', r.Rating))<span class="dg-stars-off">@(new string('★', 5 - r.Rating))</span>
                         </td>
                         <td>
                             @r.Comment
@@ -68,8 +68,7 @@ else
                             @if (!string.IsNullOrEmpty(r.PhotoUrl))
                             {
                                 <a href="@r.PhotoUrl" target="_blank" rel="noopener">
-                                    <img src="@r.PhotoUrl" alt="Ảnh đánh giá"
-                                         style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px;" />
+                                    <img src="@r.PhotoUrl" alt="Ảnh đánh giá" class="dg-photo-thumb" />
                                 </a>
                             }
                             else
@@ -111,7 +110,7 @@ else
                             }
                         </td>
                         <td><small>@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td>
-                        <td class="text-right" style="white-space: nowrap;">
+                        <td class="text-right dg-actions">
                             <button class="btn btn-sm btn-outline-secondary mr-1" @onclick="() => StartReply(r)">
                                 💬 Phản hồi
                             </button>
@@ -158,8 +157,7 @@ else
             <div class="col-6 col-md-3 mb-3" @key="p.Id">
                 <div class="card h-100">
                     <a href="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" target="_blank" rel="noopener">
-                        <img src="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" class="card-img-top" alt="Ảnh check-in chờ duyệt"
-                             style="height: 160px; object-fit: cover;" />
+                        <img src="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" class="card-img-top dg-checkin-photo" alt="Ảnh check-in chờ duyệt" />
                     </a>
                     <div class="card-body p-2">
                         @if (!string.IsNullOrWhiteSpace(p.Name))

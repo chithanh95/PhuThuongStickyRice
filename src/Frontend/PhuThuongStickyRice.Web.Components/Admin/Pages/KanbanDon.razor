@@ -151,11 +151,11 @@ else
 
     private readonly List<Column> _columns = new()
     {
-        new("Pending", "Chờ xác nhận", "#f0ad4e", null, "Confirmed"),
-        new("Confirmed", "Đã xác nhận", "#5bc0de", "Pending", "Preparing"),
+        new("Pending", "Chờ xác nhận", "#f1b44c", null, "Confirmed"),
+        new("Confirmed", "Đã xác nhận", "#50a5f1", "Pending", "Preparing"),
         new("Preparing", "Đang chuẩn bị", "#7a6fbe", "Confirmed", "Delivering"),
         new("Delivering", "Sẵn sàng giao", "#6c757d", "Preparing", "Completed"),
-        new("Completed", "Hoàn thành", "#5cb85c", "Delivering", null),
+        new("Completed", "Hoàn thành", "#34c38f", "Delivering", null),
     };
 
     private static readonly string[] KanbanStatuses = { "Pending", "Confirmed", "Preparing", "Delivering", "Completed" };

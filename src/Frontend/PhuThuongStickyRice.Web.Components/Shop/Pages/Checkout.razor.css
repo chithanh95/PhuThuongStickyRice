@@ -252,3 +252,26 @@ html.dark .co-mobile-bar .co-total small {
     }
 }
 /* ===== END UIUX run 14:58 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 15:38 — Agent1 Mobile =====
+   FIX 1 — Nút xác nhận thanh toán sau khi đặt đơn ("Tôi đã chuyển khoản"
+   .btn-success, "Thanh toán MoMo" .btn-primary — con trực tiếp của
+   .card-body) vẫn cao ~38px trên mobile, trong khi đây là nút tiền quan
+   trọng nhất với khách lớn tuổi. Xếp full-width, cao 48px, chữ căn giữa —
+   đồng bộ với nút "Tôi đã chuyển khoản" ở trang tra cứu đơn
+   (TrackOrder.razor.css, UIUX-Mobile-A2).
+   (Verify: Checkout.razor:246 btn-success; :274/:285 btn-primary.
+   :not(.btn-sm) để không chạm các nút nhỏ trong bảng tóm tắt đơn;
+   nút "🎡 Quay ngay" là .btn-warning nên không bị ảnh hưởng.) */
+@media (max-width: 767.98px) {
+    .card-body > .btn-success:not(.btn-sm),
+    .card-body > .btn-primary:not(.btn-sm) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+    }
+}
+/* ===== END UIUX run 15:38 - Agent1 FIX 1 ===== */

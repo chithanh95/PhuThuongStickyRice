@@ -85,18 +85,18 @@
 
             @if (!string.IsNullOrEmpty(_error))
             {
-                <div class="alert alert-danger py-2">@_error</div>
+                <div class="alert alert-danger py-2" role="alert">@_error</div>
             }
             @if (!string.IsNullOrEmpty(_info))
             {
-                <div class="alert alert-success py-2">@_info</div>
+                <div class="alert alert-success py-2" role="status">@_info</div>
             }
 
             @if (_step == 1)
             {
                 <div class="form-group">
                     <label class="auth-label" for="qmk-phone">Số điện thoại *</label>
-                    <input id="qmk-phone" class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
+                    <input id="qmk-phone" name="phone" autocomplete="tel" class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
                     <small class="text-muted">Mã OTP sẽ được gửi qua SMS đến số này.</small>
                 </div>
                 <button class="btn btn-primary btn-block auth-btn"
@@ -108,17 +108,17 @@
             {
                 <div class="form-group">
                     <label class="auth-label" for="qmk-otp">Mã OTP *</label>
-                    <input id="qmk-otp" class="form-control text-center auth-otp-input" @bind="_otp" inputmode="numeric" placeholder="Nhập mã 6 số"
+                    <input id="qmk-otp" name="otp" autocomplete="one-time-code" class="form-control text-center auth-otp-input" @bind="_otp" inputmode="numeric" placeholder="Nhập mã 6 số"
                            maxlength="6" />
                     <small class="text-muted">Mã có hiệu lực 5 phút. Không nhận được? <a href="javascript:void(0)" class="auth-link" @onclick="RequestOtpAsync">Gửi lại</a></small>
                 </div>
                 <div class="form-group">
                     <label class="auth-label" for="qmk-pass">Mật khẩu mới * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
-                    <input id="qmk-pass" type="password" class="form-control" @bind="_newPassword" placeholder="Nhập mật khẩu mới" />
+                    <input id="qmk-pass" name="new-password" autocomplete="new-password" type="password" class="form-control" @bind="_newPassword" placeholder="Nhập mật khẩu mới" />
                 </div>
                 <div class="form-group">
                     <label class="auth-label" for="qmk-pass2">Nhập lại mật khẩu mới *</label>
-                    <input id="qmk-pass2" type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu mới" />
+                    <input id="qmk-pass2" name="new-password-confirm" autocomplete="new-password" type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu mới" />
                 </div>
                 <button class="btn btn-primary btn-block auth-btn"
                         @onclick="ResetPasswordAsync" disabled="@_busy">
@@ -128,7 +128,7 @@
             }
             else
             {
-                <div class="alert alert-success text-center">
+                <div class="alert alert-success text-center" role="status">
                     <div class="auth-success-emoji">✅</div>
                     <div class="mt-2"><strong>Đặt lại mật khẩu thành công!</strong></div>
                     <a href="/dang-nhap" class="auth-link font-weight-bold">Đăng nhập ngay →</a>

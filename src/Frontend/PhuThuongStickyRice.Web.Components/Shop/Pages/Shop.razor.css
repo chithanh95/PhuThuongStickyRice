@@ -916,3 +916,39 @@ html.dark .shop-filters-sticky {
         margin-top: 8px;
     }
 }
+
+/* ===== UIUX run 15:38 — Agent1 Mobile =====
+   FIX 2 — Card "🎉 Combo gia đình" trên mobile: hàng giá + nút "Thêm combo
+   vào giỏ" xếp ngang (d-flex) bị ép chật ở màn 320px (giá ~120px + nút
+   ~145px > ~250px nội dung card) — chữ nút rớt 2 dòng, trông chật chội.
+   Xếp dọc: giá trên, nút full-width 48px dưới — CTA to rõ cho người lớn
+   tuổi. (!important để thắng utility !important của Bootstrap.)
+   (Verify: Shop.razor:137 — .card.h-100.border-warning chỉ dùng cho card
+   combo; .d-flex giá+nút là .d-flex duy nhất là con trực tiếp của
+   .card-body nên selector không chạm chỗ khác.) */
+@media (max-width: 575.98px) {
+    .card.border-warning > .card-body > .d-flex {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        gap: 10px;
+    }
+    .card.border-warning > .card-body > .d-flex .btn-warning {
+        width: 100%;
+        min-height: 48px;
+        font-size: 1rem;
+    }
+}
+/* ===== END UIUX run 15:38 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 15:38 — Agent1 Mobile =====
+   FIX 5 — Tên danh mục ở sidebar mobile (điều hướng chính kiểu ShopeeFood)
+   đang 13px — hơi nhỏ với khách lớn tuổi. Nâng lên 14px, vẫn gọn trong
+   sidebar 88px (chữ dài tự xuống dòng, không vỡ layout).
+   (Verify: Shop.razor:282-287 .shop-cat-item) */
+@media (max-width: 768px) {
+    .shop-cat-item {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 15:38 - Agent1 FIX 5 ===== */

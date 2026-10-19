@@ -53,11 +53,11 @@ else
                 <table class="table table-striped mb-0">
                     <thead>
                         <tr>
-                            <th>Kênh thanh toán</th>
-                            <th class="text-right">Số đơn</th>
-                            <th class="text-right">Doanh thu</th>
-                            <th class="text-right">Đã thanh toán</th>
-                            <th class="text-right">Chưa thanh toán</th>
+                            <th scope="col">Kênh thanh toán</th>
+                            <th scope="col" class="text-right">Số đơn</th>
+                            <th scope="col" class="text-right">Doanh thu</th>
+                            <th scope="col" class="text-right">Đã thanh toán</th>
+                            <th scope="col" class="text-right">Chưa thanh toán</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -74,7 +74,7 @@ else
                     </tbody>
                     <tfoot>
                         <tr class="lx-total-row">
-                            <th>Tổng cộng</th>
+                            <th scope="row">Tổng cộng</th>
                             <th class="text-right">@_data.TotalOrderCount</th>
                             <th class="text-right">@FormatPrice(_data.TotalRevenue)</th>
                             <th class="text-right">@FormatPrice(_data.TotalPaidAmount)</th>
