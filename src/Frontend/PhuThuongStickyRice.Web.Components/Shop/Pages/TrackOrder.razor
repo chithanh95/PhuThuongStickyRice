@@ -503,6 +503,7 @@
                                             {
                                                 var s = star;
                                                 <button type="button" class="btn btn-link p-0"
+                                                        aria-label="Đánh giá món @l.ProductName: @s sao"
                                                         style="font-size: 20px; color: @(s <= LineRating(l.Id) ? "#f1b44c" : "#ccc"); text-decoration: none;"
                                                         @onclick="() => SetLineRating(l.Id, s)">★</button>
                                             }

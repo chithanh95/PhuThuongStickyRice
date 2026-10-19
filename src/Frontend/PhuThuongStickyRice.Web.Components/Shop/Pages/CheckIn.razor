@@ -29,7 +29,7 @@
                 </div>
                 @if (!string.IsNullOrEmpty(_message))
                 {
-                    <div class="alert @(_isError ? "alert-danger" : "alert-success") py-2">@_message</div>
+                    <div class="alert @(_isError ? "alert-danger" : "alert-success") py-2" role="@(_isError ? "alert" : "status")">@_message</div>
                 }
                 <button class="xo-btn xo-btn-red" @onclick="UploadAsync" disabled="@(_uploading || _selectedFileName == null)">
                     @(_uploading ? "Đang tải lên..." : "Đăng ảnh")

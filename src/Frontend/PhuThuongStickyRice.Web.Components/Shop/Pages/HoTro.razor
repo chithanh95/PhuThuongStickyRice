@@ -8,7 +8,7 @@
 
 @if (_sent)
 {
-    <div class="alert alert-success">
+    <div class="alert alert-success" role="status">
         <strong>Đã gửi yêu cầu hỗ trợ!</strong> Shop sẽ liên hệ lại qua số <strong>@_ticket.Phone</strong> sớm nhất.
     </div>
     <button class="btn btn-outline-primary" @onclick="Reset">Gửi yêu cầu khác</button>
@@ -17,7 +17,7 @@ else
 {
     @if (!string.IsNullOrEmpty(_error))
     {
-        <div class="alert alert-danger">@_error</div>
+        <div class="alert alert-danger" role="alert">@_error</div>
     }
 
     <div class="card">

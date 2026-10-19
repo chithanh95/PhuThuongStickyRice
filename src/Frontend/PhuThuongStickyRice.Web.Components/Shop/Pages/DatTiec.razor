@@ -18,7 +18,7 @@
 
 @if (_submitted)
 {
-    <div class="alert alert-success">
+    <div class="alert alert-success" role="status">
         <h4>Cảm ơn bạn!</h4>
         <p class="mb-0">
             Shop đã nhận được yêu cầu đặt tiệc của bạn và sẽ liên hệ qua số
@@ -36,7 +36,7 @@ else
 {
     @if (!string.IsNullOrEmpty(_error))
     {
-        <div class="alert alert-danger">@_error</div>
+        <div class="alert alert-danger" role="alert">@_error</div>
     }
 
     <div class="card">
