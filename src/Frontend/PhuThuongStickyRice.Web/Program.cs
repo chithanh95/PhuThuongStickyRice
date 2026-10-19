@@ -73,14 +73,8 @@ namespace PhuThuongStickyRice.Web
             // Admin services attach the JWT via ApiClientBase + ITokenStore.
             AddApiHttpClient<ProductService>(builder, apiBaseUri);
 
-            // Item 185: admin quản lý gói "Ăn sáng cả tuần" (JWT).
-            AddApiHttpClient<WeeklyPlanAdminService>(builder, apiBaseUri);
-
             // Public storefront (anonymous).
             AddApiHttpClient<ShopService>(builder, apiBaseUri);
-
-            // Item 185: gói "Ăn sáng cả tuần" (public).
-            AddApiHttpClient<WeeklyPlanService>(builder, apiBaseUri);
             builder.Services.AddScoped<CartState>();
 
             // Item 137: cart sync for logged-in users.
@@ -136,12 +130,6 @@ namespace PhuThuongStickyRice.Web
 
             // Shop engagement: loyalty, spin, support, FAQ, subscriptions, reviews, integrations.
             AddApiHttpClient<ShopEngagementService>(builder, apiBaseUri);
-
-            // Item 164: prepaid cards (shop buy + lookup).
-            AddApiHttpClient<PrepaidCardService>(builder, apiBaseUri);
-
-            // Item 164: prepaid cards (admin list + redeem).
-            AddApiHttpClient<PrepaidCardAdminService>(builder, apiBaseUri);
 
             // Admin operations: shippers, blacklist, CRM notes, promos, reward rules,
             // articles, table QRs, profit report, login audit, 2FA.
