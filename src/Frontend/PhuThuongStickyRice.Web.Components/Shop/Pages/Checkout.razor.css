@@ -615,4 +615,18 @@ html.dark .co-mobile-bar .co-total small {
 .co-auto-applied-note {
     font-size: 1.05rem;
 }
+
+/* A11y (Agent4 run 04:30): vòng focus rõ khi điều hướng bằng bàn phím —
+   chuột/chạm không bị ảnh hưởng nhờ :focus-visible. */
+.form-control:focus-visible,
+.btn:focus-visible,
+.form-check-input:focus-visible {
+    outline: 3px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .form-control:focus-visible,
+html.dark .btn:focus-visible,
+html.dark .form-check-input:focus-visible {
+    outline-color: #a49de0;
+}
 /* ===== END UIUX run 03:05 - Agent3 FIX 3 ===== */

@@ -48,7 +48,7 @@ else
                        aria-describedby="@(!string.IsNullOrEmpty(_nameError) ? "dt-name-error" : null)" />
                 @if (!string.IsNullOrEmpty(_nameError))
                 {
-                    <small class="text-danger" id="dt-name-error">@_nameError</small>
+                    <small class="text-danger" id="dt-name-error" role="alert">@_nameError</small>
                 }
             </div>
             <div class="form-group">
@@ -58,7 +58,7 @@ else
                        aria-describedby="@(!string.IsNullOrEmpty(_phoneError) ? "dt-phone-error" : null)" />
                 @if (!string.IsNullOrEmpty(_phoneError))
                 {
-                    <small class="text-danger" id="dt-phone-error">@_phoneError</small>
+                    <small class="text-danger" id="dt-phone-error" role="alert">@_phoneError</small>
                 }
             </div>
             @* DT2: loại tiệc điều chỉnh gợi ý & placeholder. *@
@@ -97,7 +97,7 @@ else
                            aria-describedby="@(!string.IsNullOrEmpty(_qtyError) ? "dt-qty-error" : null)" />
                     @if (!string.IsNullOrEmpty(_qtyError))
                     {
-                        <small class="text-danger" id="dt-qty-error">@_qtyError</small>
+                        <small class="text-danger" id="dt-qty-error" role="alert">@_qtyError</small>
                     }
                 </div>
             </div>

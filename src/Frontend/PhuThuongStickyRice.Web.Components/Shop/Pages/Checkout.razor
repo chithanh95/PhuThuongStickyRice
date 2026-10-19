@@ -413,7 +413,7 @@ else
                                aria-describedby="@(!string.IsNullOrEmpty(_nameError) ? "co-name-error" : null)" />
                         @if (!string.IsNullOrEmpty(_nameError))
                         {
-                            <small class="text-danger" id="co-name-error">@_nameError</small>
+                            <small class="text-danger" id="co-name-error" role="alert">@_nameError</small>
                         }                    </div>
                     <div class="form-group">
                         <label for="co-phone">@AppI18n.Translate("common.phone") *</label>
@@ -428,7 +428,7 @@ else
                         }
                         @if (!string.IsNullOrEmpty(_phoneError))
                         {
-                            <small class="text-danger" id="co-phone-error">@_phoneError</small>
+                            <small class="text-danger" id="co-phone-error" role="alert">@_phoneError</small>
                         }
                     </div>
                     @* Item 236: "Nhớ tôi" cho khách vãng lai — không cần tài khoản. *@
@@ -454,7 +454,7 @@ else
                                aria-describedby="@(!string.IsNullOrEmpty(_emailError) ? "co-email-error" : null)" />
                         @if (!string.IsNullOrEmpty(_emailError))
                         {
-                            <small class="text-danger" id="co-email-error">@_emailError</small>
+                            <small class="text-danger" id="co-email-error" role="alert">@_emailError</small>
                         }
                     </div>
                     @if (_fulfillment == "ShipperPickup")
@@ -489,7 +489,7 @@ else
                                    aria-describedby="@(!string.IsNullOrEmpty(_recipientNameError) ? "co-recipient-name-error" : null)" />
                             @if (!string.IsNullOrEmpty(_recipientNameError))
                             {
-                                <small class="text-danger" id="co-recipient-name-error">@_recipientNameError</small>
+                                <small class="text-danger" id="co-recipient-name-error" role="alert">@_recipientNameError</small>
                             }
                         </div>
                         <div class="form-group">
@@ -500,7 +500,7 @@ else
                                    aria-describedby="@(!string.IsNullOrEmpty(_recipientPhoneError) ? "co-recipient-phone-error" : null)" />
                             @if (!string.IsNullOrEmpty(_recipientPhoneError))
                             {
-                                <small class="text-danger" id="co-recipient-phone-error">@_recipientPhoneError</small>
+                                <small class="text-danger" id="co-recipient-phone-error" role="alert">@_recipientPhoneError</small>
                             }
                         </div>
                     }
@@ -522,7 +522,7 @@ else
                                            aria-describedby="@(!string.IsNullOrEmpty(_taxCodeError) ? "co-tax-code-error" : null)" />
                                     @if (!string.IsNullOrEmpty(_taxCodeError))
                                     {
-                                        <small class="text-danger" id="co-tax-code-error">@_taxCodeError</small>
+                                        <small class="text-danger" id="co-tax-code-error" role="alert">@_taxCodeError</small>
                                     }
                                 </div>
                                 <div class="form-group mb-1">
@@ -533,7 +533,7 @@ else
                                            aria-describedby="@(!string.IsNullOrEmpty(_companyNameError) ? "co-company-name-error" : null)" />
                                     @if (!string.IsNullOrEmpty(_companyNameError))
                                     {
-                                        <small class="text-danger" id="co-company-name-error">@_companyNameError</small>
+                                        <small class="text-danger" id="co-company-name-error" role="alert">@_companyNameError</small>
                                     }
                                 </div>
                             </div>

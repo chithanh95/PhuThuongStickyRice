@@ -212,7 +212,7 @@
                 <h5 class="card-title">Đổi mật khẩu</h5>
                 @if (!string.IsNullOrEmpty(_pwError))
                 {
-                    <div class="alert alert-danger">@_pwError</div>
+                    <div class="alert alert-danger" role="alert">@_pwError</div>
                 }
                 @if (!string.IsNullOrEmpty(_pwInfo))
                 {
@@ -242,7 +242,7 @@
 
                 @if (!string.IsNullOrEmpty(_addrError))
                 {
-                    <div class="alert alert-danger">@_addrError</div>
+                    <div class="alert alert-danger" role="alert">@_addrError</div>
                 }
 
                 @if (_editing)
