@@ -418,7 +418,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
             var orderQueryable = await _orders.GetQueryableAsync();
             // Khách đã từng có đơn completed trước đó → không phải đơn đầu
-            // tiên, bỏ qua để chống farm bonus lặp lại.
+            // tiên, bỏ qua để chống farm bonus lặp lại. Pre-filter bằng so
+            // sánh trên cột chuẩn hóa (index seek) thay vì LIKE '%...%' quét
+            // toàn bảng; bước kiểm tra khoan dung cuối cùng trên C# giữ
+            // nguyên nên ngữ nghĩa không đổi.
             if (!await HasNoPriorCompletedOrderAsync(orderQueryable, order, buyer))
             {
                 return;
@@ -463,8 +466,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 orderQueryable
                     .Where(x => x.Id != order.Id
                         && x.Status == OrderStatus.Completed
-                        && x.CustomerPhone != null
-                        && x.CustomerPhone.Contains(buyerKey))
+                        && x.CustomerPhoneNorm == buyerKey)
                     .Select(x => x.CustomerPhone));
             return !candidatePhones.Any(p => PhonesEqualTolerant(p, buyer.Phone));
         }

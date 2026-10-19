@@ -15,6 +15,11 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int OrderNumberMaxLength = 30;
         public const int CustomerNameMaxLength = 200;
         public const int CustomerPhoneMaxLength = 30;
+        /// <summary>
+        /// Độ dài tối đa của <see cref="CustomerPhoneNorm"/> — 9 số cuối
+        /// của SĐT (chỉ chữ số). SĐT ngắn hơn 9 số được giữ nguyên.
+        /// </summary>
+        public const int CustomerPhoneNormMaxLength = 9;
         public const int CustomerEmailMaxLength = 254;
         public const int CustomerAddressMaxLength = 500;
         public const int NotesMaxLength = 1000;
@@ -47,6 +52,19 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string CustomerName { get; private set; }
 
         public string CustomerPhone { get; private set; }
+
+        /// <summary>
+        /// SĐT chuẩn hóa phục vụ tra cứu khoan dung định dạng: chỉ giữ chữ
+        /// số, lấy 9 số cuối (vd "0912 345 678", "+84912345678" và
+        /// "0912345678" đều → "912345678"). Được tính 1 lần trong
+        /// constructor — <see cref="CustomerPhone"/> không bao giờ đổi sau
+        /// khi tạo đơn — nên mọi đơn mới đều có giá trị đúng. Các tra cứu
+        /// theo SĐT (HasOrderedBefore, giới hạn đơn/ngày, voucher đơn đầu,
+        /// bonus giới thiệu) so sánh bằng trên cột này để dùng index thay
+        /// vì LIKE '%...%' quét toàn bảng; bước kiểm tra khoan dung cuối
+        /// cùng trên C# vẫn giữ nguyên nên ngữ nghĩa không đổi.
+        /// </summary>
+        public string CustomerPhoneNorm { get; private set; }
 
         /// <summary>
         /// Optional. When provided, the order confirmation email is sent here.
@@ -357,6 +375,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             OrderNumber = orderNumber;
             CustomerName = customerName;
             CustomerPhone = customerPhone;
+            CustomerPhoneNorm = ComputePhoneNorm(customerPhone);
             CustomerUserId = customerUserId;
             CustomerEmail = customerEmail;
             CustomerAddress = customerAddress;
@@ -834,6 +853,20 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             var dot = email.LastIndexOf('.');
             return dot > atIndex + 1 && dot < email.Length - 1 && !email.Contains(' ');
+        }
+
+        /// <summary>
+        /// Tính <see cref="CustomerPhoneNorm"/>: chỉ giữ chữ số, lấy 9 số
+        /// cuối; SĐT ít hơn 9 số thì giữ nguyên chuỗi số. Dùng chung chuẩn
+        /// khoan dung với OrderAppService.PhonesMatch — cùng 1 số dù khách
+        /// gõ "0912 345 678", "+84912345678" hay "0912345678".
+        /// </summary>
+        private static string ComputePhoneNorm(string customerPhone)
+        {
+            var digits = new string((customerPhone ?? string.Empty).Where(char.IsDigit).ToArray());
+            return digits.Length > CustomerPhoneNormMaxLength
+                ? digits.Substring(digits.Length - CustomerPhoneNormMaxLength)
+                : digits;
         }
 
         public void Confirm()

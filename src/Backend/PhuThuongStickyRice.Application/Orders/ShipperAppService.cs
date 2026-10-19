@@ -58,7 +58,8 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Lấy danh sách shipper sắp xếp theo tên A-Z.
+        /// Lấy danh sách shipper sắp xếp theo tên A-Z, tối đa 500 dòng
+        /// server-side (bảng tăng theo tuyển dụng, không bao giờ nạp toàn bộ).
         /// </summary>
         /// <param name="activeOnly">true: chỉ lấy shipper đang hoạt động (dùng khi gán đơn giao).</param>
         /// <returns>Danh sách shipper.</returns>
@@ -71,7 +72,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 query = query.Where(x => x.IsActive);
             }
 
-            var items = await _asyncExecuter.ToListAsync(query);
+            // perf-hunt 2026-10-19 (run 15:45): Take(500) server-side — quán
+            // nhỏ chỉ có vài shipper, không bao giờ materialize toàn bảng.
+            var items = await _asyncExecuter.ToListAsync(query.Take(500));
             return items.Select(Map).ToList();
         }
 

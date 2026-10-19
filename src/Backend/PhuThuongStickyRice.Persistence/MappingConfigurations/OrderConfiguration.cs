@@ -18,6 +18,16 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             builder.Property(x => x.CustomerName).HasMaxLength(Order.CustomerNameMaxLength).IsRequired();
             builder.Property(x => x.CustomerPhone).HasMaxLength(Order.CustomerPhoneMaxLength).IsRequired();
+
+            // perf-hunt 2026-10-19 (run 15:45): SĐT chuẩn hóa 9 số cuối để
+            // các tra cứu khoan dung định dạng (HasOrderedBefore, giới hạn
+            // đơn/ngày, voucher đơn đầu, bonus giới thiệu) chạy so sánh bằng
+            // trên index thay vì LIKE '%...%' / EndsWith trên cột đã REPLACE
+            // — quét toàn bảng Orders (bảng nóng nhất) mỗi lần checkout.
+            builder.Property(x => x.CustomerPhoneNorm)
+                .HasMaxLength(Order.CustomerPhoneNormMaxLength)
+                .IsRequired();
+            builder.HasIndex(x => x.CustomerPhoneNorm);
             builder.Property(x => x.CustomerEmail).HasMaxLength(Order.CustomerEmailMaxLength);
             builder.Property(x => x.CustomerAddress).HasMaxLength(Order.CustomerAddressMaxLength);
             builder.Property(x => x.Notes).HasMaxLength(Order.NotesMaxLength);

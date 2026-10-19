@@ -2620,12 +2620,13 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var suffix = digits.Substring(digits.Length - 9);
             var orderQueryable = await _orders.GetQueryableAsync();
-            // SQL pre-filter on the phone suffix (LIKE, provider-agnostic), then the
-            // exact tolerant match in memory — same pattern as GetLastOrderInfoByPhoneAsync.
-            // Only the CustomerPhone column is selected: the check never needs the
+            // SQL pre-filter on the normalized 9-digit suffix (index seek on
+            // CustomerPhoneNorm), then the exact tolerant match in memory —
+            // same pattern as GetLastOrderInfoByPhoneAsync. Only the
+            // CustomerPhone column is selected: the check never needs the
             // full Order row, so full-entity materialization is pure waste.
             var phones = await _asyncExecuter.ToListAsync(
-                orderQueryable.Where(x => x.CustomerPhone != null && x.CustomerPhone.Contains(suffix))
+                orderQueryable.Where(x => x.CustomerPhoneNorm == suffix)
                               .Select(x => x.CustomerPhone));
             return phones.Any(x => PhonesMatch(x, phone));
         }
@@ -2728,11 +2729,12 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Phase 1 của tra cứu đơn theo SĐT: quét LIKE '%suffix%' nhưng chỉ
-        /// select (Id, SĐT, ngày tạo) thay vì nạp full 100 đơn (cột text dài
-        /// như AdminNote/Notes) — phase 2 nạp full đơn theo Id trúng (index
-        /// seek). Giữ nguyên ngữ nghĩa: cùng tập ứng viên, cùng thứ tự mới
-        /// nhất lên trước.
+        /// Phase 1 của tra cứu đơn theo SĐT: so sánh bằng trên cột chuẩn hóa
+        /// (index seek) nhưng chỉ select (Id, SĐT, ngày tạo) thay vì nạp full
+        /// 100 đơn (cột text dài như AdminNote/Notes) — phase 2 nạp full đơn
+        /// theo Id trúng (index seek). Giữ nguyên ngữ nghĩa: cùng tập ứng
+        /// viên (phase 2 vẫn lọc khoan dung bằng PhonesMatch), cùng thứ tự
+        /// mới nhất lên trước.
         /// </summary>
         /// <param name="last9">9 số cuối SĐT (tìm khoan dung định dạng).</param>
         private async Task<List<OrderPhoneCandidate>> LoadOrderCandidatesAsync(string last9)
@@ -2740,7 +2742,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var orderQueryable = await _orders.GetQueryableAsync();
             return await _asyncExecuter.ToListAsync(
                 orderQueryable
-                    .Where(x => x.CustomerPhone.Contains(last9))
+                    .Where(x => x.CustomerPhoneNorm == last9)
                     .OrderByDescending(x => x.CreatedAt)
                     .Select(x => new OrderPhoneCandidate(x.Id, x.CustomerPhone, x.CreatedAt))
                     .Take(100));
@@ -2810,19 +2812,20 @@ namespace PhuThuongStickyRice.Application.Orders
             var completedQuery = orderQueryable.Where(o => o.Status == OrderStatus.Completed);
 
             // Same digit-tolerance as EnsurePhoneDailyLimitAsync: SQL-side
-            // suffix pre-filter, then the tolerant in-memory compare.
+            // suffix pre-filter on the normalized column (index seek), then
+            // the tolerant in-memory compare.
             List<string> candidatePhones;
             if (digits.Length >= 9)
             {
                 var last9 = digits.Substring(digits.Length - 9);
                 candidatePhones = await _asyncExecuter.ToListAsync(completedQuery
-                    .Where(o => o.CustomerPhone.Replace(" ", "").Replace("-", "").Replace(".", "").EndsWith(last9))
+                    .Where(o => o.CustomerPhoneNorm == last9)
                     .Select(o => o.CustomerPhone));
             }
             else
             {
                 candidatePhones = await _asyncExecuter.ToListAsync(completedQuery
-                    .Where(o => o.CustomerPhone.Replace(" ", "").Replace("-", "").Replace(".", "") == digits)
+                    .Where(o => o.CustomerPhoneNorm == digits)
                     .Select(o => o.CustomerPhone));
             }
 
@@ -2855,19 +2858,20 @@ namespace PhuThuongStickyRice.Application.Orders
                     && x.CreatedAt >= startOfTodayUtc);
 
             // Same digit-tolerance as PhonesMatch: compare the last 9 digits
-            // (or the exact digit string when shorter than 9 digits).
+            // (or the exact digit string when shorter than 9 digits) via the
+            // normalized column — index seek instead of a REPLACE() table scan.
             var digits = DigitsOnly(customerPhone);
             int count;
             if (digits.Length >= 9)
             {
                 var last9 = digits.Substring(digits.Length - 9);
                 count = await _asyncExecuter.CountAsync(todayQuery.Where(x =>
-                    x.CustomerPhone.Replace(" ", "").Replace("-", "").Replace(".", "").EndsWith(last9)));
+                    x.CustomerPhoneNorm == last9));
             }
             else
             {
                 count = await _asyncExecuter.CountAsync(todayQuery.Where(x =>
-                    x.CustomerPhone.Replace(" ", "").Replace("-", "").Replace(".", "") == digits));
+                    x.CustomerPhoneNorm == digits));
             }
 
             if (count >= maxPerDay)

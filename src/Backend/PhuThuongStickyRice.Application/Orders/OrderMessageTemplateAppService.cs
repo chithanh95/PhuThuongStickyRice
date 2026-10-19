@@ -93,7 +93,9 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<List<OrderMessageTemplateDto>> GetListAsync()
         {
             var queryable = await _templates.GetQueryableAsync();
-            var list = await _asyncExecuter.ToListAsync(queryable.OrderBy(x => x.Status));
+            // perf-hunt 2026-10-19 (run 15:45): Take(500) server-side — bảng
+            // mẫu tin nhắn tăng dần theo cấu hình, không bao giờ nạp toàn bộ.
+            var list = await _asyncExecuter.ToListAsync(queryable.OrderBy(x => x.Status).Take(500));
             return list.Select(MapToDto).ToList();
         }
 
