@@ -2273,3 +2273,79 @@
     }
 }
 /* ===== END UIUX-2135 A1 ===== */
+
+/* ===== UIUX 22:05 A1 (run 22:05 2026-10-19) — 3 fix mobile/tablet mới =====
+   Đợt này quét kỹ ShopLayout (header/footer), /nhuong-quyen, /track-order
+   card đánh giá, landing: nút bấm, input, radio, tràn ngang, bottom sheet
+   đều đã được ~16 đợt trước phủ kín (không bịa thêm). Còn sót đúng 3 điểm
+   dưới đây, mỗi điểm verify kỹ bằng mã nguồn (dòng cụ thể) và kiểm tra
+   chéo không có rule nào trong file này phủ trước đó.
+   Scope ≤991.98px = phủ cả điện thoại lẫn tablet cảm ứng (khe 768–991px);
+   PC ≥992px giữ nguyên. Selector nhân đôi class (vd .shp-logout.shp-logout)
+   theo quy ước sẵn trong file này để thắng specificity của scoped CSS
+   Blazor (.shp-logout[b-xxx]); file này load sau bundle scoped trong
+   index.html nên hòa specificity thì rule mới thắng.
+   ------------------------------------------------------------
+   FIX 1 — nút "Đăng xuất" (.shp-logout) trên header mobile/tablet.
+   Vấn đề: khách đã đăng nhập thấy nút "Đăng xuất" dạng text gạch chân
+   trong hàng nút header (ShopLayout.razor:86, hiện ở ≤991.98px vì
+   .shp-account bị ẩn còn .shp-logout thì không) — chỉ font-size 12.5px
+   (<13px, khách lớn tuổi khó đọc) và cao ~35px (padding 8px 6px, <44px).
+   Giải pháp: chữ lên 13px, vùng bấm tối thiểu 44px.
+   (Verify: ShopLayout.razor.css:197-206 .shp-logout; grep file này
+   trước đó không có rule .shp-logout nào)
+   ------------------------------------------------------------ */
+@media (max-width: 991.98px) {
+    .shp-logout.shp-logout {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — link điều hướng ở footer shop (.shp-footer-col > a).
+   Vấn đề: 4 link "Khám phá" (Trang chủ/Thực đơn/Đặt số lượng lớn/
+   Tra cứu đơn) + link "🔐 Đăng nhập quản trị" đều là con trực tiếp
+   của .shp-footer-col với padding 4px 0 (ShopLayout.razor.css) → mỗi
+   hàng link chỉ cao ~28px (<44px), khách lớn tuổi chạm trượt rất dễ
+   bấm nhầm link cạnh. Riêng .shp-admin-login còn font-size 12.5px
+   !important (<13px).
+   Giải pháp: padding dọc 12px → mỗi hàng ~44px; chữ admin-login lên
+   13px (cần !important để đè rule gốc). Chỉ tác động link con trực
+   tiếp — link hotline inline trong <p> giữ nguyên để không vỡ dòng.
+   (Verify: ShopLayout.razor:114-128 footer, .shp-admin-login ở 129;
+   ShopLayout.razor.css .shp-footer-col a padding:4px 0,
+   .shp-admin-login font-size:12.5px !important; grep file này trước
+   đó không có rule .shp-footer-col nào)
+   ------------------------------------------------------------ */
+@media (max-width: 991.98px) {
+    .shp-footer-col.shp-footer-col > a {
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+    .shp-footer-col.shp-footer-col > .shp-admin-login.shp-admin-login {
+        font-size: 13px !important;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /nhuong-quyen: các ô nhập trong form đăng ký tư vấn.
+   Vấn đề: #nq-fullname, #nq-phone, #nq-province, 3 select
+   (#nq-budget/#nq-premises/#nq-experience) và #nq-notes đều là
+   .form-control Bootstrap mặc định cao ~38px (<44px) — form dài 7 ô,
+   khách lớn tuổi chạm trượt khi điền trên điện thoại. Font chữ đã
+   16px nên không bị iOS auto-zoom, chỉ thiếu chiều cao.
+   Giải pháp: min-height 44px trên mobile/tablet, giữ nguyên PC.
+   (Verify: NhuongQuyen.razor:165/172/180/187/203/215/228;
+   NhuongQuyen.razor.css:223 .nq-form-card .form-control chỉ set
+   border-radius; grep file này trước đó không có rule .nq- nào)
+   ------------------------------------------------------------ */
+@media (max-width: 991.98px) {
+    .nq-form-card.nq-form-card .form-control {
+        min-height: 44px;
+    }
+}
+/* ===== END UIUX 22:05 A1 ===== */
