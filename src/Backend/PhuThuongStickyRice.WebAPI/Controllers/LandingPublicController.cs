@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -104,6 +105,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// <paramref name="loader"/>, cache kết quả đúng TTL rồi trả
         /// <c>Ok</c>. Giữ nguyên key/TTL của từng endpoint nên hành vi không đổi.
         /// </summary>
+        /// <remarks>
+        /// perf-hunt 2026-10-20: chống cache stampede (thundering herd). Trước
+        /// đây khi TTL hết, N request đồng thời đều chạy loader() (queries DB)
+        /// — giờ 1 request duy nhất chạy loader nhờ SemaphoreSlim per-key +
+        /// double-check sau khi lấy khóa (cùng pattern với
+        /// ProductCatalogCache.GetOrAddAsync).
+        /// </remarks>
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> CacheLocks = new();
+
         private async Task<ActionResult> GetOrCacheJsonAsync(
             string cacheKey, TimeSpan ttl, Func<Task<object>> loader)
         {
@@ -112,9 +122,25 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Ok(cached);
             }
 
-            var value = await loader();
-            _memoryCache.Set(cacheKey, value, ttl);
-            return Ok(value);
+            var semaphore = CacheLocks.GetOrAdd(cacheKey, _ => new SemaphoreSlim(1, 1));
+            await semaphore.WaitAsync();
+            try
+            {
+                // Double-check: request khác có thể đã nạp cache trong lúc mình chờ khóa.
+                if (_memoryCache.TryGetValue(cacheKey, out object cachedAfterLock))
+                {
+                    return Ok(cachedAfterLock);
+                }
+
+                var value = await loader();
+                _memoryCache.Set(cacheKey, value, ttl);
+                return Ok(value);
+            }
+            finally
+            {
+                semaphore.Release();
+                CacheLocks.TryRemove(cacheKey, out _);
+            }
         }
 
         public LandingPublicController(
@@ -1175,24 +1201,29 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return InvalidPhoneResult();
             }
 
-            var order = await _db.Orders
-                .AsNoTracking()
-                .Where(o => o.CustomerPhone == phone)
-                .OrderByDescending(o => o.CreatedAt)
-                .Include(o => o.Lines)
-                .FirstOrDefaultAsync(cancellationToken);
+            // perf-hunt 2026-10-20: trước đây so bằng trên cột CustomerPhone thô
+            // (bỏ lỡ index) và .Include(o => o.Lines) materialize toàn bộ entity
+            // Order (~50 cột, gồm text dài như AdminNote/Notes) chỉ để trả 4
+            // field của lines. Giờ lọc bằng CustomerPhoneNorm (9 số cuối, có
+            // index composite (CustomerPhoneNorm, CreatedAt) — seek + sort ngay
+            // trên index) và project trực tiếp lines của đơn mới nhất qua 1 câu
+            // SQL duy nhất. Shape JSON trả về giữ nguyên: { items: [...] }.
+            var phoneNorm = PhoneNumber.DigitsOnly(phone);
+            phoneNorm = phoneNorm[^9..]; // IsValidVnPhone bảo đảm đủ 10 chữ số
 
-            var items = order == null
-                ? new List<object>()
-                : order.Lines
-                    .Select(l => (object)new
-                    {
-                        productId = l.ProductId,
-                        productName = l.ProductName,
-                        quantity = l.Quantity,
-                        price = l.UnitPrice.Amount
-                    })
-                    .ToList();
+            var items = await _db.Orders
+                .AsNoTracking()
+                .Where(o => o.CustomerPhoneNorm == phoneNorm)
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(1)
+                .SelectMany(o => o.Lines.Select(l => new
+                {
+                    productId = l.ProductId,
+                    productName = l.ProductName,
+                    quantity = l.Quantity,
+                    price = l.UnitPrice.Amount
+                }))
+                .ToListAsync(cancellationToken);
 
             return Ok(new { items });
         }

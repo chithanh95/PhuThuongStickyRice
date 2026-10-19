@@ -154,32 +154,57 @@ namespace PhuThuongStickyRice.Application.Orders
             var utcTo = today.AddHours(-VietnamTime.UtcOffsetHours);
 
             var queryable = await _orders.GetQueryableAsync();
-            var perOrder = queryable
+            var orders = queryable
                 .Where(x => x.CreatedAt >= utcFrom
                     && x.CreatedAt < utcTo
-                    && x.Status != OrderStatus.Cancelled)
-                .Select(x => new
-                {
-                    Day = x.CreatedAt.AddHours(VietnamTime.UtcOffsetHours).Date,
-                    Revenue = x.TotalAmount.Amount,
-                    Portions = x.Lines.Sum(l => (long)l.Quantity)
-                });
+                    && x.Status != OrderStatus.Cancelled);
 
-            var rows = await _asyncExecuter.ToListAsync(
-                perOrder
+            // Query 1: doanh thu + số đơn theo ngày — aggregate thuần trên
+            // Orders, không chạm Lines.
+            var orderRows = await _asyncExecuter.ToListAsync(
+                orders
+                    .Select(x => new
+                    {
+                        Day = x.CreatedAt.AddHours(VietnamTime.UtcOffsetHours).Date,
+                        Revenue = x.TotalAmount.Amount
+                    })
                     .Where(x => x.Day >= patternStart && x.Day < today)
                     .GroupBy(x => x.Day)
                     .Select(g => new
                     {
                         Day = g.Key,
                         Revenue = g.Sum(x => x.Revenue),
-                        Orders = g.LongCount(),
-                        Portions = g.Sum(x => x.Portions)
+                        Orders = g.LongCount()
                     }));
 
-            return rows.ToDictionary(
+            // perf-hunt 2026-10-20: trước đây Portions = x.Lines.Sum(...) là
+            // correlated scalar subquery chạy cho MỖI order row trong cửa sổ
+            // 57 ngày (hàng nghìn subquery trong 1 statement). Giờ JOIN
+            // OrderLines một lần rồi GROUP BY ngày — 1 aggregate duy nhất.
+            // Đơn không có lines thì không sinh dòng → ngày đó Portions = 0,
+            // giống hệt bản cũ (subquery của đơn 0 lines trả 0).
+            var portionRows = await _asyncExecuter.ToListAsync(
+                orders
+                    .SelectMany(x => x.Lines.Select(l => new
+                    {
+                        Day = x.CreatedAt.AddHours(VietnamTime.UtcOffsetHours).Date,
+                        l.Quantity
+                    }))
+                    .Where(x => x.Day >= patternStart && x.Day < today)
+                    .GroupBy(x => x.Day)
+                    .Select(g => new
+                    {
+                        Day = g.Key,
+                        Portions = g.Sum(x => (long)x.Quantity)
+                    }));
+
+            var portionsByDay = portionRows.ToDictionary(x => x.Day, x => x.Portions);
+            return orderRows.ToDictionary(
                 x => x.Day,
-                x => new DayAggregate(x.Revenue, x.Orders, x.Portions));
+                x => new DayAggregate(
+                    x.Revenue,
+                    x.Orders,
+                    portionsByDay.TryGetValue(x.Day, out var portions) ? portions : 0));
         }
 
         /// <summary>Tổng doanh thu trong [from, toExclusive); ngày thiếu tính là 0.</summary>
