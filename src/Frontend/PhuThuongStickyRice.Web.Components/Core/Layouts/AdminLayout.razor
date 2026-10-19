@@ -24,12 +24,12 @@
                 {
                     <div class="lx-hnav-search">
                         <span class="lx-hnav-label">Kết quả tìm kiếm</span>
-                        @foreach (var item in FilteredItems)
+                        @foreach (var menuItem in FilteredItems)
                         {
-                            <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile"
-                               aria-current="@(IsActive(item.Href) == "active" ? "page" : null)">
-                                <i class="@item.Icon" aria-hidden="true"></i>
-                                <span class="lx-hnav-text">@item.Label</span>
+                            <a class="lx-hnav-link @IsActive(menuItem.Href)" href="@menuItem.Href" @onclick="CloseNavMobile"
+                               aria-current="@(IsActive(menuItem.Href) == "active" ? "page" : null)">
+                                <i class="@menuItem.Icon" aria-hidden="true"></i>
+                                <span class="lx-hnav-text">@menuItem.Label</span>
                             </a>
                         }
                         @if (!FilteredItems.Any())
@@ -40,7 +40,7 @@
                 }
                 else
                 {
-                    @foreach (var (group, items) in VisibleMenu())
+                    @foreach (var (group, menuItems) in VisibleMenu())
                     {
                         <div class="lx-hnav-group @(IsGroupActive(group) ? "active" : "") @(IsGroupOpen(group.Key) ? "open" : "")">
                             <button type="button" class="lx-hnav-toggle" @onclick="() => ToggleGroup(group.Key)" aria-haspopup="true"
@@ -50,15 +50,15 @@
                                 <span class="fa-solid fa-chevron-down lx-hnav-caret" aria-hidden="true"></span>
                             </button>
                             <div class="lx-hnav-drop">
-                                @foreach (var item in items)
+                                @foreach (var menuItem in menuItems)
                                 {
-                                    <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile"
-                                       aria-current="@(IsActive(item.Href) == "active" ? "page" : null)">
-                                        <i class="@item.Icon" aria-hidden="true"></i>
-                                        <span class="lx-hnav-text">@item.Label</span>
-                                        @if (!string.IsNullOrEmpty(item.Badge))
+                                    <a class="lx-hnav-link @IsActive(menuItem.Href)" href="@menuItem.Href" @onclick="CloseNavMobile"
+                                       aria-current="@(IsActive(menuItem.Href) == "active" ? "page" : null)">
+                                        <i class="@menuItem.Icon" aria-hidden="true"></i>
+                                        <span class="lx-hnav-text">@menuItem.Label</span>
+                                        @if (!string.IsNullOrEmpty(menuItem.Badge))
                                         {
-                                            <span class="lx-nav-badge @item.BadgeClass">@item.Badge</span>
+                                            <span class="lx-nav-badge @menuItem.BadgeClass">@menuItem.Badge</span>
                                         }
                                     </a>
                                 }
@@ -105,33 +105,33 @@
                                 @if (_searchResult.Orders.Count > 0)
                                 {
                                     <div class="lx-search-group-label">🧾 Đơn hàng</div>
-                                    @foreach (var r in _searchResult.Orders)
+                                    @foreach (var orderResult in _searchResult.Orders)
                                     {
-                                        <button class="lx-search-item" @onclick="() => NavigateToSearchResult(r.Link)">
+                                        <button class="lx-search-item" @onclick="() => NavigateToSearchResult(orderResult.Link)">
                                             <span class="fa-solid fa-cart-shopping" aria-hidden="true"></span>
-                                            <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
+                                            <span><span class="t">@orderResult.Title</span><br /><span class="s">@orderResult.Subtitle</span></span>
                                         </button>
                                     }
                                 }
                                 @if (_searchResult.Products.Count > 0)
                                 {
                                     <div class="lx-search-group-label">🍚 Món ăn</div>
-                                    @foreach (var r in _searchResult.Products)
+                                    @foreach (var productResult in _searchResult.Products)
                                     {
-                                        <button class="lx-search-item" @onclick="() => NavigateToSearchResult(r.Link)">
+                                        <button class="lx-search-item" @onclick="() => NavigateToSearchResult(productResult.Link)">
                                             <span class="fa-solid fa-tag" aria-hidden="true"></span>
-                                            <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
+                                            <span><span class="t">@productResult.Title</span><br /><span class="s">@productResult.Subtitle</span></span>
                                         </button>
                                     }
                                 }
                                 @if (_searchResult.Customers.Count > 0)
                                 {
                                     <div class="lx-search-group-label">👤 Khách hàng</div>
-                                    @foreach (var r in _searchResult.Customers)
+                                    @foreach (var customerResult in _searchResult.Customers)
                                     {
-                                        <button class="lx-search-item" @onclick="() => NavigateToSearchResult(r.Link)">
+                                        <button class="lx-search-item" @onclick="() => NavigateToSearchResult(customerResult.Link)">
                                             <span class="fa-solid fa-user" aria-hidden="true"></span>
-                                            <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
+                                            <span><span class="t">@customerResult.Title</span><br /><span class="s">@customerResult.Subtitle</span></span>
                                         </button>
                                     }
                                 }
@@ -192,12 +192,12 @@
                             }
                             else
                             {
-                                @foreach (var n in _notifications)
+                                @foreach (var notification in _notifications)
                                 {
-                                    <button class="lx-search-item @(_readNotifIds.Contains(n.Id) ? "" : "lx-notif-unread")"
-                                            @onclick="() => OpenNotification(n)">
-                                        <span aria-hidden="true">@KindIcon(n.Kind)</span>
-                                        <span><span class="t">@n.Title</span><br /><span class="s">@n.Detail</span></span>
+                                    <button class="lx-search-item @(_readNotifIds.Contains(notification.Id) ? "" : "lx-notif-unread")"
+                                            @onclick="() => OpenNotification(notification)">
+                                        <span aria-hidden="true">@KindIcon(notification.Kind)</span>
+                                        <span><span class="t">@notification.Title</span><br /><span class="s">@notification.Detail</span></span>
                                     </button>
                                 }
                             }
@@ -378,10 +378,10 @@
 
     private IEnumerable<(MenuGroup Group, List<MenuItem> Items)> VisibleMenu()
     {
-        foreach (var g in MenuGroups)
+        foreach (var menuGroup in MenuGroups)
         {
-            var items = g.Items.Where(IsVisible).ToList();
-            if (items.Count > 0) yield return (g, items);
+            var visibleItems = menuGroup.Items.Where(IsVisible).ToList();
+            if (visibleItems.Count > 0) yield return (menuGroup, visibleItems);
         }
     }
 
@@ -563,16 +563,16 @@
     private async Task MarkAllRead()
     {
         if (_notifications != null)
-            foreach (var n in _notifications) _readNotifIds.Add(n.Id);
+            foreach (var notification in _notifications) _readNotifIds.Add(notification.Id);
         await SaveReadIdsAsync();
     }
 
-    private async Task OpenNotification(NotificationModel n)
+    private async Task OpenNotification(NotificationModel notification)
     {
-        _readNotifIds.Add(n.Id);
+        _readNotifIds.Add(notification.Id);
         await SaveReadIdsAsync();
         _notifOpen = false;
-        Navigation.NavigateTo(n.Link);
+        Navigation.NavigateTo(notification.Link);
     }
 
     private async Task ToggleFullscreen()
