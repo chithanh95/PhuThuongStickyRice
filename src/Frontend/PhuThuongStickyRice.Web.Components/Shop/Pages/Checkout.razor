@@ -603,6 +603,19 @@ else
                                     <td class="text-right text-success">−@FormatPrice(_redeemDiscountPreview)</td>
                                 </tr>
                             }
+                            @* Item 125: tổng tiết kiệm — cộng mọi khoản giảm để khách "thấy" được lợi. *@
+                            @{
+                                var totalSaved = _promotionDiscountPreview + _discountAmount
+                                    + _tierDiscountPreview + _redeemDiscountPreview
+                                    + (_isFreeship ? _shopSettings?.DeliveryFee ?? 0 : 0);
+                            }
+                            @if (totalSaved > 0)
+                            {
+                                <tr class="table-success">
+                                    <td class="text-success font-weight-bold" colspan="3">💰 Bạn tiết kiệm được</td>
+                                    <td class="text-right text-success font-weight-bold">@FormatPrice(totalSaved)</td>
+                                </tr>
+                            }
                             @if (_giftFeePreview > 0)
                             {
                                 <tr>

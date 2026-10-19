@@ -10,6 +10,7 @@
 @inject CustomerAddressService AddressService
 @inject CustomerProfileService ProfileService
 @inject ShopService ShopService
+@inject CartState CartState
 @inject Wave2Service Wave2Service
 @inject ITokenManager TokenManager
 @inject AuthenticationStateProvider AuthStateProvider
@@ -111,6 +112,10 @@
                             <div class="mt-2">
                                 <a href="/track-order?orderNumber=@Uri.EscapeDataString(o.OrderNumber)&phone=@Uri.EscapeDataString(_userName)"
                                    class="btn btn-sm btn-outline-primary">Xem chi tiết</a>
+                                <button type="button" class="btn btn-sm btn-success ml-2"
+                                        @onclick="() => ReorderAsync(o)" disabled="@_reorderBusy">
+                                    @(_reorderBusy ? "Đang thêm..." : "🔁 Đặt lại")
+                                </button>
                             </div>
                         </div>
                     }
@@ -365,6 +370,7 @@
     // Lịch sử đơn hàng + hạng thành viên.
     private LoyaltyAccountModel _loyalty;
     private List<TrackedOrderModel> _orders;
+    private bool _reorderBusy;
 
     protected override async Task OnInitializedAsync()
     {
@@ -556,6 +562,47 @@
         catch (Exception) { }
 
         Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    /// <summary>
+    /// Item 122: "Đặt lại" — thêm toàn bộ món của đơn cũ vào giỏ (kèm size/topping theo tên),
+    /// rồi chuyển sang trang giỏ hàng.
+    /// </summary>
+    private async Task ReorderAsync(TrackedOrderModel order)
+    {
+        if (order?.Lines == null || order.Lines.Count == 0)
+        {
+            return;
+        }
+
+        _reorderBusy = true;
+        try
+        {
+            foreach (var line in order.Lines.Where(l => l != null && l.Quantity > 0))
+            {
+                // Đơn giá đã bao gồm size/topping ở thời điểm đặt đơn.
+                // SizeOptionId/ToppingIds không có trong lịch sử → dùng tên để hiển thị.
+                CartState.AddConfigured(
+                    line.ProductId,
+                    line.ProductName,
+                    productCode: null,
+                    line.UnitPrice,
+                    line.Quantity,
+                    sizeOptionId: null,
+                    line.SizeName,
+                    toppingIds: new List<Guid>(),
+                    line.ToppingNames,
+                    line.ToppingsExtra,
+                    line.IsCombo,
+                    note: line.Note);
+            }
+
+            Navigation.NavigateTo("/cart");
+        }
+        finally
+        {
+            _reorderBusy = false;
+        }
     }
 
     // Item 90: taste preferences.

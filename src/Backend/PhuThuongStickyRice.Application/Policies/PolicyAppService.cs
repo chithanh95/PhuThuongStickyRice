@@ -34,26 +34,32 @@ namespace PhuThuongStickyRice.Application.Policies
     {
         private readonly IRepository<PolicyPage, Guid> _pages;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public PolicyAppService(
             IRepository<PolicyPage, Guid> pages,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _pages = pages;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         [AllowAnonymous]
         public virtual async Task<List<PolicyPageSummaryDto>> GetPublicListAsync()
         {
-            var queryable = await _pages.GetQueryableAsync();
-            var items = await _asyncExecuter.ToListAsync(
-                queryable.OrderBy(x => x.SortOrder));
-            return items.Select(x => new PolicyPageSummaryDto
+            return await _catalogCache.GetOrAddAsync("policies:public-list", async () =>
             {
-                Slug = x.Slug,
-                Title = x.Title
-            }).ToList();
+                var queryable = await _pages.GetQueryableAsync();
+                var items = await _asyncExecuter.ToListAsync(
+                    queryable.OrderBy(x => x.SortOrder));
+                return items.Select(x => new PolicyPageSummaryDto
+                {
+                    Slug = x.Slug,
+                    Title = x.Title
+                }).ToList();
+            });
         }
 
         [AllowAnonymous]
@@ -65,10 +71,13 @@ namespace PhuThuongStickyRice.Application.Policies
                 return null;
             }
 
-            var queryable = await _pages.GetQueryableAsync();
-            var page = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Slug == normalized));
-            return page == null ? null : MapToDto(page);
+            return await _catalogCache.GetOrAddAsync($"policies:slug:{normalized}", async () =>
+            {
+                var queryable = await _pages.GetQueryableAsync();
+                var page = await _asyncExecuter.FirstOrDefaultAsync(
+                    queryable.Where(x => x.Slug == normalized));
+                return page == null ? null : MapToDto(page);
+            });
         }
 
         [Authorize(Roles = "Admin")]
@@ -88,6 +97,7 @@ namespace PhuThuongStickyRice.Application.Policies
             page.Body = dto.Body.Trim();
             page.SortOrder = dto.SortOrder;
             await _pages.UpdateAsync(page, autoSave: true);
+            _catalogCache.Invalidate();
             return MapToDto(page);
         }
 

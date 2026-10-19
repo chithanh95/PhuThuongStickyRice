@@ -39,13 +39,16 @@ namespace PhuThuongStickyRice.Application.Discounts
     {
         private readonly IRepository<Promotion, Guid> _promotions;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public PromotionAppService(
             IRepository<Promotion, Guid> promotions,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _promotions = promotions;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         public virtual async Task<List<PromotionDto>> GetListAsync()
@@ -68,6 +71,7 @@ namespace PhuThuongStickyRice.Application.Discounts
                 IsActive = input.IsActive
             };
             await _promotions.InsertAsync(promotion, autoSave: true);
+            _catalogCache.Invalidate();
             return Map(promotion);
         }
 
@@ -81,27 +85,87 @@ namespace PhuThuongStickyRice.Application.Discounts
             promotion.DaysOfWeekFlags = input.DaysOfWeekFlags;
             promotion.IsActive = input.IsActive;
             await _promotions.UpdateAsync(promotion, autoSave: true);
+            _catalogCache.Invalidate();
             return Map(promotion);
         }
 
         public virtual async Task DeleteAsync(Guid id)
         {
             await _promotions.DeleteAsync(id, autoSave: true);
+            _catalogCache.Invalidate();
         }
 
-        /// <summary>Public: the checkout page previews the active promotion.</summary>
+        /// <summary>
+        /// Public: the checkout page previews the active promotion.
+        /// The IsActive list is cached (5 min); the time-window filter still
+        /// runs per call so start/end semantics are unchanged.
+        /// </summary>
         [AllowAnonymous]
         public virtual async Task<PromotionDto> GetBestActiveAsync(DateTime? vnNow = null)
         {
             var now = vnNow ?? DateTime.UtcNow.AddHours(7);
-            var queryable = await _promotions.GetQueryableAsync();
-            var active = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.IsActive));
+            var active = await _catalogCache.GetOrAddAsync("promotions:active-list", QueryActiveAsync);
             var best = active
-                .Where(x => x.IsActiveAt(now))
-                .OrderByDescending(x => x.DiscountPercent)
+                .Where(x => MatchesWindow(x, now))
+                .OrderByDescending(x => x.Dto.DiscountPercent)
                 .FirstOrDefault();
-            return best == null ? null : Map(best);
+            return best?.Dto;
+        }
+
+        private async Task<List<CachedActivePromotion>> QueryActiveAsync()
+        {
+            var queryable = await _promotions.GetQueryableAsync();
+            var entities = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => x.IsActive));
+            return entities.Select(x => new CachedActivePromotion
+            {
+                StartTime = x.StartTime,
+                EndTime = x.EndTime,
+                DaysOfWeekFlags = x.DaysOfWeekFlags,
+                Dto = Map(x)
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Immutable cached snapshot of an active promotion. Mirrors
+        /// <see cref="Promotion.IsActiveAt"/> so the time check can run on
+        /// cached data without a DB round-trip.
+        /// </summary>
+        private sealed class CachedActivePromotion
+        {
+            public TimeSpan StartTime { get; init; }
+            public TimeSpan EndTime { get; init; }
+            public int DaysOfWeekFlags { get; init; }
+            public PromotionDto Dto { get; init; }
+        }
+
+        // Same logic as Promotion.IsActiveAt (entity is IsActive already).
+        private static bool MatchesWindow(CachedActivePromotion p, DateTime vnNow)
+        {
+            var dayFlag = vnNow.DayOfWeek switch
+            {
+                DayOfWeek.Monday => PromotionDay.Monday,
+                DayOfWeek.Tuesday => PromotionDay.Tuesday,
+                DayOfWeek.Wednesday => PromotionDay.Wednesday,
+                DayOfWeek.Thursday => PromotionDay.Thursday,
+                DayOfWeek.Friday => PromotionDay.Friday,
+                DayOfWeek.Saturday => PromotionDay.Saturday,
+                _ => PromotionDay.Sunday
+            };
+
+            if ((p.DaysOfWeekFlags & (int)dayFlag) == 0)
+            {
+                return false;
+            }
+
+            var time = vnNow.TimeOfDay;
+            if (p.EndTime >= p.StartTime)
+            {
+                return time >= p.StartTime && time < p.EndTime;
+            }
+
+            // Overnight window, e.g. 22:00–02:00.
+            return time >= p.StartTime || time < p.EndTime;
         }
 
         private static PromotionDto Map(Promotion p) => new PromotionDto

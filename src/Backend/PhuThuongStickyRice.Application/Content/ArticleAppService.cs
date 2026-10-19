@@ -35,13 +35,16 @@ namespace PhuThuongStickyRice.Application.Content
     {
         private readonly IRepository<Article, Guid> _articles;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public ArticleAppService(
             IRepository<Article, Guid> articles,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _articles = articles;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         public virtual async Task<List<ArticleDto>> GetListAsync()
@@ -63,6 +66,7 @@ namespace PhuThuongStickyRice.Application.Content
                 IsPublished = input.IsPublished
             };
             await _articles.InsertAsync(article, autoSave: true);
+            _catalogCache.Invalidate();
             return Map(article);
         }
 
@@ -79,22 +83,27 @@ namespace PhuThuongStickyRice.Application.Content
 
             article.IsPublished = input.IsPublished;
             await _articles.UpdateAsync(article, autoSave: true);
+            _catalogCache.Invalidate();
             return Map(article);
         }
 
         public virtual async Task DeleteAsync(Guid id)
         {
             await _articles.DeleteAsync(id, autoSave: true);
+            _catalogCache.Invalidate();
         }
 
         [AllowAnonymous]
         public virtual async Task<List<ArticleDto>> GetPublishedAsync()
         {
-            var queryable = await _articles.GetQueryableAsync();
-            var items = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.IsPublished)
-                    .OrderByDescending(x => x.PublishedAt));
-            return items.Select(Map).ToList();
+            return await _catalogCache.GetOrAddAsync("articles:published", async () =>
+            {
+                var queryable = await _articles.GetQueryableAsync();
+                var items = await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => x.IsPublished)
+                        .OrderByDescending(x => x.PublishedAt));
+                return items.Select(Map).ToList();
+            });
         }
 
         private static ArticleDto Map(Article a) => new ArticleDto

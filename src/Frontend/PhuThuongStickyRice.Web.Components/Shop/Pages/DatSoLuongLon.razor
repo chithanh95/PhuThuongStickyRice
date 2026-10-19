@@ -9,15 +9,14 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @inject ShopService ShopService
-@inject Wave2Service Wave2Service
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
-<h1>Đặt số lượng lớn &amp; định kỳ</h1>
+<h1>Đặt số lượng lớn</h1>
 <p class="text-muted">
-    Công ty, đám tiệc, cúng giỗ hay quán ăn cần xôi đều đặn mỗi ngày —
-    chọn hình thức phù hợp, để lại thông tin, shop sẽ lo phần còn lại.
+    Công ty, đám tiệc, cúng giỗ hay quán ăn cần số lượng lớn —
+    để lại thông tin, shop sẽ liên hệ báo giá trong thời gian sớm nhất.
 </p>
 
 @* SL4: print-only quote (visible only when printing) *@
@@ -42,32 +41,20 @@
     <p>Chiết khấu (@(BulkDiscountPct.ToString("0"))% theo số lượng): −@FormatPrice(BulkDiscountAmount)</p>
     <p><strong>Thành tiền ước tính: @FormatPrice(BulkFinalTotal)</strong></p>
     <p>Ngày cần hàng: @(_bulkDate?.ToString("dd/MM/yyyy") ?? "—") · Loại sự kiện: @_bulkEventType</p>
-    <p>Điều khoản giao hàng: shop liên hệ chốt giờ giao, địa điểm và phương thức thanh toán sau khi xác nhận báo giá.</p>
+    <p>Hình thức nhận hàng: quý khách tự đến lấy tại quán hoặc tự book shipper đến lấy. Shop liên hệ xác nhận báo giá và phương thức thanh toán sau khi nhận yêu cầu.</p>
     <p><small>Báo giá tham khảo — giá chính thức do shop xác nhận. Cam kết phản hồi trong 2 giờ làm việc.</small></p>
 </div>
 
 <style>
-    .bulk-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
     @@media (max-width: 576px) {
-        .bulk-opt-grid { grid-template-columns: 1fr; }
         .bulk-submit { width: 100%; min-height: 50px; font-size: 1.05rem; }
     }
-    .bulk-opt-card {
-        display: block; width: 100%; text-align: center; cursor: pointer;
-        background: #fff; border: 2px solid #e9dfcb; border-radius: 16px;
-        padding: 32px 20px; transition: border-color .15s, box-shadow .15s, transform .15s;
-    }
-    .bulk-opt-card:hover { border-color: #a67c3d; box-shadow: 0 6px 24px rgba(166,124,61,.18); transform: translateY(-2px); }
-    .bulk-opt-icon { font-size: 3rem; line-height: 1; margin-bottom: 12px; }
-    .bulk-opt-card h4 { font-weight: 800; color: #2e2620; margin-bottom: 8px; }
-    .bulk-opt-card p { color: #7d6c58; margin: 0; font-size: .95rem; }
     .bulk-prod { display: flex; align-items: center; gap: 12px; border: 1px solid #e9dfcb; border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; cursor: pointer; background: #fff; }
     .bulk-prod.selected { border-color: #a67c3d; background: #fdf8ef; }
     .bulk-prod img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; flex: none; }
     .bulk-prod .nm { font-weight: 700; color: #2e2620; }
     .bulk-prod .pr { color: #7d6c58; font-size: .9rem; }
     .bulk-prod input { width: 20px; height: 20px; flex: none; }
-    .bulk-back { margin-bottom: 16px; }
     /* SL4: print-only quote */
     .bulk-print-only { display: none; }
     @@media print {
@@ -79,383 +66,182 @@
     }
 </style>
 
-@if (_kind == null)
+@* ============ FORM SỐ LƯỢNG LỚN — 3 bước (SL3) ============ *@
+@if (_bulkDone)
 {
-    <div class="bulk-opt-grid">
-        <button type="button" class="bulk-opt-card" @onclick='() => SelectKind("bulk")'>
-            <div class="bulk-opt-icon">📦</div>
-            <h4>Đặt số lượng lớn</h4>
-            <p>Đơn từ 50 gói trở lên — báo giá riêng cho công ty, đám tiệc, cúng lớn.</p>
-        </button>
-        <button type="button" class="bulk-opt-card" @onclick='() => SelectKind("sub")'>
-            <div class="bulk-opt-icon">🔁</div>
-            <h4>Đặt định kỳ</h4>
-            <p>Giao xôi tự động mỗi ngày/tuần — đăng ký một lần, nhận đều đặn.</p>
-        </button>
+    <div class="alert alert-success">
+        <h4>Cảm ơn bạn!</h4>
+        <p class="mb-0">
+            Shop đã nhận yêu cầu đặt số lượng lớn và sẽ liên hệ qua số
+            <strong>@_bulk.CustomerPhone</strong> để báo giá trong thời gian sớm nhất.
+        </p>
     </div>
-}
-else
-{
-    <button type="button" class="btn btn-link bulk-back" @onclick="BackToChoice">← Chọn lại hình thức</button>
-
-    @if (_kind == "bulk")
-    {
-        @* ============ FORM SỐ LƯỢNG LỚN — 3 bước (SL3) ============ *@
-        @if (_bulkDone)
-        {
-            <div class="alert alert-success">
-                <h4>Cảm ơn bạn!</h4>
-                <p class="mb-0">
-                    Shop đã nhận yêu cầu đặt số lượng lớn và sẽ liên hệ qua số
-                    <strong>@_bulk.CustomerPhone</strong> để báo giá trong thời gian sớm nhất.
-                </p>
-            </div>
-            @* SL2: đặt cọc 30% qua VietQR *@
-            <div class="card mt-3">
-                <div class="card-header"><strong>💰 Đặt cọc 30% giữ chỗ</strong></div>
-                <div class="card-body text-center">
-                    <p class="mb-2">
-                        Quét mã QR để chuyển khoản đặt cọc
-                        <strong class="text-danger">@FormatPrice(_depositAmount)</strong>
-                        (30% của @FormatPrice(BulkFinalTotal)).
-                    </p>
-                    @if (!string.IsNullOrEmpty(DepositQrUrl))
-                    {
-                        <img src="@DepositQrUrl" alt="QR đặt cọc" class="bulk-qr" />
-                        <p class="mt-2 mb-1">Nội dung chuyển khoản: <strong>@_depositCode</strong></p>
-                        <table class="table table-sm text-left bulk-bank-table">
-                            <tr><td><strong>Ngân hàng</strong></td><td>@_bankInfo.BankName</td></tr>
-                            <tr><td><strong>Số tài khoản</strong></td><td><strong>@_bankInfo.AccountNumber</strong></td></tr>
-                            <tr><td><strong>Chủ tài khoản</strong></td><td>@_bankInfo.AccountName</td></tr>
-                        </table>
-                    }
-                    else
-                    {
-                        <p class="text-muted">Shop chưa cấu hình tài khoản nhận cọc — vui lòng gọi hotline để được hướng dẫn.</p>
-                    }
-                    <button class="btn btn-success mt-2" @onclick="ConfirmDeposit" disabled="@_depositConfirmed">
-                        @(_depositConfirmed ? "✓ Đã ghi nhận chuyển khoản" : "Tôi đã chuyển khoản")
-                    </button>
-                    @if (_depositConfirmed)
-                    {
-                        <p class="text-muted mt-2 mb-0"><small>Shop sẽ kiểm tra và xác nhận cọc qua số điện thoại của bạn.</small></p>
-                    }
-                </div>
-            </div>
-            <a class="btn btn-primary mt-3" href="/shop">Xem thực đơn</a>
-        }
-        else
-        {
-            @if (!string.IsNullOrEmpty(_bulkError))
+    @* SL2: đặt cọc 30% qua VietQR *@
+    <div class="card mt-3">
+        <div class="card-header"><strong>💰 Đặt cọc 30% giữ chỗ</strong></div>
+        <div class="card-body text-center">
+            <p class="mb-2">
+                Quét mã QR để chuyển khoản đặt cọc
+                <strong class="text-danger">@FormatPrice(_depositAmount)</strong>
+                (30% của @FormatPrice(BulkFinalTotal)).
+            </p>
+            @if (!string.IsNullOrEmpty(DepositQrUrl))
             {
-                <div class="alert alert-danger">@_bulkError</div>
-            }
-            <div class="bulk-steps">
-                <div class="bulk-step @(_bulkStep > 1 ? "done" : "") @(_bulkStep == 1 ? "active" : "")"><span>1</span><em>Sự kiện &amp; số lượng</em></div>
-                <div class="bulk-step @(_bulkStep > 2 ? "done" : "") @(_bulkStep == 2 ? "active" : "")"><span>2</span><em>Thực đơn</em></div>
-                <div class="bulk-step @(_bulkStep == 3 ? "active" : "")"><span>3</span><em>Liên hệ</em></div>
-            </div>
-
-            @if (_bulkStep == 1)
-            {
-                <div class="card">
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label>Loại sự kiện *</label>
-                            <select class="form-control" @bind="_bulkEventType">
-                                <option>Đám tiệc</option>
-                                <option>Công ty / văn phòng</option>
-                                <option>Cúng giỗ</option>
-                                <option>Quán ăn / đại lý</option>
-                                <option>Khác</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label>Ngày cần hàng *</label>
-                                <input type="date" class="form-control" @bind="_bulkDate"
-                                       min="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                            </div>
-                            <div class="form-group col-md-6">
-                                <label>Số lượng dự kiến (gói) *</label>
-                                <input type="number" min="50" class="form-control" @bind="_bulk.Quantity" />
-                                <small class="form-text text-muted">Đơn số lượng lớn từ 50 gói trở lên.</small>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary bulk-submit" @onclick="BulkNextFromStep1">Tiếp tục →</button>
-                    </div>
-                </div>
-            }
-            else if (_bulkStep == 2)
-            {
-                <div class="card">
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label>Chọn món *</label>
-                            @if (_products.Count == 0)
-                            {
-                                <p class="text-muted">Đang tải danh sách món...</p>
-                            }
-                            @foreach (var p in _products)
-                            {
-                                <label class="bulk-prod @(_bulkProductIds.Contains(p.Id) ? "selected" : "")">
-                                    <input type="checkbox" checked="@_bulkProductIds.Contains(p.Id)"
-                                           @onchange="e => ToggleBulkProduct(p.Id, (bool)e.Value)" />
-                                    <img loading="lazy" src="@ProductImage(p)" alt="@p.Name" />
-                                    <span>
-                                        <span class="nm">@p.Name</span><br />
-                                        <span class="pr">@FormatPrice(p.Price)/gói</span>
-                                    </span>
-                                </label>
-                            }
-                        </div>
-                        <div class="alert alert-info mb-3">
-                            <strong>Bảng chiết khấu theo số lượng:</strong><br />
-                            <small>50–99 gói: giảm 5% &nbsp;|&nbsp; 100–199 gói: giảm 8% &nbsp;|&nbsp; Từ 200 gói: giảm 12%</small>
-                        </div>
-                        <div class="card bg-light mb-3">
-                            <div class="card-body py-2">
-                                <div class="form-row align-items-end mb-2">
-                                    <div class="form-group col-6 col-md-4 mb-0">
-                                        <label class="mb-1">Số lượng (gói)</label>
-                                        <input type="number" min="50" class="form-control" @bind="_bulk.Quantity" @bind:event="oninput" />
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between"><span>Giá gốc</span><strong>@FormatPrice(BulkOriginalTotal)</strong></div>
-                                <div class="d-flex justify-content-between"><span>Chiết khấu (@(BulkDiscountPct.ToString("0"))%)</span><strong class="text-success">−@FormatPrice(BulkDiscountAmount)</strong></div>
-                                <hr class="my-1" />
-                                <div class="d-flex justify-content-between"><span><strong>Thành tiền ước tính</strong></span><strong class="text-danger bulk-total">@FormatPrice(BulkFinalTotal)</strong></div>
-                                <div class="mt-2">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="PrintQuote">🖨 In / Lưu báo giá</button>
-                                </div>
-                            </div>
-                        </div>
-                        <button class="btn btn-outline-secondary" @onclick="() => _bulkStep = 1">← Quay lại</button>
-                        <button class="btn btn-primary bulk-submit ml-2" @onclick="BulkNextFromStep2">Tiếp tục →</button>
-                    </div>
-                </div>
+                <img src="@DepositQrUrl" alt="QR đặt cọc" class="bulk-qr" />
+                <p class="mt-2 mb-1">Nội dung chuyển khoản: <strong>@_depositCode</strong></p>
+                <table class="table table-sm text-left bulk-bank-table">
+                    <tr><td><strong>Ngân hàng</strong></td><td>@_bankInfo.BankName</td></tr>
+                    <tr><td><strong>Số tài khoản</strong></td><td><strong>@_bankInfo.AccountNumber</strong></td></tr>
+                    <tr><td><strong>Chủ tài khoản</strong></td><td>@_bankInfo.AccountName</td></tr>
+                </table>
             }
             else
             {
-                <div class="card">
-                    <div class="card-body">
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label>Họ tên *</label>
-                                <input class="form-control" @bind="_bulk.CustomerName" placeholder="Nguyễn Văn A" />
-                            </div>
-                            <div class="form-group col-md-6">
-                                <label>Số điện thoại *</label>
-                                <input class="form-control" @bind="_bulk.CustomerPhone" placeholder="0901234567" />
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Địa điểm tổ chức</label>
-                            <input class="form-control" @bind="_bulk.EventLocation" placeholder="VD: Nhà văn hóa phường..." />
-                        </div>
-                        <div class="form-group">
-                            <label>Ngân sách dự kiến (không bắt buộc)</label>
-                            <input class="form-control" @bind="_bulk.Budget" placeholder="VD: khoảng 2 triệu" />
-                        </div>
-                        <div class="form-group">
-                            <label>Ghi chú thêm</label>
-                            <textarea class="form-control" rows="3" @bind="_bulkNotes"
-                                      placeholder="VD: giao trước 9h sáng, chia 2 đợt, cần hóa đơn..."></textarea>
-                        </div>
-                        <p class="text-muted">📞 <strong>Cam kết phản hồi báo giá trong 2 giờ làm việc.</strong></p>
-                        <button class="btn btn-outline-secondary" @onclick="() => _bulkStep = 2">← Quay lại</button>
-                        <button class="btn btn-success btn-lg bulk-submit ml-2" @onclick="SubmitBulk" disabled="@_submitting">
-                            @(_submitting ? "Đang gửi..." : "Gửi yêu cầu báo giá")
-                        </button>
+                <p class="text-muted">Shop chưa cấu hình tài khoản nhận cọc — vui lòng gọi hotline để được hướng dẫn.</p>
+            }
+            <button class="btn btn-success mt-2" @onclick="ConfirmDeposit" disabled="@_depositConfirmed">
+                @(_depositConfirmed ? "✓ Đã ghi nhận chuyển khoản" : "Tôi đã chuyển khoản")
+            </button>
+            @if (_depositConfirmed)
+            {
+                <p class="text-muted mt-2 mb-0"><small>Shop sẽ kiểm tra và xác nhận cọc qua số điện thoại của bạn.</small></p>
+            }
+        </div>
+    </div>
+    <a class="btn btn-primary mt-3" href="/shop">Xem thực đơn</a>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_bulkError))
+    {
+        <div class="alert alert-danger">@_bulkError</div>
+    }
+    <div class="bulk-steps">
+        <div class="bulk-step @(_bulkStep > 1 ? "done" : "") @(_bulkStep == 1 ? "active" : "")"><span>1</span><em>Sự kiện &amp; số lượng</em></div>
+        <div class="bulk-step @(_bulkStep > 2 ? "done" : "") @(_bulkStep == 2 ? "active" : "")"><span>2</span><em>Thực đơn</em></div>
+        <div class="bulk-step @(_bulkStep == 3 ? "active" : "")"><span>3</span><em>Liên hệ</em></div>
+    </div>
+
+    @if (_bulkStep == 1)
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Loại sự kiện *</label>
+                    <select class="form-control" @bind="_bulkEventType">
+                        <option>Đám tiệc</option>
+                        <option>Công ty / văn phòng</option>
+                        <option>Cúng giỗ</option>
+                        <option>Quán ăn / đại lý</option>
+                        <option>Khác</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Ngày cần hàng *</label>
+                        <input type="date" class="form-control" @bind="_bulkDate"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Số lượng dự kiến (gói) *</label>
+                        <input type="number" min="50" class="form-control" @bind="_bulk.Quantity" />
+                        <small class="form-text text-muted">Đơn số lượng lớn từ 50 gói trở lên.</small>
                     </div>
                 </div>
-            }
-        }
+                <button class="btn btn-primary bulk-submit" @onclick="BulkNextFromStep1">Tiếp tục →</button>
+            </div>
+        </div>
+    }
+    else if (_bulkStep == 2)
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Chọn món *</label>
+                    @if (_products.Count == 0)
+                    {
+                        <p class="text-muted">Đang tải danh sách món...</p>
+                    }
+                    @foreach (var p in _products)
+                    {
+                        <label class="bulk-prod @(_bulkProductIds.Contains(p.Id) ? "selected" : "")">
+                            <input type="checkbox" checked="@_bulkProductIds.Contains(p.Id)"
+                                   @onchange="e => ToggleBulkProduct(p.Id, (bool)e.Value)" />
+                            <img loading="lazy" src="@ProductImage(p)" alt="@p.Name" />
+                            <span>
+                                <span class="nm">@p.Name</span><br />
+                                <span class="pr">@FormatPrice(p.Price)/gói</span>
+                            </span>
+                        </label>
+                    }
+                </div>
+                <div class="alert alert-info mb-3">
+                    <strong>Bảng chiết khấu theo số lượng:</strong><br />
+                    <small>50–99 gói: giảm 5% &nbsp;|&nbsp; 100–199 gói: giảm 8% &nbsp;|&nbsp; Từ 200 gói: giảm 12%</small>
+                </div>
+                <div class="card bg-light mb-3">
+                    <div class="card-body py-2">
+                        <div class="form-row align-items-end mb-2">
+                            <div class="form-group col-6 col-md-4 mb-0">
+                                <label class="mb-1">Số lượng (gói)</label>
+                                <input type="number" min="50" class="form-control" @bind="_bulk.Quantity" @bind:event="oninput" />
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between"><span>Giá gốc</span><strong>@FormatPrice(BulkOriginalTotal)</strong></div>
+                        <div class="d-flex justify-content-between"><span>Chiết khấu (@(BulkDiscountPct.ToString("0"))%)</span><strong class="text-success">−@FormatPrice(BulkDiscountAmount)</strong></div>
+                        <hr class="my-1" />
+                        <div class="d-flex justify-content-between"><span><strong>Thành tiền ước tính</strong></span><strong class="text-danger bulk-total">@FormatPrice(BulkFinalTotal)</strong></div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="PrintQuote">🖨 In / Lưu báo giá</button>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" @onclick="() => _bulkStep = 1">← Quay lại</button>
+                <button class="btn btn-primary bulk-submit ml-2" @onclick="BulkNextFromStep2">Tiếp tục →</button>
+            </div>
+        </div>
     }
     else
     {
-        @* ============ FORM ĐỊNH KỲ ============ *@
-        @if (_subDone)
-        {
-            <div class="alert alert-success">
-                <strong>Đăng ký thành công!</strong> Từ ngày
-                <strong>@_created.StartDate.ToString("dd/MM/yyyy")</strong>,
-                mỗi sáng shop sẽ tự tạo đơn <strong>@_created.Quantity × @_created.ProductName</strong>
-                giao đến địa chỉ của bạn.
-            </div>
-            @* SL2: đặt cọc 30% tháng đầu qua VietQR *@
-            <div class="card mt-3">
-                <div class="card-header"><strong>💰 Đặt cọc 30% tháng đầu</strong></div>
-                <div class="card-body text-center">
-                    <p class="mb-2">
-                        Quét mã QR để chuyển khoản đặt cọc
-                        <strong class="text-danger">@FormatPrice(_depositAmount)</strong>
-                        (30% của ước tính @FormatPrice(MonthlyEstimate)/tháng).
-                    </p>
-                    @if (!string.IsNullOrEmpty(DepositQrUrl))
-                    {
-                        <img src="@DepositQrUrl" alt="QR đặt cọc" class="bulk-qr" />
-                        <p class="mt-2 mb-1">Nội dung chuyển khoản: <strong>@_depositCode</strong></p>
-                        <table class="table table-sm text-left bulk-bank-table">
-                            <tr><td><strong>Ngân hàng</strong></td><td>@_bankInfo.BankName</td></tr>
-                            <tr><td><strong>Số tài khoản</strong></td><td><strong>@_bankInfo.AccountNumber</strong></td></tr>
-                            <tr><td><strong>Chủ tài khoản</strong></td><td>@_bankInfo.AccountName</td></tr>
-                        </table>
-                    }
-                    else
-                    {
-                        <p class="text-muted">Shop chưa cấu hình tài khoản nhận cọc — vui lòng gọi hotline để được hướng dẫn.</p>
-                    }
-                    <button class="btn btn-success mt-2" @onclick="ConfirmDeposit" disabled="@_depositConfirmed">
-                        @(_depositConfirmed ? "✓ Đã ghi nhận chuyển khoản" : "Tôi đã chuyển khoản")
-                    </button>
-                    @if (_depositConfirmed)
-                    {
-                        <p class="text-muted mt-2 mb-0"><small>Shop sẽ kiểm tra và xác nhận cọc qua số điện thoại của bạn.</small></p>
-                    }
+        <div class="card">
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Họ tên *</label>
+                        <input class="form-control" @bind="_bulk.CustomerName" placeholder="Nguyễn Văn A" />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Số điện thoại *</label>
+                        <input class="form-control" @bind="_bulk.CustomerPhone" placeholder="0901234567" />
+                    </div>
                 </div>
-            </div>
-            <button class="btn btn-outline-primary mt-3" @onclick="ResetSub">Đăng ký thêm</button>
-        }
-        else
-        {
-            @if (!string.IsNullOrEmpty(_subError))
-            {
-                <div class="alert alert-danger">@_subError</div>
-            }
-            <div class="card">
-                <div class="card-body">
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label>Họ tên *</label>
-                            <input class="form-control" @bind="_sub.CustomerName" placeholder="Nguyễn Văn A" />
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label>Số điện thoại *</label>
-                            <input class="form-control" @bind="_sub.Phone" placeholder="0901234567" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Món xôi *</label>
-                        <select class="form-control" @onchange="OnSubProductChanged">
-                            <option value="">— Chọn món —</option>
-                            @foreach (var p in _products)
-                            {
-                                <option value="@p.Id" selected="@(p.Id == _sub.ProductId)">@p.Name — @FormatPrice(p.Price)</option>
-                            }
-                        </select>
-                    </div>
-                    @if (_subSelectedProduct?.Sizes?.Any(s => s.IsActive) == true)
-                    {
-                        <div class="form-group">
-                            <label>Cỡ gói</label>
-                            <select class="form-control" @bind="_sub.SizeOptionId">
-                                <option value="">Mặc định</option>
-                                @foreach (var s in _subSelectedProduct.Sizes.Where(x => x.IsActive))
-                                {
-                                    <option value="@s.Id">@s.Name — @FormatPrice(s.Price)</option>
-                                }
-                            </select>
-                        </div>
-                    }
-                    @if (_toppings.Count > 0)
-                    {
-                        <div class="form-group">
-                            <label>Ăn kèm</label>
-                            <div>
-                                @foreach (var t in _toppings)
-                                {
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="checkbox" id="sub-top-@t.Id"
-                                               checked="@_sub.ToppingIds.Contains(t.Id)"
-                                               @onchange="e => ToggleSubTopping(t.Id, (bool)e.Value)" />
-                                        <label class="form-check-label" for="sub-top-@t.Id">@t.Name (+@FormatPrice(t.ExtraPrice))</label>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-                    <div class="form-group">
-                        <label>Ngày giao trong tuần *</label>
-                        <div class="mb-2">
-                            <button type="button" class="btn btn-sm @(_weekdayPreset == "daily" ? "btn-primary" : "btn-outline-secondary") mr-1 mb-1"
-                                    @onclick='() => SetWeekdayPreset("daily")'>Hằng ngày</button>
-                            <button type="button" class="btn btn-sm @(_weekdayPreset == "weekdays" ? "btn-primary" : "btn-outline-secondary") mr-1 mb-1"
-                                    @onclick='() => SetWeekdayPreset("weekdays")'>Thứ 2 – 6</button>
-                            <button type="button" class="btn btn-sm @(_weekdayPreset == "custom" ? "btn-primary" : "btn-outline-secondary") mb-1"
-                                    @onclick='() => SetWeekdayPreset("custom")'>Tùy chọn</button>
-                        </div>
-                        <div>
-                            @foreach (var d in WeekdayOrder)
-                            {
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="sub-day-@((int)d)"
-                                           checked="@_subWeekdays.Contains(d)"
-                                           @onchange="e => ToggleSubWeekday(d, (bool)e.Value)" />
-                                    <label class="form-check-label" for="sub-day-@((int)d)">@ShortDayName(d)</label>
-                                </div>
-                            }
-                        </div>
-                        @if (_subWeekdays.Count == 0)
-                        {
-                            <small class="text-danger">Vui lòng chọn ít nhất một ngày giao.</small>
-                        }
-                        <small class="form-text text-muted">
-                            Hệ thống tự tạo đơn mỗi sáng; với lịch Thứ 2–6 / tùy chọn,
-                            shop sẽ liên hệ để chốt lịch giao phù hợp.
-                        </small>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            <label>Số lượng mỗi lần giao *</label>
-                            <input type="number" class="form-control" min="1" max="100" @bind="_sub.Quantity" />
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>Ước tính / lần giao</label>
-                            <input class="form-control" readonly value="@FormatPrice(EstimatedPerDelivery)" />
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>Bắt đầu từ ngày *</label>
-                            <input type="date" class="form-control" @bind="_sub.StartDate"
-                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                        </div>
-                    </div>
-                    @* DK4: ước tính gói theo tháng (không claim tiết kiệm vì chưa có chiết khấu cấu hình) *@
-                    @if (DeliveriesNext30Days > 0)
-                    {
-                        <div class="alert alert-success">
-                            📦 Gói của bạn ≈ <strong>@FormatPrice(MonthlyEstimate)/tháng</strong>
-                            <small class="text-muted">(@DeliveriesNext30Days lần giao trong 30 ngày tới · @FormatPrice(EstimatedPerDelivery)/lần)</small>
-                        </div>
-                    }
-                    <div class="form-group">
-                        <label>Địa chỉ giao hàng *</label>
-                        <textarea class="form-control" rows="2" @bind="_sub.DeliveryAddress"
-                                  placeholder="Số nhà, đường, phường..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Ghi chú</label>
-                        <textarea class="form-control" rows="2" @bind="_sub.Notes"
-                                  placeholder="VD: giao trước 7h sáng..."></textarea>
-                    </div>
-                    <button class="btn btn-success bulk-submit" @onclick="SubmitSub" disabled="@_submitting">
-                        @(_submitting ? "Đang đăng ký..." : "Đăng ký đặt định kỳ")
-                    </button>
+                <div class="form-group">
+                    <label>Địa điểm tổ chức</label>
+                    <input class="form-control" @bind="_bulk.EventLocation" placeholder="VD: Nhà văn hóa phường..." />
                 </div>
+                <div class="form-group">
+                    <label>Ngân sách dự kiến (không bắt buộc)</label>
+                    <input class="form-control" @bind="_bulk.Budget" placeholder="VD: khoảng 2 triệu" />
+                </div>
+                <div class="form-group">
+                    <label>Ghi chú thêm</label>
+                    <textarea class="form-control" rows="3" @bind="_bulkNotes"
+                              placeholder="VD: giao trước 9h sáng, chia 2 đợt, cần hóa đơn..."></textarea>
+                </div>
+                <p class="text-muted">📞 <strong>Cam kết phản hồi báo giá trong 2 giờ làm việc.</strong></p>
+                <button class="btn btn-outline-secondary" @onclick="() => _bulkStep = 2">← Quay lại</button>
+                <button class="btn btn-success btn-lg bulk-submit ml-2" @onclick="SubmitBulk" disabled="@_submitting">
+                    @(_submitting ? "Đang gửi..." : "Gửi yêu cầu báo giá")
+                </button>
             </div>
-        }
+        </div>
     }
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = "loai")]
-    public string Loai { get; set; }
-
-    private string _kind; // null | "bulk" | "sub"
     private bool _submitting;
 
     private List<ShopProductModel> _products = new List<ShopProductModel>();
-    private List<ToppingModel> _toppings = new List<ToppingModel>();
 
     // ---- Bulk (QuoteRequest) ----
     private readonly QuoteRequestModel _bulk = new QuoteRequestModel { QuoteType = "SoLuongLon", Quantity = 50 };
@@ -501,61 +287,18 @@ else
     private string _depositCode = string.Empty;
     private bool _depositConfirmed;
 
-    // ---- Subscription ----
-    private readonly CreateSubscriptionModel _sub = new CreateSubscriptionModel();
-    private ShopProductModel _subSelectedProduct;
-    private SubscriptionModel _created;
-    private bool _subDone;
-    private string _subError;
-
-    // ---- DK1: subscription weekdays (Mon–Sun), presets + custom ----
-    private readonly HashSet<DayOfWeek> _subWeekdays = new HashSet<DayOfWeek>
-    {
-        DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday,
-        DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday
-    };
-    private string _weekdayPreset = "daily";
-
-    private static readonly DayOfWeek[] WeekdayOrder =
-    {
-        DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday,
-        DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday
-    };
-
     protected override async Task OnInitializedAsync()
     {
-        if (string.Equals(Loai, "dinh-ky", StringComparison.OrdinalIgnoreCase))
-        {
-            _kind = "sub";
-        }
-
         try
         {
             var paged = await ShopService.GetProductsAsync();
             _products = paged?.Items?.Where(p => p.Status == "Active").ToList()
                 ?? new List<ShopProductModel>();
-            _toppings = await ShopService.GetToppingsAsync() ?? new List<ToppingModel>();
         }
         catch (Exception)
         {
             // Form shows empty state; the user can retry.
         }
-    }
-
-    private void SelectKind(string kind) => _kind = kind;
-
-    private void BackToChoice()
-    {
-        _kind = null;
-        _bulkDone = false;
-        _subDone = false;
-        _bulkError = null;
-        _subError = null;
-        _bulkStep = 1;
-        _depositConfirmed = false;
-        _depositAmount = 0;
-        _depositCode = string.Empty;
-        _bankInfo = null;
     }
 
     private void ToggleBulkProduct(Guid id, bool selected)
