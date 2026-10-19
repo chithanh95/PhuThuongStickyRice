@@ -12,7 +12,13 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.Id).HasDefaultValueSql("newsequentialid()");
 
             builder.Property(x => x.SessionId).HasMaxLength(ChatMessage.SessionIdMaxLength).IsRequired();
-            builder.HasIndex(x => x.SessionId);
+
+            // perf-hunt 2026-10-19 (run 14:25): composite (SessionId, CreatedAt)
+            // thay index đơn SessionId — endpoint public lịch sử chat
+            // (LandingPublicController) luôn WHERE SessionId + ORDER BY
+            // CreatedAt + Take(50); composite cho index seek rồi duyệt theo
+            // thứ tự sẵn, không cần sort trên memory.
+            builder.HasIndex(x => new { x.SessionId, x.CreatedAt });
 
             builder.Property(x => x.Sender).HasMaxLength(ChatMessage.SenderMaxLength).IsRequired();
             builder.Property(x => x.Message).HasMaxLength(ChatMessage.MessageMaxLength).IsRequired();
