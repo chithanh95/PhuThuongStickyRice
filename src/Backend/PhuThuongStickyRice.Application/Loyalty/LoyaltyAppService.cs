@@ -670,15 +670,33 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return "PT-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
         }
 
+        /// <summary>
+        /// Tính ngày sinh nhật sắp tới (29/2 được coi là 28/2 vào năm không nhuận,
+        /// cùng cách xử lý của trang landing — tránh ArgumentOutOfRangeException
+        /// khi khách sinh ngày 29/2 tra cứu danh sách sinh nhật sắp tới).
+        /// </summary>
         private static DateTime NextBirthday(DateTime dob, DateTime today)
         {
-            var next = new DateTime(today.Year, dob.Month, dob.Day);
+            var next = SafeBirthdayDate(dob.Month, dob.Day, today.Year);
             if (next < today)
             {
-                next = next.AddYears(1);
+                next = SafeBirthdayDate(dob.Month, dob.Day, today.Year + 1);
             }
 
             return next;
+        }
+
+        /// <summary>
+        /// Dựng DateTime an toàn cho ngày sinh: 29/2 → 28/2 vào năm không nhuận.
+        /// </summary>
+        private static DateTime SafeBirthdayDate(int month, int day, int year)
+        {
+            if (month == 2 && day == 29 && !DateTime.IsLeapYear(year))
+            {
+                day = 28;
+            }
+
+            return new DateTime(year, month, day);
         }
 
         private async Task<LoyaltyAccountDto> MapToDtoAsync(LoyaltyAccount account)
