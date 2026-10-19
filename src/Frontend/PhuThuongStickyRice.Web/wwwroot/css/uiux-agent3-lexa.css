@@ -737,3 +737,38 @@ html.dark .page-link { color: #b3a8e8; }
 .invalid { outline-color: #f46a6a; }
 
 /* ===== end UI/UX run 2026-10-19 15:45 - Agent3 Lexa ===== */
+
+/* ===== uiux-team run 2026-10-19 18:35 - Agent 3 Lexa: chuẩn hóa tím primary PrepaidCardTab =====
+   Quét đợt này: toàn bộ hex trong *.razor/*.razor.css (uniq count), style=""
+   inline có màu, oi-* trong markup (không còn), rgb()/rgba(), svg fill,
+   gradient, accent-color, selection, focus-shadow, pagination, progress,
+   switch, toast, table, kanban, chat, dashboard, báo cáo, đặt tiệc, hỗ trợ,
+   đăng nhập, tra cứu đơn, giỏ/checkout, tài khoản, menu in, MoMo simulator.
+   Kết luận: web đã qua 12+ đợt đồng bộ Lexa nên gần như sạch — text-*,
+   btn-*, badge, alert, pagination, progress, switch, toast, slider đều đã
+   chuẩn; các màu còn lại là brand ấm chủ ý (landing/shop), tint trung tính,
+   hoặc palette demo trang /admin/lexa — KHÔNG đụng. Chỉ còn 1 lệch chuẩn
+   thật sự bên dưới. */
+
+/* ---------- Fix 1: tab "Thẻ xôi" (/goi-tra-truoc) dùng tím đậm tự chế #5a4fa3 -> tím primary Lexa #7a6fbe ----------
+   Verify: Shop/Components/PrepaidCardTab.razor.css — #5a4fa3 xuất hiện 11 lần:
+   .pt-package.active border (dòng 56), .pt-package-price (69), .pt-input:focus
+   outline+border (101,103), .pt-bigbtn nền (114), .pt-bigbtn.pt-outline chữ+viền
+   (128,129), .pt-code chữ+viền đứt (178,179), .pt-item-code (229).
+   Màu này là "mồ côi" — không dùng ở bất kỳ chỗ nào khác trên web; trong khi
+   nav tab của CHÍNH trang này (GoiTraTruoc.razor:12, class lx-tabbtn) đã được
+   chuẩn hóa active #7a6fbe (fix run 11:55) — cùng một trang đang dùng 2 tông
+   tím khác nhau cho vai trò "primary". Gom về #7a6fbe để đồng nhất toàn trang
+   và toàn web.
+   Giữ nguyên các tint tím nhạt (#f4f2fd, #d9d4ec, #b9b3d9, #fbfbff, #f8f7ff)
+   vốn đã thuộc họ Lexa. Rule gốc nằm trong CSS isolation bundle ([b-xxx])
+   nên cần !important; scope .shp-page vì component chỉ dùng ở shop. */
+.shp-page .pt-package.active { border-color: #7a6fbe !important; }
+.shp-page .pt-package-price { color: #7a6fbe !important; }
+.shp-page .pt-input:focus { outline-color: #7a6fbe !important; border-color: #7a6fbe !important; }
+.shp-page .pt-bigbtn { background-color: #7a6fbe !important; }
+.shp-page .pt-bigbtn.pt-outline { color: #7a6fbe !important; border-color: #7a6fbe !important; }
+.shp-page .pt-code { color: #7a6fbe !important; border-color: #7a6fbe !important; }
+.shp-page .pt-item-code { color: #7a6fbe !important; }
+
+/* ===== end UI/UX run 2026-10-19 18:35 - Agent3 Lexa ===== */
