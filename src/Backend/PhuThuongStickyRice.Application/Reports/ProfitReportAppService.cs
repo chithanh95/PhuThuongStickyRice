@@ -84,7 +84,7 @@ namespace PhuThuongStickyRice.Application.Reports
         {
             public DateTime Day { get; set; }
             public Guid ProductId { get; set; }
-            public string? ProductName { get; set; }
+            public string ProductName { get; set; }
             public long Quantity { get; set; }
             public decimal Revenue { get; set; }
             public decimal Cost { get; set; }

@@ -61,6 +61,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int AvailableHoursJsonMaxLength = 1000;
 
         /// <summary>
+        /// Độ lệch giờ Việt Nam so với UTC (+7, không có giờ mùa hè).
+        /// Khung giờ bán trong ngày (AvailableHoursJson) luôn tính theo giờ VN.
+        /// </summary>
+        private const int VietnamUtcOffsetHours = 7;
+
+        /// <summary>
         /// Item 165: max portions sold per day. Null = unlimited.
         /// </summary>
         public int? DailyLimit { get; private set; }
@@ -508,7 +514,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 var windows = ParseHourWindows(AvailableHoursJson.Trim());
                 if (windows.Count > 0)
                 {
-                    var vnNow = utcNow.AddHours(7).TimeOfDay;
+                    var vnNow = utcNow.AddHours(VietnamUtcOffsetHours).TimeOfDay;
                     var inWindow = false;
                     foreach (var w in windows)
                     {

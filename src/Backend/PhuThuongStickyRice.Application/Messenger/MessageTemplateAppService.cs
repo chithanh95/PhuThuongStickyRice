@@ -42,8 +42,8 @@ namespace PhuThuongStickyRice.Application.Messenger
             IQueryable<MessageTemplate> query = queryable.OrderBy(x => x.Name);
             if (!string.IsNullOrWhiteSpace(channel))
             {
-                var c = channel.Trim();
-                query = query.Where(x => x.Channel == c);
+                var trimmedChannel = channel.Trim();
+                query = query.Where(x => x.Channel == trimmedChannel);
             }
 
             var list = await _asyncExecuter.ToListAsync(query);
@@ -83,14 +83,14 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         private static string NormalizeChannel(string channel)
         {
-            var c = (channel ?? string.Empty).Trim();
-            if (!c.Equals("SMS", StringComparison.OrdinalIgnoreCase)
-                && !c.Equals("Zalo", StringComparison.OrdinalIgnoreCase))
+            var trimmed = (channel ?? string.Empty).Trim();
+            if (!trimmed.Equals("SMS", StringComparison.OrdinalIgnoreCase)
+                && !trimmed.Equals("Zalo", StringComparison.OrdinalIgnoreCase))
             {
                 throw new DomainException("Kênh phải là SMS hoặc Zalo.");
             }
 
-            return c.Equals("Zalo", StringComparison.OrdinalIgnoreCase) ? "Zalo" : "SMS";
+            return trimmed.Equals("Zalo", StringComparison.OrdinalIgnoreCase) ? "Zalo" : "SMS";
         }
 
         private static MessageTemplateDto MapToDto(MessageTemplate x)

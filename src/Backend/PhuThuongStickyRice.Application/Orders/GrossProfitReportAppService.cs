@@ -88,7 +88,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private sealed class LineAggregate
         {
             public Guid ProductId { get; set; }
-            public string? ProductName { get; set; }
+            public string ProductName { get; set; }
             public long QuantitySold { get; set; }
             public decimal Revenue { get; set; }
             public decimal UnitCost { get; set; }

@@ -138,20 +138,20 @@ namespace PhuThuongStickyRice.Application.Shop
             return $"{baseUrl}/shop?ban={Uri.EscapeDataString(label)}";
         }
 
-        private static TableQrDto Map(TableQr t) => new TableQrDto
+        private static TableQrDto Map(TableQr tableQr) => new TableQrDto
         {
-            Id = t.Id,
-            Label = t.Label,
-            EncodedUrl = t.EncodedUrl,
-            CreatedAt = t.CreatedAt
+            Id = tableQr.Id,
+            Label = tableQr.Label,
+            EncodedUrl = tableQr.EncodedUrl,
+            CreatedAt = tableQr.CreatedAt
         };
 
         /// <summary>Renders a QR code as PNG bytes (offline, QRCoder).</summary>
         public static byte[] RenderPng(string content)
         {
             using var generator = new QRCodeGenerator();
-            var data = generator.CreateQrCode(content, QRCodeGenerator.ECCLevel.M);
-            return new PngByteQRCode(data).GetGraphic(20);
+            var qrCodeData = generator.CreateQrCode(content, QRCodeGenerator.ECCLevel.M);
+            return new PngByteQRCode(qrCodeData).GetGraphic(20);
         }
     }
 }

@@ -24,16 +24,16 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogDebug("SendEmailService is starting.");
-            await DoWork(stoppingToken);
+            await SendPendingEmailsLoop(stoppingToken);
         }
 
-        private async Task DoWork(CancellationToken stoppingToken)
+        private async Task SendPendingEmailsLoop(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogDebug($"SendEmail task doing background work.");
 
-                int rs = 0;
+                int sentCount = 0;
 
                 try
                 {
@@ -41,10 +41,10 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
                     {
                         var emailService = scope.ServiceProvider.GetRequiredService<EmailMessageService>();
 
-                        rs = await emailService.SendEmailMessagesAsync();
+                        sentCount = await emailService.SendEmailMessagesAsync();
                     }
 
-                    if (rs == 0)
+                    if (sentCount == 0)
                     {
                         await Task.Delay(10000, stoppingToken);
                     }

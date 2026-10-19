@@ -88,9 +88,9 @@ namespace PhuThuongStickyRice.Application.Orders
                     }));
 
             var buckets = new HourlyBuckets();
-            foreach (var o in raw)
+            foreach (var order in raw)
             {
-                var hour = VietnamTime.ToVietnamTime(o.CreatedAt).Hour;
+                var hour = VietnamTime.ToVietnamTime(order.CreatedAt).Hour;
                 if (hour < DayStartHour || hour > DayEndHour)
                 {
                     continue;
@@ -105,11 +105,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
 
                 buckets.OrdersPerHour[hour]++;
-                foreach (var l in o.Lines)
+                foreach (var line in order.Lines)
                 {
-                    var name = string.IsNullOrWhiteSpace(l.ProductName) ? "(không tên)" : l.ProductName.Trim();
+                    var name = string.IsNullOrWhiteSpace(line.ProductName) ? "(không tên)" : line.ProductName.Trim();
                     products.TryGetValue(name, out var qty);
-                    products[name] = qty + l.Quantity;
+                    products[name] = qty + line.Quantity;
                 }
             }
 
@@ -154,7 +154,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 {
                     Hour = r.Hour,
                     Portions = r.Total,
-                    Orders = buckets.OrdersPerHour.TryGetValue(r.Hour, out var c) ? c : 0
+                    Orders = buckets.OrdersPerHour.TryGetValue(r.Hour, out var orderCount) ? orderCount : 0
                 })
                 .ToList();
 

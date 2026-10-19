@@ -144,9 +144,9 @@ namespace PhuThuongStickyRice.Application.Orders
                     }));
 
             var perDay = new Dictionary<DateTime, DayAggregate>();
-            foreach (var o in raw)
+            foreach (var order in raw)
             {
-                var local = VietnamTime.ToVietnamTime(o.CreatedAt).Date;
+                var local = VietnamTime.ToVietnamTime(order.CreatedAt).Date;
                 if (local < patternStart || local >= today)
                 {
                     continue;
@@ -156,14 +156,14 @@ namespace PhuThuongStickyRice.Application.Orders
                 {
                     perDay[local] = cur with
                     {
-                        Revenue = cur.Revenue + o.Revenue,
+                        Revenue = cur.Revenue + order.Revenue,
                         Orders = cur.Orders + 1,
-                        Portions = cur.Portions + o.Portions
+                        Portions = cur.Portions + order.Portions
                     };
                 }
                 else
                 {
-                    perDay[local] = new DayAggregate(o.Revenue, 1, o.Portions);
+                    perDay[local] = new DayAggregate(order.Revenue, 1, order.Portions);
                 }
             }
 

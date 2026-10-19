@@ -10,8 +10,6 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
-using PhuThuongStickyRice.Application.Discounts;
-using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Loyalty;
 
 namespace PhuThuongStickyRice.Application.Loyalty

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Discounts;
 
 namespace PhuThuongStickyRice.Application.Discounts
@@ -137,7 +138,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         [AllowAnonymous]
         public virtual async Task<PromotionDto> GetBestActiveAsync(DateTime? vnNow = null)
         {
-            var now = vnNow ?? DateTime.UtcNow.AddHours(7);
+            var now = vnNow ?? DateTime.UtcNow.AddHours(VietnamTime.UtcOffsetHours);
             var active = await _catalogCache.GetOrAddAsync("promotions:active-list", QueryActiveAsync);
             var best = active
                 .Where(x => MatchesWindow(x, now))

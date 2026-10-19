@@ -14,17 +14,28 @@ namespace PhuThuongStickyRice.Application.Landing
 {
     public interface ILandingAppService : IApplicationService
     {
+        /// <summary>Trang landing/shop đọc nội dung trang chủ (cho phép ẩn danh).</summary>
+        /// <returns>Nội dung landing; nếu DB chưa có bản ghi thì trả nội dung mặc định.</returns>
         Task<LandingContentDto> GetContentAsync();
 
+        /// <summary>Admin: lưu nội dung trang chủ từ màn hình /admin/landing (upsert 1 bản ghi duy nhất).</summary>
+        /// <param name="dto">Toàn bộ nội dung trang chủ.</param>
         Task<LandingContentDto> UpdateContentAsync(LandingContentDto dto);
     }
 
+    /// <summary>
+    /// Quản lý nội dung trang landing (hero, câu chuyện, menu, tin tức, footer...).
+    /// Bảng LandingPageContent chỉ giữ đúng 1 bản ghi (singleton); public đọc
+    /// qua cache 5 phút vì mọi trang public đều gọi, admin sửa xong thì xóa cache.
+    /// Ảnh lấy từ setting DB theo quy tắc chung, không hardcode fallback.
+    /// </summary>
     public class LandingAppService : ApplicationService, ILandingAppService
     {
         private readonly IRepository<LandingPageContent, Guid> _contentRepository;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>Khởi tạo service quản lý nội dung landing.</summary>
         public LandingAppService(
             IRepository<LandingPageContent, Guid> contentRepository,
             IAsyncQueryableExecuter asyncExecuter,
@@ -35,6 +46,14 @@ namespace PhuThuongStickyRice.Application.Landing
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Public: đọc nội dung trang chủ. Dùng cache vì mọi layout/header/footer
+        /// public đều gọi endpoint này mỗi lượt xem trang.
+        /// </summary>
+        /// <returns>
+        /// Nội dung landing; nếu DB chưa có bản ghi (chưa seed/chưa lưu) thì
+        /// trả nội dung mặc định để trang không bao giờ trắng.
+        /// </returns>
         [AllowAnonymous]
         public virtual async Task<LandingContentDto> GetContentAsync()
         {
@@ -48,6 +67,13 @@ namespace PhuThuongStickyRice.Application.Landing
             });
         }
 
+        /// <summary>
+        /// Admin: lưu nội dung trang chủ. Upsert — chưa có bản ghi thì tạo mới,
+        /// có rồi thì cập nhật — vì bảng này luôn chỉ có 1 bản ghi duy nhất.
+        /// Xóa cache sau khi lưu để trang public thấy nội dung mới ngay.
+        /// </summary>
+        /// <param name="dto">Toàn bộ nội dung trang chủ từ form admin.</param>
+        /// <returns>Nội dung vừa lưu.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<LandingContentDto> UpdateContentAsync(LandingContentDto dto)
         {
@@ -179,6 +205,10 @@ namespace PhuThuongStickyRice.Application.Landing
     /// </summary>
     public static class LandingContentDefaults
     {
+        /// <summary>
+        /// Nội dung mặc định khi DB chưa có bản ghi landing nào. Bản này phải
+        /// giữ đồng bộ với nội dung seed trong migration AddLandingPageContent.
+        /// </summary>
         public static LandingContentDto GetDefaultDto()
         {
             return new LandingContentDto

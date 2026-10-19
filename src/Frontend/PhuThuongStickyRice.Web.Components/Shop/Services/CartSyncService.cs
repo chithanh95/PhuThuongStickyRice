@@ -155,7 +155,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 var content = new StringContent(
                     JsonSerializer.Serialize(new { ItemsJson = itemsJson }),
                     Encoding.UTF8, "application/json");
-                await _httpClient.PutAsync("api/cart", content);
+                // Dispose response để trả connection về pool ngay sau khi PUT xong.
+                using var response = await _httpClient.PutAsync("api/cart", content);
             }
             catch
             {

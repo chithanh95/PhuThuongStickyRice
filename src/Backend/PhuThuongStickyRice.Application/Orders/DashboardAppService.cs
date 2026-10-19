@@ -96,8 +96,6 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int PreOrderLookbackHours = 2;
         /// <summary>Kích thước mỗi batch khi truy vấn SĐT khách cũ (SQL Server giới hạn ~2100 tham số/query).</summary>
         private const int ReturningPhoneQueryBatchSize = 1000;
-        /// <summary>Múi giờ VN (UTC+7): CreatedAt lưu UTC nên cộng/trừ bấy nhiêu giờ khi quy đổi ngày VN.</summary>
-        private const int VietnamUtcOffsetHours = 7;
 
         public DashboardAppService(
             IOrderRepository orders,
@@ -251,7 +249,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var target = settings.DailyTargetAmount > 0 ? settings.DailyTargetAmount : DefaultDailyTargetAmount;
 
             var todayVn = VietnamTime.Today();
-            var startUtc = todayVn.AddHours(-VietnamUtcOffsetHours); // VN 00:00 → UTC
+            var startUtc = todayVn.AddHours(-VietnamTime.UtcOffsetHours); // VN 00:00 → UTC
             var endUtc = startUtc.AddDays(1);
 
             var orderQueryable = await _orders.GetQueryableAsync();
@@ -435,7 +433,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<TodayVsYesterdayDto> GetTodayVsYesterdayAsync()
         {
             var todayVn = VietnamTime.Today();
-            var startUtc = todayVn.AddHours(-VietnamUtcOffsetHours); // VN 00:00 today → UTC
+            var startUtc = todayVn.AddHours(-VietnamTime.UtcOffsetHours); // VN 00:00 today → UTC
             var yesterdayStartUtc = startUtc.AddDays(-1);
             var endUtc = startUtc.AddDays(1);
 
@@ -486,7 +484,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // load. Cache 60s keyed by VN date — a marketing number, not
             // real-time; the heavy SUM over today's order lines must not
             // run per page view.
-            var vnDate = DateTime.UtcNow.AddHours(VietnamUtcOffsetHours).Date;
+            var vnDate = DateTime.UtcNow.AddHours(VietnamTime.UtcOffsetHours).Date;
             var cacheKey = $"dashboard:today-sold:{vnDate:yyyyMMdd}";
             if (_memoryCache.TryGetValue(cacheKey, out long cached))
             {
@@ -494,7 +492,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // The shop runs on Vietnam time (UTC+7); CreatedAt is UTC.
-            var startOfTodayUtc = vnDate.AddHours(-VietnamUtcOffsetHours);
+            var startOfTodayUtc = vnDate.AddHours(-VietnamTime.UtcOffsetHours);
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var billable = orderQueryable.Where(x =>

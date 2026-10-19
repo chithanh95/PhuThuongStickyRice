@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
@@ -73,8 +74,6 @@ namespace PhuThuongStickyRice.Application.Shop
         private const string DefaultOpenTime = "06:00";
         private const string DefaultCloseTime = "10:30";
         private const string DefaultMaintenanceMessage = "Cửa hàng đang bảo trì, vui lòng quay lại sau.";
-        /// <summary>Múi giờ Việt Nam (UTC+7, không đổi giờ theo mùa) — dùng để tính "hôm nay" trên storefront.</summary>
-        private const int VietnamUtcOffsetHours = 7;
 
         private readonly IRepository<ShopSetting, Guid> _settings;
         private readonly IRepository<HolidaySchedule, Guid> _holidays;
@@ -139,7 +138,7 @@ namespace PhuThuongStickyRice.Application.Shop
             // "shop-settings" cache used by the admin and internal callers.
             // The date in the key also stops a holiday auto-pause from
             // leaking into the next day via a stale cached flag.
-            var today = DateTime.UtcNow.AddHours(VietnamUtcOffsetHours).ToString("yyyyMMdd");
+            var today = DateTime.UtcNow.AddHours(VietnamTime.UtcOffsetHours).ToString("yyyyMMdd");
             var dto = await _catalogCache.GetOrAddAsync($"shop-settings:public:{today}", async () =>
             {
                 var entity = await GetSingleAsync();
@@ -182,7 +181,7 @@ namespace PhuThuongStickyRice.Application.Shop
         {
             try
             {
-                var today = DateTime.UtcNow.AddHours(VietnamUtcOffsetHours).Date;
+                var today = DateTime.UtcNow.AddHours(VietnamTime.UtcOffsetHours).Date;
                 // Perf: GetPublicAsync runs on every storefront page load, so the
                 // holiday lookup must not hit the DB each time. Keyed by Vietnam
                 // date so it rolls over at midnight; admin holiday CRUD busts it

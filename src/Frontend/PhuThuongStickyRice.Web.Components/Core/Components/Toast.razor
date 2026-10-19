@@ -26,6 +26,9 @@
 @code {
     private readonly List<ToastMessage> _toasts = new List<ToastMessage>();
 
+    /// <summary>Thời gian toast tự ẩn sau khi hiện (giây).</summary>
+    private static readonly TimeSpan AutoDismissDelay = TimeSpan.FromSeconds(3);
+
     protected override void OnInitialized()
     {
         Toasts.OnShow += HandleShow;
@@ -40,7 +43,7 @@
 
     private async Task AutoDismissAsync(Guid id)
     {
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        await Task.Delay(AutoDismissDelay);
         Dismiss(id);
     }
 
