@@ -10,7 +10,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// <c>api/funnel-events</c> fire-and-forget — failures never break the page.
     /// No PII: only the allowlisted event name + URL path.
     /// </summary>
-    public class FunnelService : HttpService
+    public class FunnelService : ApiClientBase
     {
         public FunnelService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

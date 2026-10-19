@@ -12,7 +12,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// Wave 6b (item 28): policy pages — public list/by-slug, admin
     /// list/update. Follows the FAQ service pattern.
     /// </summary>
-    public class PolicyService : HttpService
+    public class PolicyService : ApiClientBase
     {
         public PolicyService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

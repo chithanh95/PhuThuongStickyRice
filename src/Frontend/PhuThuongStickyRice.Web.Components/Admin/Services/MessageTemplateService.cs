@@ -10,7 +10,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// <summary>
     /// Item 162: message templates per order status (mẫu tin nhắn).
     /// </summary>
-    public class MessageTemplateService : HttpService
+    public class MessageTemplateService : ApiClientBase
     {
         public MessageTemplateService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

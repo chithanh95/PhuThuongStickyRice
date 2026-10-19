@@ -12,7 +12,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// Client HTTP mỏng — mọi nghiệp vụ (tính giá gói, sinh mã thẻ, trừ suất) nằm ở backend
     /// <c>PrepaidCardAppService</c>.
     /// </summary>
-    public class PrepaidCardService : HttpService
+    public class PrepaidCardService : ApiClientBase
     {
         /// <summary>Khởi tạo service với HttpClient và token manager dùng chung.</summary>
         public PrepaidCardService(HttpClient httpClient, ITokenStore tokenStore)

@@ -47,10 +47,13 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Customer-booked pickup shipper phone (optional).</summary>
         public const int PickupShipperPhoneMaxLength = 30;
 
+        /// <summary>Mã đơn hiển thị cho khách, vd "PX-20261019-4821" (duy nhất).</summary>
         public string OrderNumber { get; private set; }
 
+        /// <summary>Tên khách đặt (người thanh toán).</summary>
         public string CustomerName { get; private set; }
 
+        /// <summary>SĐT khách đặt — khóa tra cứu đơn, loyalty và voucher gắn SĐT.</summary>
         public string CustomerPhone { get; private set; }
 
         /// <summary>
@@ -72,16 +75,28 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public string CustomerEmail { get; private set; }
 
+        /// <summary>Địa chỉ giao hàng (null với đơn tự đến lấy).</summary>
         public string CustomerAddress { get; private set; }
 
+        /// <summary>Ghi chú của khách cho cả đơn (vd giờ lấy, dị ứng).</summary>
         public string Notes { get; private set; }
 
+        /// <summary>
+        /// Trạng thái xử lý đơn (Pending → Confirmed → Preparing → Delivering →
+        /// Completed/Cancelled) — khác <see cref="PaymentStatus"/> là trạng thái tiền.
+        /// </summary>
         public OrderStatus Status { get; private set; }
 
+        /// <summary>Hình thức thanh toán khách chọn lúc checkout (tiền mặt/chuyển khoản/MoMo).</summary>
         public PaymentMethod PaymentMethod { get; private set; }
 
+        /// <summary>
+        /// Trạng thái thanh toán (chưa thu / đã thu / cần đặt cọc) — khác
+        /// <see cref="Status"/> là trạng thái xử lý đơn.
+        /// </summary>
         public PaymentStatus PaymentStatus { get; private set; }
 
+        /// <summary>Tổng tiền khách phải trả (sau mọi khoản giảm + phí), tính bằng VND.</summary>
         public Money TotalAmount { get; private set; }
 
         /// <summary>Delivery or self-pickup.</summary>
@@ -123,11 +138,13 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Recipient (when ordering for someone else).</summary>
         public string RecipientName { get; private set; }
 
+        /// <summary>SĐT người nhận hộ (khi đặt cho người khác; null = khách tự nhận).</summary>
         public string RecipientPhone { get; private set; }
 
         /// <summary>Gift packaging requested.</summary>
         public bool IsGift { get; private set; }
 
+        /// <summary>Lời nhắn in kèm khi gói quà (null khi không phải quà tặng).</summary>
         public string GiftMessage { get; private set; }
 
         /// <summary>Customer already used the post-checkout lucky spin for this order.</summary>
@@ -142,6 +159,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public Guid? CustomerUserId { get; private set; }
 
+        /// <summary>Navigation tới shipper được gán (null khi chưa gán).</summary>
         public Shipper Shipper { get; private set; }
 
         /// <summary>
@@ -324,10 +342,15 @@ namespace PhuThuongStickyRice.Domain.Entities
             CashCollectedAt = DateTime.UtcNow;
         }
 
+        /// <summary>Thời điểm tạo đơn (UTC) — dùng sắp xếp, báo cáo theo ngày VN.</summary>
         public DateTime CreatedAt { get; private set; }
 
         private readonly List<OrderLine> _lines = new List<OrderLine>();
 
+        /// <summary>
+        /// Các dòng món của đơn (chỉ đọc từ ngoài — thêm/xóa dòng phải qua
+        /// method của entity để giữ tổng tiền và trạng thái nhất quán).
+        /// </summary>
         public IReadOnlyCollection<OrderLine> Lines => _lines.AsReadOnly();
 
         // EF Core

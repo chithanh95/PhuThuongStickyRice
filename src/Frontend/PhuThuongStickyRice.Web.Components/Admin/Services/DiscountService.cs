@@ -14,7 +14,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// tiền giảm và tăng lượt dùng nằm ở backend
     /// (DiscountAppService) nên không nhân bản logic ở client.
     /// </summary>
-    public class DiscountService : HttpService
+    public class DiscountService : ApiClientBase
     {
         public DiscountService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

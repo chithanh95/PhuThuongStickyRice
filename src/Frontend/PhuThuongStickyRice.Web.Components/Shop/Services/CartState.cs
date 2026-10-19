@@ -36,12 +36,19 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             _commerceService = commerceService;
         }
 
+        /// <summary>
+        /// Sự kiện bắn ra mỗi khi giỏ thay đổi (thêm/xóa/đổi số lượng) —
+        /// các component đăng ký để re-render (badge số lượng, trang giỏ, checkout).
+        /// </summary>
         public event Action OnChange;
 
+        /// <summary>Danh sách dòng giỏ hiện tại (chỉ đọc).</summary>
         public IReadOnlyList<CartItemModel> Items => _items.AsReadOnly();
 
+        /// <summary>Tổng số lượng món trong giỏ.</summary>
         public int TotalQuantity => _items.Sum(x => x.Quantity);
 
+        /// <summary>Tổng tiền hàng của giỏ (chưa trừ khuyến mãi/mã giảm giá — các khoản giảm tính ở checkout).</summary>
         public decimal TotalAmount => _items.Sum(x => x.LineTotal);
 
         /// <summary>

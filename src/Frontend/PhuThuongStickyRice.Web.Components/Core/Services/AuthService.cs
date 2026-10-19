@@ -9,9 +9,9 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 {
     /// <summary>
     /// Wave 6d (item 37): in-repo auth actions (change password). The JWT is
-    /// attached automatically by HttpService (ITokenStore).
+    /// attached automatically by ApiClientBase (ITokenStore).
     /// </summary>
-    public class AuthService : HttpService
+    public class AuthService : ApiClientBase
     {
         // CA1869: reuse one options instance instead of allocating per call.
         private static readonly JsonSerializerOptions CaseInsensitiveOptions = new()

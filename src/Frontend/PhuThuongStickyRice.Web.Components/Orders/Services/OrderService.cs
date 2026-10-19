@@ -15,7 +15,7 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
     /// và khách hàng. Server vẫn tự validate mọi nghiệp vụ; service này chỉ
     /// dựng URL và chuyển tiếp request.
     /// </summary>
-    public class OrderService : HttpService
+    public class OrderService : ApiClientBase
     {
         public OrderService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

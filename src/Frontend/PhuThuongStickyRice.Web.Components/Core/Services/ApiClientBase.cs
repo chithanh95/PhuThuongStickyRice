@@ -13,13 +13,13 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
     /// (refresh khi hết hạn) vào request, và xử lý chung 2 lỗi hệ thống:
     /// 401 → đẩy về trang đăng nhập (kèm returnUrl), 404 → trang không tìm thấy.
     /// </summary>
-    public class HttpService
+    public class ApiClientBase
     {
         protected readonly HttpClient _httpClient;
         protected readonly ITokenStore _tokenStore;
         protected readonly NavigationManager _navigation;
 
-        public HttpService(HttpClient httpClient, ITokenStore tokenStore, NavigationManager navigation = null)
+        public ApiClientBase(HttpClient httpClient, ITokenStore tokenStore, NavigationManager navigation = null)
         {
             _httpClient = httpClient;
             _tokenStore = tokenStore;

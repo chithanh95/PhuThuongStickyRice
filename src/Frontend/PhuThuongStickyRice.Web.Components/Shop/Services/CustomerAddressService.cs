@@ -9,9 +9,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 {
     /// <summary>
     /// Customer's saved addresses (api/customer/addresses). Requires login;
-    /// the JWT is attached by <see cref="HttpService"/>.
+    /// the JWT is attached by <see cref="ApiClientBase"/>.
     /// </summary>
-    public class CustomerAddressService : HttpService
+    public class CustomerAddressService : ApiClientBase
     {
         public CustomerAddressService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

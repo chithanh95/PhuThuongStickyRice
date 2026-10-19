@@ -11,7 +11,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// Admin customer-care endpoints (api/admin/customer-care): birthday
     /// list + gifts, inactive-customer reminders (Zalo OA stub).
     /// </summary>
-    public class CustomerCareService : HttpService
+    public class CustomerCareService : ApiClientBase
     {
         public CustomerCareService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

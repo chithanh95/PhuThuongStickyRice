@@ -31,7 +31,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// fetched once from GET api/auth/my-permissions and cached in memory
     /// for the session; call ClearCache() on login/logout.
     /// </summary>
-    public class PermissionService : HttpService
+    public class PermissionService : ApiClientBase
     {
         // Cache chính Task (AsyncLazy pattern): các caller đồng thời chia sẻ
         // 1 lần fetch đang chạy, thay vì mỗi caller đều gọi API riêng trong

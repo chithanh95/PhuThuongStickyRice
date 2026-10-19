@@ -13,7 +13,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// forecast, work shifts, wallet, shift close, refunds, message templates,
     /// voucher campaigns, POS, MoMo reconciliation, dashboard widgets.
     /// </summary>
-    public class AdminCommerceService : HttpService
+    public class AdminCommerceService : ApiClientBase
     {
         public AdminCommerceService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

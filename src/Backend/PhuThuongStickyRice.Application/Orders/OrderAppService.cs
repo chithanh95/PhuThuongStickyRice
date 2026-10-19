@@ -403,57 +403,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
             }
 
-            // Item 88: blocked phones cannot place orders.
-            if (await _blacklist.IsBlacklistedAsync(input.CustomerPhone))
-            {
-                throw new Domain.Exceptions.DomainException(
-                    "Số điện thoại này tạm thời không thể đặt hàng.");
-            }
+            await EnsureCheckoutGuardsAsync(input, shopSetting, skipRecaptchaCheck);
 
-            // Wave 6d (item 39): anti-spam — cap non-cancelled orders per
-            // phone per Vietnam day. Checked before anything is created.
-            await EnsurePhoneDailyLimitAsync(shopSetting.MaxOrdersPerPhonePerDay, input.CustomerPhone);
+            var paymentMethod = await ResolvePaymentMethodAsync(input);
 
-            // Item 96: reCAPTCHA v3, verified server-side when configured.
-            // Internal flows (POS, Messenger bot, group-order close) call with
-            // skipRecaptchaCheck: true — they have no browser token.
-            if (!skipRecaptchaCheck && !await _recaptcha.VerifyAsync(input.RecaptchaToken))
-            {
-                throw new Domain.Exceptions.DomainException(
-                    "Xác thực chống spam không thành công. Vui lòng thử lại.");
-            }
-
-            if ((!Enum.TryParse<PaymentMethod>(input.PaymentMethod, ignoreCase: true, out var paymentMethod)
-                    || !Enum.IsDefined<PaymentMethod>(paymentMethod))
-                && !string.IsNullOrWhiteSpace(input.PaymentMethod))
-            {
-                throw new Domain.Exceptions.DomainException($"Unknown payment method '{input.PaymentMethod}'.");
-            }
-
-            // Item 50: pay-later requires at least 5 completed orders from this phone.
-            // Order.CustomerPhone is stored raw as typed, so count by the last
-            // 9 digits (same tolerance as PhonesMatch / EnsurePhoneDailyLimitAsync):
-            // "0912345678" and "+84 912 345 678" are the same customer — a raw ==
-            // compare undercounts and wrongly denies loyal customers "Trả sau".
-            if (paymentMethod == PaymentMethod.PayLater)
-            {
-                var completedCount = await CountCompletedOrdersByPhoneAsync(input.CustomerPhone);
-                if (completedCount < PayLaterMinCompletedOrders)
-                {
-                    throw new Domain.Exceptions.DomainException(
-                        "Trả sau chỉ áp dụng cho khách đã có ít nhất 5 đơn hoàn thành.");
-                }
-            }
-
-            // Fulfillment: customer-booked shipper pickup (default — the shop
-            // does not deliver), self-pickup, or legacy home delivery.
-            var fulfillment = FulfillmentMethod.ShipperPickup;
-            if (!string.IsNullOrWhiteSpace(input.FulfillmentMethod)
-                && Enum.TryParse<FulfillmentMethod>(input.FulfillmentMethod, ignoreCase: true, out var parsedFulfillment)
-                && Enum.IsDefined<FulfillmentMethod>(parsedFulfillment))
-            {
-                fulfillment = parsedFulfillment;
-            }
+            var fulfillment = ResolveFulfillmentMethod(input);
 
             var catalog = await LoadOrderLineCatalogAsync(input);
 
@@ -469,19 +423,9 @@ namespace PhuThuongStickyRice.Application.Orders
             var subtotal = lines.Sum(x => x.Quantity * x.UnitPrice.Amount);
             var currency = lines.First().UnitPrice.Currency;
 
-            // Item 91: auto-apply the best active "giờ vàng" promotion
-            // (Vietnam local time). It comes first in the discount priority
-            // order, so the subtotal below already accounts for it.
-            string promotionName = null;
-            decimal promotionDiscount = 0;
-            var bestPromo = await _promotions.GetBestActiveAsync();
-            if (bestPromo != null && bestPromo.DiscountPercent > 0)
-            {
-                promotionName = bestPromo.Name;
-                promotionDiscount = Math.Round(subtotal * bestPromo.DiscountPercent / PercentDivisor, 0);
-            }
+            var (promotionName, promotionDiscount) = await ComputeHappyHourPromotionAsync(subtotal);
 
-            // Minimum order amount (shop setting, loaded once at the top of CreateAsync).
+            // Minimum order amount (shop setting).
 
             // Item 105: feature flags for the checkout extras (UI hides them
             // too; the backend is the real gate).
@@ -489,79 +433,16 @@ namespace PhuThuongStickyRice.Application.Orders
             var giftWrapEnabled = await flags.IsEnabledAsync(FeatureFlag.GiftWrap);
             var referralsEnabled = await flags.IsEnabledAsync(FeatureFlag.Referrals);
 
-            if (shopSetting.MinOrderAmount > 0 && subtotal < shopSetting.MinOrderAmount)
-            {
-                throw new Domain.Exceptions.DomainException(
-                    $"Đơn hàng tối thiểu {shopSetting.MinOrderAmount:N0} ₫. Vui lòng thêm món vào giỏ.");
-            }
+            EnsureMinOrderAmount(shopSetting, subtotal);
 
-            // Discount code (validated + usage counted here; owner-tied
-            // spin/birthday codes require the matching phone). The code
-            // applies to the subtotal remaining after the happy-hour promotion.
-            decimal discountValue = 0;
-            string appliedCode = null;
-            bool isFreeship = false;
-            if (!string.IsNullOrWhiteSpace(input.DiscountCode))
-            {
-                // Validate only here — usage is bumped after the order row
-                // is written (see below), so a failed order never burns a use.
-                // Perf-hunt 2026-10-19: gộp validate + xác định freeship thành
-                // 1 query (trước đây gọi 2 method = 2 SELECT cùng 1 row mã).
-                (discountValue, isFreeship) = await _discounts.ValidateAndComputeWithFreeshipAsync(
-                    input.DiscountCode, subtotal - promotionDiscount, input.CustomerPhone);
-                appliedCode = input.DiscountCode.Trim().ToUpperInvariant();
-            }
+            var (discountValue, appliedCode, isFreeship) = await ApplyDiscountCodeAsync(input, subtotal, promotionDiscount);
 
-            // Loyalty account (created on first order) + tier discount.
-            // SĐT placeholder (POS "0000000000" cho khách vãng lai): không
-            // đụng tới loyalty — không tạo/tìm tài khoản pool chung, không
-            // tier, không redeem. Dùng account transient (không lưu DB) để
-            // code phía dưới gán DateOfBirth / check referral không bị null.
-            var loyaltyAccount = _loyalty.IsPlaceholderPhone(input.CustomerPhone)
-                ? new LoyaltyAccount { Phone = input.CustomerPhone ?? string.Empty }
-                : await _loyalty.GetOrCreateAsync(input.CustomerPhone);
-            var (_, tierPercent) = _loyalty.GetTier(loyaltyAccount.TotalSpent, shopSetting);
-            decimal tierValue = 0;
-            if (loyaltyAccount.TotalSpent > 0 && tierPercent > 0)
-            {
-                tierValue = Math.Round((subtotal - promotionDiscount - discountValue) * tierPercent / PercentDivisor, 0);
-            }
+            var loyaltyAccount = await LoadLoyaltyAccountAsync(input.CustomerPhone);
+            var tierValue = ComputeTierDiscount(loyaltyAccount, shopSetting, subtotal, promotionDiscount, discountValue);
 
-            // Loyalty points redemption.
-            int redeemedPoints = 0;
-            decimal loyaltyValue = 0;
-            if (input.RedeemPoints > 0)
-            {
-                // Kẹp điểm đổi theo phần còn lại của đơn (sau khuyến mãi giờ
-                // vàng + mã giảm giá): Order.Create cũng kẹp phần tiền giảm,
-                // nhưng RedeemAsync trừ toàn bộ điểm yêu cầu — không kẹp ở đây
-                // thì khách mất điểm oan cho phần giảm không áp dụng được.
-                var remainingForLoyalty = Math.Max(0, subtotal - promotionDiscount - discountValue);
-                var cappedPoints = _loyalty.CapRedeemPoints(input.RedeemPoints, remainingForLoyalty, shopSetting);
-                (redeemedPoints, loyaltyValue) = await _loyalty.RedeemAsync(
-                    input.CustomerPhone, cappedPoints, shopSetting);
-            }
+            var (redeemedPoints, loyaltyValue) = await RedeemLoyaltyPointsAsync(input, subtotal, promotionDiscount, discountValue, shopSetting);
 
-            // Referral code: must exist and must not be the buyer's own.
-            // Item 105: referrals are feature-flagged.
-            string referralCodeUsed = null;
-            var referralCode = referralsEnabled ? input.ReferralCode : null;
-            if (!string.IsNullOrWhiteSpace(referralCode))
-            {
-                var referrer = await _loyalty.FindByReferralCodeAsync(referralCode);
-                if (referrer == null)
-                {
-                    throw new Domain.Exceptions.DomainException("Mã giới thiệu không tồn tại.");
-                }
-
-                if (referrer.Id == loyaltyAccount.Id)
-                {
-                    throw new Domain.Exceptions.DomainException(
-                        "Không thể dùng mã giới thiệu của chính mình.");
-                }
-
-                referralCodeUsed = referrer.ReferralCode;
-            }
+            var referralCodeUsed = await ValidateReferralAsync(input, referralsEnabled, loyaltyAccount);
 
             // Birthday saved to the loyalty profile when provided.
             if (input.DateOfBirth.HasValue)
@@ -570,103 +451,23 @@ namespace PhuThuongStickyRice.Application.Orders
                 loyaltyAccount.UpdatedAt = DateTime.UtcNow;
             }
 
-            // VAT invoice fields.
-            var taxCode = string.IsNullOrWhiteSpace(input.TaxCode) ? null : input.TaxCode.Trim();
-            var companyName = string.IsNullOrWhiteSpace(input.CompanyName) ? null : input.CompanyName.Trim();
-            if (taxCode != null && companyName == null)
-            {
-                throw new Domain.Exceptions.DomainException(
-                    "Vui lòng nhập tên công ty khi cần hóa đơn VAT.");
-            }
-
-            // Recipient (ordering for someone else).
-            var recipientName = string.IsNullOrWhiteSpace(input.RecipientName) ? null : input.RecipientName.Trim();
-            var recipientPhone = string.IsNullOrWhiteSpace(input.RecipientPhone) ? null : input.RecipientPhone.Trim();
-            if ((recipientName == null) != (recipientPhone == null))
-            {
-                throw new Domain.Exceptions.DomainException(
-                    "Vui lòng nhập đầy đủ tên và số điện thoại người nhận.");
-            }
+            var (taxCode, companyName, recipientName, recipientPhone) = NormalizeVatAndRecipient(input);
 
             var isGift = giftWrapEnabled && input.IsGift;
 
             // Gift packaging.
             var giftFeeValue = isGift ? Math.Max(0, shopSetting.GiftFee) : 0;
 
-            // Delivery fee: the shop does not deliver — always 0 for
-            // ShipperPickup and self-pickup orders; legacy Delivery orders
-            // keep the old threshold/freeship rules.
-            decimal feeValue = 0;
-            var isPickup = fulfillment == FulfillmentMethod.Pickup
-                || fulfillment == FulfillmentMethod.ShipperPickup;
-            if (!isPickup && shopSetting.DeliveryFee > 0 && !isFreeship) // Item 120: freeship voucher -> phí ship = 0
-            {
-                var afterDiscount = subtotal - promotionDiscount - discountValue;
-                var freeShip = shopSetting.FreeShipThreshold > 0 && afterDiscount >= shopSetting.FreeShipThreshold;
-                feeValue = freeShip ? 0 : shopSetting.DeliveryFee;
-            }
+            var feeValue = ComputeDeliveryFee(shopSetting, fulfillment, isFreeship, subtotal, promotionDiscount, discountValue);
 
             // Deposit: large bank-transfer orders are flagged; the checkout
             // shows "Cần đặt cọc Xđ" and the admin confirms via ConfirmPayment.
             var totalBeforeDeposit = subtotal - promotionDiscount - discountValue - loyaltyValue - tierValue + feeValue + giftFeeValue;
-            var requiresDeposit = paymentMethod == PaymentMethod.BankTransfer
-                && shopSetting.DepositThreshold > 0
-                && totalBeforeDeposit >= shopSetting.DepositThreshold;
+            var requiresDeposit = ShouldRequireDeposit(paymentMethod, shopSetting, totalBeforeDeposit);
 
-            // Item 109: branch (nullable). Only active branches are
-            // accepted; the branch name is denormalized onto the order.
-            Guid? branchId = input.BranchId;
-            string branchName = null;
-            if (branchId.HasValue)
-            {
-                var branch = await _branches.FindAsync(branchId.Value);
-                if (branch == null || !branch.IsActive)
-                {
-                    throw new Domain.Exceptions.DomainException("Chi nhánh không tồn tại hoặc đã ngừng hoạt động.");
-                }
+            var (branchId, branchName) = await ResolveBranchAsync(input.BranchId);
 
-                branchName = branch.Name;
-            }
-
-            // Pre-order (đặt trước): ScheduledFor must be at least 1 hour
-            // ahead and inside shop open hours. Null = nhận ngay.
-            DateTime? scheduledFor = null;
-            if (input.ScheduledFor.HasValue)
-            {
-                var scheduledDateTime = input.ScheduledFor.Value;
-                // Accept both UTC and unspecified/local input; normalize to UTC.
-                if (scheduledDateTime.Kind == DateTimeKind.Unspecified)
-                {
-                    scheduledDateTime = DateTime.SpecifyKind(scheduledDateTime, DateTimeKind.Local).ToUniversalTime();
-                }
-                else if (scheduledDateTime.Kind == DateTimeKind.Local)
-                {
-                    scheduledDateTime = scheduledDateTime.ToUniversalTime();
-                }
-
-                if (scheduledDateTime <= DateTime.UtcNow.AddHours(PreOrderMinLeadTimeHours))
-                {
-                    throw new Domain.Exceptions.DomainException("Giờ đặt trước phải sau thời điểm hiện tại ít nhất 1 tiếng.");
-                }
-
-                // Within open hours (Vietnam local, UTC+7).
-                var vnTime = scheduledDateTime.AddHours(VietnamTime.UtcOffsetHours).TimeOfDay;
-                if (!TimeSpan.TryParse(shopSetting.OpenTime, out var open))
-                {
-                    open = DefaultOpenHour;
-                }
-                if (!TimeSpan.TryParse(shopSetting.CloseTime, out var close))
-                {
-                    close = DefaultCloseHour;
-                }
-                if (vnTime < open || vnTime >= close)
-                {
-                    throw new Domain.Exceptions.DomainException(
-                        $"Giờ đặt trước phải trong giờ mở cửa ({shopSetting.OpenTime}–{shopSetting.CloseTime}).");
-                }
-
-                scheduledFor = scheduledDateTime;
-            }
+            var scheduledFor = ParseScheduledFor(input, shopSetting);
 
             var order = Order.Create(
                 orderNumber,
@@ -710,6 +511,389 @@ namespace PhuThuongStickyRice.Application.Orders
 
             return _objectMapper.Map<Order, OrderDto>(order);
         }
+
+        /// <summary>
+        /// Kiểm tra các điều kiện chống spam/lạm dụng trước khi tạo đơn:
+        /// SĐT bị chặn (item 88), giới hạn số đơn/ngày/SĐT (item 39) và
+        /// reCAPTCHA v3 (item 96). Chạy trước mọi thao tác tạo đơn để không
+        /// tốn tài nguyên vô ích; ném DomainException khi vi phạm.
+        /// </summary>
+        private async Task EnsureCheckoutGuardsAsync(
+            CreateOrderDto input, ShopSettingDto shopSetting, bool skipRecaptchaCheck)
+        {
+            // Item 88: blocked phones cannot place orders.
+            if (await _blacklist.IsBlacklistedAsync(input.CustomerPhone))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Số điện thoại này tạm thời không thể đặt hàng.");
+            }
+
+            // Wave 6d (item 39): anti-spam — cap non-cancelled orders per
+            // phone per Vietnam day. Checked before anything is created.
+            await EnsurePhoneDailyLimitAsync(shopSetting.MaxOrdersPerPhonePerDay, input.CustomerPhone);
+
+            // Item 96: reCAPTCHA v3, verified server-side when configured.
+            // Internal flows (POS, Messenger bot, group-order close) call with
+            // skipRecaptchaCheck: true — they have no browser token.
+            if (!skipRecaptchaCheck && !await _recaptcha.VerifyAsync(input.RecaptchaToken))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Xác thực chống spam không thành công. Vui lòng thử lại.");
+            }
+        }
+
+        /// <summary>
+        /// Phân giải phương thức thanh toán từ input checkout. Trả sau
+        /// (item 50) yêu cầu SĐT đã có ít nhất
+        /// <see cref="PayLaterMinCompletedOrders"/> đơn hoàn thành — đếm theo
+        /// 9 số cuối để cùng 1 khách gõ SĐT khác format không bị từ chối oan.
+        /// </summary>
+        private async Task<PaymentMethod> ResolvePaymentMethodAsync(CreateOrderDto input)
+        {
+            if ((!Enum.TryParse<PaymentMethod>(input.PaymentMethod, ignoreCase: true, out var paymentMethod)
+                    || !Enum.IsDefined<PaymentMethod>(paymentMethod))
+                && !string.IsNullOrWhiteSpace(input.PaymentMethod))
+            {
+                throw new Domain.Exceptions.DomainException($"Unknown payment method '{input.PaymentMethod}'.");
+            }
+
+            // Item 50: pay-later requires at least 5 completed orders from this phone.
+            // Order.CustomerPhone is stored raw as typed, so count by the last
+            // 9 digits (same tolerance as PhonesMatch / EnsurePhoneDailyLimitAsync):
+            // "0912345678" and "+84 912 345 678" are the same customer — a raw ==
+            // compare undercounts and wrongly denies loyal customers "Trả sau".
+            if (paymentMethod == PaymentMethod.PayLater)
+            {
+                var completedCount = await CountCompletedOrdersByPhoneAsync(input.CustomerPhone);
+                if (completedCount < PayLaterMinCompletedOrders)
+                {
+                    throw new Domain.Exceptions.DomainException(
+                        "Trả sau chỉ áp dụng cho khách đã có ít nhất 5 đơn hoàn thành.");
+                }
+            }
+
+            return paymentMethod;
+        }
+
+        /// <summary>
+        /// Phân giải hình thức nhận hàng: mặc định là khách tự book shipper
+        /// (quán không giao hàng), hoặc tự đến lấy, hoặc giao tận nơi (legacy).
+        /// </summary>
+        private static FulfillmentMethod ResolveFulfillmentMethod(CreateOrderDto input)
+        {
+            // Fulfillment: customer-booked shipper pickup (default — the shop
+            // does not deliver), self-pickup, or legacy home delivery.
+            var fulfillment = FulfillmentMethod.ShipperPickup;
+            if (!string.IsNullOrWhiteSpace(input.FulfillmentMethod)
+                && Enum.TryParse<FulfillmentMethod>(input.FulfillmentMethod, ignoreCase: true, out var parsedFulfillment)
+                && Enum.IsDefined<FulfillmentMethod>(parsedFulfillment))
+            {
+                fulfillment = parsedFulfillment;
+            }
+
+            return fulfillment;
+        }
+
+        /// <summary>
+        /// Tính khuyến mãi "giờ vàng" tốt nhất đang chạy (item 91, giờ VN).
+        /// Đứng đầu thứ tự ưu tiên giảm giá nên subtotal truyền vào đây là
+        /// tổng gốc chưa trừ gì.
+        /// </summary>
+        /// <returns>(Tên khuyến mãi, số tiền được giảm).</returns>
+        private async Task<(string PromotionName, decimal PromotionDiscount)> ComputeHappyHourPromotionAsync(
+            decimal subtotal)
+        {
+            // Item 91: auto-apply the best active "giờ vàng" promotion
+            // (Vietnam local time). It comes first in the discount priority
+            // order, so the subtotal below already accounts for it.
+            string promotionName = null;
+            decimal promotionDiscount = 0;
+            var bestPromo = await _promotions.GetBestActiveAsync();
+            if (bestPromo != null && bestPromo.DiscountPercent > 0)
+            {
+                promotionName = bestPromo.Name;
+                promotionDiscount = Math.Round(subtotal * bestPromo.DiscountPercent / PercentDivisor, 0);
+            }
+
+            return (promotionName, promotionDiscount);
+        }
+
+        /// <summary>
+        /// Chặn đơn dưới mức tối thiểu của shop (cấu hình). Ném
+        /// DomainException để khách thêm món vào giỏ.
+        /// </summary>
+        private static void EnsureMinOrderAmount(ShopSettingDto shopSetting, decimal subtotal)
+        {
+            if (shopSetting.MinOrderAmount > 0 && subtotal < shopSetting.MinOrderAmount)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    $"Đơn hàng tối thiểu {shopSetting.MinOrderAmount:N0} ₫. Vui lòng thêm món vào giỏ.");
+            }
+        }
+
+        /// <summary>
+        /// Validate mã giảm giá và tính số tiền được giảm trên phần subtotal
+        /// còn lại sau khuyến mãi giờ vàng. Chỉ validate ở đây — lượt dùng
+        /// được tăng sau khi đơn đã ghi DB để đơn lỗi không đốt lượt dùng.
+        /// </summary>
+        /// <returns>(Số tiền giảm, mã đã chuẩn hóa, có phải freeship).</returns>
+        private async Task<(decimal DiscountValue, string AppliedCode, bool IsFreeship)> ApplyDiscountCodeAsync(
+            CreateOrderDto input, decimal subtotal, decimal promotionDiscount)
+        {
+            // Discount code (validated + usage counted here; owner-tied
+            // spin/birthday codes require the matching phone). The code
+            // applies to the subtotal remaining after the happy-hour promotion.
+            decimal discountValue = 0;
+            string appliedCode = null;
+            bool isFreeship = false;
+            if (!string.IsNullOrWhiteSpace(input.DiscountCode))
+            {
+                // Validate only here — usage is bumped after the order row
+                // is written (see below), so a failed order never burns a use.
+                // Perf-hunt 2026-10-19: gộp validate + xác định freeship thành
+                // 1 query (trước đây gọi 2 method = 2 SELECT cùng 1 row mã).
+                (discountValue, isFreeship) = await _discounts.ValidateAndComputeWithFreeshipAsync(
+                    input.DiscountCode, subtotal - promotionDiscount, input.CustomerPhone);
+                appliedCode = input.DiscountCode.Trim().ToUpperInvariant();
+            }
+
+            return (discountValue, appliedCode, isFreeship);
+        }
+
+        /// <summary>
+        /// Lấy (hoặc tạo ở đơn đầu tiên) tài khoản loyalty của khách.
+        /// SĐT placeholder của POS ("0000000000" cho khách vãng lai) không
+        /// đụng tới loyalty — trả về account transient (không lưu DB) để code
+        /// phía dưới gán DateOfBirth / check referral không bị null.
+        /// </summary>
+        private async Task<LoyaltyAccount> LoadLoyaltyAccountAsync(string customerPhone)
+        {
+            // Loyalty account (created on first order) + tier discount.
+            // SĐT placeholder (POS "0000000000" cho khách vãng lai): không
+            // đụng tới loyalty — không tạo/tìm tài khoản pool chung, không
+            // tier, không redeem. Dùng account transient (không lưu DB) để
+            // code phía dưới gán DateOfBirth / check referral không bị null.
+            return _loyalty.IsPlaceholderPhone(customerPhone)
+                ? new LoyaltyAccount { Phone = customerPhone ?? string.Empty }
+                : await _loyalty.GetOrCreateAsync(customerPhone);
+        }
+
+        /// <summary>
+        /// Tính chiết khấu hạng thành viên (Đồng/Bạc/Vàng) trên phần subtotal
+        /// còn lại sau khuyến mãi giờ vàng và mã giảm giá.
+        /// </summary>
+        private decimal ComputeTierDiscount(
+            LoyaltyAccount loyaltyAccount, ShopSettingDto shopSetting,
+            decimal subtotal, decimal promotionDiscount, decimal discountValue)
+        {
+            var (_, tierPercent) = _loyalty.GetTier(loyaltyAccount.TotalSpent, shopSetting);
+            if (loyaltyAccount.TotalSpent > 0 && tierPercent > 0)
+            {
+                return Math.Round((subtotal - promotionDiscount - discountValue) * tierPercent / PercentDivisor, 0);
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Đổi điểm loyalty lấy tiền giảm. Điểm yêu cầu được kẹp theo phần
+        /// còn lại của đơn (sau giờ vàng + mã giảm giá) vì
+        /// <c>RedeemAsync</c> trừ toàn bộ điểm yêu cầu — không kẹp ở đây thì
+        /// khách mất điểm oan cho phần giảm không áp dụng được.
+        /// </summary>
+        /// <returns>(Số điểm đã đổi, số tiền được giảm).</returns>
+        private async Task<(int RedeemedPoints, decimal LoyaltyValue)> RedeemLoyaltyPointsAsync(
+            CreateOrderDto input, decimal subtotal, decimal promotionDiscount,
+            decimal discountValue, ShopSettingDto shopSetting)
+        {
+            // Loyalty points redemption.
+            int redeemedPoints = 0;
+            decimal loyaltyValue = 0;
+            if (input.RedeemPoints > 0)
+            {
+                // Kẹp điểm đổi theo phần còn lại của đơn (sau khuyến mãi giờ
+                // vàng + mã giảm giá): Order.Create cũng kẹp phần tiền giảm,
+                // nhưng RedeemAsync trừ toàn bộ điểm yêu cầu — không kẹp ở đây
+                // thì khách mất điểm oan cho phần giảm không áp dụng được.
+                var remainingForLoyalty = Math.Max(0, subtotal - promotionDiscount - discountValue);
+                var cappedPoints = _loyalty.CapRedeemPoints(input.RedeemPoints, remainingForLoyalty, shopSetting);
+                (redeemedPoints, loyaltyValue) = await _loyalty.RedeemAsync(
+                    input.CustomerPhone, cappedPoints, shopSetting);
+            }
+
+            return (redeemedPoints, loyaltyValue);
+        }
+
+        /// <summary>
+        /// Validate mã giới thiệu (item 105, feature-flagged): mã phải tồn
+        /// tại và không được là mã của chính người mua.
+        /// </summary>
+        /// <returns>Mã giới thiệu của người giới thiệu; null nếu không dùng.</returns>
+        private async Task<string> ValidateReferralAsync(
+            CreateOrderDto input, bool referralsEnabled, LoyaltyAccount loyaltyAccount)
+        {
+            // Referral code: must exist and must not be the buyer's own.
+            // Item 105: referrals are feature-flagged.
+            string referralCodeUsed = null;
+            var referralCode = referralsEnabled ? input.ReferralCode : null;
+            if (!string.IsNullOrWhiteSpace(referralCode))
+            {
+                var referrer = await _loyalty.FindByReferralCodeAsync(referralCode);
+                if (referrer == null)
+                {
+                    throw new Domain.Exceptions.DomainException("Mã giới thiệu không tồn tại.");
+                }
+
+                if (referrer.Id == loyaltyAccount.Id)
+                {
+                    throw new Domain.Exceptions.DomainException(
+                        "Không thể dùng mã giới thiệu của chính mình.");
+                }
+
+                referralCodeUsed = referrer.ReferralCode;
+            }
+
+            return referralCodeUsed;
+        }
+
+        /// <summary>
+        /// Chuẩn hóa trường hóa đơn VAT và người nhận hộ: trim, null khi
+        /// trống; có mã số thuế mà thiếu tên công ty thì báo lỗi; tên và SĐT
+        /// người nhận phải đi cùng nhau.
+        /// </summary>
+        private static (string TaxCode, string CompanyName, string RecipientName, string RecipientPhone)
+            NormalizeVatAndRecipient(CreateOrderDto input)
+        {
+            // VAT invoice fields.
+            var taxCode = string.IsNullOrWhiteSpace(input.TaxCode) ? null : input.TaxCode.Trim();
+            var companyName = string.IsNullOrWhiteSpace(input.CompanyName) ? null : input.CompanyName.Trim();
+            if (taxCode != null && companyName == null)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Vui lòng nhập tên công ty khi cần hóa đơn VAT.");
+            }
+
+            // Recipient (ordering for someone else).
+            var recipientName = string.IsNullOrWhiteSpace(input.RecipientName) ? null : input.RecipientName.Trim();
+            var recipientPhone = string.IsNullOrWhiteSpace(input.RecipientPhone) ? null : input.RecipientPhone.Trim();
+            if ((recipientName == null) != (recipientPhone == null))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Vui lòng nhập đầy đủ tên và số điện thoại người nhận.");
+            }
+
+            return (taxCode, companyName, recipientName, recipientPhone);
+        }
+
+        /// <summary>
+        /// Tính phí giao hàng: quán không giao hàng nên đơn tự đến lấy hoặc
+        /// khách tự book shipper luôn 0đ; đơn giao tận nơi (legacy) áp ngưỡng
+        /// miễn ship, voucher freeship (item 120) cho phí về 0.
+        /// </summary>
+        private static decimal ComputeDeliveryFee(
+            ShopSettingDto shopSetting, FulfillmentMethod fulfillment, bool isFreeship,
+            decimal subtotal, decimal promotionDiscount, decimal discountValue)
+        {
+            // Delivery fee: the shop does not deliver — always 0 for
+            // ShipperPickup and self-pickup orders; legacy Delivery orders
+            // keep the old threshold/freeship rules.
+            var isPickup = fulfillment == FulfillmentMethod.Pickup
+                || fulfillment == FulfillmentMethod.ShipperPickup;
+            if (!isPickup && shopSetting.DeliveryFee > 0 && !isFreeship) // Item 120: freeship voucher -> phí ship = 0
+            {
+                var afterDiscount = subtotal - promotionDiscount - discountValue;
+                var freeShip = shopSetting.FreeShipThreshold > 0 && afterDiscount >= shopSetting.FreeShipThreshold;
+                return freeShip ? 0 : shopSetting.DeliveryFee;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Đơn chuyển khoản lớn (vượt ngưỡng đặt cọc của shop) bị gắn cờ cần
+        /// đặt cọc — checkout hiển thị "Cần đặt cọc Xđ", admin xác nhận qua
+        /// ConfirmPayment.
+        /// </summary>
+        private static bool ShouldRequireDeposit(
+            PaymentMethod paymentMethod, ShopSettingDto shopSetting, decimal totalBeforeDeposit) =>
+            paymentMethod == PaymentMethod.BankTransfer
+                && shopSetting.DepositThreshold > 0
+                && totalBeforeDeposit >= shopSetting.DepositThreshold;
+
+        /// <summary>
+        /// Phân giải chi nhánh của đơn (item 109, nullable): chỉ chấp nhận
+        /// chi nhánh đang hoạt động; tên chi nhánh được denormalize lên đơn.
+        /// </summary>
+        /// <returns>(Id chi nhánh, tên chi nhánh).</returns>
+        private async Task<(Guid? BranchId, string BranchName)> ResolveBranchAsync(Guid? branchId)
+        {
+            // Item 109: branch (nullable). Only active branches are
+            // accepted; the branch name is denormalized onto the order.
+            string branchName = null;
+            if (branchId.HasValue)
+            {
+                var branch = await _branches.FindAsync(branchId.Value);
+                if (branch == null || !branch.IsActive)
+                {
+                    throw new Domain.Exceptions.DomainException("Chi nhánh không tồn tại hoặc đã ngừng hoạt động.");
+                }
+
+                branchName = branch.Name;
+            }
+
+            return (branchId, branchName);
+        }
+
+        /// <summary>
+        /// Phân giải giờ đặt trước: phải sau hiện tại ít nhất
+        /// <see cref="PreOrderMinLeadTimeHours"/> giờ và nằm trong giờ mở cửa
+        /// (giờ VN, UTC+7). Null = nhận ngay. Input UTC/unspecified/local đều
+        /// được chuẩn hóa về UTC.
+        /// </summary>
+        private static DateTime? ParseScheduledFor(CreateOrderDto input, ShopSettingDto shopSetting)
+        {
+            // Pre-order (đặt trước): ScheduledFor must be at least 1 hour
+            // ahead and inside shop open hours. Null = nhận ngay.
+            if (!input.ScheduledFor.HasValue)
+            {
+                return null;
+            }
+
+            var scheduledDateTime = input.ScheduledFor.Value;
+            // Accept both UTC and unspecified/local input; normalize to UTC.
+            if (scheduledDateTime.Kind == DateTimeKind.Unspecified)
+            {
+                scheduledDateTime = DateTime.SpecifyKind(scheduledDateTime, DateTimeKind.Local).ToUniversalTime();
+            }
+            else if (scheduledDateTime.Kind == DateTimeKind.Local)
+            {
+                scheduledDateTime = scheduledDateTime.ToUniversalTime();
+            }
+
+            if (scheduledDateTime <= DateTime.UtcNow.AddHours(PreOrderMinLeadTimeHours))
+            {
+                throw new Domain.Exceptions.DomainException("Giờ đặt trước phải sau thời điểm hiện tại ít nhất 1 tiếng.");
+            }
+
+            // Within open hours (Vietnam local, UTC+7).
+            var vnTime = scheduledDateTime.AddHours(VietnamTime.UtcOffsetHours).TimeOfDay;
+            if (!TimeSpan.TryParse(shopSetting.OpenTime, out var open))
+            {
+                open = DefaultOpenHour;
+            }
+            if (!TimeSpan.TryParse(shopSetting.CloseTime, out var close))
+            {
+                close = DefaultCloseHour;
+            }
+            if (vnTime < open || vnTime >= close)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    $"Giờ đặt trước phải trong giờ mở cửa ({shopSetting.OpenTime}–{shopSetting.CloseTime}).");
+            }
+
+            return scheduledDateTime;
+        }
+
 
         /// <summary>
         /// Kết quả load 1 lần toàn bộ catalog cần để dựng dòng đơn: món,

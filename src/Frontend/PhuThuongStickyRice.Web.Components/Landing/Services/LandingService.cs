@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Landing.Services
 {
-    public class LandingService : HttpService
+    public class LandingService : ApiClientBase
     {
         public LandingService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

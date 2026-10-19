@@ -271,6 +271,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> GetProfile()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Best practice: FindFirstValue trả về string? — guard trước khi
+            // truyền vào FindByIdAsync (tránh CS8604 và 500 khi claim thiếu).
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return NotFound();
             return Ok(new
@@ -287,6 +294,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> UpdateProfile([FromBody] UpdateProfileModel model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Best practice: FindFirstValue trả về string? — guard trước khi
+            // truyền vào FindByIdAsync (tránh CS8604 và 500 khi claim thiếu).
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return NotFound();
 
@@ -552,6 +566,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return user.UserRoles
                 .Select(x => x.Role?.Name)
                 .Where(name => !string.IsNullOrWhiteSpace(name))
+                // Where ở trên đã loại hết null/whitespace nên ép non-null an toàn (tránh CS8619).
+                .Select(name => name!)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
@@ -636,9 +652,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         public DateTimeOffset ExpiresAt { get; set; }
 
-        public string UserName { get; set; }
+        // Nullable: UserName/Email trên AppUser có thể null (Identity cho phép).
+        public string? UserName { get; set; }
 
-        public string Email { get; set; }
+        // Nullable: Email có thể null khi tài khoản đăng ký bằng SĐT.
+        public string? Email { get; set; }
 
         public string[] Roles { get; set; }
 
@@ -651,7 +669,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// <summary>Item 99: true when this login came from a never-seen IP.</summary>
         public bool NewIpWarning { get; set; }
 
-        public string NewIpAddress { get; set; }
+        /// <summary>Item 99: địa chỉ IP lạ — null khi không có cảnh báo.</summary>
+        public string? NewIpAddress { get; set; }
     }
 
     /// <summary>

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Admin.Services
 {
     /// <summary>Item 164: admin APIs for prepaid cards (list + redeem).</summary>
-    public class PrepaidCardAdminService : HttpService
+    public class PrepaidCardAdminService : ApiClientBase
     {
         public PrepaidCardAdminService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

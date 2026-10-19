@@ -21,7 +21,7 @@ namespace PhuThuongStickyRice.Web.Services
             _jsRuntime = jsRuntime;
         }
 
-        /// <summary>Tokens are attached manually by HttpService, not by a message handler.</summary>
+        /// <summary>Tokens are attached manually by ApiClientBase, not by a message handler.</summary>
         public bool AttachTokenAutomatically => false;
 
         public async Task<AuthTokenPair> GetToken()

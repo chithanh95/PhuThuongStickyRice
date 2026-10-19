@@ -16,7 +16,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         public List<string> Roles { get; set; } = new();
     }
 
-    public class StaffService : HttpService
+    public class StaffService : ApiClientBase
     {
         public StaffService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

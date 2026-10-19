@@ -28,6 +28,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     // Item 107: versioned prefix — both routes stay live.
     [Route("api/v1/[controller]")]
     [ApiController]
+    /// <summary>
+    /// API đơn hàng: checkout public cho khách vãng lai (không cần đăng nhập)
+    /// và các endpoint vận hành (Admin/Cashier/Kitchen) như đổi trạng thái,
+    /// gán shipper, đánh giá, vòng quay may mắn. Rate-limit theo chính sách chung.
+    /// </summary>
     public class OrdersController : ControllerBase
     {
         private readonly IOrderAppService _orderAppService;
@@ -60,6 +65,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Creating order for {CustomerPhone}", model?.CustomerPhone);
+
+            // Best practice: [ApiController] đã trả 400 khi body null, nhưng guard
+            // tường minh giúp compiler biết model non-null ở dưới (tránh CS8602)
+            // và thông điệp lỗi rõ ràng hơn.
+            if (model is null)
+            {
+                return BadRequest("Thiếu thông tin đơn hàng trong request body.");
+            }
 
             var order = await _orderAppService.CreateAsync(new CreateOrderDto
             {
@@ -109,10 +122,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(order);
         }
 
+        /// <summary>
+        /// Lấy danh sách đơn hàng có phân trang + bộ lọc (tìm kiếm, trạng thái,
+        /// shipper, khoảng ngày VN, trạng thái thu tiền mặt, chỉ khách VIP).
+        /// Dùng cho màn hình quản lý đơn của Admin/Cashier.
+        /// </summary>
         [Authorize(Roles = "Admin,Cashier")]
         [HttpGet]
         public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = DefaultPageSize,
-            [FromQuery] string searchTerm = null, [FromQuery] string status = null,
+            [FromQuery] string? searchTerm = null, [FromQuery] string? status = null,
             [FromQuery] Guid? shipperId = null,
             // Wave 6c (item 35): date-only range filter (Vietnam day boundaries).
             [FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null,
@@ -138,10 +156,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(paged);
         }
 
+        /// <summary>
+        /// Danh sách khách hàng suy ra từ lịch sử đơn (tìm kiếm theo tên/SĐT),
+        /// phân trang bằng skip/take — dùng cho màn khách hàng/VIP của admin.
+        /// </summary>
         [Authorize(Roles = "Admin,Cashier")]
         [HttpGet("customers")]
         public async Task<ActionResult> GetCustomers(
-            [FromQuery] string searchTerm = null,
+            [FromQuery] string? searchTerm = null,
             [FromQuery] int skip = 0,
             [FromQuery] int take = 50,
             CancellationToken cancellationToken = default)
@@ -164,6 +186,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(customers);
         }
 
+        /// <summary>Chi tiết 1 đơn hàng theo id (Admin/Cashier).</summary>
         [Authorize(Roles = "Admin,Cashier")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
@@ -172,6 +195,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(order);
         }
 
+        /// <summary>
+        /// Đổi trạng thái đơn (Pending → Confirmed → Preparing → Delivering →
+        /// Completed/Cancelled). Chuyển trạng thái hợp lệ do AppService kiểm tra;
+        /// hoàn thành đơn sẽ tự cộng điểm loyalty cho khách.
+        /// </summary>
         [Authorize(Roles = "Admin,Cashier")]
         [HttpPut("{id:guid}/status")]
         public async Task<ActionResult> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusRequestModel model,

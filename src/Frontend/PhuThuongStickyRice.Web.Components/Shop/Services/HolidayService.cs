@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
 {
     /// <summary>Item 117: holiday schedule (public upcoming + admin CRUD).</summary>
-    public class HolidayService : HttpService
+    public class HolidayService : ApiClientBase
     {
         public HolidayService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

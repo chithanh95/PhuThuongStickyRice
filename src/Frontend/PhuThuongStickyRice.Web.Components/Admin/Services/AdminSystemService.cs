@@ -12,7 +12,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// app logs, disk usage, system status, group orders, address book.
     /// Admin endpoints attach the JWT; public ones work anonymously.
     /// </summary>
-    public class AdminSystemService : HttpService
+    public class AdminSystemService : ApiClientBase
     {
         /// <summary>Khởi tạo client gọi API hệ thống (admin).</summary>
         /// <param name="httpClient">HttpClient đã gắn base address API.</param>

@@ -513,12 +513,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
                         && x.Status == OrderStatus.Completed
                         && x.CustomerPhoneNorm == buyerKey)
                     .Select(x => x.CustomerPhone));
-            return !candidatePhones.Any(p => PhonesEqualTolerant(p, buyer.Phone));
+            return !candidatePhones.Any(p => PhoneHelper.PhonesMatch(p, buyer.Phone));
         }
 
         /// <summary>
         /// Lấy 9 ký tự cuối của chuỗi SĐT đã chuẩn hóa digits — cùng chuẩn so
-        /// sánh tolerant với <see cref="PhonesEqualTolerant"/>; chuỗi ngắn hơn
+        /// sánh tolerant với <see cref="PhoneHelper.PhonesMatch"/>; chuỗi ngắn hơn
         /// 9 ký tự trả nguyên để không vứt mất số nhập thiếu.
         /// </summary>
         private static string LastNineDigits(string normalizedPhone) =>
@@ -728,26 +728,6 @@ namespace PhuThuongStickyRice.Application.Loyalty
         {
             var digits = PhoneHelper.DigitsOnly(phone);
             return digits.Length > 0 && digits.All(c => c == digits[0]);
-        }
-
-        /// <summary>
-        /// So sánh 2 SĐT theo 9 số cuối (cùng chuẩn với
-        /// PhoneHelper.PhonesMatch): "0912 345 678", "+84912345678" và
-        /// "0912345678" là cùng 1 số — chống farm bằng cách đổi format.
-        /// </summary>
-        private static bool PhonesEqualTolerant(string phone1, string phone2)
-        {
-            var digits1 = new string((phone1 ?? string.Empty).Where(char.IsDigit).ToArray());
-            var digits2 = new string((phone2 ?? string.Empty).Where(char.IsDigit).ToArray());
-            if (digits1.Length < 9 || digits2.Length < 9)
-            {
-                return string.Equals(digits1, digits2, StringComparison.Ordinal);
-            }
-
-            return string.Equals(
-                LastNineDigits(digits1),
-                LastNineDigits(digits2),
-                StringComparison.Ordinal);
         }
 
         /// <summary>

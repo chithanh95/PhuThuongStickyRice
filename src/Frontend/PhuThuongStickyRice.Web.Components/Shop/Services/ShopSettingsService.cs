@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
 {
     /// <summary>Shop commerce settings (public GET, admin PUT).</summary>
-    public class ShopSettingsService : HttpService
+    public class ShopSettingsService : ApiClientBase
     {
         public ShopSettingsService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

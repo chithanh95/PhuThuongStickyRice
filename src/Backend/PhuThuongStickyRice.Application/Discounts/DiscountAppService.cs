@@ -1,4 +1,5 @@
 #nullable enable annotations
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Permissions;
 using PhuThuongStickyRice.Application.Staff;
@@ -158,6 +159,10 @@ namespace PhuThuongStickyRice.Application.Discounts
         // Số lần thử sinh ngẫu nhiên tối đa; nếu vẫn trùng (xác suất cực thấp)
         // thì fallback sang GUID thay vì retry vô hạn.
         private const int GeneratedCodeMaxAttempts = 10;
+
+        // Mẫu số quy đổi phần trăm (10% = 10/100); cũng là trần % giảm hợp
+        // lệ khi kẹp giá trị admin nhập tay.
+        private const int PercentDivisor = 100;
 
         /// <summary>
         /// Điều kiện "mã còn dùng được" dùng chung cho cả kiểm tra 1 mã,
@@ -708,7 +713,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             if (!string.IsNullOrWhiteSpace(entity.OwnerPhone)
-                && !PhonesEqual(entity.OwnerPhone, customerPhone))
+                && !PhoneHelper.PhonesMatch(entity.OwnerPhone, customerPhone))
             {
                 return (false, "Mã giảm giá này không dành cho số điện thoại của bạn.");
             }
@@ -719,30 +724,6 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             return (true, "Áp dụng mã giảm giá thành công.");
-        }
-
-        /// <summary>
-        /// So sánh 2 SĐT khoan dung định dạng (chỉ so chữ số, 9 số cuối):
-        /// "0912 345 678", "+84912345678" và "0912345678" coi như cùng 1 số.
-        /// </summary>
-        private static bool PhonesEqual(string? firstPhone, string? secondPhone)
-        {
-            if (string.IsNullOrWhiteSpace(firstPhone) || string.IsNullOrWhiteSpace(secondPhone))
-            {
-                return false;
-            }
-
-            var firstDigits = new string(firstPhone.Where(char.IsDigit).ToArray());
-            var secondDigits = new string(secondPhone.Where(char.IsDigit).ToArray());
-            if (firstDigits.Length < 9 || secondDigits.Length < 9)
-            {
-                return string.Equals(firstDigits, secondDigits, StringComparison.Ordinal);
-            }
-
-            return string.Equals(
-                firstDigits.Substring(firstDigits.Length - 9),
-                secondDigits.Substring(secondDigits.Length - 9),
-                StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -798,8 +779,8 @@ namespace PhuThuongStickyRice.Application.Discounts
             {
                 // Chặn phần trăm trong 0..100 (admin nhập tay có thể nhầm, vd 200%)
                 // và làm tròn về đồng chẵn vì tiền mặt không có số lẻ.
-                var percent = Math.Min(100, Math.Max(0, entity.DiscountPercent.Value));
-                amount = Math.Round(subtotal * percent / 100, 0);
+                var percent = Math.Min(PercentDivisor, Math.Max(0, entity.DiscountPercent.Value));
+                amount = Math.Round(subtotal * percent / PercentDivisor, 0);
             }
             else
             {

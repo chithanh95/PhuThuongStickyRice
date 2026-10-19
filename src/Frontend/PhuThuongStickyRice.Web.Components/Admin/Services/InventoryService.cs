@@ -9,7 +9,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// <summary>
     /// Item 87: end-of-day inventory counts (kiểm kê cuối ngày).
     /// </summary>
-    public class InventoryService : HttpService
+    public class InventoryService : ApiClientBase
     {
         public InventoryService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

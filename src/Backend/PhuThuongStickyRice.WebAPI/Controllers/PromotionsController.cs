@@ -28,12 +28,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _promotions = promotions;
         }
 
+        /// <summary>Danh sách tất cả khuyến mãi "giờ vàng" (Admin).</summary>
         [HttpGet]
         public async Task<ActionResult> GetList(CancellationToken cancellationToken = default)
         {
             return Ok(await _promotions.GetListAsync());
         }
 
+        /// <summary>
+        /// Tạo khung giờ khuyến mãi mới (khung giờ tính theo giờ Việt Nam,
+        /// hỗ trợ khung qua đêm như 22:00–02:00). Lỗi validation trả 400
+        /// với message hiển thị trực tiếp cho admin.
+        /// </summary>
         [HttpPost]
         public async Task<ActionResult> Create(
             [FromBody] CreatePromotionDto dto,
@@ -49,6 +55,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>Sửa khung giờ khuyến mãi (giờ Việt Nam). Lỗi validation trả 400.</summary>
         [HttpPut("{id:guid}")]
         public async Task<ActionResult> Update(
             Guid id,
@@ -65,6 +72,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>Xóa khung giờ khuyến mãi. Trả 204 khi thành công.</summary>
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
         {

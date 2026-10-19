@@ -9,9 +9,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 {
     /// <summary>
     /// Logged-in customer's profile: taste preferences + birthday
-    /// (api/customer/profile). Requires login; JWT attached by HttpService.
+    /// (api/customer/profile). Requires login; JWT attached by ApiClientBase.
     /// </summary>
-    public class CustomerProfileService : HttpService
+    public class CustomerProfileService : ApiClientBase
     {
         public CustomerProfileService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

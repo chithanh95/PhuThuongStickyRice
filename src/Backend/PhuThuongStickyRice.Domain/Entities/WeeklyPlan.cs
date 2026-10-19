@@ -27,14 +27,19 @@ namespace PhuThuongStickyRice.Domain.Entities
     /// </summary>
     public class WeeklyPlanOrder : Entity<Guid>, IAggregateRoot
     {
+        /// <summary>Độ dài tối đa cột SĐT trong DB.</summary>
         public const int CustomerPhoneMaxLength = 30;
 
+        /// <summary>Gói tuần mà đơn này mua.</summary>
         public Guid WeeklyPlanId { get; set; }
 
+        /// <summary>Tên khách mua gói.</summary>
         public string CustomerName { get; set; }
 
+        /// <summary>SĐT khách — dùng để xác thực khi khách đến nhận món mỗi ngày.</summary>
         public string CustomerPhone { get; set; }
 
+        /// <summary>Số tiền khách đã trả cho gói (VND).</summary>
         public decimal PaidAmount { get; set; }
 
         /// <summary>Mã đơn để khách đưa quán nhận món mỗi ngày.</summary>
@@ -43,11 +48,17 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>JSON: {"Mon":false,"Tue":true,...} — ngày nào đã nhận.</summary>
         public string ClaimedDaysJson { get; set; }
 
+        /// <summary>Trạng thái đơn mua gói (Paid = đang dùng, Completed = đã nhận đủ 5 ngày, Cancelled = đã hủy).</summary>
         public WeeklyPlanOrderStatus Status { get; set; } = WeeklyPlanOrderStatus.Paid;
 
+        /// <summary>Thời điểm mua gói (UTC).</summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// Trạng thái đơn mua gói tuần: Paid (đang trong tuần sử dụng),
+    /// Completed (đã nhận đủ 5 ngày), Cancelled (đã hủy).
+    /// </summary>
     public enum WeeklyPlanOrderStatus
     {
         Paid = 0,

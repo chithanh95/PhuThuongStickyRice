@@ -13,7 +13,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// customer notes, promotions, reward rules, articles, table QRs,
     /// profit report, login audit and 2FA.
     /// </summary>
-    public class AdminOperationsService : HttpService
+    public class AdminOperationsService : ApiClientBase
     {
         /// <summary>Khởi tạo client gọi API vận hành (admin).</summary>
         /// <param name="httpClient">HttpClient đã gắn base address API.</param>

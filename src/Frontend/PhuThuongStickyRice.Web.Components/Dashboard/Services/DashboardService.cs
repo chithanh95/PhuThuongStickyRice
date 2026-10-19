@@ -14,7 +14,7 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
         /// khách mới/cũ, doanh thu hôm nay so với hôm qua, báo cáo tuần và trạng thái Zalo OA.
         /// Các URL tự gắn tham số chống cache (_=timestamp) để luôn lấy số liệu mới nhất.
         /// </summary>
-    public class DashboardService : HttpService
+    public class DashboardService : ApiClientBase
     {
         public DashboardService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

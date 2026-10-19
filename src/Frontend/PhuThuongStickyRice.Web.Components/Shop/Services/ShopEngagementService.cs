@@ -16,7 +16,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// self-service, reviews, support tickets, FAQ, subscriptions
     /// and third-party integrations.
     /// </summary>
-    public class ShopEngagementService : HttpService
+    public class ShopEngagementService : ApiClientBase
     {
         public ShopEngagementService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

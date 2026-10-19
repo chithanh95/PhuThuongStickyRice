@@ -1,7 +1,7 @@
-@page "/orders/print/{id:guid}"
+﻿@page "/orders/print/{id:guid}"
 @attribute [Authorize]
 @using System
-@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormat;
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormatter;
 @using Microsoft.JSInterop
 @using PhuThuongStickyRice.Web.Components.Orders.Models
 @using PhuThuongStickyRice.Web.Components.Orders.Services
@@ -66,13 +66,13 @@
                 </thead>
                 <tbody>
                     @{
-                        var i = 0;
+                        var lineNumber = 0;
                     }
                     @foreach (var line in _order.Lines)
                     {
-                        i++;
+                        lineNumber++;
                         <tr>
-                            <td>@i</td>
+                            <td>@lineNumber</td>
                             <td>
                                 @line.ProductName
                                 @if (!string.IsNullOrWhiteSpace(line.Note))

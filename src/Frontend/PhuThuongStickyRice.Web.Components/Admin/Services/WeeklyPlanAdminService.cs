@@ -10,7 +10,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// <summary>
     /// Admin quản lý gói "Ăn sáng cả tuần" (JWT).
     /// </summary>
-    public class WeeklyPlanAdminService : HttpService
+    public class WeeklyPlanAdminService : ApiClientBase
     {
         public WeeklyPlanAdminService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

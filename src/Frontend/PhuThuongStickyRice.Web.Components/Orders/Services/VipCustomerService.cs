@@ -11,7 +11,7 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
     /// Item 130 (đúng): VIP customer marking and priority.
     /// Calls api/admin/customer-care/vip (Admin/Cashier).
     /// </summary>
-    public class VipCustomerService : HttpService
+    public class VipCustomerService : ApiClientBase
     {
         public VipCustomerService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

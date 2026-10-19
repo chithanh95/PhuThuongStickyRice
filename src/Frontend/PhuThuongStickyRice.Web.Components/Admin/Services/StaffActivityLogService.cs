@@ -32,7 +32,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// nội bộ và truy vết thay đổi dữ liệu.
     /// </para>
     /// </summary>
-    public class StaffActivityLogService : HttpService
+    public class StaffActivityLogService : ApiClientBase
     {
         public StaffActivityLogService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

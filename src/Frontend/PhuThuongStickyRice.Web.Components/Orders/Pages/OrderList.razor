@@ -8,7 +8,7 @@
 @attribute [Authorize(Roles = "Admin,Cashier")]
 @implements System.IAsyncDisposable
 @using PhuThuongStickyRice.Web.Components.Orders.Models
-@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormat;
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormatter;
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @inject OrderService OrderService
 @inject NavigationManager Navigation
@@ -746,7 +746,7 @@ else
     /// Tải trang đơn hàng hiện tại. Bọc try/catch ngay tại đây (thay vì từng call site)
     /// vì loader này được gọi từ rất nhiều nơi không có guard: filter, phân trang,
     /// timer debounce tìm kiếm, <see cref="ClearDateFilter"/> và <c>OnInitializedAsync</c>.
-    /// HttpService dùng EnsureSuccessStatusCode() nên API trả 401/500/mất mạng sẽ ném
+    /// ApiClientBase dùng EnsureSuccessStatusCode() nên API trả 401/500/mất mạng sẽ ném
     /// exception — nếu không bắt, cả trang /orders rơi vào error boundary và staff mất
     /// hết filter đang xem. Khi lỗi, giữ dữ liệu cũ và hiện alert đỏ đầu trang để thử lại.
     /// </summary>

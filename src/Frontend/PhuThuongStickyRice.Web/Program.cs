@@ -70,7 +70,7 @@ namespace PhuThuongStickyRice.Web
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-            // Admin services attach the JWT via HttpService + ITokenStore.
+            // Admin services attach the JWT via ApiClientBase + ITokenStore.
             AddApiHttpClient<ProductService>(builder, apiBaseUri);
 
             // Item 185: admin quản lý gói "Ăn sáng cả tuần" (JWT).

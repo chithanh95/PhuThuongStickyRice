@@ -578,9 +578,11 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
     public class GetOrdersInput : PagedAndSortedResultRequestDto
     {
-        public string SearchTerm { get; set; }
+        // Nullable: filter không bắt buộc, query string vắng mặt => null.
+        public string? SearchTerm { get; set; }
 
-        public string Status { get; set; }
+        // Nullable: filter không bắt buộc, query string vắng mặt => null.
+        public string? Status { get; set; }
 
         /// <summary>Filter by assigned shipper.</summary>
         public Guid? ShipperId { get; set; }

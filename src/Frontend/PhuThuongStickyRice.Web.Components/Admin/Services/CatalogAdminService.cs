@@ -12,7 +12,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// Admin CRUD for the Wave 1 catalog features: toppings, combos, quote
     /// requests, dish candidates and product size options.
     /// </summary>
-    public class CatalogAdminService : HttpService
+    public class CatalogAdminService : ApiClientBase
     {
         public CatalogAdminService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)

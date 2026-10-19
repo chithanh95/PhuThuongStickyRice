@@ -9,9 +9,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
 {
     /// <summary>
     /// Service gọi API sản phẩm cho màn hình quản trị (/products).
-    /// Tất cả request đều tự gắn Bearer token qua <see cref="HttpService"/>.
+    /// Tất cả request đều tự gắn Bearer token qua <see cref="ApiClientBase"/>.
     /// </summary>
-    public class ProductService : HttpService
+    public class ProductService : ApiClientBase
     {
         public ProductService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)
