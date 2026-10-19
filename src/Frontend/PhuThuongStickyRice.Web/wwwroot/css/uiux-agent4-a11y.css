@@ -349,3 +349,69 @@ html.dark .to-copy-btn:hover {
 }
 
 /* === end Agent 4 run 12:55 === */
+
+/* === Agent 4 run 13:25 — batch mới (2026-10-19) — 5 fix, không trùng các run trước === */
+
+/* Fix 2 — WCAG 2.4.7 (Focus Visible): 2 ô nhập SĐT trên landing —
+   `.sg-zalo-form input` (form đăng ký nhận tin, nằm trên nền gradient xanh
+   đậm #0068ff→#004fc4) và `.sg-loyal-form input` (form bình chọn/đăng ký học,
+   nền sáng) — đều không có style focus nào → tab bằng bàn phím không thấy ô
+   nào đang nhập. Zalo-form: vòng trắng 2px nổi trên nền xanh (contrast cao);
+   loyal-form: vòng tím #7a6fbe đồng bộ các fix landing. :focus-visible nên
+   chuột/chạm không bị vẽ vòng thừa. */
+.sg-zalo-form.sg-zalo-form input:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+    border-radius: 10px;
+}
+.sg-loyal-form.sg-loyal-form input:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+    border-radius: 10px;
+}
+html.dark .sg-loyal-form.sg-loyal-form input:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* Fix 3 — WCAG 2.4.7 + polish hover: nút chia sẻ món `.sg-share-btn`
+   (landing, nút tròn 34px cạnh tên món) không có bất kỳ :hover/:focus nào →
+   desktop không biết bấm được, keyboard tab vào không thấy. Thêm hover nền
+   xám ấm nhạt (tông brand) và vòng focus tím. Lặp class thắng rule scoped. */
+.sg-share-btn.sg-share-btn:hover {
+    background: #f3ece2;
+}
+.sg-share-btn.sg-share-btn:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .sg-share-btn.sg-share-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+html.dark .sg-share-btn.sg-share-btn:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* Fix 4 — WCAG 2.5.8 (mục tiêu chạm, khách lớn tuổi dùng điện thoại):
+   `.sg-share-btn` chỉ 34px — dưới ngưỡng 44px thoải mái. Tăng vùng bấm lên
+   44px BẰNG ::after mở rộng (không đổi kích thước visual, không xô layout
+   header món): phần tử cần position:relative để ::after bám theo. */
+.sg-share-btn.sg-share-btn {
+    position: relative;
+}
+@media (pointer: coarse) {
+    .sg-share-btn.sg-share-btn::after {
+        content: "";
+        position: absolute;
+        inset: -5px; /* 34 + 5*2 = 44px vùng bấm */
+    }
+}
+
+/* Fix 5 — WCAG 1.4.3 (Contrast, AA 4.5:1): placeholder ô tìm kiếm landing
+   `.sg-search` không set màu → dùng màu mặc định trình duyệt
+   (~#9c9c9c trên nền trắng, chỉ ~2.8:1), người lớn tuổi đọc gợi ý rất khó.
+   Đậm lên #6c757d (~4.7:1), cùng tông text-muted Lexa đã dùng ở run 09:40. */
+.sg-search.sg-search::placeholder {
+    color: #6c757d;
+}
+
+/* === end Agent 4 run 13:25 === */

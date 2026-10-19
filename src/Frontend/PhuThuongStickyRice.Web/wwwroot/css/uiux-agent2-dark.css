@@ -76,15 +76,9 @@ html.dark .nq-section:not(.nq-cream) .xo-sec-title {
     color: #f2b8b8 !important;
 }
 
-/* ---------- FIX 3 — Shop: trang Tài khoản (/tai-khoan) ----------
-   Vấn đề: tiêu đề h3 dùng inline style color:#763434 (DUY NHẤT trong
-   toàn codebase — đã grep xác minh). Inline style thắng rule
-   `html.dark .shp-page h3` của ShopLayout nên ở dark mode chữ đỏ đậm
-   chìm vào nền tối. Fix: selector thuộc tính + !important để thắng
-   inline style. */
-html.dark h3[style*="763434"] {
-    color: #f2b8b8 !important;
-}
+/* (Run 13:25: Agent 3 đã chuyển inline style sang class .tk-title —
+   rule attribute selector [style*="763434"] bên dưới CHẾT nên đã xóa.
+   TaiKhoan.razor.css đã có `html.dark .tk-title`.) */
 
 /* ---------- FIX 4 — Admin: timeline trạng thái đơn hàng ----------
    Vấn đề: Orders/Pages/OrderList.razor.css — viền timeline #dee2e6
@@ -449,32 +443,18 @@ html.dark .sg-stat span {
    (đã grep xác minh toàn bộ css). Ở dark mode cả panel kem chói lóa
    giữa trang tối; label kế thừa màu body sáng → chữ sáng trên nền kem
    khó đọc; input đã có nền tối (ShopLayout) nên loang lổ trên nền kem.
-   Fix: attribute selector + !important để thắng inline style; nền/viền
-   theo palette dark của shop; label sáng đọc được trên nền mới. */
-html.dark .tk-addr-panel[style*="FFFDF7"] {
-    background: #262019 !important; /* was #FFFDF7 */
-    border-color: #3a3226 !important;
-}
+   (Run 13:25: Agent 3 đã chuyển inline style sang class — rule
+   [style*="FFFDF7"] bên dưới CHẾT nên đã xóa. TaiKhoan.razor.css đã có
+   `html.dark .tk-addr-panel`. Giữ rule label cho chắc ăn.) */
 html.dark .tk-addr-panel label {
     color: #e8ded0 !important;
 }
 
-/* ---------- FIX 2 — Shop: popup khảo sát hài lòng (/track-order) ----------
-   Vấn đề: TrackOrder.razor:695 — .to-survey-sheet dùng inline
-   style="background: #fff" (popup hiện sau khi nhận hàng), không rule
-   dark nào phủ (đã grep xác minh: "to-survey-sheet" chỉ xuất hiện trong
-   comment liệt kê của đợt 11:05, không có rule thật). Ở dark mode popup
-   trắng toát chói; h5 inline color:#763434 (dòng 698) sẽ chìm nếu chỉ
-   tối nền. .text-muted đã được ShopLayout phủ; nút sao #ddd và nút
-   #FFBA31 vẫn đọc được nên không đụng.
-   Fix: attribute selector + !important thắng inline style. */
-html.dark .to-survey-sheet[style*="background: #fff"] {
-    background: #262019 !important; /* was #fff */
-    box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
-}
-html.dark .to-survey-sheet h5[style*="763434"] {
-    color: #f2b8b8 !important; /* was #763434 */
-}
+/* (Run 13:25: Agent 3 đã chuyển inline style sang class (.to-survey-sheet,
+   .to-survey-title) — 2 rule attribute selector [style*=...] bên dưới CHẾT
+   nên đã xóa. Nền popup: rule `html.dark .to-survey-sheet` (run 13:15,
+   file này) còn sống; tiêu đề: TrackOrder.razor.css có
+   `html.dark .to-survey-sheet h5`.) */
 
 /* ---------- FIX 3 — Trang báo lỗi (/error) ----------
    Vấn đề: Core/Pages/Error.razor — h1 inline color:#7a1b2e (đỏ đậm) và
@@ -770,3 +750,45 @@ html.dark div[style*="background:#f8f8fb"]:not([style*="min-height:100vh"]) butt
 }
 
 /* === end Agent 2 run 13:15 === */
+
+/* === UIUX run 2026-10-19 13:25 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (các đợt trước đã phủ gần như toàn bộ shop/admin/landing; các mục "đã fix
+   hôm nay" — /checkout alert-light/alert-secondary, popup khảo sát
+   track-order, hộp Doanh số năm, thead invoice, header accordion ui-tabs —
+   KHÔNG đụng lại. Đợt này quét lại toàn bộ .razor.css + <style> trong .razor
+   + inline style bằng script đối chiếu selector (nền trắng / chữ tối /
+   viền sáng thiếu rule dark): chỉ còn 1 lỗi MỚI thật + dọn 4 rule chết do
+   Agent 3 chuyển inline style sang class ở các run trước.) */
+
+/* ---------- FIX 1 — Admin: icon + chữ gợi ý của dropzone upload ảnh ----------
+   Vấn đề: admin-lexa.css — ở dark mode .lx-dropzone được đổi nền sang
+   #1e1e36 (dòng 1538) và .lx-dropzone-text sang #f0eef5 (dòng 1546), nhưng
+   QUÊN .lx-dropzone-icon (icon cloud 2.5rem) và .lx-dropzone-hint
+   ("Kéo thả ảnh vào đây...", 14px) vẫn giữ color:#6c757d → tương phản chỉ
+   ~3.3:1 trên nền #1e1e36, icon + chữ gợi ý mờ khó thấy (đã grep xác minh:
+   không rule dark nào phủ 2 selector này). Dropzone này dùng ở trang
+   thêm/sửa sản phẩm (AddEditProduct) — màn hình admin dùng hàng ngày.
+   Fix: #a5a2bd cùng tone các fix #6c757d trước (~5.9:1 trên #1e1e36).
+   Mẫu tương tự đã được fix cho dropzone phía shop trong app.css:479-480
+   (html.dark .shop-dropzone-icon/hint) — đây là chỗ admin bị sót.
+   !important để chắc thắng nếu component nào override scoped. */
+html.dark .lx-admin .lx-dropzone-icon,
+html.dark .lx-admin .lx-dropzone-hint {
+    color: #a5a2bd !important; /* was #6c757d */
+}
+
+/* ---------- Dọn 4 rule CHẾT (không còn match markup hiện tại) ----------
+   Đã xóa ở các block phía trên (giữ lại comment ghi chú thay thế):
+   1. `html.dark h3[style*="763434"]` — TaiKhoan h3 giờ là class .tk-title,
+      TaiKhoan.razor.css đã có `html.dark .tk-title`.
+   2. `html.dark .to-survey-sheet[style*="background: #fff"]` — markup giờ
+      là class; nền popup do rule `html.dark .to-survey-sheet` (run 13:15,
+      file này) phủ.
+   3. `html.dark .to-survey-sheet h5[style*="763434"]` — tiêu đề giờ là
+      class .to-survey-title; TrackOrder.razor.css có
+      `html.dark .to-survey-sheet h5` phủ.
+   4. `html.dark .tk-addr-panel[style*="FFFDF7"]` — markup giờ là class;
+      TaiKhoan.razor.css đã có `html.dark .tk-addr-panel`.
+   Cả 4 đều đã grep xác minh markup không còn inline style tương ứng. */
+
+/* === end Agent 2 run 13:25 === */

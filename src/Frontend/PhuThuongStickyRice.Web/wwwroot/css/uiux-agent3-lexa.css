@@ -627,3 +627,55 @@ html.dark .wpt-claimed { color: #6fdc9c !important; }
 }
 
 /* ===== end UIUX run 12:55 - Agent3 Lexa ===== */
+
+/* ===== UI/UX run 2026-10-19 13:25 - Agent3 Lexa =====
+   2 fix MỚI (đã verify bằng grep, không trùng 10 đợt trước).
+   10 đợt trước đã xử lý: text-*/bg-*/badge-*/alert-*/border-*/table-*
+   utilities, btn solid + outline (shop+admin), btn-link, nav pills/tabs,
+   pagination admin, validation, btn focus glow, a:hover, ::selection,
+   accent-color checkbox/radio, lx-pill, .fc-call, auth-step.done,
+   online-dot.on, inline LaiGop, badge-warning/btn-warning shop (chữ
+   trắng trên nền vàng), KanbanDon, màu link #0366d6, .wpt-claimed,
+   btn-primary :active shop. Quét đợt này: toàn bộ hex trong
+   *.razor/*.razor.css (uniq count), inline style=, oi-* (không còn
+   trong markup). Các màu còn lại là brand ấm chủ ý (landing terracotta
+   #763434/#D08B8B, cam #FFBA31/#e8a013, nâu #4a2b1a), màu brand bên
+   thứ ba (Zalo #0068ff, Facebook #1877f2) và màu demo trang Lexa —
+   KHÔNG đụng. */
+
+/* ---------- Fix 1: thẻ lỗi "Không kết nối được tới máy chủ" — đỏ đậm #7a1b2e -> đỏ danger Lexa ----------
+   Verify: Shop/Pages/Shop.razor:113-118 (màn lỗi full-page khi mất mạng,
+   wave 6d item 38). Tiêu đề h2 và nút "Thử lại" đang dùng inline style
+   màu đỏ nâu đậm #7a1b2e — lệch chuẩn danger Lexa #bd4a4a đã dùng cho
+   mọi trạng thái lỗi khác trên shop (VD: .wpt-error fix 13:05).
+   Nút "Thử lại" là CTA duy nhất trên màn hình lỗi: đưa về đỏ Lexa để
+   ngôn ngữ màu lỗi nhất quán toàn shop. Giữ nguyên nền kem #f5ebcd và
+   chữ nâu #4a2b1a (thiết kế ấm chủ ý, không phải màu Bootstrap sót).
+   Dùng attribute selector + !important để thắng inline style (pattern
+   đã dùng cho KanbanDon/LaiGop); .shp-page có sẵn từ ShopLayout nên
+   không ảnh hưởng trang khác. Thẻ này không có variant dark nên không
+   cần khai báo lại dark. */
+.shp-page .card[style*="#f5ebcd"] h2[style*="#7a1b2e"] {
+    color: #bd4a4a !important;
+}
+.shp-page .card[style*="#f5ebcd"] .btn[style*="#7a1b2e"] {
+    background-color: #bd4a4a !important;
+    border-color: #bd4a4a !important;
+}
+
+/* ---------- Fix 2: chữ banner "quán đang mở" #1a7a4a -> xanh đậm success Lexa ----------
+   Verify: Shop/Components/ShopStatusBanner.razor.css:19-22
+   `.shop-status-banner.open { background: #e8f9f0; color: #1a7a4a; }`
+   Nền banner (#e8f9f0) và chấm trạng thái (#34c38f) đã đúng xanh success
+   Lexa, nhưng chữ đang dùng #1a7a4a — một xanh đậm "tự chế", lệch với
+   màu chữ success chuẩn #1e7a52 đã thiết lập cho .alert-success
+   (uiux-agent3-lexa.css:103) và tiêu đề PrepaidCardTab (fix sáng nay).
+   Thống nhất về #1e7a52 để mọi trạng thái thành công dùng chung một
+   tông chữ. Rule gốc nằm trong CSS isolation bundle (có [b-xxx]) nên
+   cần !important; khai báo lại variant dark (html.dark #7ce3b1,
+   dòng 33 file gốc) với !important để không bị rule light đè mất —
+   cùng pattern đã dùng cho .wpt-claimed ở đợt 12:55. */
+.shp-page .shop-status-banner.open { color: #1e7a52 !important; }
+html.dark .shp-page .shop-status-banner.open { color: #7ce3b1 !important; }
+
+/* ===== end UI/UX run 2026-10-19 13:25 - Agent3 Lexa ===== */

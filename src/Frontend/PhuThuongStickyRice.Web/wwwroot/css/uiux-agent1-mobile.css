@@ -1274,3 +1274,137 @@
 }
 
 /* ===== END UIUX run 13:15 - Agent1 Mobile ===== */
+
+/* ===== UIUX run 13:25 — Agent1 Mobile: 5 fix mới ===== */
+
+/* ------------------------------------------------------------
+   FIX 1 — /checkout: hàng chọn phương thức thanh toán
+   (COD / Chuyển khoản / MoMo / Ví).
+   Vấn đề: mỗi dòng .form-check chỉ cao ~24-32px, radio ~16px —
+   khách lớn tuổi hay bấm trượt khi chọn cách thanh toán ở bước
+   chốt đơn quan trọng nhất.
+   Giải pháp: cả hàng ≥48px (flex, radio 22px canh giữa), chữ
+   label to 1.05rem đậm — bấm đâu trên hàng cũng trúng.
+   (:has() được mọi trình duyệt hiện đại hỗ trợ; cũ thì bỏ qua
+   rule — không vỡ giao diện.)
+   (Verify: Checkout.razor:498-524 — name="paymentMethod" chỉ tồn
+   tại ở trang checkout, selector không khớp nhầm)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .form-check:has(> input[name="paymentMethod"]) {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-left: 0;
+        min-height: 48px;
+        margin-bottom: 10px;
+    }
+    .form-check:has(> input[name="paymentMethod"]) .form-check-input {
+        position: static;
+        margin: 0;
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
+    }
+    .form-check:has(> input[name="paymentMethod"]) .form-check-label {
+        flex: 1;
+        padding: 10px 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /dang-nhap + /quen-mat-khau: link phụ vùng bấm quá nhỏ.
+   Vấn đề: "🔒 Quên mật khẩu?" (~24px), "← Về trang chủ" / "← Về
+   đăng nhập" (~20px) và nút "← Nhập lại SĐT" (~38px) đều dưới
+   chuẩn chạm — khách lớn tuổi dễ bấm trượt các lối thoát/khôi
+   phục tài khoản. (Nút dark-mode 44px và nút đăng nhập/đăng ký
+   ~44px đã đủ chuẩn ở các đợt trước.)
+   Giải pháp: link phụ padding lên ≥44px vùng chạm; nút "Nhập lại
+   SĐT" cao 44px. Scope .auth-card — chỉ khớp 2 trang auth.
+   (Verify: DangNhap.razor:114/143, QuenMatKhau.razor:127/137;
+   .auth-card chỉ tồn tại ở 2 trang này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .auth-card a.auth-link,
+    .auth-card a.text-muted.small {
+        display: inline-block;
+        padding: 10px 14px;
+    }
+    .auth-card .auth-link-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /shop trên tablet 768–991px (desktop grid hiện ở khoảng
+   này — Shop.razor.css:438 chỉ ẩn ≤768px).
+   Vấn đề: nút "💬 Hỏi qua Zalo" btn-sm (~31px) trên card thực đơn
+   và card "Gợi ý theo giờ"; nút "Thêm vào giỏ" + ô số lượng của
+   .shop-add-row chỉ 42px — đều dưới chuẩn chạm 44px ở khoảng màn
+   hình này (mobile ≤767.98px đã được nâng các đợt trước).
+   Giải pháp: nâng tất cả lên 44px, chỉ trong khoảng tablet — PC
+   (≥992px) giữ nguyên.
+   (Verify: Shop.razor:188/193 card.border-info, :261-269
+   .shop-desktop-grid .shop-add-row; .shop-desktop-grid chỉ ở
+   Shop.razor:209; card.border-info chỉ ở trang shop)
+   ------------------------------------------------------------ */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .shop-desktop-grid .btn-sm,
+    .card.border-info .btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    .shop-desktop-grid .shop-add-row .btn {
+        min-height: 44px;
+    }
+    .shop-desktop-grid .shop-add-row input[type="number"] {
+        height: 44px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /checkout: ô nhập mã giảm giá #co-discount.
+   Vấn đề: .form-control mặc định chỉ ~38px trong khi nút "Áp dụng"
+   cạnh bên đã cao 48px (inline style tại Checkout.razor:668) —
+   lệch chiều cao trông cẩu thả, ô nhập dưới chuẩn chạm 44px.
+   Giải pháp: ô nhập cao 48px, đồng bộ với nút; font 16px để iOS
+   không auto-zoom khi focus.
+   (Verify: Checkout.razor:665 — #co-discount duy nhất toàn app)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    #co-discount {
+        min-height: 48px;
+        font-size: 16px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /cart trên tablet 768–991px: nút "Xóa" dòng món.
+   Vấn đề: btn-sm btn-danger chỉ ~31px; nút này HIỆN ở tablet
+   (Cart.razor.css:241-249 chỉ ẩn cột Xóa ở ≤768px vì mobile giảm
+   về 0 là tự xóa) — khách dùng tablet khó bấm đúng.
+   Giải pháp: cao 44px, padding rộng, chữ canh giữa — chỉ khoảng
+   tablet, mobile và PC không đổi.
+   (Verify: Cart.razor:136 nút Xóa; .cart-lines chỉ ở Cart.razor:85)
+   ------------------------------------------------------------ */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .cart-lines .btn-danger.btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+    }
+}
+
+/* ===== END UIUX run 13:25 - Agent1 Mobile ===== */

@@ -395,7 +395,7 @@ else
             <p class="sg-eyebrow">Thực đơn</p>
             <h2 class="sg-h2">@MenuTitleText</h2>
             <div class="sg-search-wrap">
-                <input class="sg-search" @bind="_searchTerm" @bind:event="oninput" placeholder="🔍 Tìm món: gấc, xéo, ngũ sắc..." />
+                <input class="sg-search" @bind="_searchTerm" @bind:event="oninput" placeholder="🔍 Tìm món: gấc, xéo, ngũ sắc..." aria-label="Tìm món ăn" />
             </div>
         </div>
         <div class="sg-tabs" role="tablist">
@@ -587,7 +587,7 @@ else
                 }
             </div>
             <div class="sg-loyal-form" style="max-width:420px;margin:20px auto 0">
-                <input @bind="_votePhone" placeholder="SĐT của bạn (để bình chọn)" inputmode="tel" maxlength="15" />
+                <input @bind="_votePhone" placeholder="SĐT của bạn (để bình chọn)" aria-label="Số điện thoại của bạn để bình chọn" inputmode="tel" maxlength="15" />
             </div>
             @if (!string.IsNullOrEmpty(_voteMsg)) { <p class="sg-center">@_voteMsg</p> }
         </div>
@@ -624,7 +624,7 @@ else
                 }
             </div>
             <div class="sg-loyal-form" style="max-width:420px;margin:20px auto 0">
-                <input @bind="_coursePhone" placeholder="SĐT để đăng ký học" inputmode="tel" maxlength="15" />
+                <input @bind="_coursePhone" placeholder="SĐT để đăng ký học" aria-label="Số điện thoại đăng ký lớp học nấu xôi" inputmode="tel" maxlength="15" />
             </div>
         </div>
     </section>
@@ -710,7 +710,7 @@ else
             else
             {
                 <form @onsubmit="SubmitSubscribe" class="sg-zalo-form">
-                    <input @bind="_subPhone" placeholder="Số điện thoại" inputmode="tel" maxlength="15" />
+                    <input @bind="_subPhone" placeholder="Số điện thoại" aria-label="Số điện thoại đăng ký nhận tin khuyến mãi" inputmode="tel" maxlength="15" />
                     <button type="submit" class="sg-btn sg-btn-solid" disabled="@_subSending">@(_subSending ? "..." : "Đăng ký")</button>
                 </form>
                 @if (!string.IsNullOrEmpty(_subMsg))
