@@ -558,7 +558,7 @@ namespace PhuThuongStickyRice.Application.Products
             return limited
                 .Select(x =>
                 {
-                    var sold = soldMap.TryGetValue(x.Id, out var s) ? s : 0;
+                    var sold = soldMap.TryGetValue(x.Id, out var soldQty) ? soldQty : 0;
                     return new ProductDailyRemainingDto
                     {
                         ProductId = x.Id,

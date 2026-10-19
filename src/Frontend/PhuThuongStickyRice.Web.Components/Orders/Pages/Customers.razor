@@ -512,6 +512,10 @@ else
     /// 2026-10-19: trước đây mọi hàng bind chung 1 biến _giftAmount).
     /// </summary>
     private const decimal DefaultGiftAmount = 25000m;
+    // Giới hạn mệnh giá quà nhập tay: tối thiểu 5.000đ, tối đa 1.000.000đ
+    // (quà lớn hơn cần duyệt thủ công nên không cho nhập trực tiếp).
+    private const decimal GiftAmountMin = 5000m;
+    private const decimal GiftAmountMax = 1000000m;
 
     private readonly Dictionary<Guid, decimal> _giftAmounts = new();
 
@@ -520,7 +524,7 @@ else
 
     private void SetGiftAmount(Guid userId, object value)
     {
-        if (decimal.TryParse(value?.ToString(), out var v) && v >= 5000 && v <= 1000000)
+        if (decimal.TryParse(value?.ToString(), out var v) && v >= GiftAmountMin && v <= GiftAmountMax)
         {
             _giftAmounts[userId] = v;
         }
@@ -929,11 +933,16 @@ else
         }
     }
 
+    // Ngưỡng hạng mặc định khi chưa cấu hình trong cài đặt:
+    // Vàng từ 5.000.000đ, Bạc từ 1.000.000đ tổng chi tiêu tích lũy.
+    private const decimal DefaultTierGoldMin = 5000000m;
+    private const decimal DefaultTierSilverMin = 1000000m;
+
     /// <summary>Membership tier from lifetime spend (same rule as the backend).</summary>
     private string TierOf(decimal totalSpent)
     {
-        var goldMin = _settings.TierGoldMin > 0 ? _settings.TierGoldMin : 5000000;
-        var silverMin = _settings.TierSilverMin > 0 ? _settings.TierSilverMin : 1000000;
+        var goldMin = _settings.TierGoldMin > 0 ? _settings.TierGoldMin : DefaultTierGoldMin;
+        var silverMin = _settings.TierSilverMin > 0 ? _settings.TierSilverMin : DefaultTierSilverMin;
         if (totalSpent > goldMin)
         {
             return "Vàng";

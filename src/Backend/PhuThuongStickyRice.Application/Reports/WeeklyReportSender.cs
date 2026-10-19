@@ -308,15 +308,15 @@ namespace PhuThuongStickyRice.Application.Reports
         private static Dictionary<string, long> AccumulateProductQuantities(List<OrderWeekRow> billable)
         {
             var productQty = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-            foreach (var o in billable)
+            foreach (var orderRow in billable)
             {
-                foreach (var l in o.Lines)
+                foreach (var line in orderRow.Lines)
                 {
-                    var name = string.IsNullOrWhiteSpace(l.ProductName)
+                    var name = string.IsNullOrWhiteSpace(line.ProductName)
                         ? UnnamedProductLabel
-                        : l.ProductName.Trim();
+                        : line.ProductName.Trim();
                     productQty.TryGetValue(name, out var qty);
-                    productQty[name] = qty + l.Quantity;
+                    productQty[name] = qty + line.Quantity;
                 }
             }
 

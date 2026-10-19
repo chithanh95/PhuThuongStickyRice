@@ -11,22 +11,22 @@ namespace PhuThuongStickyRice.Application.Products.EventHandlers
 {
     public class ProductDeletedEventHandler : IDomainEventHandler<EntityDeletedEvent<Product>>
     {
-        private readonly IEntityCrudService<AuditLogEntry> _auditSerivce;
+        private readonly IEntityCrudService<AuditLogEntry> _auditService;
         private readonly ICurrentUser _currentUser;
         private readonly IRepository<OutboxEvent, long> _outboxEventRepository;
 
-        public ProductDeletedEventHandler(IEntityCrudService<AuditLogEntry> auditSerivce,
+        public ProductDeletedEventHandler(IEntityCrudService<AuditLogEntry> auditService,
             ICurrentUser currentUser,
             IRepository<OutboxEvent, long> outboxEventRepository)
         {
-            _auditSerivce = auditSerivce;
+            _auditService = auditService;
             _currentUser = currentUser;
             _outboxEventRepository = outboxEventRepository;
         }
 
         public async Task HandleAsync(EntityDeletedEvent<Product> domainEvent, CancellationToken cancellationToken = default)
         {
-            await _auditSerivce.AddOrUpdateAsync(new AuditLogEntry
+            await _auditService.AddOrUpdateAsync(new AuditLogEntry
             {
                 Id = Guid.NewGuid(),
                 UserId = _currentUser.UserId,

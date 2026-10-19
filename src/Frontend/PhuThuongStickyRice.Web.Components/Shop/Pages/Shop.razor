@@ -1011,38 +1011,13 @@ else
     private const int SuggestEveningEndHour = 23;
     private const int SuggestMaxItems = 3;
 
-    // ---------- Branch filter (item 109) ----------
-
-    private string BranchTabClass(Guid? branchId) =>
-        _branchFilter == branchId ? "active" : "";
-
-    private async Task SetBranch(Guid? branchId)
-    {
-        _branchFilter = branchId;
-        try
-        {
-            var paged = await ShopService.GetProductsAsync(branchId);
-            _products = paged.Items ?? new List<ShopProductModel>();
-            // Chi nhánh khác có thể có món mới chưa từng render: khởi tạo
-            // lại state thẻ (số lượng/size mặc định) để @bind
-            // _quantities[product.Id] ở markup không ném KeyNotFoundException.
-            foreach (var p in _products)
-            {
-                InitCardState(p);
-            }
-
-            ApplyFilters();
-            BuildSuggestions();
-        }
-        catch (Exception)
-        {
-            _loadError = "Không tải được sản phẩm theo chi nhánh.";
-        }
-    }
+    // AGENT2-CODEQUALITY-20261020: batch marker (dead filter handlers removed, magic numbers -> named consts).
+    // SH2 "Lọc theo nhu cầu": preset "biếu tặng" = món giá từ 35.000đ trở lên.
+    private const decimal NeedGiftPriceThreshold = 35000m;
 
     /// <summary>
     /// Khởi tạo state mặc định của thẻ món (số lượng = 1, size mặc định) —
-    /// gọi mỗi khi danh sách món thay đổi (lần đầu + đổi chi nhánh).
+    /// gọi mỗi khi danh sách món thay đổi (lần đầu tải trang).
     /// </summary>
     private void InitCardState(ShopProductModel p)
     {
@@ -1062,21 +1037,6 @@ else
         ApplyFilters();
     }
 
-    /// <summary>
-    /// SH2: "Lọc theo nhu cầu" presets — client-side only, mapped onto
-    /// existing product data (tags / IsSignature / price). A preset with no
-    /// matching products simply shows the existing empty state.
-    /// </summary>
-    private void SetNeedFilter(string need)
-    {
-        _needFilter = need;
-        ApplyFilters();
-    }
-
-    private string NeedTabClass(string need) =>
-        string.Equals(_needFilter, need, StringComparison.OrdinalIgnoreCase)
-            ? "active" : "";
-
     private static bool MatchesNeed(ShopProductModel product, string need) => need switch
     {
         // Savory breakfast items (same rule as the morning suggestions).
@@ -1084,17 +1044,11 @@ else
         // Đẹp mắt, hợp mâm cỗ / tiệc.
         "cungtiec" => product?.IsSignature == true,
         // Món cao cấp để biếu tặng.
-        "bieutang" => MinPrice(product) >= 35000,
+        "bieutang" => MinPrice(product) >= NeedGiftPriceThreshold,
         // Chay = nhẹ, ít béo.
         "itbeo" => ProductTags(product).Contains("chay"),
         _ => true,
     };
-
-    private void SetSort(string sort)
-    {
-        _sort = sort;
-        ApplyFilters();
-    }
 
     // ---------- Mobile ShopeeFood-style row ----------
 
@@ -1134,33 +1088,6 @@ else
         _needFilter = null;
         _sort = "popular";
         ClearSearch();
-    }
-
-    /// <summary>
-    /// Wave 6b (item 29): debounced search input (300ms) over the loaded
-    /// product list; combined with the category/tag chips and sort.
-    /// </summary>
-    private async Task OnSearchInput(ChangeEventArgs e)
-    {
-        _searchTerm = e.Value?.ToString() ?? string.Empty;
-        _searchCts?.Cancel();
-        _searchCts?.Dispose();
-        _searchCts = new System.Threading.CancellationTokenSource();
-        var token = _searchCts.Token;
-        try
-        {
-            await Task.Delay(300, token);
-        }
-        catch (TaskCanceledException)
-        {
-            return;
-        }
-
-        if (!token.IsCancellationRequested)
-        {
-            ApplyFilters();
-            StateHasChanged();
-        }
     }
 
     private void ClearSearch()
@@ -1290,14 +1217,6 @@ else
         }
 
         return DefaultSizeId(product);
-    }
-
-    private void OnCardSizeChanged(ShopProductModel product, ChangeEventArgs e)
-    {
-        if (Guid.TryParse(e.Value?.ToString(), out var sizeId))
-        {
-            _cardSizes[product.Id] = sizeId;
-        }
     }
 
     private void SelectCardSize(ShopProductModel product, Guid sizeId)

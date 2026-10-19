@@ -11,6 +11,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Linq;
 
+// CS8632: file dùng annotation nullable (?); bật ngữ cảnh annotations để
+// compiler hiểu đúng ý nghĩa, không bật phân tích luồng (dự án chưa bật nullable toàn cục).
+#nullable enable annotations
+
 namespace PhuThuongStickyRice.Application.EmailMessages.Services
 {
     public class EmailMessageService

@@ -45,6 +45,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _activityLogger = activityLogger;
         }
 
+        /// <summary>
+        /// Admin: danh sách tài khoản nhân viên (id, tên đăng nhập, email, SĐT,
+        /// trạng thái khóa, các vai trò). Chỉ project 6 cột cần thiết —
+        /// không trả PasswordHash/SecurityStamp về client.
+        /// </summary>
         [HttpGet("users")]
         public async Task<ActionResult> GetUsers(CancellationToken cancellationToken = default)
         {
@@ -86,21 +91,33 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Dữ liệu tạo tài khoản nhân viên mới từ màn hình admin.
+        /// </summary>
         public class CreateStaffRequest
         {
+            /// <summary>Tên đăng nhập (duy nhất, dùng làm khóa tìm kiếm).</summary>
             [Required, MaxLength(256)]
             public string UserName { get; set; }
 
+            /// <summary>Email; bỏ trống thì dùng tạm UserName.</summary>
             [EmailAddress, MaxLength(256)]
             public string Email { get; set; }
 
+            /// <summary>Mật khẩu khởi tạo (tối thiểu 6 ký tự).</summary>
             [Required, MinLength(6)]
             public string Password { get; set; }
 
+            /// <summary>Vai trò gán lúc tạo: chỉ nhận Admin/Cashier/Kitchen.</summary>
             [Required]
             public string Role { get; set; }
         }
 
+        /// <summary>
+        /// Admin: tạo tài khoản nhân viên mới. Từ chối khi vai trò không nằm
+        /// trong AllowedRoles hoặc tên đăng nhập đã tồn tại; tài khoản mới
+        /// được gán vai trò ngay và ghi log hoạt động (Item 156).
+        /// </summary>
         [HttpPost("users")]
         public async Task<ActionResult> CreateUser(
             [FromBody] CreateStaffRequest request,
@@ -134,12 +151,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { id = user.Id });
         }
 
+        /// <summary>Dữ liệu gán thêm vai trò cho tài khoản nhân viên.</summary>
         public class AssignRoleRequest
         {
+            /// <summary>Vai trò cần gán: chỉ nhận Admin/Cashier/Kitchen.</summary>
             [Required]
             public string Role { get; set; }
         }
 
+        /// <summary>
+        /// Admin: gán thêm 1 vai trò cho tài khoản nhân viên (không trùng lặp —
+        /// đã có thì giữ nguyên). Ghi log hoạt động (Item 156).
+        /// </summary>
         [HttpPost("users/{id:guid}/roles")]
         public async Task<ActionResult> AssignRole(
             Guid id,
@@ -161,6 +184,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Admin: gỡ 1 vai trò khỏi tài khoản nhân viên. Chặn tự gỡ vai trò
+        /// Admin của chính mình (tránh khóa luôn tài khoản admin cuối cùng).
+        /// Ghi log hoạt động (Item 156).
+        /// </summary>
         [HttpDelete("users/{id:guid}/roles/{role}")]
         public async Task<ActionResult> RemoveRole(
             Guid id,

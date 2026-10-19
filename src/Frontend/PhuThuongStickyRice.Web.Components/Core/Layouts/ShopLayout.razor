@@ -255,8 +255,6 @@
 
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
 
-    private async Task SetLanguage(string language) => await AppI18n.SetLanguageAsync(language);
-
     private async Task SignOut()
     {
         try

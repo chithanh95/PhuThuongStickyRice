@@ -1,3 +1,7 @@
+// CS8632: file dùng annotation nullable (?); bật ngữ cảnh annotations để
+// compiler hiểu đúng ý nghĩa, không bật phân tích luồng (dự án chưa bật nullable toàn cục).
+#nullable enable annotations
+
 using Microsoft.Extensions.Caching.Memory;
 using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders.DTOs;

@@ -3654,7 +3654,7 @@ namespace PhuThuongStickyRice.Application.Orders
             foreach (var limited in limits)
             {
                 var want = wanted[limited.Id];
-                var sold = soldMap.TryGetValue(limited.Id, out var s) ? s : 0;
+                var sold = soldMap.TryGetValue(limited.Id, out var soldQty) ? soldQty : 0;
                 if (sold + want.Quantity > limited.Limit)
                 {
                     var remaining = Math.Max(0, limited.Limit - sold);

@@ -140,9 +140,9 @@ namespace PhuThuongStickyRice.Application.Reports
             sb.AppendLine($"Đơn chờ xác nhận (hiện tại): {stats.PendingOrders}");
             sb.AppendLine();
             sb.AppendLine("Đơn hàng theo trạng thái:");
-            foreach (var s in stats.OrdersByStatus ?? Enumerable.Empty<Orders.DTOs.OrdersByStatusDto>())
+            foreach (var statusRow in stats.OrdersByStatus ?? Enumerable.Empty<Orders.DTOs.OrdersByStatusDto>())
             {
-                sb.AppendLine($"  - {s.Status}: {s.Count}");
+                sb.AppendLine($"  - {statusRow.Status}: {statusRow.Count}");
             }
 
             sb.AppendLine();

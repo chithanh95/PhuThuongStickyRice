@@ -4,25 +4,52 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 
+// Batch marker: [cq-doc-20261020-0037] — XML doc tiếng Việt (Agent 4 Documentation, run 00:37).
+
 namespace PhuThuongStickyRice.Web.Components.Admin.Services
 {
+    /// <summary>
+    /// Định nghĩa 1 quyền chi tiết (vd "orders.confirm"): khóa máy + nhãn
+    /// hiển thị tiếng Việt + nhóm gom quyền trên màn hình phân quyền.
+    /// </summary>
     public class PermissionDefinitionModel
     {
+        /// <summary>Khóa quyền dùng khi kiểm tra (vd "orders.confirm").</summary>
         public string Key { get; set; }
+
+        /// <summary>Nhãn hiển thị tiếng Việt trên màn hình phân quyền.</summary>
         public string Label { get; set; }
+
+        /// <summary>Nhóm gom quyền (vd "Đơn hàng", "Nhân viên").</summary>
         public string Group { get; set; }
     }
 
+    /// <summary>
+    /// Tập quyền đã cấp cho 1 vai trò (Admin/Cashier/Kitchen) — dữ liệu cột
+    /// của ma trận phân quyền ở màn hình admin.
+    /// </summary>
     public class RolePermissionsModel
     {
+        /// <summary>Tên vai trò (khóa): Admin, Cashier, Kitchen.</summary>
         public string Role { get; set; }
+
+        /// <summary>Nhãn vai trò hiển thị tiếng Việt.</summary>
         public string RoleLabel { get; set; }
+
+        /// <summary>Danh sách khóa quyền đã được cấp cho vai trò này.</summary>
         public List<string> GrantedKeys { get; set; } = new List<string>();
     }
 
+    /// <summary>
+    /// Toàn bộ ma trận phân quyền: danh sách quyền định nghĩa + quyền của
+    /// từng vai trò — nguồn dữ liệu cho màn hình quản lý phân quyền admin.
+    /// </summary>
     public class PermissionMatrixModel
     {
+        /// <summary>Tất cả quyền định nghĩa trong hệ thống (theo nhóm).</summary>
         public List<PermissionDefinitionModel> Definitions { get; set; } = new List<PermissionDefinitionModel>();
+
+        /// <summary>Quyền đã cấp cho từng vai trò.</summary>
         public List<RolePermissionsModel> Roles { get; set; } = new List<RolePermissionsModel>();
     }
 
@@ -45,6 +72,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         {
         }
 
+        /// <summary>
+        /// Xóa cache quyền trong memory — gọi khi đăng nhập/đăng xuất để
+        /// user mới không dùng nhầm quyền của user cũ.
+        /// </summary>
         public void ClearCache()
         {
             lock (_lock)
@@ -53,6 +84,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             }
         }
 
+        /// <summary>
+        /// Lấy tập khóa quyền của user đang đăng nhập (fetch 1 lần rồi cache
+        /// cả session). Trả về tập rỗng khi chưa đăng nhập hoặc API lỗi.
+        /// </summary>
         public Task<HashSet<string>> GetMyPermissionsAsync()
         {
             lock (_lock)
@@ -82,6 +117,11 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             }
         }
 
+        /// <summary>
+        /// Kiểm tra user hiện tại có quyền theo khóa không (không phân biệt
+        /// hoa/thường). Khóa rỗng/trắng luôn trả về false.
+        /// </summary>
+        /// <param name="key">Khóa quyền cần kiểm tra (vd "orders.confirm").</param>
         public async Task<bool> HasPermissionAsync(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -92,9 +132,18 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             return (await GetMyPermissionsAsync()).Contains(key);
         }
 
+        /// <summary>
+        /// Tải ma trận phân quyền đầy đủ (danh sách quyền + quyền từng vai trò)
+        /// từ API admin — nguồn dữ liệu cho màn hình phân quyền.
+        /// </summary>
         public async Task<PermissionMatrixModel> GetMatrixAsync()
             => await GetAsync<PermissionMatrixModel>("api/admin/permissions/matrix");
 
+        /// <summary>
+        /// Lưu danh sách quyền được cấp cho 1 vai trò lên server.
+        /// </summary>
+        /// <param name="role">Tên vai trò (Admin/Cashier/Kitchen).</param>
+        /// <param name="grantedKeys">Danh sách khóa quyền được cấp; null coi như rỗng.</param>
         public async Task SaveRolePermissionsAsync(string role, List<string> grantedKeys)
             => await PutAsync<object>("api/admin/permissions/matrix",
                 new { role, grantedKeys = grantedKeys ?? new List<string>() });
