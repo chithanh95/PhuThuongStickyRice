@@ -220,10 +220,10 @@ else if (_forecast != null)
         _svgMarkup = sb.ToString();
     }
 
-    private static string CompactMoney(decimal v)
+    private static string CompactMoney(decimal amount)
     {
-        if (v >= 1_000_000m) return (v / 1_000_000m).ToString("0.#") + "tr";
-        if (v >= 1_000m) return (v / 1_000m).ToString("0.#") + "K";
-        return v.ToString("0");
+        if (amount >= 1_000_000m) return (amount / 1_000_000m).ToString("0.#") + "tr";
+        if (amount >= 1_000m) return (amount / 1_000m).ToString("0.#") + "K";
+        return amount.ToString("0");
     }
 }

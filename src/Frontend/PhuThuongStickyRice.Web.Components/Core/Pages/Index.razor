@@ -581,7 +581,7 @@ else
                             <h3>@p.DishName</h3>
                             <p>@p.Description</p>
                             <div class="sg-poll-votes">🗳️ @p.VoteCount lượt bình chọn</div>
-                            <button class="sg-btn sg-btn-outline sg-btn-block" @onclick="() => DoVote(p.Id)">Bình chọn món này</button>
+                            <button class="sg-btn sg-btn-outline sg-btn-block" @onclick="() => SubmitDishPollVote(p.Id)">Bình chọn món này</button>
                         </div>
                     </div>
                 }
@@ -1460,7 +1460,7 @@ else
     }
 
 
-    private async Task DoVote(Guid pollId)
+    private async Task SubmitDishPollVote(Guid pollId)
     {
         _voteMsg = null;
         var digits = new string((_votePhone ?? "").Where(char.IsDigit).ToArray());
@@ -1500,10 +1500,10 @@ else
             _chatSession = Guid.NewGuid().ToString("N");
             try { await JSRuntime.InvokeVoidAsync("localStorage.setItem", "pt-chat", _chatSession); } catch { }
         }
-        if (_chatOpen) await LoadChat();
+        if (_chatOpen) await LoadChatHistory();
     }
 
-    private async Task LoadChat()
+    private async Task LoadChatHistory()
     {
         try
         {

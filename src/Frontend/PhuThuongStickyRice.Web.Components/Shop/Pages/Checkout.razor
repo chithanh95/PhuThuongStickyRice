@@ -156,7 +156,7 @@
                 </div>
                 @if (_spinResult == null)
                 {
-                    <button class="btn btn-warning mt-3" @onclick="DoSpin" disabled="@_spinning">
+                    <button class="btn btn-warning mt-3" @onclick="SpinLuckyWheelAsync" disabled="@_spinning">
                         @(_spinning ? "Đang quay..." : "🎡 Quay ngay")
                     </button>
                     @if (!string.IsNullOrEmpty(_spinError))
@@ -1071,7 +1071,7 @@ else
                 && IsValidPhone(carriedPhone))
             {
                 _order.CustomerPhone = carriedPhone.Trim();
-                await DoPhoneLookupAsync();
+                await LookupCustomerLoyaltyAsync();
             }
         }
         catch (Exception)
@@ -1325,7 +1325,7 @@ else
 
         if (!token.IsCancellationRequested)
         {
-            await DoPhoneLookupAsync();
+            await LookupCustomerLoyaltyAsync();
         }
     }
 
@@ -1335,7 +1335,7 @@ else
     private async Task LookupLastOrderAsync()
     {
         _phoneLookupCts?.Cancel();
-        await DoPhoneLookupAsync();
+        await LookupCustomerLoyaltyAsync();
     }
 
     /// <summary>
@@ -1343,7 +1343,7 @@ else
     /// entered phone. Auto-filled fields never overwrite text the user
     /// already typed.
     /// </summary>
-    private async Task DoPhoneLookupAsync()
+    private async Task LookupCustomerLoyaltyAsync()
     {
         var phone = (_order.CustomerPhone ?? "").Trim();
         if (phone == _suggestedPhone || !IsValidPhone(phone))
@@ -1875,7 +1875,7 @@ else
     /// (mỗi đơn chỉ quay 1 lần — server cũng chặn), rồi tính góc xoay để kim
     /// dừng đúng giữa ô trúng. Segment lạ (không khớp key) thì rơi về ô cuối.
     /// </summary>
-    private async Task DoSpin()
+    private async Task SpinLuckyWheelAsync()
     {
         _spinError = null;
         _spinning = true;
