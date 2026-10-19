@@ -1,6 +1,7 @@
 
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,16 +61,29 @@ namespace PhuThuongStickyRice.Application.Common
 
         private readonly IRepository<ShortLink, Guid> _links;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IMemoryCache _memoryCache;
 
         /// <summary>Giới hạn server-side cho màn hình admin (bảng tăng dần).</summary>
         private const int MaxListRows = 500;
 
+        /// <summary>
+        /// TTL cache cho redirect public (giống các public path khác: 5 phút).
+        /// Chỉ cache HIT (mã tồn tại); MISS không cache để link mới tạo xong
+        /// resolve được ngay mà không cần invalidate toàn cục.
+        /// </summary>
+        private static readonly TimeSpan ResolveCacheTtl = TimeSpan.FromMinutes(5);
+
+        /// <summary>Tiền tố key cache cho <see cref="ResolveAsync"/>.</summary>
+        private const string ResolveCacheKeyPrefix = "shortlink:resolve:";
+
         public ShortLinkAppService(
             IRepository<ShortLink, Guid> links,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            IMemoryCache memoryCache)
         {
             _links = links;
             _asyncExecuter = asyncExecuter;
+            _memoryCache = memoryCache;
         }
 
         /// <summary>
@@ -116,18 +130,25 @@ namespace PhuThuongStickyRice.Application.Common
         }
 
         /// <summary>
-        /// Admin: xóa một link ngắn. Link đã xóa không redirect được nữa.
+        /// Admin: xóa một link ngắn. Link đã xóa không redirect được nữa —
+        /// xóa luôn key cache của mã này để redirect dừng ngay lập tức
+        /// (không chờ hết TTL 5 phút).
         /// </summary>
         /// <param name="id">Id link cần xóa.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task DeleteAsync(Guid id)
         {
+            var entity = await _links.GetAsync(id);
+            var cacheKey = ResolveCacheKeyPrefix + entity.Code.ToLowerInvariant();
             await _links.DeleteAsync(id, autoSave: true);
+            _memoryCache.Remove(cacheKey);
         }
 
         /// <summary>
         /// Public: giải mã ngắn thành URL đích để redirect. Mã được chuẩn hóa
         /// về chữ thường khi tra cứu nên người dùng gõ hoa/thường đều được.
+        /// Kết quả HIT được cache 5 phút (giống các public path khác) vì mỗi
+        /// click redirect trước đây đều query DB; MISS không cache.
         /// </summary>
         /// <param name="code">Mã rút gọn (không phân biệt hoa thường).</param>
         /// <returns>URL đích, hoặc null khi mã không tồn tại.</returns>
@@ -140,10 +161,25 @@ namespace PhuThuongStickyRice.Application.Common
             }
 
             var normalized = code.Trim().ToLowerInvariant();
+            var cacheKey = ResolveCacheKeyPrefix + normalized;
+            if (_memoryCache.TryGetValue(cacheKey, out string cachedTarget))
+            {
+                return cachedTarget;
+            }
+
             var queryable = await _links.GetQueryableAsync();
             var entity = await _asyncExecuter.FirstOrDefaultAsync(
                 queryable.Where(x => x.Code == normalized));
-            return entity?.TargetUrl;
+            var target = entity?.TargetUrl;
+            // Chỉ cache khi tìm thấy: mã mới tạo (CreateAsync sinh mã mới
+            // chưa từng cache) resolve được ngay; link bị xóa thì DeleteAsync
+            // đã gỡ key nên không bao giờ trả URL cũ quá TTL.
+            if (!string.IsNullOrWhiteSpace(target))
+            {
+                _memoryCache.Set(cacheKey, target, ResolveCacheTtl);
+            }
+
+            return target;
         }
 
         /// <summary>

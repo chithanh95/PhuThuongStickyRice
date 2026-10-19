@@ -46,6 +46,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             });
 
             builder.HasIndex(x => x.ProductId);
+            // perf-hunt 2026-10-19 (run 17:25): EF Core KHONG tu tao index
+            // cho FK (khac EF6) nen cot OrderId chua co index nao. Moi bao
+            // cao join lines qua navigation (SelectMany x.Lines), export
+            // Excel query WHERE OrderId IN (...), CustomerDetail topxxx
+            // Where(l => ids.Contains(l.OrderId)) deu lookup theo OrderId.
+            builder.HasIndex(x => x.OrderId);
         }
     }
 }
