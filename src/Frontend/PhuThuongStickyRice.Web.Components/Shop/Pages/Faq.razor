@@ -114,9 +114,9 @@ else
         // FQ3: load hotline / Zalo (fail-soft — block ẩn khi không có).
         try
         {
-            var s = await ShopSettingsService.GetPublicAsync();
-            var phone = !string.IsNullOrWhiteSpace(s?.ZaloPhone) ? s.ZaloPhone : s?.Hotline;
-            _hotline = s?.Hotline;
+            var settings = await ShopSettingsService.GetPublicAsync();
+            var phone = !string.IsNullOrWhiteSpace(settings?.ZaloPhone) ? settings.ZaloPhone : settings?.Hotline;
+            _hotline = settings?.Hotline;
             _hotlineDigits = _hotline == null ? null : new string(_hotline.Where(char.IsDigit).ToArray());
             if (!string.IsNullOrWhiteSpace(phone))
             {

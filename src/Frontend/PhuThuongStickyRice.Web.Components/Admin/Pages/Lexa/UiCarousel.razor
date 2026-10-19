@@ -102,14 +102,14 @@
 @code {
     private int _slideIdx;
     private bool _playing;
-    private GalleryImg _lightbox;
+    private GalleryImage _lightbox;
     private List<Slide> _slides = new()
     {
         new("🍚", "Xôi gấc", "Món bán chạy nhất", "#7a6fbe"),
         new("🌽", "Xôi ngô", "Béo ngậy thơm ngon", "#3ac9d6"),
         new("🫘", "Xôi đỗ", "Bùi bùi khó quên", "#f5b225"),
     };
-    private List<GalleryImg> _gallery = new()
+    private List<GalleryImage> _gallery = new()
     {
         new("🍚", "Xôi gấc", "#7a6fbe"), new("🌽", "Xôi ngô", "#3ac9d6"), new("🫘", "Xôi đỗ", "#f5b225"),
         new("🥥", "Xôi vò", "#ec536c"), new("🍠", "Xôi khoai", "#29bbe3"), new("🥜", "Xôi lạc", "#6a5fae"),
@@ -117,5 +117,5 @@
     private void PrevSlide() => _slideIdx = (_slideIdx - 1 + _slides.Count) % _slides.Count;
     private void NextSlide() => _slideIdx = (_slideIdx + 1) % _slides.Count;
     private record Slide(string Icon, string Title, string Desc, string Color);
-    private record GalleryImg(string Icon, string Title, string Color);
+    private record GalleryImage(string Icon, string Title, string Color);
 }

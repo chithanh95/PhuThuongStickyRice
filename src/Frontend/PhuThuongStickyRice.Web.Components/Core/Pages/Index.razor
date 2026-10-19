@@ -1237,10 +1237,10 @@ else
             try { await JSRuntime.InvokeVoidAsync("ptInitBackToTop"); } catch { }
             try
             {
-                var temp = await JSRuntime.InvokeAsync<string>("ptCheckColdWeather");
-                if (!string.IsNullOrEmpty(temp))
+                var coldWeatherResult = await JSRuntime.InvokeAsync<string>("ptCheckColdWeather");
+                if (!string.IsNullOrEmpty(coldWeatherResult))
                 {
-                    _coldTemp = temp;
+                    _coldTemp = coldWeatherResult;
                     _showColdBanner = true;
                     StateHasChanged();
                 }

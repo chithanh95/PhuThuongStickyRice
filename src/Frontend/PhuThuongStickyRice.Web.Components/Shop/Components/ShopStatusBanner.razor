@@ -29,9 +29,9 @@
     {
         try
         {
-            var s = await ShopSettingsService.GetPublicAsync();
-            if (!string.IsNullOrWhiteSpace(s?.OpenTime)) _openTime = s.OpenTime;
-            if (!string.IsNullOrWhiteSpace(s?.CloseTime)) _closeTime = s.CloseTime;
+            var settings = await ShopSettingsService.GetPublicAsync();
+            if (!string.IsNullOrWhiteSpace(settings?.OpenTime)) _openTime = settings.OpenTime;
+            if (!string.IsNullOrWhiteSpace(settings?.CloseTime)) _closeTime = settings.CloseTime;
         }
         catch { }
 

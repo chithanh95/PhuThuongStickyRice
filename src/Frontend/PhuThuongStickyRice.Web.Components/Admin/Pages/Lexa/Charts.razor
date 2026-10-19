@@ -144,19 +144,19 @@
 </style>
 
 @code {
-    private List<DayVal> _weekRevenue = new()
+    private List<DailyValue> _weekRevenue = new()
     {
         new("T2", 32), new("T3", 45), new("T4", 38), new("T5", 52),
         new("T6", 68), new("T7", 85), new("CN", 74),
     };
-    private List<DayVal> _hourly = new List<DayVal>
+    private List<DailyValue> _hourly = new List<DailyValue>
     {
-        new DayVal("6", 8), new DayVal("7", 18), new DayVal("8", 32), new DayVal("9", 25), new DayVal("10", 15),
-        new DayVal("11", 28), new DayVal("12", 45), new DayVal("13", 30), new DayVal("14", 18), new DayVal("15", 12),
-        new DayVal("16", 20), new DayVal("17", 35), new DayVal("18", 42), new DayVal("19", 38), new DayVal("20", 25),
-        new DayVal("21", 15), new DayVal("22", 8),
+        new DailyValue("6", 8), new DailyValue("7", 18), new DailyValue("8", 32), new DailyValue("9", 25), new DailyValue("10", 15),
+        new DailyValue("11", 28), new DailyValue("12", 45), new DailyValue("13", 30), new DailyValue("14", 18), new DailyValue("15", 12),
+        new DailyValue("16", 20), new DailyValue("17", 35), new DailyValue("18", 42), new DailyValue("19", 38), new DailyValue("20", 25),
+        new DailyValue("21", 15), new DailyValue("22", 8),
     };
-    private List<CompareVal> _compare = new()
+    private List<ComparisonValue> _compare = new()
     {
         new("T2", 32, 28), new("T3", 45, 40), new("T4", 38, 42),
         new("T5", 52, 45), new("T6", 68, 60), new("T7", 85, 78), new("CN", 74, 70),
@@ -175,7 +175,7 @@
     private string AreaPoints => $"0,160 {LinePoints} 400,160";
     private List<(double X, double Y)> LineDots => _monthly.Select((v, i) => (X: i * (400.0 / 11), Y: 150 - v * 1.3)).ToList();
 
-    private record DayVal(string Day, int Value);
-    private record CompareVal(string Day, int This, int Last);
+    private record DailyValue(string Day, int Value);
+    private record ComparisonValue(string Day, int This, int Last);
     private record TopDish(string Name, int Sold, int Pct, string Color);
 }
