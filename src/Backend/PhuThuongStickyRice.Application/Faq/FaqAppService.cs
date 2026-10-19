@@ -74,7 +74,10 @@ namespace PhuThuongStickyRice.Application.Faq
 
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
-                return all;
+                // perf-hunt 2026-10-19: trả bản sao của list trong cache
+                // (faqs:public-list) — không để caller mutate chung instance
+                // cache (pattern AddressBookAppService).
+                return new List<FaqItemDto>(all);
             }
 
             var term = searchTerm.Trim();

@@ -77,6 +77,24 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         }
 
         /// <summary>
+        /// Nạp các đơn ở trạng thái bếp ở chế độ read-only (AsNoTracking,
+        /// không Include Lines — giống bản tracked cũ cũng không Include):
+        /// màn hình bếp poll liên tục, chỉ đọc rồi map sang DTO.
+        /// </summary>
+        public async Task<List<Order>> GetKitchenOrdersNoTrackingAsync(
+            OrderStatus[] statuses, int maxRows,
+            CancellationToken cancellationToken = default)
+        {
+            var queryable = await GetQueryableAsync();
+            return await AsyncExecuter.ToListAsync(
+                queryable.AsNoTracking()
+                    .Where(x => statuses.Contains(x.Status))
+                    .OrderBy(x => x.CreatedAt)
+                    .Take(maxRows),
+                cancellationToken);
+        }
+
+        /// <summary>
         /// Đánh dấu lượt quay may mắn nguyên tử bằng ExecuteUpdateAsync
         /// (1 câu UPDATE ... WHERE Id = orderId AND LuckySpinUsed = false).
         /// Chạy trong DbContext/UoW hiện tại nên rollback cùng nghiệp vụ khi

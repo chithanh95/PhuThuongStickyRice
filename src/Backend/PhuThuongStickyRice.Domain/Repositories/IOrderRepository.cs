@@ -30,6 +30,17 @@ namespace PhuThuongStickyRice.Domain.Repositories
         Task<List<Order>> GetOrdersByIdsNoTrackingAsync(IEnumerable<Guid> orderIds, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Nạp các đơn ở trạng thái bếp ở chế độ read-only (AsNoTracking,
+        /// không Include Lines): màn hình bếp poll liên tục, chỉ đọc rồi map
+        /// sang DTO nên không track entity — tiết kiệm memory/CPU snapshot
+        /// change-tracker cho tới <paramref name="maxRows"/> đơn mỗi lần poll.
+        /// Thứ tự: cũ nhất lên trước (CreatedAt tăng dần).
+        /// </summary>
+        Task<List<Order>> GetKitchenOrdersNoTrackingAsync(
+            OrderStatus[] statuses, int maxRows,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Đánh dấu lượt quay may mắn của đơn đã dùng một cách nguyên tử:
         /// UPDATE ... WHERE Id = orderId AND LuckySpinUsed = false. Trả về
         /// true nếu đánh dấu thành công, false nếu lượt quay đã được dùng

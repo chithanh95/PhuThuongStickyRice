@@ -1608,11 +1608,13 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var kitchenStatuses = new[]
                 { OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.Preparing };
-            var queryable = await _orders.GetQueryableAsync();
-            var items = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => kitchenStatuses.Contains(x.Status))
-                    .OrderBy(x => x.CreatedAt)
-                    .Take(KitchenDisplayMaxOrders));
+            // perf-hunt 2026-10-19: bếp chỉ đọc rồi map sang DTO (không sửa
+            // entity) — nạp qua repo ở chế độ AsNoTracking để không track tới
+            // 200 đơn (cột text dài Notes/AdminNote) mỗi lần màn hình bếp poll.
+            // Giữ nguyên tập đơn, thứ tự cũ nhất lên trước (repo OrderBy
+            // CreatedAt) và không Include Lines như bản cũ.
+            var items = await _orders.GetKitchenOrdersNoTrackingAsync(
+                kitchenStatuses, KitchenDisplayMaxOrders);
             var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
             // Wave 6c (item 33): internal note stays in the admin UI.
             dtos.ForEach(x => x.AdminNote = null);

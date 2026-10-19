@@ -124,12 +124,18 @@ namespace PhuThuongStickyRice.Application.Shop
             var loyalty = normalized == null
                 ? null
                 : await FindLoyaltyAsync(normalized);
+            // perf-hunt 2026-10-19: GetStreakAndTodayAsync đã nạp bản ghi hôm
+            // nay trong đợt đầu (order desc) nên không cần query FindAsync
+            // riêng cho AlreadyCheckedIn — 3 query còn 2 (loyalty + streak).
+            var (streakDays, alreadyCheckedIn) = normalized == null
+                ? (StreakDays: 0, AlreadyCheckedIn: false)
+                : await GetStreakAndTodayAsync(normalized, today);
 
             return new CheckInResultDto
             {
-                AlreadyCheckedIn = normalized != null && await FindAsync(normalized, today) != null,
+                AlreadyCheckedIn = alreadyCheckedIn,
                 PointsAwarded = 0,
-                StreakDays = normalized == null ? 0 : await GetStreakAsync(normalized, today),
+                StreakDays = streakDays,
                 LoyaltyPoints = loyalty?.Points ?? 0
             };
         }
@@ -155,7 +161,7 @@ namespace PhuThuongStickyRice.Application.Shop
             {
                 AlreadyCheckedIn = alreadyCheckedIn,
                 PointsAwarded = pointsAwarded,
-                StreakDays = await GetStreakAsync(phone, today),
+                StreakDays = (await GetStreakAndTodayAsync(phone, today)).StreakDays,
                 LoyaltyPoints = loyaltyPoints
             };
         }
@@ -213,20 +219,25 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>
-        /// Đếm số ngày điểm danh liên tiếp tính đến hôm nay.
+        /// Đếm số ngày điểm danh liên tiếp tính đến hôm nay, đồng thời cho
+        /// biết đã điểm danh hôm nay chưa (đợt đầu order desc nên dates[0]
+        /// chính là bản ghi mới nhất — khớp FindAsync(phone, today)).
         /// Perf-hunt 2026-10-19: nạp theo từng đợt (mỗi đợt tối đa 370 ngày)
         /// thay vì toàn bộ lịch sử điểm danh của SĐT. Vòng lặp dừng ngay khi
         /// gặp ngày đứt quãng nên hầu hết trường hợp chỉ cần đúng 1 query có
         /// Take; kết quả trả về giống hệt bản cũ kể cả streak dài hơn 370 ngày.
         /// </summary>
-        private async Task<int> GetStreakAsync(string phone, DateTime today)
+        private async Task<(int StreakDays, bool AlreadyCheckedIn)> GetStreakAndTodayAsync(
+            string phone, DateTime today)
         {
             const int ChunkSize = 370;
             var queryable = await _checkIns.GetQueryableAsync();
 
             var streak = 0;
+            var alreadyCheckedIn = false;
             var expected = today;
             var upperBound = today; // đợt hiện tại chỉ lấy các ngày <= upperBound
+            var firstChunk = true;
             while (true)
             {
                 var dates = await _asyncExecuter.ToListAsync(
@@ -234,6 +245,15 @@ namespace PhuThuongStickyRice.Application.Shop
                         .OrderByDescending(x => x.Date)
                         .Select(x => x.Date)
                         .Take(ChunkSize));
+
+                if (firstChunk)
+                {
+                    // Mỗi SĐT tối đa 1 bản ghi/ngày (unique index Phone+Date)
+                    // nên phần tử đầu của đợt mới nhất chính là hôm nay nếu
+                    // đã điểm danh — thay cho 1 query FindAsync riêng.
+                    alreadyCheckedIn = dates.Count > 0 && dates[0] == today;
+                    firstChunk = false;
+                }
 
                 var gapFound = false;
                 foreach (var date in dates)
@@ -261,7 +281,7 @@ namespace PhuThuongStickyRice.Application.Shop
                 upperBound = dates[dates.Count - 1].AddDays(-1);
             }
 
-            return streak;
+            return (streak, alreadyCheckedIn);
         }
     }
 }

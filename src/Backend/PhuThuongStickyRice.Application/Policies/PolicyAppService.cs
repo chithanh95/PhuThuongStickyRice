@@ -49,7 +49,7 @@ namespace PhuThuongStickyRice.Application.Policies
         [AllowAnonymous]
         public virtual async Task<List<PolicyPageSummaryDto>> GetPublicListAsync()
         {
-            return await _catalogCache.GetOrAddAsync("policies:public-list", async () =>
+            var cached = await _catalogCache.GetOrAddAsync("policies:public-list", async () =>
             {
                 var queryable = await _pages.GetQueryableAsync();
                 var items = await _asyncExecuter.ToListAsync(
@@ -60,6 +60,10 @@ namespace PhuThuongStickyRice.Application.Policies
                     Title = x.Title
                 }).ToList();
             });
+            // perf-hunt 2026-10-19: trả bản sao của list trong cache
+            // (policies:public-list) — không để caller mutate chung instance
+            // cache (pattern AddressBookAppService).
+            return new List<PolicyPageSummaryDto>(cached);
         }
 
         [AllowAnonymous]
