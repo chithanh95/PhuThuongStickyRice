@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @using PhuThuongStickyRice.Web.Components.Admin.Models
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormatter;
 @inject OrderService OrderService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
@@ -257,6 +258,7 @@
 }
 
 @code {
+    // codequality-team 2026-10-20 run-0245 Agent2-CleanCode: FormatPrice dùng chung từ Core.Helpers.PriceFormatter — xóa bản copy local trong file này.
     private DateTime? _fromDate;
     private DateTime? _toDate;
     private bool _exporting;
@@ -413,8 +415,6 @@
         var pct = ChangePct(current, previous);
         return pct > 0 ? "text-success" : pct < 0 ? "text-danger" : "text-muted";
     }
-
-    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
     private async Task ExportExcel()
     {

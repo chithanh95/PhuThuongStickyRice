@@ -1,12 +1,38 @@
+// codequality-team 2026-10-20 run-0245 Agent2-CleanCode
 using PhuThuongStickyRice.Domain.Entities;
+using PhuThuongStickyRice.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System;
+using System.Linq.Expressions;
 
 namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 {
+    /// <summary>
+    /// Cấu hình EF Core cho bảng Orders (đơn hàng): cột, index, quan hệ và
+    /// các cột tiền (Money complex type). Tách thành các method nhỏ theo nhóm
+    /// cột để dễ đọc; thứ tự gọi không ảnh hưởng model cuối cùng.
+    /// </summary>
     public class OrderConfiguration : IEntityTypeConfiguration<Order>
     {
         public void Configure(EntityTypeBuilder<Order> builder)
+        {
+            ConfigureIdentity(builder);
+            ConfigureCustomerFields(builder);
+            ConfigureFulfillmentAndPayment(builder);
+            ConfigureMoneyColumns(builder);
+            ConfigureMarketingFields(builder);
+            ConfigureInvoiceFields(builder);
+            ConfigurePickupFields(builder);
+            ConfigureCashCollection(builder);
+            ConfigureLookupIndexes(builder);
+            ConfigureRelationships(builder);
+        }
+
+        /// <summary>
+        /// Bảng + khóa chính + mã đơn duy nhất (dùng tra cứu đơn public).
+        /// </summary>
+        private static void ConfigureIdentity(EntityTypeBuilder<Order> builder)
         {
             builder.ToTable("Orders");
             builder.Property(x => x.Id).HasDefaultValueSql("newsequentialid()");
@@ -15,7 +41,16 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .HasMaxLength(Order.OrderNumberMaxLength)
                 .IsRequired();
             builder.HasIndex(x => x.OrderNumber).IsUnique();
+        }
 
+        /// <summary>
+        /// Thông tin khách đặt: tên/SĐT bắt buộc, email/địa chỉ/ghi chú nullable,
+        /// ghi chú nội bộ (AdminNote, không public), lý do hủy đơn (Item 233).
+        /// SĐT chuẩn hóa 9 số cuối (CustomerPhoneNorm) có composite index để
+        /// tra cứu khoan dung định dạng chạy seek trên index thay vì scan.
+        /// </summary>
+        private static void ConfigureCustomerFields(EntityTypeBuilder<Order> builder)
+        {
             builder.Property(x => x.CustomerName).HasMaxLength(Order.CustomerNameMaxLength).IsRequired();
             builder.Property(x => x.CustomerPhone).HasMaxLength(Order.CustomerPhoneMaxLength).IsRequired();
 
@@ -47,13 +82,21 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.CustomerAddress).HasMaxLength(Order.CustomerAddressMaxLength);
             builder.Property(x => x.Notes).HasMaxLength(Order.NotesMaxLength);
 
-            // Wave 6c (item 33): internal staff note. Nullable, never public.
+            // Wave 6a (item 33): internal staff note. Nullable, never public.
             builder.Property(x => x.AdminNote).HasMaxLength(Order.AdminNoteMaxLength);
 
             // Item 233: lý do hủy đơn. Nullable — chỉ có giá trị với đơn đã hủy.
             builder.Property(x => x.CancelReason).HasMaxLength(Order.CancelReasonMaxLength);
             builder.HasIndex(x => x.CancelReason);
+        }
 
+        /// <summary>
+        /// Hình thức nhận hàng, trạng thái đơn/thanh toán/hoàn tiền (lưu dạng
+        /// int), khung giờ giao đã đặt (Wave 6a item 23), nguồn đơn và cờ đối
+        /// soát MoMo (Item 128/130/133).
+        /// </summary>
+        private static void ConfigureFulfillmentAndPayment(EntityTypeBuilder<Order> builder)
+        {
             // Nullable: self-pickup orders have no delivery address.
             builder.Property(x => x.FulfillmentMethod)
                 .HasConversion<int>()
@@ -83,79 +126,53 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .HasConversion<int>()
                 .IsRequired();
             builder.Property(x => x.RefundAmount).HasPrecision(18, 2).IsRequired();
+        }
 
-            builder.ComplexProperty(x => x.TotalAmount, totalBuilder =>
+        /// <summary>
+        /// Cấu hình 1 cột tiền (<see cref="Money"/> complex type): cột Amount
+        /// precision 18,2 bắt buộc; cột Currency tối đa 3 ký tự bắt buộc.
+        /// Gom 6 cột tiền của Orders để không lặp khối ComplexProperty giống hệt nhau.
+        /// </summary>
+        private static void ConfigureMoneyColumn(
+            EntityTypeBuilder<Order> builder,
+            Expression<Func<Order, Money>> navigation,
+            string amountColumnName,
+            string currencyColumnName)
+        {
+            builder.ComplexProperty(navigation, moneyBuilder =>
             {
-                totalBuilder.Property(x => x.Amount)
-                    .HasColumnName("TotalAmount")
+                moneyBuilder.Property(x => x.Amount)
+                    .HasColumnName(amountColumnName)
                     .HasPrecision(18, 2)
                     .IsRequired();
-                totalBuilder.Property(x => x.Currency)
-                    .HasColumnName("Currency")
+                moneyBuilder.Property(x => x.Currency)
+                    .HasColumnName(currencyColumnName)
                     .HasMaxLength(3)
                     .IsRequired();
             });
+        }
 
-            builder.ComplexProperty(x => x.DeliveryFee, feeBuilder =>
-            {
-                feeBuilder.Property(x => x.Amount)
-                    .HasColumnName("DeliveryFee")
-                    .HasPrecision(18, 2)
-                    .IsRequired();
-                feeBuilder.Property(x => x.Currency)
-                    .HasColumnName("DeliveryFeeCurrency")
-                    .HasMaxLength(3)
-                    .IsRequired();
-            });
+        /// <summary>
+        /// 6 cột tiền trên đơn: tổng tiền, phí ship, giảm giá mã, giảm giá
+        /// loyalty, giảm giá hạng, phí gói quà. Tên cột giữ nguyên như cũ.
+        /// </summary>
+        private static void ConfigureMoneyColumns(EntityTypeBuilder<Order> builder)
+        {
+            ConfigureMoneyColumn(builder, x => x.TotalAmount, "TotalAmount", "Currency");
+            ConfigureMoneyColumn(builder, x => x.DeliveryFee, "DeliveryFee", "DeliveryFeeCurrency");
+            ConfigureMoneyColumn(builder, x => x.DiscountAmount, "DiscountAmount", "DiscountCurrency");
+            ConfigureMoneyColumn(builder, x => x.LoyaltyDiscount, "LoyaltyDiscount", "LoyaltyDiscountCurrency");
+            ConfigureMoneyColumn(builder, x => x.TierDiscount, "TierDiscount", "TierDiscountCurrency");
+            ConfigureMoneyColumn(builder, x => x.GiftFee, "GiftFee", "GiftFeeCurrency");
+        }
 
-            builder.ComplexProperty(x => x.DiscountAmount, discountBuilder =>
-            {
-                discountBuilder.Property(x => x.Amount)
-                    .HasColumnName("DiscountAmount")
-                    .HasPrecision(18, 2)
-                    .IsRequired();
-                discountBuilder.Property(x => x.Currency)
-                    .HasColumnName("DiscountCurrency")
-                    .HasMaxLength(3)
-                    .IsRequired();
-            });
-
-            builder.ComplexProperty(x => x.LoyaltyDiscount, loyaltyBuilder =>
-            {
-                loyaltyBuilder.Property(x => x.Amount)
-                    .HasColumnName("LoyaltyDiscount")
-                    .HasPrecision(18, 2)
-                    .IsRequired();
-                loyaltyBuilder.Property(x => x.Currency)
-                    .HasColumnName("LoyaltyDiscountCurrency")
-                    .HasMaxLength(3)
-                    .IsRequired();
-            });
-
-            builder.ComplexProperty(x => x.TierDiscount, tierBuilder =>
-            {
-                tierBuilder.Property(x => x.Amount)
-                    .HasColumnName("TierDiscount")
-                    .HasPrecision(18, 2)
-                    .IsRequired();
-                tierBuilder.Property(x => x.Currency)
-                    .HasColumnName("TierDiscountCurrency")
-                    .HasMaxLength(3)
-                    .IsRequired();
-            });
-
-            builder.ComplexProperty(x => x.GiftFee, giftBuilder =>
-            {
-                giftBuilder.Property(x => x.Amount)
-                    .HasColumnName("GiftFee")
-                    .HasPrecision(18, 2)
-                    .IsRequired();
-                giftBuilder.Property(x => x.Currency)
-                    .HasColumnName("GiftFeeCurrency")
-                    .HasMaxLength(3)
-                    .IsRequired();
-            });
-
+        /// <summary>
+        /// Các trường marketing/khuyến mãi: điểm loyalty đã đổi, cọc, gói quà,
+        /// vòng quay may mắn đã dùng, mã giảm giá + mã giới thiệu đã dùng,
+        /// khuyến mãi "giờ vàng" tự áp.
+        /// </summary>
+        private static void ConfigureMarketingFields(EntityTypeBuilder<Order> builder)
+        {
             builder.Property(x => x.LoyaltyPointsRedeemed).IsRequired();
             builder.Property(x => x.RequiresDeposit).IsRequired();
             builder.Property(x => x.IsGift).IsRequired();
@@ -164,13 +181,33 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.DiscountCode)
                 .HasMaxLength(Order.DiscountCodeMaxLength);
 
+            builder.Property(x => x.SpinPrizeCode)
+                .HasMaxLength(Order.SpinPrizeCodeMaxLength);
+            builder.Property(x => x.ReferralCodeUsed).HasMaxLength(Order.ReferralCodeMaxLength);
+
+            // Auto-applied "giờ vàng" promotion.
+            builder.Property(x => x.PromotionName).HasMaxLength(Order.PromotionNameMaxLength);
+            builder.Property(x => x.PromotionDiscountAmount).HasPrecision(18, 2).IsRequired();
+        }
+
+        /// <summary>
+        /// Thông tin xuất hóa đơn công ty + người nhận quà (tất cả nullable).
+        /// </summary>
+        private static void ConfigureInvoiceFields(EntityTypeBuilder<Order> builder)
+        {
             builder.Property(x => x.TaxCode).HasMaxLength(Order.TaxCodeMaxLength);
             builder.Property(x => x.CompanyName).HasMaxLength(Order.CompanyNameMaxLength);
             builder.Property(x => x.RecipientName).HasMaxLength(Order.RecipientNameMaxLength);
             builder.Property(x => x.RecipientPhone).HasMaxLength(Order.RecipientPhoneMaxLength);
             builder.Property(x => x.GiftMessage).HasMaxLength(Order.GiftMessageMaxLength);
-            builder.Property(x => x.ReferralCodeUsed).HasMaxLength(Order.ReferralCodeMaxLength);
+        }
 
+        /// <summary>
+        /// Shipper do khách tự đặt (ShipperPickup) — khác shipper quán phân
+        /// (ShipperId); giờ hẹn lấy hàng đã đặt trước (ScheduledFor, UTC, null = nhận ngay).
+        /// </summary>
+        private static void ConfigurePickupFields(EntityTypeBuilder<Order> builder)
+        {
             // Customer-booked pickup shipper (ShipperPickup orders). Nullable;
             // distinct from the shop's assigned delivery shipper (ShipperId).
             builder.Property(x => x.PickupShipperName).HasMaxLength(Order.PickupShipperNameMaxLength);
@@ -179,11 +216,25 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             // Pre-order scheduled pickup time (UTC). Null = ASAP.
             builder.Property(x => x.ScheduledFor);
+        }
 
+        /// <summary>
+        /// Thu hộ tiền mặt (Item 163): cờ + thời điểm thu, mặc định false.
+        /// </summary>
+        private static void ConfigureCashCollection(EntityTypeBuilder<Order> builder)
+        {
             // Item 163: cash-collection flag. Defaults to false.
             builder.Property(x => x.CashCollected).IsRequired();
             builder.Property(x => x.CashCollectedAt);
+        }
 
+        /// <summary>
+        /// Index tra cứu: tài khoản khách đăng ký đặt đơn, composite index
+        /// (Status, CreatedAt) cho danh sách đơn admin, (CustomerPhone, Status),
+        /// trạng thái hoàn tiền và (PaymentMethod, PaymentStatus) cho đối soát.
+        /// </summary>
+        private static void ConfigureLookupIndexes(EntityTypeBuilder<Order> builder)
+        {
             // Registered customer account that placed the order (nullable).
             builder.Property(x => x.CustomerUserId);
             builder.HasIndex(x => x.CustomerUserId);
@@ -200,17 +251,26 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.HasIndex(x => x.RefundStatus);
             builder.HasIndex(x => new { x.PaymentMethod, x.PaymentStatus });
 
+            // perf-hunt 2026-10-19: admin order list (OrderAppService.GetListAsync)
+            // + order reports (OrderReportsAppService) filter Where(ShipperId == ...)
+            // — equality on Guid without index = table scan on the hottest table.
+            // Non-unique index: lookup only, no business change.
+            builder.HasIndex(x => x.ShipperId);
+        }
+
+        /// <summary>
+        /// Quan hệ: shipper quán phân (SetNull khi xóa), chi nhánh (item 109),
+        /// idempotency key chống tạo trùng đơn khi checkout retry (unique, NULL
+        /// vẫn phân biệt được), và các dòng đơn (cascade khi xóa đơn).
+        /// </summary>
+        private static void ConfigureRelationships(EntityTypeBuilder<Order> builder)
+        {
             // Delivery shipper assignment (optional).
             builder.Property(x => x.ShipperId);
             builder.HasOne(x => x.Shipper)
                 .WithMany()
                 .HasForeignKey(x => x.ShipperId)
                 .OnDelete(DeleteBehavior.SetNull);
-            // perf-hunt 2026-10-19: admin order list (OrderAppService.GetListAsync)
-            // + order reports (OrderReportsAppService) filter Where(ShipperId == ...)
-            // — equality on Guid without index = table scan on the hottest table.
-            // Non-unique index: lookup only, no business change.
-            builder.HasIndex(x => x.ShipperId);
 
             // Multi-branch foundation (item 109).
             builder.Property(x => x.BranchId);
@@ -224,10 +284,6 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // existing order. NULLs stay distinct under a unique index.
             builder.Property(x => x.IdempotencyKey).HasMaxLength(Order.IdempotencyKeyMaxLength);
             builder.HasIndex(x => x.IdempotencyKey).IsUnique();
-
-            // Auto-applied "giờ vàng" promotion.
-            builder.Property(x => x.PromotionName).HasMaxLength(Order.PromotionNameMaxLength);
-            builder.Property(x => x.PromotionDiscountAmount).HasPrecision(18, 2).IsRequired();
 
             builder.HasMany(x => x.Lines)
                 .WithOne()

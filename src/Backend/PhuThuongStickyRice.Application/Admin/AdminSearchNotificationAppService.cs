@@ -1,3 +1,4 @@
+// codequality-team 2026-10-20 run-0245 Agent2-CleanCode
 using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Customer;
 using PhuThuongStickyRice.Application.Discounts;
@@ -55,6 +56,9 @@ namespace PhuThuongStickyRice.Application.Admin
 
         /// <summary>Max birthday customer names shown in the notification detail.</summary>
         private const int BirthdayNamesTake = 3;
+
+        /// <summary>Số mã giảm giá tối đa liệt kê tên trong thông báo "mã hết lượt" — giữ nội dung thông báo gọn, còn lại xem ở màn khuyến mãi.</summary>
+        private const int ExhaustedCodesTake = 3;
 
         private readonly IOrderAppService _orders;
         private readonly IProductAppService _products;
@@ -218,7 +222,7 @@ namespace PhuThuongStickyRice.Application.Admin
                 return;
             }
 
-            var shown = codes.Take(3).Select(x => x.Code);
+            var shown = codes.Take(ExhaustedCodesTake).Select(x => x.Code);
             notifications.Add(new NotificationDto
             {
                 Id = "exhausted-discounts",

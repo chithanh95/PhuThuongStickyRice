@@ -9,6 +9,7 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Components
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @using PhuThuongStickyRice.Web.Components.Admin.Services
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormatter;
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
 @inject AdminSystemService AdminSystemService
@@ -642,6 +643,7 @@ else
 }
 
 @code {
+    // codequality-team 2026-10-20 run-0245 Agent2-CleanCode: FormatPrice dùng chung từ Core.Helpers.PriceFormatter — xóa bản copy local trong file này.
     private string _activeTab = "products";
     private List<ShopProductModel> _products;
     private List<ShopProductModel> _filteredProducts = new List<ShopProductModel>();
@@ -1844,8 +1846,6 @@ else
 
         return defaultLabel ?? I18n.Translate("add_to_cart");
     }
-
-    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
     /// <summary>Bỏ dấu tiếng Việt để tìm kiếm không dấu vẫn ra.</summary>
     private static string RemoveDiacritics(string text)

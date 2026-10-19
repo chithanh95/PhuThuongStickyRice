@@ -1,6 +1,7 @@
 @page "/momo-simulator"
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormatter;
 @inject ShopService ShopService
 @inject NavigationManager Navigation
 
@@ -47,6 +48,7 @@ else
 }
 
 @code {
+    // codequality-team 2026-10-20 run-0245 Agent2-CleanCode: FormatPrice dùng chung từ Core.Helpers.PriceFormatter — xóa bản copy local trong file này.
     private string _orderId;
     private string _orderNumber;
     private long _amount;
@@ -143,6 +145,4 @@ else
 
         return result;
     }
-
-    private static string FormatPrice(long price) => $"{price:N0} ₫";
 }

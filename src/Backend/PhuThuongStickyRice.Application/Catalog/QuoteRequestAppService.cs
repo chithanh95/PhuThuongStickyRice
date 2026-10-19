@@ -1,3 +1,4 @@
+// codequality-team 2026-10-20 run-0245 Agent2-CleanCode
 using PhuThuongStickyRice.Application.Catalog.DTOs;
 using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Domain.Entities;
@@ -84,12 +85,12 @@ namespace PhuThuongStickyRice.Application.Catalog
                 CustomerName = dto.CustomerName.Trim(),
                 CustomerPhone = dto.CustomerPhone.Trim(),
                 EventDate = dto.EventDate?.Date,
-                EventLocation = string.IsNullOrWhiteSpace(dto.EventLocation) ? null : dto.EventLocation.Trim(),
-                Budget = string.IsNullOrWhiteSpace(dto.Budget) ? null : dto.Budget.Trim(),
-                QuoteType = string.IsNullOrWhiteSpace(dto.QuoteType) ? null : dto.QuoteType.Trim(),
+                EventLocation = TrimToNull(dto.EventLocation),
+                Budget = TrimToNull(dto.Budget),
+                QuoteType = TrimToNull(dto.QuoteType),
                 // Số lượng tối thiểu 1 — không cho đơn báo giá 0 suất.
                 Quantity = Math.Max(1, dto.Quantity),
-                Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim(),
+                Notes = TrimToNull(dto.Notes),
                 Status = QuoteStatus.New,
                 CreatedAt = DateTime.UtcNow
             };
@@ -171,7 +172,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             // Truyền 0 nghĩa là "không yêu cầu cọc" → lưu null thay vì 0
             // để UI phân biệt được "chưa đặt cọc" và "cọc 0đ".
             entity.DepositAmount = dto.DepositAmount > 0 ? dto.DepositAmount : null;
-            entity.DepositInfo = string.IsNullOrWhiteSpace(dto.DepositInfo) ? null : dto.DepositInfo.Trim();
+            entity.DepositInfo = TrimToNull(dto.DepositInfo);
             await _quotes.UpdateAsync(entity, autoSave: true);
 
             return MapToDto(entity);
@@ -266,6 +267,14 @@ namespace PhuThuongStickyRice.Application.Catalog
                 CreatedAt = entity.CreatedAt
             };
         }
+
+        /// <summary>
+        /// Chuẩn hóa chuỗi nullable: trim, rỗng/trắng thì trả null (để DB lưu
+        /// null thay vì chuỗi trắng — các field optional như địa điểm sự kiện,
+        /// ngân sách, ghi chú đều dùng pattern này).
+        /// </summary>
+        private static string TrimToNull(string value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
         private static QuoteRequestDto MapToDto(QuoteRequest entity)
         {
