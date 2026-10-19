@@ -646,10 +646,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public void MergeLinesFrom(Order source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             if (source.Id == Id)
             {
@@ -755,8 +752,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("Chỉ đơn hàng đang chờ xác nhận mới được đổi địa chỉ / giờ giao.");
             }
 
-            var address = (customerAddress ?? "").Trim();
-            var slot = (deliverySlot ?? "").Trim();
+            var address = (customerAddress ?? string.Empty).Trim();
+            var slot = (deliverySlot ?? string.Empty).Trim();
 
             if (string.IsNullOrEmpty(address))
             {
@@ -787,7 +784,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("Chỉ đơn hàng đang chờ xác nhận mới được sửa thông tin liên hệ.");
             }
 
-            var phone = (recipientPhone ?? "").Trim();
+            var phone = (recipientPhone ?? string.Empty).Trim();
             if (!string.IsNullOrEmpty(phone))
             {
                 // Validate SĐT VN: 0 + (3|5|7|8|9) + 8 số.
@@ -804,7 +801,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 RecipientPhone = phone;
             }
 
-            var note = (notes ?? "").Trim();
+            var note = (notes ?? string.Empty).Trim();
             Notes = string.IsNullOrEmpty(note) ? null : note;
         }
 
@@ -836,7 +833,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             }
 
             var dot = email.LastIndexOf('.');
-            return dot > atIndex + 1 && dot < email.Length - 1 && !email.Contains(" ");
+            return dot > atIndex + 1 && dot < email.Length - 1 && !email.Contains(' ');
         }
 
         public void Confirm()

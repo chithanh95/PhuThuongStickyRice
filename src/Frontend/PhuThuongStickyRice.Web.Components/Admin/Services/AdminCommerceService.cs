@@ -195,7 +195,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         {
             var dateString = date.ToString("yyyy-MM-dd");
             var result = await GetAsync<Dictionary<string, decimal>>($"api/shift-closes/expected?date={dateString}");
-            return result != null && result.TryGetValue("expected", out var v) ? v : 0;
+            return result != null && result.TryGetValue("expected", out var expectedCod) ? expectedCod : 0;
         }
 
         public async Task<ShiftCloseModel> GetShiftCloseAsync(DateTime date)

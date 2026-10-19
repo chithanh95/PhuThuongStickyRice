@@ -1,3 +1,7 @@
+@* Trang thanh toán: dựng đơn hàng từ giỏ (CartState), áp khuyến mãi giờ vàng + mã giảm giá +
+   giảm hạng thành viên + đổi điểm loyalty (preview khớp công thức server), validate thông tin
+   khách, chống đặt trùng (idempotency key), gửi đơn qua ShopService.CreateOrderAsync rồi hiển
+   thị QR chuyển khoản / vòng quay may mắn theo phương thức thanh toán. *@
 @page "/checkout"
 <PageTitle>Thanh toán — Xôi Phú Thượng</PageTitle>
 @using System
@@ -768,6 +772,10 @@ else
     /// <summary>Customer's saved addresses (empty when anonymous).</summary>
     private List<CustomerAddressModel> _savedAddresses = new List<CustomerAddressModel>();
 
+    /// <summary>
+    /// Item 90: khi khách chọn 1 địa chỉ đã lưu, điền tên/SĐT/địa chỉ người nhận
+    /// vào form đặt hàng (khách vẫn sửa được trước khi đặt).
+    /// </summary>
     private void OnSavedAddressChanged(ChangeEventArgs e)
     {
         if (!Guid.TryParse(e.Value?.ToString(), out var id))
@@ -856,7 +864,9 @@ else
     private int _redeemPoints;
     private string _redeemMessage;
 
-    // Lucky spin.
+    // Lucky spin: 6 ô trên vòng quay (mỗi ô 60°). _spinSegmentKeys là mã segment
+    // server trả về (SpinResultModel.Segment) — thứ tự 2 mảng phải khớp nhau
+    // tuyệt đối, nếu không kim dừng sai ô so với phần thưởng thật.
     private static readonly string[] _spinSegments = { "5%", "10%", "15%", "Miễn ship", "20k", "May mắn" };
     private static readonly string[] _spinSegmentKeys = { "Percent5", "Percent10", "Percent15", "FreeShip", "Cash20k", "Miss" };
     private string _wheelStyle = string.Empty;
@@ -948,6 +958,11 @@ else
         }
     }
 
+    /// <summary>
+    /// Tải setting shop, khuyến mãi giờ vàng, feature flag, chi nhánh, địa chỉ đã lưu
+    /// và auto-fill SĐT/đơn cũ, sau đó tự áp mã giảm giá tốt nhất (fail-soft —
+    /// mọi bước đều có try/catch, checkout không bao giờ chặn vì lỗi load phụ).
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         try
@@ -1076,11 +1091,25 @@ else
         Funnel.Track(FunnelService.Events.CheckoutView, new Uri(Navigation.Uri).AbsolutePath);
     }
 
+    /// <summary>
+    /// Đọc 1 feature flag từ map server trả về; nếu thiếu flag thì dùng giá trị
+    /// mặc định (fail open — checkout không bị chặn khi không tải được flag).
+    /// </summary>
+    /// <param name="flags">Map flag từ server (null khi tải lỗi).</param>
+    /// <param name="key">Tên flag.</param>
+    /// <param name="fallback">Giá trị mặc định khi không có flag.</param>
+    /// <returns>Trạng thái flag hoặc giá trị mặc định.</returns>
     private static bool GetFlag(System.Collections.Generic.Dictionary<string, bool> flags, string key, bool fallback)
     {
         return flags != null && flags.TryGetValue(key, out var enabled) ? enabled : fallback;
     }
 
+    /// <summary>
+    /// Parse query string của URL hiện tại thành dictionary (không phân biệt hoa/thường).
+    /// Dùng để nhận ?phone= mang từ giỏ và ?code= mang từ banner ở /shop.
+    /// </summary>
+    /// <param name="uri">URL đầy đủ của trang.</param>
+    /// <returns>Các cặp key=value của query string (không dấu #, + thành space).</returns>
     private static Dictionary<string, string> ParseQuery(string uri)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -1197,6 +1226,10 @@ else
         CartState.UpdateQuantity(item.LineKey, item.Quantity + delta);
     }
 
+    /// <summary>
+    /// Cập nhật trạng thái chặn đặt đơn theo đơn tối thiểu (MinOrderAmount):
+    /// dưới ngưỡng thì nút đặt bị khóa kèm thông báo thêm món.
+    /// </summary>
     private void RefreshMinOrderState()
     {
         _minOrderBlocked = _shopSettings.MinOrderAmount > 0 && _subtotal < _shopSettings.MinOrderAmount;
@@ -1358,6 +1391,11 @@ else
         }
     }
 
+    /// <summary>
+    /// Áp mã giảm giá khách nhập: validate qua server với subtotal đã trừ khuyến mãi
+    /// giờ vàng (_subtotalForDiscount) để số tiền preview khớp số server thực trừ.
+    /// Fail-soft — lỗi mạng chỉ hiện thông báo, không chặn checkout.
+    /// </summary>
     private async Task ApplyDiscount()
     {
         _discountMessage = null;
@@ -1449,6 +1487,11 @@ else
         _autoAppliedNote = null;
     }
 
+    /// <summary>
+    /// Đổi điểm loyalty sang tiền giảm: yêu cầu nhập tối thiểu 1 bước đổi
+    /// (PointsRedeemUnit) và không vượt số dư; số điểm lẻ dưới 1 bước bị làm
+    /// tròn xuống — server validate lại khi đặt hàng.
+    /// </summary>
     private void ApplyRedeem()
     {
         _redeemMessage = null;
@@ -1482,6 +1525,13 @@ else
         _redeemMessage = $"Đổi {_redeemPoints} điểm → giảm {FormatPrice(_redeemDiscountPreview)}.";
     }
 
+    /// <summary>
+    /// Validate từng field của form (tên, SĐT VN 10 số đầu 03/05/07/08/09, email
+    /// optional, tên/SĐT người nhận khi đặt hộ, MST + tên công ty khi xuất VAT).
+    /// Lỗi được gán vào biến _*Error để form hiện đỏ đúng ô; địa chỉ không bắt
+    /// buộc vì shop không giao hàng.
+    /// </summary>
+    /// <returns>true khi mọi field hợp lệ.</returns>
     private bool ValidateFields()
     {
         _nameError = string.IsNullOrWhiteSpace(_order.CustomerName) ? "Vui lòng nhập họ tên." : null;
@@ -1510,6 +1560,12 @@ else
 
 
 
+    /// <summary>
+    /// Đặt hàng: validate form → chặn khi dưới đơn tối thiểu / quán tạm nghỉ →
+    /// dựng payload + token reCAPTCHA → gọi API tạo đơn → reset idempotency key,
+    /// xóa giỏ, chuyển sang trang tra cứu đơn (COD/ví) hoặc hiện QR (chuyển
+    /// khoản) / thanh toán (MoMo). Lỗi server hiện nguyên văn message tiếng Việt.
+    /// </summary>
     private async Task PlaceOrder()
     {
         _error = null;
@@ -1688,6 +1744,10 @@ else
         }
     }
 
+    /// <summary>
+    /// Khách bấm "Tôi đã chuyển khoản": báo server ghi nhận, trạng thái thanh toán
+    /// của đơn được cập nhật từ kết quả trả về (shop sẽ xác nhận thủ công sau).
+    /// </summary>
     private async Task MarkTransferred()
     {
         _transferMessage = null;
@@ -1709,6 +1769,10 @@ else
         }
     }
 
+    /// <summary>
+    /// Tạo yêu cầu thanh toán MoMo cho đơn vừa đặt rồi chuyển khách sang PayUrl
+    /// của MoMo (forceLoad vì là URL ngoài, Blazor không navigate nội bộ được).
+    /// </summary>
     private async Task PayWithMoMo()
     {
         _momoError = null;
@@ -1730,8 +1794,14 @@ else
         }
     }
 
+    /// <summary>CSS class báo lỗi đỏ của Bootstrap cho 1 field có message lỗi.</summary>
+    /// <param name="error">Message lỗi của field (null = không lỗi).</param>
+    /// <returns>"is-invalid" khi có lỗi, null khi hợp lệ.</returns>
     private static string FieldClass(string error) => string.IsNullOrEmpty(error) ? null : "is-invalid";
 
+    /// <summary>SĐT VN di động hợp lệ: 10 số, đầu 03/05/07/08/09 (định dạng mạng VN).</summary>
+    /// <param name="phone">Số điện thoại nhập vào.</param>
+    /// <returns>true khi đúng định dạng di động VN.</returns>
     private static bool IsValidPhone(string phone) =>
         !string.IsNullOrWhiteSpace(phone)
         && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
@@ -1758,6 +1828,12 @@ else
         return parts.Count == 0 ? null : "Khẩu vị: " + string.Join(" — ", parts);
     }
 
+    /// <summary>
+    /// Check email hợp lệ bằng cấu trúc cơ bản: đúng 1 dấu @, có dấu chấm sau @,
+    /// không chứa space. Không dùng Regex phức tạp — email chỉ là field optional.
+    /// </summary>
+    /// <param name="email">Email nhập vào.</param>
+    /// <returns>true khi đúng cấu trúc email cơ bản.</returns>
     private static bool IsValidEmail(string email)
     {
         var at = email.IndexOf('@');
@@ -1777,6 +1853,11 @@ else
         return $"transform: translate(-50%, -50%) rotate({angle}deg) translateY(-70px) rotate(-{angle}deg);";
     }
 
+    /// <summary>
+    /// Quay vòng may mắn sau khi đặt đơn: gọi server bốc segment, đánh dấu đã dùng
+    /// (mỗi đơn chỉ quay 1 lần — server cũng chặn), rồi tính góc xoay để kim
+    /// dừng đúng giữa ô trúng. Segment lạ (không khớp key) thì rơi về ô cuối.
+    /// </summary>
     private async Task DoSpin()
     {
         _spinError = null;
@@ -1809,8 +1890,12 @@ else
         }
     }
 
+    /// <summary>Định dạng tiền VNĐ không số thập phân kèm ký hiệu ₫ (vd 35.000 ₫).</summary>
+    /// <param name="price">Số tiền.</param>
+    /// <returns>Chuỗi tiền đã định dạng.</returns>
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
+    /// <summary>Re-render khi người dùng đổi ngôn ngữ (AppI18n.OnChange).</summary>
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
 
     public void Dispose()

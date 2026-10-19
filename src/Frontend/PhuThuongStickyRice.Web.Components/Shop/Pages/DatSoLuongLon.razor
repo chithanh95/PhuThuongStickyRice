@@ -1,3 +1,6 @@
+@* Form đặt số lượng lớn (đám tiệc/sự kiện): 3 bước (1-sự kiện & số lượng, 2-chọn món,
+   3-thông tin liên hệ) → gửi yêu cầu báo giá → hiện QR cọc 30% qua VietQR (in được qua
+   window.print). Đơn số lượng lớn áp giá chiết khấu theo bậc (tier) tự động. *@
 @page "/dat-so-luong-lon"
 <PageTitle>Đặt số lượng lớn — Xôi Phú Thượng</PageTitle>
 @using System
@@ -255,7 +258,9 @@ else
     private int _bulkStep = 1;
     private string _bulkEventType = "Đám tiệc";
 
-    // ---- SL1: Tiered bulk pricing (discount grows with quantity) ----
+    // ---- SL1: Chiết khấu theo bậc số lượng (mua càng nhiều giảm càng sâu) ----
+    // Bậc: 50–99 gói giảm 5%, 100–199 gói giảm 8%, từ 200 gói giảm 12%.
+    // Con số là chính sách bán của shop — đổi phải hỏi lại chủ shop.
     private const int BulkTier1MinQty = 50;
     private const int BulkTier1MaxQty = 99;
     private const decimal BulkTier1DiscountPct = 5m;
@@ -265,6 +270,12 @@ else
     private const int BulkTier3MinQty = 200;
     private const decimal BulkTier3DiscountPct = 12m;
 
+    /// <summary>
+    /// Tra mức chiết khấu % theo số lượng: từ 50 gói trở lên mới có chiết khấu,
+    /// bậc cao hơn luôn thắng (không cộng dồn các bậc).
+    /// </summary>
+    /// <param name="qty">Số gói đặt.</param>
+    /// <returns>% chiết khấu (0 khi dưới 50 gói).</returns>
     private static decimal BulkTierDiscountPct(int qty) => qty >= BulkTier3MinQty ? BulkTier3DiscountPct
         : qty >= BulkTier2MinQty ? BulkTier2DiscountPct
         : qty >= BulkTier1MinQty ? BulkTier1DiscountPct
@@ -288,6 +299,10 @@ else
     private string _depositCode = string.Empty;
     private bool _depositConfirmed;
 
+    /// <summary>
+    /// Tải món còn bán cho bước 2 (chọn món). Lỗi mạng → form hiện trạng thái
+    /// trống, khách bấm lại để thử.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         try
@@ -302,12 +317,20 @@ else
         }
     }
 
+    /// <summary>Chọn/bỏ chọn 1 món ở bước 2 (giá tạm tính cập nhật ngay trên màn hình).</summary>
+    /// <param name="id">Id món.</param>
+    /// <param name="selected">true = chọn, false = bỏ chọn.</param>
     private void ToggleBulkProduct(Guid id, bool selected)
     {
         if (selected) { _bulkProductIds.Add(id); }
         else { _bulkProductIds.Remove(id); }
     }
 
+    /// <summary>
+    /// Validate bước 1 (sự kiện & số lượng): bắt chọn loại sự kiện, ngày nhận phải
+    /// trước ít nhất 3 ngày (shop cần thời gian chuẩn bị nguyên liệu số lượng lớn),
+    /// và tối thiểu 50 gói (đơn nhỏ hơn đặt trực tiếp ở /shop).
+    /// </summary>
     private void BulkNextFromStep1()
     {
         _bulkError = null;
@@ -334,6 +357,10 @@ else
         _bulkStep = 2;
     }
 
+    /// <summary>
+    /// Validate bước 2: bắt chọn ít nhất 1 món rồi mới sang bước 3
+    /// (thông tin liên hệ).
+    /// </summary>
     private void BulkNextFromStep2()
     {
         _bulkError = null;
@@ -345,6 +372,12 @@ else
         _bulkStep = 3;
     }
 
+    /// <summary>
+    /// Gửi yêu cầu báo giá số lượng lớn: validate tên + SĐT, ghép tên món và loại
+    /// sự kiện vào ghi chú, gọi API CreateQuoteAsync. Khi thành công: tính cọc 30%
+    /// trên tổng đã chiết khấu, sinh mã cọc "COC" + SĐT (dễ tra soát), tải thông
+    /// tin chuyển khoản và hiện QR VietQR.
+    /// </summary>
     private async Task SubmitBulk()
     {
         _bulkError = null;
@@ -369,8 +402,10 @@ else
             _bulk.Notes = $"Loại sự kiện: {_bulkEventType}. Món: {names}."
                 + (string.IsNullOrWhiteSpace(_bulkNotes) ? "" : $" Ghi chú: {_bulkNotes.Trim()}");
             await ShopService.CreateQuoteAsync(_bulk);
-            // SL2: 30% deposit on the discounted estimate
+            // SL2: cọc 30% trên tổng ĐÃ chiết khấu theo bậc — giữ chân khách đơn lớn,
+            // shop có cơ sở chuẩn bị nguyên liệu; 30% là quy định chung của shop.
             _depositAmount = BulkFinalTotal * 0.30m;
+            // Mã cọc tra soát: "COC" + SĐT khách (dễ đối chiếu trên sao kê).
             _depositCode = "COC" + new string((_bulk.CustomerPhone ?? "").Where(char.IsDigit).ToArray());
             _depositConfirmed = false;
             await LoadBankInfoAsync();
@@ -386,6 +421,7 @@ else
         }
     }
 
+    /// <summary>Tải thông tin tài khoản ngân hàng của shop để dựng QR VietQR tiền cọc.</summary>
     private async Task LoadBankInfoAsync()
     {
         try
@@ -418,6 +454,10 @@ else
         }
     }
 
+    /// <summary>
+    /// Khách bấm "Tôi đã chuyển cọc": ghi nhận trạng thái trên màn hình (shop sẽ
+    /// kiểm tra và xác nhận cọc thủ công sau — không trừ tiền tự động).
+    /// </summary>
     private void ConfirmDeposit()
     {
         _depositConfirmed = true;
@@ -438,12 +478,24 @@ else
     }
 
 
+    /// <summary>SĐT VN di động hợp lệ: 10 số, đầu 03/05/07/08/09 (định dạng mạng VN).</summary>
+    /// <param name="phone">Số điện thoại nhập vào.</param>
+    /// <returns>true khi đúng định dạng di động VN.</returns>
     private static bool IsValidPhone(string phone) =>
         !string.IsNullOrWhiteSpace(phone)
         && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 
+    /// <summary>Định dạng tiền VNĐ không số thập phân kèm ký hiệu ₫ (vd 35.000 ₫).</summary>
+    /// <param name="price">Số tiền.</param>
+    /// <returns>Chuỗi tiền đã định dạng.</returns>
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
+    /// <summary>
+    /// Ảnh món ở danh sách chọn: dùng ảnh thật từ setting DB, chưa có thì ảnh
+    /// placeholder SVG (không hardcode ảnh món nào).
+    /// </summary>
+    /// <param name="product">Món cần lấy ảnh.</param>
+    /// <returns>URL ảnh món hoặc ảnh placeholder.</returns>
     private static string ProductImage(ShopProductModel product)
     {
         // Parse "ảnh đầu tiên" gom về CartState.FirstImageUrl thay vì parse

@@ -25,7 +25,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string Message { get; set; }
 
         /// <summary>True once the other side has seen the message.</summary>
-        public bool IsRead { get; set; } = false;
+        public bool IsRead { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

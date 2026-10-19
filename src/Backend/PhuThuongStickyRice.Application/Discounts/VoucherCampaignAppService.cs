@@ -48,6 +48,14 @@ namespace PhuThuongStickyRice.Application.Discounts
         // Prefix mặc định cho mã voucher sinh tự động.
         private const string DefaultCodePrefix = "VC";
 
+        // Độ dài phần hậu tố ngẫu nhiên của mã voucher (GUID rút gọn, chữ hoa).
+        private const int CodeSuffixLength = 6;
+        // Số lần thử tối đa khi sinh mã không trùng DB; quá giới hạn thì báo
+        // lỗi thay vì treo request (DB gần như đầy mã).
+        private const int CodeMaxAttempts = 20;
+        // Kích thước chunk khi kiểm tra trùng mã với DB (dưới giới hạn tham số của SQL Server).
+        private const int CodeCheckChunkSize = 1000;
+
         private readonly IRepository<LoyaltyAccount, Guid> _loyaltyAccounts;
         private readonly IRepository<Order, Guid> _orders;
         private readonly IRepository<DiscountCode, Guid> _discountCodes;
@@ -234,20 +242,14 @@ namespace PhuThuongStickyRice.Application.Discounts
             var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < count; i++)
             {
-                string code;
-                do
-                {
-                    code = prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
-                } while (!used.Add(code));
-                codes.Add(code);
+                codes.Add(GenerateCandidate(prefix, used));
             }
 
-            // Giới hạn 20 lần thử để tránh vòng lặp vô hạn nếu DB gần như đầy mã.
-            for (var attempt = 0; attempt < 20; attempt++)
+            for (var attempt = 0; attempt < CodeMaxAttempts; attempt++)
             {
                 var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var queryable = await _discountCodes.GetQueryableAsync();
-                foreach (var chunk in codes.Chunk(1000))
+                foreach (var chunk in codes.Chunk(CodeCheckChunkSize))
                 {
                     var found = await _asyncExecuter.ToListAsync(
                         queryable.Where(x => chunk.Contains(x.Code)).Select(x => x.Code));
@@ -267,17 +269,27 @@ namespace PhuThuongStickyRice.Application.Discounts
                     if (existing.Contains(codes[i]))
                     {
                         used.Remove(codes[i]);
-                        string replacement;
-                        do
-                        {
-                            replacement = prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
-                        } while (!used.Add(replacement));
-                        codes[i] = replacement;
+                        codes[i] = GenerateCandidate(prefix, used);
                     }
                 }
             }
 
             throw new DomainException("Không thể tạo mã voucher duy nhất, vui lòng thử lại.");
+        }
+
+        /// <summary>
+        /// Sinh 1 mã ứng viên dạng "TIỀN TỐ-XXXXXX" chưa dùng trong batch này
+        /// (loại trùng trong batch bằng HashSet; trùng với DB kiểm tra riêng).
+        /// </summary>
+        private static string GenerateCandidate(string prefix, HashSet<string> used)
+        {
+            string candidate;
+            do
+            {
+                candidate = prefix + "-" + Guid.NewGuid().ToString("N")
+                    .Substring(0, CodeSuffixLength).ToUpperInvariant();
+            } while (!used.Add(candidate));
+            return candidate;
         }
     }
 }

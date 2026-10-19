@@ -69,6 +69,14 @@ namespace PhuThuongStickyRice.Application.Orders
             _vipPriority = vipPriority;
         }
 
+        /// <summary>
+        /// Một dòng đối soát theo kênh thanh toán (record lồng để truyền
+        /// dữ liệu query qua <see cref="BuildDailyReconciliationDto"/> thay
+        /// cho anonymous type).
+        /// </summary>
+        private sealed record ReconciliationChannelRow(
+            PaymentMethod Method, long OrderCount, decimal Revenue, decimal PaidAmount, decimal UnpaidAmount);
+
         public virtual async Task<DailyReconciliationDto> GetDailyReconciliationAsync(DateTime? date)
         {
             var day = (date ?? VietnamTime.Today()).Date;
@@ -76,29 +84,43 @@ namespace PhuThuongStickyRice.Application.Orders
             var endUtc = VietnamTime.DayEndExclusiveUtc(day);
 
             var queryable = await _orders.GetQueryableAsync();
-            var dayQuery = queryable.Where(x => x.CreatedAt >= startUtc && x.CreatedAt < endUtc);
+            var rows = await LoadReconciliationRowsAsync(
+                queryable.Where(x => x.CreatedAt >= startUtc && x.CreatedAt < endUtc));
 
-            // One query per channel metric is avoided: group once by payment
-            // method and derive count / revenue / paid / unpaid in the
-            // projection. Cancelled orders contribute to the count but never
-            // to revenue.
-            var rows = await _asyncExecuter.ToListAsync(
+            return BuildDailyReconciliationDto(day, rows);
+        }
+
+        /// <summary>
+        /// Gộp 1 query theo kênh thanh toán: đếm đơn, doanh thu, đã/chưa thanh
+        /// toán. Đơn hủy chỉ tính vào số đơn, không tính vào doanh thu.
+        /// </summary>
+        /// <param name="dayQuery">Query đơn trong ngày VN (giờ UTC).</param>
+        private async Task<List<ReconciliationChannelRow>> LoadReconciliationRowsAsync(
+            IQueryable<Order> dayQuery)
+        {
+            return await _asyncExecuter.ToListAsync(
                 dayQuery
                     .GroupBy(x => x.PaymentMethod)
-                    .Select(g => new
-                    {
-                        Method = g.Key,
-                        OrderCount = g.LongCount(),
-                        Revenue = g.Where(x => x.Status != OrderStatus.Cancelled)
+                    .Select(g => new ReconciliationChannelRow(
+                        g.Key,
+                        g.LongCount(),
+                        g.Where(x => x.Status != OrderStatus.Cancelled)
                             .Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m,
-                        PaidAmount = g.Where(x => x.Status != OrderStatus.Cancelled
+                        g.Where(x => x.Status != OrderStatus.Cancelled
                                 && x.PaymentStatus == PaymentStatus.Paid)
                             .Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m,
-                        UnpaidAmount = g.Where(x => x.Status != OrderStatus.Cancelled
+                        g.Where(x => x.Status != OrderStatus.Cancelled
                                 && x.PaymentStatus != PaymentStatus.Paid)
-                            .Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m
-                    }));
+                            .Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m)));
+        }
 
+        /// <summary>
+        /// Dựng DTO đối soát: map từng kênh thanh toán (kênh nào không có đơn
+        /// trong ngày thì toàn bộ chỉ số = 0) rồi cộng dồn hàng tổng.
+        /// </summary>
+        private static DailyReconciliationDto BuildDailyReconciliationDto(
+            DateTime day, List<ReconciliationChannelRow> rows)
+        {
             var channels = Enum.GetValues(typeof(PaymentMethod))
                 .Cast<PaymentMethod>()
                 .Select(m =>
@@ -139,8 +161,23 @@ namespace PhuThuongStickyRice.Application.Orders
             var linesByOrder = await GetLinesByOrderAsync(items.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
-            var sheet = workbook.Worksheets.Add("Đơn hàng");
+            WriteOrdersSheet(workbook.Worksheets.Add("Đơn hàng"), items, linesByOrder);
 
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Ghi sheet "Đơn hàng" của file Excel xuất đơn: header vàng + 1 dòng/đơn
+        /// (ngày đặt quy về giờ VN, tổng giảm = cộng cả 4 loại giảm lưu riêng trong DB).
+        /// </summary>
+        /// <param name="sheet">Sheet Excel đang dựng.</param>
+        /// <param name="items">Đơn hàng cần xuất, mới nhất lên trước.</param>
+        /// <param name="linesByOrder">Dòng món theo Id đơn (load 1 query gộp).</param>
+        private static void WriteOrdersSheet(
+            IXLWorksheet sheet, List<Order> items, Dictionary<Guid, List<OrderLine>> linesByOrder)
+        {
             var headers = new[]
             {
                 "Mã đơn", "Ngày đặt", "Khách hàng", "SĐT", "Địa chỉ",
@@ -193,10 +230,6 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             sheet.Columns().AdjustToContents();
-
-            using var stream = new MemoryStream();
-            workbook.SaveAs(stream);
-            return stream.ToArray();
         }
 
         /// <summary>

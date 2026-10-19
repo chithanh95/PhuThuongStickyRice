@@ -710,6 +710,14 @@ namespace PhuThuongStickyRice.Application.Orders
             List<Topping> Toppings);
 
         /// <summary>
+        /// Ứng viên đơn cho tra cứu theo SĐT (phase 1 của tìm kiếm 2 phase):
+        /// chỉ lấy (Id, SĐT, ngày tạo) để thu hẹp payload của scan
+        /// LIKE '%suffix%' — phase 2 mới nạp full đơn theo Id trúng.
+        /// </summary>
+        private sealed record OrderPhoneCandidate(
+            Guid Id, string CustomerPhone, DateTime CreatedAt);
+
+        /// <summary>
         /// Nạp 1 lần (4 query gộp) toàn bộ món/combo/size/topping mà các dòng
         /// đơn tham chiếu, lọc theo ID phân biệt — tránh N+1 khi checkout có
         /// nhiều dòng. Mỗi query chỉ lấy đúng các ID cần thiết.
@@ -2633,22 +2641,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             var last9 = digits.Substring(digits.Length - 9);
-            var orderQueryable = await _orders.GetQueryableAsync();
-            // Perf (two-phase): the tolerant PhonesMatch check cannot run on SQL,
-            // and the LIKE '%suffix%' scan cannot be avoided without a persisted
-            // normalized phone column (deferred: schema change + semantic risk).
-            // To shrink the scan payload, phase 1 selects only (Id, CustomerPhone,
-            // CreatedAt) instead of materializing 100 full Order rows (long text
-            // columns like AdminNote/Notes); phase 2 fetches only the matched
-            // orders by Id (index seeks). Semantics unchanged: same candidate
-            // set, same descending-CreatedAt order, same DTO mapping, AdminNote
-            // still stripped.
-            var candidates = await _asyncExecuter.ToListAsync(
-                orderQueryable
-                    .Where(x => x.CustomerPhone.Contains(last9))
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Select(x => new { x.Id, x.CustomerPhone, x.CreatedAt })
-                    .Take(100));
+            var candidates = await LoadOrderCandidatesAsync(last9);
 
             var matched = candidates.Where(x => PhonesMatch(x.CustomerPhone, digits)).ToList();
             if (matched.Count == 0)
@@ -2657,6 +2650,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             var matchedIds = matched.Select(x => x.Id).ToList();
+            var orderQueryable = await _orders.GetQueryableAsync();
             var orders = await _asyncExecuter.ToListAsync(
                 orderQueryable.Where(x => matchedIds.Contains(x.Id)));
             var byId = orders.ToDictionary(x => x.Id);
@@ -2675,6 +2669,25 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Phase 1 của tra cứu đơn theo SĐT: quét LIKE '%suffix%' nhưng chỉ
+        /// select (Id, SĐT, ngày tạo) thay vì nạp full 100 đơn (cột text dài
+        /// như AdminNote/Notes) — phase 2 nạp full đơn theo Id trúng (index
+        /// seek). Giữ nguyên ngữ nghĩa: cùng tập ứng viên, cùng thứ tự mới
+        /// nhất lên trước.
+        /// </summary>
+        /// <param name="last9">9 số cuối SĐT (tìm khoan dung định dạng).</param>
+        private async Task<List<OrderPhoneCandidate>> LoadOrderCandidatesAsync(string last9)
+        {
+            var orderQueryable = await _orders.GetQueryableAsync();
+            return await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.CustomerPhone.Contains(last9))
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Select(x => new OrderPhoneCandidate(x.Id, x.CustomerPhone, x.CreatedAt))
+                    .Take(100));
         }
 
         private async Task<Order> FindOrThrowAsync(Guid id)
@@ -2845,18 +2858,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var today = VietnamTime.Today();
             var fromUtc = VietnamTime.DayStartUtc(today);
             var toUtc = VietnamTime.DayEndExclusiveUtc(today);
-
-            var orderQueryable = await _orders.GetQueryableAsync();
-            var soldRows = await _asyncExecuter.ToListAsync(
-                orderQueryable
-                    .Where(x => x.Status != OrderStatus.Cancelled
-                        && x.CreatedAt >= fromUtc
-                        && x.CreatedAt < toUtc)
-                    .SelectMany(x => x.Lines)
-                    .GroupBy(l => l.ProductId)
-                    .Select(g => new { ProductId = g.Key, Sold = g.Sum(l => l.Quantity) }));
-
-            var soldMap = soldRows.ToDictionary(x => x.ProductId, x => (int)x.Sold);
+            var soldMap = await LoadTodaySoldByProductAsync(fromUtc, toUtc);
 
             foreach (var limited in limits)
             {
@@ -2869,6 +2871,28 @@ namespace PhuThuongStickyRice.Application.Orders
                         $"Món '{want.Name}' hôm nay chỉ còn {remaining} suất. Vui lòng giảm số lượng.");
                 }
             }
+        }
+
+        /// <summary>
+        /// Tổng số lượng đã bán hôm nay (giờ VN) của từng món, tính từ các đơn
+        /// chưa hủy — dùng kiểm tra giới hạn suất/ngày của sản phẩm (item 165).
+        /// </summary>
+        /// <param name="fromUtc">Đầu ngày VN (quy về UTC).</param>
+        /// <param name="toUtc">Cuối ngày VN, exclusive (quy về UTC).</param>
+        private async Task<Dictionary<Guid, int>> LoadTodaySoldByProductAsync(
+            DateTime fromUtc, DateTime toUtc)
+        {
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var soldRows = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Status != OrderStatus.Cancelled
+                        && x.CreatedAt >= fromUtc
+                        && x.CreatedAt < toUtc)
+                    .SelectMany(x => x.Lines)
+                    .GroupBy(l => l.ProductId)
+                    .Select(g => new { ProductId = g.Key, Sold = g.Sum(l => l.Quantity) }));
+
+            return soldRows.ToDictionary(x => x.ProductId, x => (int)x.Sold);
         }
 
         /// <summary>

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Web.Components.Shop.Models
 {
+    /// <summary>Kết quả phân trang từ API: tổng số bản ghi + danh sách của trang hiện tại.</summary>
+    /// <typeparam name="T">Kiểu item trong trang.</typeparam>
     public class PagedResult<T>
     {
         public long TotalCount { get; set; }
@@ -74,6 +76,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public DateTimeOffset CreatedDateTime { get; set; }
     }
 
+    /// <summary>Tùy chọn kích cỡ của 1 món (vd Nhỏ/Vừa/Lớn), mỗi size có giá riêng.</summary>
     public class ProductSizeOptionModel
     {
         public Guid Id { get; set; }
@@ -117,6 +120,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public bool IsActive { get; set; }
     }
 
+    /// <summary>1 món thành phần trong gói combo (id, tên, giá gốc, số lượng trong gói).</summary>
     public class ComboItemModel
     {
         public Guid ProductId { get; set; }
@@ -190,6 +194,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public string Note { get; set; }
     }
 
+    /// <summary>1 dòng hàng trong payload gửi API khi tạo đơn (món, size, topping, số lượng).</summary>
     public class CreateOrderLineModel
     {
         public Guid ProductId { get; set; }
@@ -370,6 +375,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
     }
 
     /// <summary>Public bank-transfer details shown at checkout (account info + VietQR).</summary>
+    /// <summary>Thông tin tài khoản ngân hàng của shop — dùng để dựng QR VietQR cho khách chuyển khoản.</summary>
     public class BankTransferInfoModel
     {
         public string BankName { get; set; }
@@ -388,6 +394,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
             && !string.IsNullOrWhiteSpace(AccountNumber) && AccountNumber != "xxx";
     }
 
+    /// <summary>Kết quả tạo thanh toán MoMo: URL PayUrl để chuyển khách sang MoMo thanh toán.</summary>
     public class MoMoCreatePaymentResultModel
     {
         public Guid OrderId { get; set; }
@@ -401,6 +408,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public bool TestMode { get; set; }
     }
 
+    /// <summary>Payload MoMo gọi ngược về server khi khách thanh toán xong (server xác thực chữ ký).</summary>
     public class MoMoCallbackModel
     {
         public string OrderId { get; set; }
@@ -430,6 +438,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public bool Simulated { get; set; }
     }
 
+    /// <summary>1 dòng hàng hiển thị ở trang tra cứu đơn (chỉ xem, không chỉnh sửa).</summary>
     public class TrackedOrderLineModel
     {
         public Guid Id { get; set; }
@@ -692,6 +701,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
     }
 
     /// <summary>Result of GET api/dashboard/today-sold.</summary>
+    /// <summary>Tổng số gói đã bán trong ngày hôm nay — dùng cho số liệu bán hàng nhanh.</summary>
     public class TodaySoldModel
     {
         public long QuantitySold { get; set; }

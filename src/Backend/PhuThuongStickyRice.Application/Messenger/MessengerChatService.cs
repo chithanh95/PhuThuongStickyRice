@@ -260,19 +260,12 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         private async Task<string> HandleInfoAsync(ChatSession session, string text)
         {
-            var phoneMatch = VnPhoneRegex().Match(text.Replace(" ", string.Empty));
-            if (!phoneMatch.Success)
+            // Tách SĐT + tên khách từ tin nhắn: SĐT là cụm số khớp regex VN,
+            // phần chữ còn lại là tên (xóa dấu câu, gom khoảng trắng thừa).
+            var (phone, name) = ExtractCustomerInfo(text);
+            if (phone == null)
             {
                 return "SĐT chưa đúng định dạng (VD: 0912345678). Bạn gửi lại giúp mình nhé!";
-            }
-
-            var phone = phoneMatch.Value;
-            var name = VnPhoneRegex().Replace(text, " ");
-            name = PunctuationRegex().Replace(name, " ").Trim();
-            name = WhitespaceRegex().Replace(name, " ");
-            if (string.IsNullOrWhiteSpace(name) || name.Length < 2)
-            {
-                name = "Khách Messenger";
             }
 
             var norm = NormalizeForMatching(text);
@@ -280,21 +273,9 @@ namespace PhuThuongStickyRice.Application.Messenger
 
             try
             {
-                var order = await _orders.CreateAsync(new CreateOrderDto
-                {
-                    CustomerName = name.Length > 200 ? name.Substring(0, 200) : name,
-                    CustomerPhone = phone,
-                    CustomerAddress = fulfillment == "CustomerPickup" ? "Khách tự đến quán lấy" : "Shipper đến quán lấy",
-                    Notes = $"Đặt qua Messenger chat (PSID {session.Psid ?? "?"})",
-                    PaymentMethod = "Cod",
-                    FulfillmentMethod = fulfillment,
-                    Source = "Messenger",
-                    Lines = session.PendingLines.Select(x => new CreateOrderLineDto
-                    {
-                        ProductId = x.ProductId,
-                        Quantity = x.Quantity
-                    }).ToList()
-                }, skipRecaptchaCheck: true);
+                var order = await _orders.CreateAsync(
+                    BuildOrderDto(session, name, phone, fulfillment),
+                    skipRecaptchaCheck: true);
 
                 _sessions.TryRemove(session.Psid ?? string.Empty, out _);
                 var pickupNote = fulfillment == "ShipperPickup"
@@ -309,6 +290,55 @@ namespace PhuThuongStickyRice.Application.Messenger
                 Logger.LogWarning(ex, "Messenger order creation failed.");
                 return "Rất tiếc, quán đang tạm ngưng nhận đơn lúc này. Bạn thử lại sau ít phút nhé!";
             }
+        }
+
+        /// <summary>
+        /// Tách SĐT + tên khách từ tin nhắn chat: SĐT là cụm số khớp regex VN,
+        /// phần chữ còn lại là tên (xóa dấu câu, gom khoảng trắng thừa).
+        /// Trả (null, null) khi SĐT sai định dạng.
+        /// </summary>
+        private (string Phone, string Name) ExtractCustomerInfo(string text)
+        {
+            var phoneMatch = VnPhoneRegex().Match(text.Replace(" ", string.Empty));
+            if (!phoneMatch.Success)
+            {
+                return (null, null);
+            }
+
+            var name = VnPhoneRegex().Replace(text, " ");
+            name = PunctuationRegex().Replace(name, " ").Trim();
+            name = WhitespaceRegex().Replace(name, " ");
+            if (string.IsNullOrWhiteSpace(name) || name.Length < 2)
+            {
+                name = "Khách Messenger";
+            }
+
+            return (phoneMatch.Value, name);
+        }
+
+        /// <summary>
+        /// Dựng DTO tạo đơn từ thông tin khách chat: thanh toán COD, nguồn
+        /// Messenger, địa chỉ theo hình thức nhận. reCAPTCHA bỏ qua ở call site
+        /// vì chat không có token trình duyệt.
+        /// </summary>
+        private static CreateOrderDto BuildOrderDto(
+            ChatSession session, string name, string phone, string fulfillment)
+        {
+            return new CreateOrderDto
+            {
+                CustomerName = name.Length > 200 ? name.Substring(0, 200) : name,
+                CustomerPhone = phone,
+                CustomerAddress = fulfillment == "CustomerPickup" ? "Khách tự đến quán lấy" : "Shipper đến quán lấy",
+                Notes = $"Đặt qua Messenger chat (PSID {session.Psid ?? "?"})",
+                PaymentMethod = "Cod",
+                FulfillmentMethod = fulfillment,
+                Source = "Messenger",
+                Lines = session.PendingLines.Select(x => new CreateOrderLineDto
+                {
+                    ProductId = x.ProductId,
+                    Quantity = x.Quantity
+                }).ToList()
+            };
         }
 
         // ---------------- menu & parsing ----------------

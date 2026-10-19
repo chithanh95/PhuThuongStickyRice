@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
@@ -145,6 +146,40 @@ namespace PhuThuongStickyRice.Application.Discounts
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
         private readonly Products.IProductCatalogCache _catalogCache;
+
+        // Độ dài phần ngẫu nhiên của mã sinh tự động (bỏ ký tự dễ nhầm I/O/0/1
+        // để khách đọc to không bị nhầm khi nhập mã).
+        private const int GeneratedCodeRandomPartLength = 6;
+        // Số lần thử sinh ngẫu nhiên tối đa; nếu vẫn trùng (xác suất cực thấp)
+        // thì fallback sang GUID thay vì retry vô hạn.
+        private const int GeneratedCodeMaxAttempts = 10;
+
+        /// <summary>
+        /// Điều kiện "mã còn dùng được" dùng chung cho cả kiểm tra 1 mã,
+        /// kiểm tra 1 SĐT và kiểm tra hàng loạt — gom 1 chỗ để logic lọc
+        /// không lệch nhau giữa các method (tiền tố khớp, đang bật, còn hạn,
+        /// còn lượt dùng).
+        /// </summary>
+        /// <param name="prefix">Tiền tố mã (đã chuẩn hóa chữ hoa).</param>
+        /// <param name="now">Mốc thời gian so sánh hạn dùng.</param>
+        private static Expression<Func<DiscountCode, bool>> UsableCodeFilter(
+            string prefix, DateTime now) =>
+            x => x.Code.StartsWith(prefix)
+                && x.IsActive
+                && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
+                && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value);
+
+        /// <summary>
+        /// Điều kiện "mã công khai đang hoạt động" dùng chung cho
+        /// <see cref="GetActivePublicAsync"/> và <see cref="EvaluateBestAsync"/>
+        /// — mã không gắn SĐT riêng, đang bật, còn hạn, còn lượt dùng.
+        /// </summary>
+        private static Expression<Func<DiscountCode, bool>> PublicActiveCodeFilter(
+            DateTime now) =>
+            x => x.IsActive
+                && (x.OwnerPhone == null || x.OwnerPhone == "")
+                && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
+                && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value);
 
         public DiscountAppService(
             IDiscountCodeRepository discounts,
@@ -470,12 +505,9 @@ namespace PhuThuongStickyRice.Application.Discounts
             var prefix = codePrefix.Trim().ToUpperInvariant();
             var queryable = await _discounts.GetQueryableAsync();
             var existing = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x =>
-                    x.Code.StartsWith(prefix)
-                    && x.OwnerPhone == ownerPhone
-                    && x.IsActive
-                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > DateTime.UtcNow)
-                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value)));
+                queryable
+                    .Where(UsableCodeFilter(prefix, DateTime.UtcNow))
+                    .Where(x => x.OwnerPhone == ownerPhone));
             return existing != null;
         }
 
@@ -506,12 +538,9 @@ namespace PhuThuongStickyRice.Application.Discounts
             var prefix = codePrefix.Trim().ToUpperInvariant();
             var queryable = await _discounts.GetQueryableAsync();
             var rows = await _asyncExecuter.ToListAsync(
-                queryable.Where(x =>
-                    x.Code.StartsWith(prefix)
-                    && list.Contains(x.OwnerPhone)
-                    && x.IsActive
-                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > DateTime.UtcNow)
-                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
+                queryable
+                    .Where(UsableCodeFilter(prefix, DateTime.UtcNow))
+                    .Where(x => list.Contains(x.OwnerPhone))
                     .Select(x => x.OwnerPhone));
             foreach (var phone in rows)
             {
@@ -535,12 +564,9 @@ namespace PhuThuongStickyRice.Application.Discounts
             var prefix = codePrefix.Trim().ToUpperInvariant();
             var queryable = await _discounts.GetQueryableAsync();
             var existing = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x =>
-                    x.Code.StartsWith(prefix)
-                    && x.OwnerPhone == ownerPhone
-                    && x.IsActive
-                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > DateTime.UtcNow)
-                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value)));
+                queryable
+                    .Where(UsableCodeFilter(prefix, DateTime.UtcNow))
+                    .Where(x => x.OwnerPhone == ownerPhone));
             return existing?.Code;
         }
 
@@ -561,10 +587,8 @@ namespace PhuThuongStickyRice.Application.Discounts
                 var now = DateTime.UtcNow;
                 var queryable = await _discounts.GetQueryableAsync();
                 var entities = await _asyncExecuter.ToListAsync(
-                    queryable.Where(x => x.IsActive
-                        && (x.OwnerPhone == null || x.OwnerPhone == "")
-                        && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
-                        && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
+                    queryable
+                        .Where(PublicActiveCodeFilter(now))
                         .OrderByDescending(x => x.CreatedDateTime));
                 return entities.Select(MapToDto).ToList();
             });
@@ -588,10 +612,8 @@ namespace PhuThuongStickyRice.Application.Discounts
             var now = DateTime.UtcNow;
             var queryable = await _discounts.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.IsActive
-                    && (x.OwnerPhone == null || x.OwnerPhone == "")
-                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
-                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
+                queryable
+                    .Where(PublicActiveCodeFilter(now))
                     .OrderByDescending(x => x.CreatedDateTime));
 
             string bestCode = null;
@@ -705,16 +727,14 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <returns>Mã chưa từng tồn tại trong DB.</returns>
         private async Task<string> GenerateUniqueCodeAsync(string prefix)
         {
-            // Bộ ký tự bỏ I/O/0/1 (dễ nhầm lẫn khi khách đọc to), 6 ký tự ngẫu nhiên.
+            // Bộ ký tự bỏ I/O/0/1 (dễ nhầm lẫn khi khách đọc to).
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
             var random = Random.Shared; // perf-hunt 2026-10-19: Random.Shared is thread-safe and avoids same-tick seed collisions across concurrent requests
 
-            // Thử tối đa 10 lần sinh ngẫu nhiên không trùng; nếu vẫn trùng
-            // (xác suất cực thấp) thì dùng GUID cho chắc, không retry vô hạn.
-            for (var attempt = 0; attempt < 10; attempt++)
+            for (var attempt = 0; attempt < GeneratedCodeMaxAttempts; attempt++)
             {
                 var code = prefix + "-" + new string(
-                    Enumerable.Range(0, 6).Select(_ => chars[random.Next(chars.Length)]).ToArray());
+                    Enumerable.Range(0, GeneratedCodeRandomPartLength).Select(_ => chars[random.Next(chars.Length)]).ToArray());
 
                 var queryable = await _discounts.GetQueryableAsync();
                 var exists = await _asyncExecuter.FirstOrDefaultAsync(
@@ -725,7 +745,7 @@ namespace PhuThuongStickyRice.Application.Discounts
                 }
             }
 
-            return prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
+            return prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, GeneratedCodeRandomPartLength).ToUpperInvariant();
         }
 
         /// <summary>

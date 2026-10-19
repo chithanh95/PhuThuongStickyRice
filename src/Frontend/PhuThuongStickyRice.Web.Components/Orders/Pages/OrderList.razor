@@ -1,3 +1,9 @@
+@* Trang quản lý đơn (staff): danh sách đơn phân trang 20/trang với filter trạng thái,
+   shipper, khoảng ngày, trạng thái thu tiền, chỉ đơn VIP và tìm kiếm debounce; đổi
+   trạng thái theo luồng Pending→Confirmed→Preparing→Delivering→Completed (hoặc Cancelled),
+   gán shipper, xác nhận lấy hàng, xác nhận thanh toán/thu tiền mặt, gộp đơn trùng SĐT,
+   xuất Excel, phím tắt và copy mẫu tin nhắn theo trạng thái. Nút nhạy cảm bị ẩn theo
+   quyền (item 155); API kiểm tra quyền lại phía server. *@
 @page "/orders"
 @attribute [Authorize(Roles = "Admin,Cashier")]
 @implements System.IAsyncDisposable
@@ -546,6 +552,12 @@ else
     private System.Collections.Generic.HashSet<string> _permissions =
         new(System.StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Item 155: kiểm tra quyền chi tiết của user hiện tại. Nút thiếu quyền bị ẩn
+    /// hẳn (không chỉ mờ) để staff không thấy chức năng mình không được dùng.
+    /// </summary>
+    /// <param name="key">Mã quyền (vd "orders.confirm", "orders.cancel").</param>
+    /// <returns>true khi user có quyền.</returns>
     private bool HasPermission(string key) => _permissions.Contains(key);
     private string _searchTerm;
     private string _statusFilter;
@@ -612,9 +624,14 @@ else
     private bool _mergeIsError;
     private readonly System.Collections.Generic.Dictionary<string, System.Guid> _mergePrimary = new System.Collections.Generic.Dictionary<string, System.Guid>();
 
+    // Thứ tự chuẩn của luồng đơn hàng (dùng cho filter và các chuyển trạng thái hợp lệ).
     private static readonly string[] Statuses =
         { "Pending", "Confirmed", "Preparing", "Delivering", "Completed", "Cancelled" };
 
+    /// <summary>
+    /// Tải quyền, nhận deep link (?status=, ?searchTerm=, ?fromDate=, ?toDate=),
+    /// tải danh sách shipper và trang đơn đầu tiên, rồi load nền nhóm đơn trùng SĐT.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         // Item 155: fine-grained permissions gate the sensitive buttons.
@@ -668,6 +685,11 @@ else
         _ = LoadDuplicateGroupsAsync();
     }
 
+    /// <summary>
+    /// Item 141: gắn listener phím tắt 1 lần duy nhất sau lần render đầu.
+    /// Fail-soft — trang vẫn chạy bình thường nếu JS interop lỗi.
+    /// </summary>
+    /// <param name="firstRender">true ở lần render đầu tiên.</param>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         // Item 141: attach the keyboard-shortcut listener once.
@@ -686,6 +708,8 @@ else
         }
     }
 
+    /// <summary>Dừng listener phím tắt JS và giải phóng DotNetObjectReference + timer tìm kiếm.</summary>
+    /// <returns>Task dispose bất đồng bộ.</returns>
     public async ValueTask DisposeAsync()
     {
         try
@@ -700,6 +724,9 @@ else
         _searchTimer?.Dispose();
     }
 
+    /// <summary>
+    /// Id shipper đang lọc (parse từ dropdown). Guid.Empty = bỏ lọc.
+    /// </summary>
     private Guid? ShipperFilterId
     {
         get
@@ -775,6 +802,10 @@ else
         }
     }
 
+    /// <summary>
+    /// Tìm kiếm debounce 500ms: mỗi lần gõ hủy timer cũ, chỉ tải lại khi khách
+    /// ngừng gõ — tránh gọi API liên tục theo từng ký tự.
+    /// </summary>
     private void OnSearchChanged()
     {
         _searchTimer?.Dispose();
@@ -916,6 +947,9 @@ else
         }
     }
 
+    /// <summary>Nhãn tiếng Việt cho trạng thái thanh toán (badge ở hàng đơn).</summary>
+    /// <param name="status">Mã trạng thái thanh toán.</param>
+    /// <returns>Nhãn hiển thị (vd "Chờ xác nhận"); mã lạ giữ nguyên.</returns>
     private static string PaymentStatusLabel(string status) => status switch
     {
         "Unpaid" => "Chưa thanh toán",
@@ -925,6 +959,11 @@ else
         _ => status
     };
 
+    /// <summary>
+    /// Mở/đóng panel chi tiết 1 đơn: khi mở thì prefill ghi chú nội bộ, thông tin
+    /// shipper đến lấy và tải timeline trạng thái của đơn đó.
+    /// </summary>
+    /// <param name="order">Đơn cần mở/đóng chi tiết.</param>
     private async Task ToggleDetail(OrderModel order)
     {
         var opening = _expandedOrderId != order.Id;
@@ -982,6 +1021,12 @@ else
         }
     }
 
+    /// <summary>
+    /// Đổi trạng thái 1 đơn qua API rồi tải lại trang hiện tại. Lỗi hiển thị
+    /// trong alert đỏ đầu trang (_actionError).
+    /// </summary>
+    /// <param name="order">Đơn cần đổi trạng thái.</param>
+    /// <param name="status">Trạng thái mới (trong luồng Statuses).</param>
     private async Task ChangeStatus(OrderModel order, string status)
     {
         _actionError = null;
@@ -996,6 +1041,11 @@ else
         }
     }
 
+    /// <summary>
+    /// Xác nhận đã nhận tiền cho đơn chờ xác nhận (chuyển khoản/MoMo): nút chỉ hiện
+    /// khi có quyền "orders.confirm-payment", sau khi xác nhận thì tải lại trang.
+    /// </summary>
+    /// <param name="order">Đơn cần xác nhận thanh toán.</param>
     private async Task ConfirmPayment(OrderModel order)
     {
         _actionError = null;
@@ -1064,6 +1114,11 @@ else
     /// <summary>
     /// Staff confirms a ShipperPickup order was collected at the shop.
     /// </summary>
+    /// <summary>
+    /// Nhân viên xác nhận shipper (do khách đặt) đã đến shop lấy hàng — đóng lại
+    /// vòng đời đơn ShipperPickup khi không có shipper nhà.
+    /// </summary>
+    /// <param name="order">Đơn ShipperPickup cần xác nhận.</param>
     private async Task MarkPickedUp(OrderModel order)
     {
         _pickupMessage = null;
@@ -1089,6 +1144,12 @@ else
         }
     }
 
+    /// <summary>
+    /// Render nút "Đã nhận tiền" cho đơn chờ xác nhận thanh toán; nút bị ẩn khi
+    /// thiếu quyền "orders.confirm-payment" (item 155).
+    /// </summary>
+    /// <param name="order">Đơn đang xét.</param>
+    /// <returns>Fragment nút xác nhận (rỗng khi không đủ điều kiện).</returns>
     private RenderFragment ConfirmPaymentButton(OrderModel order) => builder =>
     {
         if (order.PaymentStatus != "PendingConfirmation")
@@ -1196,6 +1257,12 @@ else
         }
     }
 
+    /// <summary>
+    /// Render badge thông tin thanh toán: tên phương thức (COD/VietQR/MoMo) + nhãn
+    /// trạng thái thanh toán bằng tiếng Việt.
+    /// </summary>
+    /// <param name="order">Đơn đang xét.</param>
+    /// <returns>Fragment hiển thị phương thức + trạng thái.</returns>
     private static RenderFragment PaymentInfo(OrderModel order) => builder =>
     {
         var method = order.PaymentMethod switch
@@ -1222,6 +1289,13 @@ else
         builder.CloseElement();
     };
 
+    /// <summary>
+    /// Render các nút chuyển trạng thái kế tiếp của 1 đơn theo luồng chuẩn
+    /// (Pending → Confirmed/Preparing/Delivering → Completed, hoặc Cancelled);
+    /// nút không đủ quyền bị ẩn — server kiểm tra quyền lại khi đổi.
+    /// </summary>
+    /// <param name="order">Đơn đang xét.</param>
+    /// <returns>Fragment các nút chuyển trạng thái hợp lệ.</returns>
     private RenderFragment NextStatusButtons(OrderModel order) => builder =>
     {
         var next = order.Status switch
@@ -1255,6 +1329,9 @@ else
         }
     };
 
+    /// <summary>Nhãn nút tiếng Việt cho trạng thái kế tiếp (vd Confirmed → "Xác nhận").</summary>
+    /// <param name="status">Mã trạng thái.</param>
+    /// <returns>Nhãn nút; mã lạ giữ nguyên.</returns>
     private static string ButtonLabel(string status) => status switch
     {
         "Confirmed" => "Xác nhận",
@@ -1265,6 +1342,9 @@ else
         _ => status
     };
 
+    /// <summary>Định dạng tiền VNĐ không số thập phân kèm ký hiệu ₫ (vd 35.000 ₫).</summary>
+    /// <param name="price">Số tiền.</param>
+    /// <returns>Chuỗi tiền đã định dạng.</returns>
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
     /// <summary>Wave 6c (item 34): Vietnamese labels for the timeline.</summary>
@@ -1279,6 +1359,12 @@ else
         _ => status
     };
 
+    /// <summary>
+    /// Parse query string thành dictionary (không phân biệt hoa/thường) để nhận
+    /// deep link /orders?status= /orders?searchTerm= /orders?fromDate= /orders?toDate=.
+    /// </summary>
+    /// <param name="uri">URL đầy đủ của trang.</param>
+    /// <returns>Các cặp key=value của query string.</returns>
     private static System.Collections.Generic.Dictionary<string, string> ParseQuery(string uri)
     {
         var result = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
@@ -1325,6 +1411,9 @@ else
         builder.CloseElement();
     };
 
+    /// <summary>Màu badge theo mã trạng thái đơn (Pending vàng → Completed xanh lá, Cancelled đỏ).</summary>
+    /// <param name="status">Mã trạng thái đơn.</param>
+    /// <returns>Fragment badge trạng thái.</returns>
     private static RenderFragment StatusBadge(string status) => builder =>
     {
         var css = status switch

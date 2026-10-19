@@ -17,7 +17,7 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public int RewardAmount { get; set; } = 10000;
 
-        public bool IsRewarded { get; set; } = false;
+        public bool IsRewarded { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

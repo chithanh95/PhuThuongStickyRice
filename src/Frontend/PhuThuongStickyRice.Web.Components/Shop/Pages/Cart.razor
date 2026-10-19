@@ -1,3 +1,6 @@
+@* Trang giỏ hàng: hiển thị các dòng hàng, đổi số lượng (về 0 là xóa dòng), thanh
+   freeship, gợi ý "Thường được mua cùng", mang SĐT sang /checkout (?phone=)
+   và gộp món từ link chia sẻ giỏ (?share=). *@
 @page "/cart"
 <PageTitle>Giỏ hàng — Xôi Phú Thượng</PageTitle>
 @using System
@@ -209,6 +212,12 @@ else
     private List<ShopProductModel> _suggestions;
     private const string PlaceholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIxMiI+Tm8gaW1hZ2U8L3RleHQ+PC9zdmc+";
 
+    /// <summary>
+    /// Ảnh 1 dòng giỏ: dùng ảnh thật của món, chưa có thì ảnh placeholder SVG
+    /// (không hardcode ảnh món nào — rule chung: ảnh lấy từ setting DB).
+    /// </summary>
+    /// <param name="item">Dòng giỏ hàng.</param>
+    /// <returns>URL ảnh món hoặc ảnh placeholder.</returns>
     private string CartItemImage(CartItemModel item)
     {
         if (!string.IsNullOrWhiteSpace(item?.ImageUrl))
@@ -216,6 +225,9 @@ else
         return PlaceholderImage;
     }
 
+    /// <summary>Ảnh gợi ý "Thường được mua cùng": ảnh đầu của món qua ResolveImageUrl, fallback placeholder.</summary>
+    /// <param name="s">Món được gợi ý.</param>
+    /// <returns>URL ảnh tuyệt đối hoặc ảnh placeholder.</returns>
     private string SuggestionImage(ShopProductModel s)
     {
         var first = CartState.FirstImageUrl(s?.ImageUrlsJson);
@@ -237,6 +249,10 @@ else
     // OnCartChanged only refetches when this changes (quantity changes don't).
     private string _lastSuggestionCartKey = string.Empty;
 
+    /// <summary>
+    /// Tải danh sách giỏ, gộp món từ link chia sẻ, gợi ý mua cùng, ngưỡng freeship
+    /// và prefill SĐT từ lần ghé trước (fail-soft — không chặn giỏ khi lỗi).
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         AppI18n.OnChange += OnLangChanged;
@@ -268,6 +284,10 @@ else
         }
     }
 
+    /// <summary>
+    /// Giỏ thay đổi: chỉ tải lại gợi ý khi TẬP ID món thay đổi (không tải lại khi
+    /// chỉ đổi số lượng — tiết kiệm 2 API call mỗi lần bấm +/-).
+    /// </summary>
     private void OnCartChanged()
     {
         // Suggestion list ("Thường được mua cùng") only depends on the SET of
@@ -295,12 +315,16 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>Thêm nhanh 1 món từ gợi ý "Thường được mua cùng" vào giỏ kèm toast xác nhận.</summary>
+    /// <param name="product">Món được gợi ý.</param>
     private void QuickAddSuggestion(ShopProductModel product)
     {
         CartState.Add(product, 1);
         Toasts.Show($"Đã thêm {product.Name} vào giỏ");
     }
 
+    /// <summary>Lưu tạm SĐT nhập ở ô checkout vào state (dùng khi sang /checkout).</summary>
+    /// <param name="e">Giá trị ô nhập SĐT.</param>
     private void OnPhoneInput(ChangeEventArgs e)
     {
         _phone = e.Value?.ToString();
@@ -383,9 +407,9 @@ else
     }
 
     /// <summary>
-    /// <summary>
-    /// On page load, merges ?share= items into the cart (product ids are
-    /// validated against the API).
+    /// Gộp ?share= vào giỏ khi mở trang: payload là các cặp productId:quantity mã hóa
+    /// base64, mỗi id được validate với API và chỉ nhận hàng còn bán. Tham số
+    /// share bị xóa khỏi URL sau khi gộp để F5 không cộng trùng.
     /// </summary>
     private async Task MergeSharedCartAsync()
     {
@@ -397,6 +421,9 @@ else
 
         try
         {
+            // Link chia sẻ dùng base64 URL-safe (- thay +, _ thay /): trả về
+            // base64 chuẩn và thêm dấu = đệm cho đủ bội số của 4 (quy tắc base64)
+            // trước khi giải mã.
             var padded = share.Replace('-', '+').Replace('_', '/');
             padded = padded.PadRight(padded.Length + (4 - padded.Length % 4) % 4, '=');
             var payload = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(padded));
@@ -441,6 +468,12 @@ else
         }
     }
 
+    /// <summary>
+    /// Parse query string thành dictionary (không phân biệt hoa/thường).
+    /// Dùng để nhận ?share= từ link chia sẻ giỏ.
+    /// </summary>
+    /// <param name="uri">URL đầy đủ của trang.</param>
+    /// <returns>Các cặp key=value của query string.</returns>
     private static Dictionary<string, string> ParseQuery(string uri)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -472,8 +505,12 @@ else
         return result;
     }
 
+    /// <summary>Định dạng tiền VNĐ không số thập phân kèm ký hiệu ₫ (vd 35.000 ₫).</summary>
+    /// <param name="price">Số tiền.</param>
+    /// <returns>Chuỗi tiền đã định dạng.</returns>
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
+    /// <summary>Re-render khi người dùng đổi ngôn ngữ (AppI18n.OnChange).</summary>
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
 
     public void Dispose()

@@ -560,6 +560,8 @@ namespace PhuThuongStickyRice.Domain.Entities
         private static string FormatHour(TimeSpan t) =>
             t.Minutes == 0 ? $"{t.Hours}h" : $"{t.Hours}:{t.Minutes:D2}";
 
+        private static readonly char[] TagSeparators = [',', ';'];
+
         private static string NormalizeTags(string tags)
         {
             if (string.IsNullOrWhiteSpace(tags))
@@ -567,7 +569,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 return null;
             }
 
-            var parts = tags.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+            // Dùng field static readonly thay vì new[] mỗi lần gọi — tránh cấp phát
+            // mảng mới cho mỗi lần chuẩn hóa tags (CA1861).
+            var parts = tags.Split(TagSeparators, StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => x.Trim().ToLowerInvariant())
                 .Where(x => x.Length > 0)
                 .Distinct()
