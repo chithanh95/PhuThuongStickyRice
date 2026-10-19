@@ -17,10 +17,13 @@ namespace PhuThuongStickyRice.WebAPI.Services
     /// <see cref="RequestOtpAsync"/> never reveals whether the phone number
     /// is registered (always "succeeds") to prevent account enumeration.
     /// </summary>
-    public class PasswordResetOtpService
+    public partial class PasswordResetOtpService
     {
-        private static readonly Regex VnPhoneRegex =
-            new Regex(@"^(0)(3|5|7|8|9)\d{8}$", RegexOptions.Compiled);
+        // .NET 7+: regex sinh ở compile-time — khởi động nhanh hơn
+        // RegexOptions.Compiled (không tốn JIT codegen lúc chạy), pattern
+        // và semantics giữ nguyên.
+        [GeneratedRegex(@"^(0)(3|5|7|8|9)\d{8}$")]
+        private static partial Regex VnPhoneRegex();
 
         private static readonly TimeSpan OtpTtl = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan RateLimitWindow = TimeSpan.FromHours(1);
@@ -57,7 +60,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
         public async Task RequestOtpAsync(string phone, CancellationToken cancellationToken = default)
         {
             phone = (phone ?? string.Empty).Trim();
-            if (!VnPhoneRegex.IsMatch(phone))
+            if (!VnPhoneRegex().IsMatch(phone))
             {
                 return;
             }
@@ -107,7 +110,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
             phone = (phone ?? string.Empty).Trim();
             otp = (otp ?? string.Empty).Trim();
 
-            if (!VnPhoneRegex.IsMatch(phone))
+            if (!VnPhoneRegex().IsMatch(phone))
             {
                 return PasswordResetResult.Fail("Số điện thoại không đúng định dạng (VD: 0901234567).");
             }

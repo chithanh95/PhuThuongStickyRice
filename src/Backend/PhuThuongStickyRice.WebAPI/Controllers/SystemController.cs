@@ -128,7 +128,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 if (Directory.Exists(uploads))
                 {
-                    foreach (var file in Directory.GetFiles(uploads, "*", SearchOption.AllDirectories))
+                    // EnumerateFiles thay vì GetFiles: stream từng file thay
+                    // vì nạp toàn bộ mảng đường dẫn vào RAM khi thư mục
+                    // uploads lớn — kết quả duyệt từng file giữ nguyên.
+                    foreach (var file in Directory.EnumerateFiles(uploads, "*", SearchOption.AllDirectories))
                     {
                         try
                         {
@@ -153,7 +156,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 UploadsBytes = bytes,
                 UploadsFileCount = files,
-                DatabaseBytes = GetDatabaseSizeBytes(),
+                DatabaseBytes = await GetDatabaseSizeBytesAsync(cancellationToken),
                 WarningThresholdMb = warningMb,
                 OverThreshold = warningMb > 0 && bytes > (long)warningMb * 1024 * 1024
             });
@@ -163,7 +166,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// SQL Server data-file size (reserved MB from sys.master_files).
         /// Null when unavailable — never throws.
         /// </summary>
-        private long? GetDatabaseSizeBytes()
+        private async Task<long?> GetDatabaseSizeBytesAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -174,20 +177,29 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     return null;
                 }
 
-                using var connection = new SqlConnection(connectionString);
-                connection.Open();
-                using var command = connection.CreateCommand();
+                // Async ADO.NET (OpenAsync/ExecuteScalarAsync + await using):
+                // GetDiskUsage là async nên không được chặn thread pool của
+                // request trong lúc chờ SQL Server — kết quả trả về đồng nhất.
+                await using var connection = new SqlConnection(connectionString);
+                await connection.OpenAsync(cancellationToken);
+                await using var command = connection.CreateCommand();
                 command.CommandText = @"
                     SELECT SUM(size) * 8.0 / 1024
                     FROM sys.master_files
                     WHERE database_id = DB_ID()";
-                var result = command.ExecuteScalar();
+                var result = await command.ExecuteScalarAsync(cancellationToken);
                 if (result == null || result == DBNull.Value)
                 {
                     return null;
                 }
 
                 return (long)(Convert.ToDouble(result) * 1024 * 1024);
+            }
+            catch (OperationCanceledException)
+            {
+                // Client ngắt request giữa chừng: để ASP.NET xử lý hủy đúng
+                // cách, không nuốt thành "không đo được dung lượng".
+                throw;
             }
             catch
             {
