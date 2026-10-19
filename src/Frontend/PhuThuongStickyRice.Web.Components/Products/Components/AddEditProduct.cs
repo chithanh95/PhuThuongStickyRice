@@ -88,6 +88,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
 
         // ---- Items 164/166: sale time windows + photo gallery editors ----
 
+        // Số khung giờ bán tối đa cho phép trên 1 sản phẩm.
+        private const int MaxHourWindows = 3;
+
         private readonly List<HourWindow> _hours = new List<HourWindow>();
 
         private string _imageUrl;
@@ -131,63 +134,84 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             _imageUrl = null;
             _imageError = null;
 
-            if (!string.IsNullOrWhiteSpace(Product.AvailableHoursJson))
-            {
-                try
-                {
-                    using var doc = JsonDocument.Parse(Product.AvailableHoursJson);
-                    if (doc.RootElement.ValueKind == JsonValueKind.Array)
-                    {
-                        foreach (var el in doc.RootElement.EnumerateArray())
-                        {
-                            if (_hours.Count >= 3)
-                            {
-                                break;
-                            }
+            LoadHourWindowsFromJson(Product.AvailableHoursJson);
+            LoadImageUrlFromJson(Product.ImageUrlsJson);
+        }
 
-                            var from = el.TryGetProperty("from", out var fromEl) ? fromEl.GetString() : null;
-                            var to = el.TryGetProperty("to", out var toEl) ? toEl.GetString() : null;
-                            if (TimeOnly.TryParse(from, out var fromT) && TimeOnly.TryParse(to, out var toT))
-                            {
-                                _hours.Add(new HourWindow { From = fromT, To = toT });
-                            }
-                        }
-                    }
-                }
-                catch (JsonException)
-                {
-                    // Cố ý bỏ qua: dữ liệu giờ bán cũ có thể không phải JSON
-                    // hợp lệ — khi đó editor chỉ hiện danh sách giờ trống để
-                    // user nhập lại, không được làm sập form.
-                }
+        /// <summary>
+        /// Nạp tối đa 3 khung giờ bán từ JSON vào editor. JSON cũ hỏng thì
+        /// bỏ qua — editor hiện danh sách trống để user nhập lại, không sập form.
+        /// </summary>
+        private void LoadHourWindowsFromJson(string hoursJson)
+        {
+            if (string.IsNullOrWhiteSpace(hoursJson))
+            {
+                return;
             }
 
-            if (!string.IsNullOrWhiteSpace(Product.ImageUrlsJson))
+            try
             {
-                try
+                using var doc = JsonDocument.Parse(hoursJson);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
                 {
-                    using var doc = JsonDocument.Parse(Product.ImageUrlsJson);
-                    if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                    foreach (var el in doc.RootElement.EnumerateArray())
                     {
-                        foreach (var el in doc.RootElement.EnumerateArray())
+                        if (_hours.Count >= MaxHourWindows)
                         {
-                            if (el.ValueKind == JsonValueKind.String)
+                            break;
+                        }
+
+                        var from = el.TryGetProperty("from", out var fromEl) ? fromEl.GetString() : null;
+                        var to = el.TryGetProperty("to", out var toEl) ? toEl.GetString() : null;
+                        if (TimeOnly.TryParse(from, out var fromT) && TimeOnly.TryParse(to, out var toT))
+                        {
+                            _hours.Add(new HourWindow { From = fromT, To = toT });
+                        }
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Cố ý bỏ qua: dữ liệu giờ bán cũ có thể không phải JSON
+                // hợp lệ — khi đó editor chỉ hiện danh sách giờ trống để
+                // user nhập lại, không được làm sập form.
+            }
+        }
+
+        /// <summary>
+        /// Nạp ảnh đầu tiên từ JSON gallery vào ô ảnh. JSON cũ hỏng thì
+        /// bỏ qua — ô ảnh hiện trống để user tải lại, không sập form.
+        /// </summary>
+        private void LoadImageUrlFromJson(string imageUrlsJson)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrlsJson))
+            {
+                return;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(imageUrlsJson);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var el in doc.RootElement.EnumerateArray())
+                    {
+                        if (el.ValueKind == JsonValueKind.String)
+                        {
+                            var url = el.GetString()?.Trim();
+                            if (!string.IsNullOrEmpty(url))
                             {
-                                var url = el.GetString()?.Trim();
-                                if (!string.IsNullOrEmpty(url))
-                                {
-                                    _imageUrl = url;
-                                    break;
-                                }
+                                _imageUrl = url;
+                                break;
                             }
                         }
                     }
                 }
-                catch (JsonException)
-                {
-                    // Cố ý bỏ qua: JSON ảnh cũ có thể hỏng — khi đó ô ảnh chỉ
-                    // hiện trống để user tải lại, không được làm sập form.
-                }
+            }
+            catch (JsonException)
+            {
+                // Cố ý bỏ qua: JSON ảnh cũ có thể hỏng — khi đó ô ảnh chỉ
+                // hiện trống để user tải lại, không được làm sập form.
             }
         }
 
@@ -209,7 +233,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
 
         private void AddHour()
         {
-            if (_hours.Count < 3)
+            if (_hours.Count < MaxHourWindows)
             {
                 _hours.Add(new HourWindow());
             }

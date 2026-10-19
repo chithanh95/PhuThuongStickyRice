@@ -137,8 +137,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         {
             // Debounce: reset timer mỗi lần giỏ thay đổi, chỉ lưu server sau
             // 2s yên lặng — tránh spam PUT api/cart mỗi lần bấm +/- số lượng.
+            // Fire-and-forget bằng discard Task (không dùng async void):
+            // TimerCallback là void nên lambda async sẽ thành async void —
+            // nếu có exception thoát ra sẽ crash process trên threadpool.
+            // Discard Task thì exception (không thể xảy ra vì
+            // SaveToServerAsync đã try/catch toàn bộ) chỉ thành unobserved.
             _debounceTimer?.Dispose();
-            _debounceTimer = new Timer(async _ => await SaveToServerAsync(), null, DebounceMs, Timeout.Infinite);
+            _debounceTimer = new Timer(_ => _ = SaveToServerAsync(), null, DebounceMs, Timeout.Infinite);
         }
 
         private async Task SaveToServerAsync()

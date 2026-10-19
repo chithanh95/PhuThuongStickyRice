@@ -28,7 +28,9 @@ namespace PhuThuongStickyRice.Application.Orders
     [Authorize(Roles = "Admin")]
     public class OrderHourlyReportAppService : ApplicationService, IOrderHourlyReportAppService
     {
+        /// <summary>Giờ mở đầu khung báo cáo (quán bán từ 6h sáng; đơn ngoài khung không đáng kể).</summary>
         private const int DayStartHour = 6;
+        /// <summary>Giờ kết thúc khung báo cáo (quán nghỉ sau 22h).</summary>
         private const int DayEndHour = 22;
 
         /// <summary>Số khung giờ cao điểm hiển thị trong báo cáo.</summary>
@@ -45,6 +47,13 @@ namespace PhuThuongStickyRice.Application.Orders
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Admin: báo cáo món bán chạy theo từng giờ của 1 ngày (giờ Việt Nam).
+        /// Mặc định lấy hôm nay. Đơn ngoài khung 6h–22h bị bỏ qua vì quán không
+        /// bán trong khung đó.
+        /// </summary>
+        /// <param name="date">Ngày cần xem (mặc định hôm nay, giờ Việt Nam).</param>
+        /// <returns>Ma trận giờ×món, top khung giờ đông khách và gợi ý chuẩn bị.</returns>
         public virtual async Task<HourlySalesReportDto> GetHourlySalesReportAsync(DateTime? date)
         {
             var day = (date?.Date ?? VietnamTime.Today());
@@ -172,6 +181,11 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
+        /// <summary>
+        /// Gợi ý chuẩn bị hàng từ dữ liệu: gọi tên khung giờ đông nhất để bếp
+        /// nấu trước, kèm top 3 khung giờ. Ngày không có dữ liệu thì trả câu
+        /// thông báo thay vì chuỗi rỗng.
+        /// </summary>
         private static string BuildSuggestion(DateTime day, List<TopHourDto> topHours, long totalPortions)
         {
             if (topHours.Count == 0 || totalPortions == 0)

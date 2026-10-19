@@ -1590,8 +1590,8 @@ else
             {
                 foreach (var item in parsed.Items)
                 {
-                    var p = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
-                    if (p != null) CartState.Add(p, item.Quantity);
+                    var product = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
+                    if (product != null) CartState.Add(product, item.Quantity);
                 }
                 Toasts.Show($"Đã thêm: {string.Join(", ", parsed.Items.Select(i => $"{i.Quantity} {i.ProductName}"))}");
                 Navigation.NavigateTo("/checkout");
@@ -1608,8 +1608,8 @@ else
         if (_lastOrderItems == null) return;
         foreach (var item in _lastOrderItems)
         {
-            var p = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
-            if (p != null) CartState.Add(p, item.Quantity);
+            var product = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
+            if (product != null) CartState.Add(product, item.Quantity);
         }
         Navigation.NavigateTo("/checkout");
     }
@@ -1651,8 +1651,8 @@ else
         if (digits.Length < 9) { Toasts.Show("Nhập SĐT để đặt hàng."); return; }
         foreach (var item in _chatOrder.Items)
         {
-            var p = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
-            if (p != null) CartState.Add(p, item.Quantity);
+            var product = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
+            if (product != null) CartState.Add(product, item.Quantity);
         }
         try { JSRuntime.InvokeVoidAsync("localStorage.setItem", "pt-checkout-phone", digits); } catch { }
         _chatOrder = null;
@@ -1795,10 +1795,10 @@ else
     {
         get
         {
-            var h = DateTime.Now.Hour;
-            if (h >= 5 && h < 10) return "☀️ Chào buổi sáng! Xôi nóng vừa ra lò.";
-            if (h >= 10 && h < 14) return "🍱 Xôi trưa dẻo thơm, ăn là no tới chiều.";
-            if (h >= 14 && h < 18) return "🌤️ Xế chiều thèm xôi? Quán còn nóng hổi.";
+            var hour = DateTime.Now.Hour;
+            if (hour >= 5 && hour < 10) return "☀️ Chào buổi sáng! Xôi nóng vừa ra lò.";
+            if (hour >= 10 && hour < 14) return "🍱 Xôi trưa dẻo thơm, ăn là no tới chiều.";
+            if (hour >= 14 && hour < 18) return "🌤️ Xế chiều thèm xôi? Quán còn nóng hổi.";
             return "🌙 Đặt xôi sáng mai từ bây giờ, mai giao nóng.";
         }
     }
@@ -1806,15 +1806,15 @@ else
     private IEnumerable<ShopProductModel> SearchedProducts(IEnumerable<ShopProductModel> source)
     {
         if (string.IsNullOrWhiteSpace(_searchTerm)) return source;
-        var t = _searchTerm.Trim().ToLower();
-        return source.Where(p => (p.Name ?? "").ToLower().Contains(t));
+        var term = _searchTerm.Trim().ToLower();
+        return source.Where(p => (p.Name ?? "").ToLower().Contains(term));
     }
 
     private string MaskPhone(string phone)
     {
-        var d = new string((phone ?? "").Where(char.IsDigit).ToArray());
-        if (d.Length < 5) return "Khách hàng";
-        return d.Substring(0, 3) + "***" + d.Substring(d.Length - 2);
+        var digits = new string((phone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length < 5) return "Khách hàng";
+        return digits.Substring(0, 3) + "***" + digits.Substring(digits.Length - 2);
     }
 
     public void Dispose()

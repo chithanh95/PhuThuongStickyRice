@@ -60,6 +60,22 @@ namespace PhuThuongStickyRice.Application.Inventory
 
             var tomorrow = VietnamTime.Today().AddDays(1);
             var weekday = (int)tomorrow.DayOfWeek;
+
+            var (totalPortions, weeksWithData) = await LoadPortionsByWeekAsync(tomorrow, weekday);
+
+            var averagePortions = weeksWithData > 0
+                ? (double)totalPortions / weeksWithData
+                : 0;
+
+            return BuildForecastDto(tomorrow, weekday, gramsPerPortion, averagePortions, weeksWithData);
+        }
+
+        /// <summary>
+        /// Gom tổng số suất bán được của cùng thứ trong tuần qua các tuần
+        /// lịch sử. CreatedAt lưu UTC nên convert sang giờ VN khi lọc.
+        /// </summary>
+        private async Task<(int TotalPortions, int WeeksWithData)> LoadPortionsByWeekAsync(DateTime tomorrow, int weekday)
+        {
             var lookbackDays = LookbackWeeks * 7;
             var fourWeeksAgo = tomorrow.AddDays(-lookbackDays);
 
@@ -99,22 +115,28 @@ namespace PhuThuongStickyRice.Application.Inventory
                 seen[weekIndex]++;
             }
 
-            var weeksWithData = seen.Count(x => x > 0);
-            var totalPortions = weeks.Sum();
-            var averagePortions = weeksWithData > 0
-                ? (double)totalPortions / weeksWithData
-                : 0;
+            return (weeks.Sum(), seen.Count(x => x > 0));
+        }
 
+        /// <summary>
+        /// Dựng DTO dự báo từ số suất trung bình: kg nếp = trung bình suất ×
+        /// gram/suất, làm tròn lên bước 0.5kg.
+        /// </summary>
+        private IngredientForecastDto BuildForecastDto(
+            DateTime tomorrow, int weekday, int gramsPerPortion,
+            double averagePortions, int weeksWithData)
+        {
             var nepKg = Math.Ceiling(averagePortions * gramsPerPortion / 1000.0 / RoundingStepKg) * RoundingStepKg;
+            var weekdayName = CultureInfo.GetCultureInfo("vi-VN").DateTimeFormat.DayNames[weekday];
 
             return new IngredientForecastDto
             {
                 Date = tomorrow,
-                WeekdayName = CultureInfo.GetCultureInfo("vi-VN").DateTimeFormat.DayNames[weekday],
+                WeekdayName = weekdayName,
                 AveragePortions = Math.Round(averagePortions, 1),
                 NepKg = nepKg,
                 NepPerPortionGrams = gramsPerPortion,
-                Heuristic = $"Trung bình {Math.Round(averagePortions, 1)} suất vào {CultureInfo.GetCultureInfo("vi-VN").DateTimeFormat.DayNames[weekday].ToLowerInvariant()} " +
+                Heuristic = $"Trung bình {Math.Round(averagePortions, 1)} suất vào {weekdayName.ToLowerInvariant()} " +
                     $"trong {weeksWithData}/{LookbackWeeks} tuần qua × {gramsPerPortion}g/suất, làm tròn lên 0.5kg. " +
                     "Chỉ là ước tính — ngày lễ/tiệc lớn cần cộng thêm dự phòng."
             };

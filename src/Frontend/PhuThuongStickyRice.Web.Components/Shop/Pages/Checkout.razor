@@ -1505,8 +1505,6 @@ else
     {
         _error = null;
 
-        DateTime? scheduledFor = null; // Luôn nhận ngay — đã bỏ đặt trước theo giờ.
-
         if (!ValidateFields())
         {
             _error = "Vui lòng kiểm tra lại các thông tin được đánh dấu.";
@@ -1529,80 +1527,8 @@ else
         _submitting = true;
         try
         {
-            _order.DiscountCode = _appliedCode;
-            _order.FulfillmentMethod = _fulfillment;
-            _order.RedeemPoints = _redeemPoints;
-            _order.BranchId = _branchId;
-
-            // No delivery slot — the shop does not deliver.
-            _order.DeliverySlot = null;
-
-            // Pre-order scheduled pickup time (local → server normalizes to UTC).
-            _order.ScheduledFor = scheduledFor;
-
-            // Item 133: order source captured at shop entry.
-            _order.Source = CartState.Source;
-
-            // Item 97: one idempotency key per logical order, reused across
-            // retries. Minting a fresh key per submit attempt defeated the
-            // server-side dedupe: a retry after a timeout/reconnect created a
-            // DUPLICATE order (double wallet charge, double loyalty redeem,
-            // double discount usage). The key is reset when the cart changes
-            // (OnCartChanged) or after the order succeeds, so a changed cart
-            // never reuses a stale key.
-            if (string.IsNullOrEmpty(_order.IdempotencyKey))
-            {
-                _order.IdempotencyKey = Guid.NewGuid().ToString("D");
-            }
-
-            // Item 96: reCAPTCHA v3 token when enabled in shop settings.
-            _order.RecaptchaToken = null;
-            if (!string.IsNullOrWhiteSpace(_shopSettings.RecaptchaSiteKey))
-            {
-                try
-                {
-                    _order.RecaptchaToken = await JSRuntime.InvokeAsync<string>(
-                        "interop.recaptchaToken", _shopSettings.RecaptchaSiteKey);
-                }
-                catch (Exception)
-                {
-                    _order.RecaptchaToken = null;
-                }
-            }
-            if (_fulfillment == "Pickup" || _fulfillment == "ShipperPickup")
-            {
-                _order.CustomerAddress = null;
-            }
-
-            if (!_orderForSomeoneElse)
-            {
-                _order.RecipientName = null;
-                _order.RecipientPhone = null;
-            }
-
-            if (!_showVat)
-            {
-                _order.TaxCode = null;
-                _order.CompanyName = null;
-            }
-
-            if (!_order.IsGift)
-            {
-                _order.GiftMessage = null;
-            }
-
-            _order.Lines = CartState.Items
-                .Select(x => new CreateOrderLineModel
-                {
-                    ProductId = x.ProductId,
-                    Quantity = x.Quantity,
-                    SizeOptionId = x.SizeOptionId,
-                    ToppingIds = x.ToppingIds ?? new System.Collections.Generic.List<Guid>(),
-                    IsCombo = x.IsCombo,
-                    // Wave 6a (item 24): per-item note persists to the order line.
-                    Note = x.Note
-                })
-                .ToList();
+            BuildOrderPayload();
+            await FetchRecaptchaTokenAsync();
 
             _placedOrder = await ShopService.CreateOrderAsync(_order);
             // Item 97: order accepted — drop the key so a later new checkout
@@ -1629,16 +1555,7 @@ else
 
             if (_placedOrder.PaymentMethod == "BankTransfer")
             {
-                try
-                {
-                    _bankInfo = await ShopService.GetBankTransferInfoAsync();
-                }
-                catch (Exception)
-                {
-                    // Bank info is nice-to-have here; the track-order page
-                    // shows the same info. Fall back to the placeholder box.
-                    _bankInfo = new BankTransferInfoModel();
-                }
+                await LoadBankTransferInfoAsync();
             }
         }
         catch (Exception ex)
@@ -1650,6 +1567,110 @@ else
         finally
         {
             _submitting = false;
+        }
+    }
+
+    /// <summary>
+    /// Dựng payload đơn hàng từ state UI (giỏ, mã giảm giá, điểm, quà tặng)
+    /// trước khi gọi API. Luôn nhận ngay — đã bỏ đặt trước theo giờ.
+    /// </summary>
+    private void BuildOrderPayload()
+    {
+        _order.DiscountCode = _appliedCode;
+        _order.FulfillmentMethod = _fulfillment;
+        _order.RedeemPoints = _redeemPoints;
+        _order.BranchId = _branchId;
+
+        // No delivery slot — the shop does not deliver.
+        _order.DeliverySlot = null;
+
+        // Item 133: order source captured at shop entry.
+        _order.Source = CartState.Source;
+
+        // Item 97: one idempotency key per logical order, reused across
+        // retries. Minting a fresh key per submit attempt defeated the
+        // server-side dedupe: a retry after a timeout/reconnect created a
+        // DUPLICATE order (double wallet charge, double loyalty redeem,
+        // double discount usage). The key is reset when the cart changes
+        // (OnCartChanged) or after the order succeeds, so a changed cart
+        // never reuses a stale key.
+        if (string.IsNullOrEmpty(_order.IdempotencyKey))
+        {
+            _order.IdempotencyKey = Guid.NewGuid().ToString("D");
+        }
+
+        if (_fulfillment == "Pickup" || _fulfillment == "ShipperPickup")
+        {
+            _order.CustomerAddress = null;
+        }
+
+        if (!_orderForSomeoneElse)
+        {
+            _order.RecipientName = null;
+            _order.RecipientPhone = null;
+        }
+
+        if (!_showVat)
+        {
+            _order.TaxCode = null;
+            _order.CompanyName = null;
+        }
+
+        if (!_order.IsGift)
+        {
+            _order.GiftMessage = null;
+        }
+
+        _order.Lines = CartState.Items
+            .Select(x => new CreateOrderLineModel
+            {
+                ProductId = x.ProductId,
+                Quantity = x.Quantity,
+                SizeOptionId = x.SizeOptionId,
+                ToppingIds = x.ToppingIds ?? new System.Collections.Generic.List<Guid>(),
+                IsCombo = x.IsCombo,
+                // Wave 6a (item 24): per-item note persists to the order line.
+                Note = x.Note
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Lấy token reCAPTCHA v3 khi shop bật. Lỗi thì bỏ qua — server tự quyết.
+    /// </summary>
+    private async Task FetchRecaptchaTokenAsync()
+    {
+        // Item 96: reCAPTCHA v3 token when enabled in shop settings.
+        _order.RecaptchaToken = null;
+        if (!string.IsNullOrWhiteSpace(_shopSettings.RecaptchaSiteKey))
+        {
+            try
+            {
+                _order.RecaptchaToken = await JSRuntime.InvokeAsync<string>(
+                    "interop.recaptchaToken", _shopSettings.RecaptchaSiteKey);
+            }
+            catch (Exception)
+            {
+                _order.RecaptchaToken = null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Tải thông tin chuyển khoản để hiện QR sau khi đặt đơn. Lỗi thì hiện
+    /// hộp placeholder — trang tra cứu đơn hiện cùng thông tin.
+    /// </summary>
+    private async Task LoadBankTransferInfoAsync()
+    {
+        try
+        {
+            _bankInfo = await ShopService.GetBankTransferInfoAsync();
+        }
+        catch (Exception)
+        {
+            // Bank info is nice-to-have here; the track-order page
+            // shows the same info. Fall back to the placeholder box.
+            _bankInfo = new BankTransferInfoModel();
         }
     }
 

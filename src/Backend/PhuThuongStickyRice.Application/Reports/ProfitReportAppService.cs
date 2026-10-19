@@ -20,6 +20,14 @@ namespace PhuThuongStickyRice.Application.Reports
     /// </summary>
     public interface IProfitReportAppService : IApplicationService
     {
+        /// <summary>
+        /// Admin: báo cáo lãi gộp theo ngày và theo món trong khoảng ngày.
+        /// Lãi = doanh thu − giá vốn; giá vốn dùng giá HIỆN TẠI của từng món
+        /// (tính hồi tố — sửa giá vốn làm thay đổi số liệu các kỳ trước).
+        /// </summary>
+        /// <param name="from">Ngày bắt đầu (mặc định 7 ngày gần nhất).</param>
+        /// <param name="to">Ngày kết thúc (mặc định hôm nay).</param>
+        /// <returns>Doanh thu/giá vốn/lãi theo ngày, theo món và tổng cộng.</returns>
         Task<ProfitReportDto> GetReportAsync(DateTime? from = null, DateTime? to = null);
     }
 
@@ -40,6 +48,13 @@ namespace PhuThuongStickyRice.Application.Reports
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Admin: báo cáo lãi gộp theo ngày và theo món trong khoảng ngày.
+        /// Đơn đã hủy bị loại khỏi toàn bộ số liệu.
+        /// </summary>
+        /// <param name="from">Ngày bắt đầu (mặc định 7 ngày gần nhất).</param>
+        /// <param name="to">Ngày kết thúc (mặc định hôm nay).</param>
+        /// <returns>Doanh thu/giá vốn/lãi theo ngày, theo món và tổng cộng.</returns>
         public virtual async Task<ProfitReportDto> GetReportAsync(DateTime? from = null, DateTime? to = null)
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
@@ -176,6 +191,13 @@ namespace PhuThuongStickyRice.Application.Reports
                 .ToList();
         }
 
+        /// <summary>
+        /// Chuẩn hóa khoảng ngày về biên "nửa mở" [From, To): To = ngày kết
+        /// thúc + 1 ngày (mốc độc quyền) để query CreatedAt &lt; To bao trọn
+        /// cả ngày kết thúc; mặc định lấy 7 ngày gần nhất. Nếu from &gt; to thì
+        /// lùi from về to − 7 ngày thay vì trả lỗi, để UI date-picker lỡ chọn
+        /// ngược vẫn ra báo cáo.
+        /// </summary>
         private static (DateTime From, DateTime To) NormalizeRange(DateTime? from, DateTime? to)
         {
             var toDate = (to?.Date ?? DateTime.UtcNow.Date).AddDays(1);

@@ -735,10 +735,15 @@ namespace PhuThuongStickyRice.Application.Products
                     .OrderBy(x => x.SortOrder)
                     .ThenBy(x => x.Price));
 
+            // ToLookup: tra cứu O(1) theo từng sản phẩm thay vì quét cả list
+            // cho mỗi DTO (O(n*m)). Thứ tự trong group giữ nguyên thứ tự
+            // query (SortOrder, Price); key vắng trả về rỗng giống .Where()
+            // không khớp — output DTO không đổi.
+            var sizesByProduct = sizes.ToLookup(x => x.ProductId);
+
             foreach (var dto in list)
             {
-                dto.Sizes = sizes
-                    .Where(x => x.ProductId == dto.Id)
+                dto.Sizes = sizesByProduct[dto.Id]
                     .Select(x => new ProductSizeOptionDto
                     {
                         Id = x.Id,

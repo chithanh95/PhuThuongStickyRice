@@ -55,6 +55,54 @@ namespace PhuThuongStickyRice.WebAPI
         {
             services.Configure<AppSettings>(Configuration);
 
+            AddWebInfrastructure(services);
+            AddAuthPaymentOptions(services);
+
+            // ABP modules: Application Services (CQRS), EF Core (repositories, DbContext),
+            // AutoMapper. Replaces the template AddMultiTenantPersistence (its
+            // multi-tenancy was scaffolding that always returned the default
+            // connection string).
+            services.AddApplication<StickyRiceWebApiModule>();
+
+            services.AddDomainServices()
+                    .AddApplicationServices((Type serviceType, Type implementationType, ServiceLifetime serviceLifetime) =>
+                    {
+                        services.AddInterceptors(serviceType, implementationType, serviceLifetime, AppSettings.Interceptors);
+                    })
+                    .AddMessageHandlers()
+                    .ConfigureInterceptors()
+                    .AddIdentityCore(Configuration);
+
+            services.AddDataProtection()
+                .PersistKeysToDbContext<StickyRiceDbContext>()
+                .SetApplicationName("PhuThuongStickyRice");
+
+            AddJwtAuthentication(services);
+
+            services.AddAuthorizationPolicies(Assembly.GetExecutingAssembly(), AuthorizationPolicyNames.GetPolicyNames());
+
+            services.AddRateLimiter(options =>
+            {
+                options.AddPolicy<string, DefaultRateLimiterPolicy>(RateLimiterPolicyNames.DefaultPolicy);
+            });
+
+            AddSwagger(services);
+            AddDocumentAndCsvServices(services);
+
+            // Item 104: persists Warning+ log entries to the AppLogs table.
+            // TEMP DISABLED 2026-10-17: AppLogLoggerProvider causes DbContext
+            // concurrency crash (duplicate PK on AppLogs + "second operation"
+            // on StickyRiceDbContext). Re-enable after fixing the GUID/
+            // concurrency issue in AppLogWriter.
+            // services.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider, Services.AppLogLoggerProvider>();
+        }
+
+        /// <summary>
+        /// Đăng ký hạ tầng web chung: nén response, controllers, CORS,
+        /// date-time provider. Không đổi thứ tự ảnh hưởng đến behavior.
+        /// </summary>
+        private void AddWebInfrastructure(IServiceCollection services)
+        {
             // Item 102: Brotli + Gzip response compression for the API.
             // EnableForHttps = true: the payloads are public catalog/menu
             // JSON (no per-user secrets in compressed responses here).
@@ -97,7 +145,14 @@ namespace PhuThuongStickyRice.WebAPI
             });
 
             services.AddDateTimeProvider();
+        }
 
+        /// <summary>
+        /// Đăng ký options + service cho auth tự cấp (JWT), thanh toán
+        /// (MoMo/chuyển khoản), Zalo OA và OTP SMS quên mật khẩu.
+        /// </summary>
+        private void AddAuthPaymentOptions(IServiceCollection services)
+        {
             // Self-issued JWT + payment options (bound from appsettings.json).
             // The API issues and validates its own tokens — no external
             // IdentityServer is involved.
@@ -122,26 +177,13 @@ namespace PhuThuongStickyRice.WebAPI
             // Item 96: typed client for reCAPTCHA v3 server verification.
             services.AddHttpClient<IRecaptchaService, RecaptchaService>();
             services.AddHostedService<AdminSeedHostedService>();
+        }
 
-            // ABP modules: Application Services (CQRS), EF Core (repositories, DbContext),
-            // AutoMapper. Replaces the template AddMultiTenantPersistence (its
-            // multi-tenancy was scaffolding that always returned the default
-            // connection string).
-            services.AddApplication<StickyRiceWebApiModule>();
-
-            services.AddDomainServices()
-                    .AddApplicationServices((Type serviceType, Type implementationType, ServiceLifetime serviceLifetime) =>
-                    {
-                        services.AddInterceptors(serviceType, implementationType, serviceLifetime, AppSettings.Interceptors);
-                    })
-                    .AddMessageHandlers()
-                    .ConfigureInterceptors()
-                    .AddIdentityCore(Configuration);
-
-            services.AddDataProtection()
-                .PersistKeysToDbContext<StickyRiceDbContext>()
-                .SetApplicationName("PhuThuongStickyRice");
-
+        /// <summary>
+        /// Đăng ký xác thực JWT tự cấp: API tự validate token do chính nó phát hành.
+        /// </summary>
+        private void AddJwtAuthentication(IServiceCollection services)
+        {
             // Self-issued JWT validation: the API validates the tokens it
             // issues itself (see JwtTokenService). No external IdentityServer.
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -161,14 +203,13 @@ namespace PhuThuongStickyRice.WebAPI
                         ClockSkew = TimeSpan.FromMinutes(2)
                     };
                 });
+        }
 
-            services.AddAuthorizationPolicies(Assembly.GetExecutingAssembly(), AuthorizationPolicyNames.GetPolicyNames());
-
-            services.AddRateLimiter(options =>
-            {
-                options.AddPolicy<string, DefaultRateLimiterPolicy>(RateLimiterPolicyNames.DefaultPolicy);
-            });
-
+        /// <summary>
+        /// Đăng ký Swagger với JWT Bearer security scheme.
+        /// </summary>
+        private void AddSwagger(IServiceCollection services)
+        {
             services.AddSwaggerGen(setupAction =>
             {
                 setupAction.SwaggerDoc(
@@ -213,7 +254,13 @@ namespace PhuThuongStickyRice.WebAPI
                     },
                 });
             });
+        }
 
+        /// <summary>
+        /// Đăng ký service sinh HTML/PDF và đọc/ghi CSV dùng cho báo cáo.
+        /// </summary>
+        private void AddDocumentAndCsvServices(IServiceCollection services)
+        {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<ICurrentUser, CurrentWebUser>();
 
@@ -222,13 +269,6 @@ namespace PhuThuongStickyRice.WebAPI
 
             services.AddScoped(typeof(ICsvReader<>), typeof(CsvReader<>));
             services.AddScoped(typeof(ICsvWriter<>), typeof(CsvWriter<>));
-
-            // Item 104: persists Warning+ log entries to the AppLogs table.
-            // TEMP DISABLED 2026-10-17: AppLogLoggerProvider causes DbContext
-            // concurrency crash (duplicate PK on AppLogs + "second operation"
-            // on StickyRiceDbContext). Re-enable after fixing the GUID/
-            // concurrency issue in AppLogWriter.
-            // services.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider, Services.AppLogLoggerProvider>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

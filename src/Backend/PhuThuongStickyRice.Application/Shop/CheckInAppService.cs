@@ -45,6 +45,13 @@ namespace PhuThuongStickyRice.Application.Shop
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Public: khách điểm danh hôm nay để nhận điểm loyalty (mỗi SĐT tối đa
+        /// 1 lần/ngày). SĐT tự chuẩn hóa đầu số Việt Nam nên khách nhập kèm
+        /// dấu cách/ký tự khác nhau vẫn được nhận diện đúng 1 tài khoản.
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng.</param>
+        /// <returns>Kết quả: đã điểm danh chưa, số điểm được tặng, streak, tổng điểm hiện tại.</returns>
         [AllowAnonymous]
         public virtual async Task<CheckInResultDto> CheckInAsync(string phone)
         {
@@ -84,6 +91,13 @@ namespace PhuThuongStickyRice.Application.Shop
                 alreadyCheckedIn: false, pointsAwarded: points, loyaltyPoints: loyalty.Points);
         }
 
+        /// <summary>
+        /// Public: trạng thái điểm danh hiện tại (đã điểm danh hôm nay chưa,
+        /// streak bao nhiêu ngày, tổng điểm loyalty). Không tạo tài khoản mới —
+        /// chỉ đọc, nên khách chưa từng dùng loyalty cũng tra cứu được.
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng.</param>
+        /// <returns>Trạng thái điểm danh, streak và tổng điểm hiện tại.</returns>
         [AllowAnonymous]
         public virtual async Task<CheckInResultDto> GetStatusAsync(string phone)
         {

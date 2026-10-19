@@ -33,7 +33,11 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// </summary>
     public class PermissionService : HttpService
     {
-        private HashSet<string> _cachedPermissions;
+        // Cache chính Task (AsyncLazy pattern): các caller đồng thời chia sẻ
+        // 1 lần fetch đang chạy, thay vì mỗi caller đều gọi API riêng trong
+        // khoảng giữa lần check và lần set (async double-check race).
+        // Fetch lỗi vẫn trả về tập rỗng nên cache không bao giờ bị poison.
+        private Task<HashSet<string>> _permissionsTask;
         private readonly object _lock = new object();
 
         public PermissionService(HttpClient httpClient, ITokenManager tokenManager)
@@ -45,39 +49,37 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         {
             lock (_lock)
             {
-                _cachedPermissions = null;
+                _permissionsTask = null;
             }
         }
 
-        public async Task<HashSet<string>> GetMyPermissionsAsync()
+        public Task<HashSet<string>> GetMyPermissionsAsync()
         {
             lock (_lock)
             {
-                if (_cachedPermissions != null)
+                if (_permissionsTask == null)
                 {
-                    return _cachedPermissions;
+                    _permissionsTask = FetchMyPermissionsAsync();
                 }
-            }
 
-            HashSet<string> result;
+                return _permissionsTask;
+            }
+        }
+
+        private async Task<HashSet<string>> FetchMyPermissionsAsync()
+        {
             try
             {
                 var response = await GetAsync<MyPermissionsResponse>("api/auth/my-permissions");
-                result = new HashSet<string>(response?.Permissions ?? new List<string>(),
+                return new HashSet<string>(
+                    response?.Permissions ?? new List<string>(),
                     StringComparer.OrdinalIgnoreCase);
             }
             catch
             {
                 // Not logged in (or API unreachable): no permissions.
-                result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
-
-            lock (_lock)
-            {
-                _cachedPermissions = result;
-            }
-
-            return result;
         }
 
         public async Task<bool> HasPermissionAsync(string key)

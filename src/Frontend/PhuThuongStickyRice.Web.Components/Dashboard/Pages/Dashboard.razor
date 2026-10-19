@@ -351,8 +351,8 @@ else
                         <div class="lexa-area-chart">
                             @foreach (var day in _stats.RevenueByDay)
                             {
-                                var h = maxRev > 0 ? Math.Max(4, (int)(day.Revenue / maxRev * 130)) : 4;
-                                <div class="lexa-area-bar" style="height:@(h)px" title="@day.Date.ToString("dd/MM"): @FormatPrice(day.Revenue)"></div>
+                                var barHeight = maxRev > 0 ? Math.Max(4, (int)(day.Revenue / maxRev * 130)) : 4;
+                                <div class="lexa-area-bar" style="height:@(barHeight)px" title="@day.Date.ToString("dd/MM"): @FormatPrice(day.Revenue)"></div>
                             }
                         </div>
                         <div class="d-flex justify-content-between text-muted small mt-1">
@@ -688,43 +688,61 @@ else
             await LoadDashboardWidgetsAsync();
 
             // Wave 6d (item 36): today-vs-yesterday card (fail-soft).
-            try
-            {
-                _todayVsYesterday = await DashboardService.GetTodayVsYesterdayAsync();
-            }
-            catch (Exception)
-            {
-                _todayVsYesterday = null;
-            }
+            await LoadTodayVsYesterdayAsync();
 
             // Item 138: weekly report card (fail-soft; Admin-only API).
-            try
-            {
-                _weeklyReport = await DashboardService.GetWeeklyReportAsync();
-            }
-            catch (Exception)
-            {
-                _weeklyReport = null;
-            }
+            await LoadWeeklyReportAsync();
 
             // Item 135: món hết suất hôm nay (fail-soft — alert ẩn khi lỗi).
-            try
-            {
-                var remaining = await ShopService.GetDailyRemainingAsync();
-                _soldOutToday = (remaining ?? new List<PhuThuongStickyRice.Web.Components.Shop.Models.ProductDailyRemainingModel>())
-                    .Where(r => r.RemainingToday <= 0)
-                    .Select(r => r.ProductName)
-                    .Where(n => !string.IsNullOrWhiteSpace(n))
-                    .ToList();
-            }
-            catch (Exception)
-            {
-                _soldOutToday = new List<string>();
-            }
+            await LoadSoldOutTodayAsync();
         }
         catch (Exception)
         {
             _stats ??= new DashboardStatsModel();
+        }
+    }
+
+    /// <summary>Thẻ so sánh hôm nay/hôm qua — lỗi thì ẩn thẻ.</summary>
+    private async Task LoadTodayVsYesterdayAsync()
+    {
+        try
+        {
+            _todayVsYesterday = await DashboardService.GetTodayVsYesterdayAsync();
+        }
+        catch (Exception)
+        {
+            _todayVsYesterday = null;
+        }
+    }
+
+    /// <summary>Thẻ báo cáo tuần — lỗi thì ẩn thẻ.</summary>
+    private async Task LoadWeeklyReportAsync()
+    {
+        try
+        {
+            _weeklyReport = await DashboardService.GetWeeklyReportAsync();
+        }
+        catch (Exception)
+        {
+            _weeklyReport = null;
+        }
+    }
+
+    /// <summary>Danh sách món hết suất hôm nay — lỗi thì hiện rỗng.</summary>
+    private async Task LoadSoldOutTodayAsync()
+    {
+        try
+        {
+            var remaining = await ShopService.GetDailyRemainingAsync();
+            _soldOutToday = (remaining ?? new List<PhuThuongStickyRice.Web.Components.Shop.Models.ProductDailyRemainingModel>())
+                .Where(r => r.RemainingToday <= 0)
+                .Select(r => r.ProductName)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .ToList();
+        }
+        catch (Exception)
+        {
+            _soldOutToday = new List<string>();
         }
     }
 

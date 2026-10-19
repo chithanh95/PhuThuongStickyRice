@@ -34,6 +34,12 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         Task<int> CreateDueOrdersAsync();
     }
 
+    /// <summary>
+    /// Gói đăng ký xôi theo ngày: khách chọn món cố định, mỗi sáng worker gọi
+    /// <see cref="CreateDueOrdersAsync"/> để sinh đơn COD Pending cho mọi gói
+    /// đang hoạt động đến hạn hôm nay. Đơn lưu snapshot giá/tên món tại thời
+    /// điểm tạo — giá bán thay đổi sau đó không ảnh hưởng các đơn đã sinh.
+    /// </summary>
     public class SubscriptionAppService : ApplicationService, ISubscriptionAppService
     {
         private readonly Volo.Abp.Domain.Repositories.IRepository<Subscription, Guid> _subscriptions;
@@ -62,6 +68,15 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             _shopSettings = shopSettings;
         }
 
+        /// <summary>
+        /// Public: khách tạo gói đăng ký xôi theo ngày. Snapshot giá/tên món
+        /// từ catalog hiện tại (size thay giá gốc, topping cộng thêm tiền) —
+        /// vì gói cố định giá lúc đăng ký, các đơn sau này dùng giá này chứ
+        /// không cập nhật theo giá catalog mới.
+        /// </summary>
+        /// <param name="dto">Thông tin gói: SĐT, món, size, topping, ngày bắt đầu...</param>
+        /// <returns>Gói đăng ký vừa tạo.</returns>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi món/size/topping không khả dụng hoặc ngày bắt đầu trong quá khứ.</exception>
         [AllowAnonymous]
         public virtual async Task<SubscriptionDto> CreateAsync(CreateSubscriptionDto dto)
         {
@@ -99,6 +114,12 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: danh sách gói đăng ký, mới nhất trước (tối đa 200 dòng cho
+        /// màn hình admin; không materialize toàn bộ lịch sử).
+        /// </summary>
+        /// <param name="activeOnly">true: chỉ gói đang hoạt động; false: chỉ gói đã tắt; null: tất cả.</param>
+        /// <returns>Danh sách gói đăng ký.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<SubscriptionDto>> GetListAsync(bool? activeOnly)
         {
@@ -114,6 +135,13 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             return items.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: tạm ngưng / kích hoạt lại gói đăng ký (soft toggle, giữ
+        /// nguyên lịch sử — xóa hẳn chỉ khi khách hủy tài khoản).
+        /// </summary>
+        /// <param name="id">Id gói đăng ký.</param>
+        /// <param name="active">true: kích hoạt; false: tạm ngưng.</param>
+        /// <returns>Gói sau khi đổi trạng thái.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<SubscriptionDto> SetActiveAsync(Guid id, bool active)
         {
@@ -123,6 +151,13 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Internal: worker buổi sáng gọi — sinh 1 đơn COD Pending cho mỗi gói
+        /// đang hoạt động đến hạn hôm nay (StartDate ≤ hôm nay và chưa sinh đơn
+        /// trong ngày). Điều kiện LastOrderDate loại đơn trùng nếu worker chạy
+        /// lặp, nên method này idempotent trong cùng một ngày.
+        /// </summary>
+        /// <returns>Số đơn đã sinh thành công.</returns>
         public virtual async Task<int> CreateDueOrdersAsync()
         {
             var today = DateTime.UtcNow.Date;
@@ -170,6 +205,9 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             };
 
             var subtotal = sub.UnitPrice * sub.Quantity;
+            // Miễn ship cho đơn định kỳ khi đủ ngưỡng như đơn đặt tay trên
+            // checkout — khách đăng ký gói phải được hưởng chính sách freeship
+            // chung, không tính riêng.
             var fee = settings.DeliveryFee > 0
                 && !(settings.FreeShipThreshold > 0 && subtotal >= settings.FreeShipThreshold)
                 ? settings.DeliveryFee
