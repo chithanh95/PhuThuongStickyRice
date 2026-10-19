@@ -112,4 +112,26 @@ namespace PhuThuongStickyRice.Application.Discounts.DTOs
         /// <summary>True when the code is a freeship voucher: fee becomes 0.</summary>
         public bool IsFreeship { get; set; }
     }
+
+    /// <summary>
+    /// perf-hunt 2026-10-19: batch input for checkout auto-apply — finds the
+    /// best money-off public code in ONE server round-trip instead of
+    /// GetActivePublicAsync + N x ValidateAsync.
+    /// </summary>
+    public class EvaluateBestDiscountInput
+    {
+        [Range(0, double.MaxValue)]
+        public decimal Subtotal { get; set; }
+
+        /// <summary>Optional: owner-phone check for phone-tied codes.</summary>
+        public string CustomerPhone { get; set; }
+    }
+
+    /// <summary>Best applicable money-off code, or null Code when none.</summary>
+    public class BestDiscountResultDto
+    {
+        public string Code { get; set; }
+
+        public decimal DiscountAmount { get; set; }
+    }
 }

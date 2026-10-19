@@ -43,6 +43,17 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public bool IsFreeship { get; set; }
     }
 
+    /// <summary>
+    /// perf-hunt 2026-10-19: kết quả endpoint api/discounts/best — mã giảm
+    /// tốt nhất cho giỏ hàng trong 1 round-trip.
+    /// </summary>
+    public class BestDiscountResultModel
+    {
+        public string Code { get; set; }
+
+        public decimal DiscountAmount { get; set; }
+    }
+
     public class CustomerModel
     {
         public string CustomerName { get; set; }

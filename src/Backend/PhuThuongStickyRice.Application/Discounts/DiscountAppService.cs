@@ -36,6 +36,16 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task<List<DiscountCodeDto>> GetActivePublicAsync();
 
         /// <summary>
+        /// perf-hunt 2026-10-19 (Public): returns the best applicable
+        /// money-off public code for the subtotal in ONE call — replaces the
+        /// old client loop of GetActivePublicAsync + N x ValidateAsync
+        /// (N HTTP round-trips + N DB lookups on the checkout hot path).
+        /// Freeship codes are skipped (separate flow); ties keep the newest
+        /// code, exactly like the old client loop did.
+        /// </summary>
+        Task<BestDiscountResultDto> EvaluateBestAsync(EvaluateBestDiscountInput input);
+
+        /// <summary>
         /// True when the code is a usable freeship voucher (item 120).
         /// Used by order creation to zero the delivery fee.
         /// </summary>
@@ -472,6 +482,63 @@ namespace PhuThuongStickyRice.Application.Discounts
                         .OrderByDescending(x => x.CreatedDateTime));
                 return entities.Select(MapToDto).ToList();
             });
+        }
+
+        /// <summary>
+        /// perf-hunt 2026-10-19: batch best-code evaluation for checkout
+        /// auto-apply. Loads candidate codes ONCE (fresh, not the 5-min cache)
+        /// and reuses <see cref="CheckUsable"/> + <see cref="ComputeDiscount"/>
+        /// so the result is identical to validating each code via
+        /// <see cref="ValidateAsync(ValidateDiscountInput, string)"/> —
+        /// 1 DB query instead of N HTTP round-trips with N DB lookups.
+        /// </summary>
+        [AllowAnonymous]
+        public virtual async Task<BestDiscountResultDto> EvaluateBestAsync(
+            EvaluateBestDiscountInput input)
+        {
+            var subtotal = input?.Subtotal ?? 0;
+            var customerPhone = input?.CustomerPhone;
+
+            var now = DateTime.UtcNow;
+            var queryable = await _discounts.GetQueryableAsync();
+            var entities = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => x.IsActive
+                    && (x.OwnerPhone == null || x.OwnerPhone == "")
+                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
+                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
+                    .OrderByDescending(x => x.CreatedDateTime));
+
+            string bestCode = null;
+            decimal bestAmount = 0;
+            foreach (var entity in entities)
+            {
+                // VoucherType Freeship có luồng riêng — chỉ xét mã giảm tiền,
+                // giống hệt vòng lặp client cũ.
+                if (entity.VoucherType == VoucherType.Freeship
+                    || string.IsNullOrWhiteSpace(entity.Code))
+                {
+                    continue;
+                }
+
+                var (valid, _) = CheckUsable(entity, subtotal, customerPhone);
+                if (!valid)
+                {
+                    continue;
+                }
+
+                var amount = ComputeDiscount(entity, subtotal);
+                if (amount > bestAmount)
+                {
+                    bestAmount = amount;
+                    bestCode = entity.Code;
+                }
+            }
+
+            return new BestDiscountResultDto
+            {
+                Code = bestCode,
+                DiscountAmount = bestAmount
+            };
         }
 
         private static (bool Valid, string Message) CheckUsable(

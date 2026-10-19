@@ -17,6 +17,11 @@ namespace PhuThuongStickyRice.Application.Customer
     /// first-class, idempotent operations plus fast batch lookups so the
     /// order list, kitchen screen and priority sorting can treat VIPs
     /// as more than just another label.
+    /// NOTE (perf-hunt 2026-10-19): lookups compare TagName with plain ==
+    /// against <see cref="VipPriorityAppService.VipTagName"/> instead of
+    /// ToLower() so SQL Server can seek the unique index
+    /// {CustomerPhone, TagName}; matching stays case-insensitive under the
+    /// database's default CI collation.
     /// </summary>
     public interface IVipPriorityAppService : IApplicationService
     {
@@ -72,7 +77,7 @@ namespace PhuThuongStickyRice.Application.Customer
             var queryable = await _tagRepo.GetQueryableAsync();
             return await _asyncExecuter.AnyAsync(
                 queryable.Where(x => x.CustomerPhone == phone
-                    && x.TagName.ToLower() == "vip"));
+                    && x.TagName == VipTagName));
         }
 
         public virtual async Task<Dictionary<string, bool>> IsVipByPhonesAsync(IEnumerable<string> phones)
@@ -91,7 +96,7 @@ namespace PhuThuongStickyRice.Application.Customer
             var queryable = await _tagRepo.GetQueryableAsync();
             var vipPhones = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => list.Contains(x.CustomerPhone)
-                    && x.TagName.ToLower() == "vip")
+                    && x.TagName == VipTagName)
                     .Select(x => x.CustomerPhone));
             foreach (var phone in vipPhones.Distinct())
             {
@@ -105,7 +110,7 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             var queryable = await _tagRepo.GetQueryableAsync();
             var phones = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.TagName.ToLower() == "vip")
+                queryable.Where(x => x.TagName == VipTagName)
                     .Select(x => x.CustomerPhone));
             return new HashSet<string>(phones.Distinct());
         }
@@ -114,7 +119,7 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             var queryable = await _tagRepo.GetQueryableAsync();
             var rows = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.TagName.ToLower() == "vip")
+                queryable.Where(x => x.TagName == VipTagName)
                     .OrderByDescending(x => x.CreatedAt));
             return rows.Select(x => new CustomerTagDto
             {

@@ -100,5 +100,19 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             return Ok(await _discountAppService.GetActivePublicAsync());
         }
+
+        /// <summary>
+        /// perf-hunt 2026-10-19 (Public): best money-off code for the cart in
+        /// one round-trip — replaces the old client loop of
+        /// GET active + N x POST validate on the checkout hot path.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("best")]
+        public async Task<ActionResult> EvaluateBest(
+            [FromBody] EvaluateBestDiscountInput input,
+            CancellationToken cancellationToken = default)
+        {
+            return Ok(await _discountAppService.EvaluateBestAsync(input));
+        }
     }
 }

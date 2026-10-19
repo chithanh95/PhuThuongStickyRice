@@ -2,6 +2,7 @@ using PhuThuongStickyRice.Application.Shop;
 
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 using QRCoder;
 using System;
 using System.Collections.Generic;
@@ -36,15 +37,18 @@ namespace PhuThuongStickyRice.Application.Shop
         private readonly IRepository<TableQr, Guid> _tableQrs;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IShopSettingAppService _shopSettings;
+        private readonly IMemoryCache _cache;
 
         public TableQrAppService(
             IRepository<TableQr, Guid> tableQrs,
             IAsyncQueryableExecuter asyncExecuter,
-            IShopSettingAppService shopSettings)
+            IShopSettingAppService shopSettings,
+            IMemoryCache cache)
         {
             _tableQrs = tableQrs;
             _asyncExecuter = asyncExecuter;
             _shopSettings = shopSettings;
+            _cache = cache;
         }
 
         public virtual async Task<List<TableQrDto>> GetListAsync()
@@ -82,6 +86,10 @@ namespace PhuThuongStickyRice.Application.Shop
                 row = existing;
             }
 
+            // URL có thể đổi khi WebBaseUrl đổi — PNG cache theo id nên phải
+            // xóa entry cũ để lần tải sau render lại từ EncodedUrl mới.
+            _cache.Remove(PngCacheKey(row.Id));
+
             var png = RenderPng(url);
             return new TableQrGeneratedDto
             {
@@ -95,14 +103,25 @@ namespace PhuThuongStickyRice.Application.Shop
 
         public virtual async Task DeleteAsync(Guid id)
         {
+            _cache.Remove(PngCacheKey(id));
             await _tableQrs.DeleteAsync(id, autoSave: true);
         }
 
         public virtual async Task<byte[]> RenderPngAsync(Guid id)
         {
-            var row = await _tableQrs.GetAsync(id);
-            return RenderPng(row.EncodedUrl);
+            // perf-hunt 2026-10-19: the anonymous /png download re-rendered the
+            // QR on every request (CPU-bound, no input change). PNG bytes are a
+            // pure function of the saved EncodedUrl, so cache them; the entry is
+            // evicted whenever the row is regenerated or deleted below.
+            return await _cache.GetOrCreateAsync(PngCacheKey(id), async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
+                var row = await _tableQrs.GetAsync(id);
+                return RenderPng(row.EncodedUrl);
+            });
         }
+
+        private static string PngCacheKey(Guid id) => $"tableqr:png:{id}";
 
         private async Task<string> BuildUrlAsync(string label)
         {
