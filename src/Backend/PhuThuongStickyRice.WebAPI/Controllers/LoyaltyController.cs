@@ -16,6 +16,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+    /// <summary>
+    /// API điểm thành viên: khách tra cứu điểm/hạng theo SĐT, tự cập nhật
+    /// ngày sinh; admin liệt kê tài khoản, cộng/trừ điểm tay, xem sinh nhật
+    /// sắp tới và phát voucher sinh nhật.
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
     [Route("api/[controller]")]

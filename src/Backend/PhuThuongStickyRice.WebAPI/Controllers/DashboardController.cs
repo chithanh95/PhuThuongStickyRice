@@ -12,6 +12,11 @@ using PhuThuongStickyRice.Application.Inventory;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+    /// <summary>
+    /// API thống kê dashboard: tổng quan doanh thu/đơn hàng, top món bán chạy,
+    /// khách mới/quay lại, chỉ tiêu ngày và so sánh hôm nay với hôm qua.
+    /// Endpoint today-sold mở public cho trang shop/landing ("Đã bán N gói hôm nay").
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Authorize(Roles = "Admin,Cashier")]
     [Produces("application/json")]
@@ -33,6 +38,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _forecast = forecast;
         }
 
+        /// <summary>
+        /// Thống kê tổng quan dashboard (doanh thu, số đơn, giá trị đơn trung
+        /// bình...) trong khoảng thời gian — số liệu hiển thị trên trang admin.
+        /// </summary>
+        /// <param name="from">Từ ngày (query, tùy chọn).</param>
+        /// <param name="to">Đến ngày (query, tùy chọn).</param>
         [HttpGet("stats")]
         public async Task<ActionResult> GetStats(
             [FromQuery] DateTime? from = null,
@@ -43,6 +54,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(stats);
         }
 
+        /// <summary>
+        /// Top món bán chạy nhất trong khoảng thời gian (mặc định top 5) —
+        /// hiển thị bảng "món bán chạy" trên dashboard.
+        /// </summary>
+        /// <param name="from">Từ ngày (query, tùy chọn).</param>
+        /// <param name="to">Đến ngày (query, tùy chọn).</param>
+        /// <param name="top">Số món lấy (query, mặc định 5).</param>
         [HttpGet("top-products")]
         public async Task<ActionResult> GetTopProducts(
             [FromQuery] DateTime? from = null,

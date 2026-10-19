@@ -11,6 +11,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+    /// <summary>
+    /// API mã giảm giá (admin): CRUD mã, kiểm tra mã có áp được không
+    /// (validate), liệt kê mã đang chạy công khai và chọn mã tốt nhất cho
+    /// giỏ hàng (best — checkout tự gợi ý).
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Authorize(Roles = "Admin")]
     [Produces("application/json")]

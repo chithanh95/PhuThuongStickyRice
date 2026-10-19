@@ -895,22 +895,35 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
     }
 
+    /// <summary>
+    /// Body gán (hoặc gỡ) shipper cho đơn hàng — admin chọn shipper giao đơn.
+    /// </summary>
     public sealed class AssignShipperRequestModel
     {
         /// <summary>Shipper id; null unassigns.</summary>
         public Guid? ShipperId { get; set; }
     }
 
+    /// <summary>
+    /// Body ẩn/hiện một đánh giá của khách trên trang đánh giá công khai.
+    /// </summary>
     public sealed class SetReviewHiddenRequestModel
     {
         public bool IsHidden { get; set; }
     }
 
+    /// <summary>
+    /// Body trả lời đánh giá của khách (hiện kèm dưới review trên trang shop).
+    /// </summary>
     public sealed class ReplyReviewRequestModel
     {
         public string Reply { get; set; }
     }
 
+    /// <summary>
+    /// Body đánh giá shipper: điểm sao + SĐT đặt hàng để xác thực người
+    /// đánh giá đúng là chủ đơn (không ai đánh giá hộ đơn của người khác).
+    /// </summary>
     public sealed class SetShipperRatingRequestModel
     {
         public int Rating { get; set; }
