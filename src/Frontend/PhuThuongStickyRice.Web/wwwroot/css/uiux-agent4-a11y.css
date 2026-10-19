@@ -1322,3 +1322,78 @@ html.dark .shop-row-stepper button:focus-visible {
     outline-color: #a49de0;
 }
 /* ===== END UIUX run 20:35 - Agent4 ===== */
+
+/* ===== UIUX 21:35 - Agent4 A11y & Polish (5 fix moi, CSS-only + 1 attribute, khong trung cac run truoc) ===== */
+
+/* UIUX 21:35 A4-fix1: 3 nút chia sẻ trong quick-view sheet mobile
+   (.qv-sheet-share-btn: Facebook / Zalo / Copy link, Shop.razor:592-596)
+   bấm được (cursor: pointer) nhưng HOÀN TOÀN không có :hover/:active —
+   khách lớn tuổi không nhận được phản hồi thị giác khi chạm/di chuột.
+   Thêm nền hover đậm hơn + scale nhẹ khi nhấn; dark mode nền tối tương
+   ứng. Guard prefers-reduced-motion tắt scale cho người nhạy cảm
+   chuyển động (a11y.css đã có guard toàn cục, rule này phòng khi file
+   đó bị gỡ). Specificity :hover (0,2,0) ngang rule scoped gốc nên thắng
+   theo thứ tự cascade (file này load sau). */
+.qv-sheet-share-btn:hover {
+    background: #efe9df;
+}
+.qv-sheet-share-btn:active {
+    transform: scale(0.97);
+}
+html.dark .qv-sheet-share-btn:hover {
+    background: #3a3226;
+}
+@media (prefers-reduced-motion: reduce) {
+    .qv-sheet-share-btn:active {
+        transform: none;
+    }
+}
+
+/* UIUX 21:35 A4-fix2: 2 nút CTA trang /error (.sg-error-btn-primary
+   "Về trang chủ", .sg-error-btn-outline "Đặt món", Error.razor.css:45+)
+   không có :hover — người dùng di chuột qua không thấy phản hồi.
+   Nút solid: nền tím đậm hơn khi hover (chữ trắng trên #625998 đạt
+   ~6.2:1, giữ chuẩn WCAG AA). Nút outline: nền tint tím nhạt; dark mode
+   (Agent 2 run 21:25 đã đổi chữ/viền sang #b3a8e8) dùng tint tím sáng
+   tương ứng, không đổi màu chữ/viền của Agent 2. */
+.sg-error-btn-primary:hover {
+    background: #625998;
+    border-color: #625998;
+    color: #fff;
+    text-decoration: none;
+}
+.sg-error-btn-outline:hover {
+    background: rgba(122, 111, 190, .1);
+    text-decoration: none;
+}
+html.dark .sg-error-btn-outline:hover {
+    background: rgba(179, 168, 224, .14);
+}
+
+/* UIUX 21:35 A4-fix3: 2 nút mua gói (luồng tiền thật) không có :hover:
+   .pt-bigbtn "Mua thẻ xôi" (PrepaidCardTab.razor:52) và .wpt-btn-primary
+   "Mua gói tuần" (WeeklyPlanTab.razor:63). Người cao tuổi cần tín hiệu
+   rõ trước khi bấm nút thanh toán. Nút mua thẻ: #5a4fa3 → #4c4387
+   (chữ trắng vẫn ~8.5:1). Nút gói tuần: dùng var(--shp-accent-dark)
+   có sẵn cùng scope (định nghĩa tại ShopLayout.razor.css:16), đồng bộ
+   với design system shop. :not(:disabled) để nút đang xử lý không hiện
+   hover gây hiểu nhầm. */
+.pt-bigbtn:hover:not(:disabled) {
+    background: #4c4387;
+}
+.wpt-btn-primary:hover:not(:disabled) {
+    background: var(--shp-accent-dark);
+}
+
+/* UIUX 21:35 A4-fix5: nút pill "Xem giỏ →" trong thanh sticky bar shop
+   (.shop-sticky-cart-cta, Shop.razor.css:76 — hiện mọi trang shop) không
+   có :hover. Thêm nền hover kem nhạt (light) / nâu tối (dark), chữ giữ
+   nguyên (tương phản chữ #7a1b2e trên #f3e3c2 đạt ~8.2:1, #ffd97a trên
+   #3a3226 đạt ~9.3:1). Không đổi kích thước/layout (chỉ background). */
+.shop-sticky-cart-cta:hover {
+    background: #f3e3c2;
+}
+html.dark .shop-sticky-cart-cta:hover {
+    background: #3a3226;
+}
+/* ===== END UIUX 21:35 - Agent4 ===== */
