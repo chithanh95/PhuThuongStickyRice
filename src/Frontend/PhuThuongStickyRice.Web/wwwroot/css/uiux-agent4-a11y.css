@@ -179,3 +179,31 @@ html.dark .shp-lang-select:focus-visible {
 }
 
 /* === end Agent 4 run 10:20 === */
+
+/* === Agent 4 run 10:55 — batch mới (2026-10-19) — 2 fix CSS, không trùng các run trước === */
+
+/* Fix 1 — WCAG 2.4.13 (Focus Appearance): vòng chỉ báo focus của ô tìm kiếm
+   topbar admin `.lx-search:focus-within` (admin-lexa.css:232) chỉ là
+   box-shadow rgba(122,111,190,.28) — đo thực tế chỉ ~1.39:1 (sáng) và ~1.4:1
+   (tối) so với nền, DƯỚI mức 3:1 yêu cầu cho focus indicator. Dùng
+   :has(input:focus-visible) để vẽ vòng 2px đặc CHỈ khi điều hướng bằng bàn
+   phím (chuột click vẫn giữ hiệu ứng mờ cũ, không đổi trải nghiệm hiện tại);
+   dark mode dùng #a49de0 (~6.38:1). Specificity (0,2,1) thắng rule gốc. */
+.lx-search:has(input:focus-visible) {
+    box-shadow: 0 0 0 2px #7a6fbe;
+}
+html.dark .lx-search:has(input:focus-visible) {
+    box-shadow: 0 0 0 2px #a49de0;
+}
+
+/* Fix 2 — Polish hover: nút chat nổi landing `.sg-chat-fab`
+   (Index.razor.css:1736) là CTA liên hệ chính nhưng hoàn toàn không có
+   phản hồi hover — người dùng desktop không biết nút "sống". Thêm scale nhẹ
+   + nền đậm hơn khi hover; vẫn tôn trọng prefers-reduced-motion nhờ rule
+   toàn cục trong a11y.css (transition bị rút về 0.01ms). */
+.sg-chat-fab.sg-chat-fab:hover {
+    transform: scale(1.06);
+    background: #5c0606;
+}
+
+/* === end Agent 4 run 10:55 === */

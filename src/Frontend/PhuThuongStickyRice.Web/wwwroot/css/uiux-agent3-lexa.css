@@ -252,3 +252,85 @@ html.dark .lx-admin .page-item.active .page-link {
 .btn:focus, .btn.focus { box-shadow: 0 0 0 .2rem rgba(122,111,190,.25); }
 
 /* === end Agent 3 run 10:40 === */
+
+/* === UIUX run 10:55 (job uiux-team-2days) — Agent 3 Lexa sync, đợt 5 ===
+   5 fix MỚI (đã verify bằng grep, không trùng 4 đợt trước).
+   Ghi chú: file này load ở index.html:155 — SAU Bootstrap + app.css +
+   admin-lexa.css nhưng TRƯỚC uiux-agent4-a11y.css (dòng 156). Các rule
+   dưới thắng Bootstrap nhờ specificity cao hơn hoặc load sau; chỉ dùng
+   !important khi Bootstrap dùng !important hoặc khi đè chuỗi :not()
+   specificity (0,4,0). */
+
+/* ---------- Fix 1: nav-pills active -> tím Lexa (shop /goi-tra-truoc) ----------
+   Verify: Shop/Pages/GoiTraTruoc.razor:9 <ul class="nav nav-pills">, các
+   <button class="nav-link"> + active. Bootstrap .nav-pills .nav-link.active
+   dùng background #007bff (xanh dương) — trang khách hàng nhìn thấy.
+   Specificity: .shp-page.nav-pills.nav-link.active (0,4,0) thắng BS (0,3,0). */
+.shp-page .nav-pills .nav-link.active {
+    background-color: #7a6fbe;
+}
+.shp-page .nav-pills .nav-link:not(.active):hover {
+    color: #625998;
+    background-color: rgba(122,111,190,.12);
+}
+.shp-page .nav-pills .nav-link:focus {
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25);
+}
+
+/* ---------- Fix 2: nav-tabs active -> tím Lexa (shop + admin) ----------
+   Verify: Shop/Pages/Shop.razor:79 (tab "Tất cả món" / "Xôi nào hợp bạn?"),
+   Admin/Pages/GoiTraTruoc.razor:13. Bootstrap .nav-tabs .nav-link.active
+   dùng color #495057 (xám) — lệch chuẩn Lexa (tab active tím).
+   Dark mode an toàn: html.dark .nav-tabs .nav-link.active (app.css, (0,4,1))
+   vẫn thắng rule này (0,4,0). */
+.shp-page .nav-tabs .nav-link.active,
+.lx-admin .nav-tabs .nav-link.active {
+    color: #7a6fbe;
+    font-weight: 600;
+}
+
+/* ---------- Fix 3: btn-outline-primary -> Lexa TOÀN shop ----------
+   Verify: .shp-page .btn-outline-primary chỉ tồn tại trong Shop.razor.css
+   (CSS isolation -> scoped, chỉ có hiệu lực TRONG trang Shop). Các trang
+   shop khác dùng btn-outline-primary vẫn xanh Bootstrap #007bff:
+   DatTiec.razor:86-88 (nút preset "30/50/100 khách"), HoTro.razor:14,
+   TaiKhoan.razor:115/151/237/319, Checkout.razor:134, TrackOrder.razor:62.
+   Khớp pattern Shop.razor.css:279-284 (chữ/viền #7a6fbe, hover fill tím).
+   !important cho :active/.active vì chuỗi :not() của Bootstrap có
+   specificity (0,4,0) cao hơn rule thường. */
+.shp-page .btn-outline-primary {
+    color: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    border-radius: 6px !important;
+}
+.shp-page .btn-outline-primary:hover {
+    background: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    color: #fff !important;
+}
+.shp-page .btn-outline-primary:focus, .shp-page .btn-outline-primary.focus {
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25) !important;
+}
+.shp-page .btn-outline-primary:not(:disabled):not(.disabled):active,
+.shp-page .btn-outline-primary:not(:disabled):not(.disabled).active {
+    background: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    color: #fff !important;
+}
+
+/* ---------- Fix 4: a:hover toàn web -> tím đậm Lexa ----------
+   Bootstrap reboot: a:hover { color: #0056b3 } (xanh dương đậm). app.css chỉ
+   set `a { color:#7a6fbe }` mà không có a:hover -> hover MỌI link trên web
+   (trừ trang Shop.razor có rule scoped riêng, và dark-mode admin đã có rule)
+   đều nháy xanh #0056b3: link footer, breadcrumb, "Xem chi tiết", tab...
+   Rule này specificity (0,1,1) bằng reboot, file load sau nên thắng.
+   Ghi chú cho Agent 2 (dark mode): có thể bổ sung
+   html.dark a:hover { color: #a89ee0; } để hover trên nền tối đủ contrast. */
+a:hover, a:focus { color: #625998; }
+
+/* ---------- Fix 5: ::selection -> tím nhạt Lexa (polish brand) ----------
+   Bôi đen chữ đang dùng màu xanh dương mặc định của trình duyệt.
+   Đổi sang tím Lexa nhạt cho đồng nhất brand trên mọi trang. */
+::selection { background: rgba(122,111,190,.28); }
+
+/* === end Agent 3 run 10:55 === */

@@ -428,3 +428,110 @@
     }
 }
 /* ===== END UIUX-0910 A1 ===== */
+
+/* ===== UIUX-1055 A1 (run 10:55) — 5 fix mobile mới ===== */
+/* ------------------------------------------------------------
+   FIX 1 — /track-order: nút "Tra cứu" chính (.to-lookup .btn-primary).
+   Vấn đề: nút chỉ ~38px, co theo chữ — là hành động chính của trang
+   tra cứu đơn nhưng khó bấm với người già. (Các đợt trước mới chỉ
+   fix nút "Xem lịch sử đơn" .btn-outline-primary, chưa đụng nút này.)
+   Giải pháp: full-width, cao 48px, chữ đậm.
+   (Verify: TrackOrder.razor:27 .to-lookup, :40 nút btn-primary —
+   không phải con trực tiếp của .card-body nên rule MoMo cũ
+   `.card-body > .btn-primary` không phủ tới; scoped CSS không set
+   width/min-height cho nút này nên selector thường đủ thắng)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .to-lookup .btn-primary {
+        width: 100%;
+        min-height: 48px;
+        font-size: 1rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /shop (mobile, kiểu ShopeeFood): mô tả + meta món ăn.
+   Vấn đề: .shop-row-desc và .shop-row-meta chỉ 12px, mô tả bị cắt
+   1 dòng (nowrap + ellipsis) — trên màn 360px chỉ còn vài ký tự,
+   khách lớn tuổi không đọc được món có gì.
+   Giải pháp: chữ lên 13px; mô tả cho xuống 2 dòng (line-clamp) thay
+   vì cắt 1 dòng — vẫn gọn, đọc được nội dung.
+   (Verify: Shop.razor.css:524-536 set 12px + white-space:nowrap —
+   dùng doubled-class để thắng specificity của scoped CSS, file này
+   load sau cùng nên thắng theo cascade khi hòa specificity)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .shop-row-desc.shop-row-desc {
+        font-size: 13px;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .shop-row-meta.shop-row-meta {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /shop: chữ tổng tiền trên thanh giỏ hàng sticky.
+   Vấn đề: .shop-sticky-cart-info ("🛒 25 món · 12.350.000₫") không
+   có min-width:0/ellipsis — khi giỏ nhiều món, chữ dài ép pill
+   "Xem giỏ →" trên màn 320px, chữ có thể tràn/đè nút.
+   Giải pháp: cho phép co + cắt ellipsis, pill luôn đủ chỗ.
+   (Verify: Shop.razor.css:64-68 — scoped chỉ set font-weight/size/
+   color nên selector thường không xung đột)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .shop-sticky-cart-info {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /shop: pill "Xem giỏ →" trên thanh sticky giỏ hàng.
+   Vấn đề: .shop-sticky-cart-cta padding 8px 16px → cao chỉ ~40px,
+   dưới chuẩn chạm 44px (cả thanh là link nên vẫn bấm được, nhưng
+   pill là điểm nhìn chính để bấm).
+   Giải pháp: cao 44px, chữ canh giữa.
+   (Verify: Shop.razor.css:70-77 set padding 8px 16px — doubled-class
+   để thắng padding của scoped CSS)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .shop-sticky-cart-cta.shop-sticky-cart-cta {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 20px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /cart: nút "Tiếp tục mua" ở 576–767px.
+   Vấn đề: rule `.cart-actions .btn-* { min-height: 44px }` trong
+   Cart.razor.css chỉ nằm trong @media (max-width: 575.98px) — ở
+   576–767px (điện thoại xoay ngang, tablet nhỏ) nút "Tiếp tục mua"
+   rớt về ~38px mặc định Bootstrap.
+   Giải pháp: mở rộng rule lên 767.98px, giữ nguyên 44px.
+   (Verify: Cart.razor:163 .cart-actions; Cart.razor.css rule 44px
+   chỉ trong media 575.98px; nút "Xóa" đã ẩn ở ≤768px nên không ảnh
+   hưởng; nút checkout btn-lg vốn đã ≥48px)
+   ------------------------------------------------------------ */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .cart-actions .btn-secondary,
+    .cart-actions .btn-outline-primary {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+}
+/* ===== END UIUX-1055 A1 ===== */

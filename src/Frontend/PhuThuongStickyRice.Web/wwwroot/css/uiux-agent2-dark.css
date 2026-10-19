@@ -331,3 +331,62 @@ html.dark .sg-share-btn {
 }
 
 /* === end Agent 2 run 10:42 === */
+
+/* === UIUX run 11:05 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (các đợt trước đã phủ: kanban, nhuong-quyen, check-in, the-xoi,
+   cart/checkout sticky bar, track-order, svg DuBao, shop size price,
+   price-filter + card text landing, qv-sheet section/close/meta/opt-price,
+   stepper mobile, lexa auth, poll-votes, spin-win code, share-btn,
+   survey-sheet, bulk, faq-mini, lang-caret, nq-form label, to-info-label,
+   shp-logout hover, sg-sticky-call — đợt này chỉ lỗi MỚI) */
+
+/* ---------- FIX 1 — Landing: tiêu đề mốc timeline (.sg-tl-card strong) ----------
+   Vấn đề: Index.razor.css:1381 — .sg-tl-card strong color:#6F0707 (đỏ đậm)
+   trên card nền var(--sg-surface) (= #262019 ở dark) → tương phản chỉ ~2.3:1,
+   tiêu đề các mốc thời gian chìm hẳn, không rule dark nào phủ (đã grep xác minh).
+   Fix: đỏ sáng #f0a08a cùng tone các fix #6F0707 trước. */
+html.dark .sg-tl-card strong {
+    color: #f0a08a !important; /* was #6F0707 */
+}
+
+/* ---------- FIX 2 — Landing: dấu "+" câu hỏi FAQ (.sg-faq-item summary::after) ----------
+   Vấn đề: Index.razor.css:1502 — dấu "+" 22px color:#6F0707 trên card FAQ
+   nền var(--sg-surface) (= #262019 ở dark) → ~2.3:1, icon mở câu hỏi gần như
+   tàng hình, không rule dark nào phủ (đã grep xác minh). Khi mở (dấu "−")
+   kế thừa cùng màu nên cũng được fix. */
+html.dark .sg-faq-item summary::after {
+    color: #f0a08a !important; /* was #6F0707 */
+}
+
+/* ---------- FIX 3 — Landing: số liệu thống kê (.sg-stat strong) ----------
+   Vấn đề: Index.razor.css:1346 — .sg-stat strong (số 28px: món/ngày, khách...)
+   color:#6F0707 nằm trực tiếp trên nền trang dark var(--sg-bg) = #1c1712
+   → tương phản chỉ ~2.2:1, con số thống kê chìm hẳn, không rule dark nào phủ.
+   Fix: đỏ sáng #f0a08a cùng tone các fix #6F0707 trước. */
+html.dark .sg-stat strong {
+    color: #f0a08a !important; /* was #6F0707 */
+}
+
+/* ---------- FIX 4 — Landing: nội dung đánh giá (.sg-review-text) ----------
+   Vấn đề: Index.razor.css:1403 — .sg-review-text color:#4a3f33 (nâu đậm)
+   trên card đánh giá nền var(--sg-surface) (= #262019 ở dark) → ~2.6:1,
+   lời nhận xét của khách (nội dung chính của card) khó đọc, không rule dark
+   nào phủ (đã grep xác minh). Tên người đánh giá (.sg-review-name #8a7a68)
+   vẫn đọc được (~4:1) nên không đụng.
+   Fix: chữ nâu sáng cùng tone các fix #5a4a3a trước. */
+html.dark .sg-review-text {
+    color: #d8c8a8 !important; /* was #4a3f33 */
+}
+
+/* ---------- FIX 5 — Landing: hộp phản hồi của quán (.sg-review-reply) ----------
+   Vấn đề: Index.razor.css:1407 — .sg-review-reply giữ background:#fdf6ec
+   (kem sáng) + color:#6b5a45, không rule dark nào phủ (đã grep xác minh).
+   Trên card đánh giá đã tối #262019, hộp kem sáng lọt thỏm loang lổ cả dãy
+   review ở dark mode.
+   Fix: nền tối theo palette landing, chữ nâu sáng đọc được. */
+html.dark .sg-review-reply {
+    background: #2e2620 !important; /* was #fdf6ec */
+    color: #d8c8a8 !important; /* was #6b5a45 */
+}
+
+/* === end Agent 2 run 11:05 === */
