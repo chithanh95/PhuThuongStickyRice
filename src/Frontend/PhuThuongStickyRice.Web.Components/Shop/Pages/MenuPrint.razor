@@ -68,7 +68,9 @@
                                 {
                                     <br />
                                     <small class="text-muted">
-                                        @string.Join(" · ", product.Sizes.OrderBy(s => s.Price).Select(s => $"{s.Name}: {s.Price:N0} ₫"))
+                                        @* bug-hunt 2026-10-20: hiện giá KM (EffectivePrice) như toàn web
+                                           (item 256) — trước đây menu in luôn in giá gốc. *@
+                                        @string.Join(" · ", product.Sizes.OrderBy(s => s.Price).Select(s => $"{s.Name}: {ShopProductModel.EffectivePrice(product, s.Price):N0} ₫"))
                                     </small>
                                 }
                             </td>
@@ -113,8 +115,10 @@
         await JSRuntime.InvokeVoidAsync("window.print");
     }
 
+    // bug-hunt 2026-10-20: giá "từ" dùng giá KM (EffectivePrice) như toàn web
+    // (item 256) — trước đây menu in luôn in giá gốc.
     private static decimal MinPrice(ShopProductModel product) =>
         product.Sizes != null && product.Sizes.Count > 0
-            ? product.Sizes.Min(s => s.Price)
-            : product.Price;
+            ? product.Sizes.Min(s => ShopProductModel.EffectivePrice(product, s.Price))
+            : ShopProductModel.EffectivePrice(product, product.Price);
 }

@@ -449,7 +449,18 @@ else
                         }
                     }
                     <p class="mt-3">
-                        <strong class="text-danger" style="font-size: 1.4rem;">@FormatPrice(QuickViewUnitPrice())</strong>
+                        @* bug-hunt 2026-10-20: hiện "giá gốc → giá KM" (đã gồm
+                           topping) như card và popup mobile — trước đây modal PC
+                           chỉ hiện một giá duy nhất. *@
+                        @if (QuickViewPromoUnitPrice() is decimal qvPromoPc)
+                        {
+                            <s class="text-muted mr-2" style="font-size: 1rem;">@FormatPrice(QuickViewBasePrice() + QuickViewToppingsTotal())</s>
+                            <strong class="text-danger" style="font-size: 1.4rem;">@FormatPrice(qvPromoPc)</strong>
+                        }
+                        else
+                        {
+                            <strong class="text-danger" style="font-size: 1.4rem;">@FormatPrice(QuickViewUnitPrice())</strong>
+                        }
                         <small class="text-muted">@UnitSuffix(_quickView)</small>
                         @if (IsSoldOut(_quickView))
                         {
@@ -534,12 +545,16 @@ else
                             {
                                 <div class="qv-sheet-meta">@FormatSoldShort(qvSold) đã bán</div>
                             }
-                            @* Item 256: giá KM trong popup xem nhanh. *@
+                            @* Item 256: giá KM trong popup xem nhanh.
+                               bug-hunt 2026-10-20: giá KM phải gồm topping đã chọn
+                               (khớp số giỏ hàng thực tính ở AddQuickViewToCart);
+                               giá gạch bỏ là giá GỐC (trước đây gạch bỏ giá đã KM
+                               và hiện giá KM món lẻ không topping). *@
                             <div class="qv-sheet-price">
-                                @if (CardPromoPrice(_quickView) is decimal qvPromo)
+                                @if (QuickViewPromoUnitPrice() is decimal qvPromoUnit)
                                 {
-                                    <s class="text-muted mr-1" style="font-size: 0.9rem;">@FormatPrice(QuickViewUnitPrice())</s>
-                                    <span class="text-danger">@FormatPrice(qvPromo)</span>
+                                    <s class="text-muted mr-1" style="font-size: 0.9rem;">@FormatPrice(QuickViewBasePrice() + QuickViewToppingsTotal())</s>
+                                    <span class="text-danger">@FormatPrice(qvPromoUnit)</span>
                                 }
                                 else
                                 {
@@ -1503,7 +1518,7 @@ else
         }
     }
 
-    private decimal QuickViewUnitPrice()
+    private decimal QuickViewBasePrice()
     {
         if (_quickView == null)
         {
@@ -1511,13 +1526,45 @@ else
         }
 
         var size = _quickViewSizeId.HasValue
-            ? _quickView.Sizes.FirstOrDefault(s => s.Id == _quickViewSizeId.Value)
+            ? _quickView.Sizes?.FirstOrDefault(s => s.Id == _quickViewSizeId.Value)
             : null;
-        var basePrice = size?.Price ?? _quickView.Price;
-        var toppingsTotal = (_toppings ?? new List<ToppingModel>())
+        return size?.Price ?? _quickView.Price;
+    }
+
+    private decimal QuickViewToppingsTotal() =>
+        (_toppings ?? new List<ToppingModel>())
             .Where(t => _quickViewToppings.Contains(t.Id))
             .Sum(t => t.ExtraPrice);
-        return EffectivePrice(_quickView, basePrice) + toppingsTotal;
+
+    private decimal QuickViewUnitPrice()
+    {
+        if (_quickView == null)
+        {
+            return 0;
+        }
+
+        return EffectivePrice(_quickView, QuickViewBasePrice()) + QuickViewToppingsTotal();
+    }
+
+    /// <summary>
+    /// bug-hunt 2026-10-20: giá KM đơn vị trong popup xem nhanh, ĐÃ gồm
+    /// topping đã chọn (khớp số giỏ hàng thực tính) — null khi món không có
+    /// KM. Trước đây popup mobile hiện giá KM món lẻ (không topping) trong
+    /// khi <see cref="AddQuickViewToCart"/> cộng cả topping → giá hiển thị
+    /// ≠ giá khách thực trả; giá gạch bỏ lại là giá đã KM.
+    /// </summary>
+    private decimal? QuickViewPromoUnitPrice()
+    {
+        if (_quickView == null)
+        {
+            return null;
+        }
+
+        var basePrice = QuickViewBasePrice();
+        var effective = EffectivePrice(_quickView, basePrice);
+        return effective < basePrice
+            ? effective + QuickViewToppingsTotal()
+            : null;
     }
 
     private void AddQuickViewToCart()

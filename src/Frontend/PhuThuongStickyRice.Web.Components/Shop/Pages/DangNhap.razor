@@ -335,7 +335,22 @@
             return null;
         }
 
-        var query = uri.Substring(question + 1);
+        // bug-hunt 2026-10-20: query chứa % sai định dạng (vd /dang-nhap?returnUrl=%zz)
+        // làm Uri.UnescapeDataString ném UriFormatException → OnInitializedAsync
+        // nổ → trắng trang. Cùng pattern đã fix ở Shop.razor/Cart/TrackOrder:
+        // URL hỏng thì bỏ qua êm (trả null) thay vì crash cả trang.
+        try
+        {
+            return GetQueryValueCore(uri.Substring(question + 1), key);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static string GetQueryValueCore(string query, string key)
+    {
         foreach (var pair in query.Split('&', System.StringSplitOptions.RemoveEmptyEntries))
         {
             var eq = pair.IndexOf('=');
