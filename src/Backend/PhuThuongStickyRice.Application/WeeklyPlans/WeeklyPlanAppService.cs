@@ -78,6 +78,12 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Public: gói tuần đang bán (tuần chứa ngày hôm nay theo giờ VN,
+        /// gói có WeekStart mới nhất). Dùng cache 5 phút vì trang shop
+        /// gọi mỗi lần khách mở tab gói tuần.
+        /// </summary>
+        /// <returns>Gói tuần đang bán, null nếu chưa có gói nào.</returns>
         [AllowAnonymous]
         public virtual async Task<WeeklyPlanDto> GetActiveAsync()
         {
@@ -100,6 +106,13 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
                 });
         }
 
+        /// <summary>
+        /// Admin: tạo gói tuần mới. Validate đủ 5 ngày Mon..Fri (mỗi ngày 1 lần,
+        /// đã chọn món), snap WeekStart về thứ 2, giá gói = tổng giá món × 0.9,
+        /// rồi tắt các gói cũ cùng tuần. Xóa cache gói đang bán.
+        /// </summary>
+        /// <param name="dto">Thông tin gói tuần mới (tuần + món từng ngày).</param>
+        /// <returns>Gói tuần vừa tạo.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<WeeklyPlanDto> CreateAsync(CreateWeeklyPlanDto dto)
         {
@@ -130,6 +143,11 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             return MapToDto(plan);
         }
 
+        /// <summary>
+        /// Admin: danh sách gói tuần (mới nhất trước), kèm số lượt mua
+        /// của từng gói (đếm bằng GroupBy trong SQL, không nạp hết bảng đơn).
+        /// </summary>
+        /// <returns>Danh sách gói tuần kèm số lượt mua.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<WeeklyPlanDto>> GetListAsync()
         {
@@ -158,6 +176,13 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             }).ToList();
         }
 
+        /// <summary>
+        /// Public: khách mua gói. Validate tên + SĐT, chỉ bán khi gói còn
+        /// IsActive. Chụp giá gói tại thời điểm mua vào PaidAmount (đơn giữ
+        /// giá đã trả dù sau này admin đổi giá gói).
+        /// </summary>
+        /// <param name="dto">Tên, SĐT khách và Id gói muốn mua.</param>
+        /// <returns>Đơn mua gói mới ở trạng thái Paid.</returns>
         [AllowAnonymous]
         public virtual async Task<WeeklyPlanOrderDto> BuyAsync(BuyWeeklyPlanDto dto)
         {
@@ -196,6 +221,12 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             return MapToDto(order);
         }
 
+        /// <summary>
+        /// Public: tra cứu các đơn mua gói của khách theo SĐT (mới nhất
+        /// trước, giới hạn 100 đơn server-side để không nạp quá nhiều).
+        /// </summary>
+        /// <param name="phone">SĐT đã dùng khi mua gói.</param>
+        /// <returns>Danh sách đơn mua gói của SĐT này.</returns>
         [AllowAnonymous]
         public virtual async Task<List<WeeklyPlanOrderDto>> GetMyOrdersAsync(string phone)
         {

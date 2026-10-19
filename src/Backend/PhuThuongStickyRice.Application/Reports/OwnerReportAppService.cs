@@ -26,6 +26,13 @@ namespace PhuThuongStickyRice.Application.Reports
         Task<OwnerReportResultDto> SendAsync(string period);
     }
 
+    /// <summary>
+    /// Báo cáo định kỳ cho chủ quán (item 85): báo cáo tuần (thứ 2, 7:00) và
+    /// báo cáo tháng (ngày 1, 7:00) do background worker gọi. Tóm tắt doanh thu,
+    /// đơn hàng theo trạng thái và top 5 món bán chạy; nội dung được xếp hàng
+    /// qua pipeline EmailMessage gửi đến địa chỉ OwnerReportEmail trong cài đặt
+    /// shop (bỏ trống = tắt báo cáo).
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class OwnerReportAppService : ApplicationService, IOwnerReportAppService
     {
@@ -50,7 +57,13 @@ namespace PhuThuongStickyRice.Application.Reports
         // Địa chỉ gửi của báo cáo qua pipeline EmailMessage.
         private const string ReportSenderAddress = "no-reply@phuthuong.vn";
 
-        /// <summary>Internal — the background worker calls this.</summary>
+        /// <summary>
+        /// Background worker gọi để gửi báo cáo cho chủ quán. Nếu chưa cấu
+        /// hình OwnerReportEmail trong cài đặt shop thì không gửi (trả về
+        /// IsSent=false với lý do) thay vì ném lỗi — worker vẫn chạy ổn định.
+        /// </summary>
+        /// <param name="period">"weekly" (tuần trước) hoặc "monthly" (tháng trước).</param>
+        /// <returns>Kết quả gửi: đã gửi hay bỏ qua + lý do.</returns>
         [AllowAnonymous]
         public virtual async Task<OwnerReportResultDto> SendAsync(string period)
         {

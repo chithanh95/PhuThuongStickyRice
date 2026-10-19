@@ -31,6 +31,13 @@ namespace PhuThuongStickyRice.Application.Reports
         Task<ProfitReportDto> GetReportAsync(DateTime? from = null, DateTime? to = null);
     }
 
+    /// <summary>
+    /// Báo cáo lãi gộp (item 84) cho chủ quán: lãi = doanh thu − giá vốn, tổng
+    /// hợp theo ngày và theo món. Đơn đã hủy bị loại khỏi toàn bộ số liệu.
+    /// LƯU Ý: giá vốn dùng giá HIỆN TẠI của từng món (tính hồi tố — sửa giá
+    /// vốn làm thay đổi số liệu các kỳ trước); combo không có product row
+    /// tính giá vốn 0.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class ProfitReportAppService : ApplicationService, IProfitReportAppService
     {

@@ -72,6 +72,11 @@ namespace PhuThuongStickyRice.Application.Common
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Admin: danh sách link ngắn, mới nhất trước, tối đa 500 dòng
+        /// (server-side Take, bảng tăng dần theo thời gian).
+        /// </summary>
+        /// <returns>Danh sách link ngắn.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<ShortLinkDto>> GetListAsync()
         {
@@ -110,12 +115,22 @@ namespace PhuThuongStickyRice.Application.Common
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: xóa một link ngắn. Link đã xóa không redirect được nữa.
+        /// </summary>
+        /// <param name="id">Id link cần xóa.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task DeleteAsync(Guid id)
         {
             await _links.DeleteAsync(id, autoSave: true);
         }
 
+        /// <summary>
+        /// Public: giải mã ngắn thành URL đích để redirect. Mã được chuẩn hóa
+        /// về chữ thường khi tra cứu nên người dùng gõ hoa/thường đều được.
+        /// </summary>
+        /// <param name="code">Mã rút gọn (không phân biệt hoa thường).</param>
+        /// <returns>URL đích, hoặc null khi mã không tồn tại.</returns>
         [AllowAnonymous]
         public virtual async Task<string> ResolveAsync(string code)
         {

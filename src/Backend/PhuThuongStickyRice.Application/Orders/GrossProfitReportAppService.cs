@@ -65,6 +65,16 @@ namespace PhuThuongStickyRice.Application.Orders
         // Số tên món tối đa liệt kê trong gợi ý "chưa nhập giá vốn".
         private const int MaxUnpricedNamesInSuggestion = 3;
 
+        /// <summary>
+        /// Admin: báo cáo lãi gộp theo món trong khoảng ngày (giờ VN,
+        /// mặc định 7 ngày gần nhất). Đơn đã hủy bị loại. Giá vốn dùng giá
+        /// HIỆN TẠI của từng món (tính hồi tố); combo không có product row
+        /// tính giá vốn 0. Trả kèm gợi ý kinh doanh (món chưa nhập giá vốn,
+        /// món biên lãi cao/thấp bất thường).
+        /// </summary>
+        /// <param name="from">Ngày bắt đầu (mặc định 7 ngày gần nhất).</param>
+        /// <param name="to">Ngày kết thúc (mặc định hôm nay).</param>
+        /// <returns>Chi tiết theo món, dòng tổng cộng, gợi ý và ghi chú giá vốn.</returns>
         public virtual async Task<GrossProfitReportDto> GetGrossProfitReportAsync(DateTime? from, DateTime? to)
         {
             var (fromDate, toDate) = ResolveReportDateRange(from, to);
@@ -201,6 +211,11 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
+        /// <summary>
+        /// Admin: toàn bộ món kèm giá vốn hiện tại, dùng cho bảng nhập giá
+        /// vốn ở màn hình báo cáo lãi gộp.
+        /// </summary>
+        /// <returns>Danh sách món với giá vốn hiện tại.</returns>
         public virtual async Task<List<ProductCostDto>> GetProductCostsAsync()
         {
             var productQueryable = await _products.GetQueryableAsync();
@@ -217,6 +232,15 @@ namespace PhuThuongStickyRice.Application.Orders
                     }));
         }
 
+        /// <summary>
+        /// Admin: đặt giá vốn (giá nhập) của một món. LƯU Ý: hệ thống không
+        /// lưu lịch sử giá vốn nên giá mới áp dụng hồi tố — báo cáo lãi gộp
+        /// các kỳ trước cũng thay đổi theo. Xóa cache catalog để trang shop
+        /// và báo cáo thấy giá mới ngay.
+        /// </summary>
+        /// <param name="productId">Id món cần cập nhật giá vốn.</param>
+        /// <param name="costPrice">Giá vốn mới (VND).</param>
+        /// <returns>Thông tin món sau khi cập nhật.</returns>
         public virtual async Task<ProductCostDto> UpdateCostPriceAsync(Guid productId, decimal costPrice)
         {
             var product = await _products.GetAsync(productId);
@@ -239,6 +263,12 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
+        /// <summary>
+        /// Sinh gợi ý kinh doanh từ số liệu: món chưa nhập giá vốn (lãi đang
+        /// tính bằng 100% doanh thu), món biên lãi cao nhưng bán ít (nên đẩy
+        /// bán), món biên lãi thấp (cân nhắc tăng giá/đổi nguồn nguyên liệu),
+        /// món đóng góp lãi nhiều nhất.
+        /// </summary>
         private static List<string> BuildSuggestions(List<GrossProfitRowDto> rows)
         {
             var suggestions = new List<string>();
