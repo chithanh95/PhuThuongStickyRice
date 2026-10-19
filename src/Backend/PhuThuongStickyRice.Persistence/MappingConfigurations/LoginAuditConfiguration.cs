@@ -16,6 +16,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // perf-hunt 2026-10-19: trang admin xem login audit sort +
             // LongCount theo At mỗi lần mở; chỉ có index UserName -> sort/scan cả bảng.
             builder.HasIndex(x => x.At);
+            // perf-hunt 2026-10-19 (run 17:25): IsNewIpForUserAsync chạy trên
+            // MỖI lần đăng nhập thành công với WHERE UserName + Success +
+            // IpAddress; index đơn UserName chỉ seek được UserName rồi lọc
+            // IpAddress trên toàn bộ lịch sử đăng nhập của user đó. Composite
+            // (UserName, IpAddress) cho seek đủ 2 điều kiện bằng nhau.
+            builder.HasIndex(x => new { x.UserName, x.IpAddress });
             builder.Property(x => x.At).IsRequired();
             builder.Property(x => x.IpAddress).HasMaxLength(LoginAudit.IpMaxLength);
             builder.Property(x => x.Success).IsRequired();
