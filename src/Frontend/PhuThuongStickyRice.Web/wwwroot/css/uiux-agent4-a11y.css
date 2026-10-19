@@ -988,3 +988,80 @@ html.dark .lx-admin .lx-modal-veil .modal-header .close.close:focus-visible {
 }
 
 /* ===== END uiux-team run 2026-10-19 18:35 - Agent 4 ===== */
+
+/* ===== uiux-team run 2026-10-19 18:55 - Agent4 A11y ===== */
+
+/* Fix 1 — WCAG 1.4.11 (Non-text Contrast, cần 3:1) + 2.4.7 (Focus Visible)
+   + polish hover: nút × `.close` của Bootstrap trong popup gợi ý món ăn kèm
+   (UpsellPopup.razor:12, hiện ngay sau khi thêm món vào giỏ) mặc định chỉ có
+   opacity .5 (~#808080 trên nền trắng modal ≈ 3.9:1, sát ngưỡng — khách lớn
+   tuổi khó thấy), không có phản hồi hover riêng và không có vòng focus riêng.
+   Nâng opacity cơ bản lên .75, hover cho nền tròn xám nhạt + opacity 1
+   (affordance rõ), vòng focus tím #7a6fbe khi tab bằng bàn phím.
+   Scope `.upsell-popup` nên không chạm fix tương tự của admin
+   (`.lx-admin .lx-modal-veil`, run 18:35) và không chạm demo Lexa.
+   Lặp class (0,4,0) để thắng rule mobile (0,3,0) trong UpsellPopup.razor.css
+   (quy định 44px touch target — KHÔNG đổi kích thước ở đây). Modal popup
+   giữ nền trắng cả ở dark mode (không có override dark nào) nên không cần
+   biến thể dark. */
+.upsell-popup .modal-header .close.close {
+    opacity: .75;
+    text-shadow: none;
+    border-radius: 50%;
+    transition: background-color .15s ease, opacity .15s ease;
+}
+.upsell-popup .modal-header .close.close:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, .07);
+}
+.upsell-popup .modal-header .close.close:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+    opacity: 1;
+}
+
+/* Fix 2 — WCAG 2.4.7 (Focus Visible): nút × `.qv-sheet-close`
+   (Shop.razor:528) của bottom sheet xem-nhanh-món trên mobile đã có
+   aria-label="Đóng" và touch target 44px, nhưng rule gốc không tắt outline
+   cũng không vẽ vòng focus riêng — người dùng bàn phím ngoài (gắn vào điện
+   thoại/tablet) hoặc tab trên cửa sổ desktop hẹp khó biết nút đang được chọn.
+   Vẽ vòng tím #7a6fbe khi :focus-visible; chuột/chạm không bị ảnh hưởng.
+   Lặp class (0,3,0) để chắc thắng rule scoped (0,2,0). Không đổi kích thước,
+   vị trí hay màu sắc hiện tại. */
+.qv-sheet-close.qv-sheet-close:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .qv-sheet-close.qv-sheet-close:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* Fix 3 — WCAG 2.4.7 (Focus Visible) + polish hover: nút ⤢ `.cho-zoom`
+   (HangCho.razor:160,186) trên mỗi vé hàng chờ — target nhỏ
+   (padding 2px 8px, cao ~26px), nền rgba(0,0,0,.35), hoàn toàn không có
+   phản hồi hover và không có vòng focus riêng (rule gốc nằm trong <style>
+   ở body nên dùng specificity (0,3,0) để thắng rule gốc (0,2,0) bất kể thứ
+   tự). Hover: nền đậm lên rgba(0,0,0,.55) cho thấy nút "sống"; focus-visible:
+   vòng trắng 2px nổi bật trên nền vé tối (#0b3d1b / #4a3200). Không đổi kích
+   thước/vị trí — layout PC đang ổn giữ nguyên. */
+.cho-ticket .cho-zoom:hover {
+    background: rgba(0, 0, 0, .55);
+}
+.cho-ticket .cho-zoom:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* Fix 4 — WCAG 2.4.7 (Focus Visible) + polish: nút chat nổi 💬 `.sg-chat-fab`
+   (Index.razor:842) là CTA liên hệ chính trên landing — run trước đã thêm
+   :hover (scale + nền đậm) nhưng vòng focus vẫn là outline mặc định của
+   browser (mảnh, không đồng nhất brand). Vẽ vòng trắng 3px cách nút 3px khi
+   tab bằng bàn phím — tương phản mạnh trên nền đỏ #6F0707 (cả light và dark
+   mode vì nút giữ nguyên màu nền). Không thêm transition nên không cần
+   ngoại lệ prefers-reduced-motion. */
+.sg-chat-fab.sg-chat-fab:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 3px;
+}
+
+/* ===== END ===== */

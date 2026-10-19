@@ -1410,3 +1410,46 @@ html.dark .lang-caret {
 }
 
 /* === end uiux-team run 2026-10-19 18:35 — Agent 2 (1 fix moi) === */
+
+/* ===== uiux-team run 2026-10-19 18:55 - Agent2 Dark =====
+   Run nay quet ~50 luot: Bootstrap chuan (modal/dropdown/toast/badge/card/
+   table/nav-tabs/pagination/close/alert) + app.css + admin-lexa.css +
+   scoped CSS cac trang/component moi (ShopStatusBanner, OrderCountdownBanner,
+   PrepaidCardTab, WeeklyPlanTab, TaiKhoan, UpsellPopup, Toast, KDS/Kanban,
+   DatSoLuongLon, landing Index) deu da co rule dark. Trang demo /admin/lexa/*
+   va trang in OrderPrint giu trang chu y (khong dung). Chi con dung 2 loi
+   MOI that, deu da grep xac minh khong rule dark nao phu. */
+
+/* ---------- FIX 1 — /cart (shop): track thanh .progress freeship sang choi ----------
+   Van de: Cart.razor:82 — thanh tien do "Con Xd nua duoc mien phi giao hang"
+   dung Bootstrap .progress, mac dinh background-color:#e9ecef (xam sang).
+   Khong rule dark nao phu .progress ngoai admin (.lx-admin .progress o
+   admin-lexa.css:1284); Cart render trong ShopLayout (.shp-page) -> o dark
+   mode track #e9ecef sang choi giua nen toi, lac hoan toan voi progress-bar
+   xanh la ben trong.
+   Fix: track -> #3a3226 (mau border/vien toi chuan cua shop dark — dung o
+   .co-mobile-bar, .cart-sticky-checkout, .lang-btn). Specificity (0,3,1)
+   thang Bootstrap .progress (0,1,0), khong can !important.
+   progress-bar bg-success giu nguyen (xanh la doc tot tren nen toi). */
+html.dark .shp-page .progress {
+    background-color: #3a3226; /* was #e9ecef — track sang choi tren nen toi */
+}
+
+/* ---------- FIX 2 — .table-striped: soc den 5% tang hinh o dark ----------
+   Van de: Bootstrap v4.3.1 dinh nghia
+   .table-striped tbody tr:nth-of-type(odd){background-color:rgba(0,0,0,.05)}
+   — vet soc DEN 5%. Bien the soc trang rgba(255,255,255,.05) chi ap dung
+   khi table co them class .table-dark. 4 cho dung table-striped KHONG co
+   .table-dark: /shop tab "Xoi nao hop ban?" (Shop.razor:116, thead-dark +
+   card toi), /admin FunnelReport:41, DoiSoatNgay:53, NhatKy:74 (card toi
+   #262640). O dark mode vet den 5% gan nhu vo hinh -> mat phan tach
+   hang le/chan, bang kho doc.
+   Da grep: khong file CSS nao co rule dark cho .table-striped.
+   Fix: hang le -> soc trang 5% (giong bien the .table-dark cua Bootstrap).
+   Specificity (0,3,2) thang Bootstrap (0,2,2), khong can !important.
+   Ap dung chung cho ca shop + admin (ca 4 cho deu can). */
+html.dark .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, .05); /* was rgba(0,0,0,.05) — tang hinh tren nen toi */
+}
+
+/* ===== END ===== */

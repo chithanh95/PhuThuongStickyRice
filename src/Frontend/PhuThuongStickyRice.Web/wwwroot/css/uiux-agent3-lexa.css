@@ -772,3 +772,27 @@ html.dark .page-link { color: #b3a8e8; }
 .shp-page .pt-item-code { color: #7a6fbe !important; }
 
 /* ===== end UI/UX run 2026-10-19 18:35 - Agent3 Lexa ===== */
+
+/* ===== uiux-team run 2026-10-19 18:55 - Agent3 Lexa =====
+   Quét đợt này: hex lạ toàn src/Frontend (uniq count), style="" inline có màu,
+   oi-* trong markup (chỉ còn từ tiếng Việt "doi-/goi-/gioi-" — không còn icon
+   Open Iconic thật), rgb()/rgba(), svg fill, color-name (red/blue/green),
+   accent-color, ::selection, validation (Blazor + Bootstrap), text-*/bg-*/
+   border-*/alert-*/badge-*/btn-*, pagination, nav-pills, dropdown, list-group,
+   progress-bar. Kết luận: web đã qua 13+ đợt đồng bộ Lexa nên gần như sạch —
+   các màu còn lại là brand chủ ý (Zalo #0068ff, FB #1877f2, palette ấm
+   landing/shop), tint trung tính, palette trang demo /admin/lexa, hoặc quyết
+   định giữ có chủ đích của agent a11y (giữ #dc3545 cho .text-danger nền tối vì
+   contrast). Chỉ còn 1 lệch chuẩn thật sự bên dưới. */
+
+/* ---------- Fix 1: chữ báo lỗi validation của Blazor (shop) đỏ thuần -> đỏ danger Lexa ----------
+   Verify: app.css:131 `.validation-message { color: red; }` — class do chính
+   component <ValidationMessage> của Blazor render, dùng ở mọi form shop
+   (checkout, đăng nhập, quên mật khẩu, đặt cỗ/đặt tiệc...). Admin đã được phủ
+   bởi `.lx-admin .validation-message` (admin-lexa.css:1497), nhưng shop thì
+   chưa — chữ lỗi đang đỏ thuần, lệch với `.invalid-feedback` (#f46a6a) và
+   `.invalid` outline (#f46a6a) đã chuẩn hóa trước đó.
+   Đồng nhất về #f46a6a. !important để thắng rule gốc app.css. */
+.validation-message { color: #f46a6a !important; }
+
+/* ===== END ===== */

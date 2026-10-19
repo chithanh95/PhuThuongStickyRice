@@ -1987,3 +1987,85 @@
 }
 
 /* ===== END Run 2026-10-19 17:15 — Agent 1 Mobile UX ===== */
+
+/* ===== uiux-team run 2026-10-19 18:55 - Agent1 Mobile =====
+   Đợt này quét sâu shop/cart/checkout/track-order/tai-khoan — 5 trang đã
+   qua ~20 đợt fix trước (file này 1989 dòng) nên chỉ còn 3 lỗi THẬT,
+   không sửa cho có. Tất cả bọc @media, không đổi layout PC.
+   ------------------------------------------------------------
+   FIX 1 — /tai-khoan, card "⭐ Hạng thành viên": 3 cột thống kê
+   (Điểm tích lũy / Tổng đã mua / Tổng điểm đã kiếm) dùng col-4.
+   Vấn đề: ở màn ≤575px mỗi cột chỉ còn ~53px nội dung, trong khi số
+   tiền VN "1.250.000 ₫" (h5 20px đậm) rộng ~100px → tràn đè sang cột
+   bên cạnh, người lớn tuổi đọc nhầm số tiền/điểm.
+   Giải pháp: xếp dọc, mỗi chỉ số 1 hàng (nhãn trái, số phải), chữ số
+   giữ nguyên to rõ. ≥576px giữ nguyên 3 cột.
+   (Verify: TaiKhoan.razor:65 .row.text-center duy nhất toàn trang;
+   .tk-tier-badge chỉ tồn tại ở card này nên :has() an toàn)
+   ------------------------------------------------------------ */
+@media (max-width: 575.98px) {
+    .tk-page .card-body:has(.tk-tier-badge) .row.text-center > .col-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        border-top: 1px solid #eee;
+    }
+    .tk-page .card-body:has(.tk-tier-badge) .row.text-center > .col-4:first-child {
+        border-top: none;
+    }
+    html.dark .tk-page .card-body:has(.tk-tier-badge) .row.text-center > .col-4 {
+        border-top-color: #3a3226;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /tai-khoan, card "🧾 Lịch sử đơn hàng": hàng tiêu đề mỗi đơn
+   là .d-flex (mã đơn + badge | tổng tiền + ngày giờ).
+   Vấn đề: ở màn ≤575px (nội dung ~250px) mã "PX-20261019-4821" + badge
+   "Đang chuẩn bị" (~220px) cộng cụm tổng tiền/ngày (~140px) vượt xa chỗ
+   chứa, mã đơn không có điểm ngắt từ → hàng tràn ngang, card bị đẩy vỡ.
+   Giải pháp: xếp dọc (mã + badge trên, tổng tiền + ngày dưới, căn trái).
+   (Verify: TaiKhoan.razor:102 .border.rounded.p-3.mb-2 > div.d-flex...
+   align-items-center; header "📇 Địa chỉ đã lưu" mang mb-3 nên loại trừ)
+   ------------------------------------------------------------ */
+@media (max-width: 575.98px) {
+    .tk-page .border.rounded.p-3.mb-2 > .d-flex.justify-content-between.align-items-center {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 4px;
+    }
+    .tk-page .border.rounded.p-3.mb-2 > .d-flex.justify-content-between.align-items-center .text-right {
+        text-align: left !important;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /tai-khoan, "📇 Địa chỉ đã lưu": mỗi dòng địa chỉ là flex
+   (thông tin trái + cụm 3 nút ★/Sửa/Xóa phải).
+   Vấn đề: ở màn ≤575px cụm nút (~164px sau khi đã nâng 44px) ép cột
+   thông tin chỉ còn ~80px — địa chỉ xuống dòng vụn khó đọc; 3 nút sát
+   nhau, người lớn tuổi dễ bấm nhầm (nhất là nút Xóa cạnh nút Sửa).
+   Giải pháp: xếp dọc — thông tin full-width ở trên, 3 nút chia đều
+   1 hàng ở dưới (vẫn ≥44px theo rule .tk-page .btn-group-sm > .btn).
+   (Verify: TaiKhoan.razor:298 — selector này khớp duy nhất dòng địa chỉ)
+   ------------------------------------------------------------ */
+@media (max-width: 575.98px) {
+    .tk-page .border.rounded.p-3.mb-2.d-flex.justify-content-between.align-items-start {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    .tk-page .border.rounded.p-3.mb-2.d-flex.justify-content-between.align-items-start .btn-group {
+        display: flex;
+        width: 100%;
+        margin-top: 10px;
+    }
+    .tk-page .border.rounded.p-3.mb-2.d-flex.justify-content-between.align-items-start .btn-group .btn {
+        flex: 1 1 0;
+    }
+}
+/* ===== END ===== */
