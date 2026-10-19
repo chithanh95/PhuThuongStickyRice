@@ -895,6 +895,11 @@ else
             // products have their own _loadFailed flag (item 38).
             _loadError = "Một số thông tin bổ sung không tải được. Vui lòng thử lại sau.";
             _products ??= new List<ShopProductModel>();
+            // Bug-hunt 2026-10-20: API phụ lỗi mà bỏ qua InitializeProductCatalog
+            // thì _quantities rỗng → @bind="_quantities[product.Id]" ném
+            // KeyNotFoundException, sập toàn trang /shop dù danh sách món đã tải
+            // thành công. Khởi tạo state thẻ món ở đây để giữ đúng ý đồ fail-soft.
+            InitializeProductCatalog();
         }
     }
 

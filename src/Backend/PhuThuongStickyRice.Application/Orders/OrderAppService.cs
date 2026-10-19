@@ -2103,7 +2103,11 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             var subtotal = order.Lines.Sum(x => x.LineTotal.Amount);
-            if (subtotal >= minOrderAmount)
+            // Bug-hunt 2026-10-20: checkout validate mã trên base
+            // (subtotal - promotionDiscount) — mirror đúng base đó, nếu
+            // không mã giữ được dù (subtotal - promo) đã dưới ngưỡng.
+            var baseForMinCheck = Math.Max(0, subtotal - order.PromotionDiscountAmount);
+            if (baseForMinCheck >= minOrderAmount)
             {
                 return;
             }
@@ -3361,6 +3365,10 @@ namespace PhuThuongStickyRice.Application.Orders
             // bug-hunt 2026-10-19: đơn phụ bị hủy khi gộp cũng hoàn lượt mã
             // giảm giá của nó (đơn chính giữ mã của chính nó).
             await _discounts.RefundUsageAsync(other.DiscountCode);
+            // bug-hunt 2026-10-20: mirror luồng hủy đơn — thu hồi voucher
+            // trúng vòng quay của đơn phụ, nếu không khách giữ được voucher
+            // miễn phí dù đơn gốc đã bị hủy khi gộp.
+            await _discounts.RevokeSpinPrizeAsync(other.SpinPrizeCode);
         }
 
         private static void EnsureMergeable(Order order)
