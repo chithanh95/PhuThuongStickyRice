@@ -796,3 +796,32 @@ html.dark .page-link { color: #b3a8e8; }
 .validation-message { color: #f46a6a !important; }
 
 /* ===== END ===== */
+
+/* ===== UIUX-1925 A3: text-info light mode -> xanh info Lexa =====
+   Verify: Bootstrap .text-info { color: #17a2b8 !important; } (xanh teal)
+   đang dùng thật ở: Checkout.razor:622 (ghi chú món của khách),
+   TrackOrder.razor:288,616 (ghi chú + trạng thái shipper — khách nhìn thấy),
+   OrderList.razor:467, Dashboard.razor:495, LandingSettings.razor:109.
+   .text-success/.text-warning/.text-danger đã có override global (dòng 80-83),
+   riêng .text-info bị sót — dark mode đã có #7cc4f5 (ShopLayout.razor.css:414)
+   nên light mode đang lệch 2 tông giữa sáng/tối. Đồng nhất về #50a5f1
+   (info Lexa, khớp .btn-info/.badge-info/.alert-info đã chuẩn hóa).
+   !important để thắng rule gốc Bootstrap (cũng !important); file load sau
+   cùng (index.html:155) nên thắng rule cùng specificity. */
+.text-info { color: #50a5f1 !important; }
+
+/* ===== UIUX-1925 A3: hàng tổng DoiSoatNgay dark mode -> tím primary Lexa =====
+   Verify: DoiSoatNgay.razor:93-96
+     .lx-total-row th { background: #7a6fbe; color: #fff; border-color: #7a6fbe; }
+     html.dark .lx-total-row th { background: #5a4fa0; border-color: #5a4fa0; }
+   #5a4fa0 là tím đậm tự chế (cùng họ với #5a4fa3 đã gom về #7a6fbe ở run 18:35),
+   không thuộc palette Lexa. Quy ước dark mode của web: giữ nguyên #7a6fbe cho
+   bề mặt primary (vd html.dark .lx-admin .page-item.active .page-link), chữ
+   trắng trên #7a6fbe tương phản tốt ở cả 2 mode nên không cần tối đi.
+   Selector tie (0,2,2) với rule gốc, file load sau (index.html:155 sau
+   Components.styles.css:149) nên thắng không cần !important. Trang này nằm
+   trong AdminLayout (.lx-admin) nhưng rule gốc không scope nên override theo
+   đúng class là an toàn — class .lx-total-row chỉ tồn tại ở trang này. */
+html.dark .lx-total-row th { background-color: #7a6fbe; border-color: #7a6fbe; }
+
+/* ===== end UIUX-1925 - Agent3 Lexa (2 fix) ===== */
