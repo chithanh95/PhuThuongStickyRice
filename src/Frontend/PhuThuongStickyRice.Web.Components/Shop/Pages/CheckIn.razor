@@ -99,6 +99,10 @@
 
     private async Task UploadAsync()
     {
+        // Bug-hunt 2026-10-19 (17:55): chặn bấm đúp tải 2 ảnh trùng.
+        // disabled="@_uploading" chỉ có hiệu lực sau lần re-render đầu tiên.
+        if (_uploading) return;
+
         if (string.IsNullOrWhiteSpace(_name))
         {
             _isError = true;

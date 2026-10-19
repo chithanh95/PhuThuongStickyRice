@@ -46,7 +46,10 @@ else
         await I18n.InitializeAsync();
         try
         {
-            _photos = await AdminCommerceService.GetApprovedPhotosAsync();
+            // Bug-hunt 2026-10-19 (17:55): GetApprovedPhotosAsync trả null khi
+            // API trả body rỗng (ReadAs<T> trả default, không ném) — không guard
+            // thì trang kẹt "Đang tải..." vĩnh viễn.
+            _photos = await AdminCommerceService.GetApprovedPhotosAsync() ?? new List<CustomerPhotoModel>();
         }
         catch (Exception)
         {

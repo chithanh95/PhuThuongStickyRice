@@ -464,6 +464,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] SubmitReviewRequestModel model,
             CancellationToken cancellationToken = default)
         {
+            // Bug-hunt 2026-10-19 (17:55): voucher đánh giá kèm ảnh (25.000đ) chỉ
+            // phát khi ảnh thật sự được tải lên qua POST api/orders/track/review/photo.
+            // Trước đây PhotoUrl do client tự khai báo nên kẻ gian gửi URL giả
+            // (vd https://google.com/logo.png) cũng nhận voucher thật.
+            if (!string.IsNullOrWhiteSpace(model?.PhotoUrl) && !IsUploadedReviewPhoto(model.PhotoUrl))
+            {
+                return BadRequest(new { message = "Ảnh đánh giá không hợp lệ. Vui lòng tải ảnh lên lại." });
+            }
+
             try
             {
                 var review = await _orderAppService.SubmitReviewAsync(new SubmitReviewInput
@@ -588,6 +597,33 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// ngẫu nhiên (tránh trùng và lộ tên gốc), trả về URL tương đối để
         /// client gửi kèm khi submit đánh giá.
         /// </summary>
+        /// <summary>
+        /// Kiểm tra PhotoUrl có phải ảnh thật sự được tải lên qua
+        /// <c>POST api/orders/track/review/photo</c> không. Chặn farm voucher
+        /// đánh giá kèm ảnh bằng URL giả. Bug-hunt 2026-10-19 (17:55).
+        /// </summary>
+        private bool IsUploadedReviewPhoto(string photoUrl)
+        {
+            const string Prefix = "/uploads/review-photos/";
+            if (!photoUrl.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            // Path.GetFileName loại bỏ mọi thành phần thư mục — chặn path traversal
+            // (vd /uploads/review-photos/../../appsettings.json).
+            var fileName = System.IO.Path.GetFileName(photoUrl.Substring(Prefix.Length));
+            if (string.IsNullOrEmpty(fileName))
+            {
+                return false;
+            }
+
+            var folder = System.IO.Path.Combine(
+                (_environment.WebRootPath ?? System.IO.Path.Combine(_environment.ContentRootPath, "wwwroot")),
+                "uploads", "review-photos");
+            return System.IO.File.Exists(System.IO.Path.Combine(folder, fileName));
+        }
+
         private async Task<string> SaveReviewPhotoAsync(IFormFile file, CancellationToken cancellationToken)
         {
             var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "review-photos");

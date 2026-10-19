@@ -403,6 +403,9 @@ else
     /// </summary>
     private async Task SubmitBulk()
     {
+        // Bug-hunt 2026-10-19 (17:55): chặn bấm đúp tạo 2 yêu cầu báo giá trùng.
+        if (_submitting) return;
+
         _bulkError = null;
         if (string.IsNullOrWhiteSpace(_bulk.CustomerName))
         {

@@ -107,6 +107,10 @@ else
 
     private async Task SubmitAsync()
     {
+        // Bug-hunt 2026-10-19 (17:55): chặn bấm đúp tạo 2 yêu cầu trùng.
+        // disabled="@_submitting" chỉ có hiệu lực sau lần re-render đầu tiên.
+        if (_submitting) return;
+
         _error = null;
         _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
         _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;

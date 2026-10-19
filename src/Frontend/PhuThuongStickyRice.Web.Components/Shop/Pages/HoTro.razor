@@ -57,6 +57,10 @@ else
 
     private async Task Submit()
     {
+        // Bug-hunt 2026-10-19 (17:55): chặn bấm đúp tạo 2 ticket hỗ trợ trùng.
+        // disabled="@_submitting" chỉ có hiệu lực sau lần re-render đầu tiên.
+        if (_submitting) return;
+
         _error = null;
         if (string.IsNullOrWhiteSpace(_model.Name)
             || string.IsNullOrWhiteSpace(_model.Phone)
