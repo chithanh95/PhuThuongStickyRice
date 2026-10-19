@@ -71,6 +71,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private const decimal DefaultRewardDiscountPercent = 5;
         private const int RewardVoucherValidDays = 30;
 
+        // [codequality-smell 2026-10-20] Magic string: tiền tố mã giảm giá sinh
+        // tự động khi thưởng đơn hoàn tất — đặt hằng số có tên để thay đổi 1 chỗ.
+        private const string RewardVoucherPrefix = "THUONG";
+
         public RewardRuleAppService(
             IRepository<OrderRewardRule, Guid> rules,
             IAsyncQueryableExecuter asyncExecuter,
@@ -144,10 +148,11 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return;
             }
 
-            var queryable = await _rules.GetQueryableAsync();
-            var rules = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.IsActive && x.MinAmount <= order.TotalAmount.Amount)
-                    .OrderBy(x => x.MinAmount));
+            var rules = await GetEligibleRulesAsync(order);
+            if (rules.Count == 0)
+            {
+                return;
+            }
 
             // perf-hunt 2026-10-20: gom các rule DiscountCode rồi tạo mã 1 lần
             // bằng CreateGeneratedBatchAsync — trước đây mỗi rule là 1 lần
@@ -157,36 +162,100 @@ namespace PhuThuongStickyRice.Application.Loyalty
             // vẫn theo đúng thứ tự rule như cũ (kể cả khi topping và mã giảm
             // đan xen nhau).
             var ownerPhone = NormalizePhone(order.CustomerPhone);
+            var discountPercents = CollectRewardDiscountPercents(rules);
+            var generatedCodes = await CreateRewardVouchersAsync(discountPercents, ownerPhone);
+            AppendRewardNotes(order, rules, discountPercents, generatedCodes);
+        }
+
+        /// <summary>
+        /// Lấy các quy tắc thưởng còn hiệu lực mà đơn vừa hoàn tất đủ điều kiện
+        /// (tổng đơn đạt ngưỡng <c>MinAmount</c>), sắp xếp theo ngưỡng tăng dần
+        /// để ghi chú quà giữ đúng thứ tự rule như thiết kế.
+        /// </summary>
+        /// <param name="order">Đơn hàng vừa hoàn tất.</param>
+        /// <returns>Danh sách rule đủ điều kiện (có thể rỗng).</returns>
+        private async Task<List<OrderRewardRule>> GetEligibleRulesAsync(Order order)
+        {
+            var queryable = await _rules.GetQueryableAsync();
+            return await _asyncExecuter.ToListAsync(
+                queryable.Where(x => x.IsActive && x.MinAmount <= order.TotalAmount.Amount)
+                    .OrderBy(x => x.MinAmount));
+        }
+
+        /// <summary>
+        /// Thu gom % giảm của các rule loại <c>DiscountCode</c> (mặc định 5%
+        /// nếu rule không đặt), giữ đúng thứ tự các rule để bước ghi chú ánh xạ
+        /// đúng mã đã sinh cho từng rule.
+        /// </summary>
+        /// <param name="rules">Các rule thưởng đủ điều kiện (đã sắp xếp).</param>
+        /// <returns>Danh sách % giảm, thứ tự khớp các rule loại <c>DiscountCode</c>.</returns>
+        private static List<decimal> CollectRewardDiscountPercents(List<OrderRewardRule> rules)
+        {
             var discountPercents = new List<decimal>();
             foreach (var rule in rules)
             {
-                // Mặc định 5% nếu rule không đặt — mã dùng 1 lần, gắn đúng SĐT khách
-                // và có hạn 30 ngày, để khách quay lại mua lần sau.
                 if (rule.RewardType == OrderRewardType.DiscountCode)
                 {
                     discountPercents.Add(rule.DiscountPercent ?? DefaultRewardDiscountPercent);
                 }
             }
 
-            var generatedCodes = discountPercents.Count > 0
-                ? await _discounts.CreateGeneratedBatchAsync(
-                    discountPercents.Select(percent => new CreateGeneratedDiscountDto
-                    {
-                        Prefix = "THUONG",
-                        DiscountPercent = percent,
-                        ExpiresAt = DateTime.UtcNow.AddDays(RewardVoucherValidDays),
-                        OwnerPhone = ownerPhone
-                    }).ToList())
-                : new List<DiscountCodeDto>();
+            return discountPercents;
+        }
 
+        /// <summary>
+        /// Sinh mã giảm giá theo batch từ danh sách % đã thu gom. Mỗi mã dùng 1 lần,
+        /// gắn đúng SĐT khách và có hạn 30 ngày, để khách quay lại mua lần sau.
+        /// </summary>
+        /// <param name="discountPercents">Danh sách % giảm cần sinh mã.</param>
+        /// <param name="ownerPhone">SĐT chuẩn hóa của khách — mã được gắn đúng người.</param>
+        /// <returns>
+        /// Danh sách mã vừa sinh, thứ tự khớp với <paramref name="discountPercents"/>;
+        /// rỗng nếu không có gì cần sinh (không gọi DB khi không cần).
+        /// </returns>
+        private async Task<List<DiscountCodeDto>> CreateRewardVouchersAsync(
+            List<decimal> discountPercents, string ownerPhone)
+        {
+            if (discountPercents.Count == 0)
+            {
+                return new List<DiscountCodeDto>();
+            }
+
+            return await _discounts.CreateGeneratedBatchAsync(
+                discountPercents.Select(percent => new CreateGeneratedDiscountDto
+                {
+                    Prefix = RewardVoucherPrefix,
+                    DiscountPercent = percent,
+                    ExpiresAt = DateTime.UtcNow.AddDays(RewardVoucherValidDays),
+                    OwnerPhone = ownerPhone
+                }).ToList());
+        }
+
+        /// <summary>
+        /// Ghi chú quà tặng lên đơn hàng theo đúng thứ tự rule. <c>FreeTopping</c>
+        /// chỉ là ghi chú để nhân viên/bếp thực hiện (không trừ tiền, không sinh
+        /// mã); <c>DiscountCode</c> ghi chú mã đã sinh ở bước trước kèm SĐT để
+        /// admin thông báo đúng khách.
+        /// </summary>
+        /// <param name="order">Đơn hàng cần ghi chú.</param>
+        /// <param name="rules">Các rule thưởng đủ điều kiện (đã sắp xếp).</param>
+        /// <param name="discountPercents">% giảm theo thứ tự các rule <c>DiscountCode</c>.</param>
+        /// <param name="generatedCodes">
+        /// Mã đã sinh bởi <see cref="CreateRewardVouchersAsync"/> — phần tử thứ n
+        /// tương ứng rule <c>DiscountCode</c> thứ n trong <paramref name="rules"/>.
+        /// </param>
+        private static void AppendRewardNotes(
+            Order order,
+            List<OrderRewardRule> rules,
+            List<decimal> discountPercents,
+            List<DiscountCodeDto> generatedCodes)
+        {
             var discountIndex = 0;
             foreach (var rule in rules)
             {
                 switch (rule.RewardType)
                 {
                     case OrderRewardType.FreeTopping:
-                        // Tặng topping chỉ là ghi chú trên đơn để nhân viên/bếp thực hiện,
-                        // không trừ tiền hay tạo mã gì thêm.
                         var topping = string.IsNullOrWhiteSpace(rule.ToppingName)
                             ? "topping miễn phí"
                             : rule.ToppingName.Trim();

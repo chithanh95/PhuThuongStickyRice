@@ -29,6 +29,10 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
         private const int CircuitFailureThreshold = 5;
         private static readonly TimeSpan CircuitOpenDuration = TimeSpan.FromMinutes(1);
 
+        // [codequality-smell 2026-10-20] Magic number: cửa sổ trượt để đếm lỗi
+        // liên tục của circuit breaker — đặt hằng số có tên để thay đổi 1 chỗ.
+        private static readonly TimeSpan CircuitFailureWindow = TimeSpan.FromMinutes(5);
+
         // Lịch chờ thử lại theo số lần đã thử (Fibonacci phút: 1, 2, 3, 5, ...).
         // Độ dài tối đa của email.Log — mỗi lần gửi lỗi cũ cộng dồn cả
         // ex.ToString() (full stack trace) qua nhiều lần retry sẽ phình
@@ -165,7 +169,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
                 email.NextAttemptDateTime = _dateTimeProvider.OffsetNow
                     + RetryDelays[Math.Min(email.AttemptCount, RetryDelays.Length - 1)];
 
-                _circuitBreakerStore.LogFailure(circuit, CircuitFailureThreshold, TimeSpan.FromMinutes(5));
+                _circuitBreakerStore.LogFailure(circuit, CircuitFailureThreshold, CircuitFailureWindow);
             }
 
             email.AttemptCount += 1;

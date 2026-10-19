@@ -80,6 +80,13 @@ namespace PhuThuongStickyRice.WebAPI.Services
             }
         }
 
+        /// <summary>
+        /// Seed 1 lần: tạo scope DI riêng, đảm bảo role + user admin mặc định,
+        /// gán role Admin cho user đó, rồi seed quyền chi tiết mặc định.
+        /// Chỉ điều phối các bước nhỏ bên dưới; mỗi bước tự idempotent nên chạy
+        /// lại nhiều lần vẫn an toàn.
+        /// </summary>
+        /// <param name="cancellationToken">Token hủy của host.</param>
         private async Task SeedOnceAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Admin seed: starting (attempt to ensure '{Email}' exists).", DefaultAdminEmail);
@@ -89,11 +96,32 @@ namespace PhuThuongStickyRice.WebAPI.Services
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             _logger.LogInformation("Admin seed: database connection OK.");
 
+            var role = await EnsureAllRolesAsync(dbContext, cancellationToken);
+            var admin = await EnsureAdminUserAsync(userManager, cancellationToken);
+            await AssignAdminRoleIfMissingAsync(dbContext, admin, role, cancellationToken);
+
+            _logger.LogInformation("Admin seed: DONE. '{Email}' has the '{Role}' role.", DefaultAdminEmail, AdminRoleName);
+
+            // Item 155: seed default fine-grained permissions (idempotent —
+            // only missing role/key pairs are added; admin edits at
+            // /admin/phan-quyen are never overwritten).
+            await SeedDefaultPermissionsAsync(dbContext, cancellationToken);
+        }
+
+        /// <summary>
+        /// Đảm bảo role Admin và các role phụ (Bếp/Thu ngân/Khách hàng) tồn tại.
+        /// Item 126: Kitchen/Cashier không gán user nào — admin tự gán trên trang
+        /// quản trị nhân sự. Gộp 3 lần <c>AnyAsync</c> thành 1 query IN duy nhất
+        /// để tránh N+1 (fix perf-hunt).
+        /// </summary>
+        /// <param name="dbContext">DbContext trong scope seed.</param>
+        /// <param name="cancellationToken">Token hủy của host.</param>
+        /// <returns>Role Admin (đã tồn tại hoặc vừa tạo).</returns>
+        private async Task<Role> EnsureAllRolesAsync(
+            StickyRiceDbContext dbContext, CancellationToken cancellationToken)
+        {
             var role = await EnsureRoleExistsAsync(dbContext, AdminRoleName, cancellationToken);
 
-            // Item 126: seed the Kitchen and Cashier roles too (no users
-            // assigned — the admin assigns them on the user admin page).
-            // FIX N+1: gộp 3 lần AnyAsync thành 1 query IN duy nhất.
             var extraRoles = new[] { KitchenRoleName, CashierRoleName, CustomerRoleName };
             // Tính trước ở client để EF dịch Contains thành mệnh đề IN trong SQL.
             var wantedNormalized = extraRoles.Select(n => n.ToUpperInvariant()).ToList();
@@ -110,33 +138,59 @@ namespace PhuThuongStickyRice.WebAPI.Services
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
+            return role;
+        }
 
+        /// <summary>
+        /// Đảm bảo user admin mặc định tồn tại: tìm theo email, chưa có thì tạo
+        /// mới (xác thực email sẵn, bật lockout). Thất bại khi tạo thì ném lỗi —
+        /// không bao giờ nuốt im lặng để admin biết ngay trong log khởi động.
+        /// </summary>
+        /// <param name="userManager">UserManager để tra/tạo user.</param>
+        /// <param name="cancellationToken">Token hủy của host.</param>
+        /// <returns>User admin mặc định.</returns>
+        private async Task<User> EnsureAdminUserAsync(
+            UserManager<User> userManager, CancellationToken cancellationToken)
+        {
             var admin = await userManager.FindByEmailAsync(DefaultAdminEmail);
-            if (admin == null)
-            {
-                _logger.LogInformation("Admin seed: creating default admin user '{Email}'.", DefaultAdminEmail);
-                admin = new User
-                {
-                    UserName = DefaultAdminEmail,
-                    Email = DefaultAdminEmail,
-                    EmailConfirmed = true,
-                    LockoutEnabled = true
-                };
-
-                var result = await userManager.CreateAsync(admin, DefaultAdminPassword);
-                if (!result.Succeeded)
-                {
-                    var errors = string.Join("; ", result.Errors.Select(e => $"{e.Code}: {e.Description}"));
-                    _logger.LogError("Admin seed: could not create the default admin user: {Errors}", errors);
-                    throw new InvalidOperationException($"Admin seed: UserManager.CreateAsync failed: {errors}");
-                }
-                _logger.LogInformation("Admin seed: user '{Email}' created.", DefaultAdminEmail);
-            }
-            else
+            if (admin != null)
             {
                 _logger.LogInformation("Admin seed: user '{Email}' already exists.", DefaultAdminEmail);
+                return admin;
             }
 
+            _logger.LogInformation("Admin seed: creating default admin user '{Email}'.", DefaultAdminEmail);
+            admin = new User
+            {
+                UserName = DefaultAdminEmail,
+                Email = DefaultAdminEmail,
+                EmailConfirmed = true,
+                LockoutEnabled = true
+            };
+
+            var result = await userManager.CreateAsync(admin, DefaultAdminPassword);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join("; ", result.Errors.Select(e => $"{e.Code}: {e.Description}"));
+                _logger.LogError("Admin seed: could not create the default admin user: {Errors}", errors);
+                throw new InvalidOperationException($"Admin seed: UserManager.CreateAsync failed: {errors}");
+            }
+
+            _logger.LogInformation("Admin seed: user '{Email}' created.", DefaultAdminEmail);
+            return admin;
+        }
+
+        /// <summary>
+        /// Gán role Admin cho user admin nếu chưa có (idempotent — kiểm tra trước
+        /// khi thêm để chạy lại nhiều lần không tạo trùng).
+        /// </summary>
+        /// <param name="dbContext">DbContext trong scope seed.</param>
+        /// <param name="admin">User admin mặc định.</param>
+        /// <param name="role">Role Admin.</param>
+        /// <param name="cancellationToken">Token hủy của host.</param>
+        private async Task AssignAdminRoleIfMissingAsync(
+            StickyRiceDbContext dbContext, User admin, Role role, CancellationToken cancellationToken)
+        {
             var alreadyAdmin = await dbContext.Set<UserRole>()
                 .AnyAsync(x => x.UserId == admin.Id && x.RoleId == role.Id, cancellationToken);
             if (!alreadyAdmin)
@@ -146,13 +200,6 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 await dbContext.SaveChangesAsync(cancellationToken);
                 _logger.LogInformation("Admin seed: role '{Role}' assigned to '{Email}'.", AdminRoleName, DefaultAdminEmail);
             }
-
-            _logger.LogInformation("Admin seed: DONE. '{Email}' has the '{Role}' role.", DefaultAdminEmail, AdminRoleName);
-
-            // Item 155: seed default fine-grained permissions (idempotent —
-            // only missing role/key pairs are added; admin edits at
-            // /admin/phan-quyen are never overwritten).
-            await SeedDefaultPermissionsAsync(dbContext, cancellationToken);
         }
 
         /// <summary>
