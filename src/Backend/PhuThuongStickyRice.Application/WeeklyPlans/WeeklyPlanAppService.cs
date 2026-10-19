@@ -192,7 +192,11 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             var orders = await _asyncExecuter.ToListAsync(
                 queryable
                     .Where(o => o.CustomerPhone == phone)
-                    .OrderByDescending(o => o.CreatedAt));
+                    .OrderByDescending(o => o.CreatedAt)
+                    // perf-hunt 2026-10-19: cap server-side — đơn gói tuần tích lũy
+                    // ~1 đơn/tuần/khách, không cap sẽ nạp hàng trăm đơn vào memory
+                    // mỗi lần tra cứu public.
+                    .Take(100));
 
             return orders.Select(MapToDto).ToList();
         }

@@ -117,7 +117,10 @@ namespace PhuThuongStickyRice.Application.Shop
             var normalized = (phone ?? string.Empty).Trim();
             var query = (await _cards.GetQueryableAsync())
                 .Where(c => c.CustomerPhone == normalized)
-                .OrderByDescending(c => c.CreatedAt);
+                .OrderByDescending(c => c.CreatedAt)
+                // perf-hunt 2026-10-19: cap server-side — thẻ không bao giờ xóa nên
+                // danh sách theo SĐT tăng vô hạn; 200 thẻ mới nhất là quá đủ cho tra cứu.
+                .Take(200);
 
             var cards = await _asyncExecuter.ToListAsync(query);
             return cards.Select(MapToDto).ToList();
