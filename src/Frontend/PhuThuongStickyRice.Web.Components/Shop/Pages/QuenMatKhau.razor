@@ -57,6 +57,11 @@
     .auth-btn { background: #7a6fbe; border-color: #7a6fbe; padding: 10px; }
     .auth-link { color: #7a6fbe; }
     .auth-link-btn { color: #7a6fbe; }
+    /* UIUX run 16:48 - Agent2 Dark: nút "← Nhập lại SĐT" giữ #7a6fbe trên
+       card dark #262640 (~3.4:1, dưới chuẩn 4.5:1) — không rule dark nào phủ
+       (đã grep xác minh). Sáng lên #a49de0 (~5.6:1), đồng bộ convention
+       `html.dark .auth-card .auth-link` của trang Đăng nhập. */
+    html.dark .auth-card .auth-link-btn { color: #a49de0 !important; }
     .auth-otp-input { letter-spacing: 4px; font-weight: 700; font-size: 18px; }
     .auth-success-emoji { font-size: 40px; }
     html.dark .auth-brand-name { color: #f0eef5; }

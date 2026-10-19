@@ -349,3 +349,21 @@ html.dark .nq-step p {
 html.dark .nq-form-card label {
     color: #f0d9b5;
 }
+
+/* ===== UIUX run 16:48 — Agent1 Mobile =====
+   FIX 3 — /nhuong-quyen: vùng bấm câu hỏi trong accordion FAQ.
+   Vấn đề: nút .nq-faq-q là `btn btn-link btn-block text-left p-1` —
+   chỉ cao ~32px, dưới chuẩn chạm 44px; khách lớn tuổi khó mở từng câu hỏi.
+   (Fix chung .btn-link.btn-block.text-left ở uiux-agent1-mobile.css loại
+   trừ .nq-faq-q bằng :not() nên trang này chưa được phủ.)
+   Giải pháp: mobile — min-height 44px, chữ canh giữa dọc.
+   (Verify: NhuongQuyen.razor:121 button.nq-faq-q; scoped CSS nên chỉ
+   ảnh hưởng accordion trang này) */
+@media (max-width: 767.98px) {
+    .nq-faq-q {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+}
+/* ===== END UIUX run 16:48 - Agent1 FIX 3 ===== */

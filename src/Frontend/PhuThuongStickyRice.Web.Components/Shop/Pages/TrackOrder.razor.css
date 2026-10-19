@@ -690,3 +690,25 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 16:10 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 16:48 — Agent1 Mobile =====
+   FIX 1 — /track-order: 5 sao "Đánh giá chung" trong card "Đánh giá đơn hàng".
+   Vấn đề: nút là `btn btn-link p-0` font-size 28px, vùng bấm chỉ ~28px ngang
+   (thấp hơn chuẩn chạm 44px), người lớn tuổi khó bấm chính xác vào từng sao.
+   Sao đánh giá từng món đã được fix ở run 16:10 (FIX 2); popup khảo sát
+   .to-survey-sheet fix riêng — chỉ còn cụm sao chung này chưa phủ.
+   Giải pháp: vùng bấm 44x44px, sao canh giữa, giữ nguyên font-size.
+   (Verify: TrackOrder.razor:~517 — div[role="radiogroup"] con trực tiếp duy
+   nhất của .card-body mang role này; div radiogroup còn lại nằm trong
+   .to-survey-sheet nên không bị ảnh hưởng.) */
+@media (max-width: 767.98px) {
+    .card-body > div[role="radiogroup"] .btn-link {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px !important; /* đè .p-0 của Bootstrap */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+/* ===== END UIUX run 16:48 - Agent1 FIX 1 ===== */

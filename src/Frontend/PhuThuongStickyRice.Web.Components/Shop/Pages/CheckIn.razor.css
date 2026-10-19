@@ -92,3 +92,25 @@ html.dark .xo-checkin-form,
 html.dark .xo-checkin-card { background: #2a2a32; }
 html.dark .xo-checkin-meta strong { color: #e8c9a0; }
 html.dark .xo-checkin-meta span { color: #aaa; }
+
+/* ===== UIUX run 16:48 — Agent1 Mobile =====
+   FIX 2 — /check-in: tiêu đề + nút "Đăng ảnh" trên mobile.
+   Vấn đề: .xo-sec-title 40px trên màn 360px — chữ "CHECK-IN TẠI QUÁN 📸"
+   vỡ nhiều dòng, đẩy form xuống sâu; nút .xo-btn (padding 10px 28px) chỉ
+   cao ~42px, dưới chuẩn chạm; padding section 40px thừa không gian.
+   Giải pháp: mobile — tiêu đề 28px, nút 48px full-width, gọn padding.
+   (Verify: CheckIn.razor:12 .xo-sec-title, :34 .xo-btn; scoped CSS nên
+   chỉ ảnh hưởng trang này) */
+@media (max-width: 767.98px) {
+    .xo-checkin { padding: 24px 0 36px; }
+    .xo-sec-title { font-size: 28px; }
+    .xo-btn {
+        width: 100%;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+    }
+}
+/* ===== END UIUX run 16:48 - Agent1 FIX 2 ===== */
