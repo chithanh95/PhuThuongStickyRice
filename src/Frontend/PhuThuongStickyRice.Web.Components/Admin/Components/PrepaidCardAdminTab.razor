@@ -190,7 +190,9 @@
 
     private async Task ConfirmedRedeem()
     {
-        if (_redeemingCard == null)
+        // Guard chống double-click nút "Xác nhận": lần bấm thứ 2 (khi lần 1
+        // chưa xong) phải bỏ qua, nếu không sẽ trừ 2 suất thay vì 1.
+        if (_redeemingCard == null || _redeeming)
         {
             return;
         }

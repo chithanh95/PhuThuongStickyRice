@@ -1,6 +1,7 @@
 @page "/admin/nhan-vien"
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Core.Components
 @inject StaffService StaffService
 
 <div class="lx-page-head">
@@ -103,7 +104,7 @@
                                                     @RoleLabel(r)
                                                     <button type="button" class="close ml-1" aria-label="Gỡ"
                                                             style="font-size:14px;line-height:1;" title="Gỡ vai trò @r"
-                                                            @onclick="() => RemoveRole(u, r)">×</button>
+                                                            @onclick="() => AskRemoveRole(u, r)">×</button>
                                                 </span>
                                             }
                                             @if (u.Roles.Count == 0)
@@ -131,6 +132,12 @@
         </div>
     </div>
 </div>
+
+<ConfirmDialog @ref="RemoveRoleDialog" Title="Gỡ vai trò" YesText="Gỡ" NoText="Hủy" ConfirmEventCallback="ConfirmedRemoveRole">
+    <Message>
+        Gỡ vai trò <strong>@RoleLabel(_removingRole)</strong> khỏi nhân viên <strong>@_removingUser?.UserName</strong>?
+    </Message>
+</ConfirmDialog>
 
 @code {
     private List<StaffUserModel> _users;
@@ -216,8 +223,30 @@
         }
     }
 
-    private async Task RemoveRole(StaffUserModel u, string role)
+    private ConfirmDialog RemoveRoleDialog;
+    private StaffUserModel _removingUser;
+    private string _removingRole;
+
+    // Gỡ vai trò phải qua hộp thoại xác nhận — tránh bấm nhầm 1 click làm
+    // mất quyền của nhân viên. Backend (StaffController.RemoveRole) đã chặn
+    // tự gỡ quyền Admin của chính mình; dialog này là lớp bảo vệ ở UI.
+    private void AskRemoveRole(StaffUserModel u, string role)
     {
+        _removingUser = u;
+        _removingRole = role;
+        _error = null;
+        RemoveRoleDialog.Show();
+    }
+
+    private async Task ConfirmedRemoveRole()
+    {
+        var u = _removingUser;
+        var role = _removingRole;
+        if (u == null || string.IsNullOrEmpty(role))
+        {
+            return;
+        }
+
         try
         {
             await StaffService.RemoveRoleAsync(u.Id, role);
@@ -226,6 +255,12 @@
         catch (Exception ex)
         {
             _error = "Gỡ vai trò thất bại: " + ex.Message;
+        }
+        finally
+        {
+            _removingUser = null;
+            _removingRole = null;
+            RemoveRoleDialog.Close();
         }
     }
 }

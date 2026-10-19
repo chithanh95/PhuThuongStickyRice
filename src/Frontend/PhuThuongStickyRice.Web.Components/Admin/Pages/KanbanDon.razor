@@ -1,4 +1,5 @@
 @page "/admin/kanban-don"
+@implements IDisposable
 @attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
 @using PhuThuongStickyRice.Web.Components.Orders.Models
 @using PhuThuongStickyRice.Web.Components.Orders.Services
