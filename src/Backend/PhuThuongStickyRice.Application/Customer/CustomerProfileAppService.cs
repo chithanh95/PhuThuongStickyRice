@@ -70,6 +70,9 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>SĐT Việt Nam: bắt đầu bằng 0, đầu số 3/5/7/8/9, tổng 10 chữ số.</summary>
         private const string VnPhonePattern = @"^(0)(3|5|7|8|9)\d{8}$";
 
+        /// <summary>Số bản ghi nhắc chăm sóc tối đa trả về cho 1 SĐT (tránh nạp toàn bộ lịch sử).</summary>
+        private const int MaxReminderHistoryRows = 200;
+
         private readonly IRepository<User, Guid> _users;
         private readonly IRepository<UserRole, Guid> _userRoles;
         private readonly IRepository<Role, Guid> _roles;
@@ -367,15 +370,18 @@ namespace PhuThuongStickyRice.Application.Customer
         /// Admin/Cashier xem lịch sử nhắc chăm sóc của 1 SĐT, mới nhất lên trước.
         /// </summary>
         /// <param name="phone">Số điện thoại cần xem lịch sử.</param>
-        /// <returns>Danh sách nhắc đã tạo cho SĐT.</returns>
+        /// <returns>Danh sách nhắc đã tạo cho SĐT (tối đa 200, mới nhất trước).</returns>
         [Authorize(Roles = "Admin,Cashier")]
         public virtual async Task<List<CustomerReminderDto>> GetRemindersAsync(string phone)
         {
             phone = (phone ?? string.Empty).Trim();
             var queryable = await _reminders.GetQueryableAsync();
+            // perf-hunt 2026-10-19: Take(200) server-side — bảng CustomerReminder
+            // tăng vô hạn (lịch sử nhắc), trước đây nạp toàn bộ của 1 SĐT.
             var entities = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.CustomerPhone == phone)
-                    .OrderByDescending(x => x.CreatedAt));
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(MaxReminderHistoryRows));
             return entities.Select(MapReminder).ToList();
         }
 
