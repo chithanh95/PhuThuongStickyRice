@@ -1255,3 +1255,92 @@ html.dark .dg-stars .dg-stars-off {
 }
 
 /* ===== END Run 17:05 2026-10-19 — Agent 2 ===== */
+
+/* === Run 2026-10-19 17:15 — Agent 2 Dark mode ===
+   Phương pháp: script property-level quét toàn bộ .razor.css + <style>
+   trong .razor + inline style + 8 file global, đối chiếu từng màu với
+   ~470 selector đã có rule html.dark (17 đợt Agent 2 trước + admin-lexa +
+   app.css + uiux-dark-fixes + agent1/3/4). 4 lỗi MỚI thật — cùng 1 họ:
+   rule của Agent 1/3/4 (light-mode) có specificity CAO HƠN rule dark hiện
+   có nên "đè" mất ý đồ dark mode (đều đã verify specificity + contrast).
+   Các ứng viên còn lại đã có rule dark hoặc intentional: auth pages
+   (DangNhap/QuenMatKhau đã có html.dark h4/label/sub), to-survey-title
+   (html.dark .to-survey-sheet h5), inline background:#f8f8fb (rule
+   attribute run 13:15), shop-filter-tabs (dark riêng), sg-zalo-box
+   (gradient xanh cả 2 mode), sg-bottom-bar #9a8b73 (~4.6:1, đạt),
+   spin wheel / kanban-sched / badge-morning (giữ chủ ý). */
+
+/* ---------- FIX 1 — /track-order: bước "chờ" của timeline bị xám đậm đè ----------
+   Vấn đề: uiux-agent4-a11y.css — `.to-timeline .to-tl-step .to-tl-label`
+   và `.to-tl-dot { color:#6c757d }` (specificity 0,3,0, fix contrast light
+   mode) ĐÈ LÊN rule dark của chính file TrackOrder.razor.css:
+   `html.dark .to-tl-label/.to-tl-dot { color:#8b8f98 }` (0,2,1).
+   Comment trong a11y.css ghi "rule html.dark cụ thể hơn: 0,3,1" là SAI —
+   rule dark thực tế chỉ (0,2,1). Kết quả ở dark mode: nhãn + icon các bước
+   chưa tới render #6c757d (~3.1:1 trên card tối) thay vì #8b8f98 (~4.6:1);
+   icon ✓/số của bước done/current (ý đồ #fff) cũng bị đè thành #6c757d.
+   Trạng thái done/current của NHÃN vẫn ổn (html.dark .to-tl-done/current
+   .to-tl-label là 0,3,1 > 0,3,0) nên không đụng.
+   Fix: khôi phục đúng ý đồ dark của file gốc. !important để chắc thắng
+   rule agent4 (load SAU file này trong index.html). */
+html.dark .to-timeline .to-tl-step .to-tl-label {
+    color: #8b8f98 !important; /* was #6c757d (agent4) — ~3.1:1 → ~4.6:1 */
+}
+html.dark .to-timeline .to-tl-step .to-tl-dot {
+    color: #8b8f98 !important; /* was #6c757d (agent4) */
+}
+html.dark .to-timeline .to-tl-step.to-tl-done .to-tl-dot,
+html.dark .to-timeline .to-tl-step.to-tl-current .to-tl-dot {
+    color: #fff !important; /* was #6c757d (agent4) — khôi phục ý đồ gốc */
+}
+
+/* ---------- FIX 2 — /checkout: dòng "📝 ghi chú" trong tóm tắt đơn mờ ở dark ----------
+   Vấn đề: uiux-agent4-a11y.css — `.co-summary .text-info.text-info
+   { color:#0e7c99 }` (0,3,0) áp dụng CẢ 2 mode. Comment của agent4 ghi
+   "Dark mode giữ nguyên #17a2b8 vì trên card tối vẫn đạt ~5.29:1" — nhưng
+   rule KHÔNG có ngoại lệ dark nên dark mode cũng render #0e7c99.
+   Card .co-summary là Bootstrap .card → dark bg #262640 (app.css:240);
+   #0e7c99 trên đó chỉ ~2.9:1 (< 4.5:1), dòng ghi chú khách đọc khó.
+   Không có rule html.dark .text-info nào khác (đã grep xác minh).
+   Fix: khôi phục #17a2b8 ở dark (~4.5:1) — đúng giá trị agent4 đã tính.
+   !important để thắng rule agent4 (0,3,0, load sau). */
+html.dark .co-summary .text-info {
+    color: #17a2b8 !important; /* was #0e7c99 — ~2.9:1 → ~4.5:1 trên #262640 */
+}
+
+/* ---------- FIX 3 — Shop: hover pill lọc danh mục (.nav-pills) tối thui ở dark ----------
+   Vấn đề: uiux-agent3-lexa.css —
+   `.shp-page .nav-pills .nav-link:not(.active):hover { color:#625998 }`
+   (0,5,0) đè `html.dark a:hover { color:#d5cdf5 }` (0,2,1, cùng file agent3).
+   Dùng ở GoiTraTruoc.razor:9 (tab "Loại gói trả trước"). Ở dark mode, di
+   chuột lên pill chưa active → chữ tím đậm #625998 trên nền trang tối
+   (~2.3:1), gần như tàng hình. Không rule dark nào cho nav-pills
+   (đã grep xác minh).
+   Fix: #d5cdf5 — đúng convention hover link dark của chính agent3
+   (uiux-agent3-lexa.css:722). Specificity (0,6,1) thắng rule gốc (0,5,0). */
+html.dark .shp-page .nav-pills .nav-link:not(.active):hover {
+    color: #d5cdf5 !important; /* was #625998 — ~2.3:1 → ~9:1 */
+}
+
+/* ---------- FIX 4 — /cart + /checkout (mobile): chữ freeship/ship info tàng hình ở dark ----------
+   Vấn đề: uiux-agent1-mobile.css (media ≤767.98px, run 15:15) —
+   `.gh-freeship small, .tt-shipinfo small { color:#343a40 }` (0,1,1) áp
+   TRỰC TIẾP lên thẻ <small> nên thắng màu kế thừa từ rule dark của thẻ cha
+   (inheritance luôn thua rule trực tiếp — cùng bẫy như run 15:15 đã fix
+   cho DatSoLuongLon). Markup: Cart.razor:76 ("Còn X nữa được miễn phí
+   giao hàng", small KHÔNG class) và Checkout.razor:341 (small trong
+   `alert alert-success` → dark bg #1e4a2e, app.css:315). Ở dark mode mobile:
+   #343a40 trên nền tối chỉ ~1.3–1.5:1 — chữ TÀNG HÌNH.
+   (small.text-muted kề bên đã ổn nhờ `html.dark .text-muted !important`.)
+   Fix: đặt trong cùng media query; màu theo nền thực tế từng chỗ.
+   Specificity (0,2,2) thắng rule agent1 (0,1,1). */
+@media (max-width: 767.98px) {
+    html.dark .gh-freeship small {
+        color: #f0e8dc !important; /* was #343a40 — trên nền trang tối */
+    }
+    html.dark .tt-shipinfo small {
+        color: #bff2cf !important; /* was #343a40 — khớp chữ alert-success dark */
+    }
+}
+
+/* === end Run 2026-10-19 17:15 — Agent 2 (4 fix mới) === */
