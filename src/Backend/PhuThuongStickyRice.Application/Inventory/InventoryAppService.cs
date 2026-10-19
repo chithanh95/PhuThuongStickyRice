@@ -136,7 +136,11 @@ namespace PhuThuongStickyRice.Application.Inventory
             // Perf: chỉ nạp (days+1) ngày gần nhất trong SQL thay vì toàn bộ bảng.
             // Ngày thừa (cũ nhất) chỉ dùng để tính PreviousRemainingQty cho ngày
             // đầu của cửa sổ, kết quả trả về giống hệt trước đây.
-            var cutoff = DateTime.Today.AddDays(-days);
+            // Bug fix (bug-hunt run 14:25): dùng VietnamTime.Today() thay vì
+            // DateTime.Today (giờ server). Nếu server chạy UTC (Docker/K8s),
+            // khung 00:00–06:59 giờ VN lệch 1 ngày → cutoff biên sai,
+            // PreviousRemainingQty của ngày đầu cửa sổ tính nhầm.
+            var cutoff = VietnamTime.Today().AddDays(-days);
             var all = await _asyncExecuter.ToListAsync(
                 (await _inventories.GetQueryableAsync())
                     .Where(x => x.Date >= cutoff)

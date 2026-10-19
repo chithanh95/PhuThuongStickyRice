@@ -21,5 +21,20 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// <param name="cancellationToken">Token hủy.</param>
         Task<bool> TryDecrementBalanceAsync(
             Guid accountId, decimal amount, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Cộng số dư ví một cách nguyên tử: UPDATE Balance = Balance + amount.
+        /// Trả về số dư mới sau khi cộng. Dùng cho hoàn tiền: RefundAsync trước
+        /// đây đọc-modify-ghi (account.Balance += amount rồi UpdateAsync) nên
+        /// 2 refund đồng thời, hoặc refund chạy song song với ChargeAsync
+        /// (đã nguyên tử), có thể làm mất phần cộng của nhau / ghi đè số dư
+        /// sai — lỗi tiền thật. ExecuteUpdateAsync chạy 1 câu UPDATE nên không
+        /// bị race.
+        /// </summary>
+        /// <param name="accountId">Id tài khoản ví.</param>
+        /// <param name="amount">Số tiền cần cộng (phải &gt; 0).</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        Task<decimal> IncrementBalanceAsync(
+            Guid accountId, decimal amount, CancellationToken cancellationToken = default);
     }
 }

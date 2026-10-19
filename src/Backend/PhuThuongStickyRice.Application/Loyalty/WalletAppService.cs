@@ -17,23 +17,34 @@ namespace PhuThuongStickyRice.Application.Loyalty
 {
     public interface IWalletAppService : IApplicationService
     {
-        /// <summary>Public: balance for a phone (checkout shows the ví option when ≥ total).</summary>
+        /// <summary>Public: số dư ví theo SĐT (checkout hiện lựa chọn thanh toán bằng ví khi số dư ≥ tổng đơn).</summary>
+        /// <param name="phone">SĐT khách hàng.</param>
+        /// <returns>DTO số dư ví.</returns>
         Task<WalletAccountDto> GetBalanceAsync(string phone);
 
-        /// <summary>Admin: all wallets, optional phone search.</summary>
+        /// <summary>Admin: liệt kê toàn bộ ví tiền, tìm kiếm theo SĐT.</summary>
+        /// <param name="searchTerm">Chuỗi tìm kiếm SĐT (tùy chọn).</param>
+        /// <returns>Danh sách ví sắp xếp theo số dư giảm dần.</returns>
         Task<List<WalletAccountDto>> GetListAsync(string searchTerm);
 
-        /// <summary>Admin: top-up (positive) or manual deduct (negative) with a reason.</summary>
+        /// <summary>Admin: cộng (số dương) hoặc trừ tay (số âm) số dư ví kèm lý do.</summary>
+        /// <param name="input">SĐT, số tiền điều chỉnh (khác 0) và lý do.</param>
+        /// <returns>Ví sau khi điều chỉnh.</returns>
         Task<WalletAccountDto> AdjustAsync(AdjustWalletInput input);
 
-        /// <summary>Admin: transaction log for a phone.</summary>
+        /// <summary>Admin: lịch sử biến động ví của một SĐT.</summary>
+        /// <param name="phone">SĐT cần tra cứu.</param>
+        /// <returns>Danh sách giao dịch, mới nhất trước.</returns>
         Task<List<WalletTransactionDto>> GetTransactionsAsync(string phone);
 
-        /// <summary>Internal: charge the wallet for a new order. Throws when insufficient.</summary>
+        /// <summary>Internal: trừ tiền ví khi tạo đơn hàng mới (chỉ checkout gọi). Ném lỗi khi số dư không đủ.</summary>
+        /// <param name="phone">SĐT chủ ví.</param>
+        /// <param name="amount">Số tiền cần trừ (phải &gt; 0).</param>
+        /// <param name="orderNumber">Mã đơn để ghi vào lịch sử giao dịch.</param>
         Task ChargeAsync(string phone, decimal amount, string orderNumber);
 
         /// <summary>
-        /// Internal: credit the wallet back (order cancelled).
+        /// Internal: hoàn tiền vào ví khi đơn hàng bị hủy (idempotent theo cặp SĐT + lý do).
         /// <para>
         /// Cộng lại tiền vào ví. Idempotent theo cặp (SĐT, lý do):
         /// hủy đơn và bớt món phải dùng lý do khác nhau — nếu dùng chung,
@@ -42,6 +53,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// vì cùng lý do hủy đơn cho cùng mã đơn chỉ hoàn đúng 1 lần.
         /// </para>
         /// </summary>
+        /// <param name="phone">SĐT chủ ví.</param>
+        /// <param name="amount">Số tiền hoàn lại.</param>
+        /// <param name="orderNumber">Mã đơn bị hủy, ghi vào lịch sử giao dịch.</param>
+        /// <param name="refundReason">Lý do hoàn (tùy chọn; mặc định "Hoàn tiền hủy đơn &lt;mã đơn&gt;").</param>
         Task RefundAsync(string phone, decimal amount, string orderNumber, string refundReason = null);
     }
 
@@ -55,6 +70,11 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private readonly IWalletAccountRepository _wallets;
         private readonly Volo.Abp.Domain.Repositories.IRepository<WalletTransaction, Guid> _transactions;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+
+        /// <summary>Số ví tối đa liệt kê ở màn hình admin (tránh materialize toàn bảng).</summary>
+        private const int MaxAdminListRows = 200;
+        /// <summary>Số giao dịch mới nhất hiển thị trong lịch sử ví của 1 SĐT.</summary>
+        private const int MaxTransactionHistoryRows = 100;
 
         /// <summary>Khởi tạo service ví tiền với repository tài khoản và lịch sử giao dịch.</summary>
         public WalletAppService(
@@ -105,9 +125,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 query = query.Where(x => x.Phone.Contains(term));
             }
 
-            // perf-hunt: cap at 200 like LoyaltyAppService.GetListAsync (admin list only;
-            // without Take the whole wallet table is materialized and sorted).
-            var list = await _asyncExecuter.ToListAsync(query.Take(200));
+            var list = await _asyncExecuter.ToListAsync(query.Take(MaxAdminListRows));
             return list.Select(MapToDto).ToList();
         }
 
@@ -164,7 +182,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             var list = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.Phone == normalized)
                     .OrderByDescending(x => x.CreatedAt)
-                    .Take(100));
+                    .Take(MaxTransactionHistoryRows));
             return list.Select(MapToTransactionDto).ToList();
         }
 
@@ -245,19 +263,29 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             var account = await GetOrCreateAsync(normalized);
-            account.Balance += amount;
-            account.UpdatedAt = DateTime.UtcNow;
-            await _wallets.UpdateAsync(account, autoSave: true);
 
-            await LogAsync(normalized, amount, account.Balance, reason, "system");
+            // Bug fix (bug-hunt run 14:25): cộng số dư bằng UPDATE nguyên tử
+            // (Balance = Balance + amount) thay vì read-modify-write
+            // (account.Balance += amount rồi UpdateAsync). Bản cũ: 2 refund
+            // đồng thời đều đọc số dư cũ, cộng rồi ghi đè → số dư tăng thiếu;
+            // refund chạy song song ChargeAsync (đã nguyên tử) có thể ghi đè
+            // phần trừ của Charge → thừa tiền. Bản mới trả về số dư mới để
+            // lịch sử giao dịch ghi đúng BalanceAfter.
+            var newBalance = await _wallets.IncrementBalanceAsync(account.Id, amount);
+
+            await LogAsync(normalized, amount, newBalance, reason, "system");
         }
 
+        /// <summary>Tìm ví theo SĐT đã chuẩn hóa; null nếu SĐT chưa từng có ví.</summary>
+        /// <param name="phone">SĐT đã chuẩn hóa đầu số Việt Nam.</param>
         private async Task<WalletAccount> FindAsync(string phone)
         {
             var queryable = await _wallets.GetQueryableAsync();
             return await _asyncExecuter.FirstOrDefaultAsync(queryable.Where(x => x.Phone == phone));
         }
 
+        /// <summary>Tìm ví theo SĐT; chưa có thì tạo ví mới số dư 0 (để mọi SĐT đều có ví sẵn sàng dùng).</summary>
+        /// <param name="phone">SĐT đã chuẩn hóa đầu số Việt Nam.</param>
         private async Task<WalletAccount> GetOrCreateAsync(string phone)
         {
             var account = await FindAsync(phone);
@@ -277,6 +305,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return account;
         }
 
+        /// <summary>Ghi 1 dòng lịch sử biến động ví (mọi cộng/trừ số dư đều phải qua đây để đối soát).</summary>
         private async Task LogAsync(string phone, decimal amount, decimal balanceAfter, string reason, string createdBy)
         {
             await _transactions.InsertAsync(new WalletTransaction
@@ -290,11 +319,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }, autoSave: true);
         }
 
+        /// <summary>Map entity ví → DTO trả về API.</summary>
         private static WalletAccountDto MapToDto(WalletAccount x)
         {
             return new WalletAccountDto { Id = x.Id, Phone = x.Phone, Balance = x.Balance };
         }
 
+        /// <summary>Map entity lịch sử giao dịch → DTO trả về API.</summary>
         private static WalletTransactionDto MapToTransactionDto(WalletTransaction x)
         {
             return new WalletTransactionDto

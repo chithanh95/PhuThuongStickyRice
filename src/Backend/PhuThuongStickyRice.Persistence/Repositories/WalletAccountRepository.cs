@@ -38,5 +38,28 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                     cancellationToken);
             return affected > 0;
         }
+
+        /// <summary>
+        /// Cộng số dư nguyên tử bằng ExecuteUpdateAsync (1 câu UPDATE
+        /// Balance = Balance + amount), rồi đọc lại số dư mới (AsNoTracking
+        /// để không dính entity cũ trong change tracker). Trả về số dư mới
+        /// để caller ghi đúng BalanceAfter vào lịch sử giao dịch.
+        /// </summary>
+        public async Task<decimal> IncrementBalanceAsync(
+            Guid accountId, decimal amount, CancellationToken cancellationToken = default)
+        {
+            var dbContext = await GetDbContextAsync();
+            await dbContext.Set<WalletAccount>()
+                .Where(x => x.Id == accountId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Balance, x => x.Balance + amount)
+                    .SetProperty(x => x.UpdatedAt, DateTime.UtcNow),
+                    cancellationToken);
+            return await dbContext.Set<WalletAccount>()
+                .AsNoTracking()
+                .Where(x => x.Id == accountId)
+                .Select(x => x.Balance)
+                .FirstAsync(cancellationToken);
+        }
     }
 }

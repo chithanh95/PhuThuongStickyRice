@@ -9,6 +9,7 @@ using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.Application.Products;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
@@ -40,15 +41,18 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IRepository<Order, Guid> _orders;
         private readonly IRepository<Product, Guid> _products;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IProductCatalogCache _catalogCache;
 
         public GrossProfitReportAppService(
             IRepository<Order, Guid> orders,
             IRepository<Product, Guid> products,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            IProductCatalogCache catalogCache)
         {
             _orders = orders;
             _products = products;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         // Báo cáo mặc định lùi về trước bao nhiêu ngày (6 = hôm nay + 6 ngày trước = 7 ngày).
@@ -218,6 +222,12 @@ namespace PhuThuongStickyRice.Application.Orders
             var product = await _products.GetAsync(productId);
             product.ChangeCostPrice(costPrice);
             await _products.UpdateAsync(product);
+
+            // Bug fix (bug-hunt run 14:25): đổi giá vốn mà không invalidate
+            // catalog cache (TTL 5p) → GET /api/products/{id} vẫn trả CostPrice
+            // cũ, báo cáo lãi gộp sai. Mọi write path khác (ProductAppService,
+            // ProductSizeOption, Topping, Combo) đã invalidate, riêng chỗ này bị sót.
+            _catalogCache.Invalidate();
 
             return new ProductCostDto
             {
