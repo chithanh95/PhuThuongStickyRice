@@ -35,8 +35,20 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddScoped<Dispatcher>();
 
-            var assemblyTypes = Assembly.GetExecutingAssembly().GetTypes();
+            RegisterConcreteHandlers(services, Assembly.GetExecutingAssembly().GetTypes());
+            RegisterGenericEntityHandlers(services);
 
+            return services;
+        }
+
+        /// <summary>
+        /// Đăng ký các handler cụ thể (không generic) trong assembly: mỗi type
+        /// triển khai interface handler thì được đăng ký transient qua factory.
+        /// </summary>
+        /// <param name="services">DI container.</param>
+        /// <param name="assemblyTypes">Các type của assembly hiện tại.</param>
+        private static void RegisterConcreteHandlers(IServiceCollection services, Type[] assemblyTypes)
+        {
             foreach (var type in assemblyTypes)
             {
                 // Skip open-generic handler definitions (e.g. AddEntityCommandHandler<T>).
@@ -62,7 +74,15 @@ namespace Microsoft.Extensions.DependencyInjection
                     services.AddTransient(interfaceType, provider => handlerFactory.Create(provider, interfaceType));
                 }
             }
+        }
 
+        /// <summary>
+        /// Đăng ký các handler generic cho mọi aggregate root
+        /// (Get/AddOrUpdate/Delete entity) bằng cách đóng generic từng entity.
+        /// </summary>
+        /// <param name="services">DI container.</param>
+        private static void RegisterGenericEntityHandlers(IServiceCollection services)
+        {
             var aggregateRootTypes = typeof(IAggregateRoot).Assembly.GetTypes().Where(x => x.BaseType == typeof(Entity<Guid>) && x.GetInterfaces().Contains(typeof(IAggregateRoot))).ToList();
 
             var genericHandlerTypes = new[]
@@ -87,8 +107,6 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
             }
-
-            return services;
         }
     }
 }

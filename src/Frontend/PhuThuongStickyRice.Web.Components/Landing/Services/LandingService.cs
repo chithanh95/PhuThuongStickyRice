@@ -160,21 +160,21 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
 
         public async Task<List<Guid>> GetFavoritesAsync(string phone)
         {
-            var w = await GetAsync<ProductIdsWrapper>($"api/landing/favorites?phone={phone}");
-            return w?.ProductIds ?? new List<Guid>();
+            var wrapper = await GetAsync<ProductIdsWrapper>($"api/landing/favorites?phone={phone}");
+            return wrapper?.ProductIds ?? new List<Guid>();
         }
 
         public async Task<List<BackInStockItem>> GetBackInStockFavoritesAsync(string phone)
         {
-            var w = await GetAsync<ItemsWrapper<BackInStockItem>>($"api/landing/favorites/back-in-stock?phone={phone}");
-            return w?.Items ?? new List<BackInStockItem>();
+            var wrapper = await GetAsync<ItemsWrapper<BackInStockItem>>($"api/landing/favorites/back-in-stock?phone={phone}");
+            return wrapper?.Items ?? new List<BackInStockItem>();
         }
 
         /// <summary>Items đơn gần nhất (item 62).</summary>
         public async Task<List<ParsedOrderItem>> GetLastOrderItemsAsync(string phone)
         {
-            var w = await GetAsync<ItemsWrapper<ParsedOrderItem>>($"api/landing/last-order-items?phone={phone}");
-            return w?.Items ?? new List<ParsedOrderItem>();
+            var wrapper = await GetAsync<ItemsWrapper<ParsedOrderItem>>($"api/landing/last-order-items?phone={phone}");
+            return wrapper?.Items ?? new List<ParsedOrderItem>();
         }
 
         /// <summary>Link sàn TMĐT (item 75).</summary>

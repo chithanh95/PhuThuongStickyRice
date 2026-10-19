@@ -15,7 +15,17 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
     {
         // HttpClient dùng chung cho mọi lần check để tránh socket exhaustion
         // (tạo HttpClient mới mỗi lần ping sẽ cạn kiệt port TCP).
-        private static readonly HttpClient _httpClient = new HttpClient();
+        // SocketsHttpHandler với PooledConnectionLifetime: connection được tái
+        // tạo định kỳ nên DNS thay đổi vẫn được cập nhật (HttpClient static giữ
+        // connection cũ vô thời hạn sẽ trỏ vào IP cũ). Timeout riêng để một
+        // endpoint bị treo không giữ trang /health quá lâu.
+        private static readonly HttpClient _httpClient = new(new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+        })
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
         private readonly string _uri;
 
         /// <summary>Khởi tạo health check cho URL cần ping.</summary>

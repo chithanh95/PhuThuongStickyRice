@@ -62,7 +62,14 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
 
         public Task<User> FindByIdAsync(string userId, CancellationToken cancellationToken)
         {
-            return _userRepository.Get(new UserQueryOptions { IncludeTokens = true }).FirstOrDefaultAsync(x => x.Id == Guid.Parse(userId));
+            // Guid sai định dạng (vd: cookie/claim bị giả mạo) thì trả null theo đúng
+            // contract của ASP.NET Identity ("not found"), thay vì ném FormatException.
+            if (!Guid.TryParse(userId, out var id))
+            {
+                return Task.FromResult<User>(null);
+            }
+
+            return _userRepository.Get(new UserQueryOptions { IncludeTokens = true }).FirstOrDefaultAsync(x => x.Id == id);
         }
 
         public Task<User> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)

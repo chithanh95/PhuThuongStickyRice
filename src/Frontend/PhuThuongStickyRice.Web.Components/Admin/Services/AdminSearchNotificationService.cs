@@ -8,7 +8,6 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 {
     /// <summary>
     /// Items 157–158: tìm kiếm toàn cục + trung tâm thông báo của admin.
-    /// (Tên cũ: AdminUtilityService — đổi để phản ánh đúng chức năng.)
     /// </summary>
     public class AdminSearchNotificationService : HttpService
     {

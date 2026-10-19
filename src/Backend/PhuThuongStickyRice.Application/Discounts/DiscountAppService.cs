@@ -330,6 +330,17 @@ namespace PhuThuongStickyRice.Application.Discounts
             return await ApplyAsync(code, subtotal, null);
         }
 
+        /// <summary>
+        /// Áp mã giảm giá khi tạo đơn (bản có SĐT chủ sở hữu): validate mã,
+        /// tính số tiền giảm và tăng bộ đếm lượt dùng. Mã spin/voucher sinh
+        /// nhật chỉ gắn 1 lần dùng cho 1 SĐT nên bắt buộc truyền SĐT để chặn
+        /// dùng ké mã của người khác. Ném DomainException khi mã không áp
+        /// dụng được.
+        /// </summary>
+        /// <param name="code">Mã giảm giá đã chuẩn hóa.</param>
+        /// <param name="subtotal">Tổng tiền hàng trước khi giảm.</param>
+        /// <param name="customerPhone">SĐT chủ đơn (null với khách vãng lai).</param>
+        /// <returns>Số tiền được giảm.</returns>
         public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone)
         {
             // Validate trước rồi mới tăng lượt dùng: đơn lỗi không được đốt lượt mã.

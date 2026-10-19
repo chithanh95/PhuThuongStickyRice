@@ -53,6 +53,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// </summary>
         Task<(int Points, decimal VndOff)> RedeemAsync(string phone, int pointsRequested, ShopSettingDto settings);
 
+        /// <summary>
+        /// Internal: kẹp số điểm muốn đổi theo số tiền tối đa có thể giảm (làm
+        /// tròn xuống theo bước đổi) — tránh trừ điểm nhiều hơn giá trị giảm
+        /// thực tế mà đơn hàng áp dụng được.
+        /// </summary>
+        int CapRedeemPoints(int pointsRequested, decimal maxDiscountVnd, ShopSettingDto settings);
+
         /// <summary>Internal: hoàn lại điểm đã đổi khi đơn bị hủy.</summary>
         Task RefundRedeemedPointsAsync(Order order);
 
@@ -213,6 +220,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
         }
 
         /// <summary>
+        /// Giới hạn số ngày quét sinh nhật sắp tới (60 ngày): đủ cho chiến dịch
+        /// chúc mừng, đồng thời tránh tính toán trên khoảng thời gian quá xa.
+        /// </summary>
+        private const int MaxDaysAhead = 60;
+
+        /// <summary>
         /// Admin: tài khoản có sinh nhật trong N ngày tới (phục vụ chiến dịch
         /// gửi voucher sinh nhật). Kẹp daysAhead trong 0..60 ngày để admin
         /// không vô tình quét cả năm. So sánh tháng/ngày chạy in-memory (bảng
@@ -223,61 +236,76 @@ namespace PhuThuongStickyRice.Application.Loyalty
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<LoyaltyAccountDto>> GetUpcomingBirthdaysAsync(int daysAhead)
         {
-            if (daysAhead < 0)
-            {
-                daysAhead = 0;
-            }
+            daysAhead = ClampDaysAhead(daysAhead);
 
-            if (daysAhead > 60)
-            {
-                daysAhead = 60;
-            }
+            var today = DateTime.UtcNow.Date;
+            var upcoming = await LoadUpcomingBirthdayRowsAsync(today, daysAhead);
 
-            // Month/day comparison runs in memory — the table is small and
-            // this keeps the query provider-agnostic. Only the 6 columns the
-            // birthday DTO needs are selected from SQL instead of materializing
-            // full LoyaltyAccount entities.
+            var settings = await _shopSettings.GetAsync();
+            return upcoming.Select(row => MapToBirthdayDto(row, settings)).ToList();
+        }
+
+        /// <summary>
+        /// Dòng rút gọn chỉ gồm 6 cột DTO sinh nhật cần — tránh materialize
+        /// cả entity <c>LoyaltyAccount</c> khi chỉ cần so sánh tháng/ngày.
+        /// </summary>
+        private sealed record BirthdayRow(
+            string Phone,
+            int Points,
+            long TotalEarned,
+            decimal TotalSpent,
+            string ReferralCode,
+            DateTime? DateOfBirth);
+
+        /// <summary>Giới hạn <paramref name="daysAhead"/> trong khoảng 0..MaxDaysAhead.</summary>
+        private static int ClampDaysAhead(int daysAhead)
+            => Math.Clamp(daysAhead, 0, MaxDaysAhead);
+
+        /// <summary>
+        /// Tải các dòng sinh nhật sắp tới, sắp xếp theo ngày sinh nhật gần nhất.
+        /// </summary>
+        /// <remarks>
+        /// So sánh tháng/ngày chạy trong bộ nhớ — bảng nhỏ và giữ truy vấn
+        /// không phụ thuộc nhà cung cấp DB. Chỉ 6 cột DTO cần được select từ
+        /// SQL thay vì materialize full entity.
+        /// </remarks>
+        private async Task<List<BirthdayRow>> LoadUpcomingBirthdayRowsAsync(DateTime today, int daysAhead)
+        {
             var queryable = await _accounts.GetQueryableAsync();
             var rows = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.DateOfBirth.HasValue)
-                         .Select(x => new
-                         {
+                         .Select(x => new BirthdayRow(
                              x.Phone,
                              x.Points,
                              x.TotalEarned,
                              x.TotalSpent,
                              x.ReferralCode,
-                             x.DateOfBirth
-                         }));
+                             x.DateOfBirth)));
 
-            var today = DateTime.UtcNow.Date;
-            var upcoming = rows
-                .Select(x => new
-                {
-                    Row = x,
-                    Next = NextBirthday(x.DateOfBirth!.Value, today)
-                })
-                .Where(x => (x.Next - today).TotalDays <= daysAhead)
-                .OrderBy(x => x.Next)
-                .Select(x => x.Row)
-                .ToList();
+            return rows.Select(row => (Row: row, Next: NextBirthday(row.DateOfBirth!.Value, today)))
+                       .Where(x => (x.Next - today).TotalDays <= daysAhead)
+                       .OrderBy(x => x.Next)
+                       .Select(x => x.Row)
+                       .ToList();
+        }
 
-            var settings = await _shopSettings.GetAsync();
-            return upcoming.Select(x =>
+        /// <summary>
+        /// Map một dòng sinh nhật sang DTO, kèm hạng thành viên hiện tại.
+        /// </summary>
+        private LoyaltyAccountDto MapToBirthdayDto(BirthdayRow row, ShopSettingDto settings)
+        {
+            var (tier, pct) = GetTier(row.TotalSpent, settings);
+            return new LoyaltyAccountDto
             {
-                var (tier, pct) = GetTier(x.TotalSpent, settings);
-                return new LoyaltyAccountDto
-                {
-                    Phone = x.Phone,
-                    Points = x.Points,
-                    TotalEarned = x.TotalEarned,
-                    TotalSpent = x.TotalSpent,
-                    ReferralCode = x.ReferralCode,
-                    DateOfBirth = x.DateOfBirth,
-                    Tier = tier,
-                    TierDiscountPercent = pct
-                };
-            }).ToList();
+                Phone = row.Phone,
+                Points = row.Points,
+                TotalEarned = row.TotalEarned,
+                TotalSpent = row.TotalSpent,
+                ReferralCode = row.ReferralCode,
+                DateOfBirth = row.DateOfBirth,
+                Tier = tier,
+                TierDiscountPercent = pct
+            };
         }
 
         /// <summary>
@@ -432,6 +460,35 @@ namespace PhuThuongStickyRice.Application.Loyalty
             // buyer được lưu bởi method gọi (AwardCompletedOrderAsync) ngay sau đó.
             buyer.Points += bonus;
             buyer.TotalEarned += bonus;
+        }
+
+        /// <summary>
+        /// Kẹp số điểm muốn đổi theo số tiền tối đa có thể giảm (làm tròn xuống
+        /// theo bước đổi): điểm vượt quá phần này sẽ bị trừ oan, vì
+        /// <see cref="Order.Create"/> kẹp giá trị giảm điểm không vượt phần còn
+        /// lại của đơn (sau khuyến mãi giờ vàng + mã giảm giá).
+        /// </summary>
+        /// <param name="pointsRequested">Số điểm khách muốn đổi.</param>
+        /// <param name="maxDiscountVnd">Số tiền tối đa (đ) mà điểm đổi có thể giảm.</param>
+        /// <param name="settings">Cấu hình bước đổi và mệnh giá.</param>
+        /// <returns>Số điểm thực tế nên đổi (≤ điểm yêu cầu).</returns>
+        public virtual int CapRedeemPoints(int pointsRequested, decimal maxDiscountVnd, ShopSettingDto settings)
+        {
+            if (pointsRequested <= 0 || maxDiscountVnd <= 0)
+            {
+                return 0;
+            }
+
+            var unit = settings.PointsRedeemUnit > 0 ? settings.PointsRedeemUnit : DefaultPointsRedeemUnit;
+            var value = settings.PointsRedeemValue > 0 ? settings.PointsRedeemValue : DefaultPointsRedeemValue;
+            if (unit <= 0 || value <= 0)
+            {
+                return 0;
+            }
+
+            // Số bước đổi tối đa mà số tiền còn lại "đỡ" được, làm tròn xuống.
+            var maxSteps = (int)(maxDiscountVnd / value);
+            return Math.Min(pointsRequested, maxSteps * unit);
         }
 
         /// <summary>

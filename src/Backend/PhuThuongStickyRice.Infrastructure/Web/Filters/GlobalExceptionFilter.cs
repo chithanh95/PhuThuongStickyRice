@@ -32,7 +32,10 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Filters
             }
             else
             {
-                _logger.LogError(context.Exception, $"[{DateTime.UtcNow.Ticks}-{Environment.CurrentManagedThreadId}]");
+                // Message template có parameter (thay vì $"...") để correlation id
+                // thành field có cấu trúc trong log, tra cứu được — message render ra giống hệt.
+                _logger.LogError(context.Exception, "[{Ticks}-{ThreadId}]",
+                    DateTime.UtcNow.Ticks, Environment.CurrentManagedThreadId);
 
                 if (_options.DetailLevel == GlobalExceptionDetailLevel.Throw)
                 {

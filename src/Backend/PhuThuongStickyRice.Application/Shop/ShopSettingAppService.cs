@@ -328,6 +328,10 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.ZaloOaAccessToken = ProtectSecret(dto.ZaloOaAccessToken);
         }
 
+        /// <summary>
+        /// Chuẩn hóa chuỗi setting: null/rỗng/toàn khoảng trắng → null,
+        /// ngược lại trim. Tránh lưu chuỗi rác vào DB rồi phải xử lý ở nơi đọc.
+        /// </summary>
         private static string TrimOrNull(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -426,6 +430,15 @@ namespace PhuThuongStickyRice.Application.Shop
             return response.IsSuccessStatusCode;
         }
 
+        /// <summary>
+        /// Gửi webhook "có đơn mới" (item 180). Lỗi HTTP (4xx/5xx) trả về
+        /// false; lỗi transport (timeout, DNS) thì THROW — nơi gọi phải
+        /// catch và log (webhook là thông báo phụ, không được làm hỏng
+        /// luồng tạo đơn).
+        /// </summary>
+        /// <param name="url">URL webhook tuyệt đối (http/https).</param>
+        /// <param name="payload">Dữ liệu đơn serialize thành JSON.</param>
+        /// <returns>true nếu endpoint trả về HTTP thành công.</returns>
         private Task<bool> PostNewOrderWebhookAsync(string url, object payload)
         {
             return PostNewOrderWebhookAsync(_httpClientFactory, url, payload);
@@ -504,12 +517,21 @@ namespace PhuThuongStickyRice.Application.Shop
             }
         }
 
+        /// <summary>
+        /// Lấy bản ghi setting duy nhất của shop. Thiết kế 1 row/table nên
+        /// lấy row đầu tiên, không có thì trả null để nơi gọi dùng default.
+        /// </summary>
         private async Task<ShopSetting> GetSingleAsync()
         {
             var queryable = await _settings.GetQueryableAsync();
             return await _asyncExecuter.FirstOrDefaultAsync(queryable);
         }
 
+        /// <summary>
+        /// Map entity sang DTO, đồng thời áp fallback cho các cột số:
+        /// cột thêm sau qua migration có giá trị 0 ở row cũ nên phải
+        /// fallback về default lúc đọc (xem comment trong thân hàm).
+        /// </summary>
         private ShopSettingDto MapToDto(ShopSetting entity)
         {
             // Rows created before Wave 2 have 0 in the new columns; fall back

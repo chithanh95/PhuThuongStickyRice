@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 
 namespace PhuThuongStickyRice.Application.Common
 {
@@ -23,6 +24,35 @@ namespace PhuThuongStickyRice.Application.Common
         private static readonly string[] VietnamTimeZoneIds =
             { "Asia/Ho_Chi_Minh", "SE Asia Standard Time" };
 
+        /// <summary>
+        /// TimeZoneInfo đã resolve, chỉ tìm 1 lần cho cả vòng đời app.
+        /// FindSystemTimeZoneById đọc registry/file hệ thống nên không nên
+        /// gọi mỗi lần convert (ToVietnamTime được gọi rất nhiều).
+        /// </summary>
+        private static readonly Lazy<TimeZoneInfo> CachedVietnamTimeZone =
+            new(ResolveVietnamTimeZone, LazyThreadSafetyMode.ExecutionAndPublication);
+
+        private static TimeZoneInfo ResolveVietnamTimeZone()
+        {
+            foreach (var id in VietnamTimeZoneIds)
+            {
+                try
+                {
+                    return TimeZoneInfo.FindSystemTimeZoneById(id);
+                }
+                catch (TimeZoneNotFoundException)
+                {
+                    // ID timezone không có trên OS này — thử id tiếp theo.
+                }
+                catch (InvalidTimeZoneException)
+                {
+                    // Dữ liệu timezone hỏng — thử id tiếp theo.
+                }
+            }
+
+            return null;
+        }
+
         public static DateTime Today()
         {
             return ToVietnamTime(DateTime.UtcNow).Date;
@@ -31,24 +61,11 @@ namespace PhuThuongStickyRice.Application.Common
         public static DateTime ToVietnamTime(DateTime utc)
         {
             var utcDateTime = utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc);
-            foreach (var id in VietnamTimeZoneIds)
-            {
-                try
-                {
-                    var tz = TimeZoneInfo.FindSystemTimeZoneById(id);
-                    return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tz);
-                }
-                catch (TimeZoneNotFoundException)
-                {
-                    // Timezone id not present on this OS — try the next id.
-                }
-                catch (InvalidTimeZoneException)
-                {
-                    // Corrupt timezone data — try the next id.
-                }
-            }
-
-            return utcDateTime.AddHours(UtcOffsetHours);
+            var tz = CachedVietnamTimeZone.Value;
+            // Không resolve được timezone nào (OS lạ) thì cộng tay +7 như cũ.
+            return tz != null
+                ? TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tz)
+                : utcDateTime.AddHours(UtcOffsetHours);
         }
 
 

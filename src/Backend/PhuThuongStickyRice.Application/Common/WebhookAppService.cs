@@ -220,12 +220,14 @@ namespace PhuThuongStickyRice.Application.Common
         private static string TruncateError(string error) =>
             error.Length > MaxErrorLength ? error.Substring(0, MaxErrorLength) : error;
 
-        /// <summary>HMAC-SHA256 of the raw body, hex-encoded.</summary>
+        /// <summary>HMAC-SHA256 of the raw body, hex-encoded (lowercase).</summary>
         public static string ComputeSignature(string secret, string body)
         {
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
             var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(body));
-            return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
+            // Convert.ToHexString (.NET 5+): nhanh và ít cấp phát hơn
+            // BitConverter.ToString(...).Replace("-", ...) — output giống hệt (hex chữ thường).
+            return Convert.ToHexString(hash).ToLowerInvariant();
         }
     }
 

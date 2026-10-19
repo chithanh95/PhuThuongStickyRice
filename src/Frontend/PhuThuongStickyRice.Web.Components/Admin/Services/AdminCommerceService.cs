@@ -142,8 +142,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<List<WorkShiftModel>> GetWorkShiftsAsync(DateTime? date)
         {
-            var d = (date ?? DateTime.Today).ToString("yyyy-MM-dd");
-            return await GetAsync<List<WorkShiftModel>>($"api/work-shifts/week?date={d}");
+            var dateString = (date ?? DateTime.Today).ToString("yyyy-MM-dd");
+            return await GetAsync<List<WorkShiftModel>>($"api/work-shifts/week?date={dateString}");
         }
 
         public async Task<WorkShiftModel> CreateWorkShiftAsync(WorkShiftModel model)
@@ -171,10 +171,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<List<WalletAccountModel>> GetWalletsAsync(string search)
         {
-            var q = string.IsNullOrWhiteSpace(search)
+            var queryString = string.IsNullOrWhiteSpace(search)
                 ? string.Empty
                 : $"?search={Uri.EscapeDataString(search)}";
-            return await GetAsync<List<WalletAccountModel>>($"api/wallets{q}");
+            return await GetAsync<List<WalletAccountModel>>($"api/wallets{queryString}");
         }
 
         public async Task<List<WalletTransactionModel>> GetWalletTransactionsAsync(string phone)
@@ -193,15 +193,15 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<decimal> GetExpectedCodAsync(DateTime date)
         {
-            var d = date.ToString("yyyy-MM-dd");
-            var result = await GetAsync<Dictionary<string, decimal>>($"api/shift-closes/expected?date={d}");
+            var dateString = date.ToString("yyyy-MM-dd");
+            var result = await GetAsync<Dictionary<string, decimal>>($"api/shift-closes/expected?date={dateString}");
             return result != null && result.TryGetValue("expected", out var v) ? v : 0;
         }
 
         public async Task<ShiftCloseModel> GetShiftCloseAsync(DateTime date)
         {
-            var d = date.ToString("yyyy-MM-dd");
-            return await GetAsync<ShiftCloseModel>($"api/shift-closes/by-date?date={d}");
+            var dateString = date.ToString("yyyy-MM-dd");
+            return await GetAsync<ShiftCloseModel>($"api/shift-closes/by-date?date={dateString}");
         }
 
         public async Task<List<ShiftCloseModel>> GetShiftClosesAsync()
@@ -236,10 +236,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<List<MessageTemplateModel>> GetMessageTemplatesAsync(string channel = null)
         {
-            var q = string.IsNullOrWhiteSpace(channel)
+            var queryString = string.IsNullOrWhiteSpace(channel)
                 ? string.Empty
                 : $"?channel={Uri.EscapeDataString(channel)}";
-            return await GetAsync<List<MessageTemplateModel>>($"api/message-templates{q}");
+            return await GetAsync<List<MessageTemplateModel>>($"api/message-templates{queryString}");
         }
 
         public async Task<MessageTemplateModel> CreateMessageTemplateAsync(MessageTemplateModel model)
@@ -261,10 +261,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<List<VoucherCampaignAudienceModel>> GetVoucherAudiencesAsync(string tier)
         {
-            var q = string.IsNullOrWhiteSpace(tier)
+            var queryString = string.IsNullOrWhiteSpace(tier)
                 ? string.Empty
                 : $"?tier={Uri.EscapeDataString(tier)}";
-            return await GetAsync<List<VoucherCampaignAudienceModel>>($"api/voucher-campaigns/audiences{q}");
+            return await GetAsync<List<VoucherCampaignAudienceModel>>($"api/voucher-campaigns/audiences{queryString}");
         }
 
         public async Task<List<GeneratedVoucherModel>> GenerateVouchersAsync(
@@ -286,10 +286,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<List<MoMoOrderModel>> GetMoMoOrdersAsync(bool? matched)
         {
-            var q = matched.HasValue
+            var queryString = matched.HasValue
                 ? $"?matched={matched.Value.ToString().ToLowerInvariant()}"
                 : string.Empty;
-            return await GetAsync<List<MoMoOrderModel>>($"api/momo-reconciliation/orders{q}");
+            return await GetAsync<List<MoMoOrderModel>>($"api/momo-reconciliation/orders{queryString}");
         }
 
         public async Task MarkMoMoMatchedAsync(Guid orderId)
@@ -326,19 +326,19 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<List<SourceStatModel>> GetSourceStatsAsync(DateTime? from, DateTime? to)
         {
-            var q = string.Empty;
+            var queryString = string.Empty;
             if (from.HasValue)
             {
-                q += $"from={from.Value:yyyy-MM-dd}";
+                queryString += $"from={from.Value:yyyy-MM-dd}";
             }
 
             if (to.HasValue)
             {
-                q += (q.Length > 0 ? "&" : string.Empty) + $"to={to.Value:yyyy-MM-dd}";
+                queryString += (queryString.Length > 0 ? "&" : string.Empty) + $"to={to.Value:yyyy-MM-dd}";
             }
 
             return await GetAsync<List<SourceStatModel>>(
-                $"api/dashboard/source-stats{(q.Length > 0 ? "?" + q : string.Empty)}");
+                $"api/dashboard/source-stats{(queryString.Length > 0 ? "?" + queryString : string.Empty)}");
         }
     }
 }

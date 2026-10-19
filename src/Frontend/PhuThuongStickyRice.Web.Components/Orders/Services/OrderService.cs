@@ -198,8 +198,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         /// <summary>Item 99: hourly best-sellers report for one day.</summary>
         public async Task<HourlySalesReportModel> GetHourlySalesReportAsync(DateTime date)
         {
-            var d = date.ToString("yyyy-MM-dd");
-            return await GetAsync<HourlySalesReportModel>($"api/admin/orders/hourly-sales?date={d}");
+            var dateString = date.ToString("yyyy-MM-dd");
+            return await GetAsync<HourlySalesReportModel>($"api/admin/orders/hourly-sales?date={dateString}");
         }
 
         /// <summary>Item 154: gross profit per product for a date range.</summary>

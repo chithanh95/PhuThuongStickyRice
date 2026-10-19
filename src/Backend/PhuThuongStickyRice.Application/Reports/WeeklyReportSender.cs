@@ -194,6 +194,28 @@ namespace PhuThuongStickyRice.Application.Reports
             };
         }
 
+        /// <summary>
+        /// Tên hiển thị khi dòng đơn không có tên sản phẩm (dữ liệu cũ bị thiếu).
+        /// </summary>
+        private const string UnnamedProductLabel = "(không tên)";
+
+        /// <summary>
+        /// Số sản phẩm bán chạy nhất hiển thị trong báo cáo tuần gửi chủ quán.
+        /// </summary>
+        private const int TopProductsCount = 5;
+
+        /// <summary>
+        /// Dòng đơn rút gọn cho báo cáo tuần: chỉ trạng thái, tổng tiền và các
+        /// dòng hàng cần thiết — tránh materialize cả entity Order.
+        /// </summary>
+        private sealed record OrderWeekRow(
+            OrderStatus Status,
+            decimal Total,
+            List<OrderWeekLine> Lines);
+
+        /// <summary>Dòng hàng rút gọn: tên sản phẩm + số lượng đã bán.</summary>
+        private sealed record OrderWeekLine(string ProductName, int Quantity);
+
         private async Task<WeekAggregate> AggregateWeekAsync(DateTime weekStartVn, DateTime weekEndVn)
         {
             var fromUtc = VietnamTime.DayStartUtc(weekStartVn);
@@ -203,30 +225,13 @@ namespace PhuThuongStickyRice.Application.Reports
             var rows = await _asyncExecuter.ToListAsync(
                 queryable
                     .Where(x => x.CreatedAt >= fromUtc && x.CreatedAt < toUtc)
-                    .Select(x => new
-                    {
+                    .Select(x => new OrderWeekRow(
                         x.Status,
-                        Total = x.TotalAmount.Amount,
-                        Lines = x.Lines.Select(l => new
-                        {
-                            l.ProductName,
-                            l.Quantity
-                        }).ToList()
-                    }));
+                        x.TotalAmount.Amount,
+                        x.Lines.Select(l => new OrderWeekLine(l.ProductName, l.Quantity)).ToList())));
 
             var billable = rows.Where(x => x.Status != OrderStatus.Cancelled).ToList();
-            var productQty = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-            foreach (var o in billable)
-            {
-                foreach (var l in o.Lines)
-                {
-                    var name = string.IsNullOrWhiteSpace(l.ProductName)
-                        ? "(không tên)"
-                        : l.ProductName.Trim();
-                    productQty.TryGetValue(name, out var qty);
-                    productQty[name] = qty + l.Quantity;
-                }
-            }
+            var productQty = AccumulateProductQuantities(billable);
 
             return new WeekAggregate
             {
@@ -236,7 +241,7 @@ namespace PhuThuongStickyRice.Application.Reports
                 TopProducts = productQty
                     .OrderByDescending(kv => kv.Value)
                     .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
-                    .Take(5)
+                    .Take(TopProductsCount)
                     .Select(kv => new WeeklyTopProductDto
                     {
                         ProductName = kv.Key,
@@ -244,6 +249,27 @@ namespace PhuThuongStickyRice.Application.Reports
                     })
                     .ToList()
             };
+        }
+
+        /// <summary>
+        /// Cộng dồn số lượng đã bán theo tên sản phẩm (không phân biệt hoa/thường).
+        /// </summary>
+        private static Dictionary<string, long> AccumulateProductQuantities(List<OrderWeekRow> billable)
+        {
+            var productQty = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            foreach (var o in billable)
+            {
+                foreach (var l in o.Lines)
+                {
+                    var name = string.IsNullOrWhiteSpace(l.ProductName)
+                        ? UnnamedProductLabel
+                        : l.ProductName.Trim();
+                    productQty.TryGetValue(name, out var qty);
+                    productQty[name] = qty + l.Quantity;
+                }
+            }
+
+            return productQty;
         }
 
         private static decimal? ChangePercent(decimal current, decimal previous) =>

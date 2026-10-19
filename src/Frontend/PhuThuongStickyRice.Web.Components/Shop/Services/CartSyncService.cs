@@ -89,47 +89,69 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
             try
             {
-                await SetBearerTokenAsync();
-                using var response = await _httpClient.GetAsync("api/cart");
-                if (!response.IsSuccessStatusCode)
+                var items = await FetchServerCartItemsAsync();
+                if (items != null && items.Count > 0)
                 {
-                    // Fail-soft: giữ giỏ local, không chặn user mua hàng.
-                    return;
-                }
-
-                var json = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("itemsJson", out var itemsProp))
-                {
-                    var itemsJson = itemsProp.GetString();
-                    if (!string.IsNullOrWhiteSpace(itemsJson))
-                    {
-                        var items = JsonSerializer.Deserialize<List<CartItemModel>>(itemsJson);
-                        if (items != null && items.Count > 0)
-                        {
-                            // Server wins: clear local and load server items.
-                            _cartState.Clear();
-                            foreach (var item in items)
-                            {
-                                // Bỏ qua món hỏng (null hoặc số lượng <= 0) để không
-                                // làm sập giỏ khi dữ liệu server bị lệch.
-                                if (item != null && item.Quantity > 0)
-                                {
-                                    _cartState.AddConfigured(
-                                        item.ProductId, item.ProductName, item.ProductCode,
-                                        item.UnitPrice, item.Quantity,
-                                        item.SizeOptionId, item.SizeName,
-                                        item.ToppingIds, item.ToppingNames, item.ToppingsTotal,
-                                        item.IsCombo, item.Note, item.ImageUrl);
-                                }
-                            }
-                        }
-                    }
+                    ApplyServerCartItems(items);
                 }
             }
             catch
             {
-                // Fail-soft: keep local cart.
+                // Fail-soft: giữ giỏ local, không chặn user mua hàng.
+            }
+        }
+
+        /// <summary>
+        /// Tải giỏ hàng đang lưu trên server của user. Trả về null khi server
+        /// không có giỏ, request lỗi, hoặc payload không có itemsJson hợp lệ —
+        /// caller lúc đó giữ nguyên giỏ local (fail-soft).
+        /// </summary>
+        private async Task<List<CartItemModel>?> FetchServerCartItemsAsync()
+        {
+            await SetBearerTokenAsync();
+            using var response = await _httpClient.GetAsync("api/cart");
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("itemsJson", out var itemsProp))
+            {
+                return null;
+            }
+
+            var itemsJson = itemsProp.GetString();
+            if (string.IsNullOrWhiteSpace(itemsJson))
+            {
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<List<CartItemModel>>(itemsJson);
+        }
+
+        /// <summary>
+        /// Thay giỏ local bằng giỏ server (server thắng — user có thể đã thêm
+        /// món trên thiết bị khác). Món hỏng (null hoặc số lượng &lt;= 0) bị bỏ
+        /// qua để không làm sập giỏ khi dữ liệu server bị lệch.
+        /// </summary>
+        private void ApplyServerCartItems(List<CartItemModel> items)
+        {
+            _cartState.Clear();
+            foreach (var item in items)
+            {
+                if (item == null || item.Quantity <= 0)
+                {
+                    continue;
+                }
+
+                _cartState.AddConfigured(
+                    item.ProductId, item.ProductName, item.ProductCode,
+                    item.UnitPrice, item.Quantity,
+                    item.SizeOptionId, item.SizeName,
+                    item.ToppingIds, item.ToppingNames, item.ToppingsTotal,
+                    item.IsCombo, item.Note, item.ImageUrl);
             }
         }
 

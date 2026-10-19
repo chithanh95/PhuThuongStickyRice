@@ -18,10 +18,25 @@ namespace PhuThuongStickyRice.Application.Staff
         /// <summary>Expected COD for a business day (VN date).</summary>
         Task<decimal> GetExpectedCodAsync(DateTime date);
 
+        /// <summary>
+        /// Lấy bản chốt ca của 1 ngày (null nếu ngày đó chưa chốt).
+        /// </summary>
+        /// <param name="date">Ngày kinh doanh (giờ VN, chỉ lấy phần ngày).</param>
         Task<ShiftCloseDto> GetByDateAsync(DateTime date);
 
+        /// <summary>
+        /// Chốt ca: ghi số tiền mặt thực thu, hệ thống tự tính số tiền lẽ ra
+        /// phải thu (tổng COD đơn hoàn tất trong ngày) và chênh lệch.
+        /// Gọi lại cùng ngày chỉ cập nhật bản ghi cũ (không tạo trùng).
+        /// </summary>
+        /// <param name="input">Ngày, số tiền thực thu, ghi chú.</param>
+        /// <returns>Bản chốt ca sau khi lưu.</returns>
         Task<ShiftCloseDto> CloseAsync(CloseShiftInput input);
 
+        /// <summary>
+        /// Lấy lịch sử chốt ca, mới nhất trước.
+        /// </summary>
+        /// <param name="take">Số bản ghi lấy, tối đa 100 (mặc định 30).</param>
         Task<List<ShiftCloseDto>> GetListAsync(int take = 30);
     }
 
@@ -43,6 +58,11 @@ namespace PhuThuongStickyRice.Application.Staff
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Tính số tiền mặt lẽ ra phải thu trong ngày (xem doc ở interface):
+        /// tổng các đơn COD đã hoàn tất trong ngày VN. Đơn hủy/bank/MoMo
+        /// không vào vì không thu tiền mặt tại quầy.
+        /// </summary>
         public virtual async Task<decimal> GetExpectedCodAsync(DateTime date)
         {
             var day = date.Date;
@@ -62,6 +82,9 @@ namespace PhuThuongStickyRice.Application.Staff
                 .Select(x => x.TotalAmount.Amount));
         }
 
+        /// <summary>
+        /// Lấy bản chốt ca của 1 ngày (xem doc ở interface).
+        /// </summary>
         public virtual async Task<ShiftCloseDto> GetByDateAsync(DateTime date)
         {
             var day = date.Date;
@@ -71,6 +94,11 @@ namespace PhuThuongStickyRice.Application.Staff
             return entity == null ? null : MapToDto(entity);
         }
 
+        /// <summary>
+        /// Chốt ca cuối ngày (xem doc ở interface). Lũy tiến: nhân viên có thể
+        /// bấm chốt nhiều lần trong ca (đếm tiền từng đợt) nên tìm bản ghi
+        /// của ngày trước — đã chốt rồi thì cập nhật, chưa có mới tạo.
+        /// </summary>
         public virtual async Task<ShiftCloseDto> CloseAsync(CloseShiftInput input)
         {
             var day = input.Date.Date;
@@ -92,6 +120,9 @@ namespace PhuThuongStickyRice.Application.Staff
             }
 
             existing.ExpectedCod = expected;
+            // Tiền thực thu không thể âm (nhập tay ở form admin) — ép về 0
+            // để chênh lệch (Actual - Expected) luôn có nghĩa: âm = thiếu,
+            // dương = thừa.
             existing.ActualCod = Math.Max(0, input.ActualCod);
             existing.Note = string.IsNullOrWhiteSpace(input.Note) ? null : input.Note.Trim();
             await _closes.UpdateAsync(existing, autoSave: true);
@@ -99,9 +130,13 @@ namespace PhuThuongStickyRice.Application.Staff
             return MapToDto(existing);
         }
 
+        /// <summary>
+        /// Lấy lịch sử chốt ca, mới nhất trước (xem doc ở interface).
+        /// </summary>
         public virtual async Task<List<ShiftCloseDto>> GetListAsync(int take = 30)
         {
             var queryable = await _closes.GetQueryableAsync();
+            // Chặn take âm/quá lớn để 1 request không kéo hết lịch sử.
             var list = await _asyncExecuter.ToListAsync(
                 queryable.OrderByDescending(x => x.Date).Take(Math.Max(1, Math.Min(100, take))));
             return list.Select(MapToDto).ToList();
