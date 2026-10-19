@@ -42,8 +42,10 @@ namespace PhuThuongStickyRice.Application.Security
         public virtual async Task<List<BlacklistedPhoneDto>> GetListAsync()
         {
             var queryable = await _blacklist.GetQueryableAsync();
+            // perf-hunt 2026-10-19: Take(500) server-side — danh sách chặn
+            // tăng dần theo thời gian, không bao giờ materialize toàn bộ bảng.
             var items = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.CreatedAt));
+                queryable.OrderByDescending(x => x.CreatedAt).Take(500));
             return items.Select(x => new BlacklistedPhoneDto
             {
                 Id = x.Id,

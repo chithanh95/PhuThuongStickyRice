@@ -46,7 +46,9 @@ namespace PhuThuongStickyRice.Application.Messenger
                 query = query.Where(x => x.Channel == trimmedChannel);
             }
 
-            var list = await _asyncExecuter.ToListAsync(query);
+            // perf-hunt 2026-10-19: Take(500) server-side — template do admin
+            // tạo, bảng tăng không giới hạn, không bao giờ materialize toàn bộ.
+            var list = await _asyncExecuter.ToListAsync(query.Take(500));
             return list.Select(MapToDto).ToList();
         }
 

@@ -134,8 +134,14 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
 
             var orderQueryable = await _orders.GetQueryableAsync();
             // Perf: GroupBy chạy trong SQL thay vì nạp toàn bộ bảng vào memory.
+            // perf-hunt 2026-10-19: chỉ GroupBy các đơn thuộc những gói vừa
+            // nạp (Where theo planIds) — trước đây quét toàn bộ bảng
+            // WeeklyPlanOrders trên mỗi lần mở trang admin dù chỉ cần đếm
+            // cho vài chục gói, bảng đơn tăng không giới hạn theo thời gian.
+            var planIds = plans.Select(p => p.Id).ToList();
             var counts = (await _asyncExecuter.ToListAsync(
-                    orderQueryable.GroupBy(o => o.WeeklyPlanId)
+                    orderQueryable.Where(o => planIds.Contains(o.WeeklyPlanId))
+                        .GroupBy(o => o.WeeklyPlanId)
                         .Select(g => new { WeeklyPlanId = g.Key, Count = g.Count() })))
                 .ToDictionary(x => x.WeeklyPlanId, x => x.Count);
 
