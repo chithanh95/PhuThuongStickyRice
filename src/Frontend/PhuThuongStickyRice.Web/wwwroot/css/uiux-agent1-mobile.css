@@ -1720,3 +1720,57 @@
 }
 
 /* ===== END UIUX run 15:15 - Agent1 ===== */
+
+/* ===== UIUX-1648 A1 (run 16:48) — 2 fix mobile mới ===== */
+/* ------------------------------------------------------------
+   FIX 1 — /track-order: khóa cuộn nền khi popup khảo sát hài lòng mở.
+   Vấn đề: popup .to-survey-overlay là modal Blazor render tay, KHÔNG dùng
+   class .modal.show nên rule khóa cuộn nền của run 11:15 (body:has(.modal.show))
+   không phủ tới — trên mobile vuốt ngoài popup vẫn cuộn được trang phía sau,
+   popup "trôi" khỏi vị trí khi vô tình chạm nền.
+   Giải pháp: khóa cuộn body khi .to-survey-overlay đang mở, đúng chuẩn hành
+   vi modal. Sheet khảo sát nhỏ gọn (không cần cuộn trong), overlay z-index
+   2000 nên không xung đột nút nổi. :has() được mọi trình duyệt hiện đại hỗ
+   trợ; trình duyệt cũ bỏ qua — không vỡ giao diện.
+   (Verify: TrackOrder.razor:704 .to-survey-overlay; TrackOrder.razor.css:433
+   overlay position:fixed z-index:2000 — class chỉ tồn tại ở popup này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    body:has(.to-survey-overlay) {
+        overflow: hidden;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /dat-cung + /cung-gio: radio "Dịp cúng" / "Loại mâm" khó bấm.
+   Vấn đề: input radio mặc định chỉ ~12.5px; đây là lựa chọn bắt buộc đầu
+   form, khách lớn tuổi hay bấm trượt. Fix radio 20px + cả hàng bấm được
+   đã áp dụng ở /checkout (input[name="fulfillment"], run 16:10 FIX 3) —
+   2 trang này dùng name="dipcung"/"loaimam" nên chưa được phủ.
+   Giải pháp: radio 20px, nới padding label để vùng bấm to hơn (giữ xếp
+   ngang vì đây là .form-check-inline), đồng bộ chuẩn /checkout.
+   (Verify: DatCung.razor:60/65 name="dipcung", :94/99 name="loaimam";
+   CungGio.razor:74/79 name="loaimam" — 2 name này chỉ tồn tại ở 2 trang này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    /* Radio "Dịp cúng"/"Loại mâm" dùng .form-check-inline (input static,
+       không absolute như /checkout) nên chỉ phóng to input + nới padding
+       label, giữ xếp ngang cho gọn trên mobile. */
+    .form-check-inline:has(> input[name="dipcung"]) .form-check-input,
+    .form-check-inline:has(> input[name="loaimam"]) .form-check-input {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+    .form-check-inline:has(> input[name="dipcung"]),
+    .form-check-inline:has(> input[name="loaimam"]) {
+        margin-right: 16px;
+        padding: 8px 0;
+    }
+    .form-check-inline:has(> input[name="dipcung"]) .form-check-label,
+    .form-check-inline:has(> input[name="loaimam"]) .form-check-label {
+        padding: 8px 4px;
+    }
+}
+/* ===== END UIUX-1648 A1 ===== */

@@ -774,3 +774,65 @@ html.dark .sg-review-stars.sg-review-stars {
     color: #e8a013;
 }
 /* ===== END UIUX run 16:30 - Agent4 ===== */
+
+/* ===== UIUX run 16:50 - Agent4 A11y & Polish (5 fix moi, khong trung cac run truoc) ===== */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1): `.text-success` Bootstrap #28a745
+   tren nen trang chi dat ~3.13:1 — dung rong khap trang checkout cho thong
+   tin tien QUAN TRONG (so tien giam tung dong, "mien phi ship", "Ban tiet
+   kiem duoc", tong tiet kiem) va trang track-order (thong bao sinh nhat,
+   dia chi, thuong danh gia). Nguoi lon tuoi doc so tien giam rat kho.
+   Dam len #1e7e34 (~5.14:1, van xanh la). Chi override light mode; dark mode
+   giu #28a745 goc (tren card toi #262640 dat ~4.68:1, da qua chuan).
+   Selector (0,2,0) thang Bootstrap .text-success (0,1,0). */
+.shp-page .text-success {
+    color: #1e7e34;
+}
+
+/* Fix 2 — WCAG 1.4.3 (Contrast, AA 4.5:1): `.text-info` #17a2b8 tren nen
+   trang chi ~3.04:1 — fix 14:58 moi chi scope `.co-summary` (ghi chu mon
+   trong tom tat don checkout), nhung track-order con dung o 2 cho khac:
+   ghi chu tung mon trong don (TrackOrder.razor:283, chu small) va thong bao
+   "cho shipper den lay" (TrackOrder.razor:568). Mo rong ra toan bo trang
+   shop: #0e7c99 (~4.81:1, cung mau voi fix 14:58, dong bo). Dark mode giu
+   #17a2b8 goc (tren card toi dat ~5.29:1, da qua chuan). */
+.shp-page .text-info {
+    color: #0e7c99;
+}
+
+/* Fix 3 — WCAG 1.4.3 (Contrast, AA 4.5:1): `.text-danger` #dc3545 trong
+   DARK MODE tren card toi #262640 chi ~3.24:1 — cac thong bao loi
+   validation form checkout (ten/SDT/email...) va tong tien hien thi kho doc
+   voi nguoi lon tuoi khi bat che do toi. Sang len #f0818a (~5.73:1, van sac
+   do, khong nham voi text-muted). Chi ap dung html.dark; light mode giu
+   #dc3545 goc (tren nen trang dat ~4.53:1, da qua chuan). */
+html.dark .shp-page .text-danger {
+    color: #f0818a;
+}
+
+/* Fix 4 — Polish hover: cac hang radio/checkbox chon hinh thuc nhan hang va
+   phuong thuc thanh toan (Checkout.razor:320-545) HOAN TOAN khong co phan
+   hoi :hover — desktop di chuot qua hang khong biet bam duoc (du label da
+   display:block de bam ca hang o run 16:10 cua Agent1). Them nen xam rat
+   nhat + bo goc khi hover de thay "hang nay bam duoc"; dark mode dung nen
+   trang mo 4%. Scope .shp-page nen CungGio/DatCung/TaiKhoan co form-check
+   tuong tu cung duoc huong loi, khong xau di dau. */
+.shp-page .form-check:hover {
+    background: #f4f2fd;
+    border-radius: 8px;
+}
+html.dark .shp-page .form-check:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* Fix 5 — WCAG 1.4.3 (Contrast, AA 4.5:1): `.text-success` #28a745 tren card
+   trang admin cung chi ~3.13:1 — admin dung cho so lieu doanh thu
+   (BaoCao.razor:75/111), doi soat theo kenh (DoiSoatNgay.razor:70), loi nhuan
+   (LaiGop.razor:166), thong bao thanh cong (HoSo.razor:41). Dam len #1e7e34
+   (~5.14:1) scope .lx-admin, chi light mode; dark admin giu #28a745 goc
+   (tren nen toi dat ~4.68:1, da qua chuan). */
+.lx-admin .text-success {
+    color: #1e7e34;
+}
+
+/* ===== END UIUX run 16:50 - Agent4 ===== */

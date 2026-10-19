@@ -1012,14 +1012,17 @@ html.dark .sg-error-wrap p[style*="#4a2b1a"] {
 }
 
 /* ---------- FIX 3 — Trang 404: tiêu đề h2 "Không tìm thấy trang" ----------
-   Vấn đề: App.razor:83 (NotFound) dùng inline style color:#7a1b2e, trên nền
-   tối #1a1a2e chỉ ~1.6:1 — tàng hình ở dark mode. Class .mt-3 phân biệt với
-   h2 cùng inline style ở thẻ lỗi mất mạng /shop (Shop.razor:116, không có
-   class) — thẻ đó nằm trên card nền kem #f5ebcd (inline, giữ nguyên ở dark)
-   nên KHÔNG được đổi màu (đã verify: chỉ 2 h2 này dùng inline #7a1b2e).
-   Màu #ff8a8a đồng nhất với FIX 1. */
-html.dark h2.mt-3[style*="#7a1b2e"] {
-    color: #ff8a8a !important; /* was #7a1b2e */
+   Vấn đề: App.razor:83 (NotFound) dùng inline style color:#bd4a4a (Agent 3
+   run 14:45 đổi từ #7a1b2e sang đỏ danger Lexa), trên nền tối #1a1a2e chỉ
+   ~2.6:1 — tiêu đề mờ ở dark mode. Rule cũ `h2.mt-3[style*="#7a1b2e"]`
+   (run 14:55) đã CHẾT vì markup không còn chuỗi "7a1b2e" — đã grep xác minh
+   App.razor:83 giờ là #bd4a4a. Class .mt-3 phân biệt với h2 thẻ lỗi mất
+   mạng /shop (Shop.razor:116, không class, vẫn #7a1b2e — rule run 14:35
+   `h2[style*="color: #7a1b2e"]` vẫn phủ, không đụng).
+   Màu #ff8a8a đồng nhất với FIX 1. Đã grep: đây là h2 duy nhất dùng
+   inline #bd4a4a (LaiGop.razor:329 là span badge, không phải h2). */
+html.dark h2.mt-3[style*="bd4a4a"] {
+    color: #ff8a8a !important; /* was #bd4a4a */
 }
 
 /* ---------- FIX 4 — /admin/du-bao: nhãn trục biểu đồ SVG ----------
