@@ -9,20 +9,65 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Landing.Services
 {
     public class LandingService : ApiClientBase
     {
+        /// <summary>
+        /// TTL cache client-side cho nội dung landing public: nội dung đổi
+        /// hiếm khi nhưng endpoint được gọi ở mọi trang có ShopFooter/ShopLayout
+        /// mỗi lần mở trang. Cùng pattern <c>ShopSettingsService</c>: static
+        /// field vì service đăng ký Transient (mỗi page inject instance riêng).
+        /// Caller chỉ đọc model (không mutate) nên trả cùng instance là an toàn.
+        /// </summary>
+        private static readonly TimeSpan ContentCacheTtl = TimeSpan.FromMinutes(2);
+        private static readonly SemaphoreSlim ContentCacheLock = new(1, 1);
+        private static LandingContentModel? _cachedContent;
+        private static DateTimeOffset _cachedContentAt;
+
         public LandingService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)
         {
         }
 
+        /// <summary>
+        /// Nội dung landing public. Kết quả được cache client-side 2 phút
+        /// (static): cắt ~1 HTTP round-trip trên mỗi trang mở (footer + layout
+        /// đều gọi). Admin lưu nội dung qua <see cref="UpdateContentAsync"/>
+        /// sẽ xóa cache để lần đọc sau lấy dữ liệu mới ngay.
+        /// </summary>
         public async Task<LandingContentModel> GetContentAsync()
         {
-            return await GetAsync<LandingContentModel>("api/landing/content");
+            var cached = _cachedContent;
+            if (cached is not null && DateTimeOffset.UtcNow - _cachedContentAt < ContentCacheTtl)
+                return cached;
+
+            // Lock tránh N request cùng fetch khi cache hết hạn (chỉ 1 fetch).
+            await ContentCacheLock.WaitAsync();
+            try
+            {
+                // Kiểm tra lại sau khi vào lock: request khác có thể đã refresh xong.
+                cached = _cachedContent;
+                if (cached is not null && DateTimeOffset.UtcNow - _cachedContentAt < ContentCacheTtl)
+                    return cached;
+
+                var fresh = await GetAsync<LandingContentModel>("api/landing/content");
+                if (fresh is not null)
+                {
+                    _cachedContent = fresh;
+                    _cachedContentAt = DateTimeOffset.UtcNow;
+                    return fresh;
+                }
+                // Fetch trả null: không ghi đè cache cũ (nếu có), giữ hành vi cũ.
+                return cached!;
+            }
+            finally
+            {
+                ContentCacheLock.Release();
+            }
         }
 
         /// <summary>Item 93: published news articles for the landing page.</summary>
@@ -197,7 +242,20 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
 
         public async Task<LandingContentModel> UpdateContentAsync(LandingContentModel model)
         {
-            return await PutAsync<LandingContentModel>("api/landing/content", model);
+            var result = await PutAsync<LandingContentModel>("api/landing/content", model);
+            // Admin vừa lưu nội dung mới: xóa cache public để lần đọc sau
+            // lấy dữ liệu mới ngay, không phải chờ cache hết hạn.
+            InvalidateContentCache();
+            return result;
+        }
+
+        /// <summary>
+        /// Xóa cache client-side của <see cref="GetContentAsync"/> (vd sau khi
+        /// admin lưu nội dung landing). Lần gọi sau sẽ fetch lại từ server.
+        /// </summary>
+        public static void InvalidateContentCache()
+        {
+            _cachedContent = null;
         }
 
         /// <summary>

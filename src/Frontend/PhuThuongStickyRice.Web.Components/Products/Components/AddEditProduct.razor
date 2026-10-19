@@ -256,22 +256,21 @@
         // Items 164/166: load the hours + gallery editors from the product.
         SyncFromProduct();
 
+        // perf-hunt 2026-10-19: 2 loader độc lập (sizes theo Product.Id,
+        // branches cho branch picker) chạy song song thay vì tuần tự —
+        // ghi field khác nhau, fail-soft riêng nên không race.
+        var loadTasks = new List<Task>();
         if (Product?.Id != Guid.Empty)
         {
-            await LoadSizesAsync();
+            loadTasks.Add(LoadSizesAsync());
         }
 
         if (_branches == null)
         {
-            try
-            {
-                _branches = await AdminSystemService.GetBranchesAsync();
-            }
-            catch (Exception)
-            {
-                _branches = new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
-            }
+            loadTasks.Add(LoadBranchesAsync());
         }
+
+        await Task.WhenAll(loadTasks);
     }
 
     private async Task LoadSizesAsync()
@@ -284,6 +283,23 @@
         {
             _sizeError = "Không tải được danh sách size.";
             _sizes = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel>();
+        }
+    }
+
+    /// <summary>
+    /// Tải danh sách chi nhánh cho branch picker (Item 109), fail-soft như
+    /// bản inline cũ — tách thành method để chạy song song với
+    /// <see cref="LoadSizesAsync"/> trong OnParametersSetAsync.
+    /// </summary>
+    private async Task LoadBranchesAsync()
+    {
+        try
+        {
+            _branches = await AdminSystemService.GetBranchesAsync();
+        }
+        catch (Exception)
+        {
+            _branches = new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
         }
     }
 

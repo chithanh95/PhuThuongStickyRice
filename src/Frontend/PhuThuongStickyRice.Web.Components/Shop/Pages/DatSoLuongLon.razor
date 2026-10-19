@@ -314,7 +314,10 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        await LoadProductsAsync();
+        // perf-hunt 2026-10-19: tải song song 2 API độc lập — danh sách món
+        // (bước 2) và thông tin ngân hàng (QR cọc bước cuối). Bank info tải
+        // trước để khi bấm gửi không phải chờ thêm 1 round-trip nữa.
+        await Task.WhenAll(LoadProductsAsync(), LoadBankInfoAsync());
     }
 
     private async Task LoadProductsAsync()
@@ -448,7 +451,13 @@ else
             // Mã cọc tra soát: "COC" + SĐT khách (dễ đối chiếu trên sao kê).
             _depositCode = "COC" + new string((_bulk.CustomerPhone ?? "").Where(char.IsDigit).ToArray());
             _depositConfirmed = false;
-            await LoadBankInfoAsync();
+            // Bank info đã preload song song khi mở trang: không tốn thêm
+            // round-trip sau khi bấm gửi. Chỉ tải lại nếu preload thất bại
+            // (fail-soft ở OnInitializedAsync) để giữ đúng hành vi cũ.
+            if (_bankInfo == null || !_bankInfo.IsConfigured)
+            {
+                await LoadBankInfoAsync();
+            }
             _bulkDone = true;
         }
         catch (Exception)
