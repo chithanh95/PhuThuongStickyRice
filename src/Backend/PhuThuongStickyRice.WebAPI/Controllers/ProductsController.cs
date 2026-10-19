@@ -69,10 +69,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Getting products");
+            // Perf: pageSize comes from the public internet — clamp it so a huge
+            // value can't force a full-table materialization + poison the
+            // 5-minute public cache with a giant list. Internal callers
+            // (export PDF/CSV, Messenger) bypass this via the service directly.
+            var effectivePageSize = pageSize < 1 ? 20 : Math.Min(pageSize, 100);
             var paged = await _productAppService.GetListAsync(new GetProductsInput
             {
-                MaxResultCount = pageSize < 1 ? 20 : pageSize,
-                SkipCount = (page < 1 ? 0 : page - 1) * (pageSize < 1 ? 20 : pageSize),
+                MaxResultCount = effectivePageSize,
+                SkipCount = (page < 1 ? 0 : page - 1) * effectivePageSize,
                 SearchTerm = searchTerm,
                 Status = status,
                 BranchId = branch,

@@ -63,6 +63,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         internal const string LandingPollsCacheKey = "landing:polls";
         internal const string LandingReviewsCacheKey = "landing:reviews";
         internal const string LandingGalleryCacheKey = "landing:gallery";
+        internal const string LandingParseOrderProductsCacheKey = "landing:parse-order-products";
         internal const string LandingOffPeakCacheKeyPrefix = "landing:offpeak:";
 
         private static (string Label, int Value) PickPrize(double roll)
@@ -872,10 +873,29 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             var text = request?.Text ?? string.Empty;
-            var products = await _db.Products
-                .AsNoTracking()
-                .Where(p => p.Status == ProductStatus.Active)
-                .ToListAsync(cancellationToken);
+
+            // Perf: chatbot can send a message on every keystroke-ish interaction.
+            // Project only Id/Name/Price (no Description/ImageUrlsJson columns) and
+            // cache the tiny list 5 minutes like other landing endpoints.
+            List<OrderIntentParser.ParseProductCandidate> products;
+            if (_memoryCache.TryGetValue(LandingParseOrderProductsCacheKey, out object cachedProducts))
+            {
+                products = (List<OrderIntentParser.ParseProductCandidate>)cachedProducts;
+            }
+            else
+            {
+                products = await _db.Products
+                    .AsNoTracking()
+                    .Where(p => p.Status == ProductStatus.Active)
+                    .Select(p => new OrderIntentParser.ParseProductCandidate
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        PriceAmount = p.Price.Amount
+                    })
+                    .ToListAsync(cancellationToken);
+                _memoryCache.Set(LandingParseOrderProductsCacheKey, products, TimeSpan.FromMinutes(5));
+            }
 
             var result = OrderIntentParser.Parse(text, products);
 

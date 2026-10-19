@@ -99,9 +99,12 @@ namespace PhuThuongStickyRice.Application.Content
             return await _catalogCache.GetOrAddAsync("articles:published", async () =>
             {
                 var queryable = await _articles.GetQueryableAsync();
+                // Perf: the only consumer (landing Index.razor) renders Take(6);
+                // don't materialize/map full Body of every published article.
                 var items = await _asyncExecuter.ToListAsync(
                     queryable.Where(x => x.IsPublished)
-                        .OrderByDescending(x => x.PublishedAt));
+                        .OrderByDescending(x => x.PublishedAt)
+                        .Take(6));
                 return items.Select(Map).ToList();
             });
         }
