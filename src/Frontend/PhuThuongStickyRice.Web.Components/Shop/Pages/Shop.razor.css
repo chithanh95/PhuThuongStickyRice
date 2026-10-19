@@ -438,10 +438,12 @@ html.dark .shop-filters-sticky {
     /* Sidebar danh mục */
     .shop-cat-sidebar {
         position: sticky;
-        /* Header sticky cao ~60px trên mobile — dính sidebar sát bên dưới
-           (khe hở ~16px) thay vì top:120px để lại khoảng trống ~60px,
-           nhìn sidebar như bị "treo lơ lửng" khi cuộn danh sách món. */
-        top: 76px;
+        /* Trên mobile KHÔNG có header sticky (.main .top-row bị
+           display:none ở <768px — app.css), nên top:76px cũ để lại
+           khoảng trống ~76px phía trên sidebar khi cuộn, nhìn sidebar
+           như "treo lơ lửng". Dính sát mép trên (khe 12px) cho gọn
+           kiểu ShopeeFood. */
+        top: 12px;
         flex: 0 0 88px;
         display: flex;
         flex-direction: column;

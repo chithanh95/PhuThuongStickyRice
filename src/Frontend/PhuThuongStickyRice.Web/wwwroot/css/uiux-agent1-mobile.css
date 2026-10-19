@@ -535,3 +535,44 @@
     }
 }
 /* ===== END UIUX-1055 A1 ===== */
+
+/* ===== UIUX-1115 A1 (run 11:15) — 2 fix mobile mới ===== */
+/* ------------------------------------------------------------
+   FIX 1 — /shop + /cart: nút nổi "📞 Gọi ngay / 💬 Zalo"
+   (.floating-contact, MainLayout) đè lên popup.
+   Vấn đề: 2 nút này position:fixed z-index:1080 — cao hơn modal
+   Blazor của quick-view bottom sheet và popup upsell (z-index:1050,
+   render tay bằng <div class="modal fade show d-block"> nên KHÔNG
+   có body.modal-open như Bootstrap JS). Kết quả: mở xem nhanh món
+   ăn thì 2 pill "Gọi ngay/Zalo" vẫn nổi đè lên bottom sheet, che
+   nội dung và dễ bấm nhầm.
+   Giải pháp: khi có modal Blazor đang mở (.modal.show) thì ẩn nút
+   nổi trên mobile. Dùng :has() — trình duyệt cũ bỏ qua rule, giữ
+   nguyên như hiện tại (không vỡ giao diện).
+   (Verify: MainLayout.razor floating-contact z-index:1080;
+   Shop.razor:345 + UpsellPopup.razor:7 modal Blazor không modal-open)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    body:has(.modal.show) .floating-contact {
+        display: none;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /shop: nền trang vẫn cuộn được khi bottom sheet mở.
+   Vấn đề: modal Blazor (quick-view, upsell) không thêm
+   body.modal-open như Bootstrap JS, nên trên mobile vuốt ngoài
+   bottom sheet vẫn cuộn nền trang phía sau — rối mắt, sheet bị
+   "trôi" khỏi vị trí khi vô tình chạm nền.
+   Giải pháp: khóa cuộn body khi có modal Blazor đang mở, đúng
+   chuẩn hành vi modal Bootstrap. Nội dung sheet vẫn cuộn trong
+   (.qv-sheet-body overflow-y:auto, .modal-dialog-scrollable).
+   (Verify: cùng 2 modal Blazor như FIX 1; :has() được mọi trình
+   duyệt hiện đại hỗ trợ, cũ thì bỏ qua — không vỡ giao diện)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    body:has(.modal.show) {
+        overflow: hidden;
+    }
+}
+/* ===== END UIUX-1115 A1 ===== */

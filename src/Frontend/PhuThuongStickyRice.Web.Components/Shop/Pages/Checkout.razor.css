@@ -180,16 +180,20 @@ html.dark .co-mobile-bar .co-total small {
 }
 
 /* Mobile: ẩn nút đặt hàng trong luồng, giữ sticky bar */
+.co-mobile-spacer {
+    display: none;
+}
+
 @media (max-width: 767.98px) {
     .co-flow-submit { display: none; }
 
-    /* In-flow spacer so the fixed bar never covers the page bottom */
+    /* In-flow spacer so the fixed bar never covers the page bottom.
+       LƯU Ý thứ tự: rule display:none ở TRÊN, rule mobile ở DƯỚI —
+       cùng specificity nên rule sau (trong media) mới thắng được.
+       (Bug cũ: display:none đặt sau media → spacer không bao giờ hiện,
+       thanh bar cố định che mất ~70px nội dung cuối trang.) */
     .co-mobile-spacer {
         display: block;
         height: calc(88px + env(safe-area-inset-bottom, 0px));
     }
-}
-
-.co-mobile-spacer {
-    display: none;
 }

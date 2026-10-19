@@ -237,3 +237,17 @@ html.dark .gh-freeship .progress {
         display: none;
     }
 }
+
+/* 576–767px (điện thoại xoay ngang / tablet nhỏ): các nút .btn-sm
+   ("Thêm" ở gợi ý món giỏ trống + "thường được mua cùng") rớt về
+   ~31px vì rule 44px chỉ nằm trong media 575.98px — mở rộng lên
+   767.98px cho đủ chuẩn chạm. (Nút "Xóa" đã ẩn ở ≤768px nên không
+   bị ảnh hưởng.) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}

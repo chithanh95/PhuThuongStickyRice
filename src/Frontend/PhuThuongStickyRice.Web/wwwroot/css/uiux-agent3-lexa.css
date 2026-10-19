@@ -334,3 +334,112 @@ a:hover, a:focus { color: #625998; }
 ::selection { background: rgba(122,111,190,.28); }
 
 /* === end Agent 3 run 10:55 === */
+
+/* === UIUX run 11:20 (job uiux-team-2days) — Agent 3 Lexa sync, đợt 6 ===
+   3 fix CSS MỚI trong file này (đã verify bằng grep, không trùng 5 đợt trước).
+   (+1 fix razor: Admin/Pages/DuBao.razor — màu dự báo #f5b225 -> #f1b44c)
+   Bối cảnh: .lx-admin .btn-success/.btn-outline-* đã có trong admin-lexa.css
+   nhưng KHÔNG phủ tới shop; các đợt trước chỉ xử lý btn-outline-*,
+   text-*/bg-*/border-*/alert-*/table-*, btn-link, nav, pagination, validation
+   — còn sót nút SOLID btn-success/btn-danger/btn-warning ở shop và
+   btn-danger/btn-warning solid ở admin (vẫn màu gốc Bootstrap).
+   File này load sau cùng (index.html:155) nên thắng Bootstrap nhờ
+   specificity cao hơn mà không cần !important. */
+
+/* ---------- Fix 1: nút CTA solid btn-success trên shop -> xanh lá Lexa ----------
+   Verify (tất cả trong .shp-page — Shop/Pages/_Imports.razor -> ShopLayout):
+   Checkout.razor:242/618/732/750 ("Đặt hàng", "Đã chuyển khoản"),
+   Cart.razor:167/178 ("Đặt hàng"), DatCung.razor:117, CungGio.razor:90,
+   DatSoLuongLon.razor:102/234, DatTiec.razor:32/107 (kể cả nút Zalo),
+   MoMoSimulator.razor:38, Faq.razor:80, TrackOrder.razor:389/416/443/618
+   (các nút lưu). Đang render xanh #28a745 Bootstrap.
+   Khớp pattern .lx-admin .btn-success (admin-lexa.css:2134-2143):
+   base #34c38f, hover/active #2cab7c; glow focus xanh lá Lexa thay vì
+   rgba(40,167,69,.5) của Bootstrap. Không đụng border-radius/font-size
+   (nút shop to hơn admin — giữ nguyên thiết kế). */
+.shp-page .btn-success {
+    background-color: #34c38f;
+    border-color: #34c38f;
+}
+.shp-page .btn-success:hover,
+.shp-page .btn-success:active,
+.shp-page .btn-success:not(:disabled):not(.disabled):active,
+.shp-page .btn-success:not(:disabled):not(.disabled).active,
+.show > .shp-page .btn-success.dropdown-toggle {
+    background-color: #2cab7c;
+    border-color: #2cab7c;
+}
+.shp-page .btn-success:focus, .shp-page .btn-success.focus {
+    box-shadow: 0 0 0 .2rem rgba(52,195,143,.5);
+}
+.shp-page .btn-success.disabled, .shp-page .btn-success:disabled {
+    background-color: #34c38f;
+    border-color: #34c38f;
+}
+
+/* ---------- Fix 2: nút solid btn-danger shop + admin -> đỏ Lexa ----------
+   Verify shop (.shp-page): Cart.razor:141 (nút "Xóa" món trong giỏ),
+   Faq.razor:76 (nút gọi hotline).
+   Verify admin (.lx-admin): ProductListPage.razor:115 (nút Xóa
+   "btn btn-sm lx-btn-icon btn-danger").
+   Đang render đỏ #dc3545 Bootstrap. Hover/active: filter brightness(.93)
+   để tối lại cùng tông — không phát minh mã màu mới. */
+.shp-page .btn-danger, .lx-admin .btn-danger {
+    background-color: #f46a6a;
+    border-color: #f46a6a;
+}
+.shp-page .btn-danger:hover, .lx-admin .btn-danger:hover,
+.shp-page .btn-danger:active, .lx-admin .btn-danger:active,
+.shp-page .btn-danger:not(:disabled):not(.disabled):active,
+.lx-admin .btn-danger:not(:disabled):not(.disabled):active,
+.shp-page .btn-danger:not(:disabled):not(.disabled).active,
+.lx-admin .btn-danger:not(:disabled):not(.disabled).active {
+    background-color: #f46a6a;
+    border-color: #f46a6a;
+    filter: brightness(.93);
+}
+.shp-page .btn-danger:focus, .lx-admin .btn-danger:focus,
+.shp-page .btn-danger.focus, .lx-admin .btn-danger.focus {
+    box-shadow: 0 0 0 .2rem rgba(244,106,106,.5);
+}
+.shp-page .btn-danger.disabled, .shp-page .btn-danger:disabled,
+.lx-admin .btn-danger.disabled, .lx-admin .btn-danger:disabled {
+    background-color: #f46a6a;
+    border-color: #f46a6a;
+}
+
+/* ---------- Fix 3: nút solid btn-warning shop + admin -> vàng Lexa ----------
+   Verify shop (.shp-page): Shop.razor:152/188 (nút "Thêm" combo/món),
+   Checkout.razor:155 (nút quay thưởng), Shop/Components/UpsellPopup.razor:28.
+   Verify admin (.lx-admin): Customers.razor:143/249/397 (VIP, gửi nhắc nhở),
+   Orders/Pages/OrderList.razor:101 (xem đơn trùng).
+   Đang render vàng #ffc107 Bootstrap. Giữ chữ #212529 như Bootstrap để
+   đủ contrast trên nền vàng (khớp rule .badge-warning đã có). */
+.shp-page .btn-warning, .lx-admin .btn-warning {
+    background-color: #f1b44c;
+    border-color: #f1b44c;
+    color: #212529;
+}
+.shp-page .btn-warning:hover, .lx-admin .btn-warning:hover,
+.shp-page .btn-warning:active, .lx-admin .btn-warning:active,
+.shp-page .btn-warning:not(:disabled):not(.disabled):active,
+.lx-admin .btn-warning:not(:disabled):not(.disabled):active,
+.shp-page .btn-warning:not(:disabled):not(.disabled).active,
+.lx-admin .btn-warning:not(:disabled):not(.disabled).active {
+    background-color: #f1b44c;
+    border-color: #f1b44c;
+    color: #212529;
+    filter: brightness(.93);
+}
+.shp-page .btn-warning:focus, .lx-admin .btn-warning:focus,
+.shp-page .btn-warning.focus, .lx-admin .btn-warning.focus {
+    box-shadow: 0 0 0 .2rem rgba(241,180,76,.5);
+}
+.shp-page .btn-warning.disabled, .shp-page .btn-warning:disabled,
+.lx-admin .btn-warning.disabled, .lx-admin .btn-warning:disabled {
+    background-color: #f1b44c;
+    border-color: #f1b44c;
+    color: #212529;
+}
+
+/* === end Agent 3 run 11:20 === */

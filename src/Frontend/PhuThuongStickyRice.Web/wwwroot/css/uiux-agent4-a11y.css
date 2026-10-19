@@ -207,3 +207,49 @@ html.dark .lx-search:has(input:focus-visible) {
 }
 
 /* === end Agent 4 run 10:55 === */
+
+/* === Agent 4 run 11:20 — batch mới (2026-10-19) — không trùng các run trước === */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1): 4 selector văn bản nhỏ trên
+   landing dùng màu nâu xám #8a7a68 / #a08c78 trên nền sáng, đều DƯỚI chuẩn:
+   .sg-stat span (13px, ~4.09:1), .sg-chat-hint (14px, ~4.09:1),
+   .sg-blog-date (12px, ~3.22:1), .sg-trust-review-name (12px, ~4.15:1).
+   Cùng root cause, cùng remedy: #6f5f4c (~6.06:1 trên nền trắng, đã dùng cho
+   .sg-review-name ở run trước, giữ tông nâu ấm của brand).
+   Dark mode: nền section thành tối (#262019/#1a1410) nên #6f5f4c không đạt;
+   dùng var(--sg-muted) (=#b3a88f, ~6.6:1) cho stat + chat-hint, giữ #a08c78
+   gốc cho blog-date (~4.93:1, đã đạt), trust-review-name đã có rule dark
+   riêng (var(--sg-muted)) nên không cần thêm. */
+.sg-stat span,
+.sg-chat-hint,
+.sg-blog-date,
+.sg-trust-review-name {
+    color: #6f5f4c;
+}
+html.dark .sg-stat span,
+html.dark .sg-chat-hint {
+    color: var(--sg-muted);
+}
+html.dark .sg-blog-date {
+    color: #a08c78;
+}
+
+/* Fix 2 — WCAG 2.4.7 (Focus Visible): 2 nút đóng không viền trên landing
+   (.sg-modal-close của modal 360°, .sg-chat-head button đóng khung chat)
+   có `background: none; border: none` và KHÔNG có bất kỳ style focus nào →
+   người dùng tab bằng bàn phím không thấy đã tới nút đóng. Thêm vòng focus
+   tím #7a6fbe cho modal (đồng bộ các fix focus landing ở run trước), vòng
+   trắng nổi trên nền đỏ sậm #6F0707 cho nút đóng chat. */
+.sg-modal-close:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .sg-modal-close:focus-visible {
+    outline-color: #a49de0;
+}
+.sg-chat-head button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* === end Agent 4 run 11:20 === */

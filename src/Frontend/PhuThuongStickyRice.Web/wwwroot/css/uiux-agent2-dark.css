@@ -390,3 +390,50 @@ html.dark .sg-review-reply {
 }
 
 /* === end Agent 2 run 11:05 === */
+
+/* === UIUX run 11:20 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (các đợt trước đã phủ: kanban, nhuong-quyen, check-in, the-xoi,
+   cart/checkout sticky bar, track-order, svg DuBao, shop size price,
+   price-filter + card text landing, qv-sheet, stepper mobile, lexa auth,
+   poll-votes, spin-win code, share-btn, sg-stat strong, review-text,
+   review-reply, survey-sheet, bulk-step/bulk-qr, faq-mini, lang-caret,
+   nq-form label, to-info-label, shp-logout hover, sg-sticky-call,
+   sg-qbadge, sg-chat-msg.theirs, co-mobile-bar small — đợt này chỉ lỗi MỚI) */
+
+/* ---------- FIX 1 — Shop: hàng chọn món trang Đặt số lượng lớn (/dat-so-luong-lon) ----------
+   Vấn đề: DatSoLuongLon.razor <style> — .bulk-prod { background:#fff },
+   .nm { color:#2e2620 }, .pr { color:#7d6c58 }, .selected { background:#fdf8ef }.
+   Không có rule dark nào phủ (đã grep xác minh: <style> của trang có 0 rule
+   dark; DatSoLuongLon.razor.css chỉ phủ .bulk-step/.bulk-qr). Ở dark mode
+   cả danh sách món là các card trắng toát trên trang tối — loang lổ.
+   Fix: nền/viền/chữ theo palette dark của chính trang (.bulk-step dùng
+   #1f1b16, .bulk-step.active dùng #2a241a). Không cần !important vì <style>
+   không scoped (html.dark .bulk-prod thắng .bulk-prod). */
+html.dark .bulk-prod {
+    background: #1f1b16; /* was #fff */
+    border-color: #3a3226; /* was #e9dfcb */
+}
+html.dark .bulk-prod.selected {
+    background: #2a241a; /* was #fdf8ef */
+    border-color: #a67c3d;
+}
+html.dark .bulk-prod .nm {
+    color: #f0e8dc; /* was #2e2620 */
+}
+html.dark .bulk-prod .pr {
+    color: #b8a88f; /* was #7d6c58 */
+}
+
+/* ---------- FIX 2 — Landing: 2 chỗ chữ xám #8a7a68 còn sót ----------
+   Vấn đề: .sg-chat-hint (câu chào trong khung chat, 14px) và .sg-stat span
+   (nhãn dưới con số thống kê, 13px) đều giữ color:#8a7a68. Trên nền dark
+   (#262019 / #1c1712) tương phản chỉ ~3.5–3.8:1, chữ xám mờ khó đọc
+   (đã grep xác minh: không rule dark nào phủ 2 selector này).
+   Fix: #b8a88f cùng tone các fix #8a7a63/#8a7a68 trước (~5.4–5.6:1).
+   Không cần !important (html.dark .x thắng .x[b-xxx] scoped). */
+html.dark .sg-chat-hint,
+html.dark .sg-stat span {
+    color: #b8a88f; /* was #8a7a68 */
+}
+
+/* === end Agent 2 run 11:20 === */
