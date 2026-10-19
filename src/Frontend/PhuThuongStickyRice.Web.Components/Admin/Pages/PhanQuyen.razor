@@ -68,13 +68,13 @@ else
                                             {
                                                 var r = role;
                                                 var d = def;
-                                                var cbId = $"pq-{r.Role}-{d.Key}".Replace(".", "-");
+                                                var checkboxId = $"pq-{r.Role}-{d.Key}".Replace(".", "-");
                                                 <td class="text-center">
                                                     <div class="custom-control custom-checkbox d-inline-block">
-                                                        <input type="checkbox" class="custom-control-input" id="@cbId"
+                                                        <input type="checkbox" class="custom-control-input" id="@checkboxId"
                                                                checked="@r.GrantedKeys.Contains(d.Key)"
                                                                @onchange="(e => OnToggle(r, d.Key, (bool)e.Value))" />
-                                                        <label class="custom-control-label" for="@cbId"></label>
+                                                        <label class="custom-control-label" for="@checkboxId"></label>
                                                     </div>
                                                 </td>
                                             }

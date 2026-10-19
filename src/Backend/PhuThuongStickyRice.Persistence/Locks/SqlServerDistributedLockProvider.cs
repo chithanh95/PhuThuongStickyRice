@@ -39,17 +39,17 @@ namespace PhuThuongStickyRice.Persistence.Locks
                   new SqlParameter("entityId", entityId));
         }
 
-        public bool AcquireLock(string entityName, string entityId, string ownerId, TimeSpan expirationIn)
+        public bool AcquireLock(string entityName, string entityId, string ownerId, TimeSpan expiration)
         {
             CreateLock(entityName, entityId);
 
-            if (ExtendLock(entityName, entityId, ownerId, expirationIn))
+            if (ExtendLock(entityName, entityId, ownerId, expiration))
             {
                 return true;
             }
 
             var now = _dateTimeProvider.OffsetNow;
-            var expired = now + expirationIn;
+            var expired = now + expiration;
 
             string sql = @"
             Update Locks set OwnerId = @OwnerId, 
@@ -69,10 +69,10 @@ namespace PhuThuongStickyRice.Persistence.Locks
             return rs > 0;
         }
 
-        public bool ExtendLock(string entityName, string entityId, string ownerId, TimeSpan expirationIn)
+        public bool ExtendLock(string entityName, string entityId, string ownerId, TimeSpan expiration)
         {
             var now = _dateTimeProvider.OffsetNow;
-            var expired = now + expirationIn;
+            var expired = now + expiration;
 
             string sql = @"
             Update Locks set ExpiredDateTime = @ExpiredDateTime
@@ -137,9 +137,9 @@ namespace PhuThuongStickyRice.Persistence.Locks
             return true;
         }
 
-        public void EnsureAcquiringLock(string entityName, string entityId, string ownerId, TimeSpan expirationIn)
+        public void EnsureAcquiringLock(string entityName, string entityId, string ownerId, TimeSpan expiration)
         {
-            if (!AcquireLock(entityName, entityId, ownerId, expirationIn))
+            if (!AcquireLock(entityName, entityId, ownerId, expiration))
             {
                 throw new CouldNotAcquireLockException();
             }

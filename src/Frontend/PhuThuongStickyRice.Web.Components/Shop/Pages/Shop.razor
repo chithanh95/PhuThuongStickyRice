@@ -1095,9 +1095,11 @@ else
             return null;
         }
 
-        return product.Sizes.OrderBy(s => s.SortOrder)
-            .FirstOrDefault(s => s.Price == product.Price)?.Id
-            ?? product.Sizes.OrderBy(s => s.SortOrder).First().Id;
+        // Sắp xếp 1 lần rồi tái dùng cho cả 2 nhánh — tránh OrderBy chạy 2 lần
+        // (deferred execution nên mỗi lần gọi OrderBy là một lần sort mới).
+        var ordered = product.Sizes.OrderBy(s => s.SortOrder).ToList();
+        return ordered.FirstOrDefault(s => s.Price == product.Price)?.Id
+            ?? ordered.First().Id;
     }
 
     private Guid? SelectedSizeId(ShopProductModel product)

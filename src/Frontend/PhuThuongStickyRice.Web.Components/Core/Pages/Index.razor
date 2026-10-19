@@ -1195,8 +1195,10 @@ else
         try
         {
             var holidays = await LandingService.GetUpcomingHolidaysAsync();
+            // MinBy tương đương OrderBy(...).FirstOrDefault() nhưng chỉ duyệt 1 lần O(n),
+            // không tốn chi phí sắp xếp cả danh sách.
             _nextHoliday = holidays?.Where(h => (h.HolidayDate.Date - DateTime.Now.Date).TotalDays is >= 0 and <= 14)
-                .OrderBy(h => h.HolidayDate).FirstOrDefault();
+                .MinBy(h => h.HolidayDate);
         }
         catch { }
 

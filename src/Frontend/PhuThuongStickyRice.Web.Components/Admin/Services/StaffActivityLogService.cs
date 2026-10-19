@@ -24,11 +24,13 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         public List<string> Actions { get; set; } = new List<string>();
     }
 
-    /// <summary>Item 156: staff activity log viewer client (Admin only).</summary>
     /// <summary>
+    /// Item 156: staff activity log viewer client (Admin only).
+    /// <para>
     /// Service gọi API nhật ký hoạt động của nhân viên cho trang
     /// /admin/nhat-ky ("ai đã làm gì, khi nào") — phục vụ kiểm soát
     /// nội bộ và truy vết thay đổi dữ liệu.
+    /// </para>
     /// </summary>
     public class StaffActivityLogService : HttpService
     {

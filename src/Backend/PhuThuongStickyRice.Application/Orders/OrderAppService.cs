@@ -179,6 +179,26 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<int> AutoCancelExpiredBankTransfersAsync();
     }
 
+    /// <summary>
+    /// Trung tâm quản lý đơn hàng: vòng đời đơn từ tạo mới (checkout) đến hoàn tất/hủy,
+    /// và toàn bộ điều phối tính tiền của quán.
+    ///
+    /// Thứ tự trừ tiền trong <see cref="CreateAsync"/> (giữ nguyên khi sửa code —
+    /// checkout hiển thị và admin đối soát đều dựa vào thứ tự này):
+    /// 1. Khuyến mãi "giờ vàng" (% trên tổng tiền hàng).
+    /// 2. Mã giảm giá (tính trên phần còn lại sau khuyến mãi giờ vàng).
+    /// 3. Hạng thành viên Đồng/Bạc/Vàng (% trên phần còn lại sau 2 bước trên).
+    /// 4. Điểm loyalty đổi ra tiền (trừ trực tiếp, không vượt tổng tiền).
+    /// 5. Cộng phí ship (0 với tự đến lấy / khách tự book shipper; freeship = 0)
+    ///    và phí gói quà; đơn chuyển khoản lớn thì đánh dấu cần đặt cọc.
+    ///
+    /// An toàn tiền: ví chỉ bị trừ sau khi đơn đủ điều kiện (trước khi ghi đơn),
+    /// lượt dùng mã giảm giá chỉ tăng sau khi đơn đã được lưu, và redeem điểm
+    /// được hoàn lại khi đơn bị hủy — đơn lỗi không bao giờ làm khách mất tiền/mã/điểm.
+    /// Mọi chuyển trạng thái đều phải đi qua <see cref="UpdateStatusAsync"/> vì mỗi
+    /// bước kích hoạt audit lịch sử trạng thái, log hoạt động nhân viên, webhook,
+    /// và khi Completed thì cộng điểm loyalty + chạy quy tắc thưởng tự động.
+    /// </summary>
     public class OrderAppService : ApplicationService, IOrderAppService
     {
         // Lucky-spin prize code generation.
@@ -186,6 +206,16 @@ namespace PhuThuongStickyRice.Application.Orders
         private const string SpinFreeshipCodePrefix = "FREESHIP";
         private const int SpinCodeValidityDays = 30;
         private const decimal SpinFreeshipFallbackAmount = 15000m;
+        /// <summary>Tiền tố mã voucher tặng khách đặt đơn đầu tiên.</summary>
+        private const string FirstOrderVoucherPrefix = "CHAO";
+        /// <summary>Phần trăm giảm giá của voucher đơn đầu tiên.</summary>
+        private const int FirstOrderVoucherDiscountPercent = 10;
+        /// <summary>Voucher đơn đầu tiên có hiệu lực 30 ngày kể từ ngày tạo.</summary>
+        private const int FirstOrderVoucherValidityDays = 30;
+        /// <summary>Giờ mở cửa mặc định (6:00) khi shop chưa cấu hình.</summary>
+        private static readonly TimeSpan DefaultOpenHour = new(6, 0, 0);
+        /// <summary>Giờ đóng cửa mặc định (10:30) khi shop chưa cấu hình.</summary>
+        private static readonly TimeSpan DefaultCloseHour = new(10, 30, 0);
 
         private readonly IOrderRepository _orders;
         private readonly IProductRepository _products;
@@ -288,6 +318,24 @@ namespace PhuThuongStickyRice.Application.Orders
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Tạo đơn hàng mới (checkout): chạy toàn bộ pipeline định giá rồi lưu đơn.
+        /// Trình tự: chặn đơn khi quán tạm nghỉ/nghỉ lễ → chống trùng đơn (idempotency key)
+        /// → chặn SĐT bị cấm → giới hạn số đơn/ngày → reCAPTCHA v3 (luồng công khai)
+        /// → kiểm tra điều kiện "trả sau" → dựng từng dòng đơn (size thay giá gốc,
+        /// topping cộng thêm, khung giờ sale, giới hạn suất/ngày) → áp các khoản giảm
+        /// theo đúng thứ tự trong doc của class → tạo entity → trừ ví trước khi ghi
+        /// (số dư không đủ thì đơn không được tạo) → tăng lượt dùng mã sau khi đơn đã lưu.
+        /// Mã giảm giá được validate ở bước tính tiền nhưng KHÔNG tăng lượt dùng ngay —
+        /// chỉ tăng sau khi đơn tồn tại, để đơn lỗi (thanh toán hỏng, khách bỏ giỏ)
+        /// không đốt lượt mã của khách.
+        /// </summary>
+        /// <param name="input">Thông tin đơn từ checkout: khách, món, mã giảm giá, điểm đổi, hình thức nhận/thanh toán.</param>
+        /// <param name="skipRecaptchaCheck">
+        /// Bỏ qua reCAPTCHA cho các luồng nội bộ (POS, bot Messenger, chốt gom đơn)
+        /// vì không có token trình duyệt — checkout công khai luôn để false.
+        /// </param>
+        /// <returns>Đơn hàng vừa tạo (đã tính đủ tiền và phí).</returns>
         public virtual async Task<OrderDto> CreateAsync(CreateOrderDto input, bool skipRecaptchaCheck = false)
         {
             if (input.Lines == null || input.Lines.Count == 0)
@@ -668,14 +716,14 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
 
                 // Within open hours (Vietnam local, UTC+7).
-                var vnTime = sf.AddHours(7).TimeOfDay;
+                var vnTime = sf.AddHours(VietnamTime.UtcOffsetHours).TimeOfDay;
                 if (!TimeSpan.TryParse(shopSetting.OpenTime, out var open))
                 {
-                    open = TimeSpan.FromHours(6);
+                    open = DefaultOpenHour;
                 }
                 if (!TimeSpan.TryParse(shopSetting.CloseTime, out var close))
                 {
-                    close = new TimeSpan(10, 30, 0);
+                    close = DefaultCloseHour;
                 }
                 if (vnTime < open || vnTime >= close)
                 {
@@ -919,6 +967,20 @@ namespace PhuThuongStickyRice.Application.Orders
             return dto;
         }
 
+        /// <summary>
+        /// Chuyển trạng thái đơn — cửa duy nhất cho mọi đổi trạng thái (kể cả POS
+        /// và luồng nội bộ đều gọi qua đây từng bước, không được set thẳng Completed).
+        /// Mỗi lần chuyển đều: kiểm tra quyền (hủy đơn cần "orders.cancel", các bước
+        /// khác cần "orders.confirm") → đổi trạng thái trên entity → ghi audit lịch sử
+        /// trạng thái → log hoạt động nhân viên → bắn webhook.
+        /// Side effect theo trạng thái đích: Completed thì cộng điểm loyalty + thưởng
+        /// giới thiệu + chạy quy tắc thưởng tự động; Cancelled thì hoàn điểm đã đổi
+        /// và hoàn tiền ví về cho khách. Nhảy cóc trạng thái sẽ làm audit thiếu bước
+        /// và mất side effect nên bị cấm.
+        /// </summary>
+        /// <param name="id">Id đơn hàng.</param>
+        /// <param name="input">Trạng thái đích (Pending/Confirmed/Preparing/Delivering/Completed/Cancelled).</param>
+        /// <returns>Đơn hàng sau khi chuyển trạng thái.</returns>
         public virtual async Task<OrderDto> UpdateStatusAsync(Guid id, UpdateOrderStatusDto input)
         {
             var order = await FindOrThrowAsync(id);
@@ -1369,7 +1431,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Server-side phone masking (mirrors landing MaskPhone): "0901234567" → "090***67".</summary>
         private static string MaskPhoneForDisplay(string phone)
         {
-            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            var digits = DigitsOnly(phone);
             if (digits.Length < 5) return "Khách hàng";
             return digits.Substring(0, 3) + "***" + digits.Substring(digits.Length - 2);
         }
@@ -1547,9 +1609,11 @@ namespace PhuThuongStickyRice.Application.Orders
                         Reason = $"Thưởng đánh giá 5 sao đơn {order.OrderNumber}"
                     });
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // Thưởng điểm là nice-to-have — không fail review vì lỗi này.
+                    // Thưởng điểm là nice-to-have — không fail review vì lỗi này,
+                    // nhưng vẫn log để phát hiện khi loyalty service hỏng liên tục.
+                    Logger.LogWarning(ex, "Không thưởng được 20 điểm đánh giá 5 sao cho đơn {OrderNumber}.", order.OrderNumber);
                 }
             }
 
@@ -1749,9 +1813,6 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Public lookup that also proves ownership via phone match.
-        /// </summary>
-        /// <summary>
         /// Wave 6b (item 30): rejects checkout when the pause toggle is off
         /// or the current Vietnam time (UTC+7, no DST) is outside the
         /// configured open hours. Strict: no grace period after CloseTime.
@@ -1783,9 +1844,9 @@ namespace PhuThuongStickyRice.Application.Orders
                             : $"Quán đang tạm ngừng nhận đơn: {reason}");
             }
 
-            var now = DateTimeOffset.UtcNow.AddHours(7).TimeOfDay;
-            var open = ParseHour(shopSetting.OpenTime, "06:00");
-            var close = ParseHour(shopSetting.CloseTime, "10:30");
+            var now = VietnamTime.Now.TimeOfDay;
+            var open = ParseHour(shopSetting.OpenTime, DefaultOpenHour);
+            var close = ParseHour(shopSetting.CloseTime, DefaultCloseHour);
             if (close > open && (now < open || now >= close))
             {
                 throw new Domain.Exceptions.DomainException(
@@ -1794,7 +1855,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
         }
 
-        private static TimeSpan ParseHour(string value, string fallback)
+        private static TimeSpan ParseHour(string value, TimeSpan fallback)
         {
             if (TimeSpan.TryParse(value?.Trim(), out var time)
                 && time >= TimeSpan.Zero && time < TimeSpan.FromDays(1))
@@ -1802,8 +1863,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return time;
             }
 
-            TimeSpan.TryParse(fallback, out var fallbackTime);
-            return fallbackTime;
+            return fallback;
         }
 
         private static string FormatHour(TimeSpan time)
@@ -1811,6 +1871,10 @@ namespace PhuThuongStickyRice.Application.Orders
             return $"{(int)time.TotalHours}:{time.Minutes:D2}";
         }
 
+        /// <summary>
+        /// Tra cứu đơn theo mã đơn + SĐT; SĐT phải khớp SĐT trên đơn
+        /// (chứng minh quyền sở hữu) thì mới trả về.
+        /// </summary>
         private async Task<Order> FindByNumberAndPhoneAsync(string orderNumber, string customerPhone)        {
             var order = await _orders.GetByOrderNumberAsync(orderNumber?.Trim());
             if (order == null || !PhonesMatch(order.CustomerPhone, customerPhone))
@@ -2127,9 +2191,16 @@ namespace PhuThuongStickyRice.Application.Orders
 
         private static string NormalizePhoneKey(string phone)
         {
-            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            var digits = DigitsOnly(phone);
             return digits.Length >= 9 ? digits.Substring(digits.Length - 9) : null;
         }
+
+        /// <summary>
+        /// Lấy chuỗi chữ số từ SĐT (bỏ dấu cách, gạch ngang, dấu chấm, +84...).
+        /// Null-safe: null hoặc trống trả về chuỗi rỗng.
+        /// </summary>
+        private static string DigitsOnly(string phone) =>
+            new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
 
         private static string AppendNote(string existing, string addition)
         {
@@ -2154,7 +2225,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return null;
             }
 
-            var normalized = new string(phone.Where(char.IsDigit).ToArray());
+            var normalized = DigitsOnly(phone);
             if (normalized.Length < 9)
             {
                 return null;
@@ -2190,7 +2261,7 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<bool> HasOrderedBeforeAsync(string phone)
         {
-            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            var digits = DigitsOnly(phone);
             if (digits.Length < 9)
             {
                 return false;
@@ -2212,7 +2283,7 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<FirstOrderVoucherDto> GetFirstOrderVoucherAsync(string phone)
         {
-            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            var digits = DigitsOnly(phone);
             if (digits.Length < 9)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -2227,23 +2298,23 @@ namespace PhuThuongStickyRice.Application.Orders
                 return new FirstOrderVoucherDto { IsNewCustomer = false };
             }
 
-            var existing = await _discounts.GetUsableCodeAsync("CHAO", digits);
+            var existing = await _discounts.GetUsableCodeAsync(FirstOrderVoucherPrefix, digits);
             if (!string.IsNullOrWhiteSpace(existing))
             {
                 return new FirstOrderVoucherDto
                 {
                     IsNewCustomer = true,
                     Code = existing,
-                    DiscountPercent = 10
+                    DiscountPercent = FirstOrderVoucherDiscountPercent
                 };
             }
 
             var created = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
             {
-                Prefix = "CHAO",
-                DiscountPercent = 10,
+                Prefix = FirstOrderVoucherPrefix,
+                DiscountPercent = FirstOrderVoucherDiscountPercent,
                 MinOrderAmount = 0,
-                ExpiresAt = DateTime.UtcNow.AddDays(30),
+                ExpiresAt = DateTime.UtcNow.AddDays(FirstOrderVoucherValidityDays),
                 OwnerPhone = digits
             });
 
@@ -2251,7 +2322,7 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 IsNewCustomer = true,
                 Code = created.Code,
-                DiscountPercent = 10
+                DiscountPercent = FirstOrderVoucherDiscountPercent
             };
         }
 
@@ -2264,7 +2335,7 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<List<OrderDto>> GetOrdersByPhoneAsync(string phone)
         {
-            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            var digits = DigitsOnly(phone);
             if (!System.Text.RegularExpressions.Regex.IsMatch(digits, @"^(0)(3|5|7|8|9)\d{8}$"))
             {
                 throw new CrossCuttingConcerns.Exceptions.ValidationException(
@@ -2335,29 +2406,13 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Phone comparison tolerant of spaces/dashes/dots and a leading
-        /// country code (e.g. +84 vs 0). Both sides are reduced to digits,
-        /// then the last 9 digits are compared.
-        /// </summary>
-        /// <summary>
-        /// Wave 6d (item 39): counts today's non-cancelled orders for the
-        /// phone (Vietnam day) and rejects when the per-day cap is reached.
-        /// 0 = unlimited. Phone comparison is tolerant (last 9 digits).
-        /// perf-hunt 2026-10-19: the count now runs in SQL (COUNT with the
-        /// separators stripped via REPLACE + a suffix LIKE on the last 9
-        /// digits) instead of loading every phone of the day into memory on
-        /// each checkout. Equivalent to PhonesMatch for realistic inputs
-        /// (digits + spaces/dashes/dots + leading country code); EF Core
-        /// translates the chained Replace/EndsWith to nested REPLACE + LIKE.
-        /// </summary>
-        /// <summary>
         /// Item 50: counts completed orders for a phone with the same digit
         /// tolerance as <see cref="PhonesMatch"/> — order phones are stored raw
         /// as typed, so the last 9 digits identify the customer.
         /// </summary>
         private async Task<int> CountCompletedOrdersByPhoneAsync(string customerPhone)
         {
-            var digits = new string((customerPhone ?? string.Empty).Where(char.IsDigit).ToArray());
+            var digits = DigitsOnly(customerPhone);
             var orderQueryable = await _orders.GetQueryableAsync();
             var completedQuery = orderQueryable.Where(o => o.Status == OrderStatus.Completed);
 
@@ -2381,6 +2436,17 @@ namespace PhuThuongStickyRice.Application.Orders
             return candidatePhones.Count(p => PhonesMatch(p, customerPhone));
         }
 
+        /// <summary>
+        /// Wave 6d (item 39): counts today's non-cancelled orders for the
+        /// phone (Vietnam day) and rejects when the per-day cap is reached.
+        /// 0 = unlimited. Phone comparison is tolerant (last 9 digits).
+        /// perf-hunt 2026-10-19: the count now runs in SQL (COUNT with the
+        /// separators stripped via REPLACE + a suffix LIKE on the last 9
+        /// digits) instead of loading every phone of the day into memory on
+        /// each checkout. Equivalent to PhonesMatch for realistic inputs
+        /// (digits + spaces/dashes/dots + leading country code); EF Core
+        /// translates the chained Replace/EndsWith to nested REPLACE + LIKE.
+        /// </summary>
         private async Task EnsurePhoneDailyLimitAsync(int maxPerDay, string customerPhone)
         {
             if (maxPerDay <= 0 || string.IsNullOrWhiteSpace(customerPhone))
@@ -2388,7 +2454,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return;
             }
 
-            var startOfTodayUtc = VietnamTime.Today().AddHours(-7); // VN 00:00 → UTC
+            var startOfTodayUtc = VietnamTime.DayStartUtc(VietnamTime.Today()); // VN 00:00 → UTC
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var todayQuery = orderQueryable
@@ -2397,7 +2463,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Same digit-tolerance as PhonesMatch: compare the last 9 digits
             // (or the exact digit string when shorter than 9 digits).
-            var digits = new string(customerPhone.Where(char.IsDigit).ToArray());
+            var digits = DigitsOnly(customerPhone);
             int count;
             if (digits.Length >= 9)
             {
@@ -2505,23 +2571,28 @@ namespace PhuThuongStickyRice.Application.Orders
             return DateTime.UtcNow;
         }
 
+        /// <summary>
+        /// So khớp SĐT theo kiểu "khoan dung": chỉ giữ lại chữ số rồi so 9 số cuối
+        /// (khách có thể nhập kèm mã vùng +84, dấu cách, dấu chấm...). Dùng để xác thực
+        /// khách nhận gói tuần / tra cứu đơn mà không bắt nhập đúng từng ký tự.
+        /// </summary>
         internal static bool PhonesMatch(string orderPhone, string givenPhone)        {
             if (string.IsNullOrWhiteSpace(orderPhone) || string.IsNullOrWhiteSpace(givenPhone))
             {
                 return false;
             }
 
-            var a = new string(orderPhone.Where(char.IsDigit).ToArray());
-            var b = new string(givenPhone.Where(char.IsDigit).ToArray());
+            var orderPhoneDigits = DigitsOnly(orderPhone);
+            var givenPhoneDigits = DigitsOnly(givenPhone);
 
-            if (a.Length < 9 || b.Length < 9)
+            if (orderPhoneDigits.Length < 9 || givenPhoneDigits.Length < 9)
             {
-                return string.Equals(a, b, StringComparison.Ordinal);
+                return string.Equals(orderPhoneDigits, givenPhoneDigits, StringComparison.Ordinal);
             }
 
             return string.Equals(
-                a.Substring(a.Length - 9),
-                b.Substring(b.Length - 9),
+                orderPhoneDigits.Substring(orderPhoneDigits.Length - 9),
+                givenPhoneDigits.Substring(givenPhoneDigits.Length - 9),
                 StringComparison.Ordinal);
         }
 

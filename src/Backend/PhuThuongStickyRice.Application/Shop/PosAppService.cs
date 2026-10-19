@@ -32,6 +32,20 @@ namespace PhuThuongStickyRice.Application.Shop
             _orders = orders;
         }
 
+        /// <summary>
+        /// Tạo đơn POS cho khách mua tại quầy: thanh toán tiền mặt, nhận hàng
+        /// ngay, đơn đi thẳng từ mới tạo đến Hoàn tất trong 1 lần gọi.
+        /// BẮT BUỘC đi qua từng trạng thái (Confirmed → Preparing → Delivering →
+        /// Completed) thay vì set thẳng Completed — vì domain chỉ cho Completed
+        /// từ Delivering, và mỗi bước chuyển đều ghi audit lịch sử trạng thái,
+        /// log hoạt động nhân viên và bắn webhook; chỉ bước Completed mới cộng
+        /// điểm loyalty và chạy quy tắc thưởng. Nhảy cóc sẽ throw và mất side effect.
+        /// SĐT "0000000000" là placeholder cho khách vãng lai không để lại SĐT —
+        /// loyalty bỏ qua SĐT này để điểm các đơn vãng lai không dồn vào 1 pool chung.
+        /// Bỏ qua reCAPTCHA vì đây là luồng nội bộ của nhân viên, không có token trình duyệt.
+        /// </summary>
+        /// <param name="input">Tên/SĐT khách (trống thì lấy "Khách vãng lai"), ghi chú và danh sách món.</param>
+        /// <returns>Đơn hàng đã hoàn tất.</returns>
         public virtual async Task<OrderDto> CreateOrderAsync(CreatePosOrderInput input)
         {
             if (input?.Lines == null || input.Lines.Count == 0)
@@ -69,6 +83,9 @@ namespace PhuThuongStickyRice.Application.Shop
             }
 
             // Walk-in: cash collected at the counter, order fulfilled immediately.
+            // Đi từng bước (không set thẳng Completed): mỗi UpdateStatusAsync
+            // ghi audit + log nhân viên + webhook, và chỉ Completed mới cộng
+            // điểm loyalty/chạy quy tắc thưởng (xem doc của method).
             await _orders.ConfirmPaymentAsync(order.Id);
             foreach (var status in new[] { "Confirmed", "Preparing", "Delivering", "Completed" })
             {

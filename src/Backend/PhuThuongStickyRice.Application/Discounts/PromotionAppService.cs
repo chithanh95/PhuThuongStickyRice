@@ -16,11 +16,11 @@ namespace PhuThuongStickyRice.Application.Discounts
     /// <summary>
     /// Item 91: "Khuyến mãi giờ vàng" time-window promotions.
     /// The best active promotion is auto-applied at checkout (Vietnam time).
-    /// </summary>
-    /// <summary>
+    /// <para>
     /// Hợp đồng khuyến mãi "giờ vàng": admin CRUD; checkout gọi
     /// <c>GetBestActiveAsync</c> (không cần login) để lấy khuyến mãi tốt nhất
     /// đang diễn ra cho đơn hàng.
+    /// </para>
     /// </summary>
     public interface IPromotionAppService : IApplicationService
     {

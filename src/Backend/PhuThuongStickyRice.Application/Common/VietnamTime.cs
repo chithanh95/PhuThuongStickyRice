@@ -8,6 +8,10 @@ namespace PhuThuongStickyRice.Application.Common
     /// </summary>
     internal static class VietnamTime
     {
+        /// <summary>
+        /// Độ lệch giờ của Việt Nam so với UTC: +7, không có giờ mùa hè (DST).
+        /// </summary>
+        public const int UtcOffsetHours = 7;
         public static DateTime Today()
         {
             return ToVietnamTime(DateTime.UtcNow).Date;
@@ -33,25 +37,25 @@ namespace PhuThuongStickyRice.Application.Common
                 }
             }
 
-            return utcDateTime.AddHours(7);
+            return utcDateTime.AddHours(UtcOffsetHours);
         }
 
 
         /// <summary>Now in Vietnam time.</summary>
-        public static DateTimeOffset Now => DateTimeOffset.UtcNow.AddHours(7);
+        public static DateTimeOffset Now => DateTimeOffset.UtcNow.AddHours(UtcOffsetHours);
 
         /// <summary>
         /// UTC instant of 00:00 Vietnam time on the given (date-only) day.
         /// </summary>
         public static DateTime DayStartUtc(DateTime date) =>
-            date.Date.AddHours(-7);
+            date.Date.AddHours(-UtcOffsetHours);
 
         /// <summary>
         /// UTC instant of 00:00 Vietnam time on the day AFTER the given
         /// (date-only) day — exclusive upper bound of the day.
         /// </summary>
         public static DateTime DayEndExclusiveUtc(DateTime date) =>
-            date.Date.AddDays(1).AddHours(-7);
+            date.Date.AddDays(1).AddHours(-UtcOffsetHours);
 
         /// <summary>Digits-only phone; null when invalid.</summary>
         public static string NormalizePhone(string phone)

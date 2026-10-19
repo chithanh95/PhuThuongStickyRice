@@ -36,6 +36,16 @@ namespace PhuThuongStickyRice.Application.Shop
         Task<(bool Ok, string Message)> TestNewOrderWebhookAsync(string url);
     }
 
+    /// <summary>
+    /// Trung tâm cấu hình toàn quán — 1 dòng cấu hình duy nhất dùng chung cho
+    /// mọi màn hình: giá/phí ship/đơn tối thiểu, luật loyalty (tích điểm, đổi điểm,
+    /// hạng Đồng/Bạc/Vàng), giờ mở cửa và giới hạn nhận đơn, thông tin liên hệ,
+    /// và các tích hợp (reCAPTCHA, Telegram, Zalo...).
+    /// Setting được cache (mọi trang checkout/public đọc qua cache) và mọi lần
+    /// sửa đều xóa cache để có hiệu lực ngay. Secret tích hợp lưu ở DB dạng mã
+    /// hóa DPv1: và bị che (redact) ở endpoint public — admin xem đầy đủ qua
+    /// endpoint riêng yêu cầu quyền Admin.
+    /// </summary>
     public class ShopSettingAppService : ApplicationService, IShopSettingAppService
     {
         /// <summary>
@@ -193,6 +203,16 @@ namespace PhuThuongStickyRice.Application.Shop
             }
         }
 
+        /// <summary>
+        /// Admin (cần quyền "settings.edit"): lưu toàn bộ cấu hình quán. Chưa có
+        /// dòng cấu hình thì tạo mới từ giá trị mặc định; số âm/0 không hợp lệ ở
+        /// các trường tiền/phí thì bị kẹp về 0 hoặc default ở từng nhóm
+        /// (Apply*Settings) thay vì báo lỗi — để admin không bị kẹt form.
+        /// Sau khi lưu thì xóa cache cấu hình để shop/admin thấy ngay.
+        /// Secret tích hợp gửi lên được mã hóa trước khi lưu (không lưu plain text).
+        /// </summary>
+        /// <param name="dto">Toàn bộ cấu hình từ form admin.</param>
+        /// <returns>Cấu hình sau khi lưu.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<ShopSettingDto> UpdateAsync(ShopSettingDto dto)
         {

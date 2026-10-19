@@ -606,24 +606,35 @@
         _bellRinging = true;
         StateHasChanged();
         // Auto-dismiss after 4 seconds.
-        _ = Task.Delay(4000).ContinueWith(_ =>
-        {
-            InvokeAsync(() =>
-            {
-                _toasts.RemoveAll(t => t.Id == toast.Id);
-                _bellRinging = false;
-                StateHasChanged();
-            });
-        });
+        _ = AutoDismissToastAsync(toast.Id, 4000, dismissBell: true);
         // Stop bell ringing after 1.5s.
-        _ = Task.Delay(1500).ContinueWith(_ =>
+        _ = AutoDismissToastAsync(toast.Id, 1500, dismissBell: false);
+    }
+
+    /// <summary>
+    /// Fire-and-forget có kiểm soát: chờ rồi gỡ toast qua InvokeAsync (đúng Blazor sync context).
+    /// Dùng async/await thay cho ContinueWith để exception không bị nuốt thầm lặng
+    /// (ví dụ component đã dispose khi timer chạy xong) và code dễ đọc hơn.
+    /// </summary>
+    private async Task AutoDismissToastAsync(Guid toastId, int delayMs, bool dismissBell)
+    {
+        try
         {
-            InvokeAsync(() =>
+            await Task.Delay(delayMs);
+            await InvokeAsync(() =>
             {
+                if (dismissBell)
+                {
+                    _toasts.RemoveAll(t => t.Id == toastId);
+                }
                 _bellRinging = false;
                 StateHasChanged();
             });
-        });
+        }
+        catch (Exception)
+        {
+            // Component có thể đã dispose khi timer chạy xong — bỏ qua an toàn.
+        }
     }
 
     private void DismissToast(Guid id)

@@ -217,7 +217,7 @@ namespace PhuThuongStickyRice.Application.Orders
             CultureInfo vi)
         {
             var overallAvg = result.AvgDailyRevenue30d;
-            var weekdayStats = new Dictionary<DayOfWeek, (decimal rev, double ord, double por, int n)>();
+            var weekdayStats = new Dictionary<DayOfWeek, (decimal revenue, double orders, double portions, int days)>();
             foreach (DayOfWeek dow in Enum.GetValues(typeof(DayOfWeek)))
             {
                 weekdayStats[dow] = (0m, 0, 0, 0);
@@ -225,31 +225,31 @@ namespace PhuThuongStickyRice.Application.Orders
 
             for (var d = patternStart; d < today; d = d.AddDays(1))
             {
-                var s = weekdayStats[d.DayOfWeek];
+                var stats = weekdayStats[d.DayOfWeek];
                 if (perDay.TryGetValue(d, out var v))
                 {
-                    s = (s.rev + v.Revenue, s.ord + v.Orders, s.por + v.Portions, s.n + 1);
+                    stats = (stats.revenue + v.Revenue, stats.orders + v.Orders, stats.portions + v.Portions, stats.days + 1);
                 }
                 else
                 {
-                    s = (s.rev, s.ord, s.por, s.n + 1); // ngày mở cửa nhưng không có đơn
+                    stats = (stats.revenue, stats.orders, stats.portions, stats.days + 1); // ngày mở cửa nhưng không có đơn
                 }
 
-                weekdayStats[d.DayOfWeek] = s;
+                weekdayStats[d.DayOfWeek] = stats;
             }
 
             foreach (var dow in OrderedWeekdays)
             {
-                var s = weekdayStats[dow];
-                var avgRev = s.n > 0 ? s.rev / s.n : 0m;
+                var stats = weekdayStats[dow];
+                var avgRev = stats.days > 0 ? stats.revenue / stats.days : 0m;
                 result.WeekdayPattern.Add(new WeekdayPatternDto
                 {
                     DayOfWeek = dow,
                     WeekdayName = vi.DateTimeFormat.DayNames[(int)dow],
-                    Occurrences = s.n,
+                    Occurrences = stats.days,
                     AvgRevenue = Math.Round(avgRev, 0),
-                    AvgOrders = Math.Round(s.ord / Math.Max(s.n, 1), 1),
-                    AvgPortions = Math.Round(s.por / Math.Max(s.n, 1), 1),
+                    AvgOrders = Math.Round(stats.orders / Math.Max(stats.days, 1), 1),
+                    AvgPortions = Math.Round(stats.portions / Math.Max(stats.days, 1), 1),
                     RatioVsAverage = overallAvg > 0
                         ? Math.Round((double)(avgRev / overallAvg), 2)
                         : 0

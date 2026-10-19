@@ -21,10 +21,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
     /// FreeTopping appends a note on the order; DiscountCode generates a real
     /// single-use voucher owned by the customer's phone and records it on the
     /// order notes so the admin can tell the customer.
-    /// </summary>
-    /// <summary>
+    /// <para>
     /// Hợp đồng quy tắc thưởng tự động: admin CRUD các quy tắc; order service
     /// gọi <c>ApplyOnOrderCompletedAsync</c> ngay sau khi đơn hoàn tất.
+    /// </para>
     /// </summary>
     public interface IRewardRuleAppService : IApplicationService
     {

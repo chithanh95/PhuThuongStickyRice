@@ -5,7 +5,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
     /// <summary>
     /// Cặp access/refresh token đang lưu ở client Blazor WASM.
     /// </summary>
-    public class AuthToken
+    public class AuthTokenPair
     {
         public string AccessToken { get; set; }
 

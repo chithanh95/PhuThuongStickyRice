@@ -29,7 +29,15 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
                 var userId = _context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                     ?? _context.HttpContext.User.FindFirst("sub")?.Value;
 
-                return Guid.Parse(userId);
+                // Claim có thể thiếu (null) hoặc không phải GUID nếu token lạ —
+                // Guid.Parse khi đó ném ArgumentNullException/FormatException rất khó chẩn đoán.
+                // Dùng TryParse và báo lỗi 401 rõ ràng thay vì 500 mập mờ.
+                if (!Guid.TryParse(userId, out var id))
+                {
+                    throw new UnauthorizedAccessException("Không xác định được người dùng từ token đăng nhập.");
+                }
+
+                return id;
             }
         }
     }

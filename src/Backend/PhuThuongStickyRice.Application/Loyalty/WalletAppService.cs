@@ -31,13 +31,15 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>Internal: charge the wallet for a new order. Throws when insufficient.</summary>
         Task ChargeAsync(string phone, decimal amount, string orderNumber);
 
-        /// <summary>Internal: credit the wallet back (order cancelled).</summary>
         /// <summary>
-        /// Internal: cộng lại tiền vào ví. Idempotent theo cặp (SĐT, lý do):
+        /// Internal: credit the wallet back (order cancelled).
+        /// <para>
+        /// Cộng lại tiền vào ví. Idempotent theo cặp (SĐT, lý do):
         /// hủy đơn và bớt món phải dùng lý do khác nhau — nếu dùng chung,
         /// lần hoàn từng phần (bớt món) sẽ chặn nhầm lần hoàn tiền khi hủy
         /// đơn (khách mất số tiền còn lại). Webhook hủy gọi lặp vẫn an toàn
         /// vì cùng lý do hủy đơn cho cùng mã đơn chỉ hoàn đúng 1 lần.
+        /// </para>
         /// </summary>
         Task RefundAsync(string phone, decimal amount, string orderNumber, string refundReason = null);
     }
