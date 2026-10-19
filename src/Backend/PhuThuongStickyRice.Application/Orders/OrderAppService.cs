@@ -221,6 +221,9 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly ICustomerTagAppService _customerTags;
         private readonly IVipPriorityAppService _vipPriority;
 
+        /// <summary>perf-hunt 2026-10-19: cache for public review listing (landing hot path).</summary>
+        private readonly Products.IProductCatalogCache _catalogCache;
+
         public OrderAppService(
             IOrderRepository orders,
             IProductRepository products,
@@ -250,7 +253,8 @@ namespace PhuThuongStickyRice.Application.Orders
             IVipPriorityAppService vipPriority,
             IPermissionService permissions,
             IStaffActivityLogger activityLogger,
-            System.Net.Http.IHttpClientFactory httpClientFactory)
+            System.Net.Http.IHttpClientFactory httpClientFactory,
+            Products.IProductCatalogCache catalogCache)
         {
             _orders = orders;
             _products = products;
@@ -281,6 +285,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _permissions = permissions;
             _activityLogger = activityLogger;
             _httpClientFactory = httpClientFactory;
+            _catalogCache = catalogCache;
         }
 
         public virtual async Task<OrderDto> CreateAsync(CreateOrderDto input, bool skipRecaptchaCheck = false)
@@ -1280,6 +1285,8 @@ namespace PhuThuongStickyRice.Application.Orders
             var review = await _reviews.GetAsync(id);
             review.IsHidden = input.IsHidden;
             await _reviews.UpdateAsync(review, autoSave: true);
+            // Perf: bust the cached public review listing.
+            _catalogCache.Invalidate();
             return MapReviewToDto(review);
         }
 
@@ -1290,6 +1297,8 @@ namespace PhuThuongStickyRice.Application.Orders
             var review = await _reviews.GetAsync(id);
             review.AdminReply = string.IsNullOrWhiteSpace(input.Reply) ? null : input.Reply.Trim();
             await _reviews.UpdateAsync(review, autoSave: true);
+            // Perf: bust the cached public review listing.
+            _catalogCache.Invalidate();
             return MapReviewToDto(review);
         }
 
@@ -1321,12 +1330,17 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<List<PublicOrderReviewDto>> GetPublicReviewsAsync()
         {
-            var reviewQueryable = await _reviews.GetQueryableAsync();
-            var items = await _asyncExecuter.ToListAsync(
-                reviewQueryable.Where(x => !x.IsHidden)
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Take(20));
-            return items.Select(MapReviewToPublicDto).ToList();
+            // Perf: landing page fetches this on every visit; cache 5 minutes,
+            // invalidated on review submit/hide/reply (see Invalidate below).
+            return await _catalogCache.GetOrAddAsync("orders:public-reviews", async () =>
+            {
+                var reviewQueryable = await _reviews.GetQueryableAsync();
+                var items = await _asyncExecuter.ToListAsync(
+                    reviewQueryable.Where(x => !x.IsHidden)
+                        .OrderByDescending(x => x.CreatedAt)
+                        .Take(20));
+                return items.Select(MapReviewToPublicDto).ToList();
+            });
         }
 
         private static PublicOrderReviewDto MapReviewToPublicDto(OrderReview review)
@@ -1519,6 +1533,9 @@ namespace PhuThuongStickyRice.Application.Orders
                     // Thưởng điểm là nice-to-have — không fail review vì lỗi này.
                 }
             }
+
+            // Perf: bust the cached public review listing.
+            _catalogCache.Invalidate();
 
             return MapReviewToDto(review);
         }

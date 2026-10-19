@@ -49,29 +49,40 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
         private readonly IRepository<Product, Guid> _products;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>perf-hunt 2026-10-19: cache for the public active-plan lookup (shop tab hot path).</summary>
+        private readonly Products.IProductCatalogCache _catalogCache;
+
         public WeeklyPlanAppService(
             IRepository<WeeklyPlan, Guid> plans,
             IRepository<WeeklyPlanOrder, Guid> orders,
             IRepository<Product, Guid> products,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _plans = plans;
             _orders = orders;
             _products = products;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         [AllowAnonymous]
         public virtual async Task<WeeklyPlanDto> GetActiveAsync()
         {
+            // Perf: shop tab hits this on every view; cache 5 minutes.
+            // Keyed by the Monday date so the plan rolls over naturally each week.
             var monday = GetMonday(DateTime.Today);
-            var queryable = await _plans.GetQueryableAsync();
-            var plan = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable
-                    .Where(p => p.IsActive && p.WeekStart <= monday)
-                    .OrderByDescending(p => p.WeekStart));
+            return await _catalogCache.GetOrAddAsync(
+                $"weeklyplan:active:{monday:yyyyMMdd}", async () =>
+                {
+                    var queryable = await _plans.GetQueryableAsync();
+                    var plan = await _asyncExecuter.FirstOrDefaultAsync(
+                        queryable
+                            .Where(p => p.IsActive && p.WeekStart <= monday)
+                            .OrderByDescending(p => p.WeekStart));
 
-            return plan == null ? null : MapToDto(plan);
+                    return plan == null ? null : MapToDto(plan);
+                });
         }
 
         [Authorize(Roles = "Admin")]
@@ -150,6 +161,9 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
                 old.IsActive = false;
                 await _plans.UpdateAsync(old);
             }
+
+            // Perf: bust the cached public active plan.
+            _catalogCache.Invalidate();
 
             return MapToDto(plan);
         }

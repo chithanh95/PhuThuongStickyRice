@@ -38,22 +38,32 @@ namespace PhuThuongStickyRice.Application.Customer
         private readonly IRepository<CustomerPhoto, Guid> _photos;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>perf-hunt 2026-10-19: cache for the public gallery (unbounded list, queried per page view).</summary>
+        private readonly Products.IProductCatalogCache _catalogCache;
+
         public CustomerPhotoAppService(
             IRepository<CustomerPhoto, Guid> photos,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _photos = photos;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         [AllowAnonymous]
         public virtual async Task<List<CustomerPhotoDto>> GetApprovedAsync()
         {
-            var queryable = await _photos.GetQueryableAsync();
-            var list = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.IsApproved)
-                    .OrderByDescending(x => x.CreatedAt));
-            return list.Select(MapToDto).ToList();
+            // Perf: gallery page hits this on every view; cache 5 minutes,
+            // invalidated on admin approve/reject.
+            return await _catalogCache.GetOrAddAsync("customerphotos:approved-list", async () =>
+            {
+                var queryable = await _photos.GetQueryableAsync();
+                var list = await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => x.IsApproved)
+                        .OrderByDescending(x => x.CreatedAt));
+                return list.Select(MapToDto).ToList();
+            });
         }
 
         [AllowAnonymous]
@@ -103,6 +113,8 @@ namespace PhuThuongStickyRice.Application.Customer
             var photo = await _photos.GetAsync(id);
             photo.IsApproved = true;
             await _photos.UpdateAsync(photo, autoSave: true);
+            // Perf: bust the cached public gallery.
+            _catalogCache.Invalidate();
         }
 
         [Authorize(Roles = "Admin")]
@@ -110,6 +122,8 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             var photo = await _photos.GetAsync(id);
             await _photos.DeleteAsync(photo, autoSave: true);
+            // Perf: bust the cached public gallery.
+            _catalogCache.Invalidate();
             return MapToDto(photo);
         }
 
