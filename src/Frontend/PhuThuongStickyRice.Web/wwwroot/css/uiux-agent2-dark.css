@@ -1385,3 +1385,28 @@ html.dark .lx-admin td[style*="color:#333"] {
 }
 
 /* === end UIUX run 2026-10-19 17:50 — Agent 2 (2 fix mới) === */
+
+/* ===== uiux-team run 2026-10-19 18:35 - Agent 2 Dark: nut chon ngon ngu trang lot tren landing dark =====
+   FIX 1 — Landing (/) dark mode: nut co ngon ngu trang choi tren header toi.
+   Van de: .lang-btn dung background: var(--shp-surface, #fff) — bien
+   --shp-surface chi duoc dinh nghia trong .shp-page (ShopLayout.razor.css:11,
+   dark override :371/:485). Trang landing dung EmptyLayout, KHONG co
+   .shp-page -> var() rot ve fallback #fff -> nut trang toat tren header toi
+   rgba(28,23,18,.92) (Index.razor.css:1174). Vien var(--shp-line, #e8ddd0)
+   cung rot ve mau sang. Tren shop khong sao (bien co gia tri dark #241d17).
+   Da grep: LanguageSelector chi dung o Index.razor (landing) + ShopLayout
+   (shop) — khong dung o admin.
+   Fix: trong html.dark ep nen/vien dung var() voi fallback TOI.
+   - Tren shop: var() resolve ra #241d17/#3a3226 nhu cu -> khong doi gi.
+   - Tren landing: fallback #241d17/#3a3226 -> het trang lot.
+   Specificity (0,2,1) thang rule scoped .lang-btn[b-x] (0,2,0).
+   Kem: caret v #8a7a63 (~3.9:1 tren nen toi) -> #b8a88f (~7:1). */
+html.dark .lang-btn {
+    background: var(--shp-surface, #241d17); /* was #fff fallback — trang lot tren landing dark */
+    border-color: var(--shp-line, #3a3226); /* was #e8ddd0 fallback — vien sang lot */
+}
+html.dark .lang-caret {
+    color: #b8a88f; /* was #8a7a63 — ~3.9:1 -> ~7:1 tren #241d17 */
+}
+
+/* === end uiux-team run 2026-10-19 18:35 — Agent 2 (1 fix moi) === */
