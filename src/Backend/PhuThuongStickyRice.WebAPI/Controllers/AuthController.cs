@@ -102,7 +102,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest("Username/email and password are required.");
             }
 
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
             var login = model.UsernameOrEmail.Trim();
             var user = await _userManager.FindByNameAsync(login)
                 ?? (login.Contains("@") ? await _userManager.FindByEmailAsync(login) : null);
@@ -192,7 +192,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             await EnsureCustomerRoleAsync(user.Id, cancellationToken);
 
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
             await _loginAudits.RecordAsync(user.UserName, ip, true, "Đăng ký tài khoản khách hàng.");
 
             var roles = await GetRoleNamesAsync(user.Id);
@@ -248,7 +248,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Unauthorized("Mã đăng nhập 2 bước đã hết hạn. Vui lòng đăng nhập lại.");
             }
 
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
             var user = await _userManager.FindByIdAsync(userId.Value.ToString());
             if (user == null)
             {
@@ -481,7 +481,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// Dùng chung cho Login thường và VerifyTwoFactor.
         /// </summary>
         private async Task<(string[] Roles, bool NewIpWarning)> AuditSuccessfulLoginAsync(
-            User user, string? ip, string staffLoginNote)
+            User user, string ip, string staffLoginNote)
         {
             // Item 99: cảnh báo khi đăng nhập thành công từ IP chưa từng thấy của user.
             var newIpWarning = await _loginAudits.IsNewIpForUserAsync(user.UserName, ip);
@@ -586,59 +586,59 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public sealed class LoginRequestModel
     {
         [Required]
-        public string UsernameOrEmail { get; set; }
+        public required string UsernameOrEmail { get; set; }
 
         [Required]
-        public string Password { get; set; }
+        public required string Password { get; set; }
     }
 
     public sealed class CustomerRegisterRequestModel
     {
         [Required]
-        public string Phone { get; set; }
+        public required string Phone { get; set; }
 
         [Required]
-        public string Password { get; set; }
+        public required string Password { get; set; }
 
-        public string FullName { get; set; }
+        public string? FullName { get; set; }
 
-        public string Email { get; set; }
+        public string? Email { get; set; }
     }
 
     public sealed class ChangePasswordRequestModel
     {
         [Required]
-        public string CurrentPassword { get; set; }
+        public required string CurrentPassword { get; set; }
 
         [Required]
-        public string NewPassword { get; set; }
+        public required string NewPassword { get; set; }
     }
 
     public sealed class ForgotPasswordRequestModel
     {
         [Required]
-        public string Phone { get; set; }
+        public required string Phone { get; set; }
     }
 
     public sealed class ForgotPasswordResetModel
     {
         [Required]
-        public string Phone { get; set; }
+        public required string Phone { get; set; }
 
         [Required]
-        public string Otp { get; set; }
+        public required string Otp { get; set; }
 
         [Required]
-        public string NewPassword { get; set; }
+        public required string NewPassword { get; set; }
     }
 
     public sealed class VerifyTwoFactorRequestModel
     {
         [Required]
-        public string TwoFactorToken { get; set; }
+        public required string TwoFactorToken { get; set; }
 
         [Required]
-        public string Code { get; set; }
+        public required string Code { get; set; }
     }
 
     public sealed class EnableTwoFactorRequestModel
@@ -646,18 +646,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         // Bug-hunt 2026-10-19: bỏ trường Secret — secret cài đặt do server sinh
         // và giữ trong cache chờ xác thực, client chỉ gửi mã 6 số.
         [Required]
-        public string Code { get; set; }
+        public required string Code { get; set; }
     }
 
     public sealed class DisableTwoFactorRequestModel
     {
         [Required]
-        public string Code { get; set; }
+        public required string Code { get; set; }
     }
 
     public sealed class LoginResponseModel
     {
-        public string AccessToken { get; set; }
+        public string? AccessToken { get; set; }
 
         public DateTimeOffset ExpiresAt { get; set; }
 
@@ -667,13 +667,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         // Nullable: Email có thể null khi tài khoản đăng ký bằng SĐT.
         public string? Email { get; set; }
 
-        public string[] Roles { get; set; }
+        public string[]? Roles { get; set; }
 
         /// <summary>Item 98: true when a TOTP code is still required.</summary>
         public bool RequiresTwoFactor { get; set; }
 
         /// <summary>Item 98: short-lived token for the 2FA verification step.</summary>
-        public string TwoFactorToken { get; set; }
+        public string? TwoFactorToken { get; set; }
 
         /// <summary>Item 99: true when this login came from a never-seen IP.</summary>
         public bool NewIpWarning { get; set; }
@@ -688,12 +688,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public class UpdateProfileModel
     {
         /// <summary>Tên đăng nhập mới.</summary>
-        public string UserName { get; set; }
+        public string? UserName { get; set; }
 
         /// <summary>Email mới.</summary>
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         /// <summary>Số điện thoại mới.</summary>
-        public string PhoneNumber { get; set; }
+        public string? PhoneNumber { get; set; }
     }
 }

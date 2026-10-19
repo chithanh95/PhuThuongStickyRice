@@ -31,8 +31,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using PhuThuongStickyRice.Application.AuditLogs;
-using PhuThuongStickyRice.Application.Orders.Payments;
-using PhuThuongStickyRice.Application.Zalo;
 using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.WebAPI

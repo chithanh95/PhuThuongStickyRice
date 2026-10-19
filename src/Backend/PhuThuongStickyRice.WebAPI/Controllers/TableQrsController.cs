@@ -9,7 +9,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using PhuThuongStickyRice.Application.Shop;
-using PhuThuongStickyRice.Application.Shop;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {

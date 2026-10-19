@@ -197,26 +197,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             }
 
             // Email via the existing EmailMessage queue.
-            if (!string.IsNullOrWhiteSpace(settings.OwnerReportEmail))
-            {
-                try
-                {
-                    var queue = provider.GetRequiredService<IEmailMessageRepository>();
-                    await queue.AddAsync(new EmailMessage
-                    {
-                        From = "noreply@xoiphuthuong.vn",
-                        Tos = settings.OwnerReportEmail,
-                        Subject = "[Xôi Phú Thượng] Cảnh báo hệ thống",
-                        Body = message.Replace("*", string.Empty)
-                    });
-                    await queue.UnitOfWork.SaveChangesAsync();
-                    sent = true;
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, "SystemHealthWorker: could not queue alert email.");
-                }
-            }
+            sent |= await TryQueueAlertEmailAsync(provider, settings, message);
 
             if (!sent)
             {
@@ -224,6 +205,39 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             }
 
             return lastAlert;
+        }
+
+        /// <summary>
+        /// Đưa cảnh báo vào hàng đợi EmailMessage để gửi mail cho chủ quán.
+        /// Trả false khi chưa cấu hình email nhận hoặc ghi queue thất bại —
+        /// caller chỉ log, không ném, để worker không chết vì lỗi kênh cảnh báo.
+        /// </summary>
+        private async Task<bool> TryQueueAlertEmailAsync(
+            IServiceProvider provider, ShopSettingDtoSafe settings, string message)
+        {
+            if (string.IsNullOrWhiteSpace(settings.OwnerReportEmail))
+            {
+                return false;
+            }
+
+            try
+            {
+                var queue = provider.GetRequiredService<IEmailMessageRepository>();
+                await queue.AddAsync(new EmailMessage
+                {
+                    From = "noreply@xoiphuthuong.vn",
+                    Tos = settings.OwnerReportEmail,
+                    Subject = "[Xôi Phú Thượng] Cảnh báo hệ thống",
+                    Body = message.Replace("*", string.Empty)
+                });
+                await queue.UnitOfWork.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "SystemHealthWorker: could not queue alert email.");
+                return false;
+            }
         }
 
         private async Task<bool> SendTelegramAsync(string botToken, string chatId, string text)

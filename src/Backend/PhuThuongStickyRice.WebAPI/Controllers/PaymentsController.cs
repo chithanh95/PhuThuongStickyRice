@@ -8,8 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading;
 using System.Threading.Tasks;
-using PhuThuongStickyRice.Application.Orders.DTOs;
-using PhuThuongStickyRice.Application.Orders.Payments;
 using PhuThuongStickyRice.Application.Orders;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers

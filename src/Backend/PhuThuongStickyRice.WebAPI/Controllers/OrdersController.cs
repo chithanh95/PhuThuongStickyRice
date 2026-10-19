@@ -73,7 +73,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> Create([FromBody] CreateOrderRequestModel model,
             CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Creating order for {CustomerPhone}", model?.CustomerPhone);
+            _logger.LogInformation("Creating order for {CustomerPhone}", model.CustomerPhone);
 
             // Best practice: [ApiController] đã trả 400 khi body null, nhưng guard
             // tường minh giúp compiler biết model non-null ở dưới (tránh CS8602)
@@ -177,7 +177,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] int take = 50,
             CancellationToken cancellationToken = default)
         {
-            var customers = await _orderAppService.GetCustomersAsync(searchTerm, skip, take);
+            var customers = await _orderAppService.GetCustomersAsync(searchTerm ?? string.Empty, skip, take);
             return Ok(customers);
         }
 
@@ -310,7 +310,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var order = await _orderAppService.MarkTransferredAsync(id, new MarkTransferredDto
                 {
-                    CustomerPhone = model?.CustomerPhone
+                    CustomerPhone = model.CustomerPhone
                 });
                 return Ok(order);
             }
@@ -396,11 +396,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var order = await _orderAppService.CancelByCustomerAsync(new CancelOrderByCustomerInput
                 {
-                    OrderNumber = model?.OrderNumber,
-                    CustomerPhone = model?.CustomerPhone,
+                    OrderNumber = model.OrderNumber,
+                    CustomerPhone = model.CustomerPhone,
                     // bug-hunt 2026-10-19: map lý do hủy — thiếu dòng này thì
                     // mọi lần khách tự hủy đều thất bại vì CancelReason null.
-                    CancelReason = model?.CancelReason
+                    CancelReason = model.CancelReason
                 });
                 return Ok(order);
             }
@@ -424,9 +424,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var order = await _orderAppService.UpdateLinesByCustomerAsync(new UpdateOrderLinesInput
                 {
-                    OrderNumber = model?.OrderNumber,
-                    CustomerPhone = model?.CustomerPhone,
-                    Lines = model?.Lines
+                    OrderNumber = model.OrderNumber,
+                    CustomerPhone = model.CustomerPhone,
+                    Lines = model.Lines
                         .Select(x => new UpdateOrderLineQtyDto
                         {
                             LineId = x.LineId,
@@ -456,10 +456,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var order = await _orderAppService.UpdateAddressByCustomerAsync(new UpdateOrderAddressByCustomerInput
                 {
-                    OrderNumber = model?.OrderNumber,
-                    CustomerPhone = model?.CustomerPhone,
-                    CustomerAddress = model?.CustomerAddress,
-                    DeliverySlot = model?.DeliverySlot
+                    OrderNumber = model.OrderNumber,
+                    CustomerPhone = model.CustomerPhone,
+                    CustomerAddress = model.CustomerAddress,
+                    DeliverySlot = model.DeliverySlot
                 });
                 return Ok(order);
             }
@@ -483,10 +483,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var order = await _orderAppService.UpdateContactByCustomerAsync(new UpdateOrderContactByCustomerInput
                 {
-                    OrderNumber = model?.OrderNumber,
-                    CustomerPhone = model?.CustomerPhone,
-                    RecipientPhone = model?.RecipientPhone,
-                    Notes = model?.Notes
+                    OrderNumber = model.OrderNumber,
+                    CustomerPhone = model.CustomerPhone,
+                    RecipientPhone = model.RecipientPhone,
+                    Notes = model.Notes
                 });
                 return Ok(order);
             }
@@ -509,7 +509,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // phát khi ảnh thật sự được tải lên qua POST api/orders/track/review/photo.
             // Trước đây PhotoUrl do client tự khai báo nên kẻ gian gửi URL giả
             // (vd https://google.com/logo.png) cũng nhận voucher thật.
-            if (!string.IsNullOrWhiteSpace(model?.PhotoUrl) && !IsUploadedReviewPhoto(model.PhotoUrl))
+            if (!string.IsNullOrWhiteSpace(model.PhotoUrl) && !IsUploadedReviewPhoto(model.PhotoUrl))
             {
                 return BadRequest(new { message = "Ảnh đánh giá không hợp lệ. Vui lòng tải ảnh lên lại." });
             }
@@ -518,12 +518,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var review = await _orderAppService.SubmitReviewAsync(new SubmitReviewInput
                 {
-                    OrderNumber = model?.OrderNumber,
-                    CustomerPhone = model?.CustomerPhone,
+                    OrderNumber = model.OrderNumber,
+                    CustomerPhone = model.CustomerPhone,
                     Rating = model?.Rating ?? 0,
-                    Comment = model?.Comment,
-                    PhotoUrl = model?.PhotoUrl,
-                    Lines = model?.Lines?
+                    Comment = model!.Comment,
+                    PhotoUrl = model.PhotoUrl,
+                    Lines = model.Lines?
                         .Select(x => new SubmitReviewLineInput
                         {
                             ProductId = x.ProductId,
@@ -711,7 +711,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 var result = await _orderAppService.SpinAsync(new SpinInput
                 {
                     OrderId = model?.OrderId ?? Guid.Empty,
-                    CustomerPhone = model?.CustomerPhone
+                    CustomerPhone = model!.CustomerPhone
                 });
                 return Ok(result);
             }
@@ -732,7 +732,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var order = await _orderAppService.AssignShipperAsync(id, new AssignShipperDto
                 {
-                    ShipperId = model?.ShipperId
+                    ShipperId = model.ShipperId
                 });
                 return Ok(order);
             }
@@ -756,7 +756,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var order = await _orderAppService.UpdateAdminNoteAsync(id, new UpdateAdminNoteDto
                 {
-                    Note = model?.Note
+                    Note = model.Note
                 });
                 return Ok(order);
             }
@@ -793,8 +793,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var order = await _orderAppService.MarkPickedUpAsync(id, new MarkPickedUpDto
                 {
-                    PickupShipperName = model?.PickupShipperName,
-                    PickupShipperPhone = model?.PickupShipperPhone
+                    PickupShipperName = model.PickupShipperName,
+                    PickupShipperPhone = model.PickupShipperPhone
                 });
                 return Ok(order);
             }
@@ -853,7 +853,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var review = await _orderAppService.ReplyReviewAsync(id, new ReplyReviewDto
                 {
-                    Reply = model?.Reply
+                    Reply = model.Reply
                 });
                 return Ok(review);
             }
@@ -876,7 +876,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 var review = await _orderAppService.SetShipperRatingAsync(id, new SetShipperRatingDto
                 {
                     Rating = model?.Rating ?? 0,
-                    CustomerPhone = model?.CustomerPhone
+                    CustomerPhone = model!.CustomerPhone
                 });
                 return Ok(review);
             }
@@ -917,7 +917,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// </summary>
     public sealed class ReplyReviewRequestModel
     {
-        public string Reply { get; set; }
+        public required string Reply { get; set; }
     }
 
     /// <summary>
@@ -929,6 +929,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public int Rating { get; set; }
 
         /// <summary>SĐT đặt hàng — xác thực quyền đánh giá review này.</summary>
-        public string CustomerPhone { get; set; }
+        public required string CustomerPhone { get; set; }
     }
 }

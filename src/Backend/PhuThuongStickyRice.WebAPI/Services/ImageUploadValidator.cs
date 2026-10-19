@@ -38,13 +38,13 @@ namespace PhuThuongStickyRice.WebAPI.Services
             }
 
             var header = new byte[12];
-            await using (var stream = file.OpenReadStream())
+            // Using declaration (C# 8+): stream tự dispose ở cuối method,
+            // không cần khối using lồng nhau — hành vi dispose giữ nguyên.
+            await using var stream = file.OpenReadStream();
+            var read = await stream.ReadAsync(header.AsMemory(0, header.Length), cancellationToken);
+            if (read < 4)
             {
-                var read = await stream.ReadAsync(header.AsMemory(0, header.Length), cancellationToken);
-                if (read < 4)
-                {
-                    return false;
-                }
+                return false;
             }
 
             switch (extension.ToLowerInvariant())

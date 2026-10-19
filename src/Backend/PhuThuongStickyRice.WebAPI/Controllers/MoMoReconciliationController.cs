@@ -14,7 +14,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using PhuThuongStickyRice.Application.Orders;
-using PhuThuongStickyRice.Application.Orders;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
