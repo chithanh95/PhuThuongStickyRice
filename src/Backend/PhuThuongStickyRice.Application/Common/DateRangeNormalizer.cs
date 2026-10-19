@@ -3,13 +3,15 @@ using System;
 namespace PhuThuongStickyRice.Application.Common
 {
     /// <summary>
-    /// Helper dùng chung để chuẩn hóa khoảng ngày của các màn báo cáo: biên
-    /// "nửa mở" [From, To) — To là ngày kết thúc + 1 ngày (mốc độc quyền) để
-    /// query <c>CreatedAt &lt; To</c> bao trọn cả ngày kết thúc; mặc định lấy
+    /// Chuẩn hóa khoảng ngày dùng chung cho các màn báo cáo: biên "nửa mở"
+    /// [From, To) — To là ngày kết thúc + 1 ngày (mốc độc quyền) để query
+    /// <c>CreatedAt &lt; To</c> bao trọn cả ngày kết thúc; mặc định lấy
     /// 7 ngày gần nhất. Gom bản copy-paste trước đây nằm ở DashboardAppService
     /// và ProfitReportAppService về 1 chỗ để đổi 1 lần là áp dụng khắp nơi.
     /// </summary>
-    public static class DateRangeHelper
+    // [codequality-naming 2026-10-19] Đổi tên DateRangeHelper → DateRangeNormalizer:
+    // tên cũ "Helper" chung chung, tên mới mô tả đúng chức năng duy nhất của class.
+    public static class DateRangeNormalizer
     {
         /// <summary>
         /// Chuẩn hóa khoảng ngày: from/to null thì dùng mặc định (7 ngày gần
