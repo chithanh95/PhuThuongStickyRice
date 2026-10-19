@@ -15,16 +15,47 @@ namespace PhuThuongStickyRice.Application.Common
 {
     public interface IShortLinkAppService : IApplicationService
     {
+        /// <summary>
+        /// Admin: danh sách link ngắn, mới nhất trước, tối đa 500 dòng.
+        /// </summary>
+        /// <returns>Danh sách link ngắn.</returns>
         Task<List<ShortLinkDto>> GetListAsync();
+
+        /// <summary>
+        /// Tạo (hoặc tái sử dụng) link ngắn cho một URL. Public vì nút "Link
+        /// ngắn" hiển thị cho mọi khách; mỗi URL chỉ có một mã duy nhất —
+        /// tạo lại URL đã có thì trả về mã cũ thay vì sinh mã mới.
+        /// </summary>
+        /// <param name="dto">URL đích cần rút gọn.</param>
+        /// <returns>Link ngắn (mã + URL đích).</returns>
         Task<ShortLinkDto> CreateAsync(CreateShortLinkDto dto);
+
+        /// <summary>
+        /// Admin: xóa một link ngắn.
+        /// </summary>
+        /// <param name="id">Id link cần xóa.</param>
         Task DeleteAsync(Guid id);
 
-        /// <summary>Public: resolves a code to its target URL (null when unknown).</summary>
+        /// <summary>
+        /// Public: giải mã thành URL đích để redirect (null khi mã không tồn tại).
+        /// </summary>
+        /// <param name="code">Mã rút gọn (không phân biệt hoa thường).</param>
+        /// <returns>URL đích hoặc null.</returns>
         Task<string> ResolveAsync(string code);
     }
 
+    /// <summary>
+    /// Quản lý link rút gọn dạng <c>/s/abc123</c> cho shop: nút "Link ngắn" ở
+    /// màn hình xem nhanh sản phẩm tạo link ngắn cho URL sản phẩm để chia sẻ
+    /// Zalo/Facebook; truy cập link sẽ chuyển hướng (redirect) về URL gốc.
+    /// Mã được sinh ngẫu nhiên để không đoán được, chữ dễ nhầm bị loại bỏ.
+    /// </summary>
     public class ShortLinkAppService : ApplicationService, IShortLinkAppService
     {
+        /// <summary>
+        /// Ký tự dùng sinh mã: loại bỏ l/1/I/o/0 để khách đọc/đánh lại mã
+        /// không bị nhầm lẫn ký tự giống nhau.
+        /// </summary>
         private const string CodeChars = "abcdefghjkmnpqrstuvwxyz23456789";
 
         private readonly IRepository<ShortLink, Guid> _links;
@@ -100,6 +131,11 @@ namespace PhuThuongStickyRice.Application.Common
             return entity?.TargetUrl;
         }
 
+        /// <summary>
+        /// Sinh mã rút gọn 6 ký tự duy nhất. Thử tối đa 20 lần để tránh trùng;
+        /// nếu vẫn trùng (gần như không thể) thì lấy 6 ký tự đầu của GUID để
+        /// đảm bảo không bao giờ lỗi khi tạo link.
+        /// </summary>
         private async Task<string> GenerateUniqueCodeAsync()
         {
             // Dùng RNG an toàn mật mã thay vì Random.Shared để mã short-link

@@ -13,17 +13,47 @@ using PhuThuongStickyRice.Application.Staff;
 
 namespace PhuThuongStickyRice.Application.Staff
 {
+    /// <summary>
+    /// Quản lý lịch làm việc theo tuần của nhân viên (item 125): admin xem
+    /// lịch tuần, thêm/sửa/xóa ca cho từng nhân viên từng ngày.
+    /// </summary>
     public interface IWorkShiftAppService : IApplicationService
     {
-        /// <summary>Admin: shifts for the week containing the given date (Mon-Sun).</summary>
+        /// <summary>
+        /// Admin: lấy tất cả ca trong tuần (thứ 2 → chủ nhật) chứa ngày đã
+        /// cho, sắp theo ngày rồi theo giờ bắt đầu.
+        /// </summary>
+        /// <param name="dateInWeek">Một ngày bất kỳ trong tuần cần xem.</param>
+        /// <returns>Danh sách ca của tuần đó.</returns>
         Task<List<WorkShiftDto>> GetWeekAsync(DateTime dateInWeek);
 
+        /// <summary>
+        /// Admin: thêm ca mới. Tên nhân viên bắt buộc, giờ kết thúc phải sau
+        /// giờ bắt đầu; ngày lưu về dạng ngày (bỏ phần giờ).
+        /// </summary>
+        /// <param name="input">Nhân viên, ngày, giờ bắt đầu/kết thúc, ghi chú.</param>
+        /// <returns>Ca vừa tạo.</returns>
         Task<WorkShiftDto> CreateAsync(CreateUpdateWorkShiftDto input);
+
+        /// <summary>
+        /// Admin: cập nhật ca đã xếp. Kiểm tra hợp lệ giống khi tạo.
+        /// </summary>
+        /// <param name="id">Id ca cần sửa.</param>
+        /// <param name="input">Thông tin ca mới.</param>
+        /// <returns>Ca sau khi cập nhật.</returns>
         Task<WorkShiftDto> UpdateAsync(Guid id, CreateUpdateWorkShiftDto input);
+
+        /// <summary>
+        /// Admin: xóa ca khỏi lịch.
+        /// </summary>
+        /// <param name="id">Id ca cần xóa.</param>
         Task DeleteAsync(Guid id);
     }
 
-    /// <summary>Item 125: staff work shifts.</summary>
+    /// <summary>
+    /// Lưu lịch ca làm việc của nhân viên theo tuần; tuần tính từ thứ 2 đến
+    /// chủ nhật theo cách hiển thị lịch làm việc của quán. Chỉ admin quản lý.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class WorkShiftAppService : ApplicationService, IWorkShiftAppService
     {
@@ -41,7 +71,10 @@ namespace PhuThuongStickyRice.Application.Staff
         public virtual async Task<List<WorkShiftDto>> GetWeekAsync(DateTime dateInWeek)
         {
             var date = dateInWeek.Date;
-            // Monday-first week.
+            // Tuần bắt đầu thứ 2: .NET quy ước DayOfWeek.Sunday = 0 nên dùng
+            // công thức (+6) % 7 để chủ nhật lùi 6 ngày, các thứ còn lại lùi
+            // đúng số ngày về thứ 2. Biên trên dùng < (độc quyền) nên ca đúng
+            // ngày chủ nhật vẫn được tính (sunday = thứ 2 tuần sau).
             var monday = date.AddDays(-(((int)date.DayOfWeek + 6) % 7));
             var sunday = monday.AddDays(7);
 
@@ -88,6 +121,11 @@ namespace PhuThuongStickyRice.Application.Staff
             await _shifts.DeleteAsync(id, autoSave: true);
         }
 
+        /// <summary>
+        /// Kiểm tra dữ liệu ca trước khi lưu: tên nhân viên bắt buộc và giờ
+        /// kết thúc phải sau giờ bắt đầu (ca qua đêm chưa hỗ trợ nên coi là
+        /// nhập sai giờ).
+        /// </summary>
         private static void Validate(CreateUpdateWorkShiftDto input)
         {
             if (string.IsNullOrWhiteSpace(input?.StaffName))

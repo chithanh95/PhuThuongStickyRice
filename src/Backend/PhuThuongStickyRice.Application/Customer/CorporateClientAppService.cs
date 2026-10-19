@@ -14,19 +14,61 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Customer
 {
+    /// <summary>
+    /// Quản lý khách hàng doanh nghiệp đặt món định kỳ theo tuần (item 122).
+    /// Mỗi công ty gắn một thứ trong tuần giao món cố định; sáng mỗi ngày
+    /// hệ thống lọc ra các công ty "đến hẹn" để chuẩn bị đơn.
+    /// </summary>
     public interface ICorporateClientAppService : IApplicationService
     {
+        /// <summary>
+        /// Admin: danh sách công ty, sắp theo tên, tối đa 200 dòng (server-side).
+        /// </summary>
+        /// <returns>Danh sách khách hàng doanh nghiệp.</returns>
         Task<List<CorporateClientDto>> GetListAsync();
+
+        /// <summary>
+        /// Admin: xem chi tiết một công ty.
+        /// </summary>
+        /// <param name="id">Id khách hàng doanh nghiệp.</param>
+        /// <returns>Thông tin chi tiết công ty.</returns>
         Task<CorporateClientDto> GetAsync(Guid id);
+
+        /// <summary>
+        /// Admin: thêm công ty mới. SĐT được chuẩn hóa về dạng chữ số;
+        /// tên công ty là bắt buộc, các trường còn lại có thể để trống.
+        /// </summary>
+        /// <param name="input">Thông tin công ty (tên, liên hệ, SĐT, thứ giao, món đặt).</param>
+        /// <returns>Công ty vừa tạo.</returns>
         Task<CorporateClientDto> CreateAsync(CreateUpdateCorporateClientDto input);
+
+        /// <summary>
+        /// Admin: cập nhật thông tin công ty (kể cả bật/tắt trạng thái hoạt động).
+        /// </summary>
+        /// <param name="id">Id công ty.</param>
+        /// <param name="input">Thông tin mới.</param>
+        /// <returns>Công ty sau khi cập nhật.</returns>
         Task<CorporateClientDto> UpdateAsync(Guid id, CreateUpdateCorporateClientDto input);
+
+        /// <summary>
+        /// Admin: xóa công ty khỏi danh sách đặt định kỳ.
+        /// </summary>
+        /// <param name="id">Id công ty.</param>
         Task DeleteAsync(Guid id);
 
-        /// <summary>Active clients whose standing order falls on today's weekday.</summary>
+        /// <summary>
+        /// Khách đặt theo lịch định kỳ: lấy các công ty đang hoạt động có thứ
+        /// giao món trùng với thứ hôm nay (tính theo giờ Việt Nam).
+        /// </summary>
+        /// <returns>Danh sách công ty "đến hẹn" hôm nay.</returns>
         Task<List<CorporateClientDto>> GetDueTodayAsync();
     }
 
-    /// <summary>Item 122: corporate weekly-order customers.</summary>
+    /// <summary>
+    /// Lưu trữ và tra cứu khách hàng doanh nghiệp đặt món định kỳ theo tuần.
+    /// "Thứ trong tuần" của mỗi công ty được so theo ngày Việt Nam (không
+    /// dùng giờ UTC của server) vì khách đặt theo lịch sinh hoạt thực tế.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class CorporateClientAppService : ApplicationService, ICorporateClientAppService
     {
@@ -97,6 +139,8 @@ namespace PhuThuongStickyRice.Application.Customer
 
         public virtual async Task<List<CorporateClientDto>> GetDueTodayAsync()
         {
+            // Tính "hôm nay" theo giờ Việt Nam: khách lên lịch giao món theo
+            // ngày dương lịch họ nhìn thấy, không theo múi giờ UTC của server.
             var weekday = (int)VietnamTime.Today().DayOfWeek;
             var queryable = await _clients.GetQueryableAsync();
             var list = await _asyncExecuter.ToListAsync(
