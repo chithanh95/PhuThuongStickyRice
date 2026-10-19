@@ -3,6 +3,7 @@ using PhuThuongStickyRice.Web.Components.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Admin.Services
@@ -24,10 +25,53 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         // ---- Feature flags (item 105) ----
 
-        /// <summary>Lấy map cờ tính năng (key → bật/tắt) cho toàn bộ web.</summary>
+        /// <summary>
+        /// TTL cache client-side cho map cờ tính năng: flags đổi hiếm (admin bật/tắt
+        /// thủ công) nhưng endpoint được gọi mỗi lượt xem landing + mỗi lần vào
+        /// checkout. Cache nằm trên static field vì service đăng ký Transient qua
+        /// AddHttpClient (mỗi page inject instance riêng) nên instance-field không
+        /// chia sẻ được. Cả 2 caller (landing, checkout) chỉ đọc dictionary
+        /// (TryGetValue) nên trả cùng instance là an toàn.
+        /// </summary>
+        private static readonly TimeSpan FeatureFlagMapCacheTtl = TimeSpan.FromMinutes(2);
+        private static readonly SemaphoreSlim FeatureFlagMapCacheLock = new(1, 1);
+        private static Dictionary<string, bool>? _cachedFeatureFlagMap;
+        private static DateTimeOffset _cachedFeatureFlagMapAt;
+
+        /// <summary>
+        /// Lấy map cờ tính năng (key → bật/tắt) cho toàn bộ web.
+        /// Kết quả được cache client-side 2 phút (static, vì service là Transient):
+        /// cắt ~1 HTTP round-trip trên mỗi lượt xem landing/checkout.
+        /// </summary>
         public async Task<Dictionary<string, bool>> GetFeatureFlagMapAsync()
         {
-            return await GetAsync<Dictionary<string, bool>>("api/featureflags");
+            var cached = _cachedFeatureFlagMap;
+            if (cached is not null && DateTimeOffset.UtcNow - _cachedFeatureFlagMapAt < FeatureFlagMapCacheTtl)
+                return cached;
+
+            // Lock tránh N request cùng fetch khi cache hết hạn (chỉ 1 fetch).
+            await FeatureFlagMapCacheLock.WaitAsync();
+            try
+            {
+                // Kiểm tra lại sau khi vào lock: request khác có thể đã refresh xong.
+                cached = _cachedFeatureFlagMap;
+                if (cached is not null && DateTimeOffset.UtcNow - _cachedFeatureFlagMapAt < FeatureFlagMapCacheTtl)
+                    return cached;
+
+                var fresh = await GetAsync<Dictionary<string, bool>>("api/featureflags");
+                if (fresh is not null)
+                {
+                    _cachedFeatureFlagMap = fresh;
+                    _cachedFeatureFlagMapAt = DateTimeOffset.UtcNow;
+                    return fresh;
+                }
+                // Fetch trả null: không ghi đè cache cũ (nếu có), giữ hành vi cũ.
+                return cached!;
+            }
+            finally
+            {
+                FeatureFlagMapCacheLock.Release();
+            }
         }
 
         /// <summary>Lấy danh sách chi tiết cờ tính năng (admin).</summary>
@@ -41,8 +85,20 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         /// <param name="enabled">true = bật, false = tắt.</param>
         public async Task<FeatureFlagModel> SetFeatureFlagAsync(string key, bool enabled)
         {
-            return await PutAsync<FeatureFlagModel>($"api/featureflags/{Uri.EscapeDataString(key)}",
+            var result = await PutAsync<FeatureFlagModel>($"api/featureflags/{Uri.EscapeDataString(key)}",
                 new { Enabled = enabled });
+            // Admin vừa đổi cờ: xóa cache map public để lần đọc sau lấy dữ liệu mới.
+            InvalidateFeatureFlagCache();
+            return result;
+        }
+
+        /// <summary>
+        /// Xóa cache client-side của <see cref="GetFeatureFlagMapAsync"/> (vd sau khi admin
+        /// bật/tắt cờ). Lần gọi sau sẽ fetch lại từ server.
+        /// </summary>
+        public static void InvalidateFeatureFlagCache()
+        {
+            _cachedFeatureFlagMap = null;
         }
 
         // ---- Branches (item 109) ----

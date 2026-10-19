@@ -1300,17 +1300,17 @@
         {
             return;
         }
-        if (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
-        {
-            try
-            {
-                _bankInfo = await ShopService.GetBankTransferInfoAsync();
-            }
-            catch (Exception)
-            {
-                _bankInfo = new BankTransferInfoModel();
-            }
-        }
+
+        // The five loads below are independent (each only writes its own
+        // fields) — start them together so the order-detail screen resolves
+        // in one parallel batch instead of five sequential round-trips.
+        var bankInfoTask = (_order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
+            ? ShopService.GetBankTransferInfoAsync()
+            : null;
+        var loyaltyTask = ShopEngagementService.GetLoyaltyByPhoneAsync(_order.CustomerPhone);
+        var addressesTask = AdminSystemService.GetAddressesAsync(_order.CustomerPhone);
+        var hotlineTask = ShopSettingsService.GetPublicAsync();
+        var surveyTask = MaybeShowSurveyPopupAsync();
 
         // Poll for payment-status updates (e.g. admin confirms the transfer)
         // while the payment is still unsettled.
@@ -1319,10 +1319,22 @@
             StartPolling();
         }
 
+        if (bankInfoTask != null)
+        {
+            try
+            {
+                _bankInfo = await bankInfoTask;
+            }
+            catch (Exception)
+            {
+                _bankInfo = new BankTransferInfoModel();
+            }
+        }
+
         // Loyalty profile for the order phone (points, tier, birthday).
         try
         {
-            _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(_order.CustomerPhone);
+            _loyalty = await loyaltyTask;
             _birthdayInput = _loyalty?.DateOfBirth;
         }
         catch (Exception)
@@ -1330,13 +1342,21 @@
             _loyalty = null;
         }
 
-        // Item 119: address book for the order phone.
-        await LoadAddressBookAsync();
+        // Item 119: address book for the order phone (same fallback as
+        // LoadAddressBookAsync — fail-soft).
+        try
+        {
+            _addresses = await addressesTask;
+        }
+        catch (Exception)
+        {
+            _addresses = new System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel>();
+        }
 
         // TC3: shop hotline for the "call hotline to change" note (fail-soft).
         try
         {
-            _hotline = (await ShopSettingsService.GetPublicAsync())?.Hotline;
+            _hotline = (await hotlineTask)?.Hotline;
         }
         catch (Exception)
         {
@@ -1344,7 +1364,7 @@
         }
 
         // Khảo sát hài lòng: chỉ hiện khi đơn đã xong và chưa đánh giá/bỏ qua.
-        await MaybeShowSurveyPopupAsync();
+        await surveyTask;
     }
 
     /// <summary>

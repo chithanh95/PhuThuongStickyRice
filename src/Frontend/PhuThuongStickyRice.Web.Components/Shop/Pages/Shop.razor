@@ -132,12 +132,12 @@ else
 @if (_loadFailed)
 {
     @* Wave 6d (item 38): friendly full-page error, PWA offline.html look. *@
-    <div class="card" style="background: #f5ebcd; border: none;">
+    <div class="card shp-err-card">
         <div class="card-body text-center py-5">
-            <div style="font-size: 4rem;">😞</div>
-            <h2 style="font-family: Georgia, serif; color: #bd4a4a;"><!-- UIUX-1019 A3: đỏ danger Lexa (trước #7a1b2e đỏ nâu lệch chuẩn) — đồng nhất trang lỗi /error -->Không kết nối được tới máy chủ</h2>
-            <p class="mb-4" style="color: #495057;"><!-- UIUX-1019 A3: chữ body chuẩn Lexa (trước #4a2b1a nâu lệch tông) -->Kiểm tra mạng rồi thử lại.</p>
-            <button class="btn" style="background: #7a6fbe; color: #fff; padding: 12px 28px; border-radius: 6px;" @onclick="RetryLoad"><!-- UIUX-1019 A3: nút Thử lại tím primary Lexa (trước #7a1b2e) -->Thử lại</button>
+            <div class="shp-err-emoji">😞</div>
+            <h2 class="shp-err-title">Không kết nối được tới máy chủ</h2>
+            <p class="mb-4 shp-err-desc">Kiểm tra mạng rồi thử lại.</p>
+            <button class="btn shp-err-retry" @onclick="RetryLoad">Thử lại</button>
         </div>
     </div>
 }
@@ -830,11 +830,19 @@ else
 
             await Task.WhenAll(branchesTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
 
+            // Ratings / sold-quantities / daily-remaining are independent of
+            // each other — start all three now so they resolve in one parallel
+            // batch instead of three sequential round-trips. Each keeps its own
+            // failure handling below, so semantics are unchanged.
+            var ratingsTask = ShopService.GetProductRatingsAsync();
+            var soldQuantitiesTask = ShopService.GetSoldQuantitiesAsync();
+            var dailyRemainingTask = ShopService.GetDailyRemainingAsync();
+
             // Wave 6b (item 26): rating aggregates are fail-soft — the shop
             // hides the stars when the call fails.
             try
             {
-                var ratings = await ShopService.GetProductRatingsAsync();
+                var ratings = await ratingsTask;
                 _ratings = (ratings ?? new List<ProductRatingModel>())
                     .Where(r => r.ReviewCount > 0)
                     .ToDictionary(r => r.ProductId, r => (r.AverageRating, r.ReviewCount));
@@ -845,13 +853,13 @@ else
             }
 
             // BA shop item 4: sold quantities for "Đã bán N suất" — fail-soft.
-            _soldQuantities = await ShopService.GetSoldQuantitiesAsync();
+            _soldQuantities = await soldQuantitiesTask;
 
             // Item 165: daily-limit status ("Còn N suất") — fail-soft, the
             // badge simply hides when the call fails.
             try
             {
-                var remaining = await ShopService.GetDailyRemainingAsync();
+                var remaining = await dailyRemainingTask;
                 var byId = (remaining ?? new List<ProductDailyRemainingModel>())
                     .ToDictionary(r => r.ProductId);
                 foreach (var p in _products)
