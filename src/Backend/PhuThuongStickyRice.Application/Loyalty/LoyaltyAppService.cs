@@ -369,7 +369,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private async Task<string> GenerateReferralCodeAsync()
         {
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            var random = new Random();
+            var random = Random.Shared; // perf-hunt 2026-10-19: Random.Shared is thread-safe and avoids same-tick seed collisions across concurrent requests
 
             for (var attempt = 0; attempt < 10; attempt++)
             {

@@ -94,17 +94,20 @@ namespace PhuThuongStickyRice.Application.Discounts
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public DiscountAppService(
             IRepository<DiscountCode, Guid> discounts,
             IAsyncQueryableExecuter asyncExecuter,
             IPermissionService permissions,
-            IStaffActivityLogger activityLogger)
+            IStaffActivityLogger activityLogger,
+            Products.IProductCatalogCache catalogCache)
         {
             _discounts = discounts;
             _asyncExecuter = asyncExecuter;
             _permissions = permissions;
             _activityLogger = activityLogger;
+            _catalogCache = catalogCache;
         }
 
         [Authorize(Roles = "Admin")]
@@ -146,6 +149,7 @@ namespace PhuThuongStickyRice.Application.Discounts
                 VoucherType = dto.VoucherType
             };
             await _discounts.InsertAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
 
             // Item 156: staff activity log.
             await _activityLogger.LogAsync(StaffActions.DiscountCreate, $"Thêm mã giảm giá {entity.Code}.");
@@ -173,6 +177,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             entity.IsActive = dto.IsActive;
             entity.VoucherType = dto.VoucherType;
             await _discounts.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
 
             // Item 156: staff activity log.
             await _activityLogger.LogAsync(StaffActions.DiscountUpdate, $"Sửa mã giảm giá {entity.Code}.");
@@ -188,6 +193,7 @@ namespace PhuThuongStickyRice.Application.Discounts
 
             var entity = await _discounts.GetAsync(id);
             await _discounts.DeleteAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
 
             // Item 156: staff activity log.
             await _activityLogger.LogAsync(StaffActions.DiscountDelete, $"Xóa mã giảm giá {entity.Code}.");
@@ -307,6 +313,7 @@ namespace PhuThuongStickyRice.Application.Discounts
                 OwnerPhone = string.IsNullOrWhiteSpace(dto.OwnerPhone) ? null : dto.OwnerPhone.Trim()
             };
             await _discounts.InsertAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
@@ -354,21 +361,28 @@ namespace PhuThuongStickyRice.Application.Discounts
 
         /// <summary>
         /// Item 139 (Public): active, unexpired public discount codes that
-        /// still have uses left. No cache — this service does not use
-        /// IProductCatalogCache, and the result is cheap to compute.
+        /// still have uses left. Used by checkout to auto-apply the best one.
+        /// perf-hunt 2026-10-19: called on every checkout/cart view, so cache
+        /// 5 minutes via IProductCatalogCache. Safe because ApplyAsync /
+        /// ValidateAndComputeAsync re-check IsActive/expiry/MaxUses server-side
+        /// at apply time; worst case a just-exhausted code shows for ≤5 min and
+        /// fails validation gracefully. Invalidated on every write path.
         /// </summary>
         [AllowAnonymous]
         public virtual async Task<List<DiscountCodeDto>> GetActivePublicAsync()
         {
-            var now = DateTime.UtcNow;
-            var queryable = await _discounts.GetQueryableAsync();
-            var entities = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.IsActive
-                    && (x.OwnerPhone == null || x.OwnerPhone == "")
-                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
-                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
-                    .OrderByDescending(x => x.CreatedDateTime));
-            return entities.Select(MapToDto).ToList();
+            return await _catalogCache.GetOrAddAsync("discounts:active-public", async () =>
+            {
+                var now = DateTime.UtcNow;
+                var queryable = await _discounts.GetQueryableAsync();
+                var entities = await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => x.IsActive
+                        && (x.OwnerPhone == null || x.OwnerPhone == "")
+                        && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
+                        && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
+                        .OrderByDescending(x => x.CreatedDateTime));
+                return entities.Select(MapToDto).ToList();
+            });
         }
 
         private static (bool Valid, string Message) CheckUsable(
@@ -432,7 +446,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         private async Task<string> GenerateUniqueCodeAsync(string prefix)
         {
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            var random = new Random();
+            var random = Random.Shared; // perf-hunt 2026-10-19: Random.Shared is thread-safe and avoids same-tick seed collisions across concurrent requests
 
             for (var attempt = 0; attempt < 10; attempt++)
             {

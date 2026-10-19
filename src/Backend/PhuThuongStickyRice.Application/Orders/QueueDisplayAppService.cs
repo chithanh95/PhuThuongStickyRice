@@ -46,12 +46,20 @@ namespace PhuThuongStickyRice.Application.Orders
                 { OrderStatus.Confirmed, OrderStatus.Preparing, OrderStatus.Delivering };
 
             var queryable = await _orders.GetQueryableAsync();
+            // perf-hunt 2026-10-19: this endpoint is polled every 15s by the
+            // /cho waiting screen. Project only the two columns the ticket
+            // loop needs instead of materializing full Order entities.
+            // NOTE: the row set and in-memory status filter are unchanged on
+            // purpose — QueueNumber (= position in the day's order sequence)
+            // is shown on the TV screen, so filtering statuses in SQL would
+            // renumber the visible tickets (business change).
             var today = await _asyncExecuter.ToListAsync(
                 queryable
                     .Where(x => x.CreatedAt >= dayStartUtc
                         && x.CreatedAt < dayEndUtc
                         && x.Status != OrderStatus.Cancelled)
-                    .OrderBy(x => x.CreatedAt));
+                    .OrderBy(x => x.CreatedAt)
+                    .Select(x => new { x.Status, x.OrderNumber }));
 
             var result = new List<QueueTicketDto>();
             for (var i = 0; i < today.Count; i++)

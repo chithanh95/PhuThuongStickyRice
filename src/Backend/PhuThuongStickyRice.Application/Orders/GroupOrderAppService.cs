@@ -212,7 +212,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         private async Task<string> GenerateUniqueCodeAsync()
         {
-            var random = new Random();
+            var random = Random.Shared; // perf-hunt 2026-10-19: Random.Shared is thread-safe and avoids same-tick seed collisions across concurrent requests
             for (var attempt = 0; attempt < 20; attempt++)
             {
                 var code = new string(
