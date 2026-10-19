@@ -30,12 +30,23 @@ namespace PhuThuongStickyRice.Application.Policies
         Task<PolicyPageDto> UpdateAsync(Guid id, UpdatePolicyPageDto dto);
     }
 
+    /// <summary>
+    /// Dịch vụ quản lý trang chính sách tĩnh (giao hàng, đổi trả, bảo mật...):
+    /// public đọc theo slug cho các link footer tại /chinh-sach/{slug},
+    /// admin sửa tiêu đề/nội dung/thứ tự tại /admin/chinh-sach. Slug là bất
+    /// biến vì link đã được rải ở footer khắp các trang public. Danh sách
+    /// public được cache, admin sửa xong thì xóa cache.
+    /// </summary>
     public class PolicyAppService : ApplicationService, IPolicyAppService
     {
         private readonly IRepository<PolicyPage, Guid> _pages;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>Khởi tạo dịch vụ trang chính sách.</summary>
+        /// <param name="pages">Repository trang chính sách.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn async.</param>
+        /// <param name="catalogCache">Cache dùng chung; invalidate khi trang chính sách thay đổi.</param>
         public PolicyAppService(
             IRepository<PolicyPage, Guid> pages,
             IAsyncQueryableExecuter asyncExecuter,
@@ -46,6 +57,11 @@ namespace PhuThuongStickyRice.Application.Policies
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Public: slug + tiêu đề mọi trang chính sách, để footer các trang
+        /// public dựng link /chinh-sach/{slug}. Cache theo danh sách.
+        /// </summary>
+        /// <returns>Danh sách slug + tiêu đề, sắp xếp theo thứ tự hiển thị.</returns>
         [AllowAnonymous]
         public virtual async Task<List<PolicyPageSummaryDto>> GetPublicListAsync()
         {
@@ -66,6 +82,13 @@ namespace PhuThuongStickyRice.Application.Policies
             return new List<PolicyPageSummaryDto>(cached);
         }
 
+        /// <summary>
+        /// Public: đọc nội dung một trang chính sách theo slug. Lấy toàn bộ
+        /// danh sách 1 lần (cache) rồi lọc trong memory — tránh tạo cache key
+        /// cho mỗi slug lạ (bot có thể quét slug không tồn tại).
+        /// </summary>
+        /// <param name="slug">Slug trang (không phân biệt hoa/thường).</param>
+        /// <returns>Trang chính sách; null nếu slug không tồn tại.</returns>
         [AllowAnonymous]
         public virtual async Task<PolicyPageDto> GetPublicAsync(string slug)
         {
@@ -90,6 +113,8 @@ namespace PhuThuongStickyRice.Application.Policies
                 string.Equals(x.Slug, normalized, StringComparison.OrdinalIgnoreCase));
         }
 
+        /// <summary>Admin: toàn bộ trang chính sách kèm nội dung, để sửa trong màn hình quản trị.</summary>
+        /// <returns>Danh sách trang, sắp xếp theo thứ tự hiển thị.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<PolicyPageDto>> GetListAsync()
         {
@@ -99,6 +124,14 @@ namespace PhuThuongStickyRice.Application.Policies
             return items.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: sửa tiêu đề/nội dung/thứ tự của một trang. Slug không đổi
+        /// (link footer public đã trỏ theo slug nên đổi slug sẽ gãy link).
+        /// Xóa cache public sau khi lưu để trang web thấy ngay.
+        /// </summary>
+        /// <param name="id">Id trang chính sách.</param>
+        /// <param name="dto">Tiêu đề, nội dung, thứ tự hiển thị mới.</param>
+        /// <returns>Trang sau khi cập nhật.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<PolicyPageDto> UpdateAsync(Guid id, UpdatePolicyPageDto dto)
         {

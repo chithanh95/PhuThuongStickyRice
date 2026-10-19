@@ -33,6 +33,7 @@ namespace PhuThuongStickyRice.Application.Shop
         private readonly IShopSettingAppService _shopSettings;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Khởi tạo dịch vụ điểm danh với các repository và service liên quan.</summary>
         public CheckInAppService(
             ICheckInRepository checkIns,
             ILoyaltyAccountRepository loyaltyAccounts,

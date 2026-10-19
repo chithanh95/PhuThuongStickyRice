@@ -53,6 +53,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IShopSettingAppService _shopSettings;
 
+        /// <summary>Khởi tạo dịch vụ gói đăng ký với các repository và service liên quan.</summary>
         public SubscriptionAppService(
             ISubscriptionRepository subscriptions,
             IOrderRepository orders,

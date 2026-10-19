@@ -64,6 +64,8 @@ namespace PhuThuongStickyRice.Application.Shop
         /// <summary>Vietnam calendar date (UTC+7, no DST).</summary>
         internal static DateTime VietnamToday() => VietnamTime.Today();
 
+        /// <summary>Admin: toàn bộ lịch nghỉ, ngày gần nhất trước.</summary>
+        /// <returns>Danh sách ngày nghỉ, sắp xếp theo ngày tăng dần.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<HolidayScheduleDto>> GetListAsync()
         {
@@ -73,6 +75,13 @@ namespace PhuThuongStickyRice.Application.Shop
             return list.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: thêm một ngày nghỉ. Ngày trùng (kể cả khác id) bị từ chối
+        /// vì 1 ngày chỉ có 1 bản ghi trong lịch nghỉ. Xóa cache public sau
+        /// khi lưu để trang shop thấy ngay.
+        /// </summary>
+        /// <param name="dto">Ngày nghỉ, lý do, có nghỉ cả ngày không.</param>
+        /// <returns>Ngày nghỉ vừa tạo.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<HolidayScheduleDto> CreateAsync(CreateHolidayScheduleDto dto)
         {
@@ -102,6 +111,14 @@ namespace PhuThuongStickyRice.Application.Shop
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: sửa một ngày nghỉ. Không cho trùng ngày với bản ghi khác
+        /// (x != id) để lịch nghỉ không có 2 dòng cùng ngày. Xóa cache public
+        /// sau khi lưu.
+        /// </summary>
+        /// <param name="id">Id ngày nghỉ.</param>
+        /// <param name="dto">Ngày nghỉ, lý do, có nghỉ cả ngày không.</param>
+        /// <returns>Ngày nghỉ sau khi cập nhật.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<HolidayScheduleDto> UpdateAsync(Guid id, UpdateHolidayScheduleDto dto)
         {
@@ -126,6 +143,8 @@ namespace PhuThuongStickyRice.Application.Shop
             return MapToDto(entity);
         }
 
+        /// <summary>Admin: xóa một ngày nghỉ khỏi lịch (xóa cache public sau khi lưu).</summary>
+        /// <param name="id">Id ngày nghỉ.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task DeleteAsync(Guid id)
         {
@@ -134,6 +153,12 @@ namespace PhuThuongStickyRice.Application.Shop
             _catalogCache.Invalidate();
         }
 
+        /// <summary>
+        /// Public: các ngày nghỉ trong 30 ngày tới (tính theo lịch Việt Nam),
+        /// để checkout/landing hiển thị quán có mở hôm nay hay không. Cache
+        /// theo key kèm ngày VN nên qua nửa đêm không trả danh sách cũ.
+        /// </summary>
+        /// <returns>Danh sách ngày nghỉ sắp tới, sắp xếp theo ngày tăng dần.</returns>
         [AllowAnonymous]
         public virtual async Task<List<HolidayScheduleDto>> GetUpcomingAsync()
         {

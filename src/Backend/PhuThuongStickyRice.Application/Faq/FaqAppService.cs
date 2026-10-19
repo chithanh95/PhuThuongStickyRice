@@ -57,6 +57,13 @@ namespace PhuThuongStickyRice.Application.Faq
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Public: danh sách FAQ đang hiển thị công khai, lọc tùy chọn theo
+        /// từ khóa tìm trong câu hỏi/trả lời. Danh sách gốc được cache;
+        /// từ khóa chỉ lọc trên memory để không tạo cache key mỗi từ.
+        /// </summary>
+        /// <param name="searchTerm">Từ khóa tìm kiếm (tùy chọn).</param>
+        /// <returns>FAQ đang hiển thị, sắp xếp theo thứ tự admin đặt.</returns>
         [AllowAnonymous]
         public virtual async Task<List<FaqItemDto>> GetPublicAsync(string searchTerm)
         {
@@ -87,6 +94,8 @@ namespace PhuThuongStickyRice.Application.Faq
                 .ToList();
         }
 
+        /// <summary>Admin: toàn bộ FAQ (kể cả đã ẩn), sắp xếp theo thứ tự hiển thị.</summary>
+        /// <returns>Danh sách FAQ đầy đủ.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<FaqItemDto>> GetListAsync()
         {
@@ -96,6 +105,9 @@ namespace PhuThuongStickyRice.Application.Faq
             return items.Select(MapToDto).ToList();
         }
 
+        /// <summary>Admin: tạo một mục FAQ mới (xóa cache public sau khi lưu).</summary>
+        /// <param name="dto">Câu hỏi, trả lời, thứ tự hiển thị, trạng thái hiển thị.</param>
+        /// <returns>Mục FAQ vừa tạo.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<FaqItemDto> CreateAsync(CreateFaqItemDto dto)
         {
@@ -111,6 +123,10 @@ namespace PhuThuongStickyRice.Application.Faq
             return MapToDto(entity);
         }
 
+        /// <summary>Admin: cập nhật một mục FAQ (xóa cache public sau khi lưu).</summary>
+        /// <param name="id">Id mục FAQ.</param>
+        /// <param name="dto">Nội dung mới.</param>
+        /// <returns>Mục FAQ sau khi cập nhật.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<FaqItemDto> UpdateAsync(Guid id, CreateFaqItemDto dto)
         {
@@ -124,6 +140,8 @@ namespace PhuThuongStickyRice.Application.Faq
             return MapToDto(entity);
         }
 
+        /// <summary>Admin: xóa một mục FAQ (xóa cache public sau khi lưu).</summary>
+        /// <param name="id">Id mục FAQ.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task DeleteAsync(Guid id)
         {
