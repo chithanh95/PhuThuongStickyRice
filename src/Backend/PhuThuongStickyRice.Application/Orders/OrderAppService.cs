@@ -1989,6 +1989,18 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <returns>Đơn hàng sau khi cập nhật.</returns>
         public virtual async Task<OrderDto> UpdateLinesByCustomerAsync(UpdateOrderLinesInput input)
         {
+            // bug-hunt 2026-10-20: 2 request sửa đơn đồng thời (2 tab, retry
+            // mạng) cùng đọc oldTotal cũ rồi cùng trừ/hoàn ví theo delta riêng
+            // → ví bị trừ/hoàn 2 lần trong khi tổng đơn cuối chỉ phản ánh 1 lần
+            // sửa. Serialize theo (mã đơn + 9 số cuối SĐT) để request sau luôn
+            // đọc tổng mới nhất sau khi request trước đã commit.
+            return await KeyedAsyncLock.RunAsync(
+                OrderPhoneLockKey("update-order-lines", input?.OrderNumber, input?.CustomerPhone),
+                () => UpdateLinesByCustomerCoreAsync(input));
+        }
+
+        private async Task<OrderDto> UpdateLinesByCustomerCoreAsync(UpdateOrderLinesInput input)
+        {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
 
             var oldTotal = order.TotalAmount.Amount;
@@ -2174,6 +2186,19 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <param name="input">Mã đơn, SĐT khách, điểm sao và nhận xét.</param>
         /// <returns>Đánh giá vừa tạo.</returns>
         public virtual async Task<OrderReviewDto> SubmitReviewAsync(SubmitReviewInput input)
+        {
+            // bug-hunt 2026-10-20: 2 request đồng thời (2 tab, retry sau timeout)
+            // cùng qua check "chưa đánh giá" rồi cùng insert → request thua nổ
+            // DbUpdateException (unique IX OrderId) thành 500, và có thể sinh 2
+            // voucher thưởng ảnh cho 1 đơn. Serialize theo (mã đơn + 9 số cuối
+            // SĐT) để request sau nhận đúng lỗi thân thiện "Đơn hàng này đã
+            // được đánh giá." — unique index DB vẫn là backstop cuối cùng.
+            return await KeyedAsyncLock.RunAsync(
+                OrderPhoneLockKey("submit-review", input?.OrderNumber, input?.CustomerPhone),
+                () => SubmitReviewCoreAsync(input));
+        }
+
+        private async Task<OrderReviewDto> SubmitReviewCoreAsync(SubmitReviewInput input)
         {
             var order = await GetCompletedOrderForReviewAsync(input);
 
@@ -2767,6 +2792,26 @@ namespace PhuThuongStickyRice.Application.Orders
             return order;
         }
 
+        /// <summary>
+        /// Dựng khóa serialize cho các thao tác theo đơn của khách: mã đơn
+        /// (trim + uppercase) + 9 số cuối SĐT — cùng độ chi tiết với
+        /// <see cref="PhoneNumber.PhonesMatch"/> để 2 request cùng 1 đơn/SĐT
+        /// nhưng khác format input ("0901 234 567" vs "0901234567") vẫn rơi
+        /// vào cùng 1 khóa <see cref="KeyedAsyncLock"/>.
+        /// </summary>
+        /// <param name="operation">Tiền tố phân biệt loại thao tác.</param>
+        /// <param name="orderNumber">Mã đơn, có thể null.</param>
+        /// <param name="customerPhone">SĐT khách, có thể null.</param>
+        /// <returns>Chuỗi khóa đã chuẩn hóa.</returns>
+        private static string OrderPhoneLockKey(string operation, string? orderNumber, string? customerPhone)
+        {
+            var digits = PhoneNumber.DigitsOnly(customerPhone);
+            var tail = digits.Length > PhoneNumber.TailDigitCount
+                ? digits.Substring(digits.Length - PhoneNumber.TailDigitCount)
+                : digits;
+            return $"{operation}:{orderNumber?.Trim().ToUpperInvariant()}:{tail}";
+        }
+
         private static OrderReviewDto MapReviewToDto(OrderReview review)
         {
             return new OrderReviewDto
@@ -3356,6 +3401,17 @@ namespace PhuThuongStickyRice.Application.Orders
                     InvalidPhoneFormatMessage);
             }
 
+            // bug-hunt 2026-10-20: 2 request đồng thời (double-click nút "Nhận
+            // voucher", retry mạng) cùng qua check GetUsableCodeAsync rồi cùng
+            // sinh mã → 1 SĐT nhận 2 voucher "đơn đầu tiên". Serialize theo SĐT
+            // để check + sinh mã là nguyên tử.
+            return await KeyedAsyncLock.RunAsync(
+                $"first-order-voucher:{digits}",
+                () => GetFirstOrderVoucherCoreAsync(digits));
+        }
+
+        private async Task<FirstOrderVoucherDto> GetFirstOrderVoucherCoreAsync(string digits)
+        {
             // Normalize once (digits-only): the history check, the existing-code
             // lookup and the generated code's OwnerPhone must all use the same
             // form, otherwise reformatting the same number farms unlimited vouchers.
