@@ -853,3 +853,47 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 22:25 - Agent1 FIX 5 ===== */
+
+/* ===== UIUX run 00:10 — Agent1 Mobile =====
+   FIX 1 — Nhãn các ô nhập trong form tự phục vụ sửa đơn
+   (TrackOrder.razor:429 "Địa chỉ nhận hàng", :434 "Giờ giao mong muốn",
+   :456 "SĐT người nhận", :461 "Ghi chú"): label > small ~12.8px —
+   nhãn ô nhập mà nhỏ thì người lớn tuổi khó đọc/khó biết phải điền gì.
+   Nâng lên 14px, màu đậm hơn trên mobile; span.text-muted "(tùy chọn)"
+   bên trong giữ màu gốc nhờ rule riêng của Bootstrap.
+   (Verify: .to-selfservice .form-group > label > small chỉ khớp 4 nhãn
+   này — label trong modal hủy đơn dùng .form-check-label, không bị chạm.) */
+@media (max-width: 767.98px) {
+    .to-selfservice .form-group > label > small {
+        font-size: 14px;
+        color: #495057;
+    }
+}
+/* ===== END UIUX run 00:10 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 00:10 — Agent1 Mobile =====
+   FIX 2 — Nhãn "Ngày sinh (để nhận voucher sinh nhật)"
+   (TrackOrder.razor:203): small ~12.8px — thông tin quyền lợi (voucher
+   sinh nhật) nhưng mờ, người lớn tuổi dễ bỏ qua. Nâng lên 14px trên
+   mobile. (Selector theo id nên chỉ khớp đúng nhãn này.) */
+@media (max-width: 767.98px) {
+    label[for="to-birthday"] > small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 00:10 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 00:10 — Agent1 Mobile =====
+   FIX 3 — Khối điểm loyalty "⭐ Bạn có X điểm / Hạng / Mã giới thiệu"
+   (TrackOrder.razor:191-198): p > small ~12.8px — thông tin TIỀN/điểm
+   quan trọng nhưng nhỏ với người lớn tuổi. Nâng lên 14px trên mobile.
+   (Selector .card-body > p > small còn phủ thêm 2 chỗ nhỏ khác trên
+   trang — gợi ý lịch sử đơn (:55) và "(tùy chọn)" (:540) — đều là chữ
+   hướng dẫn nên 14px cũng là cải thiện, không hại gì. Dòng "📅 Dự kiến
+   giao" (:159) đã 14px từ run 22:25 nên không đổi.) */
+@media (max-width: 767.98px) {
+    .card-body > p > small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 00:10 - Agent1 FIX 3 ===== */

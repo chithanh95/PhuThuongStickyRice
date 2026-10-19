@@ -430,3 +430,34 @@ html.dark .co-mobile-bar .co-total small {
     }
 }
 /* ===== END UIUX run 22:25 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 00:10 — Agent1 Mobile =====
+   FIX 4 — Thông báo đặt cọc "💰 Đơn chuyển khoản từ X cần đặt cọc trước"
+   (Checkout.razor:764-768, .co-summary .alert-warning): liên quan TIỀN,
+   khách cần thấy rõ để chuyển khoản đúng số tiền cọc, nhưng small
+   ~12.8px trong alert vàng. Nâng lên 14px, giãn dòng 1.55 trên mobile.
+   (Verify: .co-summary .alert-warning small chỉ khớp đúng alert này —
+   alert-warning ở :226/:323 nằm ngoài .co-summary; alert ở :778 không
+   chứa small.) */
+@media (max-width: 767.98px) {
+    .co-summary .alert-warning small {
+        font-size: 14px;
+        line-height: 1.55;
+    }
+}
+/* ===== END UIUX run 00:10 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 00:10 — Agent1 Mobile =====
+   FIX 5 — Chữ nhỏ trong các ô bảng tóm tắt đơn (Checkout.razor):
+   "Ăn kèm: ..."/"📝 ghi chú món" (:595/:599) và "Quán không giao hàng —
+   miễn phí ship"/"⏱ Dự kiến chuẩn bị" (:679-682) ở small ~12.8px —
+   chi tiết món đã chọn và thông tin ship quan trọng để kiểm tra đơn
+   nhưng mờ với người lớn tuổi. Nâng lên 13px trên mobile, đồng bộ với
+   fix tương tự ở /cart (run 21:23 FIX 4).
+   (Scope .co-summary td nên không chạm small ở alert/card khác.) */
+@media (max-width: 767.98px) {
+    .co-summary td small {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX run 00:10 - Agent1 FIX 5 ===== */

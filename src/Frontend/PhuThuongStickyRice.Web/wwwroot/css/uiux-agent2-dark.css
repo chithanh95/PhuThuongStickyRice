@@ -1944,3 +1944,55 @@ html.dark .sg-zalo-form input::placeholder {
 }
 
 /* ===== END UIUX 23:48 A2 ===== */
+
+/* ===== UIUX 00:15 A2 =====
+   Phương pháp: quét property-level toàn bộ 43 file .razor.css + <style>
+   trong .razor (bổ sung cả rule html.dark nằm TRONG <style> của .razor vào
+   tập đối chiếu — đợt 23:48 còn sót vì chỉ quét file .css), verify DOM +
+   đo contrast luminance từng ứng viên, loại false positive. Bề mặt đã bão
+   hòa sau ~25 đợt Agent 2 (trang in OrderPrint, pill trắng/brand, bánh xe
+   quay giữ màu sáng, chat dark-by-design đều là chủ ý) — còn đúng 2 lỗi
+   MỚI thật, đều đã grep xác minh markup. */
+
+/* ---------- UIUX 00:15 A2 FIX 1 — /track-order (mobile): nhãn form tự sửa đơn tàng hình ở dark ----------
+   Vấn đề: TrackOrder.razor.css:866-870 (Agent1 run 00:10 TỐI NAY, media
+   <=767.98px) — `.to-selfservice .form-group > label > small
+   { color:#495057 }` (nhãn "Địa chỉ nhận hàng", "Giờ giao mong muốn",
+   "SĐT người nhận", "Ghi chú" khi khách tự sửa đơn Pending —
+   TrackOrder.razor:429/434/456/461). Rule đặt TRỰC TIẾP lên <small> nên
+   thắng màu kế thừa từ `html.dark .text-muted` (inheritance luôn thua rule
+   trực tiếp). Ở dark mode mobile, khối form nằm trong .card nền #262640
+   (app.css:240) → tương phản chỉ ~1.79:1 — nhãn ô nhập GẦN NHƯ TÀNG HÌNH,
+   khách không biết phải điền gì (regression do fix mobile của Agent1 cùng
+   job tối nay; các fix font-size-only khác của run 00:10 không đổi màu nên
+   không ảnh hưởng dark).
+   Fix: #a5a2bd — đúng màu muted dark toàn cục (app.css:283) → ~5.93:1.
+   Đặt trong cùng media query (rule gốc chỉ tồn tại ở mobile); !important
+   để thắng rule scoped (Blazor gắn [b-xxx] lên mọi phần tử selector). */
+@media (max-width: 767.98px) {
+    html.dark .to-selfservice .form-group > label > small {
+        color: #a5a2bd !important; /* was #495057 — ~1.79:1 → ~5.93:1 trên card #262640 */
+    }
+}
+
+/* ---------- UIUX 00:15 A2 FIX 2 — Admin demo: chữ "Bấm để sửa" (InlineEdit/InlineSelect) chìm ở dark ----------
+   Vấn đề: 2 component dùng chung Admin/Pages/Lexa/InlineEdit.razor:40-42
+   và InlineSelect.razor:31-33 (dùng ở nhiều trang demo /admin/lexa/*) —
+   `.lexa-xedit { color:#7a6fbe }` và `.lexa-xedit:hover { color:#5a4fae }`.
+   Rule dark duy nhất hiện có chỉ đổi background hover (#2c2c4e), KHÔNG đổi
+   chữ → hover: #5a4fae trên #2c2c4e chỉ ~2.01:1 (chữ "Bấm để sửa" tàng hình
+   đúng lúc di chuột vào); base #7a6fbe trên card dark #262640 cũng chỉ
+   ~3.38:1, dưới WCAG AA 4.5:1.
+   Fix: #b3a8e8 — convention "chữ tím Lexa trên nền tối" của các fix trước
+   (kanban-code, chat-sender, code MauTinNhan/ShopSettings run 23:45) →
+   ~6.75:1 trên card, ~6.14:1 trên nền hover. Specificity (0,2,1)/(0,3,1)
+   thắng rule gốc trong <style> (0,1,0)/(0,2,0); không cần !important.
+   Một rule phủ cả 2 file (cùng class). */
+html.dark .lexa-xedit {
+    color: #b3a8e8; /* was #7a6fbe — ~3.38:1 → ~6.75:1 trên card #262640 */
+}
+html.dark .lexa-xedit:hover {
+    color: #b3a8e8; /* was #5a4fae — ~2.01:1 → ~6.14:1 trên hover-bg #2c2c4e */
+}
+
+/* ===== END UIUX 00:15 A2 ===== */

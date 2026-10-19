@@ -1845,3 +1845,99 @@ html:not(.dark) .cho-zoom-hint {
 }
 
 /* ===== END UIUX 23:48 A4 ===== */
+
+/* ===== UIUX run 2026-10-20 00:10 - Agent4 A11y & Polish (5 fix moi, khong trung cac run truoc) ===== */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1): Agent 3 (uiux-agent3-lexa.css)
+   doi nen `.shp-page .btn-success` sang xanh la Lexa #34c38f nhung GIU chu
+   trang Bootstrap -> chi ~2.25:1. Day la nut CTA CHINH luong mua: "Dat hang"
+   (Checkout.razor:773/791), "Thanh toan" (Cart), "Gui yeu cau dat tiec"
+   (DatTiec), "Gui yeu cau bao gia" (DatSoLuongLon), cac nut luu
+   (TrackOrder). Nguoi lon tuoi gan nhu khong doc duoc chu tren nut.
+   Remedy: chu #212529 -> ~6.87:1 (cung pattern .badge-success run 23:05,
+   .cart-sticky-checkout run 23:25 — giu nguyen nen brand). Nhan doi class
+   (0,3,0) de thang rule Agent 3 (0,2,0); hover/active giu chu dam de dat
+   ~5.31:1 tren nen hover #2cab7c. Dark mode khong co override nen (van
+   #34c38f) nen 1 rule dung chung 2 mode. */
+.shp-page .btn-success.btn-success,
+.shp-page .btn-success.btn-success:hover,
+.shp-page .btn-success.btn-success:active,
+.shp-page .btn-success.btn-success:focus {
+    color: #212529; /* was #fff (2.25:1 tren #34c38f) */
+}
+
+/* Fix 2 — WCAG 1.4.3 (Contrast, AA 4.5:1): Agent 3 doi nen
+   `.shp-page .btn-danger, .lx-admin .btn-danger` sang do Lexa #f46a6a,
+   chu trang chi ~2.95:1. Nut "Xoa" mon trong gio (Cart.razor:141), nut goi
+   hotline (Faq.razor:76), nut "Xoa" san pham admin (ProductListPage:115) —
+   chu trang tren do nhat kho doc voi nguoi lon tuoi. Chu #212529 -> ~5.23:1
+   (cung remedy Fix 1, giu nen brand). (0,3,0) thang rule Agent 3 (0,2,0);
+   hover cua Agent 3 chi filter brightness nen chu dam giu nguyen. */
+.shp-page .btn-danger.btn-danger,
+.lx-admin .btn-danger.btn-danger,
+.shp-page .btn-danger.btn-danger:hover,
+.lx-admin .btn-danger.btn-danger:hover {
+    color: #212529; /* was #fff (2.95:1 tren #f46a6a) */
+}
+
+/* Fix 3 — WCAG 1.4.3 (Contrast, AA 4.5:1): nut "GrabFood" landing
+   `.sg-market-btn.sg-grab` (Index.razor:650) nen xanh Grab #00b14f, chu
+   trang ke thua tu .sg-btn-solid chi ~2.84:1. Link dat mon tren nen tang
+   thu 3 — khach lon tuoi kho doc. Chu #212529 -> ~5.44:1, giu nen xanh
+   thuong hieu Grab. Lap class (0,3,0) de thang rule scoped
+   .sg-market-btn.sg-grab[b-xxx] (0,3,0) theo thu tu cascade (file nay load
+   sau cung). Dark mode khong co override nen rieng nen 1 rule ca 2 mode. */
+.sg-market-btn.sg-grab.sg-grab,
+.sg-market-btn.sg-grab.sg-grab:hover {
+    color: #212529; /* was #fff (2.84:1 tren #00b14f) */
+}
+
+/* Fix 4 — Mobile a11y (iOS Safari): o tim kiem mon tren landing `.sg-search`
+   (Index.razor.css:1613) font-size 15px — iOS TU ZOOM khi focus input <16px,
+   gay lech layout trang chu. Run 22:25 Fix 5 da fix 2 form (zalo/loyal)
+   nhung sot o nay. Nang len 16px trong breakpoint mobile (dong bo fix
+   .faq-search cua Agent 1). Lap class (0,2,0) thang rule scoped (0,1,1);
+   khong doi desktop. */
+@media (max-width: 768px) {
+    .sg-search.sg-search {
+        font-size: 16px;
+    }
+}
+
+/* Fix 5 — Polish hover + WCAG 2.5.8 (touch target): 2 nut tron tren the mon
+   landing `.sg-btn-360` (xem 360°) va `.sg-btn-fav` (yeu thich, 32px,
+   Index.razor.css:2004/2048) HOAN TOAN khong co :hover — desktop di chuot
+   qua khong biet bam duoc (kieu icon-button tren anh mon). Them hover: nen
+   kem nhat + phong nhe 1.08 (dong bo pattern .sg-dish-quick); dark mode nen
+   trang mo. Tren thiet bi cam ung mo rong vung bam 32px -> 44px bang ::after
+   (pattern run 13:25 cua .sg-share-btn), khong doi kich thuoc visual.
+   :focus-visible duoc rule toan cuc a11y.css phu (khong co outline:none). */
+.sg-btn-360.sg-btn-360:hover,
+.sg-btn-fav.sg-btn-fav:hover {
+    background: #f3ece2;
+    transform: scale(1.08);
+}
+html.dark .sg-btn-360.sg-btn-360:hover,
+html.dark .sg-btn-fav.sg-btn-fav:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(1.08);
+}
+.sg-btn-360.sg-btn-360,
+.sg-btn-fav.sg-btn-fav {
+    position: absolute; /* da co san — nhac lai de ::after bam theo */
+}
+@media (pointer: coarse) {
+    .sg-btn-360.sg-btn-360::after,
+    .sg-btn-fav.sg-btn-fav::after {
+        content: "";
+        position: absolute;
+        inset: -6px; /* 32 + 6*2 = 44px vung bam */
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sg-btn-360.sg-btn-360:hover,
+    .sg-btn-fav.sg-btn-fav:hover {
+        transform: none;
+    }
+}
+/* ===== END UIUX run 2026-10-20 00:10 - Agent4 ===== */

@@ -955,3 +955,61 @@ html.dark .lang-btn:hover { background-color: #2e2620 !important; }
 .progress-bar:not([class*="bg-"]) { background-color: #7a6fbe; }
 
 /* ===== END UIUX 23:25 A3 ===== */
+
+/* ===== UIUX run 2026-10-20 00:05 - Agent 3 Lexa (5 fix mới, đã verify bằng grep trong source + bundle đã build, không trùng 16 đợt trước) ===== */
+
+/* ---------- Fix 1: .shp-page .badge-warning chữ trắng -> #212529 (FIX LẠI đợt 1225) ----------
+   Verify: bundle Components.styles.css có
+     `.shp-page .badge-warning[b-os04c1qgf0] { background:#f1b44c !important; color:#fff !important; }`
+   specificity (0,3,0) — rule của đợt 1225 trong file này chỉ (0,2,0)
+   `.shp-page .badge-warning { color:#212529 !important; }` nên THUA dù load sau:
+   badge "Hết mùa"/promo vàng trên shop vẫn chữ trắng (~1.9:1, khó đọc),
+   lệch chuẩn Lexa .badge-warning (chữ #212529).
+   Fix lại bằng cách nhân đôi class `.badge-warning.badge-warning` -> (0,3,0),
+   !important, file load sau (index.html:172 sau bundle:166) nên thắng. */
+.shp-page .badge-warning.badge-warning { color: #212529 !important; }
+
+/* ---------- Fix 2: .shp-page .btn-warning chữ trắng -> #212529 (FIX LẠI đợt 1225) ----------
+   Verify: bundle `.shp-page .btn-warning[b-os04c1qgf0] { ... color:#fff !important; }`
+   (0,3,0) đè rule đợt 1225 (0,2,0) trong file này — nút vàng trên shop
+   (nút "Thêm" món, nút quay thưởng, popup upsell) vẫn chữ trắng trên nền vàng.
+   Chuẩn Lexa/Bootstrap .btn-warning đều dùng chữ #212529 (~8:1 contrast).
+   Nhân đôi class -> (0,3,0) + !important, file load sau nên thắng. */
+.shp-page .btn-warning.btn-warning { color: #212529 !important; }
+
+/* ---------- Fix 3: .shp-page .btn-success:hover #2aa67c -> #2cab7c (đồng nhất hover success Lexa) ----------
+   Verify: Shop.razor.css:296-299
+     `.shp-page .btn-success:hover { background:#2aa67c !important; border-color:#2aa67c !important; }`
+   bundle: `.shp-page .btn-success:hover[b-os04c1qgf0]` (0,3,0).
+   #2aa67c là xanh "tự chế" — chuẩn Lexa cho btn-success hover là #2cab7c
+   (khớp .lx-admin .btn-success:hover trong admin-lexa.css:2134-2143 và rule
+   .shp-page .btn-success:hover đợt 11:20 trong file này). Selector giữ nguyên
+   (0,3,0) + !important, file load sau bundle nên thắng. */
+.shp-page .btn-success:hover {
+    background-color: #2cab7c !important;
+    border-color: #2cab7c !important;
+}
+
+/* ---------- Fix 4: dark mode nút theme-toggle header shop: xám mồ côi -> nâu ấm brand ----------
+   Verify: ShopLayout.razor.css:492-495
+     `html.dark .shp-theme-toggle { border-color:#3a3f47; }`
+     `html.dark .shp-theme-toggle:hover { background:#2b2f36; }`
+   #2b2f36/#3a3f47 là xám trung tính "mồ côi" — không thuộc họ Lexa dark
+   (#1a1a2e/#262640/#2c2c4e/#3a3a58) lẫn brand nâu ấm của chính component này
+   (#241d17/#2e2620/#3a3226): cùng header, `.shp-nav a:hover` dark dùng #2e2620,
+   `.shp-lang-select` dark dùng border #3a3226. Cùng lý do với fix 23:05
+   (html.dark .lang-btn:hover). Rule gốc không !important nên !important ở đây
+   thắng chắc; scope class chỉ tồn tại ở header shop.
+   Ghi chú cho Agent 2 (dark mode): chỉ đổi tông màu hover/viền, không đụng
+   độ sáng/tương phản đã thiết kế. */
+html.dark .shp-theme-toggle { border-color: #3a3226 !important; }
+html.dark .shp-theme-toggle:hover { background-color: #2e2620 !important; }
+
+/* ---------- Fix 5: dark mode nút quay lại .shp-back:hover #2b2f36 -> #2e2620 ----------
+   Verify: ShopLayout.razor.css:557-559 `html.dark .shp-back:hover { background:#2b2f36; }`.
+   Cùng xám mồ côi như Fix 4 — nút quay lại và nút theme-toggle cùng nằm trong
+   header shop dark, hover phải cùng tông #2e2620 (nâu ấm brand dark) mới đồng nhất.
+   Rule gốc không !important -> !important ở đây thắng chắc. */
+html.dark .shp-back:hover { background-color: #2e2620 !important; }
+
+/* ===== END UIUX run 2026-10-20 00:05 - Agent 3 Lexa ===== */
