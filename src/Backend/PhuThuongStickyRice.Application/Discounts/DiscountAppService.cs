@@ -522,9 +522,10 @@ namespace PhuThuongStickyRice.Application.Discounts
 
         /// <summary>
         /// Batch version của <see cref="HasUsableCodeAsync"/>: trả về các SĐT
-        /// trong danh sách đã có mã còn dùng được với tiền tố cho trước — 1
-        /// query duy nhất (IN clause) thay vì 1 query/SĐT. Điều kiện lọc giữ
-        /// nguyên như HasUsableCodeAsync nên kết quả tương đương từng phần tử.
+        /// trong danh sách đã có mã còn dùng được với tiền tố cho trước —
+        /// gom theo batch 1000 SĐT (IN clause) thay vì 1 query/SĐT. Điều kiện
+        /// lọc giữ nguyên như HasUsableCodeAsync nên kết quả tương đương
+        /// từng phần tử.
         /// </summary>
         public virtual async Task<HashSet<string>> GetPhonesWithUsableCodeAsync(
             string codePrefix, IEnumerable<string> phones)
@@ -546,14 +547,20 @@ namespace PhuThuongStickyRice.Application.Discounts
 
             var prefix = codePrefix.Trim().ToUpperInvariant();
             var queryable = await _discounts.GetQueryableAsync();
-            var rows = await _asyncExecuter.ToListAsync(
-                queryable
-                    .Where(UsableCodeFilter(prefix, DateTime.UtcNow))
-                    .Where(x => list.Contains(x.OwnerPhone))
-                    .Select(x => x.OwnerPhone));
-            foreach (var phone in rows)
+            // Chunk IN clause theo batch 1000 (SQL Server giới hạn ~2100
+            // params) — cùng pattern GetTagsByPhonesAsync; caller tương lai
+            // truyền >2100 SĐT sẽ không còn SqlException. Kết quả tương đương.
+            foreach (var batch in list.Chunk(1000))
             {
-                result.Add(phone);
+                var rows = await _asyncExecuter.ToListAsync(
+                    queryable
+                        .Where(UsableCodeFilter(prefix, DateTime.UtcNow))
+                        .Where(x => batch.Contains(x.OwnerPhone))
+                        .Select(x => x.OwnerPhone));
+                foreach (var phone in rows)
+                {
+                    result.Add(phone);
+                }
             }
 
             return result;
