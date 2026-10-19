@@ -1684,6 +1684,21 @@ html.pt-reveal .sg-reveal.in {
     outline-offset: 2px;
 }
 
+/* uiux-2026-10-20 A4 FIX 1 — focus-visible toàn landing cho bàn phím:
+   trước đây chỉ .sg-lang-select có :focus-visible, các link/nav/tab/nút/
+   ô nhập còn lại tab tới không thấy được. :focus-visible chỉ hiện khi
+   dùng bàn phím, bấm chuột/chạm mobile không bị ảnh hưởng. */
+.sg-page a:focus-visible,
+.sg-page button:focus-visible,
+.sg-page input:focus-visible,
+.sg-page select:focus-visible,
+.sg-page textarea:focus-visible,
+.sg-page [tabindex]:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+
+
 /* Items 28, 29, 36, 37 */
 .sg-spin-sec { background: linear-gradient(135deg, #fff8f0, #fdf0e0); }
 .sg-spin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
@@ -2308,3 +2323,16 @@ html.dark .sg-tl-card p {
     color: #b3a48a; /* was #5a4a3a — 1.90:1 → 6.60:1 trên #262019 */
 }
 /* ===== END UIUX run 2026-10-20 02:12 - Agent2 ===== */
+
+/* uiux-2026-10-20 A4 FIX 2 — contrast chữ nâu nhạt (light mode):
+   .sg-stat span / .sg-review-name / .sg-chat-hint / .sg-trust-review-name
+   12–14px màu #8a7a68 trên nền trắng chỉ ~4.15:1 (dưới chuẩn AA 4.5:1 cho
+   chữ nhỏ, người cao tuổi khó đọc). #6f5d48 đạt ~6.3:1, vẫn giữ tông nâu
+   ấm. Đặt ở cuối file để thắng các rule gốc cùng specificity; các override
+   html.dark (specificity cao hơn) không đổi. */
+.sg-stat span,
+.sg-review-name,
+.sg-chat-hint,
+.sg-trust-review-name {
+    color: #6f5d48; /* was #8a7a68 — 4.15:1 → 6.3:1 trên nền trắng */
+}

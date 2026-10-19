@@ -397,9 +397,11 @@ else
             </div>
         </div>
         <div class="sg-tabs" role="tablist">
-            <button class="sg-tab @(_menuTab == "xoi" ? "active" : "")" @onclick='() => _menuTab = "xoi"'>Xôi truyền thống</button>
-            <button class="sg-tab @(_menuTab == "combo" ? "active" : "")" @onclick='() => _menuTab = "combo"'>Combo tiết kiệm</button>
-            <button class="sg-tab @(_menuTab == "tiec" ? "active" : "")" @onclick='() => _menuTab = "tiec"'>Đặt tiệc &amp; Cúng giỗ</button>
+            @* A11y uiux-2026-10-20: tab lọc thực đơn là toggle — thêm aria-pressed
+               giống nhóm tab lọc giá bên dưới để trình đọc màn hình biết tab đang bật. *@
+            <button class="sg-tab @(_menuTab == "xoi" ? "active" : "")" aria-pressed="@(_menuTab == "xoi")" @onclick='() => _menuTab = "xoi"'>Xôi truyền thống</button>
+            <button class="sg-tab @(_menuTab == "combo" ? "active" : "")" aria-pressed="@(_menuTab == "combo")" @onclick='() => _menuTab = "combo"'>Combo tiết kiệm</button>
+            <button class="sg-tab @(_menuTab == "tiec" ? "active" : "")" aria-pressed="@(_menuTab == "tiec")" @onclick='() => _menuTab = "tiec"'>Đặt tiệc &amp; Cúng giỗ</button>
         </div>
 
         @if (_menuTab == "xoi")

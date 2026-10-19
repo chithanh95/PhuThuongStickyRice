@@ -117,7 +117,10 @@ else
                     <tr class="@(r.IsHidden ? "table-secondary" : "")">
                         <td><a href="/orders">@r.OrderNumber</a></td>
                         <td>@r.CustomerPhone</td>
-                        <td class="dg-stars">
+                        @* A11y uiux-2026-10-20: sao là chữ ★ thuần — trình đọc màn hình
+                           sẽ đọc từng ký tự vô nghĩa. role="img" + aria-label
+                           để đọc "Đánh giá X trên 5 sao". *@
+                        <td class="dg-stars" role="img" aria-label="Đánh giá @r.Rating trên 5 sao">
                             @(new string('★', r.Rating))<span class="dg-stars-off">@(new string('★', 5 - r.Rating))</span>
                         </td>
                         <td>

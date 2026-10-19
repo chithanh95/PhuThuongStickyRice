@@ -28,11 +28,13 @@
 
 <div class="mb-3">
     <div class="btn-group btn-group-sm" role="group">
-        <button class="btn @StatusChipClass(null)" @onclick="() => SetStatus(null)">Tất cả</button>
-        <button class="btn @StatusChipClass("New")" @onclick='() => SetStatus("New")'>Mới</button>
-        <button class="btn @StatusChipClass("Contacted")" @onclick='() => SetStatus("Contacted")'>Đã liên hệ</button>
-        <button class="btn @StatusChipClass("Confirmed")" @onclick='() => SetStatus("Confirmed")'>Đã chốt</button>
-        <button class="btn @StatusChipClass("Cancelled")" @onclick='() => SetStatus("Cancelled")'>Hủy</button>
+        @* A11y uiux-2026-10-20: chip lọc là toggle — aria-pressed để trình
+           đọc màn hình biết trạng thái đang lọc. *@
+        <button class="btn @StatusChipClass(null)" aria-pressed="@(_statusFilter == null)" @onclick="() => SetStatus(null)">Tất cả</button>
+        <button class="btn @StatusChipClass("New")" aria-pressed='@(_statusFilter == "New")' @onclick='() => SetStatus("New")'>Mới</button>
+        <button class="btn @StatusChipClass("Contacted")" aria-pressed='@(_statusFilter == "Contacted")' @onclick='() => SetStatus("Contacted")'>Đã liên hệ</button>
+        <button class="btn @StatusChipClass("Confirmed")" aria-pressed='@(_statusFilter == "Confirmed")' @onclick='() => SetStatus("Confirmed")'>Đã chốt</button>
+        <button class="btn @StatusChipClass("Cancelled")" aria-pressed='@(_statusFilter == "Cancelled")' @onclick='() => SetStatus("Cancelled")'>Hủy</button>
     </div>
 </div>
 
