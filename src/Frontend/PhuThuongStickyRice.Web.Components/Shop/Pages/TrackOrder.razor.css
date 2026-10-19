@@ -712,3 +712,33 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 16:48 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 18:09 — Agent1 Mobile =====
+   FIX 2 — Nút "Tra cứu" / "Xem lịch sử" ở khoảng 576–767px (điện thoại xoay
+   ngang, tablet nhỏ): rule cũ chỉ nâng chiều cao lên 46px nhưng không
+   full-width như ở ≤575px — nút nhỏ hơn hẳn 2 ô input full-width phía trên,
+   lệch nhịp với mobile dọc. Cho full-width đồng bộ mọi màn mobile.
+   (Verify: TrackOrder.razor:40 nút "Tra cứu"; :61 nút "Xem lịch sử".) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .to-lookup .btn,
+    .to-history .form-row .btn {
+        width: 100%;
+    }
+}
+/* ===== END UIUX run 18:09 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 18:09 — Agent1 Mobile =====
+   FIX 3 — Nút "Sao chép" mã đơn (card "Thông tin đơn hàng",
+   TrackOrder.razor:~330): mobile đã nới hit area lên 44px (rule trong media
+   ≤767px) nhưng chữ vẫn căn trên — button inline-block không căn giữa dọc,
+   trông lệch và vùng bấm 44px thừa tràn xuống dưới chữ. Căn giữa dọc bằng
+   inline-flex cho gọn, chữ nằm đúng giữa vùng bấm.
+   (Base scope trong media mobile — PC giữ nguyên.) */
+@media (max-width: 767.98px) {
+    .to-copy-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+/* ===== END UIUX run 18:09 - Agent1 FIX 3 ===== */

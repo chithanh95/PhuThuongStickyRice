@@ -42,4 +42,25 @@
         padding: 0;
         font-size: 28px;
     }
+
+    /* ===== UIUX run 18:09 — Agent1 Mobile =====
+       FIX 1 — Tên món dài trong popup gợi ý (UpsellPopup.razor:23-30): khối
+       chữ (.mr-2 chứa tên + giá) là flex item không có min-width:0 nên không
+       co lại — tên dài đẩy nút "+ Thêm" (44px, flex-shrink: 0) tràn khỏi
+       popup ở màn 320px (modal-sm chỉ ~270px nội dung), gây tràn ngang trang.
+       Cho khối chữ co lại, tên món ellipsis 1 dòng kiểu ShopeeFood, giá giữ
+       nguyên dòng 2, nút giữ nguyên vị trí.
+       (Cart.razor.css run 15:52 đã fix tương tự cho gợi ý trong giỏ hàng —
+       popup này là component riêng nên bị sót.) */
+    .modal-body .d-flex.justify-content-between > .mr-2 {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .modal-body .d-flex.justify-content-between strong {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    /* ===== END UIUX run 18:09 - Agent1 FIX 1 ===== */
 }
