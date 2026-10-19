@@ -102,8 +102,13 @@ namespace PhuThuongStickyRice.Application.Inventory
             if (days < 1) days = 1;
             if (days > 90) days = 90;
 
+            // Perf: chỉ nạp (days+1) ngày gần nhất trong SQL thay vì toàn bộ bảng.
+            // Ngày thừa (cũ nhất) chỉ dùng để tính PreviousRemainingQty cho ngày
+            // đầu của cửa sổ, kết quả trả về giống hệt trước đây.
+            var cutoff = DateTime.Today.AddDays(-days);
             var all = await _asyncExecuter.ToListAsync(
                 (await _inventories.GetQueryableAsync())
+                    .Where(x => x.Date >= cutoff)
                     .OrderByDescending(x => x.Date)
                     .ThenBy(x => x.ProductName));
 

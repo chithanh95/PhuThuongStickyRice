@@ -119,16 +119,18 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             var weekStart = GetMonday(dto.WeekStart.Date);
 
             var dayDtos = new List<WeeklyPlanDayDto>();
+            // Perf: 1 query duy nhất thay vì 5 lần GetAsync trong loop (N+1).
+            var productIds = days.Select(d => d.ProductId).Distinct().ToList();
+            var productQueryable = await _products.GetQueryableAsync();
+            var productsById = (await _asyncExecuter.ToListAsync(
+                    productQueryable.Where(p => productIds.Contains(p.Id))))
+                .ToDictionary(p => p.Id);
+
             foreach (var dayCode in orderedDays)
             {
                 var input = days.First(d =>
                     d.DayOfWeek.Trim().Equals(dayCode, StringComparison.OrdinalIgnoreCase));
-                Product product;
-                try
-                {
-                    product = await _products.GetAsync(input.ProductId);
-                }
-                catch (Exception)
+                if (!productsById.TryGetValue(input.ProductId, out var product))
                 {
                     throw new DomainException($"Không tìm thấy sản phẩm cho {dayCode}.");
                 }
@@ -176,9 +178,11 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
                 planQueryable.OrderByDescending(p => p.WeekStart));
 
             var orderQueryable = await _orders.GetQueryableAsync();
-            var counts = (await _asyncExecuter.ToListAsync(orderQueryable))
-                .GroupBy(o => o.WeeklyPlanId)
-                .ToDictionary(g => g.Key, g => g.Count());
+            // Perf: GroupBy chạy trong SQL thay vì nạp toàn bộ bảng vào memory.
+            var counts = (await _asyncExecuter.ToListAsync(
+                    orderQueryable.GroupBy(o => o.WeeklyPlanId)
+                        .Select(g => new { WeeklyPlanId = g.Key, Count = g.Count() })))
+                .ToDictionary(x => x.WeeklyPlanId, x => x.Count);
 
             return plans.Select(p =>
             {
