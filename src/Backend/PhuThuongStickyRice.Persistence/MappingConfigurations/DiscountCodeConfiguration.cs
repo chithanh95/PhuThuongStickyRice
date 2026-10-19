@@ -18,6 +18,15 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             builder.HasIndex(x => new { x.IsActive, x.CreatedDateTime })        .HasDatabaseName("IX_DiscountCodes_IsActive_CreatedDateTime");
 
+            // perf-hunt 2026-10-19 (run 13:55): GetUsableCodeAsync (OwnerPhone ==
+            // phone, public checkout path) và GetPhonesWithUsableCodeAsync
+            // (OwnerPhone IN (...), batch sinh nhật) đều lọc Code.StartsWith(prefix)
+            // — chỉ có unique index trên Code nên phải range-scan mọi mã cùng prefix.
+            // Composite này cho seek equality trên (OwnerPhone, IsActive) rồi range
+            // trên Code; non-unique, không đổi nghiệp vụ.
+            builder.HasIndex(x => new { x.OwnerPhone, x.IsActive, x.Code })
+                .HasDatabaseName("IX_DiscountCodes_OwnerPhone_IsActive_Code");
+
             builder.Property(x => x.DiscountPercent).HasPrecision(5, 2);
             builder.Property(x => x.DiscountAmount).HasPrecision(18, 2);
             builder.Property(x => x.MinOrderAmount).HasPrecision(18, 2).IsRequired();
