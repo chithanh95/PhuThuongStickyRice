@@ -193,7 +193,18 @@ else
                         <div class="card-body py-2">
                             <a href="javascript:void(0)" class="text-dark" @onclick="() => OpenQuickView(product)"><strong>@product.Name</strong></a>
                             <div class="d-flex justify-content-between align-items-center mt-1">
-                                <strong class="text-danger">@FormatPrice(product.Price)</strong>
+                                @* bug-hunt 2026-10-20: gợi ý từng hiện giá gốc (product.Price)
+                                   trong khi card chính niêm yết giá KM (item 256) và AddToCart
+                                   cũng cộng giỏ theo giá KM — khách thấy 25.000đ nhưng giỏ
+                                   tính 20.000đ. Hiển thị cùng luật với card chính. *@
+                                @if (CardPromoPrice(product) is decimal suggPromo)
+                                {
+                                    <span><s class="text-muted small mr-1">@FormatPrice(DisplayPrice(product))</s><strong class="text-danger">@FormatPrice(suggPromo)</strong></span>
+                                }
+                                else
+                                {
+                                    <strong class="text-danger">@FormatPrice(DisplayPrice(product))</strong>
+                                }
                                 <button class="btn btn-sm btn-primary" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">@AddButtonLabel(product, "+ Thêm")</button>
                             </div>
                             @* Item 101: ask about this dish on Zalo. *@
@@ -669,7 +680,6 @@ else
 
     // Item 109: branch picker.
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel> _branches;
-    private Guid? _branchFilter;
 
     // Item 118: time-based suggestions (pure client-side by hour).
     private List<ShopProductModel> _suggestions = new List<ShopProductModel>();

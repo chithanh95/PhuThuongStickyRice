@@ -516,8 +516,12 @@ else
                         </div>
                         <div class="sg-dish-body">
                             <h3 class="sg-dish-name">@product.Name</h3>
-                            <div class="sg-dish-price">@FormatPrice(product.Price)<small>@UnitSuffix(product)</small></div>
-                            <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddToCart(product)">Thêm vào giỏ</button>
+                            @* bug-hunt 2026-10-20: từng hiện giá gốc (product.Price) trong khi
+                               AddToCart cộng giỏ theo giá KM (EffectivePrice) — khách thấy giá
+                               cao hơn số thực tế bị tính. Thêm disabled khi món không CanOrder
+                               (Hết suất/ngoài giờ bán) như các section khác của trang. *@
+                            <div class="sg-dish-price">@FormatPrice(ShopProductModel.EffectivePrice(product, product.Price))<small>@UnitSuffix(product)</small></div>
+                            <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">Thêm vào giỏ</button>
                         </div>
                     </div>
                 }
