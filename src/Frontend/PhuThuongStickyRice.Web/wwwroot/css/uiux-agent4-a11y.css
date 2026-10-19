@@ -467,3 +467,81 @@ html.dark .cho-ticket:focus-visible {
     outline-color: #a49de0;
 }
 /* ===== END UIUX run 14:05 - Agent4 ===== */
+
+/* ===== UIUX run 14:35 - Agent4 A11y & Polish (5 fix, khong trung cac run truoc) ===== */
+
+/* Fix 1 — Polish hover: 3 bien the nut CTA tab "Goi an sang tuan"
+   (.wpt-btn-primary "Mua goi", .wpt-btn-outline "Xem don cua toi"/"Tra cuu",
+   .wpt-btn-claim "Da nhan" — WeeklyPlanTab.razor.css) HOAN TOAN khong co
+   :hover — nguoi dung desktop di chuot qua khong nhan duoc phan hoi thi giac,
+   khong biet nut "song" (dac biet nut "Da nhan" khach lon tuoi bam moi buoi
+   sang). Dung filter: brightness() thay vi hardcode mau de an theo
+   --shp-accent o ca 2 theme (sang #a67c3d / toi #d08b8b). :focus-visible da
+   duoc rule toan cuc trong a11y.css bao phu (khong co outline:none nao de). */
+.wpt-btn-primary.wpt-btn-primary:hover {
+    filter: brightness(0.9);
+}
+.wpt-btn-outline.wpt-btn-outline:hover {
+    filter: brightness(0.94);
+}
+.wpt-btn-claim.wpt-btn-claim:hover {
+    filter: brightness(0.9);
+}
+
+/* Fix 2 — WCAG 1.4.3 (Contrast, AA 4.5:1): 2 nut CTA cam tren trang Nhuong
+   quyen — `.nq-cta` ("Dang ky tu van", NhuongQuyen.razor:19) va `.nq-submit`
+   ("Gui dang ky tu van", nut submit form) — chu TRANG #fff tren nen
+   #FFBA31 chi dat ~1.7:1, nguoi lon tuoi gan nhu khong doc duoc chu tren nut.
+   Cung root cause, cung remedy: doi chu sang #5a1f1a (~8.4:1), dung mau chu
+   da duoc dung san tren nen #FFBA31 o `.to-survey-submit`
+   (TrackOrder.razor.css) — dong bo brand, khong doi mau nen. Ap dung ca
+   trang thai hover (rule goc cung set color:#fff o hover).
+   Lap class (0,2,0)/(0,3,0) de thang rule scoped [b-xxx] theo cascade
+   (file nay load sau cung). */
+.nq-cta.nq-cta,
+.nq-submit.nq-submit {
+    color: #5a1f1a;
+}
+.nq-cta.nq-cta:hover,
+.nq-submit.nq-submit:hover {
+    color: #5a1f1a;
+}
+
+/* Fix 3 — Polish hover: nut hanh dong chinh tab "The xoi" (.pt-bigbtn "Mua
+   the"/"Tra cuu", PrepaidCardTab.razor.css) khong co :hover — khach lon tuoi
+   dung desktop khong thay phan hoi khi di chuot. Ban solid: nen dam hon
+   #4a4186 (cung hue voi #5a4fa3); ban outline: nen tim nhat #f4f2fd (trung
+   voi mau .pt-package.active, nhat quan). Lap class thang rule scoped. */
+.pt-bigbtn.pt-bigbtn:hover {
+    background: #4a4186;
+}
+.pt-bigbtn.pt-bigbtn.pt-outline:hover {
+    background: #f4f2fd;
+}
+
+/* Fix 4 — Polish hover: the chon goi nap `.pt-package` (2 the button chon
+   menh gia the xoi) khong co :hover — desktop khong biet the bam duoc.
+   Hover: vien tim nhat + nen tim rat nhat, du nhe de khong nham voi trang
+   thai da chon `.active` (vien #5a4fa3 dam + nen #f4f2fd). :not(.active) de
+   hover khong de len mau trang thai active. */
+.pt-package.pt-package:hover:not(.active) {
+    border-color: #b9b3d9;
+    background: #faf9fe;
+}
+
+/* Fix 5 — WCAG 2.5.8 (muc tieu cham, khach lon tuoi dung dien thoai): nut ×
+   dong toast `.toast .close` (Toast.razor:18) chi ~21px mac dinh Bootstrap —
+   rule 44px o run truoc moi chi phu `.modal .close` va `.qv-sheet-close`.
+   Mo rong len toast: min 44px tren thiet bi cam ung, can giua ky tu ×.
+   (Khong co rule nao set width/height cho .close nen khong can tang
+   specificity.) */
+@media (pointer: coarse) {
+    .toast-container .toast .close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+/* ===== END UIUX run 14:35 - Agent4 ===== */

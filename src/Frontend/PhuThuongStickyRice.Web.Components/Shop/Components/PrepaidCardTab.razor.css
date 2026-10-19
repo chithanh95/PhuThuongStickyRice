@@ -145,9 +145,9 @@
 }
 
 .pt-alert-error {
-    color: #8f1d1d;
-    background: #fdecec;
-    border: 2px solid #e5a3a3;
+    color: #bd4a4a; /* UIUX-1019 A3: đúng tint danger Lexa (trước #8f1d1d/#fdecec/#e5a3a3 tự chế) — khớp .alert-danger toàn cục */
+    background: #fbdddd;
+    border: 2px solid #f8c2c2;
 }
 
 /* Kết quả mua thành công */
@@ -312,9 +312,9 @@ html.dark .pt-bigbtn.pt-outline {
 }
 
 html.dark .pt-alert-error {
-    color: #ffb4b4;
-    background: #3a2222;
-    border-color: #7a3a3a;
+    color: #ff8a8a; /* UIUX-1019 A3: đúng tint danger-dark Lexa (trước #ffb4b4/#3a2222/#7a3a3a) — khớp html.dark .alert-danger */
+    background: #3a1e24;
+    border-color: #5a2d36;
 }
 
 @media (max-width: 576px) {

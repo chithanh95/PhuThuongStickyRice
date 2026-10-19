@@ -78,7 +78,7 @@
         z-index: 1030;
         background: #fff;
         border-top: 1px solid #dee2e6;
-        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); /* UIUX-Mobile-A3: thêm fallback 0px cho env() — đồng bộ với thanh sticky ở /shop và /cart; trình duyệt không hỗ trợ env() sẽ bỏ cả khai báo padding nếu thiếu fallback */
         box-shadow: 0 -4px 16px rgba(0, 0, 0, .08);
     }
 

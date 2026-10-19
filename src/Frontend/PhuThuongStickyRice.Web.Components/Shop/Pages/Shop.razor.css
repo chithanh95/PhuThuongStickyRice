@@ -450,12 +450,14 @@ html.dark .shop-filters-sticky {
     /* Sidebar danh mục */
     .shop-cat-sidebar {
         position: sticky;
-        /* Trên mobile KHÔNG có header sticky (.main .top-row bị
-           display:none ở <768px — app.css), nên top:76px cũ để lại
-           khoảng trống ~76px phía trên sidebar khi cuộn, nhìn sidebar
-           như "treo lơ lửng". Dính sát mép trên (khe 12px) cho gọn
-           kiểu ShopeeFood. */
-        top: 12px;
+        /* UIUX-Mobile-A3 (run 14:31) — SỬA LỖI: comment cũ nhầm `.main .top-row`
+           (header admin, ẩn ở mobile) với `.shp-header` của ShopLayout — header
+           shop VẪN `position:sticky; top:0; z-index:1000` trên mobile
+           (ShopLayout.razor.css:27-33), cao ~64px (nội dung 44px + padding
+           10px×2). Với top:12px, sidebar khi dính sẽ CHUI DƯỚI header → 1–2
+           nút danh mục trên cùng bị che, không bấm được khi cuộn. Đặt top:76px
+           để sidebar đậu ngay dưới header sticky (khe ~12px). */
+        top: 76px;
         flex: 0 0 88px;
         display: flex;
         flex-direction: column;
@@ -685,6 +687,14 @@ html.dark .shop-filters-sticky {
         max-height: 92dvh;
         overflow: hidden;
         animation: qvSlideUp .25s ease-out;
+        /* UIUX-Mobile-A3 (run 14:31) — SỬA LỖI NGHIÊM TRỌNG: Bootstrap đặt
+           .modal-dialog{pointer-events:none}, .modal-content được
+           pointer-events:auto NHƯNG bị display:none ở mobile → .qv-sheet
+           không set nên kế thừa none → TOÀN BỘ sheet không bấm được: chạm
+           vào chọn size/topping, ô ghi chú hay nút "Thêm vào giỏ hàng" đều
+           xuyên qua backdrop và KÍCH HOẠT CloseQuickView (đóng sheet).
+           Bật pointer-events lại cho sheet. */
+        pointer-events: auto;
     }
     @keyframes qvSlideUp {
         from { transform: translateY(40px); opacity: .5; }
@@ -730,6 +740,10 @@ html.dark .shop-filters-sticky {
         flex: 1;
         overflow-y: auto;
         padding: 16px;
+        /* UIUX-Mobile-A3 (run 14:31): vuốt tới biên trên/dưới của sheet không
+           kéo cuộn nền trang phía sau (overscroll chaining) — đúng chuẩn
+           hành vi bottom sheet, đỡ rối mắt khi sheet đang mở. */
+        overscroll-behavior: contain;
     }
     .qv-sheet-product {
         display: flex;
@@ -881,14 +895,17 @@ html.dark .shop-filters-sticky {
     }
 }
 
-/* ===== UIUX-Mobile-A2: hàng món ShopeeFood trên màn rất nhỏ (≤377px) ===== */
+/* ===== UIUX-Mobile-A2: hàng món ShopeeFood trên màn nhỏ (≤575px) ===== */
 /* Tính toán: sidebar 88px + margin 10px + padding trang 12px×2 → hàng món chỉ
    còn W−122px. Stepper (− qty +) 124px + ảnh 96px + gap/padding 36px = tối
-   thiểu 256px → màn ≤377px (iPhone SE 375, Android 360/320) bị tràn, và
-   .shp-page{overflow-x:clip} cắt mất nút "+" của stepper. Cho hàng wrap:
-   ảnh + tên ở dòng 1, cụm nút (stepper / nút +) xuống dòng 2 căn phải —
-   mọi nút vẫn ≥44px, không nút nào bị cắt. */
-@media (max-width: 377.98px) {
+   thiểu 256px cho cụm cố định. Ở màn 378–575px (iPhone 12/13/14/15 = 390px,
+   Pro Max = 430px) tuy không tràn hẳn nhưng cột info bị ép còn ~56–130px:
+   tên món ellipsis chỉ còn 1–2 ký tự, giá tiền tràn đè lên cụm stepper.
+   (Rule gốc chỉ phủ ≤377px nên dải 378–575px — tức đa số điện thoại phổ
+   biến — vẫn vỡ.) Cho hàng wrap từ 575px trở xuống: ảnh + tên/giá ở dòng 1
+   đủ rộng đọc thoải mái, cụm nút (stepper / nút +) xuống dòng 2 căn phải —
+   mọi nút vẫn ≥44px, không nút nào bị cắt hay đè chữ. */
+@media (max-width: 575.98px) {
     .shop-row-item {
         flex-wrap: wrap;
     }

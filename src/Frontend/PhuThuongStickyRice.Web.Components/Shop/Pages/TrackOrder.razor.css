@@ -259,13 +259,14 @@ html.dark .to-tl-current .to-tl-label {
 .to-copy-btn {
     border: none;
     background: none;
-    color: #e8590c;
+    color: #7a6fbe; /* UIUX-1019 A3: tím link Lexa (trước #e8590c cam lạ) — nút dạng chữ nên ăn màu link chuẩn */
     font-weight: 700;
     cursor: pointer;
     margin-left: 8px;
     padding: 0;
     font-size: 15px;
 }
+html.dark .to-copy-btn { color: #a89ee0; } /* UIUX-1019 A3: tím sáng đủ contrast trên nền tối */
 html.dark .to-summary-card,
 html.dark .to-info-card {
     background: #241d17;

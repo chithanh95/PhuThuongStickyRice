@@ -152,7 +152,7 @@
 
 /* Dark mode: giữ tương phản cho chữ báo lỗi / đã nhận. */
 html.dark .wpt-error {
-    color: #f08a93;
+    color: #ff8a8a; /* UIUX-1019 A3: chữ lỗi dark đúng chuẩn Lexa (trước #f08a93 hồng lạ) — khớp html.dark .alert-danger */
 }
 
 html.dark .wpt-claimed {

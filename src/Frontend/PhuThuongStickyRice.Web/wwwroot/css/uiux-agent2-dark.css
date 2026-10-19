@@ -904,3 +904,85 @@ html.dark .sg-spin-form input::placeholder {
 }
 
 /* ===== END UIUX run 14:05 - Agent2 ===== */
+
+/* ===== UIUX run 2026-10-19 14:35 - Agent2 Dark =====
+   (quét toàn bộ 29 file .razor.css + <style> trong .razor + inline style
+   bằng script đối chiếu property-level: nền/border/màu chữ sáng thiếu
+   rule dark. Các đợt trước đã phủ rất kỹ; đợt này còn đúng 5 lỗi MỚI
+   thật — đều đã grep xác minh markup/rule gốc. Các chỗ "sáng" còn lại
+   là design intentional: nút cam #FFBA31 (nq-cta/nq-submit/to-survey-submit),
+   pill trắng trên thanh đỏ (.shop-sticky-cart-cta), trang in (OrderPrint),
+   viền vàng brand (.nq-faq-card/#e8dcc3, .nq-faq-a giữ theo convention dark
+   của chính trang), bánh xe quay thưởng (Checkout, cố tình nhiều màu),
+   toast xanh Lexa, demo /admin/lexa giữ sáng có chủ đích.) */
+
+/* ---------- FIX 1 — Admin: chấm legend "Kỳ so sánh" (/admin/bao-cao) ----------
+   Vấn đề: BaoCao.razor.css:6 — .lexa-dot-compare { background: #c9c7dd }.
+   Rule dark hiện có (uiux-dark-fixes.css FIX 2) chỉ phủ attribute selector
+   `.lexa-dot[style*="c9c7dd"]` (cột biểu đồ vẫn dùng inline style, đã xác
+   minh markup dòng 153/160/167) — nhưng legend (dòng 173-174) Agent 3 đã
+   chuyển sang class `<span class="lexa-dot lexa-dot-compare">` nên rule
+   cũ KHÔNG match → chấm legend xám-lavender sáng chói trên card tối
+   #262640, trong khi các cột kỳ so sánh đã được tối đi.
+   Fix: cùng tone #5a5a8a của fix cột (vẫn phân biệt với #7a6fbe kỳ này).
+   Không cần !important: html.dark .lexa-dot-compare (0,2,1) thắng rule
+   scoped .lexa-dot-compare[b-xxx] (0,2,0). */
+html.dark .lexa-dot-compare {
+    background: #5a5a8a; /* was #c9c7dd */
+}
+
+/* ---------- FIX 2 — Landing: thanh tiến trình tích điểm (.sg-loyal-bar) ----------
+   Vấn đề: Core/Pages/Index.razor.css:1835 — .sg-loyal-bar (track của thanh
+   tiến trình điểm thưởng, cao 18px, full-width) giữ background:#eee, không
+   rule dark nào phủ (đã grep xác minh: file chỉ có rule dark cho input
+   .sg-loyal-form, quên track). Ở dark mode cả dải trắng sáng chạy ngang
+   section tối — phần fill gradient vàng-đỏ vẫn ổn nên không đụng.
+   Fix: #3a3226 cùng tone border dark của shop/landing. */
+html.dark .sg-loyal-bar {
+    background: #3a3226; /* was #eee */
+}
+
+/* ---------- FIX 3 — Shop: đường kẻ phân cách trong bottom sheet xem nhanh (mobile) ----------
+   Vấn đề: Shop.razor.css:739 (trong @media) — .qv-sheet-product
+   (hàng ảnh + tên + giá món trong sheet quick-view) có
+   border-bottom: 1px solid #f0ebe2, không rule dark nào phủ (đã grep xác
+   minh). Sheet đã tối #241d17 (các rule dark trước) nên đường kẻ kem sáng
+   lọt hẳn, lạc khỏi palette. Fix: #3a3226 cùng tone các divider dark khác
+   (cart-sticky-checkout, co-mobile-bar, faq-mini-item). Không cần media
+   query ở rule override (border chỉ tồn tại trong media đó). */
+html.dark .qv-sheet-product {
+    border-bottom-color: #3a3226; /* was #f0ebe2 */
+}
+
+/* ---------- FIX 4 — Shop: viền form đăng ký nhượng quyền (/nhuong-quyen) ----------
+   Vấn đề: NhuongQuyen.razor.css:210 — .nq-form-card (card form đăng ký,
+   `<div class="card nq-form-card">`) giữ border: 3px double #ffffff, không
+   rule dark nào phủ (đã grep xác minh). Ở dark mode card tối #262640
+   (html.dark .card) nhưng viền trắng double 3px phát sáng quanh form.
+   Fix: rgba(198,154,85,.45) — đúng convention dark của chính trang
+   (`.nq-card` dark đã dùng border này, dòng 311), giữ accent vàng brand
+   thay vì xám trơ. */
+html.dark .nq-form-card {
+    border-color: rgba(198, 154, 85, .45); /* was #ffffff */
+}
+
+/* ---------- FIX 5 — Thanh top-bar của MainLayout legacy (/error, 404) ----------
+   Vấn đề: app.css:47 — `.main .top-row { background-color:#f7f7f7;
+   border-bottom:1px solid #d6d5d5 }`, không rule dark nào phủ nền (app.css
+   chỉ có rule dark cho nút .theme-toggle bên trong, dòng 452). MainLayout
+   là DefaultLayout của App.razor nên trang /error và 404 render trong nó.
+   Ở dark mode: (a) cả dải top-bar xám sáng lọt giữa UI tối; (b) chữ
+   "Xin chào, <tên>" kế thừa html.dark body color #f0eef5 → chữ SÁNG trên
+   nền SÁNG, gần như tàng hình. Fix: nền/viền tối; link "Đặt xôi" (#0366d6
+   chỉ ~2.5:1 trên nền tối) sáng lên #b3a8e8 cùng tone các fix link dark
+   trước. Chữ span kế thừa #f0eef5 đã đọc tốt trên nền mới nên không cần
+   rule riêng. */
+html.dark .main .top-row {
+    background-color: #1c1c22; /* was #f7f7f7 */
+    border-bottom-color: #3a3a58; /* was #d6d5d5 */
+}
+html.dark .main .top-row > a {
+    color: #b3a8e8; /* was #0366d6 (a, .btn-link) */
+}
+
+/* === end Agent 2 run 14:35 === */
