@@ -14,27 +14,34 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // perf-hunt 2026-10-19 (run 17:25): batch index từ audit subagent.
-            // Tất cả non-unique, lookup-only, không đổi nghiệp vụ.
-
-            // (1) OrderLines: EF Core KHÔNG tự tạo index cho FK (khác EF6)
-            // nên cột OrderId chưa có index nào. Mọi báo cáo join lines qua
-            // navigation (Dashboard/GetTopProductsAsync, GetSoldQuantitiesAsync,
-            // GetRevenueSummaryAsync; GrossProfit/Profit/Hourly/Forecast report;
-            // export Excel WHERE OrderId IN (...); CustomerDetail top-spent
-            // Where(l => ids.Contains(l.OrderId))) đều lookup theo OrderId.
-            migrationBuilder.CreateIndex(
-                name: "IX_OrderLines_OrderId",
-                table: "OrderLines",
-                column: "OrderId");
+            // perf-hunt 2026-10-19 (run 17:25): index trên OrderLines(OrderId).
+            // ĐÍNH CHÍNH (fix 2026-10-19 19:10): comment cũ nói "EF Core KHÔNG
+            // tự tạo index cho FK" là SAI — EF Core có tạo index cho FK theo
+            // convention, và migration 20261013174506_AddOrdering đã tạo
+            // IX_OrderLines_OrderId khi tạo bảng OrderLines. DB nào chạy đủ
+            // migration cũ đã có index này → CreateIndex thường ném
+            // SqlException "already exists" làm Update-Database/Migrate() gãy
+            // (sự cố user gặp 2026-10-19 19:04). IF NOT EXISTS giữ migration
+            // an toàn cho cả DB cũ (đã có index) lẫn DB mới.
+            migrationBuilder.Sql(
+                """
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes
+                                 WHERE name = 'IX_OrderLines_OrderId'
+                                   AND object_id = OBJECT_ID(N'[OrderLines]'))
+                    CREATE INDEX [IX_OrderLines_OrderId] ON [OrderLines] ([OrderId]);
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_OrderLines_OrderId",
-                table: "OrderLines");
+            migrationBuilder.Sql(
+                """
+                IF EXISTS (SELECT 1 FROM sys.indexes
+                             WHERE name = 'IX_OrderLines_OrderId'
+                               AND object_id = OBJECT_ID(N'[OrderLines]'))
+                    DROP INDEX [IX_OrderLines_OrderId] ON [OrderLines];
+                """);
         }
     }
 }

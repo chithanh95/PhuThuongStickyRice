@@ -21,19 +21,35 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             // đây toàn là clustered index scan vì bảng không có index nào.
             // Uniqueness khớp ngữ nghĩa nghiệp vụ (mã TX+6 số in hoa duy
             // nhất). Non-clustered unique, lookup-only.
-            migrationBuilder.CreateIndex(
-                name: "IX_PrepaidCards_CardCode",
-                table: "PrepaidCards",
-                column: "CardCode",
-                unique: true);
+            // ĐÍNH CHÍNH (fix 2026-10-19 19:10): migration
+            // 20261019090000_AddPrepaidCardWeeklyPlan ĐÃ tạo index cùng tên
+            // IX_PrepaidCards_CardCode (unique, filtered [CardCode] IS NOT
+            // NULL). DB chạy đủ migration cũ đã có index này → CreateIndex
+            // thường sẽ ném SqlException "already exists" ngay sau khi qua
+            // được lỗi IX_OrderLines_OrderId. IF NOT EXISTS giữ migration an
+            // toàn cho cả DB cũ lẫn DB mới; định nghĩa giữ nguyên unique +
+            // filtered để khớp index đã tồn tại.
+            migrationBuilder.Sql(
+                """
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes
+                                 WHERE name = 'IX_PrepaidCards_CardCode'
+                                   AND object_id = OBJECT_ID(N'[PrepaidCards]'))
+                    CREATE UNIQUE INDEX [IX_PrepaidCards_CardCode]
+                        ON [PrepaidCards] ([CardCode])
+                        WHERE [CardCode] IS NOT NULL;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_PrepaidCards_CardCode",
-                table: "PrepaidCards");
+            migrationBuilder.Sql(
+                """
+                IF EXISTS (SELECT 1 FROM sys.indexes
+                             WHERE name = 'IX_PrepaidCards_CardCode'
+                               AND object_id = OBJECT_ID(N'[PrepaidCards]'))
+                    DROP INDEX [IX_PrepaidCards_CardCode] ON [PrepaidCards];
+                """);
         }
     }
 }
