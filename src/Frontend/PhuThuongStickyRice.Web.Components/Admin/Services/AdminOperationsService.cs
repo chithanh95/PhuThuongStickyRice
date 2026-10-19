@@ -311,12 +311,15 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             return await GetAsync<TwoFactorSetupModel>("api/auth/2fa/setup");
         }
 
-        /// <summary>Bật 2FA sau khi người dùng xác nhận mã OTP từ app authenticator.</summary>
-        /// <param name="secret">Secret đã hiển thị ở bước setup.</param>
+        /// <summary>
+        /// Bật 2FA sau khi người dùng xác nhận mã OTP từ app authenticator.
+        /// Bug-hunt 2026-10-19: chỉ gửi mã 6 số — secret do server sinh và giữ
+        /// trong cache chờ xác thực, client không được tự chọn secret.
+        /// </summary>
         /// <param name="code">Mã OTP 6 số từ app authenticator.</param>
-        public async Task EnableTwoFactorAsync(string secret, string code)
+        public async Task EnableTwoFactorAsync(string code)
         {
-            await PostAsync<object>("api/auth/2fa/enable", new { Secret = secret, Code = code });
+            await PostAsync<object>("api/auth/2fa/enable", new { Code = code });
         }
 
         /// <summary>Tắt 2FA (yêu cầu nhập mã OTP hiện tại để xác thực).</summary>

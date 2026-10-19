@@ -357,9 +357,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             try
             {
-                var result = await _twoFactor.EnableAsync(new EnableTwoFactorDto
+                var result = await _twoFactor.EnableAsync(new VerifyTwoFactorDto
                 {
-                    Secret = model?.Secret,
                     Code = model?.Code
                 });
                 return Ok(new { enabled = result.IsEnabled });
@@ -644,9 +643,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
     public sealed class EnableTwoFactorRequestModel
     {
-        [Required]
-        public string Secret { get; set; }
-
+        // Bug-hunt 2026-10-19: bỏ trường Secret — secret cài đặt do server sinh
+        // và giữ trong cache chờ xác thực, client chỉ gửi mã 6 số.
         [Required]
         public string Code { get; set; }
     }

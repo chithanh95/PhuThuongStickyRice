@@ -21,7 +21,9 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
         /// hiếm khi nhưng endpoint được gọi ở mọi trang có ShopFooter/ShopLayout
         /// mỗi lần mở trang. Cùng pattern <c>ShopSettingsService</c>: static
         /// field vì service đăng ký Transient (mỗi page inject instance riêng).
-        /// Caller chỉ đọc model (không mutate) nên trả cùng instance là an toàn.
+        /// GetContentAsync trả BẢN SAO của instance này (không trả instance gốc)
+        /// vì trang /admin/landing bind form trực tiếp vào model trả về — trả
+        /// instance gốc thì thao tác chưa Lưu của admin rò ngay ra site công khai.
         /// </summary>
         private static readonly TimeSpan ContentCacheTtl = TimeSpan.FromMinutes(2);
         private static readonly SemaphoreSlim ContentCacheLock = new(1, 1);
@@ -38,12 +40,22 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
         /// (static): cắt ~1 HTTP round-trip trên mỗi trang mở (footer + layout
         /// đều gọi). Admin lưu nội dung qua <see cref="UpdateContentAsync"/>
         /// sẽ xóa cache để lần đọc sau lấy dữ liệu mới ngay.
+        ///
+        /// Bug-hunt 2026-10-19: LUÔN trả bản sao của instance trong cache, không
+        /// trả chính instance đó. Trang /admin/landing bind form trực tiếp vào
+        /// model trả về (_model.HeroTitle, _model.NewsItems, upload ảnh qua
+        /// ImageSlot.Set...) — nếu trả instance chung thì mọi thao tác chưa bấm
+        /// Lưu của admin (gõ tiêu đề, bật popup, pad tin tức) đều rò rỉ ngay ra
+        /// site công khai trong thời gian cache còn hiệu lực (Index/ShopLayout/
+        /// ShopFooter/MainLayout cùng đọc GetContentAsync). Bản sao giữ nguyên
+        /// lợi ích cache (1 HTTP fetch / 2 phút) mà caller mutate thoải mái.
+        /// Cùng pattern FaqAppService/PolicyAppService trả bản sao từ cache.
         /// </summary>
         public async Task<LandingContentModel> GetContentAsync()
         {
             var cached = _cachedContent;
             if (cached is not null && DateTimeOffset.UtcNow - _cachedContentAt < ContentCacheTtl)
-                return cached;
+                return CloneContent(cached);
 
             // Lock tránh N request cùng fetch khi cache hết hạn (chỉ 1 fetch).
             await ContentCacheLock.WaitAsync();
@@ -52,22 +64,80 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
                 // Kiểm tra lại sau khi vào lock: request khác có thể đã refresh xong.
                 cached = _cachedContent;
                 if (cached is not null && DateTimeOffset.UtcNow - _cachedContentAt < ContentCacheTtl)
-                    return cached;
+                    return CloneContent(cached);
 
                 var fresh = await GetAsync<LandingContentModel>("api/landing/content");
                 if (fresh is not null)
                 {
                     _cachedContent = fresh;
                     _cachedContentAt = DateTimeOffset.UtcNow;
-                    return fresh;
+                    return CloneContent(fresh);
                 }
                 // Fetch trả null: không ghi đè cache cũ (nếu có), giữ hành vi cũ.
-                return cached!;
+                return cached is null ? null : CloneContent(cached);
             }
             finally
             {
                 ContentCacheLock.Release();
             }
+        }
+
+        /// <summary>
+        /// Bản sao nông của <see cref="LandingContentModel"/>: đủ để caller đọc
+        /// và sửa tự do mà không chạm vào instance đang nằm trong cache static.
+        /// Mọi property đều là string/bool/DateTime? nên shallow copy là an toàn;
+        /// riêng <c>NewsItems</c> tạo list mới + item mới để trang admin pad/sửa
+        /// tin tức không rò vào cache chung.
+        /// </summary>
+        private static LandingContentModel CloneContent(LandingContentModel source)
+        {
+            return new LandingContentModel
+            {
+                HeroTitle = source.HeroTitle,
+                HeroTagline = source.HeroTagline,
+                HeroButtonText = source.HeroButtonText,
+                StoryTitle = source.StoryTitle,
+                StoryBody = source.StoryBody,
+                MenuTitle = source.MenuTitle,
+                MenuLabel1 = source.MenuLabel1,
+                MenuLabel2 = source.MenuLabel2,
+                MenuLabel3 = source.MenuLabel3,
+                NewsTitle = source.NewsTitle,
+                NewsItems = source.NewsItems?.Select(n => new LandingNewsItemModel
+                {
+                    Title = n.Title,
+                    Body = n.Body,
+                    Source = n.Source
+                }).ToList() ?? new List<LandingNewsItemModel>(),
+                FooterTitle = source.FooterTitle,
+                FooterAboutText = source.FooterAboutText,
+                FooterCopyrightText = source.FooterCopyrightText,
+                ContactAddress = source.ContactAddress,
+                ContactPhone = source.ContactPhone,
+                ContactEmail = source.ContactEmail,
+                FooterButtonText = source.FooterButtonText,
+                HeroImageUrl = source.HeroImageUrl,
+                BannerImageUrl = source.BannerImageUrl,
+                MenuImage1Url = source.MenuImage1Url,
+                MenuImage2Url = source.MenuImage2Url,
+                MenuImage3Url = source.MenuImage3Url,
+                FooterBackgroundUrl = source.FooterBackgroundUrl,
+                VideoTitle = source.VideoTitle,
+                VideoUrl = source.VideoUrl,
+                MapEmbedUrl = source.MapEmbedUrl,
+                ReviewsEmbedHtml = source.ReviewsEmbedHtml,
+                PopupTitle = source.PopupTitle,
+                PopupBody = source.PopupBody,
+                PopupImageUrl = source.PopupImageUrl,
+                PopupActive = source.PopupActive,
+                FlashBannerText = source.FlashBannerText,
+                FlashBannerActive = source.FlashBannerActive,
+                PromoCountdownActive = source.PromoCountdownActive,
+                PromoCountdownEnd = source.PromoCountdownEnd,
+                PromoCountdownText = source.PromoCountdownText,
+                ReviewVideoUrl = source.ReviewVideoUrl,
+                ReviewVideoTitle = source.ReviewVideoTitle
+            };
         }
 
         /// <summary>Item 93: published news articles for the landing page.</summary>

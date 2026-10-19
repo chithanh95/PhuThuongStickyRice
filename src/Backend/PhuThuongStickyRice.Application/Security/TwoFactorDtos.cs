@@ -24,10 +24,7 @@ namespace PhuThuongStickyRice.Application.Security
             [StringLength(6, MinimumLength = 6)]
             public string Code { get; set; }
         }
-
-        public class EnableTwoFactorDto : VerifyTwoFactorDto
-        {
-            [Required]
-            public string Secret { get; set; }
-        }
+        // Bug-hunt 2026-10-19: đã xóa EnableTwoFactorDto (từng chứa Secret do client
+        // gửi lên). Secret cài đặt 2FA giờ do server sinh và giữ trong cache chờ
+        // xác thực — EnableAsync chỉ nhận mã 6 số qua VerifyTwoFactorDto.
 }
