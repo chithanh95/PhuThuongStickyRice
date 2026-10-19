@@ -12,7 +12,7 @@
 @if (IsNotFound)
 {
     <div class="text-center py-5">
-        <div style="font-size: 4rem;" aria-hidden="true">🍚</div>
+        <div class="lx-empty-icon" aria-hidden="true">🍚</div>
         <h2 class="mt-3">Không tìm thấy sản phẩm</h2>
         <p class="text-muted">Sản phẩm này không tồn tại hoặc đã bị xóa.</p>
         <div class="mt-4">
@@ -55,8 +55,7 @@ else
             </div>
 
             <div class="col-md-4">
-                <img class="center-block img-fluid"
-                     style="max-width:200px; margin:2px;"
+                <img class="center-block img-fluid product-photo"
                      src="/images/logo.png"
                      alt="@Product.Name"
                      title="@Product.Name" />

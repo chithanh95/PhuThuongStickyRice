@@ -20,6 +20,15 @@
 <style>
     .lx-upload-slot { min-height: 120px; background: #f8f9fa; }
     html.dark .lx-upload-slot { background: #2c2c4e; border-color: #3a3a5c; }
+    /* UIUX-1019 A3: bỏ inline style — preview ảnh slot + input file ẩn */
+    .lx-upload-preview { max-height: 150px; }
+    .lx-hidden-file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        overflow: hidden;
+    }
 </style>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -76,7 +85,7 @@ else
                             {
                                 <div class="mb-2 text-center">
                                     <img src="@LandingService.ResolveImageUrl(slot.Get())"
-                                         alt="@slot.Label" class="img-thumbnail" style="max-height: 150px;" />
+                                         alt="@slot.Label" class="img-thumbnail lx-upload-preview" />
                                     <div class="mt-1">
                                         <button type="button" class="btn btn-sm btn-link text-danger p-0"
                                                 @onclick="() => slot.Set(null)">
@@ -93,7 +102,7 @@ else
                                     <div class="lx-dropzone-hint">Ảnh tự nén trước khi tải lên.</div>
                                 </label>
                                 <InputFile id="@($"upload-{slot.Key}")" OnChange="@(e => OnImageSelected(e, slot))" accept="image/*"
-                                           style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" />
+                                           class="lx-hidden-file-input" />
                             }
                             @if (_uploadingSlot == slot.Key)
                             {

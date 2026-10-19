@@ -1,0 +1,5 @@
+/* Ảnh minh họa ở trang chi tiết sản phẩm (UIUX-1019 A3: bỏ inline style). */
+.product-photo {
+    max-width: 200px;
+    margin: 2px;
+}
