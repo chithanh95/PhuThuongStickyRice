@@ -455,12 +455,16 @@ html.dark .to-total-row {
 /* ===== END UIUX run 11:55 Agent 3 ===== */
 
 /* ===== DARK MODE (html.dark) — popup khảo sát sau giao hàng ===== */
-/* Vấn đề: .to-survey-sheet dùng inline style="background: #fff" + h5 inline
-   color:#763434 → popup trắng chói giữa trang dark. !important + [style*=]
-   để thắng inline style (scoped selector không thắng được inline). */
-html.dark .to-survey-sheet[style*="background: #fff"] {
-    background: #262019 !important;
-}
+/* Lịch sử: .to-survey-sheet từng dùng inline style="background: #fff" + h5
+   inline color:#763434 → popup trắng chói giữa trang dark. Agent 3 run
+   11:55 đã chuyển inline sang class; rule nền dark còn sống nằm ở
+   uiux-agent2-dark.css. Dưới đây giữ rule chữ h5 ở dark mode. */
+/* DỌN RULE CHẾT (UIUX run 14:05 Agent3): rule cũ
+   `html.dark .to-survey-sheet[style*="background: #fff"]` đã chết vì
+   Agent 3 run 11:55 chuyển inline style sang class — không còn element
+   nào match. Rule dark còn sống cho nền popup nằm ở
+   uiux-agent2-dark.css (`html.dark .to-survey-sheet`,
+   background #262019 !important). */
 
 html.dark .to-survey-sheet h5 {
     color: #f0d9b5 !important;
