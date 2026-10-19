@@ -145,10 +145,24 @@ namespace PhuThuongStickyRice.Application.Orders
         [AllowAnonymous]
         public virtual async Task<CloseGroupOrderResultDto> CloseAsync(string code, CloseGroupOrderDto dto)
         {
+            if (dto == null)
+            {
+                throw new Domain.Exceptions.DomainException("Thiếu thông tin chốt đơn.");
+            }
+
             var entity = await FindByCodeOrThrowAsync(code);
             if (entity.Status != GroupOrder.StatusOpen)
             {
                 throw new Domain.Exceptions.DomainException("Nhóm đã được chốt đơn.");
+            }
+
+            // Chỉ người tạo nhóm mới được chốt đơn (UI: "Chốt đơn (người tạo nhóm)").
+            // Mã nhóm được share cho cả nhóm nên phải kiểm tra SĐT, nếu không bất kỳ
+            // thành viên nào cũng chốt đơn hộ và tạo đơn COD dưới tên mình.
+            if (!PhonesMatch(entity.CreatorPhone, dto.CustomerPhone))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Số điện thoại không khớp với người tạo nhóm. Chỉ người tạo nhóm mới được chốt đơn.");
             }
 
             var lines = ParseLines(entity.LinesJson);
@@ -189,6 +203,21 @@ namespace PhuThuongStickyRice.Application.Orders
                 OrderNumber = order.OrderNumber,
                 TotalAmount = order.TotalAmount
             };
+        }
+
+        /// <summary>
+        /// So sánh SĐT tolerant theo format (chỉ so 9 số cuối) — cùng pattern
+        /// với OrderAppService/DiscountAppService, vì SĐT khách nhập tay.
+        /// </summary>
+        private static bool PhonesMatch(string a, string b)
+        {
+            var da = new string((a ?? string.Empty).Where(char.IsDigit).ToArray());
+            var db = new string((b ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (da.Length < 9 || db.Length < 9)
+            {
+                return false;
+            }
+            return da.Substring(da.Length - 9) == db.Substring(db.Length - 9);
         }
 
         private async Task<GroupOrder> FindByCodeOrThrowAsync(string code)
