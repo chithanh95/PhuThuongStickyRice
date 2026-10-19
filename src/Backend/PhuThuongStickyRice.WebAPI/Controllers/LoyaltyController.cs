@@ -66,6 +66,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin: danh sách tài khoản điểm thành viên (200 tài khoản chi tiêu
+        /// cao nhất, tìm kiếm theo SĐT) — màn quản lý loyalty ở admin.
+        /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult> GetList(
@@ -75,6 +79,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _loyaltyAppService.GetListAsync(searchTerm));
         }
 
+        /// <summary>
+        /// Admin: cộng/trừ điểm thủ công cho 1 SĐT (thưởng bù, phạt gian lận).
+        /// Điểm không được về âm; lỗi nghiệp vụ trả 400.
+        /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpPut("{phone}/adjust")]
         public async Task<ActionResult> Adjust(
@@ -92,6 +100,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin: tài khoản có sinh nhật trong N ngày tới (mặc định 7, tối đa
+        /// 60) — dùng để chuẩn bị chiến dịch gửi voucher sinh nhật.
+        /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpGet("birthdays")]
         public async Task<ActionResult> GetUpcomingBirthdays(

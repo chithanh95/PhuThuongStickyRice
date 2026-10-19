@@ -107,9 +107,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
                 try
                 {
                     using var doc = System.Text.Json.JsonDocument.Parse(body);
-                    if (doc.RootElement.TryGetProperty("message", out var m))
+                    if (doc.RootElement.TryGetProperty("message", out var messageElement))
                     {
-                        message = m.GetString() ?? message;
+                        message = messageElement.GetString() ?? message;
                     }
                 }
                 catch (System.Text.Json.JsonException)
@@ -123,9 +123,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
             try
             {
                 using var okDoc = System.Text.Json.JsonDocument.Parse(body);
-                if (okDoc.RootElement.TryGetProperty("url", out var u))
+                if (okDoc.RootElement.TryGetProperty("url", out var urlElement))
                 {
-                    return u.GetString();
+                    return urlElement.GetString();
                 }
             }
             catch (System.Text.Json.JsonException)

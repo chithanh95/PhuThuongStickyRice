@@ -207,7 +207,9 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
             form.Add(fileContent, "file", fileName);
 
-            var response = await _httpClient.PostAsync("api/landing/images", form);
+            // HttpResponseMessage giữ connection/stream bên dưới: dispose ngay
+            // sau khi đọc xong body để trả connection về pool.
+            using var response = await _httpClient.PostAsync("api/landing/images", form);
             var body = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -223,6 +225,9 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
                 }
                 catch (JsonException)
                 {
+                    // Cố ý bỏ qua: body lỗi không phải JSON thì giữ message mặc
+                    // định bên trên — lỗi gốc không quan trọng vì ngay sau đó
+                    // vẫn throw InvalidOperationException cho người gọi xử lý.
                 }
 
                 throw new InvalidOperationException(message);

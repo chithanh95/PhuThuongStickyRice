@@ -19,7 +19,14 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
             }
 
             string host = parts[0];
-            int port = int.Parse(parts[1]);
+            // TryParse thay vì Parse: config sai port (vd "localhost:abc") thì
+            // báo lỗi rõ ràng ngay, thay vì FormatException khó hiểu.
+            if (!int.TryParse(parts[1], out int port))
+            {
+                throw new ArgumentException(
+                    $"Port kiểm tra không hợp lệ: '{parts[1]}'. Định dạng đúng là 'host:port' (vd 'localhost:1433').",
+                    nameof(address));
+            }
 
             try
             {

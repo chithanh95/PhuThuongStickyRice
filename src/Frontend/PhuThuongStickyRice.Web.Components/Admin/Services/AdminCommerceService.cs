@@ -85,7 +85,9 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             form.Add(new StringContent(caption ?? string.Empty), "caption");
             form.Add(new StringContent(name ?? string.Empty), "name");
 
-            var response = await _httpClient.PostAsync("api/customer-photos/upload", form);
+            // HttpResponseMessage giữ connection/stream bên dưới: dispose ngay
+            // sau khi đọc xong body để trả connection về pool.
+            using var response = await _httpClient.PostAsync("api/customer-photos/upload", form);
             var body = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -101,6 +103,9 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
                 }
                 catch (System.Text.Json.JsonException)
                 {
+                    // Cố ý bỏ qua: body lỗi không phải JSON thì giữ message mặc
+                    // định bên trên — lỗi gốc không quan trọng vì ngay sau đó
+                    // vẫn throw InvalidOperationException cho người gọi xử lý.
                 }
 
                 throw new InvalidOperationException(message);

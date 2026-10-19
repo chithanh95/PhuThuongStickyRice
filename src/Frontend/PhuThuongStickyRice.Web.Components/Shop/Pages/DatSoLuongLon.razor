@@ -26,13 +26,13 @@
     <table>
         <thead><tr><th>Món</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th></tr></thead>
         <tbody>
-            @foreach (var p in _products.Where(x => _bulkProductIds.Contains(x.Id)))
+            @foreach (var product in _products.Where(x => _bulkProductIds.Contains(x.Id)))
             {
                 <tr>
-                    <td>@p.Name</td>
-                    <td>@FormatPrice(p.Price)</td>
+                    <td>@product.Name</td>
+                    <td>@FormatPrice(product.Price)</td>
                     <td>@_bulk.Quantity gói</td>
-                    <td>@FormatPrice(p.Price * Math.Max(0, _bulk.Quantity))</td>
+                    <td>@FormatPrice(product.Price * Math.Max(0, _bulk.Quantity))</td>
                 </tr>
             }
         </tbody>
@@ -163,15 +163,15 @@ else
                     {
                         <p class="text-muted">Đang tải danh sách món...</p>
                     }
-                    @foreach (var p in _products)
+                    @foreach (var product in _products)
                     {
-                        <label class="bulk-prod @(_bulkProductIds.Contains(p.Id) ? "selected" : "")">
-                            <input type="checkbox" checked="@_bulkProductIds.Contains(p.Id)"
-                                   @onchange="e => ToggleBulkProduct(p.Id, (bool)e.Value)" />
-                            <img loading="lazy" src="@ProductImage(p)" alt="@p.Name" />
+                        <label class="bulk-prod @(_bulkProductIds.Contains(product.Id) ? "selected" : "")">
+                            <input type="checkbox" checked="@_bulkProductIds.Contains(product.Id)"
+                                   @onchange="e => ToggleBulkProduct(product.Id, (bool)e.Value)" />
+                            <img loading="lazy" src="@ProductImage(product)" alt="@product.Name" />
                             <span>
-                                <span class="nm">@p.Name</span><br />
-                                <span class="pr">@FormatPrice(p.Price)/gói</span>
+                                <span class="nm">@product.Name</span><br />
+                                <span class="pr">@FormatPrice(product.Price)/gói</span>
                             </span>
                         </label>
                     }

@@ -25,18 +25,28 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _discountAppService = discountAppService;
         }
 
+        /// <summary>
+        /// Admin: danh sách mã giảm giá (500 mã mới nhất — bảng phình to vì
+        /// mỗi lượt quay/sinh nhật sinh 1 mã riêng nên không lấy hết).
+        /// </summary>
         [HttpGet]
         public async Task<ActionResult> GetList(CancellationToken cancellationToken = default)
         {
             return Ok(await _discountAppService.GetListAsync());
         }
 
+        /// <summary>Admin: chi tiết 1 mã giảm giá theo Id.</summary>
         [HttpGet("{id:guid}")]
         public async Task<ActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
         {
             return Ok(await _discountAppService.GetAsync(id));
         }
 
+        /// <summary>
+        /// Admin (cần quyền discounts.manage): tạo mã giảm giá mới. Mã được
+        /// chuẩn hóa in hoa và kiểm tra không trùng; lỗi nghiệp vụ (trùng mã,
+        /// thiếu giá trị giảm) trả 400 với message tiếng Việt cho admin.
+        /// </summary>
         [HttpPost]
         public async Task<ActionResult> Create(
             [FromBody] CreateDiscountCodeDto dto,
@@ -52,6 +62,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin (cần quyền discounts.manage): cập nhật mã giảm giá. Kiểm tra
+        /// trùng mã loại trừ chính nó nên sửa field khác không bị báo trùng oan.
+        /// </summary>
         [HttpPut("{id:guid}")]
         public async Task<ActionResult> Update(
             Guid id,
@@ -68,6 +82,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin (cần quyền discounts.manage): xóa mã giảm giá. Đơn cũ giữ
+        /// nguyên số tiền đã giảm (DiscountAmount lưu snapshot trên đơn,
+        /// không join lại bảng mã).
+        /// </summary>
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
         {

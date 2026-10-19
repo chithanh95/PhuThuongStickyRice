@@ -76,7 +76,17 @@ namespace PhuThuongStickyRice.Application.Admin
             });
             var customersResult = await _orders.GetCustomersAsync(term);
 
-            result.Orders = ordersResult.Items
+            result.Orders = MapOrderSearchItems(ordersResult.Items);
+            result.Products = MapProductSearchItems(productsResult.Items);
+            result.Customers = MapCustomerSearchItems(customersResult);
+
+            return result;
+        }
+
+        /// <summary>Map đơn hàng tìm được sang item kết quả search (link tới màn đơn hàng).</summary>
+        private static List<GlobalSearchItemDto> MapOrderSearchItems(IReadOnlyList<OrderDto> orders)
+        {
+            return orders
                 .Take(SearchTake)
                 .Select(o => new GlobalSearchItemDto
                 {
@@ -86,8 +96,12 @@ namespace PhuThuongStickyRice.Application.Admin
                     Link = $"/orders?search={Uri.EscapeDataString(o.OrderNumber)}"
                 })
                 .ToList();
+        }
 
-            result.Products = productsResult.Items
+        /// <summary>Map sản phẩm tìm được sang item kết quả search (kèm giá bán).</summary>
+        private static List<GlobalSearchItemDto> MapProductSearchItems(IReadOnlyList<ProductDto> products)
+        {
+            return products
                 .Take(SearchTake)
                 .Select(p => new GlobalSearchItemDto
                 {
@@ -97,8 +111,12 @@ namespace PhuThuongStickyRice.Application.Admin
                     Link = "/products"
                 })
                 .ToList();
+        }
 
-            result.Customers = (customersResult ?? new List<CustomerDto>())
+        /// <summary>Map khách hàng tìm được sang item kết quả search (link tới màn khách hàng).</summary>
+        private static List<GlobalSearchItemDto> MapCustomerSearchItems(List<CustomerDto> customers)
+        {
+            return (customers ?? new List<CustomerDto>())
                 .Take(SearchTake)
                 .Select(c => new GlobalSearchItemDto
                 {
@@ -108,8 +126,6 @@ namespace PhuThuongStickyRice.Application.Admin
                     Link = $"/customers?search={Uri.EscapeDataString(c.CustomerPhone)}"
                 })
                 .ToList();
-
-            return result;
         }
 
         public virtual async Task<List<NotificationDto>> GetNotificationsAsync()

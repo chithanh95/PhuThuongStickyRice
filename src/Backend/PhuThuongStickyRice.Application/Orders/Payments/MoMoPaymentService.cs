@@ -9,9 +9,6 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using PhuThuongStickyRice.Application.Orders.DTOs;
-using PhuThuongStickyRice.Application.Orders.Exceptions;
-using PhuThuongStickyRice.Application.Orders.Payments;
 
 namespace PhuThuongStickyRice.Application.Orders.Payments
 {
@@ -36,6 +33,16 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
     public class MoMoPaymentService : IMoMoPaymentService
     {
         private const string RequestType = "captureWallet";
+        /// <summary>Giá trị placeholder trong cấu hình — gặp giá trị này ở PartnerCode/AccessKey/SecretKey thì coi như MoMo chưa được cấu hình.</summary>
+        private const string UnconfiguredPlaceholder = "xxx";
+        /// <summary>Ngôn ngữ hiển thị trên trang thanh toán MoMo (tiếng Việt).</summary>
+        private const string MoMoUiLanguage = "vi";
+        /// <summary>Đường dẫn trang tra cứu đơn trên storefront — MoMo redirect khách về đây sau khi thanh toán xong.</summary>
+        private const string TrackOrderPath = "/track-order";
+        /// <summary>Đường dẫn trang giả lập MoMo trong app — dùng khi TestMode = true để không gọi API thật của MoMo.</summary>
+        private const string MoMoSimulatorPath = "/momo-simulator";
+        /// <summary>Đường dẫn webhook nhận kết quả thanh toán MoMo gửi về (IPN callback).</summary>
+        private const string MoMoCallbackPath = "/api/payments/momo/callback";
 
         private readonly IOrderRepository _orders;
         private readonly IPaymentConfigProvider _paymentConfig;
@@ -53,6 +60,34 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
 
         public async Task<MoMoCreatePaymentResultDto> CreatePaymentAsync(Order order)
         {
+            ValidateMoMoOrder(order);
+
+            var _options = await _paymentConfig.GetMoMoAsync();
+            var request = BuildSignedCreateRequest(order, _options);
+
+            if (_options.TestMode)
+            {
+                // TEST: never call the real MoMo endpoint. The simulator page
+                // receives the create-signature and echoes it back on callback.
+                return BuildTestModeResult(order, _options, request);
+            }
+
+            ValidateMoMoConfiguration(_options);
+            var payUrl = await SendCreatePaymentRequestAsync(_options, request);
+
+            return new MoMoCreatePaymentResultDto
+            {
+                OrderId = order.Id,
+                OrderNumber = order.OrderNumber,
+                Amount = order.TotalAmount.Amount,
+                PayUrl = payUrl,
+                TestMode = false
+            };
+        }
+
+        /// <summary>Kiểm tra đơn hàng đủ điều kiện tạo thanh toán MoMo (đúng phương thức, chưa thanh toán).</summary>
+        private static void ValidateMoMoOrder(Order order)
+        {
             if (order.PaymentMethod != PaymentMethod.MoMo)
             {
                 throw new DomainException("Order is not a MoMo order.");
@@ -62,67 +97,106 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             {
                 throw new DomainException("Order is already paid.");
             }
+        }
 
-            var _options = await _paymentConfig.GetMoMoAsync();
+        /// <summary>Các tham số đã ký HMAC của một yêu cầu tạo thanh toán MoMo.</summary>
+        private sealed class SignedCreateRequest
+        {
+            public string RequestId { get; init; } = string.Empty;
+            public long Amount { get; init; }
+            public string OrderId { get; init; } = string.Empty;
+            public string OrderInfo { get; init; } = string.Empty;
+            public string RedirectUrl { get; init; } = string.Empty;
+            public string IpnUrl { get; init; } = string.Empty;
+            public string Signature { get; init; } = string.Empty;
+        }
 
+        /// <summary>
+        /// Dựng các URL (redirect sau thanh toán, IPN callback) và chữ ký HMAC cho
+        /// yêu cầu tạo thanh toán. RequestId dùng Guid dạng "N" của đơn hàng để
+        /// phía callback đối chiếu được với đơn đã tạo.
+        /// </summary>
+        private static SignedCreateRequest BuildSignedCreateRequest(Order order, MoMoOptions options)
+        {
             var requestId = order.Id.ToString("N");
             var amount = (long)order.TotalAmount.Amount;
-            var orderId = order.OrderNumber;
             var orderInfo = $"Thanh toan don hang {order.OrderNumber} - Xoi Phu Thuong";
-            var redirectUrl = $"{_options.StorefrontBaseUrl.TrimEnd('/')}/track-order?orderNumber={Uri.EscapeDataString(order.OrderNumber)}";
-            var ipnUrl = $"{_options.ApiBaseUrl.TrimEnd('/')}/api/payments/momo/callback";
+            var redirectUrl = $"{options.StorefrontBaseUrl.TrimEnd('/')}{TrackOrderPath}?orderNumber={Uri.EscapeDataString(order.OrderNumber)}";
+            var ipnUrl = $"{options.ApiBaseUrl.TrimEnd('/')}{MoMoCallbackPath}";
 
             var rawString = MoMoSigner.BuildCreateRawString(
-                _options.PartnerCode, _options.AccessKey, requestId, amount,
-                orderId, orderInfo, redirectUrl, ipnUrl, RequestType);
-            var signature = MoMoSigner.Sign(rawString, _options.SecretKey);
+                options.PartnerCode, options.AccessKey, requestId, amount,
+                order.OrderNumber, orderInfo, redirectUrl, ipnUrl, RequestType);
+            var signature = MoMoSigner.Sign(rawString, options.SecretKey);
 
-            if (_options.TestMode)
+            return new SignedCreateRequest
             {
-                // TEST: never call the real MoMo endpoint. The simulator page
-                // receives the create-signature and echoes it back on callback.
-                var payUrl = $"{_options.StorefrontBaseUrl.TrimEnd('/')}/momo-simulator"
-                    + $"?orderId={order.Id}&orderNumber={Uri.EscapeDataString(order.OrderNumber)}"
-                    + $"&amount={amount}&requestId={requestId}&signature={Uri.EscapeDataString(signature)}";
-                return new MoMoCreatePaymentResultDto
-                {
-                    OrderId = order.Id,
-                    OrderNumber = order.OrderNumber,
-                    Amount = order.TotalAmount.Amount,
-                    PayUrl = payUrl,
-                    TestMode = true
-                };
-            }
+                RequestId = requestId,
+                Amount = amount,
+                OrderId = order.OrderNumber,
+                OrderInfo = orderInfo,
+                RedirectUrl = redirectUrl,
+                IpnUrl = ipnUrl,
+                Signature = signature
+            };
+        }
 
-            if (string.IsNullOrWhiteSpace(_options.Endpoint)
-                || string.IsNullOrWhiteSpace(_options.PartnerCode)
-                || string.IsNullOrWhiteSpace(_options.AccessKey)
-                || string.IsNullOrWhiteSpace(_options.SecretKey)
-                || _options.PartnerCode == "xxx"
-                || _options.AccessKey == "xxx"
-                || _options.SecretKey == "xxx")
+        /// <summary>
+        /// Kết quả ở TestMode: không gọi MoMo thật, trả URL trang giả lập trong app
+        /// kèm chữ ký để trang giả lập echo lại khi callback.
+        /// </summary>
+        private static MoMoCreatePaymentResultDto BuildTestModeResult(
+            Order order, MoMoOptions options, SignedCreateRequest request)
+        {
+            var payUrl = $"{options.StorefrontBaseUrl.TrimEnd('/')}{MoMoSimulatorPath}"
+                + $"?orderId={order.Id}&orderNumber={Uri.EscapeDataString(order.OrderNumber)}"
+                + $"&amount={request.Amount}&requestId={request.RequestId}&signature={Uri.EscapeDataString(request.Signature)}";
+            return new MoMoCreatePaymentResultDto
+            {
+                OrderId = order.Id,
+                OrderNumber = order.OrderNumber,
+                Amount = order.TotalAmount.Amount,
+                PayUrl = payUrl,
+                TestMode = true
+            };
+        }
+
+        /// <summary>Kiểm tra cấu hình MoMo thật đã đủ dùng (không trống, không còn giá trị placeholder).</summary>
+        private static void ValidateMoMoConfiguration(MoMoOptions options)
+        {
+            if (string.IsNullOrWhiteSpace(options.Endpoint)
+                || string.IsNullOrWhiteSpace(options.PartnerCode)
+                || string.IsNullOrWhiteSpace(options.AccessKey)
+                || string.IsNullOrWhiteSpace(options.SecretKey)
+                || options.PartnerCode == UnconfiguredPlaceholder
+                || options.AccessKey == UnconfiguredPlaceholder
+                || options.SecretKey == UnconfiguredPlaceholder)
             {
                 throw new DomainException("MoMo is not configured. Fill in PartnerCode/AccessKey/SecretKey and Endpoint.");
             }
+        }
 
+        /// <summary>Gửi yêu cầu tạo thanh toán đã ký tới MoMo, trả về payUrl khi resultCode = 0.</summary>
+        private async Task<string> SendCreatePaymentRequestAsync(MoMoOptions options, SignedCreateRequest request)
+        {
             var payload = new
             {
-                partnerCode = _options.PartnerCode,
-                accessKey = _options.AccessKey,
-                requestId,
-                amount = amount.ToString(),
-                orderId,
-                orderInfo,
-                redirectUrl,
-                ipnUrl,
+                partnerCode = options.PartnerCode,
+                accessKey = options.AccessKey,
+                requestId = request.RequestId,
+                amount = request.Amount.ToString(),
+                orderId = request.OrderId,
+                orderInfo = request.OrderInfo,
+                redirectUrl = request.RedirectUrl,
+                ipnUrl = request.IpnUrl,
                 requestType = RequestType,
                 extraData = string.Empty,
-                lang = "vi",
-                signature
+                lang = MoMoUiLanguage,
+                signature = request.Signature
             };
 
             var response = await _httpClient.PostAsync(
-                _options.Endpoint,
+                options.Endpoint,
                 new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
             response.EnsureSuccessStatusCode();
 
@@ -135,14 +209,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 throw new DomainException($"MoMo create payment failed: {message}");
             }
 
-            return new MoMoCreatePaymentResultDto
-            {
-                OrderId = order.Id,
-                OrderNumber = order.OrderNumber,
-                Amount = order.TotalAmount.Amount,
-                PayUrl = root.GetProperty("payUrl").GetString(),
-                TestMode = false
-            };
+            return root.GetProperty("payUrl").GetString();
         }
 
         public async Task<Order> HandleCallbackAsync(MoMoCallbackDto callback)

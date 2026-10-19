@@ -109,6 +109,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
             _shopSettings = shopSettings;
         }
 
+        /// <summary>
+        /// Tra cứu tài khoản điểm theo SĐT (public — trang tra cứu đơn/hồ sơ
+        /// gọi để hiện điểm, hạng, tổng chi tiêu). SĐT được chuẩn hóa trước;
+        /// SĐT sai định dạng hoặc chưa có tài khoản trả null (không lỗi 404).
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng (chuẩn hóa digits đầu vào).</param>
+        /// <returns>DTO tài khoản kèm hạng; null nếu SĐT không hợp lệ hoặc chưa có tài khoản.</returns>
         [AllowAnonymous]
         public virtual async Task<LoyaltyAccountDto> GetByPhoneAsync(string phone)
         {
@@ -127,6 +134,14 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return await MapToDtoAsync(account);
         }
 
+        /// <summary>
+        /// Khách tự cập nhật ngày sinh của mình (public — trang tra cứu đơn,
+        /// mục "hồ sơ"). Tài khoản chưa có thì tạo mới. Chỉ lưu phần ngày
+        /// (bỏ giờ) để so sánh sinh nhật hàng năm chính xác.
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng.</param>
+        /// <param name="input">Ngày sinh mới.</param>
+        /// <returns>Tài khoản sau khi cập nhật.</returns>
         [AllowAnonymous]
         public virtual async Task<LoyaltyAccountDto> UpdateBirthdayAsync(string phone, UpdateBirthdayInput input)
         {
@@ -138,6 +153,14 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return await MapToDtoAsync(account);
         }
 
+        /// <summary>
+        /// Admin: danh sách tài khoản điểm, sắp xếp theo tổng chi tiêu giảm
+        /// dần (khách chi nhiều nhất lên trước). Giới hạn 200 dòng mới nhất
+        /// vì bảng lớn dần theo đơn. Tìm kiếm theo SĐT chỉ giữ lại chữ số
+        /// (khách gõ "+84..." hay "0912..." đều tìm được).
+        /// </summary>
+        /// <param name="searchTerm">Chuỗi tìm kiếm theo SĐT; rỗng thì lấy tất cả.</param>
+        /// <returns>Danh sách tài khoản kèm hạng hiện tại.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<LoyaltyAccountDto>> GetListAsync(string searchTerm)
         {
@@ -155,6 +178,15 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return items.Select(x => MapToDto(x, settings)).ToList();
         }
 
+        /// <summary>
+        /// Admin: cộng/trừ điểm thủ công cho tài khoản (thưởng bù, phạt gian
+        /// lận...). Chặn điểm về âm — đơn đã đổi điểm rồi bị hủy sẽ được
+        /// RefundRedeemedPointsAsync hoàn sau nên trừ tay không được cho về âm
+        /// trước. TotalEarned (lịch sử "đã kiếm") chỉ tăng khi cộng điểm.
+        /// </summary>
+        /// <param name="phone">SĐT tài khoản.</param>
+        /// <param name="input">Số điểm thay đổi (âm = trừ).</param>
+        /// <returns>Tài khoản sau khi điều chỉnh.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<LoyaltyAccountDto> AdjustAsync(string phone, AdjustPointsInput input)
         {
@@ -180,6 +212,14 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return await MapToDtoAsync(account);
         }
 
+        /// <summary>
+        /// Admin: tài khoản có sinh nhật trong N ngày tới (phục vụ chiến dịch
+        /// gửi voucher sinh nhật). Kẹp daysAhead trong 0..60 ngày để admin
+        /// không vô tình quét cả năm. So sánh tháng/ngày chạy in-memory (bảng
+        /// nhỏ, không phụ thuộc DB provider) và chỉ SELECT 6 cột cần cho DTO.
+        /// </summary>
+        /// <param name="daysAhead">Số ngày tới cần quét (0..60).</param>
+        /// <returns>Danh sách tài khoản kèm hạng, sắp xếp theo ngày sinh nhật gần nhất.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<LoyaltyAccountDto>> GetUpcomingBirthdaysAsync(int daysAhead)
         {
@@ -240,6 +280,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }).ToList();
         }
 
+        /// <summary>
+        /// Internal: lấy tài khoản theo SĐT, chưa có thì tạo mới (điểm 0,
+        /// sinh mã giới thiệu riêng). Dùng ở checkout, hook đơn hoàn thành và
+        /// background worker — SĐT không hợp lệ ném DomainException.
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng (chuẩn hóa digits).</param>
+        /// <returns>Tài khoản đã có hoặc vừa tạo.</returns>
         public virtual async Task<LoyaltyAccount> GetOrCreateAsync(string phone)
         {
             var normalized = NormalizePhone(phone);
@@ -268,6 +315,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return account;
         }
 
+        /// <summary>
+        /// Internal: tìm tài khoản theo mã giới thiệu. Mã được trim và đưa về
+        /// in hoa nên khách nhập "pt-abc123" hay "PT-ABC123" đều tìm được;
+        /// mã rỗng/trắng trả null.
+        /// </summary>
+        /// <param name="referralCode">Mã giới thiệu cần tìm.</param>
+        /// <returns>Tài khoản chủ mã; null nếu không tồn tại.</returns>
         public virtual async Task<LoyaltyAccount> FindByReferralCodeAsync(string referralCode)
         {
             if (string.IsNullOrWhiteSpace(referralCode))
@@ -380,6 +434,17 @@ namespace PhuThuongStickyRice.Application.Loyalty
             buyer.TotalEarned += bonus;
         }
 
+        /// <summary>
+        /// Internal: trừ điểm khi khách đổi điểm ở checkout. Điểm yêu cầu được
+        /// làm tròn xuống theo bước đổi (mặc định 100 điểm = 10.000₫) — điểm lẻ
+        /// dưới 1 bước không đổi được vì không có mệnh giá lẻ. SĐT placeholder
+        /// POS ("0000000000") trả (0, 0): không cho redeem pool điểm chung của
+        /// các đơn vãng lai. Ném DomainException khi điểm không đủ hoặc dưới 1 bước đổi.
+        /// </summary>
+        /// <param name="phone">SĐT tài khoản đổi điểm.</param>
+        /// <param name="pointsRequested">Số điểm khách muốn đổi.</param>
+        /// <param name="settings">Cấu hình bước đổi và mệnh giá.</param>
+        /// <returns>(Điểm thực tế đã trừ, số tiền được giảm ₫).</returns>
         public virtual async Task<(int Points, decimal VndOff)> RedeemAsync(
             string phone, int pointsRequested, ShopSettingDto settings)
         {
@@ -423,6 +488,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return (points, steps * value);
         }
 
+        /// <summary>
+        /// Internal: hoàn lại điểm đã đổi khi đơn bị hủy — khách không mất
+        /// điểm oan vì đơn không thành. Điểm hoàn cộng lại cả Points và
+        /// TotalEarned. Đơn không có đổi điểm hoặc tài khoản không còn thì bỏ qua.
+        /// </summary>
+        /// <param name="order">Đơn hàng đã bị hủy.</param>
         public virtual async Task RefundRedeemedPointsAsync(Order order)
         {
             // Hoàn điểm đổi khi đơn bị hủy — khách không mất điểm oan vì đơn
@@ -493,6 +564,16 @@ namespace PhuThuongStickyRice.Application.Loyalty
             // (giống pattern gom commit ở AutoCancelExpiredBankTransfersAsync).
         }
 
+        /// <summary>
+        /// Xếp hạng thành viên theo tổng chi tiêu: trên mốc Vàng → "Vàng",
+        /// từ mốc Bạc trở lên → "Bạc", còn lại → "Đồng" (không % giảm).
+        /// Dùng '>' cho mốc Vàng và '&gt;=' cho mốc Bạc: đơn đúng bằng mốc
+        /// Vàng thì lên Vàng, không bị kẹp lửng giữa hai hạng. % giảm âm do
+        /// nhập nhầm được chặn về 0.
+        /// </summary>
+        /// <param name="totalSpent">Tổng số tiền khách đã chi tiêu (₫).</param>
+        /// <param name="settings">Cấu hình mốc hạng và % giảm.</param>
+        /// <returns>(Tên hạng tiếng Việt, % giảm giá của hạng).</returns>
         public (string Tier, decimal DiscountPercent) GetTier(decimal totalSpent, ShopSettingDto settings)
         {
             // Vàng dùng '>' còn Bạc dùng '>=': đơn đúng bằng mốc Vàng thì lên

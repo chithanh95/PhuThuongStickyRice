@@ -231,6 +231,16 @@ namespace PhuThuongStickyRice.Application.Orders
         /// đơn quá hạn vào memory khi worker chết lâu ngày.
         /// </summary>
         private const int AutoCancelBatchSize = 500;
+        /// <summary>Tiền tố mã voucher tặng khách khi gửi đánh giá kèm ảnh.</summary>
+        private const string PhotoReviewVoucherPrefix = "REVIEW";
+        /// <summary>Số tiền voucher (25.000đ) tặng khách khi đánh giá kèm ảnh — dùng cho đơn sau.</summary>
+        private const decimal PhotoReviewVoucherAmount = 25000m;
+        /// <summary>Voucher thưởng đánh giá có ảnh hết hạn sau 30 ngày kể từ ngày tạo.</summary>
+        private const int PhotoReviewVoucherValidityDays = 30;
+        /// <summary>Số điểm loyalty thưởng thêm khi khách đánh giá 5 sao.</summary>
+        private const int FiveStarReviewBonusPoints = 20;
+        /// <summary>Mức rating tối thiểu được thưởng điểm loyalty (5 sao).</summary>
+        private const int FiveStarRatingThreshold = 5;
 
         private readonly IOrderRepository _orders;
         private readonly IProductRepository _products;
@@ -858,6 +868,25 @@ namespace PhuThuongStickyRice.Application.Orders
             var queryable = await _orders.GetQueryableAsync();
             System.Linq.IQueryable<Order> query = queryable.OrderByDescending(x => x.CreatedAt);
 
+            query = await ApplyOrderListFiltersAsync(query, input);
+
+            var totalCount = await _asyncExecuter.LongCountAsync(query);
+            var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
+
+            var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
+            await FillShipperNamesAsync(dtos);
+            await FillCustomerTagsAsync(dtos);
+            return new PagedResultDto<OrderDto>(totalCount, dtos);
+        }
+
+        /// <summary>
+        /// Áp các bộ lọc của màn danh sách đơn lên query đơn hàng: tìm kiếm theo
+        /// mã/tên/SĐT, trạng thái, shipper được gán, khoảng ngày tạo (giờ VN),
+        /// trạng thái đã thu tiền mặt, và chỉ đơn của khách VIP.
+        /// </summary>
+        private async Task<System.Linq.IQueryable<Order>> ApplyOrderListFiltersAsync(
+            System.Linq.IQueryable<Order> query, GetOrdersInput input)
+        {
             if (!string.IsNullOrWhiteSpace(input.SearchTerm))
             {
                 var term = input.SearchTerm.Trim();
@@ -908,13 +937,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 query = query.Where(x => vipPhones.Contains(x.CustomerPhone));
             }
 
-            var totalCount = await _asyncExecuter.LongCountAsync(query);
-            var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
-
-            var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
-            await FillShipperNamesAsync(dtos);
-            await FillCustomerTagsAsync(dtos);
-            return new PagedResultDto<OrderDto>(totalCount, dtos);
+            return query;
         }
 
         /// <summary>
@@ -1515,6 +1538,22 @@ namespace PhuThuongStickyRice.Application.Orders
             order.UpdateLineQuantities(
                 input.Lines.Select(x => (x.LineId, x.Quantity)));
 
+            await ValidateMinOrderAmountAsync(order);
+            await ReconcileLineChangePaymentAsync(order, oldTotal);
+
+            await _orders.UpdateAsync(order);
+            // Wave 6c (item 33): internal note is never serialized publicly.
+            var linesDto = _objectMapper.Map<Order, OrderDto>(order);
+            linesDto.AdminNote = null;
+            return linesDto;
+        }
+
+        /// <summary>
+        /// Kiểm tra lại giá trị tối thiểu của đơn sau khi đổi số lượng món —
+        /// đơn dưới mức tối thiểu cấu hình của shop thì từ chối.
+        /// </summary>
+        private async Task ValidateMinOrderAmountAsync(Order order)
+        {
             // Re-check the minimum order amount against the new subtotal.
             var shopSetting = await _shopSettings.GetAsync();
             var subtotal = order.Lines.Sum(x => x.LineTotal.Amount);
@@ -1523,7 +1562,16 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException(
                     $"Đơn hàng tối thiểu {shopSetting.MinOrderAmount:N0} ₫. Vui lòng thêm món vào giỏ.");
             }
+        }
 
+        /// <summary>
+        /// Đối soát thanh toán khi khách tự sửa số lượng món: đơn trả bằng ví thì
+        /// trừ/thêm tiền ví theo chênh lệch tổng; đơn đã thanh toán (hoặc đã khai
+        /// báo chuyển khoản) bằng phương thức khác thì cấm tự sửa — khách phải
+        /// liên hệ quán, vì không thể tự trừ thêm tiền các phương thức này.
+        /// </summary>
+        private async Task ReconcileLineChangePaymentAsync(Order order, decimal oldTotal)
+        {
             // Wallet-paid orders: reconcile the wallet with the new total.
             // Without this the wallet stays charged at the old amount while the
             // order total changes (customer could underpay by adding items).
@@ -1559,12 +1607,6 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException(
                     "Đơn hàng đã thanh toán hoặc đã khai báo chuyển khoản không thể tự sửa. Vui lòng liên hệ quán để thay đổi.");
             }
-
-            await _orders.UpdateAsync(order);
-            // Wave 6c (item 33): internal note is never serialized publicly.
-            var linesDto = _objectMapper.Map<Order, OrderDto>(order);
-            linesDto.AdminNote = null;
-            return linesDto;
         }
 
         /// <summary>
@@ -1611,6 +1653,35 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <returns>Đánh giá vừa tạo.</returns>
         public virtual async Task<OrderReviewDto> SubmitReviewAsync(SubmitReviewInput input)
         {
+            var order = await GetCompletedOrderForReviewAsync(input);
+
+            var review = await CreateReviewAsync(order, input);
+
+            // Review kèm ảnh được tặng 1 phần xôi: tạo voucher giảm giá
+            // gắn với SĐT khách, dùng cho đơn sau (hết hạn sau 30 ngày).
+            if (!string.IsNullOrWhiteSpace(review.PhotoUrl))
+            {
+                await IssuePhotoReviewVoucherAsync(order, review);
+            }
+
+            // Item 134: đánh giá 5 sao được thưởng điểm loyalty.
+            if (review.Rating >= FiveStarRatingThreshold)
+            {
+                await AwardFiveStarReviewBonusAsync(order, review);
+            }
+
+            // Perf: bust the cached public review listing.
+            _catalogCache.Invalidate();
+
+            return MapReviewToDto(review);
+        }
+
+        /// <summary>
+        /// Tìm đơn theo mã + SĐT và kiểm tra điều kiện đánh giá: đơn phải ở
+        /// trạng thái hoàn thành và chưa từng được đánh giá.
+        /// </summary>
+        private async Task<Order> GetCompletedOrderForReviewAsync(SubmitReviewInput input)
+        {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
 
             if (order.Status != OrderStatus.Completed)
@@ -1627,6 +1698,12 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException("Đơn hàng này đã được đánh giá.");
             }
 
+            return order;
+        }
+
+        /// <summary>Tạo entity OrderReview (kèm rating từng món) và lưu vào DB.</summary>
+        private async Task<OrderReview> CreateReviewAsync(Order order, SubmitReviewInput input)
+        {
             var review = new OrderReview
             {
                 OrderId = order.Id,
@@ -1641,47 +1718,44 @@ namespace PhuThuongStickyRice.Application.Orders
                 Lines = await BuildReviewLinesAsync(order.Id, input.Lines)
             };
             await _reviews.InsertAsync(review, autoSave: true);
+            return review;
+        }
 
-            // Review kèm ảnh được tặng 1 phần xôi: tạo voucher giảm 25.000đ
-            // gắn với SĐT khách, dùng cho đơn sau (hết hạn sau 30 ngày).
-            if (!string.IsNullOrWhiteSpace(review.PhotoUrl))
-            {
-                var phone = _loyalty.NormalizePhone(order.CustomerPhone);
-                var voucher = await _discounts.CreateGeneratedAsync(
-                    new Discounts.DTOs.CreateGeneratedDiscountDto
-                    {
-                        Prefix = "REVIEW",
-                        DiscountAmount = 25000,
-                        ExpiresAt = DateTime.UtcNow.AddDays(30),
-                        OwnerPhone = phone
-                    });
-                review.RewardCode = voucher.Code;
-                await _reviews.UpdateAsync(review, autoSave: true);
-            }
-
-            // Item 134: đánh giá 5 sao được thưởng +20 điểm loyalty.
-            if (review.Rating >= 5)
-            {
-                try
+        /// <summary>Tạo voucher thưởng cho đánh giá kèm ảnh rồi gắn mã voucher vào review.</summary>
+        private async Task IssuePhotoReviewVoucherAsync(Order order, OrderReview review)
+        {
+            var phone = _loyalty.NormalizePhone(order.CustomerPhone);
+            var voucher = await _discounts.CreateGeneratedAsync(
+                new Discounts.DTOs.CreateGeneratedDiscountDto
                 {
-                    await _loyalty.AdjustAsync(order.CustomerPhone, new AdjustPointsInput
-                    {
-                        PointsDelta = 20,
-                        Reason = $"Thưởng đánh giá 5 sao đơn {order.OrderNumber}"
-                    });
-                }
-                catch (Exception ex)
+                    Prefix = PhotoReviewVoucherPrefix,
+                    DiscountAmount = PhotoReviewVoucherAmount,
+                    ExpiresAt = DateTime.UtcNow.AddDays(PhotoReviewVoucherValidityDays),
+                    OwnerPhone = phone
+                });
+            review.RewardCode = voucher.Code;
+            await _reviews.UpdateAsync(review, autoSave: true);
+        }
+
+        /// <summary>
+        /// Thưởng điểm loyalty cho đánh giá 5 sao. Thưởng điểm là nice-to-have —
+        /// lỗi ở đây không được fail review, nhưng vẫn log để phát hiện khi
+        /// loyalty service hỏng liên tục.
+        /// </summary>
+        private async Task AwardFiveStarReviewBonusAsync(Order order, OrderReview review)
+        {
+            try
+            {
+                await _loyalty.AdjustAsync(order.CustomerPhone, new AdjustPointsInput
                 {
-                    // Thưởng điểm là nice-to-have — không fail review vì lỗi này,
-                    // nhưng vẫn log để phát hiện khi loyalty service hỏng liên tục.
-                    Logger.LogWarning(ex, "Không thưởng được 20 điểm đánh giá 5 sao cho đơn {OrderNumber}.", order.OrderNumber);
-                }
+                    PointsDelta = FiveStarReviewBonusPoints,
+                    Reason = $"Thưởng đánh giá 5 sao đơn {order.OrderNumber}"
+                });
             }
-
-            // Perf: bust the cached public review listing.
-            _catalogCache.Invalidate();
-
-            return MapReviewToDto(review);
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Không thưởng được 20 điểm đánh giá 5 sao cho đơn {OrderNumber}.", order.OrderNumber);
+            }
         }
 
         /// <summary>

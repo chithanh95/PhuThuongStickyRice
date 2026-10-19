@@ -42,6 +42,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Ok(await _wallets.GetBalanceAsync(phone));
             }
 
+            /// <summary>
+            /// Admin: danh sách ví khách hàng (tìm kiếm theo SĐT) — màn quản
+            /// lý ví ở admin.
+            /// </summary>
             [Authorize(Roles = "Admin")]
             [HttpGet]
             public async Task<ActionResult<List<WalletAccountDto>>> GetList(
@@ -51,6 +55,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Ok(await _wallets.GetListAsync(search));
             }
 
+            /// <summary>
+            /// Admin: lịch sử giao dịch ví của 1 SĐT (nạp, thanh toán, hoàn tiền)
+            /// — dùng khi đối soát khiếu nại số dư.
+            /// </summary>
             [Authorize(Roles = "Admin")]
             [HttpGet("transactions")]
             public async Task<ActionResult<List<WalletTransactionDto>>> GetTransactions(
@@ -60,6 +68,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Ok(await _wallets.GetTransactionsAsync(phone));
             }
 
+            /// <summary>
+            /// Admin: cộng/trừ số dư ví thủ công (nạp bù, điều chỉnh sai lệch).
+            /// Lỗi nghiệp vụ (ví dụ số dư không đủ khi trừ) trả 400.
+            /// </summary>
             [Authorize(Roles = "Admin")]
             [HttpPost("adjust")]
             public async Task<ActionResult<WalletAccountDto>> Adjust(

@@ -80,9 +80,9 @@
                 <option value="">-- Tất cả chi nhánh --</option>
                 @if (_branches != null)
                 {
-                    @foreach (var b in _branches)
+                    @foreach (var branch in _branches)
                     {
-                        <option value="@b.Id">@b.Name</option>
+                        <option value="@branch.Id">@branch.Name</option>
                     }
                 }
             </InputSelect>
@@ -169,14 +169,14 @@
                     <tr><th>Tên size</th><th class="text-right">Giá (₫)</th><th>Thứ tự</th><th></th><th></th></tr>
                 </thead>
                 <tbody>
-                    @foreach (var s in _sizes)
+                    @foreach (var size in _sizes)
                     {
-                        <tr @key="s.Id">
-                            <td>@s.Name</td>
-                            <td class="text-right">@s.Price.ToString("N0")</td>
-                            <td>@s.SortOrder</td>
+                        <tr @key="size.Id">
+                            <td>@size.Name</td>
+                            <td class="text-right">@size.Price.ToString("N0")</td>
+                            <td>@size.SortOrder</td>
                             <td>
-                                @if (s.IsActive)
+                                @if (size.IsActive)
                                 {
                                     <span class="badge badge-success">Đang bán</span>
                                 }
@@ -186,8 +186,8 @@
                                 }
                             </td>
                             <td class="text-right">
-                                <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditSize(s)">Sửa</button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSizeAsync(s)">Xóa</button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditSize(size)">Sửa</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSizeAsync(size)">Xóa</button>
                             </td>
                         </tr>
                     }

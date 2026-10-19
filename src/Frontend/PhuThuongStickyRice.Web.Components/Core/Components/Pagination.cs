@@ -56,9 +56,9 @@ namespace PhuThuongStickyRice.Web.Components.Core.Components
             endIndex = Math.Min(endIndex, totalPages);
 
             PageNumbers = new List<int>();
-            for (var i = startIndex; i <= endIndex; i++)
+            for (var pageNumber = startIndex; pageNumber <= endIndex; pageNumber++)
             {
-                PageNumbers.Add(i);
+                PageNumbers.Add(pageNumber);
             }
         }
     }
