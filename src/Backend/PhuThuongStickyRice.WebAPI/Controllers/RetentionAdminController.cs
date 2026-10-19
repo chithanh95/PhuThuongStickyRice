@@ -1,10 +1,11 @@
-using PhuThuongStickyRice.Domain.Entities;
+﻿using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Persistence;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Linq;
 using System.Threading;
@@ -24,10 +25,24 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public class RetentionAdminController : ControllerBase
     {
         private readonly StickyRiceDbContext _db;
+        private readonly IMemoryCache _memoryCache;
 
-        public RetentionAdminController(StickyRiceDbContext db)
+        public RetentionAdminController(StickyRiceDbContext db, IMemoryCache memoryCache)
         {
             _db = db;
+            _memoryCache = memoryCache;
+        }
+
+        /// <summary>
+        /// Perf: busts all hourly off-peak promo cache entries so an admin
+        /// edit shows up immediately on the public landing page.
+        /// </summary>
+        private void InvalidateOffPeakCache()
+        {
+            for (var hour = 0; hour < 24; hour++)
+            {
+                _memoryCache.Remove(LandingPublicController.LandingOffPeakCacheKeyPrefix + hour);
+            }
         }
 
         // ============ Off-peak promos ============
@@ -80,6 +95,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             };
             _db.OffPeakPromos.Add(promo);
             await _db.SaveChangesAsync(cancellationToken);
+            InvalidateOffPeakCache();
 
             return Ok(new { success = true, id = promo.Id });
         }
@@ -104,6 +120,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             promo.DiscountAmount = dto.DiscountAmount;
             promo.IsActive = dto.IsActive;
             await _db.SaveChangesAsync(cancellationToken);
+            InvalidateOffPeakCache();
 
             return Ok(new { success = true });
         }
@@ -116,6 +133,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             _db.OffPeakPromos.Remove(promo);
             await _db.SaveChangesAsync(cancellationToken);
+            InvalidateOffPeakCache();
 
             return Ok(new { success = true });
         }
@@ -171,6 +189,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             };
             _db.DishPolls.Add(poll);
             await _db.SaveChangesAsync(cancellationToken);
+            _memoryCache.Remove(LandingPublicController.LandingPollsCacheKey);
 
             return Ok(new { success = true, id = poll.Id });
         }
@@ -194,6 +213,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             poll.ImageUrl = dto.ImageUrl?.Trim();
             poll.IsActive = dto.IsActive;
             await _db.SaveChangesAsync(cancellationToken);
+            _memoryCache.Remove(LandingPublicController.LandingPollsCacheKey);
 
             return Ok(new { success = true });
         }
@@ -208,6 +228,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _db.DishVotes.RemoveRange(votes);
             _db.DishPolls.Remove(poll);
             await _db.SaveChangesAsync(cancellationToken);
+            _memoryCache.Remove(LandingPublicController.LandingPollsCacheKey);
 
             return Ok(new { success = true });
         }

@@ -352,16 +352,30 @@ namespace PhuThuongStickyRice.Application.Orders
 
         public virtual async Task<long> GetTodaySoldCountAsync()
         {
+            // Perf: "Đã bán N gói hôm nay" is shown on every shop/landing
+            // load. Cache 60s keyed by VN date — a marketing number, not
+            // real-time; the heavy SUM over today's order lines must not
+            // run per page view.
+            var vnDate = DateTime.UtcNow.AddHours(7).Date;
+            var cacheKey = $"dashboard:today-sold:{vnDate:yyyyMMdd}";
+            if (_memoryCache.TryGetValue(cacheKey, out long cached))
+            {
+                return cached;
+            }
+
             // The shop runs on Vietnam time (UTC+7); CreatedAt is UTC.
-            var startOfTodayUtc = DateTime.UtcNow.AddHours(7).Date.AddHours(-7);
+            var startOfTodayUtc = vnDate.AddHours(-7);
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var billable = orderQueryable.Where(x =>
                 x.Status != OrderStatus.Cancelled
                 && x.CreatedAt >= startOfTodayUtc);
 
-            return await _asyncExecuter.SumAsync(
+            var result = await _asyncExecuter.SumAsync(
                 billable.SelectMany(x => x.Lines).Select(x => (long)x.Quantity));
+
+            _memoryCache.Set(cacheKey, result, TimeSpan.FromSeconds(60));
+            return result;
         }
 
         /// <summary>
