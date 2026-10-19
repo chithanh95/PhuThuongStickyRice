@@ -88,6 +88,12 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task<string> GetUsableCodeAsync(string codePrefix, string ownerPhone);
     }
 
+    /// <summary>
+    /// Quản lý mã giảm giá: admin tạo/sửa/xóa mã, kiểm tra và áp dụng mã vào
+    /// đơn hàng (kể cả freeship), sinh mã dùng một lần cho vòng quay may mắn /
+    /// sinh nhật, và đếm lượt sử dụng. Kết quả validate được cache ở shop nhưng
+    /// lúc áp dụng luôn kiểm tra lại nên không bao giờ áp sai mã đã hết hạn.
+    /// </summary>
     public class DiscountAppService : ApplicationService, IDiscountAppService
     {
         private readonly IRepository<DiscountCode, Guid> _discounts;
@@ -110,6 +116,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Admin: 500 mã mới nhất (mã tự sinh theo khách như quay/sinh nhật nhiều,
+        /// không lấy hết để không nặng trang).
+        /// </summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<DiscountCodeDto>> GetListAsync()
         {
@@ -122,6 +132,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             return entities.Select(MapToDto).ToList();
         }
 
+        /// <summary>Admin: chi tiết 1 mã theo Id.</summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task<DiscountCodeDto> GetAsync(Guid id)
         {
@@ -129,6 +140,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin (cần quyền discounts.manage): tạo mã mới. Chuẩn hóa mã về in
+        /// hoa, kiểm tra không trùng, xóa cache mã công khai để shop cập nhật ngay.
+        /// </summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task<DiscountCodeDto> CreateAsync(CreateDiscountCodeDto dto)
         {
@@ -160,6 +175,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin (cần quyền discounts.manage): cập nhật mã. Kiểm tra trùng mã
+        /// loại trừ chính nó (excludeId) để đổi các field khác không bị báo trùng.
+        /// </summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task<DiscountCodeDto> UpdateAsync(Guid id, CreateDiscountCodeDto dto)
         {
@@ -188,6 +207,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             return MapToDto(entity);
         }
 
+        /// <summary>Admin (cần quyền discounts.manage): xóa mã.</summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task DeleteAsync(Guid id)
         {
@@ -202,12 +222,20 @@ namespace PhuThuongStickyRice.Application.Discounts
             await _activityLogger.LogAsync(StaffActions.DiscountDelete, $"Xóa mã giảm giá {entity.Code}.");
         }
 
+        /// <summary>
+        /// Public: kiểm tra mã với tổng tiền giỏ hàng, trả về kết quả và số
+        /// tiền được giảm — CHƯA tăng lượt dùng.
+        /// </summary>
         [AllowAnonymous]
         public virtual async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input)
         {
             return await ValidateAsync(input, null);
         }
 
+        /// <summary>
+        /// Public: kiểm tra mã cho 1 SĐT cụ thể (mã riêng tư gắn SĐT như mã
+        /// quay/sinh nhật chỉ chủ SĐT mới dùng được).
+        /// </summary>
         [AllowAnonymous]
         public virtual async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string customerPhone)
         {
@@ -228,6 +256,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             };
         }
 
+        /// <summary>
+        /// True khi mã tồn tại, là loại freeship và còn dùng được với tổng
+        /// tiền + SĐT cho trước. Checkout dùng để quyết định miễn phí ship.
+        /// </summary>
         public virtual async Task<bool> IsFreeshipAsync(string code, decimal subtotal, string customerPhone)
         {
             var normalized = NormalizeCode(code);
@@ -256,11 +288,19 @@ namespace PhuThuongStickyRice.Application.Discounts
 
         public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone)
         {
+            // Validate trước rồi mới tăng lượt dùng: đơn lỗi không được đốt lượt mã.
             var amount = await ValidateAndComputeAsync(code, subtotal, customerPhone);
             await IncrementUsageAsync(code);
             return amount;
         }
 
+        /// <summary>
+        /// Kiểm tra mã và tính số tiền giảm nhưng KHÔNG tăng lượt dùng — dùng
+        /// khi tính thử tổng tiền ở checkout trước lúc tạo đơn. Gọi
+        /// <see cref="IncrementUsageAsync"/> sau khi tạo đơn thành công để đơn
+        /// lỗi (thanh toán hỏng, khách bỏ giỏ) không đốt lượt mã.
+        /// Ném <see cref="Domain.Exceptions.DomainException"/> khi mã không dùng được.
+        /// </summary>
         public virtual async Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string customerPhone)
         {
             var normalized = NormalizeCode(code);
@@ -277,6 +317,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             return ComputeDiscount(entity, subtotal);
         }
 
+        /// <summary>
+        /// Tăng UsedCount lên 1 cho mã. Chỉ gọi sau khi tạo đơn thành công —
+        /// không tự ý tăng ở bước tính thử, kẻo đơn lỗi vẫn đốt lượt mã.
+        /// </summary>
         public virtual async Task IncrementUsageAsync(string code)
         {
             var normalized = NormalizeCode(code);
@@ -292,6 +336,11 @@ namespace PhuThuongStickyRice.Application.Discounts
             await _discounts.UpdateAsync(entity, autoSave: true);
         }
 
+        /// <summary>
+        /// Tạo mã dùng 1 lần do hệ thống sinh (vòng quay may mắn, quà sinh
+        /// nhật): mã ngẫu nhiên theo tiền tố, MaxUses = 1, gắn SĐT chủ sở hữu
+        /// để không ai dùng ké. Chỉ các service nội bộ gọi.
+        /// </summary>
         public virtual async Task<DiscountCodeDto> CreateGeneratedAsync(CreateGeneratedDiscountDto dto)
         {
             if (!dto.DiscountPercent.HasValue && !dto.DiscountAmount.HasValue)
@@ -320,6 +369,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// True khi SĐT đã có mã còn dùng được với tiền tố cho trước — chống
+        /// cấp trùng mã quay/sinh nhật cho cùng 1 khách.
+        /// </summary>
         public virtual async Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone)
         {
             if (string.IsNullOrWhiteSpace(codePrefix) || string.IsNullOrWhiteSpace(ownerPhone))
@@ -391,6 +444,9 @@ namespace PhuThuongStickyRice.Application.Discounts
         private static (bool Valid, string Message) CheckUsable(
             DiscountCode entity, decimal subtotal, string customerPhone = null)
         {
+            // Thứ tự kiểm tra từ rẻ tới "đắt": tồn tại → đang bật → còn hạn →
+            // còn lượt → đúng chủ sở hữu → đạt đơn tối thiểu. Message trả về
+            // hiển thị trực tiếp cho khách nên viết rõ nguyên nhân.
             if (entity == null)
             {
                 return (false, "Mã giảm giá không tồn tại.");
@@ -448,9 +504,12 @@ namespace PhuThuongStickyRice.Application.Discounts
 
         private async Task<string> GenerateUniqueCodeAsync(string prefix)
         {
+            // Bộ ký tự bỏ I/O/0/1 (dễ nhầm lẫn khi khách đọc to), 6 ký tự ngẫu nhiên.
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
             var random = Random.Shared; // perf-hunt 2026-10-19: Random.Shared is thread-safe and avoids same-tick seed collisions across concurrent requests
 
+            // Thử tối đa 10 lần sinh ngẫu nhiên không trùng; nếu vẫn trùng
+            // (xác suất cực thấp) thì dùng GUID cho chắc, không retry vô hạn.
             for (var attempt = 0; attempt < 10; attempt++)
             {
                 var code = prefix + "-" + new string(
@@ -480,6 +539,8 @@ namespace PhuThuongStickyRice.Application.Discounts
             decimal amount;
             if (entity.DiscountPercent.HasValue)
             {
+                // Chặn phần trăm trong 0..100 (admin nhập tay có thể nhầm, vd 200%)
+                // và làm tròn về đồng chẵn vì tiền mặt không có số lẻ.
                 var percent = Math.Min(100, Math.Max(0, entity.DiscountPercent.Value));
                 amount = Math.Round(subtotal * percent / 100, 0);
             }
@@ -488,6 +549,8 @@ namespace PhuThuongStickyRice.Application.Discounts
                 amount = entity.DiscountAmount ?? 0;
             }
 
+            // Đảm bảo không âm và không vượt tổng tiền hàng — tránh tổng đơn
+            // bị âm khi mã giảm nhiều hơn giá trị giỏ.
             return Math.Min(Math.Max(0, amount), subtotal);
         }
 

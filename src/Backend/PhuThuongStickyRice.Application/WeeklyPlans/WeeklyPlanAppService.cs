@@ -1,6 +1,7 @@
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -367,7 +368,7 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             throw new DomainException("Không sinh được mã đơn, vui lòng thử lại.");
         }
 
-        private static WeeklyPlanDto MapToDto(WeeklyPlan plan)
+        private WeeklyPlanDto MapToDto(WeeklyPlan plan)
         {
             List<WeeklyPlanDayDto> days;
             try
@@ -375,8 +376,11 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
                 days = JsonSerializer.Deserialize<List<WeeklyPlanDayDto>>(plan.DayMenusJson)
                     ?? new List<WeeklyPlanDayDto>();
             }
-            catch
+            catch (Exception ex)
             {
+                // Dữ liệu JSON hỏng thì trả về danh sách rỗng thay vì nổ,
+                // nhưng phải log lại để admin biết mà sửa.
+                Logger.LogDebug(ex, "Không parse được DayMenusJson của gói tuần {PlanId}.", plan.Id);
                 days = new List<WeeklyPlanDayDto>();
             }
 
@@ -390,7 +394,7 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             };
         }
 
-        private static WeeklyPlanOrderDto MapToDto(WeeklyPlanOrder order)
+        private WeeklyPlanOrderDto MapToDto(WeeklyPlanOrder order)
         {
             Dictionary<string, bool> claimed = ParseClaimedDays(order.ClaimedDaysJson);
 
@@ -407,15 +411,17 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             };
         }
 
-        private static Dictionary<string, bool> ParseClaimedDays(string json)
+        private Dictionary<string, bool> ParseClaimedDays(string json)
         {
             try
             {
                 return JsonSerializer.Deserialize<Dictionary<string, bool>>(json)
                     ?? new Dictionary<string, bool>();
             }
-            catch
+            catch (Exception ex)
             {
+                // JSON hỏng thì coi như chưa nhận ngày nào, nhưng phải log lại.
+                Logger.LogDebug(ex, "Không parse được ClaimedDaysJson của đơn gói tuần.");
                 return new Dictionary<string, bool>();
             }
         }

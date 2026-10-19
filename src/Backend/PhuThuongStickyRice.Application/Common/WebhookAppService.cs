@@ -170,7 +170,7 @@ namespace PhuThuongStickyRice.Application.Common
                         ComputeSignature(endpoint.Secret.Trim(), body));
                 }
 
-                var response = await client.SendAsync(request);
+                using var response = await client.SendAsync(request);
                 statusCode = (int)response.StatusCode;
                 success = response.IsSuccessStatusCode;
                 if (!success)

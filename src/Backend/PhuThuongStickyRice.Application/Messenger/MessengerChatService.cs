@@ -56,12 +56,27 @@ namespace PhuThuongStickyRice.Application.Messenger
     /// messages are logged, but no replies are sent (never crashes).
     /// Sessions are kept in memory (single-instance friendly).
     /// </summary>
-    public class MessengerChatService : ApplicationService, IMessengerChatService
+    public partial class MessengerChatService : ApplicationService, IMessengerChatService
     {
         private const string GraphApiVersion = "v18.0";
         private static readonly TimeSpan SessionTimeout = TimeSpan.FromMinutes(30);
-        private static readonly Regex VnPhoneRegex =
-            new Regex(@"0(3|5|7|8|9)\d{8}", RegexOptions.Compiled);
+
+        // .NET source-generated regexes (C# 13): compiled at build time, no
+        // runtime Regex construction on the chat hot path.
+        [GeneratedRegex(@"0(3|5|7|8|9)\d{8}")]
+        private static partial Regex VnPhoneRegex();
+
+        [GeneratedRegex(@"[-–—,.;]")]
+        private static partial Regex PunctuationRegex();
+
+        [GeneratedRegex(@"\s+")]
+        private static partial Regex WhitespaceRegex();
+
+        [GeneratedRegex(@"^(đặt|dat|order)\b", RegexOptions.IgnoreCase)]
+        private static partial Regex OrderPrefixRegex();
+
+        [GeneratedRegex(@"\bx\s*(\d{1,3})\b", RegexOptions.IgnoreCase)]
+        private static partial Regex QuantityRegex();
 
         // Sending limits & catalog fetch sizes (keep these named, not inline).
         private const int MenuMaxItems = 20;
@@ -245,16 +260,16 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         private async Task<string> HandleInfoAsync(ChatSession session, string text)
         {
-            var phoneMatch = VnPhoneRegex.Match(text.Replace(" ", string.Empty));
+            var phoneMatch = VnPhoneRegex().Match(text.Replace(" ", string.Empty));
             if (!phoneMatch.Success)
             {
                 return "SĐT chưa đúng định dạng (VD: 0912345678). Bạn gửi lại giúp mình nhé!";
             }
 
             var phone = phoneMatch.Value;
-            var name = Regex.Replace(text, @"0(3|5|7|8|9)\d{8}", " ", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"[-–—,.;]", " ").Trim();
-            name = Regex.Replace(name, @"\s+", " ");
+            var name = VnPhoneRegex().Replace(text, " ");
+            name = PunctuationRegex().Replace(name, " ").Trim();
+            name = WhitespaceRegex().Replace(name, " ");
             if (string.IsNullOrWhiteSpace(name) || name.Length < 2)
             {
                 name = "Khách Messenger";
@@ -325,7 +340,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             var items = await LoadActiveProductsAsync(
                 ParseOrderMaxItems, "Could not load products for Messenger order parsing.");
 
-            var body = Regex.Replace(text, @"^(đặt|dat|order)\b", " ", RegexOptions.IgnoreCase).Trim();
+            var body = OrderPrefixRegex().Replace(text, " ").Trim();
             var parts = body.Split(new[] { ',', ';', '+' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var rawPart in parts)
             {
@@ -374,7 +389,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         private PendingLine ParseOrderPart(string part, List<ProductDto> items)
         {
             var qty = 1;
-            var m = Regex.Match(part, @"\bx\s*(\d{1,3})\b", RegexOptions.IgnoreCase);
+            var m = QuantityRegex().Match(part);
             if (m.Success)
             {
                 qty = Math.Max(1, Math.Min(100, int.Parse(m.Groups[1].Value)));
@@ -518,7 +533,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                     sb.Append(c);
                 }
             }
-            return Regex.Replace(sb.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant(), @"\s+", " ").Trim();
+            return WhitespaceRegex().Replace(sb.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant(), " ").Trim();
         }
 
         private static string FormatVnd(decimal amount)

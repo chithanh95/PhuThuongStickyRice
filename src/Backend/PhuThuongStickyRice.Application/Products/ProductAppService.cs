@@ -66,6 +66,13 @@ namespace PhuThuongStickyRice.Application.Products
 
     public class ProductAppService : ApplicationService, IProductAppService
     {
+        private const string DailyRemainingCacheKey = "daily-remaining";
+        /// <summary>
+        /// Cache "Còn N suất" chỉ 60 giây vì số suất còn lại thay đổi theo
+        /// từng đơn hàng mới — cache lâu hơn sẽ hiển thị số liệu cũ.
+        /// </summary>
+        private const int DailyRemainingCacheSeconds = 60;
+
         private readonly IProductRepository _products;
         private readonly IDomainEvents _domainEvents;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -249,20 +256,7 @@ namespace PhuThuongStickyRice.Application.Products
             }
 
             var product = Product.Create(code, input.Name, Money.Of(input.Price, input.Currency ?? "VND"), input.Description);
-            product.ChangeCostPrice(input.CostPrice);
-            if (!string.IsNullOrWhiteSpace(input.Unit))
-            {
-                product.ChangeUnit(input.Unit);
-            }
-            // Items 164/165/166: sale time windows, daily portion limit, photo gallery.
-            product.ChangeAvailableHoursJson(input.AvailableHoursJson);
-            product.ChangeDailyLimit(input.DailyLimit);
-            product.ChangeImageUrlsJson(input.ImageUrlsJson);
-            product.ChangeBranch(input.BranchId);
-            product.UpdateCatalogInfo(
-                input.Tags, input.Category, input.AllergenInfo,
-                input.IsNew, input.IsSignature,
-                input.AvailableFrom, input.AvailableTo);
+            ApplyEditableFields(product, input);
 
             product.CreatedAt = DateTime.UtcNow;
             await _products.InsertAsync(product);
@@ -294,21 +288,7 @@ namespace PhuThuongStickyRice.Application.Products
 
             product.UpdateDetails(input.Name, input.Description);
             product.ChangePrice(Money.Of(input.Price, input.Currency ?? "VND"));
-            product.ChangeCostPrice(input.CostPrice);
-            if (!string.IsNullOrWhiteSpace(input.Unit))
-            {
-                product.ChangeUnit(input.Unit);
-            }
-            // Items 164/165/166: sale time windows, daily portion limit, photo gallery.
-            product.ChangeAvailableHoursJson(input.AvailableHoursJson);
-            product.ChangeDailyLimit(input.DailyLimit);
-            product.ChangeImageUrlsJson(input.ImageUrlsJson);
-            product.UpdateCatalogInfo(
-                input.Tags, input.Category, input.AllergenInfo,
-                input.IsNew, input.IsSignature,
-                input.AvailableFrom, input.AvailableTo);
-
-            product.ChangeBranch(input.BranchId);
+            ApplyEditableFields(product, input);
 
             if (!string.IsNullOrWhiteSpace(input.Status)
                 && Enum.TryParse<ProductStatus>(input.Status, ignoreCase: true, out var status)
@@ -402,15 +382,14 @@ namespace PhuThuongStickyRice.Application.Products
         /// </summary>
         public virtual async Task<List<ProductDailyRemainingDto>> GetDailyRemainingAsync()
         {
-            const string cacheKey = "daily-remaining";
-            if (_memoryCache.TryGetValue(cacheKey, out List<ProductDailyRemainingDto> cached))
+            if (_memoryCache.TryGetValue(DailyRemainingCacheKey, out List<ProductDailyRemainingDto> cached))
             {
                 return cached;
             }
             var result = await QueryDailyRemainingAsync();
-            _memoryCache.Set(cacheKey, result, new MemoryCacheEntryOptions
+            _memoryCache.Set(DailyRemainingCacheKey, result, new MemoryCacheEntryOptions
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60)
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(DailyRemainingCacheSeconds)
             });
             return result;
         }
@@ -578,6 +557,30 @@ namespace PhuThuongStickyRice.Application.Products
                 default:
                     throw new Domain.Exceptions.DomainException($"Unsupported product status '{status}'.");
             }
+        }
+
+        /// <summary>
+        /// Tách từ CreateAsync/UpdateAsync: cả tạo mới và cập nhật dùng chung
+        /// một bộ field chỉnh sửa (giá vốn, đơn vị, khung giờ bán, giới hạn
+        /// suất/ngày, ảnh, chi nhánh, thông tin catalog). Không gồm tên, mô
+        /// tả, giá bán, mã — vì mỗi bên xử lý khác nhau.
+        /// </summary>
+        private static void ApplyEditableFields(Product product, CreateUpdateProductDto input)
+        {
+            product.ChangeCostPrice(input.CostPrice);
+            if (!string.IsNullOrWhiteSpace(input.Unit))
+            {
+                product.ChangeUnit(input.Unit);
+            }
+            // Items 164/165/166: sale time windows, daily portion limit, photo gallery.
+            product.ChangeAvailableHoursJson(input.AvailableHoursJson);
+            product.ChangeDailyLimit(input.DailyLimit);
+            product.ChangeImageUrlsJson(input.ImageUrlsJson);
+            product.ChangeBranch(input.BranchId);
+            product.UpdateCatalogInfo(
+                input.Tags, input.Category, input.AllergenInfo,
+                input.IsNew, input.IsSignature,
+                input.AvailableFrom, input.AvailableTo);
         }
 
         public virtual async Task DeleteAsync(Guid id)

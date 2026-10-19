@@ -7,12 +7,15 @@ using System.Data;
 
 namespace PhuThuongStickyRice.Persistence.Locks
 {
-    public class LockManager : ILockManager
+    /// <summary>
+    /// Khóa phân tán dùng bảng [Locks] trên SQL Server (MERGE/UPSERT theo từng thực thể).
+    /// </summary>
+    public class SqlServerDistributedLockProvider : ILockManager
     {
         private readonly StickyRiceDbContext _dbContext;
         private readonly IDateTimeProvider _dateTimeProvider;
 
-        public LockManager(StickyRiceDbContext dbContext, IDateTimeProvider dateTimeProvider)
+        public SqlServerDistributedLockProvider(StickyRiceDbContext dbContext, IDateTimeProvider dateTimeProvider)
         {
             _dbContext = dbContext;
             _dateTimeProvider = dateTimeProvider;

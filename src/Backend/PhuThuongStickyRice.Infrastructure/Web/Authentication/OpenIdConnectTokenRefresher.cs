@@ -6,18 +6,21 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Infrastructure.Web.Authentication
 {
-    public class TokenManager
+    /// <summary>
+    /// Làm mới access token qua OpenID Connect (dùng refresh token) cho WebAPI.
+    /// </summary>
+    public class OpenIdConnectTokenRefresher
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly OpenIdConnectOptions _options;
 
-        public TokenManager(IHttpClientFactory httpClientFactory, OpenIdConnectOptions options)
+        public OpenIdConnectTokenRefresher(IHttpClientFactory httpClientFactory, OpenIdConnectOptions options)
         {
             _httpClientFactory = httpClientFactory;
             _options = options;
         }
 
-        public async Task<TokenModel> RefreshToken(string refreshToken)
+        public async Task<RefreshedOidcToken> RefreshToken(string refreshToken)
         {
             var httpClient = _httpClientFactory.CreateClient();
             var metaDataResponse = await httpClient.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
@@ -44,7 +47,7 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Authentication
                 throw new Exception(response.Raw);
             }
 
-            return new TokenModel
+            return new RefreshedOidcToken
             {
                 AccessToken = response.AccessToken,
                 RefreshToken = response.RefreshToken,

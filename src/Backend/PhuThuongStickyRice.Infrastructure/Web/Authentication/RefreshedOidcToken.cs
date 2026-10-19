@@ -2,7 +2,10 @@
 
 namespace PhuThuongStickyRice.Infrastructure.Web.Authentication
 {
-    public class TokenModel
+    /// <summary>
+    /// Cặp access token / refresh token vừa được làm mới từ nhà cung cấp OpenID Connect.
+    /// </summary>
+    public class RefreshedOidcToken
     {
         public string AccessToken { get; set; }
 

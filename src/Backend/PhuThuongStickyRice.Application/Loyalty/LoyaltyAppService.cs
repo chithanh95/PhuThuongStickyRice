@@ -62,6 +62,11 @@ namespace PhuThuongStickyRice.Application.Loyalty
         string NormalizePhone(string phone);
     }
 
+    /// <summary>
+    /// Quản lý điểm thành viên theo SĐT: tích điểm khi đơn hoàn thành, đổi điểm
+    /// trừ tiền, hoàn điểm khi hủy đơn, thưởng giới thiệu (cả 2 bên), xếp hạng
+    /// Đồng/Bạc/Vàng theo tổng chi tiêu. Điểm không bao giờ âm.
+    /// </summary>
     public class LoyaltyAppService : ApplicationService, ILoyaltyAppService
     {
         private readonly IRepository<LoyaltyAccount, Guid> _accounts;
@@ -103,6 +108,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         public virtual async Task<LoyaltyAccountDto> UpdateBirthdayAsync(string phone, UpdateBirthdayInput input)
         {
             var account = await GetOrCreateAsync(phone);
+            // Chỉ lấy phần ngày (bỏ giờ) để so sánh sinh nhật hàng năm chính xác.
             account.DateOfBirth = input?.DateOfBirth?.Date;
             account.UpdatedAt = DateTime.UtcNow;
             await _accounts.UpdateAsync(account, autoSave: true);
@@ -130,6 +136,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
         public virtual async Task<LoyaltyAccountDto> AdjustAsync(string phone, AdjustPointsInput input)
         {
             var account = await GetOrCreateAsync(phone);
+            // Chặn điểm âm: đơn đã đổi điểm rồi hủy thì RefundRedeemedPoints
+            // hoàn sau, nên trừ ở đây không được cho về âm.
             var next = account.Points + input.PointsDelta;
             if (next < 0)
             {
@@ -139,6 +147,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
             account.Points = next;
             if (input.PointsDelta > 0)
             {
+                // TotalEarned là lịch sử "đã kiếm" nên chỉ tăng khi cộng điểm
+                // (kể cả admin cộng tay); trừ điểm không trừ lịch sử này.
                 account.TotalEarned += input.PointsDelta;
             }
 
@@ -228,7 +238,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
             var settings = await _shopSettings.GetAsync();
             var buyer = await GetOrCreateAsync(order.CustomerPhone);
 
-            // 1 point per PointsPerVnd spent (configurable, default 10.000đ).
+            // 1 điểm cho mỗi PointsPerVnd chi tiêu (mặc định 10.000₫), làm tròn
+            // xuống — đơn nhỏ hơn mốc thì không được điểm nào.
             var perVnd = settings.PointsPerVnd > 0 ? settings.PointsPerVnd : 10000;
             var earned = (int)Math.Floor(order.TotalAmount.Amount / perVnd);
             if (earned > 0)
@@ -240,8 +251,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
             buyer.TotalSpent += order.TotalAmount.Amount;
             buyer.UpdatedAt = DateTime.UtcNow;
 
-            // Referral bonus: on the buyer's FIRST completed order carrying a
-            // valid referrer code, both sides get ReferralBonusPoints.
+            // Thưởng giới thiệu: chỉ cho đơn hoàn thành ĐẦU TIÊN có mã giới thiệu
+            // hợp lệ — chống tự giới thiệu nhiều lần ăn bonus; người giới thiệu
+            // và người được giới thiệu không được là cùng 1 tài khoản.
             if (!string.IsNullOrWhiteSpace(order.ReferralCodeUsed))
             {
                 var orderQueryable = await _orders.GetQueryableAsync();
@@ -285,7 +297,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
             var unit = settings.PointsRedeemUnit > 0 ? settings.PointsRedeemUnit : 100;
             var value = settings.PointsRedeemValue > 0 ? settings.PointsRedeemValue : 10000;
 
-            // Round down to whole redemption steps.
+            // Làm tròn xuống bước đổi chẵn (vd 100 điểm = 10.000₫): điểm lẻ dưới
+            // 1 bước không đổi được vì không có mệnh giá lẻ.
             var steps = pointsRequested / unit;
             if (steps <= 0)
             {
@@ -311,6 +324,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
         public virtual async Task RefundRedeemedPointsAsync(Order order)
         {
+            // Hoàn điểm đổi khi đơn bị hủy — khách không mất điểm oan vì đơn
+            // không thành; điểm hoàn cộng lại vào cả Points và TotalEarned.
             if (order.LoyaltyPointsRedeemed <= 0)
             {
                 return;
@@ -330,6 +345,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
         public (string Tier, decimal DiscountPercent) GetTier(decimal totalSpent, ShopSettingDto settings)
         {
+            // Vàng dùng '>' còn Bạc dùng '>=': đơn đúng bằng mốc Vàng thì lên
+            // Vàng, không bị kẹp lửng giữa hai hạng.
             if (settings.TierGoldMin > 0 && totalSpent > settings.TierGoldMin)
             {
                 return ("Vàng", Math.Max(0, settings.TierGoldDiscount));
@@ -343,6 +360,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return ("Đồng", 0);
         }
 
+        /// <summary>
+        /// Chuẩn hóa SĐT về chuỗi chữ số (bỏ dấu cách, dấu chấm, +84...), yêu
+        /// cầu ≥ 9 chữ số — SĐT VN đủ 9-10 số; ngắn hơn coi như nhập sai, trả null.
+        /// </summary>
         public string NormalizePhone(string phone)
         {
             if (string.IsNullOrWhiteSpace(phone))

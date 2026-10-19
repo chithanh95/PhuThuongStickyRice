@@ -42,6 +42,19 @@ namespace PhuThuongStickyRice.Application.Customer
     {
         public const string CustomerRoleName = "Customer";
         private const string GiftCodePrefix = "SN";
+        /// <summary>Độ dài phần ngẫu nhiên của mã quà sinh nhật (đứng sau tiền tố SN).</summary>
+        private const int GiftCodeRandomPartLength = 6;
+        /// <summary>Số lần thử tạo mã quà duy nhất tối đa trước khi báo lỗi.</summary>
+        private const int GiftCodeMaxAttempts = 20;
+        /// <summary>Mệnh giá quà mặc định (VNĐ) khi admin không nhập.</summary>
+        private const int DefaultBirthdayGiftAmount = 25000;
+        /// <summary>Mệnh giá quà sinh nhật tối thiểu/tối đa cho phép (VNĐ).</summary>
+        private const int MinBirthdayGiftAmount = 5000;
+        private const int MaxBirthdayGiftAmount = 1000000;
+        /// <summary>Mã quà sinh nhật có hiệu lực 30 ngày kể từ ngày tặng.</summary>
+        private const int BirthdayGiftValidityDays = 30;
+        /// <summary>SĐT Việt Nam: bắt đầu bằng 0, đầu số 3/5/7/8/9, tổng 10 chữ số.</summary>
+        private const string VnPhonePattern = @"^(0)(3|5|7|8|9)\d{8}$";
 
         private readonly IRepository<User, Guid> _users;
         private readonly IRepository<UserRole, Guid> _userRoles;
@@ -219,28 +232,16 @@ namespace PhuThuongStickyRice.Application.Customer
                     $"Đã tặng quà sinh nhật năm {thisYear} rồi (mã {user.BirthdayGiftCode}).");
             }
 
-            var amount = dto?.DiscountAmount ?? 25000;
-            if (amount < 5000 || amount > 1000000)
+            var amount = dto?.DiscountAmount ?? DefaultBirthdayGiftAmount;
+            if (amount < MinBirthdayGiftAmount || amount > MaxBirthdayGiftAmount)
             {
                 throw new UserFriendlyException("Mệnh giá quà từ 5.000₫ đến 1.000.000₫.");
             }
 
             var code = await GenerateUniqueCodeAsync();
-            var expiresAt = DateTime.UtcNow.AddDays(30);
+            var expiresAt = DateTime.UtcNow.AddDays(BirthdayGiftValidityDays);
 
-            await _discounts.InsertAsync(new DiscountCode
-            {
-                Code = code,
-                DiscountAmount = amount,
-                DiscountPercent = null,
-                MinOrderAmount = 0,
-                ExpiresAt = expiresAt,
-                MaxUses = 1,
-                UsedCount = 0,
-                IsActive = true,
-                VoucherType = VoucherType.Discount,
-                OwnerPhone = phone
-            }, autoSave: true);
+            await InsertBirthdayDiscountCodeAsync(code, amount, expiresAt, phone);
 
             user.BirthdayGiftYear = thisYear;
             user.BirthdayGiftCode = code;
@@ -354,14 +355,36 @@ namespace PhuThuongStickyRice.Application.Customer
                 queryable.Where(x => x.Code == code));
         }
 
+        /// <summary>
+        /// Tách từ GrantBirthdayGiftAsync: tạo hàng mã giảm giá dùng 1 lần
+        /// cho quà sinh nhật. Tách ra để GrantBirthdayGiftAsync gọn dưới
+        /// 50 dòng, dễ đọc hơn.
+        /// </summary>
+        private async Task InsertBirthdayDiscountCodeAsync(string code, decimal amount, DateTime expiresAt, string phone)
+        {
+            await _discounts.InsertAsync(new DiscountCode
+            {
+                Code = code,
+                DiscountAmount = amount,
+                DiscountPercent = null,
+                MinOrderAmount = 0,
+                ExpiresAt = expiresAt,
+                MaxUses = 1,
+                UsedCount = 0,
+                IsActive = true,
+                VoucherType = VoucherType.Discount,
+                OwnerPhone = phone
+            }, autoSave: true);
+        }
+
         private async Task<string> GenerateUniqueCodeAsync()
         {
             const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            for (var attempt = 0; attempt < 20; attempt++)
+            for (var attempt = 0; attempt < GiftCodeMaxAttempts; attempt++)
             {
-                var chars = new char[6];
-                var bytes = RandomNumberGenerator.GetBytes(6);
-                for (var i = 0; i < 6; i++)
+                var chars = new char[GiftCodeRandomPartLength];
+                var bytes = RandomNumberGenerator.GetBytes(GiftCodeRandomPartLength);
+                for (var i = 0; i < GiftCodeRandomPartLength; i++)
                 {
                     chars[i] = alphabet[bytes[i] % alphabet.Length];
                 }
@@ -412,7 +435,7 @@ namespace PhuThuongStickyRice.Application.Customer
 
         private static bool IsValidVnPhone(string phone)
         {
-            return Regex.IsMatch(phone ?? string.Empty, @"^(0)(3|5|7|8|9)\d{8}$");
+            return Regex.IsMatch(phone ?? string.Empty, VnPhonePattern);
         }
 
         private class TastePrefs

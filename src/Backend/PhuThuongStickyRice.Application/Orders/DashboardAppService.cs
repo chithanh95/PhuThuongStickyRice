@@ -67,6 +67,12 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<TodayVsYesterdayDto> GetTodayVsYesterdayAsync();
     }
 
+    /// <summary>
+    /// Dashboard admin và các số liệu công khai cho shop: thống kê tổng quan
+    /// theo ngày (cache 45s), top sản phẩm, mục tiêu doanh thu ngày, khách
+    /// mới/cũ, doanh thu theo nguồn, so sánh hôm nay–hôm qua, số suất đã bán
+    /// hôm nay. Số liệu marketing (đã bán N gói) cache ngắn vì không cần real-time.
+    /// </summary>
     public class DashboardAppService : ApplicationService, IDashboardAppService
     {
         private readonly IOrderRepository _orders;
@@ -95,6 +101,11 @@ namespace PhuThuongStickyRice.Application.Orders
             _memoryCache = memoryCache;
         }
 
+        /// <summary>
+        /// Tổng quan dashboard theo khoảng ngày: tổng đơn/doanh thu/suất bán,
+        /// đơn theo trạng thái, doanh thu theo ngày, 5 đơn mới nhất, đơn đặt
+        /// trước sắp tới, và số đơn chờ xác nhận quá hạn để cảnh báo.
+        /// </summary>
         public virtual async Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null)
         {
             // P7: cache dashboard stats 45s (11 queries -> 0 on hit).
@@ -146,8 +157,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 orderQueryable.OrderByDescending(x => x.CreatedAt).Take(5));
             stats.RecentOrders = _objectMapper.Map<List<Order>, List<OrderDto>>(recent);
 
-            // Pre-orders the kitchen should prioritize: scheduled, not yet
-            // picked up, not cancelled/completed — soonest first.
+            // Đơn đặt trước (bếp ưu tiên xử lý): có giờ hẹn từ 2 tiếng trước tới
+            // nay (đơn quá giờ hẹn mà khách chưa bấm nhận vẫn hiện để bếp xử
+            // lý), chưa nhận hàng, chưa hủy/hoàn thành — giờ hẹn sớm nhất lên trước.
             var now = DateTime.UtcNow;
             var upcoming = await _asyncExecuter.ToListAsync(
                 orderQueryable
@@ -160,8 +172,8 @@ namespace PhuThuongStickyRice.Application.Orders
                     .Take(8));
             stats.UpcomingPreOrders = _objectMapper.Map<List<Order>, List<OrderDto>>(upcoming);
 
-            // Item 86: orders still Pending after the configured minutes —
-            // the dashboard raises a distinct urgent alert for these.
+            // Đơn còn Pending quá số phút cấu hình: dashboard bật cảnh báo khẩn
+            // riêng để quán không bỏ sót đơn chưa xác nhận.
             var settings = await _shopSettings.GetAsync();
             var staleMinutes = settings.UnconfirmedAlertMinutes < 1 ? 15 : settings.UnconfirmedAlertMinutes;
             var staleCutoff = DateTime.UtcNow.AddMinutes(-staleMinutes);
@@ -173,6 +185,11 @@ namespace PhuThuongStickyRice.Application.Orders
             return stats;
         }
 
+        /// <summary>
+        /// Doanh thu hôm nay (tính theo ngày VN) so với mục tiêu ngày trong cài
+        /// đặt shop (mặc định 2.000.000₫ khi chưa cài). CreatedAt lưu UTC nên
+        /// trừ 7 giờ để ra đầu ngày VN.
+        /// </summary>
         public virtual async Task<DailyTargetDto> GetDailyTargetAsync()
         {
             var settings = await _shopSettings.GetAsync();
@@ -197,6 +214,10 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
+        /// <summary>
+        /// Đơn + doanh thu nhóm theo nguồn đặt (web/Zalo/trực tiếp...) trong
+        /// khoảng ngày, sắp xếp theo doanh thu giảm dần.
+        /// </summary>
         public virtual async Task<List<SourceStatDto>> GetSourceStatsAsync(DateTime? from = null, DateTime? to = null)
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
@@ -270,6 +291,10 @@ namespace PhuThuongStickyRice.Application.Orders
             return result;
         }
 
+        /// <summary>
+        /// Top N sản phẩm bán chạy theo số lượng trong khoảng ngày (đơn hủy
+        /// bị loại). Mặc định top 5 khi không truyền hoặc top ≤ 0.
+        /// </summary>
         public virtual async Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5)
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
@@ -293,6 +318,10 @@ namespace PhuThuongStickyRice.Application.Orders
                     .Take(top < 1 ? 5 : top));
         }
 
+        /// <summary>
+        /// Public: id các sản phẩm bán chạy all-time (đơn hủy bị loại) — cấp
+        /// dữ liệu cho sắp xếp "Bán chạy" ở shop, không cần login.
+        /// </summary>
         public virtual async Task<List<Guid>> GetBestSellerProductIdsAsync(int top)
         {
             // perf-hunt 2026-10-19: GET /api/products/best-sellers is public and hit on
@@ -306,6 +335,11 @@ namespace PhuThuongStickyRice.Application.Orders
             return products.Take(clamped).Select(x => x.ProductId).ToList();
         }
 
+        /// <summary>
+        /// Public: tổng số lượng đã bán của từng sản phẩm (all-time, đơn hủy
+        /// bị loại) — hiển thị "Đã bán N suất" trên thẻ sản phẩm ở shop. Không
+        /// chứa thông tin nhạy cảm nên public.
+        /// </summary>
         public virtual async Task<Dictionary<Guid, long>> GetSoldQuantitiesAsync()
         {
             return await _catalogCache.GetOrAddAsync("sold-quantities", QuerySoldQuantitiesAsync);
@@ -356,6 +390,10 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
+        /// <summary>
+        /// Phần trăm thay đổi hôm nay so với hôm qua. Hôm qua không bán được
+        /// gì (mẫu số 0) mà hôm nay có bán thì coi như +100%, tránh chia cho 0.
+        /// </summary>
         private static double DeltaPercent(decimal today, decimal yesterday)
         {
             if (yesterday == 0)
@@ -366,6 +404,11 @@ namespace PhuThuongStickyRice.Application.Orders
             return (double)(today - yesterday) / (double)yesterday * 100;
         }
 
+        /// <summary>
+        /// Public: tổng số suất bán hôm nay (theo ngày VN) — hiển thị "Đã bán
+        /// N gói hôm nay" ở hero shop/landing. Chỉ là số marketing, cache 60s
+        /// để mỗi lượt tải trang không phải chạy SUM nặng.
+        /// </summary>
         public virtual async Task<long> GetTodaySoldCountAsync()
         {
             // Perf: "Đã bán N gói hôm nay" is shown on every shop/landing

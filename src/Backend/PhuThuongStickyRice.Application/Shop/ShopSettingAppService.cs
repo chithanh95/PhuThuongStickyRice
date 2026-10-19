@@ -63,6 +63,8 @@ namespace PhuThuongStickyRice.Application.Shop
         private const string DefaultOpenTime = "06:00";
         private const string DefaultCloseTime = "10:30";
         private const string DefaultMaintenanceMessage = "Cửa hàng đang bảo trì, vui lòng quay lại sau.";
+        /// <summary>Múi giờ Việt Nam (UTC+7, không đổi giờ theo mùa) — dùng để tính "hôm nay" trên storefront.</summary>
+        private const int VietnamUtcOffsetHours = 7;
 
         private readonly IRepository<ShopSetting, Guid> _settings;
         private readonly IRepository<HolidaySchedule, Guid> _holidays;
@@ -127,7 +129,7 @@ namespace PhuThuongStickyRice.Application.Shop
             // "shop-settings" cache used by the admin and internal callers.
             // The date in the key also stops a holiday auto-pause from
             // leaking into the next day via a stale cached flag.
-            var today = DateTime.UtcNow.AddHours(7).ToString("yyyyMMdd");
+            var today = DateTime.UtcNow.AddHours(VietnamUtcOffsetHours).ToString("yyyyMMdd");
             var dto = await _catalogCache.GetOrAddAsync($"shop-settings:public:{today}", async () =>
             {
                 var entity = await GetSingleAsync();
@@ -170,7 +172,7 @@ namespace PhuThuongStickyRice.Application.Shop
         {
             try
             {
-                var today = DateTime.UtcNow.AddHours(7).Date;
+                var today = DateTime.UtcNow.AddHours(VietnamUtcOffsetHours).Date;
                 // Perf: GetPublicAsync runs on every storefront page load, so the
                 // holiday lookup must not hit the DB each time. Keyed by Vietnam
                 // date so it rolls over at midnight; admin holiday CRUD busts it
@@ -279,21 +281,15 @@ namespace PhuThuongStickyRice.Application.Shop
         private void ApplyIntegrationSettings(ShopSetting entity, ShopSettingDto dto)
         {
             entity.UnconfirmedAlertMinutes = dto.UnconfirmedAlertMinutes < 1 ? DefaultUnconfirmedAlertMinutes : dto.UnconfirmedAlertMinutes;
-            entity.RecaptchaSiteKey = string.IsNullOrWhiteSpace(dto.RecaptchaSiteKey)
-                ? null
-                : dto.RecaptchaSiteKey.Trim();
+            entity.RecaptchaSiteKey = TrimOrNull(dto.RecaptchaSiteKey);
             entity.RecaptchaSecretKey = ProtectSecret(dto.RecaptchaSecretKey);
-            entity.WebBaseUrl = string.IsNullOrWhiteSpace(dto.WebBaseUrl)
-                ? null
-                : dto.WebBaseUrl.Trim().TrimEnd('/');
+            entity.WebBaseUrl = TrimOrNull(dto.WebBaseUrl)?.TrimEnd('/');
             entity.MaintenanceMode = dto.MaintenanceMode;
             entity.MaintenanceMessage = string.IsNullOrWhiteSpace(dto.MaintenanceMessage)
                 ? DefaultMaintenanceMessage
                 : dto.MaintenanceMessage.Trim();
             entity.TelegramBotToken = ProtectSecret(dto.TelegramBotToken);
-            entity.TelegramChatId = string.IsNullOrWhiteSpace(dto.TelegramChatId)
-                ? null
-                : dto.TelegramChatId.Trim();
+            entity.TelegramChatId = TrimOrNull(dto.TelegramChatId);
             entity.HealthAlertsEnabled = dto.HealthAlertsEnabled;
             entity.ErrorRateThreshold = dto.ErrorRateThreshold < 1 ? DefaultErrorRateThreshold : dto.ErrorRateThreshold;
             entity.UploadsSizeWarningMb = dto.UploadsSizeWarningMb < 1 ? DefaultUploadsSizeWarningMb : dto.UploadsSizeWarningMb;
