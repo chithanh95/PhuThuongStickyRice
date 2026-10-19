@@ -157,7 +157,7 @@
                 else { <span>?</span> }
             </div>
             <h4>@_alertTitle</h4>
-            <p class="text-muted">@_alertMsg</p>
+            <p class="text-muted">@_alertMessage</p>
             @if (_alertType == "confirm")
             {
                 <div class="d-flex justify-content-center" style="gap:8px;">
@@ -202,7 +202,7 @@
 
 @code {
     private bool _showBasic, _showLarge, _showSmall, _showForm;
-    private string _alertType, _alertTitle, _alertMsg;
+    private string _alertType, _alertTitle, _alertMessage;
     private bool _deleted;
     private string _newDishName, _newDishPrice, _formError, _addedDish;
 
@@ -221,12 +221,12 @@
     private void AlertInfo() => ShowAlert("info", "Thông tin", "Đây là thông báo thông tin.");
     private void AlertConfirm() => ShowAlert("confirm", "Bạn chắc chắn?", "Món ăn sẽ bị xóa khỏi menu!");
 
-    private void ShowAlert(string type, string title, string msg)
+    private void ShowAlert(string type, string title, string message)
     {
         _deleted = false;
         _alertType = type;
         _alertTitle = title;
-        _alertMsg = msg;
+        _alertMessage = message;
     }
 
     private void CloseAlert() => _alertType = null;

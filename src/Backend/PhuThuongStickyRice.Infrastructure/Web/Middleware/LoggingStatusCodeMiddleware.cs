@@ -38,7 +38,9 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
                 var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? context.User.FindFirst("sub")?.Value;
                 var remoteIp = context.Connection.RemoteIpAddress;
 
-                _logger.LogWarning($"StatusCode: {statusCode}, UserId: {userId}, Path: {path}, Method: {method}, IP: {remoteIp}");
+                _logger.LogWarning(
+                    "StatusCode: {StatusCode}, UserId: {UserId}, Path: {Path}, Method: {Method}, IP: {RemoteIp}",
+                    statusCode, userId, path, method, remoteIp);
             }
         }
     }

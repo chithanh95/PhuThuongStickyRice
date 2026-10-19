@@ -45,6 +45,9 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
         /// <summary>Giải phóng tài nguyên — store này không giữ tài nguyên cần dispose.</summary>
         public void Dispose()
         {
+            // CA1816: gọi SuppressFinalize để derived class có finalizer sau này
+            // không phải re-implement IDisposable; hiện tại là no-op (không có finalizer).
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>Tạo tài khoản mới: đồng thời lưu mật khẩu hiện tại vào lịch sử mật khẩu (để chặn dùng lại mật khẩu cũ), rồi lưu qua repository.</summary>

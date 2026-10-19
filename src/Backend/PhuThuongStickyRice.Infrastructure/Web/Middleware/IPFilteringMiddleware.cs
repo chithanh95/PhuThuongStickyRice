@@ -18,7 +18,7 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
         public async Task InvokeAsync(HttpContext context)
         {
             var remoteIp = context.Connection.RemoteIpAddress;
-            _logger.LogInformation($"Request from Remote IP address: {remoteIp}");
+            _logger.LogInformation("Request from Remote IP address: {RemoteIp}", remoteIp);
 
             await _next(context);
         }

@@ -105,6 +105,12 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         // Thông báo khi file ảnh chọn từ input không đọc được (file hỏng/không phải ảnh).
         private const string UnreadableImageError = "Không đọc được ảnh đã chọn.";
 
+        // [codequality-smell 2026-10-20] Magic string: id của input file ảnh.
+        // Phải khớp nhau ở 3 nơi — JS interop (compressImagesFromInput), thuộc
+        // tính for của label và id của input trong .razor — nên gom 1 hằng số
+        // để đổi 1 chỗ không lệch.
+        private const string ImageInputElementId = "product-images-input";
+
         private readonly List<HourWindow> _hours = new List<HourWindow>();
 
         private string _imageUrl;
@@ -261,7 +267,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             try
             {
                 files = await JSRuntime.InvokeAsync<List<CompressedImage>>(
-                        "interop.compressImagesFromInput", "product-images-input", CompressedImageMaxWidth, CompressedImageQuality)
+                        "interop.compressImagesFromInput", ImageInputElementId, CompressedImageMaxWidth, CompressedImageQuality)
                     ?? new List<CompressedImage>();
             }
             catch (Exception)
@@ -282,10 +288,20 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 return;
             }
 
-            // Ảnh cũ KHÔNG xóa ngay tại đây: nếu upload mới lỗi hoặc user
-            // không bấm Lưu, xóa sớm sẽ làm gãy ảnh sản phẩm đang dùng.
-            // URL cũ được đưa vào _obsoleteImageUrls và chỉ xóa thật sau khi
-            // lưu sản phẩm thành công.
+            await TryUploadImageAsync(file);
+        }
+
+        /// <summary>
+        /// Upload ảnh đã chọn lên server. Ảnh cũ KHÔNG xóa ngay tại đây:
+        /// nếu upload mới lỗi hoặc user không bấm Lưu, xóa sớm sẽ làm gãy
+        /// ảnh sản phẩm đang dùng — URL cũ được đưa vào
+        /// <c>_obsoleteImageUrls</c> và chỉ xóa thật sau khi lưu sản phẩm
+        /// thành công. Lỗi upload được ghi vào <c>_imageError</c>.
+        /// </summary>
+        /// <param name="file">Ảnh đã nén đọc từ input file.</param>
+        /// <returns>URL ảnh mới, hoặc null/rỗng nếu upload thất bại.</returns>
+        private async Task<string> TryUploadImageAsync(CompressedImage file)
+        {
             _uploadingImages = true;
             try
             {
@@ -303,10 +319,12 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
 
                     _imageUrl = url;
                 }
+                return url;
             }
             catch (Exception ex)
             {
                 _imageError = ex.Message;
+                return null;
             }
             finally
             {

@@ -14,9 +14,9 @@ namespace PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods
             ReferenceHandler = ReferenceHandler.IgnoreCycles,
         };
 
-        public static string AsJsonString(this object obj)
+        public static string AsJsonString(this object value)
         {
-            var content = JsonSerializer.Serialize(obj, PrettyPrintOptions);
+            var content = JsonSerializer.Serialize(value, PrettyPrintOptions);
             return content;
         }
     }

@@ -89,7 +89,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// returning customers, over the selected date range.
         /// </summary>
         [HttpGet("customers/new-vs-returning")]
-        public async Task<ActionResult> GetNewReturningCustomers(
+        public async Task<ActionResult> GetNewAndReturningCustomers(
             [FromQuery] DateTime? from = null,
             [FromQuery] DateTime? to = null,
             CancellationToken cancellationToken = default)

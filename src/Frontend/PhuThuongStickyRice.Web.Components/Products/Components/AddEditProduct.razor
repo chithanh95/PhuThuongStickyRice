@@ -126,12 +126,12 @@
                     </div>
                 </div>
             }
-            <label for="product-images-input" class="lx-dropzone">
+            <label for="@ImageInputElementId" class="lx-dropzone">
                 <div class="lx-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                 <div class="lx-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
                 <div class="lx-dropzone-hint">Ảnh tự nén trước khi tải lên.</div>
             </label>
-            <input type="file" id="product-images-input" accept="image/*" class="aep-hidden-file" @onchange="OnImagesSelected" />
+            <input type="file" id="@ImageInputElementId" accept="image/*" class="aep-hidden-file" @onchange="OnImagesSelected" />
             @if (_uploadingImages)
             {
                 <div class="text-muted mt-1">Đang tải ảnh lên...</div>

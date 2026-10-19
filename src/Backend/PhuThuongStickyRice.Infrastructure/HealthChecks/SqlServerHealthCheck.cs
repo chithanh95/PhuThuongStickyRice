@@ -22,8 +22,8 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
         /// <param name="healthCheckSql">Câu truy vấn probe nhẹ (vd: "SELECT 1").</param>
         public SqlServerHealthCheck(string connectionString, string healthCheckSql)
         {
-            _connectionString = connectionString ?? throw new ArgumentNullException("connectionString");
-            _healthCheckSql = healthCheckSql ?? throw new ArgumentNullException("healthCheckSql");
+            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            _healthCheckSql = healthCheckSql ?? throw new ArgumentNullException(nameof(healthCheckSql));
         }
 
         /// <summary>

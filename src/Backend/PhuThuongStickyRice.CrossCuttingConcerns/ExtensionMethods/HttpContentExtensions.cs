@@ -26,16 +26,16 @@ namespace PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods
             return JsonSerializer.Deserialize<T>(json, CaseInsensitiveOptions);
         }
 
-        public static StringContent AsStringContent(this object obj, string contentType)
+        public static StringContent AsStringContent(this object value, string contentType)
         {
-            var content = new StringContent(JsonSerializer.Serialize(obj));
+            var content = new StringContent(JsonSerializer.Serialize(value));
             content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
             return content;
         }
 
-        public static StringContent AsJsonContent(this object obj)
+        public static StringContent AsJsonContent(this object value)
         {
-            return obj.AsStringContent("application/json");
+            return value.AsStringContent("application/json");
         }
     }
 }

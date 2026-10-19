@@ -2971,11 +2971,11 @@ namespace PhuThuongStickyRice.Application.Orders
             // canh thời điểm quay để trúng thưởng lớn). GetInt32(total) vẫn uniform
             // trên [0, total) nên xác suất các segment giữ nguyên.
             var roll = RandomNumberGenerator.GetInt32(total);
-            var acc = 0;
+            var cumulativeWeight = 0;
             foreach (var (key, weight) in segments)
             {
-                acc += weight;
-                if (roll < acc)
+                cumulativeWeight += weight;
+                if (roll < cumulativeWeight)
                 {
                     return key;
                 }

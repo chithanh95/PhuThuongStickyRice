@@ -262,6 +262,12 @@ namespace PhuThuongStickyRice.Application.Discounts
         // tương đương với không chunk.
         private const int PhoneCheckBatchSize = 1000;
 
+        // [codequality-smell 2026-10-20] Magic number: kích thước chunk khi
+        // tra cứu mã sinh trong DB (WHERE Code IN chunk). SQL Server giới
+        // hạn ~2100 tham số/query — Chunk 1000 giữ biên độ an toàn, cùng
+        // lý do như PhoneCheckBatchSize ở trên.
+        private const int DbCollisionCheckChunkSize = 1000;
+
         /// <summary>
         /// Điều kiện "mã còn dùng được" dùng chung cho cả kiểm tra 1 mã,
         /// kiểm tra 1 SĐT và kiểm tra hàng loạt — gom 1 chỗ để logic lọc
@@ -1183,54 +1189,20 @@ namespace PhuThuongStickyRice.Application.Discounts
         private async Task<List<string>> GenerateUniqueCodesAsync(IReadOnlyList<string> prefixes)
         {
             var codes = prefixes.Select(BuildGeneratedCodeCandidate).ToList();
-
-            // Loại trùng trong batch ngay từ đầu (xác suất ~0 nhưng chặn được
-            // unique-index violation ở bước insert).
-            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (var i = 0; i < codes.Count; i++)
-            {
-                while (!used.Add(codes[i]))
-                {
-                    codes[i] = BuildGeneratedCodeCandidate(prefixes[i]);
-                }
-            }
+            var used = DeduplicateBatchCodes(prefixes, codes);
 
             var queryable = await _discounts.GetQueryableAsync();
             var pending = new HashSet<int>(Enumerable.Range(0, codes.Count));
             for (var attempt = 0; attempt < GeneratedCodeMaxAttempts && pending.Count > 0; attempt++)
             {
-                var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                // Chunk 1000 để dưới giới hạn tham số của SQL Server.
-                // Best practice LINQ: Chunk nhận IEnumerable và stream từng
-                // chunk — không cần .ToList() materialize cả danh sách trước
-                // (bản cũ cấp phát 1 List trung gian vô ích mỗi attempt).
-                foreach (var chunk in pending.Select(i => codes[i]).Chunk(1000))
-                {
-                    var found = await _asyncExecuter.ToListAsync(
-                        queryable.Where(x => chunk.Contains(x.Code)).Select(x => x.Code));
-                    foreach (var code in found)
-                    {
-                        existing.Add(code);
-                    }
-                }
-
-                var collided = pending.Where(i => existing.Contains(codes[i])).ToList();
+                var collided = await FindCollidedIndexesAsync(queryable, pending, codes);
                 if (collided.Count == 0)
                 {
                     pending.Clear();
                     break;
                 }
 
-                // Sinh lại mã bị đụng, vẫn giữ tính duy nhất trong batch.
-                foreach (var i in collided)
-                {
-                    used.Remove(codes[i]);
-                    do
-                    {
-                        codes[i] = BuildGeneratedCodeCandidate(prefixes[i]);
-                    }
-                    while (!used.Add(codes[i]));
-                }
+                RegenerateCollidedCodes(prefixes, codes, used, collided);
                 pending = new HashSet<int>(collided);
             }
 
@@ -1241,6 +1213,78 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             return codes;
+        }
+
+        /// <summary>
+        /// Loại mã trùng nhau ngay trong batch sinh. Xác suất trùng ~0 nhưng
+        /// vẫn phải chặn để không vỡ unique-index ở bước insert. Trả về tập
+        /// mã đã dùng để vòng sinh lại sau giữ tính duy nhất trong batch.
+        /// </summary>
+        /// <param name="prefixes">Tiền tố của từng mã, giữ đúng thứ tự.</param>
+        /// <param name="codes">Danh sách mã ứng viên (sửa tại chỗ khi trùng).</param>
+        /// <returns>Tập mã đã dùng (so sánh không phân biệt hoa thường).</returns>
+        private static HashSet<string> DeduplicateBatchCodes(IReadOnlyList<string> prefixes, List<string> codes)
+        {
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < codes.Count; i++)
+            {
+                while (!used.Add(codes[i]))
+                {
+                    codes[i] = BuildGeneratedCodeCandidate(prefixes[i]);
+                }
+            }
+            return used;
+        }
+
+        /// <summary>
+        /// Tra cứu các mã đang chờ trong DB theo từng chunk (giữ dưới giới
+        /// hạn tham số của SQL Server), trả về index các mã bị đụng.
+        /// </summary>
+        /// <param name="queryable">Query mã giảm giá.</param>
+        /// <param name="pending">Index các mã cần kiểm tra.</param>
+        /// <param name="codes">Danh sách mã ứng viên.</param>
+        /// <returns>Index các mã đã tồn tại trong DB.</returns>
+        private async Task<List<int>> FindCollidedIndexesAsync(
+            IQueryable<DiscountCode> queryable, HashSet<int> pending, List<string> codes)
+        {
+            var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // Best practice LINQ: Chunk nhận IEnumerable và stream từng
+            // chunk — không cần .ToList() materialize cả danh sách trước
+            // (bản cũ cấp phát 1 List trung gian vô ích mỗi attempt).
+            foreach (var chunk in pending.Select(i => codes[i]).Chunk(DbCollisionCheckChunkSize))
+            {
+                var found = await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => chunk.Contains(x.Code)).Select(x => x.Code));
+                foreach (var code in found)
+                {
+                    existing.Add(code);
+                }
+            }
+
+            return pending.Where(i => existing.Contains(codes[i])).ToList();
+        }
+
+        /// <summary>
+        /// Sinh lại các mã bị đụng DB, vẫn giữ tính duy nhất trong batch
+        /// (mã cũ được gỡ khỏi tập đã dùng trước khi sinh mã mới).
+        /// </summary>
+        /// <param name="prefixes">Tiền tố của từng mã, giữ đúng thứ tự.</param>
+        /// <param name="codes">Danh sách mã ứng viên (sửa tại chỗ).</param>
+        /// <param name="used">Tập mã đã dùng trong batch.</param>
+        /// <param name="collided">Index các mã bị đụng cần sinh lại.</param>
+        private static void RegenerateCollidedCodes(
+            IReadOnlyList<string> prefixes, List<string> codes, HashSet<string> used, List<int> collided)
+        {
+            // Sinh lại mã bị đụng, vẫn giữ tính duy nhất trong batch.
+            foreach (var i in collided)
+            {
+                used.Remove(codes[i]);
+                do
+                {
+                    codes[i] = BuildGeneratedCodeCandidate(prefixes[i]);
+                }
+                while (!used.Add(codes[i]));
+            }
         }
 
         /// <summary>
