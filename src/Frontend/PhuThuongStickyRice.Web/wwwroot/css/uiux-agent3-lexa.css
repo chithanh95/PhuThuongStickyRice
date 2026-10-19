@@ -1,0 +1,49 @@
+/* ============================================================
+   uiux-agent3-lexa.css — Agent 3 (Đồng bộ Lexa), đợt uiux-hunt 2026-10-19
+   Toàn bộ fix đồng bộ màu Lexa dồn vào file này.
+   YÊU CẦU: load SAU CÙNG trong index.html (sau admin-lexa.css):
+     <link href="css/uiux-agent3-lexa.css" rel="stylesheet" />
+   File load sau cùng nên thắng rule cùng specificity của Bootstrap
+   mà không cần !important — chỉ dùng !important khi đè style block
+   scoped của Blazor (đã ghi chú từng chỗ).
+   Palette chuẩn Lexa (khớp admin-lexa.css):
+     primary #7a6fbe (hover #625998) | success #34c38f
+     danger  #f46a6a | warning #f1b44c | info #50a5f1
+   ============================================================ */
+
+/* ---------- Fix 1: text-* utilities về đúng palette Lexa ----------
+   Bootstrap mặc định: text-primary #007bff, text-success #28a745,
+   text-danger #dc3545, text-info #17a2b8, text-warning #ffc107.
+   ~136 chỗ dùng ở shop + admin (validation, trạng thái, giá...). */
+.text-primary { color: #7a6fbe; }
+.text-success { color: #34c38f; }
+.text-danger { color: #f46a6a; }
+.text-info { color: #50a5f1; }
+.text-warning { color: #f1b44c; }
+
+/* ---------- Fix 2: badge-* utilities về đúng palette Lexa ----------
+   Shop dùng badge-primary/success/danger/info/warning cho trạng thái
+   đơn hàng, hạng thành viên... (VD: TaiKhoan.razor "Confirmed" =>
+   badge-primary đang render xanh dương #007bff của Bootstrap).
+   Khớp rule .lx-admin .badge-* đã có trong admin-lexa.css. */
+.badge-primary { background-color: #7a6fbe; }
+.badge-success { background-color: #34c38f; }
+.badge-info { background-color: #50a5f1; }
+.badge-warning { background-color: #f1b44c; color: #212529; }
+.badge-danger { background-color: #f46a6a; }
+
+/* ---------- Fix 3: nút "Gọi" lơ lửng #28a745 → xanh lá Lexa ----------
+   MainLayout.razor (.fc-call trong <style>): nút gọi điện floating
+   dùng xanh lá Bootstrap #28a745, lệch tông với xanh lá Lexa #34c38f
+   của toàn bộ web. !important để thắng style block của MainLayout. */
+.fc-call { background: #34c38f !important; }
+
+/* ---------- Fix 4: bước OTP hoàn thành #28a745 → xanh lá Lexa ----------
+   QuenMatKhau.razor (.auth-step.done, scoped): vòng tròn bước đã xong
+   dùng #28a745. !important để thắng CSS isolation của Blazor. */
+.auth-step.done { background: #34c38f !important; }
+
+/* ---------- Fix 5: chấm "online" chat #28a745 → xanh lá Lexa ----------
+   ChatNoiBo.razor (.online-dot.on, scoped): chấm trạng thái online +
+   glow dùng #28a745. !important để thắng CSS isolation của Blazor. */
+.online-dot.on { background: #34c38f !important; box-shadow: 0 0 4px #34c38f !important; }

@@ -1,0 +1,107 @@
+/* ============================================================
+   AGENT 1 — Mobile UX (chuẩn ShopeeFood) — uiux-hunt 2026-10-19
+   File này được load SAU CÙNG trong index.html (sau admin-lexa.css)
+   nên thắng các rule cùng specificity theo thứ tự cascade.
+   Chỉ chứa rule mobile: mọi fix bọc trong @media (max-width: 767.98px).
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   FIX 1 — /shop: nút "Tải menu (PDF)" trong hero jumbotron.
+   Vấn đề: nút mặc định Bootstrap chỉ ~38px chiều cao, chìm giữa
+   hero trên màn nhỏ — khó bấm với người già.
+   Giải pháp: mobile full-width, cao 48px, chữ canh giữa.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .jumbotron .btn-dark {
+        width: 100%;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /shop: card "Combo gia đình" — hàng giá + nút
+   "Thêm combo vào giỏ" nằm ngang (d-flex justify-content-between).
+   Vấn đề: trên màn 360px hàng này bị ép chật, nút nhỏ khó bấm.
+   Giải pháp: xếp dọc, nút full-width cao 48px.
+   (.card.border-warning chỉ dùng cho combo ở /shop)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card.border-warning .card-body > .d-flex.align-items-center.justify-content-between {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .card.border-warning .card-body > .d-flex.align-items-center.justify-content-between .btn {
+        width: 100%;
+        min-height: 48px;
+        font-size: 1rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /track-order: popup khảo sát hài lòng (.to-survey-sheet).
+   Vấn đề: 5 nút sao ★ chỉ có font 36px nhưng vùng bấm hẹp theo
+   chữ (ngang ~20px); hai nút "Gửi đánh giá"/"Để sau" chỉ ~38px.
+   Giải pháp: vùng bấm sao tối thiểu 44x44px; hai nút cao 48px.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    /* Sao đánh giá: vùng bấm vuông 44px, sao canh giữa */
+    .to-survey-sheet .btn-link {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    /* Hai nút hành động chính của popup */
+    .to-survey-sheet .d-flex > .btn {
+        min-height: 48px;
+        font-size: 1rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — Shop/Cart: ô số lượng của QuantitySpinner.
+   Vấn đề: .qty-input cao 38px trong khi hai nút +/− cao 44px —
+   stepper bị lệch và ô số lượng dưới chuẩn chạm 44px.
+   Giải pháp: mobile nâng ô số lượng lên 44px cho đồng đều.
+   (QuantitySpinner chỉ dùng ở /shop và /cart)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .qty-spinner .qty-input {
+        height: 44px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /track-order: nút "Xem lịch sử đơn" (.to-history).
+   Vấn đề: nút chỉ ~38px và co theo chữ, trong khi ô nhập SĐT
+   phía trên đã cao 46px (theo rule .to-history .form-control).
+   Giải pháp: nút full-width, cao 46px — đồng bộ với ô nhập.
+   (selector trực tiếp tới card lịch sử, không ảnh hưởng
+   nút "Lưu" của sổ địa chỉ bên trong card chi tiết đơn)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .to-history > .card-body > .form-row .btn-outline-primary {
+        width: 100%;
+        min-height: 46px;
+        font-size: 1rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}

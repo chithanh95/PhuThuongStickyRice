@@ -1,0 +1,95 @@
+/* ============================================================
+   uiux-agent2-dark.css — Agent 2 (Dark mode) — đợt uiux-hunt 2026-10-19.
+   Toàn bộ rule là override `html.dark ...` (project bật dark mode bằng
+   class `dark` trên <html> — xem index.html: pt-theme / localStorage).
+   File load SAU CÙNG trong index.html (sau admin-lexa.css + bundle
+   scoped Blazor) nên có cascade cao. Rule scoped Blazor dạng
+   .foo[b-xxx] có specificity cao hơn selector html.dark .foo, nên chỗ
+   nào cần thắng rule scoped thì dùng !important (đã ghi chú từng chỗ).
+   Palette dark dùng lại của project: admin #262640/#3a3a58/#f0eef5,
+   shop #241d17/#2e2620/#3a3226/#f0e8dc.
+   ============================================================ */
+
+/* ---------- FIX 1 — Admin: trang Kanban đơn hàng (KanbanDon) ----------
+   Vấn đề: Admin/Pages/KanbanDon.razor.css có 0 rule dark mode. Toàn bộ
+   board (cột .kanban-col #f4f4f9, đầu cột + card #fff) là nền trắng
+   hardcode, ở dark mode chói sáng trên nền admin tối. Mã đơn
+   .kanban-code #2b3a4a (xanh đen) sẽ chìm khi card tối đi.
+   Fix: nền/viền/chữ theo palette dark của admin-lexa. !important để
+   thắng rule scoped (.kanban-col[b-xxx] thắng html.dark .kanban-col). */
+html.dark .kanban-col {
+    background: #262640 !important;
+}
+html.dark .kanban-col-head {
+    background: #2e2e4e !important;
+    border-bottom: 1px solid #3a3a58;
+}
+html.dark .kanban-card {
+    background: #2e2e4e !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+}
+html.dark .kanban-code {
+    color: #b3a8e8 !important; /* was #2b3a4a */
+}
+html.dark .kanban-customer {
+    color: #f0eef5 !important;
+}
+html.dark .kanban-phone {
+    color: #a5a2bd !important;
+}
+/* .kanban-sched giữ tím Lexa #7a6fbe — đủ contrast trên nền tối. */
+
+/* ---------- FIX 2 — Shop: trang Nhượng quyền (/nhuong-quyen) ----------
+   Vấn đề: .nq-card / .nq-table / .nq-step nền trắng hardcode, không có
+   rule dark nào (3 rule dark hiện có chỉ phủ .nq-faq-*). Ở dark mode
+   cả trang loang lổ trắng. Chữ .nq-card h4 / .nq-step h5 #763434
+   (đỏ đậm) và p #444/#666 chìm vào nền tối. Dòng tổng .nq-total td
+   #FFF1D4 giữ nguyên sẽ chói.
+   Fix: nền tối theo palette shop, chữ sáng; giữ viền brand
+   (#9C682C, double #6F0707) và huy hiệu số .nq-step-num vì vẫn rõ. */
+html.dark .nq-card,
+html.dark .nq-step {
+    background: #241d17 !important;
+}
+html.dark .nq-card h4,
+html.dark .nq-step h5 {
+    color: #f2b8b8 !important; /* was #763434 */
+}
+html.dark .nq-card p,
+html.dark .nq-step p {
+    color: #d0c4b4 !important; /* was #444 / #666 */
+}
+html.dark .nq-table {
+    background: #241d17 !important;
+}
+html.dark .nq-table td {
+    border-color: #3a3226 !important;
+    color: #e8ded0;
+}
+html.dark .nq-total td {
+    background: #3a2c14 !important; /* was #FFF1D4 */
+    color: #f5c86e;
+}
+/* Tiêu đề section #763434: chỉ tối đi khi KHÔNG nằm trong section kem
+   (.nq-cream giữ nền sáng nên chữ đỏ vẫn đọc được, không được đổi). */
+html.dark .nq-section:not(.nq-cream) .xo-sec-title {
+    color: #f2b8b8 !important;
+}
+
+/* ---------- FIX 3 — Shop: trang Tài khoản (/tai-khoan) ----------
+   Vấn đề: tiêu đề h3 dùng inline style color:#763434 (DUY NHẤT trong
+   toàn codebase — đã grep xác minh). Inline style thắng rule
+   `html.dark .shp-page h3` của ShopLayout nên ở dark mode chữ đỏ đậm
+   chìm vào nền tối. Fix: selector thuộc tính + !important để thắng
+   inline style. */
+html.dark h3[style*="763434"] {
+    color: #f2b8b8 !important;
+}
+
+/* ---------- FIX 4 — Admin: timeline trạng thái đơn hàng ----------
+   Vấn đề: Orders/Pages/OrderList.razor.css — viền timeline #dee2e6
+   (xám sáng) trơ trọi trên nền tối. Fix: viền theo palette dark admin.
+   Chấm tròn #7a6fbe giữ nguyên (đủ contrast). */
+html.dark .timeline {
+    border-left-color: #3a3a58 !important;
+}

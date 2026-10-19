@@ -279,10 +279,12 @@ else
         <div class="shop-mobile-wrap">
             <div class="shop-mobile-body">
                 <aside class="shop-cat-sidebar">
-                    <button type="button" class="shop-cat-item @CategoryTabClass(null)" @onclick="() => SetCategory(null)">Tất cả</button>
+                    <button type="button" class="shop-cat-item @CategoryTabClass(null)" @onclick="() => SetCategory(null)"
+                            aria-pressed="@(_categoryFilter == null)">Tất cả</button>
                     @foreach (var cat in _categories)
                     {
-                        <button type="button" class="shop-cat-item @CategoryTabClass(cat)" @onclick="() => SetCategory(cat)">@cat</button>
+                        <button type="button" class="shop-cat-item @CategoryTabClass(cat)" @onclick="() => SetCategory(cat)"
+                                aria-pressed="@string.Equals(_categoryFilter, cat, StringComparison.OrdinalIgnoreCase)">@cat</button>
                     }
                 </aside>
                 <div class="shop-mobile-items">

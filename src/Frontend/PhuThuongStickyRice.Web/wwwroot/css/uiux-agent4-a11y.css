@@ -1,0 +1,46 @@
+/* ============================================================
+   uiux-agent4-a11y.css — Accessibility & polish layer (Agent 4, 2026-10-19)
+   Tải SAU css/a11y.css (thêm <link> sau dòng a11y.css trong wwwroot/index.html).
+   Chỉ override nhỏ, không đổi layout/typography/màu nền hiện tại.
+   ============================================================ */
+
+/* 1. Khôi phục vòng focus cho ô số lượng của QuantitySpinner khi tab bằng
+   bàn phím. Style inline trong QuantitySpinner.razor đặt
+   `.qty-input:focus { outline: none; }` — selector (0,3,0) bên dưới thắng
+   rule (0,2,0) đó mà không cần !important, và :focus-visible giữ chuột/chạm
+   không bị vẽ vòng focus thừa. */
+.qty-spinner .qty-input:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .qty-spinner .qty-input:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* 2. Mục tiêu chạm ≥44px (WCAG 2.5.8, người cao tuổi dùng điện thoại):
+   nút × đóng modal và nút × đóng quick-view sheet đang nhỏ (~21–32px).
+   Chỉ áp dụng trên thiết bị cảm ứng (pointer: coarse) nên không đổi
+   bố cục PC. Căn giữa ký tự × sau khi tăng hit area. */
+@media (pointer: coarse) {
+    .modal .close,
+    .qv-sheet-close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* 3. Feedback nhấn rõ ràng cho nút stepper số lượng (+/−) và nút xóa trong
+   bảng đơn checkout (.co-summary): người cao tuổi cần thấy thao tác đã ăn. */
+.co-summary .btn-outline-secondary:active,
+.co-summary .btn-outline-danger:active {
+    transform: scale(0.94);
+}
+@media (prefers-reduced-motion: reduce) {
+    .co-summary .btn-outline-secondary:active,
+    .co-summary .btn-outline-danger:active {
+        transform: none;
+    }
+}

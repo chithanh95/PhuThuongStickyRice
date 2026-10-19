@@ -444,7 +444,8 @@ else
                     }
                     <div class="card mb-2">
                         <div class="card-header p-2">
-                            <button type="button" class="btn btn-link btn-sm p-0" @onclick="() => _showVat = !_showVat">
+                            <button type="button" class="btn btn-link btn-sm p-0" @onclick="() => _showVat = !_showVat"
+                                    aria-expanded="@_showVat">
                                 @(_showVat ? "▾" : "▸") Cần hóa đơn VAT
                             </button>
                         </div>
@@ -556,15 +557,18 @@ else
                                     </td>
                                     <td class="text-center" style="white-space: nowrap;">
                                         <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                @onclick="() => ChangeQty(item, -1)" title="Bớt 1">−</button>
+                                                @onclick="() => ChangeQty(item, -1)" title="Bớt 1"
+                                                aria-label="Bớt 1 @item.ProductName">−</button>
                                         <span class="mx-2">@item.Quantity</span>
                                         <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                @onclick="() => ChangeQty(item, 1)" title="Thêm 1">+</button>
+                                                @onclick="() => ChangeQty(item, 1)" title="Thêm 1"
+                                                aria-label="Thêm 1 @item.ProductName">+</button>
                                     </td>
                                     <td class="text-right">@FormatPrice(item.LineTotal)</td>
                                     <td class="text-right" style="white-space: nowrap;">
                                         <button type="button" class="btn btn-sm btn-outline-danger"
-                                                @onclick="() => CartState.Remove(item.LineKey)" title="Xóa món khỏi đơn">×</button>
+                                                @onclick="() => CartState.Remove(item.LineKey)" title="Xóa món khỏi đơn"
+                                                aria-label="Xóa @item.ProductName khỏi đơn">×</button>
                                     </td>
                                 </tr>
                             }
@@ -690,6 +694,7 @@ else
                                 <div class="input-group input-group-sm mt-2">
                                     <input type="number" class="form-control" @bind="_redeemPointsInput"
                                            min="0" max="@_loyalty.Points" step="@_shopSettings.PointsRedeemUnit"
+                                           aria-label="Số điểm muốn đổi"
                                            placeholder="Số điểm muốn đổi" />
                                     <div class="input-group-append">
                                         <button class="btn btn-outline-success" @onclick="ApplyRedeem">Đổi điểm</button>
