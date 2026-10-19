@@ -862,7 +862,14 @@ else
             <div class="sg-chat-order">
                 @foreach (var chatItem in _chatOrder.Items)
                 {
-                    <div class="sg-chat-order-row"><span>@chatItem.Quantity × @chatItem.ProductName</span><b>@((chatItem.Price * chatItem.Quantity).ToString("N0"))đ</b></div>
+                    @* bug-hunt 2026-10-20: tóm tắt chat từng hiện giá gốc trong khi
+                       ConfirmChatOrder cho giá KM vào giỏ (CartState.Add dùng
+                       EffectivePrice) — khách thấy 2 tổng khác nhau. *@
+                    var chatProduct = _allProducts.FirstOrDefault(x => x.Id == chatItem.ProductId);
+                    var chatUnitPrice = chatProduct != null
+                        ? ShopProductModel.EffectivePrice(chatProduct, chatItem.Price)
+                        : chatItem.Price;
+                    <div class="sg-chat-order-row"><span>@chatItem.Quantity × @chatItem.ProductName</span><b>@((chatUnitPrice * chatItem.Quantity).ToString("N0"))đ</b></div>
                 }
                 <input @bind="_chatPhone" placeholder="SĐT nhận hàng" aria-label="Số điện thoại nhận hàng" inputmode="tel" maxlength="15" class="sg-chat-phone" />
                 <div class="sg-chat-order-btns">
@@ -1638,13 +1645,27 @@ else
         if (_chatOrder?.Items == null || _chatOrder.Items.Count == 0) return;
         var digits = NormalizePhoneDigits(_chatPhone);
         if (digits.Length < MinPhoneDigits) { Toasts.Show("Nhập SĐT để đặt hàng."); return; }
+        // bug-hunt 2026-10-20: đường chat-order từng bypass guard CanOrder —
+        // món "Hết suất hôm nay"/ngoài giờ bán vẫn lọt thẳng vào giỏ rồi sang
+        // checkout (AddToCart/AddUpsell đã guard từ fix 2026-10-19).
+        var added = 0;
+        var skipped = 0;
         foreach (var item in _chatOrder.Items)
         {
             var product = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
-            if (product != null) CartState.Add(product, item.Quantity);
+            if (product == null) continue;
+            if (!CanOrder(product)) { skipped++; continue; }
+            CartState.Add(product, item.Quantity);
+            added++;
+        }
+        if (added == 0)
+        {
+            Toasts.Show("Các món trong đơn chat hiện không đặt được (hết suất hoặc chưa tới giờ bán).");
+            return;
         }
         try { JSRuntime.InvokeVoidAsync("localStorage.setItem", "pt-checkout-phone", digits); } catch { }
         _chatOrder = null;
+        if (skipped > 0) Toasts.Show("Một số món đã hết suất hoặc chưa tới giờ bán nên không thêm vào giỏ.");
         Navigation.NavigateTo("/checkout");
     }
 
