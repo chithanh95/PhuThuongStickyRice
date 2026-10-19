@@ -1042,15 +1042,22 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        await LoadShopSettingsAsync();
-        await LoadActivePromotionAsync();
-        await LoadFeatureFlagsAsync();
-        await LoadBranchesAsync();
-        await LoadCustomerContextAsync();
-        await LoadRememberedGuestAsync();
+        // perf-hunt 2026-10-19 (run 20:25): 6 loader độc lập → chạy song song
+        // bằng Task.WhenAll thay vì tuần tự. Mỗi loader fail-soft riêng (ghi field
+        // khác nhau); 2 nhánh login/guest trong LoadCustomerContextAsync và
+        // LoadRememberedGuestAsync loại trừ nhau qua cùng auth state → không race.
+        await Task.WhenAll(
+            LoadShopSettingsAsync(),
+            LoadActivePromotionAsync(),
+            LoadFeatureFlagsAsync(),
+            LoadBranchesAsync(),
+            LoadCustomerContextAsync(),
+            LoadRememberedGuestAsync());
 
         RefreshMinOrderState();
 
+        // Giữ tuần tự: ApplyCarriedPhoneAsync đọc phone đã ổn định từ nhóm trên;
+        // ApplyCarriedDiscountAsync đọc phone cuối cùng sau bước phone.
         await ApplyCarriedPhoneAsync();
         await ApplyCarriedDiscountAsync();
 
@@ -1570,48 +1577,66 @@ else
 
         try
         {
-            // Loyalty summary (points, tier, referral code) for the phone.
-            try
-            {
-                _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(phone);
-                _redeemPoints = 0;
-                _redeemPointsInput = 0;
-                _redeemMessage = null;
-            }
-            catch (Exception)
-            {
-                _loyalty = null;
-            }
+            // perf-hunt 2026-10-19 (run 20:25): 3 request độc lập (ghi field khác
+            // nhau, fail-soft riêng) → chạy song song. EnsurePaymentMethodValid()
+            // đọc _walletBalance nên vẫn chạy sau WhenAll như logic cũ.
+            await Task.WhenAll(
+                LoadLoyaltyForPhoneAsync(),
+                LoadWalletForPhoneAsync(),
+                LoadLastOrderNameAsync());
 
-            // Item 140: wallet balance for this phone (enables the ví option).
-            try
-            {
-                var wallet = await AdminCommerceService.GetWalletBalanceAsync(phone);
-                _walletBalance = wallet?.Balance ?? 0;
-            }
-            catch (Exception)
-            {
-                _walletBalance = 0;
-            }
             // Số dư vừa tải về có thể không đủ tổng đơn → gỡ lựa chọn ví vô hình.
             EnsurePaymentMethodValid();
 
-            // TT2: auto-fill the name from the most recent order — never
-            // overwrite a name the user already typed. (This checkout has no
-            // delivery-address field: the shop doesn't deliver — the order is
-            // ShipperPickup or customer Pickup.)
-            try
+            async Task LoadLoyaltyForPhoneAsync()
             {
-                var last = await ShopService.GetLastOrderInfoAsync(phone);
-                if (last != null
-                    && string.IsNullOrWhiteSpace(_order.CustomerName)
-                    && !string.IsNullOrWhiteSpace(last.CustomerName))
+                // Loyalty summary (points, tier, referral code) for the phone.
+                try
                 {
-                    _order.CustomerName = last.CustomerName;
+                    _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(phone);
+                    _redeemPoints = 0;
+                    _redeemPointsInput = 0;
+                    _redeemMessage = null;
+                }
+                catch (Exception)
+                {
+                    _loyalty = null;
                 }
             }
-            catch (Exception)
+
+            async Task LoadWalletForPhoneAsync()
             {
+                // Item 140: wallet balance for this phone (enables the ví option).
+                try
+                {
+                    var wallet = await AdminCommerceService.GetWalletBalanceAsync(phone);
+                    _walletBalance = wallet?.Balance ?? 0;
+                }
+                catch (Exception)
+                {
+                    _walletBalance = 0;
+                }
+            }
+
+            async Task LoadLastOrderNameAsync()
+            {
+                // TT2: auto-fill the name from the most recent order — never
+                // overwrite a name the user already typed. (This checkout has no
+                // delivery-address field: the shop doesn't deliver — the order is
+                // ShipperPickup or customer Pickup.)
+                try
+                {
+                    var last = await ShopService.GetLastOrderInfoAsync(phone);
+                    if (last != null
+                        && string.IsNullOrWhiteSpace(_order.CustomerName)
+                        && !string.IsNullOrWhiteSpace(last.CustomerName))
+                    {
+                        _order.CustomerName = last.CustomerName;
+                    }
+                }
+                catch (Exception)
+                {
+                }
             }
         }
         finally

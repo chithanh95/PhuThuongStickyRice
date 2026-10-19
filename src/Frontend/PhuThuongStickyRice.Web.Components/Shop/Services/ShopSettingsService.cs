@@ -1,6 +1,8 @@
 using PhuThuongStickyRice.Web.Components.Core.Services;
 using PhuThuongStickyRice.Web.Components.Shop.Models;
+using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
@@ -8,6 +10,18 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// <summary>Shop commerce settings (public GET, admin PUT).</summary>
     public class ShopSettingsService : ApiClientBase
     {
+        /// <summary>
+        /// TTL cache client-side cho settings public: settings đổi hiếm khi nhưng
+        /// endpoint được gọi ở ~14 trang/components mỗi lần mở trang.
+        /// Cache nằm trên static field vì service đăng ký Transient qua AddHttpClient
+        /// (mỗi page inject instance riêng) nên instance-field không chia sẻ được.
+        /// Caller chỉ đọc model (không mutate) nên trả cùng instance là an toàn.
+        /// </summary>
+        private static readonly TimeSpan PublicSettingsCacheTtl = TimeSpan.FromMinutes(2);
+        private static readonly SemaphoreSlim PublicSettingsCacheLock = new(1, 1);
+        private static ShopSettingModel? _cachedPublicSettings;
+        private static DateTimeOffset _cachedPublicSettingsAt;
+
         public ShopSettingsService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)
         {
@@ -28,15 +42,55 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// pauses ordering with the holiday reason. The landing/shop/checkout
         /// pages use this instead of <see cref="GetAdminAsync"/>. Integration
         /// secrets are stripped server-side on this endpoint.
+        /// Kết quả được cache client-side 2 phút (static, vì service là Transient):
+        /// cắt ~1 HTTP round-trip trên mỗi trang mở mà dữ liệu không đổi.
         /// </summary>
         public async Task<ShopSettingModel> GetPublicAsync()
         {
-            return await GetAsync<ShopSettingModel>("api/shop-settings/public");
+            var cached = _cachedPublicSettings;
+            if (cached is not null && DateTimeOffset.UtcNow - _cachedPublicSettingsAt < PublicSettingsCacheTtl)
+                return cached;
+
+            // Lock tránh N request cùng fetch khi cache hết hạn (chỉ 1 fetch).
+            await PublicSettingsCacheLock.WaitAsync();
+            try
+            {
+                // Kiểm tra lại sau khi vào lock: request khác có thể đã refresh xong.
+                cached = _cachedPublicSettings;
+                if (cached is not null && DateTimeOffset.UtcNow - _cachedPublicSettingsAt < PublicSettingsCacheTtl)
+                    return cached;
+
+                var fresh = await GetAsync<ShopSettingModel>("api/shop-settings/public");
+                if (fresh is not null)
+                {
+                    _cachedPublicSettings = fresh;
+                    _cachedPublicSettingsAt = DateTimeOffset.UtcNow;
+                    return fresh;
+                }
+                // Fetch trả null: không ghi đè cache cũ (nếu có), giữ hành vi cũ.
+                return cached!;
+            }
+            finally
+            {
+                PublicSettingsCacheLock.Release();
+            }
         }
 
         public async Task<ShopSettingModel> UpdateAsync(ShopSettingModel model)
         {
-            return await PutAsync<ShopSettingModel>("api/shop-settings", model);
+            var result = await PutAsync<ShopSettingModel>("api/shop-settings", model);
+            // Admin vừa lưu settings mới: xóa cache public để lần đọc sau lấy dữ liệu mới.
+            InvalidatePublicCache();
+            return result;
+        }
+
+        /// <summary>
+        /// Xóa cache client-side của <see cref="GetPublicAsync"/> (vd sau khi admin
+        /// lưu settings). Lần gọi sau sẽ fetch lại từ server.
+        /// </summary>
+        public static void InvalidatePublicCache()
+        {
+            _cachedPublicSettings = null;
         }
 
         /// <summary>
