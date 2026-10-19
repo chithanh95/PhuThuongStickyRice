@@ -455,24 +455,37 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { success = false, message = "Phiên chat không hợp lệ." });
             }
 
+            // perf-hunt 2026-10-19: projection hẹp (chỉ 5 cột cần) thay vì nạp
+            // full entity + ExecuteUpdateAsync đánh dấu đã đọc bằng 1 câu
+            // UPDATE theo Id (thay vì track 50 entity + SaveChanges). Ngữ nghĩa
+            // GIỐNG HỆT: cùng 50 tin cũ nhất, cùng các tin admin chưa đọc được
+            // đánh dấu, response không đổi (không trả IsRead).
             var messages = await _db.ChatMessages
                 .Where(m => m.SessionId == sessionId)
                 .OrderBy(m => m.CreatedAt)
                 .Take(50)
+                .Select(m => new
+                {
+                    m.Id,
+                    m.Sender,
+                    m.Message,
+                    m.CreatedAt,
+                    m.IsRead
+                })
                 .ToListAsync(cancellationToken);
 
-            var unreadAdmin = messages
+            var unreadIds = messages
                 .Where(m => m.Sender == ChatMessage.SenderAdmin && !m.IsRead)
+                .Select(m => m.Id)
                 .ToList();
 
-            if (unreadAdmin.Count > 0)
+            if (unreadIds.Count > 0)
             {
-                foreach (var m in unreadAdmin)
-                {
-                    m.IsRead = true;
-                }
-
-                await _db.SaveChangesAsync(cancellationToken);
+                await _db.ChatMessages
+                    .Where(m => unreadIds.Contains(m.Id))
+                    .ExecuteUpdateAsync(
+                        s => s.SetProperty(m => m.IsRead, true),
+                        cancellationToken);
             }
 
             return Ok(messages.Select(m => new
