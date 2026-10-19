@@ -143,12 +143,12 @@ namespace PhuThuongStickyRice.Application.Catalog
                 IsActive = dto.IsActive
             };
 
-            foreach (var item in dto.Items ?? Enumerable.Empty<CreateUpdateComboItemDto>())
+            foreach (var comboItem in dto.Items ?? Enumerable.Empty<CreateUpdateComboItemDto>())
             {
                 entity.Items.Add(new ComboItem
                 {
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity
+                    ProductId = comboItem.ProductId,
+                    Quantity = comboItem.Quantity
                 });
             }
 
@@ -177,13 +177,13 @@ namespace PhuThuongStickyRice.Application.Catalog
             entity.IsActive = dto.IsActive;
 
             entity.Items.Clear();
-            foreach (var item in dto.Items ?? Enumerable.Empty<CreateUpdateComboItemDto>())
+            foreach (var comboItem in dto.Items ?? Enumerable.Empty<CreateUpdateComboItemDto>())
             {
                 entity.Items.Add(new ComboItem
                 {
                     ComboId = entity.Id,
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity
+                    ProductId = comboItem.ProductId,
+                    Quantity = comboItem.Quantity
                 });
             }
 

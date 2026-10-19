@@ -276,9 +276,9 @@ namespace PhuThuongStickyRice.Application.Messenger
                     continue;
                 }
 
-                foreach (var item in messagings.EnumerateArray())
+                foreach (var messaging in messagings.EnumerateArray())
                 {
-                    await ProcessMessageItemAsync(item, pageToken);
+                    await ProcessMessageItemAsync(messaging, pageToken);
                 }
             }
         }
@@ -289,12 +289,14 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// Non-text events (postbacks, attachments) are ignored. Extracted
         /// from HandleWebhookAsync to keep the nesting shallow.
         /// </summary>
-        private async Task ProcessMessageItemAsync(JsonElement item, string pageToken)
+        /// <param name="messaging">Phần tử "messaging" trong webhook Facebook — một sự kiện hội thoại.</param>
+        /// <param name="pageToken">Token trang dùng để gửi phản hồi.</param>
+        private async Task ProcessMessageItemAsync(JsonElement messaging, string pageToken)
         {
             try
             {
-                var psid = item.GetProperty("sender").GetProperty("id").GetString();
-                if (!item.TryGetProperty("message", out var message)
+                var psid = messaging.GetProperty("sender").GetProperty("id").GetString();
+                if (!messaging.TryGetProperty("message", out var message)
                     || !message.TryGetProperty("text", out var textProp))
                 {
                     return; // ignore non-text events (postbacks, attachments...)
@@ -310,7 +312,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             }
             catch (Exception ex)
             {
-                Logger.LogWarning(ex, "Failed to process a Messenger webhook item.");
+                Logger.LogWarning(ex, "Failed to process a Messenger webhook messaging element.");
             }
         }
 

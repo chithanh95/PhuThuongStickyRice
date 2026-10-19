@@ -124,9 +124,12 @@
     private string _dropAction;
 
     private void ToggleDrop() => _dropOpen = !_dropOpen;
-    private void DropAction(string a)
+
+    /// <summary>Lưu hành động được chọn từ dropdown demo rồi đóng dropdown.</summary>
+    /// <param name="action">Tên hành động người dùng vừa chọn.</param>
+    private void DropAction(string action)
     {
-        _dropAction = a;
+        _dropAction = action;
         _dropOpen = false;
     }
 }

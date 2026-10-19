@@ -112,29 +112,29 @@ else
                 <tr><th scope="col">Đơn hàng</th><th scope="col">SĐT</th><th scope="col">Sao</th><th scope="col">Nhận xét</th><th scope="col">Ảnh</th><th scope="col">Quà tặng</th><th scope="col">Phản hồi</th><th scope="col">Ngày</th><th scope="col"></th></tr>
             </thead>
             <tbody>
-                @foreach (var r in _reviews)
+                @foreach (var review in _reviews)
                 {
-                    <tr class="@(r.IsHidden ? "table-secondary" : "")">
-                        <td><a href="/orders">@r.OrderNumber</a></td>
-                        <td>@r.CustomerPhone</td>
+                    <tr class="@(review.IsHidden ? "table-secondary" : "")">
+                        <td><a href="/orders">@review.OrderNumber</a></td>
+                        <td>@review.CustomerPhone</td>
                         @* A11y uiux-2026-10-20: sao là chữ ★ thuần — trình đọc màn hình
                            sẽ đọc từng ký tự vô nghĩa. role="img" + aria-label
                            để đọc "Đánh giá X trên 5 sao". *@
-                        <td class="dg-stars" role="img" aria-label="Đánh giá @r.Rating trên 5 sao">
-                            @(new string('★', r.Rating))<span class="dg-stars-off">@(new string('★', 5 - r.Rating))</span>
+                        <td class="dg-stars" role="img" aria-label="Đánh giá @review.Rating trên 5 sao">
+                            @(new string('★', review.Rating))<span class="dg-stars-off">@(new string('★', 5 - review.Rating))</span>
                         </td>
                         <td>
-                            @r.Comment
-                            @if (r.IsHidden)
+                            @review.Comment
+                            @if (review.IsHidden)
                             {
                                 <span class="badge badge-dark ml-1">Đã ẩn</span>
                             }
                         </td>
                         <td>
-                            @if (!string.IsNullOrEmpty(r.PhotoUrl))
+                            @if (!string.IsNullOrEmpty(review.PhotoUrl))
                             {
-                                <a href="@r.PhotoUrl" target="_blank" rel="noopener">
-                                    <img src="@r.PhotoUrl" alt="Ảnh đánh giá" class="dg-photo-thumb" />
+                                <a href="@review.PhotoUrl" target="_blank" rel="noopener">
+                                    <img src="@review.PhotoUrl" alt="Ảnh đánh giá" class="dg-photo-thumb" />
                                 </a>
                             }
                             else
@@ -143,13 +143,13 @@ else
                             }
                         </td>
                         <td>
-                            @if (!string.IsNullOrEmpty(r.RewardCode))
+                            @if (!string.IsNullOrEmpty(review.RewardCode))
                             {
                                 <span class="badge badge-success" title="Đã tặng 1 phần xôi (mã giảm giá)">
-                                    🎁 @r.RewardCode
+                                    🎁 @review.RewardCode
                                 </span>
                             }
-                            else if (!string.IsNullOrEmpty(r.PhotoUrl))
+                            else if (!string.IsNullOrEmpty(review.PhotoUrl))
                             {
                                 <span class="badge badge-warning" title="Có ảnh nhưng chưa có mã quà">⏳ Chưa có mã</span>
                             }
@@ -159,34 +159,34 @@ else
                             }
                         </td>
                         <td>
-                            @if (_replyingId == r.Id)
+                            @if (_replyingId == review.Id)
                             {
                                 <div class="input-group">
                                     <input class="form-control form-control-sm" placeholder="Phản hồi của quán..."
                                            @bind="_replyText" />
                                     <div class="input-group-append">
-                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => SaveReply(r)">Lưu</button>
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => SaveReply(review)">Lưu</button>
                                         <button class="btn btn-sm btn-outline-secondary" @onclick="CancelReply">Hủy</button>
                                     </div>
                                 </div>
                             }
                             else
                             {
-                                <small class="text-muted">@r.AdminReply</small>
+                                <small class="text-muted">@review.AdminReply</small>
                             }
                         </td>
-                        <td><small>@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td>
+                        <td><small>@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td>
                         <td class="text-right dg-actions">
-                            <button class="btn btn-sm btn-outline-secondary mr-1" @onclick="() => StartReply(r)">
+                            <button class="btn btn-sm btn-outline-secondary mr-1" @onclick="() => StartReply(review)">
                                 💬 Phản hồi
                             </button>
-                            @if (r.IsHidden)
+                            @if (review.IsHidden)
                             {
-                                <button class="btn btn-sm btn-outline-success" @onclick="() => SetHidden(r, false)">Hiện</button>
+                                <button class="btn btn-sm btn-outline-success" @onclick="() => SetHidden(review, false)">Hiện</button>
                             }
                             else
                             {
-                                <button class="btn btn-sm btn-outline-warning" @onclick="() => SetHidden(r, true)">Ẩn</button>
+                                <button class="btn btn-sm btn-outline-warning" @onclick="() => SetHidden(review, true)">Ẩn</button>
                             }
                         </td>
                     </tr>
@@ -362,14 +362,14 @@ else
         }
     }
 
-    private async Task SetHidden(OrderReviewModel r, bool hidden)
+    private async Task SetHidden(OrderReviewModel review, bool hidden)
     {
         _error = null;
         _message = null;
         try
         {
-            await OrderService.SetReviewHiddenAsync(r.Id, hidden);
-            r.IsHidden = hidden;
+            await OrderService.SetReviewHiddenAsync(review.Id, hidden);
+            review.IsHidden = hidden;
             _message = hidden ? "Đã ẩn đánh giá khỏi công khai." : "Đã hiển thị lại đánh giá.";
         }
         catch (Exception ex)
@@ -378,10 +378,10 @@ else
         }
     }
 
-    private void StartReply(OrderReviewModel r)
+    private void StartReply(OrderReviewModel review)
     {
-        _replyingId = r.Id;
-        _replyText = r.AdminReply;
+        _replyingId = review.Id;
+        _replyText = review.AdminReply;
     }
 
     private void CancelReply()
@@ -390,7 +390,12 @@ else
         _replyText = null;
     }
 
-    private async Task SaveReply(OrderReviewModel r)
+    /// <summary>
+    /// Lưu phản hồi admin cho một đánh giá: kiểm tra nội dung trống thì hỏi
+    /// xác nhận trước, có phản hồi cũ thì hỏi xác nhận ghi đè.
+    /// </summary>
+    /// <param name="review">Đánh giá cần lưu phản hồi.</param>
+    private async Task SaveReply(OrderReviewModel review)
     {
         _error = null;
         _message = null;
@@ -400,9 +405,9 @@ else
         // - đã có phản hồi: hỏi xác nhận vì bấm Lưu = xóa vĩnh viễn phản hồi cũ.
         if (string.IsNullOrWhiteSpace(_replyText))
         {
-            if (!string.IsNullOrWhiteSpace(r.AdminReply))
+            if (!string.IsNullOrWhiteSpace(review.AdminReply))
             {
-                _pendingEmptyReply = r;
+                _pendingEmptyReply = review;
                 EmptyReplyDialog.Show();
                 return;
             }
@@ -411,7 +416,7 @@ else
             return;
         }
 
-        await DoSaveReplyAsync(r);
+        await DoSaveReplyAsync(review);
     }
 
     /// <summary>
@@ -420,27 +425,32 @@ else
     /// </summary>
     private async Task ConfirmedEmptyReply()
     {
-        var r = _pendingEmptyReply;
+        var review = _pendingEmptyReply;
         _pendingEmptyReply = null;
         EmptyReplyDialog.Close();
-        if (r == null)
+        if (review == null)
         {
             return;
         }
 
         _replyText = string.Empty;
-        await DoSaveReplyAsync(r);
+        await DoSaveReplyAsync(review);
         _message = "Đã xóa phản hồi.";
     }
 
-    private async Task DoSaveReplyAsync(OrderReviewModel r)
+    /// <summary>
+    /// Gọi API lưu phản hồi admin cho đánh giá rồi cập nhật lại dòng hiển thị
+    /// (không reload cả bảng) để giữ nguyên vị trí cuộn của trang.
+    /// </summary>
+    /// <param name="review">Đánh giá cần lưu phản hồi.</param>
+    private async Task DoSaveReplyAsync(OrderReviewModel review)
     {
         _error = null;
         _message = null;
         try
         {
-            await OrderService.ReplyReviewAsync(r.Id, _replyText ?? string.Empty);
-            r.AdminReply = _replyText?.Trim();
+            await OrderService.ReplyReviewAsync(review.Id, _replyText ?? string.Empty);
+            review.AdminReply = _replyText?.Trim();
             CancelReply();
             _message = "Đã lưu phản hồi.";
         }
