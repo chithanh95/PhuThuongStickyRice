@@ -93,3 +93,50 @@ html.dark h3[style*="763434"] {
 html.dark .timeline {
     border-left-color: #3a3a58 !important;
 }
+
+/* === UIUX run 08:35 (job uiux-team-2days) — Agent 2 Dark mode === */
+
+/* ---------- FIX 1 — Shop: trang Check-in (/check-in) ----------
+   Vấn đề: .xo-sec-title / .xo-checkin-form-title / .xo-checkin-wall-title
+   dùng #763434 (đỏ đậm) và .xo-sec-div em #9C682C — ở dark mode chữ đỏ
+   chìm hẳn vào nền #1c1c22 (đã có rule dark cho nền, nhưng quên chữ).
+   Fix: chữ sáng #f2b8b8 (cùng tone các fix #763434 trước), em → #d9ab68. */
+html.dark .xo-sec-title,
+html.dark .xo-checkin-form-title,
+html.dark .xo-checkin-wall-title {
+    color: #f2b8b8 !important; /* was #763434 */
+}
+html.dark .xo-sec-div em {
+    color: #d9ab68 !important; /* was #9C682C */
+}
+
+/* ---------- FIX 2 — Shop: tab "Thẻ xôi" (PrepaidCardTab) ----------
+   Vấn đề: .pt-success-title và .pt-item-remain strong dùng #1c7c3e
+   (xanh lá đậm) — không có rule dark nào phủ, ở dark mode chữ xanh đậm
+   chìm vào nền tối (#24242c/#2a2a32). Fix: xanh lá Lexa #34c38f. */
+html.dark .pt-success-title,
+html.dark .pt-item-remain strong {
+    color: #34c38f !important; /* was #1c7c3e */
+}
+
+/* ---------- FIX 3 — Shop: thanh sticky giỏ hàng mobile (/cart) ----------
+   Vấn đề: .cart-sticky-checkout (fixed bottom bar hiện khi giỏ có món)
+   có background:#fff hardcode, không rule dark nào phủ → dải trắng chói
+   ngang màn hình ở dark mode. Fix: nền tối palette shop + viền tối.
+   Chữ bên trong (text-muted/text-danger, nút btn-success) đã có override
+   dark toàn cục nên tự đọc được trên nền mới. */
+html.dark .cart-sticky-checkout {
+    background: #241d17 !important; /* was #fff */
+    border-top-color: #3a3226 !important; /* was #e9ecef */
+}
+
+/* ---------- FIX 4 — Shop: thanh đặt hàng mobile (/checkout) ----------
+   Vấn đề: .co-mobile-bar (fixed bottom order bar, mobile-only) có
+   background:#fff + border-top #dee2e6 hardcode, không rule dark nào phủ
+   → dải trắng chói ở dark mode, tương tự fix 3. Fix: nền/viền tối. */
+html.dark .co-mobile-bar {
+    background: #241d17 !important; /* was #fff */
+    border-top-color: #3a3226 !important; /* was #dee2e6 */
+}
+
+/* === end Agent 2 run 08:35 === */

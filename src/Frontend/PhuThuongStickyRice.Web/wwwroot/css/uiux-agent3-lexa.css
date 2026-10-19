@@ -47,3 +47,65 @@
    ChatNoiBo.razor (.online-dot.on, scoped): chấm trạng thái online +
    glow dùng #28a745. !important để thắng CSS isolation của Blazor. */
 .online-dot.on { background: #34c38f !important; box-shadow: 0 0 4px #34c38f !important; }
+
+/* === UIUX run 08:35 (job uiux-team-2days) — Agent 3 Lexa sync ===
+   5 fix mới (mỗi selector đã verify bằng grep trong source, không đoán).
+   1. text-* utilities: thêm !important — Bootstrap 4.3.1 khai báo
+      .text-*{...!important} nên 5 rule đợt 2 (thiếu !important) chưa từng
+      có hiệu lực (~136 chỗ dùng vẫn xanh/đỏ Bootstrap). Dark mode giữ
+      nguyên: html.dark .text-* (admin-lexa.css:1149-1153, specificity
+      (0,2,1)) vẫn thắng rule này.
+   2. bg-* utilities -> palette Lexa (mới): .bg-* của Bootstrap cũng
+      !important. Đã grep toàn frontend: chỉ 8 chỗ dùng — Cart.razor:82
+      thanh freeship .bg-success, NhomDatMon.razor:146 + GomDon.razor:167
+      card-header "Chốt đơn" .bg-success, Shop.razor:31 jumbotron promo
+      .bg-warning, 4 progress-bar trang demo Lexa/UiGeneral.
+   3. .lx-pill-success/warning/danger/info (light) -> Lexa soft tints:
+      admin-lexa.css:717-720 đang dùng text #28a745/#b57e00/#d63a52/#0a9fc0
+      + bg tint sai hue (dùng ở Quotes/DuBao/NhanVien). Không !important
+      (rule gốc không có, file này load sau nên thắng). Dark giữ nguyên
+      (html.dark .lx-pill-* specificity cao hơn).
+   4. LaiGop.razor:112 (<strong>) + :154 (<td>) inline style
+      color:#28a745/#dc3545 -> #34c38f/#f46a6a qua attribute selector +
+      !important (đè inline style). Đã grep: chỉ LaiGop có inline style
+      attribute màu này.
+   5. alert-* ngoài admin -> Lexa soft tints, đúng pattern
+      .lx-admin .alert-* (admin-lexa.css:1182-1202). Không !important vì
+      BS4 .alert-* không !important, và để không đè rule
+      html.dark .alert-success/info/warning đã có trong app.css.
+      Bổ sung html.dark .alert-danger/.alert-primary còn thiếu.
+   === */
+
+/* Fix 1: text-* utilities — thêm !important để thắng Bootstrap */
+.text-primary { color: #7a6fbe !important; }
+.text-success { color: #34c38f !important; }
+.text-danger { color: #f46a6a !important; }
+.text-info { color: #50a5f1 !important; }
+.text-warning { color: #f1b44c !important; }
+
+/* Fix 2: bg-* utilities về đúng palette Lexa */
+.bg-success { background-color: #34c38f !important; }
+.bg-danger { background-color: #f46a6a !important; }
+.bg-warning { background-color: #f1b44c !important; }
+.bg-info { background-color: #50a5f1 !important; }
+
+/* Fix 3: lx-pill (light) về Lexa soft tints — khớp badge-soft chuẩn Lexa */
+.lx-pill-success { background-color: rgba(52,195,143,.18); color: #34c38f; }
+.lx-pill-warning { background-color: rgba(241,180,76,.18); color: #f1b44c; }
+.lx-pill-danger { background-color: rgba(244,106,106,.18); color: #f46a6a; }
+.lx-pill-info { background-color: rgba(80,165,241,.18); color: #50a5f1; }
+
+/* Fix 4: LaiGop inline #28a745/#dc3545 -> xanh/đỏ Lexa */
+strong[style*="#28a745"], td[style*="#28a745"] { color: #34c38f !important; }
+strong[style*="#dc3545"], td[style*="#dc3545"] { color: #f46a6a !important; }
+
+/* Fix 5: alert ngoài admin -> Lexa soft tints */
+.alert-primary { background-color: #e9e6f7; border-color: #d3cdf0; color: #5a4fae; }
+.alert-success { background-color: #d3f1e2; border-color: #b3e7cf; color: #1e7a52; }
+.alert-info { background-color: #dbeafa; border-color: #bcd9f7; color: #2b7bbb; }
+.alert-warning { background-color: #fdefd3; border-color: #fae3ae; color: #a8761a; }
+.alert-danger { background-color: #fbdddd; border-color: #f8c2c2; color: #bd4a4a; }
+html.dark .alert-danger { background-color: #3a1e24; border-color: #5a2d36; color: #ff8a8a; }
+html.dark .alert-primary { background-color: #2c2848; border-color: #453d75; color: #b3a8e8; }
+
+/* === end Agent 3 run 08:35 === */
