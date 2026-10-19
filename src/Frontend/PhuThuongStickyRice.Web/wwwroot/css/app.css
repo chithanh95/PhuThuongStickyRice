@@ -536,11 +536,30 @@ html.dark .shop-row-price small {
    Chỉ override html.dark — không đụng rule light mode hiện có.
    ============================================================ */
 
-/* 1. Giỏ hàng mobile (<=575px): dòng sản phẩm là card nền trắng chói */
-@media (max-width: 575.98px) {
+/* 1. Giỏ hàng mobile (<=767px): dòng sản phẩm là card nền trắng chói.
+   uiux-2026-10-20: mở rộng từ 575.98px lên 767.98px cho khớp breakpoint
+   của rule gốc trong Cart.razor.css (576–767px trước đây vẫn lọt nền trắng). */
+@media (max-width: 767.98px) {
     html.dark .cart-lines tbody tr {
         background: #262640;
         border-color: #3a3a58;
+    }
+}
+
+/* uiux-2026-10-20 (Agent 2 dark) — FIX 2+3: thanh sticky bottom (giỏ hàng
+   .cart-sticky-checkout, checkout .co-mobile-bar) nền #fff chói trên trang
+   tối + chữ nhỏ #6c757d mờ. Nền tối + chữ phụ sáng lên. */
+@media (max-width: 767.98px) {
+    html.dark .cart-sticky-checkout {
+        background: #262640;
+        border-top-color: #3a3a58;
+    }
+    html.dark .co-mobile-bar {
+        background: #262640;
+        border-top-color: #3a3a58;
+    }
+    html.dark .co-mobile-bar .co-total small {
+        color: #a5a2bd;
     }
 }
 
@@ -552,6 +571,15 @@ html.dark .to-survey-sheet {
 }
 html.dark .to-survey-sheet h5 {
     color: #f2b8b8 !important;
+}
+
+/* uiux-2026-10-20 (Agent 2 dark) — FIX 4: card tóm tắt + thông tin đơn hàng
+   (.to-summary-card/.to-info-card) nền #fff chói ở dark mode; chữ bên trong
+   không set màu cứng nên nền tối là đủ. */
+html.dark .to-summary-card,
+html.dark .to-info-card {
+    background: #262640;
+    border: 1px solid #3a3a58;
 }
 
 /* 3. Tài khoản: panel thêm/sửa địa chỉ (inline background:#FFFDF7) */
