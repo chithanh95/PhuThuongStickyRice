@@ -37,6 +37,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
             = new List<CustomerTagDto>();
     }
 
+    /// <summary>
+    /// Món bán chạy nhất của 1 khách (xếp theo tổng số lượng đã mua), dùng
+    /// trong trang chi tiết khách hàng để nhân viên tư vấn đúng món quen.
+    /// </summary>
     public class CustomerTopProductDto
     {
         public string ProductName { get; set; }
@@ -44,6 +48,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public long Quantity { get; set; }
     }
 
+    /// <summary>
+    /// Tóm tắt 1 đơn gần nhất của khách trong trang chi tiết khách hàng:
+    /// mã đơn, thời gian đặt, tổng tiền, trạng thái và phương thức thanh toán.
+    /// </summary>
     public class CustomerRecentOrderDto
     {
         public string OrderNumber { get; set; }

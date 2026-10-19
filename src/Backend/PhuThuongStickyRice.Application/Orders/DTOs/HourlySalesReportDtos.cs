@@ -29,6 +29,11 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string Suggestion { get; set; }
     }
 
+    /// <summary>
+    /// Một hàng của heatmap "món bán chạy theo giờ": số suất bán trong 1 giờ,
+    /// chia theo từng món (cùng thứ tự cột với
+    /// <see cref="HourlySalesReportDto.Products"/> của báo cáo).
+    /// </summary>
     public class HourlySalesRowDto
     {
         public int Hour { get; set; }
@@ -39,6 +44,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public long Total { get; set; }
     }
 
+    /// <summary>
+    /// Một khung giờ đông khách nhất (top 3 theo số suất bán), dùng để chủ
+    /// quán biết trước giờ nào cần chuẩn bị nhiều xôi.
+    /// </summary>
     public class TopHourDto
     {
         public int Hour { get; set; }

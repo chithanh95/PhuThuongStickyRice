@@ -4,6 +4,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+        /// <summary>
+        /// Mục tiêu doanh thu ngày trên dashboard admin: doanh thu hôm nay
+        /// so với mục tiêu đã đặt, kèm % hoàn thành (có thể vượt 100% khi
+        /// bán vượt mục tiêu).
+        /// </summary>
         public class DailyTargetDto
         {
             public decimal TodayRevenue { get; set; }
@@ -13,6 +18,10 @@ namespace PhuThuongStickyRice.Application.Orders
             public double Percent { get; set; }
         }
 
+        /// <summary>
+        /// Tổng hợp 1 nguồn đơn hàng trên dashboard (web, hotline, Zalo...):
+        /// số đơn và doanh thu của nguồn đó trong kỳ báo cáo.
+        /// </summary>
         public class SourceStatDto
         {
             public string Source { get; set; }
@@ -20,6 +29,11 @@ namespace PhuThuongStickyRice.Application.Orders
             public decimal Revenue { get; set; }
         }
 
+        /// <summary>
+        /// So sánh hôm nay với hôm qua trên dashboard admin: doanh thu và
+        /// số đơn của 2 ngày, kèm % tăng/giảm để chủ quán nắm xu hướng kinh
+        /// doanh hàng ngày.
+        /// </summary>
         public class TodayVsYesterdayDto
         {
             public decimal TodayRevenue { get; set; }

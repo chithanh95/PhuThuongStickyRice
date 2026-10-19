@@ -33,6 +33,13 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<MoMoOptions> GetMoMoAsync();
     }
 
+    /// <summary>
+    /// Đọc cấu hình thanh toán từ 2 nguồn và gộp lại: giá trị hiển thị
+    /// (không bí mật) ưu tiên lấy từ <c>ShopSetting</c> trong DB (admin sửa
+    /// ở /admin/thanh-toan), thiếu thì fallback về appsettings.json.
+    /// Bí mật (AccessKey/SecretKey/TestMode/URLs của MoMo) LUÔN chỉ từ
+    /// appsettings — để bảo mật, admin không thể ghi đè khóa ký từ DB.
+    /// </summary>
     public class PaymentConfigProvider : IPaymentConfigProvider
     {
         private readonly IOptions<BankTransferOptions> _bankTransferDefaults;

@@ -62,6 +62,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public bool BasedOnWeekdayPattern { get; set; }
     }
 
+    /// <summary>
+    /// Tổng dự báo cho một khoảng tương lai (7 hoặc 30 ngày tới): tổng tiền
+    /// dự kiến, số đơn dự kiến và số suất xôi quán nên chuẩn bị.
+    /// </summary>
     public class ForecastTotalDto
     {
         public decimal ForecastRevenue { get; set; }
