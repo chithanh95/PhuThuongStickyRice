@@ -116,8 +116,10 @@ namespace PhuThuongStickyRice.Application.Common
 
             var target = dto.TargetUrl.Trim();
             var queryable = await _links.GetQueryableAsync();
+            // Best practice: truyền predicate thẳng vào FirstOrDefaultAsync
+            // thay vì bọc queryable.Where(...) thừa (tránh 1 wrapper LINQ).
             var existing = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.TargetUrl == target));
+                queryable, x => x.TargetUrl == target);
             if (existing != null)
             {
                 return MapToDto(existing);
@@ -169,7 +171,7 @@ namespace PhuThuongStickyRice.Application.Common
 
             var queryable = await _links.GetQueryableAsync();
             var entity = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Code == normalized));
+                queryable, x => x.Code == normalized);
             var target = entity?.TargetUrl;
             // Chỉ cache khi tìm thấy: mã mới tạo (CreateAsync sinh mã mới
             // chưa từng cache) resolve được ngay; link bị xóa thì DeleteAsync
@@ -199,7 +201,7 @@ namespace PhuThuongStickyRice.Application.Common
 
                 var queryable = await _links.GetQueryableAsync();
                 var exists = await _asyncExecuter.FirstOrDefaultAsync(
-                    queryable.Where(x => x.Code == code));
+                    queryable, x => x.Code == code);
                 if (exists == null)
                 {
                     return code;

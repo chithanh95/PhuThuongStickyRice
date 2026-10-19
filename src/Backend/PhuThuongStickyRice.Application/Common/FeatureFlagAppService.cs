@@ -128,6 +128,13 @@ namespace PhuThuongStickyRice.Application.Common
             return !map.TryGetValue(key, out var enabled) || enabled;
         }
 
+        /// <summary>
+        /// Seed các cờ mặc định còn thiếu. Gom tất cả cờ thiếu rồi
+        /// <c>InsertManyAsync</c> một lần (1 SaveChanges) thay vì
+        /// <c>InsertAsync(autoSave: true)</c> từng cờ trong vòng lặp —
+        /// vừa ít roundtrip DB vừa nguyên tử. Kết quả cuối giống hệt bản cũ:
+        /// các cờ được commit ngay để query phía dưới thấy được.
+        /// </summary>
         private async Task EnsureDefaultsAsync()
         {
             var queryable = await _flags.GetQueryableAsync();
@@ -135,20 +142,20 @@ namespace PhuThuongStickyRice.Application.Common
                 .Select(x => x.Key)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var (key, name, description) in Defaults)
-            {
-                if (existing.Contains(key))
+            var missing = Defaults
+                .Where(d => !existing.Contains(d.Key))
+                .Select(d => new FeatureFlag
                 {
-                    continue;
-                }
-
-                await _flags.InsertAsync(new FeatureFlag
-                {
-                    Key = key,
-                    Name = name,
-                    Description = description,
+                    Key = d.Key,
+                    Name = d.Name,
+                    Description = d.Description,
                     IsEnabled = true
-                }, autoSave: true);
+                })
+                .ToList();
+
+            if (missing.Count > 0)
+            {
+                await _flags.InsertManyAsync(missing, autoSave: true);
             }
         }
 

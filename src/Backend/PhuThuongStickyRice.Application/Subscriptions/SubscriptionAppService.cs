@@ -246,8 +246,10 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             ResolveSnapshotAsync(Guid productId, Guid? sizeOptionId, List<Guid> toppingIds)
         {
             var productQueryable = await _products.GetQueryableAsync();
+            // Best practice: truyền predicate thẳng vào FirstOrDefaultAsync
+            // thay vì bọc queryable.Where(...) thừa (tránh 1 wrapper LINQ).
             var product = await _asyncExecuter.FirstOrDefaultAsync(
-                productQueryable.Where(x => x.Id == productId));
+                productQueryable, x => x.Id == productId);
             if (product == null || product.Status != ProductStatus.Active)
             {
                 throw new Domain.Exceptions.DomainException("Món ăn không tồn tại hoặc đã ngừng bán.");
@@ -259,7 +261,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             {
                 var sizeQueryable = await _sizeOptions.GetQueryableAsync();
                 var size = await _asyncExecuter.FirstOrDefaultAsync(
-                    sizeQueryable.Where(x => x.Id == sizeOptionId.Value));
+                    sizeQueryable, x => x.Id == sizeOptionId.Value);
                 if (size == null || !size.IsActive || size.ProductId != product.Id)
                 {
                     throw new Domain.Exceptions.DomainException("Size không khả dụng.");

@@ -117,10 +117,10 @@ namespace PhuThuongStickyRice.Application.Inventory
         {
             var existing = await _asyncExecuter.ToListAsync(
                 (await _inventories.GetQueryableAsync()).Where(x => x.Date == date));
-            foreach (var e in existing)
-            {
-                await _inventories.DeleteAsync(e);
-            }
+            // Best practice: DeleteManyAsync 1 lần thay vì DeleteAsync từng
+            // dòng trong vòng lặp — cùng semantics (UoW commit ở cuối như cũ),
+            // code thể hiện đúng ý định "xóa hàng loạt".
+            await _inventories.DeleteManyAsync(existing);
         }
 
         /// <summary>Chèn các dòng kiểm kê mới cho một ngày.</summary>
@@ -128,19 +128,20 @@ namespace PhuThuongStickyRice.Application.Inventory
             DateTime date, List<InventoryLineInput> lines, Dictionary<Guid, string> productNamesById)
         {
             var byUser = CurrentUser?.UserName;
-            foreach (var line in lines)
+            // Best practice: dựng hết entities rồi InsertManyAsync 1 lần thay
+            // vì InsertAsync từng dòng trong vòng lặp — cùng semantics (UoW
+            // commit ở cuối như cũ), 1 thao tác chèn hàng loạt rõ ý định hơn.
+            var entities = lines.Select(line => new DailyInventory
             {
-                await _inventories.InsertAsync(new DailyInventory
-                {
-                    Date = date,
-                    ProductId = line.ProductId,
-                    ProductName = productNamesById[line.ProductId],
-                    RemainingQty = line.RemainingQty,
-                    Note = string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim(),
-                    CreatedBy = byUser,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
+                Date = date,
+                ProductId = line.ProductId,
+                ProductName = productNamesById[line.ProductId],
+                RemainingQty = line.RemainingQty,
+                Note = string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim(),
+                CreatedBy = byUser,
+                CreatedAt = DateTime.UtcNow
+            }).ToList();
+            await _inventories.InsertManyAsync(entities);
         }
 
         /// <summary>

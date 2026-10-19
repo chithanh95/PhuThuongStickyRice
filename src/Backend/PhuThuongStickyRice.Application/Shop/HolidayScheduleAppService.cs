@@ -79,8 +79,10 @@ namespace PhuThuongStickyRice.Application.Shop
             var (date, reason) = Validate(dto.HolidayDate, dto.Reason);
 
             var queryable = await _holidays.GetQueryableAsync();
+            // Best practice: truyền predicate thẳng vào FirstOrDefaultAsync
+            // thay vì bọc queryable.Where(...) thừa (tránh 1 wrapper LINQ).
             var exists = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.HolidayDate == date));
+                queryable, x => x.HolidayDate == date);
             if (exists != null)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -108,7 +110,7 @@ namespace PhuThuongStickyRice.Application.Shop
 
             var queryable = await _holidays.GetQueryableAsync();
             var clash = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.HolidayDate == date && x.Id != id));
+                queryable, x => x.HolidayDate == date && x.Id != id);
             if (clash != null)
             {
                 throw new Domain.Exceptions.DomainException(
