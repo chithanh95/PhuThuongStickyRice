@@ -1552,3 +1552,83 @@ html.dark .sg-faq-item summary:hover {
 }
 
 /* ===== END UIUX run 22:25 - Agent4 ===== */
+
+/* ===== UIUX 22:45 A4 ===== */
+
+/* uiux-hunt 2026-10-19 run 22:45 agent4-a11y */
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1): chữ tím brand #7a6fbe trên nền
+   trắng chỉ đạt 4.33:1 (đo bằng script luminance), DƯỚI chuẩn cho chữ nhỏ:
+   - `.lx-admin .page-link` — link phân trang admin (admin-lexa.css:737,
+     Agent 3 đồng bộ Lexa, chưa ai đo contrast)
+   - `.lx-admin .btn-outline-primary` — label nút viền (admin-lexa.css:660,
+     dùng ở 17 trang admin: Articles, ChiNhanh, DanhGia, FunnelReport...)
+   - `.page-item.active .page-link` — chữ trắng trên fill #7a6fbe cũng 4.33:1
+   Remedy: #625998 (6.17:1 trên trắng; chữ trắng trên fill 6.17:1) — đúng tông
+   tím đậm Lexa đã dùng làm hover khắp theme, nhìn không lệch brand.
+   `!important` + nhân đôi class (0,3,0) để thắng rule Lexa của Agent 3
+   (0,2,0)+!important.
+   Dark mode — BẮT BUỘC variant html.dark: rule light có !important nên nếu
+   không có variant, chữ tím đậm #625998 sẽ chìm trên nền tối (~2.3:1). Khôi
+   phục #b3a8e8 (6.75:1 trên #262640, khớp fix Agent 2 run 13:55).
+   Viền btn-outline-primary giữ #7a6fbe (4.33:1 ≥ 3:1 cho non-text UI,
+   WCAG 1.4.11 — đạt). */
+.lx-admin .lx-admin .page-link {
+    color: #625998 !important; /* was #7a6fbe (4.33:1) */
+}
+.lx-admin .lx-admin .page-link:hover {
+    color: #4e4777 !important; /* was #625998 — hover phải đậm hơn base mới phân biệt được (8.43:1) */
+}
+.lx-admin .lx-admin .page-item.active .page-link {
+    background: #625998 !important; /* was #7a6fbe */
+    border-color: #625998 !important;
+}
+.lx-admin .lx-admin .btn-outline-primary {
+    color: #625998 !important; /* was #7a6fbe (4.33:1) */
+}
+.lx-admin .lx-admin .btn-outline-primary:hover {
+    background: #625998; /* was var(--lx-primary) #7a6fbe — chữ trắng đạt 6.17:1 */
+    border-color: #625998;
+}
+html.dark .lx-admin .lx-admin .page-link {
+    color: #b3a8e8 !important;
+}
+html.dark .lx-admin .lx-admin .page-link:hover {
+    color: #d5cdf5 !important;
+}
+html.dark .lx-admin .lx-admin .btn-outline-primary {
+    color: #b3a8e8 !important; /* khớp fix dark của Agent 2 (uiux-agent2-dark.css:840) */
+    border-color: #b3a8e8 !important;
+}
+
+/* uiux-hunt 2026-10-19 run 22:45 agent4-a11y */
+/* Fix 2 — WCAG 1.4.3 (Contrast, AA 4.5:1): giá trong chip chọn size
+   `.shop-size-chip .shop-size-price` (Shop.razor.css:205) màu #b5462a.
+   Light mode 5.42:1 ✓ nhưng dark mode (chip nền #262019, Shop.razor.css:218)
+   chỉ 2.97:1 — người lớn tuổi đọc giá khó. Sáng lên #e8937a (6.82:1 trên
+   #262019), vẫn tông cam đất của brand. Nhân class (0,4,1) để thắng rule
+   scoped (0,3,0). Light mode giữ nguyên #b5462a. */
+html.dark .shop-size-chip.shop-size-chip .shop-size-price {
+    color: #e8937a; /* was #b5462a (2.97:1) */
+}
+
+/* uiux-hunt 2026-10-19 run 22:45 agent4-a11y */
+/* Fix 3 — WCAG 1.4.3 (Contrast, AA 4.5:1): link "Xóa bộ lọc" trong
+   `.alert-info` (Shop.razor:214, Faq.razor:31) màu #7a6fbe trên nền xanh
+   nhạt #d1ecf1 của Bootstrap chỉ 3.5:1. Đậm lên #625998 (4.99:1 trên
+   #d1ecf1). Scope chặt `.alert-info` (0,3,1) để KHÔNG chạm các link khác:
+   `.shop-row-name` (tên món #212529), `.text-dark`, nút `.btn`, ảnh
+   `.shop-img-wrap` — các rule đó specificity thấp hơn hoặc !important nên
+   an toàn. Dark mode: nền alert #1e3a4a (app.css:303), link dark sẵn có
+   #b3a8e8 (5.5:1) — giữ nguyên bằng variant explicit vì rule light (0,3,1)
+   hòa với rule scoped dark. */
+.shp-page.shp-page .alert-info a {
+    color: #625998; /* was #7a6fbe (3.5:1) */
+}
+.shp-page.shp-page .alert-info a:hover {
+    color: #4e4777; /* phân biệt hover (6.4:1 trên #d1ecf1) */
+}
+html.dark .shp-page.shp-page .alert-info a {
+    color: #b3a8e8; /* 5.5:1 trên #1e3a4a */
+}
+
+/* ===== END UIUX 22:45 A4 ===== */
