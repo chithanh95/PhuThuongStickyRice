@@ -3647,19 +3647,15 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Sinh mã đơn dạng PX-YYYYMMDD-NNNN (vd PX-20261019-4821), dùng để
-        /// khách tra cứu đơn bằng SĐT + mã đơn. Thử tối đa
-        /// <c>GenerateOrderNumberMaxAttempts</c> lần, mỗi lần kiểm tra trùng
-        /// trong DB trước khi nhận — vì vậy NNNN dùng Random.Shared là đủ
-        /// (không cần bảo mật mật mã), va chạm chỉ tốn 1 vòng lặp. Vẫn throw
-        /// sau <c>GenerateOrderNumberMaxAttempts</c> lần để đơn không được tạo
-        /// với mã có nguy cơ trùng khi shop đông đơn bất thường.
-        /// </summary>
-        /// <summary>
-        /// Sinh mã đơn dạng PX-yyyyMMdd-XXXX. Dùng Random.Shared (không cấp
+        /// Sinh mã đơn dạng PX-yyyyMMdd-NNNN (vd PX-20261019-4821), dùng để
+        /// khách tra cứu đơn bằng SĐT + mã đơn. Dùng Random.Shared (không cấp
         /// phát, thread-safe) kết hợp ngày hiện tại; thử lại tối đa
         /// <see cref="GenerateOrderNumberMaxAttempts"/> lần khi trùng mã đã
-        /// tồn tại rồi mới báo lỗi cho khách thử lại.
+        /// tồn tại rồi mới báo lỗi cho khách thử lại. NNNN dùng Random.Shared
+        /// là đủ (không cần bảo mật mật mã) vì trùng mã đã có kiểm tra DB
+        /// trước khi nhận — va chạm chỉ tốn 1 vòng lặp; vẫn throw sau
+        /// <see cref="GenerateOrderNumberMaxAttempts"/> lần để đơn không được
+        /// tạo với mã có nguy cơ trùng khi shop đông đơn bất thường.
         /// </summary>
         /// <returns>Mã đơn duy nhất (chưa tồn tại trong DB).</returns>
         private async Task<string> GenerateOrderNumberAsync()
