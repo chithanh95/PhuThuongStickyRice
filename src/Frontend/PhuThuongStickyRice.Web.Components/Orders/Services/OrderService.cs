@@ -43,42 +43,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             bool vipOnly = false)
         {
             var url = $"api/orders?page={page}&pageSize={pageSize}";
-            if (!string.IsNullOrWhiteSpace(searchTerm))
+            foreach (var part in BuildOrderFilterParts(searchTerm, status, shipperId, fromDate, toDate, cashCollected, vipOnly))
             {
-                url += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
-            }
-
-            if (!string.IsNullOrWhiteSpace(status))
-            {
-                url += $"&status={Uri.EscapeDataString(status)}";
-            }
-
-            if (shipperId.HasValue && shipperId.Value != Guid.Empty)
-            {
-                url += $"&shipperId={shipperId.Value:D}";
-            }
-
-            // Wave 6c (item 35): date-only range filter.
-            if (fromDate.HasValue)
-            {
-                url += $"&fromDate={fromDate.Value:yyyy-MM-dd}";
-            }
-
-            if (toDate.HasValue)
-            {
-                url += $"&toDate={toDate.Value:yyyy-MM-dd}";
-            }
-
-            // Item 163: cash-collection filter.
-            if (cashCollected.HasValue)
-            {
-                url += $"&cashCollected={cashCollected.Value.ToString().ToLowerInvariant()}";
-            }
-
-            // Item 130 (đúng): only VIP customers' orders.
-            if (vipOnly)
-            {
-                url += "&vipOnly=true";
+                url += "&" + part;
             }
 
             return await GetAsync<Orders.Models.PagedResult<OrderModel>>(url);
@@ -115,6 +82,32 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             Guid? shipperId = null, DateTime? fromDate = null, DateTime? toDate = null,
             bool? cashCollected = null, bool vipOnly = false)
         {
+            // Dùng chung với GetOrdersAsync: export phải khớp đúng bộ lọc
+            // đang xem (SH5 từng thiếu cashCollected/vipOnly ở export).
+            var parts = BuildOrderFilterParts(searchTerm, status, shipperId, fromDate, toDate, cashCollected, vipOnly);
+
+            var query = parts.Count == 0 ? "" : "?" + string.Join("&", parts);
+            var baseAddress = _httpClient.BaseAddress?.ToString()?.TrimEnd('/');
+            return $"{baseAddress}/api/admin/orders/export{query}";
+        }
+
+        /// <summary>
+        /// Dựng các tham số query string của bộ lọc danh sách đơn (dùng chung
+        /// cho <see cref="GetOrdersAsync"/> và <see cref="GetExportOrdersUrl"/>
+        /// để export luôn khớp danh sách đang xem).
+        /// </summary>
+        /// <param name="searchTerm">Tìm theo mã đơn / tên / SĐT khách.</param>
+        /// <param name="status">Lọc theo trạng thái đơn.</param>
+        /// <param name="shipperId">Lọc theo shipper được gán.</param>
+        /// <param name="fromDate">Từ ngày (yyyy-MM-dd).</param>
+        /// <param name="toDate">Đến ngày (yyyy-MM-dd).</param>
+        /// <param name="cashCollected">Lọc đơn đã/chưa thu tiền mặt.</param>
+        /// <param name="vipOnly">True = chỉ đơn của khách VIP.</param>
+        /// <returns>Danh sách "key=value" (chưa URL-prefix ?/&amp;).</returns>
+        private static List<string> BuildOrderFilterParts(string searchTerm, string status,
+            Guid? shipperId, DateTime? fromDate, DateTime? toDate,
+            bool? cashCollected, bool vipOnly)
+        {
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
@@ -131,30 +124,46 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
                 parts.Add($"shipperId={shipperId.Value:D}");
             }
 
-            if (fromDate.HasValue)
-            {
-                parts.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
-            }
+            // Wave 6c (item 35): date-only range filter.
+            AddDateRangeParams(parts, fromDate, toDate, "fromDate", "toDate");
 
-            if (toDate.HasValue)
-            {
-                parts.Add($"toDate={toDate.Value:yyyy-MM-dd}");
-            }
-
-            // SH5: export phải khớp danh sách — bổ sung 2 filter bị thiếu.
+            // Item 163: cash-collection filter.
             if (cashCollected.HasValue)
             {
                 parts.Add($"cashCollected={cashCollected.Value.ToString().ToLowerInvariant()}");
             }
 
+            // Item 130 (đúng): only VIP customers' orders.
             if (vipOnly)
             {
                 parts.Add("vipOnly=true");
             }
 
-            var query = parts.Count == 0 ? "" : "?" + string.Join("&", parts);
-            var baseAddress = _httpClient.BaseAddress?.ToString()?.TrimEnd('/');
-            return $"{baseAddress}/api/admin/orders/export{query}";
+            return parts;
+        }
+
+        /// <summary>
+        /// Thêm cặp tham số khoảng ngày (yyyy-MM-dd) vào danh sách query — dùng
+        /// chung cho 4 method xuất/báo cáo trong class này để không viết lặp
+        /// lại khối if from/to.
+        /// </summary>
+        /// <param name="parts">Danh sách tham số đang dựng.</param>
+        /// <param name="from">Từ ngày (null = bỏ qua).</param>
+        /// <param name="to">Đến ngày (null = bỏ qua).</param>
+        /// <param name="fromKey">Tên tham số "from" của endpoint gọi.</param>
+        /// <param name="toKey">Tên tham số "to" của endpoint gọi.</param>
+        private static void AddDateRangeParams(List<string> parts, DateTime? from, DateTime? to,
+            string fromKey = "from", string toKey = "to")
+        {
+            if (from.HasValue)
+            {
+                parts.Add($"{fromKey}={from.Value:yyyy-MM-dd}");
+            }
+
+            if (to.HasValue)
+            {
+                parts.Add($"{toKey}={to.Value:yyyy-MM-dd}");
+            }
         }
 
         /// <summary>
@@ -163,15 +172,7 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         public string GetExportRevenueUrl(DateTime? fromDate = null, DateTime? toDate = null)
         {
             var parts = new List<string>();
-            if (fromDate.HasValue)
-            {
-                parts.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
-            }
-
-            if (toDate.HasValue)
-            {
-                parts.Add($"toDate={toDate.Value:yyyy-MM-dd}");
-            }
+            AddDateRangeParams(parts, fromDate, toDate, "fromDate", "toDate");
 
             var query = parts.Count == 0 ? "" : "?" + string.Join("&", parts);
             var baseAddress = _httpClient.BaseAddress?.ToString()?.TrimEnd('/');
@@ -210,15 +211,7 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         {
             var url = "api/admin/reports/gross-profit";
             var queryParams = new List<string>();
-            if (from.HasValue)
-            {
-                queryParams.Add($"from={from.Value:yyyy-MM-dd}");
-            }
-
-            if (to.HasValue)
-            {
-                queryParams.Add($"to={to.Value:yyyy-MM-dd}");
-            }
+            AddDateRangeParams(queryParams, from, to);
 
             if (queryParams.Count > 0)
             {
@@ -296,14 +289,7 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             var url = "api/orders/cancel-reason-report";
             // Danh sách tham số query string (from/to) để gắn vào URL gọi API.
             var queryParams = new List<string>();
-            if (from.HasValue)
-            {
-                queryParams.Add($"from={from.Value:yyyy-MM-dd}");
-            }
-            if (to.HasValue)
-            {
-                queryParams.Add($"to={to.Value:yyyy-MM-dd}");
-            }
+            AddDateRangeParams(queryParams, from, to);
             if (queryParams.Count > 0)
             {
                 url += "?" + string.Join("&", queryParams);
@@ -405,15 +391,7 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             DateTime? from, DateTime? to)
         {
             var parts = new List<string>();
-            if (from.HasValue)
-            {
-                parts.Add($"from={from.Value:yyyy-MM-dd}");
-            }
-
-            if (to.HasValue)
-            {
-                parts.Add($"to={to.Value:yyyy-MM-dd}");
-            }
+            AddDateRangeParams(parts, from, to);
 
             var url = "api/admin/orders/revenue-summary";
             if (parts.Count > 0)

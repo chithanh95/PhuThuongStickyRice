@@ -103,15 +103,8 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <returns>Khuyến mãi vừa tạo.</returns>
         public virtual async Task<PromotionDto> CreateAsync(CreatePromotionDto input)
         {
-            var promotion = new Promotion
-            {
-                Name = input.Name.Trim(),
-                DiscountPercent = input.DiscountPercent,
-                StartTime = ParseTime(input.StartTime),
-                EndTime = ParseTime(input.EndTime),
-                DaysOfWeekFlags = input.DaysOfWeekFlags,
-                IsActive = input.IsActive
-            };
+            var promotion = new Promotion();
+            ApplyInput(promotion, input);
             await _promotions.InsertAsync(promotion, autoSave: true);
             _catalogCache.Invalidate();
             return Map(promotion);
@@ -127,12 +120,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         public virtual async Task<PromotionDto> UpdateAsync(Guid id, CreatePromotionDto input)
         {
             var promotion = await _promotions.GetAsync(id);
-            promotion.Name = input.Name.Trim();
-            promotion.DiscountPercent = input.DiscountPercent;
-            promotion.StartTime = ParseTime(input.StartTime);
-            promotion.EndTime = ParseTime(input.EndTime);
-            promotion.DaysOfWeekFlags = input.DaysOfWeekFlags;
-            promotion.IsActive = input.IsActive;
+            ApplyInput(promotion, input);
             await _promotions.UpdateAsync(promotion, autoSave: true);
             _catalogCache.Invalidate();
             return Map(promotion);
@@ -240,6 +228,23 @@ namespace PhuThuongStickyRice.Application.Discounts
             // Khung giờ qua đêm (vd 22:00–02:00): giờ nằm sau mốc bắt đầu
             // HOẶC trước mốc kết thúc (tức là rạng sáng hôm sau).
             return time >= p.StartTime || time < p.EndTime;
+        }
+
+        /// <summary>
+        /// Ánh xạ input DTO lên entity khuyến mãi — dùng chung cho
+        /// <c>CreateAsync</c> (entity mới) và <c>UpdateAsync</c> (entity đã
+        /// load) để 2 nhánh không viết lặp lại cùng 1 khối gán 6 field.
+        /// </summary>
+        /// <param name="promotion">Entity nhận giá trị (mới hoặc đã có).</param>
+        /// <param name="input">Input từ form admin.</param>
+        private static void ApplyInput(Promotion promotion, CreatePromotionDto input)
+        {
+            promotion.Name = input.Name.Trim();
+            promotion.DiscountPercent = input.DiscountPercent;
+            promotion.StartTime = ParseTime(input.StartTime);
+            promotion.EndTime = ParseTime(input.EndTime);
+            promotion.DaysOfWeekFlags = input.DaysOfWeekFlags;
+            promotion.IsActive = input.IsActive;
         }
 
         /// <summary>Map entity Promotion → DTO (định dạng giờ về chuỗi "HH:mm" cho API/admin).</summary>

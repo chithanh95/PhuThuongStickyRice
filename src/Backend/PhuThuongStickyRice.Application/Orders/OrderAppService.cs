@@ -2764,37 +2764,11 @@ namespace PhuThuongStickyRice.Application.Orders
             var cancelledThisRun = new List<Order>();
             foreach (var order in expired)
             {
-                // bug-hunt 2026-10-20 (HIGH): guard nguyên tử PHẢI chạy TRƯỚC
-                // khi mutate entity đang được EF track. order.Cancel() +
-                // SetCancelReason() đặt entity ở trạng thái Modified ngay cả
-                // khi guard thua (continue) — UoW commit cuối method vẫn flush
-                // Status=Cancelled lên đơn đã thua race (vd khách vừa bấm "Tôi
-                // đã chuyển khoản"), khiến đơn đã trả tiền bị đánh dấu hủy mà
-                // không chạy hoàn điểm/hoàn ví/audit.
-                // bug-hunt 2026-10-19: guard nguyên tử cả PaymentStatus —
-                // khách có thể bấm "Tôi đã chuyển khoản" (PaymentStatus chuyển
-                // Unpaid -> PendingConfirmation) GIỮA lúc worker load danh sách
-                // và chạy UPDATE này. WHERE ... AND PaymentStatus = Unpaid
-                // khiến worker thua trong trường hợp đó và bỏ qua đơn
-                // (khai báo của khách được giữ).
-                if (!await _orders.TryTransitionStatusAsync(
-                    order.Id, OrderStatus.Pending, OrderStatus.Cancelled,
-                    expectedPaymentStatus: PaymentStatus.Unpaid))
+                var cancelled = await TryCancelExpiredOrderAsync(order);
+                if (cancelled != null)
                 {
-                    continue;
+                    cancelledThisRun.Add(cancelled);
                 }
-                // Chỉ mutate khi đã thắng guard: entity trong memory vẫn ở
-                // Pending (ExecuteUpdateAsync không chạm tracker) nên
-                // Cancel() không ném DomainException ở đây.
-                order.Cancel();
-                // Item 233: đơn hệ thống tự hủy cũng ghi lý do để báo cáo đầy đủ.
-                order.SetCancelReason(OrderCancelReasons.SystemExpiredPayment);
-                await _orders.UpdateAsync(order);
-                // Perf: gom lịch sử trạng thái vào 1 commit cuối UoW thay vì
-                // SaveChanges riêng cho mỗi đơn.
-                // Wave 6c (item 34): audit the worker cancel ("hệ thống").
-                await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled, autoSave: false);
-                cancelledThisRun.Add(order);
             }
 
             // perf-hunt 2026-10-19: hoàn điểm đổi theo batch (1 SELECT accounts
@@ -2820,6 +2794,53 @@ namespace PhuThuongStickyRice.Application.Orders
                 cancelledThisRun.Select(x => x.SpinPrizeCode));
 
             return cancelledThisRun.Count;
+        }
+
+        /// <summary>
+        /// Hủy 1 đơn chuyển khoản quá hạn (gọi từ
+        /// <see cref="AutoCancelExpiredBankTransfersAsync"/>). Trả về order đã
+        /// hủy để caller gom vào batch hoàn điểm/hoàn mã, hoặc null khi đơn
+        /// đã bị thao tác khác xử lý (không chạy side-effect).
+        /// </summary>
+        /// <param name="order">Đơn hết hạn cần hủy.</param>
+        /// <returns>Order đã hủy thành công, hoặc null khi guard thua.</returns>
+        private async Task<Order> TryCancelExpiredOrderAsync(Order order)
+        {
+            // bug-hunt 2026-10-19: chỉ những đơn worker thắng được UPDATE
+            // nguyên tử mới vào danh sách hoàn điểm/audit — đơn bị khách/
+            // staff hủy tay giữa chừng (luồng kia đã hoàn điểm, ghi audit)
+            // thì bỏ qua để không hoàn điểm 2 lần.
+            // bug-hunt 2026-10-20 (HIGH): guard nguyên tử PHẢI chạy TRƯỚC
+            // khi mutate entity đang được EF track. order.Cancel() +
+            // SetCancelReason() đặt entity ở trạng thái Modified ngay cả
+            // khi guard thua — UoW commit cuối method vẫn flush
+            // Status=Cancelled lên đơn đã thua race (vd khách vừa bấm "Tôi
+            // đã chuyển khoản"), khiến đơn đã trả tiền bị đánh dấu hủy mà
+            // không chạy hoàn điểm/hoàn ví/audit.
+            // bug-hunt 2026-10-19: guard nguyên tử cả PaymentStatus —
+            // khách có thể bấm "Tôi đã chuyển khoản" (PaymentStatus chuyển
+            // Unpaid -> PendingConfirmation) GIỮA lúc worker load danh sách
+            // và chạy UPDATE này. WHERE ... AND PaymentStatus = Unpaid
+            // khiến worker thua trong trường hợp đó và bỏ qua đơn
+            // (khai báo của khách được giữ).
+            if (!await _orders.TryTransitionStatusAsync(
+                order.Id, OrderStatus.Pending, OrderStatus.Cancelled,
+                expectedPaymentStatus: PaymentStatus.Unpaid))
+            {
+                return null;
+            }
+            // Chỉ mutate khi đã thắng guard: entity trong memory vẫn ở
+            // Pending (ExecuteUpdateAsync không chạm tracker) nên
+            // Cancel() không ném DomainException ở đây.
+            order.Cancel();
+            // Item 233: đơn hệ thống tự hủy cũng ghi lý do để báo cáo đầy đủ.
+            order.SetCancelReason(OrderCancelReasons.SystemExpiredPayment);
+            await _orders.UpdateAsync(order);
+            // Perf: gom lịch sử trạng thái vào 1 commit cuối UoW thay vì
+            // SaveChanges riêng cho mỗi đơn.
+            // Wave 6c (item 34): audit the worker cancel ("hệ thống").
+            await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled, autoSave: false);
+            return order;
         }
 
         /// <summary>

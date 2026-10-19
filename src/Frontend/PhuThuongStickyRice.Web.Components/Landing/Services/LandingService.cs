@@ -356,23 +356,14 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
 
             if (!response.IsSuccessStatusCode)
             {
-                var message = "Tải ảnh lên thất bại.";
-                try
-                {
-                    using var doc = JsonDocument.Parse(body);
-                    if (doc.RootElement.TryGetProperty("message", out var msg))
-                    {
-                        message = msg.GetString() ?? message;
-                    }
-                }
-                catch (JsonException)
-                {
-                    // Cố ý bỏ qua: body lỗi không phải JSON thì giữ message mặc
-                    // định bên trên — lỗi gốc không quan trọng vì ngay sau đó
-                    // vẫn throw InvalidOperationException cho người gọi xử lý.
-                }
-
-                throw new InvalidOperationException(message);
+                // Helper ở ApiClientBase: trích property "message" trong body
+                // lỗi JSON; body không phải JSON hoặc không có message thì
+                // giữ message mặc định (dùng chung với AdminCommerceService).
+                var serverMessage = ParseServerErrorMessage(body);
+                throw new InvalidOperationException(
+                    string.IsNullOrWhiteSpace(serverMessage)
+                        ? "Tải ảnh lên thất bại."
+                        : serverMessage);
             }
 
             using var result = JsonDocument.Parse(body);

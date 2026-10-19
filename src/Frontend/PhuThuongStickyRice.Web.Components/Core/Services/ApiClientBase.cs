@@ -182,5 +182,41 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             HandleNotFound(response);
             response.EnsureSuccessStatusCode();
         }
+
+        /// <summary>
+        /// Trích message lỗi tiếng Việt từ body response lỗi dạng JSON
+        /// (property "message"). Dùng chung cho các service upload multipart
+        /// không qua <c>EnsureSuccessStatusCode</c> (LandingService,
+        /// AdminCommerceService) để không viết lặp lại khối parse.
+        /// </summary>
+        /// <param name="body">Body text của response lỗi.</param>
+        /// <returns>
+        /// Giá trị property "message" khi parse được, ngược lại null — caller
+        /// dùng message mặc định của mình.
+        /// </returns>
+        protected static string ParseServerErrorMessage(string body)
+        {
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return null;
+            }
+
+            try
+            {
+                // JsonDocument giữ buffer bên dưới: dispose ngay sau khi đọc.
+                using var doc = System.Text.Json.JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("message", out var msg))
+                {
+                    return msg.GetString();
+                }
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // Cố ý bỏ qua: body lỗi không phải JSON thì caller giữ
+                // message mặc định của nó.
+            }
+
+            return null;
+        }
     }
 }
