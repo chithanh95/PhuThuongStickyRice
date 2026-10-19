@@ -1036,3 +1036,18 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 03:50 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 04:35 (job uiux-team-2days) — Agent2 Dark mode =====
+   FIX 5 — Nút "Xóa" địa chỉ đã lưu (.btn-link.text-danger, TrackOrder.razor:241):
+   #dc3545 trên card tối chỉ 3.24:1 (dưới chuẩn 4.5:1) — nút xóa (hành động
+   nguy hiểm) phải nhìn rõ. Sáng lên #ff8a8a (6.45:1) theo đúng convention
+   text-danger dark của admin (admin-lexa.css), hover #ffb3b3; vẫn giữ màu đỏ
+   để không mất ngữ nghĩa cảnh báo.
+   (Verify: grep toàn bộ css — chưa có rule html.dark .text-danger nào cho shop.) */
+html.dark .btn-link.text-danger {
+    color: #ff8a8a; /* was #dc3545 — 3.24:1 → 6.45:1 trên card tối */
+}
+html.dark .btn-link.text-danger:hover {
+    color: #ffb3b3;
+}
+/* ===== END UIUX run 04:35 - Agent2 FIX 5 ===== */

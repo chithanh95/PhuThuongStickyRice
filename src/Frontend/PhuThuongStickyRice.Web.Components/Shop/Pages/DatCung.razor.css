@@ -99,3 +99,18 @@
     }
 }
 /* ===== END UIUX run 03:10 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 04:35 (job uiux-team-2days) — Agent2 Dark mode =====
+   FIX 3 — Radio "Dịp cúng"/"Loại mâm" + checkbox "🔔 Nhắc tôi mỗi tháng"
+   (.form-check-input): Bootstrap để nền trắng viền xám nhạt — trên nền tối
+   thành ô trắng xóa, chói và lạc tông. Chưa có rule dark nào cho shop
+   (chỉ .lx-admin có ở admin-lexa.css). Fix theo convention dark của form
+   shop: nền #1e1e36 (= .form-control dark ở app.css), viền #6b6b8c đủ nhìn.
+   Trạng thái :checked (nền #007bff + tick trắng của Bootstrap) giữ nguyên —
+   đọc tốt trên nền tối.
+   (Verify: DatCung.razor:60-113 — 4 radio + 1 checkbox dùng .form-check-input.) */
+html.dark .form-check-input {
+    background-color: #1e1e36; /* was #fff */
+    border-color: #6b6b8c; /* was rgba(0,0,0,.25) */
+}
+/* ===== END UIUX run 04:35 - Agent2 FIX 3 ===== */

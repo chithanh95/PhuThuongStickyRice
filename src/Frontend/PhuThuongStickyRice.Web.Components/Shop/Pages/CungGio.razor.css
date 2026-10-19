@@ -73,3 +73,14 @@
         font-size: 1.05rem;
     }
 }
+
+/* ===== UIUX run 04:35 (job uiux-team-2days) — Agent2 Dark mode =====
+   FIX 4 — Radio "🥬 Mâm chay" / "🍗 Mâm mặn" (.form-check-input): nền trắng
+   chói trên nền tối (cùng lỗi FIX 3 ở /dat-cung). Nền #1e1e36 + viền
+   #6b6b8c theo convention dark form shop; :checked giữ nguyên.
+   (Verify: CungGio.razor:82-87 — 2 radio dùng .form-check-input.) */
+html.dark .form-check-input {
+    background-color: #1e1e36; /* was #fff */
+    border-color: #6b6b8c; /* was rgba(0,0,0,.25) */
+}
+/* ===== END UIUX run 04:35 - Agent2 FIX 4 ===== */
