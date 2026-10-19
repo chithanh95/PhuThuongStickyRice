@@ -66,10 +66,12 @@ namespace PhuThuongStickyRice.Persistence
             // Dispatcher/CrudService paths.
             context.Services.AddScoped(typeof(IUnitOfWork), sp => sp.GetRequiredService<StickyRiceDbContext>());
             context.Services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
-            context.Services.AddScoped(typeof(IAuditLogEntryRepository), typeof(AuditLogEntryRepository));
-            context.Services.AddScoped(typeof(IEmailMessageRepository), typeof(EmailMessageRepository));
-            context.Services.AddScoped(typeof(IUserRepository), typeof(UserRepository));
-            context.Services.AddScoped(typeof(IRoleRepository), typeof(RoleRepository));
+            // CA2263: overload generic an toàn kiểu lúc compile (xem chú thích ở
+            // PersistenceExtensions.AddRepositories) — dòng open-generic giữ nguyên.
+            context.Services.AddScoped<IAuditLogEntryRepository, AuditLogEntryRepository>();
+            context.Services.AddScoped<IEmailMessageRepository, EmailMessageRepository>();
+            context.Services.AddScoped<IUserRepository, UserRepository>();
+            context.Services.AddScoped<IRoleRepository, RoleRepository>();
 
             context.Services.AddScoped<IDistributedLockProvider, SqlServerDistributedLockProvider>();
             context.Services.AddScoped<ICircuitBreakerStore, CircuitBreakerStore>();

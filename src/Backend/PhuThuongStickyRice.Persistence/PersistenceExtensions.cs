@@ -53,11 +53,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static IServiceCollection AddRepositories(this IServiceCollection services)
         {
+            // CA2263: dùng overload generic AddScoped<TService, TImplementation> (an toàn
+            // kiểu lúc compile, không reflection runtime). Dòng IRepository<,> giữ
+            // nguyên typeof vì open-generic không biểu diễn được qua generic.
             services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>))
-                    .AddScoped(typeof(IAuditLogEntryRepository), typeof(AuditLogEntryRepository))
-                    .AddScoped(typeof(IEmailMessageRepository), typeof(EmailMessageRepository))
-                    .AddScoped(typeof(IUserRepository), typeof(UserRepository))
-                    .AddScoped(typeof(IRoleRepository), typeof(RoleRepository));
+                    .AddScoped<IAuditLogEntryRepository, AuditLogEntryRepository>()
+                    .AddScoped<IEmailMessageRepository, EmailMessageRepository>()
+                    .AddScoped<IUserRepository, UserRepository>()
+                    .AddScoped<IRoleRepository, RoleRepository>();
 
             services.AddScoped(typeof(IUnitOfWork), services =>
             {

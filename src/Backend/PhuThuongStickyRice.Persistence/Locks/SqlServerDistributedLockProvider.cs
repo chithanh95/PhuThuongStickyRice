@@ -59,14 +59,15 @@ namespace PhuThuongStickyRice.Persistence.Locks
             and EntityName = @EntityName 
             and (OwnerId is NULL or ExpiredDateTime < @AcquiredDateTime)";
 
-            var rs = _dbContext.Database.ExecuteSqlRaw(sql,
+            // Số dòng bị ảnh hưởng bởi câu UPDATE — > 0 nghĩa là chiếm lock thành công.
+            var rowsAffected = _dbContext.Database.ExecuteSqlRaw(sql,
                   new SqlParameter("EntityName", entityName),
                   new SqlParameter("EntityId", entityId),
                   new SqlParameter("OwnerId", ownerId),
                   new SqlParameter("AcquiredDateTime", SqlDbType.DateTimeOffset) { Value = now },
                   new SqlParameter("ExpiredDateTime", SqlDbType.DateTimeOffset) { Value = expired });
 
-            return rs > 0;
+            return rowsAffected > 0;
         }
 
         public bool ExtendLock(string entityName, string entityId, string ownerId, TimeSpan expiration)
@@ -80,13 +81,14 @@ namespace PhuThuongStickyRice.Persistence.Locks
             and EntityName = @EntityName 
             and OwnerId = @OwnerId";
 
-            var rs = _dbContext.Database.ExecuteSqlRaw(sql,
+            // Số dòng bị ảnh hưởng bởi câu UPDATE — > 0 nghĩa là gia hạn lock thành công.
+            var rowsAffected = _dbContext.Database.ExecuteSqlRaw(sql,
                   new SqlParameter("EntityName", entityName),
                   new SqlParameter("EntityId", entityId),
                   new SqlParameter("OwnerId", ownerId),
                   new SqlParameter("ExpiredDateTime", SqlDbType.DateTimeOffset) { Value = expired });
 
-            return rs > 0;
+            return rowsAffected > 0;
         }
 
         public bool ReleaseLock(string entityName, string entityId, string ownerId)

@@ -66,6 +66,11 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IDiscountAppService _discounts;
 
+        // [codequality-smell 2026-10-19] Magic number: mặc định của loại
+        // thưởng DiscountCode — đặt hằng số có tên để thay đổi 1 chỗ.
+        private const decimal DefaultRewardDiscountPercent = 5;
+        private const int RewardVoucherValidDays = 30;
+
         public RewardRuleAppService(
             IRepository<OrderRewardRule, Guid> rules,
             IAsyncQueryableExecuter asyncExecuter,
@@ -160,12 +165,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
                     case OrderRewardType.DiscountCode:
                         // Mặc định 5% nếu rule không đặt — mã dùng 1 lần, gắn đúng SĐT khách
                         // và có hạn 30 ngày, để khách quay lại mua lần sau.
-                        var percent = rule.DiscountPercent ?? 5;
+                        var percent = rule.DiscountPercent ?? DefaultRewardDiscountPercent;
                         var code = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
                         {
                             Prefix = "THUONG",
                             DiscountPercent = percent,
-                            ExpiresAt = DateTime.UtcNow.AddDays(30),
+                            ExpiresAt = DateTime.UtcNow.AddDays(RewardVoucherValidDays),
                             OwnerPhone = NormalizePhone(order.CustomerPhone)
                         });
                         order.AddRewardNote(

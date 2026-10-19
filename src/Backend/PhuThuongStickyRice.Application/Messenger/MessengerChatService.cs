@@ -90,6 +90,9 @@ namespace PhuThuongStickyRice.Application.Messenger
         // Sending limits & catalog fetch sizes (keep these named, not inline).
         private const int MenuMaxItems = 20;
         private const int ParseOrderMaxItems = 100;
+        // [codequality-smell 2026-10-19] Magic number: độ dài tên khách tối đa
+        // khi cắt ngắn tin nhắn chat trước khi tạo đơn (khớp độ dài cột DB).
+        private const int MaxCustomerNameLength = 200;
         // CA1861: mảng phân tách dùng lặp đi lặp lại — để static readonly
         // thay vì new[] mỗi lần gọi (Split không mutate mảng).
         private static readonly char[] OrderPartSeparators = { ',', ';', '+' };
@@ -394,7 +397,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         {
             return new CreateOrderDto
             {
-                CustomerName = name.Length > 200 ? name.Substring(0, 200) : name,
+                CustomerName = name.Length > MaxCustomerNameLength ? name.Substring(0, MaxCustomerNameLength) : name,
                 CustomerPhone = phone,
                 CustomerAddress = fulfillment == "CustomerPickup" ? "Khách tự đến quán lấy" : "Shipper đến quán lấy",
                 Notes = $"Đặt qua Messenger chat (PSID {session.Psid ?? "?"})",

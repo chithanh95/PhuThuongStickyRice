@@ -801,7 +801,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 }
             }
 
-            return "PT-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
+            return "PT-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
         }
 
         /// <summary>

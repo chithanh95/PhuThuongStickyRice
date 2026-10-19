@@ -1,4 +1,5 @@
-﻿using PhuThuongStickyRice.Domain.Entities;
+﻿using PhuThuongStickyRice.CrossCuttingConcerns.Locks;
+using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using PhuThuongStickyRice.Persistence.Locks;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
@@ -144,7 +145,10 @@ namespace PhuThuongStickyRice.Persistence
             var lockScope = sqlLock.Acquire(lockName);
             if (lockScope == null)
             {
-                throw new Exception($"Could not acquire lock: {lockName}");
+                // CA2201: ném exception chuyên dụng thay vì Exception chung chung —
+                // nhất quán với SqlServerDistributedLockProvider dùng
+                // CouldNotAcquireLockException cho cùng tình huống.
+                throw new CouldNotAcquireLockException($"Could not acquire lock: {lockName}");
             }
 
             return _dbContextTransaction;

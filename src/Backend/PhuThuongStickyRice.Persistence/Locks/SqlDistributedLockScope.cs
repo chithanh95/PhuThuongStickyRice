@@ -28,19 +28,22 @@ namespace PhuThuongStickyRice.Persistence.Locks
 
         public void Dispose()
         {
-            if (HasTransaction)
+            if (!HasTransaction)
             {
-                return;
+                SqlParameter returnValue;
+                // SqlCommand giữ handle phía server — dispose ngay sau khi dùng xong.
+                using var releaseCommand = CreateReleaseCommand(_lockName, false, out returnValue);
+                releaseCommand.ExecuteNonQuery();
+
+                // ParseReturnCode ném InvalidOperationException nếu release thất bại;
+                // khối if trống trước đây không làm gì với giá trị true trả về nên
+                // bỏ để code gọn — behavior giữ nguyên (vẫn ném khi lỗi).
+                ParseReturnCode((int)returnValue.Value);
             }
 
-            SqlParameter returnValue;
-            // SqlCommand giữ handle phía server — dispose ngay sau khi dùng xong.
-            using var releaseCommand = CreateReleaseCommand(_lockName, false, out returnValue);
-            releaseCommand.ExecuteNonQuery();
-
-            if (ParseReturnCode((int)returnValue.Value))
-            {
-            }
+            // CA1816: gọi SuppressFinalize để derived class có finalizer sau này
+            // không phải re-implement IDisposable.
+            GC.SuppressFinalize(this);
         }
 
         public bool StillHoldingLock()

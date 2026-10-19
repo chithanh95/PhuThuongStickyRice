@@ -290,6 +290,11 @@ namespace PhuThuongStickyRice.Application.Common
         // CA1861: mảng separator dùng lại thay vì cấp phát new[] mỗi lần gọi NormalizeEvents.
         private static readonly char[] EventSeparators = { ',', ';' };
 
+        // [codequality-smell 2026-10-19] Magic number: số dòng lịch sử webhook
+        // mặc định và tối đa khi admin xem — đặt hằng số có tên để thay đổi 1 chỗ.
+        private const int DefaultDeliveryHistoryRows = 50;
+        private const int MaxDeliveryHistoryRows = 200;
+
         /// <summary>
         /// Khởi tạo AppService quản trị webhook (Admin): CRUD endpoint, xem
         /// lịch sử gửi và kích hoạt dispatch sự kiện.
@@ -391,7 +396,7 @@ namespace PhuThuongStickyRice.Application.Common
 
             var deliveries = await _asyncExecuter.ToListAsync(
                 queryable.OrderByDescending(x => x.At).Take(
-                    maxCount < 1 ? 50 : Math.Min(maxCount, 200)));
+                    maxCount < 1 ? DefaultDeliveryHistoryRows : Math.Min(maxCount, MaxDeliveryHistoryRows)));
 
             return deliveries.Select(x => new WebhookDeliveryDto
             {

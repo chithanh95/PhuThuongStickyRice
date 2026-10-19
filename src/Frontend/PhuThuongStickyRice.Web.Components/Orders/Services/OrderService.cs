@@ -291,18 +291,19 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             DateTime? from, DateTime? to)
         {
             var url = "api/orders/cancel-reason-report";
-            var q = new List<string>();
+            // Danh sách tham số query string (from/to) để gắn vào URL gọi API.
+            var queryParams = new List<string>();
             if (from.HasValue)
             {
-                q.Add($"from={from.Value:yyyy-MM-dd}");
+                queryParams.Add($"from={from.Value:yyyy-MM-dd}");
             }
             if (to.HasValue)
             {
-                q.Add($"to={to.Value:yyyy-MM-dd}");
+                queryParams.Add($"to={to.Value:yyyy-MM-dd}");
             }
-            if (q.Count > 0)
+            if (queryParams.Count > 0)
             {
-                url += "?" + string.Join("&", q);
+                url += "?" + string.Join("&", queryParams);
             }
             return await GetAsync<List<CancelReasonReportModel>>(url);
         }

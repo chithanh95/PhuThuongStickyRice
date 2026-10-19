@@ -118,7 +118,10 @@ namespace PhuThuongStickyRice.Persistence.Locks
                 case -2:
                     throw new OperationCanceledException("The lock request was canceled.");
                 case -3:
-                    throw new Exception("The lock request was chosen as a deadlock victim.");
+                    // CA2201: không ném Exception chung chung — dùng exception chuyên
+                    // dụng của tính năng lock để caller phân biệt được với lỗi khác
+                    // (nhất quán với SqlServerDistributedLockProvider).
+                    throw new CouldNotAcquireLockException("The lock request was chosen as a deadlock victim.");
                 case -999:
                     throw new ArgumentException("parameter validation or other error");
                 case AlreadyHeldReturnCode:
@@ -135,10 +138,14 @@ namespace PhuThuongStickyRice.Persistence.Locks
 
         public void Dispose()
         {
+            // CA1816: gọi SuppressFinalize để derived class có finalizer sau này
+            // không phải re-implement IDisposable.
             if (!string.IsNullOrEmpty(_connectionString))
             {
                 _connection.Dispose();
             }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

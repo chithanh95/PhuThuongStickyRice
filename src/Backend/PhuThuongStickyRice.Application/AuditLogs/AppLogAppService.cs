@@ -25,6 +25,11 @@ namespace PhuThuongStickyRice.Application.AuditLogs
             private readonly IRepository<AppLog, Guid> _logs;
             private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+            // [codequality-smell 2026-10-19] Magic number: kích thước trang log
+            // mặc định và tối đa — đặt hằng số có tên để thay đổi 1 chỗ.
+            private const int DefaultPageSize = 50;
+            private const int MaxPageSize = 200;
+
             public AppLogAppService(
                 IRepository<AppLog, Guid> logs,
                 IAsyncQueryableExecuter asyncExecuter)
@@ -37,7 +42,7 @@ namespace PhuThuongStickyRice.Application.AuditLogs
             public virtual async Task<PagedResultDto<AppLogDto>> GetListAsync(GetAppLogsInput input)
             {
                 var queryable = await _logs.GetQueryableAsync();
-                System.Linq.IQueryable<AppLog> query = queryable.OrderByDescending(x => x.At);
+                IQueryable<AppLog> query = queryable.OrderByDescending(x => x.At);
 
                 if (!string.IsNullOrWhiteSpace(input.Level))
                 {
@@ -54,7 +59,7 @@ namespace PhuThuongStickyRice.Application.AuditLogs
                 var total = await _asyncExecuter.LongCountAsync(query);
                 var items = await _asyncExecuter.ToListAsync(
                     query.Skip(Math.Max(0, input.SkipCount)).Take(
-                        input.MaxResultCount < 1 ? 50 : Math.Min(input.MaxResultCount, 200)));
+                        input.MaxResultCount < 1 ? DefaultPageSize : Math.Min(input.MaxResultCount, MaxPageSize)));
 
                 return new PagedResultDto<AppLogDto>(total, items.Select(x => new AppLogDto
                 {

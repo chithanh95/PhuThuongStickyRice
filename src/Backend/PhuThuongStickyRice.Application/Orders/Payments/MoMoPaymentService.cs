@@ -210,10 +210,10 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             // string rồi parse lại — ít allocation, không chặn thread I/O.
             using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
             var root = doc.RootElement;
-            var resultCode = root.TryGetProperty("resultCode", out var rc) ? rc.GetInt32() : -1;
+            var resultCode = root.TryGetProperty("resultCode", out var resultCodeElement) ? resultCodeElement.GetInt32() : -1;
             if (resultCode != 0)
             {
-                var message = root.TryGetProperty("message", out var m) ? m.GetString() : "MoMo error";
+                var message = root.TryGetProperty("message", out var messageElement) ? messageElement.GetString() : "MoMo error";
                 throw new DomainException($"MoMo create payment failed: {message}");
             }
 
