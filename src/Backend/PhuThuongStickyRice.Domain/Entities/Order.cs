@@ -904,7 +904,9 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         /// <summary>
         /// Payment confirmed — by the admin (bank transfer) or by the MoMo callback.
-        /// Allowed from Unpaid (MoMo, COD collected) or PendingConfirmation (bank transfer).
+        /// Allowed from Unpaid (MoMo, COD collected), PendingConfirmation (bank
+        /// transfer) or Failed (lần thanh toán trước thất bại, khách thanh toán
+        /// lại thành công — IPN resultCode=0 sau khi đã có callback thất bại).
         /// </summary>
         public void ConfirmPayment()
         {
@@ -913,7 +915,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("Payment is already confirmed.");
             }
 
-            if (PaymentStatus != PaymentStatus.Unpaid && PaymentStatus != PaymentStatus.PendingConfirmation)
+            if (PaymentStatus != PaymentStatus.Unpaid
+                && PaymentStatus != PaymentStatus.PendingConfirmation
+                && PaymentStatus != PaymentStatus.Failed)
             {
                 throw new DomainException($"Cannot confirm payment. Current payment status: '{PaymentStatus}'.");
             }

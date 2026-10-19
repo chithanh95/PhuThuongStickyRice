@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Shop.DTOs;
 using PhuThuongStickyRice.Application.Subscriptions.DTOs;
@@ -89,7 +90,10 @@ namespace PhuThuongStickyRice.Application.Subscriptions
                 await ResolveSnapshotAsync(dto.ProductId, dto.SizeOptionId, dto.ToppingIds);
 
             var start = dto.StartDate.Date;
-            if (start < DateTime.UtcNow.Date)
+            // So sánh với ngày hôm nay theo giờ Việt Nam (UTC+7), không phải
+            // UTC: từ 00:00 đến 06:59 giờ VN, UtcNow.Date vẫn là ngày hôm qua
+            // nên gói đăng ký cho "hôm nay" bị từ chối sai là "trong quá khứ".
+            if (start < VietnamTime.Today())
             {
                 throw new Domain.Exceptions.DomainException("Ngày bắt đầu không thể trong quá khứ.");
             }
@@ -160,7 +164,9 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         /// <returns>Số đơn đã sinh thành công.</returns>
         public virtual async Task<int> CreateDueOrdersAsync()
         {
-            var today = DateTime.UtcNow.Date;
+            // Worker chạy buổi sáng theo giờ VN — dùng ngày VN để không bỏ
+            // sót gói bắt đầu "hôm nay" trong khung 00:00-06:59 giờ VN.
+            var today = VietnamTime.Today();
             var settings = await _shopSettings.GetAsync();
 
             var queryable = await _subscriptions.GetQueryableAsync();

@@ -2,6 +2,7 @@ using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Permissions;
 using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
+using PhuThuongStickyRice.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
@@ -125,14 +126,14 @@ namespace PhuThuongStickyRice.Application.Discounts
     /// </summary>
     public class DiscountAppService : ApplicationService, IDiscountAppService
     {
-        private readonly IRepository<DiscountCode, Guid> _discounts;
+        private readonly IDiscountCodeRepository _discounts;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
         private readonly Products.IProductCatalogCache _catalogCache;
 
         public DiscountAppService(
-            IRepository<DiscountCode, Guid> discounts,
+            IDiscountCodeRepository discounts,
             IAsyncQueryableExecuter asyncExecuter,
             IPermissionService permissions,
             IStaffActivityLogger activityLogger,
@@ -385,8 +386,16 @@ namespace PhuThuongStickyRice.Application.Discounts
                 return;
             }
 
-            entity.UsedCount += 1;
-            await _discounts.UpdateAsync(entity, autoSave: true);
+            // Tăng lượt dùng nguyên tử, có điều kiện MaxUses ngay trong câu
+            // UPDATE: 2 checkout đồng thời cùng mã 1 lần dùng đều đã qua
+            // validate thì chỉ bên UPDATE trước thành công; bên còn lại ném
+            // lỗi để đơn (chung UoW) rollback thay vì dùng lậu lượt thứ 2.
+            var incremented = await _discounts.TryIncrementUsageAsync(normalized);
+            if (!incremented)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Mã giảm giá vừa được sử dụng hết. Vui lòng thử lại mà không dùng mã này.");
+            }
         }
 
         /// <summary>
