@@ -36,11 +36,21 @@ namespace PhuThuongStickyRice.Application
             _domainEvents = domainEvents;
         }
 
+        /// <summary>
+        /// Lấy toàn bộ entity của aggregate root. Dùng cho các danh sách quản trị
+        /// nhỏ (không phân trang); bảng lớn nên dùng service riêng có phân trang.
+        /// </summary>
         public Task<List<T>> GetAsync(CancellationToken cancellationToken = default)
         {
             return _repository.ToListAsync(_repository.GetAll());
         }
 
+        /// <summary>
+        /// Lấy entity theo Id. Ném ngoại lệ khi Id rỗng (Guid.Empty) để lỗi
+        /// lập trình bị phát hiện ngay thay vì trả về entity null/sai.
+        /// </summary>
+        /// <param name="id">Id của entity cần lấy.</param>
+        /// <param name="cancellationToken">Token hủy thao tác.</param>
         public Task<T> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             ValidationException.Requires(id != Guid.Empty, "Invalid Id");

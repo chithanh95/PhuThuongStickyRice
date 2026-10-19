@@ -47,6 +47,12 @@ namespace PhuThuongStickyRice.Application.Messenger
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Admin: danh sách mẫu tin nhắn (SMS/Zalo) theo kênh; <paramref name="channel"/>
+        /// rỗng/null = lấy tất cả. Sắp xếp theo tên, tối đa 500 mẫu.
+        /// </summary>
+        /// <param name="channel">Kênh lọc: "SMS", "Zalo", hoặc rỗng để lấy tất cả.</param>
+        /// <returns>Danh sách mẫu tin nhắn.</returns>
         public virtual async Task<List<MessageTemplateDto>> GetListAsync(string channel)
         {
             var queryable = await _templates.GetQueryableAsync();
@@ -63,6 +69,12 @@ namespace PhuThuongStickyRice.Application.Messenger
             return list.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: tạo mẫu tin nhắn mới. Nội dung hỗ trợ {placeholder} để hệ thống
+        /// ghép dữ liệu đơn/khách khi gửi SMS/Zalo thực tế.
+        /// </summary>
+        /// <param name="input">Tên, kênh (SMS/Zalo), nội dung mẫu tin.</param>
+        /// <returns>Mẫu tin nhắn vừa tạo.</returns>
         public virtual async Task<MessageTemplateDto> CreateAsync(CreateUpdateMessageTemplateDto input)
         {
             var channel = NormalizeChannel(input.Channel);
@@ -78,6 +90,12 @@ namespace PhuThuongStickyRice.Application.Messenger
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: cập nhật tên/kênh/nội dung mẫu tin nhắn; ghi nhận thời gian sửa.
+        /// </summary>
+        /// <param name="id">Id mẫu tin nhắn cần sửa.</param>
+        /// <param name="input">Thông tin mới của mẫu tin.</param>
+        /// <returns>Mẫu tin nhắn sau khi cập nhật.</returns>
         public virtual async Task<MessageTemplateDto> UpdateAsync(Guid id, CreateUpdateMessageTemplateDto input)
         {
             var entity = await _templates.GetAsync(id);

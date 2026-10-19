@@ -4,6 +4,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Application.Common
 {
+        /// <summary>
+        /// Webhook endpoint đã đăng ký: hệ thống bắn HTTP POST về Url khi sự kiện
+        /// đơn hàng (OrderCreated, OrderStatusChanged...) xảy ra. Secret không bao giờ
+        /// trả về client — chỉ trả cờ HasSecret để admin biết đã cấu hình hay chưa.
+        /// </summary>
         public class WebhookEndpointDto
         {
             public Guid Id { get; set; }
@@ -16,6 +21,10 @@ namespace PhuThuongStickyRice.Application.Common
             public bool IsActive { get; set; }
         }
 
+        /// <summary>
+        /// Dữ liệu tạo/sửa webhook endpoint. Khi sửa, để Secret trống thì giữ
+        /// nguyên secret cũ (không reset), tránh admin vô tình làm mất secret.
+        /// </summary>
         public class CreateUpdateWebhookEndpointDto
         {
             [Required]
@@ -38,6 +47,10 @@ namespace PhuThuongStickyRice.Application.Common
             public bool IsActive { get; set; } = true;
         }
 
+        /// <summary>
+        /// Lịch sử một lần bắn webhook tới endpoint: thời điểm, sự kiện, thành công
+        /// hay không, HTTP status và lỗi (nếu có). Dùng để admin debug tích hợp.
+        /// </summary>
         public class WebhookDeliveryDto
         {
             public Guid Id { get; set; }

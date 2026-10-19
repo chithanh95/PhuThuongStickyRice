@@ -3,6 +3,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Application.Customer
 {
+    /// <summary>
+    /// Địa chỉ giao hàng đã lưu của khách (sổ địa chỉ): nhãn (Nhà/Riêng...), người nhận,
+    /// SĐT, địa chỉ chi tiết, ghi chú giao hàng và cờ địa chỉ mặc định dùng ở checkout.
+    /// </summary>
     public class CustomerAddressDto
     {
         public Guid Id { get; set; }
@@ -20,6 +24,10 @@ namespace PhuThuongStickyRice.Application.Customer
         public bool IsDefault { get; set; }
     }
 
+    /// <summary>
+    /// Dữ liệu thêm địa chỉ mới vào sổ địa chỉ: người nhận, SĐT, địa chỉ chi tiết
+    /// bắt buộc; nhãn và ghi chú tùy chọn.
+    /// </summary>
     public class CreateCustomerAddressDto
     {
         [MaxLength(100)]
@@ -43,6 +51,9 @@ namespace PhuThuongStickyRice.Application.Customer
         public bool IsDefault { get; set; }
     }
 
+    /// <summary>
+    /// Dữ liệu sửa địa chỉ trong sổ địa chỉ (cùng các trường với lúc tạo mới).
+    /// </summary>
     public class UpdateCustomerAddressDto : CreateCustomerAddressDto
     {
     }
