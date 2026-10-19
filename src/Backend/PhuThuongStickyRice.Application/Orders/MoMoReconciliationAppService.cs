@@ -41,6 +41,12 @@ namespace PhuThuongStickyRice.Application.Orders
     [Authorize(Roles = "Admin")]
     public class MoMoReconciliationAppService : ApplicationService, IMoMoReconciliationAppService
     {
+        /// <summary>
+        /// Số dòng tối đa trả về trên màn hình đối soát — đủ để kế toán rà soát
+        /// tay mà không nạp hết lịch sử đối soát vào bộ nhớ.
+        /// </summary>
+        private const int MaxReportRows = 200;
+
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
@@ -76,7 +82,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 query = query.Where(x => x.MoMoMatched == matched.Value);
             }
 
-            var list = await _asyncExecuter.ToListAsync(query.Take(200));
+            var list = await _asyncExecuter.ToListAsync(query.Take(MaxReportRows));
             return list.Select(x => new MoMoOrderDto
             {
                 Id = x.Id,

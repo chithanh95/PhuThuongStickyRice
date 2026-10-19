@@ -299,7 +299,19 @@ namespace PhuThuongStickyRice.Application.Shop
         /// <summary>reCAPTCHA, Telegram, ngân hàng, MoMo, Facebook, Zalo OA, cảnh báo hệ thống.</summary>
         private void ApplyIntegrationSettings(ShopSetting entity, ShopSettingDto dto)
         {
-            entity.UnconfirmedAlertMinutes = dto.UnconfirmedAlertMinutes < 1 ? DefaultUnconfirmedAlertMinutes : dto.UnconfirmedAlertMinutes;
+            ApplySiteIntegrationSettings(entity, dto);
+            ApplyMonitoringSettings(entity, dto);
+            ApplyBankTransferSettings(entity, dto);
+            ApplyMessagingIntegrationSettings(entity, dto);
+            ApplyImageBackupSettings(entity, dto);
+        }
+
+        /// <summary>
+        /// Tích hợp phía website: reCAPTCHA chống bot ở checkout, URL gốc của web
+        /// và chế độ bảo trì. Thứ tự gán giữ nguyên như bản cũ.
+        /// </summary>
+        private void ApplySiteIntegrationSettings(ShopSetting entity, ShopSettingDto dto)
+        {
             entity.RecaptchaSiteKey = TrimOrNull(dto.RecaptchaSiteKey);
             entity.RecaptchaSecretKey = ProtectSecret(dto.RecaptchaSecretKey);
             entity.WebBaseUrl = TrimOrNull(dto.WebBaseUrl)?.TrimEnd('/');
@@ -307,11 +319,25 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.MaintenanceMessage = string.IsNullOrWhiteSpace(dto.MaintenanceMessage)
                 ? DefaultMaintenanceMessage
                 : dto.MaintenanceMessage.Trim();
-            entity.TelegramBotToken = ProtectSecret(dto.TelegramBotToken);
-            entity.TelegramChatId = TrimOrNull(dto.TelegramChatId);
+        }
+
+        /// <summary>
+        /// Cài đặt giám sát vận hành: nhắc đơn chưa xác nhận, cảnh báo sức khỏe
+        /// hệ thống (tỷ lệ lỗi, dung lượng upload). Giá trị &lt; 1 rơi về mặc định.
+        /// </summary>
+        private void ApplyMonitoringSettings(ShopSetting entity, ShopSettingDto dto)
+        {
+            entity.UnconfirmedAlertMinutes = dto.UnconfirmedAlertMinutes < 1 ? DefaultUnconfirmedAlertMinutes : dto.UnconfirmedAlertMinutes;
             entity.HealthAlertsEnabled = dto.HealthAlertsEnabled;
             entity.ErrorRateThreshold = dto.ErrorRateThreshold < 1 ? DefaultErrorRateThreshold : dto.ErrorRateThreshold;
             entity.UploadsSizeWarningMb = dto.UploadsSizeWarningMb < 1 ? DefaultUploadsSizeWarningMb : dto.UploadsSizeWarningMb;
+        }
+
+        /// <summary>
+        /// Thông tin chuyển khoản ngân hàng (hiển thị QR cho khách) và MoMo.
+        /// </summary>
+        private void ApplyBankTransferSettings(ShopSetting entity, ShopSettingDto dto)
+        {
             entity.BankName = TrimOrNull(dto.BankName);
             entity.BankId = TrimOrNull(dto.BankId);
             entity.BankAccountNumber = TrimOrNull(dto.BankAccountNumber);
@@ -319,13 +345,28 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.BankQrTemplate = TrimOrNull(dto.BankQrTemplate);
             entity.MoMoPartnerCode = TrimOrNull(dto.MoMoPartnerCode);
             entity.MoMoEndpoint = TrimOrNull(dto.MoMoEndpoint);
+        }
+
+        /// <summary>
+        /// Kênh nhắn tin: Telegram (báo đơn), Facebook Page và Zalo OA
+        /// (gửi e-receipt, báo cáo tuần). Secret được mã hóa trước khi lưu.
+        /// </summary>
+        private void ApplyMessagingIntegrationSettings(ShopSetting entity, ShopSettingDto dto)
+        {
+            entity.TelegramBotToken = ProtectSecret(dto.TelegramBotToken);
+            entity.TelegramChatId = TrimOrNull(dto.TelegramChatId);
+            entity.FacebookPageAccessToken = ProtectSecret(dto.FacebookPageAccessToken);
+            entity.FacebookVerifyToken = TrimOrNull(dto.FacebookVerifyToken);
+            entity.ZaloOaAccessToken = ProtectSecret(dto.ZaloOaAccessToken);
+        }
+
+        /// <summary>Cấu hình sao lưu ảnh sản phẩm sang nhà cung cấp ngoài.</summary>
+        private void ApplyImageBackupSettings(ShopSetting entity, ShopSettingDto dto)
+        {
             entity.ImageBackupProvider = string.IsNullOrWhiteSpace(dto.ImageBackupProvider)
                 ? DefaultImageBackupProvider
                 : dto.ImageBackupProvider.Trim();
             entity.ImageBackupSettingsJson = TrimOrNull(dto.ImageBackupSettingsJson);
-            entity.FacebookPageAccessToken = ProtectSecret(dto.FacebookPageAccessToken);
-            entity.FacebookVerifyToken = TrimOrNull(dto.FacebookVerifyToken);
-            entity.ZaloOaAccessToken = ProtectSecret(dto.ZaloOaAccessToken);
         }
 
         /// <summary>

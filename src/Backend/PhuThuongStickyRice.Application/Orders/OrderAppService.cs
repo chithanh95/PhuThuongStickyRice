@@ -727,36 +727,56 @@ namespace PhuThuongStickyRice.Application.Orders
         private async Task<OrderLineCatalog> LoadOrderLineCatalogAsync(CreateOrderDto input)
         {
             var productIds = input.Lines.Where(x => !x.IsCombo).Select(x => x.ProductId).Distinct().ToList();
-            var productQueryable = await _products.GetQueryableAsync();
-            var products = await _asyncExecuter.ToListAsync(
-                productQueryable.Where(x => productIds.Contains(x.Id)));
-
             var comboIds = input.Lines.Where(x => x.IsCombo).Select(x => x.ProductId).Distinct().ToList();
-            var comboQueryable = await _combos.GetQueryableAsync();
-            var combos = await _asyncExecuter.ToListAsync(
-                comboQueryable.Where(x => comboIds.Contains(x.Id)));
-
             var sizeOptionIds = input.Lines
                 .Where(x => x.SizeOptionId.HasValue)
                 .Select(x => x.SizeOptionId.Value)
                 .Distinct()
                 .ToList();
-            var sizeQueryable = await _sizeOptions.GetQueryableAsync();
-            var sizeOptions = sizeOptionIds.Count == 0
-                ? new List<ProductSizeOption>()
-                : await _asyncExecuter.ToListAsync(
-                    sizeQueryable.Where(x => sizeOptionIds.Contains(x.Id)));
-
             var toppingIds = input.Lines
                 .SelectMany(x => x.ToppingIds ?? Enumerable.Empty<Guid>())
                 .Distinct()
                 .ToList();
-            var toppingQueryable = await _toppings.GetQueryableAsync();
-            var toppings = toppingIds.Count == 0
-                ? new List<Topping>()
-                : await _asyncExecuter.ToListAsync(
-                    toppingQueryable.Where(x => toppingIds.Contains(x.Id) && x.IsActive));
+
+            var products = await LoadEntitiesByIdsAsync(productIds, () => _products.GetQueryableAsync());
+            var combos = await LoadEntitiesByIdsAsync(comboIds, () => _combos.GetQueryableAsync());
+            var sizeOptions = await LoadEntitiesByIdsAsync(sizeOptionIds, () => _sizeOptions.GetQueryableAsync());
+            // Topping: giữ nguyên filter gốc — chỉ lấy topping còn đang bán.
+            var toppings = await LoadEntitiesByIdsAsync(
+                toppingIds, () => _toppings.GetQueryableAsync(), q => q.Where(x => x.IsActive));
+
             return new OrderLineCatalog(products, combos, sizeOptions, toppings);
+        }
+
+        /// <summary>
+        /// Nạp hàng loạt entity theo danh sách Id (product, combo, size, topping...).
+        /// Ids rỗng thì trả về rỗng ngay, không bắn query "Contains(empty)" vô ích.
+        /// Gộp 4 khối load lặp đi lặp lại trong <see cref="LoadOrderLineCatalogAsync"/>
+        /// về một chỗ để sửa logic nạp catalog không phải sửa 4 nơi.
+        /// </summary>
+        /// <typeparam name="TEntity">Loại entity cần nạp (phải có Id kiểu Guid).</typeparam>
+        /// <param name="ids">Danh sách Id cần nạp (đã distinct ở nơi gọi).</param>
+        /// <param name="getQueryableAsync">Hàm lấy queryable của repository tương ứng.</param>
+        /// <param name="applyExtraFilter">Filter phụ tùy chọn (ví dụ chỉ topping đang bán).</param>
+        /// <returns>Danh sách entity tìm được, rỗng nếu <paramref name="ids"/> rỗng.</returns>
+        private async Task<List<TEntity>> LoadEntitiesByIdsAsync<TEntity>(
+            IReadOnlyList<Guid> ids,
+            Func<Task<IQueryable<TEntity>>> getQueryableAsync,
+            Func<IQueryable<TEntity>, IQueryable<TEntity>> applyExtraFilter = null)
+            where TEntity : class, Volo.Abp.Domain.Entities.IEntity<Guid>
+        {
+            if (ids.Count == 0)
+            {
+                return new List<TEntity>();
+            }
+
+            var queryable = await getQueryableAsync();
+            if (applyExtraFilter != null)
+            {
+                queryable = applyExtraFilter(queryable);
+            }
+
+            return await _asyncExecuter.ToListAsync(queryable.Where(x => ids.Contains(x.Id)));
         }
 
         /// <summary>
@@ -1544,13 +1564,25 @@ namespace PhuThuongStickyRice.Application.Orders
                 PhotoUrl = review.PhotoUrl,
                 AdminReply = review.AdminReply,
                 CreatedAt = review.CreatedAt,
-                Lines = review.Lines?.Select(x => new OrderReviewLineDto
-                {
-                    ProductId = x.ProductId,
-                    ProductName = x.ProductName,
-                    Rating = x.Rating
-                }).ToList() ?? new List<OrderReviewLineDto>()
+                Lines = MapReviewLines(review)
             };
+        }
+
+        /// <summary>
+        /// Map danh sách dòng đánh giá sang DTO — dùng chung cho DTO admin và
+        /// DTO công khai để 2 hàm map không nhân bản cùng một projection
+        /// (sửa 1 chỗ là cả 2 nơi đều đổi).
+        /// </summary>
+        /// <param name="review">Entity đánh giá nguồn.</param>
+        /// <returns>Danh sách DTO dòng đánh giá, rỗng nếu review không có dòng nào.</returns>
+        private static List<OrderReviewLineDto> MapReviewLines(OrderReview review)
+        {
+            return review.Lines?.Select(x => new OrderReviewLineDto
+            {
+                ProductId = x.ProductId,
+                ProductName = x.ProductName,
+                Rating = x.Rating
+            }).ToList() ?? new List<OrderReviewLineDto>();
         }
 
         /// <summary>Server-side phone masking (mirrors landing MaskPhone): "0901234567" → "090***67".</summary>
@@ -1919,6 +1951,36 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException("Vòng quay may mắn hiện đang tắt.");
             }
 
+            var order = await GetSpinEligibleOrderAsync(input);
+
+            var segment = PickSpinSegment();
+            var settings = await _shopSettings.GetAsync();
+            var phone = _loyalty.NormalizePhone(input.CustomerPhone);
+            var expiresAt = DateTime.UtcNow.AddDays(SpinCodeValidityDays);
+
+            var (prizeLabel, code) = await BuildSpinPrizeAsync(segment, expiresAt, phone, settings.DeliveryFee);
+
+            return new SpinResultDto
+            {
+                Segment = segment,
+                PrizeLabel = prizeLabel,
+                Code = code,
+                ExpiresAt = code == null ? (DateTime?)null : expiresAt
+            };
+        }
+
+        /// <summary>
+        /// Validate lượt quay may mắn của một đơn: đơn phải tồn tại và SĐT nhập
+        /// vào phải khớp SĐT trên đơn, chưa từng quay, chưa bị hủy. Đồng thời
+        /// khóa nguyên tử lượt quay tại DB (UPDATE ... WHERE LuckySpinUsed =
+        /// false) để 2 request quay đồng thời chỉ 1 qua được — chống nhận 2
+        /// voucher thật từ 1 lượt quay. Nằm trong cùng UoW nên rollback nếu
+        /// các bước sau lỗi.
+        /// </summary>
+        /// <param name="input">Id đơn và SĐT khách dùng để xác thực lượt quay.</param>
+        /// <returns>Entity đơn đã được khóa lượt quay (đồng bộ trạng thái track).</returns>
+        private async Task<Order> GetSpinEligibleOrderAsync(SpinInput input)
+        {
             var order = await _orders.FindAsync(input.OrderId);
             if (order == null || !PhonesMatch(order.CustomerPhone, input.CustomerPhone))
             {
@@ -1936,29 +1998,13 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException("Đơn hàng đã hủy không được quay thưởng.");
             }
 
-            // Khóa lượt quay nguyên tử tại DB (UPDATE ... WHERE LuckySpinUsed = false):
-            // 2 request quay đồng thời cùng đơn chỉ 1 qua được — chống nhận 2 voucher
-            // thật từ 1 lượt quay. Nằm trong cùng UoW nên rollback nếu các bước sau lỗi.
             if (!await _orders.TryMarkSpinUsedAsync(order.Id))
             {
                 throw new Domain.Exceptions.DomainException("Lượt quay may mắn đã được sử dụng.");
             }
             order.MarkLuckySpinUsed(); // đồng bộ entity đang track; UoW flush cùng giá trị
 
-            var segment = PickSpinSegment();
-            var settings = await _shopSettings.GetAsync();
-            var phone = _loyalty.NormalizePhone(input.CustomerPhone);
-            var expiresAt = DateTime.UtcNow.AddDays(SpinCodeValidityDays);
-
-            var (prizeLabel, code) = await BuildSpinPrizeAsync(segment, expiresAt, phone, settings.DeliveryFee);
-
-            return new SpinResultDto
-            {
-                Segment = segment,
-                PrizeLabel = prizeLabel,
-                Code = code,
-                ExpiresAt = code == null ? (DateTime?)null : expiresAt
-            };
+            return order;
         }
 
         /// <summary>
@@ -2140,12 +2186,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 IsHidden = review.IsHidden,
                 AdminReply = review.AdminReply,
                 CreatedAt = review.CreatedAt,
-                Lines = review.Lines?.Select(x => new OrderReviewLineDto
-                {
-                    ProductId = x.ProductId,
-                    ProductName = x.ProductName,
-                    Rating = x.Rating
-                }).ToList() ?? new List<OrderReviewLineDto>()
+                Lines = MapReviewLines(review)
             };
         }
 
