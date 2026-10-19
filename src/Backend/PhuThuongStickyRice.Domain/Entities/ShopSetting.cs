@@ -368,6 +368,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int DefaultWholesaleMinQty = 50;         // số lượng tối thiểu mua sỉ (suất)
         public const string DefaultMaintenanceMessage = "Cửa hàng đang bảo trì, vui lòng quay lại sau.";
 
+        /// <summary>
+        /// Tạo dòng cấu hình shop mặc định (bảng single-row): được gọi khi
+        /// đọc setting lần đầu mà DB chưa có dòng nào. Mọi giá trị lấy từ
+        /// các hằng Default* để 1 chỗ đổi là đồng bộ khắp hệ thống.
+        /// </summary>
+        /// <returns>Dòng ShopSetting với toàn bộ giá trị mặc định.</returns>
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting

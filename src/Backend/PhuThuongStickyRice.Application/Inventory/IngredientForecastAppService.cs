@@ -24,7 +24,7 @@ namespace PhuThuongStickyRice.Application.Inventory
         /// bình bán được vào cùng thứ trong 4 tuần gần nhất.
         /// </summary>
         /// <returns>Lượng nếp gợi ý (làm tròn lên 0.5kg) kèm giải thích cách tính.</returns>
-        Task<IngredientForecastDto> GetForecastAsync();
+        Task<IngredientForecastDto> GetIngredientForecastAsync();
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ namespace PhuThuongStickyRice.Application.Inventory
         /// bình của cùng thứ trong 4 tuần gần nhất.
         /// </summary>
         /// <returns>Lượng nếp gợi ý (làm tròn lên 0.5kg) kèm giải thích cách tính.</returns>
-        public virtual async Task<IngredientForecastDto> GetForecastAsync()
+        public virtual async Task<IngredientForecastDto> GetIngredientForecastAsync()
         {
             var settings = await _shopSettings.GetAsync();
             var gramsPerPortion = settings.NepPerPortionGrams > 0 ? settings.NepPerPortionGrams : FallbackNepPerPortionGrams;

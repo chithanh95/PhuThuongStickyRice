@@ -31,12 +31,16 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
         // Tên provider mặc định: không backup đi đâu, đĩa local là bản duy nhất.
         private const string NoneProviderName = "None";
 
+        // Worker backup ảnh chạy mỗi giờ 1 lần: file ảnh upload không đổi
+        // liên tục nên quét hourly là đủ, không cần realtime.
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(1);
+
         public ImageBackupWorker(
             AbpAsyncTimer timer,
             IServiceScopeFactory serviceScopeFactory)
             : base(timer, serviceScopeFactory)
         {
-            Timer.Period = (int)TimeSpan.FromHours(1).TotalMilliseconds; // mỗi giờ 1 lần
+            Timer.Period = (int)CheckInterval.TotalMilliseconds;
             Timer.RunOnStart = false;
         }
 

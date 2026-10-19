@@ -1706,7 +1706,7 @@ else
             // ValidateAsync tuần tự trên hot path checkout. Server dùng đúng
             // logic CheckUsable/ComputeDiscount của ValidateAsync nên kết quả
             // giống hệt vòng lặp cũ (bỏ freeship, hòa thì giữ mã mới nhất).
-            var best = await DiscountService.EvaluateBestAsync(_subtotalForDiscount, _order.CustomerPhone);
+            var best = await DiscountService.EvaluateBestDiscountAsync(_subtotalForDiscount, _order.CustomerPhone);
             var bestCode = best?.Code;
             var bestAmount = best?.DiscountAmount ?? 0;
 

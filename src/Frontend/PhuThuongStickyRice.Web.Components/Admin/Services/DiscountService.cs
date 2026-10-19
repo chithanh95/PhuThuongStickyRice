@@ -78,7 +78,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         /// perf-hunt 2026-10-19: mã giảm tiền tốt nhất cho giỏ hàng trong 1
         /// round-trip — thay vòng lặp N lần ValidateAsync ở checkout.
         /// </summary>
-        public async Task<BestDiscountResultModel> EvaluateBestAsync(decimal subtotal, string customerPhone = null)
+        public async Task<BestDiscountResultModel> EvaluateBestDiscountAsync(decimal subtotal, string customerPhone = null)
         {
             return await PostAsync<BestDiscountResultModel>("api/discounts/best",
                 new { Subtotal = subtotal, CustomerPhone = customerPhone });

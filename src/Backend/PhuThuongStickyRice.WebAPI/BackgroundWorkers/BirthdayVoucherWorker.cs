@@ -23,18 +23,22 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
     /// </summary>
     public class BirthdayVoucherWorker : AsyncPeriodicBackgroundWorkerBase
     {
-        // Voucher sinh nhật: prefix mã, % giảm giá, số ngày hiệu lực.
-        // Đặt tên hằng số để mỗi con số đều tự giải thích ý nghĩa.
+        // Voucher sinh nhật: prefix mã, % giảm giá, số ngày hiệu lực,
+        // chu kỳ chạy worker. Đặt tên hằng số để mỗi con số đều tự giải
+        // thích ý nghĩa.
         private const string BirthdayVoucherPrefix = "BDAY";
         private const int BirthdayDiscountPercent = 20;
         private const int BirthdayVoucherExpiryDays = 30;
+        // Worker quét mỗi 24 giờ 1 lần: voucher sinh nhật tính theo ngày nên
+        // chạy 1 lần/ngày là đủ, tránh spam DB.
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(24);
 
         public BirthdayVoucherWorker(
             AbpAsyncTimer timer,
             IServiceScopeFactory serviceScopeFactory)
             : base(timer, serviceScopeFactory)
         {
-            Timer.Period = (int)TimeSpan.FromHours(24).TotalMilliseconds; // chạy mỗi 24 giờ
+            Timer.Period = (int)CheckInterval.TotalMilliseconds;
             Timer.RunOnStart = false;
         }
 

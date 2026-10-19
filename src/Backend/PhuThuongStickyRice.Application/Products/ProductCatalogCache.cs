@@ -40,7 +40,7 @@ namespace PhuThuongStickyRice.Application.Products
     /// chỉ tăng version thay vì xóa từng entry (IMemoryCache không hỗ trợ xóa
     /// hàng loạt). Transient nhưng SemaphoreSlim chống stampede là static vì
     /// IMemoryCache dùng chung toàn process. Nằm trên đường nóng của checkout
-    /// (EvaluateBestAsync chạy mỗi lần xem giỏ) nên mọi logic validate áp dụng
+    /// (EvaluateBestDiscountAsync chạy mỗi lần xem giỏ) nên mọi logic validate áp dụng
     /// mã vẫn kiểm tra lại server-side — cache hết hạn/chậm tối đa 5 phút là
     /// chấp nhận được vì validate sẽ từ chối mã đã hết hiệu lực.
     /// </summary>

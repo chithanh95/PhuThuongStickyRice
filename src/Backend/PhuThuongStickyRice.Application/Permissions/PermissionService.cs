@@ -22,6 +22,11 @@ namespace PhuThuongStickyRice.Application.Permissions
         /// <summary>All permission keys the current user holds.</summary>
         Task<HashSet<string>> GetUserPermissionsAsync();
 
+        /// <summary>
+        /// Kiểm tra user hiện tại có giữ key quyền không (gộp từ mọi role
+        /// của user; role Admin luôn true không cần dòng DB).
+        /// </summary>
+        /// <param name="permissionKey">Key quyền cần kiểm tra, vd "orders.refund".</param>
         Task<bool> HasPermissionAsync(string permissionKey);
 
         /// <summary>Throws <see cref="AbpAuthorizationException"/> (403) when missing.</summary>
@@ -119,6 +124,13 @@ namespace PhuThuongStickyRice.Application.Permissions
             }
         }
 
+        /// <summary>
+        /// Admin: dựng ma trận role × quyền cho trang /admin/phan-quyen —
+        /// định nghĩa quyền lấy từ PermissionKeys.All, danh sách role từ
+        /// PermissionKeys.MatrixRoles, quyền đã cấp đọc từ bảng
+        /// RolePermissions trong DB. Role Admin không cần dòng DB vì luôn
+        /// có toàn quyền.
+        /// </summary>
         [Authorize(Roles = "Admin")]
         public async Task<PermissionMatrixDto> GetMatrixAsync()
         {
@@ -146,6 +158,14 @@ namespace PhuThuongStickyRice.Application.Permissions
             };
         }
 
+        /// <summary>
+        /// Admin: thay thế toàn bộ key quyền của 1 role (full-replace — xóa
+        /// dòng không còn trong danh sách mới, thêm dòng mới) thay vì sửa
+        /// từng dòng, để ma trận hiển thị luôn khớp DB. Chỉ chấp nhận role
+        /// trong PermissionKeys.MatrixRoles và key hợp lệ trong
+        /// PermissionKeys.All; role Admin không chỉnh được (luôn full quyền).
+        /// </summary>
+        /// <param name="input">Role cần phân quyền và danh sách key được cấp.</param>
         [Authorize(Roles = "Admin")]
         public async Task UpdateRolePermissionsAsync(UpdateRolePermissionsDto input)
         {

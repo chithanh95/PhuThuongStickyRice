@@ -144,6 +144,16 @@ namespace PhuThuongStickyRice.Domain.Entities
             Status = ProductStatus.Active;
         }
 
+        /// <summary>
+        /// Factory khởi tạo món mới: validate mã/tên/giá trước khi tạo,
+        /// tự trim khoảng trắng; trạng thái mặc định là Active.
+        /// </summary>
+        /// <param name="code">Mã món (bắt buộc).</param>
+        /// <param name="name">Tên món (bắt buộc, tối đa 200 ký tự).</param>
+        /// <param name="price">Giá bán (bắt buộc).</param>
+        /// <param name="description">Mô tả; null được phép.</param>
+        /// <returns>Món mới ở trạng thái Active.</returns>
+        /// <exception cref="DomainException">Ném khi thiếu mã/tên/giá hoặc vượt độ dài cho phép.</exception>
         public static Product Create(ProductCode code, string name, Money price, string description = null)
         {
             if (code == null)
@@ -174,6 +184,11 @@ namespace PhuThuongStickyRice.Domain.Entities
             return new Product(code, name.Trim(), price, description?.Trim());
         }
 
+        /// <summary>
+        /// Cập nhật tên + mô tả món. Không cho sửa món đã ngừng bán
+        /// (Discontinued) để giữ nguyên dữ liệu lịch sử đơn hàng.
+        /// </summary>
+        /// <exception cref="DomainException">Ném khi món đã Discontinued hoặc tên/mô tả không hợp lệ.</exception>
         public void UpdateDetails(string name, string description)
         {
             if (Status == ProductStatus.Discontinued)
@@ -200,6 +215,12 @@ namespace PhuThuongStickyRice.Domain.Entities
             Description = description?.Trim();
         }
 
+        /// <summary>
+        /// Đổi giá bán món. Món đã ngừng bán (Discontinued) không được đổi
+        /// giá để dữ liệu lịch sử và báo cáo lãi gộp không bị sai lệch.
+        /// </summary>
+        /// <param name="newPrice">Giá bán mới (bắt buộc).</param>
+        /// <exception cref="DomainException">Ném khi thiếu giá hoặc món đã Discontinued.</exception>
         public void ChangePrice(Money newPrice)
         {
             if (newPrice == null)
@@ -453,6 +474,12 @@ namespace PhuThuongStickyRice.Domain.Entities
             return windows;
         }
 
+        /// <summary>
+        /// Mở bán lại món đang tạm ngưng (Inactive). Món đã Discontinued
+        /// không được kích hoạt lại — đó là trạng thái cuối để dữ liệu
+        /// lịch sử đơn hàng luôn nhất quán.
+        /// </summary>
+        /// <exception cref="DomainException">Ném khi món đã Discontinued.</exception>
         public void Activate()
         {
             if (Status == ProductStatus.Discontinued)
@@ -463,6 +490,11 @@ namespace PhuThuongStickyRice.Domain.Entities
             Status = ProductStatus.Active;
         }
 
+        /// <summary>
+        /// Tạm ngưng bán (Inactive): món biến mất khỏi shop nhưng admin vẫn
+        /// mở lại được sau. Khác <see cref="Discontinue"/> là trạng thái cuối.
+        /// </summary>
+        /// <exception cref="DomainException">Ném khi món đã Discontinued.</exception>
         public void Deactivate()
         {
             if (Status == ProductStatus.Discontinued)
@@ -473,6 +505,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             Status = ProductStatus.Inactive;
         }
 
+        /// <summary>
+        /// Ngừng bán vĩnh viễn: trạng thái cuối, không thể <see cref="Activate"/>
+        /// lại. Đơn cũ đã bán vẫn giữ nguyên thông tin món trong lịch sử.
+        /// </summary>
         public void Discontinue()
         {
             Status = ProductStatus.Discontinued;

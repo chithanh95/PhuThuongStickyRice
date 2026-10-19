@@ -5,6 +5,7 @@
 // chấp nhận được.)
 #nullable enable
 using PhuThuongStickyRice.Application.AuditLogs;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Permissions;
 using PhuThuongStickyRice.Application.Security;
 using PhuThuongStickyRice.Application.Staff;
@@ -22,7 +23,6 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -47,16 +47,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IStaffActivityLogger _activityLogger;
         private readonly PasswordResetOtpService _passwordReset;
 
-        private const string VnPhonePattern = @"^(0)(3|5|7|8|9)\d{8}$";
         private const int MinPasswordLength = 6;
         // Thông báo lỗi định dạng SĐT dùng chung ở Register + UpdateProfile
         // (trước đây lặp lại y nguyên 2 nơi — đổi nội dung chỉ cần 1 chỗ).
         private const string InvalidVnPhoneMessage = "Số điện thoại không đúng định dạng (VD: 0901234567).";
         private const int AccountLockedStatusCode = 423;
         private static readonly string[] StaffRoleNames = { "Admin", "Cashier", "Kitchen" };
-
-        private static bool IsValidVnPhone(string phone) =>
-            !string.IsNullOrWhiteSpace(phone) && Regex.IsMatch(phone.Trim(), VnPhonePattern);
 
         private static bool IsStaffRole(string roleName) =>
             StaffRoleNames.Contains(roleName, StringComparer.Ordinal);
@@ -164,7 +160,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             var phone = (model.Phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!PhoneNumber.IsValidVn(phone))
             {
                 return BadRequest(InvalidVnPhoneMessage);
             }
@@ -332,7 +328,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
             {
                 var phone = model.PhoneNumber.Trim();
-                if (!IsValidVnPhone(phone))
+                if (!PhoneNumber.IsValidVn(phone))
                     return BadRequest(InvalidVnPhoneMessage);
                 var setPhone = await _userManager.SetPhoneNumberAsync(user, phone);
                 if (!setPhone.Succeeded)

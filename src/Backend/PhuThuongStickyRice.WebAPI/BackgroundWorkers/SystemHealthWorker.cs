@@ -41,6 +41,9 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
         private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
         // Hệ số đổi byte → MB khi hiển thị dung lượng còn trống.
         private const long BytesPerMegabyte = 1024L * 1024L;
+        // Timeout gửi cảnh báo Telegram: worker chạy nền không được treo lâu
+        // chờ Telegram trả lời; 10s là đủ cho 1 request gửi tin nhắn.
+        private static readonly TimeSpan TelegramHttpTimeout = TimeSpan.FromSeconds(10);
 
         private readonly IHttpClientFactory _httpClientFactory;
 
@@ -245,7 +248,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             try
             {
                 var client = _httpClientFactory.CreateClient("Telegram");
-                client.Timeout = TimeSpan.FromSeconds(10);
+                client.Timeout = TelegramHttpTimeout;
                 var payload = JsonSerializer.Serialize(new
                 {
                     chat_id = chatId,

@@ -18,6 +18,10 @@ namespace PhuThuongStickyRice.WebAPI.Services
     /// </summary>
     public class JwtTokenService
     {
+        // Token 2FA chỉ dùng cho 1 bước nhập mã OTP nên vòng đời phải rất
+        // ngắn: 5 phút đủ để khách nhập mã, hết hạn thì đăng nhập lại từ đầu.
+        private const int TwoFactorTokenExpiryMinutes = 5;
+
         private readonly JwtOptions _options;
 
         public JwtTokenService(IOptions<JwtOptions> options)
@@ -76,7 +80,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
         /// </summary>
         public (string Token, DateTimeOffset ExpiresAt) CreateTwoFactorToken(User user)
         {
-            var expiresAt = DateTimeOffset.UtcNow.AddMinutes(5);
+            var expiresAt = DateTimeOffset.UtcNow.AddMinutes(TwoFactorTokenExpiryMinutes);
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),

@@ -1,4 +1,4 @@
-using PhuThuongStickyRice.Application.Discounts;
+﻿using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders;
@@ -17,7 +17,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -246,9 +245,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] SubscribeRequest request,
             CancellationToken cancellationToken = default)
         {
-            var phone = (request?.Phone ?? string.Empty).Trim();
-
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(request?.Phone, out var phone))
             {
                 return InvalidPhoneResult();
             }
@@ -271,9 +268,22 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { success = true });
         }
 
-        private static bool IsValidVnPhone(string phone) =>
-            !string.IsNullOrWhiteSpace(phone)
-            && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+        /// <summary>
+        /// Chuẩn hóa SĐT đầu vào (bỏ khoảng trắng 2 đầu) và kiểm tra hợp lệ
+        /// theo <see cref="PhoneNumber.IsValidVn"/>. Gom ~13 khối copy-paste
+        /// "trim → validate → trả InvalidPhoneResult" trước đây lặp lại ở
+        /// mọi endpoint public nhận SĐT về 1 chỗ: sửa logic 1 lần là áp dụng
+        /// khắp nơi. Trả false khi SĐT không hợp lệ — caller trả
+        /// <see cref="InvalidPhoneResult"/>.
+        /// </summary>
+        /// <param name="raw">SĐT thô từ request, có thể null.</param>
+        /// <param name="phone">SĐT đã chuẩn hóa (chỉ có nghĩa khi trả true).</param>
+        /// <returns>True khi SĐT là số VN hợp lệ.</returns>
+        private static bool TryNormalizeVnPhone(string raw, out string phone)
+        {
+            phone = (raw ?? string.Empty).Trim();
+            return PhoneNumber.IsValidVn(phone);
+        }
 
         // ============ Landing engagement: lucky spin (item 28) ============
 
@@ -292,9 +302,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] SpinRequest request,
             CancellationToken cancellationToken = default)
         {
-            var phone = (request?.Phone ?? string.Empty).Trim();
-
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(request?.Phone, out var phone))
             {
                 return InvalidPhoneResult();
             }
@@ -390,10 +398,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] ReferralRequest request,
             CancellationToken cancellationToken = default)
         {
-            var referrer = (request?.ReferrerPhone ?? string.Empty).Trim();
-            var referred = (request?.ReferredPhone ?? string.Empty).Trim();
-
-            if (!IsValidVnPhone(referrer) || !IsValidVnPhone(referred))
+            if (!TryNormalizeVnPhone(request?.ReferrerPhone, out var referrer)
+                || !TryNormalizeVnPhone(request?.ReferredPhone, out var referred))
             {
                 return InvalidPhoneResult();
             }
@@ -576,8 +582,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] BirthdayGiftRequest request,
             CancellationToken cancellationToken = default)
         {
-            var phone = (request?.Phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(request?.Phone, out var phone))
             {
                 return InvalidPhoneResult();
             }
@@ -705,8 +710,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] string phone,
             CancellationToken cancellationToken = default)
         {
-            phone = (phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(phone, out phone))
             {
                 return InvalidPhoneResult();
             }
@@ -794,8 +798,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] CourseEnrollRequest request,
             CancellationToken cancellationToken = default)
         {
-            var phone = (request?.Phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(request?.Phone, out var phone))
             {
                 return InvalidPhoneResult();
             }
@@ -875,9 +878,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] CheckInRequest request,
             CancellationToken cancellationToken = default)
         {
-            var phone = (request?.Phone ?? string.Empty).Trim();
-
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(request?.Phone, out var phone))
             {
                 return InvalidPhoneResult();
             }
@@ -962,9 +963,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] VoteRequest request,
             CancellationToken cancellationToken = default)
         {
-            var phone = (request?.Phone ?? string.Empty).Trim();
-
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(request?.Phone, out var phone))
             {
                 return InvalidPhoneResult();
             }
@@ -1073,8 +1072,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] FavoriteRequest request,
             CancellationToken cancellationToken = default)
         {
-            var phone = (request?.Phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(request?.Phone, out var phone))
             {
                 return InvalidPhoneResult();
             }
@@ -1102,8 +1100,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] FavoriteRequest request,
             CancellationToken cancellationToken = default)
         {
-            var phone = (request?.Phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(request?.Phone, out var phone))
             {
                 return InvalidPhoneResult();
             }
@@ -1127,8 +1124,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] string phone,
             CancellationToken cancellationToken = default)
         {
-            phone = (phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(phone, out phone))
             {
                 return InvalidPhoneResult();
             }
@@ -1151,8 +1147,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] string phone,
             CancellationToken cancellationToken = default)
         {
-            phone = (phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(phone, out phone))
             {
                 return InvalidPhoneResult();
             }
@@ -1205,8 +1200,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] string phone,
             CancellationToken cancellationToken = default)
         {
-            phone = (phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!TryNormalizeVnPhone(phone, out phone))
             {
                 return InvalidPhoneResult();
             }
@@ -1219,7 +1213,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // trên index) và project trực tiếp lines của đơn mới nhất qua 1 câu
             // SQL duy nhất. Shape JSON trả về giữ nguyên: { items: [...] }.
             var phoneNorm = PhoneNumber.DigitsOnly(phone);
-            phoneNorm = phoneNorm[^9..]; // IsValidVnPhone bảo đảm đủ 10 chữ số
+            phoneNorm = phoneNorm[^9..]; // TryNormalizeVnPhone bảo đảm đủ 10 chữ số
 
             var items = await _db.Orders
                 .AsNoTracking()

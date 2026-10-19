@@ -78,7 +78,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// qua (luồng riêng); mã bằng điểm nhau thì giữ mã mới nhất, y như
         /// vòng lặp cũ của client.
         /// </summary>
-        Task<BestDiscountResultDto> EvaluateBestAsync(EvaluateBestDiscountInput input);
+        Task<BestDiscountResultDto> EvaluateBestDiscountAsync(EvaluateBestDiscountInput input);
 
         /// <summary>
         /// True khi mã là voucher freeship còn dùng được (item 120).
@@ -207,7 +207,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         // nạp vào memory mỗi lần checkout. Mã công khai không hạn dùng/không
         // giới hạn lượt (vd "WELCOME10") sống vĩnh viễn nên tập này tăng đơn
         // điệu theo thời gian; query không Take sẽ phình vô hạn trên đường
-        // nóng public (EvaluateBestAsync chạy mỗi lần xem giỏ/checkout).
+        // nóng public (EvaluateBestDiscountAsync chạy mỗi lần xem giỏ/checkout).
         // Giữ OrderByDescending(CreatedDateTime) nên 200 mã mới nhất được
         // xét — ngữ nghĩa "mã bằng điểm nhau thì giữ mã mới nhất" không đổi;
         // không shop nào chạy >200 mã công khai đồng thời còn sống.
@@ -230,7 +230,7 @@ namespace PhuThuongStickyRice.Application.Discounts
 
         /// <summary>
         /// Điều kiện "mã công khai đang hoạt động" dùng chung cho
-        /// <see cref="GetActivePublicAsync"/> và <see cref="EvaluateBestAsync"/>
+        /// <see cref="GetActivePublicAsync"/> và <see cref="EvaluateBestDiscountAsync"/>
         /// — mã không gắn SĐT riêng, đang bật, còn hạn, còn lượt dùng.
         /// </summary>
         private static Expression<Func<DiscountCode, bool>> PublicActiveCodeFilter(
@@ -794,7 +794,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// 1 DB query instead of N HTTP round-trips with N DB lookups.
         /// </summary>
         [AllowAnonymous]
-        public virtual async Task<BestDiscountResultDto> EvaluateBestAsync(
+        public virtual async Task<BestDiscountResultDto> EvaluateBestDiscountAsync(
             EvaluateBestDiscountInput input)
         {
             var subtotal = input?.Subtotal ?? 0;
@@ -822,7 +822,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// giảm lớn nhất trên tổng giỏ hàng: mã phải vượt <see cref="CheckUsable"/>
         /// và được tính bằng <see cref="ComputeDiscount"/> nên kết quả khớp
         /// đúng với validate từng mã riêng lẻ. Tách vòng lặp chọn mã tốt nhất
-        /// khỏi <see cref="EvaluateBestAsync"/> (query DB) để mỗi method làm
+        /// khỏi <see cref="EvaluateBestDiscountAsync"/> (query DB) để mỗi method làm
         /// đúng 1 việc.
         /// </summary>
         /// <param name="entities">Các mã công khai đang kích hoạt (đã sắp xếp mới nhất trước).</param>

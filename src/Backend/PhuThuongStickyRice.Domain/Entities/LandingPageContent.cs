@@ -173,6 +173,12 @@ namespace PhuThuongStickyRice.Domain.Entities
             return content;
         }
 
+        /// <summary>
+        /// Cập nhật toàn bộ nội dung landing trong 1 lần gọi: trang
+        /// /admin/landing lưu form chỉnh sửa bằng method này (factory tạo
+        /// dòng seed mặc định cũng gọi lại nó). Chỉ gán giá trị — không
+        /// validate độ dài ở đây, tầng Application validate trước khi gọi.
+        /// </summary>
         public void Update(
             string heroTitle, string heroTagline, string heroButtonText,
             string storyTitle, string storyBody,

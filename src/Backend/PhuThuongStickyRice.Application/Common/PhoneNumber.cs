@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace PhuThuongStickyRice.Application.Common
 {
@@ -11,7 +12,7 @@ namespace PhuThuongStickyRice.Application.Common
     /// (IsPlaceholderPhone) và LandingPublicController (MaskPhone) về 1 chỗ
     /// để sửa 1 lần là áp dụng khắp nơi, tránh các bản sao lệch nhau dần.
     /// </summary>
-    public static class PhoneNumber
+    public static partial class PhoneNumber
     {
         /// <summary>
         /// Số chữ số cuối dùng để so khớp "khoan dung" 2 SĐT (bỏ mã vùng đầu số):
@@ -99,5 +100,23 @@ namespace PhuThuongStickyRice.Application.Common
                 ? digits.Substring(digits.Length - TailDigitCount)
                 : digits;
         }
+
+        // Best practice .NET 7+/C# 13: [GeneratedRegex] biên dịch regex ngay
+        // lúc build thay vì parse mỗi lần gọi (dùng chung ở IsValidVn).
+        [GeneratedRegex(@"^(0)(3|5|7|8|9)\d{8}$")]
+        private static partial Regex VnPhoneRegex();
+
+        /// <summary>
+        /// Kiểm tra SĐT Việt Nam hợp lệ: bắt đầu bằng 0, đầu số 3/5/7/8/9,
+        /// tổng 10 chữ số. Bỏ khoảng trắng 2 đầu trước khi kiểm tra.
+        /// Gom 4 bản private IsValidVnPhone/IsValidPhone trước đây nằm rải
+        /// rác ở AuthController, LandingPublicController,
+        /// CustomerProfileAppService và QuoteRequestAppService — cùng pattern,
+        /// mọi call site đều đã Trim() trước nên ngữ nghĩa giữ nguyên.
+        /// </summary>
+        /// <param name="phone">SĐT đầu vào, có thể null.</param>
+        /// <returns>True khi là SĐT VN hợp lệ.</returns>
+        public static bool IsValidVn(string? phone) =>
+            !string.IsNullOrWhiteSpace(phone) && VnPhoneRegex().IsMatch(phone.Trim());
     }
 }

@@ -84,7 +84,21 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest("Thiếu thông tin đơn hàng trong request body.");
             }
 
-            var order = await _orderAppService.CreateAsync(new CreateOrderDto
+            var order = await _orderAppService.CreateAsync(MapToCreateOrderDto(model));
+
+            return Ok(order);
+        }
+
+        /// <summary>
+        /// Ánh xạ request model của controller sang DTO của application
+        /// service. Tách riêng khỏi action <c>Create</c> để action chỉ còn
+        /// flow validate → map → gọi service, dễ đọc hơn.
+        /// </summary>
+        /// <param name="model">Request model đã validate non-null.</param>
+        /// <returns>DTO dùng để tạo đơn hàng.</returns>
+        private static CreateOrderDto MapToCreateOrderDto(CreateOrderRequestModel model)
+        {
+            return new CreateOrderDto
             {
                 CustomerName = model.CustomerName,
                 CustomerPhone = model.CustomerPhone,
@@ -127,9 +141,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                         Note = x.Note
                     })
                     .ToList()
-            });
-
-            return Ok(order);
+            };
         }
 
         /// <summary>

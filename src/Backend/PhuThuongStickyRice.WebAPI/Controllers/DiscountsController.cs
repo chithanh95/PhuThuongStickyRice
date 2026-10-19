@@ -136,7 +136,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] EvaluateBestDiscountInput input,
             CancellationToken cancellationToken = default)
         {
-            return Ok(await _discountAppService.EvaluateBestAsync(input));
+            return Ok(await _discountAppService.EvaluateBestDiscountAsync(input));
         }
     }
 }

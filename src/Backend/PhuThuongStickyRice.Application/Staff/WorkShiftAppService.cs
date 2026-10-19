@@ -71,6 +71,13 @@ namespace PhuThuongStickyRice.Application.Staff
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Admin: lấy ca của tuần (thứ 2 → chủ nhật) chứa ngày đã cho, sắp
+        /// theo ngày rồi giờ bắt đầu. Ngày ca lưu dạng ngày (bỏ giờ) nên
+        /// lọc theo biên [thứ 2, thứ 2 tuần sau) là đủ.
+        /// </summary>
+        /// <param name="dateInWeek">Một ngày bất kỳ trong tuần cần xem.</param>
+        /// <returns>Danh sách ca của tuần đó.</returns>
         public virtual async Task<List<WorkShiftDto>> GetWeekAsync(DateTime dateInWeek)
         {
             var date = dateInWeek.Date;
@@ -90,6 +97,12 @@ namespace PhuThuongStickyRice.Application.Staff
             return list.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: thêm ca mới — validate chung với <see cref="UpdateAsync"/>;
+        /// ngày lưu về dạng ngày (bỏ phần giờ) để lọc theo tuần chính xác.
+        /// </summary>
+        /// <param name="input">Nhân viên, ngày, giờ bắt đầu/kết thúc, ghi chú.</param>
+        /// <returns>Ca vừa tạo.</returns>
         public virtual async Task<WorkShiftDto> CreateAsync(CreateUpdateWorkShiftDto input)
         {
             Validate(input);
@@ -106,6 +119,13 @@ namespace PhuThuongStickyRice.Application.Staff
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: cập nhật ca đã xếp; kiểm tra hợp lệ giống khi tạo
+        /// (<see cref="CreateAsync"/>).
+        /// </summary>
+        /// <param name="id">Id ca cần sửa.</param>
+        /// <param name="input">Thông tin ca mới.</param>
+        /// <returns>Ca sau khi cập nhật.</returns>
         public virtual async Task<WorkShiftDto> UpdateAsync(Guid id, CreateUpdateWorkShiftDto input)
         {
             Validate(input);

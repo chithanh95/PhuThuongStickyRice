@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Zalo;
 using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
@@ -7,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Volo.Abp;
 using Volo.Abp.Application.Services;
@@ -67,14 +67,6 @@ namespace PhuThuongStickyRice.Application.Customer
         private const int MaxBirthdayGiftAmount = 1000000;
         /// <summary>Mã quà sinh nhật có hiệu lực 30 ngày kể từ ngày tặng.</summary>
         private const int BirthdayGiftValidityDays = 30;
-        /// <summary>SĐT Việt Nam: bắt đầu bằng 0, đầu số 3/5/7/8/9, tổng 10 chữ số.</summary>
-        // Best practice .NET 7+/C# 13: [GeneratedRegex] biên dịch regex ngay
-        // lúc build (không tốn Regex.Compile/cache động ở runtime, không tạo
-        // chuỗi pattern động) — cùng convention với MessengerChatService và
-        // MoMoPaymentService trong cùng codebase. Ngữ nghĩa kiểm tra giống hệt
-        // bản Regex.IsMatch cũ: cùng pattern, cùng IsMatch(input).
-        [GeneratedRegex(@"^(0)(3|5|7|8|9)\d{8}$")]
-        private static partial Regex VnPhoneRegex();
 
         /// <summary>Số bản ghi nhắc chăm sóc tối đa trả về cho 1 SĐT (tránh nạp toàn bộ lịch sử).</summary>
         private const int MaxReminderHistoryRows = 200;
@@ -294,7 +286,7 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             var user = await _users.GetAsync(userId);
             var phone = (user.PhoneNumber ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!PhoneNumber.IsValidVn(phone))
             {
                 throw new UserFriendlyException("Tài khoản này chưa có SĐT hợp lệ, không thể tặng quà.");
             }
@@ -347,7 +339,7 @@ namespace PhuThuongStickyRice.Application.Customer
             ArgumentNullException.ThrowIfNull(dto);
 
             var phone = (dto.Phone ?? string.Empty).Trim();
-            if (!IsValidVnPhone(phone))
+            if (!PhoneNumber.IsValidVn(phone))
             {
                 throw new UserFriendlyException("SĐT không đúng định dạng (VD: 0901234567).");
             }
@@ -526,11 +518,6 @@ namespace PhuThuongStickyRice.Application.Customer
                 CreatedBy = entity.CreatedBy,
                 CreatedAt = entity.CreatedAt
             };
-        }
-
-        private static bool IsValidVnPhone(string phone)
-        {
-            return VnPhoneRegex().IsMatch(phone ?? string.Empty);
         }
 
         private class TastePreferences

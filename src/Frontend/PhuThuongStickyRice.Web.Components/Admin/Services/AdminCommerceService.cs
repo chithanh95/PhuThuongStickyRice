@@ -166,7 +166,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         // ---- Forecast (item 124) ----
 
         /// <summary>Admin: dự báo lượng nếp (kg) cần chuẩn bị cho sáng mai.</summary>
-        public async Task<IngredientForecastModel> GetForecastAsync()
+        public async Task<IngredientForecastModel> GetIngredientForecastAsync()
         {
             return await GetAsync<IngredientForecastModel>("api/forecast");
         }

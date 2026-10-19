@@ -146,7 +146,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet("ingredient-forecast")]
         public async Task<ActionResult> GetIngredientForecast(CancellationToken cancellationToken = default)
         {
-            return Ok(await _forecast.GetForecastAsync());
+            return Ok(await _forecast.GetIngredientForecastAsync());
         }
     }
 }
