@@ -608,7 +608,14 @@ else
         {
             var created = await AdminOperationsService.AddCustomerNoteAsync(_expandedPhone, _newNote.Trim());
 
-            var list = _notes[_expandedPhone];
+            // Tải ghi chú ban đầu có thể đã thất bại (catch ở ToggleNotes không
+            // gán _notes[phone]) — tạo list mới thay vì _notes[phone] ném KeyNotFoundException.
+            if (!_notes.TryGetValue(_expandedPhone, out var list))
+            {
+                list = new List<CustomerNoteModel>();
+                _notes[_expandedPhone] = list;
+            }
+
             list.Insert(0, created);
             _newNote = null;
         }

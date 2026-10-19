@@ -1114,8 +1114,25 @@ else
         // fresh one instead of deduping against the previous cart.
         _order.IdempotencyKey = null;
         RefreshMinOrderState();
+        EnsurePaymentMethodValid();
         _ = RefreshAppliedDiscountAsync();
         InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Radio "ví" chỉ hiện khi số dư đủ tổng đơn. Nếu khách đã chọn ví rồi giỏ
+    /// phình ra vượt số dư (hoặc mã giảm giá hết hiệu lực làm tổng tăng), radio
+    /// ẩn đi nhưng _order.PaymentMethod vẫn dính "Wallet" → PlaceOrder gửi ví
+    /// trong khi màn hình không radio nào được chọn → server từ chối khó hiểu.
+    /// Reset về COD ngay khi ví không còn đủ.
+    /// </summary>
+    private void EnsurePaymentMethodValid()
+    {
+        if (_order.PaymentMethod == "Wallet"
+            && !(_walletBalance >= _estimatedTotal && _estimatedTotal > 0))
+        {
+            _order.PaymentMethod = "Cod";
+        }
     }
 
     /// <summary>
@@ -1302,6 +1319,8 @@ else
             {
                 _walletBalance = 0;
             }
+            // Số dư vừa tải về có thể không đủ tổng đơn → gỡ lựa chọn ví vô hình.
+            EnsurePaymentMethodValid();
 
             // TT2: auto-fill the name from the most recent order — never
             // overwrite a name the user already typed. (This checkout has no
@@ -1371,6 +1390,8 @@ else
         {
             _applyingDiscount = false;
             RefreshMinOrderState();
+            // Mã giảm giá đổi tổng đơn → ví có thể không còn đủ.
+            EnsurePaymentMethodValid();
         }
     }
 

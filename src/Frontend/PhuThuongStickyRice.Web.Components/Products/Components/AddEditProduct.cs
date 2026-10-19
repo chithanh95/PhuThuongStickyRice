@@ -46,15 +46,41 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
 
         protected async Task HandleValidSubmit()
         {
-            // Items 164/166: serialize the hours + gallery editors into the
-            // product model before saving.
-            Product.AvailableHoursJson = SerializeHours();
-            Product.ImageUrlsJson = SerializeImages();
-            var isNew = Product.Id == Guid.Empty;
-            await (isNew ? ProductService.CreateProductAsync(Product) : ProductService.UpdateProductAsync(Product.Id, Product));
-            Toasts.Show(isNew ? "Đã thêm sản phẩm thành công!" : "Đã lưu sản phẩm thành công!");
-            NavManager.NavigateTo("/products");
+            // Chặn bấm đúp nút Lưu: 2 request CreateProductAsync liên tiếp
+            // sẽ tạo 2 sản phẩm trùng nhau (server sinh Id mới mỗi lần gọi).
+            if (_saving)
+            {
+                return;
+            }
+
+            _saving = true;
+            _saveError = null;
+            try
+            {
+                // Items 164/166: serialize the hours + gallery editors into the
+                // product model before saving.
+                Product.AvailableHoursJson = SerializeHours();
+                Product.ImageUrlsJson = SerializeImages();
+                var isNew = Product.Id == Guid.Empty;
+                await (isNew ? ProductService.CreateProductAsync(Product) : ProductService.UpdateProductAsync(Product.Id, Product));
+                Toasts.Show(isNew ? "Đã thêm sản phẩm thành công!" : "Đã lưu sản phẩm thành công!");
+                NavManager.NavigateTo("/products");
+            }
+            catch (Exception ex)
+            {
+                // Giữ người dùng ở lại form + hiện lỗi thay vì sập error boundary.
+                Logger.LogError(ex, "Lưu sản phẩm thất bại.");
+                _saveError = "Lưu sản phẩm thất bại. Vui lòng thử lại.";
+            }
+            finally
+            {
+                _saving = false;
+            }
         }
+
+        private bool _saving;
+
+        private string _saveError;
 
         // ---- Items 164/166: sale time windows + photo gallery editors ----
 
@@ -115,8 +141,8 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                                 break;
                             }
 
-                            var from = el.TryGetProperty("from", out var f) ? f.GetString() : null;
-                            var to = el.TryGetProperty("to", out var t) ? t.GetString() : null;
+                            var from = el.TryGetProperty("from", out var fromEl) ? fromEl.GetString() : null;
+                            var to = el.TryGetProperty("to", out var toEl) ? toEl.GetString() : null;
                             if (TimeOnly.TryParse(from, out var fromT) && TimeOnly.TryParse(to, out var toT))
                             {
                                 _hours.Add(new HourWindow { From = fromT, To = toT });
@@ -204,8 +230,8 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 return;
             }
 
-            var f = files[0];
-            if (string.IsNullOrEmpty(f.Base64))
+            var file = files[0];
+            if (string.IsNullOrEmpty(file.Base64))
             {
                 _imageError = "Không đọc được ảnh đã chọn.";
                 return;
@@ -221,9 +247,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             _uploadingImages = true;
             try
             {
-                using var stream = new MemoryStream(Convert.FromBase64String(f.Base64));
+                using var stream = new MemoryStream(Convert.FromBase64String(file.Base64));
                 var url = await ProductService.UploadProductImageAsync(
-                    stream, f.FileName, f.ContentType);
+                    stream, file.FileName, file.ContentType);
                 if (!string.IsNullOrEmpty(url))
                 {
                     _imageUrl = url;

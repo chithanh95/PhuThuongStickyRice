@@ -7,7 +7,9 @@
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminSystemService AdminSystemService
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
-<EditForm Model="Product" OnSubmit="HandleValidSubmit">
+<EditForm Model="Product" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="alert alert-danger py-2" />
 
 
     <div class="form-group row">
@@ -135,7 +137,11 @@
     <div class="form-group row">
         <label class="col-sm-2 col-form-label"></label>
         <div class="col-sm-10">
-            <button type="submit" class="btn btn-primary">Lưu</button>
+            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Đang lưu..." : "Lưu")</button>
+            @if (!string.IsNullOrEmpty(_saveError))
+            {
+                <div class="alert alert-danger mt-2 py-2">@_saveError</div>
+            }
         </div>
     </div>
 </EditForm>
