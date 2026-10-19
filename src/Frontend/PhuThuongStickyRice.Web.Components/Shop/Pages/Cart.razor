@@ -416,6 +416,10 @@ else
     /// base64, mỗi id được validate với API và chỉ nhận hàng còn bán. Tham số
     /// share bị xóa khỏi URL sau khi gộp để F5 không cộng trùng.
     /// </summary>
+    /// <summary>
+    /// Gộp giỏ từ link chia sẻ (?share=...): giải mã payload rồi thêm từng món
+    /// vào giỏ. Xong thì xóa param share khỏi URL để F5 không cộng trùng.
+    /// </summary>
     private async Task MergeSharedCartAsync()
     {
         var query = ParseQuery(Navigation.Uri);
@@ -424,53 +428,78 @@ else
             return;
         }
 
+        var payload = DecodeSharePayload(share);
+        if (payload == null)
+        {
+            return;
+        }
+
+        var added = await AddSharedPayloadToCartAsync(payload);
+        if (added > 0)
+        {
+            Toasts.Show($"Đã thêm {added} món từ link chia sẻ vào giỏ");
+            // Remove the share param so a refresh doesn't re-add.
+            Navigation.NavigateTo("/cart", forceLoad: false);
+        }
+    }
+
+    /// <summary>
+    /// Giải mã payload link chia sẻ: base64 URL-safe (- thay +, _ thay /), thêm dấu
+    /// = đệm cho đủ bội số của 4 (quy tắc base64) rồi decode UTF-8.
+    /// </summary>
+    /// <param name="share">Giá trị param share trong URL.</param>
+    /// <returns>Chuỗi payload "guid:qty;guid:qty;...", hoặc null nếu sai định dạng.</returns>
+    private static string DecodeSharePayload(string share)
+    {
         try
         {
-            // Link chia sẻ dùng base64 URL-safe (- thay +, _ thay /): trả về
-            // base64 chuẩn và thêm dấu = đệm cho đủ bội số của 4 (quy tắc base64)
-            // trước khi giải mã.
             var padded = share.Replace('-', '+').Replace('_', '/');
             padded = padded.PadRight(padded.Length + (4 - padded.Length % 4) % 4, '=');
-            var payload = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(padded));
-
-            var added = 0;
-            foreach (var part in payload.Split(';', StringSplitOptions.RemoveEmptyEntries))
-            {
-                var pieces = part.Split(':');
-                if (pieces.Length != 2
-                    || !Guid.TryParseExact(pieces[0], "N", out var productId)
-                    || !int.TryParse(pieces[1], out var qty)
-                    || qty < 1)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    var product = await ShopService.GetProductAsync(productId);
-                    if (product != null && product.Status == "Active")
-                    {
-                        CartState.Add(product, Math.Min(qty, MaxQuantityPerLine));
-                        added++;
-                    }
-                }
-                catch (Exception)
-                {
-                    // Invalid / unavailable product id — skip it.
-                }
-            }
-
-            if (added > 0)
-            {
-                Toasts.Show($"Đã thêm {added} món từ link chia sẻ vào giỏ");
-                // Remove the share param so a refresh doesn't re-add.
-                Navigation.NavigateTo("/cart", forceLoad: false);
-            }
+            return System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(padded));
         }
         catch (Exception)
         {
             // Malformed share payload — ignore.
+            return null;
         }
+    }
+
+    /// <summary>
+    /// Thêm từng món trong payload chia sẻ vào giỏ: mỗi mục "productId:qty",
+    /// bỏ qua mục sai định dạng hoặc món không còn bán.
+    /// </summary>
+    /// <param name="payload">Chuỗi payload đã giải mã.</param>
+    /// <returns>Số món đã thêm thành công.</returns>
+    private async Task<int> AddSharedPayloadToCartAsync(string payload)
+    {
+        var added = 0;
+        foreach (var part in payload.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var pieces = part.Split(':');
+            if (pieces.Length != 2
+                || !Guid.TryParseExact(pieces[0], "N", out var productId)
+                || !int.TryParse(pieces[1], out var qty)
+                || qty < 1)
+            {
+                continue;
+            }
+
+            try
+            {
+                var product = await ShopService.GetProductAsync(productId);
+                if (product != null && product.Status == "Active")
+                {
+                    CartState.Add(product, Math.Min(qty, MaxQuantityPerLine));
+                    added++;
+                }
+            }
+            catch (Exception)
+            {
+                // Invalid / unavailable product id — skip it.
+            }
+        }
+
+        return added;
     }
 
     /// <summary>
@@ -509,10 +538,6 @@ else
 
         return result;
     }
-
-    /// <summary>Định dạng tiền VNĐ không số thập phân kèm ký hiệu ₫ (vd 35.000 ₫).</summary>
-    /// <param name="price">Số tiền.</param>
-    /// <returns>Chuỗi tiền đã định dạng.</returns>
 
     /// <summary>Re-render khi người dùng đổi ngôn ngữ (AppI18n.OnChange).</summary>
     private void OnLangChanged() => InvokeAsync(StateHasChanged);

@@ -274,27 +274,6 @@
         }
     }
 
-    private bool HasTag(string tag)
-    {
-        var tags = (Product.Tags ?? "").Split(',', ';', ' ')
-            .Select(x => x.Trim().ToLowerInvariant());
-        return tags.Contains(tag);
-    }
-
-    private void ToggleTag(string tag, bool on)
-    {
-        var tags = (Product.Tags ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(x => x.Trim().ToLowerInvariant())
-            .Where(x => x.Length > 0 && x != tag)
-            .ToList();
-        if (on)
-        {
-            tags.Add(tag);
-        }
-
-        Product.Tags = tags.Count == 0 ? null : string.Join(",", tags);
-    }
-
     private async Task LoadSizesAsync()
     {
         try
