@@ -491,3 +491,85 @@ html.dark .sg-error-wrap p[style*="4a2b1a"] {
 }
 
 /* === end Agent 2 run 11:40 === */
+
+/* === UIUX run 12:10 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (các đợt trước đã phủ: kanban, nhuong-quyen, check-in, the-xoi,
+   cart/checkout sticky bar, track-order + survey popup, tai-khoan panel,
+   error page, svg DuBao, shop size price, qv-sheet, stepper mobile,
+   lexa auth, poll/spin/share, stats, review, bulk-prod, nq-form label,
+   to-info-label, shp-logout hover, chat-hint — đợt này chỉ lỗi MỚI;
+   quét toàn bộ file <style> trong .razor: OrderLabels/MenuPrint là trang
+   in (cố tình nền sáng), HangCho đã tối sẵn, ChatNoiBo/LichTongHop/Login/
+   DangNhap/QuenMatKhau/PrepaidCardTab/OrderCountdownBanner đã có rule dark) */
+
+/* ---------- FIX 1 — Trang bảo trì (App.razor) ----------
+   Vấn đề: App.razor (item 111/176) render trang bảo trì bằng <style> riêng:
+   .maint-screen nền #F5E9D4 (kem), .maint-card nền #fffdf8, .maint-title
+   #763434, .maint-msg #6b5b4a — 0 rule dark nào phủ (đã grep xác minh toàn
+   bộ css). Ở dark mode cả màn hình kem chói lóa; nếu chỉ tối nền thì chữ
+   đỏ/nâu chìm. Link "Đăng nhập quản trị" inline color:#9C682C cũng mờ.
+   Fix: nền/viền/chữ theo palette dark của landing (#1c1712/#262019), chữ
+   sáng cùng tone các fix #763434/#6b5b4a trước. Không cần !important vì
+   <style> của trang bảo trì không scoped (html.dark .maint-screen thắng
+   .maint-screen). */
+html.dark .maint-screen {
+    background: #1c1712; /* was #F5E9D4 */
+}
+html.dark .maint-card {
+    background: #262019; /* was #fffdf8 */
+    border-color: #a67c3d; /* was #9C682C */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .45);
+}
+html.dark .maint-title {
+    color: #f2b8b8; /* was #763434 */
+}
+html.dark .maint-msg {
+    color: #d8c8a8; /* was #6b5b4a */
+}
+html.dark .maint-card a[style*="9C682C"] {
+    color: #d9ab68 !important; /* was #9C682C */
+}
+
+/* ---------- FIX 2 — Trang 404 (App.razor NotFound) ----------
+   Vấn đề: App.razor <NotFound> — h2 inline color:#7a1b2e (đỏ đậm) trên
+   MainLayout nền tối ở dark mode → tương phản ~1.8:1, tiêu đề "Không tìm
+   thấy trang" chìm hẳn. Nút "Đặt món ngay" (trắng trên #7a1b2e) và p
+   text-muted vẫn đọc được nên không đụng.
+   Fix: attribute selector + !important để thắng inline style; cùng tone
+   fix Error.razor đợt 11:40. Selector chỉ bám h2 có inline "color: #7a1b2e"
+   nên không chạm button dùng background-color. */
+html.dark h2[style*="color: #7a1b2e"] {
+    color: #f2b8b8 !important; /* was #7a1b2e */
+}
+
+/* ---------- FIX 3 — Card báo lỗi tải trang /shop ----------
+   Vấn đề: Shop.razor:113 — card lỗi khi mất mạng dùng inline
+   style="background: #f5ebcd" (vàng kem): inline thắng mọi rule dark nên
+   ở dark mode card vàng sáng lọt thỏm giữa trang tối. Nếu chỉ tối nền thì
+   h2 #7a1b2e và p #4a2b1a (inline) chìm. .card này duy nhất dùng #f5ebcd
+   (đã grep xác minh) nên attribute selector an toàn. Nút "Thử lại"
+   (trắng trên #7a1b2e) vẫn đọc được nên không đụng.
+   Fix: nền tối palette shop + chữ sáng cùng tone fix error trước. */
+html.dark div.card[style*="f5ebcd"] {
+    background: #262019 !important; /* was #f5ebcd */
+}
+html.dark div.card[style*="f5ebcd"] h2[style*="7a1b2e"] {
+    color: #f2b8b8 !important; /* was #7a1b2e */
+}
+html.dark div.card[style*="f5ebcd"] p[style*="4a2b1a"] {
+    color: #d8c8a8 !important; /* was #4a2b1a */
+}
+
+/* ---------- FIX 4 — Viền stepper QuantitySpinner ở dark mode ----------
+   Vấn đề: Shop/Components/QuantitySpinner.razor — wrapper .qty-spinner có
+   background:#fff hardcode; ô nhập .qty-input đã có rule dark (#1e1e36)
+   nhưng nút chỉ cao 44px, ô nhập 38px → ở dark mode lộ 2 dải trắng 3px
+   quanh ô nhập, lạc khỏi nền tối. Không rule dark nào phủ wrapper
+   (đã grep xác minh).
+   Fix: nền wrapper trùng nền input dark; giữ nút tím #7a6fbe (vẫn rõ).
+   Không cần !important (<style> trong .razor không scoped). */
+html.dark .qty-spinner {
+    background: #1e1e36; /* was #fff */
+}
+
+/* === end Agent 2 run 12:10 === */

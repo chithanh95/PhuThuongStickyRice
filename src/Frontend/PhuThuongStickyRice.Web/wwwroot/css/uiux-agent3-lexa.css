@@ -443,3 +443,73 @@ a:hover, a:focus { color: #625998; }
 }
 
 /* === end Agent 3 run 11:20 === */
+
+/* === UIUX run 12:05 (job uiux-team-2days) — Agent 3 Lexa sync, đợt 7 ===
+   3 fix MỚI (đã verify bằng grep, không trùng 6 đợt trước).
+   6 đợt trước đã xử lý: text-*/bg-*/badge-*/alert-*/border-*/table-*
+   utilities, btn solid + outline (shop+admin), btn-link, nav pills/tabs,
+   pagination admin, validation, btn focus glow, a:hover, ::selection,
+   custom-switch/checkbox/radio (admin-lexa), .fc-call, auth-step.done,
+   online-dot.on, inline LaiGop, lx-pill. File này load ở index.html:155,
+   sau Bootstrap + app.css + admin-lexa.css nên thắng rule cùng specificity. */
+
+/* ---------- Fix 1: link .alert-link trong alert -> màu chữ của alert ----------
+   Verify: Dashboard.razor:57 (alert-warning + "Xem ngay →"),
+   :71 (alert-danger + "Xử lý ngay →"), :87 (alert-warning + "Kiểm tra
+   tồn kho →"). Đợt 08:35 đã đổi nền/chữ alert sang Lexa soft tints,
+   nhưng Bootstrap còn rule riêng `.alert-warning .alert-link`
+   (#533f03 nâu đậm) và `.alert-danger .alert-link` (#491217 đỏ đậm)
+   specificity (0,2,0) — vẫn đè lên màu chữ alert trên chính các link này.
+   `.alert .alert-link` cùng specificity (0,2,0), file load sau nên thắng;
+   dùng inherit để link ăn đúng màu chữ Lexa đã thiết kế cho từng alert
+   (đủ contrast trên nền tint), kèm gạch chân giữ nhận diện link. */
+.alert .alert-link { color: inherit; text-decoration: underline; }
+.alert .alert-link:hover { color: inherit; filter: brightness(.85); }
+
+/* ---------- Fix 2: checkbox/radio native -> accent tím Lexa (shop + admin) ----------
+   Verify shop: DatCung.razor:60-112 (radio dịp cúng, loại mắm; checkbox
+   nhắc hàng tháng), CungGio.razor:74-79 (radio loại mắm),
+   TaiKhoan.razor:265 (checkbox "Mặc định" địa chỉ).
+   Verify admin: ShopSettings.razor:246/289/338/414/454 (checkbox trần
+   AcceptingOrders, MaintenanceMode...), MaGiamGia.razor:218,
+   AddEditProduct.razor (form-check-input), Dashboard.razor.
+   Các input native đang render xanh dương mặc định của trình duyệt.
+   `accent-color` đổi màu tick/dot sang tím Lexa, không đụng layout;
+   thêm glow focus tím đồng bộ pattern .form-control:focus (đợt 09:40).
+   Không ảnh hưởng custom-switch/checkbox (đã style bằng ::before). */
+.shp-page .form-check-input,
+.shp-page input[type="checkbox"],
+.shp-page input[type="radio"],
+.lx-admin .form-check-input,
+.lx-admin input[type="checkbox"],
+.lx-admin input[type="radio"] {
+    accent-color: #7a6fbe;
+}
+.shp-page .form-check-input:focus,
+.lx-admin .form-check-input:focus {
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25);
+    outline: none;
+}
+
+/* ---------- Fix 3: btn-outline-primary admin — trạng thái :active/:focus ----------
+   Verify: FunnelReport.razor:66, LichNghi.razor:115, MauTinNhan.razor:91,
+   MaGiamGia.razor:106, Articles.razor:113, LichTongHop.razor:25,
+   DoiSoatMomo.razor:25-27 (tab lọc). admin-lexa.css:659-668 chỉ cover
+   base + :hover; khi NHẤN GIỮ nút, rule Bootstrap
+   `.btn-outline-primary:not(:disabled):not(.disabled):active`
+   specificity (0,4,0) thắng :hover (0,3,0) -> fill xanh #007bff nháy lên.
+   Rule dưới specificity (0,6,0), file load sau nên thắng mà không cần
+   !important; focus glow tím thay rgba(0,123,255,.5) của Bootstrap. */
+.lx-admin .btn-outline-primary:not(:disabled):not(.disabled):active,
+.lx-admin .btn-outline-primary:not(:disabled):not(.disabled).active,
+.show > .lx-admin .btn-outline-primary.dropdown-toggle {
+    background-color: #7a6fbe;
+    border-color: #7a6fbe;
+    color: #fff;
+}
+.lx-admin .btn-outline-primary:focus,
+.lx-admin .btn-outline-primary.focus {
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25);
+}
+
+/* === end Agent 3 run 12:05 === */

@@ -253,3 +253,26 @@ html.dark .sg-modal-close:focus-visible {
 }
 
 /* === end Agent 4 run 11:20 === */
+
+/* === Agent 4 run 12:10 — batch mới (2026-10-19) — 5 fix, không trùng các run trước === */
+/* 4 fix đầu là attribute for/id trong Shop/Pages/Checkout.razor (WCAG 1.3.1/3.3.2):
+   - "Tên người nhận *" / "SĐT người nhận *" → co-recipient-name, co-recipient-phone
+   - "Mã số thuế *" / "Tên công ty *" (mục hóa đơn VAT) → co-tax-code, co-company-name
+   - "Lời nhắn trên thiệp" (textarea quà tặng) → co-gift-message
+   - "Chi nhánh" / "📇 Chọn địa chỉ đã lưu" (2 select) → co-branch, co-saved-address
+   Screen reader trước đây không đọc được label các ô này vì label không gắn với input. */
+
+/* Fix 5 — WCAG 1.4.3 (Contrast, AA 4.5:1): nút "Sao chép" mã đơn
+   `.to-copy-btn` (TrackOrder.razor:333, TrackOrder.razor.css:264) chữ cam
+   #e8590c trên nền trắng chỉ đạt ~3.58:1 — người lớn tuổi khó đọc tên nút.
+   Đậm lên #b5470a (~5.43:1), cùng tông cam brand. Dark mode giữ #e8590c gốc
+   vì trên nền tối nó đạt ~4.7:1 (đã qua chuẩn). Lặp class để thắng rule
+   component scoped (0,1,0) theo thứ tự cascade (file này load sau cùng). */
+.to-copy-btn.to-copy-btn {
+    color: #b5470a;
+}
+html.dark .to-copy-btn.to-copy-btn {
+    color: #e8590c;
+}
+
+/* === end Agent 4 run 12:10 === */

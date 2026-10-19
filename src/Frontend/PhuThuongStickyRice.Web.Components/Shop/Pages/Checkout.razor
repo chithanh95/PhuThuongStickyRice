@@ -345,8 +345,8 @@ else
                     @if (_branches != null && _branches.Count > 0)
                     {
                         <div class="form-group">
-                            <label>Chi nhánh <small class="text-muted">(tùy chọn)</small></label>
-                            <select class="form-control" @onchange="OnBranchChanged">
+                            <label for="co-branch">Chi nhánh <small class="text-muted">(tùy chọn)</small></label>
+                            <select id="co-branch" class="form-control" @onchange="OnBranchChanged">
                                 <option value="">— Không chọn —</option>
                                 @foreach (var b in _branches)
                                 {
@@ -358,8 +358,8 @@ else
                     @if (_savedAddresses != null && _savedAddresses.Count > 0)
                     {
                         <div class="form-group">
-                            <label>📇 Chọn địa chỉ đã lưu</label>
-                            <select class="form-control" @onchange="OnSavedAddressChanged">
+                            <label for="co-saved-address">📇 Chọn địa chỉ đã lưu</label>
+                            <select id="co-saved-address" class="form-control" @onchange="OnSavedAddressChanged">
                                 <option value="">— Nhập tay —</option>
                                 @foreach (var a in _savedAddresses)
                                 {
@@ -424,8 +424,8 @@ else
                     @if (_orderForSomeoneElse)
                     {
                         <div class="form-group">
-                            <label>Tên người nhận *</label>
-                            <input class="form-control @FieldClass(_recipientNameError)" @bind="_order.RecipientName"
+                            <label for="co-recipient-name">Tên người nhận *</label>
+                            <input id="co-recipient-name" class="form-control @FieldClass(_recipientNameError)" @bind="_order.RecipientName"
                                    placeholder="Tên người nhận hàng" />
                             @if (!string.IsNullOrEmpty(_recipientNameError))
                             {
@@ -433,8 +433,8 @@ else
                             }
                         </div>
                         <div class="form-group">
-                            <label>SĐT người nhận *</label>
-                            <input class="form-control @FieldClass(_recipientPhoneError)" @bind="_order.RecipientPhone"
+                            <label for="co-recipient-phone">SĐT người nhận *</label>
+                            <input id="co-recipient-phone" class="form-control @FieldClass(_recipientPhoneError)" @bind="_order.RecipientPhone"
                                    placeholder="0901234567" />
                             @if (!string.IsNullOrEmpty(_recipientPhoneError))
                             {
@@ -453,8 +453,8 @@ else
                         {
                             <div class="card-body p-2">
                                 <div class="form-group mb-2">
-                                    <label>Mã số thuế *</label>
-                                    <input class="form-control @FieldClass(_taxCodeError)" @bind="_order.TaxCode"
+                                    <label for="co-tax-code">Mã số thuế *</label>
+                                    <input id="co-tax-code" class="form-control @FieldClass(_taxCodeError)" @bind="_order.TaxCode"
                                            placeholder="0101234567" />
                                     @if (!string.IsNullOrEmpty(_taxCodeError))
                                     {
@@ -462,8 +462,8 @@ else
                                     }
                                 </div>
                                 <div class="form-group mb-1">
-                                    <label>Tên công ty *</label>
-                                    <input class="form-control @FieldClass(_companyNameError)" @bind="_order.CompanyName"
+                                    <label for="co-company-name">Tên công ty *</label>
+                                    <input id="co-company-name" class="form-control @FieldClass(_companyNameError)" @bind="_order.CompanyName"
                                            placeholder="Công ty TNHH ..." />
                                     @if (!string.IsNullOrEmpty(_companyNameError))
                                     {
@@ -486,8 +486,8 @@ else
                         @if (_order.IsGift)
                         {
                             <div class="form-group">
-                                <label>Lời nhắn trên thiệp</label>
-                                <textarea class="form-control" @bind="_order.GiftMessage" rows="2"
+                                <label for="co-gift-message">Lời nhắn trên thiệp</label>
+                                <textarea id="co-gift-message" class="form-control" @bind="_order.GiftMessage" rows="2"
                                           placeholder="Ví dụ: Chúc mừng sinh nhật!"></textarea>
                             </div>
                         }

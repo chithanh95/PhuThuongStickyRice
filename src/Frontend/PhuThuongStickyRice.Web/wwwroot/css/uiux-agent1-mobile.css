@@ -576,3 +576,142 @@
     }
 }
 /* ===== END UIUX-1115 A1 ===== */
+
+/* ===== UIUX-1210 A1 (run 12:10) — 5 fix mobile mới ===== */
+/* ------------------------------------------------------------
+   FIX 1 — /taikhoan: các nút `btn-sm` còn sót (~31px).
+   Vấn đề: "Xem chi tiết" / "🔁 Đặt lại" trong lịch sử đơn,
+   các chip khẩu vị ("ít hành", "nhiều đậu"...), nút "+ Thêm địa
+   chỉ", và cụm ★/Sửa/Xóa trong btn-group-sm — tất cả chỉ ~31px,
+   khách lớn tuổi khó bấm trên điện thoại.
+   Giải pháp: toàn trang .tk-page, mọi .btn-sm lên 44px.
+   (Verify: TaiKhoan.razor:20 wrapper .tk-page; btn-sm tại
+   115-116 lịch sử đơn, 144 chips khẩu vị, 237 + Thêm địa chỉ,
+   317-320 btn-group-sm địa chỉ — scoped CSS TaiKhoan.razor.css
+   không có rule mobile nào nên không xung đột)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .tk-page .btn-sm {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /taikhoan: nút hành động chính chỉ ~38px.
+   Vấn đề: "Thêm" (khẩu vị), "Lưu khẩu vị", "Lưu địa chỉ",
+   "Đăng xuất" đều là btn Bootstrap mặc định ~38px — dưới chuẩn
+   chạm 44px, trong khi đây là thao tác chính của trang tài khoản.
+   Giải pháp: nâng lên 48px; nút "Đăng xuất" full-width cuối trang.
+   (Verify: TaiKhoan.razor:151 input-group-append > .btn Thêm;
+   158/198/226/278 các .btn-primary đều là CTA chính;
+   328 Đăng xuất là con trực tiếp của .tk-page)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .tk-page .input-group-append .btn,
+    .tk-page .btn-primary {
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .tk-page > .btn-outline-secondary {
+        width: 100%;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /hang-cho: nút "⤢ Phóng to" trên vé số quá nhỏ.
+   Vấn đề: .cho-zoom padding 2px 8px, font 1.1rem → vùng bấm chỉ
+   ~26px cao × ~40px ngang, nằm góc vé số — khó bấm chính xác
+   trên điện thoại (màn hình chờ lấy món khách hay mở bằng mobile).
+   Giải pháp: vùng bấm 44×44px, giữ nguyên vị trí tuyệt đối góc vé.
+   (Verify: HangCho.razor:69-79 inline <style> set padding cho
+   .cho-ticket .cho-zoom — không phải scoped CSS, file này load
+   sau cùng nên cùng specificity vẫn thắng theo cascade)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .cho-ticket .cho-zoom {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /dat-so-luong-lon: khe hở 577–767px của nút bước.
+   Vấn đề: inline <style> trong DatSoLuongLon.razor chỉ fix
+   .bulk-submit (width:100%, 50px) ở @media ≤576px — ở 577–767px
+   (điện thoại xoay ngang, tablet nhỏ) nút "Tiếp tục →" / "Gửi yêu
+   cầu báo giá" rớt về ~38px; nút "← Quay lại" cạnh bên cũng ~38px;
+   thêm nữa .ml-2 (8px) cộng với width:100% làm nút tràn ngang 8px
+   ở ≤576px.
+   Giải pháp: mở rộng rule lên 767.98px; cặp Quay lại/Tiếp tục xếp
+   dọc full-width, mỗi nút ≥48px; bỏ margin-left gây tràn.
+   (Verify: DatSoLuongLon.razor:44-46 inline style chỉ ≤576px;
+   .bulk-submit chỉ tồn tại ở trang này — selector an toàn;
+   152/201/234 nút Quay lại đứng ngay trước .bulk-submit.ml-2)
+   ------------------------------------------------------------ */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .bulk-submit {
+        width: 100%;
+        min-height: 50px;
+        font-size: 1.05rem;
+    }
+    .btn-outline-secondary:has(+ .bulk-submit) {
+        width: 100%;
+        min-height: 48px;
+        margin-bottom: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+}
+@media (max-width: 767.98px) {
+    /* Bỏ ml-2 khi nút đã full-width — tránh tràn ngang 8px */
+    .bulk-submit.ml-2 {
+        margin-left: 0;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /dat-so-luong-lon (bước cọc + hoàn tất): nút chốt ~38px.
+   Vấn đề: "Tôi đã chuyển khoản" (btn-success) và "Xem thực đơn"
+   (btn-primary) chỉ ~38px, co theo nội dung — đây là hành động
+   chốt thanh toán cọc và điều hướng chính sau khi gửi yêu cầu,
+   cần dễ bấm với người lớn tuổi.
+   Giải pháp: full-width, cao 48px, chữ đậm.
+   (Verify: DatSoLuongLon.razor:102 button.btn-success.mt-2
+   (dùng :not(.btn-sm) để loại nút "Lưu" ở TrackOrder:444) và
+   111 a.btn-primary.mt-3 "Xem thực đơn" — cả hai combo chỉ khớp
+   đúng trang này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    button.btn-success.mt-2:not(.btn-sm),
+    a.btn-primary.mt-3 {
+        width: 100%;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+}
+/* ===== END UIUX-1210 A1 ===== */
