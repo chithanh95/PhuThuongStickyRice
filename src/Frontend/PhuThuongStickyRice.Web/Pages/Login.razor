@@ -29,14 +29,14 @@
             }
 
             <div class="form-group">
-                <label class="login-label">Tên đăng nhập</label>
-                <input class="form-control" @bind="_username" placeholder="Nhập tên đăng nhập"
-                       disabled="@_awaitingTwoFactor" @onkeyup="HandleEnter" />
+                <label class="login-label" for="login-username">Tên đăng nhập</label>
+                <input id="login-username" class="form-control" @bind="_username" placeholder="Nhập tên đăng nhập"
+                       autocomplete="username" disabled="@_awaitingTwoFactor" @onkeyup="HandleEnter" />
             </div>
             <div class="form-group">
-                <label class="login-label">Mật khẩu</label>
-                <input type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu"
-                       disabled="@_awaitingTwoFactor" @onkeyup="HandleEnter" />
+                <label class="login-label" for="login-password">Mật khẩu</label>
+                <input id="login-password" type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu"
+                       autocomplete="current-password" disabled="@_awaitingTwoFactor" @onkeyup="HandleEnter" />
             </div>
             @if (_awaitingTwoFactor)
             {
@@ -44,9 +44,9 @@
                     <small>Nhập mã 6 số từ ứng dụng Authenticator.</small>
                 </div>
                 <div class="form-group">
-                    <label>Mã xác thực 2 bước</label>
-                    <input class="form-control text-center" @bind="_twoFactorCode" maxlength="6"
-                           inputmode="numeric" placeholder="123456" @onkeyup="HandleEnter" />
+                    <label for="login-2fa">Mã xác thực 2 bước</label>
+                    <input id="login-2fa" class="form-control text-center" @bind="_twoFactorCode" maxlength="6"
+                           inputmode="numeric" autocomplete="one-time-code" placeholder="123456" @onkeyup="HandleEnter" />
                 </div>
             }
             <div class="form-group row align-items-center">

@@ -313,7 +313,8 @@ else
                 <div class="card-header">@AppI18n.T("shop.your_info")</div>
                 <div class="card-body">
                     <div class="form-group">
-                        <label>Hình thức nhận hàng *</label>
+                        <label id="co-fulfillment-label">Hình thức nhận hàng *</label>
+                        <div role="radiogroup" aria-labelledby="co-fulfillment-label">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="fulfillment" id="fm-shipper"
                                    checked="@(_fulfillment == "ShipperPickup")" @onchange="@(() => _fulfillment = "ShipperPickup")" />
@@ -323,6 +324,7 @@ else
                             <input class="form-check-input" type="radio" name="fulfillment" id="fm-pickup"
                                    checked="@(_fulfillment == "Pickup")" @onchange="@(() => _fulfillment = "Pickup")" />
                             <label class="form-check-label" for="fm-pickup">🏪 Tôi tự đến quán lấy <small class="text-success">(miễn phí ship)</small></label>
+                        </div>
                         </div>
                         <small class="text-muted d-block mt-1">Quán chuẩn bị sẵn theo mã đơn. Bạn tự đặt xe (Grab/Ahamove...) và báo tài xế đọc mã đơn để lấy — phí ship bạn trả trực tiếp cho tài xế.</small>
                     </div>

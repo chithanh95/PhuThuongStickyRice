@@ -1479,11 +1479,20 @@ html.dark .lx-admin .img-thumbnail {
 .lx-admin .form-control.invalid,
 .lx-admin .form-select.invalid {
     border-color: #f46a6a !important;
+    /* UIUX-1019+ A3: app.css (Blazor template) vẫn vẽ outline đỏ tươi `red`
+       quanh input lỗi — đè về đỏ danger Lexa cho đồng nhất với border. */
+    outline-color: #f46a6a !important;
 }
 .lx-admin .form-control.invalid:focus,
 .lx-admin .form-select.invalid:focus {
     border-color: #f46a6a !important;
     box-shadow: 0 0 0 .2rem rgba(244,106,106,.25) !important;
+}
+
+/* UIUX-1019+ A3: app.css (Blazor template) vẽ outline xanh Bootstrap #26b050
+   quanh input hợp lệ đã sửa — đè về xanh success Lexa #34c38f. */
+.lx-admin .valid.modified:not([type=checkbox]) {
+    outline-color: #34c38f !important;
 }
 .lx-admin .validation-message {
     color: #f46a6a !important;

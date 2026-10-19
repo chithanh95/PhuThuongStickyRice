@@ -191,10 +191,12 @@
     }
 }
 
-/* Dark mode: stacked cards follow the dark card palette */
+/* Dark mode: stacked cards follow the SHOP dark palette (#2e2620/#3a3226).
+   Trước dùng #262640/#3a3a58 là palette admin (tím-xám), lạc tông nâu ấm
+   của trang shop ở dark mode. */
 html.dark .cart-lines tbody tr {
-    background: #262640;
-    border-color: #3a3a58;
+    background: #2e2620;
+    border-color: #3a3226;
 }
 
 /* GH1: freeship progress bar */

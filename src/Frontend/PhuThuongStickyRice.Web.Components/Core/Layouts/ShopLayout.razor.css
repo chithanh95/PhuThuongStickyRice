@@ -140,7 +140,7 @@
     height: 19px;
     padding: 0 5px;
     border-radius: 999px;
-    background: #c0392b;
+    background: #f46a6a; /* UIUX-1019+ A3: đỏ danger Lexa (trước #c0392b) — đồng nhất với nút Xóa giỏ #f46a6a ở Cart.razor.css */
     color: #fff;
     font-size: 11px;
     font-weight: 800;
@@ -206,7 +206,7 @@
 }
 
 .shp-logout:hover {
-    color: #c0392b;
+    color: #f46a6a; /* UIUX-1019+ A3: đỏ danger Lexa (trước #c0392b) — đồng nhất badge giỏ phía trên */
 }
 
 .shp-hamburger {

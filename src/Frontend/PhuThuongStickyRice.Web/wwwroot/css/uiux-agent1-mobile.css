@@ -715,3 +715,107 @@
     }
 }
 /* ===== END UIUX-1210 A1 ===== */
+
+/* ===== UIUX-1215 A1 (run 12:15) — 5 fix mobile mới ===== */
+/* ------------------------------------------------------------
+   FIX 1 — /shop: card "Gợi ý theo giờ" (.card.border-info, duy nhất
+   toàn app — Shop.razor:180). Trên mobile hiện dạng card 2 cột:
+   hàng giá + nút "+ Thêm" (btn-sm ~31px) bị ép chật; nút
+   "💬 Hỏi qua Zalo" cũng chỉ ~31px.
+   Giải pháp: hàng giá/nút xếp dọc, nút "+ Thêm" full-width 44px;
+   nút Zalo 44px.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card.border-info .card-body > .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .card.border-info .card-body > .d-flex.justify-content-between .btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .card.border-info .btn-block {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — Popup upsell "Ăn kèm ngon hơn" (UpsellPopup, dùng ở
+   /shop và landing): nút "+ Thêm" btn-sm (~31px) cạnh mỗi món gợi
+   ý; 2 nút footer "Không, cảm ơn" / "Xem giỏ hàng" cũng ~31px.
+   Popup này hiện ngay sau khi thêm món — khách thao tác nhiều.
+   Giải pháp: class mới .upsell-popup trên modal (1 từ trong razor);
+   nút "+ Thêm" 44x44, footer 44px.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .upsell-popup .modal-body .btn-sm {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+    .upsell-popup .modal-footer .btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /cart (giỏ có món): card "Món ăn kèm gợi ý"
+   (.cart-upsell — class mới, duy nhất trang cart): nút "Thêm"
+   btn-sm (~31px) nằm cạnh ảnh món ăn.
+   Giải pháp: lên 44px, chữ canh giữa dọc.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .cart-upsell .btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /cart (giỏ trống): card "🔥 Món bán chạy"
+   (.cart-empty-suggest — class mới trên .row): nút "➕ Thêm"
+   btn-sm w-100 — full-width nhưng chỉ ~31px cao, đây là cửa cứu
+   phiên thoát đầu tiên khách thấy khi giỏ trống.
+   Giải pháp: cao 44px, chữ to đậm.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .cart-empty-suggest .btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — Nút nổi "📞 Gọi ngay / 💬 Zalo" (MainLayout, mọi trang
+   shop trên mobile).
+   Vấn đề: pill chỉ ~34px cao (font 13px + padding 8px) — dưới
+   chuẩn chạm, đây là kênh liên hệ chính của khách lớn tuổi.
+   Giải pháp: sửa trực tiếp inline <style> trong MainLayout.razor
+   (không động file CSS này): min-height 44px, chữ 14px canh giữa.
+   Vị trí bottom:84px giữ nguyên — không đè thanh sticky.
+   ------------------------------------------------------------ */
+/* ===== END UIUX-1215 A1 ===== */
