@@ -71,13 +71,7 @@ namespace PhuThuongStickyRice.Application.Common
                     return false;
                 }
 
-                // v3 returns a score; v2/checkbox has no score — treat as pass.
-                if (root.TryGetProperty("score", out var score))
-                {
-                    return score.GetDouble() >= MinimumScore;
-                }
-
-                return true;
+                return IsScorePassing(root);
             }
             catch (Exception)
             {
@@ -85,6 +79,22 @@ namespace PhuThuongStickyRice.Application.Common
                 // through when the admin enabled reCAPTCHA.
                 return false;
             }
+        }
+
+        /// <summary>
+        /// True khi score reCAPTCHA v3 đạt ngưỡng tối thiểu; phản hồi v2/
+        /// checkbox không có score thì coi như pass (fail-open cho dạng này
+        /// vì Google trả success=true mà không kèm score).
+        /// </summary>
+        private static bool IsScorePassing(JsonElement root)
+        {
+            // v3 returns a score; v2/checkbox has no score — treat as pass.
+            if (root.TryGetProperty("score", out var score))
+            {
+                return score.GetDouble() >= MinimumScore;
+            }
+
+            return true;
         }
     }
 }

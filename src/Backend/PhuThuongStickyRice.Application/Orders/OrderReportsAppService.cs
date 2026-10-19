@@ -121,8 +121,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private static DailyReconciliationDto BuildDailyReconciliationDto(
             DateTime day, List<ReconciliationChannelRow> rows)
         {
-            var channels = Enum.GetValues(typeof(PaymentMethod))
-                .Cast<PaymentMethod>()
+            var channels = Enum.GetValues<PaymentMethod>()
                 .Select(m =>
                 {
                     var row = rows.FirstOrDefault(x => x.Method == m);
@@ -480,16 +479,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 query = query.Where(x => x.ShipperId == shipperId);
             }
 
-            if (input.FromDate.HasValue)
+            if (input.FromDate.HasValue || input.ToDate.HasValue)
             {
-                var fromUtc = VietnamTime.DayStartUtc(input.FromDate.Value);
-                query = query.Where(x => x.CreatedAt >= fromUtc);
-            }
-
-            if (input.ToDate.HasValue)
-            {
-                var toUtc = VietnamTime.DayEndExclusiveUtc(input.ToDate.Value);
-                query = query.Where(x => x.CreatedAt < toUtc);
+                query = ApplyDateRangeFilter(query, input);
             }
 
             // SH5 (bug-hunt): export bỏ sót 2 filter này nên file Excel lệch
@@ -506,6 +498,28 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 var vipPhones = await _vipPriority.GetVipPhonesAsync();
                 query = query.Where(x => vipPhones.Contains(x.CustomerPhone));
+            }
+
+            return query;
+        }
+
+        /// <summary>
+        /// Lọc đơn theo khoảng ngày Việt Nam: đầu ngày FromDate (00:00, biên
+        /// bao) đến hết ngày ToDate (biên độc quyền) — cùng cách đổi múi giờ
+        /// với GetListAsync ở OrderAppService để Excel khớp danh sách đang xem.
+        /// </summary>
+        private static IQueryable<Order> ApplyDateRangeFilter(IQueryable<Order> query, GetOrdersInput input)
+        {
+            if (input.FromDate.HasValue)
+            {
+                var fromUtc = VietnamTime.DayStartUtc(input.FromDate.Value);
+                query = query.Where(x => x.CreatedAt >= fromUtc);
+            }
+
+            if (input.ToDate.HasValue)
+            {
+                var toUtc = VietnamTime.DayEndExclusiveUtc(input.ToDate.Value);
+                query = query.Where(x => x.CreatedAt < toUtc);
             }
 
             return query;

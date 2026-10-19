@@ -28,6 +28,38 @@ namespace PhuThuongStickyRice.Application.Orders.Email
             body.Append("<h2>Xôi Phú Thượng — Xác nhận đơn hàng</h2>");
             body.Append($"<p>Cảm ơn <strong>{Escape(order.CustomerName)}</strong> đã đặt hàng!</p>");
             body.Append("<h3>Thông tin đơn hàng</h3>");
+            AppendOrderInfoTable(body, order, orderedAt);
+
+            body.Append("<h3>Chi tiết món</h3>");
+            AppendLinesTable(body, order);
+
+            if (order.PaymentMethod == PaymentMethod.BankTransfer && order.PaymentStatus == PaymentStatus.Unpaid)
+            {
+                AppendBankTransferInstructions(body, order, bankTransfer);
+            }
+
+            if (order.PaymentMethod == PaymentMethod.Cod)
+            {
+                body.Append("<p>Bạn sẽ thanh toán bằng tiền mặt khi nhận hàng.</p>");
+            }
+
+            if (order.PaymentMethod == PaymentMethod.MoMo)
+            {
+                body.Append("<p>Vui lòng hoàn tất thanh toán qua MoMo theo hướng dẫn trên trang đặt hàng.</p>");
+            }
+
+            AppendFooter(body);
+            body.Append("</body></html>");
+
+            return (subject, body.ToString());
+        }
+
+        /// <summary>
+        /// Bảng thông tin đơn hàng: mã đơn, ngày giờ, khách, địa chỉ, trạng
+        /// thái đơn / thanh toán, phương thức thanh toán, ghi chú (nếu có).
+        /// </summary>
+        private static void AppendOrderInfoTable(StringBuilder body, Order order, DateTime orderedAt)
+        {
             body.Append("<table cellpadding=\"6\" cellspacing=\"0\" border=\"0\">");
             body.Append($"<tr><td><strong>Mã đơn hàng:</strong></td><td>{Escape(order.OrderNumber)}</td></tr>");
             body.Append($"<tr><td><strong>Ngày giờ đặt:</strong></td><td>{orderedAt:dd/MM/yyyy HH:mm} (giờ Việt Nam, UTC+7)</td></tr>");
@@ -43,8 +75,14 @@ namespace PhuThuongStickyRice.Application.Orders.Email
             }
 
             body.Append("</table>");
+        }
 
-            body.Append("<h3>Chi tiết món</h3>");
+        /// <summary>
+        /// Bảng chi tiết từng món + các dòng tổng: tạm tính, giảm giá (nếu có),
+        /// phí giao hàng (nếu có), tổng tiền.
+        /// </summary>
+        private static void AppendLinesTable(StringBuilder body, Order order)
+        {
             body.Append("<table cellpadding=\"6\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\">");
             body.Append("<tr><th align=\"left\">Món</th><th align=\"right\">Số lượng</th><th align=\"right\">Đơn giá</th><th align=\"right\">Thành tiền</th></tr>");
             foreach (var line in order.Lines)
@@ -76,40 +114,35 @@ namespace PhuThuongStickyRice.Application.Orders.Email
             body.Append("<tr><td colspan=\"3\" align=\"right\"><strong>Tổng tiền</strong></td>"
                 + $"<td align=\"right\"><strong>{FormatPrice(order.TotalAmount.Amount)}</strong></td></tr>");
             body.Append("</table>");
+        }
 
-            if (order.PaymentMethod == PaymentMethod.BankTransfer && order.PaymentStatus == PaymentStatus.Unpaid)
+        /// <summary>
+        /// Hướng dẫn chuyển khoản cho đơn BankTransfer chưa thanh toán: nội
+        /// dung chuyển khoản (mã đơn) + thông tin tài khoản shop (nếu có).
+        /// </summary>
+        private static void AppendBankTransferInstructions(StringBuilder body, Order order, BankTransferOptions bankTransfer)
+        {
+            body.Append("<h3>Hướng dẫn chuyển khoản</h3>");
+            body.Append("<p>Vui lòng chuyển khoản với nội dung: "
+                + $"<strong>{Escape(order.OrderNumber)}</strong>. Sau khi chuyển, bấm "
+                + "“Tôi đã chuyển khoản” trên trang tra cứu đơn hàng để shop xác nhận.</p>");
+            if (bankTransfer != null)
             {
-                body.Append("<h3>Hướng dẫn chuyển khoản</h3>");
-                body.Append("<p>Vui lòng chuyển khoản với nội dung: "
-                    + $"<strong>{Escape(order.OrderNumber)}</strong>. Sau khi chuyển, bấm "
-                    + "“Tôi đã chuyển khoản” trên trang tra cứu đơn hàng để shop xác nhận.</p>");
-                if (bankTransfer != null)
-                {
-                    body.Append("<table cellpadding=\"6\" cellspacing=\"0\" border=\"0\">");
-                    body.Append($"<tr><td><strong>Ngân hàng:</strong></td><td>{Escape(bankTransfer.BankName)}</td></tr>");
-                    body.Append($"<tr><td><strong>Số tài khoản:</strong></td><td>{Escape(bankTransfer.AccountNumber)}</td></tr>");
-                    body.Append($"<tr><td><strong>Chủ tài khoản:</strong></td><td>{Escape(bankTransfer.AccountName)}</td></tr>");
-                    body.Append($"<tr><td><strong>Số tiền:</strong></td><td>{FormatPrice(order.TotalAmount.Amount)}</td></tr>");
-                    body.Append("</table>");
-                }
+                body.Append("<table cellpadding=\"6\" cellspacing=\"0\" border=\"0\">");
+                body.Append($"<tr><td><strong>Ngân hàng:</strong></td><td>{Escape(bankTransfer.BankName)}</td></tr>");
+                body.Append($"<tr><td><strong>Số tài khoản:</strong></td><td>{Escape(bankTransfer.AccountNumber)}</td></tr>");
+                body.Append($"<tr><td><strong>Chủ tài khoản:</strong></td><td>{Escape(bankTransfer.AccountName)}</td></tr>");
+                body.Append($"<tr><td><strong>Số tiền:</strong></td><td>{FormatPrice(order.TotalAmount.Amount)}</td></tr>");
+                body.Append("</table>");
             }
+        }
 
-            if (order.PaymentMethod == PaymentMethod.Cod)
-            {
-                body.Append("<p>Bạn sẽ thanh toán bằng tiền mặt khi nhận hàng.</p>");
-            }
-
-            if (order.PaymentMethod == PaymentMethod.MoMo)
-            {
-                body.Append("<p>Vui lòng hoàn tất thanh toán qua MoMo theo hướng dẫn trên trang đặt hàng.</p>");
-            }
-
+        /// <summary>Chân email: thương hiệu + lưu ý email tự động.</summary>
+        private static void AppendFooter(StringBuilder body)
+        {
             body.Append("<hr/>");
             body.Append("<p><small>Xôi Phú Thượng — Xôi làng nghề Phú Thượng, Hà Nội.<br/>"
                 + "Đây là email tự động, vui lòng không trả lời email này.</small></p>");
-            body.Append("</body></html>");
-
-            return (subject, body.ToString());
         }
 
         private static string PaymentMethodLabel(PaymentMethod method) => method switch

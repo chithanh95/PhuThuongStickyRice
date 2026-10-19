@@ -417,26 +417,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             var orderQueryable = await _orders.GetQueryableAsync();
-            // So sánh tolerant theo 9 số cuối (pattern như
-            // HasOrderedBeforeAsync): Order.CustomerPhone lưu raw theo
-            // cách khách gõ, buyer.Phone đã chuẩn hóa digits — so raw
-            // trực tiếp cho phép đổi format SĐT để farm bonus nhiều lần.
-            var buyerKey = buyer.Phone.Length >= 9
-                ? buyer.Phone.Substring(buyer.Phone.Length - 9)
-                : buyer.Phone;
-            var candidatePhones = await _asyncExecuter.ToListAsync(
-                orderQueryable
-                    .Where(x => x.Id != order.Id
-                        && x.Status == OrderStatus.Completed
-                        && x.CustomerPhone != null
-                        && x.CustomerPhone.Contains(buyerKey))
-                    .Select(x => x.CustomerPhone));
-            var priorCompletedCount = candidatePhones
-                .Count(p => PhonesEqualTolerant(p, buyer.Phone));
-
-            // Đã từng có đơn completed trước đó → không phải đơn đầu tiên,
-            // bỏ qua để chống farm bonus lặp lại.
-            if (priorCompletedCount > 0)
+            // Khách đã từng có đơn completed trước đó → không phải đơn đầu
+            // tiên, bỏ qua để chống farm bonus lặp lại.
+            if (!await HasNoPriorCompletedOrderAsync(orderQueryable, order, buyer))
             {
                 return;
             }
@@ -463,6 +446,38 @@ namespace PhuThuongStickyRice.Application.Loyalty
             buyer.Points += bonus;
             buyer.TotalEarned += bonus;
         }
+
+        /// <summary>
+        /// True khi khách CHƯA từng có đơn hoàn thành nào trước đó (trừ đơn
+        /// hiện tại) — điều kiện để nhận bonus giới thiệu cho "đơn đầu tiên".
+        /// </summary>
+        private async Task<bool> HasNoPriorCompletedOrderAsync(
+            IQueryable<Order> orderQueryable, Order order, LoyaltyAccount buyer)
+        {
+            // So sánh tolerant theo 9 số cuối (pattern như HasOrderedBeforeAsync):
+            // Order.CustomerPhone lưu raw theo cách khách gõ, buyer.Phone đã
+            // chuẩn hóa digits — so raw trực tiếp cho phép đổi format SĐT để
+            // farm bonus nhiều lần.
+            var buyerKey = LastNineDigits(buyer.Phone);
+            var candidatePhones = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Id != order.Id
+                        && x.Status == OrderStatus.Completed
+                        && x.CustomerPhone != null
+                        && x.CustomerPhone.Contains(buyerKey))
+                    .Select(x => x.CustomerPhone));
+            return !candidatePhones.Any(p => PhonesEqualTolerant(p, buyer.Phone));
+        }
+
+        /// <summary>
+        /// Lấy 9 ký tự cuối của chuỗi SĐT đã chuẩn hóa digits — cùng chuẩn so
+        /// sánh tolerant với <see cref="PhonesEqualTolerant"/>; chuỗi ngắn hơn
+        /// 9 ký tự trả nguyên để không vứt mất số nhập thiếu.
+        /// </summary>
+        private static string LastNineDigits(string normalizedPhone) =>
+            normalizedPhone.Length >= 9
+                ? normalizedPhone.Substring(normalizedPhone.Length - 9)
+                : normalizedPhone;
 
         /// <summary>
         /// Kẹp số điểm muốn đổi theo số tiền tối đa có thể giảm (làm tròn xuống
@@ -694,8 +709,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             return string.Equals(
-                digits1.Substring(digits1.Length - 9),
-                digits2.Substring(digits2.Length - 9),
+                LastNineDigits(digits1),
+                LastNineDigits(digits2),
                 StringComparison.Ordinal);
         }
 

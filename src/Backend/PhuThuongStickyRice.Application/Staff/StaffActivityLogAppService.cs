@@ -1,6 +1,7 @@
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Dtos;
@@ -52,8 +53,35 @@ namespace PhuThuongStickyRice.Application.Staff
             input ??= new GetStaffActivityLogsInput();
 
             var queryable = await _logs.GetQueryableAsync();
-            var query = queryable.AsQueryable();
+            var query = ApplyFilters(queryable.AsQueryable(), input);
 
+            var total = await _asyncExecuter.LongCountAsync(query);
+            // Chặn số dòng/trang từ 1 đến 200: tránh request tham số MaxResultCount
+            // lớn/âm kéo sập DB hoặc trả về trang rỗng vì SkipCount âm.
+            var items = await _asyncExecuter.ToListAsync(
+                query.OrderByDescending(x => x.CreatedAt)
+                    .Skip(Math.Max(0, input.SkipCount))
+                    .Take(Math.Clamp(input.MaxResultCount, 1, 200)));
+
+            var actions = await GetDistinctActionsAsync();
+
+            return new StaffActivityLogListDto
+            {
+                TotalCount = total,
+                Items = items.Select(MapToDto).ToList(),
+                Actions = actions.OrderBy(a => a).ToList(),
+            };
+        }
+
+        /// <summary>
+        /// Áp dụng bộ lọc danh sách log: theo nhân viên (Guid.Empty coi như
+        /// không lọc để UI gửi giá trị mặc định của dropdown mà không lỗi),
+        /// loại thao tác, khoảng ngày (ngày kết thúc là biên độc quyền +1 ngày
+        /// để tính cả log lúc 23:59).
+        /// </summary>
+        private static IQueryable<StaffActivityLog> ApplyFilters(
+            IQueryable<StaffActivityLog> query, GetStaffActivityLogsInput input)
+        {
             // Guid.Empty coi như "không lọc theo người" để UI gửi giá trị
             // mặc định của dropdown nhân viên mà không lỗi.
             if (input.UserId.HasValue && input.UserId.Value != Guid.Empty)
@@ -80,36 +108,30 @@ namespace PhuThuongStickyRice.Application.Staff
                 query = query.Where(x => x.CreatedAt < to);
             }
 
-            var total = await _asyncExecuter.LongCountAsync(query);
-            // Chặn số dòng/trang từ 1 đến 200: tránh request tham số MaxResultCount
-            // lớn/âm kéo sập DB hoặc trả về trang rỗng vì SkipCount âm.
-            var items = await _asyncExecuter.ToListAsync(
-                query.OrderByDescending(x => x.CreatedAt)
-                    .Skip(Math.Max(0, input.SkipCount))
-                    .Take(Math.Clamp(input.MaxResultCount, 1, 200)));
-
-            // Lấy riêng danh sách loại thao tác đã tồn tại trong bảng để UI vẽ
-            // dropdown bộ lọc, thay vì hardcode enum ở frontend (thêm action
-            // mới ở backend thì filter tự hiện).
-            var actionsQueryable = await _logs.GetQueryableAsync();
-            var actions = await _asyncExecuter.ToListAsync(
-                actionsQueryable.Select(x => x.Action).Distinct());
-
-            return new StaffActivityLogListDto
-            {
-                TotalCount = total,
-                Items = items.Select(x => new StaffActivityLogDto
-                {
-                    Id = x.Id,
-                    UserId = x.UserId,
-                    UserName = x.UserName,
-                    Action = x.Action,
-                    ActionLabel = StaffActions.Label(x.Action),
-                    Detail = x.Detail,
-                    CreatedAt = x.CreatedAt,
-                }).ToList(),
-                Actions = actions.OrderBy(a => a).ToList(),
-            };
+            return query;
         }
+
+        /// <summary>
+        /// Lấy danh sách loại thao tác đã tồn tại trong bảng để UI vẽ dropdown
+        /// bộ lọc, thay vì hardcode enum ở frontend (thêm action mới ở backend
+        /// thì filter tự hiện).
+        /// </summary>
+        private async Task<List<string>> GetDistinctActionsAsync()
+        {
+            var actionsQueryable = await _logs.GetQueryableAsync();
+            return await _asyncExecuter.ToListAsync(
+                actionsQueryable.Select(x => x.Action).Distinct());
+        }
+
+        private static StaffActivityLogDto MapToDto(StaffActivityLog x) => new()
+        {
+            Id = x.Id,
+            UserId = x.UserId,
+            UserName = x.UserName,
+            Action = x.Action,
+            ActionLabel = StaffActions.Label(x.Action),
+            Detail = x.Detail,
+            CreatedAt = x.CreatedAt,
+        };
     }
 }
