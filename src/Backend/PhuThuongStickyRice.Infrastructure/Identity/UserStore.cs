@@ -44,8 +44,8 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
                     CreatedDateTime = DateTimeOffset.Now,
                 },
             };
-            await _userRepository.AddOrUpdateAsync(user);
-            await _unitOfWork.SaveChangesAsync();
+            await _userRepository.AddOrUpdateAsync(user, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             return IdentityResult.Success;
         }
 
@@ -57,7 +57,7 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
 
         public Task<User> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
         {
-            return _userRepository.Get(new UserQueryOptions { IncludeTokens = true }).FirstOrDefaultAsync(x => x.NormalizedEmail == normalizedEmail);
+            return _userRepository.Get(new UserQueryOptions { IncludeTokens = true }).FirstOrDefaultAsync(x => x.NormalizedEmail == normalizedEmail, cancellationToken);
         }
 
         public Task<User> FindByIdAsync(string userId, CancellationToken cancellationToken)
@@ -69,12 +69,12 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
                 return Task.FromResult<User>(null);
             }
 
-            return _userRepository.Get(new UserQueryOptions { IncludeTokens = true }).FirstOrDefaultAsync(x => x.Id == id);
+            return _userRepository.Get(new UserQueryOptions { IncludeTokens = true }).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
         public Task<User> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
         {
-            return _userRepository.Get(new UserQueryOptions { IncludeTokens = true }).FirstOrDefaultAsync(x => x.NormalizedUserName == normalizedUserName);
+            return _userRepository.Get(new UserQueryOptions { IncludeTokens = true }).FirstOrDefaultAsync(x => x.NormalizedUserName == normalizedUserName, cancellationToken);
         }
 
         public Task<int> GetAccessFailedCountAsync(User user, CancellationToken cancellationToken)
@@ -238,8 +238,8 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
 
         public async Task<IdentityResult> UpdateAsync(User user, CancellationToken cancellationToken)
         {
-            await _userRepository.AddOrUpdateAsync(user);
-            await _unitOfWork.SaveChangesAsync();
+            await _userRepository.AddOrUpdateAsync(user, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             return IdentityResult.Success;
         }
 
@@ -273,7 +273,7 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
                 });
             }
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         public async Task RemoveTokenAsync(User user, string loginProvider, string name, CancellationToken cancellationToken)
@@ -283,7 +283,7 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
             if (tokenEntity != null)
             {
                 user.Tokens.Remove(tokenEntity);
-                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
         }
 

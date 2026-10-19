@@ -2,6 +2,7 @@ using PhuThuongStickyRice.Web.Components.Admin.Models;
 using PhuThuongStickyRice.Web.Components.Core.Services;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -18,6 +19,11 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             : base(httpClient, tokenStore)
         {
         }
+
+        // CA1869: JsonSerializerOptions tốn kém khi khởi tạo — cache 1 instance
+        // dùng chung thay vì new mỗi lần deserialize.
+        private static readonly System.Text.Json.JsonSerializerOptions _caseInsensitiveJsonOptions =
+            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
         // ---- Check-in (item 121, public) ----
 
@@ -111,8 +117,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
                 throw new InvalidOperationException(message);
             }
 
-            return System.Text.Json.JsonSerializer.Deserialize<CustomerPhotoModel>(body,
-                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            return System.Text.Json.JsonSerializer.Deserialize<CustomerPhotoModel>(body, _caseInsensitiveJsonOptions);
         }
 
         public async Task<List<CustomerPhotoModel>> GetCustomerPhotosAsync(bool pendingOnly)
@@ -142,7 +147,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<List<WorkShiftModel>> GetWorkShiftsAsync(DateTime? date)
         {
-            var dateString = (date ?? DateTime.Today).ToString("yyyy-MM-dd");
+            var dateString = (date ?? DateTime.Today).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             return await GetAsync<List<WorkShiftModel>>($"api/work-shifts/week?date={dateString}");
         }
 
@@ -193,14 +198,14 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         public async Task<decimal> GetExpectedCodAsync(DateTime date)
         {
-            var dateString = date.ToString("yyyy-MM-dd");
+            var dateString = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             var result = await GetAsync<Dictionary<string, decimal>>($"api/shift-closes/expected?date={dateString}");
             return result != null && result.TryGetValue("expected", out var expectedCod) ? expectedCod : 0;
         }
 
         public async Task<ShiftCloseModel> GetShiftCloseAsync(DateTime date)
         {
-            var dateString = date.ToString("yyyy-MM-dd");
+            var dateString = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             return await GetAsync<ShiftCloseModel>($"api/shift-closes/by-date?date={dateString}");
         }
 
@@ -316,7 +321,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             }
 
             var baseUrl = _httpClient.BaseAddress?.ToString().TrimEnd('/');
-            var path = url.StartsWith("/") ? url : "/" + url;
+            var path = url.StartsWith('/') ? url : "/" + url;
             return string.IsNullOrEmpty(baseUrl) ? path : baseUrl + path;
         }
         public async Task<DailyTargetModel> GetDailyTargetAsync()

@@ -1,3 +1,4 @@
+#nullable enable annotations
 using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Loyalty.DTOs;
 using PhuThuongStickyRice.Application.Shop;

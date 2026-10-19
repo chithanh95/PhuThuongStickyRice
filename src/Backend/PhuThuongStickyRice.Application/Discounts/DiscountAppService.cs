@@ -1,3 +1,4 @@
+#nullable enable annotations
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Permissions;
 using PhuThuongStickyRice.Application.Staff;

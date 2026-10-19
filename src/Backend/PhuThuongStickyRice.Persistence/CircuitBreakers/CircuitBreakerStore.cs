@@ -120,6 +120,8 @@ namespace PhuThuongStickyRice.Persistence.CircuitBreakers
         public void Dispose()
         {
             _dbContext.Dispose();
+            // Không có finalizer: báo GC bỏ qua hàng đợi finalizer (CA1816).
+            GC.SuppressFinalize(this);
         }
     }
 }
