@@ -1569,9 +1569,14 @@ else
         }
         catch (Exception ex)
         {
-            _error = ex.Message.Contains("tối thiểu") || ex.Message.Contains("Mã")
-                ? ex.Message
-                : "Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin và thử lại.";
+            // ShopService.CreateOrderAsync (SH5) đã trích message lỗi tiếng Việt thật
+            // từ server (mã giảm giá hết hạn, số dư ví không đủ, combo ngừng bán,
+            // quán tạm ngừng nhận đơn...) — hiện nguyên văn để khách biết lý do thật.
+            // Whitelist cũ chỉ cho qua message chứa "tối thiểu"/"Mã" nên các lý do
+            // thật còn lại bị nuốt thành message chung chung.
+            _error = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin và thử lại."
+                : ex.Message;
         }
         finally
         {

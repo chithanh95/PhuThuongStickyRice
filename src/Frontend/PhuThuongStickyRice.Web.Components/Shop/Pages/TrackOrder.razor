@@ -1208,6 +1208,17 @@
         _reviewPhotoPreviewUrl = null;
         _reviewRewardCode = null;
         _lineRatings.Clear();
+        // Reset cả các message thanh toán/hủy/sao chép của đơn cũ (Lookup() reset
+        // đầy đủ nhưng ViewHistoryDetail() sót): đơn A bấm "Đã chuyển khoản" rồi mở
+        // đơn B từ lịch sử sẽ vẫn hiện thông báo của đơn A.
+        _error = null;
+        _transferMessage = null;
+        _transferError = null;
+        _momoError = null;
+        _copyMessage = null;
+        _cancelError = null;
+        _editError = null;
+        StopPolling(); // dừng poll đơn A trước khi nạp đơn B
         _order = order;
         _reorderMessage = null;
         await AfterOrderLoadedAsync();
@@ -1706,13 +1717,26 @@
     private void StartPolling()
     {
         StopPolling();
+        // Capture mã đơn + SĐT tại thời điểm tạo timer: request poll của đơn A
+        // có thể về SAU khi user đã mở đơn B từ lịch sử — nếu không guard, response
+        // cũ của A sẽ ghi đè panel của B, và StopPolling() sẽ giết nhầm timer của B.
+        var orderNumber = _order?.OrderNumber;
+        var phone = _order?.CustomerPhone;
+        if (string.IsNullOrWhiteSpace(orderNumber))
+        {
+            return;
+        }
         _pollTimer = new System.Threading.Timer(async _ =>
         {
             try
             {
-                var fresh = await ShopService.TrackOrderAsync(_order.OrderNumber, _order.CustomerPhone);
+                var fresh = await ShopService.TrackOrderAsync(orderNumber, phone);
                 await InvokeAsync(() =>
                 {
+                    if (!string.Equals(_order?.OrderNumber, orderNumber, StringComparison.Ordinal))
+                    {
+                        return; // user đã chuyển sang đơn khác — bỏ kết quả cũ
+                    }
                     _order = fresh;
                     if (fresh.PaymentStatus != "Unpaid" && fresh.PaymentStatus != "PendingConfirmation")
                     {
