@@ -986,3 +986,52 @@ html.dark .main .top-row > a {
 }
 
 /* === end Agent 2 run 14:35 === */
+
+/* ===== Agent 2 run 14:55 — 5 fix dark mode (trang ít được quét: /error, 404, /admin/du-bao, chat landing) ===== */
+
+/* ---------- FIX 1 — Trang /error: tiêu đề h1 "Đã có lỗi xảy ra" ----------
+   Vấn đề: Error.razor:7 dùng inline style color:#7a1b2e; Agent 3 (Lexa, run
+   14:45) đổi light-mode thành #bd4a4a qua
+   `.sg-error-wrap h1[style*="#7a1b2e"]`. Ở dark mode trang /error render
+   trong MainLayout legacy, nền body #1a1a2e (app.css:236) → #bd4a4a chỉ
+   ~3.5:1, tiêu đề full-page mờ. Fix: #ff8a8a (~7.6:1) — đúng màu chữ danger
+   đã chuẩn hóa ở dark cho .wpt-error (run 14:25, Agent 3). !important để
+   thắng inline style + rule Lexa (pattern attribute selector đã dùng). */
+html.dark .sg-error-wrap h1[style*="#7a1b2e"] {
+    color: #ff8a8a !important; /* was #bd4a4a (light-mode Lexa) */
+}
+
+/* ---------- FIX 2 — Trang /error: đoạn mô tả "Xin lỗi, đã có sự cố..." ----------
+   Vấn đề: Error.razor:8 dùng inline style color:#4a2b1a (nâu đậm). Trên nền
+   tối #1a1a2e tương phản chỉ ~1.3:1 — CHỮ TÀNG HÌNH ở dark mode. Agent 3
+   run 14:45 giữ nguyên màu này cho light mode (thiết kế ấm chủ ý) nên chỉ
+   override ở dark: #f0e8d8 (~14:1), trùng màu ink dark toàn cục
+   (html.dark body, app.css:237). */
+html.dark .sg-error-wrap p[style*="#4a2b1a"] {
+    color: #f0e8d8 !important; /* was #4a2b1a */
+}
+
+/* ---------- FIX 3 — Trang 404: tiêu đề h2 "Không tìm thấy trang" ----------
+   Vấn đề: App.razor:83 (NotFound) dùng inline style color:#7a1b2e, trên nền
+   tối #1a1a2e chỉ ~1.6:1 — tàng hình ở dark mode. Class .mt-3 phân biệt với
+   h2 cùng inline style ở thẻ lỗi mất mạng /shop (Shop.razor:116, không có
+   class) — thẻ đó nằm trên card nền kem #f5ebcd (inline, giữ nguyên ở dark)
+   nên KHÔNG được đổi màu (đã verify: chỉ 2 h2 này dùng inline #7a1b2e).
+   Màu #ff8a8a đồng nhất với FIX 1. */
+html.dark h2.mt-3[style*="#7a1b2e"] {
+    color: #ff8a8a !important; /* was #7a1b2e */
+}
+
+/* ---------- FIX 4 — /admin/du-bao: nhãn trục biểu đồ SVG ----------
+   Vấn đề: DuBao.razor:192,216 vẽ nhãn trục bằng <text fill="#6c757d">
+   (11px). Trên card admin tối #262640 (admin-lexa dark) tương phản chỉ
+   ~2.8:1 — số liệu trục Y và ngày trục X mờ ở dark mode. Fix: #a5a2bd
+   (~5.9:1) — đúng màu thay thế #6c757d ở dark đã chuẩn hóa cho
+   .text-secondary (run 13:55 batch B). Scope .lx-content (admin); đã grep —
+   chỉ DuBao dùng <text fill="#6c757d">. Presentation attribute fill thua
+   mọi rule CSS nên không cần !important. */
+html.dark .lx-content svg text[fill="#6c757d"] {
+    fill: #a5a2bd; /* was #6c757d */
+}
+
+/* === end Agent 2 run 14:55 === */

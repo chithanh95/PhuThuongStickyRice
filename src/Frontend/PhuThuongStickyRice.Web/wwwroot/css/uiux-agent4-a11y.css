@@ -606,3 +606,49 @@ html.dark .cho-ticket:focus-visible {
     }
 }
 /* ===== END UIUX run 14:45 - Agent4 ===== */
+
+/* ===== UIUX run 14:58 - Agent4 A11y & Polish (5 fix, khong trung cac run truoc) ===== */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1): ghi chú món trong tóm tắt đơn
+   checkout (`.co-summary .text-info`, Checkout.razor:557 — dòng "📝 ghi chú")
+   dùng màu text-info Bootstrap #17a2b8 trên card trắng chỉ đạt ~3.04:1,
+   người lớn tuổi đọc chữ nhỏ rất khó. Đậm lên #0e7c99 (~4.81:1, cùng tông
+   xanh lơ). Dark mode giữ nguyên #17a2b8 vì trên card tối #262019 vẫn đạt
+   ~5.29:1 (đã qua chuẩn), chỉ override light mode. Lặp class thắng rule
+   Bootstrap .text-info (0,1,0) theo thứ tự cascade (file này load sau cùng). */
+.co-summary .text-info.text-info {
+    color: #0e7c99;
+}
+
+/* Fix 2 — WCAG 2.1.1 (Keyboard): overlay phóng to vé hàng chờ
+   `.cho-zoom-overlay` (HangCho.razor) chỉ đóng bằng CHẠM (hint "Chạm vào màn
+   hình để thu nhỏ") — người dùng bàn phím mở được vé (ticket đã có keyboard
+   từ run trước) nhưng KHÔNG có cách nào đóng overlay. Thêm nút × thật
+   `.cho-zoom-close`: 44px (chuẩn chạm, khách lớn tuổi), aria-label rõ, vòng
+   focus trắng nổi trên nền tối overlay. */
+.cho-zoom-close.cho-zoom-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    line-height: 1;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 2;
+}
+.cho-zoom-close.cho-zoom-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+.cho-zoom-close.cho-zoom-close:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+/* ===== END UIUX run 14:58 - Agent4 ===== */

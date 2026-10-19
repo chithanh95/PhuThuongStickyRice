@@ -215,3 +215,40 @@ html.dark .co-mobile-bar .co-total small {
         height: calc(88px + env(safe-area-inset-bottom, 0px));
     }
 }
+
+/* ===== UIUX run 14:58 — Agent1 Mobile =====
+   FIX 3 — Bảng tóm tắt đơn trong alert "Đặt hàng thành công!".
+   Vấn đề: .alert-success > table.table-sm (Checkout.razor:51) không
+   được bọc .table-responsive như bảng chuyển khoản (đã fix ở run
+   09:35) — tên khuyến mãi/mã giảm giá dài ("🏷 Khuyến mãi giờ vàng
+   (Tên dài...)") đẩy bảng rộng hơn card → tràn ngang ở màn 320px.
+   Giải pháp: mobile khóa layout bảng, cho chữ ô xuống dòng.
+   (Verify: Checkout.razor:49-51 — .alert-success > table.table-sm
+   chỉ khớp đúng bảng này; alert-success khác (165/192/233/253)
+   không chứa table) */
+@media (max-width: 767.98px) {
+    .alert-success > table.table-sm {
+        table-layout: fixed;
+        width: 100%;
+    }
+    .alert-success > table.table-sm td {
+        word-break: break-word;
+        min-width: 0;
+    }
+}
+/* ===== END UIUX run 14:58 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 14:58 — Agent1 Mobile =====
+   FIX 4 — h1 "Thanh toán" quá to trên mobile.
+   Vấn đề: h1 Bootstrap 2.5rem (40px) trên màn 360px chiếm chỗ, đẩy
+   nội dung form xuống — trong khi hero /shop đã được thu gọn về
+   1.6rem (Shop.razor.css:162). Đồng bộ: h1 trang checkout 1.75rem,
+   vẫn to rõ với người lớn tuổi.
+   (Scope trang checkout — không ảnh hưởng admin/landing) */
+@media (max-width: 767.98px) {
+    h1 {
+        font-size: 1.75rem;
+        line-height: 1.3;
+    }
+}
+/* ===== END UIUX run 14:58 - Agent1 FIX 4 ===== */

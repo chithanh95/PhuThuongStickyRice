@@ -496,3 +496,70 @@ html.dark .to-survey-sheet .btn-outline-secondary:hover {
         margin: 8px 0 0 !important;
     }
 }
+
+/* ===== UIUX run 14:58 — Agent1 Mobile =====
+   FIX 2 — Khung upload ảnh (dropzone) ở card "Đánh giá đơn hàng" và
+   card "📸 Chia sẻ ảnh món bạn đã nhận" không có CSS nào định nghĩa.
+   Vấn đề: markup dùng class .shop-dropzone/.shop-dropzone-icon/
+   .shop-dropzone-text (TrackOrder.razor:520-524, 671-673) nhưng toàn
+   repo không có rule nào cho 3 class này → label render dạng chữ
+   inline thường, vùng bấm chỉ cao ~20px, khách không nhận ra đây là
+   chỗ bấm để tải ảnh lên — nhất là người lớn tuổi.
+   Giải pháp: style dropzone đúng ý đồ markup — viền đứt, icon cloud
+   tím Lexa, vùng bấm lớn (min-height 120px, full-width), chữ rõ.
+   (Base style, mọi viewport — trước đó không có style nào nên không
+   phá vỡ layout PC hiện có.) */
+.shop-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 120px;
+    padding: 20px 16px;
+    border: 2px dashed #b9b3e6;
+    border-radius: 12px;
+    background: #f6f4fd;
+    color: #5a5570;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 0;
+}
+.shop-dropzone:hover,
+.shop-dropzone:focus-within {
+    border-color: #7a6fbe;
+    background: #efecfa;
+}
+.shop-dropzone-icon {
+    font-size: 32px;
+    color: #7a6fbe;
+    line-height: 1;
+}
+.shop-dropzone-text {
+    font-size: 15px;
+    font-weight: 600;
+}
+html.dark .shop-dropzone {
+    background: #2e2a45;
+    border-color: #5a4f8f;
+    color: #c9c4e8;
+}
+html.dark .shop-dropzone:hover,
+html.dark .shop-dropzone:focus-within {
+    border-color: #a89ee0;
+    background: #35304f;
+}
+/* ===== END UIUX run 14:58 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 14:58 — Agent1 Mobile =====
+   FIX 4 — h1 "Tra cứu đơn hàng" quá to trên mobile (đồng bộ với
+   /shop 1.6rem, /cart và /checkout 1.75rem): 40px → 28px.
+   (Verify: TrackOrder.razor:25 h1) */
+@media (max-width: 767.98px) {
+    h1 {
+        font-size: 1.75rem;
+        line-height: 1.3;
+    }
+}
+/* ===== END UIUX run 14:58 - Agent1 FIX 4 ===== */

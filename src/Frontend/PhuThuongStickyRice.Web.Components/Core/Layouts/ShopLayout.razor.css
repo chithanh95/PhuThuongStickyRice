@@ -444,7 +444,7 @@ html.dark .shp-page .btn-primary {
 
 .shp-lang-select:focus {
     outline: none;
-    border-color: #6F0707;
+    border-color: #7a6fbe; /* UIUX-1019 A3: viền focus tím Lexa (trước #6F0707 đỏ brand landing copy-paste) — đồng nhất với :focus-visible ngay dưới */
 }
 
 /* A11y: rule gốc tắt outline chỉ đổi màu viền nên người dùng bàn phím

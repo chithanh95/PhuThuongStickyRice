@@ -201,9 +201,13 @@
 @if (_zoomed != null)
 {
     <div class="cho-zoom-overlay" @onclick="() => _zoomed = null">
+        @* A11y-1458: nút đóng thật cho người dùng bàn phím (trước overlay chỉ
+           đóng bằng chạm, keyboard mở được vé nhưng không đóng được). *@
+        <button type="button" class="cho-zoom-close" aria-label="Thu nhỏ vé"
+                @onclick:stopPropagation="true" @onclick="() => _zoomed = null">×</button>
         <div class="cho-big @(_zoomed.IsReady ? "cho-ready" : "cho-preparing")"><!-- #34c38f: xanh success Lexa cho trạng thái sẵn sàng (trước #28e06c) -->@_zoomed.QueueNumber</div>
         <div class="cho-big-label">@(_zoomed.IsReady ? "🔔 Mời lấy món!" : "🍳 Đang chuẩn bị...")</div>
-        <div class="mt-3 cho-zoom-hint">Chạm vào màn hình để thu nhỏ</div>
+        <div class="mt-3 cho-zoom-hint">Chạm vào màn hình hoặc bấm nút × để thu nhỏ</div>
     </div>
 }
 

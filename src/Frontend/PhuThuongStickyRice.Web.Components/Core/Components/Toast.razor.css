@@ -38,3 +38,30 @@
     opacity: 1;
     color: #fff;
 }
+
+/* ===== UIUX run 14:58 — Agent1 Mobile =====
+   FIX 1 — Toast đè lên thanh sticky trên mobile + nút × quá nhỏ.
+   Vấn đề: .toast-container fixed bottom:1rem, z-index 1080 — cao hơn
+   thanh sticky giỏ hàng /shop (1040), /cart (1030), /checkout (1030)
+   nên toast "Đã thêm vào giỏ" hiện đè lên nút "Xem giỏ →"/"Thanh
+   toán"/"Đặt hàng", che mất CTA quan trọng đúng lúc khách cần bấm.
+   Nút × đóng toast cũng chỉ ~20px, khó bấm với người lớn tuổi.
+   Giải pháp: mobile nâng cụm toast lên trên thanh sticky (88px +
+   safe-area iPhone notch), nút × có vùng bấm 44px.
+   (Verify: Toast.razor:6 .toast-container; thanh sticky:
+   Shop.razor.css:48 .shop-sticky-cart, Cart.razor.css .cart-sticky-
+   checkout, Checkout.razor.css .co-mobile-bar — cả 3 đều fixed
+   bottom:0, cao ~64-76px) */
+@media (max-width: 767.98px) {
+    .toast-container {
+        bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    }
+    .toast-container .close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+    }
+}

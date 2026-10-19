@@ -807,7 +807,9 @@ else
 @if (_view360Product != null)
 {
     <div class="sg-modal-backdrop" @onclick="Close360">
-        <div class="sg-modal-360" @onclick:stopPropagation>
+        @* A11y-1458: role="dialog" để screen reader nhận diện hộp thoại *@
+        <div class="sg-modal-360" @onclick:stopPropagation role="dialog" aria-modal="true"
+             aria-label="Xem 360 độ @_view360Product.Name">
             <button class="sg-modal-close" @onclick="Close360" aria-label="Đóng">×</button>
             <h3>🔄 @_view360Product.Name — xem 360°</h3>
             @{
@@ -845,7 +847,8 @@ else
             <strong>💬 Chat với quán</strong>
             <button @onclick="ToggleChat" aria-label="Đóng">×</button>
         </div>
-        <div class="sg-chat-msgs" id="sg-chat-msgs">
+        @* A11y-1458: aria-live để screen reader đọc tin nhắn mới của quán *@
+        <div class="sg-chat-msgs" id="sg-chat-msgs" aria-live="polite">
             @if (_chatMessages.Count == 0)
             {
                 <p class="sg-chat-hint">Chào bạn! Hỏi quán về món, giá, giờ giao nhé.</p>
@@ -880,7 +883,9 @@ else
 @if (_showPopup)
 {
     <div class="sg-popup-overlay" @onclick="DismissPopup">
-        <div class="sg-popup" @onclick:stopPropagation>
+        @* A11y-1458: role="dialog" để screen reader nhận diện hộp thoại *@
+        <div class="sg-popup" @onclick:stopPropagation role="dialog" aria-modal="true"
+             aria-label="@_content.PopupTitle">
             <button type="button" class="sg-popup-close" aria-label="Đóng" @onclick="DismissPopup">×</button>
             @if (!string.IsNullOrWhiteSpace(_content.PopupImageUrl))
             {
