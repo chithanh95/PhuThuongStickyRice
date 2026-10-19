@@ -110,6 +110,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] ValidateDiscountInput input,
             CancellationToken cancellationToken = default)
         {
+            // bug-hunt 2026-10-20: body JSON literal "null" bind thành
+            // input = null mà không lỗi ModelState — phải chặn trước khi
+            // dereference input.CustomerPhone (tránh NRE 500).
+            if (input == null)
+            {
+                return BadRequest(new { message = "Thiếu thông tin kiểm tra mã giảm giá." });
+            }
+
             try
             {
                 return Ok(await _discountAppService.ValidateAsync(input, input.CustomerPhone));

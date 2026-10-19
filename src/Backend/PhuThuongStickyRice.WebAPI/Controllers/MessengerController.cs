@@ -76,10 +76,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest();
             }
 
-            // bug-hunt 2026-10-19: verify chữ ký chống giả mạo callback
-            // (kẻ lạ POST payload giả có thể điều khiển bot tạo đơn thật,
-            // bỏ qua reCAPTCHA). Không có secret cấu hình -> service log
-            // cảnh báo và cho qua để không gãy webhook đang chạy.
+            // bug-hunt 2026-10-20 (run 05:45): verify chữ ký chống giả mạo
+            // callback (kẻ lạ POST payload giả có thể điều khiển bot tạo đơn
+            // thật, bỏ qua reCAPTCHA). Không có secret cấu hình -> service
+            // từ chối (fail-closed, 401) thay vì cho qua như trước.
             var signature = Request.Headers["X-Hub-Signature-256"].ToString();
             if (!await _chat.VerifyWebhookSignatureAsync(bodyBytes, signature))
             {

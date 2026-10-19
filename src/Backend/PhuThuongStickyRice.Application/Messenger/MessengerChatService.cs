@@ -50,12 +50,15 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// <summary>
         /// Verify chữ ký X-Hub-Signature-256 (HMAC-SHA256 bằng App Secret) của
         /// webhook POST — chống giả mạo callback tạo đơn ảo. Trả về false khi
-        /// đã cấu hình App Secret mà chữ ký thiếu/sai. Khi chưa cấu hình secret
-        /// thì log cảnh báo và trả về true để webhook đang chạy không bị gãy.
+        /// đã cấu hình App Secret mà chữ ký thiếu/sai, hoặc khi chưa cấu hình
+        /// secret (fail-closed: bot có thể tạo đơn thật qua
+        /// skipRecaptchaCheck nên không được cho qua).
         /// </summary>
         /// <param name="body">Body thô của request.</param>
         /// <param name="signatureHeader">Giá trị header X-Hub-Signature-256.</param>
-        /// <returns>True khi chữ ký hợp lệ (hoặc chưa cấu hình secret).</returns>
+        /// <returns>True khi chữ ký hợp lệ; false khi chưa cấu hình secret
+        /// hoặc chữ ký sai (fail-closed: thiếu secret thì từ chối, không
+        /// cho qua — bot có thể tạo đơn thật qua skipRecaptchaCheck).</returns>
         Task<bool> VerifyWebhookSignatureAsync(byte[] body, string signatureHeader);
     }
 
@@ -167,7 +170,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// <param name="verifyToken">Token Facebook gửi sang để đối chiếu.</param>
         /// <param name="challenge">Chuỗi challenge cần echo lại khi khớp.</param>
         /// <returns>Challenge khi xác minh thành công, null khi thất bại.</returns>
-        public async Task<string> VerifyWebhookAsync(string mode, string verifyToken, string challenge)
+        public virtual async Task<string> VerifyWebhookAsync(string mode, string verifyToken, string challenge)
         {
             if (!string.Equals(mode, "subscribe", StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(challenge))
@@ -197,19 +200,22 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// <param name="body">Body thô của request.</param>
         /// <param name="signatureHeader">Giá trị header X-Hub-Signature-256.</param>
         /// <returns>True khi chữ ký hợp lệ (hoặc chưa cấu hình secret).</returns>
-        public async Task<bool> VerifyWebhookSignatureAsync(byte[] body, string signatureHeader)
+        public virtual async Task<bool> VerifyWebhookSignatureAsync(byte[] body, string signatureHeader)
         {
             var settings = await _shopSettings.GetAsync();
             var appSecret = settings?.FacebookAppSecret;
             if (string.IsNullOrWhiteSpace(appSecret))
             {
-                // Chưa cấu hình App Secret: không thể verify — log cảnh báo
-                // và cho qua để webhook đang chạy theo hướng dẫn cũ không gãy.
-                // Admin nên dán App Secret (App dashboard > Settings > Basic)
-                // tại Cài đặt cửa hàng > Chatbot Messenger.
+                // Chưa cấu hình App Secret: không thể verify nên TỪ CHỐI
+                // (fail-closed) — cho qua (return true) sẽ cho phép bất kỳ
+                // ai POST payload giả vào webhook và điều khiển bot tạo đơn
+                // thật (HandleInfoAsync gọi CreateAsync với
+                // skipRecaptchaCheck: true). Admin dán App Secret (App
+                // dashboard > Settings > Basic) tại Cài đặt cửa hàng >
+                // Chatbot Messenger để webhook hoạt động trở lại.
                 Logger.LogWarning(
-                    "Messenger webhook signature NOT verified: FacebookAppSecret chưa được cấu hình.");
-                return true;
+                    "Messenger webhook signature NOT verified: FacebookAppSecret chưa được cấu hình — từ chối request.");
+                return false;
             }
 
             const string prefix = "sha256=";
@@ -251,7 +257,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// không crash. Lỗi 1 tin không làm gãy các tin khác.
         /// </summary>
         /// <param name="payload">Payload JSON từ Facebook.</param>
-        public async Task HandleWebhookAsync(JsonDocument payload)
+        public virtual async Task HandleWebhookAsync(JsonDocument payload)
         {
             string pageToken = null;
             try
