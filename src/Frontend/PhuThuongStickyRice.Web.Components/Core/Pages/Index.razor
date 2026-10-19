@@ -176,7 +176,7 @@ else
         @if (_stats != null && (_stats.TotalOrders > 0 || _stats.ReviewCount > 0))
         {
             <div class="sg-stats">
-                <div class="sg-stat"><strong>@_stats.TotalOrders.ToString("N0")</strong><span>đơn đã giao</span></div>
+                <div class="sg-stat"><strong>@_stats.TotalOrders.ToString("N0")</strong><span>đơn hàng thành công</span></div>
                 <div class="sg-stat"><strong>@_stats.AvgRating.ToString("0.0")/5</strong><span>điểm đánh giá</span></div>
                 <div class="sg-stat"><strong>@_stats.ReviewCount.ToString("N0")</strong><span>lượt đánh giá</span></div>
             </div>

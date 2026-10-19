@@ -193,7 +193,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 TimeSpan.FromMinutes(5),
                 async () =>
                 {
-                    var totalOrders = await _db.Orders.CountAsync(cancellationToken);
+                    // bug-hunt 2026-10-20: chỉ đếm đơn hoàn thành — trước đây
+                    // CountAsync() đếm cả đơn mới tạo/đang xử lý/đã hủy trong
+                    // khi label landing ghi "đơn đã giao" (đã đổi thành
+                    // "đơn hàng thành công"), con số bị thổi phồng và sai sự thật.
+                    var totalOrders = await _db.Orders
+                        .Where(x => x.Status == OrderStatus.Completed)
+                        .CountAsync(cancellationToken);
 
                     var visibleRatings = _db.OrderReviews.Where(r => !r.IsHidden);
                     var reviewCount = await visibleRatings.CountAsync(cancellationToken);

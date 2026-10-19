@@ -204,26 +204,36 @@ namespace PhuThuongStickyRice.Application.Catalog
             }
 
             var phone = dto.CustomerPhone.Trim();
-            var queryable = await _reminders.GetQueryableAsync();
-            var existing = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.CustomerPhone == phone && x.IsActive));
-            if (existing != null)
+            // bug-hunt 2026-10-20: race check-then-insert — khách bấm 2 lần
+            // (hoặc retry sau timeout) cùng lúc đều qua check existing == null
+            // rồi cùng InsertAsync → 2 bản ghi đang bật cho cùng 1 SĐT (nhận
+            // nhắc trùng), đúng cái comment idempotent muốn tránh. Serialize
+            // theo 9 số cuối SĐT bằng KeyedAsyncLock (pattern ShiftClose);
+            // không cần migration vì index CustomerPhone hiện tại chỉ lookup.
+            return await KeyedAsyncLock.RunAsync(
+                $"cung-reminder:{PhoneNumber.PhoneTailKey(phone)}", async () =>
             {
-                // SĐT đã đăng ký nhắc và đang bật: trả về bản ghi cũ (idempotent),
-                // tránh spam nhiều đăng ký trùng cho cùng 1 SĐT.
-                return MapReminderToDto(existing);
-            }
+                var queryable = await _reminders.GetQueryableAsync();
+                var existing = await _asyncExecuter.FirstOrDefaultAsync(
+                    queryable.Where(x => x.CustomerPhone == phone && x.IsActive));
+                if (existing != null)
+                {
+                    // SĐT đã đăng ký nhắc và đang bật: trả về bản ghi cũ (idempotent),
+                    // tránh spam nhiều đăng ký trùng cho cùng 1 SĐT.
+                    return MapReminderToDto(existing);
+                }
 
-            var entity = new CungReminder
-            {
-                CustomerName = dto.CustomerName.Trim(),
-                CustomerPhone = phone,
-                ReminderType = type,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
-            await _reminders.InsertAsync(entity, autoSave: true);
-            return MapReminderToDto(entity);
+                var entity = new CungReminder
+                {
+                    CustomerName = dto.CustomerName.Trim(),
+                    CustomerPhone = phone,
+                    ReminderType = type,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _reminders.InsertAsync(entity, autoSave: true);
+                return MapReminderToDto(entity);
+            });
         }
 
         /// <summary>
