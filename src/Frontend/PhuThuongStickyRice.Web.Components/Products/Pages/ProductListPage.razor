@@ -109,7 +109,7 @@
                                     {
                                         <button @onclick="(() => ToggleAvailability(product))" class="btn btn-sm lx-btn-icon btn-outline-warning" title="Bật/tắt bán (hết hàng)"
                                                 aria-label="@($"Bật/tắt bán món {product.Name}")">
-                                            <i class="fas @(product.Status == "Active" ? "fa-eye-slash" : "fa-eye")" aria-hidden="true"></i>
+                                            <i class="fa-solid @(product.Status == "Active" ? "fa-eye-slash" : "fa-eye")" aria-hidden="true"></i>
                                         </button>
                                     }
                                     @if (HasPermission("products.edit"))

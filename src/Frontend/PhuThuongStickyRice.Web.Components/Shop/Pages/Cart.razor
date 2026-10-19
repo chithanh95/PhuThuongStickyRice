@@ -74,12 +74,15 @@ else
     <div class="table-responsive">
         <table class="table cart-lines">
             <thead>
+                @* A11y-20261020: scope="col" — trình đọc màn hình liên kết đúng
+                   ô dữ liệu với tên cột (Sản phẩm/Đơn giá/Thành tiền/Số lượng)
+                   khi điều hướng bảng bằng bàn phím. *@
                 <tr>
-                    <th>@AppI18n.Translate("shop.product")</th>
-                    <th class="text-right">@AppI18n.Translate("shop.unit_price")</th>
-                    <th class="text-right">@AppI18n.Translate("shop.line_total")</th>
-                    <th class="text-center">@AppI18n.Translate("common.quantity")</th>
-                    <th></th>
+                    <th scope="col">@AppI18n.Translate("shop.product")</th>
+                    <th scope="col" class="text-right">@AppI18n.Translate("shop.unit_price")</th>
+                    <th scope="col" class="text-right">@AppI18n.Translate("shop.line_total")</th>
+                    <th scope="col" class="text-center">@AppI18n.Translate("common.quantity")</th>
+                    <th scope="col"></th>
                 </tr>
             </thead>
             <tbody>

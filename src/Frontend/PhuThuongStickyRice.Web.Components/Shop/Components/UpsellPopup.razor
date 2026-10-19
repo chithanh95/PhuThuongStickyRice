@@ -4,7 +4,10 @@
    Non-blocking: closes via X, backdrop click, or "Không, cảm ơn". *@
 @if (Visible && Products != null && Products.Count > 0)
 {
-    <div class="modal fade show d-block upsell-popup" tabindex="-1" role="dialog" aria-modal="true" @onclick="Close">
+    @* A11y-20261020: @onkeydown để đóng popup bằng phím Escape —
+       người dùng bàn phím cần cách thoát chuẩn (đồng bộ pattern
+       ConfirmDialog.razor). Keydown từ nút đang focus sẽ bubble lên div. *@
+    <div class="modal fade show d-block upsell-popup" tabindex="-1" role="dialog" aria-modal="true" @onclick="Close" @onkeydown="HandleKeyDown">
         <div class="modal-dialog modal-dialog-centered modal-sm" role="document" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header py-2">
@@ -73,5 +76,17 @@
     private async Task Close()
     {
         await OnClose.InvokeAsync();
+    }
+
+    /// <summary>
+    /// Đóng popup khi bấm Escape — cùng pattern ConfirmDialog.cs
+    /// (người dùng bàn phím thoát chuẩn, không phải tab tới nút Đóng).
+    /// </summary>
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e?.Key == "Escape")
+        {
+            _ = Close();
+        }
     }
 }

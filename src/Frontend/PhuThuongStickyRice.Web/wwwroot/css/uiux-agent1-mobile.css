@@ -2697,3 +2697,76 @@
     }
 }
 /* ===== END UIUX run 00:25 A1 ===== */
+
+/* ===== UIUX run 02:05 A1 (Agent1 Mobile) — 5 fix mobile mới ===== */
+
+/* ------------------------------------------------------------
+   FIX 1 — /track-order: dòng Size/Ăn kèm/ghi chú trong chi tiết đơn.
+   Vấn đề: `.to-item-name small` ("Size: ...", "Ăn kèm: ...", "📝 ghi
+   chú", TrackOrder.razor:280/284/288) ~12.8px — chi tiết món khách
+   đã chọn, cần đọc để đối chiếu đơn trước khi thanh toán/sửa đơn.
+   Fix 21:23 chỉ phủ /cart (rule .cart-lines), trang tra cứu bị sót.
+   Giải pháp: mobile 13px. (.to-item-name chỉ tồn tại ở TrackOrder.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .to-item-name.to-item-name small {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /track-order: chữ trong card "📒 Sổ địa chỉ".
+   Vấn đề: các `small` ~12.8px trong card Sổ địa chỉ (TrackOrder.razor:
+   224-261) — tiêu đề "Sổ địa chỉ của số...", "Đang tải...", "Chưa có
+   địa chỉ nào được lưu.", từng dòng địa chỉ và thông báo sau khi lưu.
+   Khách lớn tuổi quản lý địa chỉ cần đọc rõ các dòng này.
+   Giải pháp: mobile 13px. Selector `.card.mt-2.mb-2` chỉ khớp đúng
+   card này (grep toàn app: duy nhất 1 chỗ, ở TrackOrder).
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body:has(.to-info-row) .card.mt-2.mb-2 small {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /track-order: nhãn các ô trong form sửa đơn.
+   Vấn đề: `label[for^="to-edit-"] > small` ~12.8px — "Địa chỉ nhận
+   hàng", "Giờ giao mong muốn (tùy chọn)", "SĐT người nhận",
+   "Ghi chú (VD: ít hành, không cay...)" (TrackOrder.razor:429/434/
+   456/461). Khách tự sửa đơn trên điện thoại, nhãn nhỏ dễ nhập nhầm.
+   Giải pháp: mobile 13px. (for="to-edit-*" chỉ tồn tại ở TrackOrder.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body:has(.to-info-row) label[for^="to-edit-"] > small {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /track-order: hướng dẫn "(0 = bỏ món)" ở form Sửa số lượng.
+   Vấn đề: `small.text-muted` trong card-header "Sửa số lượng"
+   (TrackOrder.razor:479) ~12.8px — đây là HƯỚNG DẪN quan trọng (nhập
+   0 là xóa món khỏi đơn); chữ nhỏ khách không đọc, bấm Lưu mà không
+   hiểu sao món biến mất.
+   Giải pháp: mobile 13px.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body:has(.to-info-row) .card-header > small.text-muted {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /track-order: nhãn ô "Ngày sinh (để nhận voucher sinh nhật)".
+   Vấn đề: `label[for="to-birthday"] small` ~12.8px (TrackOrder.razor:
+   203) — giải thích quyền lợi voucher sinh nhật; chữ nhỏ khách lớn
+   tuổi bỏ qua, mất lượt nhận voucher.
+   Giải pháp: mobile 13px. (for="to-birthday" chỉ tồn tại ở TrackOrder.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body:has(.to-info-row) label[for="to-birthday"] small {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX run 02:05 A1 ===== */
