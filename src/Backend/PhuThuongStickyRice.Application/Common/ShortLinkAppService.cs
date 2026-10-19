@@ -54,6 +54,11 @@ namespace PhuThuongStickyRice.Application.Common
         [AllowAnonymous]
         public virtual async Task<ShortLinkDto> CreateAsync(CreateShortLinkDto dto)
         {
+            if (dto == null)
+            {
+                throw new ArgumentNullException(nameof(dto));
+            }
+
             var target = dto.TargetUrl.Trim();
             var queryable = await _links.GetQueryableAsync();
             var existing = await _asyncExecuter.FirstOrDefaultAsync(

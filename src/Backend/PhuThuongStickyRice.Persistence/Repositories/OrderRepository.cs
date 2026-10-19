@@ -1,5 +1,7 @@
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,6 +32,20 @@ namespace PhuThuongStickyRice.Persistence.Repositories
             var queryable = await GetQueryableAsync();
             return await AsyncExecuter.AnyAsync(
                 queryable.Where(x => x.OrderNumber == orderNumber), cancellationToken);
+        }
+
+        public async Task<List<Order>> GetListWithLinesAsync(IEnumerable<System.Guid> orderIds, CancellationToken cancellationToken = default)
+        {
+            var ids = orderIds.Distinct().ToList();
+            if (ids.Count == 0)
+            {
+                return new List<Order>();
+            }
+
+            var queryable = await GetQueryableAsync();
+            return await AsyncExecuter.ToListAsync(
+                queryable.Include(x => x.Lines).Where(x => ids.Contains(x.Id)),
+                cancellationToken);
         }
     }
 }

@@ -307,9 +307,21 @@ else
         if (key != _lastSuggestionCartKey)
         {
             _lastSuggestionCartKey = key;
-            _ = LoadSuggestionsAsync();
+            _ = ReloadSuggestionsAsync();
         }
         InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Reloads "Thường được mua cùng" and re-renders AFTER the load
+    /// completes, so the suggestion list is never one interaction behind
+    /// the cart (a fire-and-forget reload + immediate StateHasChanged left
+    /// the old list on screen until the next unrelated render).
+    /// </summary>
+    private async Task ReloadSuggestionsAsync()
+    {
+        await LoadSuggestionsAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
     private void ChangeQuantity(CartItemModel item, int delta)

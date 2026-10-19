@@ -55,6 +55,11 @@ namespace PhuThuongStickyRice.Application.Catalog
         [AllowAnonymous]
         public virtual async Task<QuoteRequestDto> CreateAsync(CreateQuoteRequestDto dto)
         {
+            if (dto == null)
+            {
+                throw new ArgumentNullException(nameof(dto));
+            }
+
             if (!IsValidPhone(dto.CustomerPhone))
             {
                 throw new Domain.Exceptions.DomainException("Số điện thoại không đúng định dạng (VD: 0901234567).");
@@ -134,6 +139,11 @@ namespace PhuThuongStickyRice.Application.Catalog
         [AllowAnonymous]
         public virtual async Task<CungReminderDto> CreateReminderAsync(CreateCungReminderDto dto)
         {
+            if (dto == null)
+            {
+                throw new ArgumentNullException(nameof(dto));
+            }
+
             if (!IsValidPhone(dto.CustomerPhone))
             {
                 throw new Domain.Exceptions.DomainException("Số điện thoại không đúng định dạng (VD: 0901234567).");

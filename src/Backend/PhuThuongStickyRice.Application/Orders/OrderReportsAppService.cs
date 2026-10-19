@@ -44,6 +44,11 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? from, DateTime? to);
     }
 
+    /// <summary>
+    /// Báo cáo doanh thu cho admin: đối soát 1 ngày VN theo kênh thanh toán,
+    /// xuất Excel đơn hàng / doanh thu (tối đa 5000 dòng để file không phình),
+    /// tổng hợp doanh thu theo khoảng ngày. Toàn bộ chỉ role Admin được gọi.
+    /// </summary>
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
     public class OrderReportsAppService : ApplicationService, IOrderReportsAppService
     {
@@ -127,6 +132,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 filtered
                     .OrderByDescending(x => x.CreatedAt)
                     .Take(MaxExportRows));
+            var linesByOrder = await GetLinesByOrderAsync(items.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
             var sheet = workbook.Worksheets.Add("Đơn hàng");
@@ -150,16 +156,19 @@ namespace PhuThuongStickyRice.Application.Orders
             var row = 2;
             foreach (var order in items)
             {
-                var itemsText = string.Join("; ",
-                    order.Lines.Select(x =>
-                        $"{x.Quantity}× {x.ProductName}" +
-                        (string.IsNullOrWhiteSpace(x.SizeName) ? "" : $" ({x.SizeName})")));
+                var itemsText = FormatLines(
+                    linesByOrder.TryGetValue(order.Id, out var ol)
+                        ? ol
+                        : Enumerable.Empty<OrderLine>());
+                // Tổng tiền giảm của 1 đơn = cộng cả 4 loại: mã giảm giá + điểm
+                // đổi + giảm hạng thành viên + khuyến mãi (trong DB chúng lưu riêng).
                 var discountTotal = order.DiscountAmount.Amount
                     + order.LoyaltyDiscount.Amount
                     + order.TierDiscount.Amount
                     + order.PromotionDiscountAmount;
 
                 sheet.Cell(row, 1).Value = order.OrderNumber;
+                // Giờ VN cho file Excel (CreatedAt lưu UTC).
                 sheet.Cell(row, 2).Value = order.CreatedAt.AddHours(7);
                 sheet.Cell(row, 2).Style.NumberFormat.Format = "dd/MM/yyyy HH:mm";
                 sheet.Cell(row, 3).Value = order.CustomerName;
@@ -206,6 +215,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var details = await _asyncExecuter.ToListAsync(
                 ranged.OrderByDescending(x => x.CreatedAt).Take(MaxExportRows));
+            var linesByOrder = await GetLinesByOrderAsync(details.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
 
@@ -254,11 +264,12 @@ namespace PhuThuongStickyRice.Application.Orders
             var row = 2;
             foreach (var order in details)
             {
-                var itemsText = string.Join("; ",
-                    order.Lines.Select(x =>
-                        $"{x.Quantity}× {x.ProductName}" +
-                        (string.IsNullOrWhiteSpace(x.SizeName) ? "" : $" ({x.SizeName})")));
+                var itemsText = FormatLines(
+                    linesByOrder.TryGetValue(order.Id, out var ol)
+                        ? ol
+                        : Enumerable.Empty<OrderLine>());
                 sheet.Cell(row, 1).Value = order.OrderNumber;
+                // Giờ VN cho file Excel (CreatedAt lưu UTC).
                 sheet.Cell(row, 2).Value = order.CreatedAt.AddHours(7);
                 sheet.Cell(row, 2).Style.NumberFormat.Format = "dd/MM/yyyy HH:mm";
                 sheet.Cell(row, 3).Value = order.CustomerName;
@@ -319,6 +330,10 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
+        /// <summary>
+        /// Style hàng tiêu đề file Excel: chữ đậm trắng, nền tím thương hiệu
+        /// (#7a6fbe), căn giữa — dùng chung cho mọi sheet xuất ra.
+        /// </summary>
         private static void StyleHeader(IXLRow headerRow)
         {
             headerRow.Style.Font.Bold = true;
@@ -326,6 +341,41 @@ namespace PhuThuongStickyRice.Application.Orders
             headerRow.Style.Font.FontColor = XLColor.White;
             headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         }
+
+        /// <summary>
+        /// Loads order lines for the given orders in ONE extra query, keyed
+        /// by order id. Needed because AutoInclude for Order.Lines was removed
+        /// (see OrderConfiguration) and this layer cannot call EF Core's
+        /// Include directly — so the exports would otherwise always show an
+        /// empty "Món" column.
+        /// </summary>
+        private async Task<Dictionary<Guid, List<OrderLine>>> GetLinesByOrderAsync(
+            IEnumerable<Guid> orderIds)
+        {
+            var ids = orderIds.Distinct().ToList();
+            if (ids.Count == 0)
+            {
+                return new Dictionary<Guid, List<OrderLine>>();
+            }
+
+            var ordersWithLines = await _orders.GetListWithLinesAsync(ids);
+            return ordersWithLines
+                .ToDictionary(x => x.Id, x => x.Lines.ToList());
+        }
+
+        /// <summary>
+        /// Renders order lines as "2× Xôi gấc (Lớn); 1× Xôi xéo" for exports.
+        /// </summary>
+        private static string FormatLines(IEnumerable<OrderLine> lines) =>
+            string.Join("; ",
+                lines.Select(x =>
+                    $"{x.Quantity}× {x.ProductName}" +
+                    (string.IsNullOrWhiteSpace(x.SizeName) ? "" : $" ({x.SizeName})")));
+        /// <summary>
+        /// Lọc đơn xuất Excel theo ô tìm kiếm (mã đơn/tên khách/SĐT), trạng
+        /// thái, shipper và khoảng ngày VN. Trạng thái nhập sai chính tả thì
+        /// bỏ qua bộ lọc (không lỗi trang).
+        /// </summary>
         private static IQueryable<Order> ApplyFilters(IQueryable<Order> query, GetOrdersInput input)
         {
             if (!string.IsNullOrWhiteSpace(input.SearchTerm))
