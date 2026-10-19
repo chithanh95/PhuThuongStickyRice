@@ -88,15 +88,15 @@
                     }
                     else
                     {
-                        @foreach (var h in _holidays)
+                        @foreach (var holiday in _holidays)
                         {
-                            var isPast = h.HolidayDate.Date < DateTime.Today;
-                            var isToday = h.HolidayDate.Date == DateTime.Today;
+                            var isPast = holiday.HolidayDate.Date < DateTime.Today;
+                            var isToday = holiday.HolidayDate.Date == DateTime.Today;
                             <tr class="@(isPast ? "text-muted" : "") @(isToday ? "table-warning" : "")">
-                                <td><strong>@h.HolidayDate.ToString("dd/MM/yyyy")</strong></td>
-                                <td>@VnWeekday(h.HolidayDate)</td>
-                                <td>@h.Reason</td>
-                                <td>@(h.IsFullDay ? "Nghỉ cả ngày" : "Nghỉ một phần")</td>
+                                <td><strong>@holiday.HolidayDate.ToString("dd/MM/yyyy")</strong></td>
+                                <td>@VnWeekday(holiday.HolidayDate)</td>
+                                <td>@holiday.Reason</td>
+                                <td>@(holiday.IsFullDay ? "Nghỉ cả ngày" : "Nghỉ một phần")</td>
                                 <td>
                                     @if (isToday)
                                     {
@@ -112,8 +112,8 @@
                                     }
                                 </td>
                                 <td class="text-right">
-                                    <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(h)">Sửa</button>
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(h)">Xóa</button>
+                                    <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(holiday)">Sửa</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(holiday)">Xóa</button>
                                 </td>
                             </tr>
                         }
@@ -158,14 +158,14 @@
         }
     }
 
-    private void StartEdit(HolidayModel h)
+    private void StartEdit(HolidayModel holiday)
     {
-        _editingId = h.Id;
+        _editingId = holiday.Id;
         _model = new CreateHolidayModel
         {
-            HolidayDate = h.HolidayDate.Date,
-            Reason = h.Reason,
-            IsFullDay = h.IsFullDay
+            HolidayDate = holiday.HolidayDate.Date,
+            Reason = holiday.Reason,
+            IsFullDay = holiday.IsFullDay
         };
         _error = null;
         _success = null;
@@ -217,13 +217,13 @@
         }
     }
 
-    private async Task DeleteAsync(HolidayModel h)
+    private async Task DeleteAsync(HolidayModel holiday)
     {
         _error = null;
         try
         {
-            await HolidayService.DeleteAsync(h.Id);
-            _success = $"Đã xóa ngày nghỉ {h.HolidayDate:dd/MM/yyyy}.";
+            await HolidayService.DeleteAsync(holiday.Id);
+            _success = $"Đã xóa ngày nghỉ {holiday.HolidayDate:dd/MM/yyyy}.";
             await LoadAsync();
         }
         catch (Exception ex)

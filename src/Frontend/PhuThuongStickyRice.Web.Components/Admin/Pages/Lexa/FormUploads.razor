@@ -29,19 +29,19 @@
                 {
                     <div class="mt-3">
                         <h6>File đã chọn (@_files.Count)</h6>
-                        @foreach (var f in _files)
+                        @foreach (var file in _files)
                         {
                             <div class="lexa-file-item">
-                                <span class="lexa-file-icon">@GetIcon(f.Name)</span>
+                                <span class="lexa-file-icon">@GetIcon(file.Name)</span>
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between">
-                                        <strong class="small">@f.Name</strong>
-                                        <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="() => RemoveFile(f)">✕</button>
+                                        <strong class="small">@file.Name</strong>
+                                        <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="() => RemoveFile(file)">✕</button>
                                     </div>
                                     <div class="progress" style="height:6px;">
-                                        <div class="progress-bar" style="width:@(f.Progress)%;background:#7a6fbe;"></div>
+                                        <div class="progress-bar" style="width:@(file.Progress)%;background:#7a6fbe;"></div>
                                     </div>
-                                    <small class="text-muted">@FormatSize(f.Size) • @(f.Progress)%</small>
+                                    <small class="text-muted">@FormatSize(file.Size) • @(file.Progress)%</small>
                                 </div>
                             </div>
                         }
@@ -138,28 +138,28 @@
 
     private void OnFilesSelected(InputFileChangeEventArgs e)
     {
-        foreach (var f in e.GetMultipleFiles(10))
+        foreach (var file in e.GetMultipleFiles(10))
         {
-            if (!_files.Any(x => x.Name == f.Name))
-                _files.Add(new UploadFile { Name = f.Name, Size = f.Size });
+            if (!_files.Any(x => x.Name == file.Name))
+                _files.Add(new UploadFile { Name = file.Name, Size = file.Size });
         }
         _uploadDone = false;
     }
 
     private void OnDrop(DragEventArgs e) { }
 
-    private void RemoveFile(UploadFile f) => _files.Remove(f);
+    private void RemoveFile(UploadFile file) => _files.Remove(file);
 
     private async Task StartUpload()
     {
         _uploading = true;
         _uploadDone = false;
-        foreach (var f in _files)
+        foreach (var file in _files)
         {
-            while (f.Progress < 100)
+            while (file.Progress < 100)
             {
                 await Task.Delay(80);
-                f.Progress = Math.Min(100, f.Progress + 20);
+                file.Progress = Math.Min(100, file.Progress + 20);
                 StateHasChanged();
             }
         }
@@ -171,20 +171,20 @@
 
     private async Task OnSingleImage(InputFileChangeEventArgs e)
     {
-        var f = e.File;
-        if (f == null) return;
-        _singleImageName = f.Name;
-        var buffer = new byte[f.Size];
-        await f.OpenReadStream(5 * 1024 * 1024).ReadAsync(buffer);
-        _previewUrl = $"data:{f.ContentType};base64,{Convert.ToBase64String(buffer)}";
+        var file = e.File;
+        if (file == null) return;
+        _singleImageName = file.Name;
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream(5 * 1024 * 1024).ReadAsync(buffer);
+        _previewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
     }
 
     private void OnSingleDoc(InputFileChangeEventArgs e)
     {
-        var f = e.File;
-        if (f == null) return;
-        _singleDocName = f.Name;
-        _singleDocSize = f.Size;
+        var file = e.File;
+        if (file == null) return;
+        _singleDocName = file.Name;
+        _singleDocSize = file.Size;
     }
 
     private string GetIcon(string name)

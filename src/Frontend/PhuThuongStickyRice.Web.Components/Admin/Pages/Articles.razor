@@ -93,14 +93,14 @@ else
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var a in _items)
+                                @foreach (var article in _items)
                                 {
-                                    <tr @key="a.Id">
-                                        <td><strong>@a.Title</strong></td>
-                                        <td class="text-muted">@Truncate(a.Body, 220)</td>
-                                        <td class="text-nowrap">@a.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                    <tr @key="article.Id">
+                                        <td><strong>@article.Title</strong></td>
+                                        <td class="text-muted">@Truncate(article.Body, 220)</td>
+                                        <td class="text-nowrap">@article.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
                                         <td>
-                                            @if (a.IsPublished)
+                                            @if (article.IsPublished)
                                             {
                                                 <span class="badge badge-success">Đã xuất bản</span>
                                             }
@@ -110,8 +110,8 @@ else
                                             }
                                         </td>
                                         <td class="text-right text-nowrap">
-                                            <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(a)">Sửa</button>
-                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(a)">Xóa</button>
+                                            <button class="btn btn-sm btn-outline-primary mr-1" @onclick="() => StartEdit(article)">Sửa</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(article)">Xóa</button>
                                         </td>
                                     </tr>
                                 }
@@ -160,15 +160,15 @@ else
         }
     }
 
-    private async Task StartEdit(ArticleModel a)
+    private async Task StartEdit(ArticleModel article)
     {
         // perf-hunt 2026-10-19 (run 14:46): list chỉ trả excerpt Body (220 ký
         // tự) để giảm payload — form sửa phải nạp full Body qua endpoint riêng,
         // nếu lỗi thì dùng dữ liệu list (không chặn user).
-        ArticleModel src = a;
+        ArticleModel src = article;
         try
         {
-            src = await AdminOperationsService.GetArticleAsync(a.Id) ?? a;
+            src = await AdminOperationsService.GetArticleAsync(article.Id) ?? article;
         }
         catch (Exception)
         {
@@ -233,12 +233,12 @@ else
         }
     }
 
-    private async Task DeleteAsync(ArticleModel a)
+    private async Task DeleteAsync(ArticleModel article)
     {
         _error = null;
         try
         {
-            await AdminOperationsService.DeleteArticleAsync(a.Id);
+            await AdminOperationsService.DeleteArticleAsync(article.Id);
             await LoadAsync();
         }
         catch (Exception ex)

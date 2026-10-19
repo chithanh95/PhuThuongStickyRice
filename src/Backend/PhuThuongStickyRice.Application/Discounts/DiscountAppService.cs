@@ -495,8 +495,12 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         public virtual async Task IncrementUsageAsync(string code)
         {
-            var entity = await FindByCodeAsync(code);
-            if (entity == null)
+            // Chuẩn hóa 1 lần, dùng chung cho cả bước kiểm tra tồn tại lẫn câu UPDATE.
+            var normalized = NormalizeCode(code);
+            var queryable = await _discounts.GetQueryableAsync();
+            // [codequality-practices 2026-10-19] Bỏ FindByCodeAsync nạp cả entity
+            // chỉ để check null — AnyAsync đủ để biết mã có tồn tại không.
+            if (!await _asyncExecuter.AnyAsync(queryable, x => x.Code == normalized))
             {
                 return;
             }
@@ -505,7 +509,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             // UPDATE: 2 checkout đồng thời cùng mã 1 lần dùng đều đã qua
             // validate thì chỉ bên UPDATE trước thành công; bên còn lại ném
             // lỗi để đơn (chung UoW) rollback thay vì dùng lậu lượt thứ 2.
-            var incremented = await _discounts.TryIncrementUsageAsync(NormalizeCode(code));
+            var incremented = await _discounts.TryIncrementUsageAsync(normalized);
             if (!incremented)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -834,13 +838,17 @@ namespace PhuThuongStickyRice.Application.Discounts
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
             // CA5394: mã giảm giá quy ra tiền nên phải dùng RNG mật mã —
             // Random.Shared đoán được (deterministic PRNG), kẻ xấu có thể dò mã.
+            var queryable = await _discounts.GetQueryableAsync();
 
             for (var attempt = 0; attempt < GeneratedCodeMaxAttempts; attempt++)
             {
                 var code = prefix + "-" + new string(
                     Enumerable.Range(0, GeneratedCodeRandomPartLength).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
 
-                if (await FindByCodeAsync(code) == null)
+                // [codequality-practices 2026-10-19] Mã vừa sinh đã ở dạng chuẩn
+                // hóa (prefix + ký tự hoa, không khoảng trắng) nên kiểm tra tồn tại
+                // trực tiếp bằng AnyAsync — bỏ FindByCodeAsync nạp cả entity chỉ để check null.
+                if (!await _asyncExecuter.AnyAsync(queryable, x => x.Code == code))
                 {
                     return code;
                 }
@@ -936,8 +944,9 @@ namespace PhuThuongStickyRice.Application.Discounts
         {
             var normalized = NormalizeCode(code);
             var queryable = await _discounts.GetQueryableAsync();
-            return await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Code == normalized));
+            // [codequality-practices 2026-10-19] Truyền predicate thẳng vào
+            // FirstOrDefaultAsync thay vì bọc queryable.Where(...) thừa.
+            return await _asyncExecuter.FirstOrDefaultAsync(queryable, x => x.Code == normalized);
         }
 
         /// <summary>
@@ -950,9 +959,11 @@ namespace PhuThuongStickyRice.Application.Discounts
         private async Task EnsureCodeUniqueAsync(string code, Guid? excludeId)
         {
             var queryable = await _discounts.GetQueryableAsync();
-            var exists = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Code == code && x.Id != excludeId));
-            if (exists != null)
+            // [codequality-practices 2026-10-19] Chỉ cần biết mã đã tồn tại
+            // hay chưa — AnyAsync (SELECT 1) gọn hơn nạp cả entity chỉ để check null.
+            var exists = await _asyncExecuter.AnyAsync(
+                queryable, x => x.Code == code && x.Id != excludeId);
+            if (exists)
             {
                 throw new Domain.Exceptions.DomainException($"Mã '{code}' đã tồn tại.");
             }

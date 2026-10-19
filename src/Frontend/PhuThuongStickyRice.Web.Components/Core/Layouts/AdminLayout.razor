@@ -107,7 +107,7 @@
                                     <div class="lx-search-group-label">🧾 Đơn hàng</div>
                                     @foreach (var r in _searchResult.Orders)
                                     {
-                                        <button class="lx-search-item" @onclick="() => GoSearch(r.Link)">
+                                        <button class="lx-search-item" @onclick="() => NavigateToSearchResult(r.Link)">
                                             <span class="fa-solid fa-cart-shopping" aria-hidden="true"></span>
                                             <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
                                         </button>
@@ -118,7 +118,7 @@
                                     <div class="lx-search-group-label">🍚 Món ăn</div>
                                     @foreach (var r in _searchResult.Products)
                                     {
-                                        <button class="lx-search-item" @onclick="() => GoSearch(r.Link)">
+                                        <button class="lx-search-item" @onclick="() => NavigateToSearchResult(r.Link)">
                                             <span class="fa-solid fa-tag" aria-hidden="true"></span>
                                             <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
                                         </button>
@@ -129,7 +129,7 @@
                                     <div class="lx-search-group-label">👤 Khách hàng</div>
                                     @foreach (var r in _searchResult.Customers)
                                     {
-                                        <button class="lx-search-item" @onclick="() => GoSearch(r.Link)">
+                                        <button class="lx-search-item" @onclick="() => NavigateToSearchResult(r.Link)">
                                             <span class="fa-solid fa-user" aria-hidden="true"></span>
                                             <span><span class="t">@r.Title</span><br /><span class="s">@r.Subtitle</span></span>
                                         </button>
@@ -326,7 +326,6 @@
         new("sales", "Bán hàng", "fa-solid fa-tag", new()
         {
             new("/products", "Sản phẩm", "fa-solid fa-tag"),
-            new("/admin/goi-tra-truoc", "Gói trả trước", "fa-solid fa-ticket"),
             new("/admin/khuyen-mai", "Khuyến mãi", "fa-solid fa-ticket"),
             new("/admin/ma-giam-gia", "Mã giảm giá", "fa-solid fa-tag"),
             new("/admin/chi-nhanh", "Chi nhánh", "fa-solid fa-store"),
@@ -489,7 +488,7 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void GoSearch(string link)
+    private void NavigateToSearchResult(string link)
     {
         _searchFocused = false;
         _search = "";

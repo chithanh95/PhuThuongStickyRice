@@ -294,31 +294,31 @@
                 }
                 else
                 {
-                    @foreach (var a in _addresses)
+                    @foreach (var address in _addresses)
                     {
                         <div class="border rounded p-3 mb-2 d-flex justify-content-between align-items-start">
                             <div>
                                 <strong>
-                                    @(!string.IsNullOrWhiteSpace(a.Label) ? a.Label + " — " : "")@a.ReceiverName
+                                    @(!string.IsNullOrWhiteSpace(address.Label) ? address.Label + " — " : "")@address.ReceiverName
                                 </strong>
-                                @if (a.IsDefault)
+                                @if (address.IsDefault)
                                 {
                                     <span class="badge badge-success ml-1">Mặc định</span>
                                 }
-                                <div class="text-muted small">@a.ReceiverPhone</div>
-                                <div>@a.AddressDetail</div>
-                                @if (!string.IsNullOrWhiteSpace(a.Note))
+                                <div class="text-muted small">@address.ReceiverPhone</div>
+                                <div>@address.AddressDetail</div>
+                                @if (!string.IsNullOrWhiteSpace(address.Note))
                                 {
-                                    <div class="text-muted small"><em>@a.Note</em></div>
+                                    <div class="text-muted small"><em>@address.Note</em></div>
                                 }
                             </div>
                             <div class="btn-group btn-group-sm">
-                                @if (!a.IsDefault)
+                                @if (!address.IsDefault)
                                 {
-                                    <button class="btn btn-outline-secondary" title="Đặt mặc định" aria-label="Đặt làm địa chỉ mặc định" @onclick="() => SetDefaultAsync(a.Id)">★</button>
+                                    <button class="btn btn-outline-secondary" title="Đặt mặc định" aria-label="Đặt làm địa chỉ mặc định" @onclick="() => SetDefaultAsync(address.Id)">★</button>
                                 }
-                                <button class="btn btn-outline-primary" @onclick="() => StartEdit(a)">Sửa</button>
-                                <button class="btn btn-outline-danger" @onclick="() => DeleteAsync(a.Id)">Xóa</button>
+                                <button class="btn btn-outline-primary" @onclick="() => StartEdit(address)">Sửa</button>
+                                <button class="btn btn-outline-danger" @onclick="() => DeleteAsync(address.Id)">Xóa</button>
                             </div>
                         </div>
                     }
@@ -506,19 +506,19 @@
         _addrError = null;
     }
 
-    private void StartEdit(CustomerAddressModel a)
+    private void StartEdit(CustomerAddressModel address)
     {
         _editing = true;
-        _editingId = a.Id;
+        _editingId = address.Id;
         _form = new CustomerAddressModel
         {
-            Id = a.Id,
-            Label = a.Label,
-            ReceiverName = a.ReceiverName,
-            ReceiverPhone = a.ReceiverPhone,
-            AddressDetail = a.AddressDetail,
-            Note = a.Note,
-            IsDefault = a.IsDefault
+            Id = address.Id,
+            Label = address.Label,
+            ReceiverName = address.ReceiverName,
+            ReceiverPhone = address.ReceiverPhone,
+            AddressDetail = address.AddressDetail,
+            Note = address.Note,
+            IsDefault = address.IsDefault
         };
         _addrError = null;
     }

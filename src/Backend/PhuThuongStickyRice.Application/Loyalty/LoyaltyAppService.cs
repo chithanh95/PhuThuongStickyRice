@@ -430,8 +430,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
             var code = referralCode.Trim().ToUpperInvariant();
             var queryable = await _accounts.GetQueryableAsync();
-            return await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.ReferralCode == code));
+            // [codequality-practices 2026-10-19] Truyền predicate thẳng vào
+            // FirstOrDefaultAsync thay vì bọc queryable.Where(...) thừa.
+            return await _asyncExecuter.FirstOrDefaultAsync(queryable, x => x.ReferralCode == code);
         }
 
         /// <summary>
@@ -804,8 +805,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             var queryable = await _accounts.GetQueryableAsync();
-            return await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Phone == normalizedPhone));
+            // [codequality-practices 2026-10-19] Truyền predicate thẳng vào
+            // FirstOrDefaultAsync thay vì bọc queryable.Where(...) thừa.
+            return await _asyncExecuter.FirstOrDefaultAsync(queryable, x => x.Phone == normalizedPhone);
         }
 
         /// <summary>
@@ -828,9 +830,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
                     Enumerable.Range(0, 6).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
 
                 var queryable = await _accounts.GetQueryableAsync();
-                var exists = await _asyncExecuter.FirstOrDefaultAsync(
-                    queryable.Where(x => x.ReferralCode == code));
-                if (exists == null)
+                // [codequality-practices 2026-10-19] Chỉ cần biết mã đã tồn tại
+                // hay chưa — AnyAsync phát sinh SELECT 1 gọn hơn FirstOrDefaultAsync
+                // nạp cả entity vào bộ nhớ/change tracker chỉ để check null.
+                if (!await _asyncExecuter.AnyAsync(queryable, x => x.ReferralCode == code))
                 {
                     return code;
                 }

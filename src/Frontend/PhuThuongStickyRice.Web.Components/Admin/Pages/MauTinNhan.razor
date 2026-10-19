@@ -45,12 +45,12 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var t in _templates)
+                        @foreach (var template in _templates)
                         {
                             <tr>
-                                <td><strong>@t.StatusLabel</strong><br /><small class="text-muted">@t.Status</small></td>
+                                <td><strong>@template.StatusLabel</strong><br /><small class="text-muted">@template.Status</small></td>
                                 <td>
-                                    @if (_editingId == t.Id)
+                                    @if (_editingId == template.Id)
                                     {
                                         <textarea class="form-control" rows="4" maxlength="2000"
                                                   @bind="_editText"></textarea>
@@ -58,18 +58,18 @@ else
                                     }
                                     else
                                     {
-                                        <div style="white-space: pre-line;">@t.Template</div>
+                                        <div style="white-space: pre-line;">@template.Template</div>
                                     }
                                 </td>
                                 <td>
-                                    @if (_editingId == t.Id)
+                                    @if (_editingId == template.Id)
                                     {
                                         <div class="custom-control custom-switch">
-                                            <input type="checkbox" class="custom-control-input" id="@($"mt-{t.Id}")" @bind="_editActive" />
-                                            <label class="custom-control-label" for="@($"mt-{t.Id}")">Bật</label>
+                                            <input type="checkbox" class="custom-control-input" id="@($"mt-{template.Id}")" @bind="_editActive" />
+                                            <label class="custom-control-label" for="@($"mt-{template.Id}")">Bật</label>
                                         </div>
                                     }
-                                    else if (t.IsActive)
+                                    else if (template.IsActive)
                                     {
                                         <span class="badge badge-success">Bật</span>
                                     }
@@ -79,16 +79,16 @@ else
                                     }
                                 </td>
                                 <td class="text-right">
-                                    @if (_editingId == t.Id)
+                                    @if (_editingId == template.Id)
                                     {
-                                        <button class="btn btn-sm btn-primary" @onclick="() => SaveAsync(t)" disabled="@_saving">
+                                        <button class="btn btn-sm btn-primary" @onclick="() => SaveAsync(template)" disabled="@_saving">
                                             @(_saving ? "..." : "Lưu")
                                         </button>
                                         <button class="btn btn-sm btn-secondary ml-1" @onclick="CancelEdit">Hủy</button>
                                     }
                                     else
                                     {
-                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(t)">Sửa</button>
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(template)">Sửa</button>
                                     }
                                 </td>
                             </tr>
@@ -134,11 +134,11 @@ else
         }
     }
 
-    private void StartEdit(OrderMessageTemplateModel t)
+    private void StartEdit(OrderMessageTemplateModel template)
     {
-        _editingId = t.Id;
-        _editText = t.Template;
-        _editActive = t.IsActive;
+        _editingId = template.Id;
+        _editText = template.Template;
+        _editActive = template.IsActive;
         _message = null;
     }
 
@@ -148,18 +148,18 @@ else
         _message = null;
     }
 
-    private async Task SaveAsync(OrderMessageTemplateModel t)
+    private async Task SaveAsync(OrderMessageTemplateModel template)
     {
         _saving = true;
         _message = null;
         try
         {
-            var updated = await OrderMessageTemplateService.UpdateAsync(t.Id, _editText, _editActive);
-            t.Template = updated.Template;
-            t.IsActive = updated.IsActive;
+            var updated = await OrderMessageTemplateService.UpdateAsync(template.Id, _editText, _editActive);
+            template.Template = updated.Template;
+            template.IsActive = updated.IsActive;
             _editingId = null;
-            _message = $"Đã lưu mẫu \"{t.StatusLabel}\".";
-            Toasts.Show($"Đã lưu mẫu tin nhắn \"{t.StatusLabel}\" thành công!");
+            _message = $"Đã lưu mẫu \"{template.StatusLabel}\".";
+            Toasts.Show($"Đã lưu mẫu tin nhắn \"{template.StatusLabel}\" thành công!");
             _isError = false;
         }
         catch (Exception ex)

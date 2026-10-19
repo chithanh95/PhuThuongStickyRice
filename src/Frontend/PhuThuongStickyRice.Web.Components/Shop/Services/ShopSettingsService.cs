@@ -76,6 +76,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
         }
 
+        /// <summary>
+        /// Admin lưu cài đặt shop. Sau khi lưu phải xóa cache public
+        /// (<see cref="GetPublicAsync"/> cache 2 phút) để shop/landing/checkout
+        /// đọc ngay giá trị mới, không phải chờ cache hết hạn.
+        /// </summary>
+        /// <param name="model">Cài đặt cần lưu.</param>
+        /// <returns>Cài đặt sau khi server lưu.</returns>
         public async Task<ShopSettingModel> UpdateAsync(ShopSettingModel model)
         {
             var result = await PutAsync<ShopSettingModel>("api/shop-settings", model);
@@ -94,8 +101,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
-        /// Item 180: "Gửi thử" — posts a sample new-order payload.
+        /// Item 180: nút "Gửi thử" ở trang cài đặt — gửi 1 payload đơn hàng mẫu
+        /// tới URL webhook admin nhập để kiểm tra tích hợp (vd Telegram/Zalo)
+        /// có nhận được tin nhắn không, trước khi bật thật.
         /// </summary>
+        /// <param name="url">URL webhook cần test.</param>
+        /// <returns>Kết quả test: thành công hay không + message giải thích.</returns>
         public async Task<TestOrderWebhookResult> TestOrderWebhookAsync(string url)
         {
             return await PostAsync<TestOrderWebhookResult>(

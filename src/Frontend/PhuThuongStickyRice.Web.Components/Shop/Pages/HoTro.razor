@@ -11,7 +11,7 @@
     <div class="alert alert-success" role="status">
         <strong>Đã gửi yêu cầu hỗ trợ!</strong> Shop sẽ liên hệ lại qua số <strong>@_ticket.Phone</strong> sớm nhất.
     </div>
-    <button class="btn btn-outline-primary ht-submit" @onclick="Reset">Gửi yêu cầu khác</button>
+    <button class="btn btn-outline-primary ht-submit" @onclick="ResetSupportForm">Gửi yêu cầu khác</button>
 }
 else
 {
@@ -86,7 +86,7 @@ else
         }
     }
 
-    private void Reset()
+    private void ResetSupportForm()
     {
         _sent = false;
         _ticket = null;

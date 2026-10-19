@@ -277,6 +277,12 @@ namespace PhuThuongStickyRice.Application.Orders
         /// đơn quá hạn vào memory khi worker chết lâu ngày.
         /// </summary>
         private const int AutoCancelBatchSize = 500;
+        /// <summary>
+        /// Số phút quá hạn mặc định của đơn chuyển khoản ngân hàng khi shop
+        /// chưa cấu hình (BankTransferExpiryMinutes &lt;= 0) — worker tự hủy
+        /// dùng giá trị này làm hạn chờ thanh toán.
+        /// </summary>
+        private const int DefaultBankTransferExpiryMinutes = 30;
         /// <summary>Tiền tố mã voucher tặng khách khi gửi đánh giá kèm ảnh.</summary>
         private const string PhotoReviewVoucherPrefix = "REVIEW";
         /// <summary>Số tiền voucher (25.000đ) tặng khách khi đánh giá kèm ảnh — dùng cho đơn sau.</summary>
@@ -303,6 +309,10 @@ namespace PhuThuongStickyRice.Application.Orders
         private const string VipTagName = "VIP";
         /// <summary>Cửa sổ (giờ) idempotency key của checkout còn hiệu lực.</summary>
         private const int IdempotencyKeyWindowHours = 24;
+        /// <summary>Số lần thử sinh mã đơn tối đa trước khi bỏ cuộc (mã dạng PX-yyyyMMdd-NNNN).</summary>
+        private const int GenerateOrderNumberMaxAttempts = 10;
+        /// <summary>Message lỗi dùng chung khi SĐT khách nhập không đúng định dạng VN.</summary>
+        private const string InvalidPhoneFormatMessage = "Số điện thoại không đúng định dạng (VD: 0901234567).";
 
         private readonly IOrderRepository _orders;
         private readonly IProductRepository _products;
@@ -2580,7 +2590,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var settings = await _shopSettings.GetAsync();
             var expiryMinutes = settings.BankTransferExpiryMinutes < 1
-                ? 30
+                ? DefaultBankTransferExpiryMinutes
                 : settings.BankTransferExpiryMinutes;
             var cutoff = DateTime.UtcNow.AddMinutes(-expiryMinutes);
 
@@ -3279,7 +3289,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (digits.Length < 9)
             {
                 throw new Domain.Exceptions.DomainException(
-                    "Số điện thoại không đúng định dạng (VD: 0901234567).");
+                    InvalidPhoneFormatMessage);
             }
 
             // Normalize once (digits-only): the history check, the existing-code
@@ -3331,7 +3341,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (!System.Text.RegularExpressions.Regex.IsMatch(digits, @"^(0)(3|5|7|8|9)\d{8}$"))
             {
                 throw new CrossCuttingConcerns.Exceptions.ValidationException(
-                    "Số điện thoại không đúng định dạng (VD: 0901234567).");
+                    InvalidPhoneFormatMessage);
             }
 
             var last9 = digits.Substring(digits.Length - 9);
@@ -3417,17 +3427,18 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>
         /// Sinh mã đơn dạng PX-YYYYMMDD-NNNN (vd PX-20261019-4821), dùng để
-        /// khách tra cứu đơn bằng SĐT + mã đơn. Thử tối đa 10 lần, mỗi lần
-        /// kiểm tra trùng trong DB trước khi nhận — vì vậy NNNN dùng
-        /// Random.Shared là đủ (không cần bảo mật mật mã), va chạm chỉ tốn
-        /// 1 vòng lặp. Vẫn throw sau 10 lần để đơn không được tạo với mã
-        /// có nguy cơ trùng khi shop đông đơn bất thường.
+        /// khách tra cứu đơn bằng SĐT + mã đơn. Thử tối đa
+        /// <c>GenerateOrderNumberMaxAttempts</c> lần, mỗi lần kiểm tra trùng
+        /// trong DB trước khi nhận — vì vậy NNNN dùng Random.Shared là đủ
+        /// (không cần bảo mật mật mã), va chạm chỉ tốn 1 vòng lặp. Vẫn throw
+        /// sau <c>GenerateOrderNumberMaxAttempts</c> lần để đơn không được tạo
+        /// với mã có nguy cơ trùng khi shop đông đơn bất thường.
         /// </summary>
         private async Task<string> GenerateOrderNumberAsync()
         {
             var random = Random.Shared;
 
-            for (var attempt = 0; attempt < 10; attempt++)
+            for (var attempt = 0; attempt < GenerateOrderNumberMaxAttempts; attempt++)
             {
                 var orderNumber = $"PX-{DateTime.UtcNow:yyyyMMdd}-{random.Next(1000, 9999)}";
 

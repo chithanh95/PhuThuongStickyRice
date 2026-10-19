@@ -214,16 +214,16 @@
     {
         get
         {
-            var q = _dishes.AsEnumerable();
+            var filteredDishes = _dishes.AsEnumerable();
             if (!string.IsNullOrWhiteSpace(_search))
-                q = q.Where(d => d.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
-            q = _sortCol switch
+                filteredDishes = filteredDishes.Where(d => d.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+            filteredDishes = _sortCol switch
             {
-                "Category" => _sortAsc ? q.OrderBy(d => d.Category) : q.OrderByDescending(d => d.Category),
-                "PriceNum" => _sortAsc ? q.OrderBy(d => d.PriceNum) : q.OrderByDescending(d => d.PriceNum),
-                _ => _sortAsc ? q.OrderBy(d => d.Name) : q.OrderByDescending(d => d.Name),
+                "Category" => _sortAsc ? filteredDishes.OrderBy(d => d.Category) : filteredDishes.OrderByDescending(d => d.Category),
+                "PriceNum" => _sortAsc ? filteredDishes.OrderBy(d => d.PriceNum) : filteredDishes.OrderByDescending(d => d.PriceNum),
+                _ => _sortAsc ? filteredDishes.OrderBy(d => d.Name) : filteredDishes.OrderByDescending(d => d.Name),
             };
-            return q;
+            return filteredDishes;
         }
     }
     private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
@@ -247,14 +247,14 @@
     {
         _editable = _dishes.Take(4).Select(d => new Dish(d.Id, d.Name, d.Category, d.Price, d.PriceNum, d.Status, d.Badge)).ToList();
     }
-    private void StartEdit(Dish d) { _editingId = d.Id; _editPrice = d.PriceNum.ToString(); }
+    private void StartEdit(Dish dish) { _editingId = dish.Id; _editPrice = dish.PriceNum.ToString(); }
     private void CancelEdit() => _editingId = null;
-    private void SavePrice(Dish d)
+    private void SavePrice(Dish dish)
     {
         if (int.TryParse(_editPrice, out var p) && p > 0)
         {
-            d.PriceNum = p;
-            d.Price = p.ToString("N0") + " ₫";
+            dish.PriceNum = p;
+            dish.Price = p.ToString("N0") + " ₫";
         }
         _editingId = null;
     }

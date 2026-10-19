@@ -166,22 +166,13 @@ namespace PhuThuongStickyRice.Application.Orders
             var query = await _orders.GetQueryableAsync();
             var filtered = await ApplyFiltersAsync(query, input ?? new GetOrdersInput());
 
-            // perf-hunt 2026-10-19 (run 17:55): project OrderExportRow ngay trong
+            // Projection chung ProjectToExportRows: project OrderExportRow ngay trong
             // SQL thay vì materialize full entity Order — WriteOrderRow chỉ
             // dùng các scalar này; tổng giảm cộng 4 loại được tính ngay trong
             // projection để SQL làm 1 lần, kết quả Excel không đổi.
             var items = await _asyncExecuter.ToListAsync(
-                filtered
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Take(MaxExportRows)
-                    .Select(x => new OrderExportRow(
-                        x.Id, x.OrderNumber, x.CreatedAt,
-                        x.CustomerName, x.CustomerPhone, x.CustomerAddress,
-                        x.TotalAmount.Amount, x.DeliveryFee.Amount,
-                        x.DiscountAmount.Amount + x.LoyaltyDiscount.Amount
-                            + x.TierDiscount.Amount + x.PromotionDiscountAmount,
-                        x.PaymentMethod, x.PaymentStatus, x.Status,
-                        x.Notes, x.AdminNote)));
+                ProjectToExportRows(
+                    filtered.OrderByDescending(x => x.CreatedAt).Take(MaxExportRows)));
             var linesByOrder = await GetLinesByOrderAsync(items.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
@@ -208,10 +199,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 "Món", "Tổng tiền", "Phí ship", "Giảm giá",
                 "Kênh thanh toán", "Trạng thái TT", "Trạng thái đơn", "Ghi chú"
             };
-            for (var columnIndex = 0; columnIndex < headers.Length; columnIndex++)
-            {
-                sheet.Cell(1, columnIndex + 1).Value = headers[columnIndex];
-            }
+            WriteHeaders(sheet, headers);
 
             var headerRow = sheet.Row(1);
             headerRow.Style.Font.Bold = true;
@@ -294,8 +282,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var summary = workbook.Worksheets.Add("Tổng hợp");
             var sumHeaders = new[] { "Ngày", "Số đơn", "Doanh thu (₫)", "Giá trị TB/đơn (₫)" };
-            for (var columnIndex = 0; columnIndex < sumHeaders.Length; columnIndex++)
-                summary.Cell(1, columnIndex + 1).Value = sumHeaders[columnIndex];
+            WriteHeaders(summary, sumHeaders);
             StyleHeader(summary.Row(1));
 
             var rowIndex = 2;
@@ -339,8 +326,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 "Mã đơn", "Ngày đặt", "Khách hàng", "SĐT",
                 "Món", "Tổng tiền", "Kênh thanh toán", "Trạng thái đơn"
             };
-            for (var columnIndex = 0; columnIndex < headers.Length; columnIndex++)
-                sheet.Cell(1, columnIndex + 1).Value = headers[columnIndex];
+            WriteHeaders(sheet, headers);
             StyleHeader(sheet.Row(1));
 
             var rowIndex = 2;
@@ -393,19 +379,11 @@ namespace PhuThuongStickyRice.Application.Orders
                         g.Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m))
                     .OrderBy(x => x.Date));
 
-            // perf-hunt 2026-10-19 (run 17:55): project OrderExportRow ngay trong
-            // SQL thay vì materialize full entity Order (tracked) cho tối đa
-            // 5000 dòng — WriteRevenueDetailSheet chỉ dùng các scalar này.
+            // perf-hunt 2026-10-19 (run 17:55): projection chung
+            // ProjectToExportRows (không materialize full entity Order tracked).
             var details = await _asyncExecuter.ToListAsync(
-                ranged.OrderByDescending(x => x.CreatedAt).Take(MaxExportRows)
-                    .Select(x => new OrderExportRow(
-                        x.Id, x.OrderNumber, x.CreatedAt,
-                        x.CustomerName, x.CustomerPhone, x.CustomerAddress,
-                        x.TotalAmount.Amount, x.DeliveryFee.Amount,
-                        x.DiscountAmount.Amount + x.LoyaltyDiscount.Amount
-                            + x.TierDiscount.Amount + x.PromotionDiscountAmount,
-                        x.PaymentMethod, x.PaymentStatus, x.Status,
-                        x.Notes, x.AdminNote)));
+                ProjectToExportRows(
+                    ranged.OrderByDescending(x => x.CreatedAt).Take(MaxExportRows)));
             var linesByOrder = await GetLinesByOrderAsync(details.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
@@ -479,6 +457,39 @@ namespace PhuThuongStickyRice.Application.Orders
             headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#7a6fbe");
             headerRow.Style.Font.FontColor = XLColor.White;
             headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        }
+
+        /// <summary>
+        /// Ghi dòng tiêu đề (dòng 1) của 1 sheet xuất Excel từ mảng tên cột —
+        /// gom loop ghi cell lặp y hệt ở 3 sheet writer (WriteOrdersSheet,
+        /// WriteRevenueSummarySheet, WriteRevenueDetailSheet).
+        /// </summary>
+        private static void WriteHeaders(IXLWorksheet sheet, string[] headers)
+        {
+            for (var columnIndex = 0; columnIndex < headers.Length; columnIndex++)
+            {
+                sheet.Cell(1, columnIndex + 1).Value = headers[columnIndex];
+            }
+        }
+
+        /// <summary>
+        /// Projection chung Order → OrderExportRow cho 2 export (đơn hàng và chi
+        /// tiết doanh thu): gom khối Select 13 field từng copy-paste y hệt ở 2 nơi.
+        /// Giữ projection trong SQL (không materialize full entity Order tracked) —
+        /// tổng giảm cộng cả 4 loại giảm lưu riêng được tính ngay trong projection.
+        /// </summary>
+        /// <param name="query">Query Order đã lọc/sắp xếp/giới hạn dòng.</param>
+        /// <returns>Query project sang <see cref="OrderExportRow"/>.</returns>
+        private static IQueryable<OrderExportRow> ProjectToExportRows(IQueryable<Order> query)
+        {
+            return query.Select(x => new OrderExportRow(
+                x.Id, x.OrderNumber, x.CreatedAt,
+                x.CustomerName, x.CustomerPhone, x.CustomerAddress,
+                x.TotalAmount.Amount, x.DeliveryFee.Amount,
+                x.DiscountAmount.Amount + x.LoyaltyDiscount.Amount
+                    + x.TierDiscount.Amount + x.PromotionDiscountAmount,
+                x.PaymentMethod, x.PaymentStatus, x.Status,
+                x.Notes, x.AdminNote));
         }
 
         /// <summary>

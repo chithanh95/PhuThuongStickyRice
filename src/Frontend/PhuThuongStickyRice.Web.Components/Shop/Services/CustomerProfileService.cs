@@ -13,11 +13,19 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// </summary>
     public class CustomerProfileService : ApiClientBase
     {
+        /// <summary>
+        /// Khởi tạo service hồ sơ khách hàng (gắn JWT qua <see cref="ApiClientBase"/>).
+        /// </summary>
         public CustomerProfileService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)
         {
         }
 
+        /// <summary>
+        /// Lấy hồ sơ của khách đang đăng nhập. Fail-soft: lỗi mạng/API thì trả
+        /// model trống thay vì nổ để trang TaiKhoan vẫn render được.
+        /// </summary>
+        /// <returns>Hồ sơ khách (khẩu vị, ngày sinh); rỗng nếu lỗi.</returns>
         public async Task<CustomerProfileModel> GetMyAsync()
         {
             try
@@ -31,6 +39,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
         }
 
+        /// <summary>
+        /// Cập nhật khẩu vị/ngày sinh. Luật "ngày sinh đổi 1 lần/năm" do server
+        /// kiểm tra — client chỉ hiển thị gợi ý từ <c>CanChangeDateOfBirth</c>.
+        /// </summary>
+        /// <param name="model">Hồ sơ cần lưu.</param>
+        /// <returns>Hồ sơ sau khi server lưu.</returns>
+        /// <exception cref="InvalidOperationException">Ném khi server trả lỗi (kèm message tiếng Việt).</exception>
         public async Task<CustomerProfileModel> UpdateAsync(CustomerProfileModel model)
         {
             await SetBearerToken();

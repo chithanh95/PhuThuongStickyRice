@@ -29,6 +29,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         private static List<PolicyPageSummaryModel>? _cachedPublicList;
         private static DateTimeOffset _cachedPublicListAt;
 
+        /// <summary>
+        /// Khởi tạo service chính sách/chính sách đổi trả (gắn JWT qua <see cref="ApiClientBase"/>).
+        /// </summary>
         public PolicyService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)
         {

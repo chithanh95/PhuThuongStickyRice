@@ -287,16 +287,16 @@
         }
     }
 
-    private void StartEditSize(PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel s)
+    private void StartEditSize(PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel size)
     {
-        _editingSizeId = s.Id;
+        _editingSizeId = size.Id;
         _sizeForm = new PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel
         {
-            Name = s.Name,
-            Price = s.Price,
-            SortOrder = s.SortOrder,
-            IsActive = s.IsActive,
-            ProductId = s.ProductId
+            Name = size.Name,
+            Price = size.Price,
+            SortOrder = size.SortOrder,
+            IsActive = size.IsActive,
+            ProductId = size.ProductId
         };
         _sizeError = null;
     }
@@ -336,11 +336,11 @@
         }
     }
 
-    private async Task DeleteSizeAsync(PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel s)
+    private async Task DeleteSizeAsync(PhuThuongStickyRice.Web.Components.Admin.Models.ProductSizeOptionModel size)
     {
         try
         {
-            await CatalogService.DeleteSizeOptionAsync(s.Id);
+            await CatalogService.DeleteSizeOptionAsync(size.Id);
             await LoadSizesAsync();
         }
         catch (Exception)
