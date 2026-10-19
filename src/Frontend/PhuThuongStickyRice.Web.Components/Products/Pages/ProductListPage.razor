@@ -31,9 +31,12 @@
             <div class="col-md-4 col-sm-6">
                 <div class="input-group">
                     <div class="input-group-prepend">
-                        <span class="input-group-text"><i class="fa-solid fa-search"></i></span>
+                        <span class="input-group-text"><i class="fa-solid fa-search" aria-hidden="true"></i></span>
                     </div>
                     <input type="text" class="form-control" placeholder="Tìm tên, mã món..."
+                           @* A11y: ô tìm kiếm không có label hiển thị — dùng aria-label để
+                              trình đọc màn hình biết mục đích ô nhập; icon kính lúp chỉ trang trí. *@
+                           aria-label="Tìm kiếm sản phẩm"
                            value="@SearchText" @oninput="OnSearchChanged" />
                 </div>
             </div>
@@ -100,19 +103,24 @@
                                     }
                                 </td>
                                 <td class="text-right text-nowrap">
+                                    @* A11y: nút icon-only chỉ có title — trình đọc màn hình cần
+                                       aria-label rõ ràng, kèm tên món để phân biệt các hàng. *@
                                     @if (HasPermission("products.edit"))
                                     {
-                                        <button @onclick="(() => ToggleAvailability(product))" class="btn btn-sm lx-btn-icon btn-outline-warning" title="Bật/tắt bán (hết hàng)">
-                                            <i class="fas @(product.Status == "Active" ? "fa-eye-slash" : "fa-eye")"></i>
+                                        <button @onclick="(() => ToggleAvailability(product))" class="btn btn-sm lx-btn-icon btn-outline-warning" title="Bật/tắt bán (hết hàng)"
+                                                aria-label="@($"Bật/tắt bán món {product.Name}")">
+                                            <i class="fas @(product.Status == "Active" ? "fa-eye-slash" : "fa-eye")" aria-hidden="true"></i>
                                         </button>
                                     }
                                     @if (HasPermission("products.edit"))
                                     {
-                                        <button @onclick="(() => EditProduct(product))" class="btn btn-sm lx-btn-icon btn-primary" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                                        <button @onclick="(() => EditProduct(product))" class="btn btn-sm lx-btn-icon btn-primary" title="Sửa"
+                                                aria-label="@($"Sửa món {product.Name}")"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
                                     }
                                     @if (HasPermission("products.delete"))
                                     {
-                                        <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm lx-btn-icon btn-outline-danger" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                                        <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm lx-btn-icon btn-outline-danger" title="Xóa"
+                                                aria-label="@($"Xóa món {product.Name}")"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
                                     }
                                 </td>
                             </tr>

@@ -357,3 +357,42 @@ html.dark .co-mobile-bar .co-total small {
     }
 }
 /* ===== END UIUX run 16:10 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 21:23 — Agent1 Mobile =====
+   FIX 1 — Alert phí giao hàng + thời gian chuẩn bị (.tt-shipinfo,
+   Checkout.razor:353): chữ <small> ~12.8px — thông tin quan trọng
+   (miễn phí ship, quán chuẩn bị bao lâu) nhưng nhỏ với người lớn tuổi.
+   Nâng lên 14px trên mobile, PC giữ nguyên. */
+@media (max-width: 767.98px) {
+    .tt-shipinfo small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 21:23 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 21:23 — Agent1 Mobile =====
+   FIX 2 — Khối điểm thưởng trong tóm tắt đơn (Checkout.razor:723):
+   "⭐ Bạn có X điểm / Hạng / Mã giới thiệu" ở <small> ~12.8px — thông tin
+   tiền/điểm quan trọng với khách. Nâng lên 14px trên mobile.
+   (Scope .co-summary .alert-light nên không chạm alert-light khác;
+   các dòng tỉ lệ đổi điểm + phản hồi đổi điểm trong cùng khối cũng
+   được 14px, đồng bộ.) */
+@media (max-width: 767.98px) {
+    .co-summary .alert-light small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 21:23 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 21:23 — Agent1 Mobile =====
+   FIX 3 — Thông báo phản hồi sau khi bấm "Áp dụng" mã giảm giá
+   (Checkout.razor:713, small ngay sau .input-group): ~12.8px — phản hồi
+   quan trọng (mã đúng/sai, được giảm bao nhiêu) nhưng khó đọc nhanh với
+   người lớn tuổi. Nâng lên 14px trên mobile.
+   (Selector .input-group + small chỉ khớp đúng dòng phản hồi này.) */
+@media (max-width: 767.98px) {
+    .co-summary .input-group + small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 21:23 - Agent1 FIX 3 ===== */

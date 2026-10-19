@@ -1,0 +1,89 @@
+/* ============================================================
+   /error — chuẩn Lexa (UIUX 19:23 — Agent3 Đồng bộ Lexa).
+   Toàn bộ style trước đây nằm inline trong Error.razor, chuyển về
+   scoped CSS. Màu giữ nguyên bản đã chốt: nút tím Lexa #7a6fbe,
+   đỏ danger Lexa #f46a6a, chữ body #495057.
+   ============================================================ */
+.sg-error-wrap {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 16px;
+}
+
+.sg-error-body {
+    text-align: center;
+    max-width: 520px;
+}
+
+.sg-error-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+}
+
+.sg-error-title {
+    font-family: Georgia, serif;
+    color: #f46a6a; /* đỏ danger Lexa */
+    margin-bottom: 12px;
+}
+
+.sg-error-text {
+    color: #495057;
+    margin-bottom: 24px;
+}
+
+.sg-error-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Nút solid tím Lexa — trước đây là link xanh gạch chân vì class
+   sg-btn* là scoped CSS của Index.razor, không apply ở /error. */
+.sg-error-btn-primary {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 6px;
+    text-decoration: none;
+    background: #7a6fbe;
+    border: 2px solid #7a6fbe;
+    color: #fff;
+    font-weight: 600;
+}
+
+.sg-error-btn-outline {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 6px;
+    text-decoration: none;
+    background: transparent;
+    border: 2px solid #7a6fbe;
+    color: #7a6fbe;
+    font-weight: 600;
+}
+
+/* ===== UIUX run 2026-10-19 21:25 — Agent 2 Dark mode =====
+   Trang /error mới được Agent 3 (run 19:23) chuyển inline style sang class
+   (.sg-error-title/.sg-error-text/.sg-error-btn-*) nên các rule attribute
+   [style*="bd4a4a"]/["495057"] cũ trong uiux-agent2-dark.css KHÔNG còn
+   match markup — trang lỗi ở dark mode lại chìm chữ. 2 lỗi thật còn lại: */
+
+/* FIX 1 — .sg-error-text #495057 trên nền tối #1a1a2e chỉ ~2:1, đoạn mô tả
+   lỗi không đọc được ở dark mode. Fix: #f0e8d8 (màu ink dark toàn cục).
+   Specificity html.dark .x (0,2,1) thắng rule scoped .x[b-xxx] (0,2,0). */
+html.dark .sg-error-text {
+    color: #f0e8d8; /* was #495057 */
+}
+
+/* FIX 2 — .sg-error-btn-outline: chữ/viền tím #7a6fbe trên nền tối chỉ
+   ~3.9:1 (< chuẩn 4.5:1), nút "Đặt món" mờ ở dark mode. Fix: #b3a8e8 —
+   đúng tiền lệ đã duyệt cho #7a6fbe trên nền tối (run 15:15:
+   .shp-page .btn-outline-primary). Nút solid (trắng trên #7a6fbe) vẫn
+   đọc tốt cả 2 mode nên không đụng. */
+html.dark .sg-error-btn-outline {
+    color: #b3a8e8; /* was #7a6fbe */
+    border-color: #b3a8e8; /* was #7a6fbe */
+}
+/* ===== END UIUX run 2026-10-19 21:25 — Agent 2 ===== */

@@ -10,28 +10,30 @@
         <li class="current">Hồ sơ</li>
     </ol>
 </div>
-<div class="card">
+<div class="card hs-profile-card">
     <div class="card-header">
         <h5 class="mb-0">Hồ sơ của tôi</h5>
     </div>
-    <div class="card-body" style="max-width: 500px;">
+    <div class="card-body">
         @if (_loading)
         {
             <p><em>Đang tải...</em></p>
         }
         else
         {
+            @* A11y: label phải gắn với input qua for/id — trước đây label "treo",
+               trình đọc màn hình không biết ô nào thuộc về label nào. *@
             <div class="mb-3">
-                <label class="form-label">Tên đăng nhập</label>
-                <input class="form-control" @bind="_userName" />
+                <label class="form-label" for="hs-username">Tên đăng nhập</label>
+                <input id="hs-username" class="form-control" @bind="_userName" autocomplete="username" />
             </div>
             <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input class="form-control" @bind="_email" type="email" />
+                <label class="form-label" for="hs-email">Email</label>
+                <input id="hs-email" class="form-control" @bind="_email" type="email" autocomplete="email" />
             </div>
             <div class="mb-3">
-                <label class="form-label">Số điện thoại</label>
-                <input class="form-control" @bind="_phone" placeholder="VD: 0901234567" />
+                <label class="form-label" for="hs-phone">Số điện thoại</label>
+                <input id="hs-phone" class="form-control" @bind="_phone" placeholder="VD: 0901234567" inputmode="tel" autocomplete="tel" />
                 @if (!string.IsNullOrEmpty(_error))
                 {
                     <div class="text-danger mt-1">@_error</div>

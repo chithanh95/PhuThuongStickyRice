@@ -357,3 +357,16 @@ html.dark .gh-freeship .progress {
     }
 }
 /* ===== END UIUX run 19:40 - Agent1 FIX 2+3 ===== */
+
+/* ===== UIUX run 21:23 — Agent1 Mobile =====
+   FIX 4 — Dòng size/topping trong thẻ dòng giỏ (Cart.razor:113-118):
+   <small> ~12.8px — chi tiết món khách đã chọn (size nào, ăn kèm gì),
+   quan trọng để kiểm tra đơn nhưng mờ với người lớn tuổi. Nâng lên 13px
+   trên mobile. (Scope td đầu tiên của .cart-lines nên không chạm dòng
+   freeship hay nhãn SĐT.) */
+@media (max-width: 767.98px) {
+    .cart-lines tbody td:nth-child(1) small {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX run 21:23 - Agent1 FIX 4 ===== */

@@ -1,0 +1,7 @@
+/* ============================================================
+   Hồ sơ admin — chuẩn Lexa (UIUX 19:23 — Agent3 Đồng bộ Lexa).
+   Gom style inline của card-body vào scoped CSS.
+   ============================================================ */
+.hs-profile-card .card-body {
+    max-width: 500px;
+}

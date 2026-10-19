@@ -1,0 +1,15 @@
+/* ============================================================
+   Menu in (print) — chuẩn Lexa (UIUX 19:23 — Agent3 Đồng bộ Lexa).
+   Gom style inline của bảng thực đơn vào scoped CSS.
+   ============================================================ */
+.mp-item-cell {
+    width: 60%;
+}
+
+.mp-price-cell {
+    vertical-align: middle;
+}
+
+.mp-price {
+    font-size: 1.1rem;
+}

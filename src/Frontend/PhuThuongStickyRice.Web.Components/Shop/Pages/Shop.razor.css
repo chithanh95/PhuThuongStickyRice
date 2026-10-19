@@ -1067,3 +1067,17 @@ html.dark .shop-sticky-cart-cta {
         max-height: 55vh;
     }
 }
+
+/* ===== UIUX run 21:23 — Agent1 Mobile =====
+   FIX 5 — Mã voucher đơn đầu tiên (Shop.razor:78): font 2rem +
+   letter-spacing 2px mà không có kiểm soát xuống dòng. Ở màn 320px khung
+   chứa chỉ ~254px: mã ≥12 ký tự (vd "CHAO-MUNG-01") tràn ra và bị
+   .shp-page{overflow-x:clip} cắt mất chữ — khách không đọc/nhập được mã.
+   Cho phép ngắt chữ khi quá dài trên mobile; mã ngắn vẫn hiển thị 1 dòng
+   như cũ, PC giữ nguyên. */
+@media (max-width: 767.98px) {
+    .shp-voucher-code {
+        overflow-wrap: anywhere;
+    }
+}
+/* ===== END UIUX run 21:23 - Agent1 FIX 5 ===== */

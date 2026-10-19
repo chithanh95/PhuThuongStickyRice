@@ -54,7 +54,7 @@
                     @foreach (var product in group.OrderBy(p => p.Name))
                     {
                         <tr @key="product.Id">
-                            <td style="width: 60%;">
+                            <td class="mp-item-cell">
                                 <strong>@product.Name</strong>
                                 @if (product.IsSignature)
                                 {
@@ -72,8 +72,8 @@
                                     </small>
                                 }
                             </td>
-                            <td class="text-right" style="vertical-align: middle;">
-                                <strong class="text-danger" style="font-size: 1.1rem;">@($"{MinPrice(product):N0} ₫")</strong>
+                            <td class="text-right mp-price-cell">
+                                <strong class="text-danger mp-price">@($"{MinPrice(product):N0} ₫")</strong>
                                 @if (product.Sizes != null && product.Sizes.Count > 0)
                                 {
                                     <br /><small class="text-muted">từ</small>

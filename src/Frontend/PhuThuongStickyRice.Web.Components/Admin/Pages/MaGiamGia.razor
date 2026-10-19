@@ -104,13 +104,16 @@
                                     }
                                 </td>
                                 <td class="text-right text-nowrap">
+                                    @* A11y: nút icon-only — aria-label kèm mã để trình đọc màn hình phân biệt các hàng. *@
                                     <button type="button" class="btn btn-sm btn-outline-primary mr-1" title="Sửa"
+                                            aria-label="@($"Sửa mã giảm giá {c.Code}")"
                                             @onclick="() => ShowEdit(c)">
-                                        <i class="fa-solid fa-pen"></i>
+                                        <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa"
+                                            aria-label="@($"Xóa mã giảm giá {c.Code}")"
                                             @onclick="() => AskDelete(c)">
-                                        <i class="fa-solid fa-trash"></i>
+                                        <i class="fa-solid fa-trash" aria-hidden="true"></i>
                                     </button>
                                 </td>
                             </tr>
