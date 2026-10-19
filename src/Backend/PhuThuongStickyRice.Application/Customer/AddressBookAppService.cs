@@ -11,6 +11,7 @@ using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using PhuThuongStickyRice.Application.Customer;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Customer
 {
@@ -188,22 +189,14 @@ namespace PhuThuongStickyRice.Application.Customer
             }
 
             /// <summary>
-            /// Chuẩn hóa SĐT về dạng chữ số thuần. Lọc bỏ dấu cách/dấu chấm
-            /// (khách nhập tay ở checkout) rồi yêu cầu ít nhất 9 chữ số —
-            /// số ngắn hơn coi như không hợp lệ để chặn rác.
+            /// Chuẩn hóa SĐT về dạng chữ số thuần — dùng bản duy nhất ở
+            /// <see cref="VietnamTime.NormalizePhone"/> (xóa bản copy-paste
+            /// trước đây nằm ở đây): lọc bỏ dấu cách/dấu chấm rồi yêu cầu
+            /// ít nhất 9 chữ số, số ngắn hơn coi như không hợp lệ để chặn rác.
             /// </summary>
             /// <param name="phone">SĐT nhập vào.</param>
             /// <returns>Chuỗi chữ số, hoặc null nếu không hợp lệ.</returns>
-            private static string NormalizePhone(string phone)
-            {
-                if (string.IsNullOrWhiteSpace(phone))
-                {
-                    return null;
-                }
-
-                var digits = new string(phone.Where(char.IsDigit).ToArray());
-                return digits.Length >= 9 ? digits : null;
-            }
+            private static string NormalizePhone(string phone) => VietnamTime.NormalizePhone(phone);
 
             /// <summary>Map entity địa chỉ đã lưu → DTO trả về API.</summary>
             private static AddressBookDto MapToDto(AddressBook entity)

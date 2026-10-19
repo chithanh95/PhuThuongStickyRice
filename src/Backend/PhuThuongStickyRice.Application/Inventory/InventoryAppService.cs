@@ -29,6 +29,13 @@ namespace PhuThuongStickyRice.Application.Inventory
     [Authorize(Roles = "Admin")]
     public class InventoryAppService : ApplicationService, IInventoryAppService
     {
+        /// <summary>
+        /// Biên kẹp cho tham số <c>days</c> của <c>GetHistoryAsync</c>: ít nhất
+        /// 1 ngày, nhiều nhất 90 ngày — tránh query phạm vi vô lý.
+        /// </summary>
+        private const int MinHistoryDays = 1;
+        private const int MaxHistoryDays = 90;
+
         private readonly IRepository<DailyInventory, Guid> _inventories;
         private readonly IRepository<Product, Guid> _products;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -156,8 +163,8 @@ namespace PhuThuongStickyRice.Application.Inventory
         /// <returns>Danh sách ngày kiểm kê kèm chênh lệch so với lần trước.</returns>
         public virtual async Task<List<DailyInventoryDayDto>> GetHistoryAsync(int days = 30)
         {
-            if (days < 1) days = 1;
-            if (days > 90) days = 90;
+            if (days < MinHistoryDays) days = MinHistoryDays;
+            if (days > MaxHistoryDays) days = MaxHistoryDays;
 
             // Perf: chỉ nạp (days+1) ngày gần nhất trong SQL thay vì toàn bộ bảng.
             // Ngày thừa (cũ nhất) chỉ dùng để tính PreviousRemainingQty cho ngày

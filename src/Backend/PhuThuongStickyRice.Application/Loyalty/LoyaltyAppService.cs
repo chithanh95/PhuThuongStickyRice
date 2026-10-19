@@ -135,6 +135,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// </summary>
         private const int MaxAdminListRows = 200;
 
+        /// <summary>
+        /// Số lần thử tối đa khi sinh mã giới thiệu "PT-XXXXXX" trước khi
+        /// fallback sang GUID — tránh treo request khi DB gần đầy mã.
+        /// </summary>
+        private const int MaxReferralCodeAttempts = 10;
+
         private readonly Domain.Repositories.ILoyaltyAccountRepository _accounts;
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -570,8 +576,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// 9 ký tự trả nguyên để không vứt mất số nhập thiếu.
         /// </summary>
         private static string LastNineDigits(string normalizedPhone) =>
-            normalizedPhone.Length >= 9
-                ? normalizedPhone.Substring(normalizedPhone.Length - 9)
+            normalizedPhone.Length >= PhoneNumber.TailDigitCount
+                ? normalizedPhone.Substring(normalizedPhone.Length - PhoneNumber.TailDigitCount)
                 : normalizedPhone;
 
         /// <summary>
@@ -803,17 +809,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>
         /// Chuẩn hóa SĐT về chuỗi chữ số (bỏ dấu cách, dấu chấm, +84...), yêu
         /// cầu ≥ 9 chữ số — SĐT VN đủ 9-10 số; ngắn hơn coi như nhập sai, trả null.
+        /// Ủy thác cho <see cref="VietnamTime.NormalizePhone"/> để chỉ giữ 1
+        /// bản logic duy nhất (xóa bản copy-paste trước đây nằm ở đây).
         /// </summary>
-        public string? NormalizePhone(string phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-            {
-                return null;
-            }
-
-            var digits = new string(phone.Where(char.IsDigit).ToArray());
-            return digits.Length >= 9 ? digits : null;
-        }
+        public string? NormalizePhone(string phone) => VietnamTime.NormalizePhone(phone);
 
         /// <summary>
         /// SĐT placeholder (vd "0000000000" POS gán cho khách vãng lai): mọi
@@ -858,7 +857,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             // Mã giới thiệu gắn với điểm thưởng nên dùng RNG an toàn mật mã
             // thay vì Random.Shared (có thể bị đoán mã tiếp theo từ mã đã lộ).
 
-            for (var attempt = 0; attempt < 10; attempt++)
+            for (var attempt = 0; attempt < MaxReferralCodeAttempts; attempt++)
             {
                 var code = "PT-" + new string(
                     Enumerable.Range(0, 6).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
