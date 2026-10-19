@@ -1397,3 +1397,59 @@ html.dark .shop-sticky-cart-cta:hover {
     background: #3a3226;
 }
 /* ===== END UIUX 21:35 - Agent4 ===== */
+
+/* ===== UIUX 22:05 A4 ===== */
+
+/* Fix 1 — WCAG 1.4.11 (Non-text Contrast, can 3:1): sao "chua sang"
+   `.dg-stars-off` (DanhGia.razor:121 — trang admin duyet danh gia khach)
+   mau #ddd tren nen trang chi ~1.36:1. Day khong phai trang tri: so sao
+   sang/toi chinh la NOI DUNG muc danh gia (vd 2/5 nhin loang loang nhu
+   4/5 vi #ddd qua nhat). Nang len #8f8f8f (~3.23:1) — dong bo convention
+   "sao chua chon" cua run 17:05 (popup khao sat TrackOrder/Checkout).
+   Lap class (0,3,0) de thang rule scoped; rule dark #4a4a66 cua Agent 2
+   (0,4,1) van thang o dark mode nen khong xung dot. */
+.dg-stars .dg-stars-off.dg-stars-off {
+    color: #8f8f8f;
+}
+
+/* Fix 2 — WCAG 2.5.8 (Target Size Minimum, AA: toi thieu 24x24px): nut ×
+   dong toast `.toast-container .close` (Toast.razor:18) tren desktop
+   (pointer: fine) chi ~18px — nguoi kho khan van dong dung chuot kho bam
+   trung. Nang vung bam len 32px, can giua ky tu × (toast dang flex nen
+   khong vo layout). Rule 44px cho pointer: coarse cua run 14:35 giu nguyen
+   — block nay chi scope pointer: fine nen khong de mat. */
+@media (pointer: fine) {
+    .toast-container .toast .close {
+        min-width: 32px;
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Fix 3 — Polish hover: nut dong/thu gon khung chat `.sg-chat-head button`
+   (Index.razor.css:1780, tren nen do sam #6F0707 cua header chat landing)
+   HOAN TOAN khong co :hover — di chuot qua khong biet bam duoc. Them nen
+   trang mo 15% + bo goc khi hover. :focus-visible (vong trang) da co tu
+   run 11:20, khong dung toi. */
+.sg-chat-head.sg-chat-head button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+}
+
+/* Fix 4 — Polish hover + WCAG 2.5.8: nut × tat banner "nhac dat lai"
+   `.sg-reorder-bar button` (Index.razor:71 — banner hien khi khach 1 tuan
+   chua dat, co aria-label="Dong"). Khong co :hover, vung bam chi ~20px
+   (font-size 20px, khong padding) — duoi chuan 24px. Them padding de vung
+   bam dat ~32x36px (banner da chua padding-right 40px nen khong vo layout)
+   + nen trang mo khi hover. :focus-visible duoc rule toan cuc a11y.css
+   (:where(button)) phu san. */
+.sg-reorder-bar.sg-reorder-bar button {
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+.sg-reorder-bar.sg-reorder-bar button:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+/* ===== END UIUX 22:05 A4 ===== */
