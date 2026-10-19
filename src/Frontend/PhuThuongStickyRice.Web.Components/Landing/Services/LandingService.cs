@@ -5,6 +5,7 @@ using PhuThuongStickyRice.Web.Components.Shop.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -102,7 +103,12 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
         /// <summary>Off-peak promo (item 48).</summary>
         public async Task<OffPeakPromoModel> GetOffPeakAsync()
         {
-            return await GetAsync<OffPeakPromoModel>("api/landing/offpeak");
+            // bug-hunt 2026-10-19: BE trả ARRAY (Ok(promos)), FE cũ đọc OBJECT
+            // -> JsonException bị catch {} nuốt ở Index.razor, banner "khung giờ
+            // vắng khách" không bao giờ hiện. Đọc list rồi lấy promo đang diễn ra
+            // (BE đã tính sẵn isNow theo giờ VN), khớp đúng kỳ vọng của UI.
+            var promos = await GetAsync<List<OffPeakPromoModel>>("api/landing/offpeak");
+            return promos?.FirstOrDefault(p => p != null && p.IsNow);
         }
 
         /// <summary>Điểm danh thử thách 7 ngày (item 53).</summary>

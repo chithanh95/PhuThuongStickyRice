@@ -369,6 +369,14 @@ else
             _bulkError = "Vui lòng chọn ít nhất một món.";
             return;
         }
+        // bug-hunt 2026-10-19: bước 2 cho sửa lại số lượng (@bind:event="oninput")
+        // nhưng không re-validate -> đổi 50 thành 10 ở bước 2 vẫn qua được, qua mặt
+        // điều kiện "tối thiểu 50 gói" của bước 1. Validate lại ở đây.
+        if (_bulk.Quantity < 50)
+        {
+            _bulkError = "Đơn số lượng lớn từ 50 gói trở lên. Đơn nhỏ hơn vui lòng đặt tại cửa hàng.";
+            return;
+        }
         _bulkStep = 3;
     }
 
