@@ -2626,3 +2626,74 @@
     }
 }
 /* ===== END UIUX 23:25 A1 ===== */
+
+/* ===== UIUX run 00:25 A1 (Agent1 Mobile) — 3 fix mobile mới ===== */
+
+/* ------------------------------------------------------------
+   FIX 1 — /dat-tiec + /ho-tro: chữ phụ trong form (~12.8px) khó đọc
+   với người lớn tuổi.
+   Vấn đề: (a) /dat-tiec — 3 dòng lỗi validate (small.text-danger:
+   dt-name-error, dt-phone-error, dt-qty-error) và gợi ý loại tiệc
+   (small.form-text.text-muted @PartyTypeHint); (b) /ho-tro — chữ
+   "(nếu có)" trong label Mã đơn hàng (small.text-muted). Tất cả đều
+   ~12.8px — khách lớn tuổi đọc tin nhắn lỗi là việc quan trọng
+   (biết vì sao form không gửi được). Input chính 2 trang đã 16px/44px
+   (run 17:36/17:48), còn sót đúng các dòng small này.
+   Giải pháp: mobile 13px — đủ đọc mà không phá nhịp form.
+   (Verify: DatTiec.razor:51/61/77/100, HoTro.razor:39; id="dt-name"
+   chỉ tồn tại ở DatTiec, id="ht-name" chỉ ở HoTro nên :has() an toàn.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body:has(#dt-name) small.text-danger,
+    .card-body:has(#dt-name) small.form-text,
+    .card-body:has(#ht-name) label small {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /tai-khoan: nút "Hủy" trong panel thêm/sửa địa chỉ quá nhỏ.
+   Vấn đề: button.btn-link "Hủy" (TaiKhoan.razor:283) chỉ cao ~38px —
+   nút nhỏ duy nhất còn sót trong .tk-addr-panel (nút "Lưu địa chỉ" đã
+   44px theo rule .tk-page .btn-primary ở run 12:10; nút ★/Sửa/Xóa đã
+   44px ở run 14:05). Người già sửa địa chỉ bấm trượt "Hủy" sẽ khó chịu.
+   Giải pháp: min-height 44px, canh giữa dọc.
+   (Verify: TaiKhoan.razor:283 — btn-link duy nhất trong trang;
+   .tk-addr-panel chỉ tồn tại ở form địa chỉ trang này.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .tk-addr-panel .btn-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /dat-so-luong-lon (màn "Cảm ơn bạn!" sau panel cọc 30%):
+   nút "Xem thực đơn" chỉ ~38px.
+   Vấn đề: rule run 12:25 (.alert-success + a.btn-primary[href="/shop"])
+   KHÔNG khớp nút này vì giữa alert-success và nút còn panel cọc 30%
+   (card.mt-3) chen vào (DatSoLuongLon.razor:96-118) — nút bị sót, vẫn
+   ~38px dưới chuẩn chạm. Đây là nút điều hướng tiếp theo duy nhất sau
+   khi gửi yêu cầu báo giá.
+   Giải pháp: full-width 48px, chữ đậm — đồng bộ 3 trang dat-tiec/
+   dat-cung/cung-gio đã fix ở run 12:25.
+   (Verify: DatSoLuongLon.razor:118 — a.btn-primary.mt-3[href="/shop"]
+   duy nhất toàn repo (3 trang kia không có .mt-3).)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    a.btn-primary.mt-3[href="/shop"] {
+        width: 100%;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+}
+/* ===== END UIUX run 00:25 A1 ===== */
