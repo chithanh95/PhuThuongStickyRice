@@ -169,13 +169,19 @@
                 Navigation.NavigateTo(SafeReturnUrl(_returnUrl));
             }
         }
-        catch (Exception) { }
+        catch (Exception)
+        {
+            // Bỏ qua lỗi khi đọc trạng thái đăng nhập có chủ ý: nếu auth check lỗi,
+            // user chỉ đơn giản ở lại trang đăng nhập — không chặn hiển thị form.
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            // Đồng bộ icon dark/light với theme đã lưu: nếu JS chưa sẵn sàng (prerender) thì giữ
+            // mặc định, không ảnh hưởng chức năng đăng nhập/đăng ký.
             try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") == "dark"; } catch { }
             StateHasChanged();
         }
@@ -183,6 +189,8 @@
 
     private async Task ToggleTheme()
     {
+        // ptToggleTheme tự đổi class CSS ngay trong JS nên giao diện luôn đúng; _isDark chỉ dùng
+        // để vẽ icon nút bấm — nếu interop lỗi (JS chưa load) thì giữ nguyên, không báo user.
         try { _isDark = await JSRuntime.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop") == "dark"; } catch { }
     }
 

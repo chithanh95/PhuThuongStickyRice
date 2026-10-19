@@ -8,6 +8,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Core.Services
 {
+    /// <summary>
+    /// Lớp cơ sở cho mọi service gọi WebAPI phía Blazor. Tự động gắn bearer token
+    /// (refresh khi hết hạn) vào request, và xử lý chung 2 lỗi hệ thống:
+    /// 401 → đẩy về trang đăng nhập (kèm returnUrl), 404 → trang không tìm thấy.
+    /// </summary>
     public class HttpService
     {
         protected readonly HttpClient _httpClient;
@@ -44,6 +49,10 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
         }
 
+        /// <summary>
+        /// Lấy access token hiện tại; tự refresh rồi đọc lại khi token đã hết hạn.
+        /// Trả về null khi không có session (request đi ẩn danh).
+        /// </summary>
         public async Task<string> GetAccessToken()
         {
             var token = await _tokenManager.GetToken();
@@ -110,6 +119,13 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             return createdObject;
         }
 
+        /// <summary>
+        /// Gửi PUT với JSON body, gắn bearer token, xử lý 401/404 chung,
+        /// và giải mã response JSON thành <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">Kiểu DTO của response.</typeparam>
+        /// <param name="url">API endpoint tương đối (vd "api/orders/{id}").</param>
+        /// <param name="data">Body gửi lên (serialize JSON).</param>
         public async Task<T> PutAsync<T>(string url, object data)
         {
             await SetBearerToken();

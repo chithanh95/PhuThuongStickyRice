@@ -63,10 +63,10 @@ namespace PhuThuongStickyRice.Application.Reports
 
             var url = (input?.Url ?? string.Empty).Trim();
             // No PII: keep path only, drop query string / fragment, cap length.
-            var q = url.IndexOf('?');
-            if (q >= 0) url = url.Substring(0, q);
-            var h = url.IndexOf('#');
-            if (h >= 0) url = url.Substring(0, h);
+            var queryIndex = url.IndexOf('?');
+            if (queryIndex >= 0) url = url.Substring(0, queryIndex);
+            var fragmentIndex = url.IndexOf('#');
+            if (fragmentIndex >= 0) url = url.Substring(0, fragmentIndex);
             if (url.Length > FunnelEvent.UrlMaxLength) url = url.Substring(0, FunnelEvent.UrlMaxLength);
 
             await _events.AddAsync(new FunnelEvent

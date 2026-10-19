@@ -1377,6 +1377,8 @@ else
                 if (!string.IsNullOrWhiteSpace(s)) list.Add(s);
             }
         }
+        // Parse JSON danh sách ảnh: dữ liệu hỏng hoặc không phải mảng thì trả list rỗng
+        // (hiển thị placeholder) thay vì làm vỡ cả trang — bỏ qua lỗi có chủ ý.
         catch { }
         return list;
     }

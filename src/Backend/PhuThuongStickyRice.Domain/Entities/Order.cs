@@ -829,14 +829,14 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         private static bool IsValidEmail(string email)
         {
-            var at = email.IndexOf('@');
-            if (at <= 0 || at != email.LastIndexOf('@'))
+            var atIndex = email.IndexOf('@');
+            if (atIndex <= 0 || atIndex != email.LastIndexOf('@'))
             {
                 return false;
             }
 
             var dot = email.LastIndexOf('.');
-            return dot > at + 1 && dot < email.Length - 1 && !email.Contains(" ");
+            return dot > atIndex + 1 && dot < email.Length - 1 && !email.Contains(" ");
         }
 
         public void Confirm()

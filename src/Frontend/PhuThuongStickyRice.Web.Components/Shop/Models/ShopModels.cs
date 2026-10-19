@@ -10,6 +10,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public List<T> Items { get; set; } = new List<T>();
     }
 
+    /// <summary>Sản phẩm hiển thị trên trang shop (tên, giá, ảnh, size, topping có thể chọn).</summary>
     public class ShopProductModel
     {
         public Guid Id { get; set; }
@@ -104,6 +105,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public int RemainingToday { get; set; }
     }
 
+    /// <summary>Phần ăn thêm (topping) kèm giá phụ thu cho 1 món.</summary>
     public class ToppingModel
     {
         public Guid Id { get; set; }
@@ -126,6 +128,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public int Quantity { get; set; }
     }
 
+    /// <summary>Gói nhiều món bán chung 1 giá — thêm vào giỏ như 1 dòng đơn.</summary>
     public class ComboModel
     {
         public Guid Id { get; set; }
@@ -141,6 +144,11 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public List<ComboItemModel> Items { get; set; } = new List<ComboItemModel>();
     }
 
+    /// <summary>
+    /// Một dòng trong giỏ hàng phía client. Dòng mới được ghép theo line key
+    /// (món + size + tập topping) nên cùng món nhưng khác cấu hình là các dòng
+    /// riêng; tiền dòng = đơn giá (đã gồm size + topping) × số lượng.
+    /// </summary>
     public class CartItemModel
     {
         /// <summary>
@@ -198,6 +206,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public string Note { get; set; }
     }
 
+    /// <summary>Payload gửi /api/orders khi khách bấm đặt hàng (checkout).</summary>
     public class CreateOrderModel
     {
         public string CustomerName { get; set; }
@@ -282,6 +291,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public List<CreateOrderLineModel> Lines { get; set; } = new List<CreateOrderLineModel>();
     }
 
+    /// <summary>Thông tin đơn vừa đặt thành công — hiển thị ở màn hình xác nhận đơn.</summary>
     public class PlacedOrderModel
     {
         public Guid Id { get; set; }

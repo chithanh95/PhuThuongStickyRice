@@ -11,22 +11,54 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Catalog
 {
+    /// <summary>
+    /// Hợp đồng quản lý topping (phần ăn thêm cho xôi): shop lấy danh sách
+    /// topping đang bật để khách tick chọn; admin CRUD ở màn hình quản lý.
+    /// </summary>
     public interface IToppingAppService : IApplicationService
     {
         /// <summary>Public: active toppings for the quick-view checkboxes.</summary>
         Task<List<ToppingDto>> GetActiveAsync();
 
+        /// <summary>Admin: toàn bộ topping (kể cả đã tắt), sắp xếp theo thứ tự hiển thị.</summary>
         Task<List<ToppingDto>> GetListAsync();
 
+        /// <summary>
+        /// Admin: chi tiết 1 topping.
+        /// </summary>
+        /// <param name="id">Id topping.</param>
+        /// <returns>Topping tìm được; throw khi Id không tồn tại.</returns>
         Task<ToppingDto> GetAsync(Guid id);
 
+        /// <summary>
+        /// Admin: tạo topping mới (giá phụ thu không được âm).
+        /// </summary>
+        /// <param name="dto">Tên, giá phụ thu, thứ tự hiển thị, trạng thái bật/tắt.</param>
+        /// <returns>Topping vừa tạo.</returns>
         Task<ToppingDto> CreateAsync(CreateUpdateToppingDto dto);
 
+        /// <summary>
+        /// Admin: cập nhật topping (ghi đè toàn bộ trường bằng DTO mới).
+        /// </summary>
+        /// <param name="id">Id topping cần cập nhật.</param>
+        /// <param name="dto">Thông tin mới của topping.</param>
+        /// <returns>Topping sau khi cập nhật.</returns>
         Task<ToppingDto> UpdateAsync(Guid id, CreateUpdateToppingDto dto);
 
+        /// <summary>
+        /// Admin: xóa topping. Tên topping được lưu dạng text trong OrderLine nên
+        /// không cần giữ FK, nhưng xóa mềm (tắt trạng thái) để lịch sử đơn cũ
+        /// vẫn hiển thị đúng và tránh nhầm nếu topping được tạo lại sau này.
+        /// </summary>
+        /// <param name="id">Id topping cần tắt.</param>
         Task DeleteAsync(Guid id);
     }
 
+    /// <summary>
+    /// Quản lý topping cho shop và admin. Danh sách topping đang bật được cache
+    /// (<c>IProductCatalogCache</c>) phục vụ checkout của khách, nên mọi thao tác
+    /// tạo/sửa/tắt đều phải invalidate cache để khách thấy thay đổi ngay lập tức.
+    /// </summary>
     public class ToppingAppService : ApplicationService, IToppingAppService
     {
         private readonly IRepository<Topping, Guid> _toppings;

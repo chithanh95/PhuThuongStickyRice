@@ -149,24 +149,24 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @for (var gi = 0; gi < group.Orders.Count; gi++)
+                                    @for (var orderIndex = 0; orderIndex < group.Orders.Count; orderIndex++)
                                     {
-                                        var go = group.Orders[gi];
+                                        var order = group.Orders[orderIndex];
                                         var isPrimary = _mergePrimary.TryGetValue(group.Phone, out var pid)
-                                            ? pid == go.Id
-                                            : gi == 0;
+                                            ? pid == order.Id
+                                            : orderIndex == 0;
                                         <tr class="@(isPrimary ? "table-success" : "")">
                                             <td>
                                                 <input type="radio" name="primary-@group.Phone" checked="@isPrimary"
-                                                       @onchange="() => _mergePrimary[group.Phone] = go.Id"
+                                                       @onchange="() => _mergePrimary[group.Phone] = order.Id"
                                                        title="Chọn đơn giữ lại" />
                                             </td>
-                                            <td><strong>@go.OrderNumber</strong></td>
-                                            <td><small>@go.CreatedAt.ToLocalTime().ToString("HH:mm")</small></td>
-                                            <td><small>@string.Join(", ", go.Lines.Select(l => $"{l.ProductName}×{l.Quantity}"))</small></td>
-                                            <td class="text-right"><small><strong>@FormatPrice(go.TotalAmount)</strong></small></td>
-                                            <td><small>@StatusLabel(go.Status)</small></td>
-                                            <td><small>@PaymentStatusLabel(go.PaymentStatus)</small></td>
+                                            <td><strong>@order.OrderNumber</strong></td>
+                                            <td><small>@order.CreatedAt.ToLocalTime().ToString("HH:mm")</small></td>
+                                            <td><small>@string.Join(", ", order.Lines.Select(l => $"{l.ProductName}×{l.Quantity}"))</small></td>
+                                            <td class="text-right"><small><strong>@FormatPrice(order.TotalAmount)</strong></small></td>
+                                            <td><small>@StatusLabel(order.Status)</small></td>
+                                            <td><small>@PaymentStatusLabel(order.PaymentStatus)</small></td>
                                         </tr>
                                     }
                                 </tbody>

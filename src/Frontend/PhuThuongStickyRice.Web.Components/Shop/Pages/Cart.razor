@@ -23,11 +23,6 @@
 
 <h1>@AppI18n.T("common.cart")</h1>
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger">@_error</div>
-}
-
 @if (CartState.Items.Count == 0)
 {
     <div class="alert alert-info">
@@ -212,8 +207,6 @@ else
 
 @code {
     private List<ShopProductModel> _suggestions;
-    private string _error;
-
     private const string PlaceholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIxMiI+Tm8gaW1hZ2U8L3RleHQ+PC9zdmc+";
 
     private string CartItemImage(CartItemModel item)
@@ -260,6 +253,8 @@ else
 
     // GH2: optional phone carried over to checkout.
     private const string PhoneStorageKey = "phuthuong.phone.v1";
+    // Số lượng tối đa cho 1 dòng khi gộp giỏ được chia sẻ (tránh giỏ phình quá lớn).
+    private const int MaxQuantityPerLine = 99;
     private string _phone;
 
     // Snapshot of the cart's product-id set the suggestions were built from;
@@ -322,11 +317,6 @@ else
     {
         await LoadSuggestionsAsync();
         await InvokeAsync(StateHasChanged);
-    }
-
-    private void ChangeQuantity(CartItemModel item, int delta)
-    {
-        CartState.UpdateQuantity(item.LineKey, item.Quantity + delta);
     }
 
     private void QuickAddSuggestion(ShopProductModel product)
@@ -452,7 +442,7 @@ else
                     var product = await ShopService.GetProductAsync(productId);
                     if (product != null && product.Status == "Active")
                     {
-                        CartState.Add(product, Math.Min(qty, 99));
+                        CartState.Add(product, Math.Min(qty, MaxQuantityPerLine));
                         added++;
                     }
                 }

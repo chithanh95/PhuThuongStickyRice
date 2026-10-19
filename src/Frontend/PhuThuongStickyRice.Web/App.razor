@@ -117,6 +117,8 @@ else
             // JS interop is available.
             await CartState.InitializeAsync();
             // GL4: bật chống ảnh gãy toàn site (chỉ 1 lần).
+            // Tính năng phụ (tự thay ảnh gãy bằng placeholder, chỉ chạy 1 lần khi đã có JS interop):
+            // nếu hàm JS thiếu, trang vẫn hiển thị bình thường nên bỏ qua lỗi có chủ ý.
             try { await JSRuntime.InvokeVoidAsync("ptInitImageGuard"); } catch { }
         }
     }

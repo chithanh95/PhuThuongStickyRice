@@ -707,24 +707,24 @@ namespace PhuThuongStickyRice.Application.Orders
             DateTime? scheduledFor = null;
             if (input.ScheduledFor.HasValue)
             {
-                var sf = input.ScheduledFor.Value;
+                var scheduledDateTime = input.ScheduledFor.Value;
                 // Accept both UTC and unspecified/local input; normalize to UTC.
-                if (sf.Kind == DateTimeKind.Unspecified)
+                if (scheduledDateTime.Kind == DateTimeKind.Unspecified)
                 {
-                    sf = DateTime.SpecifyKind(sf, DateTimeKind.Local).ToUniversalTime();
+                    scheduledDateTime = DateTime.SpecifyKind(scheduledDateTime, DateTimeKind.Local).ToUniversalTime();
                 }
-                else if (sf.Kind == DateTimeKind.Local)
+                else if (scheduledDateTime.Kind == DateTimeKind.Local)
                 {
-                    sf = sf.ToUniversalTime();
+                    scheduledDateTime = scheduledDateTime.ToUniversalTime();
                 }
 
-                if (sf <= DateTime.UtcNow.AddHours(1))
+                if (scheduledDateTime <= DateTime.UtcNow.AddHours(1))
                 {
                     throw new Domain.Exceptions.DomainException("Giờ đặt trước phải sau thời điểm hiện tại ít nhất 1 tiếng.");
                 }
 
                 // Within open hours (Vietnam local, UTC+7).
-                var vnTime = sf.AddHours(VietnamTime.UtcOffsetHours).TimeOfDay;
+                var vnTime = scheduledDateTime.AddHours(VietnamTime.UtcOffsetHours).TimeOfDay;
                 if (!TimeSpan.TryParse(shopSetting.OpenTime, out var open))
                 {
                     open = DefaultOpenHour;
@@ -739,7 +739,7 @@ namespace PhuThuongStickyRice.Application.Orders
                         $"Giờ đặt trước phải trong giờ mở cửa ({shopSetting.OpenTime}–{shopSetting.CloseTime}).");
                 }
 
-                scheduledFor = sf;
+                scheduledFor = scheduledDateTime;
             }
 
             var order = Order.Create(
@@ -2424,6 +2424,14 @@ namespace PhuThuongStickyRice.Application.Orders
                 queryable.Where(x => x.IdempotencyKey == idempotencyKey && x.CreatedAt >= cutoff));
         }
 
+        /// <summary>
+        /// Sinh mã đơn dạng PX-YYYYMMDD-NNNN (vd PX-20261019-4821), dùng để
+        /// khách tra cứu đơn bằng SĐT + mã đơn. Thử tối đa 10 lần, mỗi lần
+        /// kiểm tra trùng trong DB trước khi nhận — vì vậy NNNN dùng
+        /// Random.Shared là đủ (không cần bảo mật mật mã), va chạm chỉ tốn
+        /// 1 vòng lặp. Vẫn throw sau 10 lần để đơn không được tạo với mã
+        /// có nguy cơ trùng khi shop đông đơn bất thường.
+        /// </summary>
         private async Task<string> GenerateOrderNumberAsync()
         {
             var random = Random.Shared;
@@ -2591,17 +2599,17 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             if (input.ScheduledFor.HasValue)
             {
-                var sf = input.ScheduledFor.Value;
-                if (sf.Kind == DateTimeKind.Unspecified)
+                var scheduledFor = input.ScheduledFor.Value;
+                if (scheduledFor.Kind == DateTimeKind.Unspecified)
                 {
-                    sf = DateTime.SpecifyKind(sf, DateTimeKind.Local).ToUniversalTime();
+                    scheduledFor = DateTime.SpecifyKind(scheduledFor, DateTimeKind.Local).ToUniversalTime();
                 }
-                else if (sf.Kind == DateTimeKind.Local)
+                else if (scheduledFor.Kind == DateTimeKind.Local)
                 {
-                    sf = sf.ToUniversalTime();
+                    scheduledFor = scheduledFor.ToUniversalTime();
                 }
 
-                return sf;
+                return scheduledFor;
             }
 
             return DateTime.UtcNow;

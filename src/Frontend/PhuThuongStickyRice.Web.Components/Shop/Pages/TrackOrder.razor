@@ -1085,6 +1085,8 @@
     }
 
     private const string TrackOrderStorageKey = "phuthuong.track-order.v1";
+    // Số lượng tối đa cho 1 dòng khi khôi phục đơn cũ vào giỏ (tránh giỏ phình quá lớn).
+    private const int MaxQuantityPerLine = 99;
 
     private async Task Lookup()
     {
@@ -1486,72 +1488,14 @@
                     continue;
                 }
 
-                var qty = Math.Min(line.Quantity, 99);
-
-                if (line.IsCombo)
+                if (TryRestoreOrderLine(line, products, combos, toppings))
                 {
-                    if (combos.TryGetValue(line.ProductId, out var combo) && combo.IsActive)
-                    {
-                        CartState.AddCombo(combo, qty);
-                        restored++;
-                    }
-                    else
-                    {
-                        skipped++;
-                    }
-
-                    continue;
+                    restored++;
                 }
-
-                if (!products.TryGetValue(line.ProductId, out var product) || product.Status != "Active")
+                else
                 {
                     skipped++;
-                    continue;
                 }
-
-                // Best-effort size match by name.
-                ProductSizeOptionModel size = null;
-                if (!string.IsNullOrWhiteSpace(line.SizeName))
-                {
-                    size = product.Sizes?.FirstOrDefault(s =>
-                        string.Equals(s.Name?.Trim(), line.SizeName.Trim(),
-                            StringComparison.OrdinalIgnoreCase));
-                }
-
-                // Best-effort topping match by name (comma-separated).
-                var chosen = new System.Collections.Generic.List<ToppingModel>();
-                if (!string.IsNullOrWhiteSpace(line.ToppingNames))
-                {
-                    foreach (var name in line.ToppingNames.Split(
-                        new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                    {
-                        var trimmed = name.Trim();
-                        if (trimmed.Length == 0)
-                        {
-                            continue;
-                        }
-
-                        var topping = toppings.FirstOrDefault(t =>
-                            !chosen.Contains(t)
-                            && string.Equals(t.Name?.Trim(), trimmed,
-                                StringComparison.OrdinalIgnoreCase));
-                        if (topping != null)
-                        {
-                            chosen.Add(topping);
-                        }
-                    }
-                }
-
-                var toppingsTotal = chosen.Sum(t => t.ExtraPrice);
-                CartState.AddConfigured(
-                    product.Id, product.Name, product.Code,
-                    (size?.Price ?? product.Price) + toppingsTotal, qty,
-                    size?.Id, size?.Name ?? line.SizeName,
-                    chosen.Select(t => t.Id).ToList(),
-                    line.ToppingNames, toppingsTotal,
-                    isCombo: false,
-                    note: line.Note);
-                restored++;
             }
 
             if (restored > 0)
@@ -1578,6 +1522,80 @@
         {
             _reordering = false;
         }
+    }
+
+    /// <summary>
+    /// Khôi phục 1 dòng của đơn cũ vào giỏ hàng: combo thêm nguyên combo, món lẻ match
+    /// size/topping theo tên dạng best-effort (tên có thể đổi sau khi đơn đã đặt).
+    /// Trả về true nếu đã thêm vào giỏ, false nếu phải bỏ qua (món/combo đã ngừng bán).
+    /// </summary>
+    private bool TryRestoreOrderLine(TrackedOrderLineModel line,
+        System.Collections.Generic.Dictionary<System.Guid, ShopProductModel> products,
+        System.Collections.Generic.Dictionary<System.Guid, ComboModel> combos,
+        System.Collections.Generic.List<ToppingModel> toppings)
+    {
+        // Giới hạn số lượng mỗi dòng để tránh giỏ hàng phình quá lớn.
+        var qty = Math.Min(line.Quantity, MaxQuantityPerLine);
+
+        if (line.IsCombo)
+        {
+            if (combos.TryGetValue(line.ProductId, out var combo) && combo.IsActive)
+            {
+                CartState.AddCombo(combo, qty);
+                return true;
+            }
+
+            return false;
+        }
+
+        if (!products.TryGetValue(line.ProductId, out var product) || product.Status != "Active")
+        {
+            return false;
+        }
+
+        // Best-effort size match by name.
+        ProductSizeOptionModel size = null;
+        if (!string.IsNullOrWhiteSpace(line.SizeName))
+        {
+            size = product.Sizes?.FirstOrDefault(s =>
+                string.Equals(s.Name?.Trim(), line.SizeName.Trim(),
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Best-effort topping match by name (comma-separated).
+        var chosen = new System.Collections.Generic.List<ToppingModel>();
+        if (!string.IsNullOrWhiteSpace(line.ToppingNames))
+        {
+            foreach (var name in line.ToppingNames.Split(
+                new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var trimmed = name.Trim();
+                if (trimmed.Length == 0)
+                {
+                    continue;
+                }
+
+                var topping = toppings.FirstOrDefault(t =>
+                    !chosen.Contains(t)
+                    && string.Equals(t.Name?.Trim(), trimmed,
+                        StringComparison.OrdinalIgnoreCase));
+                if (topping != null)
+                {
+                    chosen.Add(topping);
+                }
+            }
+        }
+
+        var toppingsTotal = chosen.Sum(t => t.ExtraPrice);
+        CartState.AddConfigured(
+            product.Id, product.Name, product.Code,
+            (size?.Price ?? product.Price) + toppingsTotal, qty,
+            size?.Id, size?.Name ?? line.SizeName,
+            chosen.Select(t => t.Id).ToList(),
+            line.ToppingNames, toppingsTotal,
+            isCombo: false,
+            note: line.Note);
+        return true;
     }
 
     private async Task SaveEditedLines()
@@ -1838,38 +1856,6 @@
     }
 
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
-
-    // ---------- Item 121: daily check-in ----------
-
-    private string _checkInPhone;
-    private PhuThuongStickyRice.Web.Components.Admin.Models.CheckInResultModel _checkInResult;
-    private bool _checkingIn;
-    private string _checkInError;
-
-    private async Task CheckInAsync()
-    {
-        _checkInError = null;
-        _checkInResult = null;
-        if (string.IsNullOrWhiteSpace(_checkInPhone))
-        {
-            _checkInError = "Vui lòng nhập SĐT.";
-            return;
-        }
-
-        _checkingIn = true;
-        try
-        {
-            _checkInResult = await AdminCommerceService.CheckInAsync(_checkInPhone.Trim());
-        }
-        catch (Exception ex)
-        {
-            _checkInError = ex.Message;
-        }
-        finally
-        {
-            _checkingIn = false;
-        }
-    }
 
     // ---------- Item 123: share a photo ----------
 

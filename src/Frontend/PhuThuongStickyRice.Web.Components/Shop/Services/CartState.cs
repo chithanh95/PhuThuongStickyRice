@@ -199,6 +199,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
 
             var trimmed = note.Trim();
+            // Giới hạn 500 ký tự: ghi chú chỉ in trên nhãn dán bếp, quá dài
+            // làm tràn nhãn và chật cột ghi chú trong đơn.
             return trimmed.Length > 500 ? trimmed.Substring(0, 500) : trimmed;
         }
 
@@ -249,6 +251,11 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 isCombo: true);
         }
 
+        /// <summary>
+        /// Đổi số lượng 1 dòng theo LineKey. Truyền quantity &lt; 1 để xóa dòng —
+        /// pattern mobile (giống ShopeeFood): giảm stepper tới 0 thì dòng biến mất,
+        /// không cần nút xóa riêng. Mọi thay đổi đều persist localStorage.
+        /// </summary>
         public void UpdateQuantity(string lineKey, int quantity)
         {
             var existing = _items.FirstOrDefault(x => x.LineKey == lineKey);
@@ -269,6 +276,11 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             NotifyChanged();
         }
 
+        /// <summary>
+        /// Đổi số lượng theo Id sản phẩm (dùng cho các màn hình không có LineKey).
+        /// Tìm dòng đầu tiên trùng ProductId rồi đổi theo key của dòng đó —
+        /// các cấu hình khác nhau (size/topping) của cùng 1 món là các dòng riêng.
+        /// </summary>
         public void UpdateQuantity(Guid productId, int quantity)
         {
             var existing = _items.FirstOrDefault(x => x.ProductId == productId);
@@ -280,24 +292,35 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             UpdateQuantity(existing.LineKey, quantity);
         }
 
+        /// <summary>Xóa toàn bộ các dòng có cùng LineKey (thường chỉ có 1 dòng).</summary>
         public void Remove(string lineKey)
         {
             _items.RemoveAll(x => x.LineKey == lineKey);
             NotifyChanged();
         }
 
+        /// <summary>Xóa mọi dòng của 1 sản phẩm, bất kể size/topping.</summary>
         public void Remove(Guid productId)
         {
             _items.RemoveAll(x => x.ProductId == productId);
             NotifyChanged();
         }
 
+        /// <summary>
+        /// Xóa sạch giỏ (sau khi checkout thành công hoặc khi đăng nhập và
+        /// server trả về giỏ mới — <see cref="CartSyncService"/>).
+        /// </summary>
         public void Clear()
         {
             _items.Clear();
             NotifyChanged();
         }
 
+        /// <summary>
+        /// Khóa định danh 1 dòng giỏ: món (hoặc combo) + size + tập topping.
+        /// Id topping được sắp xếp trước khi ghép chuỗi — khách tick topping theo
+        /// thứ tự nào cũng ra cùng 1 key, tránh tạo dòng trùng cho cùng cấu hình.
+        /// </summary>
         public static string BuildLineKey(
             Guid productId,
             Guid? sizeOptionId,

@@ -286,11 +286,11 @@ namespace PhuThuongStickyRice.Application.Orders
             var total30 = new ForecastTotalDto();
             for (var i = 1; i <= Forecast30d; i++)
             {
-                var f = ForecastOneDay(
+                var dayForecast = ForecastOneDay(
                     today.AddDays(i), result, perDay, vi, totalOrders, portionsPerOrder);
-                total30.ForecastRevenue += f.ForecastRevenue;
-                total30.ForecastOrders += f.ForecastOrders;
-                total30.SuggestedPortions += f.SuggestedPortions;
+                total30.ForecastRevenue += dayForecast.ForecastRevenue;
+                total30.ForecastOrders += dayForecast.ForecastOrders;
+                total30.SuggestedPortions += dayForecast.SuggestedPortions;
             }
 
             total30.ForecastOrders = Math.Round(total30.ForecastOrders, 1);
