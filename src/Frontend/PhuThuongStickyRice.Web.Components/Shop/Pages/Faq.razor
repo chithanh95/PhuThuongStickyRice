@@ -14,7 +14,7 @@
 
 <h1>Câu hỏi thường gặp</h1>
 
-<div class="input-group mb-3" style="max-width: 480px;">
+<div class="input-group mb-3 faq-search" style="max-width: 480px;">
     <input class="form-control" @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp"
            placeholder="Tìm kiếm câu hỏi..." aria-label="Tìm kiếm câu hỏi" />
     <div class="input-group-append">
@@ -32,7 +32,7 @@ else if (_faqs == null || _faqs.Count == 0)
 }
 else
 {
-    <div>
+    <div class="faq-list">
         @foreach (var faq in _faqs)
         {
             var isOpen = _expandedId == faq.Id;
@@ -66,7 +66,7 @@ else
 }
 
 @* FQ3: chưa giải đáp được → hotline + Zalo. *@
-<div class="card mt-4">
+<div class="card mt-4 faq-contact">
     <div class="card-body text-center">
         <h4>Chưa giải đáp được?</h4>
         <p class="text-muted">Liên hệ trực tiếp, shop trả lời nhanh trong giờ mở cửa.</p>

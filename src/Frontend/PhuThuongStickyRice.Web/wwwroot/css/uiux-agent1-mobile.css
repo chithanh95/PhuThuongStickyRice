@@ -1875,3 +1875,115 @@
 }
 
 /* ===== END Run 17:05 2026-10-19 — Agent 1 Mobile UX ===== */
+
+/* ============================================================
+   Run 2026-10-19 17:15 — Agent 1 Mobile (đợt mới, 5 fix)
+   Đợt 17:05 (commit 5fc558f) đã fix: checkbox /dat-cung + /checkout
+   20px, auth-card padding, input auth 48px, ảnh check-in 130px.
+   Dưới đây chỉ là vấn đề MỚI.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   FIX 1 — /ho-tro: nút "Gửi yêu cầu" và "Gửi yêu cầu khác".
+   Vấn đề: 2 nút là .btn Bootstrap mặc định, chỉ cao ~38px —
+   dưới chuẩn chạm 44px, nằm sau form dài nên khách lớn tuổi khó
+   bấm trúng đúng nút gửi.
+   Giải pháp: mobile — full-width, cao 48px, chữ to rõ.
+   (Verify: HoTro.razor — nút submit + nút "Gửi yêu cầu khác"
+   đều mang class .ht-submit mới thêm)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .ht-submit {
+        width: 100%;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /dat-tiec: 3 nút preset "30 khách / 50 khách / 100 khách".
+   Vấn đề: .btn-group.btn-group-sm → mỗi nút chỉ ~31px, lại là cụm
+   nút bấm liền nhau (gói mẫu theo số khách) — người lớn tuổi dễ
+   bấm nhầm nút bên cạnh.
+   Giải pháp: mobile — mỗi nút cao 44px, chữ canh giữa.
+   (Selector dùng aria-label duy nhất của nhóm — DatTiec.razor:85 —
+   TaiKhoan.razor:314 có btn-group-sm khác nhưng aria-label khác
+   nên không bị ảnh hưởng)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    div[role="group"][aria-label="Gói mẫu theo số khách"] .btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /anh-khach-hang: ảnh gallery cao 200px trên mobile.
+   Vấn đề: grid 2 cột (col-6) ở mobile, mỗi card rộng ~156px nhưng
+   img inline style height:200px — ảnh dài ngoằng, phải cuộn nhiều
+   mới xem hết tường ảnh. Cùng vấn đề đã fix ở /check-in (run
+   17:05), trang gallery này còn sót.
+   Giải pháp: mobile — img 130px (tỉ lệ ~5:6, đồng bộ check-in),
+   !important để thắng inline style height:200px.
+   (Verify: GalleryKhachHang.razor — div.row đã thêm class
+   .xo-gallery mới; PC giữ nguyên 200px)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .xo-gallery .card-img-top {
+        height: 130px !important;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /faq: 3 cụm chạm dưới chuẩn trên mobile.
+   a) Ô tìm kiếm + nút "Tìm": input ~38px, nút ~38px — ô nhập khó
+      bấm, chữ <16px thì iOS auto-zoom giật màn hình.
+      → input 46px + font 16px, nút 46px.
+   b) Nút mở/đóng từng câu hỏi (.btn-block p-1): cao chỉ bằng dòng
+      chữ (~30px) — vùng bấm hẹp với người lớn tuổi.
+      → min-height 44px.
+   c) Nút "📞 hotline" / "💬 Chat Zalo" trong card liên hệ: ~38px,
+      nằm cạnh nhau dễ bấm nhầm.
+      → xếp dọc full-width, mỗi nút 48px.
+   (Verify: Faq.razor:17 .faq-search, :35 .faq-list, :69 .faq-contact
+   là class mới thêm — không chạm trang khác)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .faq-search .form-control {
+        min-height: 46px;
+        font-size: 16px;
+    }
+    .faq-search .btn {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .faq-list .card-header .btn-block {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    .faq-contact .btn {
+        width: 100%;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 6px 0 0 !important;
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+    .faq-contact .btn:first-child {
+        margin-top: 0 !important;
+    }
+}
+
+/* ===== END Run 2026-10-19 17:15 — Agent 1 Mobile UX ===== */

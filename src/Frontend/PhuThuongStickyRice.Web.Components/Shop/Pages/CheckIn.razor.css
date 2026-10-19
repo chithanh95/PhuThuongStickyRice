@@ -114,3 +114,20 @@ html.dark .xo-checkin-meta span { color: #aaa; }
     }
 }
 /* ===== END UIUX run 16:48 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 17:15 — Agent1 Mobile =====
+   FIX 5 — /check-in: ô "Tên của bạn" (form-control Bootstrap ~38px).
+   Vấn đề: ô nhập tên trong form đăng ảnh chỉ cao ~38px, dưới chuẩn
+   chạm 44px — form check-in dùng ngoài quán trên điện thoại, khách
+   lớn tuổi khó bấm trúng.
+   Giải pháp: mobile — ô nhập cao 46px, chữ 16px (iOS không auto-zoom).
+   (Verify: CheckIn.razor:21 input#ci-name trong .xo-checkin-form;
+   scoped CSS nên chỉ ảnh hưởng trang này; run 16:48 đã fix tiêu đề
+   + nút "Đăng ảnh", không trùng) */
+@media (max-width: 767.98px) {
+    .xo-checkin-form .form-control {
+        min-height: 46px;
+        font-size: 16px;
+    }
+}
+/* ===== END UIUX run 17:15 - Agent1 FIX 5 ===== */
