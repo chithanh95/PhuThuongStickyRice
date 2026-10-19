@@ -55,11 +55,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         // Perf: cache keys for public landing endpoints (see GetStats,
-        // GetCourses, GetOffPeak, GetPolls below). Internal so
-        // RetentionAdminController can invalidate them on admin edits.
+        // GetCourses, GetOffPeak, GetPolls, GetReviews, GetGallery below).
+        // Internal so RetentionAdminController can invalidate them on
+        // admin edits.
         internal const string LandingStatsCacheKey = "landing:stats";
         internal const string LandingCoursesCacheKey = "landing:courses";
         internal const string LandingPollsCacheKey = "landing:polls";
+        internal const string LandingReviewsCacheKey = "landing:reviews";
+        internal const string LandingGalleryCacheKey = "landing:gallery";
         internal const string LandingOffPeakCacheKeyPrefix = "landing:offpeak:";
 
         private static (string Label, int Value) PickPrize(double roll)
@@ -90,6 +93,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet("reviews")]
         public async Task<ActionResult> GetReviews(CancellationToken cancellationToken = default)
         {
+            // Perf: reviews widget on every landing load. Cache 5 minutes
+            // like stats/courses; stale reviews are acceptable.
+            if (_memoryCache.TryGetValue(LandingReviewsCacheKey, out object cached))
+            {
+                return Ok(cached);
+            }
+
             var reviews = await _db.OrderReviews
                 .Where(r => !r.IsHidden)
                 .OrderByDescending(r => r.CreatedAt)
@@ -104,6 +114,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 })
                 .ToListAsync(cancellationToken);
 
+            _memoryCache.Set(LandingReviewsCacheKey, reviews, TimeSpan.FromMinutes(5));
             return Ok(reviews);
         }
 
@@ -143,6 +154,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet("gallery")]
         public async Task<ActionResult> GetGallery(CancellationToken cancellationToken = default)
         {
+            // Perf: gallery on every landing load. Cache 5 minutes like
+            // reviews/stats; admin photo approvals can wait a few minutes.
+            if (_memoryCache.TryGetValue(LandingGalleryCacheKey, out object cached))
+            {
+                return Ok(cached);
+            }
+
             var photos = await _db.CustomerPhotos
                 .Where(p => p.IsApproved)
                 .OrderByDescending(p => p.CreatedAt)
@@ -155,6 +173,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 })
                 .ToListAsync(cancellationToken);
 
+            _memoryCache.Set(LandingGalleryCacheKey, photos, TimeSpan.FromMinutes(5));
             return Ok(photos);
         }
 

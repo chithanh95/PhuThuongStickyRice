@@ -54,17 +54,37 @@ namespace PhuThuongStickyRice.Application.Common
             var endpoints = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.IsActive));
 
+            // Perf: match first (cheap), then POST to every matched endpoint
+            // in parallel — one slow receiver must not delay the others or
+            // the order flow that awaits this. The parallel part touches no
+            // DbContext (pure HttpClient); delivery rows are inserted
+            // sequentially below because they share one DbContext.
+            var matched = new List<WebhookEndpoint>();
             foreach (var endpoint in endpoints)
             {
                 var events = (endpoint.Events ?? string.Empty)
                     .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(x => x.Trim());
-                if (!events.Any(x => string.Equals(x, eventName, StringComparison.OrdinalIgnoreCase)))
+                if (events.Any(x => string.Equals(x, eventName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    continue;
+                    matched.Add(endpoint);
                 }
+            }
 
-                await SendAsync(endpoint, eventName, payload, ping: false);
+            var results = await Task.WhenAll(matched.Select(e => PostAsync(e, eventName, payload)));
+
+            foreach (var result in results)
+            {
+                await _deliveries.InsertAsync(new WebhookDelivery
+                {
+                    At = result.At,
+                    EndpointId = result.Endpoint.Id,
+                    EndpointName = result.Endpoint.Name,
+                    Event = eventName,
+                    Success = result.Success,
+                    StatusCode = result.StatusCode,
+                    Error = result.Error
+                }, autoSave: true);
             }
         }
 
@@ -72,20 +92,60 @@ namespace PhuThuongStickyRice.Application.Common
         public virtual async Task<WebhookDeliveryDto> SendTestAsync(Guid endpointId)
         {
             var endpoint = await _endpoints.GetAsync(endpointId);
-            return await SendAsync(endpoint, "Ping", new
+            var result = await PostAsync(endpoint, "Ping", new
             {
                 message = "Kết nối webhook OK",
                 at = _clock.Now
-            }, ping: true);
+            });
+
+            var delivery = new WebhookDelivery
+            {
+                At = result.At,
+                EndpointId = endpoint.Id,
+                EndpointName = endpoint.Name,
+                Event = "Ping",
+                Success = result.Success,
+                StatusCode = result.StatusCode,
+                Error = result.Error
+            };
+            await _deliveries.InsertAsync(delivery, autoSave: true);
+
+            return new WebhookDeliveryDto
+            {
+                Id = delivery.Id,
+                At = delivery.At,
+                EndpointId = delivery.EndpointId,
+                EndpointName = delivery.EndpointName,
+                Event = delivery.Event,
+                Success = delivery.Success,
+                StatusCode = delivery.StatusCode,
+                Error = delivery.Error
+            };
         }
 
-        private async Task<WebhookDeliveryDto> SendAsync(
-            WebhookEndpoint endpoint, string eventName, object payload, bool ping)
+        /// <summary>Result of one outbound HTTP POST (no DB access).</summary>
+        private sealed class PostResult
         {
+            public WebhookEndpoint Endpoint { get; set; }
+            public DateTime At { get; set; }
+            public bool Success { get; set; }
+            public int? StatusCode { get; set; }
+            public string Error { get; set; }
+        }
+
+        /// <summary>
+        /// POSTs the event payload to one endpoint. Pure HTTP — safe to run
+        /// in parallel via Task.WhenAll; never touches the DbContext.
+        /// Exceptions become an <see cref="PostResult.Error"/> like before.
+        /// </summary>
+        private async Task<PostResult> PostAsync(
+            WebhookEndpoint endpoint, string eventName, object payload)
+        {
+            var at = _clock.Now;
             var body = System.Text.Json.JsonSerializer.Serialize(new
             {
                 @event = eventName,
-                at = _clock.Now,
+                at,
                 data = payload
             });
 
@@ -127,28 +187,13 @@ namespace PhuThuongStickyRice.Application.Common
                 }
             }
 
-            var delivery = new WebhookDelivery
+            return new PostResult
             {
-                At = _clock.Now,
-                EndpointId = endpoint.Id,
-                EndpointName = endpoint.Name,
-                Event = ping ? "Ping" : eventName,
+                Endpoint = endpoint,
+                At = at,
                 Success = success,
                 StatusCode = statusCode,
                 Error = error
-            };
-            await _deliveries.InsertAsync(delivery, autoSave: true);
-
-            return new WebhookDeliveryDto
-            {
-                Id = delivery.Id,
-                At = delivery.At,
-                EndpointId = delivery.EndpointId,
-                EndpointName = delivery.EndpointName,
-                Event = delivery.Event,
-                Success = delivery.Success,
-                StatusCode = delivery.StatusCode,
-                Error = delivery.Error
             };
         }
 
