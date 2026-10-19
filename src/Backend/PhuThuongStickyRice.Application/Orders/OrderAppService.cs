@@ -1996,6 +1996,17 @@ namespace PhuThuongStickyRice.Application.Orders
             await ValidateMinOrderAmountAsync(order);
             await ReconcileLineChangePaymentAsync(order, oldTotal);
 
+            // bug-hunt 2026-10-19 (run 22:35): chống "hồi sinh" đơn đã hủy —
+            // staff hủy đơn giữa lúc khách sửa (load lúc còn Pending, lưu sau
+            // khi đã Cancelled) thì UpdateAsync ghi đè Status=Cancelled thành
+            // Pending, khách được hoàn ví/điểm lúc hủy rồi vẫn sửa đơn tiếp.
+            // Guard nguyên tử: chỉ lưu khi đơn vẫn còn Pending tại DB.
+            if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Pending))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Đơn hàng vừa được xử lý. Vui lòng kiểm tra lại trạng thái đơn.");
+            }
+
             await _orders.UpdateAsync(order);
             // Wave 6c (item 33): internal note is never serialized publicly.
             var linesDto = _objectMapper.Map<Order, OrderDto>(order);
@@ -2109,6 +2120,14 @@ namespace PhuThuongStickyRice.Application.Orders
 
             order.UpdateAddressByCustomer(input.CustomerAddress, input.DeliverySlot);
 
+            // bug-hunt 2026-10-19 (run 22:35): chống "hồi sinh" đơn đã hủy —
+            // guard nguyên tử, chỉ lưu khi đơn vẫn còn Pending tại DB.
+            if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Pending))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Đơn hàng vừa được xử lý. Vui lòng kiểm tra lại trạng thái đơn.");
+            }
+
             await _orders.UpdateAsync(order);
             // Wave 6c (item 33): internal note is never serialized publicly.
             var dto = _objectMapper.Map<Order, OrderDto>(order);
@@ -2127,6 +2146,14 @@ namespace PhuThuongStickyRice.Application.Orders
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
 
             order.UpdateContactByCustomer(input.RecipientPhone, input.Notes);
+
+            // bug-hunt 2026-10-19 (run 22:35): chống "hồi sinh" đơn đã hủy —
+            // guard nguyên tử, chỉ lưu khi đơn vẫn còn Pending tại DB.
+            if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Pending))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Đơn hàng vừa được xử lý. Vui lòng kiểm tra lại trạng thái đơn.");
+            }
 
             await _orders.UpdateAsync(order);
             var dto = _objectMapper.Map<Order, OrderDto>(order);

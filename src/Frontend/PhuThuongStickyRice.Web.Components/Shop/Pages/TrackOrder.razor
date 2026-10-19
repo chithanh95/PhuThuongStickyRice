@@ -707,10 +707,6 @@
                     @(_payingMoMo ? "Đang xử lý..." : "Thanh toán MoMo (TEST)")
                 </button>
             }
-            else if (_order.PaymentMethod == "MoMo" && _order.PaymentStatus == "Failed")
-            {
-                <div class="alert alert-danger">Thanh toán MoMo thất bại.</div>
-            }
         </div>
     </div>
 

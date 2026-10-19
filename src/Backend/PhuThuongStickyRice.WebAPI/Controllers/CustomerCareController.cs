@@ -4,8 +4,10 @@ using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -99,7 +101,28 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromBody] CreateCustomerTagDto dto,
             CancellationToken cancellationToken = default)
         {
-            return Ok(await _tags.AddTagAsync(dto));
+            try
+            {
+                return Ok(await _tags.AddTagAsync(dto));
+            }
+            catch (DbUpdateException)
+            {
+                // bug-hunt 2026-10-19 (run 22:35): race — 2 request đồng thời
+                // (2 tab admin, bấm trùng nhanh) cùng qua bước kiểm tra trùng
+                // trong AddTagAsync rồi cùng insert; unique (CustomerPhone,
+                // TagName) chỉ cho 1 bên qua, bên thua nhận DbUpdateException
+                // lúc UoW commit → 500. Bên thua lấy lại tag bên thắng vừa tạo
+                // để "thêm tag" idempotent thay vì lỗi.
+                var tags = await _tags.GetTagsAsync(dto?.CustomerPhone);
+                var existing = tags.FirstOrDefault(t =>
+                    string.Equals(t.TagName, dto?.TagName?.Trim(),
+                        StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    return Ok(existing);
+                }
+                throw;
+            }
         }
 
         /// <summary>Admin/Cashier: remove a customer tag.</summary>
