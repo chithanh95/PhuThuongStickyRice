@@ -97,7 +97,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // 5-minute public cache with a giant list. Internal callers
             // (export PDF/CSV, Messenger) bypass this via the service directly.
             var effectivePageSize = pageSize < 1 ? 20 : Math.Min(pageSize, 100);
-            var paged = await _productAppService.GetListAsync(new GetProductsInput
+            var paged = await _productAppService.GetPublicListAsync(new GetProductsInput
             {
                 MaxResultCount = effectivePageSize,
                 SkipCount = (page < 1 ? 0 : page - 1) * effectivePageSize,
@@ -119,7 +119,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             try
             {
-                var dto = await _productAppService.GetAsync(id);
+                // bug-hunt 2026-10-19: endpoint public — giá vốn chỉ hiện cho Admin.
+                var dto = await _productAppService.GetPublicAsync(id);
                 return Ok(dto);
             }
             catch (ProductNotFoundException ex)

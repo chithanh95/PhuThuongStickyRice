@@ -26,6 +26,20 @@ namespace PhuThuongStickyRice.Application.Products
 
         Task<ProductDto> GetAsync(Guid id);
 
+        /// <summary>
+        /// bug-hunt 2026-10-19: danh sách món cho kênh public — giống
+        /// <see cref="GetListAsync"/> nhưng che giá vốn (CostPrice, thông tin
+        /// nội bộ) khỏi người không phải Admin. Luôn clone DTO trước khi mask
+        /// để không làm bẩn cache catalog dùng chung.
+        /// </summary>
+        Task<PagedResultDto<ProductDto>> GetPublicListAsync(GetProductsInput input);
+
+        /// <summary>
+        /// bug-hunt 2026-10-19: chi tiết món cho kênh public — giống
+        /// <see cref="GetAsync"/> nhưng che giá vốn khỏi người không phải Admin.
+        /// </summary>
+        Task<ProductDto> GetPublicAsync(Guid id);
+
         Task<ProductDto> CreateAsync(CreateUpdateProductDto input);
 
         Task<ProductDto> UpdateAsync(Guid id, CreateUpdateProductDto input);
@@ -293,6 +307,52 @@ namespace PhuThuongStickyRice.Application.Products
                 await AttachSizesAsync(new[] { dto });
                 return dto;
             });
+        }
+
+        /// <summary>
+        /// bug-hunt 2026-10-19: danh sách món cho kênh public — che giá vốn
+        /// (CostPrice, thông tin nội bộ) khỏi người không phải Admin. Clone
+        /// DTO trước khi mask để không làm bẩn cache catalog dùng chung
+        /// (admin gọi cùng cache key vẫn thấy giá vốn đầy đủ).
+        /// </summary>
+        /// <param name="input">Điều kiện lọc/phân trang.</param>
+        /// <returns>Danh sách món đã che giá vốn (trừ Admin).</returns>
+        public virtual async Task<PagedResultDto<ProductDto>> GetPublicListAsync(GetProductsInput input)
+        {
+            var paged = await GetListAsync(input);
+            if (paged.Items == null || CurrentUser?.IsInRole("Admin") == true)
+            {
+                return paged;
+            }
+
+            var items = paged.Items
+                .Select(x =>
+                {
+                    var copy = _objectMapper.Map<ProductDto, ProductDto>(x);
+                    copy.CostPrice = 0;
+                    return copy;
+                })
+                .ToList();
+            return new PagedResultDto<ProductDto>(paged.TotalCount, items);
+        }
+
+        /// <summary>
+        /// bug-hunt 2026-10-19: chi tiết món cho kênh public — che giá vốn
+        /// khỏi người không phải Admin (clone trước khi mask, giữ cache sạch).
+        /// </summary>
+        /// <param name="id">Id sản phẩm.</param>
+        /// <returns>DTO chi tiết món đã che giá vốn (trừ Admin).</returns>
+        public virtual async Task<ProductDto> GetPublicAsync(Guid id)
+        {
+            var dto = await GetAsync(id);
+            if (CurrentUser?.IsInRole("Admin") == true)
+            {
+                return dto;
+            }
+
+            var copy = _objectMapper.Map<ProductDto, ProductDto>(dto);
+            copy.CostPrice = 0;
+            return copy;
         }
 
         /// <summary>

@@ -22,6 +22,10 @@ namespace PhuThuongStickyRice.Application
                 .ForMember(d => d.Currency, o => o.MapFrom(s => s.Price.Currency))
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 
+            // bug-hunt 2026-10-19: clone DTO trước khi che giá vốn (CostPrice)
+            // ở endpoint public — không mutate object trong cache dùng chung.
+            CreateMap<Products.DTOs.ProductDto, Products.DTOs.ProductDto>();
+
             // Item 148: product change history (convention mapping).
             CreateMap<ProductChangeLog, Products.DTOs.ProductChangeLogDto>();
 

@@ -107,6 +107,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string OrderNumber { get; set; }
 
         public string CustomerPhone { get; set; }
+
+        /// <summary>
+        /// Item 233 fix (bug-hunt 2026-10-19): lý do hủy đơn do khách chọn
+        /// ở modal tra cứu. Trước đây controller bỏ qua trường này nên
+        /// CancelByCustomerAsync luôn nhận null → mọi lần khách tự hủy đều
+        /// lỗi "Vui lòng chọn lý do hủy đơn." dù đã chọn lý do.
+        /// </summary>
+        public string CancelReason { get; set; }
     }
 
     public sealed class UpdateOrderLineRequestModel

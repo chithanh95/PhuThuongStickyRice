@@ -388,7 +388,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 var order = await _orderAppService.CancelByCustomerAsync(new CancelOrderByCustomerInput
                 {
                     OrderNumber = model?.OrderNumber,
-                    CustomerPhone = model?.CustomerPhone
+                    CustomerPhone = model?.CustomerPhone,
+                    // bug-hunt 2026-10-19: map lý do hủy — thiếu dòng này thì
+                    // mọi lần khách tự hủy đều thất bại vì CancelReason null.
+                    CancelReason = model?.CancelReason
                 });
                 return Ok(order);
             }
