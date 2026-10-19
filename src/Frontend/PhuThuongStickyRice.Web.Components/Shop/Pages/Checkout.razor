@@ -592,9 +592,12 @@ else
                             }
                             @if (_isFreeship)
                             {
+                                @* Bug-hunt 2026-10-19: quán không giao hàng nên phí ship luôn 0
+                                   (xem _fee bên dưới và OrderAppService: feeValue = 0 với
+                                   ShipperPickup/Pickup) — không hiển thị số "−DeliveryFee" ảo. *@
                                 <tr>
                                     <td class="text-success" colspan="3">🚚 Miễn phí ship (@_appliedCode)</td>
-                                    <td class="text-right text-success">−@FormatPrice(_shopSettings.DeliveryFee)</td>
+                                    <td class="text-right text-success">Miễn phí</td>
                                 </tr>
                             }
                             @if (_tierDiscountPreview > 0)
@@ -611,11 +614,12 @@ else
                                     <td class="text-right text-success">−@FormatPrice(_redeemDiscountPreview)</td>
                                 </tr>
                             }
-                            @* Item 125: tổng tiết kiệm — cộng mọi khoản giảm để khách "thấy" được lợi. *@
+                            @* Item 125: tổng tiết kiệm — cộng mọi khoản giảm để khách "thấy" được lợi.
+                               Bug-hunt 2026-10-19: KHÔNG cộng freeship — phí ship thực tế luôn 0
+                               (quán không giao hàng) nên cộng DeliveryFee là số tiết kiệm ảo. *@
                             @{
                                 var totalSaved = _promotionDiscountPreview + _discountAmount
-                                    + _tierDiscountPreview + _redeemDiscountPreview
-                                    + (_isFreeship ? _shopSettings?.DeliveryFee ?? 0 : 0);
+                                    + _tierDiscountPreview + _redeemDiscountPreview;
                             }
                             @if (totalSaved > 0)
                             {
@@ -888,10 +892,14 @@ else
     /// <summary>Item 140: wallet balance of the entered phone (0 = no ví option).</summary>
     private decimal _walletBalance;
 
-    /// <summary>Membership-tier discount preview (auto-applied for recognized phones).</summary>
+    /// <summary>
+    /// Membership-tier discount preview (auto-applied for recognized phones).
+    /// Bug-hunt 2026-10-19: trừ cả khuyến mãi giờ vàng — server tính tier trên
+    /// (subtotal − promotionDiscount − discountValue) (OrderAppService.CreateAsync).
+    /// </summary>
     private decimal _tierDiscountPreview =>
         _loyalty != null && _loyalty.TotalSpent > 0 && _loyalty.TierDiscountPercent > 0
-            ? Math.Round((_subtotal - _discountAmount) * _loyalty.TierDiscountPercent / 100, 0)
+            ? Math.Round((_subtotal - _promotionDiscountPreview - _discountAmount) * _loyalty.TierDiscountPercent / 100, 0)
             : 0;
 
     /// <summary>Loyalty-points redemption preview.</summary>
