@@ -45,12 +45,12 @@ namespace PhuThuongStickyRice.Web
 
             // In-repo JWT admin login (no OIDC / external IdentityServer).
             builder.Services.AddAuthorizationCore();
-            builder.Services.AddScoped<JwtTokenManager>();
+            builder.Services.AddScoped<JwtTokenStore>();
             builder.Services.AddScoped<JwtAuthenticationStateProvider>();
             builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
                 sp.GetRequiredService<JwtAuthenticationStateProvider>());
             builder.Services.AddScoped<ITokenManager>(sp =>
-                sp.GetRequiredService<JwtTokenManager>());
+                sp.GetRequiredService<JwtTokenStore>());
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
@@ -213,7 +213,7 @@ namespace PhuThuongStickyRice.Web
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
-            builder.Services.AddHttpClient<StaffLogService, StaffLogService>(client =>
+            builder.Services.AddHttpClient<StaffActivityLogService, StaffActivityLogService>(client =>
             {
                 client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);

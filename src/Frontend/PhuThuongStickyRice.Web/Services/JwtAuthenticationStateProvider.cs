@@ -15,9 +15,9 @@ namespace PhuThuongStickyRice.Web.Services
     /// </summary>
     public class JwtAuthenticationStateProvider : AuthenticationStateProvider
     {
-        private readonly JwtTokenManager _tokenManager;
+        private readonly JwtTokenStore _tokenManager;
 
-        public JwtAuthenticationStateProvider(JwtTokenManager tokenManager)
+        public JwtAuthenticationStateProvider(JwtTokenStore tokenManager)
         {
             _tokenManager = tokenManager;
         }

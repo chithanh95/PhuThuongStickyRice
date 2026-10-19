@@ -25,9 +25,11 @@ namespace PhuThuongStickyRice.Application.Common
                 }
                 catch (TimeZoneNotFoundException)
                 {
+                    // Timezone id not present on this OS — try the next id.
                 }
                 catch (InvalidTimeZoneException)
                 {
+                    // Corrupt timezone data — try the next id.
                 }
             }
 

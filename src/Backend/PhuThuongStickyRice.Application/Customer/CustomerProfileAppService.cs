@@ -101,37 +101,11 @@ namespace PhuThuongStickyRice.Application.Customer
             var user = await GetCurrentUserAsync();
             dto ??= new UpdateCustomerProfileDto();
 
-            var tags = (dto.TasteTags ?? new List<string>())
-                .Select(t => (t ?? string.Empty).Trim())
-                .Where(t => t.Length > 0)
-                .Distinct()
-                .Take(10)
-                .ToList();
-            if (tags.Any(t => t.Length > 50))
-            {
-                throw new UserFriendlyException("Mỗi khẩu vị tối đa 50 ký tự.");
-            }
-
-            var note = (dto.TasteNote ?? string.Empty).Trim();
-            if (note.Length > 500)
-            {
-                throw new UserFriendlyException("Ghi chú khẩu vị tối đa 500 ký tự.");
-            }
-
-            user.TastePreferences = JsonSerializer.Serialize(new TastePrefs { Tags = tags, Note = note });
+            user.TastePreferences = SerializeTastePrefs(dto);
 
             if (dto.DateOfBirth.HasValue)
             {
-                var dob = dto.DateOfBirth.Value.Date;
-                if (dob >= DateTime.UtcNow.Date)
-                {
-                    throw new UserFriendlyException("Ngày sinh phải là ngày trong quá khứ.");
-                }
-
-                if (dob < DateTime.UtcNow.Date.AddYears(-120))
-                {
-                    throw new UserFriendlyException("Ngày sinh không hợp lệ.");
-                }
+                var dob = ValidateDateOfBirth(dto.DateOfBirth.Value.Date);
 
                 var dobChanged = user.DateOfBirth != dob;
                 if (dobChanged)
@@ -148,6 +122,50 @@ namespace PhuThuongStickyRice.Application.Customer
 
             await _users.UpdateAsync(user);
             return await GetMyAsync();
+        }
+
+        private const int MaxTasteTags = 10;
+        private const int MaxTagLength = 50;
+        private const int MaxTasteNoteLength = 500;
+        private const int MaxDobAgeYears = 120;
+
+        /// <summary>Validates and serializes the customer's taste preferences.</summary>
+        private static string SerializeTastePrefs(UpdateCustomerProfileDto dto)
+        {
+            var tags = (dto.TasteTags ?? new List<string>())
+                .Select(t => (t ?? string.Empty).Trim())
+                .Where(t => t.Length > 0)
+                .Distinct()
+                .Take(MaxTasteTags)
+                .ToList();
+            if (tags.Any(t => t.Length > MaxTagLength))
+            {
+                throw new UserFriendlyException($"Mỗi khẩu vị tối đa {MaxTagLength} ký tự.");
+            }
+
+            var note = (dto.TasteNote ?? string.Empty).Trim();
+            if (note.Length > MaxTasteNoteLength)
+            {
+                throw new UserFriendlyException($"Ghi chú khẩu vị tối đa {MaxTasteNoteLength} ký tự.");
+            }
+
+            return JsonSerializer.Serialize(new TastePrefs { Tags = tags, Note = note });
+        }
+
+        /// <summary>Validates a date of birth (past date, not older than 120 years).</summary>
+        private static DateTime ValidateDateOfBirth(DateTime dob)
+        {
+            if (dob >= DateTime.UtcNow.Date)
+            {
+                throw new UserFriendlyException("Ngày sinh phải là ngày trong quá khứ.");
+            }
+
+            if (dob < DateTime.UtcNow.Date.AddYears(-MaxDobAgeYears))
+            {
+                throw new UserFriendlyException("Ngày sinh không hợp lệ.");
+            }
+
+            return dob;
         }
 
         [Authorize(Roles = "Admin")]

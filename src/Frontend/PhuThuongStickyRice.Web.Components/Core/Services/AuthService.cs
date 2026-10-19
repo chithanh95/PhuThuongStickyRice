@@ -87,10 +87,10 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             var body = await response.Content.ReadAsStringAsync();
             throw new InvalidOperationException(ExtractMessage(body));
         }
-        public async Task<ProfileInfo> GetProfileAsync()
+        public async Task<UserProfile> GetProfileAsync()
         {
             await SetBearerToken();
-            return await _httpClient.GetFromJsonAsync<ProfileInfo>("api/auth/profile");
+            return await _httpClient.GetFromJsonAsync<UserProfile>("api/auth/profile");
         }
 
         public async Task UpdateProfileAsync(string userName, string email, string phoneNumber)
@@ -197,7 +197,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         public string[] Roles { get; set; }
     }
 
-    public class ProfileInfo
+    public class UserProfile
     {
         public string UserName { get; set; }
         public string Email { get; set; }

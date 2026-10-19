@@ -1,7 +1,7 @@
 @page "/admin/nhat-ky"
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Admin.Services
-@inject StaffLogService StaffLogService
+@inject StaffActivityLogService StaffActivityLogService
 @inject StaffService StaffService
 
 <div class="lx-page-head">
@@ -166,7 +166,7 @@ else if (_logs != null)
         try
         {
             Guid? userId = Guid.TryParse(_filterUserId, out var id) ? id : (Guid?)null;
-            _logs = await StaffLogService.GetLogsAsync(
+            _logs = await StaffActivityLogService.GetLogsAsync(
                 userId,
                 string.IsNullOrWhiteSpace(_filterAction) ? null : _filterAction,
                 _filterFrom,

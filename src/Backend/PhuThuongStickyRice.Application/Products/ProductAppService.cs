@@ -141,50 +141,9 @@ namespace PhuThuongStickyRice.Application.Products
                 .OrderBy(x => x.SortOrder)
                 .ThenBy(x => x.Name);
 
-            if (!string.IsNullOrWhiteSpace(input.SearchTerm))
-            {
-                var term = input.SearchTerm.Trim();
-                query = query.Where(x => x.Name.Contains(term) || x.Code.Value.Contains(term));
-            }
-
-            if (!string.IsNullOrWhiteSpace(input.Status)
-                && Enum.TryParse<ProductStatus>(input.Status, ignoreCase: true, out var status))
-            {
-                // Item 85: the public shop asks for status=Active with
-                // includeInactive=true so sold-out products can be shown
-                // with a "Tạm hết" badge. Discontinued stays hidden.
-                if (status == ProductStatus.Active && input.IncludeInactive)
-                {
-                    query = query.Where(x =>
-                        x.Status == ProductStatus.Active || x.Status == ProductStatus.Inactive);
-                }
-                else
-                {
-                    query = query.Where(x => x.Status == status);
-                }
-
-                // The public shop asks for status=Active: hide seasonal
-                // products that are outside their availability window.
-                // The admin list (no status filter) still sees them all.
-                // Sold-out (Inactive) products are shown regardless of the
-                // seasonal window — the "Tạm hết" badge is what matters.
-                if (status == ProductStatus.Active)
-                {
-                    var today = DateTime.UtcNow.Date;
-                    query = query.Where(x =>
-                        x.Status == ProductStatus.Inactive
-                        || ((x.AvailableFrom == null || x.AvailableFrom.Value.Date <= today)
-                            && (x.AvailableTo == null || x.AvailableTo.Value.Date >= today)));
-                }
-            }
-
-            // Item 109: branch filter — products of the branch plus
-            // branch-less (global) products.
-            if (input.BranchId.HasValue)
-            {
-                var branchId = input.BranchId.Value;
-                query = query.Where(x => x.BranchId == null || x.BranchId == branchId);
-            }
+            query = ApplySearchFilter(query, input);
+            query = ApplyStatusFilter(query, input);
+            query = ApplyBranchFilter(query, input);
 
             var totalCount = await _asyncExecuter.LongCountAsync(query);
             var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
@@ -196,6 +155,77 @@ namespace PhuThuongStickyRice.Application.Products
             await AttachSizesAsync(dtos);
 
             return new PagedResultDto<ProductDto>(totalCount, dtos);
+        }
+
+        /// <summary>Lọc sản phẩm theo từ khóa (tên hoặc mã).</summary>
+        private static System.Linq.IQueryable<Product> ApplySearchFilter(
+            System.Linq.IQueryable<Product> query, GetProductsInput input)
+        {
+            if (!string.IsNullOrWhiteSpace(input.SearchTerm))
+            {
+                var term = input.SearchTerm.Trim();
+                query = query.Where(x => x.Name.Contains(term) || x.Code.Value.Contains(term));
+            }
+
+            return query;
+        }
+
+        /// <summary>
+        /// Lọc theo trạng thái; shop công khai (status=Active) vẫn thấy món
+        /// "Tạm hết" (Inactive) nhưng ẩn món theo mùa ngoài thời gian bán.
+        /// </summary>
+        private static System.Linq.IQueryable<Product> ApplyStatusFilter(
+            System.Linq.IQueryable<Product> query, GetProductsInput input)
+        {
+            if (string.IsNullOrWhiteSpace(input.Status)
+                || !Enum.TryParse<ProductStatus>(input.Status, ignoreCase: true, out var status))
+            {
+                return query;
+            }
+
+            // Item 85: the public shop asks for status=Active with
+            // includeInactive=true so sold-out products can be shown
+            // with a "Tạm hết" badge. Discontinued stays hidden.
+            if (status == ProductStatus.Active && input.IncludeInactive)
+            {
+                query = query.Where(x =>
+                    x.Status == ProductStatus.Active || x.Status == ProductStatus.Inactive);
+            }
+            else
+            {
+                query = query.Where(x => x.Status == status);
+            }
+
+            // The public shop asks for status=Active: hide seasonal
+            // products that are outside their availability window.
+            // The admin list (no status filter) still sees them all.
+            // Sold-out (Inactive) products are shown regardless of the
+            // seasonal window — the "Tạm hết" badge is what matters.
+            if (status == ProductStatus.Active)
+            {
+                var today = DateTime.UtcNow.Date;
+                query = query.Where(x =>
+                    x.Status == ProductStatus.Inactive
+                    || ((x.AvailableFrom == null || x.AvailableFrom.Value.Date <= today)
+                        && (x.AvailableTo == null || x.AvailableTo.Value.Date >= today)));
+            }
+
+            return query;
+        }
+
+        // Item 109: branch filter — products of the branch plus
+        // branch-less (global) products.
+        /// <summary>Lọc theo chi nhánh (kèm món dùng chung toàn hệ thống).</summary>
+        private static System.Linq.IQueryable<Product> ApplyBranchFilter(
+            System.Linq.IQueryable<Product> query, GetProductsInput input)
+        {
+            if (input.BranchId.HasValue)
+            {
+                var branchId = input.BranchId.Value;
+                query = query.Where(x => x.BranchId == null || x.BranchId == branchId);
+            }
+
+            return query;
         }
 
         public virtual async Task<ProductDto> GetAsync(Guid id)

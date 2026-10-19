@@ -72,10 +72,10 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             var redirectUrl = $"{_options.StorefrontBaseUrl.TrimEnd('/')}/track-order?orderNumber={Uri.EscapeDataString(order.OrderNumber)}";
             var ipnUrl = $"{_options.ApiBaseUrl.TrimEnd('/')}/api/payments/momo/callback";
 
-            var rawString = MoMoSignatureHelper.BuildCreateRawString(
+            var rawString = MoMoSigner.BuildCreateRawString(
                 _options.PartnerCode, _options.AccessKey, requestId, amount,
                 orderId, orderInfo, redirectUrl, ipnUrl, RequestType);
-            var signature = MoMoSignatureHelper.Sign(rawString, _options.SecretKey);
+            var signature = MoMoSigner.Sign(rawString, _options.SecretKey);
 
             if (_options.TestMode)
             {
@@ -209,13 +209,13 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 throw new DomainException("MoMo callback amount does not match the order total.");
             }
 
-            var rawString = MoMoSignatureHelper.BuildCallbackRawString(
+            var rawString = MoMoSigner.BuildCallbackRawString(
                 options.AccessKey, callback.Amount, callback.ExtraData ?? string.Empty,
                 callback.Message ?? string.Empty, callback.OrderId, callback.OrderInfo ?? string.Empty,
                 "momo_wallet", options.PartnerCode, callback.PayType ?? string.Empty,
                 callback.RequestId ?? string.Empty, callback.ResponseTime, callback.ResultCode,
                 callback.TransId ?? string.Empty);
-            var expectedSignature = MoMoSignatureHelper.Sign(rawString, options.SecretKey);
+            var expectedSignature = MoMoSigner.Sign(rawString, options.SecretKey);
             if (!string.Equals(expectedSignature, callback.Signature, StringComparison.Ordinal))
             {
                 throw new DomainException("Invalid MoMo callback signature.");
@@ -285,10 +285,10 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             var orderInfo = $"Thanh toan don hang {order.OrderNumber} - Xoi Phu Thuong";
             var redirectUrl = $"{options.StorefrontBaseUrl.TrimEnd('/')}/track-order?orderNumber={Uri.EscapeDataString(order.OrderNumber)}";
             var ipnUrl = $"{options.ApiBaseUrl.TrimEnd('/')}/api/payments/momo/callback";
-            var rawString = MoMoSignatureHelper.BuildCreateRawString(
+            var rawString = MoMoSigner.BuildCreateRawString(
                 options.PartnerCode, options.AccessKey, requestId, amount,
                 order.OrderNumber, orderInfo, redirectUrl, ipnUrl, RequestType);
-            return MoMoSignatureHelper.Sign(rawString, options.SecretKey);
+            return MoMoSigner.Sign(rawString, options.SecretKey);
         }
     }
 }

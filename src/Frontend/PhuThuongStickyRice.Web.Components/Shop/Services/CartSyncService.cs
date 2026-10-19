@@ -24,6 +24,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         private readonly AuthenticationStateProvider _authStateProvider;
         private readonly ITokenManager _tokenManager;
         private Timer _debounceTimer;
+        // 2 giây: đủ lâu để gộp nhiều lần bấm +/- liên tiếp thành 1 lần lưu,
+        // đủ nhanh để giỏ vẫn được lưu nếu user tắt tab ngay sau khi sửa.
         private const int DebounceMs = 2000;
 
         public CartSyncService(
@@ -51,7 +53,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                         new AuthenticationHeaderValue("Bearer", token);
                 }
             }
-            catch { }
+            catch
+            {
+                // Token lookup is best-effort; the request proceeds without an auth header.
+            }
         }
 
         private async Task<bool> IsLoggedInAsync()
@@ -68,7 +73,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
-        /// Called after login: if server has a cart, replace local cart with it.
+        /// Gọi sau khi đăng nhập: nếu server có giỏ hàng thì thay giỏ local
+        /// bằng giỏ server (server thắng — vì user có thể đã thêm món trên
+        /// thiết bị khác; giỏ local chỉ dùng khi chưa đăng nhập).
         /// </summary>
         public async Task SyncOnLoginAsync()
         {
@@ -83,6 +90,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 var response = await _httpClient.GetAsync("api/cart");
                 if (!response.IsSuccessStatusCode)
                 {
+                    // Fail-soft: giữ giỏ local, không chặn user mua hàng.
                     return;
                 }
 
@@ -100,6 +108,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                             _cartState.Clear();
                             foreach (var item in items)
                             {
+                                // Bỏ qua món hỏng (null hoặc số lượng <= 0) để không
+                                // làm sập giỏ khi dữ liệu server bị lệch.
                                 if (item != null && item.Quantity > 0)
                                 {
                                     _cartState.AddConfigured(
@@ -122,7 +132,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
         private void OnCartChanged()
         {
-            // Debounce server saves.
+            // Debounce: reset timer mỗi lần giỏ thay đổi, chỉ lưu server sau
+            // 2s yên lặng — tránh spam PUT api/cart mỗi lần bấm +/- số lượng.
             _debounceTimer?.Dispose();
             _debounceTimer = new Timer(async _ => await SaveToServerAsync(), null, DebounceMs, Timeout.Infinite);
         }
@@ -149,6 +160,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
         }
 
+        /// <summary>
+        /// Dọn dẹp: hủy timer debounce và gỡ lắng nghe thay đổi giỏ để
+        /// tránh rò rỉ bộ nhớ (CartState sống lâu hơn service này).
+        /// </summary>
         public void Dispose()
         {
             _debounceTimer?.Dispose();

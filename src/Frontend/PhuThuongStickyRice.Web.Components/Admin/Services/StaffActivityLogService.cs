@@ -25,13 +25,27 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     }
 
     /// <summary>Item 156: staff activity log viewer client (Admin only).</summary>
-    public class StaffLogService : HttpService
+    /// <summary>
+    /// Service gọi API nhật ký hoạt động của nhân viên cho trang
+    /// /admin/nhat-ky ("ai đã làm gì, khi nào") — phục vụ kiểm soát
+    /// nội bộ và truy vết thay đổi dữ liệu.
+    /// </summary>
+    public class StaffActivityLogService : HttpService
     {
-        public StaffLogService(HttpClient httpClient, ITokenManager tokenManager)
+        public StaffActivityLogService(HttpClient httpClient, ITokenManager tokenManager)
             : base(httpClient, tokenManager)
         {
         }
 
+        /// <summary>
+        /// Lấy danh sách log có phân trang và lọc theo nhân viên / hành động / khoảng ngày.
+        /// </summary>
+        /// <param name="userId">Lọc theo nhân viên; null hoặc Guid.Empty = tất cả.</param>
+        /// <param name="action">Lọc theo mã hành động; rỗng = tất cả.</param>
+        /// <param name="from">Từ ngày (yyyy-MM-dd); null = không giới hạn dưới.</param>
+        /// <param name="to">Đến ngày (yyyy-MM-dd); null = không giới hạn trên.</param>
+        /// <param name="skipCount">Số bản ghi bỏ qua (phân trang).</param>
+        /// <param name="maxResultCount">Số bản ghi mỗi trang, mặc định 50.</param>
         public Task<StaffActivityLogListModel> GetLogsAsync(
             Guid? userId, string action, DateTime? from, DateTime? to, int skipCount, int maxResultCount = 50)
         {

@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Products.Services
 {
+    /// <summary>
+    /// Service gọi API sản phẩm cho màn hình quản trị (/products).
+    /// Tất cả request đều tự gắn Bearer token qua <see cref="HttpService"/>.
+    /// </summary>
     public class ProductService : HttpService
     {
         public ProductService(HttpClient httpClient, ITokenManager tokenManager)
@@ -14,6 +18,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
         {
         }
 
+        /// <summary>Lấy danh sách sản phẩm (tự bóc danh sách items từ kết quả phân trang của API).</summary>
         public async Task<List<ProductModel>> GetProductsAsync()
         {
             // The API returns a paged result; unwrap the items list.
@@ -21,24 +26,31 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
             return paged?.Items ?? new List<ProductModel>();
         }
 
+        /// <summary>Lấy chi tiết một sản phẩm theo Id.</summary>
         public async Task<ProductModel> GetProductByIdAsync(Guid id)
         {
             var product = await GetAsync<ProductModel>($"api/products/{id}");
             return product;
         }
 
+        /// <summary>Tạo sản phẩm mới.</summary>
         public async Task<ProductModel> CreateProductAsync(ProductModel product)
         {
             var createdProduct = await PostAsync<ProductModel>("api/products", product);
             return createdProduct;
         }
 
+        /// <summary>Cập nhật sản phẩm theo Id.</summary>
         public async Task<ProductModel> UpdateProductAsync(Guid id, ProductModel product)
         {
             var updatedProduct = await PutAsync<ProductModel>($"api/products/{id}", product);
             return updatedProduct;
         }
 
+        /// <summary>
+        /// Xóa sản phẩm. API tự chặn (hoặc chuyển thành "Ngưng bán") nếu
+        /// sản phẩm đã có lịch sử đơn hàng — xem ProductAppService.
+        /// </summary>
         public async Task DeleteProductAsync(Guid id)
         {
             await DeleteAsync($"api/products/{id}");
@@ -100,6 +112,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
                 }
                 catch (System.Text.Json.JsonException)
                 {
+                    // Best-effort: error body isn't JSON — keep the default message.
                 }
 
                 throw new System.InvalidOperationException(message);
@@ -115,24 +128,29 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
             }
             catch (System.Text.Json.JsonException)
             {
+                // Best-effort: success body has no url — fall through to the error below.
             }
 
             throw new System.InvalidOperationException("Tải ảnh lên thất bại.");
         }
 
+        /// <summary>Xóa ảnh sản phẩm trên server theo URL đã lưu.</summary>
         public async Task DeleteProductImageAsync(string url)
         {
             await SetBearerToken();
+            // URL ảnh có thể chứa ký tự đặc biệt — phải encode trước khi đưa vào query string.
             var response = await _httpClient.DeleteAsync(
                 $"api/products/images?url={Uri.EscapeDataString(url)}");
             response.EnsureSuccessStatusCode();
         }
 
+        /// <summary>URL tải danh sách sản phẩm dạng PDF (mở trang export của API trong tab mới).</summary>
         public string GetExportPdfUrl()
         {
             return $"{_httpClient.BaseAddress.AbsoluteUri.Trim('/')}/api/products/ExportAsPdf";
         }
 
+        /// <summary>URL tải danh sách sản phẩm dạng CSV.</summary>
         public string GetExportCsvUrl()
         {
             return $"{_httpClient.BaseAddress.AbsoluteUri.Trim('/')}/api/products/ExportAsCsv";

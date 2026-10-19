@@ -71,6 +71,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
             catch (Exception)
             {
+                // localStorage unavailable (prerender/private mode) — language applies in-memory only.
             }
 
             OnChange?.Invoke();

@@ -7,7 +7,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
     {
         bool AttachTokenAutomatically { get; }
 
-        Task<TokenModel> GetToken();
+        Task<AuthToken> GetToken();
 
         Task RefreshToken();
 
@@ -18,7 +18,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         Task ClearTokenAsync();
     }
 
-    public class TokenModel
+    public class AuthToken
     {
         public string AccessToken { get; set; }
 

@@ -46,6 +46,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private const int VoucherCodeRandomLength = 6;
         private const int VoucherCodeMaxAttempts = 10;
 
+        private const string InvalidPhoneMessage = "Số điện thoại không hợp lệ.";
+
+        /// <summary>400 response for endpoints that require a valid VN phone number.</summary>
+        private BadRequestObjectResult InvalidPhoneResult()
+        {
+            return BadRequest(new { success = false, message = InvalidPhoneMessage });
+        }
+
         // Perf: cache keys for public landing endpoints (see GetStats,
         // GetCourses, GetOffPeak, GetPolls below). Internal so
         // RetentionAdminController can invalidate them on admin edits.
@@ -166,7 +174,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var exists = await _db.PromoSubscribers
@@ -212,7 +220,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var today = DateTime.UtcNow.Date;
@@ -282,7 +290,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             if (!IsValidVnPhone(referrer) || !IsValidVnPhone(referred))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             if (referrer == referred)
@@ -453,7 +461,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var phone = (request?.Phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var birthDate = request?.BirthDate?.Date;
@@ -525,7 +533,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             phone = (phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var account = await _db.LoyaltyAccounts
@@ -619,7 +627,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var phone = (request?.Phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var course = await _db.Courses
@@ -703,7 +711,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var today = DateTime.UtcNow.Date;
@@ -792,7 +800,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var poll = await _db.DishPolls.FirstOrDefaultAsync(p => p.Id == id && p.IsActive, cancellationToken);
@@ -884,7 +892,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var phone = (request?.Phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var exists = await _db.FavoriteDishes
@@ -913,7 +921,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var phone = (request?.Phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var fav = await _db.FavoriteDishes
@@ -938,7 +946,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             phone = (phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var ids = await _db.FavoriteDishes
@@ -962,7 +970,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             phone = (phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var items = await _db.FavoriteDishes
@@ -1015,7 +1023,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             phone = (phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                return InvalidPhoneResult();
             }
 
             var order = await _db.Orders

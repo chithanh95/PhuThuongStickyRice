@@ -9,14 +9,14 @@ namespace PhuThuongStickyRice.Web.Services
     /// JWT token storage (browser localStorage) for the in-repo admin login.
     /// Tokens are issued by WebAPI itself — no OIDC / external IdentityServer.
     /// </summary>
-    public class JwtTokenManager : ITokenManager
+    public class JwtTokenStore : ITokenManager
     {
         private const string TokenKey = "phuthuong_access_token";
         private const string ExpiresKey = "phuthuong_access_token_expires";
 
         private readonly IJSRuntime _jsRuntime;
 
-        public JwtTokenManager(IJSRuntime jsRuntime)
+        public JwtTokenStore(IJSRuntime jsRuntime)
         {
             _jsRuntime = jsRuntime;
         }
@@ -24,7 +24,7 @@ namespace PhuThuongStickyRice.Web.Services
         /// <summary>Tokens are attached manually by HttpService, not by a message handler.</summary>
         public bool AttachTokenAutomatically => false;
 
-        public async Task<TokenModel> GetToken()
+        public async Task<AuthToken> GetToken()
         {
             var token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", TokenKey);
             if (string.IsNullOrWhiteSpace(token))
@@ -35,7 +35,7 @@ namespace PhuThuongStickyRice.Web.Services
             var expiresText = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", ExpiresKey);
             DateTimeOffset.TryParse(expiresText, out var expiresAt);
 
-            return new TokenModel
+            return new AuthToken
             {
                 AccessToken = token,
                 ExpiresAt = expiresAt

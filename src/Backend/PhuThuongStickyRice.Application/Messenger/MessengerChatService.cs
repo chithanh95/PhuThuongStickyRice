@@ -300,21 +300,8 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         private async Task<string> BuildMenuMessageAsync()
         {
-            List<ProductDto> items;
-            try
-            {
-                var paged = await _products.GetListAsync(new GetProductsInput
-                {
-                    Status = "Active",
-                    MaxResultCount = MenuMaxItems
-                });
-                items = paged?.Items?.ToList() ?? new List<ProductDto>();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Could not load product menu for Messenger.");
-                items = new List<ProductDto>();
-            }
+            var items = await LoadActiveProductsAsync(
+                MenuMaxItems, "Could not load product menu for Messenger.");
 
             var sb = new StringBuilder("🍚 THỰC ĐƠN XÔI PHÚ THƯỢNG\n");
             if (items.Count == 0)
@@ -335,21 +322,8 @@ namespace PhuThuongStickyRice.Application.Messenger
         private async Task<List<PendingLine>> ParseOrderLinesAsync(string text)
         {
             var result = new List<PendingLine>();
-            List<ProductDto> items;
-            try
-            {
-                var paged = await _products.GetListAsync(new GetProductsInput
-                {
-                    Status = "Active",
-                    MaxResultCount = ParseOrderMaxItems
-                });
-                items = paged?.Items?.ToList() ?? new List<ProductDto>();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Could not load products for Messenger order parsing.");
-                return result;
-            }
+            var items = await LoadActiveProductsAsync(
+                ParseOrderMaxItems, "Could not load products for Messenger order parsing.");
 
             var body = Regex.Replace(text, @"^(đặt|dat|order)\b", " ", RegexOptions.IgnoreCase).Trim();
             var parts = body.Split(new[] { ',', ';', '+' }, StringSplitOptions.RemoveEmptyEntries);
@@ -361,28 +335,62 @@ namespace PhuThuongStickyRice.Application.Messenger
                     continue;
                 }
 
-                var qty = 1;
-                var m = Regex.Match(part, @"\bx\s*(\d{1,3})\b", RegexOptions.IgnoreCase);
-                if (m.Success)
+                var line = ParseOrderPart(part, items);
+                if (line != null)
                 {
-                    qty = Math.Max(1, Math.Min(100, int.Parse(m.Groups[1].Value)));
-                    part = (part.Substring(0, m.Index) + " " + part.Substring(m.Index + m.Length)).Trim();
-                }
-
-                var product = MatchProduct(part, items);
-                if (product != null)
-                {
-                    result.Add(new PendingLine
-                    {
-                        ProductId = product.Id,
-                        ProductName = product.Name,
-                        UnitPrice = product.Price,
-                        Quantity = qty
-                    });
+                    result.Add(line);
                 }
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Loads the active product catalog for Messenger features.
+        /// Never throws — returns an empty list when the catalog is unavailable.
+        /// </summary>
+        private async Task<List<ProductDto>> LoadActiveProductsAsync(int maxItems, string warnMessage)
+        {
+            try
+            {
+                var paged = await _products.GetListAsync(new GetProductsInput
+                {
+                    Status = "Active",
+                    MaxResultCount = maxItems
+                });
+                return paged?.Items?.ToList() ?? new List<ProductDto>();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, warnMessage);
+                return new List<ProductDto>();
+            }
+        }
+
+        /// <summary>
+        /// Parses one order fragment like "xôi gấc x 2" into a pending
+        /// line, or null when no product matches.
+        /// </summary>
+        private PendingLine ParseOrderPart(string part, List<ProductDto> items)
+        {
+            var qty = 1;
+            var m = Regex.Match(part, @"\bx\s*(\d{1,3})\b", RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                qty = Math.Max(1, Math.Min(100, int.Parse(m.Groups[1].Value)));
+                part = (part.Substring(0, m.Index) + " " + part.Substring(m.Index + m.Length)).Trim();
+            }
+
+            var product = MatchProduct(part, items);
+            return product == null
+                ? null
+                : new PendingLine
+                {
+                    ProductId = product.Id,
+                    ProductName = product.Name,
+                    UnitPrice = product.Price,
+                    Quantity = qty
+                };
         }
 
         private static ProductDto MatchProduct(string part, List<ProductDto> items)
