@@ -43,46 +43,49 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="id">Id mã cần xóa.</param>
         Task DeleteAsync(Guid id);
 
-        /// <summary>Public: checks a code against a cart subtotal.</summary>
+        /// <summary>
+        /// Public: kiểm tra 1 mã giảm giá có áp được cho tổng giỏ hàng không.
+        /// </summary>
+        /// <param name="input">Mã và tổng tiền giỏ hàng cần kiểm tra.</param>
+        /// <returns>Kết quả validate (hợp lệ/không + message + số tiền giảm dự kiến).</returns>
         Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input);
 
         /// <summary>
-        /// Item 139 (Public): active, unexpired public discount codes that
-        /// still have uses left. Used by checkout to auto-apply the best one.
+        /// Item 139 (Public): các mã công khai đang hoạt động và còn hạn,
+        /// còn lượt dùng. Checkout dùng để tự áp mã tốt nhất.
         /// </summary>
         Task<List<DiscountCodeDto>> GetActivePublicAsync();
 
         /// <summary>
-        /// perf-hunt 2026-10-19 (Public): returns the best applicable
-        /// money-off public code for the subtotal in ONE call — replaces the
-        /// old client loop of GetActivePublicAsync + N x ValidateAsync
-        /// (N HTTP round-trips + N DB lookups on the checkout hot path).
-        /// Freeship codes are skipped (separate flow); ties keep the newest
-        /// code, exactly like the old client loop did.
+        /// perf-hunt 2026-10-19 (Public): trả mã giảm tiền công khai tốt nhất
+        /// cho tổng giỏ trong MỘT lần gọi — thay vòng lặp cũ của client
+        /// (GetActivePublicAsync + N x ValidateAsync: N HTTP round-trip + N
+        /// lần lookup DB trên đường nóng của checkout). Mã freeship bị bỏ
+        /// qua (luồng riêng); mã bằng điểm nhau thì giữ mã mới nhất, y như
+        /// vòng lặp cũ của client.
         /// </summary>
         Task<BestDiscountResultDto> EvaluateBestAsync(EvaluateBestDiscountInput input);
 
         /// <summary>
-        /// True when the code is a usable freeship voucher (item 120).
-        /// Used by order creation to zero the delivery fee.
+        /// True khi mã là voucher freeship còn dùng được (item 120).
+        /// Dùng lúc tạo đơn để đưa phí giao hàng về 0.
         /// </summary>
         Task<bool> IsFreeshipAsync(string code, decimal subtotal, string? customerPhone);
         /// <summary>
-        /// Order creation: returns the discount amount and bumps the usage
-        /// counter. Throws DomainException when the code cannot be applied.
+        /// Lúc tạo đơn: trả số tiền được giảm và tăng bộ đếm lượt dùng.
+        /// Ném DomainException khi mã không áp được.
         /// </summary>
         Task<decimal> ApplyAsync(string code, decimal subtotal);
 
         /// <summary>
-        /// Order creation with an owner phone (single-use spin/birthday
-        /// codes are tied to a phone). Throws when the code cannot be applied.
+        /// Lúc tạo đơn với SĐT chủ mã (mã dùng 1 lần như quay số/sinh nhật
+        /// gắn với SĐT). Ném DomainException khi mã không áp được.
         /// </summary>
         Task<decimal> ApplyAsync(string code, decimal subtotal, string? customerPhone);
 
         /// <summary>
-        /// Validates a code and returns the discount amount WITHOUT bumping
-        /// the usage counter. Call <see cref="IncrementUsageAsync"/> after the
-        /// order is successfully created.
+        /// Kiểm tra mã và trả số tiền được giảm mà KHÔNG tăng bộ đếm lượt
+        /// dùng. Gọi <see cref="IncrementUsageAsync"/> sau khi tạo đơn thành công.
         /// </summary>
         Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string? customerPhone);
 
@@ -96,40 +99,40 @@ namespace PhuThuongStickyRice.Application.Discounts
             string code, decimal subtotal, string? customerPhone);
 
         /// <summary>
-        /// Bumps the usage counter for a code. Call after order creation succeeds.
+        /// Tăng bộ đếm lượt dùng của mã. Gọi sau khi tạo đơn thành công.
         /// </summary>
         Task IncrementUsageAsync(string code);
 
         /// <summary>
-        /// Public: checks a code against a cart subtotal for a given phone.
+        /// Public: kiểm tra 1 mã với tổng giỏ hàng cho 1 SĐT cụ thể.
         /// </summary>
         Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string? customerPhone);
 
         /// <summary>
-        /// Creates a system-generated single-use code (lucky spin, birthday
-        /// voucher). Internal — called from other application services.
+        /// Tạo mã dùng 1 lần do hệ thống sinh (vòng quay may mắn, voucher
+        /// sinh nhật). Internal — các service khác trong application gọi tới.
         /// </summary>
         Task<DiscountCodeDto> CreateGeneratedAsync(CreateGeneratedDiscountDto dto);
 
         /// <summary>
-        /// Internal: true when a usable code with the given prefix already
-        /// exists for the phone (prevents duplicate spin/birthday codes).
+        /// Internal: true khi SĐT đã có mã còn dùng được với tiền tố cho trước
+        /// (chặn sinh trùng mã quay số/sinh nhật).
         /// </summary>
         Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone);
 
         /// <summary>
-        /// Internal: subset of the given phones that already own a usable
-        /// code with the given prefix — one batched query instead of calling
-        /// <see cref="HasUsableCodeAsync"/> per phone (N+1 in birthday
-        /// voucher loops). Filters are identical to
-        /// <see cref="HasUsableCodeAsync"/>; membership of the returned set
-        /// is equivalent to that method's result for each input phone.
+        /// Internal: tập con của danh sách SĐT đã có mã còn dùng được với
+        /// tiền tố cho trước — 1 query gộp thay vì gọi
+        /// <see cref="HasUsableCodeAsync"/> cho từng SĐT (tránh N+1 trong
+        /// vòng lặp voucher sinh nhật). Điều kiện lọc giống hệt
+        /// <see cref="HasUsableCodeAsync"/>; thành viên của set trả về tương
+        /// đương kết quả của method đó cho từng SĐT đầu vào.
         /// </summary>
         Task<HashSet<string>> GetPhonesWithUsableCodeAsync(string codePrefix, IEnumerable<string> phones);
 
         /// <summary>
-        /// Item 143 (Internal): code of the first usable code with the given
-        /// prefix for the phone, or null when none exists.
+        /// Item 143 (Internal): mã còn dùng được đầu tiên với tiền tố cho
+        /// trước của SĐT, hoặc null khi không có.
         /// </summary>
         Task<string?> GetUsableCodeAsync(string codePrefix, string ownerPhone);
     }
@@ -203,9 +206,10 @@ namespace PhuThuongStickyRice.Application.Discounts
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<DiscountCodeDto>> GetListAsync()
         {
-            // perf-hunt 2026-10-19: DiscountCodes grows unbounded (lucky-spin /
-            // birthday / reward-rule generate one code per customer). Cap the admin
-            // list at the 500 newest like Wallet/Loyalty lists (Take(200)).
+            // perf-hunt 2026-10-19: bảng DiscountCodes tăng không giới hạn
+            // (vòng quay may mắn / sinh nhật / quy tắc thưởng sinh mã cho
+            // từng khách). Giới hạn trang admin 500 mã mới nhất, giống kiểu
+            // Take(200) của danh sách ví/loyalty.
             var queryable = await _discounts.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
                 queryable.OrderByDescending(x => x.CreatedDateTime).Take(500));
@@ -660,6 +664,14 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="subtotal">Tổng tiền hàng của giỏ.</param>
         /// <param name="customerPhone">SĐT khách; mã riêng tư chỉ đúng chủ SĐT mới dùng được.</param>
         /// <returns>Tuple: hợp lệ hay không + message tiếng Việt.</returns>
+        /// <summary>
+        /// Kiểm tra 1 mã còn dùng được không theo 6 điều kiện: tồn tại, đang
+        /// bật, còn hạn, còn lượt dùng, đúng SĐT chủ mã, đạt đơn tối thiểu.
+        /// </summary>
+        /// <param name="entity">Entity mã giảm giá; null = mã không tồn tại.</param>
+        /// <param name="subtotal">Tổng tiền giỏ hàng.</param>
+        /// <param name="customerPhone">SĐT khách dùng mã (kiểm tra mã gắn SĐT).</param>
+        /// <returns>(Có dùng được không, message hiển thị trực tiếp cho khách).</returns>
         private static (bool IsValid, string Message) CheckUsable(
             DiscountCode? entity, decimal subtotal, string? customerPhone = null)
         {
@@ -700,7 +712,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             return (true, "Áp dụng mã giảm giá thành công.");
         }
 
-        /// <summary>Phone equality tolerant of formatting (digits compared, last 9).</summary>
+        /// <summary>
+        /// So sánh 2 SĐT khoan dung định dạng (chỉ so chữ số, 9 số cuối):
+        /// "0912 345 678", "+84912345678" và "0912345678" coi như cùng 1 số.
+        /// </summary>
         private static bool PhonesEqual(string? firstPhone, string? secondPhone)
         {
             if (string.IsNullOrWhiteSpace(firstPhone) || string.IsNullOrWhiteSpace(secondPhone))
@@ -762,8 +777,8 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </returns>
         private static decimal ComputeDiscount(DiscountCode entity, decimal subtotal)
         {
-            // Freeship vouchers give 0 VND discount — the benefit is the
-            // zeroed delivery fee at checkout (item 120).
+            // Mã freeship không trừ tiền — lợi ích của nó là phí giao hàng
+            // về 0 ở checkout (item 120).
             if (entity.VoucherType == VoucherType.Freeship)
             {
                 return 0;
@@ -795,8 +810,8 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <exception cref="Domain.Exceptions.DomainException">Ném khi thiếu cả % và số tiền giảm.</exception>
         private static void EnsureValueProvided(CreateDiscountCodeDto dto)
         {
-            // Freeship vouchers carry no monetary value — the benefit is the
-            // zeroed delivery fee, so no percent/amount is required.
+            // Mã freeship không mang giá trị tiền — lợi ích của nó là miễn
+            // phí giao hàng, nên không cần nhập %/số tiền giảm.
             if (dto.VoucherType == VoucherType.Freeship)
             {
                 return;

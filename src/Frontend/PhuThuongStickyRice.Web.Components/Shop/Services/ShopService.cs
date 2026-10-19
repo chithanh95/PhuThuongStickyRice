@@ -10,7 +10,8 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
 {
     /// <summary>
-    /// Calls the public (anonymous) WebAPI endpoints used by the storefront.
+    /// Gọi các endpoint WebAPI public (không cần đăng nhập) phục vụ
+    /// cửa hàng: sản phẩm, topping, combo, đánh giá, đơn hàng, thanh toán.
     /// </summary>
     public class ShopService
     {
@@ -27,7 +28,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await GetProductsAsync(null);
         }
 
-        /// <summary>Item 109: optional branch filter (products of the branch + global products).</summary>
+        /// <summary>Item 109: lọc theo chi nhánh (món của chi nhánh + món toàn hệ thống).</summary>
         public async Task<PagedResult<ShopProductModel>> GetProductsAsync(Guid? branchId)
         {
             // Only show Active products; Inactive (sold-out) are hidden.
@@ -43,7 +44,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<PagedResult<ShopProductModel>>();
         }
 
-        /// <summary>Validates a single product id (used when importing a shared cart).</summary>
+        /// <summary>Kiểm tra 1 id sản phẩm còn hợp lệ không (dùng khi nhập giỏ hàng được chia sẻ).</summary>
         public async Task<ShopProductModel> GetProductAsync(Guid id)
         {
             // Dispose response để trả kết nối HTTP về pool (CA2000).
@@ -52,7 +53,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<ShopProductModel>();
         }
 
-        /// <summary>Active toppings for the quick-view checkboxes.</summary>
+        /// <summary>Danh sách topping đang bán (cho checkbox trong popup xem nhanh).</summary>
         public async Task<List<ToppingModel>> GetToppingsAsync()
         {
             // Dispose response để trả kết nối HTTP về pool (CA2000).
@@ -61,7 +62,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<List<ToppingModel>>();
         }
 
-        /// <summary>Active family combos for the shop.</summary>
+        /// <summary>Danh sách combo gia đình đang bán.</summary>
         public async Task<List<ComboModel>> GetCombosAsync()
         {
             // Dispose response để trả kết nối HTTP về pool (CA2000).
@@ -70,7 +71,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<List<ComboModel>>();
         }
 
-        /// <summary>Product ids ordered by quantity sold (for "Bán chạy" sort).</summary>
+        /// <summary>Id sản phẩm xếp theo số lượng đã bán (cho kiểu sắp xếp "Bán chạy").</summary>
         public async Task<List<Guid>> GetBestSellerIdsAsync()
         {
             // Dispose response để trả kết nối HTTP về pool (CA2000).
@@ -80,8 +81,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
-        /// BA shop item 4: total quantity sold per product, for the
-        /// "Đã bán N suất" social proof on product cards. Fail-soft.
+        /// BA shop item 4: tổng số lượng đã bán theo từng sản phẩm, hiển thị
+        /// "Đã bán N suất" trên thẻ sản phẩm (social proof). Fail-soft.
         /// </summary>
         public async Task<Dictionary<Guid, long>> GetSoldQuantitiesAsync()
         {
@@ -100,9 +101,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
-        /// Wave 6b (item 26): per-product rating aggregates
-        /// {ProductId, AverageRating, ReviewCount}. Fail-soft: the shop
-        /// page hides the stars when this call fails.
+        /// Wave 6b (item 26): điểm đánh giá tổng hợp theo sản phẩm
+        /// {ProductId, AverageRating, ReviewCount}. Fail-soft: trang shop
+        /// ẩn sao khi gọi này lỗi.
         /// </summary>
         public async Task<List<ProductRatingModel>> GetProductRatingsAsync()
         {
@@ -113,7 +114,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 ?? new List<ProductRatingModel>();
         }
 
-        /// <summary>Quantity of items sold today ("Đã bán N gói hôm nay").</summary>
+        /// <summary>Số suất đã bán hôm nay ("Đã bán N gói hôm nay").</summary>
         public async Task<long> GetTodaySoldAsync()
         {
             // Dispose response để trả kết nối HTTP về pool (CA2000).
@@ -124,8 +125,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
-        /// Item 165: daily-limit status of limited products ("Còn N suất").
-        /// Fail-soft — the shop hides the badge when the call fails.
+        /// Item 165: trạng thái giới hạn suất theo ngày của món giới hạn
+        /// ("Còn N suất"). Fail-soft — shop ẩn badge khi gọi lỗi.
         /// </summary>
         public async Task<List<ProductDailyRemainingModel>> GetDailyRemainingAsync()
         {
@@ -136,7 +137,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 ?? new List<ProductDailyRemainingModel>();
         }
 
-        /// <summary>Submits a bulk/event quote request (đặt tiệc). No payment.</summary>
+        /// <summary>Gửi yêu cầu báo giá đặt tiệc / số lượng lớn. Không thanh toán ở bước này.</summary>
         public async Task CreateQuoteAsync(QuoteRequestModel quote)
         {
             // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
@@ -149,7 +150,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             response.EnsureSuccessStatusCode();
         }
 
-        /// <summary>Subscribes a phone to monthly cung reminders (public).</summary>
+        /// <summary>Đăng ký SĐT nhận nhắc cúng hàng tháng (public).</summary>
         public async Task<CungReminderModel> CreateCungReminderAsync(CungReminderModel model)
         {
             // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
@@ -164,8 +165,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
-        /// Last order name/address for a phone number (for checkout auto-fill).
-        /// Returns null when no previous order with an address exists.
+        /// Tên/địa chỉ của đơn gần nhất theo SĐT (để checkout tự điền).
+        /// Trả null khi không có đơn cũ nào có địa chỉ.
         /// </summary>
         public async Task<LastOrderInfoModel> GetLastOrderInfoAsync(string phone)
         {
@@ -183,8 +184,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
-        /// Item 143: first-order voucher for a new customer. Returns null
-        /// when the call fails or the phone is invalid (fail-soft).
+        /// Item 143: voucher đơn đầu tiên cho khách mới. Trả null khi gọi
+        /// lỗi hoặc SĐT không hợp lệ (fail-soft).
         /// </summary>
         public async Task<FirstOrderVoucherModel> GetFirstOrderVoucherAsync(string phone)
         {
@@ -267,7 +268,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return $"Đặt hàng thất bại (mã lỗi {(int)response.StatusCode}).";
         }
 
-        /// <summary>Public bank-transfer details (account info + VietQR config).</summary>
+        /// <summary>Thông tin chuyển khoản ngân hàng public (tài khoản + cấu hình VietQR).</summary>
         public async Task<BankTransferInfoModel> GetBankTransferInfoAsync()
         {
             // Dispose response để trả kết nối HTTP về pool (CA2000).
@@ -276,7 +277,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<BankTransferInfoModel>();
         }
 
-        /// <summary>Customer reports they sent the bank transfer (phone must match the order).</summary>
+        /// <summary>Khách báo đã chuyển khoản (SĐT phải khớp với SĐT của đơn).</summary>
         public async Task<TrackedOrderModel> MarkTransferredAsync(Guid orderId, string phone)
         {
             // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
@@ -290,7 +291,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<TrackedOrderModel>();
         }
 
-        /// <summary>Creates a MoMo payment (test simulator payUrl while TestMode is on).</summary>
+        /// <summary>Tạo thanh toán MoMo (trang test giả lập trả payUrl khi đang bật TestMode).</summary>
         public async Task<MoMoCreatePaymentResultModel> CreateMoMoPaymentAsync(Guid orderId)
         {
             // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
@@ -303,7 +304,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<MoMoCreatePaymentResultModel>();
         }
 
-        /// <summary>Posts a MoMo return/callback (used by the TEST simulator page).</summary>
+        /// <summary>Gửi MoMo return/callback (trang giả lập TEST dùng).</summary>
         public async Task MoMoCallbackAsync(MoMoCallbackModel callback)
         {
             // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
@@ -316,7 +317,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             response.EnsureSuccessStatusCode();
         }
 
-        /// <summary>Public order lookup by order number + phone.</summary>
+        /// <summary>Tra cứu đơn hàng public theo mã đơn + SĐT.</summary>
         public async Task<TrackedOrderModel> TrackOrderAsync(string orderNumber, string phone)
         {
             var url = $"api/orders/track?orderNumber={Uri.EscapeDataString(orderNumber ?? string.Empty)}"
@@ -327,7 +328,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<TrackedOrderModel>();
         }
 
-        /// <summary>Public: full order history for a VN phone number (no login).</summary>
+        /// <summary>Public: lịch sử đơn đầy đủ theo SĐT VN (không cần đăng nhập).</summary>
         public async Task<List<TrackedOrderModel>> GetOrdersByPhoneAsync(string phone)
         {
             var url = $"api/orders/by-phone?phone={Uri.EscapeDataString(phone ?? string.Empty)}";

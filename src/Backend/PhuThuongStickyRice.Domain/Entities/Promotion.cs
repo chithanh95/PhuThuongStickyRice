@@ -3,8 +3,8 @@ using System;
 namespace PhuThuongStickyRice.Domain.Entities
 {
     /// <summary>
-    /// Days-of-week bit flags for <see cref="Promotion.DaysOfWeekFlags"/>.
-    /// Monday = 1, Tuesday = 2, Wednesday = 4, ..., Sunday = 64.
+    /// Bit flags ngày trong tuần cho <see cref="Promotion.DaysOfWeekFlags"/>.
+    /// Thứ 2 = 1, Thứ 3 = 2, Thứ 4 = 4, ..., Chủ nhật = 64.
     /// </summary>
     [Flags]
     public enum PromotionDay
@@ -21,8 +21,8 @@ namespace PhuThuongStickyRice.Domain.Entities
     }
 
     /// <summary>
-    /// "Khuyến mãi giờ vàng": time-window promotion auto-applied at checkout.
-    /// Times are local Vietnam time (UTC+7) as TimeSpan-of-day.
+    /// "Khuyến mãi giờ vàng": khuyến mãi theo khung giờ tự áp ở checkout.
+    /// Giờ dùng là giờ địa phương Việt Nam (UTC+7), dạng TimeSpan trong ngày.
     /// </summary>
     public class Promotion : Entity<Guid>, IAggregateRoot
     {
@@ -30,24 +30,26 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public string Name { get; set; }
 
-        /// <summary>Percent off the subtotal, e.g. 10 = 10%.</summary>
+        /// <summary>Phần trăm giảm trên tổng tiền hàng, vd 10 = giảm 10%.</summary>
         public decimal DiscountPercent { get; set; }
 
-        /// <summary>Local start time (Vietnam), e.g. 14:00.</summary>
+        /// <summary>Giờ bắt đầu (giờ địa phương Việt Nam), vd 14:00.</summary>
         public TimeSpan StartTime { get; set; }
 
-        /// <summary>Local end time (Vietnam). May cross midnight (EndTime &lt; StartTime).</summary>
+        /// <summary>Giờ kết thúc (giờ địa phương Việt Nam). Có thể qua đêm (EndTime &lt; StartTime).</summary>
         public TimeSpan EndTime { get; set; }
 
-        /// <summary>Bit flags of <see cref="PromotionDay"/>.</summary>
+        /// <summary>Bit flags của <see cref="PromotionDay"/> — những ngày được áp dụng.</summary>
         public int DaysOfWeekFlags { get; set; } = (int)PromotionDay.All;
 
         public bool IsActive { get; set; } = true;
 
         /// <summary>
-        /// True when the given Vietnam-local time falls inside this
-        /// promotion's window (day flags + start/end, supports overnight).
+        /// True khi thời điểm cho trước (giờ Việt Nam) nằm trong khung giờ
+        /// khuyến mãi (ngày trong tuần + giờ bắt đầu/kết thúc, hỗ trợ qua đêm).
         /// </summary>
+        /// <param name="vnNow">Thời điểm kiểm tra (giờ Việt Nam).</param>
+        /// <returns>True nếu khuyến mãi đang trong khung áp dụng.</returns>
         public bool IsActiveAt(DateTime vnNow)
         {
             if (!IsActive)
@@ -77,7 +79,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 return time >= StartTime && time < EndTime;
             }
 
-            // Overnight window, e.g. 22:00–02:00.
+            // Khung giờ qua đêm, vd 22:00–02:00.
             return time >= StartTime || time < EndTime;
         }
     }

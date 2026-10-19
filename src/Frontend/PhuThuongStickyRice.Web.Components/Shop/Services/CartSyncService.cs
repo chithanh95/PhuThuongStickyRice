@@ -13,9 +13,10 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
 {
     /// <summary>
-    /// Item 137: syncs the cart with the server for logged-in users.
-    /// Server is the source of truth when logged in; localStorage otherwise.
-    /// Simple: on login, if server has a cart, use it. On change, save debounced.
+    /// Item 137: đồng bộ giỏ hàng với server cho user đã đăng nhập.
+    /// Khi đã đăng nhập thì server là nguồn đúng (localStorage chỉ dùng khi
+    /// chưa đăng nhập). Đơn giản: sau login, nếu server có giỏ thì dùng giỏ
+    /// server. Khi giỏ thay đổi thì lưu lên server (debounce).
     /// </summary>
     public class CartSyncService : IDisposable
     {
@@ -55,7 +56,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
             catch
             {
-                // Token lookup is best-effort; the request proceeds without an auth header.
+                // Đọc token là best-effort; không đọc được thì request vẫn
+                // chạy tiếp không có header auth.
             }
         }
 
@@ -187,7 +189,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
             catch
             {
-                // Fail-soft: local cart still works.
+                // Fail-soft: giữ giỏ local, không chặn khách mua hàng khi
+                // không lưu được lên server.
             }
         }
 

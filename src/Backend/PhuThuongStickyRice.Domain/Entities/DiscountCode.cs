@@ -3,9 +3,9 @@ using System;
 namespace PhuThuongStickyRice.Domain.Entities
 {
     /// <summary>
-    /// Discount / promo code. Either <see cref="DiscountPercent"/> or
-    /// <see cref="DiscountAmount"/> is set (percent wins if both are set).
-    /// Amounts are in VND.
+    /// Mã giảm giá / khuyến mãi. Một mã có <see cref="DiscountPercent"/>
+    /// hoặc <see cref="DiscountAmount"/> (nếu có cả hai thì % thắng).
+    /// Mọi số tiền tính bằng VND.
     /// </summary>
     public class DiscountCode : Entity<Guid>, IAggregateRoot
     {
@@ -15,10 +15,10 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Mã giảm giá (đã chuẩn hóa in hoa, duy nhất trong hệ thống).</summary>
         public string Code { get; set; }
 
-        /// <summary>0-100. Null when the discount is a fixed amount.</summary>
+        /// <summary>Phần trăm giảm (0-100). Null khi mã giảm số tiền cố định.</summary>
         public decimal? DiscountPercent { get; set; }
 
-        /// <summary>Fixed-amount discount in VND. Null when percent-based.</summary>
+        /// <summary>Số tiền giảm cố định (VND). Null khi mã giảm theo phần trăm.</summary>
         public decimal? DiscountAmount { get; set; }
 
         /// <summary>Giá trị đơn hàng tối thiểu (VND) để được áp mã.</summary>
@@ -40,14 +40,14 @@ namespace PhuThuongStickyRice.Domain.Entities
         public bool IsActive { get; set; }
 
         /// <summary>
-        /// Voucher type (item 120): Discount (giảm giá) or Freeship
-        /// (miễn phí ship — sets the delivery fee to 0 at checkout).
+        /// Loại voucher (item 120): Discount (giảm giá) hoặc Freeship
+        /// (miễn phí ship — phí giao hàng về 0 ở checkout).
         /// </summary>
         public VoucherType VoucherType { get; set; }
 
         /// <summary>
-        /// Optional phone the code is tied to (lucky-spin / birthday vouchers).
-        /// When set, only this phone may redeem the code.
+        /// SĐT gắn với mã (voucher vòng quay may mắn / sinh nhật).
+        /// Khi có giá trị, chỉ SĐT này mới được dùng mã.
         /// </summary>
         public string OwnerPhone { get; set; }
     }
