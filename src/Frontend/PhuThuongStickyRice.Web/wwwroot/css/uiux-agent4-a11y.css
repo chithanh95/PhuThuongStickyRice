@@ -1941,3 +1941,35 @@ html.dark .sg-btn-fav.sg-btn-fav:hover {
     }
 }
 /* ===== END UIUX run 2026-10-20 00:10 - Agent4 ===== */
+
+/* ===== UIUX run 2026-10-20 00:25 - Agent4 A11y & Polish (5 fix moi, khong trung cac run truoc) ===== */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1): thanh progress "Tỉ lệ hủy theo lý do"
+   (BaoCao.razor:237) — `progress-bar bg-warning` có chữ % BÊN TRONG thanh.
+   Bootstrap đặt chữ #fff; nền vàng Lexa #f1b44c (uiux-agent3-lexa.css:88) →
+   chỉ ~1.85:1, người lớn tuổi không đọc được %. Đổi chữ sang #212529
+   (~8.36:1, đúng chuẩn chữ-trên-nền-vàng của .badge-warning Lexa) + in đậm
+   cho rõ trên thanh cao 18px. Scope .lx-admin (trang /admin/bao-cao);
+   demo /admin/lexa/* có progress-bar bg-warning nhưng KHÔNG có chữ bên
+   trong nên không bị ảnh hưởng hình ảnh. */
+.lx-admin .progress-bar.bg-warning {
+    color: #212529;
+    font-weight: 700;
+}
+
+/* Fix 2 — WCAG 1.4.3: giờ hẹn "📅 Hẹn: ..." trên thẻ Kanban (.kanban-sched,
+   KanbanDon.razor:80 / KanbanDon.razor.css:45) màu tím primary #7a6fbe —
+   thông tin quan trọng với nhân viên bếp/xác nhận đơn.
+   Light: trên thẻ trắng chỉ ~4.33:1 (< 4.5:1) → đậm xuống #5a4f9e
+   (~6.89:1, cùng họ tím Lexa).
+   Dark: trên thẻ #2c2c4e chỉ ~3.10:1 (chưa từng có rule dark cho selector
+   này) → sáng lên #b3a8e8 (~6.18:1, đúng convention tím-trên-nền-tối đã
+   duyệt ở .chat-sender, code, v.v.).
+   Lặp class (0,2,1) thắng rule scoped [b-xxx] (0,2,0) theo thứ tự cascade
+   (file này load sau bundle ở index.html:173). */
+html:not(.dark) .kanban-sched.kanban-sched {
+    color: #5a4f9e;
+}
+html.dark .kanban-sched.kanban-sched {
+    color: #b3a8e8;
+}
