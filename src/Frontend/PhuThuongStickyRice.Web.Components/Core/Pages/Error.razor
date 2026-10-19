@@ -4,11 +4,11 @@
 <div class="sg-error-wrap" style="min-height: 60vh; display: flex; align-items: center; justify-content: center; padding: 48px 16px;">
     <div style="text-align: center; max-width: 520px;">
         <div style="font-size: 4rem; margin-bottom: 16px;">😞</div>
-        <h1 style="font-family: Georgia, serif; color: #7a1b2e; margin-bottom: 12px;">Đã có lỗi xảy ra</h1>
-        <p style="color: #4a2b1a; margin-bottom: 24px;">Xin lỗi, đã có sự cố. Vui lòng thử lại hoặc về trang chủ.</p>
+        <h1 style="font-family: Georgia, serif; color: #bd4a4a; margin-bottom: 12px;"><!-- UIUX-1019 A3: đỏ danger Lexa (trước #7a1b2e đỏ nâu lệch chuẩn) — đồng nhất với trang lỗi App.razor -->Đã có lỗi xảy ra</h1>
+        <p style="color: #495057; margin-bottom: 24px;"><!-- UIUX-1019 A3: chữ body chuẩn Lexa (trước #4a2b1a nâu lệch tông) -->Xin lỗi, đã có sự cố. Vui lòng thử lại hoặc về trang chủ.</p>
         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-            <a href="/" class="sg-btn sg-btn-solid" style="padding: 12px 28px; border-radius: 6px; text-decoration: none;">Về trang chủ</a>
-            <a href="/shop" class="sg-btn sg-btn-outline" style="padding: 12px 28px; border-radius: 6px; text-decoration: none;">Đặt món</a>
+            <a href="/" style="display:inline-block; padding: 12px 28px; border-radius: 6px; text-decoration: none; background: #7a6fbe; border: 2px solid #7a6fbe; color: #fff; font-weight: 600;"><!-- UIUX-1019 A3: class sg-btn* là scoped CSS của Index.razor, KHÔNG apply ở trang /error — nút trước đây render dạng link xanh gạch chân. Chuyển sang nút solid tím Lexa -->Về trang chủ</a>
+            <a href="/shop" style="display:inline-block; padding: 12px 28px; border-radius: 6px; text-decoration: none; background: transparent; border: 2px solid #7a6fbe; color: #7a6fbe; font-weight: 600;"><!-- UIUX-1019 A3: nút outline tím Lexa -->Đặt món</a>
         </div>
     </div>
 </div>

@@ -334,3 +334,21 @@ html.dark .gh-freeship .progress {
     }
 }
 /* ===== END UIUX run 15:52 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 19:40 — Agent1 Mobile =====
+   FIX 2 — Dòng "Còn X nữa được miễn phí giao hàng" + % (Cart.razor:76-77,
+   thẻ <small> ≈12.8px): thông tin khuyến mãi quan trọng nhưng nhỏ hơn
+   ngưỡng 13px, người lớn tuổi khó đọc trên mobile. Nâng lên 14px.
+   FIX 3 — Nhãn "Tổng cộng" trong thanh checkout sticky dưới cùng
+   (.cart-sticky-total small): 12px → 13px, đồng bộ với nhãn tương tự
+   ở thanh mobile của /checkout (run này, Checkout.razor.css FIX 4).
+   (Cả 2 chỉ áp mobile — PC giữ nguyên.) */
+@media (max-width: 767.98px) {
+    .gh-freeship small {
+        font-size: 14px;
+    }
+    .cart-sticky-total small {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX run 19:40 - Agent1 FIX 2+3 ===== */

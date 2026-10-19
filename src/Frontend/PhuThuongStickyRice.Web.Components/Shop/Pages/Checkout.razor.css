@@ -172,6 +172,35 @@
         padding: 8px 4px !important; /* đè .p-0 của Bootstrap */
     }
 
+/* ===== UIUX run 19:40 — Agent1 Mobile =====
+   FIX 1 — Nút "🗑 Xóa thông tin đã nhớ" (Checkout.razor:436: btn btn-link
+   btn-sm p-0, nằm trong .form-group của ô "Nhớ tôi"): không rule mobile nào
+   phủ tới (rule .card-header .btn-link chỉ áp cho nút VAT ở card-header) nên
+   trên mobile chỉ cao ~24px — nút dạng chữ khó bấm với người lớn tuổi. Nới
+   vùng bấm lên 44px, chữ 15px, căn giữa dọc.
+   (Selector .form-group > ... nên không chạm nút VAT ở card-header.) */
+@media (max-width: 767.98px) {
+    .form-group > .btn.btn-link.btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 4px !important; /* đè .p-0 của Bootstrap */
+        font-size: 15px;
+    }
+}
+/* ===== END UIUX run 19:40 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 19:40 — Agent1 Mobile =====
+   FIX 4 — Nhãn "Tổng cộng" trong thanh Đặt hàng cố định dưới cùng
+   (.co-total small): 12px — nằm ngay trên số tiền lớn, người lớn tuổi
+   liếc nhanh khó đọc. Nâng lên 13px trên mobile. */
+@media (max-width: 767.98px) {
+    .co-mobile-bar .co-total small {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX run 19:40 - Agent1 FIX 4 ===== */
+
     /* FIX selector cũ (.alert-success > p > .btn-sm): selector này KHÔNG BAO GIỜ
        khớp markup — 3 nút "Về trang chủ / Xem thực đơn / Tra cứu đơn hàng" sau
        khi đặt hàng thành công nằm trong .card-body > p.co-success-nav (không

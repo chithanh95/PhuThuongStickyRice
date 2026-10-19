@@ -14,3 +14,12 @@
 
 /* Gợi ý "Chạm vào màn hình để thu nhỏ" */
 .cho-zoom-hint { color: #888; }
+
+/* ===== UIUX run 19:40 — Agent2 Dark mode =====
+   FIX 3 — Gợi ý "Chạm vào màn hình để thu nhỏ" (.cho-zoom-hint) màu #888
+   trên nền #111 chỉ đạt ~3.5:1 — khó đọc. Sáng lên #b5b5b5 (~7:1).
+   (Verify: HangCho.razor:210 .cho-zoom-hint; nền trang #111 HangCho.razor:15) */
+html.dark .cho-zoom-hint {
+    color: #b5b5b5;
+}
+/* ===== END UIUX run 19:40 - Agent2 ===== */

@@ -561,8 +561,11 @@ html.dark .shop-filters-sticky {
         color: #7a6fbe;
         margin-top: 4px;
     }
+    /* UIUX run 19:40 — Agent1 Mobile FIX 5: hậu tố đơn vị "đ/phần"
+       (12px → 13px) — đi cùng giá tiền là thông tin quan trọng với
+       người lớn tuổi; nằm trong media mobile (≤768px) nên PC không đổi. */
     .shop-row-price small {
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 400;
         color: #8a7a63;
     }
@@ -1001,3 +1004,23 @@ html.dark .shop-filters-sticky {
     }
 }
 /* ===== END UIUX run 16:10 - Agent1 FIX 5 ===== */
+
+/* ===== UIUX run 19:40 — Agent2 Dark mode =====
+   FIX 1 — Nút "−" của stepper (.shop-row-stepper button) nền #fff lọt mảng
+   trắng giữa thẻ món nền tối #241d17 ở dark mode (mobile ShopeeFood-style).
+   Nút "+" (nền tím #7a6fbe) đã ổn nên không chạm.
+   FIX 2 — Nút CTA "Xem giỏ →" (.shop-sticky-cart-cta) nền #fff chói trong
+   thanh sticky đỏ #7a1b2e ở dark mode — chuyển nền tối + chữ vàng nhạt,
+   vẫn nổi bật nhưng không chói.
+   (Verify: Shop.razor.css:76 .shop-sticky-cart-cta, :598 .shop-row-stepper
+   button; dark thẻ món: html.dark .shop-row-item #241d17) */
+html.dark .shop-row-stepper button {
+    background: #241d17;
+    border-color: #8f86d4;
+    color: #b3a8e8;
+}
+html.dark .shop-sticky-cart-cta {
+    background: #2e2620;
+    color: #ffd97a;
+}
+/* ===== END UIUX run 19:40 - Agent2 ===== */

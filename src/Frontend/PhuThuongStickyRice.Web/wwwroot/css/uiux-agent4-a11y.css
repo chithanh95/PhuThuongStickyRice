@@ -1088,3 +1088,71 @@ html.dark .nq-faq-q.nq-faq-q:focus-visible {
 }
 
 /* ===== END UIUX-1925 A4 ===== */
+
+/* ===== UIUX-1940 A4 (Agent 4 — Accessibility & Polish, run 19:40) ===== */
+/* Tất cả CSS-only override, file load sau cùng → thắng theo cascade.
+   Không đổi layout/typography/màu nền hiện tại. */
+
+/* Fix 2 — WCAG 1.4.3 (Contrast): dòng gợi ý trong khung chat AI landing
+   `.sg-chat-hint` (14px) ở LIGHT mode dùng #8a7a68 trên nền trắng
+   --sg-surface (#ffffff) chỉ ~3.66:1, dưới chuẩn AA 4.5:1 cho chữ nhỏ
+   (run Agent 2 trước chỉ fix dark mode). Đổi sang #6f6151 cùng tông nâu
+   ấm (~6:1 trên nền trắng), người lớn tuổi đọc rõ hơn. Lặp class (0,2,0)
+   để hòa specificity với rule scoped .sg-chat-hint[b-x] và thắng nhờ
+   thứ tự cascade. */
+.sg-chat-hint.sg-chat-hint {
+    color: #6f6151; /* was #8a7a68 */
+}
+
+/* Fix 3 — WCAG 2.4.7 (Focus Visible): form liên hệ landing `.sg-field
+   input/textarea` đặt `outline: none` khi focus, chỉ đổi border-color +
+   box-shadow vàng 15% (rgba(166,124,61,.15)) — gần như không nhìn thấy
+   khi tab bằng bàn phím, đặc biệt với người cao tuổi. Thêm vòng outline
+   2px màu đỏ nâu brand #763434 khi :focus-visible (tương phản mạnh trên
+   nền trắng). Selector (0,3,1) thắng rule scoped `.sg-field input:focus`
+   (0,2,1); border-color/shadow gốc giữ nguyên. Chuột/chạm không ảnh hưởng. */
+.sg-field.sg-field input:focus-visible,
+.sg-field.sg-field textarea:focus-visible {
+    outline: 2px solid #763434;
+    outline-offset: 2px;
+}
+html.dark .sg-field.sg-field input:focus-visible,
+html.dark .sg-field.sg-field textarea:focus-visible {
+    outline-color: #f0d9b5;
+}
+
+/* Fix 4 — WCAG 2.4.7 (Focus Visible): ô tìm kiếm topbar admin `.lx-search`
+   có `outline: none` trên input và chỉ hiện vòng box-shadow tím 28%
+   (rgba(122,111,190,.28)) khi :focus-within — quá mờ để nhận biết khi tab
+   bằng bàn phím. Tăng vòng lên 3px/55% CHỈ khi input được focus bằng bàn
+   phím (:has(input:focus-visible)); chuột bấm vào giữ vòng nhẹ như cũ.
+   `.lx-admin` tiền tố để specificity (0,2,1) thắng rule :focus-within (0,2,0). */
+.lx-admin .lx-search:has(input:focus-visible) {
+    box-shadow: 0 0 0 3px rgba(122, 111, 190, .55);
+}
+
+/* Fix 5 — Polish (hover state): 2 nút CTA sticky mobile landing
+   (.sg-sticky-call "Gọi quán", .sg-sticky-order "Đặt xôi") hoàn toàn không
+   có :hover — người dùng PC rê chuột không có phản hồi. "Gọi quán" đảo
+   nền đỏ chữ trắng khi hover; "Đặt xôi" nền đỏ đậm hơn. Không thêm
+   transition nên tương thích prefers-reduced-motion toàn cục. */
+.sg-sticky-call:hover {
+    background: #6F0707;
+    color: #fff;
+    text-decoration: none;
+}
+.sg-sticky-order:hover {
+    background: #560505;
+    color: #fff;
+    text-decoration: none;
+}
+/* Dark mode: rule `html.dark .sg-sticky-call` (0,2,1) mạnh hơn :hover
+   (0,2,0) nên cần variant riêng (0,3,1) để hover vẫn có phản hồi. */
+html.dark .sg-sticky-call:hover {
+    background: #6F0707;
+    color: #fff;
+    border-color: #6F0707;
+    text-decoration: none;
+}
+
+/* ===== END UIUX-1940 A4 ===== */

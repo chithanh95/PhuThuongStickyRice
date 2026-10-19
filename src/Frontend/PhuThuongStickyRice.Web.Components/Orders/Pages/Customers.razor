@@ -135,6 +135,7 @@
                                         {
                                             <input type="number" class="form-control form-control-sm d-inline-block"
                                                    style="width: 110px;" step="5000" min="5000" max="1000000"
+                                                   aria-label="Số tiền tặng sinh nhật (đồng)"
                                                    value="@GiftAmountFor(b.UserId)"
                                                    @onchange="(e) => SetGiftAmount(b.UserId, e.Value)" />
                                             <span class="small text-muted">₫</span>
