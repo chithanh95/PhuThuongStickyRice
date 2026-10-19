@@ -12,6 +12,9 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
+    // [codequality-docs 2026-10-19]
+
+    /// <summary>Hợp đồng dịch vụ quản lý lịch nghỉ lễ của quán.</summary>
     public interface IHolidayScheduleAppService : IApplicationService
     {
         /// <summary>Admin: lists all holidays, nearest first.</summary>
@@ -32,12 +35,22 @@ namespace PhuThuongStickyRice.Application.Shop
         Task<List<HolidayScheduleDto>> GetUpcomingAsync();
     }
 
+    /// <summary>
+    /// Dịch vụ quản lý lịch nghỉ lễ/ngày đóng cửa của quán: bộ CRUD cho admin và
+    /// danh sách ngày nghỉ sắp tới (công khai) để checkout/landing biết quán có
+    /// mở cửa hôm nay hay không. Dữ liệu công khai được cache và invalidate mỗi
+    /// khi admin thêm/sửa/xóa.
+    /// </summary>
     public class HolidayScheduleAppService : ApplicationService, IHolidayScheduleAppService
     {
         private readonly IRepository<HolidaySchedule, Guid> _holidays;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>Khởi tạo dịch vụ lịch nghỉ lễ.</summary>
+        /// <param name="holidays">Repository lịch nghỉ.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn async.</param>
+        /// <param name="catalogCache">Cache dùng chung; invalidate khi lịch nghỉ thay đổi.</param>
         public HolidayScheduleAppService(
             IRepository<HolidaySchedule, Guid> holidays,
             IAsyncQueryableExecuter asyncExecuter,
@@ -144,6 +157,15 @@ namespace PhuThuongStickyRice.Application.Shop
             return list.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Kiểm tra và chuẩn hóa ngày nghỉ trước khi lưu: loại bỏ phần giờ của ngày
+        /// đã nhập, từ chối ngày quá khứ (so theo lịch Việt Nam vì quán bán theo giờ
+        /// VN — một "ngày hôm qua" theo UTC vẫn có thể là hôm nay ở VN), bắt buộc
+        /// nhập lý do, và cắt lý do quá dài về giới hạn của entity thay vì lỗi.
+        /// </summary>
+        /// <param name="holidayDate">Ngày nghỉ do admin nhập (phần giờ bị bỏ).</param>
+        /// <param name="reason">Lý do nghỉ; bắt buộc có.</param>
+        /// <returns>Cặp (ngày đã chuẩn hóa, lý do đã cắt gọn).</returns>
         private static (DateTime date, string reason) Validate(DateTime holidayDate, string reason)
         {
             var date = holidayDate.Date;
