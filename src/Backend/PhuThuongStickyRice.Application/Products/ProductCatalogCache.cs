@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 
@@ -23,6 +25,15 @@ namespace PhuThuongStickyRice.Application.Products
         private const string VersionKey = "product-catalog:version";
         private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(5);
 
+        /// <summary>
+        /// Khóa per-key chống cache stampede (thundering herd): khi 1 key nóng
+        /// hết TTL, chỉ 1 request chạy factory (query DB), các request đồng thời
+        /// còn lại chờ rồi đọc kết quả từ cache. Static vì class này là transient
+        /// (mỗi lần resolve 1 instance mới), còn IMemoryCache thì dùng chung toàn
+        /// process. Semaphore được dọn sau khi dùng để không phình dictionary.
+        /// </summary>
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> Locks = new();
+
         private readonly IMemoryCache _cache;
 
         public ProductCatalogCache(IMemoryCache cache)
@@ -38,9 +49,25 @@ namespace PhuThuongStickyRice.Application.Products
                 return cached;
             }
 
-            var value = await factory();
-            _cache.Set(versionedKey, value, Ttl);
-            return value;
+            var semaphore = Locks.GetOrAdd(versionedKey, _ => new SemaphoreSlim(1, 1));
+            await semaphore.WaitAsync();
+            try
+            {
+                // Double-check: request khác có thể đã nạp cache trong lúc mình chờ khóa.
+                if (_cache.TryGetValue(versionedKey, out T cachedAfterLock))
+                {
+                    return cachedAfterLock;
+                }
+
+                var value = await factory();
+                _cache.Set(versionedKey, value, Ttl);
+                return value;
+            }
+            finally
+            {
+                semaphore.Release();
+                Locks.TryRemove(versionedKey, out _);
+            }
         }
 
         public void Invalidate()

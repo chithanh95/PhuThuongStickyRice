@@ -133,6 +133,15 @@ namespace PhuThuongStickyRice.Application.Products
         /// <returns>Trang sản phẩm hiện tại.</returns>
         public virtual async Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input)
         {
+            // perf-hunt 2026-10-19: clamp phân trang ngay ở entry point.
+            // GetProductsInput không có [Range] nên client có thể gửi
+            // MaxResultCount=int.MaxValue -> query DB nặng + phình cache
+            // (key public chứa nguyên giá trị skip/max do client truyền).
+            // Shop chỉ có vài chục món, admin dùng 10/trang -> clamp 200 an toàn.
+            input ??= new GetProductsInput();
+            input.SkipCount = Math.Max(0, input.SkipCount);
+            input.MaxResultCount = Math.Clamp(input.MaxResultCount, 1, 200);
+
             // Item 101: the public shop path (status=Active) is served from a
             // 5-minute in-memory cache. The admin list (no status filter)
             // always hits the database.

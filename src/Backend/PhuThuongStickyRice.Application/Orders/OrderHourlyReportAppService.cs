@@ -81,45 +81,71 @@ namespace PhuThuongStickyRice.Application.Orders
         private async Task<HourlyBuckets> AggregatePerHourAsync(DateTime fromUtc, DateTime toUtc)
         {
             var queryable = await _orders.GetQueryableAsync();
-            var raw = await _asyncExecuter.ToListAsync(
-                queryable
-                    .Where(x => x.CreatedAt >= fromUtc
-                        && x.CreatedAt < toUtc
-                        && x.Status != OrderStatus.Cancelled)
-                    .Select(x => new
+            var baseQuery = queryable
+                .Where(x => x.CreatedAt >= fromUtc
+                    && x.CreatedAt < toUtc
+                    && x.Status != OrderStatus.Cancelled);
+
+            // perf-hunt 2026-10-19: gom ngay trong SQL theo (giờ VN, tên món)
+            // thay vì nạp toàn bộ đơn + lines của cả ngày vào memory rồi gom
+            // bằng C#. VN không có DST nên AddHours(offset) dịch được sang SQL.
+            // Tên món vẫn chuẩn hóa ở C# (trim/"(không tên)") nên semantics giữ nguyên.
+            var quantityRows = await _asyncExecuter.ToListAsync(
+                baseQuery
+                    .SelectMany(x => x.Lines.Select(l => new
                     {
-                        x.CreatedAt,
-                        Lines = x.Lines.Select(l => new
-                        {
-                            l.ProductName,
-                            l.Quantity
-                        }).ToList()
+                        Hour = x.CreatedAt.AddHours(VietnamTime.UtcOffsetHours).Hour,
+                        l.ProductName,
+                        l.Quantity
+                    }))
+                    .GroupBy(x => new { x.Hour, x.ProductName })
+                    .Select(g => new
+                    {
+                        g.Key.Hour,
+                        g.Key.ProductName,
+                        Quantity = g.Sum(x => (long)x.Quantity)
+                    }));
+
+            // 1 câu SQL đếm số đơn theo giờ VN (OrdersPerHour/TotalOrders).
+            var orderCountRows = await _asyncExecuter.ToListAsync(
+                baseQuery
+                    .GroupBy(x => x.CreatedAt.AddHours(VietnamTime.UtcOffsetHours).Hour)
+                    .Select(g => new
+                    {
+                        Hour = g.Key,
+                        Count = g.LongCount()
                     }));
 
             var buckets = new HourlyBuckets();
-            foreach (var order in raw)
+            foreach (var row in quantityRows)
             {
-                var hour = VietnamTime.ToVietnamTime(order.CreatedAt).Hour;
-                if (hour < DayStartHour || hour > DayEndHour)
+                if (row.Hour < DayStartHour || row.Hour > DayEndHour)
                 {
                     continue;
                 }
 
-                buckets.TotalOrders++;
-                if (!buckets.QuantitiesPerHour.TryGetValue(hour, out var products))
+                if (!buckets.QuantitiesPerHour.TryGetValue(row.Hour, out var products))
                 {
                     products = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-                    buckets.QuantitiesPerHour[hour] = products;
-                    buckets.OrdersPerHour[hour] = 0;
+                    buckets.QuantitiesPerHour[row.Hour] = products;
+                    buckets.OrdersPerHour[row.Hour] = 0;
                 }
 
-                buckets.OrdersPerHour[hour]++;
-                foreach (var line in order.Lines)
+                // Chuẩn hóa tên y hệt bản cũ (để SQL gom theo raw name không ảnh hưởng kết quả).
+                var name = string.IsNullOrWhiteSpace(row.ProductName) ? "(không tên)" : row.ProductName.Trim();
+                products.TryGetValue(name, out var qty);
+                products[name] = qty + row.Quantity;
+            }
+
+            foreach (var row in orderCountRows)
+            {
+                if (row.Hour < DayStartHour || row.Hour > DayEndHour)
                 {
-                    var name = string.IsNullOrWhiteSpace(line.ProductName) ? "(không tên)" : line.ProductName.Trim();
-                    products.TryGetValue(name, out var qty);
-                    products[name] = qty + line.Quantity;
+                    continue;
                 }
+
+                buckets.OrdersPerHour[row.Hour] = row.Count;
+                buckets.TotalOrders += row.Count;
             }
 
             return buckets;
