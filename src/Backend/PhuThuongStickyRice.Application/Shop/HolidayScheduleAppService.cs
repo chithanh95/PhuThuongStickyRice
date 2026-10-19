@@ -121,6 +121,19 @@ namespace PhuThuongStickyRice.Application.Shop
         [AllowAnonymous]
         public virtual async Task<List<HolidayScheduleDto>> GetUpcomingAsync()
         {
+            // Perf: public shop calls this on every checkout/landing load, but
+            // holidays change rarely and Create/Update/Delete already call
+            // _catalogCache.Invalidate(). The Vietnam date is part of the key so
+            // a midnight rollover never serves a stale day's list; the 5-minute
+            // catalog TTL covers the rest. No business change.
+            var today = VietnamToday();
+            return await _catalogCache.GetOrAddAsync(
+                $"holidays:upcoming:{today:yyyyMMdd}",
+                QueryUpcomingAsync);
+        }
+
+        private async Task<List<HolidayScheduleDto>> QueryUpcomingAsync()
+        {
             var today = VietnamToday();
             var limit = today.AddDays(30);
             var queryable = await _holidays.GetQueryableAsync();

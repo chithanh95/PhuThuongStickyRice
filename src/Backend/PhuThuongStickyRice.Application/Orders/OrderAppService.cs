@@ -2356,12 +2356,22 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Phone matching reuses the tolerant PhonesMatch logic; it runs
             // in memory over recent orders to keep the query provider-agnostic.
+            // Perf: only the 4 columns this method actually reads are selected —
+            // materializing 50 full Order rows (long text columns like
+            // AdminNote/Notes) is pure waste on this checkout hot path.
             var orderQueryable = await _orders.GetQueryableAsync();
             var recent = await _asyncExecuter.ToListAsync(
                 orderQueryable
                     .Where(x => x.Status != OrderStatus.Cancelled
                         && !string.IsNullOrWhiteSpace(x.CustomerAddress))
                     .OrderByDescending(x => x.CreatedAt)
+                    .Select(x => new
+                    {
+                        x.CustomerPhone,
+                        x.CustomerName,
+                        x.CustomerAddress,
+                        x.CreatedAt
+                    })
                     .Take(50));
 
             var match = recent.FirstOrDefault(x => PhonesMatch(x.CustomerPhone, phone));
@@ -2470,15 +2480,41 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var last9 = digits.Substring(digits.Length - 9);
             var orderQueryable = await _orders.GetQueryableAsync();
+            // Perf (two-phase): the tolerant PhonesMatch check cannot run on SQL,
+            // and the LIKE '%suffix%' scan cannot be avoided without a persisted
+            // normalized phone column (deferred: schema change + semantic risk).
+            // To shrink the scan payload, phase 1 selects only (Id, CustomerPhone,
+            // CreatedAt) instead of materializing 100 full Order rows (long text
+            // columns like AdminNote/Notes); phase 2 fetches only the matched
+            // orders by Id (index seeks). Semantics unchanged: same candidate
+            // set, same descending-CreatedAt order, same DTO mapping, AdminNote
+            // still stripped.
             var candidates = await _asyncExecuter.ToListAsync(
                 orderQueryable
                     .Where(x => x.CustomerPhone.Contains(last9))
                     .OrderByDescending(x => x.CreatedAt)
+                    .Select(x => new { x.Id, x.CustomerPhone, x.CreatedAt })
                     .Take(100));
 
-            var result = new List<OrderDto>();
-            foreach (var order in candidates.Where(x => PhonesMatch(x.CustomerPhone, digits)))
+            var matched = candidates.Where(x => PhonesMatch(x.CustomerPhone, digits)).ToList();
+            if (matched.Count == 0)
             {
+                return new List<OrderDto>();
+            }
+
+            var matchedIds = matched.Select(x => x.Id).ToList();
+            var orders = await _asyncExecuter.ToListAsync(
+                orderQueryable.Where(x => matchedIds.Contains(x.Id)));
+            var byId = orders.ToDictionary(x => x.Id);
+
+            var result = new List<OrderDto>(matched.Count);
+            foreach (var candidate in matched)
+            {
+                if (!byId.TryGetValue(candidate.Id, out var order))
+                {
+                    continue;
+                }
+
                 var dto = _objectMapper.Map<Order, OrderDto>(order);
                 dto.AdminNote = null;
                 result.Add(dto);
