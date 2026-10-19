@@ -1344,3 +1344,44 @@ html.dark .shp-page .nav-pills .nav-link:not(.active):hover {
 }
 
 /* === end Run 2026-10-19 17:15 — Agent 2 (4 fix mới) === */
+
+/* === UIUX run 2026-10-19 17:50 — Agent 2 Dark mode (2 fix mới) ===
+   Phương pháp: quét property-level toàn bộ .razor.css + <style> trong .razor
+   + inline style + wwwroot/css, đối chiếu với ~470 selector đã có rule
+   html.dark (17 đợt Agent 2 trước + admin-lexa + app.css + uiux-dark-fixes).
+   Bề mặt phủ rất kín (script đối chiếu: white-bg / dark-text / light-border
+   còn sót = 0, trừ trang in và demo giữ chủ ý) — còn đúng 2 lỗi MỚI thật,
+   đều đã grep xác minh không rule dark nào phủ. */
+
+/* ---------- FIX 1 — /admin/du-bao: nhãn trục + lưới biểu đồ SVG mờ/tàng hình ở dark ----------
+   Vấn đề: BuildChart() trong DuBao.razor sinh SVG với fill="#6c757d" cứng cho
+   nhãn trục (giá trị tiền trục Y + ngày dd/MM trục X) và stroke="#e9ecef" cho
+   4 đường lưới ngang. Ở dark mode: nhãn #6c757d trên card tối #262640 chỉ
+   ~3.3:1 (chữ 11px, khó đọc), lưới #e9ecef gần như tàng hình → mất mốc tham
+   chiếu khi đọc biểu đồ. Trang DuBao không nằm trong 4 trang run 17:25 đã làm.
+   Đã grep: không rule dark nào phủ (selector dùng class mới db-chart).
+   Fix: presentation attribute fill/stroke của SVG luôn thua CSS nên override
+   bằng CSS thuần. Đã thêm class="db-chart" vào thẻ <svg> (DuBao.razor).
+   Vòng tròn điểm dự báo giữ stroke="#fff" (nổi rõ cả 2 mode, không đụng). */
+html.dark .db-chart text {
+    fill: #a5a2bd; /* was #6c757d — ~3.3:1 → ~6.5:1 trên #262640 */
+}
+html.dark .db-chart line {
+    stroke: #3a3a58; /* was #e9ecef — lưới hiện lại trên nền tối */
+}
+
+/* ---------- FIX 2 — /admin/bao-cao-gio: số trong ô heatmap nhạt tàng hình ở dark ----------
+   Vấn đề: BaoCaoGio.razor CellStyle() sinh inline style="...color:#333" cho ô
+   có số lượng thấp (nền tím alpha 0.08–0.5). Inline style thắng rule dark của
+   .table (html.dark .lx-admin .table color:#e8e6f0) → chữ #333 trên ô nền tối
+   chỉ ~1.5:1, TÀNG HÌNH — admin không đọc được số suất theo giờ ở dark mode.
+   Ô trống (color:#ccc) và ô đậm (color:#fff trên nền tím đậm) vẫn đọc được
+   nên chỉ override đúng các ô có color:#333. Đã grep: chỉ BaoCaoGio dùng
+   pattern inline này.
+   Fix: attribute selector + !important để thắng inline style (kỹ thuật đã dùng
+   ở run 13:15 cho inline background). */
+html.dark .lx-admin td[style*="color:#333"] {
+    color: #e8e6f0 !important; /* was #333 inline — ~1.5:1 → ~7:1 */
+}
+
+/* === end UIUX run 2026-10-19 17:50 — Agent 2 (2 fix mới) === */

@@ -172,24 +172,24 @@ else if (_forecast != null)
         var sb = new System.Text.StringBuilder();
         var hist = _forecast.History.Select(x => (x.Date, x.Revenue)).ToList();
         var fc = _forecast.Next7Days.Select(x => (x.Date, x.ForecastRevenue)).ToList();
-        var n = hist.Count + fc.Count;
+        var pointCount = hist.Count + fc.Count;
 
-        sb.Append("<svg viewBox=\"0 0 720 270\" style=\"width:100%;height:auto\" role=\"img\" aria-label=\"Bieu do doanh thu\">");
-        if (n > 0)
+        sb.Append("<svg class=\"db-chart\" viewBox=\"0 0 720 270\" style=\"width:100%;height:auto\" role=\"img\" aria-label=\"Bieu do doanh thu\">");
+        if (pointCount > 0)
         {
             var maxV = hist.Concat(fc).Max(x => x.Item2);
             if (maxV <= 0) maxV = 1;
 
-            double X(int i) => PadL + i * (W - PadL - PadR) / Math.Max(n - 1, 1);
+            double X(int i) => PadL + i * (W - PadL - PadR) / Math.Max(pointCount - 1, 1);
             double Y(decimal v) => PadT + (H - PadT - PadB) * (1 - (double)v / (double)maxV);
             string F(double d) => d.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
             for (var g = 0; g <= 4; g++)
             {
-                var v = maxV * g / 4;
-                var y = Y((decimal)v);
+                var gridValue = maxV * g / 4;
+                var y = Y((decimal)gridValue);
                 sb.Append($"<line x1=\"{F(PadL)}\" y1=\"{F(y)}\" x2=\"{F(W - PadR)}\" y2=\"{F(y)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
-                sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(y + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)v)}</text>");
+                sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(y + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)gridValue)}</text>");
             }
 
             var histPts = string.Join(" ", hist.Select((p, i) => $"{F(X(i))},{F(Y(p.Revenue))}"));
@@ -210,8 +210,8 @@ else if (_forecast != null)
             sb.Append(dots);
 
             var all = hist.Select(x => x.Date).Concat(fc.Select(x => x.Date)).ToList();
-            var step = Math.Max(1, n / 7);
-            for (var i = 0; i < n; i += step)
+            var step = Math.Max(1, pointCount / 7);
+            for (var i = 0; i < pointCount; i += step)
             {
                 sb.Append($"<text x=\"{F(X(i))}\" y=\"{F(H - 8)}\" text-anchor=\"middle\" font-size=\"11\" fill=\"#6c757d\">{all[i]:dd/MM}</text>");
             }
