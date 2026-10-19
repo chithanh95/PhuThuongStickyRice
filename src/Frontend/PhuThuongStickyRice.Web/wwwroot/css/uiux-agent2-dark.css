@@ -818,3 +818,33 @@ html.dark .sg-form-ok { color: #8fe3a0; }
 html.dark .qv-sheet-note-input::placeholder { color: #b8a88f; }
 
 /* === end Agent 2 run 13:55 === */
+
+/* === UIUX Agent 2 — run 13:55 batch B (3 fix bổ sung, không trùng 5 fix đã commit) === */
+
+/* uiux-a2-1355b-fix1-btn-outline-primary
+   Admin: nút .btn-outline-primary (Lexa #7a6fbe) trên nền card tối #262640 chỉ ~3:1 —
+   chữ các nút "Sửa"/"Lưu"/"Hôm nay"/filter mờ (dùng ở 17 chỗ: Articles, ChiNhanh,
+   DanhGia, DoiSoatMomo, FunnelReport, KhuyenMai, LaiGop, LichNghi, LichTongHop...).
+   Fix: chữ + viền sáng #b3a8e8 chỉ ở dark. Hover giữ nguyên fill tím + chữ trắng. */
+html.dark .lx-admin .btn-outline-primary {
+    color: #b3a8e8 !important;
+    border-color: #b3a8e8 !important;
+}
+
+/* uiux-a2-1355b-fix2-date-picker
+   Admin: input type="date" ở dark mode — icon lịch
+   ::-webkit-calendar-picker-indicator mặc định màu tối chìm hẳn trên nền input
+   tối (#2b2b45). Fix: invert(1) chỉ dark. Áp dụng: Articles, BaoCao, BaoCaoGio,
+   DoiSoatNgay, LaiGop, LichNghi, MaGiamGia, NhatKy. */
+html.dark .lx-admin input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+/* uiux-a2-1355b-fix3-text-secondary
+   Admin: Bootstrap .text-secondary (#6c757d) ở dark mode ~3.3:1 trên nền tối —
+   tiêu đề "Kỳ so sánh" (BaoCao.razor:107) mờ. Fix: #a5a2bd, cùng palette muted
+   dark của admin-lexa. */
+html.dark .lx-admin .text-secondary {
+    color: #a5a2bd !important;
+}
