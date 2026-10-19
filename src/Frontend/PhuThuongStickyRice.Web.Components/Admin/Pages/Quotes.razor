@@ -237,8 +237,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAsync();
-        await LoadRemindersAsync();
+        // 2 loader độc lập (danh sách báo giá, nhắc cúng) -> chạy song song cắt 1 round-trip nối tiếp;
+        // mỗi loader giữ try/catch fail-soft riêng, ghi field khác nhau nên không race.
+        await Task.WhenAll(LoadAsync(), LoadRemindersAsync());
     }
 
     private async Task LoadRemindersAsync()

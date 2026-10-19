@@ -265,8 +265,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAsync();
-        await LoadPoorlyRated();
+        // 3 loader độc lập (reviews, ảnh chờ duyệt, món bị chê) -> chạy song song cắt ~2 round-trip nối tiếp;
+        // mỗi loader giữ try/catch fail-soft riêng, ghi field khác nhau nên không race.
+        await Task.WhenAll(LoadAsync(), LoadPoorlyRated());
     }
 
     /// <summary>Item 234: tải danh sách món bị chê nhiều.</summary>
