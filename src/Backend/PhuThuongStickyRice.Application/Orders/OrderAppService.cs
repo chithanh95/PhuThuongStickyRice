@@ -1358,6 +1358,20 @@ namespace PhuThuongStickyRice.Application.Orders
                 order.SetCancelReason(input.CancelReason);
             }
 
+            // bug-hunt 2026-10-19: chuyển trạng thái nguyên tử tại DB TRƯỚC
+            // khi lưu entity — 2 staff bấm "Hoàn thành"/"Hủy" đồng thời cùng
+            // đơn chỉ 1 thắng được UPDATE ... WHERE Status = fromStatus (guard
+            // in-memory Order.Complete()/Cancel() không chặn được vì mỗi
+            // request đọc 1 bản entity riêng). Người thua nhận lỗi rõ ràng
+            // thay vì chạy side-effect 2 lần: cộng điểm loyalty + TotalSpent
+            // + thưởng giới thiệu 2 lần (hoàn thành), hoặc hoàn điểm đã đổi
+            // + hoàn tiền ví 2 lần (hủy).
+            if (!await _orders.TryTransitionStatusAsync(order.Id, fromStatus, status))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Đơn hàng vừa được xử lý bởi thao tác khác. Vui lòng tải lại trang.");
+            }
+
             await _orders.UpdateAsync(order);
 
             // Wave 6c (item 34): audit the transition.
@@ -1831,6 +1845,18 @@ namespace PhuThuongStickyRice.Application.Orders
 
             order.Cancel();
             order.SetCancelReason(input.CancelReason);
+
+            // bug-hunt 2026-10-19: hủy nguyên tử tại DB — 2 request hủy đồng
+            // thời cùng đơn (khách tự hủy + staff hủy tay) chỉ 1 qua được
+            // UPDATE ... WHERE Status = Pending. Không có guard này, cả 2
+            // request đều qua guard in-memory rồi hoàn điểm loyalty đã đổi
+            // và hoàn tiền ví 2 lần cho khách.
+            if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Đơn hàng vừa được xử lý. Vui lòng kiểm tra lại trạng thái đơn.");
+            }
+
             await _orders.UpdateAsync(order);
             await _loyalty.RefundRedeemedPointsAsync(order);
 
@@ -2410,23 +2436,33 @@ namespace PhuThuongStickyRice.Application.Orders
                     && x.CreatedAt < cutoff)
                 .Take(AutoCancelBatchSize));
 
+            // bug-hunt 2026-10-19: chỉ những đơn worker thắng được UPDATE
+            // nguyên tử mới vào danh sách hoàn điểm/audit — đơn bị khách/
+            // staff hủy tay giữa chừng (luồng kia đã hoàn điểm, ghi audit)
+            // thì bỏ qua để không hoàn điểm 2 lần.
+            var cancelledThisRun = new List<Order>();
             foreach (var order in expired)
             {
                 order.Cancel();
                 // Item 233: đơn hệ thống tự hủy cũng ghi lý do để báo cáo đầy đủ.
                 order.SetCancelReason(OrderCancelReasons.SystemExpiredPayment);
+                if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled))
+                {
+                    continue;
+                }
                 await _orders.UpdateAsync(order);
                 // Perf: gom lịch sử trạng thái vào 1 commit cuối UoW thay vì
                 // SaveChanges riêng cho mỗi đơn.
                 // Wave 6c (item 34): audit the worker cancel ("hệ thống").
                 await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled, autoSave: false);
+                cancelledThisRun.Add(order);
             }
 
             // perf-hunt 2026-10-19: hoàn điểm đổi theo batch (1 SELECT accounts
             // + 1 commit) thay vì 2 roundtrip cho mỗi đơn có đổi điểm.
-            await _loyalty.RefundRedeemedPointsBatchAsync(expired);
+            await _loyalty.RefundRedeemedPointsBatchAsync(cancelledThisRun);
 
-            return expired.Count;
+            return cancelledThisRun.Count;
         }
 
         /// <summary>
@@ -2908,6 +2944,14 @@ namespace PhuThuongStickyRice.Application.Orders
             other.Cancel();
             // Item 233: đơn bị gộp ghi rõ lý do để báo cáo hủy không bị lệch.
             other.SetCancelReason($"Gộp vào đơn {primary.OrderNumber}");
+            // bug-hunt 2026-10-19: hủy đơn phụ nguyên tử tại DB — 2 lần gộp
+            // đồng thời cùng đơn phụ chỉ 1 qua được, không hoàn ví/hoàn điểm
+            // 2 lần (cùng họ bug với race hủy đơn thông thường).
+            if (!await _orders.TryTransitionStatusAsync(other.Id, fromStatus, OrderStatus.Cancelled))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    $"Đơn phụ {other.OrderNumber} vừa được xử lý bởi thao tác khác. Vui lòng tải lại.");
+            }
             await _orders.UpdateAsync(other);
             await RecordStatusChangeAsync(other.Id, fromStatus, OrderStatus.Cancelled);
 

@@ -64,5 +64,28 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                     cancellationToken);
             return affected > 0;
         }
+
+        /// <summary>
+        /// Chuyển trạng thái đơn nguyên tử bằng ExecuteUpdateAsync (1 câu
+        /// UPDATE ... SET Status = to WHERE Id = orderId AND Status =
+        /// expectedFrom). Chạy trong DbContext/UoW hiện tại nên rollback cùng
+        /// nghiệp vụ khi các bước sau thất bại. Cùng pattern với
+        /// <see cref="TryMarkSpinUsedAsync"/> — chỉ request đầu tiên thắng
+        /// được UPDATE mới chạy side-effect (cộng/hoàn điểm, hoàn ví, thưởng
+        /// giới thiệu), request thua nhận false và phải báo lỗi rõ ràng cho
+        /// người dùng thay vì xử lý tiếp.
+        /// </summary>
+        public async Task<bool> TryTransitionStatusAsync(
+            System.Guid orderId, OrderStatus expectedFrom, OrderStatus to,
+            CancellationToken cancellationToken = default)
+        {
+            var dbContext = await GetDbContextAsync();
+            var affected = await dbContext.Set<Order>()
+                .Where(x => x.Id == orderId && x.Status == expectedFrom)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Status, to),
+                    cancellationToken);
+            return affected > 0;
+        }
     }
 }

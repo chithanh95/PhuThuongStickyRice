@@ -30,5 +30,17 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// 2 voucher thật từ 1 lượt quay).
         /// </summary>
         Task<bool> TryMarkSpinUsedAsync(Guid orderId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Chuyển trạng thái đơn một cách nguyên tử: UPDATE ... SET Status
+        /// = to WHERE Id = orderId AND Status = expectedFrom. Trả về true
+        /// nếu chuyển thành công, false nếu đơn đã đổi trạng thái bởi request
+        /// khác (2 staff bấm "Hoàn thành"/"Hủy" đồng thời cùng đơn chỉ 1 qua
+        /// được — chống chạy side-effect 2 lần: cộng/hoàn điểm loyalty, hoàn
+        /// tiền ví, thưởng giới thiệu).
+        /// </summary>
+        Task<bool> TryTransitionStatusAsync(
+            Guid orderId, OrderStatus expectedFrom, OrderStatus to,
+            CancellationToken cancellationToken = default);
     }
 }
