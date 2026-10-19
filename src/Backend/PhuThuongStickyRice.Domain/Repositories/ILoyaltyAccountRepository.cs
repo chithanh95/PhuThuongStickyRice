@@ -38,6 +38,24 @@ namespace PhuThuongStickyRice.Domain.Repositories
             string phone, int points, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Cộng điểm + tổng chi tiêu một cách nguyên tử: UPDATE ... SET
+        /// Points = Points + points, TotalEarned = TotalEarned + points,
+        /// TotalSpent = TotalSpent + spentAmount WHERE Phone = phone. Trả về
+        /// true nếu cộng thành công (tài khoản tồn tại), false nếu không tìm
+        /// thấy. Chống race read-modify-write khi 2 đơn của cùng SĐT hoàn
+        /// thành đồng thời: bản cũ đọc Points/TotalSpent vào memory rồi +=
+        /// và UpdateAsync — bên ghi sau đè mất phần cộng của bên ghi trước
+        /// (mất điểm tích lũy / sai tổng chi tiêu tính hạng thành viên).
+        /// </summary>
+        /// <param name="phone">SĐT đã chuẩn hóa (khớp cột Phone).</param>
+        /// <param name="points">Số điểm tích lũy cộng thêm (có thể = 0 khi đơn nhỏ hơn mốc).</param>
+        /// <param name="spentAmount">Số tiền đơn hàng cộng vào tổng chi tiêu (₫).</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        Task<bool> TryIncrementEarnedAndSpentAsync(
+            string phone, int points, decimal spentAmount,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Tạo tài khoản loyalty nguyên tử: chỉ insert khi chưa có tài khoản
         /// cùng Phone. Trả về tài khoản đã tạo, null nếu đã tồn tại — chống
         /// race 2 request đồng thời tạo tài khoản cho SĐT mới (unique index

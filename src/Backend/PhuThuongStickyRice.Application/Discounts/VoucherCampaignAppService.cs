@@ -196,20 +196,38 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
-        /// Lấy SĐT khách theo hạng: tổng chi tiêu ≥ ngưỡng của hạng.
-        /// Ngưỡng hạng lấy từ cài đặt shop (mặc định "Vàng" nếu tier khác "Bạc").
+        /// Lấy SĐT khách theo hạng, khớp chuẩn xếp hạng
+        /// <see cref="PhuThuongStickyRice.Application.Loyalty.LoyaltyAppService.GetTier"/> (nơi tính % giảm
+        /// hạng ở checkout và hiển thị hạng cho khách): Vàng = phải VƯỢT mốc
+        /// (&gt;), Bạc = từ mốc trở lên (&gt;=); mốc &lt;= 0 nghĩa là hạng đó
+        /// không tồn tại → không nhắm ai.
         /// </summary>
         /// <param name="tier">Tên hạng ("Bạc" dùng ngưỡng Bạc, còn lại dùng ngưỡng Vàng).</param>
         private async Task<List<string>> GetTierPhonesAsync(string tier)
         {
             var settings = await _shopSettings.GetAsync();
-            var min = string.Equals(tier, "Bạc", StringComparison.OrdinalIgnoreCase)
-                ? settings.TierSilverMin
-                : settings.TierGoldMin;
+            var isSilver = string.Equals(tier, "Bạc", StringComparison.OrdinalIgnoreCase);
+            var min = isSilver ? settings.TierSilverMin : settings.TierGoldMin;
+
+            // Khớp GetTier (bug-hunt run 16:25): bản cũ dùng >= cho cả Vàng
+            // và thiếu guard mốc <= 0 → khách chi tiêu ĐÚNG bằng mốc Vàng bị
+            // tính Bạc ở checkout (hưởng % giảm thấp hơn) nhưng vẫn nhận
+            // voucher chiến dịch "hạng Vàng"; tệ hơn mốc = 0 sẽ nhắm toàn bộ
+            // tài khoản trong khi GetTier không xếp ai vào hạng đó.
+            if (min <= 0)
+            {
+                return new List<string>();
+            }
 
             var queryable = await _loyaltyAccounts.GetQueryableAsync();
+            if (isSilver)
+            {
+                return await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => x.TotalSpent >= min).Select(x => x.Phone));
+            }
+
             return await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.TotalSpent >= min).Select(x => x.Phone));
+                queryable.Where(x => x.TotalSpent > min).Select(x => x.Phone));
         }
 
         /// <summary>Đếm tổng số tài khoản loyalty (dùng hiển thị quy mô nhóm "tất cả khách").</summary>
