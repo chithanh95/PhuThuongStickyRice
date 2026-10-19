@@ -265,6 +265,22 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int FiveStarReviewBonusPoints = 20;
         /// <summary>Mức rating tối thiểu được thưởng điểm loyalty (5 sao).</summary>
         private const int FiveStarRatingThreshold = 5;
+        /// <summary>Số đơn tối đa trả về cho màn hình bếp (kitchen display) — chặn trước khi materialize.</summary>
+        private const int KitchenDisplayMaxOrders = 200;
+        /// <summary>Số đánh giá tối đa nạp cho màn kiểm duyệt/trả lời của admin.</summary>
+        private const int ReviewModerationMaxItems = 200;
+        /// <summary>Số review tối đa quét khi thống kê món bị chê 1–2 sao — chặn trước khi group trong memory.</summary>
+        private const int PoorlyRatedReviewScanCap = 2000;
+        /// <summary>Khoảng thời gian (ngày) quét review cho báo cáo món bị chê.</summary>
+        private const int PoorlyRatedReviewWindowDays = 30;
+        /// <summary>Cửa sổ (phút) phát hiện đơn trùng SĐT cho panel admin duyệt thủ công.</summary>
+        private const int DuplicateOrderWindowMinutes = 30;
+        /// <summary>Số dòng tối đa một lần lấy danh sách khách hàng.</summary>
+        private const int CustomerListMaxTake = 200;
+        /// <summary>Tên tag đánh dấu khách VIP (dùng cho cờ ưu tiên hiển thị/sắp xếp).</summary>
+        private const string VipTagName = "VIP";
+        /// <summary>Cửa sổ (giờ) idempotency key của checkout còn hiệu lực.</summary>
+        private const int IdempotencyKeyWindowHours = 24;
 
         private readonly IOrderRepository _orders;
         private readonly IProductRepository _products;
@@ -1271,7 +1287,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     dto.CustomerTags = tags;
                     // Item 130 (đúng): VIP flag for priority display/sorting.
                     dto.IsVip = tags.Any(t =>
-                        string.Equals(t.TagName, "VIP", StringComparison.OrdinalIgnoreCase));
+                        string.Equals(t.TagName, VipTagName, StringComparison.OrdinalIgnoreCase));
                 }
             }
         }
@@ -1554,7 +1570,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var items = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => kitchenStatuses.Contains(x.Status))
                     .OrderBy(x => x.CreatedAt)
-                    .Take(200));
+                    .Take(KitchenDisplayMaxOrders));
             var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
             // Wave 6c (item 33): internal note stays in the admin UI.
             dtos.ForEach(x => x.AdminNote = null);
@@ -2191,7 +2207,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var reviewQueryable = await _reviews.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
-                reviewQueryable.OrderByDescending(x => x.CreatedAt).Take(200));
+                reviewQueryable.OrderByDescending(x => x.CreatedAt).Take(ReviewModerationMaxItems));
             return items.Select(MapReviewToDto).ToList();
         }
 
@@ -2229,7 +2245,7 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public virtual async Task<List<PoorlyRatedDishDto>> GetPoorlyRatedDishesAsync()
         {
-            var cutoff = DateTime.UtcNow.AddDays(-30);
+            var cutoff = DateTime.UtcNow.AddDays(-PoorlyRatedReviewWindowDays);
 
             var reviewQueryable = await _reviews.GetQueryableAsync();
 
@@ -2244,21 +2260,36 @@ namespace PhuThuongStickyRice.Application.Orders
                     .Where(x => !x.IsHidden && x.CreatedAt >= cutoff && x.Rating <= 2)
                     .OrderByDescending(x => x.CreatedAt)
                     .Select(x => x.Id)
-                    .Take(2000));
+                    .Take(PoorlyRatedReviewScanCap));
 
             var rows = await _asyncExecuter.ToListAsync(
                 reviewQueryable
                     .Where(x => badReviewIds.Contains(x.Id))
                     .SelectMany(x => x.Lines
                         .Where(l => l.Rating <= 2)
-                        .Select(l => new
-                        {
+                        .Select(l => new PoorlyRatedReviewRow(
                             x.Comment,
                             x.CreatedAt,
                             l.ProductName,
-                            l.Rating
-                        })));
+                            l.Rating))));
 
+            var result = BuildPoorlyRatedDishSummaries(rows);
+
+            return result.OrderByDescending(x => x.BadCount).ToList();
+        }
+
+        /// <summary>Dòng review 1–2 sao đã rút gọn để gom theo tên món.</summary>
+        private sealed record PoorlyRatedReviewRow(
+            string? Comment, DateTime CreatedAt, string? ProductName, int Rating);
+
+        /// <summary>
+        /// Gom các dòng review 1–2 sao theo tên món, chỉ giữ món có từ 3 lượt
+        /// chê trở lên, tính điểm trung bình và lấy 3 comment mẫu. Logic thuần
+        /// trong memory nên tách khỏi phần truy vấn EF ở trên.
+        /// </summary>
+        private static List<PoorlyRatedDishDto> BuildPoorlyRatedDishSummaries(
+            List<PoorlyRatedReviewRow> rows)
+        {
             var result = new List<PoorlyRatedDishDto>();
             foreach (var group in rows
                 .GroupBy(x => string.IsNullOrWhiteSpace(x.ProductName)
@@ -2277,7 +2308,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     AvgRating = Math.Round(items.Average(x => x.Rating), 1),
                     SampleComments = items
                         .Where(x => !string.IsNullOrWhiteSpace(x.Comment))
-                        .Select(x => x.Comment.Trim())
+                        .Select(x => x.Comment!.Trim())
                         .Distinct()
                         .Take(3)
                         .ToList(),
@@ -2285,7 +2316,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 });
             }
 
-            return result.OrderByDescending(x => x.BadCount).ToList();
+            return result;
         }
 
         /// <summary>
@@ -2731,7 +2762,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     })
                     .OrderByDescending(x => x.TotalSpent)
                     .Skip(Math.Max(0, skip))
-                    .Take(Math.Clamp(take, 1, 200)));
+                    .Take(Math.Clamp(take, 1, CustomerListMaxTake)));
 
             // Item 149: attach tags (single lookup, no N+1).
             var tagsByPhone = await _customerTags.GetTagsByPhonesAsync(
@@ -2743,7 +2774,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     c.Tags = tags;
                     // Item 130 (đúng): VIP flag drives the one-tap VIP toggle.
                     c.IsVip = tags.Any(t =>
-                        string.Equals(t.TagName, "VIP", StringComparison.OrdinalIgnoreCase));
+                        string.Equals(t.TagName, VipTagName, StringComparison.OrdinalIgnoreCase));
                 }
             }
 
@@ -2764,7 +2795,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // "khách không mua N ngày" không cần real-time nên dữ liệu cũ tối đa
             // 5 phút là chấp nhận được. Semantics không đổi.
             days = Math.Max(1, days);
-            take = Math.Clamp(take, 1, 200);
+            take = Math.Clamp(take, 1, CustomerListMaxTake);
             return await _catalogCache.GetOrAddAsync(
                 $"orders:inactive-customers:{days}:{take}",
                 async () =>
@@ -2795,7 +2826,7 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public virtual async Task<List<DuplicateOrderGroupDto>> GetDuplicateOrderGroupsAsync()
         {
-            var cutoff = DateTime.UtcNow.AddMinutes(-30);
+            var cutoff = DateTime.UtcNow.AddMinutes(-DuplicateOrderWindowMinutes);
             var orderQueryable = await _orders.GetQueryableAsync();
             var candidates = await _asyncExecuter.ToListAsync(
                 orderQueryable
@@ -2858,24 +2889,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var primaryTotalBefore = primary.TotalAmount.Amount;
 
             // P9: batch load all secondaries in 1 query instead of N FindOrThrowAsync calls.
-            var secondaryIds = input.OrderIds.Distinct()
-                .Where(x => x != primary.Id).ToList();
-            var withDetails = await _orders.WithDetailsAsync(x => x.Lines);
-            var secondaryDict = (await _asyncExecuter.ToListAsync(
-                    withDetails.Where(x => secondaryIds.Contains(x.Id))))
-                .ToDictionary(x => x.Id);
-
-            var secondaries = new List<Order>();
-            foreach (var id in secondaryIds)
-            {
-                if (!secondaryDict.TryGetValue(id, out var other))
-                {
-                    throw new OrderNotFoundException(id);
-                }
-
-                EnsureMergeable(other);
-                secondaries.Add(other);
-            }
+            var secondaries = await LoadMergeableSecondariesAsync(input, primary);
 
             if (secondaries.Count == 0)
             {
@@ -2902,6 +2916,38 @@ namespace PhuThuongStickyRice.Application.Orders
             var dto = _objectMapper.Map<Order, OrderDto>(primary);
             await FillShipperNamesAsync(new[] { dto });
             return dto;
+        }
+
+        /// <summary>
+        /// Batch-load các đơn phụ của vụ gộp trong 1 query (thay vì N lần
+        /// FindOrThrowAsync), ném <see cref="OrderNotFoundException"/> khi id
+        /// không tồn tại và kiểm tra gộp được cho từng đơn.
+        /// </summary>
+        /// <param name="input">Input gộp đơn (đã chọn đơn chính).</param>
+        /// <param name="primary">Đơn chính — các id trùng nó bị loại.</param>
+        /// <returns>Danh sách đơn phụ đã kiểm tra, giữ thứ tự id input.</returns>
+        private async Task<List<Order>> LoadMergeableSecondariesAsync(MergeOrdersInput input, Order primary)
+        {
+            var secondaryIds = input.OrderIds.Distinct()
+                .Where(x => x != primary.Id).ToList();
+            var withDetails = await _orders.WithDetailsAsync(x => x.Lines);
+            var secondaryDict = (await _asyncExecuter.ToListAsync(
+                    withDetails.Where(x => secondaryIds.Contains(x.Id))))
+                .ToDictionary(x => x.Id);
+
+            var secondaries = new List<Order>();
+            foreach (var id in secondaryIds)
+            {
+                if (!secondaryDict.TryGetValue(id, out var other))
+                {
+                    throw new OrderNotFoundException(id);
+                }
+
+                EnsureMergeable(other);
+                secondaries.Add(other);
+            }
+
+            return secondaries;
         }
 
         /// <summary>
@@ -3245,7 +3291,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         private async Task<Order> FindByIdempotencyKeyAsync(string idempotencyKey)
         {
-            var cutoff = DateTime.UtcNow.AddHours(-24);
+            var cutoff = DateTime.UtcNow.AddHours(-IdempotencyKeyWindowHours);
             var queryable = await _orders.GetQueryableAsync();
             return await _asyncExecuter.FirstOrDefaultAsync(
                 queryable.Where(x => x.IdempotencyKey == idempotencyKey && x.CreatedAt >= cutoff));
