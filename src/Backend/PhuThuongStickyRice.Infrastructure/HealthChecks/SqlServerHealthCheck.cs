@@ -29,7 +29,7 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
         /// <summary>
         /// Mở kết nối SQL Server và chạy câu probe; trả về Healthy khi thành công.
         /// </summary>
-        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -38,11 +38,9 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
                 // tránh block thread pool khi server còn giữ handle.
                 await using SqlConnection connection = new SqlConnection(_connectionString);
                 await connection.OpenAsync(cancellationToken);
-                await using (SqlCommand command = connection.CreateCommand())
-                {
-                    command.CommandText = _healthCheckSql;
-                    await command.ExecuteScalarAsync(cancellationToken);
-                }
+                await using var command = connection.CreateCommand();
+                command.CommandText = _healthCheckSql;
+                await command.ExecuteScalarAsync(cancellationToken);
 
                 return HealthCheckResult.Healthy();
             }
