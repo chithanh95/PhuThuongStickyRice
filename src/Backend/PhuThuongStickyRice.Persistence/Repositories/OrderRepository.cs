@@ -43,8 +43,10 @@ namespace PhuThuongStickyRice.Persistence.Repositories
             }
 
             var queryable = await GetQueryableAsync();
+            // Read-only cho export báo cáo: không track entity để giảm memory/CPU
+            // (5000 đơn ~ 20k entity Lines đi kèm).
             return await AsyncExecuter.ToListAsync(
-                queryable.Include(x => x.Lines).Where(x => ids.Contains(x.Id)),
+                queryable.AsNoTracking().Include(x => x.Lines).Where(x => ids.Contains(x.Id)),
                 cancellationToken);
         }
 

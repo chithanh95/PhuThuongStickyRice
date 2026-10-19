@@ -433,8 +433,18 @@ namespace PhuThuongStickyRice.Application.Orders
                     && x.CreatedAt < endUtc
                     && x.Status != OrderStatus.Cancelled);
 
-            var orderCount = await _asyncExecuter.LongCountAsync(billable);
-            var totalRevenue = await _asyncExecuter.SumAsync(billable.Select(x => x.TotalAmount.Amount));
+            // Gộp count + sum thành 1 query (GROUP BY hằng số): trước đây là
+            // 2 round-trip riêng trên cùng tập billable.
+            var totals = await _asyncExecuter.FirstOrDefaultAsync(
+                billable.GroupBy(x => 1)
+                    .Select(g => new
+                    {
+                        OrderCount = g.LongCount(),
+                        TotalRevenue = g.Sum(x => (decimal?)x.TotalAmount.Amount)
+                    }));
+            var orderCount = totals?.OrderCount ?? 0L;
+            // Sum trên tập rỗng trả NULL trong SQL -> ?? 0m giữ đúng hành vi cũ.
+            var totalRevenue = totals?.TotalRevenue ?? 0m;
 
             var topProducts = await _asyncExecuter.ToListAsync(
                 billable.SelectMany(x => x.Lines)
