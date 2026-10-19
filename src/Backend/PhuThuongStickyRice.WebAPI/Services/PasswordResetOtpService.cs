@@ -26,6 +26,11 @@ namespace PhuThuongStickyRice.WebAPI.Services
         private static readonly TimeSpan RateLimitWindow = TimeSpan.FromHours(1);
         private const int MaxOtpRequestsPerHour = 3;
         private const int MaxOtpAttempts = 3;
+        private const int MinPasswordLength = 6;
+
+        // Khi nhập sai OTP: giữ nguyên hạn dùng gốc của OTP nhưng tối thiểu
+        // chừng này để user còn kịp nhập lại thay vì OTP hết hạn ngay.
+        private static readonly TimeSpan MinFailedAttemptTtl = TimeSpan.FromSeconds(30);
 
         private readonly UserManager<User> _userManager;
         private readonly IMemoryCache _cache;
@@ -107,7 +112,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 return PasswordResetResult.Fail("Số điện thoại không đúng định dạng (VD: 0901234567).");
             }
 
-            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < MinPasswordLength)
             {
                 return PasswordResetResult.Fail("Mật khẩu mới phải có ít nhất 6 ký tự.");
             }
@@ -126,19 +131,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
             if (!string.Equals(entry.Code, otp, StringComparison.Ordinal))
             {
-                entry.FailedAttempts++;
-                // Preserve the original expiry on failed attempts.
-                var remaining = entry.ExpiresAt - DateTimeOffset.UtcNow;
-                if (remaining < TimeSpan.FromSeconds(30))
-                {
-                    remaining = TimeSpan.FromSeconds(30);
-                }
-                _cache.Set(key, entry, remaining);
-
-                var left = MaxOtpAttempts - entry.FailedAttempts;
-                return left > 0
-                    ? PasswordResetResult.Fail($"Mã OTP không đúng. Bạn còn {left} lần thử.")
-                    : PasswordResetResult.Fail("Bạn đã nhập sai OTP quá 3 lần. Vui lòng yêu cầu mã OTP mới.");
+                return RegisterFailedOtpAttempt(key, entry);
             }
 
             var user = await _userManager.FindByNameAsync(phone);
@@ -168,6 +161,28 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
             _logger.LogInformation("Đặt lại mật khẩu thành công cho SĐT {Phone}.", phone);
             return PasswordResetResult.Ok();
+        }
+
+        /// <summary>
+        /// Xử lý 1 lần nhập sai OTP: tăng số lần thử, giữ nguyên hạn dùng gốc
+        /// của OTP (nhưng tối thiểu <see cref="MinFailedAttemptTtl"/>), trả về
+        /// thông báo lỗi tương ứng số lần thử còn lại.
+        /// </summary>
+        private PasswordResetResult RegisterFailedOtpAttempt(string key, OtpEntry entry)
+        {
+            entry.FailedAttempts++;
+            // Preserve the original expiry on failed attempts.
+            var remaining = entry.ExpiresAt - DateTimeOffset.UtcNow;
+            if (remaining < MinFailedAttemptTtl)
+            {
+                remaining = MinFailedAttemptTtl;
+            }
+            _cache.Set(key, entry, remaining);
+
+            var left = MaxOtpAttempts - entry.FailedAttempts;
+            return left > 0
+                ? PasswordResetResult.Fail($"Mã OTP không đúng. Bạn còn {left} lần thử.")
+                : PasswordResetResult.Fail("Bạn đã nhập sai OTP quá 3 lần. Vui lòng yêu cầu mã OTP mới.");
         }
 
         private static string OtpCacheKey(string phone) => $"pwdreset:{phone}";

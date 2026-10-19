@@ -1,5 +1,7 @@
 using PhuThuongStickyRice.Application.Shop;
-
+using PhuThuongStickyRice.Application.AuditLogs;
+using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.WebAPI.Common;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -11,11 +13,6 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using PhuThuongStickyRice.Application.AuditLogs;
-using PhuThuongStickyRice.Application.Shop;
-using PhuThuongStickyRice.Application.AuditLogs;
-using PhuThuongStickyRice.Application.Shop;
-using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
@@ -122,7 +119,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             var settings = await _shopSettings.GetAsync();
 
-            var root = _env.WebRootPath ?? Path.Combine(AppContext.BaseDirectory, "wwwroot");
+            var root = WebRootResolver.Resolve(_env);
             var uploads = Path.Combine(root, "uploads");
 
             long bytes = 0;

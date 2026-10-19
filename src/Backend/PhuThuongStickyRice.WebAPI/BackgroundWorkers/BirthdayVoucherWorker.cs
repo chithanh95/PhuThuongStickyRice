@@ -11,6 +11,7 @@ using Volo.Abp.Linq;
 using Volo.Abp.Threading;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Application.Common;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
@@ -22,12 +23,18 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
     /// </summary>
     public class BirthdayVoucherWorker : AsyncPeriodicBackgroundWorkerBase
     {
+        // Voucher sinh nhật: prefix mã, % giảm giá, số ngày hiệu lực.
+        // Đặt tên hằng số để mỗi con số đều tự giải thích ý nghĩa.
+        private const string BirthdayVoucherPrefix = "BDAY";
+        private const int BirthdayDiscountPercent = 20;
+        private const int BirthdayVoucherExpiryDays = 30;
+
         public BirthdayVoucherWorker(
             AbpAsyncTimer timer,
             IServiceScopeFactory serviceScopeFactory)
             : base(timer, serviceScopeFactory)
         {
-            Timer.Period = 24 * 60 * 60 * 1000; // 24 hours
+            Timer.Period = (int)TimeSpan.FromHours(24).TotalMilliseconds; // chạy mỗi 24 giờ
             Timer.RunOnStart = false;
         }
 
@@ -46,12 +53,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 // 00:00–06:59 giờ VN thì UtcNow.Date lệch 1 ngày → voucher
                 // sinh nhật bị tạo trễ/nhầm ngày.
                 var today = VietnamTime.Today();
-                var queryable = await accounts.GetQueryableAsync();
-                var celebrants = await asyncExecuter.ToListAsync(
-                    queryable.Where(x =>
-                        x.DateOfBirth.HasValue
-                        && x.DateOfBirth.Value.Month == today.Month
-                        && x.DateOfBirth.Value.Day == today.Day));
+                var celebrants = await GetTodayCelebrantsAsync(accounts, asyncExecuter, today);
 
                 // perf-hunt 2026-10-19: kiểm tra mã BDAY còn dùng được cho
                 // TẤT CẢ người sinh nhật trong 1 query (IN clause) thay vì
@@ -59,26 +61,9 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 // trong GetPhonesWithUsableCodeAsync giữ nguyên nên kết quả
                 // tương đương từng phần tử.
                 var phonesWithCode = await discounts.GetPhonesWithUsableCodeAsync(
-                    "BDAY", celebrants.Select(x => x.Phone));
+                    BirthdayVoucherPrefix, celebrants.Select(x => x.Phone));
 
-                var created = 0;
-                foreach (var account in celebrants)
-                {
-                    // Skip when a usable birthday voucher already exists.
-                    if (phonesWithCode.Contains(account.Phone))
-                    {
-                        continue;
-                    }
-
-                    await discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
-                    {
-                        Prefix = "BDAY",
-                        DiscountPercent = 20,
-                        ExpiresAt = DateTime.UtcNow.AddDays(30),
-                        OwnerPhone = account.Phone
-                    });
-                    created++;
-                }
+                var created = await CreateMissingVouchersAsync(discounts, celebrants, phonesWithCode);
 
                 if (created > 0)
                 {
@@ -91,6 +76,53 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             {
                 Logger.LogError(ex, "BirthdayVoucherWorker failed.");
             }
+        }
+
+        /// <summary>
+        /// Lấy danh sách tài khoản loyalty có sinh nhật đúng hôm nay (theo giờ VN).
+        /// </summary>
+        private static async Task<List<LoyaltyAccount>> GetTodayCelebrantsAsync(
+            IRepository<LoyaltyAccount, Guid> accounts,
+            IAsyncQueryableExecuter asyncExecuter,
+            DateTime today)
+        {
+            var queryable = await accounts.GetQueryableAsync();
+            return await asyncExecuter.ToListAsync(
+                queryable.Where(x =>
+                    x.DateOfBirth.HasValue
+                    && x.DateOfBirth.Value.Month == today.Month
+                    && x.DateOfBirth.Value.Day == today.Day));
+        }
+
+        /// <summary>
+        /// Tạo voucher sinh nhật cho những người chưa có mã còn dùng được.
+        /// Trả về số voucher đã tạo.
+        /// </summary>
+        private static async Task<int> CreateMissingVouchersAsync(
+            IDiscountAppService discounts,
+            List<LoyaltyAccount> celebrants,
+            HashSet<string> phonesWithCode)
+        {
+            var created = 0;
+            foreach (var account in celebrants)
+            {
+                // Skip when a usable birthday voucher already exists.
+                if (phonesWithCode.Contains(account.Phone))
+                {
+                    continue;
+                }
+
+                await discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
+                {
+                    Prefix = BirthdayVoucherPrefix,
+                    DiscountPercent = BirthdayDiscountPercent,
+                    ExpiresAt = DateTime.UtcNow.AddDays(BirthdayVoucherExpiryDays),
+                    OwnerPhone = account.Phone
+                });
+                created++;
+            }
+
+            return created;
         }
     }
 }

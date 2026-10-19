@@ -337,38 +337,69 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public string GrabFoodUrl { get; set; }
 
+        // Giá trị mặc định khi seed/tạo mới cài đặt shop. Đặt tên hằng số để
+        // mỗi con số đều tự giải thích ý nghĩa (tránh magic number).
+        public const int DefaultDeliveryFee = 20000;            // phí giao hàng (VNĐ)
+        public const int DefaultFreeShipThreshold = 200000;    // đơn từ mức này được freeship (VNĐ)
+        public const int DefaultMinOrderAmount = 0;            // giá trị đơn tối thiểu (VNĐ)
+        public const int DefaultEstimatedDeliveryMinutes = 45; // thời gian giao dự kiến (phút)
+        public const int DefaultBankTransferExpiryMinutes = 30;// QR chuyển khoản hết hạn sau (phút)
+        public const int DefaultPointsPerVnd = 10000;          // cứ 10k VNĐ tích 1 điểm
+        public const int DefaultPointsRedeemUnit = 100;        // đổi điểm theo bội số
+        public const int DefaultPointsRedeemValue = 10000;     // giá trị quy đổi (VNĐ)
+        public const int DefaultReferralBonusPoints = 50;     // điểm thưởng giới thiệu
+        public const int DefaultDepositThreshold = 500000;    // đơn từ mức này phải cọc (VNĐ)
+        public const int DefaultDepositPercent = 30;           // % cọc
+        public const int DefaultGiftFee = 20000;               // phí gói quà (VNĐ)
+        public const int DefaultTierSilverMin = 1000000;       // mốc hạng Bạc (tổng chi VNĐ)
+        public const int DefaultTierSilverDiscount = 2;        // % giảm hạng Bạc
+        public const int DefaultTierGoldMin = 5000000;         // mốc hạng Vàng (tổng chi VNĐ)
+        public const int DefaultTierGoldDiscount = 5;          // % giảm hạng Vàng
+        public const int DefaultUnconfirmedAlertMinutes = 15; // cảnh báo đơn chưa xác nhận sau (phút)
+        public const int DefaultErrorRateThreshold = 20;      // ngưỡng số lỗi/giờ để cảnh báo
+        public const int DefaultUploadsSizeWarningMb = 500;   // cảnh báo khi thư mục uploads vượt (MB)
+        public const string DefaultImageBackupProvider = "None"; // không backup ảnh đi đâu
+        public const int DefaultCheckInPoints = 5;            // điểm thưởng mỗi lần điểm danh
+        public const int DefaultNepPerPortionGrams = 150;     // định lượng nếp 1 suất (gram)
+        public const int DefaultDailyTargetAmount = 2000000;  // mục tiêu doanh thu ngày (VNĐ)
+        public const string DefaultOpenTime = "06:00";        // giờ mở bán
+        public const string DefaultCloseTime = "10:30";        // giờ đóng bán
+        public const int DefaultMaxOrdersPerPhonePerDay = 10; // tối đa đơn/SĐT/ngày
+        public const int DefaultWholesaleMinQty = 50;         // số lượng tối thiểu mua sỉ (suất)
+        public const string DefaultMaintenanceMessage = "Cửa hàng đang bảo trì, vui lòng quay lại sau.";
+
         public static ShopSetting CreateDefault()
         {
             return new ShopSetting
             {
-                DeliveryFee = 20000,
-                FreeShipThreshold = 200000,
-                MinOrderAmount = 0,
-                EstimatedDeliveryMinutes = 45,
-                BankTransferExpiryMinutes = 30,
-                PointsPerVnd = 10000,
-                PointsRedeemUnit = 100,
-                PointsRedeemValue = 10000,
-                ReferralBonusPoints = 50,
-                DepositThreshold = 500000,
-                DepositPercent = 30,
-                GiftFee = 20000,
-                TierSilverMin = 1000000,
-                TierSilverDiscount = 2,
-                TierGoldMin = 5000000,
-                TierGoldDiscount = 5,
+                DeliveryFee = DefaultDeliveryFee,
+                FreeShipThreshold = DefaultFreeShipThreshold,
+                MinOrderAmount = DefaultMinOrderAmount,
+                EstimatedDeliveryMinutes = DefaultEstimatedDeliveryMinutes,
+                BankTransferExpiryMinutes = DefaultBankTransferExpiryMinutes,
+                PointsPerVnd = DefaultPointsPerVnd,
+                PointsRedeemUnit = DefaultPointsRedeemUnit,
+                PointsRedeemValue = DefaultPointsRedeemValue,
+                ReferralBonusPoints = DefaultReferralBonusPoints,
+                DepositThreshold = DefaultDepositThreshold,
+                DepositPercent = DefaultDepositPercent,
+                GiftFee = DefaultGiftFee,
+                TierSilverMin = DefaultTierSilverMin,
+                TierSilverDiscount = DefaultTierSilverDiscount,
+                TierGoldMin = DefaultTierGoldMin,
+                TierGoldDiscount = DefaultTierGoldDiscount,
                 OwnerReportEmail = null,
-                UnconfirmedAlertMinutes = 15,
+                UnconfirmedAlertMinutes = DefaultUnconfirmedAlertMinutes,
                 RecaptchaSiteKey = null,
                 RecaptchaSecretKey = null,
                 WebBaseUrl = null,
                 MaintenanceMode = false,
-                MaintenanceMessage = "Cửa hàng đang bảo trì, vui lòng quay lại sau.",
+                MaintenanceMessage = DefaultMaintenanceMessage,
                 TelegramBotToken = null,
                 TelegramChatId = null,
                 HealthAlertsEnabled = true,
-                ErrorRateThreshold = 20,
-                UploadsSizeWarningMb = 500,
+                ErrorRateThreshold = DefaultErrorRateThreshold,
+                UploadsSizeWarningMb = DefaultUploadsSizeWarningMb,
                 BankName = null,
                 BankId = null,
                 BankAccountNumber = null,
@@ -376,26 +407,26 @@ namespace PhuThuongStickyRice.Domain.Entities
                 BankQrTemplate = null,
                 MoMoPartnerCode = null,
                 MoMoEndpoint = null,
-                ImageBackupProvider = "None",
+                ImageBackupProvider = DefaultImageBackupProvider,
                 ImageBackupSettingsJson = null,
-                CheckInPoints = 5,
-                NepPerPortionGrams = 150,
-                DailyTargetAmount = 2000000,
-                OpenTime = "06:00",
-                CloseTime = "10:30",
+                CheckInPoints = DefaultCheckInPoints,
+                NepPerPortionGrams = DefaultNepPerPortionGrams,
+                DailyTargetAmount = DefaultDailyTargetAmount,
+                OpenTime = DefaultOpenTime,
+                CloseTime = DefaultCloseTime,
                 Hotline = null,
                 ZaloPhone = null,
                 ShowZaloChatButton = true,
                 GoogleMapsUrl = null,
                 AcceptingOrders = true,
-                MaxOrdersPerPhonePerDay = 10,
+                MaxOrdersPerPhonePerDay = DefaultMaxOrdersPerPhonePerDay,
                 NewOrderWebhookUrl = null,
                 NewOrderWebhookEnabled = false,
                 FacebookPixelId = null,
                 GoogleAnalyticsId = null,
                 ZaloVipGroupUrl = null,
                 WholesaleContact = null,
-                WholesaleMinQty = 50,
+                WholesaleMinQty = DefaultWholesaleMinQty,
                 ShopeeFoodUrl = null,
                 GrabFoodUrl = null
             };

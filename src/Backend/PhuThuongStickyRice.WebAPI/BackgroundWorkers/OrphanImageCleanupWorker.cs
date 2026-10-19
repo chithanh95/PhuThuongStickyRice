@@ -11,6 +11,7 @@ using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using Volo.Abp.Threading;
+using PhuThuongStickyRice.WebAPI.Common;
 
 namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
 {
@@ -41,7 +42,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             var provider = workerContext.ServiceProvider;
 
             var env = provider.GetService<IWebHostEnvironment>();
-            var root = env?.WebRootPath ?? Path.Combine(AppContext.BaseDirectory, "wwwroot");
+            var root = WebRootResolver.Resolve(env);
             var folder = Path.Combine(root, "uploads", "landing");
             if (!Directory.Exists(folder))
             {

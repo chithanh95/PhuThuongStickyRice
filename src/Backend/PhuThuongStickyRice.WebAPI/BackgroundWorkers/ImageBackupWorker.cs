@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Common.ImageBackup;
+using PhuThuongStickyRice.WebAPI.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -25,12 +26,15 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
     {
         private const string StateFileName = ".backup-state.json";
 
+        // Tên provider mặc định: không backup đi đâu, đĩa local là bản duy nhất.
+        private const string NoneProviderName = "None";
+
         public ImageBackupWorker(
             AbpAsyncTimer timer,
             IServiceScopeFactory serviceScopeFactory)
             : base(timer, serviceScopeFactory)
         {
-            Timer.Period = 60 * 60 * 1000; // 1 hour
+            Timer.Period = (int)TimeSpan.FromHours(1).TotalMilliseconds; // mỗi giờ 1 lần
             Timer.RunOnStart = false;
         }
 
@@ -39,27 +43,13 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
         {
             var provider = workerContext.ServiceProvider;
 
-            string providerName;
-            try
+            var providerName = await ResolveProviderNameAsync(provider);
+            if (providerName == null)
             {
-                var settings = provider.GetRequiredService<IShopSettingAppService>();
-                var dto = await settings.GetAsync();
-                providerName = string.IsNullOrWhiteSpace(dto.ImageBackupProvider)
-                    ? "None"
-                    : dto.ImageBackupProvider.Trim();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "ImageBackupWorker: could not read shop settings.");
                 return;
             }
 
-            var backupProvider = provider
-                .GetServices<IImageBackupProvider>()
-                .FirstOrDefault(x => string.Equals(x.Name, providerName, StringComparison.OrdinalIgnoreCase))
-                ?? provider.GetServices<IImageBackupProvider>()
-                    .FirstOrDefault(x => string.Equals(x.Name, "None", StringComparison.OrdinalIgnoreCase));
-
+            var backupProvider = ResolveBackupProvider(provider, providerName);
             if (backupProvider == null)
             {
                 return;
@@ -76,13 +66,13 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 return;
             }
 
-            if (!configured || string.Equals(backupProvider.Name, "None", StringComparison.OrdinalIgnoreCase))
+            if (!configured || string.Equals(backupProvider.Name, NoneProviderName, StringComparison.OrdinalIgnoreCase))
             {
                 return; // Nothing to do — the default "None" provider is a no-op.
             }
 
             var env = provider.GetService<IWebHostEnvironment>();
-            var root = env?.WebRootPath ?? Path.Combine(AppContext.BaseDirectory, "wwwroot");
+            var root = WebRootResolver.Resolve(env);
             var uploads = Path.Combine(root, "uploads");
             if (!Directory.Exists(uploads))
             {
@@ -90,6 +80,56 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             }
 
             var state = LoadState(uploads);
+            var backedUp = await BackupNewFilesAsync(backupProvider, uploads, state);
+
+            if (backedUp > 0)
+            {
+                SaveState(uploads, state);
+                Logger.LogInformation("ImageBackupWorker: backed up {Count} new files via '{Provider}'.", backedUp, backupProvider.Name);
+            }
+        }
+
+        /// <summary>
+        /// Đọc tên provider backup từ cài đặt shop. Trả về null khi không đọc
+        /// được cài đặt (caller sẽ dừng worker lần này).
+        /// </summary>
+        private async Task<string?> ResolveProviderNameAsync(IServiceProvider provider)
+        {
+            try
+            {
+                var settings = provider.GetRequiredService<IShopSettingAppService>();
+                var dto = await settings.GetAsync();
+                return string.IsNullOrWhiteSpace(dto.ImageBackupProvider)
+                    ? NoneProviderName
+                    : dto.ImageBackupProvider.Trim();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "ImageBackupWorker: could not read shop settings.");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Tìm provider backup theo tên, fallback về provider "None" khi không khớp.
+        /// </summary>
+        private static IImageBackupProvider? ResolveBackupProvider(
+            IServiceProvider provider, string providerName)
+        {
+            var providers = provider.GetServices<IImageBackupProvider>();
+            return providers
+                .FirstOrDefault(x => string.Equals(x.Name, providerName, StringComparison.OrdinalIgnoreCase))
+                ?? providers.FirstOrDefault(x => string.Equals(x.Name, NoneProviderName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Backup các file chưa từng backup thành công. Trả về số file đã backup.
+        /// </summary>
+        private async Task<int> BackupNewFilesAsync(
+            IImageBackupProvider backupProvider,
+            string uploads,
+            HashSet<string> state)
+        {
             var backedUp = 0;
 
             foreach (var file in Directory.GetFiles(uploads, "*", SearchOption.AllDirectories))
@@ -119,11 +159,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 }
             }
 
-            if (backedUp > 0)
-            {
-                SaveState(uploads, state);
-                Logger.LogInformation("ImageBackupWorker: backed up {Count} new files via '{Provider}'.", backedUp, backupProvider.Name);
-            }
+            return backedUp;
         }
 
         private static HashSet<string> LoadState(string uploads)

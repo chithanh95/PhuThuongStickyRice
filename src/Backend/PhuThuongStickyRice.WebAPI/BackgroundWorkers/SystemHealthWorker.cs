@@ -17,6 +17,7 @@ using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using Volo.Abp.Threading;
+using PhuThuongStickyRice.WebAPI.Common;
 
 namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
 {
@@ -128,7 +129,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             try
             {
                 var env = provider.GetService<IWebHostEnvironment>();
-                var root = env?.WebRootPath ?? Path.Combine(AppContext.BaseDirectory, "wwwroot");
+                var root = WebRootResolver.Resolve(env);
                 var uploads = Path.Combine(root, "uploads");
                 Directory.CreateDirectory(uploads);
                 var drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(uploads)));
