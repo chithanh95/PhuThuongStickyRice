@@ -8,6 +8,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.EmailMessages.Services
 {
@@ -19,13 +20,15 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly ICircuitBreakerManager _circuitBreakerManager;
         private readonly IDistributedLock _distributedLock;
+        private readonly IAsyncQueryableExecuter _asyncExecuter;
 
         public EmailMessageService(ILogger<EmailMessageService> logger,
             IEmailMessageRepository repository,
             IEmailNotification emailNotification,
             IDateTimeProvider dateTimeProvider,
             ICircuitBreakerManager circuitBreakerManager,
-            IDistributedLock distributedLock)
+            IDistributedLock distributedLock,
+            IAsyncQueryableExecuter asyncExecuter)
         {
             _logger = logger;
             _repository = repository;
@@ -33,6 +36,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
             _dateTimeProvider = dateTimeProvider;
             _circuitBreakerManager = circuitBreakerManager;
             _distributedLock = distributedLock;
+            _asyncExecuter = asyncExecuter;
         }
 
         public async Task<int> SendEmailMessagesAsync()
@@ -57,12 +61,12 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
             var dateTime = _dateTimeProvider.OffsetNow;
             var defaultAttemptCount = 5;
 
-            var messages = _repository.GetAll()
-                .Where(x => x.SentDateTime == null)
-                .Where(x => x.ExpiredDateTime == null || x.ExpiredDateTime > dateTime)
-                .Where(x => (x.MaxAttemptCount == 0 && x.AttemptCount < defaultAttemptCount) || x.AttemptCount < x.MaxAttemptCount)
-                .Where(x => x.NextAttemptDateTime == null || x.NextAttemptDateTime <= dateTime)
-                .ToList();
+            var messages = await _asyncExecuter.ToListAsync(
+                _repository.GetAll()
+                    .Where(x => x.SentDateTime == null)
+                    .Where(x => x.ExpiredDateTime == null || x.ExpiredDateTime > dateTime)
+                    .Where(x => (x.MaxAttemptCount == 0 && x.AttemptCount < defaultAttemptCount) || x.AttemptCount < x.MaxAttemptCount)
+                    .Where(x => x.NextAttemptDateTime == null || x.NextAttemptDateTime <= dateTime));
 
             if (messages.Any())
             {

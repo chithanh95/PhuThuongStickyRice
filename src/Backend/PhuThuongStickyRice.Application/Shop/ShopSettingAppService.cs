@@ -45,6 +45,25 @@ namespace PhuThuongStickyRice.Application.Shop
         /// </summary>
         private const string EncryptedPrefix = "DPv1:";
 
+        // Fallback defaults applied when a setting is missing or invalid —
+        // the same values are used on write (UpdateAsync) and on read
+        // (MapToDto, for rows written before a column existed).
+        private const int DefaultEstimatedDeliveryMinutes = 45;
+        private const int DefaultBankTransferExpiryMinutes = 30;
+        private const int DefaultPointsPerVnd = 10000;
+        private const int DefaultPointsRedeemUnit = 100;
+        private const int DefaultUnconfirmedAlertMinutes = 15;
+        private const int DefaultErrorRateThreshold = 20;
+        private const int DefaultUploadsSizeWarningMb = 500;
+        private const int DefaultCheckInPoints = 5;
+        private const int DefaultNepPerPortionGrams = 150;
+        private const int MaxOrdersPerPhonePerDayLimit = 1000;
+        private const int MaxWebhookUrlLength = 1000;
+        private const string DefaultImageBackupProvider = "None";
+        private const string DefaultOpenTime = "06:00";
+        private const string DefaultCloseTime = "10:30";
+        private const string DefaultMaintenanceMessage = "Cửa hàng đang bảo trì, vui lòng quay lại sau.";
+
         private readonly IRepository<ShopSetting, Guid> _settings;
         private readonly IRepository<HolidaySchedule, Guid> _holidays;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -154,23 +173,23 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.DeliveryFee = Math.Max(0, dto.DeliveryFee);
             entity.FreeShipThreshold = Math.Max(0, dto.FreeShipThreshold);
             entity.MinOrderAmount = Math.Max(0, dto.MinOrderAmount);
-            entity.EstimatedDeliveryMinutes = dto.EstimatedDeliveryMinutes < 0 ? 45 : dto.EstimatedDeliveryMinutes;
-            entity.BankTransferExpiryMinutes = dto.BankTransferExpiryMinutes < 1 ? 30 : dto.BankTransferExpiryMinutes;
-            entity.PointsPerVnd = dto.PointsPerVnd <= 0 ? 10000 : dto.PointsPerVnd;
-            entity.PointsRedeemUnit = dto.PointsRedeemUnit < 1 ? 100 : dto.PointsRedeemUnit;
+            entity.EstimatedDeliveryMinutes = dto.EstimatedDeliveryMinutes < 0 ? DefaultEstimatedDeliveryMinutes : dto.EstimatedDeliveryMinutes;
+            entity.BankTransferExpiryMinutes = dto.BankTransferExpiryMinutes < 1 ? DefaultBankTransferExpiryMinutes : dto.BankTransferExpiryMinutes;
+            entity.PointsPerVnd = dto.PointsPerVnd <= 0 ? DefaultPointsPerVnd : dto.PointsPerVnd;
+            entity.PointsRedeemUnit = dto.PointsRedeemUnit < 1 ? DefaultPointsRedeemUnit : dto.PointsRedeemUnit;
             entity.PointsRedeemValue = Math.Max(0, dto.PointsRedeemValue);
             entity.ReferralBonusPoints = Math.Max(0, dto.ReferralBonusPoints);
             entity.DepositThreshold = Math.Max(0, dto.DepositThreshold);
-            entity.DepositPercent = Math.Min(100, Math.Max(0, dto.DepositPercent));
+            entity.DepositPercent = ClampPercent(dto.DepositPercent);
             entity.GiftFee = Math.Max(0, dto.GiftFee);
             entity.TierSilverMin = Math.Max(0, dto.TierSilverMin);
-            entity.TierSilverDiscount = Math.Min(100, Math.Max(0, dto.TierSilverDiscount));
+            entity.TierSilverDiscount = ClampPercent(dto.TierSilverDiscount);
             entity.TierGoldMin = Math.Max(0, dto.TierGoldMin);
-            entity.TierGoldDiscount = Math.Min(100, Math.Max(0, dto.TierGoldDiscount));
+            entity.TierGoldDiscount = ClampPercent(dto.TierGoldDiscount);
             entity.OwnerReportEmail = string.IsNullOrWhiteSpace(dto.OwnerReportEmail)
                 ? null
                 : dto.OwnerReportEmail.Trim();
-            entity.UnconfirmedAlertMinutes = dto.UnconfirmedAlertMinutes < 1 ? 15 : dto.UnconfirmedAlertMinutes;
+            entity.UnconfirmedAlertMinutes = dto.UnconfirmedAlertMinutes < 1 ? DefaultUnconfirmedAlertMinutes : dto.UnconfirmedAlertMinutes;
             entity.RecaptchaSiteKey = string.IsNullOrWhiteSpace(dto.RecaptchaSiteKey)
                 ? null
                 : dto.RecaptchaSiteKey.Trim();
@@ -180,15 +199,15 @@ namespace PhuThuongStickyRice.Application.Shop
                 : dto.WebBaseUrl.Trim().TrimEnd('/');
             entity.MaintenanceMode = dto.MaintenanceMode;
             entity.MaintenanceMessage = string.IsNullOrWhiteSpace(dto.MaintenanceMessage)
-                ? "Cửa hàng đang bảo trì, vui lòng quay lại sau."
+                ? DefaultMaintenanceMessage
                 : dto.MaintenanceMessage.Trim();
             entity.TelegramBotToken = ProtectSecret(dto.TelegramBotToken);
             entity.TelegramChatId = string.IsNullOrWhiteSpace(dto.TelegramChatId)
                 ? null
                 : dto.TelegramChatId.Trim();
             entity.HealthAlertsEnabled = dto.HealthAlertsEnabled;
-            entity.ErrorRateThreshold = dto.ErrorRateThreshold < 1 ? 20 : dto.ErrorRateThreshold;
-            entity.UploadsSizeWarningMb = dto.UploadsSizeWarningMb < 1 ? 500 : dto.UploadsSizeWarningMb;
+            entity.ErrorRateThreshold = dto.ErrorRateThreshold < 1 ? DefaultErrorRateThreshold : dto.ErrorRateThreshold;
+            entity.UploadsSizeWarningMb = dto.UploadsSizeWarningMb < 1 ? DefaultUploadsSizeWarningMb : dto.UploadsSizeWarningMb;
             entity.BankName = TrimOrNull(dto.BankName);
             entity.BankId = TrimOrNull(dto.BankId);
             entity.BankAccountNumber = TrimOrNull(dto.BankAccountNumber);
@@ -197,15 +216,15 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.MoMoPartnerCode = TrimOrNull(dto.MoMoPartnerCode);
             entity.MoMoEndpoint = TrimOrNull(dto.MoMoEndpoint);
             entity.ImageBackupProvider = string.IsNullOrWhiteSpace(dto.ImageBackupProvider)
-                ? "None"
+                ? DefaultImageBackupProvider
                 : dto.ImageBackupProvider.Trim();
             entity.ImageBackupSettingsJson = TrimOrNull(dto.ImageBackupSettingsJson);
-            entity.CheckInPoints = dto.CheckInPoints < 0 ? 5 : dto.CheckInPoints;
-            entity.NepPerPortionGrams = dto.NepPerPortionGrams < 1 ? 150 : dto.NepPerPortionGrams;
+            entity.CheckInPoints = dto.CheckInPoints < 0 ? DefaultCheckInPoints : dto.CheckInPoints;
+            entity.NepPerPortionGrams = dto.NepPerPortionGrams < 1 ? DefaultNepPerPortionGrams : dto.NepPerPortionGrams;
             entity.DailyTargetAmount = Math.Max(0, dto.DailyTargetAmount);
             // Wave 6a (item 22): normalized to "HH:mm"; admin config UI arrives in Wave 6b.
-            entity.OpenTime = NormalizeHour(dto.OpenTime, "06:00");
-            entity.CloseTime = NormalizeHour(dto.CloseTime, "10:30");
+            entity.OpenTime = NormalizeHour(dto.OpenTime, DefaultOpenTime);
+            entity.CloseTime = NormalizeHour(dto.CloseTime, DefaultCloseTime);
             // Wave 6b (items 27, 30): floating contact numbers + pause toggle.
             entity.Hotline = TrimOrNull(dto.Hotline);
             entity.ZaloPhone = TrimOrNull(dto.ZaloPhone);
@@ -222,7 +241,7 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.AcceptingOrders = dto.AcceptingOrders;
             entity.PausedReason = TrimOrNull(dto.PausedReason);
             // Wave 6d (item 39): 0 = unlimited, otherwise cap at 1000.
-            entity.MaxOrdersPerPhonePerDay = Math.Min(1000, Math.Max(0, dto.MaxOrdersPerPhonePerDay));
+            entity.MaxOrdersPerPhonePerDay = Math.Min(MaxOrdersPerPhonePerDayLimit, Math.Max(0, dto.MaxOrdersPerPhonePerDay));
             await _settings.UpdateAsync(entity, autoSave: true);
             _catalogCache.Invalidate();
 
@@ -252,7 +271,13 @@ namespace PhuThuongStickyRice.Application.Shop
                 return null;
             }
 
-            return trimmed.Length > 1000 ? trimmed.Substring(0, 1000) : trimmed;
+            return trimmed.Length > MaxWebhookUrlLength ? trimmed.Substring(0, MaxWebhookUrlLength) : trimmed;
+        }
+
+        /// <summary>Clamps a percentage setting to 0–100.</summary>
+        private static decimal ClampPercent(decimal value)
+        {
+            return Math.Min(100, Math.Max(0, value));
         }
 
         /// <summary>
@@ -399,9 +424,9 @@ namespace PhuThuongStickyRice.Application.Shop
                 FreeShipThreshold = entity.FreeShipThreshold,
                 MinOrderAmount = entity.MinOrderAmount,
                 EstimatedDeliveryMinutes = entity.EstimatedDeliveryMinutes,
-                BankTransferExpiryMinutes = entity.BankTransferExpiryMinutes < 1 ? 30 : entity.BankTransferExpiryMinutes,
-                PointsPerVnd = entity.PointsPerVnd <= 0 ? 10000 : entity.PointsPerVnd,
-                PointsRedeemUnit = entity.PointsRedeemUnit < 1 ? 100 : entity.PointsRedeemUnit,
+                BankTransferExpiryMinutes = entity.BankTransferExpiryMinutes < 1 ? DefaultBankTransferExpiryMinutes : entity.BankTransferExpiryMinutes,
+                PointsPerVnd = entity.PointsPerVnd <= 0 ? DefaultPointsPerVnd : entity.PointsPerVnd,
+                PointsRedeemUnit = entity.PointsRedeemUnit < 1 ? DefaultPointsRedeemUnit : entity.PointsRedeemUnit,
                 PointsRedeemValue = entity.PointsRedeemValue,
                 ReferralBonusPoints = entity.ReferralBonusPoints,
                 DepositThreshold = entity.DepositThreshold,
@@ -412,19 +437,19 @@ namespace PhuThuongStickyRice.Application.Shop
                 TierGoldMin = entity.TierGoldMin,
                 TierGoldDiscount = entity.TierGoldDiscount,
                 OwnerReportEmail = entity.OwnerReportEmail,
-                UnconfirmedAlertMinutes = entity.UnconfirmedAlertMinutes < 1 ? 15 : entity.UnconfirmedAlertMinutes,
+                UnconfirmedAlertMinutes = entity.UnconfirmedAlertMinutes < 1 ? DefaultUnconfirmedAlertMinutes : entity.UnconfirmedAlertMinutes,
                 RecaptchaSiteKey = entity.RecaptchaSiteKey,
                 RecaptchaSecretKey = UnprotectSecret(entity.RecaptchaSecretKey),
                 WebBaseUrl = entity.WebBaseUrl,
                 MaintenanceMode = entity.MaintenanceMode,
                 MaintenanceMessage = string.IsNullOrWhiteSpace(entity.MaintenanceMessage)
-                    ? "Cửa hàng đang bảo trì, vui lòng quay lại sau."
+                    ? DefaultMaintenanceMessage
                     : entity.MaintenanceMessage,
                 TelegramBotToken = UnprotectSecret(entity.TelegramBotToken),
                 TelegramChatId = entity.TelegramChatId,
                 HealthAlertsEnabled = entity.HealthAlertsEnabled,
-                ErrorRateThreshold = entity.ErrorRateThreshold < 1 ? 20 : entity.ErrorRateThreshold,
-                UploadsSizeWarningMb = entity.UploadsSizeWarningMb < 1 ? 500 : entity.UploadsSizeWarningMb,
+                ErrorRateThreshold = entity.ErrorRateThreshold < 1 ? DefaultErrorRateThreshold : entity.ErrorRateThreshold,
+                UploadsSizeWarningMb = entity.UploadsSizeWarningMb < 1 ? DefaultUploadsSizeWarningMb : entity.UploadsSizeWarningMb,
                 BankName = entity.BankName,
                 BankId = entity.BankId,
                 BankAccountNumber = entity.BankAccountNumber,
@@ -433,14 +458,14 @@ namespace PhuThuongStickyRice.Application.Shop
                 MoMoPartnerCode = entity.MoMoPartnerCode,
                 MoMoEndpoint = entity.MoMoEndpoint,
                 ImageBackupProvider = string.IsNullOrWhiteSpace(entity.ImageBackupProvider)
-                    ? "None"
+                    ? DefaultImageBackupProvider
                     : entity.ImageBackupProvider,
                 ImageBackupSettingsJson = entity.ImageBackupSettingsJson,
                 CheckInPoints = entity.CheckInPoints,
-                NepPerPortionGrams = entity.NepPerPortionGrams < 1 ? 150 : entity.NepPerPortionGrams,
+                NepPerPortionGrams = entity.NepPerPortionGrams < 1 ? DefaultNepPerPortionGrams : entity.NepPerPortionGrams,
                 DailyTargetAmount = entity.DailyTargetAmount,
-                OpenTime = NormalizeHour(entity.OpenTime, "06:00"),
-                CloseTime = NormalizeHour(entity.CloseTime, "10:30"),
+                OpenTime = NormalizeHour(entity.OpenTime, DefaultOpenTime),
+                CloseTime = NormalizeHour(entity.CloseTime, DefaultCloseTime),
                 // Wave 6b (items 27, 30). The migration backfills
                 // AcceptingOrders = true for pre-existing rows.
                 Hotline = entity.Hotline,

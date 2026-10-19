@@ -4,7 +4,7 @@
 @using PhuThuongStickyRice.Web.Components.Products.Models
 @using PhuThuongStickyRice.Web.Components.Products.Services
 @using PhuThuongStickyRice.Web.Components.Shop.Models
-@inject WeeklyPlanAdminService WeeklyPlanService
+@inject WeeklyPlanAdminService WeeklyPlanAdminService
 @inject ProductService ProductService
 
 @if (!string.IsNullOrEmpty(_error))
@@ -164,7 +164,7 @@
     {
         try
         {
-            _plans = await WeeklyPlanService.GetListAsync();
+            _plans = await WeeklyPlanAdminService.GetListAsync();
         }
         catch (Exception ex)
         {
@@ -185,7 +185,7 @@
                 ProductId = Guid.Parse(_selected[d.Code]),
             }).ToList();
 
-            var created = await WeeklyPlanService.CreateAsync(_weekStart, days);
+            var created = await WeeklyPlanAdminService.CreateAsync(_weekStart, days);
             _success = $"Đã tạo gói tuần {created.WeekStart:dd/MM/yyyy} — giá {created.Price:N0}đ.";
             foreach (var d in _days)
             {

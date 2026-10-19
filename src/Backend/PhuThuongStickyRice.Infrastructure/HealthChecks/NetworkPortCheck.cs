@@ -14,12 +14,12 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
 
             try
             {
-                TcpClient client = new TcpClient(host, port);
+                using var client = new TcpClient(host, port);
                 return client.Connected;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to connect to {address} :" + ex.Message);
+                Console.WriteLine($"Failed to connect to {address}: {ex.Message}");
                 return false;
             }
         }

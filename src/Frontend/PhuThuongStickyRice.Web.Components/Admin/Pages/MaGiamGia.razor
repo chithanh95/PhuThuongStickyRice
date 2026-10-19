@@ -373,9 +373,9 @@
         try
         {
             if (_editing == null)
-                await DiscountService.CreateAsync(_form);
+                await DiscountService.CreateDiscountCodeAsync(_form);
             else
-                await DiscountService.UpdateAsync(_editing.Id, _form);
+                await DiscountService.UpdateDiscountCodeAsync(_editing.Id, _form);
 
             _showForm = false;
             await LoadAsync();
@@ -402,7 +402,7 @@
             return;
         try
         {
-            await DiscountService.DeleteAsync(_deleting.Id);
+            await DiscountService.DeleteDiscountCodeAsync(_deleting.Id);
             DeleteDialog.Close();
             await LoadAsync();
         }

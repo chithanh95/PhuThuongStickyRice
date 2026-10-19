@@ -16,7 +16,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         {
         }
 
-        public async Task SaveAsync(SaveInventoryModel model)
+        public async Task SaveInventoryAsync(SaveInventoryModel model)
         {
             await PostAsync<object>("api/admin/inventory", model);
         }

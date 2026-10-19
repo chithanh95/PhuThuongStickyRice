@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -168,7 +169,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return template;
             }
 
-            var vnTime = DateTime.UtcNow.AddHours(7);
+            var vnTime = VietnamTime.ToVietnamTime(DateTime.UtcNow);
             return template
                 .Replace("{MaDon}", order.OrderNumber ?? string.Empty)
                 .Replace("{TenKhach}", order.CustomerName ?? string.Empty)

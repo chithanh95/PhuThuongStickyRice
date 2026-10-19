@@ -19,17 +19,17 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             return await GetAsync<List<DiscountCodeModel>>("api/discounts");
         }
 
-        public async Task<DiscountCodeModel> CreateAsync(DiscountCodeModel model)
+        public async Task<DiscountCodeModel> CreateDiscountCodeAsync(DiscountCodeModel model)
         {
             return await PostAsync<DiscountCodeModel>("api/discounts", model);
         }
 
-        public async Task<DiscountCodeModel> UpdateAsync(Guid id, DiscountCodeModel model)
+        public async Task<DiscountCodeModel> UpdateDiscountCodeAsync(Guid id, DiscountCodeModel model)
         {
             return await PutAsync<DiscountCodeModel>($"api/discounts/{id}", model);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public async Task DeleteDiscountCodeAsync(Guid id)
         {
             await DeleteAsync($"api/discounts/{id}");
         }
