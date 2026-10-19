@@ -375,26 +375,8 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             throw new InvalidOperationException("Máy chủ không trả về đường dẫn ảnh.");
         }
 
-        /// <summary>
-        /// Builds the absolute URL for an image returned by the upload endpoint.
-        /// The API serves uploads from its own wwwroot, so relative URLs like
-        /// /uploads/landing/xxx.jpg are resolved against the API base address.
-        /// </summary>
-        public string ResolveImageUrl(string url)
-        {
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                return null;
-            }
-
-            if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            {
-                return url;
-            }
-
-            var baseUrl = _httpClient.BaseAddress?.ToString().TrimEnd('/');
-            var path = url.StartsWith('/') ? url : "/" + url;
-            return string.IsNullOrEmpty(baseUrl) ? path : baseUrl + path;
-        }
+        // NOTE (codequality-team 2026-10-20): ResolveImageUrl đã gom về
+        // ApiClientBase để dùng chung với AdminCommerceService — xóa bản
+        // copy tại đây, behavior giữ nguyên (kế thừa từ lớp cơ sở).
     }
 }

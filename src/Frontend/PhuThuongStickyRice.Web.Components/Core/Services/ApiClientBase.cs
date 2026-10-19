@@ -32,6 +32,40 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         }
 
         /// <summary>
+        /// API base address đã cắt dấu "/" cuối (vd "https://api...").
+        /// Dùng chung khi dựng URL tuyệt đối (xuất Excel, ảnh upload, mã QR)
+        /// để không lặp lại biểu thức TrimEnd('/') ở từng service.
+        /// </summary>
+        protected string ApiBaseAddress =>
+            _httpClient.BaseAddress?.ToString()?.TrimEnd('/');
+
+        /// <summary>
+        /// Dựng URL tuyệt đối cho ảnh do endpoint upload trả về. API phục vụ
+        /// upload từ chính wwwroot của nó nên đường dẫn tương đối như
+        /// /uploads/landing/xxx.jpg được resolve theo base address của API.
+        /// URL đã tuyệt đối (http...) được giữ nguyên; rỗng/trắng trả null.
+        /// Gom về đây từ LandingService/AdminCommerceService để không copy
+        /// cùng 1 method ở 2 service (codequality-team 2026-10-20).
+        /// </summary>
+        /// <param name="url">Đường dẫn ảnh (tương đối hoặc tuyệt đối).</param>
+        /// <returns>URL tuyệt đối, hoặc null khi đầu vào rỗng.</returns>
+        public string ResolveImageUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return null;
+            }
+
+            if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                return url;
+            }
+
+            var path = url.StartsWith('/') ? url : "/" + url;
+            return string.IsNullOrEmpty(ApiBaseAddress) ? path : ApiBaseAddress + path;
+        }
+
+        /// <summary>
         /// 401 → session hết hạn: về trang đăng nhập.
         /// </summary>
         protected void HandleUnauthorized(HttpResponseMessage response)

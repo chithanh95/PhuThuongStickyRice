@@ -391,26 +391,9 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         // ---- Dashboard widgets (items 122/124/133/139) ----
 
-        /// <summary>
-        /// Builds an absolute URL for an /uploads/... path using the API
-        /// base address (same pattern as LandingService.ResolveImageUrl).
-        /// </summary>
-        public string ResolveImageUrl(string url)
-        {
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                return null;
-            }
-
-            if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            {
-                return url;
-            }
-
-            var baseUrl = _httpClient.BaseAddress?.ToString().TrimEnd('/');
-            var path = url.StartsWith('/') ? url : "/" + url;
-            return string.IsNullOrEmpty(baseUrl) ? path : baseUrl + path;
-        }
+        // NOTE (codequality-team 2026-10-20): ResolveImageUrl đã gom về
+        // ApiClientBase để dùng chung với LandingService — xóa bản copy
+        // tại đây, behavior giữ nguyên (kế thừa từ lớp cơ sở).
 
         /// <summary>Admin: mục tiêu doanh thu ngày hôm nay (widget dashboard).</summary>
         public async Task<DailyTargetModel> GetDailyTargetAsync()
