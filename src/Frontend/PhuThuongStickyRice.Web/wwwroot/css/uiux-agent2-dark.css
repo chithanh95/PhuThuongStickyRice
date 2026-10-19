@@ -1585,3 +1585,121 @@ html.dark .cal-sched-title {
 }
 
 /* ===== END UIUX 21:35 — Agent 2 ===== */
+
+/* ===== UIUX 22:05 A2 =====
+   Phương pháp: quét property-level toàn bộ .razor.css + <style> + inline
+   (pass 1: 13 ứng viên) + pass 2 box-shadow/fill/caret (0) + đối chiếu
+   specificity light-vs-dark cho mọi rule :hover/:focus (200 cặp) rồi verify
+   thủ công từng cặp thật. Bề mặt dark đã bão hòa sau ~20 đợt — 4 fix dưới
+   đều là lỗi THẬT mới: 2 instance mới của họ "rule light thắng rule dark
+   vì specificity" (từng gặp ở run 16:20) và 1 họ bug chưa ai đụng tới
+   (hàng contextual Bootstrap sáng lọt). */
+
+/* ---------- FIX 1 — /goi-tra-truoc: nút outline "Mua gói" hover chớp trắng ở dark ----------
+   Vấn đề: Agent 4 (uiux-agent4-a11y.css:518) thêm
+   `.pt-bigbtn.pt-bigbtn.pt-outline:hover { background: #f4f2fd }` (0,4,0)
+   để polish hover ở light mode. Specificity này THẮNG rule dark
+   `html.dark .pt-bigbtn.pt-outline` (PrepaidCardTab.razor.css:308, (0,3,1),
+   background: transparent) → ở dark mode, di chuột lên nút outline "Mua gói"
+   (tab Thẻ xôi) là nút chớp nền gần trắng #f4f2fd giữa card tối #1e1e26.
+   Đã grep: không có rule html.dark :hover nào cho bản outline (Agent 4 chỉ
+   thêm dark variant cho bản solid).
+   Fix: hover dark → tint tím mờ rgba(122,111,190,.18), đúng convention
+   hover-dark đã duyệt (.dropdown-item admin-lexa.css:1317, .sg-share-btn
+   a11y:387). Specificity (0,5,1) thắng (0,4,0). Chữ #cfc4ff giữ nguyên. */
+html.dark .pt-bigbtn.pt-bigbtn.pt-outline:hover {
+    background: rgba(122, 111, 190, .18); /* was #f4f2fd chớp trắng khi hover */
+}
+
+/* ---------- FIX 2 — /goi-tra-truoc: thẻ chọn gói nạp hover trắng lọt ở dark ----------
+   Vấn đề: Agent 4 (uiux-agent4-a11y.css:527)
+   `.pt-package.pt-package:hover:not(.active) { background: #faf9fe;
+   border-color: #b9b3d9 }` (0,5,0) thắng rule dark
+   `html.dark .pt-package` (PrepaidCardTab.razor.css:268, (0,2,1),
+   background: #2a2a32) → ở dark mode, di chuột lên thẻ gói chưa chọn là
+   cả thẻ chớp nền gần trắng #faf9fe.
+   Fix: hover dark đồng bộ trạng thái .active ở dark (#35324a/#8f86d6,
+   PrepaidCardTab.razor.css:273-275) — người dùng đọc hover = "sắp chọn".
+   Specificity (0,5,1) thắng (0,5,0). */
+html.dark .pt-package.pt-package:hover:not(.active) {
+    background: #35324a; /* was #faf9fe chớp trắng */
+    border-color: #8f86d6; /* was #b9b3d9 */
+}
+
+/* ---------- FIX 3 — /track-order: icon dropzone upload ảnh mờ đi khi hover ở dark ----------
+   Vấn đề: app.css:379 `.shop-dropzone:hover .shop-dropzone-icon
+   { color: #7a6fbe }` (0,3,0) thắng `html.dark .shop-dropzone-icon
+   { color: #8a87a3 }` (app.css:483, (0,2,1)) → ở dark mode, hover khung
+   upload ảnh đánh giá (nền hover #262640) icon cloud rơi từ #8a87a3
+   (~4.6:1) xuống #7a6fbe (~2.9:1 — dưới ngưỡng 3:1 cho icon).
+   Fix: hover dark giữ icon sáng nhẹ #a5a2bd (~5.9:1 trên #262640), cùng
+   tone .lx-dropzone-icon dark đã duyệt (file này, run 13:25).
+   Specificity (0,3,1) thắng (0,3,0). */
+html.dark .shop-dropzone:hover .shop-dropzone-icon {
+    color: #a5a2bd; /* was #7a6fbe khi hover — ~2.9:1 → ~5.9:1 */
+}
+
+/* ---------- FIX 4 — Hàng bảng contextual Bootstrap (success/primary/warning/info/danger) sáng lọt ở dark ----------
+   Vấn đề: Bootstrap v4.3.1 tô hàng contextual bằng màu SÁNG cứng, ví dụ
+   `.table-success>td { background:#c3e6cb; border-color:#8fd19e }`, và
+   KHÔNG có rule html.dark nào phủ cả 5 biến thể (đã grep toàn frontend
+   = 0 kết quả — các pass quét trước chỉ bắt được màu trong pattern hẹp
+   nên sót). 4 chỗ đang dùng:
+   - /admin/don-hang OrderList.razor:166 — hàng đơn chính khi gộp đơn (table-success);
+   - /admin/don-hang OrderList.razor:220 — hàng đang chọn (table-primary), bảng dùng hàng ngày;
+   - /checkout Checkout.razor:670 — hàng "Bạn tiết kiệm được" (table-success);
+   - /admin/lich-nghi LichNghi.razor:95 — hàng hôm nay (table-warning).
+   Ở dark mode mỗi hàng là một dải sáng chói chạy ngang bảng tối.
+   Fix: nền tint bán trong suốt giữ đúng semantic màu (người dùng vẫn nhận
+   biết ý nghĩa), viền đồng bộ; chữ trong ô kế thừa màu chữ bảng dark
+   (.text-success đã có #5dd39e ở dark — ShopLayout.razor.css:428).
+   Hover đậm hơn 1 nấc. Specificity: (0,2,2) thắng Bootstrap (0,1,1);
+   hover (0,4,2) thắng Bootstrap `.table-hover .table-success:hover>td` (0,3,1).
+   An toàn: trang in + demo /admin/lexa không dùng class này (đã grep). */
+html.dark .table-success > td,
+html.dark .table-success > th {
+    background-color: rgba(52, 195, 143, .16); /* was #c3e6cb */
+    border-color: rgba(52, 195, 143, .35); /* was #8fd19e */
+}
+html.dark .table-primary > td,
+html.dark .table-primary > th {
+    background-color: rgba(122, 111, 190, .16); /* was #b8daff */
+    border-color: rgba(122, 111, 190, .35); /* was #9fcdff */
+}
+html.dark .table-warning > td,
+html.dark .table-warning > th {
+    background-color: rgba(241, 180, 76, .16); /* was #ffeeba */
+    border-color: rgba(241, 180, 76, .35); /* was #ffdf7e */
+}
+html.dark .table-info > td,
+html.dark .table-info > th {
+    background-color: rgba(80, 165, 241, .16); /* was #bee5eb */
+    border-color: rgba(80, 165, 241, .35); /* was #86cfda */
+}
+html.dark .table-danger > td,
+html.dark .table-danger > th {
+    background-color: rgba(244, 106, 106, .16); /* was #f5c6cb */
+    border-color: rgba(244, 106, 106, .35); /* was #ed969e */
+}
+html.dark .table-hover .table-success:hover > td,
+html.dark .table-hover .table-success:hover > th {
+    background-color: rgba(52, 195, 143, .24); /* was #b1dfbb */
+}
+html.dark .table-hover .table-primary:hover > td,
+html.dark .table-hover .table-primary:hover > th {
+    background-color: rgba(122, 111, 190, .24); /* was #9fcdff */
+}
+html.dark .table-hover .table-warning:hover > td,
+html.dark .table-hover .table-warning:hover > th {
+    background-color: rgba(241, 180, 76, .24); /* was #ffe8a1 */
+}
+html.dark .table-hover .table-info:hover > td,
+html.dark .table-hover .table-info:hover > th {
+    background-color: rgba(80, 165, 241, .24); /* was #abdde5 */
+}
+html.dark .table-hover .table-danger:hover > td,
+html.dark .table-hover .table-danger:hover > th {
+    background-color: rgba(244, 106, 106, .24); /* was #f1b0b7 */
+}
+
+/* ===== END UIUX 22:05 A2 ===== */
