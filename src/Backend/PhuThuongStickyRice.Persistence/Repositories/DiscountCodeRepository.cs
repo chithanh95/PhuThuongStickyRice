@@ -45,5 +45,24 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                     cancellationToken);
             return affected > 0;
         }
+
+        /// <summary>
+        /// Giảm UsedCount đi 1 nguyên tử bằng ExecuteUpdateAsync (1 câu
+        /// UPDATE ... SET UsedCount = UsedCount - 1 WHERE Code = ... AND
+        /// UsedCount &gt; 0) — không bao giờ về âm. Chạy trong DbContext/UoW
+        /// hiện tại nên tham gia cùng transaction với nghiệp vụ hủy đơn.
+        /// Không tự bật lại IsActive (xem interface).
+        /// </summary>
+        public async Task<bool> TryDecrementUsageAsync(
+            string normalizedCode, CancellationToken cancellationToken = default)
+        {
+            var dbContext = await GetDbContextAsync();
+            var affected = await dbContext.Set<DiscountCode>()
+                .Where(x => x.Code == normalizedCode && x.UsedCount > 0)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.UsedCount, x => x.UsedCount - 1),
+                    cancellationToken);
+            return affected > 0;
+        }
     }
 }

@@ -1760,6 +1760,13 @@
     private async Task SubmitReview()
     {
         _reviewError = null;
+        // bug-hunt 2026-10-19: guard cứng chống bấm trùng — nút chỉ
+        // disabled="@_submittingReview" sau re-render, double-click gửi 2
+        // review song song (có thể nhận 2 mã thưởng đánh giá cho 1 đơn).
+        if (_submittingReview)
+        {
+            return;
+        }
         if (_rating < 1)
         {
             _reviewError = "Vui lòng chọn số sao đánh giá.";

@@ -113,6 +113,14 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task IncrementUsageAsync(string code);
 
         /// <summary>
+        /// Hoàn lại lượt dùng của mã khi đơn hàng bị hủy (không throw khi mã
+        /// trống hoặc không tồn tại — hủy đơn phải luôn thành công). Đơn đã
+        /// hủy không còn tiêu thụ lượt, nên mã dùng 1 lần (quà tân thủ, quay
+        /// số, sinh nhật...) trả về cho khách dùng lại.
+        /// </summary>
+        Task RefundUsageAsync(string? code);
+
+        /// <summary>
         /// Public: kiểm tra 1 mã với tổng giỏ hàng cho 1 SĐT cụ thể.
         /// </summary>
         Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string? customerPhone);
@@ -491,6 +499,23 @@ namespace PhuThuongStickyRice.Application.Discounts
                 throw new Domain.Exceptions.DomainException(
                     "Mã giảm giá vừa được sử dụng hết. Vui lòng thử lại mà không dùng mã này.");
             }
+        }
+
+        /// <summary>
+        /// Hoàn lại lượt dùng khi đơn bị hủy: giảm UsedCount nguyên tử tại
+        /// DB, clamp không về âm. Không throw khi mã trống hoặc không còn
+        /// tồn tại (đơn đã hủy phải thành công) — mã lưu trên Order là text
+        /// tự do, admin có thể đã xóa mã sau khi đơn tạo.
+        /// </summary>
+        public virtual async Task RefundUsageAsync(string? code)
+        {
+            var normalized = code?.Trim().ToUpperInvariant();
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return;
+            }
+
+            await _discounts.TryDecrementUsageAsync(normalized);
         }
 
         /// <summary>

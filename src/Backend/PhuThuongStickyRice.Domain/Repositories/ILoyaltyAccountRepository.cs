@@ -38,6 +38,20 @@ namespace PhuThuongStickyRice.Domain.Repositories
             string phone, int points, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Hoàn điểm loyalty một cách nguyên tử: UPDATE ... SET Points =
+        /// Points + points WHERE Phone = phone — KHÔNG cộng TotalEarned.
+        /// TotalEarned là lịch sử "đã kiếm", chỉ tăng khi khách thật sự kiếm
+        /// điểm (mua hàng, điểm danh, giới thiệu...); hoàn điểm khi hủy đơn
+        /// là trả lại số dư chứ không phải kiếm mới. Dùng cho refund, không
+        /// dùng cho earn.
+        /// </summary>
+        /// <param name="phone">SĐT đã chuẩn hóa (khớp cột Phone).</param>
+        /// <param name="points">Số điểm cần hoàn (phải &gt; 0).</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        Task<bool> TryRefundPointsAsync(
+            string phone, int points, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Cộng điểm + tổng chi tiêu một cách nguyên tử: UPDATE ... SET
         /// Points = Points + points, TotalEarned = TotalEarned + points,
         /// TotalSpent = TotalSpent + spentAmount WHERE Phone = phone. Trả về

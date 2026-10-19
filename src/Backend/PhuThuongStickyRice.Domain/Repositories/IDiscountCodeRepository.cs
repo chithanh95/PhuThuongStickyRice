@@ -22,5 +22,18 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// <param name="cancellationToken">Token hủy.</param>
         Task<bool> TryIncrementUsageAsync(
             string normalizedCode, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Giảm <see cref="DiscountCode.UsedCount"/> đi 1 một cách nguyên tử,
+        /// không bao giờ cho về âm: UPDATE ... WHERE Code = ... AND UsedCount
+        /// &gt; 0. Dùng khi đơn hàng bị hủy — hoàn lại lượt dùng mã đã đốt lúc
+        /// tạo đơn. Không tự bật lại IsActive: mã có thể bị admin tắt tay sau
+        /// khi tự tạm dừng ở trần MaxUses (item 252), admin xem ở trung tâm
+        /// thông báo và tự quyết định bật lại.
+        /// </summary>
+        /// <param name="normalizedCode">Mã đã chuẩn hóa (in hoa, trim).</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        Task<bool> TryDecrementUsageAsync(
+            string normalizedCode, CancellationToken cancellationToken = default);
     }
 }

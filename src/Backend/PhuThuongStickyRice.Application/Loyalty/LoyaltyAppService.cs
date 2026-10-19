@@ -644,9 +644,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
         /// <summary>
         /// Internal: hoàn lại điểm đã đổi khi đơn bị hủy — khách không mất
-        /// điểm oan vì đơn không thành. Điểm hoàn cộng lại cả Points và
-        /// TotalEarned. Đơn không có đổi điểm hoặc tài khoản không còn thì bỏ qua.
-        /// Cộng điểm nguyên tử tại DB (TryIncrementPointsAsync): 2 lần hủy
+        /// điểm oan vì đơn không thành. Điểm hoàn chỉ cộng lại Points, KHÔNG
+        /// cộng TotalEarned (hoàn là trả số dư, không phải kiếm mới). Đơn
+        /// không có đổi điểm hoặc tài khoản không còn thì bỏ qua.
+        /// Cộng điểm nguyên tử tại DB (TryRefundPointsAsync): 2 lần hủy
         /// đơn đồng thời cùng SĐT không thể cùng đọc số dư cũ rồi ghi đè làm
         /// mất phần cộng của nhau (race read-modify-write của bản cũ
         /// account.Points += ... rồi UpdateAsync).
@@ -655,20 +656,22 @@ namespace PhuThuongStickyRice.Application.Loyalty
         public virtual async Task RefundRedeemedPointsAsync(Order order)
         {
             // Hoàn điểm đổi khi đơn bị hủy — khách không mất điểm oan vì đơn
-            // không thành; điểm hoàn cộng lại vào cả Points và TotalEarned.
+            // không thành. Hoàn điểm chỉ cộng lại Points, KHÔNG cộng
+            // TotalEarned (lịch sử "đã kiếm") — hoàn là trả số dư, không phải
+            // kiếm mới.
             if (order.LoyaltyPointsRedeemed <= 0)
             {
                 return;
             }
 
-            await _accounts.TryIncrementPointsAsync(
+            await _accounts.TryRefundPointsAsync(
                 NormalizePhone(order.CustomerPhone), order.LoyaltyPointsRedeemed);
         }
 
         /// <summary>
         /// Hoàn điểm đổi cho nhiều đơn bị hủy cùng lúc. Gom delta theo từng
-        /// SĐT distinct rồi cộng bằng <see cref="Domain.Repositories.ILoyaltyAccountRepository.TryIncrementPointsAsync"/>
-        /// (UPDATE nguyên tử) — chống race read-modify-write: worker tự hủy
+        /// SĐT distinct rồi cộng bằng <see cref="Domain.Repositories.ILoyaltyAccountRepository.TryRefundPointsAsync"/>
+        /// (UPDATE nguyên tử, chỉ cộng Points không phình TotalEarned) — chống race read-modify-write: worker tự hủy
         /// đơn quá hạn chạy đồng thời với nhân viên hủy tay cùng đơn/SĐT sẽ
         /// không còn đọc số dư cũ rồi ghi đè làm mất phần cộng của nhau.
         /// Tài khoản không tồn tại thì bỏ qua (giống hành vi cũ).
@@ -699,7 +702,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
             foreach (var (phone, points) in increments)
             {
-                await _accounts.TryIncrementPointsAsync(phone, points);
+                // Hoàn theo batch cũng chỉ cộng Points, không phình TotalEarned.
+                await _accounts.TryRefundPointsAsync(phone, points);
             }
         }
 

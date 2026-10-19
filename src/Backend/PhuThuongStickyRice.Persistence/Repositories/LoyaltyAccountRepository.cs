@@ -61,6 +61,24 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         }
 
         /// <summary>
+        /// Hoàn điểm nguyên tử: chỉ cộng Points, không cộng TotalEarned —
+        /// hoàn điểm hủy đơn là trả lại số dư, không phải kiếm mới (xem
+        /// interface). Chạy trong UoW hiện tại nên tham gia cùng transaction.
+        /// </summary>
+        public async Task<bool> TryRefundPointsAsync(
+            string phone, int points, CancellationToken cancellationToken = default)
+        {
+            var dbContext = await GetDbContextAsync();
+            var affected = await dbContext.Set<LoyaltyAccount>()
+                .Where(x => x.Phone == phone)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Points, x => x.Points + points)
+                    .SetProperty(x => x.UpdatedAt, DateTime.UtcNow),
+                    cancellationToken);
+            return affected > 0;
+        }
+
+        /// <summary>
         /// Cộng điểm + tổng chi tiêu nguyên tử bằng ExecuteUpdateAsync (1 câu
         /// UPDATE ... SET Points = Points + points, TotalEarned = TotalEarned
         /// + points, TotalSpent = TotalSpent + spentAmount WHERE Phone =

@@ -1438,6 +1438,11 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             await _loyalty.RefundRedeemedPointsAsync(order);
 
+            // bug-hunt 2026-10-19: đơn hủy phải hoàn lại lượt dùng mã giảm
+            // giá — UsedCount chỉ tăng lúc tạo đơn mà không có chỗ nào giảm,
+            // nên đơn hủy vẫn đốt lượt mã dùng 1 lần của khách.
+            await _discounts.RefundUsageAsync(order.DiscountCode);
+
             if (order.PaymentMethod == PaymentMethod.Wallet
                 && order.PaymentStatus == PaymentStatus.Paid)
             {
@@ -1859,6 +1864,10 @@ namespace PhuThuongStickyRice.Application.Orders
 
             await _orders.UpdateAsync(order);
             await _loyalty.RefundRedeemedPointsAsync(order);
+
+            // bug-hunt 2026-10-19: khách tự hủy cũng hoàn lượt mã (như luồng
+            // admin hủy ở HandleOrderCancelledAsync).
+            await _discounts.RefundUsageAsync(order.DiscountCode);
 
             // Wave 6c (item 34): audit the customer cancel.
             await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled);
@@ -2462,6 +2471,14 @@ namespace PhuThuongStickyRice.Application.Orders
             // + 1 commit) thay vì 2 roundtrip cho mỗi đơn có đổi điểm.
             await _loyalty.RefundRedeemedPointsBatchAsync(cancelledThisRun);
 
+            // bug-hunt 2026-10-19: worker tự hủy cũng hoàn lượt mã giảm giá
+            // cho từng đơn nó thắng (cùng cancelledThisRun — đơn bị hủy tay
+            // giữa chừng đã được luồng kia hoàn).
+            foreach (var cancelled in cancelledThisRun)
+            {
+                await _discounts.RefundUsageAsync(cancelled.DiscountCode);
+            }
+
             return cancelledThisRun.Count;
         }
 
@@ -2964,6 +2981,10 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 await _wallets.RefundAsync(other.CustomerPhone, other.TotalAmount.Amount, other.OrderNumber);
             }
+
+            // bug-hunt 2026-10-19: đơn phụ bị hủy khi gộp cũng hoàn lượt mã
+            // giảm giá của nó (đơn chính giữ mã của chính nó).
+            await _discounts.RefundUsageAsync(other.DiscountCode);
         }
 
         private static void EnsureMergeable(Order order)
