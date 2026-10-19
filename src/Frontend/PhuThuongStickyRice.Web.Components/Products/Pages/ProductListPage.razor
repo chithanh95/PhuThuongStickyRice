@@ -22,7 +22,7 @@
                 @if (HasPermission("products.edit"))
                 {
                     <button class="btn btn-primary" @onclick="QuickAddProduct">
-                        <i class="fas fa-plus mr-1"></i>Thêm sản phẩm
+                        <i class="fa-solid fa-plus mr-1"></i>Thêm sản phẩm
                     </button>
                 }
             </div>
@@ -31,7 +31,7 @@
             <div class="col-md-4 col-sm-6">
                 <div class="input-group">
                     <div class="input-group-prepend">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <span class="input-group-text"><i class="fa-solid fa-search"></i></span>
                     </div>
                     <input type="text" class="form-control" placeholder="Tìm tên, mã món..."
                            value="@SearchText" @oninput="OnSearchChanged" />
@@ -108,11 +108,11 @@
                                     }
                                     @if (HasPermission("products.edit"))
                                     {
-                                        <button @onclick="(() => EditProduct(product))" class="btn btn-sm lx-btn-icon btn-primary" title="Sửa"><i class="fas fa-pen"></i></button>
+                                        <button @onclick="(() => EditProduct(product))" class="btn btn-sm lx-btn-icon btn-primary" title="Sửa"><i class="fa-solid fa-pen"></i></button>
                                     }
                                     @if (HasPermission("products.delete"))
                                     {
-                                        <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm lx-btn-icon btn-danger" title="Xóa"><i class="fas fa-trash"></i></button>
+                                        <button @onclick="(() => DeleteProduct(product))" class="btn btn-sm lx-btn-icon btn-danger" title="Xóa"><i class="fa-solid fa-trash"></i></button>
                                     }
                                 </td>
                             </tr>

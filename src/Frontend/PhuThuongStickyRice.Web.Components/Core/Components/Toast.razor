@@ -7,7 +7,7 @@
     {
         <div class="toast show mb-2" @key="toast.Id" role="status">
             <div class="d-flex align-items-center">
-                <i class="fas fa-circle-check mr-2" aria-hidden="true"></i>
+                <i class="fa-solid fa-circle-check mr-2" aria-hidden="true"></i>
                 <div class="mr-3">
                     @toast.Message
                     @if (!string.IsNullOrWhiteSpace(toast.LinkText) && !string.IsNullOrWhiteSpace(toast.LinkUrl))

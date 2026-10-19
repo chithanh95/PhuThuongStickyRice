@@ -20,7 +20,7 @@
 /* Còn <= 10 phút: cảnh báo vàng. */
 .ocb-banner.warn {
     color: #7a5c00;
-    background: #fff3cd;
+    background: #fdf6e8; /* UIUX-1019 A3: nền vàng nhạt tông Lexa warning (trước #fff3cd Bootstrap) */
     border-color: #f1b44c;
 }
 
