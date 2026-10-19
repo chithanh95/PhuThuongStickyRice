@@ -1,4 +1,4 @@
-// codequality-team 2026-10-20 run-0245 Agent2-CleanCode
+﻿// codequality-team 2026-10-20 run-0245 Agent2-CleanCode
 #nullable enable annotations
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Orders.Email;
@@ -259,6 +259,8 @@ namespace PhuThuongStickyRice.Application.Orders
         private const string RolesAdminKitchen = "Admin,Kitchen";
         /// <summary>Key của segment "trượt" (không trúng giải) trong vòng quay may mắn.</summary>
         private const string MissSegmentKey = "Miss";
+        /// <summary>Tiền tố của segment giải % trong vòng quay ("Percent5", "Percent10", ...).</summary>
+        private const string SpinPercentSegmentPrefix = "Percent";
         /// <summary>Phần trăm giảm giá của voucher đơn đầu tiên.</summary>
         private const int FirstOrderVoucherDiscountPercent = 10;
         /// <summary>Voucher đơn đầu tiên có hiệu lực 30 ngày kể từ ngày tạo.</summary>
@@ -460,20 +462,12 @@ namespace PhuThuongStickyRice.Application.Orders
             var shopSetting = await _shopSettings.GetPublicAsync();
             EnsureAcceptingOrders(shopSetting);
 
-            // Item 97: idempotency — the same key retried within 24h returns
-            // the existing order instead of creating a duplicate.
-            var idempotencyKey = string.IsNullOrWhiteSpace(input.IdempotencyKey)
-                ? null
-                : input.IdempotencyKey.Trim();
-            if (idempotencyKey != null)
+            // Item 97: chống trùng đơn (idempotency) — cùng key gửi lại trong 24h
+            // thì trả về đơn cũ thay vì tạo đơn mới (tránh bấm nút đặt 2 lần ra 2 đơn).
+            var (idempotencyKey, duplicateOrder) = await TryResolveDuplicateOrderAsync(input);
+            if (duplicateOrder != null)
             {
-                var duplicate = await FindByIdempotencyKeyAsync(idempotencyKey);
-                if (duplicate != null)
-                {
-                    var duplicateDto = _objectMapper.Map<Order, OrderDto>(duplicate);
-                    await FillShipperNamesAsync(new[] { duplicateDto });
-                    return duplicateDto;
-                }
+                return duplicateOrder;
             }
 
             await EnsureCheckoutGuardsAsync(input, shopSetting, skipRecaptchaCheck);
@@ -1357,6 +1351,19 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
+        /// Map đơn sang DTO rồi điền tên shipper — gộp 2 bước lặp lại ở mọi
+        /// chỗ trả đơn về (map + điền tên shipper) thành một helper duy nhất.
+        /// </summary>
+        /// <param name="order">Entity đơn hàng cần map.</param>
+        /// <returns>DTO đơn hàng đã có tên shipper.</returns>
+        private async Task<OrderDto> MapOrderDtoWithShipperNamesAsync(Order order)
+        {
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            await FillShipperNamesAsync(new[] { dto });
+            return dto;
+        }
+
+        /// <summary>
         /// Item 82: fills <see cref="OrderDto.ShipperName"/> for orders with an
         /// assigned shipper (single lookup, no N+1).
         /// </summary>
@@ -1395,8 +1402,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<OrderDto> GetAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
-            await FillShipperNamesAsync(new[] { dto });
+            var dto = await MapOrderDtoWithShipperNamesAsync(order);
             await FillCustomerTagsAsync(new[] { dto });
             return dto;
         }
@@ -1462,18 +1468,12 @@ namespace PhuThuongStickyRice.Application.Orders
             await _activityLogger.LogAsync(statusAction,
                 $"Đơn {order.OrderNumber}: {fromStatus} → {order.Status}.");
 
-            if (status == OrderStatus.Completed)
-            {
-                await HandleOrderCompletedAsync(order);
-            }
+            // Side effect theo trạng thái đích: Completed thì cộng điểm loyalty
+            // + thưởng giới thiệu + chạy quy tắc thưởng tự động; Cancelled thì
+            // hoàn điểm đã đổi và hoàn tiền ví về cho khách.
+            await ApplyStatusSideEffectsAsync(order, status);
 
-            if (status == OrderStatus.Cancelled)
-            {
-                await HandleOrderCancelledAsync(order);
-            }
-
-            var updatedDto = _objectMapper.Map<Order, OrderDto>(order);
-            await FillShipperNamesAsync(new[] { updatedDto });
+            var updatedDto = await MapOrderDtoWithShipperNamesAsync(order);
 
             // Item 110: fire the OrderStatusChanged webhook (fire-and-log).
             await FireWebhookSafelyAsync(WebhookEndpoint.EventOrderStatusChanged, new
@@ -1493,6 +1493,27 @@ namespace PhuThuongStickyRice.Application.Orders
             status == OrderStatus.Cancelled ? StaffActivityActions.OrderCancel
             : status == OrderStatus.Confirmed ? StaffActivityActions.OrderConfirm
             : StaffActivityActions.OrderStatusChange;
+
+        /// <summary>
+        /// Chạy side effect theo trạng thái đích của đơn — tách khỏi
+        /// <c>UpdateStatusAsync</c> để method chính chỉ còn pipeline chuyển
+        /// trạng thái. Completed: cộng điểm loyalty + thưởng giới thiệu +
+        /// quy tắc thưởng tự động. Cancelled: hoàn điểm đã đổi + hoàn tiền ví.
+        /// </summary>
+        /// <param name="order">Đơn hàng vừa chuyển trạng thái (đã lưu DB).</param>
+        /// <param name="status">Trạng thái đích vừa chuyển tới.</param>
+        private async Task ApplyStatusSideEffectsAsync(Order order, OrderStatus status)
+        {
+            if (status == OrderStatus.Completed)
+            {
+                await HandleOrderCompletedAsync(order);
+            }
+
+            if (status == OrderStatus.Cancelled)
+            {
+                await HandleOrderCancelledAsync(order);
+            }
+        }
 
         /// <summary>
         /// Side effect khi đơn hoàn thành: cộng điểm loyalty + thưởng giới
@@ -1625,8 +1646,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             await _orders.UpdateAsync(order);
 
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
-            await FillShipperNamesAsync(new[] { dto });
+            var dto = await MapOrderDtoWithShipperNamesAsync(order);
             return dto;
         }
 
@@ -1699,10 +1719,9 @@ namespace PhuThuongStickyRice.Application.Orders
             await _activityLogger.LogAsync(StaffActivityActions.OrderStatusChange,
                 $"Bếp chuyển đơn {order.OrderNumber}: {fromStatus} → {order.Status}.");
 
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            var dto = await MapOrderDtoWithShipperNamesAsync(order);
             // Wave 6c (item 33): internal note stays in the admin UI.
             dto.AdminNote = null;
-            await FillShipperNamesAsync(new[] { dto });
             return dto;
         }
 
@@ -1738,8 +1757,7 @@ namespace PhuThuongStickyRice.Application.Orders
             order.SetAdminNote(input?.Note);
             await _orders.UpdateAsync(order);
 
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
-            await FillShipperNamesAsync(new[] { dto });
+            var dto = await MapOrderDtoWithShipperNamesAsync(order);
             return dto;
         }
 
@@ -1795,8 +1813,7 @@ namespace PhuThuongStickyRice.Application.Orders
             await _activityLogger.LogAsync(StaffActivityActions.OrderPickedUp,
                 $"Xác nhận đã lấy hàng đơn {order.OrderNumber}.");
 
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
-            await FillShipperNamesAsync(new[] { dto });
+            var dto = await MapOrderDtoWithShipperNamesAsync(order);
             return dto;
         }
 
@@ -1816,8 +1833,7 @@ namespace PhuThuongStickyRice.Application.Orders
             order.MarkCashCollected();
             await _orders.UpdateAsync(order);
 
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
-            await FillShipperNamesAsync(new[] { dto });
+            var dto = await MapOrderDtoWithShipperNamesAsync(order);
             return dto;
         }
 
@@ -2685,14 +2701,17 @@ namespace PhuThuongStickyRice.Application.Orders
         private async Task<(string PrizeLabel, string Code)> BuildSpinPrizeAsync(
             string segment, DateTime expiresAt, string ownerPhone, decimal deliveryFee)
         {
+            // Giải %: tên segment có dạng "Percent<N>" — parse N rồi dùng chung
+            // 1 nhánh thay vì 1 case cho mỗi mức % (trước đây 3 case Percent5/10/15
+            // lặp y hệt nhau, chỉ khác con số).
+            if (segment.StartsWith(SpinPercentSegmentPrefix, StringComparison.Ordinal) &&
+                int.TryParse(segment.Substring(SpinPercentSegmentPrefix.Length), out var percent))
+            {
+                return ($"Giảm {percent}%", await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, ownerPhone, discountPercent: percent));
+            }
+
             switch (segment)
             {
-                case "Percent5":
-                    return ("Giảm 5%", await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, ownerPhone, discountPercent: 5));
-                case "Percent10":
-                    return ("Giảm 10%", await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, ownerPhone, discountPercent: 10));
-                case "Percent15":
-                    return ("Giảm 15%", await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, ownerPhone, discountPercent: 15));
                 case "FreeShip":
                 {
                     // Phí ship > 0 thì giải bằng đúng phí ship hiện tại; khi chưa
@@ -3268,8 +3287,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             await _orders.UpdateAsync(primary);
 
-            var dto = _objectMapper.Map<Order, OrderDto>(primary);
-            await FillShipperNamesAsync(new[] { dto });
+            var dto = await MapOrderDtoWithShipperNamesAsync(primary);
             return dto;
         }
 
@@ -3673,6 +3691,37 @@ namespace PhuThuongStickyRice.Application.Orders
             var queryable = await _orders.GetQueryableAsync();
             return await _asyncExecuter.FirstOrDefaultAsync(
                 queryable.Where(x => x.IdempotencyKey == idempotencyKey && x.CreatedAt >= cutoff));
+        }
+
+        /// <summary>
+        /// Item 97: chống trùng đơn (idempotency) — chuẩn hóa key do client gửi
+        /// rồi tìm đơn đã tạo trước đó với cùng key trong 24 giờ qua.
+        /// </summary>
+        /// <param name="input">Dữ liệu checkout chứa IdempotencyKey do client sinh mỗi lần bấm đặt.</param>
+        /// <returns>
+        /// Tuple (key đã chuẩn hóa, đơn trùng nếu có). Key là null khi client
+        /// không gửi. Khi tìm thấy đơn trùng, nó được map sang DTO và điền tên
+        /// shipper để caller trả về ngay thay vì tạo đơn mới.
+        /// </returns>
+        private async Task<(string? IdempotencyKey, OrderDto? Duplicate)> TryResolveDuplicateOrderAsync(CreateOrderDto input)
+        {
+            // Key rỗng hoặc chỉ khoảng trắng: coi như client không gửi key.
+            var idempotencyKey = string.IsNullOrWhiteSpace(input.IdempotencyKey)
+                ? null
+                : input.IdempotencyKey.Trim();
+            if (idempotencyKey == null)
+            {
+                return (null, null);
+            }
+
+            var duplicate = await FindByIdempotencyKeyAsync(idempotencyKey);
+            if (duplicate == null)
+            {
+                return (idempotencyKey, null);
+            }
+
+            var duplicateDto = await MapOrderDtoWithShipperNamesAsync(duplicate);
+            return (idempotencyKey, duplicateDto);
         }
 
         /// <summary>
