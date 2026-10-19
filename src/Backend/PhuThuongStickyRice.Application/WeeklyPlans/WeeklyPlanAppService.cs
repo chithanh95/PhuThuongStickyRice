@@ -55,6 +55,12 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
 
         /// <summary>Số ngày trong gói tuần (thứ 2 → thứ 6) — đổi ở 1 chỗ duy nhất.</summary>
         private const int WeekdayCount = 5;
+        /// <summary>Số lần thử tối đa khi sinh mã đơn TUAN- trước khi báo lỗi.</summary>
+        private const int GenerateOrderCodeMaxAttempts = 10;
+        /// <summary>Cận dưới của dải số ngẫu nhiên 6 chữ số cho mã đơn TUAN-.</summary>
+        private const int OrderCodeRandomMin = 100000;
+        /// <summary>Cận trên (không bao gồm) của dải số ngẫu nhiên cho mã đơn TUAN-.</summary>
+        private const int OrderCodeRandomMax = 999999;
 
         private readonly IRepository<WeeklyPlan, Guid> _plans;
         private readonly IRepository<WeeklyPlanOrder, Guid> _orders;
@@ -403,11 +409,11 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
         private async Task<string> GenerateOrderCodeAsync()
         {
             var queryable = await _orders.GetQueryableAsync();
-            for (var attempt = 0; attempt < 10; attempt++)
+            for (var attempt = 0; attempt < GenerateOrderCodeMaxAttempts; attempt++)
             {
                 // CA1305: ToString với InvariantCulture để mã số không phụ thuộc locale máy chạy.
                 // Random.Shared giữ nguyên theo quyết định team (mã TUAN- không phải secret).
-                var code = "TUAN" + Random.Shared.Next(100000, 999999).ToString(CultureInfo.InvariantCulture);
+                var code = "TUAN" + Random.Shared.Next(OrderCodeRandomMin, OrderCodeRandomMax).ToString(CultureInfo.InvariantCulture);
                 var exists = await _asyncExecuter.AnyAsync(
                     queryable.Where(o => o.OrderCode == code));
                 if (!exists)
