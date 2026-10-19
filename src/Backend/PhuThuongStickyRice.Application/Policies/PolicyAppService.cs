@@ -71,13 +71,19 @@ namespace PhuThuongStickyRice.Application.Policies
                 return null;
             }
 
-            return await _catalogCache.GetOrAddAsync($"policies:slug:{normalized}", async () =>
+            // Perf: cache 1 list toàn bộ trang (5 phút) rồi lọc theo slug trong
+            // memory — tránh cache-key explosion khi bot quét slug lạ.
+            // So sánh OrdinalIgnoreCase để giữ ngữ nghĩa collation CI của DB.
+            var pages = await _catalogCache.GetOrAddAsync("policies:public-pages", async () =>
             {
                 var queryable = await _pages.GetQueryableAsync();
-                var page = await _asyncExecuter.FirstOrDefaultAsync(
-                    queryable.Where(x => x.Slug == normalized));
-                return page == null ? null : MapToDto(page);
+                var items = await _asyncExecuter.ToListAsync(
+                    queryable.OrderBy(x => x.SortOrder));
+                return items.Select(MapToDto).ToList();
             });
+
+            return pages.FirstOrDefault(x =>
+                string.Equals(x.Slug, normalized, StringComparison.OrdinalIgnoreCase));
         }
 
         [Authorize(Roles = "Admin")]

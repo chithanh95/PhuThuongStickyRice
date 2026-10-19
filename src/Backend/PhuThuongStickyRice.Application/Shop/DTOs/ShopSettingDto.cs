@@ -269,5 +269,29 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         /// </summary>
         [StringLength(20)]
         public string LastWeeklyReportSentWeek { get; set; }
+
+        // ---- Public storefront display (items 55/58/75) ----
+        // Các trường hiển thị công khai trên landing — cũng được trả qua
+        // ShopSettingAppService.GetPublicAsync() (cache 5 phút) cho các
+        // endpoint public thay vì query trực tiếp bảng ShopSettings.
+
+        /// <summary>Item 55: link nhóm Zalo dành cho khách VIP.</summary>
+        [StringLength(500)]
+        public string ZaloVipGroupUrl { get; set; }
+
+        /// <summary>Item 58: thông tin liên hệ bán sỉ.</summary>
+        [StringLength(500)]
+        public string WholesaleContact { get; set; }
+
+        /// <summary>Item 58: số lượng tối thiểu cho đơn sỉ.</summary>
+        public int WholesaleMinQty { get; set; }
+
+        /// <summary>Item 75: link gian hàng ShopeeFood. Trống = không hiển thị.</summary>
+        [StringLength(500)]
+        public string ShopeeFoodUrl { get; set; }
+
+        /// <summary>Item 75: link gian hàng GrabFood. Trống = không hiển thị.</summary>
+        [StringLength(500)]
+        public string GrabFoodUrl { get; set; }
     }
 }

@@ -218,6 +218,12 @@ namespace PhuThuongStickyRice.Application.Orders
         private static readonly TimeSpan DefaultOpenHour = new(6, 0, 0);
         /// <summary>Giờ đóng cửa mặc định (10:30) khi shop chưa cấu hình.</summary>
         private static readonly TimeSpan DefaultCloseHour = new(10, 30, 0);
+        /// <summary>
+        /// Số đơn tối đa xử lý mỗi tick của worker tự hủy đơn chuyển khoản quá hạn
+        /// (chạy mỗi 5 phút; tick sau xử lý tiếp phần còn lại) — tránh nạp toàn bộ
+        /// đơn quá hạn vào memory khi worker chết lâu ngày.
+        /// </summary>
+        private const int AutoCancelBatchSize = 500;
 
         private readonly IOrderRepository _orders;
         private readonly IProductRepository _products;
@@ -1228,7 +1234,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Wave 6c (item 34): appends one transition record to the audit
         /// trail. No-op when the status did not change.
         /// </summary>
-        private async Task RecordStatusChangeAsync(Guid orderId, OrderStatus from, OrderStatus to)
+        private async Task RecordStatusChangeAsync(Guid orderId, OrderStatus from, OrderStatus to, bool autoSave = true)
         {
             if (from == to)
             {
@@ -1243,7 +1249,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 ToStatus = to,
                 At = DateTime.UtcNow,
                 ByUser = string.IsNullOrWhiteSpace(byUser) ? "hệ thống" : byUser
-            }, autoSave: true);
+            }, autoSave: autoSave);
         }
 
         /// <summary>
@@ -1807,14 +1813,17 @@ namespace PhuThuongStickyRice.Application.Orders
                     x.Status == OrderStatus.Pending
                     && x.PaymentMethod == PaymentMethod.BankTransfer
                     && x.PaymentStatus == PaymentStatus.Unpaid
-                    && x.CreatedAt < cutoff));
+                    && x.CreatedAt < cutoff)
+                .Take(AutoCancelBatchSize));
 
             foreach (var order in expired)
             {
                 order.Cancel();
                 await _orders.UpdateAsync(order);
+                // Perf: gom lịch sử trạng thái vào 1 commit cuối UoW thay vì
+                // SaveChanges riêng cho mỗi đơn.
                 // Wave 6c (item 34): audit the worker cancel ("hệ thống").
-                await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled);
+                await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled, autoSave: false);
                 await _loyalty.RefundRedeemedPointsAsync(order);
             }
 

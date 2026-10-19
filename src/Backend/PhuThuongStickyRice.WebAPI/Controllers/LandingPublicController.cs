@@ -1,6 +1,7 @@
 using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Orders;
+using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.CrossCuttingConcerns.OS;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Persistence;
@@ -33,6 +34,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IMemoryCache _memoryCache;
         private readonly IDiscountAppService _discounts;
+        private readonly IShopSettingAppService _shopSettings;
 
         // Lucky-wheel prize table: label, value (VND), cumulative probability.
         // Keep the probabilities sorted ascending; PickPrize returns the
@@ -82,12 +84,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             StickyRiceDbContext db,
             IDateTimeProvider dateTimeProvider,
             IMemoryCache memoryCache,
-            IDiscountAppService discounts)
+            IDiscountAppService discounts,
+            IShopSettingAppService shopSettings)
         {
             _db = db;
             _dateTimeProvider = dateTimeProvider;
             _memoryCache = memoryCache;
             _discounts = discounts;
+            _shopSettings = shopSettings;
         }
 
         /// <summary>Public: latest visible customer reviews (max 20).</summary>
@@ -567,20 +571,19 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             var account = await _db.LoyaltyAccounts
                 .FirstOrDefaultAsync(a => a.Phone == phone, cancellationToken);
-            var settings = await _db.ShopSettings.FirstOrDefaultAsync(cancellationToken);
+            // Perf: settings qua cache 5 phút của ShopSettingAppService.GetPublicAsync()
+            // (gồm cả logic holiday auto-pause) thay vì query DB mỗi request.
+            var settings = await _shopSettings.GetPublicAsync();
 
             var totalSpent = account?.TotalSpent ?? 0m;
             var tier = "Đồng";
-            if (settings != null)
+            if (settings.TierGoldMin > 0 && totalSpent > settings.TierGoldMin)
             {
-                if (settings.TierGoldMin > 0 && totalSpent > settings.TierGoldMin)
-                {
-                    tier = "Vàng";
-                }
-                else if (settings.TierSilverMin > 0 && totalSpent >= settings.TierSilverMin)
-                {
-                    tier = "Bạc";
-                }
+                tier = "Vàng";
+            }
+            else if (settings.TierSilverMin > 0 && totalSpent >= settings.TierSilverMin)
+            {
+                tier = "Bạc";
             }
 
             var isVip = tier == "Vàng" || totalSpent > 500000m;
@@ -589,7 +592,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 tier,
                 isVip,
                 totalSpent,
-                zaloGroupUrl = isVip ? settings?.ZaloVipGroupUrl : null
+                zaloGroupUrl = isVip ? settings.ZaloVipGroupUrl : null
             });
         }
 
@@ -600,11 +603,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet("wholesale-info")]
         public async Task<ActionResult> GetWholesaleInfo(CancellationToken cancellationToken = default)
         {
-            var settings = await _db.ShopSettings.FirstOrDefaultAsync(cancellationToken);
+            // Perf: cache 5 phút thay vì query DB mỗi request.
+            var settings = await _shopSettings.GetPublicAsync();
             return Ok(new
             {
-                contact = settings?.WholesaleContact,
-                minQty = settings?.WholesaleMinQty ?? 50
+                contact = settings.WholesaleContact,
+                minQty = settings.WholesaleMinQty
             });
         }
 
@@ -1047,12 +1051,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet("marketplace-links")]
         public async Task<ActionResult> GetMarketplaceLinks(CancellationToken cancellationToken = default)
         {
-            var settings = await _db.ShopSettings.FirstOrDefaultAsync(cancellationToken);
+            // Perf: cache 5 phút thay vì query DB mỗi request.
+            var settings = await _shopSettings.GetPublicAsync();
 
             return Ok(new
             {
-                shopeeFoodUrl = string.IsNullOrWhiteSpace(settings?.ShopeeFoodUrl) ? null : settings.ShopeeFoodUrl,
-                grabFoodUrl = string.IsNullOrWhiteSpace(settings?.GrabFoodUrl) ? null : settings.GrabFoodUrl
+                shopeeFoodUrl = string.IsNullOrWhiteSpace(settings.ShopeeFoodUrl) ? null : settings.ShopeeFoodUrl,
+                grabFoodUrl = string.IsNullOrWhiteSpace(settings.GrabFoodUrl) ? null : settings.GrabFoodUrl
             });
         }
 

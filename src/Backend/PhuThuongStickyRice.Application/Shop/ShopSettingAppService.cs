@@ -575,7 +575,15 @@ namespace PhuThuongStickyRice.Application.Shop
                 AcceptingOrders = entity.AcceptingOrders,
                 PausedReason = entity.PausedReason,
                 // Wave 6d (item 39): backfilled to 10 for pre-existing rows.
-                MaxOrdersPerPhonePerDay = entity.MaxOrdersPerPhonePerDay
+                MaxOrdersPerPhonePerDay = entity.MaxOrdersPerPhonePerDay,
+                // Perf (items 55/58/75): public storefront display fields — read
+                // by the landing controller through cached GetPublicAsync()
+                // instead of a direct ShopSettings query per request.
+                ZaloVipGroupUrl = entity.ZaloVipGroupUrl,
+                WholesaleContact = entity.WholesaleContact,
+                WholesaleMinQty = entity.WholesaleMinQty,
+                ShopeeFoodUrl = entity.ShopeeFoodUrl,
+                GrabFoodUrl = entity.GrabFoodUrl
             };
         }
     }
