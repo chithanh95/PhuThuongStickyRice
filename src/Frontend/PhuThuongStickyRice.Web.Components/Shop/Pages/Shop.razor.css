@@ -1052,3 +1052,25 @@ html.dark .shop-sticky-cart-cta {
     }
 }
 /* ===== END UIUX run 21:23 - Agent1 FIX 5 ===== */
+
+/* layout-align 2026-10-19 — FIX 4: card "gợi ý món" (Shop.razor:188,
+   .card.h-100.border-info) — tên món dài/ngắn khác nhau khiến hàng giá +
+   nút "+ Thêm" lệch chiều cao giữa các card cùng hàng. Card-body đã là
+   flex cột (rule .card.h-100 .card-body) nên chỉ cần pin hàng giá xuống
+   đáy bằng margin-top:auto (đè .mt-1 của Bootstrap). */
+.card.h-100.border-info .card-body > .d-flex.justify-content-between {
+    margin-top: auto;
+    padding-top: 6px;
+}
+
+/* layout-align 2026-10-19 — FIX 5: card "🎉 Combo gia đình" (Shop.razor:157,
+   .card.border-warning) — số món trong combo khác nhau khiến hàng giá +
+   nút "Thêm combo vào giỏ" lệch chiều cao giữa 2 card cùng hàng. Pin hàng
+   giá+nút xuống đáy card (chỉ desktop ≥576px; mobile đã có rule xếp dọc
+   riêng ở trên, không chạm). */
+@media (min-width: 576px) {
+    .card.border-warning > .card-body > .d-flex {
+        margin-top: auto;
+        padding-top: 10px;
+    }
+}

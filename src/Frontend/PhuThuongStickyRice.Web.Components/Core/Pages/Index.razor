@@ -185,12 +185,12 @@ else
         @if (_reviews != null && _reviews.Count > 0)
         {
             <div class="sg-trust-reviews">
-                @foreach (var r in _reviews.Take(3))
+                @foreach (var review in _reviews.Take(3))
                 {
                     <div class="sg-trust-review">
-                        <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, r.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, r.Rating))))</div>
-                        <p class="sg-trust-review-text">"@r.Comment"</p>
-                        <p class="sg-trust-review-name">— @(string.IsNullOrWhiteSpace(r.MaskedCustomerPhone) ? MaskPhone(r.CustomerPhone) : r.MaskedCustomerPhone)</p>
+                        <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, review.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, review.Rating))))</div>
+                        <p class="sg-trust-review-text">"@review.Comment"</p>
+                        <p class="sg-trust-review-name">— @(string.IsNullOrWhiteSpace(review.MaskedCustomerPhone) ? MaskPhone(review.CustomerPhone) : review.MaskedCustomerPhone)</p>
                     </div>
                 }
             </div>
@@ -312,15 +312,15 @@ else
             <p class="sg-eyebrow">Khách nói gì</p>
             <h2 class="sg-h2">Đánh giá thật từ khách hàng</h2>
             <div class="sg-review-track" id="sg-reviews">
-                @foreach (var r in _reviews.Take(12))
+                @foreach (var review in _reviews.Take(12))
                 {
                     <div class="sg-review-card sg-reveal">
-                        <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, r.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, r.Rating))))</div>
-                        <p class="sg-review-text">"@r.Comment"</p>
-                        <p class="sg-review-name">— @(string.IsNullOrWhiteSpace(r.MaskedCustomerPhone) ? MaskPhone(r.CustomerPhone) : r.MaskedCustomerPhone)</p>
-                        @if (!string.IsNullOrWhiteSpace(r.AdminReply))
+                        <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, review.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, review.Rating))))</div>
+                        <p class="sg-review-text">"@review.Comment"</p>
+                        <p class="sg-review-name">— @(string.IsNullOrWhiteSpace(review.MaskedCustomerPhone) ? MaskPhone(review.CustomerPhone) : review.MaskedCustomerPhone)</p>
+                        @if (!string.IsNullOrWhiteSpace(review.AdminReply))
                         {
-                            <p class="sg-review-reply">💬 Quán: @r.AdminReply</p>
+                            <p class="sg-review-reply">💬 Quán: @review.AdminReply</p>
                         }
                     </div>
                 }
@@ -353,13 +353,13 @@ else
             <p class="sg-eyebrow">Check-in</p>
             <h2 class="sg-h2">Khách hàng của quán</h2>
             <div class="sg-gallery-grid">
-                @foreach (var g in _gallery.Take(8))
+                @foreach (var photo in _gallery.Take(8))
                 {
                     <figure class="sg-g-item sg-reveal">
-                        <img loading="lazy" decoding="async" src="@g.ImageUrl" alt="@g.Caption" />
-                        @if (!string.IsNullOrWhiteSpace(g.Caption))
+                        <img loading="lazy" decoding="async" src="@photo.ImageUrl" alt="@photo.Caption" />
+                        @if (!string.IsNullOrWhiteSpace(photo.Caption))
                         {
-                            <figcaption>@g.Caption</figcaption>
+                            <figcaption>@photo.Caption</figcaption>
                         }
                     </figure>
                 }
@@ -539,17 +539,17 @@ else
             <p class="sg-eyebrow">Đọc & học</p>
             <h2 class="sg-h2">Góc ẩm thực</h2>
             <div class="sg-blog-grid">
-                @foreach (var a in _articles.Take(6))
+                @foreach (var article in _articles.Take(6))
                 {
                     <div class="sg-blog-card sg-reveal">
-                        @if (!string.IsNullOrWhiteSpace(a.ImageUrl))
+                        @if (!string.IsNullOrWhiteSpace(article.ImageUrl))
                         {
-                            <img loading="lazy" decoding="async" src="@a.ImageUrl" alt="@a.Title" />
+                            <img loading="lazy" decoding="async" src="@article.ImageUrl" alt="@article.Title" />
                         }
                         <div class="sg-blog-body">
-                            <h3>@a.Title</h3>
-                            <p>@(a.Body?.Length > 120 ? a.Body.Substring(0, 120) + "..." : a.Body)</p>
-                            <span class="sg-blog-date">@a.PublishedAt.ToString("dd/MM/yyyy")</span>
+                            <h3>@article.Title</h3>
+                            <p>@(article.Body?.Length > 120 ? article.Body.Substring(0, 120) + "..." : article.Body)</p>
+                            <span class="sg-blog-date">@article.PublishedAt.ToString("dd/MM/yyyy")</span>
                         </div>
                     </div>
                 }
@@ -568,18 +568,18 @@ else
             <p class="sg-eyebrow">Bạn quyết định</p>
             <h2 class="sg-h2">Món mới nào quán nên bán?</h2>
             <div class="sg-poll-grid">
-                @foreach (var p in _polls)
+                @foreach (var poll in _polls)
                 {
                     <div class="sg-poll-card sg-reveal">
-                        @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                        @if (!string.IsNullOrWhiteSpace(poll.ImageUrl))
                         {
-                            <img loading="lazy" decoding="async" src="@p.ImageUrl" alt="@p.DishName" />
+                            <img loading="lazy" decoding="async" src="@poll.ImageUrl" alt="@poll.DishName" />
                         }
                         <div class="sg-poll-body">
-                            <h3>@p.DishName</h3>
-                            <p>@p.Description</p>
-                            <div class="sg-poll-votes">🗳️ @p.VoteCount lượt bình chọn</div>
-                            <button class="sg-btn sg-btn-outline sg-btn-block" @onclick="() => SubmitDishPollVote(p.Id)">Bình chọn món này</button>
+                            <h3>@poll.DishName</h3>
+                            <p>@poll.Description</p>
+                            <div class="sg-poll-votes">🗳️ @poll.VoteCount lượt bình chọn</div>
+                            <button class="sg-btn sg-btn-outline sg-btn-block" @onclick="() => SubmitDishPollVote(poll.Id)">Bình chọn món này</button>
                         </div>
                     </div>
                 }
@@ -759,9 +759,9 @@ else
         @if (_policies.Count > 0)
         {
             <div class="sg-policy-bar">
-                @foreach (var p in _policies)
+                @foreach (var policy in _policies)
                 {
-                    <a href="/chinh-sach/@p.Slug">@p.Title</a>
+                    <a href="/chinh-sach/@policy.Slug">@policy.Title</a>
                 }
             </div>
         }
@@ -851,17 +851,17 @@ else
             {
                 <p class="sg-chat-hint">Chào bạn! Hỏi quán về món, giá, giờ giao nhé.</p>
             }
-            @foreach (var m in _chatMessages)
+            @foreach (var chatMessage in _chatMessages)
             {
-                <div class="sg-chat-msg @(m.Sender == "customer" ? "mine" : "theirs")">@m.Message</div>
+                <div class="sg-chat-msg @(chatMessage.Sender == "customer" ? "mine" : "theirs")">@chatMessage.Message</div>
             }
         </div>
         @if (_chatOrder?.Items?.Count > 0)
         {
             <div class="sg-chat-order">
-                @foreach (var i in _chatOrder.Items)
+                @foreach (var chatItem in _chatOrder.Items)
                 {
-                    <div class="sg-chat-order-row"><span>@i.Quantity × @i.ProductName</span><b>@((i.Price * i.Quantity).ToString("N0"))đ</b></div>
+                    <div class="sg-chat-order-row"><span>@chatItem.Quantity × @chatItem.ProductName</span><b>@((chatItem.Price * chatItem.Quantity).ToString("N0"))đ</b></div>
                 }
                 <input @bind="_chatPhone" placeholder="SĐT nhận hàng" aria-label="Số điện thoại nhận hàng" inputmode="tel" maxlength="15" class="sg-chat-phone" />
                 <div class="sg-chat-order-btns">

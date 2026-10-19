@@ -2208,3 +2208,11 @@ html.dark .lx-admin .kanban-code { color: #f0eef5; }
    để Bootstrap .close không kế thừa kích thước chữ to của modal/pill cha */
 .lx-admin .lx-pill .close { font-size: 14px; line-height: 1; }
 /* ===== END UIUX run 2026-10-19 17:35 - Agent3 Lexa ===== */
+
+/* layout-align 2026-10-19 — FIX 2: 4 thẻ stat tím dashboard (Dashboard.razor:141)
+   — cột .col-md-6.col-xl-3 không có mb nên khi xếp chồng (2 thẻ/hàng ở
+   768–1199px, 1 thẻ/hàng dưới 768px) các thẻ dính sát nhau, mất khe dọc.
+   Thêm khe 16px dưới mỗi thẻ khi không còn 4 thẻ trên 1 hàng. */
+@media (max-width: 1199.98px) {
+    .card.lexa-stat-card { margin-bottom: 16px; }
+}

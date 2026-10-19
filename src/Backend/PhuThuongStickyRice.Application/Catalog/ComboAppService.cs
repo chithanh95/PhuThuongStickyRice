@@ -258,22 +258,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             var list = entities.ToList();
             var productIds = list.SelectMany(x => x.Items).Select(x => x.ProductId).Distinct().ToList();
 
-            var names = new Dictionary<Guid, (string Name, decimal Price)>();
-            if (productIds.Count > 0)
-            {
-                var queryable = await _products.GetQueryableAsync();
-                // perf-hunt 2026-10-19 (run 18:05): chỉ dùng Name + Price nên
-                // project 3 cột trong SQL, không nạp full entity Product
-                // (description, JSON, owned Money VOs, audit fields).
-                // Dictionary giữ nguyên shape → DTO không đổi.
-                var rows = await _asyncExecuter.ToListAsync(
-                    queryable.Where(x => productIds.Contains(x.Id))
-                        .Select(x => new { x.Id, x.Name, Price = x.Price.Amount }));
-                foreach (var row in rows)
-                {
-                    names[row.Id] = (row.Name, row.Price);
-                }
-            }
+            var names = await LoadProductInfoMapAsync(productIds);
 
             var dtos = list.Select(e => new ComboDto
             {
@@ -306,6 +291,35 @@ namespace PhuThuongStickyRice.Application.Catalog
             }
 
             return dtos.ToList();
+        }
+
+        /// <summary>
+        /// Nạp (tên, giá) các món trong combo theo batch để map DTO.
+        /// </summary>
+        /// <remarks>
+        /// perf-hunt 2026-10-19 (run 18:05): chỉ dùng Name + Price nên
+        /// project 3 cột trong SQL, không nạp full entity Product
+        /// (description, JSON, owned Money VOs, audit fields).
+        /// </remarks>
+        private async Task<Dictionary<Guid, (string Name, decimal Price)>> LoadProductInfoMapAsync(
+            List<Guid> productIds)
+        {
+            var names = new Dictionary<Guid, (string Name, decimal Price)>();
+            if (productIds.Count == 0)
+            {
+                return names;
+            }
+
+            var queryable = await _products.GetQueryableAsync();
+            var rows = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => productIds.Contains(x.Id))
+                    .Select(x => new { x.Id, x.Name, Price = x.Price.Amount }));
+            foreach (var row in rows)
+            {
+                names[row.Id] = (row.Name, row.Price);
+            }
+
+            return names;
         }
     }
 }

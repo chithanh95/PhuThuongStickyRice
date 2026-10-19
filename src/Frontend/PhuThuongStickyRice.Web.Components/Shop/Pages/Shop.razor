@@ -33,7 +33,7 @@
         <div class="d-flex flex-wrap align-items-center justify-content-between">
             <div>
                 <h1 class="display-5">Xôi Làng Nghề Phú Thượng</h1>
-                <p class="lead mb-1">Xôi dẻo thơm chuẩn vị làng nghề — đặt hàng online, giao tận nơi.</p>
+                <p class="lead mb-1">Xôi dẻo thơm chuẩn vị làng nghề — đặt hàng online, nhận ngay.</p>
                 @if (!string.IsNullOrWhiteSpace(_tableLabel))
                 {
                     <p class="mb-1"><span class="badge badge-info" style="font-size: 1rem;">🍽 @I18n.T("table_order") @_tableLabel</span></p>
@@ -151,9 +151,9 @@ else
                         </h5>
                         <p class="card-text text-muted small">@combo.Description</p>
                         <ul class="list-unstyled small mb-2">
-                            @foreach (var item in combo.Items)
+                            @foreach (var comboItem in combo.Items)
                             {
-                                <li>• @item.ProductName <span class="text-muted">× @item.Quantity</span></li>
+                                <li>• @comboItem.ProductName <span class="text-muted">× @comboItem.Quantity</span></li>
                             }
                         </ul>
                         <div class="d-flex align-items-center justify-content-between">

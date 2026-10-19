@@ -146,9 +146,9 @@
     {
         try
         {
-            var list = await AuthService.GetStaffChatAsync();
+            var chatMessages = await AuthService.GetStaffChatAsync();
             var prevCount = _messages.Count;
-            _messages = list ?? new List<StaffChatMessage>();
+            _messages = chatMessages ?? new List<StaffChatMessage>();
             if (_messages.Count > prevCount)
                 await ScrollToBottomAsync();
         }

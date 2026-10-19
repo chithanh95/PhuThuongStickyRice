@@ -144,15 +144,19 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         /// <param name="entities">Các entity cần chèn.</param>
         public void BulkInsert(IEnumerable<T> entities)
         {
+            // Materialize 1 lần: vòng stamp Guid bên dưới và _dbContext.BulkInsert
+            // đều enumerate sequence — với sequence lazy (mỗi lần enumerate sinh
+            // object mới) Guid vừa stamp sẽ bị mất và công việc lặp lại 2 lần.
+            var list = entities as IList<T> ?? entities.ToList();
             if (typeof(TKey) == typeof(Guid))
             {
-                foreach (var entity in entities)
+                foreach (var entity in list)
                 {
                     if (entity.Id.Equals(default(TKey)))
                         entity.Id = (TKey)(object)Guid.NewGuid();
                 }
             }
-            _dbContext.BulkInsert(entities);
+            _dbContext.BulkInsert(list);
         }
 
         /// <summary>
@@ -162,15 +166,19 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         /// <param name="columnNamesSelector">Biểu thức chọn cột cần chèn.</param>
         public void BulkInsert(IEnumerable<T> entities, Expression<Func<T, object>> columnNamesSelector)
         {
+            // Materialize 1 lần: vòng stamp Guid bên dưới và _dbContext.BulkInsert
+            // đều enumerate sequence — với sequence lazy (mỗi lần enumerate sinh
+            // object mới) Guid vừa stamp sẽ bị mất và công việc lặp lại 2 lần.
+            var list = entities as IList<T> ?? entities.ToList();
             if (typeof(TKey) == typeof(Guid))
             {
-                foreach (var entity in entities)
+                foreach (var entity in list)
                 {
                     if (entity.Id.Equals(default(TKey)))
                         entity.Id = (TKey)(object)Guid.NewGuid();
                 }
             }
-            _dbContext.BulkInsert(entities, columnNamesSelector);
+            _dbContext.BulkInsert(list, columnNamesSelector);
         }
 
         /// <summary>

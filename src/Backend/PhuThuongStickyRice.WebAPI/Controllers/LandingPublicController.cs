@@ -502,7 +502,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 .Select(m => m.Id)
                 .ToList();
 
-            if (unreadIds.Count > 0)
+            if (unreadIds.Any())
             {
                 await _db.ChatMessages
                     .Where(m => unreadIds.Contains(m.Id))

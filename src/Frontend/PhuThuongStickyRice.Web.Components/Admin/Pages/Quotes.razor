@@ -344,17 +344,17 @@ else
         _savingDeposit = true;
         try
         {
-            var info = string.IsNullOrWhiteSpace(_depositInfo)
+            var depositNote = string.IsNullOrWhiteSpace(_depositInfo)
                 ? $"Coc bao gia {_depositQuote.CustomerPhone}"
                 : _depositInfo.Trim();
 
             // 1. Lưu cọc + 2. Chuyển trạng thái sang Confirmed.
-            var updated = await CatalogService.SetQuoteDepositAsync(_depositQuote.Id, _depositAmount, info);
+            var updated = await CatalogService.SetQuoteDepositAsync(_depositQuote.Id, _depositAmount, depositNote);
             await CatalogService.UpdateQuoteStatusAsync(_depositQuote.Id, "Confirmed");
             _depositQuote.Status = "Confirmed";
             _depositQuote.DepositAmount = updated.DepositAmount;
             _depositQuote.DepositInfo = updated.DepositInfo;
-            _depositInfo = info;
+            _depositInfo = depositNote;
 
             // 3. Tạo QR VietQR để gửi khách.
             try
@@ -364,7 +364,7 @@ else
                 {
                     var template = string.IsNullOrWhiteSpace(bank.QrTemplate) ? "compact2" : bank.QrTemplate;
                     _depositQrUrl = $"https://img.vietqr.io/image/{bank.BankId}-{bank.AccountNumber}-{template}.png"
-                        + $"?amount={(long)_depositAmount}&addInfo={Uri.EscapeDataString(info)}";
+                        + $"?amount={(long)_depositAmount}&addInfo={Uri.EscapeDataString(depositNote)}";
                 }
             }
             catch (Exception) { }

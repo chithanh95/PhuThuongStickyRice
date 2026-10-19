@@ -488,6 +488,10 @@ namespace PhuThuongStickyRice.Application.Orders
             var subtotal = lines.Sum(x => x.Quantity * x.UnitPrice.Amount);
             var currency = lines.First().UnitPrice.Currency;
 
+            // Thứ tự ưu tiên giảm giá (stacking): giờ vàng → mã giảm giá → chiết
+            // khấu hạng thành viên → đổi điểm loyalty. Mỗi tầng tính trên phần
+            // còn lại của tầng trước (không chồng giảm) để tổng không bao giờ
+            // âm và số tiền hiển thị ở checkout khớp đúng số server tính.
             var (promotionName, promotionDiscount) = await ComputeHappyHourPromotionAsync(subtotal);
 
             // Item 105: feature flags for the checkout extras (UI hides them
@@ -3434,12 +3438,21 @@ namespace PhuThuongStickyRice.Application.Orders
         /// sau <c>GenerateOrderNumberMaxAttempts</c> lần để đơn không được tạo
         /// với mã có nguy cơ trùng khi shop đông đơn bất thường.
         /// </summary>
+        /// <summary>
+        /// Sinh mã đơn dạng PX-yyyyMMdd-XXXX. Dùng Random.Shared (không cấp
+        /// phát, thread-safe) kết hợp ngày hiện tại; thử lại tối đa
+        /// <see cref="GenerateOrderNumberMaxAttempts"/> lần khi trùng mã đã
+        /// tồn tại rồi mới báo lỗi cho khách thử lại.
+        /// </summary>
+        /// <returns>Mã đơn duy nhất (chưa tồn tại trong DB).</returns>
         private async Task<string> GenerateOrderNumberAsync()
         {
             var random = Random.Shared;
 
             for (var attempt = 0; attempt < GenerateOrderNumberMaxAttempts; attempt++)
             {
+                // 4 chữ số ngẫu nhiên: đủ phân tán cho số đơn trong 1 ngày,
+                // ngắn gọn để đọc dễ khi xác nhận qua điện thoại.
                 var orderNumber = $"PX-{DateTime.UtcNow:yyyyMMdd}-{random.Next(1000, 9999)}";
 
                 if (!await _orders.ExistsWithOrderNumberAsync(orderNumber))

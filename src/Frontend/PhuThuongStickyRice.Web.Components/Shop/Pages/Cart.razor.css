@@ -370,3 +370,29 @@ html.dark .gh-freeship .progress {
     }
 }
 /* ===== END UIUX run 21:23 - Agent1 FIX 4 ===== */
+
+/* layout-align 2026-10-19 — FIX 1: hàng "Tổng" ở footer bảng giỏ (desktop).
+   Markup đặt colspan="3" cho ô nhãn nên số tổng tiền rơi vào cột "Số lượng"
+   (cột 4) thay vì cột "Thành tiền" (cột 3) — lệch 1 cột. Không sửa markup
+   được (CSS-only) nên dựng lại hàng footer dạng flex: nhãn co giãn căn phải,
+   số tổng căn phải, ô trống cuối ẩn. (Mobile ≤767px đã có rule flex riêng.) */
+@media (min-width: 768px) {
+    .cart-lines tfoot tr {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .cart-lines tfoot td:first-child {
+        flex: 1 1 auto;
+        text-align: right !important;
+    }
+    .cart-lines tfoot td:nth-child(2) {
+        flex: 0 0 auto;
+    }
+    .cart-lines tfoot td:last-child {
+        display: none;
+    }
+    html.dark .cart-lines tfoot td {
+        border-color: #3a3226;
+    }
+}

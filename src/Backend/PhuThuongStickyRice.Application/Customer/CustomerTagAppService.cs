@@ -293,23 +293,32 @@ namespace PhuThuongStickyRice.Application.Customer
                 grouped = grouped.Where(x => x.LastOrderAt < cutoff);
             }
 
-            if (string.IsNullOrWhiteSpace(tag))
+            if (!string.IsNullOrWhiteSpace(tag))
             {
-                // No tag filter: stop at maxRows in SQL instead of materializing
-                // every customer group then Take()ing in memory. Ordering kept
-                // (TotalSpent desc) so the result is identical.
-                return await _asyncExecuter.ToListAsync(
-                    grouped.OrderByDescending(x => x.TotalSpent).Take(maxRows));
+                grouped = await ApplyTagFilterAsync(grouped, tag);
             }
 
-            // perf-hunt 2026-10-19: tag filter cũng chạy trên SQL thay vì nạp
-            // toàn bộ nhóm khách hàng vào memory. Tên tag do admin tạo thủ
-            // công nên số lượng tên khác nhau rất nhỏ — so khớp tên không phân
-            // biệt hoa/thường trong memory (giữ đúng ngữ nghĩa OrdinalIgnoreCase
-            // trên mọi provider), rồi lọc nhóm khách bằng subquery EXISTS trên
-            // bảng tag. SĐT trong bảng tag đã chuẩn hóa lúc lưu, so với
-            // CustomerPhone thô của đơn nên chỉ khớp khi hai bên bằng nhau —
-            // đúng y hệt FilterByTag cũ (TryGetValue theo SĐT thô).
+            // Xếp hạng + giới hạn gom ở cuối để mọi nhánh (không lọc / lọc
+            // tag) dùng chung 1 câu order — thứ tự kết quả đồng nhất.
+            return await _asyncExecuter.ToListAsync(
+                grouped.OrderByDescending(x => x.TotalSpent).Take(maxRows));
+        }
+
+        /// <summary>
+        /// Lọc nhóm khách theo tag admin gán. Tên tag so khớp không phân biệt
+        /// hoa/thường; SĐT trong bảng tag đã chuẩn hóa lúc lưu nên chỉ khớp
+        /// khi bằng SĐT thô trên đơn — đúng y hệt FilterByTag cũ.
+        /// </summary>
+        /// <remarks>
+        /// Tag filter chạy trên SQL thay vì nạp toàn bộ nhóm khách hàng vào
+        /// memory. Tên tag do admin tạo thủ công nên số lượng tên khác nhau
+        /// rất nhỏ — so khớp tên trong memory (giữ đúng ngữ nghĩa
+        /// OrdinalIgnoreCase trên mọi provider), rồi lọc nhóm khách bằng
+        /// subquery EXISTS trên bảng tag.
+        /// </remarks>
+        private async Task<IQueryable<CustomerAggregateRow>> ApplyTagFilterAsync(
+            IQueryable<CustomerAggregateRow> grouped, string tag)
+        {
             var wanted = tag.Trim();
             var tagQueryable = await _tags.GetQueryableAsync();
             var distinctNames = await _asyncExecuter.ToListAsync(
@@ -321,10 +330,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 .Where(x => matchedNames.Contains(x.TagName))
                 .Select(x => x.CustomerPhone);
 
-            return await _asyncExecuter.ToListAsync(
-                grouped.Where(x => tagPhones.Contains(x.CustomerPhone))
-                    .OrderByDescending(x => x.TotalSpent)
-                    .Take(maxRows));
+            return grouped.Where(x => tagPhones.Contains(x.CustomerPhone));
         }
 
         /// <summary>Giữ lại các dòng có tag trùng tên (không phân biệt hoa/thường).</summary>

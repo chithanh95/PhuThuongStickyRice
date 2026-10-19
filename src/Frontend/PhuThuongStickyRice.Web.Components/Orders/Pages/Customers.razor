@@ -597,8 +597,8 @@ else
             _loadingNotes = true;
             try
             {
-                var list = await AdminOperationsService.GetCustomerNotesAsync(phone);
-                _notes[phone] = list ?? new List<CustomerNoteModel>();
+                var customerNotes = await AdminOperationsService.GetCustomerNotesAsync(phone);
+                _notes[phone] = customerNotes ?? new List<CustomerNoteModel>();
             }
             catch (Exception)
             {
@@ -631,14 +631,14 @@ else
             var created = await AdminOperationsService.AddCustomerNoteAsync(_expandedPhone, _newNote.Trim());
 
             // Tải ghi chú ban đầu có thể đã thất bại (catch ở ToggleNotes không
-            // gán _notes[phone]) — tạo list mới thay vì _notes[phone] ném KeyNotFoundException.
-            if (!_notes.TryGetValue(_expandedPhone, out var list))
+            // gán _notes[phone]) — tạo customerNotes mới thay vì _notes[phone] ném KeyNotFoundException.
+            if (!_notes.TryGetValue(_expandedPhone, out var customerNotes))
             {
-                list = new List<CustomerNoteModel>();
-                _notes[_expandedPhone] = list;
+                customerNotes = new List<CustomerNoteModel>();
+                _notes[_expandedPhone] = customerNotes;
             }
 
-            list.Insert(0, created);
+            customerNotes.Insert(0, created);
             _newNote = null;
         }
         catch (Exception ex)
@@ -684,9 +684,9 @@ else
         try
         {
             var created = await CareService.CreateReminderAsync(_remindPhone, null, _remindMessage.Trim());
-            if (_remindHistory.TryGetValue(_remindPhone, out var list))
+            if (_remindHistory.TryGetValue(_remindPhone, out var reminders))
             {
-                list.Insert(0, created);
+                reminders.Insert(0, created);
             }
 
             _remindMsg = "Đã lưu lịch sử nhắc. ⚠️ Tin nhắn chưa gửi thật — cần cấu hình Zalo OA.";
@@ -812,9 +812,9 @@ else
         try
         {
             await AdminOperationsService.DeleteCustomerNoteAsync(note.Id);
-            if (_notes.TryGetValue(_expandedPhone, out var list))
+            if (_notes.TryGetValue(_expandedPhone, out var customerNotes))
             {
-                list.RemoveAll(x => x.Id == note.Id);
+                customerNotes.RemoveAll(x => x.Id == note.Id);
             }
         }
         catch (Exception ex)

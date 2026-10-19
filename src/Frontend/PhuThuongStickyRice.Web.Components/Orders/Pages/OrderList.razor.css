@@ -11,3 +11,13 @@
    Đổi sang border #3a3a58 cho đồng bộ. (Chấm mốc #7a6fbe giữ nguyên,
    vẫn đọc rõ trên nền tối.) */
 html.dark .timeline { border-left-color: #3a3a58; }
+
+/* layout-align 2026-10-19 — FIX 3: cột thao tác cuối bảng đơn hàng
+   (OrderList.razor:268) chứa tới 4 nút (duyệt/hủy + xác nhận thanh toán +
+   thu tiền); khi bảng bị ép hẹp các nút rớt thành 2 dòng, các hàng cao thấp
+   không đều. Giữ cụm nút trên 1 dòng (bảng đã bọc .table-responsive nên có
+   scroll ngang). Trừ hàng chi tiết mở rộng (td[colspan]) — vẫn wrap bình
+   thường. */
+.lx-table-sticky-first tbody td:last-child:not([colspan]) {
+    white-space: nowrap;
+}

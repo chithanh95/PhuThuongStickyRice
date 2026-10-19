@@ -4,8 +4,19 @@ using System.Linq;
 
 namespace PhuThuongStickyRice.Domain.ValueObjects
 {
+    /// <summary>
+    /// Lớp cơ sở cho mọi value object trong domain: bất biến, không có Id,
+    /// bằng nhau khi mọi thành phần giá trị bằng nhau (thay vì so reference).
+    /// Class con chỉ cần override <see cref="GetEqualityComponents"/> liệt kê
+    /// các thành phần tham gia so sánh.
+    /// </summary>
     public abstract class ValueObject
     {
+        /// <summary>
+        /// Liệt kê các thành phần tạo nên giá trị của object, theo thứ tự
+        /// so sánh. Hai value object cùng kiểu bằng nhau khi mọi thành phần
+        /// trong danh sách này bằng nhau.
+        /// </summary>
         protected abstract IEnumerable<object> GetEqualityComponents();
 
         public override bool Equals(object obj)

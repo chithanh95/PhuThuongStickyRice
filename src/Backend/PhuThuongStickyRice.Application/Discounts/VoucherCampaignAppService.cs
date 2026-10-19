@@ -44,6 +44,9 @@ namespace PhuThuongStickyRice.Application.Discounts
         private const string AudienceTier = "tier";
         private const string AudienceAll = "all";
 
+        // "Không mua 30+ ngày": số ngày không có đơn để xếp vào nhóm không hoạt động.
+        private const int InactiveDays = 30;
+
         // Prefix mặc định cho mã voucher sinh tự động.
         private const string DefaultCodePrefix = "VC";
 
@@ -204,12 +207,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             // 20261019160000) — nên khách đổi cách gõ SĐT ("0912..." vs
             // "+84912...") vẫn tính là đã mua, thay vì lọt nhầm vào nhóm
             // "không mua" như bản so full-digits trước đây.
-            var since = DateTime.UtcNow.AddDays(-30);
-            var orderQuery = await _orders.GetQueryableAsync();
-            var activeNorms = orderQuery
-                .Where(x => x.CreatedAt >= since && x.Status != OrderStatus.Cancelled)
-                .Select(x => x.CustomerPhoneNorm)
-                .Distinct();
+            var activeNorms = await GetActivePhoneNormsAsync();
 
             var loyaltyQuery = await _loyaltyAccounts.GetQueryableAsync();
             return await _asyncExecuter.ToListAsync(
@@ -217,6 +215,23 @@ namespace PhuThuongStickyRice.Application.Discounts
                     .Where(x => !activeNorms.Contains(
                         x.Phone.Length <= 9 ? x.Phone : x.Phone.Substring(x.Phone.Length - 9)))
                     .Select(x => x.Phone));
+        }
+
+        /// <summary>
+        /// Query SĐT chuẩn hóa (9 số cuối) của khách ĐÃ mua trong
+        /// <see cref="InactiveDays"/> ngày gần nhất (trừ đơn đã hủy).
+        /// Dùng chung cho <see cref="GetInactivePhonesAsync"/> và
+        /// <see cref="GetInactiveCountAsync"/> để 2 luồng "liệt kê" và "đếm"
+        /// không lệch điều kiện nhau.
+        /// </summary>
+        private async Task<IQueryable<string>> GetActivePhoneNormsAsync()
+        {
+            var since = DateTime.UtcNow.AddDays(-InactiveDays);
+            var orderQuery = await _orders.GetQueryableAsync();
+            return orderQuery
+                .Where(x => x.CreatedAt >= since && x.Status != OrderStatus.Cancelled)
+                .Select(x => x.CustomerPhoneNorm)
+                .Distinct();
         }
 
         /// <summary>
@@ -229,20 +244,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="tier">Tên hạng ("Bạc" dùng ngưỡng Bạc, còn lại dùng ngưỡng Vàng).</param>
         private async Task<List<string>> GetTierPhonesAsync(string tier)
         {
-            var settings = await _shopSettings.GetAsync();
-            var isSilver = string.Equals(tier, "Bạc", StringComparison.OrdinalIgnoreCase);
-            var min = isSilver ? settings.TierSilverMin : settings.TierGoldMin;
-
-            // Khớp GetTier (bug-hunt run 16:25): bản cũ dùng >= cho cả Vàng
-            // và thiếu guard mốc <= 0 → khách chi tiêu ĐÚNG bằng mốc Vàng bị
-            // tính Bạc ở checkout (hưởng % giảm thấp hơn) nhưng vẫn nhận
-            // voucher chiến dịch "hạng Vàng"; tệ hơn mốc = 0 sẽ nhắm toàn bộ
-            // tài khoản trong khi GetTier không xếp ai vào hạng đó.
-            if (min <= 0)
+            var resolved = await ResolveTierMinAsync(tier);
+            if (resolved == null)
             {
                 return new List<string>();
             }
 
+            var (isSilver, min) = resolved.Value;
             var queryable = await _loyaltyAccounts.GetQueryableAsync();
             if (isSilver)
             {
@@ -255,17 +263,34 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
+        /// Đọc mốc chi tiêu của hạng từ setting. Khớp chuẩn xếp hạng
+        /// <see cref="PhuThuongStickyRice.Application.Loyalty.LoyaltyAppService.GetTier"/>
+        /// (nơi tính % giảm hạng ở checkout và hiển thị hạng cho khách):
+        /// Vàng = phải VƯỢT mốc (&gt;), Bạc = từ mốc trở lên (&gt;=).
+        /// Mốc &lt;= 0 nghĩa là hạng đó không tồn tại → trả null để bên gọi
+        /// bỏ qua nhóm (bản cũ thiếu guard này sẽ nhắm toàn bộ tài khoản
+        /// trong khi GetTier không xếp ai vào hạng đó — bug-hunt run 16:25).
+        /// Dùng chung cho <see cref="GetTierPhonesAsync"/> và
+        /// <see cref="GetTierCountAsync"/> để 2 luồng "liệt kê" và "đếm"
+        /// không lệch mốc nhau.
+        /// </summary>
+        /// <param name="tier">Tên hạng ("Bạc" dùng ngưỡng Bạc, còn lại dùng ngưỡng Vàng).</param>
+        /// <returns>(isSilver, mốc) hoặc null khi hạng không tồn tại.</returns>
+        private async Task<(bool IsSilver, decimal Min)?> ResolveTierMinAsync(string tier)
+        {
+            var settings = await _shopSettings.GetAsync();
+            var isSilver = string.Equals(tier, "Bạc", StringComparison.OrdinalIgnoreCase);
+            var min = isSilver ? settings.TierSilverMin : settings.TierGoldMin;
+            return min <= 0 ? null : (isSilver, min);
+        }
+
+        /// <summary>
         /// Đếm khách "không mua 30+ ngày" bằng SELECT COUNT — cùng điều kiện
         /// <see cref="GetInactivePhonesAsync"/> nhưng không nạp SĐT về memory.
         /// </summary>
         private async Task<int> GetInactiveCountAsync()
         {
-            var since = DateTime.UtcNow.AddDays(-30);
-            var orderQuery = await _orders.GetQueryableAsync();
-            var activeNorms = orderQuery
-                .Where(x => x.CreatedAt >= since && x.Status != OrderStatus.Cancelled)
-                .Select(x => x.CustomerPhoneNorm)
-                .Distinct();
+            var activeNorms = await GetActivePhoneNormsAsync();
 
             var loyaltyQuery = await _loyaltyAccounts.GetQueryableAsync();
             return await _asyncExecuter.CountAsync(
@@ -280,15 +305,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         private async Task<int> GetTierCountAsync(string tier)
         {
-            var settings = await _shopSettings.GetAsync();
-            var isSilver = string.Equals(tier, "Bạc", StringComparison.OrdinalIgnoreCase);
-            var min = isSilver ? settings.TierSilverMin : settings.TierGoldMin;
-
-            if (min <= 0)
+            var resolved = await ResolveTierMinAsync(tier);
+            if (resolved == null)
             {
                 return 0;
             }
 
+            var (isSilver, min) = resolved.Value;
             var queryable = await _loyaltyAccounts.GetQueryableAsync();
             if (isSilver)
             {

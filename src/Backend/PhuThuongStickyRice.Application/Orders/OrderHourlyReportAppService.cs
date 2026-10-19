@@ -93,7 +93,9 @@ namespace PhuThuongStickyRice.Application.Orders
             // thay vì nạp toàn bộ đơn + lines của cả ngày vào memory rồi gom
             // bằng C#. VN không có DST nên AddHours(offset) dịch được sang SQL.
             // Tên món vẫn chuẩn hóa ở C# (trim/UnnamedProductLabel) nên semantics giữ nguyên.
-            var quantityRows = await _asyncExecuter.ToListAsync(
+            // CS8143: tuple literal không dùng được trong expression tree —
+            // project anonymous type trong SQL, map sang tuple ở memory.
+            var quantityRows = (await _asyncExecuter.ToListAsync(
                 baseQuery
                     .SelectMany(x => x.Lines.Select(l => new
                     {
@@ -107,22 +109,40 @@ namespace PhuThuongStickyRice.Application.Orders
                         g.Key.Hour,
                         g.Key.ProductName,
                         Quantity = g.Sum(x => (long)x.Quantity)
-                    }));
+                    })))
+                .Select(x => (x.Hour, x.ProductName, x.Quantity))
+                .ToList();
 
             // 1 câu SQL đếm số đơn theo giờ VN (OrdersPerHour/TotalOrders).
-            var orderCountRows = await _asyncExecuter.ToListAsync(
+            var orderCountRows = (await _asyncExecuter.ToListAsync(
                 baseQuery
                     .GroupBy(x => x.CreatedAt.AddHours(VietnamTime.UtcOffsetHours).Hour)
                     .Select(g => new
                     {
                         Hour = g.Key,
                         Count = g.LongCount()
-                    }));
+                    })))
+                .Select(x => (x.Hour, x.Count))
+                .ToList();
 
             var buckets = new HourlyBuckets();
-            foreach (var row in quantityRows)
+            FillProductQuantities(buckets, quantityRows);
+            FillOrderCounts(buckets, orderCountRows);
+
+            return buckets;
+        }
+
+        /// <summary>
+        /// Đổ số lượng từng món theo giờ vào buckets (chuẩn hóa tên món ở C#
+        /// như bản cũ; đơn ngoài khung 6h–22h bị bỏ qua).
+        /// </summary>
+        private static void FillProductQuantities(
+            HourlyBuckets buckets,
+            IEnumerable<(int Hour, string? ProductName, long Quantity)> rows)
+        {
+            foreach (var row in rows)
             {
-                if (row.Hour < DayStartHour || row.Hour > DayEndHour)
+                if (!IsWithinReportingHours(row.Hour))
                 {
                     continue;
                 }
@@ -139,10 +159,16 @@ namespace PhuThuongStickyRice.Application.Orders
                 products.TryGetValue(name, out var qty);
                 products[name] = qty + row.Quantity;
             }
+        }
 
-            foreach (var row in orderCountRows)
+        /// <summary>Đổ số đơn từng giờ vào buckets (đơn ngoài khung 6h–22h bị bỏ qua).</summary>
+        private static void FillOrderCounts(
+            HourlyBuckets buckets,
+            IEnumerable<(int Hour, long Count)> rows)
+        {
+            foreach (var row in rows)
             {
-                if (row.Hour < DayStartHour || row.Hour > DayEndHour)
+                if (!IsWithinReportingHours(row.Hour))
                 {
                     continue;
                 }
@@ -150,9 +176,14 @@ namespace PhuThuongStickyRice.Application.Orders
                 buckets.OrdersPerHour[row.Hour] = row.Count;
                 buckets.TotalOrders += row.Count;
             }
-
-            return buckets;
         }
+
+        /// <summary>
+        /// Đơn trong khung <see cref="DayStartHour"/>h–<see cref="DayEndHour"/>h
+        /// (giờ VN) mới tính vào báo cáo (quán không bán ngoài khung này).
+        /// </summary>
+        private static bool IsWithinReportingHours(int hour)
+            => hour >= DayStartHour && hour <= DayEndHour;
 
         /// <summary>
         /// Dựng DTO báo cáo từ dữ liệu đã gom: danh sách món (sắp xếp theo

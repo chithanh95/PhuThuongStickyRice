@@ -577,42 +577,42 @@ else
                             <tr><th>Món</th><th class="text-center">SL</th><th class="text-right">Thành tiền</th><th></th></tr>
                         </thead>
                         <tbody>
-                            @foreach (var item in CartState.Items)
+                            @foreach (var cartItem in CartState.Items)
                             {
-                                <tr @key="item.LineKey">
+                                <tr @key="cartItem.LineKey">
                                     <td>
-                                        @item.ProductName
-                                        @if (item.IsCombo)
+                                        @cartItem.ProductName
+                                        @if (cartItem.IsCombo)
                                         {
                                             <span class="badge badge-warning ml-1">COMBO</span>
                                         }
-                                        @if (!string.IsNullOrWhiteSpace(item.SizeName))
+                                        @if (!string.IsNullOrWhiteSpace(cartItem.SizeName))
                                         {
-                                            <br /><small class="text-muted">Size: @item.SizeName</small>
+                                            <br /><small class="text-muted">Size: @cartItem.SizeName</small>
                                         }
-                                        @if (!string.IsNullOrWhiteSpace(item.ToppingNames))
+                                        @if (!string.IsNullOrWhiteSpace(cartItem.ToppingNames))
                                         {
-                                            <br /><small class="text-muted">Ăn kèm: @item.ToppingNames</small>
+                                            <br /><small class="text-muted">Ăn kèm: @cartItem.ToppingNames</small>
                                         }
-                                        @if (!string.IsNullOrWhiteSpace(item.Note))
+                                        @if (!string.IsNullOrWhiteSpace(cartItem.Note))
                                         {
-                                            <br /><small class="text-info">📝 @item.Note</small>
+                                            <br /><small class="text-info">📝 @cartItem.Note</small>
                                         }
                                     </td>
                                     <td class="text-center text-nowrap">
                                         <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                @onclick="() => ChangeQty(item, -1)" title="Bớt 1"
-                                                aria-label="Bớt 1 @item.ProductName">−</button>
-                                        <span class="mx-2">@item.Quantity</span>
+                                                @onclick="() => ChangeQty(cartItem, -1)" title="Bớt 1"
+                                                aria-label="Bớt 1 @cartItem.ProductName">−</button>
+                                        <span class="mx-2">@cartItem.Quantity</span>
                                         <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                @onclick="() => ChangeQty(item, 1)" title="Thêm 1"
-                                                aria-label="Thêm 1 @item.ProductName">+</button>
+                                                @onclick="() => ChangeQty(cartItem, 1)" title="Thêm 1"
+                                                aria-label="Thêm 1 @cartItem.ProductName">+</button>
                                     </td>
-                                    <td class="text-right">@FormatPrice(item.LineTotal)</td>
+                                    <td class="text-right">@FormatPrice(cartItem.LineTotal)</td>
                                     <td class="text-right text-nowrap">
                                         <button type="button" class="btn btn-sm btn-outline-danger"
-                                                @onclick="() => CartState.Remove(item.LineKey)" title="Xóa món khỏi đơn"
-                                                aria-label="Xóa @item.ProductName khỏi đơn">×</button>
+                                                @onclick="() => CartState.Remove(cartItem.LineKey)" title="Xóa món khỏi đơn"
+                                                aria-label="Xóa @cartItem.ProductName khỏi đơn">×</button>
                                     </td>
                                 </tr>
                             }
@@ -1443,9 +1443,9 @@ else
     /// Wave 6a (item 25): quantity steppers on the checkout order summary.
     /// Reducing to 0 removes the line; totals update live via OnCartChanged.
     /// </summary>
-    private void ChangeQty(CartItemModel item, int delta)
+    private void ChangeQty(CartItemModel cartItem, int delta)
     {
-        CartState.UpdateQuantity(item.LineKey, item.Quantity + delta);
+        CartState.UpdateQuantity(cartItem.LineKey, cartItem.Quantity + delta);
     }
 
     /// <summary>

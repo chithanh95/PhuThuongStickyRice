@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
+using PhuThuongStickyRice.Application.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,6 +74,9 @@ namespace PhuThuongStickyRice.Application.Reports
         /// <summary>Repository bảng FunnelEvent (lưu từng lượt sự kiện funnel).</summary>
         private readonly IRepository<FunnelEvent, Guid> _events;
 
+        /// <summary>Số ngày trong cửa sổ báo cáo (bao gồm hôm nay).</summary>
+        private const int ReportWindowDays = 7;
+
         /// <summary>Khởi tạo service theo dõi funnel.</summary>
         /// <param name="events">Repository bảng FunnelEvent.</param>
         public FunnelEventAppService(IRepository<FunnelEvent, Guid> events)
@@ -116,11 +120,11 @@ namespace PhuThuongStickyRice.Application.Reports
         /// <returns>Số lượt theo từng tên sự kiện.</returns>
         public virtual async Task<List<FunnelEventCountDto>> GetReportAsync()
         {
-            // Mốc ngày theo giờ Việt Nam (UTC+7, Việt Nam không có giờ mùa hè).
-            var vnNow = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7));
-            var todayStart = new DateTimeOffset(vnNow.Date, TimeSpan.FromHours(7));
-            // Cửa sổ 7 ngày: lùi 6 ngày từ đầu hôm nay (bao gồm cả hôm nay).
-            var weekStart = todayStart.AddDays(-6);
+            // Mốc ngày theo giờ Việt Nam (không có giờ mùa hè — offset lấy từ VietnamTime).
+            var vnNow = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(VietnamTime.UtcOffsetHours));
+            var todayStart = new DateTimeOffset(vnNow.Date, TimeSpan.FromHours(VietnamTime.UtcOffsetHours));
+            // Cửa sổ báo cáo bao gồm cả hôm nay nên lùi (số ngày - 1) ngày từ đầu hôm nay.
+            var weekStart = todayStart.AddDays(-(ReportWindowDays - 1));
 
             // perf-hunt 2026-10-19: aggregate in SQL (GROUP BY) instead of
             // loading every row of the last 7 days into memory. The table

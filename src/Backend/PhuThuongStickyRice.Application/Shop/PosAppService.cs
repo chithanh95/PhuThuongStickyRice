@@ -36,6 +36,23 @@ namespace PhuThuongStickyRice.Application.Shop
         /// <summary>Thông báo lỗi khi POS chưa chọn món nào (dùng ở 2 điểm validate).</summary>
         private const string NoItemsSelectedMessage = "POS: chưa chọn món nào.";
 
+        /// <summary>Tên hiển thị cho khách vãng lai không để lại tên.</summary>
+        private const string WalkInCustomerName = "Khách vãng lai";
+        /// <summary>SĐT placeholder cho khách vãng lai không để lại SĐT (loyalty bỏ qua để điểm không dồn vào 1 pool chung).</summary>
+        private const string MissingPhonePlaceholder = "0000000000";
+        /// <summary>Phương thức thanh toán của đơn POS: tiền mặt tại quầy.</summary>
+        private const string PosPaymentMethod = "Cod";
+        /// <summary>Cách nhận hàng của đơn POS: khách lấy tại quầy.</summary>
+        private const string PosFulfillmentMethod = "Pickup";
+        /// <summary>Nguồn đơn cho đơn tạo tại quầy POS.</summary>
+        private const string PosOrderSource = "POS";
+        /// <summary>
+        /// Chuỗi trạng thái đơn POS đi qua sau khi thu tiền. Không set thẳng
+        /// Completed: mỗi bước chuyển đều ghi audit/log nhân viên/webhook, và
+        /// chỉ Completed mới cộng điểm loyalty/chạy quy tắc thưởng.
+        /// </summary>
+        private static readonly string[] PosStatusPipeline = { "Confirmed", "Preparing", "Delivering", "Completed" };
+
         private readonly IOrderAppService _orders;
 
         public PosAppService(IOrderAppService orders)
@@ -68,14 +85,14 @@ namespace PhuThuongStickyRice.Application.Shop
             var order = await _orders.CreateAsync(new CreateOrderDto
             {
                 CustomerName = string.IsNullOrWhiteSpace(input.CustomerName)
-                    ? "Khách vãng lai"
+                    ? WalkInCustomerName
                     : input.CustomerName.Trim(),
-                CustomerPhone = phone ?? "0000000000",
+                CustomerPhone = phone ?? MissingPhonePlaceholder,
                 CustomerAddress = null,
                 Notes = string.IsNullOrWhiteSpace(input.Note) ? null : input.Note.Trim(),
-                PaymentMethod = "Cod",
-                FulfillmentMethod = "Pickup",
-                Source = "POS",
+                PaymentMethod = PosPaymentMethod,
+                FulfillmentMethod = PosFulfillmentMethod,
+                Source = PosOrderSource,
                 Lines = input.Lines
                     .Where(x => x.Quantity > 0)
                     .Select(x => new CreateOrderLineDto
@@ -98,7 +115,7 @@ namespace PhuThuongStickyRice.Application.Shop
             // ghi audit + log nhân viên + webhook, và chỉ Completed mới cộng
             // điểm loyalty/chạy quy tắc thưởng (xem doc của method).
             await _orders.ConfirmPaymentAsync(order.Id);
-            foreach (var status in new[] { "Confirmed", "Preparing", "Delivering", "Completed" })
+            foreach (var status in PosStatusPipeline)
             {
                 order = await _orders.UpdateStatusAsync(order.Id, new UpdateOrderStatusDto { Status = status });
             }

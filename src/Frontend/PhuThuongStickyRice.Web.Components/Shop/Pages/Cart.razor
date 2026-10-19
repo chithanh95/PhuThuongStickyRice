@@ -99,49 +99,49 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in CartState.Items)
+                @foreach (var cartItem in CartState.Items)
                 {
-                    <tr @key="item.LineKey">
+                    <tr @key="cartItem.LineKey">
                         <td>
                             <div class="cart-item-main">
-                                <img class="cart-item-img" src="@CartItemImage(item)" alt="@item.ProductName" loading="lazy"
+                                <img class="cart-item-img" src="@CartItemImage(cartItem)" alt="@cartItem.ProductName" loading="lazy"
                                      onerror="this.onerror=null;this.style.display='none';" />
                                 <div class="cart-item-info">
-                                    <strong>@item.ProductName</strong>
-                            @if (item.IsCombo)
+                                    <strong>@cartItem.ProductName</strong>
+                            @if (cartItem.IsCombo)
                             {
                                 <span class="badge badge-warning ml-1">COMBO</span>
                             }
-                            @if (!string.IsNullOrWhiteSpace(item.SizeName))
+                            @if (!string.IsNullOrWhiteSpace(cartItem.SizeName))
                             {
-                                <br /><small class="text-muted">Size: @item.SizeName</small>
+                                <br /><small class="text-muted">Size: @cartItem.SizeName</small>
                             }
-                            @if (!string.IsNullOrWhiteSpace(item.ToppingNames))
+                            @if (!string.IsNullOrWhiteSpace(cartItem.ToppingNames))
                             {
-                                <br /><small class="text-muted">@AppI18n.T("shop.toppings_label"): @item.ToppingNames</small>
+                                <br /><small class="text-muted">@AppI18n.T("shop.toppings_label"): @cartItem.ToppingNames</small>
                             }
                             @* BA cart: bỏ mã sản phẩm nội bộ (XOI-DO...) — khách không cần thấy. *@
                             @* Wave 6a (item 24): per-item note ("ghi chú món"). *@
                             <br />
                             <input class="form-control form-control-sm mt-1" style="max-width: 230px;"
                                    maxlength="500" placeholder="@AppI18n.T("shop.item_note_placeholder")"
-                                   aria-label="Ghi chú cho món @item.ProductName"
-                                   value="@item.Note"
-                                   @onchange="(e) => CartState.UpdateNote(item.LineKey, e.Value?.ToString())" />
+                                   aria-label="Ghi chú cho món @cartItem.ProductName"
+                                   value="@cartItem.Note"
+                                   @onchange="(e) => CartState.UpdateNote(cartItem.LineKey, e.Value?.ToString())" />
                                 </div>
                             </div>
                         </td>
-                        <td class="text-right">@FormatPrice(item.UnitPrice)</td>
-                        <td class="text-right"><strong>@FormatPrice(item.LineTotal)</strong></td>
+                        <td class="text-right">@FormatPrice(cartItem.UnitPrice)</td>
+                        <td class="text-right"><strong>@FormatPrice(cartItem.LineTotal)</strong></td>
                         <td class="text-center">
-                            <QuantitySpinner Value="@item.Quantity"
-                                             ValueChanged="@(q => CartState.UpdateQuantity(item.LineKey, q))"
+                            <QuantitySpinner Value="@cartItem.Quantity"
+                                             ValueChanged="@(q => CartState.UpdateQuantity(cartItem.LineKey, q))"
                                              Min="0" Max="99" />
                         </td>
                         <td class="text-right">
                             @* A11y-1610: aria-label kèm tên món — trước đây mọi dòng đều đọc
                                chung chung là "Xóa", người dùng bàn phím không biết xóa món nào. *@
-                            <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(item.LineKey)" aria-label="Xóa @item.ProductName khỏi giỏ hàng">@AppI18n.T("common.delete")</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(cartItem.LineKey)" aria-label="Xóa @cartItem.ProductName khỏi giỏ hàng">@AppI18n.T("common.delete")</button>
                         </td>
                     </tr>
                 }
@@ -221,12 +221,12 @@ else
     /// Ảnh 1 dòng giỏ: dùng ảnh thật của món, chưa có thì ảnh placeholder SVG
     /// (không hardcode ảnh món nào — rule chung: ảnh lấy từ setting DB).
     /// </summary>
-    /// <param name="item">Dòng giỏ hàng.</param>
+    /// <param name="cartItem">Dòng giỏ hàng.</param>
     /// <returns>URL ảnh món hoặc ảnh placeholder.</returns>
-    private string CartItemImage(CartItemModel item)
+    private string CartItemImage(CartItemModel cartItem)
     {
-        if (!string.IsNullOrWhiteSpace(item?.ImageUrl))
-            return item.ImageUrl;
+        if (!string.IsNullOrWhiteSpace(cartItem?.ImageUrl))
+            return cartItem.ImageUrl;
         return PlaceholderImage;
     }
 

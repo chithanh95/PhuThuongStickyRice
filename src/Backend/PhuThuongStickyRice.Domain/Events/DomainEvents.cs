@@ -8,11 +8,21 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Domain.Events
 {
+    /// <summary>
+    /// Bus sự kiện domain nội bộ: entity phát sự kiện (ví dụ đơn tạo xong)
+    /// và các handler đã đăng ký được gọi bất đồng bộ. Handler đăng ký 1 lần
+    /// lúc khởi động qua <see cref="RegisterHandlers"/>.
+    /// </summary>
     public class DomainEvents : IDomainEvents
     {
         private static List<Type> _handlers = new List<Type>();
         private IServiceProvider _serviceProvider;
 
+        /// <summary>
+        /// Quét assembly tìm mọi class implement <see cref="IDomainEventHandler{T}"/>
+        /// và đăng ký transient vào DI. Danh sách handler lưu static để
+        /// <see cref="DispatchAsync"/> biết gọi ai.
+        /// </summary>
         public static void RegisterHandlers(Assembly assembly, IServiceCollection services)
         {
             var types = assembly.GetTypes()
@@ -32,6 +42,11 @@ namespace PhuThuongStickyRice.Domain.Events
             _serviceProvider = serviceProvider;
         }
 
+        /// <summary>
+        /// Phát sự kiện tới mọi handler đã đăng ký mà xử lý đúng kiểu sự
+        /// kiện này. Mỗi handler được resolve từ DI và chạy
+        /// <see cref="IDomainEventHandler{T}.HandleAsync"/>.
+        /// </summary>
         public async Task DispatchAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default)
         {
             foreach (Type handlerType in _handlers)

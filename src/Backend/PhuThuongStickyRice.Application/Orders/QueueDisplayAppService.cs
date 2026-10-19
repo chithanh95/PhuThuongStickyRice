@@ -46,6 +46,9 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Nhãn trạng thái vé chờ trên màn hình TV khi đơn đã xong, mời khách ra lấy món.</summary>
         private const string ReadyStatusLabel = "Ready";
 
+        /// <summary>Số ký tự cuối của mã đơn dùng làm mã rút gọn hiển thị trên màn hình chờ.</summary>
+        private const int ShortCodeTailLength = 3;
+
         /// <summary>
         /// Khởi tạo service hiển thị hàng chờ.
         /// </summary>
@@ -100,14 +103,38 @@ namespace PhuThuongStickyRice.Application.Orders
             // purpose — QueueNumber (= position in the day's order sequence)
             // is shown on the TV screen, so filtering statuses in SQL would
             // renumber the visible tickets (business change).
-            var today = await _asyncExecuter.ToListAsync(
+            // CS8143: expression tree không chứa tuple literal được — project
+            // anonymous type trong SQL rồi map sang tuple ở memory (lambda
+            // thường, không phải expression tree).
+            var today = (await _asyncExecuter.ToListAsync(
                 queryable
                     .Where(x => x.CreatedAt >= dayStartUtc
                         && x.CreatedAt < dayEndUtc
                         && x.Status != OrderStatus.Cancelled)
                     .OrderBy(x => x.CreatedAt)
-                    .Select(x => new { x.Status, x.OrderNumber }));
+                    .Select(x => new { x.Status, x.OrderNumber })))
+                .Select(x => (x.Status, x.OrderNumber))
+                .ToList();
 
+            var tickets = MapQueueTickets(today, visibleStatuses);
+
+            // "Mời lấy món" first — those customers need to act.
+            return tickets
+                .OrderBy(x => x.Status == ReadyStatusLabel ? 0 : 1)
+                .ThenBy(x => x.QueueNumber)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Dựng danh sách vé chờ từ đơn trong ngày: QueueNumber = vị trí đơn
+        /// trong chuỗi đơn của ngày (kể cả đơn đã ẩn khỏi màn hình — lọc trạng
+        /// thái ở memory để không đánh số lại, xem NOTE ở
+        /// <see cref="QueryNowServingAsync"/>).
+        /// </summary>
+        private static List<QueueTicketDto> MapQueueTickets(
+            IReadOnlyList<(OrderStatus Status, string? OrderNumber)> today,
+            OrderStatus[] visibleStatuses)
+        {
             var result = new List<QueueTicketDto>();
             for (var i = 0; i < today.Count; i++)
             {
@@ -121,18 +148,14 @@ namespace PhuThuongStickyRice.Application.Orders
                 result.Add(new QueueTicketDto
                 {
                     QueueNumber = i + 1,
-                    ShortCode = number.Length <= 3
+                    ShortCode = number.Length <= ShortCodeTailLength
                         ? number.ToUpperInvariant()
-                        : number[^3..].ToUpperInvariant(),
+                        : number[^ShortCodeTailLength..].ToUpperInvariant(),
                     Status = order.Status == OrderStatus.Delivering ? ReadyStatusLabel : PreparingStatusLabel
                 });
             }
 
-            // "Mời lấy món" first — those customers need to act.
-            return result
-                .OrderBy(x => x.Status == ReadyStatusLabel ? 0 : 1)
-                .ThenBy(x => x.QueueNumber)
-                .ToList();
+            return result;
         }
     }
 }
