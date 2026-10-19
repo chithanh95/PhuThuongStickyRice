@@ -300,6 +300,21 @@ html.dark .co-mobile-bar .co-total small {
 }
 /* ===== END UIUX run 15:52 - Agent1 FIX 2 ===== */
 
+/* ===== UIUX run 18:35 — Agent1 Mobile =====
+   FIX 1 — Ô "Số điểm muốn đổi" (cụm .input-group-sm, Checkout.razor:~736):
+   Bootstrap .input-group-sm > .form-control đặt font-size .875rem (14px),
+   specificity (0,2,0) thắng rule mobile chung .form-control{font-size:16px}
+   (0,1,0) — iOS auto-zoom khi focus ô điểm, màn hình giật với người lớn
+   tuổi. Mobile: chữ 16px chống zoom, vẫn nhỏ gọn đúng ý đồ input-group-sm.
+   (Nút "Đổi điểm" đã 44px theo rule .co-summary .btn — không chạm.)
+   (Verify: chỉ cụm này dùng .input-group-sm trên trang checkout.) */
+@media (max-width: 767.98px) {
+    .co-summary .input-group-sm > .form-control {
+        font-size: 16px;
+    }
+}
+/* ===== END UIUX run 18:35 - Agent1 FIX 1 ===== */
+
 /* ===== UIUX run 16:10 — Agent1 Mobile =====
    FIX 4 — Cụm mã giảm giá (Checkout.razor:668): input #co-discount cao 44px
    (rule mobile chung cho .form-control) trong khi nút "Áp dụng" bên cạnh có

@@ -742,3 +742,68 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 18:09 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 18:35 — Agent1 Mobile =====
+   FIX 1 — Modal lý do hủy đơn (TrackOrder.razor:397-403): mỗi lý do là
+   .form-check với label chỉ cao bằng dòng chữ (~24px), radio 16px —
+   vùng bấm quá nhỏ cho thao tác nguy hiểm (chọn sai lý do vẫn hủy đơn),
+   người lớn tuổi dễ bấm trượt. Đồng bộ với chuẩn radio đã áp ở
+   /checkout (run 16:10 FIX 3): cả hàng bấm được, radio 22px.
+   (Scope .modal-body — trang này chỉ có duy nhất modal hủy đơn dùng
+   class Bootstrap modal; popup khảo sát dùng .to-survey-* nên không
+   bị ảnh hưởng.) */
+@media (max-width: 767.98px) {
+    .modal-body .form-check {
+        padding: 4px 0;
+    }
+    .modal-body .form-check-label {
+        display: block;
+        padding: 10px 0 10px 2px;
+        font-size: 15px;
+    }
+    .modal-body .form-check-input[type="radio"] {
+        width: 22px;
+        height: 22px;
+        margin-top: 11px;
+    }
+}
+/* ===== END UIUX run 18:35 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 18:35 — Agent1 Mobile =====
+   FIX 2 — Modal hủy đơn: nút "Không hủy nữa" (btn-secondary) chỉ ~38px
+   trong khi "Xác nhận hủy đơn" đã 48px (inline) — 2 nút trong cùng luồng
+   nguy hiểm lệch chuẩn, nút hủy bỏ (an toàn) lại khó bấm hơn nút xác nhận.
+   Mobile: cả 2 nút 46px, chữ căn giữa, padding cân.
+   (Scope .modal-footer — chỉ có ở modal hủy đơn.) */
+@media (max-width: 767.98px) {
+    .modal-footer .btn {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 22px;
+        font-size: 1rem;
+    }
+}
+/* ===== END UIUX run 18:35 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 18:35 — Agent1 Mobile =====
+   FIX 3 — Bảng thông tin chuyển khoản QR (TrackOrder.razor:655-666):
+   tên ngân hàng / chủ tài khoản dài làm bảng rộng hơn card → tràn ngang
+   ở màn 320px. (Bảng tương tự ở /checkout đã fix ở run 15:52 bằng cùng
+   kỹ thuật, nhưng rule nằm trong Checkout.razor.css scoped nên không phủ
+   sang trang này — trang tra cứu bị sót.)
+   Giải pháp: khóa layout bảng, cho chữ ô xuống dòng (đồng bộ /checkout).
+   (Verify: .card-body > .row > .col-md-7 > table.table-sm chỉ khớp đúng
+   bảng này trên trang tra cứu — bảng lịch sử nằm trong .to-history.) */
+@media (max-width: 767.98px) {
+    .card-body > .row > .col-md-7 > table.table-sm {
+        table-layout: fixed;
+        width: 100%;
+    }
+    .card-body > .row > .col-md-7 > table.table-sm td {
+        word-break: break-word;
+        min-width: 0;
+    }
+}
+/* ===== END UIUX run 18:35 - Agent1 FIX 3 ===== */
