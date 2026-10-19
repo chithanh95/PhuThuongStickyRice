@@ -117,12 +117,12 @@ else
 {
     @if (!string.IsNullOrEmpty(_bulkError))
     {
-        <div class="alert alert-danger">@_bulkError</div>
+        <div class="alert alert-danger" role="alert">@_bulkError</div>
     }
     <div class="bulk-steps">
-        <div class="bulk-step @(_bulkStep > 1 ? "done" : "") @(_bulkStep == 1 ? "active" : "")"><span>1</span><em>Sự kiện &amp; số lượng</em></div>
-        <div class="bulk-step @(_bulkStep > 2 ? "done" : "") @(_bulkStep == 2 ? "active" : "")"><span>2</span><em>Thực đơn</em></div>
-        <div class="bulk-step @(_bulkStep == 3 ? "active" : "")"><span>3</span><em>Liên hệ</em></div>
+        <div class="bulk-step @(_bulkStep > 1 ? "done" : "") @(_bulkStep == 1 ? "active" : "")" aria-current="@(_bulkStep == 1 ? "step" : null)"><span>1</span><em>Sự kiện &amp; số lượng</em></div>
+        <div class="bulk-step @(_bulkStep > 2 ? "done" : "") @(_bulkStep == 2 ? "active" : "")" aria-current="@(_bulkStep == 2 ? "step" : null)"><span>2</span><em>Thực đơn</em></div>
+        <div class="bulk-step @(_bulkStep == 3 ? "active" : "")" aria-current="@(_bulkStep == 3 ? "step" : null)"><span>3</span><em>Liên hệ</em></div>
     </div>
 
     @if (_bulkStep == 1)

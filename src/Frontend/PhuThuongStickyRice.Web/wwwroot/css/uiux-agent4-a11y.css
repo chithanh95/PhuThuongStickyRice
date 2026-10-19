@@ -884,3 +884,64 @@ html.dark .to-survey-sheet .to-survey-star.to-survey-star {
 }
 
 /* ===== END UIUX run 17:05 - Agent4 ===== */
+
+/* ===== Run 2026-10-19 17:15 — Agent 4 A11y ===== */
+
+/* Fix 1 — WCAG 2.1.1 (Keyboard) + 2.5.8 (Touch target): menu hamburger trên
+   mobile landing KHÔNG thể mở bằng bàn phím. `.sg-nav-checkbox
+   { display: none; }` (Index.razor.css:219) loại checkbox khỏi tab order →
+   người dùng keyboard/switch không bao giờ mở được nav trên mobile. Checkbox
+   hack giữ nguyên hành vi chuột/chạm: chỉ đổi display:none → ẩn thị giác
+   nhưng vẫn focusable (1px, opacity 0, ngoài luồng) trong breakpoint
+   ≤991.98px (nơi hamburger hiện), và vẽ vòng focus tím #7a6fbe (dark:
+   #a49de0, tương phản ~4.2:1 sáng / ~5.3:1 tối, cần 3:1) lên label
+   `.sg-hamburger` qua sibling selector khi checkbox được tab tới. Đồng thời
+   nâng vùng bấm `.sg-hamburger` (~28px) lên tối thiểu 44px trên thiết bị cảm
+   ứng cho khách lớn tuổi. Không ảnh hưởng desktop (hamburger display:none). */
+@media (max-width: 991.98px) {
+    .sg-nav-checkbox.sg-nav-checkbox {
+        display: block;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: 0;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .sg-nav-checkbox:focus-visible ~ .sg-header-right .sg-hamburger {
+        outline: 2px solid #7a6fbe;
+        outline-offset: 2px;
+        border-radius: 6px;
+    }
+}
+@media (max-width: 991.98px) {
+    html.dark .sg-nav-checkbox:focus-visible ~ .sg-header-right .sg-hamburger {
+        outline-color: #a49de0;
+    }
+}
+@media (pointer: coarse) and (max-width: 991.98px) {
+    .sg-hamburger.sg-hamburger {
+        min-width: 44px;
+        min-height: 44px;
+        justify-content: center;
+        align-items: center;
+    }
+}
+
+/* Fix 3 — WCAG 1.4.3 (Contrast, AA 4.5:1): số tiền đặt cọc `.text-warning`
+   trên màn hình đặt hàng thành công (Checkout.razor:112) dùng #f1b44c
+   (rule `.shp-page .text-warning` trong Shop.razor.css:344) trên nền sáng —
+   chỉ ~2:1, người lớn tuổi không đọc được số tiền cần cọc (thông tin tiền
+   quan trọng). Đậm xuống #664d00 (~6.4:1 trên nền .alert-success #d4edda,
+   vẫn giữ sắc hổ phách). Dark mode giữ #f5c86e gốc (~6.4:1 trên nền tối
+   #1e4a2e, đã qua chuẩn). `!important` + specificity (0,3,0) để thắng rule
+   gốc cùng có !important (0,2,0); scope `.alert-success` nên spinner demo
+   Lexa không bị đổi. */
+.shp-page .alert-success .text-warning.text-warning {
+    color: #664d00 !important;
+}
+html.dark .shp-page .alert-success .text-warning.text-warning {
+    color: #f5c86e !important;
+}
+
+/* ===== END Run 2026-10-19 17:15 — Agent 4 ===== */

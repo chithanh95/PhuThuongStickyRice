@@ -303,7 +303,7 @@ else
 {
     @if (!string.IsNullOrEmpty(_error))
     {
-        <div class="alert alert-danger">@_error</div>
+        <div class="alert alert-danger" role="alert">@_error</div>
     }
 
     @if (_minOrderBlocked)

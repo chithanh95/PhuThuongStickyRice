@@ -705,7 +705,7 @@ else
             <p>Để lại SĐT — quán gửi tin khuyến mãi, món mới mỗi tuần. Không spam.</p>
             @if (_subDone)
             {
-                <p class="sg-form-ok">✓ Đăng ký thành công! Hẹn gặp bạn với ưu đãi mới.</p>
+                <p class="sg-form-ok" role="status">✓ Đăng ký thành công! Hẹn gặp bạn với ưu đãi mới.</p>
             }
             else
             {
@@ -715,7 +715,7 @@ else
                 </form>
                 @if (!string.IsNullOrEmpty(_subMsg))
                 {
-                    <p class="sg-form-error">@_subMsg</p>
+                    <p class="sg-form-error" role="alert">@_subMsg</p>
                 }
             }
         </div>
