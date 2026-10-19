@@ -1,3 +1,5 @@
+#nullable enable annotations
+
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Common.ImageBackup;
 using PhuThuongStickyRice.WebAPI.Common;

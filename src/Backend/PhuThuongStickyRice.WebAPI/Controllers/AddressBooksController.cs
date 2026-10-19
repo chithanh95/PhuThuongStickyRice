@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Dtos;
 using PhuThuongStickyRice.Application.Customer;
-using PhuThuongStickyRice.Application.Customer;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
