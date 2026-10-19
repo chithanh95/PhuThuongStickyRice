@@ -180,17 +180,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Conflict("Số điện thoại này đã được đăng ký. Vui lòng đăng nhập.");
             }
 
-            var name = string.IsNullOrWhiteSpace(model.FullName) ? phone : model.FullName.Trim();
-            var user = new User
-            {
-                UserName = phone,
-                NormalizedUserName = phone.ToUpperInvariant(),
-                PhoneNumber = phone,
-                PhoneNumberConfirmed = true,
-                Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email.Trim(),
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString()
-            };
+            // [codequality-smell 2026-10-19] Dựng entity User tách ra method
+            // riêng để Register ngắn gọn, chỉ còn flow validate → tạo → cấp token.
+            var user = BuildCustomerUser(phone, model);
 
             var result = await _userManager.CreateAsync(user, model.Password);
             if (!result.Succeeded)
@@ -214,6 +206,25 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 Email = user.Email,
                 Roles = roles
             });
+        }
+
+        /// <summary>
+        /// Dựng entity <see cref="User"/> cho khách tự đăng ký: username là SĐT
+        /// (đã validate), SĐT coi như đã xác thực vì không có SMS OTP thật,
+        /// tên hiển thị mặc định bằng SĐT khi khách không nhập họ tên.
+        /// </summary>
+        private static User BuildCustomerUser(string phone, CustomerRegisterRequestModel model)
+        {
+            return new User
+            {
+                UserName = phone,
+                NormalizedUserName = phone.ToUpperInvariant(),
+                PhoneNumber = phone,
+                PhoneNumberConfirmed = true,
+                Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email.Trim(),
+                SecurityStamp = Guid.NewGuid().ToString(),
+                ConcurrencyStamp = Guid.NewGuid().ToString()
+            };
         }
 
         /// <summary>
