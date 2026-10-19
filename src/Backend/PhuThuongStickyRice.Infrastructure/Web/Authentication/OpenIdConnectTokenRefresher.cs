@@ -53,7 +53,9 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Authentication
                     return null;
                 }
 
-                throw new Exception(response.Raw);
+                // CA2201: không ném Exception chung chung — dùng InvalidOperationException
+                // để caller và global exception filter phân biệt được với lỗi khác.
+                throw new InvalidOperationException(response.Raw);
             }
 
             return new RefreshedOidcToken

@@ -197,13 +197,15 @@ else if (_forecast != null)
             sb.Append($"<polygon points=\"{histPts} {F(X(lastHist))},{F(H - PadB)} {F(X(0))},{F(H - PadB)}\" fill=\"rgba(122,111,190,0.12)\"/>");
             sb.Append($"<polyline points=\"{histPts}\" fill=\"none\" stroke=\"#7a6fbe\" stroke-width=\"2.5\"/>");
 
-            var fcPts = $"{F(X(lastHist))},{F(Y(hist[lastHist].Revenue))}";
+            // fcPts cũng dùng StringBuilder: nối chuỗi bằng += trong loop tạo string
+            // mới mỗi vòng (O(n²) bộ nhớ), trong khi dots bên dưới đã dùng StringBuilder.
+            var fcPts = new System.Text.StringBuilder($"{F(X(lastHist))},{F(Y(hist[lastHist].Revenue))}");
             var dots = new System.Text.StringBuilder();
             for (var i = 0; i < fc.Count; i++)
             {
                 var x = X(hist.Count + i);
                 var y = Y(fc[i].ForecastRevenue);
-                fcPts += $" {F(x)},{F(y)}";
+                fcPts.Append($" {F(x)},{F(y)}");
                 dots.Append($"<circle cx=\"{F(x)}\" cy=\"{F(y)}\" r=\"4\" fill=\"#f1b44c\" stroke=\"#fff\" stroke-width=\"1.5\"/>");
             }
             sb.Append($"<polyline points=\"{fcPts}\" fill=\"none\" stroke=\"#f1b44c\" stroke-width=\"2.5\" stroke-dasharray=\"7 4\"/>");

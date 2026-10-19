@@ -303,7 +303,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
             long TotalEarned,
             decimal TotalSpent,
             string ReferralCode,
-            DateTime? DateOfBirth);
+            // Non-nullable: truy vấn ở dưới đã lọc x.DateOfBirth.HasValue nên
+            // truyền thẳng .Value vào đây, không cần null-forgiving (!) ở chỗ dùng.
+            DateTime DateOfBirth);
 
         /// <summary>Giới hạn <paramref name="daysAhead"/> trong khoảng 0..MaxDaysAhead.</summary>
         private static int ClampDaysAhead(int daysAhead)
@@ -339,9 +341,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
                              x.TotalEarned,
                              x.TotalSpent,
                              x.ReferralCode,
-                             x.DateOfBirth)));
+                             x.DateOfBirth.Value)));
 
-            return rows.Select(row => (Row: row, Next: NextBirthday(row.DateOfBirth!.Value, today)))
+            return rows.Select(row => (Row: row, Next: NextBirthday(row.DateOfBirth, today)))
                        .Where(x => (x.Next - today).TotalDays <= daysAhead)
                        .OrderBy(x => x.Next)
                        .Select(x => x.Row)

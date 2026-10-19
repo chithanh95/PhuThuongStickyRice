@@ -37,7 +37,9 @@ namespace PhuThuongStickyRice.BackgroundServer
                 var validationResult = appSettings.Validate();
                 if (validationResult.Failed)
                 {
-                    throw new Exception(validationResult.FailureMessage);
+                    // CA2201: config sai lúc khởi động là lỗi vận hành — ném
+                    // InvalidOperationException thay vì Exception chung chung.
+                    throw new InvalidOperationException(validationResult.FailureMessage);
                 }
 
                 services.Configure<AppSettings>(configuration);
