@@ -219,6 +219,11 @@
     private QueueTicketModel _zoomed;
     private Timer _timer;
     private bool _loading;
+    // Bug-hunt 2026-10-19: async-void timer callback có thể chạy sau khi
+    // component đã dispose (vd: rời trang đúng lúc tick 15s) → StateHasChanged
+    // trên renderer đã hủy ném exception, unhandled → crash trắng app.
+    // Guard theo mẫu OrderCountdownBanner.
+    private bool _disposed;
 
     protected override async Task OnInitializedAsync()
     {
@@ -226,9 +231,11 @@
         // Tự làm mới 15s (item 178).
         _timer = new Timer(async _ =>
         {
+            if (_disposed) return;
             _now = DateTime.Now;
             await InvokeAsync(async () =>
             {
+                if (_disposed) return;
                 await RefreshAsync();
                 StateHasChanged();
             });
@@ -270,6 +277,7 @@
 
     public void Dispose()
     {
+        _disposed = true;
         _timer?.Dispose();
     }
 }

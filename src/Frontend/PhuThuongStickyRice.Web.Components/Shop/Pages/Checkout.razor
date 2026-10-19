@@ -504,8 +504,12 @@ else
                     @if (_giftWrapEnabled)
                     {
                         <div class="form-check mb-2">
+                            @* Bug-hunt 2026-10-19: bật/tắt gói quà đổi tổng đơn — nếu ví
+                               không còn đủ số dư, reset về COD ngay (cùng logic như
+                               OnCartChanged/ApplyDiscount), tránh server từ chối ví. *@
                             <input class="form-check-input" type="checkbox" id="gift-toggle"
-                                   @bind="_order.IsGift" />
+                                   @bind="_order.IsGift"
+                                   @bind:after="EnsurePaymentMethodValid" />
                             <label class="form-check-label" for="gift-toggle">
                                 🎁 Gói quà (+@FormatPrice(_shopSettings.GiftFee))
                             </label>

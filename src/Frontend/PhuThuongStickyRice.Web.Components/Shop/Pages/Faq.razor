@@ -90,6 +90,11 @@ else
     private string _searchTerm;
     private bool _loading = true;
     private Timer _debounceTimer;
+    // Bug-hunt 2026-10-19: async-void debounce callback có thể chạy sau khi
+    // component đã dispose (gõ tìm kiếm rồi rời trang trong 400ms) →
+    // StateHasChanged sau dispose, unhandled → crash trắng app.
+    // Guard theo mẫu OrderCountdownBanner.
+    private bool _disposed;
     private Guid _expandedId;
 
     // FQ3: hotline + Zalo từ shop settings.
@@ -163,8 +168,10 @@ else
         _debounceTimer?.Dispose();
         _debounceTimer = new Timer(async _ =>
         {
+            if (_disposed) return;
             await InvokeAsync(async () =>
             {
+                if (_disposed) return;
                 await LoadAsync(_searchTerm);
                 StateHasChanged();
             });
@@ -179,6 +186,7 @@ else
 
     public void Dispose()
     {
+        _disposed = true;
         _debounceTimer?.Dispose();
     }
 }
