@@ -26,13 +26,16 @@ namespace PhuThuongStickyRice.Application.Shop
     {
         private readonly IRepository<Branch, Guid> _branches;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public BranchAppService(
             IRepository<Branch, Guid> branches,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _branches = branches;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         [Authorize(Roles = "Admin")]
@@ -47,10 +50,16 @@ namespace PhuThuongStickyRice.Application.Shop
         [AllowAnonymous]
         public virtual async Task<List<BranchDto>> GetActiveAsync()
         {
-            var queryable = await _branches.GetQueryableAsync();
-            var entities = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.IsActive).OrderBy(x => x.Name));
-            return entities.Select(MapToDto).ToList();
+            // perf-hunt 2026-10-19: GET /api/branches is public (branch picker
+            // on shop pages). The active list is tiny; cache it 5 minutes and
+            // invalidate on admin CRUD below.
+            return await _catalogCache.GetOrAddAsync("branches:active-list", async () =>
+            {
+                var queryable = await _branches.GetQueryableAsync();
+                var entities = await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => x.IsActive).OrderBy(x => x.Name));
+                return entities.Select(MapToDto).ToList();
+            });
         }
 
         [Authorize(Roles = "Admin")]
@@ -70,6 +79,7 @@ namespace PhuThuongStickyRice.Application.Shop
                 IsActive = dto.IsActive
             };
             await _branches.InsertAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
@@ -82,6 +92,7 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.Phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim();
             entity.IsActive = dto.IsActive;
             await _branches.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
@@ -89,6 +100,7 @@ namespace PhuThuongStickyRice.Application.Shop
         public virtual async Task DeleteAsync(Guid id)
         {
             await _branches.DeleteAsync(id, autoSave: true);
+            _catalogCache.Invalidate();
         }
 
         private static BranchDto MapToDto(Branch entity)

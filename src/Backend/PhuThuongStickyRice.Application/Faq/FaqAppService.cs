@@ -33,32 +33,43 @@ namespace PhuThuongStickyRice.Application.Faq
     {
         private readonly IRepository<FaqItem, Guid> _faqs;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public FaqAppService(
             IRepository<FaqItem, Guid> faqs,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _faqs = faqs;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         [AllowAnonymous]
         public virtual async Task<List<FaqItemDto>> GetPublicAsync(string searchTerm)
         {
-            var queryable = await _faqs.GetQueryableAsync();
-            IQueryable<FaqItem> query = queryable
-                .Where(x => x.IsActive)
-                .OrderBy(x => x.SortOrder);
-
-            if (!string.IsNullOrWhiteSpace(searchTerm))
+            // perf-hunt 2026-10-19: GET /api/faqs is public and hit on every
+            // FAQ page view. The active list is tiny (admin-managed), so cache
+            // it once and apply the search term in memory instead of one
+            // cache key per term (avoids filling the cache with junk terms).
+            var all = await _catalogCache.GetOrAddAsync("faqs:public-list", async () =>
             {
-                var term = searchTerm.Trim();
-                query = query.Where(x =>
-                    x.Question.Contains(term) || x.Answer.Contains(term));
+                var queryable = await _faqs.GetQueryableAsync();
+                var items = await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => x.IsActive).OrderBy(x => x.SortOrder));
+                return items.Select(MapToDto).ToList();
+            });
+
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                return all;
             }
 
-            var items = await _asyncExecuter.ToListAsync(query);
-            return items.Select(MapToDto).ToList();
+            var term = searchTerm.Trim();
+            return all.Where(x =>
+                    x.Question.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    x.Answer.Contains(term, StringComparison.OrdinalIgnoreCase))
+                .ToList();
         }
 
         [Authorize(Roles = "Admin")]
@@ -81,6 +92,7 @@ namespace PhuThuongStickyRice.Application.Faq
                 IsActive = dto.IsActive
             };
             await _faqs.InsertAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
@@ -93,6 +105,7 @@ namespace PhuThuongStickyRice.Application.Faq
             entity.SortOrder = dto.SortOrder;
             entity.IsActive = dto.IsActive;
             await _faqs.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
@@ -100,6 +113,7 @@ namespace PhuThuongStickyRice.Application.Faq
         public virtual async Task DeleteAsync(Guid id)
         {
             await _faqs.DeleteAsync(id, autoSave: true);
+            _catalogCache.Invalidate();
         }
 
         private static FaqItemDto MapToDto(FaqItem entity)

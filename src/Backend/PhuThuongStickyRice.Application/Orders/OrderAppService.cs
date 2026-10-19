@@ -26,29 +26,22 @@ using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
 using Volo.Abp.ObjectMapping;
-using PhuThuongStickyRice.Application.Customer;
-using PhuThuongStickyRice.Application.Discounts;
-using PhuThuongStickyRice.Application.Discounts.DTOs;
-using PhuThuongStickyRice.Application.Loyalty;
-using PhuThuongStickyRice.Application.Orders;
-using PhuThuongStickyRice.Application.Orders.DTOs;
-using PhuThuongStickyRice.Application.Orders.Email;
-using PhuThuongStickyRice.Application.Orders.Exceptions;
-using PhuThuongStickyRice.Application.Orders.Payments;
-using PhuThuongStickyRice.Application.Permissions;
-using PhuThuongStickyRice.Application.Products.Exceptions;
-using PhuThuongStickyRice.Application.Shop;
-using PhuThuongStickyRice.Application.Shop.DTOs;
-using PhuThuongStickyRice.Application.Staff;
-using PhuThuongStickyRice.Application.Zalo;
 using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Security;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
     public interface IOrderAppService : IApplicationService
     {
-        Task<OrderDto> CreateAsync(CreateOrderDto input);
+        /// <summary>
+        /// Item 96: reCAPTCHA chỉ verify cho checkout công khai (đi qua HTTP,
+        /// có token trình duyệt). Các luồng nội bộ (POS staff, Messenger bot,
+        /// chốt gom đơn) KHÔNG có token → truyền skipRecaptchaCheck: true,
+        /// nếu không sẽ throw "Xác thực chống spam không thành công" khi admin
+        /// bật reCAPTCHA và các luồng này gãy hoàn toàn.
+        /// </summary>
+        Task<OrderDto> CreateAsync(CreateOrderDto input, bool skipRecaptchaCheck = false);
 
         Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInput input);
 
@@ -174,6 +167,12 @@ namespace PhuThuongStickyRice.Application.Orders
 
     public class OrderAppService : ApplicationService, IOrderAppService
     {
+        // Lucky-spin prize code generation.
+        private const string SpinCodePrefix = "SPIN";
+        private const string SpinFreeshipCodePrefix = "FREESHIP";
+        private const int SpinCodeValidityDays = 30;
+        private const decimal SpinFreeshipFallbackAmount = 15000m;
+
         private readonly IOrderRepository _orders;
         private readonly IProductRepository _products;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -270,7 +269,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _httpClientFactory = httpClientFactory;
         }
 
-        public virtual async Task<OrderDto> CreateAsync(CreateOrderDto input)
+        public virtual async Task<OrderDto> CreateAsync(CreateOrderDto input, bool skipRecaptchaCheck = false)
         {
             if (input.Lines == null || input.Lines.Count == 0)
             {
@@ -917,34 +916,18 @@ namespace PhuThuongStickyRice.Application.Orders
             await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
 
             // Item 156: staff activity log.
-            var statusAction = status == OrderStatus.Cancelled ? StaffActions.OrderCancel
-                : status == OrderStatus.Confirmed ? StaffActions.OrderConfirm
-                : StaffActions.OrderStatusChange;
+            var statusAction = GetStatusChangeAction(status);
             await _activityLogger.LogAsync(statusAction,
                 $"Đơn {order.OrderNumber}: {fromStatus} → {order.Status}.");
 
             if (status == OrderStatus.Completed)
             {
-                // Earn loyalty points + referral bonuses (once per order —
-                // Complete() can only run a single time per order).
-                await _loyalty.AwardCompletedOrderAsync(order);
-
-                // Item 92: automatic reward rules (free topping note /
-                // auto-generated discount code).
-                await _rewardRules.ApplyOnOrderCompletedAsync(order);
-                await _orders.UpdateAsync(order);
+                await HandleOrderCompletedAsync(order);
             }
 
             if (status == OrderStatus.Cancelled)
             {
-                await _loyalty.RefundRedeemedPointsAsync(order);
-
-                // Item 140: wallet-paid orders are credited back on cancel.
-                if (order.PaymentMethod == PaymentMethod.Wallet
-                    && order.PaymentStatus == PaymentStatus.Paid)
-                {
-                    await _wallets.RefundAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
-                }
+                await HandleOrderCancelledAsync(order);
             }
 
             var updatedDto = _objectMapper.Map<Order, OrderDto>(order);
@@ -961,6 +944,39 @@ namespace PhuThuongStickyRice.Application.Orders
             });
 
             return updatedDto;
+        }
+
+        /// <summary>Item 156: maps a status transition to its staff activity log action.</summary>
+        private static string GetStatusChangeAction(OrderStatus status) =>
+            status == OrderStatus.Cancelled ? StaffActions.OrderCancel
+            : status == OrderStatus.Confirmed ? StaffActions.OrderConfirm
+            : StaffActions.OrderStatusChange;
+
+        /// <summary>
+        /// Post-completion side effects: loyalty points + referral bonuses
+        /// (once per order — Complete() can only run a single time per order)
+        /// and automatic reward rules (item 92).
+        /// </summary>
+        private async Task HandleOrderCompletedAsync(Order order)
+        {
+            await _loyalty.AwardCompletedOrderAsync(order);
+            await _rewardRules.ApplyOnOrderCompletedAsync(order);
+            await _orders.UpdateAsync(order);
+        }
+
+        /// <summary>
+        /// Post-cancellation side effects: refund redeemed loyalty points;
+        /// wallet-paid orders are credited back (item 140).
+        /// </summary>
+        private async Task HandleOrderCancelledAsync(Order order)
+        {
+            await _loyalty.RefundRedeemedPointsAsync(order);
+
+            if (order.PaymentMethod == PaymentMethod.Wallet
+                && order.PaymentStatus == PaymentStatus.Paid)
+            {
+                await _wallets.RefundAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
+            }
         }
 
         /// <summary>
@@ -1532,7 +1548,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var segment = PickSpinSegment();
             var settings = await _shopSettings.GetAsync();
             var phone = _loyalty.NormalizePhone(input.CustomerPhone);
-            var expiresAt = DateTime.UtcNow.AddDays(30);
+            var expiresAt = DateTime.UtcNow.AddDays(SpinCodeValidityDays);
 
             string code = null;
             string prizeLabel;
@@ -1540,53 +1556,24 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 case "Percent5":
                     prizeLabel = "Giảm 5%";
-                    code = (await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
-                    {
-                        Prefix = "SPIN",
-                        DiscountPercent = 5,
-                        ExpiresAt = expiresAt,
-                        OwnerPhone = phone
-                    })).Code;
+                    code = await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, phone, discountPercent: 5);
                     break;
                 case "Percent10":
                     prizeLabel = "Giảm 10%";
-                    code = (await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
-                    {
-                        Prefix = "SPIN",
-                        DiscountPercent = 10,
-                        ExpiresAt = expiresAt,
-                        OwnerPhone = phone
-                    })).Code;
+                    code = await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, phone, discountPercent: 10);
                     break;
                 case "Percent15":
                     prizeLabel = "Giảm 15%";
-                    code = (await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
-                    {
-                        Prefix = "SPIN",
-                        DiscountPercent = 15,
-                        ExpiresAt = expiresAt,
-                        OwnerPhone = phone
-                    })).Code;
+                    code = await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, phone, discountPercent: 15);
                     break;
                 case "FreeShip":
                     prizeLabel = "Miễn phí ship";
-                    code = (await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
-                    {
-                        Prefix = "FREESHIP",
-                        DiscountAmount = settings.DeliveryFee > 0 ? settings.DeliveryFee : 15000,
-                        ExpiresAt = expiresAt,
-                        OwnerPhone = phone
-                    })).Code;
+                    var freeshipAmount = settings.DeliveryFee > 0 ? settings.DeliveryFee : SpinFreeshipFallbackAmount;
+                    code = await CreateSpinPrizeCodeAsync(SpinFreeshipCodePrefix, expiresAt, phone, discountAmount: freeshipAmount);
                     break;
                 case "Cash20k":
                     prizeLabel = "Giảm 20.000đ";
-                    code = (await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
-                    {
-                        Prefix = "SPIN",
-                        DiscountAmount = 20000,
-                        ExpiresAt = expiresAt,
-                        OwnerPhone = phone
-                    })).Code;
+                    code = await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, phone, discountAmount: 20000);
                     break;
                 default:
                     prizeLabel = "Chúc may mắn lần sau!";
@@ -1600,6 +1587,24 @@ namespace PhuThuongStickyRice.Application.Orders
                 Code = code,
                 ExpiresAt = code == null ? (DateTime?)null : expiresAt
             };
+        }
+
+        /// <summary>
+        /// Generates a single-use discount code for a lucky-spin prize.
+        /// </summary>
+        private async Task<string> CreateSpinPrizeCodeAsync(
+            string prefix, DateTime expiresAt, string ownerPhone,
+            decimal? discountPercent = null, decimal? discountAmount = null)
+        {
+            var result = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
+            {
+                Prefix = prefix,
+                DiscountPercent = discountPercent,
+                DiscountAmount = discountAmount,
+                ExpiresAt = expiresAt,
+                OwnerPhone = ownerPhone
+            });
+            return result.Code;
         }
 
         /// <summary>
@@ -2149,8 +2154,13 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>
         /// Wave 6d (item 39): counts today's non-cancelled orders for the
         /// phone (Vietnam day) and rejects when the per-day cap is reached.
-        /// 0 = unlimited. Phone comparison is tolerant (last 9 digits) via
-        /// <see cref="PhonesMatch"/>.
+        /// 0 = unlimited. Phone comparison is tolerant (last 9 digits).
+        /// perf-hunt 2026-10-19: the count now runs in SQL (COUNT with the
+        /// separators stripped via REPLACE + a suffix LIKE on the last 9
+        /// digits) instead of loading every phone of the day into memory on
+        /// each checkout. Equivalent to PhonesMatch for realistic inputs
+        /// (digits + spaces/dashes/dots + leading country code); EF Core
+        /// translates the chained Replace/EndsWith to nested REPLACE + LIKE.
         /// </summary>
         private async Task EnsurePhoneDailyLimitAsync(int maxPerDay, string customerPhone)
         {
@@ -2162,13 +2172,26 @@ namespace PhuThuongStickyRice.Application.Orders
             var startOfTodayUtc = VietnamTime.Today().AddHours(-7); // VN 00:00 → UTC
 
             var orderQueryable = await _orders.GetQueryableAsync();
-            var phonesToday = await _asyncExecuter.ToListAsync(
-                orderQueryable
-                    .Where(x => x.Status != OrderStatus.Cancelled
-                        && x.CreatedAt >= startOfTodayUtc)
-                    .Select(x => x.CustomerPhone));
+            var todayQuery = orderQueryable
+                .Where(x => x.Status != OrderStatus.Cancelled
+                    && x.CreatedAt >= startOfTodayUtc);
 
-            var count = phonesToday.Count(p => PhonesMatch(p, customerPhone));
+            // Same digit-tolerance as PhonesMatch: compare the last 9 digits
+            // (or the exact digit string when shorter than 9 digits).
+            var digits = new string(customerPhone.Where(char.IsDigit).ToArray());
+            int count;
+            if (digits.Length >= 9)
+            {
+                var last9 = digits.Substring(digits.Length - 9);
+                count = await _asyncExecuter.CountAsync(todayQuery.Where(x =>
+                    x.CustomerPhone.Replace(" ", "").Replace("-", "").Replace(".", "").EndsWith(last9)));
+            }
+            else
+            {
+                count = await _asyncExecuter.CountAsync(todayQuery.Where(x =>
+                    x.CustomerPhone.Replace(" ", "").Replace("-", "").Replace(".", "") == digits));
+            }
+
             if (count >= maxPerDay)
             {
                 throw new Domain.Exceptions.DomainException(
