@@ -17,7 +17,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Authorize(Roles = "Admin")]
     [Produces("application/json")]
-    [Route("api/[controller]")]
+    // bug-hunt 2026-10-19: route kebab-case cho khớp frontend
+    // (WeeklyPlanService/WeeklyPlanAdminService gọi api/weekly-plans/*);
+    // [controller] cho ra api/weeklyplans khiến toàn bộ UI mua/tra cứu/
+    // quản lý gói tuần bị 404.
+    [Route("api/weekly-plans")]
     [ApiController]
     public class WeeklyPlansController : ControllerBase
     {

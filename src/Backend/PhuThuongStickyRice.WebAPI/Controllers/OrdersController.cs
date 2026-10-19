@@ -7,6 +7,7 @@ using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
+using PhuThuongStickyRice.WebAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -507,7 +508,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromForm] string customerPhone,
             CancellationToken cancellationToken = default)
         {
-            var validationError = ValidateReviewPhoto(file);
+            var validationError = await ValidateReviewPhotoAsync(file, cancellationToken);
             if (validationError != null)
             {
                 return BadRequest(new { message = validationError });
@@ -539,11 +540,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         /// <summary>
         /// Kiểm tra file ảnh đánh giá: bắt buộc có file, đúng định dạng
-        /// (jpg/jpeg/png/webp/gif) và không vượt quá
-        /// <see cref="MaxReviewPhotoBytes"/>. Trả về null khi hợp lệ,
-        /// ngược lại là thông báo lỗi tiếng Việt.
+        /// (jpg/jpeg/png/webp/gif), chữ ký file (magic bytes) khớp đuôi ảnh
+        /// và không vượt quá <see cref="MaxReviewPhotoBytes"/>. Trả về null
+        /// khi hợp lệ, ngược lại là thông báo lỗi tiếng Việt.
         /// </summary>
-        private static string? ValidateReviewPhoto(IFormFile? file)
+        private static async Task<string?> ValidateReviewPhotoAsync(
+            IFormFile? file, CancellationToken cancellationToken)
         {
             if (file == null || file.Length == 0)
             {
@@ -555,6 +557,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 || !AllowedReviewPhotoExtensions.Contains(extension.ToLowerInvariant()))
             {
                 return "Định dạng ảnh không hợp lệ. Chỉ nhận: jpg, jpeg, png, webp, gif.";
+            }
+
+            // bug-hunt 2026-10-19: kiểm tra chữ ký file (magic bytes) — đuôi
+            // ảnh có thể là file thực thi/script đổi tên; chỉ nhận nội dung
+            // ảnh thật (JPEG/PNG/GIF/WebP).
+            if (!await ImageUploadValidator.HasValidImageSignatureAsync(file, extension, cancellationToken))
+            {
+                return "File không phải ảnh hợp lệ (nội dung không khớp định dạng ảnh).";
             }
 
             if (file.Length > MaxReviewPhotoBytes)

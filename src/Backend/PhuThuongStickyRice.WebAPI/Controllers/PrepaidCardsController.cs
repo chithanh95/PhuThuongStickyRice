@@ -11,7 +11,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
-    [Route("api/[controller]")]
+    // bug-hunt 2026-10-19: route kebab-case cho khớp frontend
+    // (PrepaidCardService/PrepaidCardAdminService gọi api/prepaid-cards/*);
+    // [controller] cho ra api/prepaidcards khiến toàn bộ UI mua/tra cứu/
+    // quản lý thẻ trả trước bị 404.
+    [Route("api/prepaid-cards")]
     [ApiController]
     public class PrepaidCardsController : ControllerBase
     {

@@ -558,6 +558,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// Internal: hoàn lại điểm đã đổi khi đơn bị hủy — khách không mất
         /// điểm oan vì đơn không thành. Điểm hoàn cộng lại cả Points và
         /// TotalEarned. Đơn không có đổi điểm hoặc tài khoản không còn thì bỏ qua.
+        /// Cộng điểm nguyên tử tại DB (TryIncrementPointsAsync): 2 lần hủy
+        /// đơn đồng thời cùng SĐT không thể cùng đọc số dư cũ rồi ghi đè làm
+        /// mất phần cộng của nhau (race read-modify-write của bản cũ
+        /// account.Points += ... rồi UpdateAsync).
         /// </summary>
         /// <param name="order">Đơn hàng đã bị hủy.</param>
         public virtual async Task RefundRedeemedPointsAsync(Order order)
@@ -569,16 +573,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return;
             }
 
-            var account = await FindByPhoneAsync(NormalizePhone(order.CustomerPhone));
-            if (account == null)
-            {
-                return;
-            }
-
-            account.Points += order.LoyaltyPointsRedeemed;
-            account.TotalEarned += order.LoyaltyPointsRedeemed;
-            account.UpdatedAt = DateTime.UtcNow;
-            await _accounts.UpdateAsync(account, autoSave: true);
+            await _accounts.TryIncrementPointsAsync(
+                NormalizePhone(order.CustomerPhone), order.LoyaltyPointsRedeemed);
         }
 
         /// <summary>

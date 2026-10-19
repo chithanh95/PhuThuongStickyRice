@@ -22,5 +22,19 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// <param name="cancellationToken">Token hủy.</param>
         Task<bool> TryDecrementPointsAsync(
             string phone, int points, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Cộng điểm loyalty một cách nguyên tử: UPDATE ... SET Points =
+        /// Points + points, TotalEarned = TotalEarned + points WHERE Phone =
+        /// phone. Trả về true nếu cộng thành công (tài khoản tồn tại), false
+        /// nếu không tìm thấy tài khoản. Chống race read-modify-write: 2 lần
+        /// hoàn điểm đồng thời cùng SĐT (hủy 2 đơn cùng lúc) không thể cùng
+        /// đọc số dư cũ rồi ghi đè làm mất phần cộng của nhau.
+        /// </summary>
+        /// <param name="phone">SĐT đã chuẩn hóa (khớp cột Phone).</param>
+        /// <param name="points">Số điểm cần cộng (phải &gt; 0).</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        Task<bool> TryIncrementPointsAsync(
+            string phone, int points, CancellationToken cancellationToken = default);
     }
 }

@@ -8,6 +8,7 @@ using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.WebAPI.Authorization;
 using PhuThuongStickyRice.WebAPI.Models.Products;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
+using PhuThuongStickyRice.WebAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -336,6 +337,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new
                 {
                     message = "Định dạng ảnh không hợp lệ. Chỉ nhận: jpg, jpeg, png, webp, gif."
+                });
+            }
+
+            // bug-hunt 2026-10-19: kiểm tra chữ ký file (magic bytes) — đuôi
+            // ".jpg" có thể là file thực thi/script đổi tên; chỉ nhận nội
+            // dung ảnh thật (JPEG/PNG/GIF/WebP).
+            if (!await ImageUploadValidator.HasValidImageSignatureAsync(file, extension, cancellationToken))
+            {
+                return BadRequest(new
+                {
+                    message = "File không phải ảnh hợp lệ (nội dung không khớp định dạng ảnh)."
                 });
             }
 
