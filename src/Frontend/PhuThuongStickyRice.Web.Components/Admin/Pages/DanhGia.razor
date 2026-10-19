@@ -220,7 +220,7 @@ else
             <div class="col-6 col-md-3 mb-3" @key="p.Id">
                 <div class="card h-100">
                     <a href="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" target="_blank" rel="noopener">
-                        <img src="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" class="card-img-top dg-checkin-photo" alt="Ảnh check-in chờ duyệt" />
+                        <img loading="lazy" decoding="async" src="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" class="card-img-top dg-checkin-photo" alt="Ảnh check-in chờ duyệt" />
                     </a>
                     <div class="card-body p-2">
                         @if (!string.IsNullOrWhiteSpace(p.Name))

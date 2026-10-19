@@ -115,6 +115,22 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         protected override async Task OnInitializedAsync()
         {
+            // perf-hunt 2026-10-19 (run 00:05): 2 loader độc lập (permissions +
+            // products ghi 2 field khác nhau) → chạy song song bằng Task.WhenAll
+            // thay vì tuần tự, cắt ~1 HTTP round-trip khi mở trang /products.
+            // Permissions giữ fail-soft như cũ (lỗi → tập rỗng).
+            var permissionsTask = LoadPermissionsAsync();
+            var productsTask = ProductService.GetProductsAsync();
+            await Task.WhenAll(permissionsTask, productsTask);
+            Products = await productsTask;
+        }
+
+        /// <summary>
+        /// Tải quyền của user hiện tại; lỗi thì trả tập rỗng (fail-soft) để
+        /// trang /products vẫn mở được, các nút nhạy cảm bị ẩn như trước.
+        /// </summary>
+        private async Task LoadPermissionsAsync()
+        {
             // Item 155: fine-grained permissions gate the sensitive buttons.
             try
             {
@@ -124,8 +140,6 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
             {
                 Permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
-
-            Products = await ProductService.GetProductsAsync();
         }
 
         protected void QuickAddProduct()
