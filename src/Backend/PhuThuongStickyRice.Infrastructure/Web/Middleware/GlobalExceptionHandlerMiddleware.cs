@@ -14,6 +14,15 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
         private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
         private readonly GlobalExceptionHandlerMiddlewareOptions _options;
 
+        // CA1848: dùng LoggerMessage delegate thay LoggerExtensions.LogError —
+        // template biên dịch sẵn, không parse lại mỗi lần log. Nội dung và
+        // exception kèm theo giữ nguyên.
+        private static readonly Action<ILogger, long, int, Exception> LogUnhandledException =
+            LoggerMessage.Define<long, int>(
+                LogLevel.Error,
+                new EventId(1, "UnhandledException"),
+                "[{Ticks}-{ThreadId}]");
+
         public GlobalExceptionHandlerMiddleware(RequestDelegate next,
             ILogger<GlobalExceptionHandlerMiddleware> logger,
             GlobalExceptionHandlerMiddlewareOptions options)
@@ -52,7 +61,7 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
                         // FIX: dùng message template thay vì string interpolation — tránh cấp phát
                         // chuỗi khi log level tắt, và giữ Ticks/ThreadId thành field có cấu trúc
                         // để lọc log dễ dàng.
-                        _logger.LogError(ex, "[{Ticks}-{ThreadId}]", DateTime.UtcNow.Ticks, Environment.CurrentManagedThreadId);
+                        LogUnhandledException(_logger, DateTime.UtcNow.Ticks, Environment.CurrentManagedThreadId, ex);
                         response.StatusCode = (int)HttpStatusCode.InternalServerError;
                         break;
                 }
