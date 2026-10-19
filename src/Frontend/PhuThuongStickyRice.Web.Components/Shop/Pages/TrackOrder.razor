@@ -1333,50 +1333,41 @@
 
         if (bankInfoTask != null)
         {
-            try
-            {
-                _bankInfo = await bankInfoTask;
-            }
-            catch (Exception)
-            {
-                _bankInfo = new BankTransferInfoModel();
-            }
+            // Wave 6a (item 31): fail-soft — màn hình vẫn chạy khi không lấy được.
+            _bankInfo = await AwaitFailSoftAsync(bankInfoTask, () => new BankTransferInfoModel());
         }
 
         // Loyalty profile for the order phone (points, tier, birthday).
-        try
-        {
-            _loyalty = await loyaltyTask;
-            _birthdayInput = _loyalty?.DateOfBirth;
-        }
-        catch (Exception)
-        {
-            _loyalty = null;
-        }
+        _loyalty = await AwaitFailSoftAsync(loyaltyTask, () => null);
+        _birthdayInput = _loyalty?.DateOfBirth;
 
         // Item 119: address book for the order phone (same fallback as
         // LoadAddressBookAsync — fail-soft).
-        try
-        {
-            _addresses = await addressesTask;
-        }
-        catch (Exception)
-        {
-            _addresses = new System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel>();
-        }
+        _addresses = await AwaitFailSoftAsync(addressesTask,
+            () => new System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel>());
 
         // TC3: shop hotline for the "call hotline to change" note (fail-soft).
-        try
-        {
-            _hotline = (await hotlineTask)?.Hotline;
-        }
-        catch (Exception)
-        {
-            _hotline = null;
-        }
+        _hotline = (await AwaitFailSoftAsync(hotlineTask, () => (ShopSettingModel)null))?.Hotline;
 
         // Khảo sát hài lòng: chỉ hiện khi đơn đã xong và chưa đánh giá/bỏ qua.
         await surveyTask;
+    }
+
+    /// <summary>
+    /// Chờ 1 task đã khởi chạy xong, fail-soft: task lỗi thì trả về fallback
+    /// thay vì ném exception. Dùng cho các load phụ của màn tra cứu đơn —
+    /// mỗi request chạy song song và đều có fallback riêng, giữ nguyên logic cũ.
+    /// </summary>
+    private static async Task<T> AwaitFailSoftAsync<T>(Task<T> task, Func<T> fallback)
+    {
+        try
+        {
+            return await task;
+        }
+        catch (Exception)
+        {
+            return fallback();
+        }
     }
 
     /// <summary>
