@@ -363,6 +363,9 @@
     private bool _tasteOk;
     private bool _tasteBusy;
 
+    // Độ dài tối đa của 1 khẩu vị tự nhập (giao diện đơn giản cho khách lớn tuổi).
+    private const int MaxCustomTagLength = 50;
+
     // Item 92: birthday.
     private DateTime? _dobValue;
     private string _dobMsg;
@@ -657,9 +660,9 @@
             return;
         }
 
-        if (tag.Length > 50)
+        if (tag.Length > MaxCustomTagLength)
         {
-            _tasteMsg = "Mỗi khẩu vị tối đa 50 ký tự.";
+            _tasteMsg = $"Mỗi khẩu vị tối đa {MaxCustomTagLength} ký tự.";
             _tasteOk = false;
             return;
         }

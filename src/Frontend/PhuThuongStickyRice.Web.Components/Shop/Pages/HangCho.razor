@@ -225,6 +225,9 @@
     // Guard theo mẫu OrderCountdownBanner.
     private bool _disposed;
 
+    /// <summary>Item 178: chu kỳ tự làm mới số thứ tự hàng chờ.</summary>
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(15);
+
     protected override async Task OnInitializedAsync()
     {
         await RefreshAsync();
@@ -239,7 +242,7 @@
                 await RefreshAsync();
                 StateHasChanged();
             });
-        }, null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
+        }, null, RefreshInterval, RefreshInterval);
     }
 
     private async Task RefreshAsync()
