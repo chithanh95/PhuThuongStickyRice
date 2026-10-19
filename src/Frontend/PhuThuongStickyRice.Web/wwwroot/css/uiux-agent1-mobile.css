@@ -229,3 +229,118 @@
 }
 
 /* === end Agent 1 run 08:35 === */
+
+/* ===== UIUX-0855 A1 vat-toggle ===== */
+/* ------------------------------------------------------------
+   FIX 1 — /checkout: nút toggle "▸ Cần hóa đơn VAT".
+   Vấn đề: `btn btn-link btn-sm p-0` trong card-header — vùng bấm
+   chỉ ~30px, chữ nhỏ, khách lớn tuổi khó bấm đúng trên điện thoại.
+   Giải pháp: vùng bấm ≥44px, chữ 1rem đậm hơn.
+   (Verify: Checkout.razor:447-448 — aria-expanded chỉ tồn tại ở
+   đúng nút này toàn app shop)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    button.btn-link[aria-expanded] {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 8px 6px;
+        text-decoration: none;
+    }
+}
+/* ===== END UIUX-0855 A1 ===== */
+
+/* ===== UIUX-0855 A1 spin-button ===== */
+/* ------------------------------------------------------------
+   FIX 2 — /checkout: nút "🎡 Quay ngay" của vòng quay may mắn.
+   Vấn đề: `btn btn-warning mt-3` mặc định chỉ ~38px, nằm giữa card
+   sau khi đặt đơn — dưới chuẩn chạm 48px cho người già.
+   Giải pháp: cao 48px, padding rộng, chữ to đậm.
+   (Verify: Checkout.razor:155 — .spin-wheel-wrap chỉ tồn tại ở
+   checkout, selector ~ chỉ khớp đúng nút này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .spin-wheel-wrap ~ .btn-warning {
+        min-height: 48px;
+        padding: 12px 40px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+/* ===== END UIUX-0855 A1 ===== */
+
+/* ===== UIUX-0855 A1 sheet-note-font ===== */
+/* ------------------------------------------------------------
+   FIX 3 — /shop: ô "Ghi chú cho quán" trong quick-view bottom sheet.
+   Vấn đề: font-size 15px — iOS Safari tự động zoom khi focus input
+   <16px, làm vỡ layout bottom sheet trên iPhone.
+   Giải pháp: nâng lên 16px trên mobile.
+   (Verify: Shop.razor.css:756 set 15px cho .qv-sheet-note-input —
+   dùng doubled-class để thắng specificity của scoped CSS, file này
+   load sau cùng nên thắng theo cascade)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .qv-sheet-note-input.qv-sheet-note-input {
+        font-size: 16px;
+    }
+}
+/* ===== END UIUX-0855 A1 ===== */
+
+/* ===== UIUX-0855 A1 transfer-buttons ===== */
+/* ------------------------------------------------------------
+   FIX 4 — /track-order (+ /checkout): cặp nút "Tôi đã chuyển khoản"
+   và "🔗 Sao chép link thanh toán" ở card chuyển khoản.
+   Vấn đề: cả hai chỉ ~38px và xếp ngang (ml-2) — trên màn 360px bị
+   ép chật, nút copy khó bấm; đây là hành động chốt thanh toán.
+   Giải pháp: xếp dọc full-width, mỗi nút ≥48px.
+   (Verify: TrackOrder.razor:618/621 — .card-body > .btn-success
+   không btn-sm chỉ khớp nút này trên track-order; rule cũng cải
+   thiện nút "Tôi đã chuyển khoản" tương tự ở Checkout.razor:242.
+   Nút sticky .co-mobile-bar không nằm trong .card-body nên không
+   bị ảnh hưởng)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body > .btn-success:not(.btn-sm),
+    .card-body > .btn-outline-primary.ml-2:not(.btn-sm) {
+        width: 100%;
+        min-height: 48px;
+        margin: 8px 0 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+}
+/* ===== END UIUX-0855 A1 ===== */
+
+/* ===== UIUX-0855 A1 momo-button ===== */
+/* ------------------------------------------------------------
+   FIX 5 — /track-order (+ /checkout): nút "Thanh toán MoMo (TEST)".
+   Vấn đề: `btn btn-primary` mặc định ~38px, co theo chữ — khó bấm,
+   là nút thanh toán chính của phương thức MoMo.
+   Giải pháp: full-width, cao 48px, chữ đậm.
+   (Verify: TrackOrder.razor:646 — .card-body > .btn-primary không
+   btn-sm; nút Tra cứu ở .to-lookup nằm trong .col nên không khớp;
+   rule cũng cải thiện nút MoMo ở Checkout.razor:270/281)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body > .btn-primary:not(.btn-sm) {
+        width: 100%;
+        min-height: 48px;
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+}
+/* ===== END UIUX-0855 A1 ===== */

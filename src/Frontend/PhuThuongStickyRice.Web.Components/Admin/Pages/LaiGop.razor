@@ -109,7 +109,7 @@ else if (_report != null)
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-1">
                         <span>@r.ProductName</span>
-                        <strong style="color:@(r.Profit >= 0 ? "#28a745" : "#dc3545")">@FmtVnd(r.Profit)</strong>
+                        <strong class="@(r.Profit >= 0 ? "lx-profit-pos" : "lx-profit-neg")">@FmtVnd(r.Profit)</strong>
                     </div>
                     <div class="progress" style="height:18px;">
                         <div class="progress-bar" role="progressbar" style="width:@(pct.ToString("0"))%;background:#7a6fbe;">@(pct.ToString("0"))%</div>
@@ -151,7 +151,7 @@ else if (_report != null)
                                 <td class="text-right">@FmtVnd(r.Revenue)</td>
                                 <td class="text-right">@FmtVnd(r.CostPrice)</td>
                                 <td class="text-right">@FmtVnd(r.Cost)</td>
-                                <td class="text-right font-weight-bold" style="color:@(r.Profit >= 0 ? "#28a745" : "#dc3545")">@FmtVnd(r.Profit)</td>
+                                <td class="text-right font-weight-bold @(r.Profit >= 0 ? "lx-profit-pos" : "lx-profit-neg")">@FmtVnd(r.Profit)</td>
                                 <td class="text-right"><span class="badge" style="@MarginStyle(r.MarginPercent)">@FmtPct(r.MarginPercent)</span></td>
                             </tr>
                         }

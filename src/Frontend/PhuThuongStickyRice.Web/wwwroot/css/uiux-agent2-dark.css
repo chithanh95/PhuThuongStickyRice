@@ -140,3 +140,40 @@ html.dark .co-mobile-bar {
 }
 
 /* === end Agent 2 run 08:35 === */
+
+/* === UIUX run 08:55 (job uiux-team-2days) — Agent 2 Dark mode === */
+
+/* ===== UIUX-0855 A2 nq-form-card-label =====
+   Vấn đề: /nhuong-quyen — .nq-form-card là .card nên ở dark mode kế thừa
+   nền tối #262640 (app.css: html.dark .card), nhưng label trong form giữ
+   color:#763434 (đỏ đậm, tương phản chỉ ~1.6:1 → chữ gần như chìm hẳn).
+   Section .nq-cream giữ nền sáng nên tiêu đề xo-sec-title vẫn OK, chỉ label
+   trên card tối là lỗi. Fix: label → #f2b8b8 (cùng tone các fix #763434 trước).
+   !important để thắng rule scoped (.nq-form-card[b-x] label). */
+html.dark .nq-form-card label {
+    color: #f2b8b8 !important; /* was #763434 */
+}
+/* ===== END UIUX-0855 A2 ===== */
+
+/* ===== UIUX-0855 A2 trackorder-info-label =====
+   Vấn đề: /track-order — .to-info-label (Mã đơn, Người nhận, SĐT...) giữ
+   color:#6c757d trên card tối #241d17 (html.dark .to-info-card) → tương phản
+   ~3.6:1, chữ xám mờ khó đọc ở dark mode. .to-info-value kế thừa màu body
+   sáng nên không sao. Fix: label → #a5a2bd (palette muted của admin-lexa). */
+html.dark .to-info-label {
+    color: #a5a2bd !important; /* was #6c757d */
+}
+/* ===== END UIUX-0855 A2 ===== */
+
+/* ===== UIUX-0855 A2 shop-logout-hover =====
+   Vấn đề: header shop — link "Đăng xuất" (.shp-logout) hover chuyển
+   color:#c0392b (đỏ đậm) trên nền header tối (rgba(28,23,18,.96)) → tương phản
+   ~3.2:1, chữ đỏ chìm khi di chuột ở dark mode. Màu gốc (var --shp-muted)
+   đã có bản dark nên không sao. Fix: hover → #e08070 (đỏ sáng, vẫn là
+   tone cảnh báo nhưng đọc được). */
+html.dark .shp-logout:hover {
+    color: #e08070 !important; /* was #c0392b */
+}
+/* ===== END UIUX-0855 A2 ===== */
+
+/* === end Agent 2 run 08:55 === */

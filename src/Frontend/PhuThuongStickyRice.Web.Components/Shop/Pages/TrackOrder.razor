@@ -703,11 +703,13 @@
                 {
                     var s = star;
                     <button type="button" class="btn btn-link p-0 mr-1"
+                            aria-label="@($"Đánh giá {s} sao")"
                             style="font-size: 36px; color: @(s <= _surveyRating ? "#f6c453" : "#ddd"); text-decoration: none;"
                             @onclick="() => _surveyRating = s">★</button>
                 }
             </div>
             <textarea class="form-control form-control-sm mb-3" rows="2" @bind="_surveyComment"
+                      aria-label="Góp ý thêm (tùy chọn)"
                       placeholder="Góp ý thêm (tùy chọn)..."></textarea>
             @if (!string.IsNullOrEmpty(_surveyError))
             {

@@ -289,3 +289,26 @@ html.dark .to-total-row {
         min-width: 0;
     }
 }
+
+/* ===== UIUX-0855 A4 survey-star-hover ===== */
+/* Polish: 5 nút sao đánh giá trong sheet khảo sát sau giao hàng chưa có
+   phản hồi hover — người dùng chuột không biết sao nào đang trỏ tới.
+   Phóng nhẹ sao khi hover/focus bằng bàn phím; tôn trọng
+   prefers-reduced-motion. Không đổi trạng thái đã chọn (màu #f6c453). */
+.to-survey-sheet .btn-link {
+    transition: transform 0.15s ease;
+}
+.to-survey-sheet .btn-link:hover,
+.to-survey-sheet .btn-link:focus-visible {
+    transform: scale(1.25);
+}
+@media (prefers-reduced-motion: reduce) {
+    .to-survey-sheet .btn-link {
+        transition: none;
+    }
+    .to-survey-sheet .btn-link:hover,
+    .to-survey-sheet .btn-link:focus-visible {
+        transform: none;
+    }
+}
+/* ===== END UIUX-0855 A4 ===== */

@@ -2122,3 +2122,23 @@ html.dark .lx-admin .kanban-code { color: #f0eef5; }
 .lx-toast-close:hover {
     color: #ffffff !important;
 }
+
+/* ===== UIUX-0855 A3 lx-pill-success: về đúng xanh Lexa #34c38f (trước dùng xanh Bootstrap #28a745, giống rule btn-success đã fix) ===== */
+.lx-pill-success { background: rgba(52, 195, 143, 0.16); color: #34c38f; }
+/* ===== END UIUX-0855 A3 ===== */
+
+/* ===== UIUX-0855 A3 online-dot: chấm trạng thái online ChatNoiBo về đúng xanh Lexa #34c38f (trước #28a745) ===== */
+.lx-admin .online-dot.on { background: #34c38f; box-shadow: 0 0 4px #34c38f; }
+/* ===== END UIUX-0855 A3 ===== */
+
+/* ===== UIUX-0855 A3 lx-profit: màu lãi/lỗ trang LaiGop về đúng palette Lexa (thay inline style #28a745/#dc3545) ===== */
+.lx-profit-pos { color: #34c38f !important; }
+.lx-profit-neg { color: #f46a6a !important; }
+/* ===== END UIUX-0855 A3 ===== */
+
+/* ===== UIUX-0855 A3 contextual-colors: class Bootstrap text-success/text-danger/bg-success/bg-danger trong phạm vi .lx-admin về đúng palette Lexa ===== */
+.lx-admin .text-success { color: #34c38f !important; }
+.lx-admin .text-danger { color: #f46a6a !important; }
+.lx-admin .bg-success { background-color: #34c38f !important; }
+.lx-admin .bg-danger { background-color: #f46a6a !important; }
+/* ===== END UIUX-0855 A3 ===== */

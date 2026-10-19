@@ -2232,3 +2232,13 @@ html.dark .sg-qbadge {
     color: #d8c8a8;
 }
 html.dark .sg-modal-close:hover { color: #fff; }
+
+/* ===== UIUX-0855 A4 blog-date-contrast ===== */
+/* WCAG 1.4.3: `.sg-blog-date` 12px màu #a08c78 trên nền trắng chỉ đạt ~3.2:1
+   (thiếu xa chuẩn AA 4.5:1 cho chữ nhỏ) — người cao tuổi khó đọc ngày đăng.
+   #6f5f4c đạt ~6.1:1, vẫn giữ tông nâu ấm của landing. Thẻ blog không có
+   override dark-mode nên đổi toàn cục là an toàn. */
+.sg-blog-date {
+    color: #6f5f4c;
+}
+/* ===== END UIUX-0855 A4 ===== */
