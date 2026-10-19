@@ -2844,3 +2844,101 @@
     }
 }
 /* ===== END UIUX run 05:35 A1 ===== */
+
+
+/* ===== UIUX run 05:50 2026-10-20 — Agent1 Mobile: 5 fix mới =====
+   Quét kỹ shop/cart/checkout/track-order: nút bấm, radio/checkbox,
+   chữ nhỏ, tràn ngang, bottom sheet đã qua ~25 đợt fix phủ kín
+   (file này). Còn sót đúng 5 điểm dưới đây — mỗi điểm verify bằng
+   mã nguồn + grep file này đảm bảo chưa có rule nào phủ.
+   Scope ≤767.98px = điện thoại; PC giữ nguyên tuyệt đối.
+   ------------------------------------------------------------
+   FIX 1 — /track-order: 3 ô nhập `.form-control` chỉ ~38px
+   (#to-order-number, #to-phone ở card Tra cứu; #to-history-phone
+   ở card Lịch sử đơn).
+   Vấn đề: nút "Tra cứu" phía dưới đã 48px full-width (run 10:55),
+   nút "Xem lịch sử đơn" đã 46px (run 08:35) — ô nhập lùn hơn hẳn,
+   dưới chuẩn chạm 44px, khách lớn tuổi bấm trượt khi tra cứu đơn.
+   (Comment cũ ở run 08:35 tưởng có rule `.to-history .form-control`
+   46px — grep file này: KHÔNG có rule nào như vậy, ô nhập vẫn
+   38px mặc định Bootstrap.)
+   Giải pháp: 48px, font 16px — đồng bộ với nút bên cạnh/bên dưới.
+   (Verify: TrackOrder.razor:30/35/60; .to-lookup chỉ tồn tại ở trang này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .to-lookup .form-control,
+    .to-history > .card-body > .form-row .form-control {
+        min-height: 48px;
+        font-size: 16px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /track-order: dòng gợi ý dưới "Lịch sử đơn hàng" quá nhỏ.
+   Vấn đề: `p.text-muted > small` (i18n shop.history_hint, giải thích
+   khách nhập SĐT đã đặt để xem lịch sử) chỉ ~12.8px — khách lớn tuổi
+   không đọc được hướng dẫn bước đầu tiên của trang.
+   Giải pháp: 13px trên mobile.
+   (Verify: TrackOrder.razor:55; selector con trực tiếp của card-body
+   .to-history, không khớp nhầm dòng small ở card chi tiết đơn)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .to-history > .card-body > p.text-muted > small {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /checkout: 2 dòng hướng dẫn thanh toán quá nhỏ.
+   Vấn đề: `p.text-muted.mt-2 > small` ~12.8px ở 2 chỗ: "Quét mã để
+   chuyển khoản nhanh" (Checkout.razor:248, dưới QR chuyển khoản)
+   và "Sau khi bạn bấm nút này, shop sẽ xác nhận và trang tra cứu đơn
+   hàng sẽ hiện "Đã thanh toán"." (Checkout.razor:276, dưới nút MoMo)
+   — đây là hướng dẫn dùng tiền/QR, khách lớn tuổi dễ bỏ qua rồi
+   chuyển khoản sai/lúng túng. Các fix chữ nhỏ trước chưa chạm 2 dòng
+   này (grep file này: không có rule nào).
+   Giải pháp: 13px trên mobile.
+   (Verify: grep Components — `p class="text-muted mt-2"><small` chỉ
+   tồn tại đúng 2 chỗ này toàn app)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    p.text-muted.mt-2 > small {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /cart: ô "📱 SĐT của bạn" chỉ ~38px.
+   Vấn đề: #cart-phone (Cart.razor:148-149) là `.form-control`
+   Bootstrap mặc định ~38px, nằm ngay trên cụm nút hành động —
+   dưới chuẩn chạm 44px; đây là ô nhập khách điền trước khi sang
+   bước thanh toán, người lớn tuổi dễ bấm trượt.
+   Giải pháp: 48px, font 16px — đồng bộ nút "Thanh toán" sticky 48px.
+   (Verify: Cart.razor:147 .gh-cart-phone chỉ tồn tại ở trang cart;
+   grep file này: chưa có rule .gh-cart-phone nào)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .gh-cart-phone .form-control {
+        min-height: 48px;
+        font-size: 16px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /checkout (màn hình sau khi đặt đơn thành công): dòng
+   hướng dẫn shipper quá nhỏ.
+   Vấn đề: `td[colspan="2"] > small.text-muted` (Checkout.razor:134)
+   ~12.8px — "Quán chuẩn bị sẵn — shipper đến đọc mã đơn để lấy"
+   là hướng dẫn nhận hàng khách cần đọc ngay sau khi đặt; chữ nhỏ
+   khách lớn tuổi bỏ qua, book xe không dặn tài xế đọc mã đơn.
+   Giải pháp: 14px trên mobile.
+   (Verify: Checkout.razor:134; grep Components — `colspan="2"`
+   chỉ tồn tại đúng 1 chỗ này ngoài Admin; scope .alert-success
+   + table.table-sm để an toàn tuyệt đối)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert-success > table.table-sm td[colspan="2"] > small.text-muted {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 05:50 2026-10-20 — Agent1 Mobile ===== */

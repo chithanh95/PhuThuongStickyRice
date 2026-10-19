@@ -2134,3 +2134,58 @@ html.dark .badge[style*="background:#eee"] {
 }
 
 /* === end Agent 2 run 2026-10-20 05:35 (1 fix) === */
+
+/* ===== UIUX run 2026-10-20 05:50 — Agent 2 Dark mode (2 fix mới) =====
+   Phương pháp: quét property-level toàn bộ .razor.css + <style> trong .razor
+   + inline style trong markup (loại obj//bin/), đối chiếu với ~360 selector
+   html.dark hiện có (file này + app.css + admin-lexa + agent3/4), verify DOM
+   + specificity + contrast từng ứng viên. Bề mặt đã bão hòa sau ~25 đợt
+   (các ứng viên còn lại đều đã có rule dark hoặc intentional: trang in
+   OrderPrint/OrderLabels, demo /admin/lexa pixel-exact, pill trắng trên ảnh,
+   bánh xe quay, toast/upsell trắng chủ ý, .sg-holiday-bar vàng cả 2 mode).
+   Còn đúng 2 lỗi MỚI thật, đều đã grep + verify markup và specificity. */
+
+/* ---------- FIX 1 — Admin: hộp icon tìm kiếm .input-group-text sáng lọt ở dark ----------
+   Vấn đề: Bootstrap .input-group-text (background:#e9ecef, color:#495057)
+   KHÔNG có rule html.dark nào phủ (đã grep toàn bộ css = 0 kết quả; comment
+   của Agent 3 (uiux-agent3-lexa.css:1032) chỉ nói "không lệch chuẩn" ở khía
+   cạnh brand, không phủ dark mode). Dùng thật ở 2 trang admin dùng hàng ngày:
+   - Products/Pages/ProductListPage.razor:34 — ô tìm kiếm "Tìm tên, mã món...";
+   - Admin/Pages/MaGiamGia.razor:30 — ô tìm kiếm "Tìm mã...".
+   Ở dark mode, hộp icon xám sáng dính liền ô input đã tối (#1e1e36) — mảng
+   sáng lọt ngay đầu form tìm kiếm. Icon #495057 trên #e9ecef vẫn đọc được
+   nên đây là lỗi "nền sáng lọt", nhưng vẫn phá vỡ dark mode.
+   Fix: nền/viền/chữ theo đúng convention input dark của admin-lexa
+   (form-control dark: #1e1e36/#4a4a6e — admin-lexa.css:1013; muted icon
+   #a5a2bd). Specificity (0,2,1) thắng Bootstrap .input-group-text (0,1,0).
+   Không đụng light mode. */
+html.dark .input-group-text {
+    background-color: #2e2e4e; /* was #e9ecef */
+    border-color: #4a4a6e; /* was #ced4da */
+    color: #a5a2bd; /* was #495057 */
+}
+
+/* ---------- FIX 2 — Admin: link .alert-link tàng hình trong alert đã tối ở dark ----------
+   Vấn đề: app.css đã tối 4 alert (warning #4a3a1e, danger #4a1e26,
+   success #1e4a2e, info #1e3a4a — dòng 303-325) và file này đã tối
+   alert-light/alert-secondary (run 12:55), nhưng Bootstrap vẫn giữ rule
+   `.alert-X .alert-link { color: <màu tối> }` (warning #533f03, danger
+   #491217, success #0b2e13, info #062c33, light #686868, secondary #202326
+   — đã verify trong bootstrap bundle). Rule này (0,2,0) đánh TRỰC TIẾP
+   lên thẻ <a> nên thắng màu kế thừa từ alert cha → ở dark mode link có
+   tương phản chỉ ~1.2–1.5:1, GẦN NHƯ TÀNG HÌNH.
+   Dùng thật: Dashboard.razor:59/73/89 — 3 link "Xem ngay →"/"Xử lý ngay →"/
+   "Kiểm tra tồn kho →" trong alert-warning/alert-danger (cảnh báo đơn mới,
+   đơn chờ quá lâu, món hết suất — thông tin vận hành quan trọng nhất của
+   trang tổng quan).
+   Fix: 1 rule duy nhất — link kế thừa đúng màu chữ của alert ở dark mode
+   (mỗi variant đã có màu chữ dark chuẩn: warning #f2dfb3, danger #f2bfc7,
+   success #bff2cf, info #bfe3f2, light #f0e8dc, secondary #d0c4b4).
+   Specificity (0,3,1) thắng Bootstrap (0,2,0). Không đụng link "Đăng nhập"
+   trong alert-light ở Checkout (thẻ <a> thường, không có class alert-link —
+   rule `html.dark .alert-light a` của run 12:55 vẫn giữ nguyên). */
+html.dark .alert .alert-link {
+    color: inherit; /* was #533f03/#491217/... (Bootstrap) — ~1.2:1 → ~7:1 */
+}
+
+/* ===== END UIUX run 2026-10-20 05:50 — Agent 2 (2 fix mới) ===== */

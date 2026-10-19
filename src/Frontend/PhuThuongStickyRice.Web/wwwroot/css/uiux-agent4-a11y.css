@@ -2068,3 +2068,112 @@ html.dark .toast.toast-info .fa-circle-info {
 }
 
 /* ===== END UIUX run 2026-10-20 02:15 - Agent4 ===== */
+
+/* ===== UIUX run 2026-10-20 05:50 - Agent4 A11y & Polish (5 fix moi, khong trung cac run truoc) ===== */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1): nut "Xoa" text-style trong gio
+   hang MOBILE (.cart-lines tbody td:nth-child(5) .btn, Cart.razor.css:74-82,
+   hien thi dang text "🗑 Xoa" khong nen). Agent 3 doi mau sang do Lexa
+   #f46a6a; chu #f46a6a tren card trang #fff chi ~2.95:1 — DUOI chuan, khach
+   lon tuoi kho doc nut xoa mon. Fix run 00:10 (.shp-page .btn-danger →
+   chu #212529, (0,3,0)) THUA rule mobile scoped (0,4,2) nen chua bao gio co
+   tac dung o mobile (verify: mau render thuc te van #f46a6a).
+   Remedy: chu do dam #c0392b (~5.44:1 tren #fff, do bang script luminance) —
+   giu nghia "do = xoa" quen thuoc, khac voi mau chu #212529 cua ban desktop
+   (nen do dac) nen khong nham. BAT BUOC trong @media mobile: ngoai breakpoint
+   nay nut la .btn-danger nen dac, doi chu o day se pha fix desktop run 00:10.
+   Scope html:not(.dark): dark mode card #2e2620, #f46a6a dat ~4.7:1 (qua chuan).
+   Specificity (0,5,3) thang rule goc (0,4,2). */
+@media (max-width: 767.98px) {
+    html:not(.dark) .shp-page .cart-lines tbody td:nth-child(5) .btn {
+        color: #c0392b; /* was #f46a6a (2.95:1 tren #fff) */
+    }
+}
+
+/* Fix 2 — WCAG 1.4.3: Agent 3 (uiux-agent3-lexa.css:176-177) doi
+   `.shp-page .btn-outline-success` sang chu/vien xanh Lexa #34c38f nhung
+   chu #34c38f tren nen trang chi ~2.25:1, hover chu trang tren fill #34c38f
+   cung ~2.25:1 — nut "Dat lai" (TrackOrder.razor:62, lich su don) gan nhu
+   khong doc duoc. Base: chu #1e7e34 (~5.14:1, dong bo remedy .text-success
+   run 16:50), giu vien #34c38f brand. Hover: giu fill #34c38f + chu #212529
+   (~6.87:1, dong bo remedy .btn-success run 00:10). `!important` + nhan doi
+   class (0,4,0)/(0,5,0) de thang rule Agent 3 (0,2,0)/(0,3,0)+!important.
+   Chi light mode (html:not(.dark)): dark mode #34c38f tren card toi dat
+   ~4.7:1 (da qua chuan, theo phep do run 16:50). Hover fill dac nen 1 rule
+   dung chung 2 mode. */
+html:not(.dark) .shp-page .shp-page .btn-outline-success {
+    color: #1e7e34 !important; /* was #34c38f (2.25:1 tren #fff) */
+}
+.shp-page .shp-page .btn-outline-success:hover {
+    background: #34c38f !important;
+    border-color: #34c38f !important;
+    color: #212529 !important; /* was #fff (2.25:1 tren #34c38f) */
+}
+
+/* Fix 3 — WCAG 1.4.3: cung root cause voi Fix 2 — Agent 3
+   (uiux-agent3-lexa.css:180-181) doi `.shp-page .btn-outline-info` sang
+   #50a5f1: chu tren trang ~2.63:1, hover chu trang tren fill #50a5f1 cung
+   ~2.63:1 — nut "Chi tiet" (TrackOrder.razor:62) kho doc. Base: chu #0e7c99
+   (~4.81:1, dong bo remedy .text-info run 16:50), giu vien #50a5f1 brand.
+   Hover: giu fill #50a5f1 + chu #212529 (~5.87:1, do bang script). Cung
+   pattern specificity/`!important` va scope light-only nhu Fix 2 (dark mode
+   #50a5f1 tren card toi dat ~6:1, da qua chuan). */
+html:not(.dark) .shp-page .shp-page .btn-outline-info {
+    color: #0e7c99 !important; /* was #50a5f1 (2.63:1 tren #fff) */
+}
+.shp-page .shp-page .btn-outline-info:hover {
+    background: #50a5f1 !important;
+    border-color: #50a5f1 !important;
+    color: #212529 !important; /* was #fff (2.63:1 tren #50a5f1) */
+}
+
+/* Fix 4 — WCAG 1.4.3: Agent 3 (uiux-agent3-lexa.css:301-310) doi
+   `.shp-page .btn-outline-primary` sang tim Lexa #7a6fbe: chu tren trang
+   chi ~4.33:1, hover/active chu trang tren fill #7a6fbe cung ~4.33:1 —
+   DUOI chuan 4.5:1. Dung o nhieu nut quan trong: preset "30/50/100 khach"
+   (DatTiec.razor:86-88), "Xem lich su" (TrackOrder.razor:62), cac nut
+   TaiKhoan.razor, Checkout.razor:134.
+   Light: chu #625998 (~6.17:1); hover/active fill #625998 + chu trang
+   (~6.17:1) — dong bo remedy .lx-admin .btn-outline-primary cua run 22:45.
+   Dark: chu #7a6fbe tren card toi #2e2620 chi ~2.9:1 → variant #b3a8e8
+   (~6.85:1, do bang script, dung convention tim-tren-nen-toi cua Agent 2);
+   hover dark fill #b3a8e8 + chu #262640 (~7:1). `!important` + nhan doi
+   class de thang rule Agent 3 + !important. */
+html:not(.dark) .shp-page .shp-page .btn-outline-primary {
+    color: #625998 !important; /* was #7a6fbe (4.33:1 tren #fff) */
+}
+html:not(.dark) .shp-page .shp-page .btn-outline-primary:hover,
+html:not(.dark) .shp-page .shp-page .btn-outline-primary:not(:disabled):not(.disabled):active,
+html:not(.dark) .shp-page .shp-page .btn-outline-primary:not(:disabled):not(.disabled).active {
+    background: #625998 !important; /* was #7a6fbe — chu trang 4.33:1 → 6.17:1 */
+    border-color: #625998 !important;
+    color: #fff !important;
+}
+html.dark .shp-page .shp-page .btn-outline-primary {
+    color: #b3a8e8 !important; /* was #7a6fbe (~2.9:1 tren card toi) */
+    border-color: #b3a8e8 !important;
+}
+html.dark .shp-page .shp-page .btn-outline-primary:hover,
+html.dark .shp-page .shp-page .btn-outline-primary:not(:disabled):not(.disabled):active,
+html.dark .shp-page .shp-page .btn-outline-primary:not(:disabled):not(.disabled).active {
+    background: #b3a8e8 !important;
+    border-color: #b3a8e8 !important;
+    color: #262640 !important; /* chu toi tren fill tim nhat ~7:1 */
+}
+
+/* Fix 5 — WCAG 1.4.3: nut cau hoi accordion `.faq-list .btn-link`
+   (Faq.razor:41-44 — CHINH LA noi dung trang /faq) o light mode dung xanh
+   Bootstrap #007bff tren card trang chi ~3.68:1, khach lon tuoi doc cau hoi
+   kho. Agent 2 (Faq.razor.css) moi chi fix dark mode (#b3a8e8). Dam xuong
+   #0056b3 (~7.04:1, do bang script); hover #004494 (~9.31:1) de phan biet
+   ro voi base. Scope html:not(.dark) de khong de len fix dark cua Agent 2.
+   Nhan doi class (0,4,1) thang Bootstrap .btn-link (0,1,0), khong can
+   !important. */
+html:not(.dark) .faq-list.faq-list .btn-link {
+    color: #0056b3; /* was #007bff (3.68:1 tren #fff) */
+}
+html:not(.dark) .faq-list.faq-list .btn-link:hover {
+    color: #004494;
+}
+
+/* ===== END UIUX run 2026-10-20 05:50 - Agent4 ===== */
