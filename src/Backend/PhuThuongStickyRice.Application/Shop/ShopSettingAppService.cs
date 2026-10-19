@@ -593,77 +593,100 @@ namespace PhuThuongStickyRice.Application.Shop
         {
             // Rows created before Wave 2 have 0 in the new columns; fall back
             // to the documented defaults on read so old rows keep working.
-            return new ShopSettingDto
-            {
-                DeliveryFee = entity.DeliveryFee,
-                FreeShipThreshold = entity.FreeShipThreshold,
-                MinOrderAmount = entity.MinOrderAmount,
-                EstimatedDeliveryMinutes = entity.EstimatedDeliveryMinutes,
-                BankTransferExpiryMinutes = FallbackWhenNonPositive(entity.BankTransferExpiryMinutes, DefaultBankTransferExpiryMinutes),
-                PointsPerVnd = FallbackWhenNonPositive(entity.PointsPerVnd, DefaultPointsPerVnd),
-                PointsRedeemUnit = FallbackWhenNonPositive(entity.PointsRedeemUnit, DefaultPointsRedeemUnit),
-                PointsRedeemValue = entity.PointsRedeemValue,
-                ReferralBonusPoints = entity.ReferralBonusPoints,
-                DepositThreshold = entity.DepositThreshold,
-                DepositPercent = entity.DepositPercent,
-                GiftFee = entity.GiftFee,
-                TierSilverMin = entity.TierSilverMin,
-                TierSilverDiscount = entity.TierSilverDiscount,
-                TierGoldMin = entity.TierGoldMin,
-                TierGoldDiscount = entity.TierGoldDiscount,
-                OwnerReportEmail = entity.OwnerReportEmail,
-                UnconfirmedAlertMinutes = FallbackWhenNonPositive(entity.UnconfirmedAlertMinutes, DefaultUnconfirmedAlertMinutes),
-                RecaptchaSiteKey = entity.RecaptchaSiteKey,
-                RecaptchaSecretKey = UnprotectSecret(entity.RecaptchaSecretKey),
-                WebBaseUrl = entity.WebBaseUrl,
-                MaintenanceMode = entity.MaintenanceMode,
-                MaintenanceMessage = FallbackWhenBlank(entity.MaintenanceMessage, DefaultMaintenanceMessage),
-                TelegramBotToken = UnprotectSecret(entity.TelegramBotToken),
-                TelegramChatId = entity.TelegramChatId,
-                HealthAlertsEnabled = entity.HealthAlertsEnabled,
-                ErrorRateThreshold = FallbackWhenNonPositive(entity.ErrorRateThreshold, DefaultErrorRateThreshold),
-                UploadsSizeWarningMb = FallbackWhenNonPositive(entity.UploadsSizeWarningMb, DefaultUploadsSizeWarningMb),
-                BankName = entity.BankName,
-                BankId = entity.BankId,
-                BankAccountNumber = entity.BankAccountNumber,
-                BankAccountName = entity.BankAccountName,
-                BankQrTemplate = entity.BankQrTemplate,
-                MoMoPartnerCode = entity.MoMoPartnerCode,
-                MoMoEndpoint = entity.MoMoEndpoint,
-                ImageBackupProvider = FallbackWhenBlank(entity.ImageBackupProvider, DefaultImageBackupProvider),
-                ImageBackupSettingsJson = entity.ImageBackupSettingsJson,
-                CheckInPoints = entity.CheckInPoints,
-                NepPerPortionGrams = FallbackWhenNonPositive(entity.NepPerPortionGrams, DefaultNepPerPortionGrams),
-                DailyTargetAmount = entity.DailyTargetAmount,
-                OpenTime = NormalizeHour(entity.OpenTime, DefaultOpenTime),
-                CloseTime = NormalizeHour(entity.CloseTime, DefaultCloseTime),
-                // Wave 6b (items 27, 30). The migration backfills
-                // AcceptingOrders = true for pre-existing rows.
-                Hotline = entity.Hotline,
-                ZaloPhone = entity.ZaloPhone,
-                ShowZaloChatButton = entity.ShowZaloChatButton,
-                GoogleMapsUrl = entity.GoogleMapsUrl,
-                FacebookPageAccessToken = UnprotectSecret(entity.FacebookPageAccessToken),
-                FacebookVerifyToken = entity.FacebookVerifyToken,
-                FacebookAppSecret = UnprotectSecret(entity.FacebookAppSecret),
-                // Item 138: weekly owner report via Zalo OA.
-                ZaloOaAccessToken = UnprotectSecret(entity.ZaloOaAccessToken),
-                OwnerPhone = entity.OwnerPhone,
-                OwnerZaloUserId = entity.OwnerZaloUserId,
-                LastWeeklyReportSentWeek = entity.LastWeeklyReportSentWeek,
-                AcceptingOrders = entity.AcceptingOrders,
-                PausedReason = entity.PausedReason,
-                // Wave 6d (item 39): backfilled to 10 for pre-existing rows.
-                MaxOrdersPerPhonePerDay = entity.MaxOrdersPerPhonePerDay,
-                // Perf (items 55/58/75): public storefront display fields — read
-                // by the landing controller through cached GetPublicAsync()
-                // instead of a direct ShopSettings query per request.
-                ZaloVipGroupUrl = entity.ZaloVipGroupUrl,
-                WholesaleContact = entity.WholesaleContact,
-                WholesaleMinQty = entity.WholesaleMinQty,
-                ShopeeFoodUrl = entity.ShopeeFoodUrl,
-                GrabFoodUrl = entity.GrabFoodUrl
-            };
+            var dto = new ShopSettingDto();
+            MapOrderAndFeeSettings(dto, entity);
+            MapLoyaltyAndTierSettings(dto, entity);
+            MapNotificationAndSecuritySettings(dto, entity);
+            MapBankAndStorefrontSettings(dto, entity);
+            return dto;
+        }
+
+        /// <summary>Nhóm cài đặt đơn hàng/phí ship/giờ mở cửa — kiểm soát việc nhận đơn.</summary>
+        private void MapOrderAndFeeSettings(ShopSettingDto dto, ShopSetting entity)
+        {
+            dto.DeliveryFee = entity.DeliveryFee;
+            dto.FreeShipThreshold = entity.FreeShipThreshold;
+            dto.MinOrderAmount = entity.MinOrderAmount;
+            dto.EstimatedDeliveryMinutes = entity.EstimatedDeliveryMinutes;
+            dto.BankTransferExpiryMinutes = FallbackWhenNonPositive(entity.BankTransferExpiryMinutes, DefaultBankTransferExpiryMinutes);
+            dto.UnconfirmedAlertMinutes = FallbackWhenNonPositive(entity.UnconfirmedAlertMinutes, DefaultUnconfirmedAlertMinutes);
+            dto.OpenTime = NormalizeHour(entity.OpenTime, DefaultOpenTime);
+            dto.CloseTime = NormalizeHour(entity.CloseTime, DefaultCloseTime);
+            dto.AcceptingOrders = entity.AcceptingOrders;
+            dto.PausedReason = entity.PausedReason;
+            // Wave 6d (item 39): backfilled to 10 for pre-existing rows.
+            dto.MaxOrdersPerPhonePerDay = entity.MaxOrdersPerPhonePerDay;
+        }
+
+        /// <summary>Nhóm cài đặt tích điểm/khuyến mãi/hạng thành viên — dùng ở checkout và ví.</summary>
+        private void MapLoyaltyAndTierSettings(ShopSettingDto dto, ShopSetting entity)
+        {
+            dto.PointsPerVnd = FallbackWhenNonPositive(entity.PointsPerVnd, DefaultPointsPerVnd);
+            dto.PointsRedeemUnit = FallbackWhenNonPositive(entity.PointsRedeemUnit, DefaultPointsRedeemUnit);
+            dto.PointsRedeemValue = entity.PointsRedeemValue;
+            dto.ReferralBonusPoints = entity.ReferralBonusPoints;
+            dto.DepositThreshold = entity.DepositThreshold;
+            dto.DepositPercent = entity.DepositPercent;
+            dto.GiftFee = entity.GiftFee;
+            dto.TierSilverMin = entity.TierSilverMin;
+            dto.TierSilverDiscount = entity.TierSilverDiscount;
+            dto.TierGoldMin = entity.TierGoldMin;
+            dto.TierGoldDiscount = entity.TierGoldDiscount;
+            dto.CheckInPoints = entity.CheckInPoints;
+            dto.NepPerPortionGrams = FallbackWhenNonPositive(entity.NepPerPortionGrams, DefaultNepPerPortionGrams);
+            dto.DailyTargetAmount = entity.DailyTargetAmount;
+            dto.OwnerReportEmail = entity.OwnerReportEmail;
+        }
+
+        /// <summary>Nhóm thông báo/tích hợp ngoài (Telegram, Facebook, Zalo OA, reCAPTCHA) — secret được giải mã khi đọc.</summary>
+        private void MapNotificationAndSecuritySettings(ShopSettingDto dto, ShopSetting entity)
+        {
+            dto.RecaptchaSiteKey = entity.RecaptchaSiteKey;
+            dto.RecaptchaSecretKey = UnprotectSecret(entity.RecaptchaSecretKey);
+            dto.WebBaseUrl = entity.WebBaseUrl;
+            dto.MaintenanceMode = entity.MaintenanceMode;
+            dto.MaintenanceMessage = FallbackWhenBlank(entity.MaintenanceMessage, DefaultMaintenanceMessage);
+            dto.TelegramBotToken = UnprotectSecret(entity.TelegramBotToken);
+            dto.TelegramChatId = entity.TelegramChatId;
+            dto.HealthAlertsEnabled = entity.HealthAlertsEnabled;
+            dto.ErrorRateThreshold = FallbackWhenNonPositive(entity.ErrorRateThreshold, DefaultErrorRateThreshold);
+            dto.UploadsSizeWarningMb = FallbackWhenNonPositive(entity.UploadsSizeWarningMb, DefaultUploadsSizeWarningMb);
+            dto.ImageBackupProvider = FallbackWhenBlank(entity.ImageBackupProvider, DefaultImageBackupProvider);
+            dto.ImageBackupSettingsJson = entity.ImageBackupSettingsJson;
+            dto.FacebookPageAccessToken = UnprotectSecret(entity.FacebookPageAccessToken);
+            dto.FacebookVerifyToken = entity.FacebookVerifyToken;
+            dto.FacebookAppSecret = UnprotectSecret(entity.FacebookAppSecret);
+            // Item 138: weekly owner report via Zalo OA.
+            dto.ZaloOaAccessToken = UnprotectSecret(entity.ZaloOaAccessToken);
+            dto.OwnerPhone = entity.OwnerPhone;
+            dto.OwnerZaloUserId = entity.OwnerZaloUserId;
+            dto.LastWeeklyReportSentWeek = entity.LastWeeklyReportSentWeek;
+        }
+
+        /// <summary>Nhóm ngân hàng và hiển thị storefront công khai (liên hệ, link food-app).</summary>
+        private void MapBankAndStorefrontSettings(ShopSettingDto dto, ShopSetting entity)
+        {
+            dto.BankName = entity.BankName;
+            dto.BankId = entity.BankId;
+            dto.BankAccountNumber = entity.BankAccountNumber;
+            dto.BankAccountName = entity.BankAccountName;
+            dto.BankQrTemplate = entity.BankQrTemplate;
+            dto.MoMoPartnerCode = entity.MoMoPartnerCode;
+            dto.MoMoEndpoint = entity.MoMoEndpoint;
+            // Wave 6b (items 27, 30). The migration backfills
+            // AcceptingOrders = true for pre-existing rows.
+            dto.Hotline = entity.Hotline;
+            dto.ZaloPhone = entity.ZaloPhone;
+            dto.ShowZaloChatButton = entity.ShowZaloChatButton;
+            dto.GoogleMapsUrl = entity.GoogleMapsUrl;
+            // Perf (items 55/58/75): public storefront display fields — read
+            // by the landing controller through cached GetPublicAsync()
+            // instead of a direct ShopSettings query per request.
+            dto.ZaloVipGroupUrl = entity.ZaloVipGroupUrl;
+            dto.WholesaleContact = entity.WholesaleContact;
+            dto.WholesaleMinQty = entity.WholesaleMinQty;
+            dto.ShopeeFoodUrl = entity.ShopeeFoodUrl;
+            dto.GrabFoodUrl = entity.GrabFoodUrl;
         }
     }
 }

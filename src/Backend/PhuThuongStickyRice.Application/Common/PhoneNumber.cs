@@ -14,6 +14,13 @@ namespace PhuThuongStickyRice.Application.Common
     public static class PhoneNumber
     {
         /// <summary>
+        /// Số chữ số cuối dùng để so khớp "khoan dung" 2 SĐT (bỏ mã vùng đầu số):
+        /// "0912 345 678", "+84912345678" và "0912345678" được coi là cùng 1 số.
+        /// SĐT ít hơn số này thì so nguyên chuỗi chữ số.
+        /// </summary>
+        public const int TailDigitCount = 9;
+
+        /// <summary>
         /// Lấy chuỗi chỉ gồm chữ số từ SĐT: bỏ dấu cách, gạch ngang, dấu chấm,
         /// dấu "+" (mã vùng +84...) — null hoặc rỗng trả về chuỗi rỗng.
         /// </summary>
@@ -23,10 +30,11 @@ namespace PhuThuongStickyRice.Application.Common
             new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
 
         /// <summary>
-        /// So khớp 2 SĐT theo kiểu "khoan dung": chỉ giữ lại chữ số rồi so 9
-        /// số cuối — "0912 345 678", "+84912345678" và "0912345678" là cùng 1
-        /// số. SĐT ít hơn 9 số thì so nguyên chuỗi số. Null/trống không bao
-        /// giờ khớp (trả false) để không xác thực nhầm khi thiếu SĐT.
+        /// So khớp 2 SĐT theo kiểu "khoan dung": chỉ giữ lại chữ số rồi so
+        /// <see cref="TailDigitCount"/> số cuối — "0912 345 678", "+84912345678"
+        /// và "0912345678" là cùng 1 số. SĐT ít hơn <see cref="TailDigitCount"/>
+        /// số thì so nguyên chuỗi số. Null/trống không bao giờ khớp (trả false)
+        /// để không xác thực nhầm khi thiếu SĐT.
         /// </summary>
         /// <param name="phone1">SĐT thứ nhất, có thể null.</param>
         /// <param name="phone2">SĐT thứ hai, có thể null.</param>
@@ -41,14 +49,14 @@ namespace PhuThuongStickyRice.Application.Common
             var digits1 = DigitsOnly(phone1);
             var digits2 = DigitsOnly(phone2);
 
-            if (digits1.Length < 9 || digits2.Length < 9)
+            if (digits1.Length < TailDigitCount || digits2.Length < TailDigitCount)
             {
                 return string.Equals(digits1, digits2, StringComparison.Ordinal);
             }
 
             return string.Equals(
-                digits1.Substring(digits1.Length - 9),
-                digits2.Substring(digits2.Length - 9),
+                digits1.Substring(digits1.Length - TailDigitCount),
+                digits2.Substring(digits2.Length - TailDigitCount),
                 StringComparison.Ordinal);
         }
 

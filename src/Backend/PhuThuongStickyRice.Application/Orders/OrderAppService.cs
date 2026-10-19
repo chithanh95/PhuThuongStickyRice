@@ -1093,18 +1093,6 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Hoàn tất đơn sau khi đã dựng xong: trừ ví (nếu thanh toán bằng ví)
-        /// → ghi đơn → tăng lượt dùng mã → 2 webhook (OrderCreated + báo đơn
-        /// mới) → Zalo e-receipt → xếp email xác nhận.
-        /// THỨ TỰ BẮT BUỘC GIỮ NGUYÊN: ví trừ TRƯỚC khi ghi đơn để số dư không
-        /// đủ thì abort sớm (đơn không tồn tại, khách không bị trừ oan);
-        /// lượt dùng mã chỉ tăng SAU khi đơn đã lưu để đơn lỗi (thanh toán
-        /// hỏng, khách bỏ giỏ) không đốt lượt mã của khách.
-        /// </summary>
-        /// <param name="order">Entity đơn đã dựng đầy đủ (chưa ghi DB).</param>
-        /// <param name="appliedCode">Mã giảm giá đã áp (nếu có) — tăng lượt dùng sau khi đơn lưu.</param>
-        /// <param name="branchName">Tên chi nhánh, gắn vào payload webhook.</param>
-        /// <summary>
         /// Hoàn tất quy trình tạo đơn sau khi entity <c>Order</c> đã dựng xong.
         /// Thứ tự an toàn tiền quan trọng ở đây: (1) đơn trả bằng ví bị trừ
         /// tiền NGAY (số dư không đủ thì abort trước khi ghi đơn); (2) ghi đơn;
@@ -3261,14 +3249,15 @@ namespace PhuThuongStickyRice.Application.Orders
                 .Where(x => x.Status != OrderStatus.Cancelled
                     && x.CreatedAt >= startOfTodayUtc);
 
-            // Same digit-tolerance as PhonesMatch: compare the last 9 digits
-            // (or the exact digit string when shorter than 9 digits) via the
-            // normalized column — index seek instead of a REPLACE() table scan.
+            // Same digit-tolerance as PhonesMatch: compare the last
+            // TailDigitCount digits (or the exact digit string when shorter)
+            // via the normalized column — index seek instead of a REPLACE()
+            // table scan.
             var digits = PhoneNumber.DigitsOnly(customerPhone);
             int count;
-            if (digits.Length >= 9)
+            if (digits.Length >= PhoneNumber.TailDigitCount)
             {
-                var last9 = digits.Substring(digits.Length - 9);
+                var last9 = digits.Substring(digits.Length - PhoneNumber.TailDigitCount);
                 count = await _asyncExecuter.CountAsync(todayQuery.Where(x =>
                     x.CustomerPhoneNorm == last9));
             }
@@ -3285,11 +3274,6 @@ namespace PhuThuongStickyRice.Application.Orders
             }
         }
 
-        /// <summary>
-        /// Item 165: rejects lines whose product would exceed its daily
-        /// portion limit. Combos are excluded (they are not portion-based).
-        /// Best-effort against races — see the call site comment.
-        /// </summary>
         /// <summary>
         /// Item 165: kiểm tra giới hạn suất/ngày của từng món (DailyLimit do
         /// admin cấu hình) trước khi tạo đơn. Số suất đã bán hôm nay tính theo

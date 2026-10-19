@@ -77,6 +77,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private const int MaxAdminListRows = 200;
         /// <summary>Số giao dịch mới nhất hiển thị trong lịch sử ví của 1 SĐT.</summary>
         private const int MaxTransactionHistoryRows = 100;
+        /// <summary>Số tiền điều chỉnh ví tối thiểu (VNĐ) — dưới ngưỡng này bị từ chối.</summary>
+        private const decimal MinAdjustAmountVnd = 1000m;
 
         /// <summary>Khởi tạo service ví tiền với repository tài khoản và lịch sử giao dịch.</summary>
         public WalletAppService(
@@ -142,31 +144,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         [Authorize(Roles = "Admin")]
         public virtual async Task<WalletAccountDto> AdjustAsync(AdjustWalletInput input)
         {
-            // Boundary null-check: input null (caller gọi trực tiếp) phải báo
-            // lỗi nghiệp vụ rõ ràng, không để NullReferenceException khi đọc
-            // input.Amount ở dưới.
-            if (input == null)
-            {
-                throw new DomainException("Dữ liệu điều chỉnh ví không hợp lệ.");
-            }
-
-            var normalized = VietnamTime.NormalizePhone(input.Phone);
-            if (string.IsNullOrEmpty(normalized))
-            {
-                throw new DomainException("Số điện thoại không hợp lệ.");
-            }
-
-            if (input.Amount == 0)
-            {
-                throw new DomainException("Số tiền phải khác 0.");
-            }
-
-            // Giữ đúng hợp đồng trong docstring AdjustWalletInput: trị tuyệt
-            // đối của số tiền nằm trong 1.000đ – 100.000.000đ (số âm = trừ tay).
-            if (Math.Abs(input.Amount) < 1000)
-            {
-                throw new DomainException("Số tiền điều chỉnh tối thiểu 1.000đ.");
-            }
+            var normalized = ValidateAdjustInput(input);
 
             var account = await GetOrCreateAsync(normalized);
 
@@ -208,6 +186,45 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 CurrentUser?.Email ?? CurrentUser?.UserName ?? "system");
 
             return new WalletAccountDto { Id = account.Id, Phone = account.Phone, Balance = newBalance };
+        }
+
+        /// <summary>
+        /// Kiểm tra dữ liệu điều chỉnh ví của admin: input không null, SĐT hợp
+        /// lệ và số tiền nằm trong ngưỡng cho phép. Tách riêng để
+        /// <see cref="AdjustAsync"/> chỉ còn logic cộng/trừ số dư.
+        /// </summary>
+        /// <param name="input">Dữ liệu điều chỉnh ví từ admin.</param>
+        /// <returns>SĐT đã chuẩn hóa, dùng để tra cứu ví.</returns>
+        /// <exception cref="DomainException">Ném khi input null, SĐT rỗng hoặc số tiền ngoài ngưỡng.</exception>
+        private string ValidateAdjustInput(AdjustWalletInput input)
+        {
+            // Boundary null-check: input null (caller gọi trực tiếp) phải báo
+            // lỗi nghiệp vụ rõ ràng, không để NullReferenceException khi đọc
+            // input.Amount ở dưới.
+            if (input == null)
+            {
+                throw new DomainException("Dữ liệu điều chỉnh ví không hợp lệ.");
+            }
+
+            var normalized = VietnamTime.NormalizePhone(input.Phone);
+            if (string.IsNullOrEmpty(normalized))
+            {
+                throw new DomainException("Số điện thoại không hợp lệ.");
+            }
+
+            if (input.Amount == 0)
+            {
+                throw new DomainException("Số tiền phải khác 0.");
+            }
+
+            // Giữ đúng hợp đồng trong docstring AdjustWalletInput: trị tuyệt
+            // đối của số tiền nằm trong 1.000đ – 100.000.000đ (số âm = trừ tay).
+            if (Math.Abs(input.Amount) < MinAdjustAmountVnd)
+            {
+                throw new DomainException("Số tiền điều chỉnh tối thiểu 1.000đ.");
+            }
+
+            return normalized;
         }
 
         /// <summary>Admin: lịch sử biến động ví của một SĐT (100 giao dịch mới nhất).</summary>
