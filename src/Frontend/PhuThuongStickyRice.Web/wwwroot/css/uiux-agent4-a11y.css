@@ -545,3 +545,64 @@ html.dark .cho-ticket:focus-visible {
     }
 }
 /* ===== END UIUX run 14:35 - Agent4 ===== */
+
+/* ===== UIUX run 14:45 - Agent4 A11y & Polish (5 fix, khong trung cac run truoc) ===== */
+/* Fix 1+2 (markup): xem ghi chu trong Shop.razor / TaiKhoan.razor —
+   Fix 1: 2 tab "Tat ca mon"/"Xoi nao hop ban?" (Shop.razor ~dòng 80) là <a>
+   KHONG có href → khong nam trong tab order, nguoi dung ban phim khong bao
+   gio toi duoc tab "Xoi nao hop ban?" (WCAG 2.1.1). Them href="javascript:void(0)"
+   (pattern san co trong file) + role="tab"/aria-selected, <ul> them role="tablist".
+   Vong focus tim duoc rule toan cuc a11y.css (:where(a):focus-visible) phu san.
+   Fix 2: 6 label trong TaiKhoan.razor khong ghep for/id voi input ("Ghi chu them"
+   khau vi + 5 o form dia chi: Ten goi nho, Ten nguoi nhan, SDT nguoi nhan,
+   Dia chi chi tiet, Ghi chu) → them id tk-taste-note, tk-addr-label,
+   tk-addr-receiver, tk-addr-phone, tk-addr-detail, tk-addr-note (WCAG 1.3.1/3.3.2). */
+
+/* Fix 3 — Polish hover/active: nut CTA chinh "Them vao gio" trong quick-view
+   sheet `.qv-sheet-add` (Shop.razor.css:850) HOAN TOAN khong co :hover/:active —
+   desktop di chuot qua khong biet nut "song", khach lon tuoi bam khong thay
+   phan hoi. Hover: nen tim dam hon (#6558b3, cung hue #7a6fbe); active: scale
+   nhe de thay "da an". :not(:disabled) de khong de len trang thai mo.
+   Lap class (0,4,0) thang rule scoped [b-xxx] (0,2,0); class nay chi render
+   trong quick-view sheet mobile nen khong anh huong desktop. */
+.qv-sheet-add.qv-sheet-add:hover:not(:disabled) {
+    background: #6558b3;
+}
+.qv-sheet-add.qv-sheet-add:active:not(:disabled) {
+    transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+    .qv-sheet-add.qv-sheet-add:active:not(:disabled) {
+        transform: none;
+    }
+}
+
+/* Fix 4 — WCAG 1.4.3 (Contrast, AA 4.5:1): placeholder 2 o nhap SDT tren
+   landing `.sg-zalo-form input` (form dang ky Zalo) va `.sg-loyal-form input`
+   (form binh chon/dang ky) khong set mau → dung mau mac dinh trinh duyet
+   (~#9c9c9c tren nen trang, chi ~2.8:1), nguoi lon tuoi doc goi y rat kho.
+   Cung root cause voi fix `.sg-search::placeholder` o run 13:25, cung remedy:
+   #6c757d (~4.7:1), tong text-muted Lexa. Input 2 form deu nen trang nen
+   khong can rule dark rieng. */
+.sg-zalo-form.sg-zalo-form input::placeholder,
+.sg-loyal-form.sg-loyal-form input::placeholder {
+    color: #6c757d;
+}
+
+/* Fix 5 — Polish hover/active: nut "+" them mon kieu ShopeeFood `.shop-row-add`
+   (Shop.razor.css:574, nut bam nhieu nhat tren shop mobile) khong co :hover/
+   :active — giong root cause voi `.qv-sheet-add` o Fix 3. Hover: nen tim dam
+   #6558b3; active: scale 0.92 de phan hoi ro khi cham. :focus-visible duoc
+   rule toan cuc a11y.css phu (khong co outline:none nao de). */
+.shop-row-add.shop-row-add:hover:not(:disabled) {
+    background: #6558b3;
+}
+.shop-row-add.shop-row-add:active:not(:disabled) {
+    transform: scale(0.92);
+}
+@media (prefers-reduced-motion: reduce) {
+    .shop-row-add.shop-row-add:active:not(:disabled) {
+        transform: none;
+    }
+}
+/* ===== END UIUX run 14:45 - Agent4 ===== */

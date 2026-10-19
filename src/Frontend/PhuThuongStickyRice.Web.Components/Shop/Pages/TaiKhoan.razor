@@ -152,8 +152,8 @@
                     </div>
                 </div>
                 <div class="form-group tk-form-narrow">
-                    <label>Ghi chú thêm</label>
-                    <input class="form-control" @bind="_profile.TasteNote" placeholder="VD: xôi dẻo một chút" />
+                    <label for="tk-taste-note">Ghi chú thêm</label>
+                    <input id="tk-taste-note" class="form-control" @bind="_profile.TasteNote" placeholder="VD: xôi dẻo một chút" />
                 </div>
                 <button class="btn btn-primary"
                         @onclick="SaveTasteAsync" disabled="@_tasteBusy">
@@ -247,18 +247,18 @@
                     <div class="tk-addr-panel border rounded p-3 mb-3">
                         <div class="form-row">
                             <div class="form-group col-md-4">
-                                <label>Tên gợi nhớ</label>
-                                <input class="form-control" @bind="_form.Label" placeholder="Nhà, Công ty..." />
+                                <label for="tk-addr-label">Tên gợi nhớ</label>
+                                <input id="tk-addr-label" class="form-control" @bind="_form.Label" placeholder="Nhà, Công ty..." />
                             </div>
                             <div class="form-group col-md-8">
-                                <label>Tên người nhận *</label>
-                                <input class="form-control" @bind="_form.ReceiverName" placeholder="Nguyễn Văn A" />
+                                <label for="tk-addr-receiver">Tên người nhận *</label>
+                                <input id="tk-addr-receiver" class="form-control" @bind="_form.ReceiverName" placeholder="Nguyễn Văn A" />
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group col-md-6">
-                                <label>SĐT người nhận *</label>
-                                <input class="form-control" @bind="_form.ReceiverPhone" inputmode="tel" placeholder="0901234567" />
+                                <label for="tk-addr-phone">SĐT người nhận *</label>
+                                <input id="tk-addr-phone" class="form-control" @bind="_form.ReceiverPhone" inputmode="tel" placeholder="0901234567" />
                             </div>
                             <div class="form-group col-md-6">
                                 <div class="form-check mt-4 pt-2">
@@ -268,12 +268,12 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Địa chỉ chi tiết *</label>
-                            <input class="form-control" @bind="_form.AddressDetail" placeholder="Số nhà, đường, phường/xã..." />
+                            <label for="tk-addr-detail">Địa chỉ chi tiết *</label>
+                            <input id="tk-addr-detail" class="form-control" @bind="_form.AddressDetail" placeholder="Số nhà, đường, phường/xã..." />
                         </div>
                         <div class="form-group">
-                            <label>Ghi chú</label>
-                            <input class="form-control" @bind="_form.Note" placeholder="VD: gọi trước khi đến" />
+                            <label for="tk-addr-note">Ghi chú</label>
+                            <input id="tk-addr-note" class="form-control" @bind="_form.Note" placeholder="VD: gọi trước khi đến" />
                         </div>
                         <button class="btn btn-primary mr-2"
                                 @onclick="SaveAddressAsync" disabled="@_addrBusy">

@@ -679,3 +679,31 @@ html.dark .wpt-claimed { color: #6fdc9c !important; }
 html.dark .shp-page .shop-status-banner.open { color: #7ce3b1 !important; }
 
 /* ===== end UI/UX run 2026-10-19 13:25 - Agent3 Lexa ===== */
+
+/* ===== UI/UX run 2026-10-19 14:45 - Agent3 Lexa =====
+   1 fix MỚI (đã verify bằng grep, không trùng 12 đợt trước).
+   Quét đợt này: toàn bộ hex trong *.razor/*.razor.css (uniq count),
+   style="..." inline có màu, oi-* (không còn trong markup), gradient,
+   svg fill, modal, nav, dropdown, progress, spinner, switch, toast.
+   Các màu còn lại là: brand ấm chủ ý (landing terracotta #763434/#D08B8B,
+   cam #FFBA31, nâu #4a2b1a, thanh giỏ dính #7a1b2e, chip size #b5462a),
+   màu brand bên thứ ba (Zalo/Facebook), màu demo trang Lexa
+   (#ec536c/#3ac9d6/#f5b225/#29bbe3 — palette của chính template),
+   tint trung tính (xám #6c757d/#e9ecef, dark-mode) — KHÔNG đụng. */
+
+/* ---------- Fix 1: tiêu đề trang lỗi chung /error #7a1b2e -> đỏ danger Lexa ----------
+   Verify: Core/Pages/Error.razor:7 (trang lỗi full-page khi có exception,
+   render trong MainLayout). Tiêu đề h1 "Đã có lỗi xảy ra" đang dùng inline
+   style màu đỏ nâu đậm #7a1b2e — lệch chuẩn chữ danger Lexa #bd4a4a
+   (= màu chữ .alert-danger, uiux-agent3-lexa.css:103). Đợt 13:25 đã chuẩn
+   hóa đúng màu này cho thẻ lỗi mất mạng trên /shop (Shop.razor:116-118);
+   trang /error là cùng một loại UI nên đồng nhất.
+   Giữ nguyên chữ nâu #4a2b1a và các nút .sg-btn (thiết kế ấm chủ ý của
+   landing, không phải màu Bootstrap sót). Dùng attribute selector +
+   !important để thắng inline style (pattern đã dùng cho KanbanDon/LaiGop/
+   thẻ lỗi shop). Class .sg-error-wrap chỉ tồn tại ở trang này nên an toàn. */
+.sg-error-wrap h1[style*="#7a1b2e"] {
+    color: #bd4a4a !important;
+}
+
+/* ===== end UI/UX run 2026-10-19 14:45 - Agent3 Lexa ===== */

@@ -1500,3 +1500,106 @@
 }
 
 /* ===== END UIUX run 14:05 - Agent1 ===== */
+
+/* ===== UIUX run 14:45 - Agent1 Mobile ===== */
+
+/* ------------------------------------------------------------
+   uiux-a1-1445-fix1 — /tai-khoan: các ô nhập `.form-control`
+   chỉ ~38px cao (Bootstrap mặc định).
+   Vấn đề: trang tài khoản có nhiều ô nhập quan trọng (khẩu vị,
+   ngày sinh, đổi mật khẩu, form địa chỉ) — ô 38px dưới chuẩn
+   chạm 44px; riêng ô "Thêm khẩu vị khác..." nằm cạnh nút "Thêm"
+   đã 48px (fix đợt trước) nên cặp input-group lệch chiều cao rõ
+   rệt, trông như vỡ giao diện. Font-size 16px cũng đảm bảo iOS
+   không auto-zoom khi focus (đồng bộ với rule .form-control ở
+   /checkout và /track-order đã làm các đợt trước).
+   Giải pháp: mobile nâng mọi .form-control trong .tk-page lên
+   44px, font 16px. Scope .tk-page — chỉ khớp trang tài khoản.
+   (Verify: TaiKhoan.razor:20 wrapper .tk-page; input tại
+   149/156/190/220/224/251/255/261/272/276 đều là .form-control)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .tk-page .form-control {
+        font-size: 16px;
+        min-height: 44px;
+    }
+}
+
+/* ------------------------------------------------------------
+   uiux-a1-1445-fix2 — /checkout: hàng chọn hình thức nhận hàng
+   (radio name="fulfillment": "🛵 Tôi tự book shipper" / "🏪 Tôi
+   tự đến quán lấy").
+   Vấn đề: fix đợt trước (FIX 1 batch 12) chỉ nâng hàng radio
+   name="paymentMethod" lên 48px — nhóm hình thức nhận hàng bị
+   sót, chỉ hưởng rule chung .form-check (radio 20px, label có
+   padding) nên mỗi hàng chỉ ~40px, thấp hơn hẳn 4 hàng phương
+   thức thanh toán ngay bên dưới; đây cũng là lựa chọn bắt buộc
+   (*) ở bước chốt đơn, khách lớn tuổi dễ bấm trượt.
+   Giải pháp: mirror y hệt rule paymentMethod — hàng ≥48px, radio
+   22px, label to đậm, bấm đâu trên hàng cũng trúng.
+   (:has() được mọi trình duyệt hiện đại hỗ trợ; cũ thì bỏ qua
+   rule — không vỡ giao diện.)
+   (Verify: Checkout.razor:318-327 — name="fulfillment" chỉ tồn
+   tại ở trang checkout, selector không khớp nhầm)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .form-check:has(> input[name="fulfillment"]) {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-left: 0;
+        min-height: 48px;
+        margin-bottom: 10px;
+    }
+    .form-check:has(> input[name="fulfillment"]) .form-check-input {
+        position: static;
+        margin: 0;
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
+    }
+    .form-check:has(> input[name="fulfillment"]) .form-check-label {
+        flex: 1;
+        padding: 10px 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+}
+
+/* ------------------------------------------------------------
+   uiux-a1-1445-fix3 — /tai-khoan, form địa chỉ: checkbox
+   "Đặt làm mặc định" quá nhỏ.
+   Vấn đề: checkbox Bootstrap mặc định chỉ ~13-16px — người lớn
+   tuổi khó bấm trúng trên điện thoại; trang /checkout đã được
+   nâng radio/checkbox lên 20px các đợt trước, riêng trang tài
+   khoản bị sót.
+   Giải pháp: checkbox 22px, label có padding để vùng bấm rộng;
+   căn giữa theo hàng. Scope .tk-addr-panel — chỉ khớp form địa
+   chỉ trang tài khoản.
+   (Verify: TaiKhoan.razor:264-267 — #addr-default duy nhất trong
+   .tk-addr-panel; label có for="addr-default" nên bấm chữ cũng
+   trúng)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .tk-addr-panel .form-check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        min-height: 44px;
+    }
+    .tk-addr-panel .form-check-input {
+        position: static;
+        margin: 0;
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
+        accent-color: #7a6fbe;
+    }
+    .tk-addr-panel .form-check-label {
+        padding: 8px 0;
+        font-size: 1rem;
+    }
+}
+
+/* ===== END UIUX run 14:45 - Agent1 ===== */

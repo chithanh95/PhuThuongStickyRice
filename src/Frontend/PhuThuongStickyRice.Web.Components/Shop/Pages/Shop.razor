@@ -76,12 +76,12 @@
 @* SH3: delivery info strip from shop settings (fail-soft defaults). *@
 <div class="shop-info-strip mb-3">🚚 @DeliveryInfoText()</div>
 
-<ul class="nav nav-tabs mb-4">
+<ul class="nav nav-tabs mb-4" role="tablist">
     <li class="nav-item">
-        <a class="nav-link @(_activeTab == "products" ? "active" : "")" @onclick='() => _activeTab = "products"' style="cursor: pointer;">🍚 Tất cả món</a>
+        <a href="javascript:void(0)" role="tab" aria-selected="@(_activeTab == "products" ? "true" : "false")" class="nav-link @(_activeTab == "products" ? "active" : "")" @onclick='() => _activeTab = "products"' style="cursor: pointer;">🍚 Tất cả món</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link @(_activeTab == "compare" ? "active" : "")" @onclick='() => _activeTab = "compare"' style="cursor: pointer;">📊 Xôi nào hợp bạn?</a>
+        <a href="javascript:void(0)" role="tab" aria-selected="@(_activeTab == "compare" ? "true" : "false")" class="nav-link @(_activeTab == "compare" ? "active" : "")" @onclick='() => _activeTab = "compare"' style="cursor: pointer;">📊 Xôi nào hợp bạn?</a>
     </li>
 </ul>
 
