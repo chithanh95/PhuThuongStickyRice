@@ -61,6 +61,9 @@ namespace PhuThuongStickyRice.Application.Customer
         private const string VipPhonesCacheKey = "vip:phones";
         private static readonly TimeSpan VipPhonesCacheTtl = TimeSpan.FromMinutes(5);
 
+        /// <summary>Số tag VIP tối đa trả về ở màn hình admin (tránh materialize toàn bảng).</summary>
+        private const int MaxVipListRows = 500;
+
         private readonly ICustomerTagAppService _tags;
         private readonly IRepository<CustomerTag, Guid> _tagRepo;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -156,13 +159,16 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>
         /// Lấy danh sách khách VIP đầy đủ thông tin tag, mới gắn nhất lên trước (admin).
         /// </summary>
-        /// <returns>Danh sách tag VIP.</returns>
+        /// <returns>Danh sách tag VIP (tối đa 500, mới nhất trước).</returns>
         public virtual async Task<List<CustomerTagDto>> GetVipsAsync()
         {
             var queryable = await _tagRepo.GetQueryableAsync();
+            // perf-hunt 2026-10-19: Take(500) server-side — bảng CustomerTag tăng
+            // theo mỗi khách VIP (không bao giờ xóa), trước đây materialize toàn bộ.
             var rows = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.TagName == VipTagName)
-                    .OrderByDescending(x => x.CreatedAt));
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(MaxVipListRows));
             return rows.Select(x => new CustomerTagDto
             {
                 Id = x.Id,

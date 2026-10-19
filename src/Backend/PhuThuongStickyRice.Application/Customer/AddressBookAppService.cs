@@ -15,7 +15,7 @@ namespace PhuThuongStickyRice.Application.Customer
 {
         public interface IAddressBookAppService : IApplicationService
         {
-            /// <summary>Public: saved addresses for a phone.</summary>
+            /// <summary>Public: saved addresses for a phone (tối đa 50, mới nhất trước).</summary>
             Task<List<AddressBookDto>> GetByPhoneAsync(string phone);
 
             /// <summary>Public: upsert an address (dedupe by label).</summary>
@@ -29,6 +29,9 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             private readonly IRepository<AddressBook, Guid> _addresses;
             private readonly IAsyncQueryableExecuter _asyncExecuter;
+
+            /// <summary>Số địa chỉ đã lưu tối đa trả về cho 1 SĐT (endpoint public).</summary>
+            private const int MaxAddressesPerPhone = 50;
 
             public AddressBookAppService(
                 IRepository<AddressBook, Guid> addresses,
@@ -48,9 +51,12 @@ namespace PhuThuongStickyRice.Application.Customer
                 }
 
                 var queryable = await _addresses.GetQueryableAsync();
+                // perf-hunt 2026-10-19: Take(50) server-side — endpoint public
+                // (checkout), trước đây materialize toàn bộ địa chỉ đã lưu của SĐT.
                 var entities = await _asyncExecuter.ToListAsync(
                     queryable.Where(x => x.Phone == normalized)
-                        .OrderByDescending(x => x.CreatedDateTime));
+                        .OrderByDescending(x => x.CreatedDateTime)
+                        .Take(MaxAddressesPerPhone));
                 return entities.Select(MapToDto).ToList();
             }
 
