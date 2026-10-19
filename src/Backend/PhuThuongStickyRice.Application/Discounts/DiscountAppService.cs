@@ -113,9 +113,12 @@ namespace PhuThuongStickyRice.Application.Discounts
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<DiscountCodeDto>> GetListAsync()
         {
+            // perf-hunt 2026-10-19: DiscountCodes grows unbounded (lucky-spin /
+            // birthday / reward-rule generate one code per customer). Cap the admin
+            // list at the 500 newest like Wallet/Loyalty lists (Take(200)).
             var queryable = await _discounts.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.CreatedDateTime));
+                queryable.OrderByDescending(x => x.CreatedDateTime).Take(500));
             return entities.Select(MapToDto).ToList();
         }
 

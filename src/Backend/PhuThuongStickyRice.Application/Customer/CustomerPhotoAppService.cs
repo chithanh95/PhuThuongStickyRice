@@ -59,9 +59,12 @@ namespace PhuThuongStickyRice.Application.Customer
             return await _catalogCache.GetOrAddAsync("customerphotos:approved-list", async () =>
             {
                 var queryable = await _photos.GetQueryableAsync();
+                // perf-hunt 2026-10-19: UGC grows forever; cap the cached public
+                // gallery at the 200 newest so the cache entry / payload stays bounded.
                 var list = await _asyncExecuter.ToListAsync(
                     queryable.Where(x => x.IsApproved)
-                        .OrderByDescending(x => x.CreatedAt));
+                        .OrderByDescending(x => x.CreatedAt)
+                        .Take(200));
                 return list.Select(MapToDto).ToList();
             });
         }
@@ -103,7 +106,9 @@ namespace PhuThuongStickyRice.Application.Customer
                 query = query.Where(x => !x.IsApproved);
             }
 
-            var list = await _asyncExecuter.ToListAsync(query);
+            // perf-hunt 2026-10-19: CustomerPhoto is ever-growing UGC; cap the admin
+            // list at the 500 newest (pending review queue is newest-first anyway).
+            var list = await _asyncExecuter.ToListAsync(query.Take(500));
             return list.Select(MapToDto).ToList();
         }
 

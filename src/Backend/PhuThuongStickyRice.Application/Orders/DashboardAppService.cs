@@ -295,8 +295,15 @@ namespace PhuThuongStickyRice.Application.Orders
 
         public virtual async Task<List<Guid>> GetBestSellerProductIdsAsync(int top)
         {
-            var products = await GetTopProductsAsync(null, null, top < 1 ? 100 : top);
-            return products.Select(x => x.ProductId).ToList();
+            // perf-hunt 2026-10-19: GET /api/products/best-sellers is public and hit on
+            // every shop menu load. The all-time OrderLines aggregate is expensive, so
+            // cache the top-200 list (same 5-min TTL semantics as GetSoldQuantitiesAsync)
+            // and slice the requested top in memory. Clamp top to avoid huge payloads.
+            var clamped = top < 1 ? 100 : Math.Min(top, 200);
+            var products = await _catalogCache.GetOrAddAsync(
+                "best-sellers",
+                () => GetTopProductsAsync(null, null, 200));
+            return products.Take(clamped).Select(x => x.ProductId).ToList();
         }
 
         public virtual async Task<Dictionary<Guid, long>> GetSoldQuantitiesAsync()
