@@ -1,0 +1,7 @@
+/* uiux-hunt 2026-10-19 run 22:25 agent3-lexa — Fix 2: thẻ <code> hồng Bootstrap
+   (#e83e8c) -> tím Lexa #7a6fbe. Dùng ở dòng placeholder mẫu tin nhắn
+   (MauTinNhan.razor:34-35: {MaDon}, {TenKhach}...). Scope riêng trang này
+   để không chạm các trang demo /admin/lexa/* (pixel-exact). */
+code {
+    color: #7a6fbe;
+}

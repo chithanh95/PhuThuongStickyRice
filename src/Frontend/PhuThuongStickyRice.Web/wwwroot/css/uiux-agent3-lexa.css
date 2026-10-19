@@ -825,3 +825,55 @@ html.dark .page-link { color: #b3a8e8; }
 html.dark .lx-total-row th { background-color: #7a6fbe; border-color: #7a6fbe; }
 
 /* ===== end UIUX-1925 - Agent3 Lexa (2 fix) ===== */
+
+/* uiux-hunt 2026-10-19 run 22:25 agent3-lexa */
+/* ===== UIUX run 2026-10-19 22:25 — Agent 3 Lexa sync (2 fix mới) =====
+   Đã quét: toàn bộ hex trong CSS (Admin 32 mã / Shop+Core 199 mã),
+   inline style trong razor, oi-* (chỉ còn false positive từ tên
+   route/anchor — không còn icon Open Iconic thật), Bootstrap defaults
+   (btn/badge/alert/text/bg/border/table/nav/pagination/validation/
+   focus-glow/code). Các đợt Agent 3 trước (10 đợt) đã phủ gần hết —
+   dưới đây là 2 khe hở còn lại, đã verify bằng grep, không trùng. */
+
+/* ---------- Fix 1: ô nhập lỗi/hợp lệ (is-invalid/is-valid) trên shop -> palette Lexa ----------
+   Verify: 5 form shop tự gắn class Bootstrap "is-invalid" khi validate lỗi
+   (helper FieldClass): DatTiec.razor:244 (+dùng ở :46/:56/:95...),
+   NhuongQuyen.razor:323, CungGio.razor:161, DatCung.razor:227,
+   Checkout.razor:2046 (+dùng ở :399/:408/:440/:474...).
+   Bootstrap 4.3 render: viền #dc3545 + icon SVG đỏ %23dc3545 +
+   glow focus rgba(220,53,69,.25) — lệch chuẩn Lexa (đỏ #f46a6a,
+   xanh lá #34c38f). Đợt 15:45 chỉ xử lý class .valid/.invalid của Blazor,
+   chưa chạm class is-*/was-validated của Bootstrap.
+   Specificity: .shp-page .form-control.is-invalid (0,3,0) thắng rule gốc
+   Bootstrap (0,2,0); file này load sau cùng (index.html:172). Icon SVG
+   data-URI copy y nguyên từ bootstrap.min.css, chỉ đổi %23dc3545 ->
+   %23f46a6a và %2328a745 -> %2334c38f. */
+.shp-page .form-control.is-invalid {
+    border-color: #f46a6a;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23f46a6a' viewBox='-2 -2 7 7'%3e%3cpath stroke='%23f46a6a' d='M0 0l3 3m0-3L0 3'/%3e%3ccircle r='.5'/%3e%3ccircle cx='3' r='.5'/%3e%3ccircle cy='3' r='.5'/%3e%3ccircle cx='3' cy='3' r='.5'/%3e%3c/svg%3e");
+}
+.shp-page .form-control.is-invalid:focus {
+    border-color: #f46a6a;
+    box-shadow: 0 0 0 .2rem rgba(244,106,106,.25);
+}
+.shp-page .form-control.is-valid {
+    border-color: #34c38f;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2334c38f' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+}
+.shp-page .form-control.is-valid:focus {
+    border-color: #34c38f;
+    box-shadow: 0 0 0 .2rem rgba(52,195,143,.25);
+}
+
+/* ---------- Fix 2: thẻ <code> trên trang admin hồng Bootstrap -> tím Lexa ----------
+   Verify: Bootstrap reboot render <code> màu hồng #e83e8c.
+   Dùng thật ở 2 trang admin: ShopSettings.razor:107/339 (hướng dẫn webhook),
+   MauTinNhan.razor:34-35 (placeholder {MaDon}...). Tím #7a6fbe đồng nhất
+   với link/màu nhấn của admin.
+   KHÔNG viết rule global ở đây: các trang demo /admin/lexa/* (pixel-exact
+   theo template gốc) cũng dùng <code> (VD FormElements.razor:18,
+   Icons.razor) và cùng nằm trong .lx-admin — rule global sẽ làm lệch
+   demo. Fix đặt trực tiếp trong ShopSettings.razor.css và
+   MauTinNhan.razor.css (CSS isolation, scope đúng 2 trang). */
+
+/* ===== end UIUX run 2026-10-19 22:25 - Agent3 Lexa (2 fix) ===== */
