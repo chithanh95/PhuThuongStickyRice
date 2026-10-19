@@ -52,11 +52,11 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
     {
         public static IEnumerable<string> WhereNotNull(this IEnumerable<string> source)
         {
-            foreach (var s in source)
+            foreach (var item in source)
             {
-                if (!string.IsNullOrWhiteSpace(s))
+                if (!string.IsNullOrWhiteSpace(item))
                 {
-                    yield return s;
+                    yield return item;
                 }
             }
         }

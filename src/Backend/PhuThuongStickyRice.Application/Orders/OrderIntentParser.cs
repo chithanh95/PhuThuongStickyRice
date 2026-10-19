@@ -74,16 +74,16 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var normalized = text.ToLowerInvariant().Normalize(NormalizationForm.FormD);
             var sb = new StringBuilder(normalized.Length);
-            foreach (var c in normalized)
+            foreach (var ch in normalized)
             {
-                var category = CharUnicodeInfo.GetUnicodeCategory(c);
+                var category = CharUnicodeInfo.GetUnicodeCategory(ch);
                 if (category != UnicodeCategory.NonSpacingMark)
                 {
                     // 'đ' (U+0111) không có phân rã FormD nên rớt qua vòng lọc dấu.
                     // Không map tay thì "đặt" -> "đat" không khớp keyword "dat",
                     // và tên món chứa đ (vd "Xôi Đậu") không khớp khi khách gõ
                     // không dấu "xoi dau". (bug-hunt 2026-10-20)
-                    sb.Append(c == 'đ' ? 'd' : c);
+                    sb.Append(ch == 'đ' ? 'd' : ch);
                 }
             }
 
@@ -152,9 +152,9 @@ namespace PhuThuongStickyRice.Application.Orders
             var candidates = BuildCandidates(products);
             var consumed = new StringBuilder(normalized);
 
-            foreach (var c in candidates)
+            foreach (var candidate in candidates)
             {
-                if (TryParseCandidate(c, consumed, out var item))
+                if (TryParseCandidate(candidate, consumed, out var item))
                 {
                     result.Items.Add(item);
                     result.IsOrderIntent = true;

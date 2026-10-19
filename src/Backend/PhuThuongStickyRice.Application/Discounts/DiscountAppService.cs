@@ -1207,9 +1207,9 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             // Hết số lần thử mà vẫn đụng: fallback GUID như bản đơn (không check DB).
-            foreach (var i in pending)
+            foreach (var codeIndex in pending)
             {
-                codes[i] = BuildGeneratedCodeFallback(prefixes[i]);
+                codes[codeIndex] = BuildGeneratedCodeFallback(prefixes[codeIndex]);
             }
 
             return codes;
@@ -1276,14 +1276,14 @@ namespace PhuThuongStickyRice.Application.Discounts
             IReadOnlyList<string> prefixes, List<string> codes, HashSet<string> used, List<int> collided)
         {
             // Sinh lại mã bị đụng, vẫn giữ tính duy nhất trong batch.
-            foreach (var i in collided)
+            foreach (var collidedIndex in collided)
             {
-                used.Remove(codes[i]);
+                used.Remove(codes[collidedIndex]);
                 do
                 {
-                    codes[i] = BuildGeneratedCodeCandidate(prefixes[i]);
+                    codes[collidedIndex] = BuildGeneratedCodeCandidate(prefixes[collidedIndex]);
                 }
-                while (!used.Add(codes[i]));
+                while (!used.Add(codes[collidedIndex]));
             }
         }
 

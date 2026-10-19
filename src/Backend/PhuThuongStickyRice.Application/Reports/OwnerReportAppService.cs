@@ -148,10 +148,10 @@ namespace PhuThuongStickyRice.Application.Reports
             sb.AppendLine();
             sb.AppendLine("Top 5 món bán chạy:");
             var rank = 0;
-            foreach (var p in topProducts ?? Enumerable.Empty<Orders.DTOs.TopProductDto>())
+            foreach (var product in topProducts ?? Enumerable.Empty<Orders.DTOs.TopProductDto>())
             {
                 rank++;
-                sb.AppendLine($"  {rank}. {p.ProductName}: {p.QuantitySold} gói — {p.Revenue:N0} ₫");
+                sb.AppendLine($"  {rank}. {product.ProductName}: {product.QuantitySold} gói — {product.Revenue:N0} ₫");
             }
 
             sb.AppendLine();

@@ -612,21 +612,21 @@ namespace PhuThuongStickyRice.Application.Messenger
 
             ProductDto best = null;
             var bestScore = 0;
-            foreach (var (p, normName) in items)
+            foreach (var (product, normName) in items)
             {
                 var score = 0;
                 // every word of the query found in the product name scores
-                foreach (var w in normPart.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                foreach (var word in normPart.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                 {
-                    if (w.Length >= 2 && normName.Contains(w))
+                    if (word.Length >= 2 && normName.Contains(word))
                     {
-                        score += w.Length;
+                        score += word.Length;
                     }
                 }
                 if (score > bestScore)
                 {
                     bestScore = score;
-                    best = p;
+                    best = product;
                 }
             }
 
@@ -737,11 +737,11 @@ namespace PhuThuongStickyRice.Application.Messenger
             }
             var normalized = text.Normalize(NormalizationForm.FormD);
             var sb = new StringBuilder();
-            foreach (var c in normalized)
+            foreach (var ch in normalized)
             {
-                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
                 {
-                    sb.Append(c);
+                    sb.Append(ch);
                 }
             }
             return WhitespaceRegex().Replace(sb.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant(), " ").Trim();
@@ -754,9 +754,9 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         private static IEnumerable<string> SplitMessage(string text, int maxLen)
         {
-            for (var i = 0; i < text.Length; i += maxLen)
+            for (var start = 0; start < text.Length; start += maxLen)
             {
-                yield return text.Substring(i, Math.Min(maxLen, text.Length - i));
+                yield return text.Substring(start, Math.Min(maxLen, text.Length - start));
             }
         }
 
