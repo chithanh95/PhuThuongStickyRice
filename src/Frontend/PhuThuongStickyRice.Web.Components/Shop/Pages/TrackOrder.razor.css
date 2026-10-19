@@ -897,3 +897,25 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 00:10 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 01:52 — Agent1 Mobile =====
+   FIX 2 — Form "Sửa số lượng" (TrackOrder.razor:479-487): hàng tên món
+   (.col-8) + ô nhập số lượng (.col-4) chia cứng 66.7%/33.3% — ở màn 320px
+   ô nhập chỉ còn ~93px, chật với ô cao 44px cho người lớn tuổi gõ. Mobile
+   ≤575px: tên món co giãn tự do (dài thì xuống dòng), ô nhập rộng cố định
+   112px cho thoải mái bấm/gõ.
+   (Selector .to-selfservice .form-row.align-items-center chỉ khớp các hàng
+   này — form Sổ địa chỉ nằm trong .to-info-card, form-row ngày sinh dùng
+   col-auto, không bị ảnh hưởng.) */
+@media (max-width: 575.98px) {
+    .to-selfservice .form-row.align-items-center > .col-8 {
+        flex: 1 1 auto;
+        max-width: none;
+        min-width: 0;
+    }
+    .to-selfservice .form-row.align-items-center > .col-4 {
+        flex: 0 0 112px;
+        max-width: 112px;
+    }
+}
+/* ===== END UIUX run 01:52 - Agent1 FIX 2 ===== */

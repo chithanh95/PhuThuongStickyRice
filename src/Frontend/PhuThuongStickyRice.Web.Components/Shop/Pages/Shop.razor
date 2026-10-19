@@ -67,7 +67,7 @@
    Item 238: ẩn ở chế độ "Gọn". *@
 @if (_firstOrderVoucher != null && !_compactMode)
 {
-    <div class="alert alert-info mb-3" role="alert" style="border-width: 2px;">
+    <div class="alert alert-info mb-3" role="status" style="border-width: 2px;">
         <div class="font-weight-bold" style="font-size: 1.25rem;">🎉 Chào bạn mới! Quán tặng bạn mã giảm giá cho đơn đầu tiên:</div>
         <div class="mt-2 mb-2 font-weight-bold text-danger shp-voucher-code" style="font-size: 2rem; letter-spacing: 2px;">@_firstOrderVoucher.Code</div>
         <div class="mb-3" style="font-size: 1.1rem;">Được giảm <strong>@_firstOrderVoucher.DiscountPercent%</strong> khi đặt đơn đầu tiên.</div>
@@ -205,7 +205,8 @@ else
                                 {
                                     <strong class="text-danger">@FormatPrice(DisplayPrice(product))</strong>
                                 }
-                                <button class="btn btn-sm btn-primary" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">@AddButtonLabel(product, "+ Thêm")</button>
+                                <button class="btn btn-sm btn-primary" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))"
+                                        aria-label="@(CanOrder(product) ? $"Thêm {product.Name} vào giỏ hàng" : null)">@AddButtonLabel(product, "+ Thêm")</button>
                             </div>
                             @* Item 101: ask about this dish on Zalo. *@
                             @if (ShowZaloButton)
@@ -289,7 +290,8 @@ else
                             <div class="d-flex align-items-center shop-add-row">
                                 <input type="number" min="1" max="99" class="form-control mr-2" style="width: 80px;"
                                        aria-label="Số lượng" @bind="_quantities[product.Id]" />
-                                <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">
+                                <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))"
+                                        aria-label="@(CanOrder(product) ? $"Thêm {product.Name} vào giỏ hàng" : null)">
                                     @AddButtonLabel(product)
                                 </button>
                             </div>

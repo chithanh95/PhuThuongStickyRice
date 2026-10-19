@@ -1025,14 +1025,16 @@ html.dark .shop-sticky-cart-cta {
 .shp-err-retry:hover, .shp-err-retry:focus { color: #fff; background: #625998; }
 /* ===== END UIUX run 20:45 - Agent3 ===== */
 
-/* ===== UIUX run 20:45 — Agent1 Mobile =====
-   FIX 5 (tiếp) — Header shop ở màn ≤400px xuống 2 hàng, cao ~108px
-   (xem ShopLayout.razor.css FIX 5): sidebar danh mục sticky đang top:76px
-   (tính cho header 1 hàng ~64px) sẽ chui dưới header mới, 1–2 nút danh mục
-   trên cùng bị che không bấm được. Hạ top xuống 120px cho khớp, chỉ trong
-   dải ≤400px; màn lớn hơn và PC giữ nguyên. */
-/* ===== END UIUX run 20:45 - Agent1 FIX 5 ===== */
-@media (max-width: 400px) {
+/* ===== UIUX run 01:52 — Agent1 Mobile =====
+   FIX 1 — SỬA SÓT run 20:45 FIX 5: comment cũ ghi header xuống 2 hàng ở
+   "≤400px" nhưng CODE ShopLayout.razor.css cho .shp-header-inner
+   { flex-wrap: wrap } ở @media (max-width: 480px) — tức dải 401–480px
+   (Pixel 412px, iPhone Pro Max 430px — điện thoại rất phổ biến) header đã
+   cao ~108–110px mà sidebar vẫn top:76px → 1–2 nút danh mục trên cùng chui
+   dưới header sticky, không bấm được khi cuộn. Mở rộng dải phủ lên ≤480px
+   cho khớp code thực tế; >480px và PC giữ nguyên. */
+/* ===== END UIUX run 01:52 - Agent1 FIX 1 ===== */
+@media (max-width: 480px) {
     .shop-cat-sidebar {
         top: 120px;
         max-height: 55vh;

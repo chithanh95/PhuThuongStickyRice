@@ -1013,3 +1013,84 @@ html.dark .shp-theme-toggle:hover { background-color: #2e2620 !important; }
 html.dark .shp-back:hover { background-color: #2e2620 !important; }
 
 /* ===== END UIUX run 2026-10-20 00:05 - Agent 3 Lexa ===== */
+
+/* ===== UIUX run 2026-10-20 01:50 - Agent 3 Lexa (2 fix mới, đã verify bằng grep trong source, không trùng các đợt trước) ===== */
+
+/* ---------- Fix 1: .lx-admin .btn-info đặc -> xanh info Lexa ---------- */
+/* Verify: chưa có rule .btn-info nào trong uiux-agent3-lexa.css lẫn
+   admin-lexa.css (đã grep). Đang dùng ở trang demo Lexa trong admin
+   (UiButtons.razor:24,67; UiModals.razor:21,34; Icons.razor:78 nút tìm kiếm)
+   — đang render xanh lơ #17a2b8 của Bootstrap.
+   Khớp pattern .lx-admin .btn-success (admin-lexa.css:2159): nền/viền
+   #50a5f1, hover tối cùng tông #3f96e3, bo 4px, chữ 13px.
+   !important để thắng rule Bootstrap gốc (file này load sau cùng). */
+.lx-admin .btn-info {
+    background-color: #50a5f1 !important;
+    border-color: #50a5f1 !important;
+    border-radius: 4px !important;
+    font-size: 13px;
+}
+.lx-admin .btn-info:hover,
+.lx-admin .btn-info:active,
+.lx-admin .btn-info:not(:disabled):not(.disabled):active,
+.lx-admin .btn-info:not(:disabled):not(.disabled).active {
+    background-color: #3f96e3 !important;
+    border-color: #3f96e3 !important;
+}
+.lx-admin .btn-info:focus,
+.lx-admin .btn-info.focus {
+    box-shadow: 0 0 0 .2rem rgba(80,165,241,.5) !important;
+}
+.lx-admin .btn-info.disabled,
+.lx-admin .btn-info:disabled {
+    background-color: #50a5f1 !important;
+    border-color: #50a5f1 !important;
+}
+
+/* ---------- Fix 2: khôi phục remedy tương phản của Agent 4 bị rule !important đợt trước đè ---------- */
+/* Vấn đề: rule toàn cục `.text-info { color:#50a5f1 !important; }` và
+   `.text-success { color:#34c38f !important; }` (đợt 2, file này) thắng
+   2 rule KHÔNG-!important của Agent 4 trong uiux-agent4-a11y.css
+   (file load SAU nhưng thua !important):
+     - `.shp-page .text-success { color:#1e7e34; }` (run 16:50): số tiền giảm/
+       "miễn phí ship" trên checkout — #34c38f trên nền trắng chỉ ~3.5:1,
+       người lớn tuổi đọc khó; #1e7e34 đạt ~5.14:1.
+     - `.shp-page .text-info { color:#0e7c99; }` (run 16:50 + 14:58): ghi chú
+       món trong đơn (TrackOrder.razor:283), thông báo chờ shipper
+       (TrackOrder.razor:568), dòng "📝 ghi chú" checkout — #50a5f1 trên
+       nền trắng chỉ ~3.5:1; #0e7c99 đạt ~4.81:1.
+   Cả 2 remedy đều có ghi chú WCAG 1.4.3 rõ ràng — giữ nguyên giá trị Agent 4
+   đã tính, chỉ thêm !important để thắng rule toàn cục bên trên.
+   Dark mode KHÔNG bị ảnh hưởng: ShopLayout.razor.css:428-430 đã có
+   `html.dark .shp-page .text-success/info { ... !important; }` với
+   specificity (0,4,0) — cao hơn rule này (0,2,0) nên vẫn thắng ở dark. */
+.shp-page .text-success { color: #1e7e34 !important; }
+.shp-page .text-info { color: #0e7c99 !important; }
+
+/* ===== END UIUX run 2026-10-20 01:50 - Agent 3 Lexa ===== */
+
+/* ---------- Fix 3: dark mode .btn-outline-danger/.btn-outline-success sáng lên ---------- */
+/* Theo convention rule dark của .btn-outline-primary (uiux-agent2-dark.css:840:
+   `html.dark .lx-admin .btn-outline-primary { color:#b3a8e8 !important; ... }`).
+   Agent 2 phát hiện: chữ nút outline trên card tối #262640 khó đọc.
+   Verify: các nút "Xóa" dùng btn-outline-danger ở Articles.razor:114,
+   LichNghi.razor:116, ChiNhanh.razor:65, KhuyenMai.razor:67, MaGiamGia.razor:113,
+   Quotes.razor:91 ("Hủy"); btn-outline-success ở Quotes.razor:90 ("Duyệt & cọc")
+   và Quotes.razor:153 ("Bật lại"). Hiện tại admin-lexa.css đã đưa về màu Lexa
+   (#f46a6a đạt ~4.96:1, #34c38f đạt ~6.52:1 trên #262640 — vừa qua chuẩn AA
+   nhưng chữ nút btn-sm vẫn hơi gắt với người lớn tuổi).
+   Fix: sáng lên cùng tone với text dark đã có trong codebase —
+   danger #ff8a8a (~6.45:1, khớp `html.dark .text-danger` admin-lexa.css),
+   success #5dd39e (~7.87:1, khớp `html.dark .text-success` admin-lexa.css).
+   !important để thắng rule `.lx-admin .btn-outline-*` (0,2,0) của admin-lexa.css.
+   Hover giữ nguyên fill đặc + chữ trắng (đúng convention rule primary). */
+html.dark .lx-admin .btn-outline-danger {
+    color: #ff8a8a !important;
+    border-color: #ff8a8a !important;
+}
+html.dark .lx-admin .btn-outline-success {
+    color: #5dd39e !important;
+    border-color: #5dd39e !important;
+}
+
+/* ===== END UIUX run 2026-10-20 01:50 - Agent 3 Lexa ===== */

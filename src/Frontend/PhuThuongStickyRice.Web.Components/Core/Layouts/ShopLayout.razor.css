@@ -583,9 +583,10 @@ html.dark .shp-back:hover {
    (logo + 5 nút 44px) — màn ≤400px sẽ cắt mất nút hamburger vừa khôi phục,
    menu lại không mở được. ≤480px: gọn header (padding/gap nhỏ lại, logo
    17px, ẩn dòng phụ "LÀNG NGHỀ HÀ NỘI" chỉ mang tính trang trí) → vừa khít
-   màn 390px. ≤400px: cụm nút .shp-header-right xuống 2 hàng (header cao
-   ~108px) → mọi nút giữ 44px, không nút nào bị cắt; sidebar danh mục
-   /shop hạ top xuống 120px cho khớp (xem Shop.razor.css FIX 5).
+   màn 390px. ≤480px: cụm nút .shp-header-right xuống 2 hàng (header cao
+   ~108px, code @media (max-width: 480px) ở dưới) → mọi nút giữ 44px, không
+   nút nào bị cắt; sidebar danh mục /shop hạ top xuống 120px cho khớp
+   (xem Shop.razor.css — UIUX run 01:52 Agent1 FIX 1).
    (Tất cả chỉ trong media mobile — PC giữ nguyên.) */
 @media (max-width: 767.98px) {
     .shp-cart {

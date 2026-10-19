@@ -188,7 +188,7 @@ else
                                         <span class="text-danger">@FormatPrice(ShopProductModel.EffectivePrice(s, s.Price))</span>
                                     </div>
                                 </div>
-                                <button class="btn btn-sm btn-primary" @onclick="() => QuickAddSuggestion(s)">@AppI18n.Translate("shop.add")</button>
+                                <button class="btn btn-sm btn-primary" @onclick="() => QuickAddSuggestion(s)" aria-label="Thêm @s.Name vào giỏ hàng">@AppI18n.Translate("shop.add")</button>
                             </div>
                         </div>
                     }
