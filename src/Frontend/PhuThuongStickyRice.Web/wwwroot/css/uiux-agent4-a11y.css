@@ -276,3 +276,76 @@ html.dark .to-copy-btn.to-copy-btn {
 }
 
 /* === end Agent 4 run 12:10 === */
+
+/* UIUX run 12:55 — agent4-a11y: 4 fix mới (TrackOrder timeline contrast, QuantitySpinner focus bị cắt, lexa demo modal ×, copy-btn hover) — không trùng các run trước */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1) + 1.4.11: nhãn các bước timeline
+   tra cứu đơn `.to-tl-label` (11px) và icon `.to-tl-dot` (15px) ở trạng thái
+   "chưa tới" dùng #9aa0a6 trên nền sáng: label trên card trắng chỉ ~2.64:1
+   (chữ nhỏ cần 4.5:1), icon trên #f1f2f4 chỉ ~2.5:1 (icon cần 3:1) — người
+   lớn tuổi không đọc được các bước tiếp theo ("Đang chuẩn bị", "Đang giao").
+   Đậm lên #6c757d (label ~4.69:1, icon ~4.2:1), vẫn giữ tông xám "chưa tới"
+   để phân biệt với bước xong (#34c38f) và bước hiện tại (#7a6fbe).
+   Lặp class để thắng rule scoped [b-xxx] (0,2,0) theo thứ tự cascade.
+   Dark mode giữ nguyên #8b8f98 (đạt ~5.3:1, rule html.dark thắng). */
+.to-tl-label.to-tl-label {
+    color: #6c757d;
+}
+.to-tl-dot.to-tl-dot {
+    color: #6c757d;
+}
+
+/* Fix 2 — WCAG 2.4.7 (Focus Visible): nút +/− `.qty-btn` của QuantitySpinner
+   không có style focus riêng; vòng focus mặc định của trình duyệt còn bị
+   `.qty-spinner { overflow: hidden }` cắt mất → tab bằng bàn phím không thấy
+   đang ở nút nào. Dùng outline inset (offset -4px) vẽ vòng trắng 2px BÊN
+   TRONG nút — không bị cắt, tương phản ~4.3:1 trên nền tím #7a6fbe (cần 3:1).
+   Nút giữ nguyên #7a6fbe ở dark mode nên vòng trắng dùng được cả 2 mode. */
+.qty-spinner .qty-btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: -4px;
+}
+
+/* Fix 3 — WCAG 1.4.11 + polish hover: nút × `.lexa-modal-header button`
+   (trang demo UiModals) màu #999 trên nền trắng chỉ ~2.85:1 (< 3:1 cho UI
+   control) và KHÔNG có :hover/:focus-visible → khó thấy, khó biết bấm được.
+   Đậm lên #6c757d (~4.7:1); hover nền xám nhạt + chữ đậm hơn; focus tím.
+   Lặp class (0,2,1) để thắng rule (0,1,1) trong <style> của razor (render sau
+   trong body, cùng specificity sẽ thua theo thứ tự).
+   Dark mode giữ #999 gốc (trên #262640 đạt ~4.1:1, đã qua chuẩn). */
+.lexa-modal-header.lexa-modal-header button {
+    color: #6c757d;
+}
+.lexa-modal-header.lexa-modal-header button:hover {
+    color: #495057;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+}
+.lexa-modal-header.lexa-modal-header button:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .lexa-modal-header.lexa-modal-header button {
+    color: #999;
+}
+html.dark .lexa-modal-header.lexa-modal-header button:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+}
+html.dark .lexa-modal-header.lexa-modal-header button:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* Fix 4 — Polish hover: nút text "Sao chép" mã đơn `.to-copy-btn`
+   (TrackOrder) hoàn toàn không có phản hồi :hover — desktop di chuột qua
+   không nhận biết nút "sống" (dù có cursor:pointer). Thêm gạch chân + đậm
+   màu khi hover, theo pattern text-button thông thường. */
+.to-copy-btn:hover {
+    text-decoration: underline;
+    color: #8f3608;
+}
+html.dark .to-copy-btn:hover {
+    color: #ff8a3d;
+}
+
+/* === end Agent 4 run 12:55 === */

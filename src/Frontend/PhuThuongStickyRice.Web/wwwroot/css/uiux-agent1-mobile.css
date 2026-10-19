@@ -1029,3 +1029,138 @@
 }
 
 /* ===== END UI/UX run 2026-10-19 12:35 - Agent1 Mobile ===== */
+
+/* UIUX run 12:55 — agent1-mobile: 5 fix mobile mới (hamburger shop bị ẩn, nút A+ chữ lớn, nút cảm ơn đặt tiệc/cúng, nút theme trang auth, hamburger landing) */
+
+/* ------------------------------------------------------------
+   FIX 1 — ShopLayout: nút hamburger KHÔNG BAO GIỜ hiện trên mobile.
+   Vấn đề: `.shp-hamburger` bị `display:none` (ShopLayout.razor.css:212)
+   mà không có media query nào hiện lại — trong khi `.shp-nav` ở
+   ≤991.98px cũng `display:none` trừ khi có class `.open`. Kết quả:
+   trên điện thoại KHÔNG mở được menu điều hướng → mất lối vào
+   "Đăng nhập" (`.shp-nav-login` chỉ nằm trong menu này), "Gói trả
+   trước", "Đặt số lượng lớn", "Liên hệ". Comment ở
+   ShopLayout.razor.css:508 xác nhận intent: "Link Đăng nhập trong
+   nav chỉ dành cho menu hamburger mobile". (Landing `.sg-hamburger`
+   có rule `display:flex` ở media query — bản shop bị thiếu.)
+   Giải pháp: hiện hamburger ở ≤767.98px, vùng bấm 44×44px, 3 gạch
+   canh giữa. Doubled-class để thắng scoped CSS (0-2-0 hòa, file này
+   load sau cùng nên thắng theo cascade).
+   (Verify: ShopLayout.razor:29 button.shp-hamburger;
+   ShopLayout.razor.css:212 display:none, :349 chỉ set order/margin —
+   không có rule display nào khác cho .shp-hamburger toàn repo)
+   LƯU Ý coordinator: khoảng 768–991px (tablet) vẫn thiếu nút này —
+   ngoài phạm vi ≤767.98px của file này, cần run sau bổ sung.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .shp-hamburger.shp-hamburger {
+        display: flex;
+        min-width: 44px;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — ShopLayout: nút "A+ Chữ lớn" (.shp-theme-toggle) chỉ ~32px.
+   Vấn đề: font-size 18px + padding 6px 10px, line-height 1 → cao
+   ~32px, dưới chuẩn chạm 44px. Trớ trêu: đây là nút trợ năng dành
+   cho người lớn tuổi (bật chế độ chữ lớn) mà chính nó lại khó bấm
+   trên điện thoại.
+   Giải pháp: vùng bấm 44×44px, chữ "A+" canh giữa. Doubled-class để
+   thắng scoped CSS.
+   (Verify: ShopLayout.razor:58-60; ShopLayout.razor.css:463-468)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .shp-theme-toggle.shp-theme-toggle {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /dat-tiec, /dat-cung, /cung-gio (màn hình "Cảm ơn bạn!"):
+   nút "Xem thực đơn" và "💬 Trao đổi thêm qua Zalo".
+   Vấn đề: `btn btn-primary` / `btn btn-success` mặc định chỉ ~38px —
+   đây là màn hình cảm ơn sau khi khách gửi yêu cầu đặt tiệc/cúng,
+   2 nút điều hướng tiếp theo cần to rõ với người lớn tuổi.
+   (Checkout success nav đã được nâng 48px ở run 12:35 — 3 trang này
+   bị sót vì không có wrapper class riêng.)
+   Giải pháp: xếp dọc full-width, mỗi nút 48px, chữ đậm.
+   (Verify: DatTiec.razor:28/32, DatCung.razor:28, CungGio.razor:24 —
+   cả 3 đều là `.alert-success + a.btn-primary[href="/shop"]`; nút Zalo
+   chỉ ở DatTiec. Không khớp nhầm: Checkout:133 nằm trong
+   p.co-success-nav (đã fix ở run 12:35), Cart:160 là btn-secondary,
+   DatSoLuongLon:111 có .mt-3 và không kề .alert-success,
+   MenuPrint:26 là btn-outline-secondary)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert-success + a.btn-primary[href="/shop"] {
+        width: 100%;
+        min-height: 48px;
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .alert-success + a.btn-primary[href="/shop"] + a.btn-success {
+        width: 100%;
+        min-height: 48px;
+        margin: 8px 0 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /dang-nhap + /quen-mat-khau: nút dark-mode (.auth-theme-btn)
+   chỉ 40×40px.
+   Vấn đề: width/height 40px cố định (inline <style> trong razor) —
+   dưới chuẩn chạm 44px; nút tròn fixed góc phải trên của trang auth.
+   Giải pháp: lên 44×44px (vẫn tròn nhờ border-radius:50%).
+   Doubled-class: style inline nằm trong body nên cùng specificity
+   sẽ thắng file này — cần 0-2-0 để thắng chắc chắn.
+   (Verify: DangNhap.razor:44-48, QuenMatKhau.razor:42-48;
+   không có file .razor.css riêng cho 2 trang này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .auth-theme-btn.auth-theme-btn {
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — Landing: nút hamburger (.sg-hamburger) chỉ ~28-32px.
+   Vấn đề: padding 8px (base) / 6px (≤575.98px), 3 gạch 24×2px →
+   vùng bấm chỉ ~32px (desktop CSS) / ~28px (mobile CSS), dưới chuẩn
+   chạm 44px — đây là lối vào menu chính của landing trên điện thoại.
+   Giải pháp: vùng bấm 44×44px, 3 gạch canh giữa. Doubled-class để
+   thắng scoped CSS (Index.razor.css:1107/1143).
+   (Verify: Core/Pages/Index.razor.css:290-298 base, :1107
+   display:flex, :1143 padding 6px ở ≤575.98px)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-hamburger.sg-hamburger {
+        min-width: 44px;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ===== END UIUX run 12:55 - Agent1 Mobile ===== */

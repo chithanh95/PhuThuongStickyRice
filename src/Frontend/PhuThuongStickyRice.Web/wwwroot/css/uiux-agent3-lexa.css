@@ -591,3 +591,39 @@ a:hover, a:focus { color: #625998; }
 a { color: #7a6fbe; }
 
 /* ===== end UI/UX run 2026-10-19 12:35 - Agent3 Lexa ===== */
+
+/* UIUX run 12:55 — agent3-lexa: 2 fix mới (wpt-claimed #1e7e34 -> xanh lá Lexa; btn-primary :active trong shop -> tím Lexa) */
+
+/* ---------- Fix 1: nhãn "Đã nhận" gói tuần #1e7e34 -> xanh lá Lexa ----------
+   Verify: Shop/Components/WeeklyPlanTab.razor.css:143
+   `.wpt-claimed { color: #1e7e34; }` — #1e7e34 là xanh lá ĐẬM của
+   Bootstrap (màu hover/active của text-success), lệch tông với xanh lá
+   Lexa #34c38f dùng cho mọi trạng thái thành công khác trên shop.
+   Rule gốc nằm trong CSS isolation bundle (index.html:149, TRƯỚC file
+   này ở :155) và có attribute scope [b-xxx] nên cần !important để thắng.
+   Giữ nguyên variant dark của Agent 2 (html.dark .wpt-claimed #6fdc9c,
+   dòng 154-156 file gốc) bằng cách khai báo lại với !important — nếu
+   không, rule light !important sẽ đè luôn dark mode. */
+.wpt-claimed { color: #34c38f !important; }
+html.dark .wpt-claimed { color: #6fdc9c !important; }
+
+/* ---------- Fix 2: btn-primary NHẤN GIỮ trong shop -> tím Lexa ----------
+   Verify: app.css:458-459 đã phủ .btn-primary base/hover/focus toàn cục
+   bằng !important (#7a6fbe/#625998), nhưng KHÔNG có :active. Khi khách
+   NHẤN GIỮ nút CTA chính (VD: "Đặt hàng" ở Checkout/Cart, nút xác nhận
+   của Core/Components/ConfirmDialog khi render trong shop), rule
+   Bootstrap `.btn-primary:not(:disabled):not(.disabled):active`
+   specificity (0,4,0) thắng :hover (0,2,0) -> nút nháy xanh dương
+   #0062cc trong lúc nhấn. Admin đã có .lx-admin .btn-primary:active
+   (admin-lexa.css:654); shop còn sót.
+   Rule dưới specificity (0,5,0) + !important để thắng cả rule Bootstrap
+   lẫn base !important của app.css; màu #625998 = tím hover chuẩn Lexa,
+   đồng nhất cảm giác nhấn với hover. */
+.shp-page .btn-primary:not(:disabled):not(.disabled):active,
+.shp-page .btn-primary:not(:disabled):not(.disabled).active,
+.show > .shp-page .btn-primary.dropdown-toggle {
+    background-color: #625998 !important;
+    border-color: #625998 !important;
+}
+
+/* ===== end UIUX run 12:55 - Agent3 Lexa ===== */

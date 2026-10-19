@@ -673,3 +673,36 @@ html.dark .shp-page .bg-light {
 }
 
 /* === end Agent 2 run 12:35 === */
+
+/* UIUX run 12:55 — agent2-dark: alert-light/alert-secondary ở /checkout (mảng sáng lọt) */
+
+/* ---------- FIX 1 — Shop: alert-light / alert-secondary ở /checkout ----------
+   Vấn đề: Checkout.razor dùng `alert alert-light` (dòng 40: gợi ý đăng nhập
+   tích điểm; dòng 686: hộp thông tin điểm loyalty) và `alert-secondary`
+   (dòng 165: kết quả quay voucher khi chưa trúng mã). Bootstrap .alert-light
+   (#fefefe) / .alert-secondary (#e2e3e5) KHÔNG có rule dark nào phủ: app.css
+   chỉ phủ info/warning/success/danger, uiux-dark-fixes.css không có, file này
+   cũng chưa (đã grep "alert-light|alert-secondary" toàn bộ css = 0 kết quả)
+   → mảng trắng/xám sáng chói giữa trang checkout tối. (Chữ #818182/#41464b
+   trên nền sáng vẫn đọc được nên đây là lỗi "nền sáng lọt", không phải chữ
+   chìm — nhưng vẫn phá vỡ dark mode đúng nghĩa.)
+   Fix: nền/viền/chữ theo palette dark của shop (#2e2620/#3a3226/#f0e8dc),
+   đồng nhất với fix .bg-light đợt 12:35. Dùng !important để thắng utility
+   `.border` của Bootstrap (có !important, dùng ở dòng 40) và chắc chắn thắng
+   rule .alert-light gốc. Link "Đăng nhập" bên trong alert-light cho màu tím
+   nhạt để đọc được trên nền tối (đồng nhất với html.dark .lx-admin a). */
+html.dark .alert-light {
+    background-color: #2e2620 !important; /* was #fefefe */
+    border-color: #3a3226 !important; /* was #fdfdfe / .border #dee2e6 */
+    color: #f0e8dc !important; /* was #818182 */
+}
+html.dark .alert-light a {
+    color: #b3a8e8;
+}
+html.dark .alert-secondary {
+    background-color: #2e2620 !important; /* was #e2e3e5 */
+    border-color: #3a3226 !important; /* was #d6d8db */
+    color: #d0c4b4 !important; /* was #41464b */
+}
+
+/* === end Agent 2 run 12:55 === */
