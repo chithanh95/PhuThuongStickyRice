@@ -1196,7 +1196,9 @@ else
         try { _polls = await LandingService.GetPollsAsync() ?? new List<DishPollModel>(); } catch { }
         try { _courses = await LandingService.GetCoursesAsync() ?? new List<CourseModel>(); } catch { }
         try { _marketLinks = await LandingService.GetMarketplaceLinksAsync(); } catch { }
-        try { var settings = await ShopSettingsService.GetPublicAsync(); _mapsUrl = settings?.GoogleMapsUrl; } catch { }
+        // perf-hunt 2026-10-19: settings đã load ở đầu OnInitializedAsync vào
+        // _shopSettings — dùng lại, không gọi HTTP GET api/shop-settings/public lần 2.
+        try { _mapsUrl = _shopSettings?.GoogleMapsUrl; } catch { }
         try
         {
             var holidays = await LandingService.GetUpcomingHolidaysAsync();
