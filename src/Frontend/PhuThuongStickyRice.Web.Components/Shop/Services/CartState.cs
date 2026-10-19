@@ -156,41 +156,74 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             var existing = _items.FirstOrDefault(x => x.LineKey == key);
             if (existing == null)
             {
-                _items.Add(new CartItemModel
-                {
-                    LineKey = key,
-                    ProductId = productId,
-                    ProductName = productName,
-                    ProductCode = productCode,
-                    UnitPrice = unitPrice,
-                    Quantity = quantity,
-                    SizeOptionId = sizeOptionId,
-                    SizeName = sizeName,
-                    ToppingIds = toppingIds,
-                    ToppingNames = toppingNames,
-                    ToppingsTotal = toppingsTotal,
-                    IsCombo = isCombo,
-                    Note = TrimNote(note),
-                    ImageUrl = imageUrl
-                });
+                AppendNewLine(key, productId, productName, productCode, unitPrice,
+                    quantity, sizeOptionId, sizeName, toppingIds, toppingNames,
+                    toppingsTotal, isCombo, note, imageUrl);
             }
             else
             {
-                existing.Quantity += quantity;
-                if (!string.IsNullOrWhiteSpace(note))
-                {
-                    existing.Note = TrimNote(note);
-                }
-                // Backfill images for lines saved before quick-add carried
-                // the product image (old localStorage carts).
-                if (string.IsNullOrWhiteSpace(existing.ImageUrl)
-                    && !string.IsNullOrWhiteSpace(imageUrl))
-                {
-                    existing.ImageUrl = imageUrl;
-                }
+                MergeIntoExisting(existing, quantity, note, imageUrl);
             }
 
             NotifyChanged();
+        }
+
+        /// <summary>
+        /// Thêm dòng món mới vào giỏ khi chưa có line nào trùng key.
+        /// </summary>
+        private void AppendNewLine(
+            string key,
+            Guid productId,
+            string productName,
+            string productCode,
+            decimal unitPrice,
+            int quantity,
+            Guid? sizeOptionId,
+            string sizeName,
+            List<Guid> toppingIds,
+            string toppingNames,
+            decimal toppingsTotal,
+            bool isCombo,
+            string note,
+            string imageUrl)
+        {
+            _items.Add(new CartItemModel
+            {
+                LineKey = key,
+                ProductId = productId,
+                ProductName = productName,
+                ProductCode = productCode,
+                UnitPrice = unitPrice,
+                Quantity = quantity,
+                SizeOptionId = sizeOptionId,
+                SizeName = sizeName,
+                ToppingIds = toppingIds,
+                ToppingNames = toppingNames,
+                ToppingsTotal = toppingsTotal,
+                IsCombo = isCombo,
+                Note = TrimNote(note),
+                ImageUrl = imageUrl
+            });
+        }
+
+        /// <summary>
+        /// Gộp vào dòng món đã có: cộng số lượng, cập nhật ghi chú nếu có,
+        /// và backfill ảnh cho dòng lưu từ giỏ localStorage cũ (trước khi
+        /// quick-add kèm ảnh sản phẩm).
+        /// </summary>
+        private static void MergeIntoExisting(
+            CartItemModel existing, int quantity, string note, string imageUrl)
+        {
+            existing.Quantity += quantity;
+            if (!string.IsNullOrWhiteSpace(note))
+            {
+                existing.Note = TrimNote(note);
+            }
+            if (string.IsNullOrWhiteSpace(existing.ImageUrl)
+                && !string.IsNullOrWhiteSpace(imageUrl))
+            {
+                existing.ImageUrl = imageUrl;
+            }
         }
 
         /// <summary>

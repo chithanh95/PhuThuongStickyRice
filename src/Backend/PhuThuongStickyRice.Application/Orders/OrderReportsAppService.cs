@@ -65,6 +65,14 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         private const int TopProductsCount = 5;
 
+        /// <summary>
+        /// Định dạng ngày/ngày-giờ và số tiền cho các cell trong file Excel
+        /// xuất báo cáo (tập trung 1 chỗ để đổi đồng loạt khi cần).
+        /// </summary>
+        private const string ExcelDateFormat = "dd/MM/yyyy";
+        private const string ExcelDateTimeFormat = "dd/MM/yyyy HH:mm";
+        private const string ExcelMoneyFormat = "#,##0";
+
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IVipPriorityAppService _vipPriority;
@@ -262,7 +270,7 @@ namespace PhuThuongStickyRice.Application.Orders
             sheet.Cell(rowIndex, 1).Value = order.OrderNumber;
             // Giờ VN cho file Excel (CreatedAt lưu UTC).
             sheet.Cell(rowIndex, 2).Value = order.CreatedAt.AddHours(VietnamTime.UtcOffsetHours);
-            sheet.Cell(rowIndex, 2).Style.NumberFormat.Format = "dd/MM/yyyy HH:mm";
+            sheet.Cell(rowIndex, 2).Style.NumberFormat.Format = ExcelDateTimeFormat;
             sheet.Cell(rowIndex, 3).Value = order.CustomerName;
             sheet.Cell(rowIndex, 4).Value = order.CustomerPhone;
             sheet.Cell(rowIndex, 5).Value = order.CustomerAddress;
@@ -319,26 +327,36 @@ namespace PhuThuongStickyRice.Application.Orders
             foreach (var dailyStat in daily)
             {
                 summary.Cell(rowIndex, 1).Value = dailyStat.Date;
-                summary.Cell(rowIndex, 1).Style.NumberFormat.Format = "dd/MM/yyyy";
-                summary.Cell(rowIndex, 2).Value = dailyStat.OrderCount;
-                summary.Cell(rowIndex, 3).Value = dailyStat.Revenue;
-                summary.Cell(rowIndex, 3).Style.NumberFormat.Format = "#,##0";
-                summary.Cell(rowIndex, 4).Value = dailyStat.OrderCount > 0 ? dailyStat.Revenue / dailyStat.OrderCount : 0m;
-                summary.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
+                summary.Cell(rowIndex, 1).Style.NumberFormat.Format = ExcelDateFormat;
+                WriteSummaryDataRow(summary, rowIndex, dailyStat.OrderCount, dailyStat.Revenue);
                 rowIndex++;
             }
             // Dòng TỔNG CỘNG: cộng dồn toàn kỳ, in đậm để tách khỏi dữ liệu ngày.
             var totalOrders = daily.Sum(x => x.OrderCount);
             var totalRevenue = daily.Sum(x => x.Revenue);
             summary.Cell(rowIndex, 1).Value = "TỔNG CỘNG";
-            summary.Cell(rowIndex, 2).Value = totalOrders;
-            summary.Cell(rowIndex, 3).Value = totalRevenue;
-            summary.Cell(rowIndex, 3).Style.NumberFormat.Format = "#,##0";
-            summary.Cell(rowIndex, 4).Value = totalOrders > 0 ? totalRevenue / totalOrders : 0m;
-            summary.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
+            WriteSummaryDataRow(summary, rowIndex, totalOrders, totalRevenue);
             summary.Row(rowIndex).Style.Font.Bold = true;
             // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents().
             SetFixedColumnWidths(summary, 14, 10, 18, 20);
+        }
+
+        /// <summary>
+        /// Ghi các cột dữ liệu (số đơn, doanh thu, giá trị TB/đơn) của 1 dòng
+        /// vào sheet "Tổng hợp" — dùng chung cho từng ngày và dòng TỔNG CỘNG
+        /// để không lặp lại block gán cell/format.
+        /// </summary>
+        /// <param name="summary">Sheet "Tổng hợp" đang dựng.</param>
+        /// <param name="rowIndex">Chỉ số dòng cần ghi.</param>
+        /// <param name="orderCount">Số đơn của dòng.</param>
+        /// <param name="revenue">Doanh thu của dòng.</param>
+        private static void WriteSummaryDataRow(IXLWorksheet summary, int rowIndex, long orderCount, decimal revenue)
+        {
+            summary.Cell(rowIndex, 2).Value = orderCount;
+            summary.Cell(rowIndex, 3).Value = revenue;
+            summary.Cell(rowIndex, 3).Style.NumberFormat.Format = ExcelMoneyFormat;
+            summary.Cell(rowIndex, 4).Value = orderCount > 0 ? revenue / orderCount : 0m;
+            summary.Cell(rowIndex, 4).Style.NumberFormat.Format = ExcelMoneyFormat;
         }
 
         /// <summary>
@@ -370,12 +388,12 @@ namespace PhuThuongStickyRice.Application.Orders
                 sheet.Cell(rowIndex, 1).Value = order.OrderNumber;
                 // Giờ VN cho file Excel (CreatedAt lưu UTC).
                 sheet.Cell(rowIndex, 2).Value = order.CreatedAt.AddHours(VietnamTime.UtcOffsetHours);
-                sheet.Cell(rowIndex, 2).Style.NumberFormat.Format = "dd/MM/yyyy HH:mm";
+                sheet.Cell(rowIndex, 2).Style.NumberFormat.Format = ExcelDateTimeFormat;
                 sheet.Cell(rowIndex, 3).Value = order.CustomerName;
                 sheet.Cell(rowIndex, 4).Value = order.CustomerPhone;
                 sheet.Cell(rowIndex, 5).Value = itemsText;
                 sheet.Cell(rowIndex, 6).Value = order.TotalAmount;
-                sheet.Cell(rowIndex, 6).Style.NumberFormat.Format = "#,##0";
+                sheet.Cell(rowIndex, 6).Style.NumberFormat.Format = ExcelMoneyFormat;
                 sheet.Cell(rowIndex, 7).Value = OrderLabels.PaymentMethod(order.PaymentMethod);
                 sheet.Cell(rowIndex, 8).Value = OrderLabels.OrderStatus(order.Status);
                 rowIndex++;

@@ -147,7 +147,7 @@
                             <table class="table table-hover table-sm mb-0">
                                 <thead>
                                     <tr>
-                                        <th scope="col" style="width:34px" title="Đơn giữ lại sau khi gộp">Giữ</th>
+                                        <th scope="col" class="ol-col-keep" title="Đơn giữ lại sau khi gộp">Giữ</th>
                                         <th scope="col">Mã đơn</th>
                                         <th scope="col">Giờ đặt</th>
                                         <th scope="col">Món</th>
@@ -519,7 +519,7 @@ else
 @* Item 141: keyboard-shortcut cheat sheet (toggle with "?"). *@
 @if (_showShortcutHelp)
 {
-    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-label="Bảng phím tắt xử lý đơn" style="background: rgba(0,0,0,.45);" @onclick="() => _showShortcutHelp = false">
+    <div class="modal d-block ol-modal-backdrop" tabindex="-1" role="dialog" aria-modal="true" aria-label="Bảng phím tắt xử lý đơn" @onclick="() => _showShortcutHelp = false">
         <div class="modal-dialog" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header py-2">
@@ -529,7 +529,7 @@ else
                 <div class="modal-body py-2">
                     <table class="table table-sm mb-0">
                         <tbody>
-                            <tr><td style="width:130px"><kbd>J</kbd> / <kbd>↓</kbd></td><td>Chọn đơn tiếp theo</td></tr>
+                            <tr><td class="ol-kbd-key"><kbd>J</kbd> / <kbd>↓</kbd></td><td>Chọn đơn tiếp theo</td></tr>
                             <tr><td><kbd>K</kbd> / <kbd>↑</kbd></td><td>Chọn đơn trước đó</td></tr>
                             <tr><td><kbd>Enter</kbd></td><td>Mở / thu gọn chi tiết đơn đang chọn</td></tr>
                             <tr><td><kbd>C</kbd></td><td>Xác nhận đơn (Chờ xác nhận → Đã xác nhận)</td></tr>
@@ -549,7 +549,7 @@ else
 @* Item 233: modal chọn lý do khi nhân viên hủy đơn. *@
 @if (_cancelTarget != null)
 {
-    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-label="Chọn lý do hủy đơn" style="background: rgba(0,0,0,.45);">
+    <div class="modal d-block ol-modal-backdrop" tabindex="-1" role="dialog" aria-modal="true" aria-label="Chọn lý do hủy đơn">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header py-2">
@@ -575,7 +575,7 @@ else
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-secondary" @onclick="CloseCancelModal">Không hủy</button>
-                    <button type="button" class="btn btn-danger" @onclick="ConfirmCancelModal" disabled="@_cancelling" style="min-height: 44px;">
+                    <button type="button" class="btn btn-danger ol-btn-confirm" @onclick="ConfirmCancelModal" disabled="@_cancelling">
                         @(_cancelling ? "Đang hủy..." : "Xác nhận hủy đơn")
                     </button>
                 </div>
@@ -598,6 +598,8 @@ else
     private string _cancelReasonError;
     private bool _cancelling;
 
+    // Luồng hủy đơn của admin (item 233): lý do hủy là BẮT BUỘC để phục vụ báo cáo
+    // lý do hủy; state modal được reset mỗi lần mở/đóng để không rò rỉ đơn cũ.
     private void OpenCancelModal(OrderModel order)
     {
         _cancelTarget = order;

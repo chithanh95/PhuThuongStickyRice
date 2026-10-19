@@ -818,23 +818,23 @@ else
             <button class="sg-modal-close" @onclick="CloseProduct360View" aria-label="Đóng">×</button>
             <h3>🔄 @_view360Product.Name — xem 360°</h3>
             @{
-                var imgs360 = AllImageUrls(_view360Product.ImageUrlsJson);
+                var view360ImageUrls = AllImageUrls(_view360Product.ImageUrlsJson);
             }
             <div class="sg-360-stage">
-                @if (imgs360.Count > 0)
+                @if (view360ImageUrls.Count > 0)
                 {
-                    <img src="@imgs360[_view360Index % imgs360.Count]" alt="@_view360Product.Name" />
+                    <img src="@view360ImageUrls[_view360Index % view360ImageUrls.Count]" alt="@_view360Product.Name" />
                 }
                 else
                 {
                     <p class="sg-muted">Chưa có ảnh 360° — xem ảnh món ở menu nhé.</p>
                 }
             </div>
-            @if (imgs360.Count > 1)
+            @if (view360ImageUrls.Count > 1)
             {
                 <div class="sg-360-ctrl">
                     <button class="sg-btn sg-btn-outline" @onclick="() => Rotate360(-1)">◀ Xoay trái</button>
-                    <span>@(_view360Index % imgs360.Count + 1)/@imgs360.Count</span>
+                    <span>@(_view360Index % view360ImageUrls.Count + 1)/@view360ImageUrls.Count</span>
                     <button class="sg-btn sg-btn-outline" @onclick="() => Rotate360(1)">Xoay phải ▶</button>
                 </div>
             }

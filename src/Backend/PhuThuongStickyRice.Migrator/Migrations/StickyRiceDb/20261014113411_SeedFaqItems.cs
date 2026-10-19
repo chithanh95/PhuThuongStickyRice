@@ -95,13 +95,13 @@ WHERE BankTransferExpiryMinutes = 0");
             for (var i = 0; i < Faqs.Length; i++)
             {
                 sb.Append("INSERT INTO FaqItems (Id, Question, Answer, SortOrder, IsActive, CreatedDateTime) ");
-                sb.Append($"SELECT '{Faqs[i].Id}', {SqlStr(Faqs[i].Question)}, {SqlStr(Faqs[i].Answer)}, {i + 1}, 1, '{seedDate}' ");
+                sb.Append($"SELECT '{Faqs[i].Id}', {ToSqlStringLiteral(Faqs[i].Question)}, {ToSqlStringLiteral(Faqs[i].Answer)}, {i + 1}, 1, '{seedDate}' ");
                 sb.Append($"WHERE NOT EXISTS (SELECT 1 FROM FaqItems WHERE Id = '{Faqs[i].Id}'); ");
             }
             migrationBuilder.Sql(sb.ToString());
         }
 
-        private static string SqlStr(string s) => "N'" + s.Replace("'", "''") + "'";
+        private static string ToSqlStringLiteral(string s) => "N'" + s.Replace("'", "''") + "'";
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)

@@ -316,6 +316,15 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         // ---------------- conversation ----------------
 
+        /// <summary>
+        /// Xử lý một tin nhắn trong máy trạng thái hội thoại đặt hàng qua Messenger:
+        /// Browsing (xem menu/chọn món) → Confirming (xác nhận giỏ hàng) → AwaitingInfo
+        /// (nhập tên/SĐT/cách nhận hàng). Gõ từ khóa hủy ở bất kỳ trạng thái nào
+        /// cũng xóa session để bắt đầu lại từ menu.
+        /// </summary>
+        /// <param name="psid">Id người gửi trên Messenger — khóa session hội thoại.</param>
+        /// <param name="text">Nội dung tin nhắn khách gửi.</param>
+        /// <returns>Câu trả lời bot gửi lại cho khách.</returns>
         private async Task<string> ProcessMessageAsync(string psid, string text)
         {
             PruneSessions();

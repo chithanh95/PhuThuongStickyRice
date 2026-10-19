@@ -18,6 +18,16 @@ namespace PhuThuongStickyRice.Application.Orders.Email
         /// <summary>Sender shown on order emails. Test sender — replace when real mail is configured.</summary>
         public const string FromAddress = "no-reply@phuthuong.vn";
 
+        /// <summary>
+        /// Dựng email xác nhận đơn hàng (HTML tiếng Việt).
+        /// Hướng dẫn thanh toán chỉ đính kèm khi đơn là chuyển khoản mà chưa
+        /// thanh toán — đơn MoMo/COD hoặc đã trả tiền không cần phần này.
+        /// Toàn bộ dữ liệu do khách nhập đều được <see cref="Escape"/> trước khi
+        /// nhúng vào HTML để chống chèn mã độc vào email.
+        /// </summary>
+        /// <param name="order">Đơn hàng vừa tạo (đã có Lines, các tổng tiền, phương thức thanh toán).</param>
+        /// <param name="bankTransfer">Thông tin tài khoản shop; null thì bỏ qua bảng tài khoản.</param>
+        /// <returns>Cặp (tiêu đề, thân HTML) để pipeline email đưa vào hàng đợi gửi.</returns>
         public static (string Subject, string Body) Compose(Order order, BankTransferOptions bankTransfer)
         {
             var subject = $"Xác nhận đơn hàng {order.OrderNumber} — Xôi Phú Thượng";
@@ -33,6 +43,8 @@ namespace PhuThuongStickyRice.Application.Orders.Email
             body.Append("<h3>Chi tiết món</h3>");
             AppendLinesTable(body, order);
 
+            // Chỉ đơn chuyển khoản CHƯA thanh toán mới cần hướng dẫn chuyển khoản —
+            // đơn MoMo/COD có luồng thanh toán riêng, đơn đã trả tiền không cần hướng dẫn nữa.
             if (order.PaymentMethod == PaymentMethod.BankTransfer && order.PaymentStatus == PaymentStatus.Unpaid)
             {
                 AppendBankTransferInstructions(body, order, bankTransfer);
@@ -95,6 +107,7 @@ namespace PhuThuongStickyRice.Application.Orders.Email
                 body.Append("</tr>");
             }
 
+            // Tạm tính không lưu riêng trong DB — suy ngược từ các tổng đã lưu.
             var subtotal = order.TotalAmount.Amount - order.DeliveryFee.Amount + order.DiscountAmount.Amount;
             body.Append($"<tr><td colspan=\"3\" align=\"right\">Tạm tính</td>"
                 + $"<td align=\"right\">{FormatPrice(subtotal)}</td></tr>");
@@ -165,6 +178,10 @@ namespace PhuThuongStickyRice.Application.Orders.Email
         private static string FormatPrice(decimal price) =>
             $"{price.ToString("N0", CultureInfo.InvariantCulture)} ₫";
 
+        /// <summary>
+        /// Escape dữ liệu do khách nhập trước khi nhúng vào HTML email — chống
+        /// chèn thẻ/script độc hại (tên, địa chỉ, ghi chú đều là input tự do).
+        /// </summary>
         private static string Escape(string value)
         {
             if (string.IsNullOrEmpty(value))

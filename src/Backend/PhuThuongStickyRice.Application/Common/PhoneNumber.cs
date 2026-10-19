@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -27,7 +28,7 @@ namespace PhuThuongStickyRice.Application.Common
         /// </summary>
         /// <param name="phone">SĐT đầu vào, có thể null.</param>
         /// <returns>Chuỗi chữ số, rỗng nếu đầu vào null/trống.</returns>
-        public static string DigitsOnly(string phone) =>
+        public static string DigitsOnly(string? phone) =>
             new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
 
         /// <summary>
@@ -37,29 +38,29 @@ namespace PhuThuongStickyRice.Application.Common
         /// số thì so nguyên chuỗi số. Null/trống không bao giờ khớp (trả false)
         /// để không xác thực nhầm khi thiếu SĐT.
         /// </summary>
-        /// <param name="phone1">SĐT thứ nhất, có thể null.</param>
-        /// <param name="phone2">SĐT thứ hai, có thể null.</param>
+        /// <param name="firstPhone">SĐT thứ nhất, có thể null.</param>
+        /// <param name="secondPhone">SĐT thứ hai, có thể null.</param>
         /// <returns>True khi 2 SĐT được coi là cùng 1 số.</returns>
-        public static bool PhonesMatch(string phone1, string phone2)
+        public static bool PhonesMatch(string firstPhone, string secondPhone)
         {
-            if (string.IsNullOrWhiteSpace(phone1) || string.IsNullOrWhiteSpace(phone2))
+            if (string.IsNullOrWhiteSpace(firstPhone) || string.IsNullOrWhiteSpace(secondPhone))
             {
                 return false;
             }
 
-            var digits1 = DigitsOnly(phone1);
-            var digits2 = DigitsOnly(phone2);
+            var firstDigits = DigitsOnly(firstPhone);
+            var secondDigits = DigitsOnly(secondPhone);
 
-            if (digits1.Length < TailDigitCount || digits2.Length < TailDigitCount)
+            if (firstDigits.Length < TailDigitCount || secondDigits.Length < TailDigitCount)
             {
-                return string.Equals(digits1, digits2, StringComparison.Ordinal);
+                return string.Equals(firstDigits, secondDigits, StringComparison.Ordinal);
             }
 
             // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
             // operator thay Substring(digitsN.Length - TailDigitCount) — guard Length ở trên.
             return string.Equals(
-                digits1[^TailDigitCount..],
-                digits2[^TailDigitCount..],
+                firstDigits[^TailDigitCount..],
+                secondDigits[^TailDigitCount..],
                 StringComparison.Ordinal);
         }
 
@@ -69,7 +70,7 @@ namespace PhuThuongStickyRice.Application.Common
         /// </summary>
         /// <param name="phone">SĐT cần che, có thể null.</param>
         /// <returns>SĐT đã che hoặc "Khách hàng".</returns>
-        public static string MaskForPublicDisplay(string phone)
+        public static string MaskForPublicDisplay(string? phone)
         {
             if (string.IsNullOrWhiteSpace(phone))
             {

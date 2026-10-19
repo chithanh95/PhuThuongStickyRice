@@ -57,6 +57,15 @@ namespace PhuThuongStickyRice.Application.Orders
             _customerTags = customerTags;
         }
 
+        /// <summary>
+        /// Chi tiết một khách hàng theo SĐT: thống kê đơn/chi tiêu, 10 đơn gần
+        /// nhất, 3 món mua nhiều nhất và nhãn khách hàng.
+        /// Thống kê tổng hợp tính trong SQL (GROUP BY), không nạp toàn bộ đơn
+        /// của khách vào bộ nhớ.
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng.</param>
+        /// <returns>DTO chi tiết khách hàng.</returns>
+        /// <exception cref="ArgumentException">Ném khi thiếu SĐT.</exception>
         public virtual async Task<CustomerDetailDto> GetDetailAsync(string phone)
         {
             var normalized = (phone ?? string.Empty).Trim();
@@ -79,6 +88,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 CustomerPhone = normalized,
                 CustomerName = customerName,
                 TotalOrders = stats?.BillableCount ?? 0,
+                // Số đơn hủy không lưu riêng — suy ra bằng tổng đơn trừ đơn tính tiền
+                // (BillableCount đã loại đơn hủy ở LoadStatsAsync).
                 CancelledOrders = (stats?.TotalCount ?? 0) - (stats?.BillableCount ?? 0),
                 TotalSpent = stats?.TotalSpent ?? 0m,
                 FirstOrderAt = stats?.FirstOrderAt,

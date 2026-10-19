@@ -160,36 +160,44 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
                     foreach (var b in birthdays)
                     {
-                        try
-                        {
-                            // Mỗi khách chỉ 1 mã SN còn dùng được — không có check
-                            // này, admin bấm nút 2 lần sẽ sinh 2 mã/khách.
-                            if (phonesWithCode.Contains(b.Phone))
-                            {
-                                continue;
-                            }
-                            var voucher = await _discountAppService.CreateGeneratedAsync(
-                                new CreateGeneratedDiscountDto
-                                {
-                                    Prefix = BirthdayVoucherPrefix,
-                                    DiscountAmount = BirthdayVoucherAmount,
-                                    ExpiresAt = DateTime.UtcNow.AddDays(BirthdayVoucherValidityDays),
-                                    OwnerPhone = b.Phone
-                                });
-                            created.Add(new { Phone = b.Phone, Code = voucher.Code });
-                        }
-                        // Loop sinh voucher cho hàng loạt khách: 1 khách lỗi (trùng mã, lỗi DB...)
-                        // không được làm sập cả batch — nhưng không được nuốt im lặng, phải
-                        // ghi log kèm SĐT để admin biết khách nào bị bỏ qua và đối chiếu sau.
-                        catch (Exception ex)
-                        {
-                            // Bỏ qua khách lỗi, tiếp tục khách khác.
-                            _logger.LogWarning(ex, "Tạo voucher sinh nhật thất bại cho SĐT {Phone}.", b.Phone);
-                        }
+                        await TryCreateBirthdayVoucherAsync(b, phonesWithCode, created);
                     }
 
                     return Ok(new { Created = created.Count, Vouchers = created });
                 });
+        }
+
+        /// <summary>
+        /// Sinh 1 voucher sinh nhật cho khách: bỏ qua nếu khách đã có mã SN còn
+        /// dùng được. Vòng lặp sinh hàng loạt: 1 khách lỗi (trùng mã, lỗi DB...)
+        /// không được làm sập cả batch — nhưng không được nuốt im lặng, phải
+        /// ghi log kèm SĐT để admin biết khách nào bị bỏ qua và đối chiếu sau.
+        /// </summary>
+        private async Task TryCreateBirthdayVoucherAsync(
+            LoyaltyAccountDto birthday, HashSet<string> phonesWithCode, List<object> created)
+        {
+            try
+            {
+                // Mỗi khách chỉ 1 mã SN còn dùng được — không có check
+                // này, admin bấm nút 2 lần sẽ sinh 2 mã/khách.
+                if (phonesWithCode.Contains(birthday.Phone))
+                {
+                    return;
+                }
+                var voucher = await _discountAppService.CreateGeneratedAsync(
+                    new CreateGeneratedDiscountDto
+                    {
+                        Prefix = BirthdayVoucherPrefix,
+                        DiscountAmount = BirthdayVoucherAmount,
+                        ExpiresAt = DateTime.UtcNow.AddDays(BirthdayVoucherValidityDays),
+                        OwnerPhone = birthday.Phone
+                    });
+                created.Add(new { Phone = birthday.Phone, Code = voucher.Code });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Tạo voucher sinh nhật thất bại cho SĐT {Phone}.", birthday.Phone);
+            }
         }
     }
 }

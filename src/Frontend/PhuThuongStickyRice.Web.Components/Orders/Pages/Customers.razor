@@ -73,7 +73,7 @@
                     <button class="btn btn-sm btn-success mr-2" @onclick="GenerateBirthdayVouchers" disabled="@_voucherBusy">
                         @(_voucherBusy ? "Đang tạo..." : "🎟️ Tạo voucher SN")
                     </button>
-                    <select class="form-control" style="width: 140px;" @bind="_birthdayMonth" @bind:after="LoadBirthdaysAsync" aria-label="Chọn tháng để xem sinh nhật">
+                    <select class="form-control ctm-month-select" @bind="_birthdayMonth" @bind:after="LoadBirthdaysAsync" aria-label="Chọn tháng để xem sinh nhật">
                         @for (var m = 1; m <= 12; m++)
                         {
                             <option value="@m">Tháng @m</option>
@@ -133,8 +133,8 @@
                                     <td class="text-right">
                                         @if (!b.HasGiftThisYear)
                                         {
-                                            <input type="number" class="form-control form-control-sm d-inline-block"
-                                                   style="width: 110px;" step="5000" min="5000" max="1000000"
+                                            <input type="number" class="form-control form-control-sm d-inline-block ctm-gift-amount"
+                                                   step="5000" min="5000" max="1000000"
                                                    aria-label="Số tiền tặng sinh nhật (đồng)"
                                                    value="@GiftAmountFor(b.UserId)"
                                                    @onchange="(e) => SetGiftAmount(b.UserId, e.Value)" />
@@ -213,7 +213,7 @@ else
                                             <span class="badge mr-1 mb-1" style="background-color: @(string.IsNullOrWhiteSpace(tag.Color) ? "#6c757d" : tag.Color); color: #fff;"
                                                   title="@(string.IsNullOrWhiteSpace(tag.CreatedBy) ? "" : $"Thêm bởi {tag.CreatedBy}")">
                                                 @tag.TagName
-                                                <button type="button" class="btn btn-sm p-0 ml-1" style="color: #fff; line-height: 1;"
+                                                <button type="button" class="btn btn-sm p-0 ml-1 ctm-tag-remove"
                                                         title="Xóa tag" @onclick="() => RemoveTag(c, tag)">×</button>
                                             </span>
                                         }
@@ -221,7 +221,7 @@ else
                                     @if (_taggingPhone == c.CustomerPhone)
                                     {
                                         <span class="d-inline-block">
-                                            <input class="form-control form-control-sm d-inline-block" style="width: 130px;"
+                                            <input class="form-control form-control-sm d-inline-block ctm-tag-input"
                                                    placeholder="Tên tag..." list="tag-presets" @bind="_newTagName"
                                                    aria-label="Nhập tên tag mới cho khách hàng" />
                                             <datalist id="tag-presets">
@@ -519,6 +519,8 @@ else
 
     private readonly Dictionary<Guid, decimal> _giftAmounts = new();
 
+    // Mệnh giá quà nhập tay cho từng khách (mặc định DefaultGiftAmount); giá trị
+    // ngoài khoảng GiftAmountMin..GiftAmountMax bị bỏ qua, không ghi đè.
     private decimal GiftAmountFor(Guid userId) =>
         _giftAmounts.TryGetValue(userId, out var v) ? v : DefaultGiftAmount;
 
@@ -557,6 +559,8 @@ else
     private bool _loadingDetail;
     private string _detailError;
 
+    // "Khách lâu không mua": đơn cuối cách đây hơn 30 ngày — nhóm đối tượng
+    // chiến dịch voucher "không mua 30+ ngày".
     private bool IsInactive(Admin.Models.CustomerModel c) =>
         c.LastOrderAt.ToLocalTime() < DateTime.Now.AddDays(-30);
 
@@ -716,6 +720,8 @@ else
         }
     }
 
+    // Tải danh sách khách có sinh nhật trong tháng đang chọn — nguồn để phát
+    // voucher sinh nhật hàng loạt ở GenerateBirthdayVouchers.
     private async Task LoadBirthdaysAsync()
     {
         _birthdayMsg = null;
@@ -951,6 +957,7 @@ else
         return totalSpent >= silverMin ? "Bạc" : "Đồng";
     }
 
+    // Fail-soft: lỗi API thì hiện danh sách rỗng thay vì vỡ trang khách hàng.
     private async Task LoadAsync()
     {
         try
@@ -963,6 +970,7 @@ else
         }
     }
 
+    // Debounce 500ms: chỉ gọi API sau khi ngừng gõ, tránh bắn request theo từng phím.
     private void OnSearchChanged()
     {
         _searchTimer?.Dispose();

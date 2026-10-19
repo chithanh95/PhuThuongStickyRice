@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.AspNetCore.Authorization;
 using PhuThuongStickyRice.Domain.Entities;
 using System;

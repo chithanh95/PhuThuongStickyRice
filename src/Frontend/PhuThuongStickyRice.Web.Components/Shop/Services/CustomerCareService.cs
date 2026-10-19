@@ -207,11 +207,11 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 if (start >= 0)
                 {
                     var colon = body.IndexOf(':', start);
-                    var quote1 = body.IndexOf('"', colon);
-                    var quote2 = body.IndexOf('"', quote1 + 1);
-                    if (quote1 >= 0 && quote2 > quote1)
+                    var openingQuoteIndex = body.IndexOf('"', colon);
+                    var closingQuoteIndex = body.IndexOf('"', openingQuoteIndex + 1);
+                    if (openingQuoteIndex >= 0 && closingQuoteIndex > openingQuoteIndex)
                     {
-                        return body.Substring(quote1 + 1, quote2 - quote1 - 1);
+                        return body.Substring(openingQuoteIndex + 1, closingQuoteIndex - openingQuoteIndex - 1);
                     }
                 }
 
