@@ -1632,3 +1632,84 @@ html.dark .shp-page.shp-page .alert-info a {
 }
 
 /* ===== END UIUX 22:45 A4 ===== */
+
+/* ===== UIUX 23:05 A4 ===== */
+
+/* UIUX 23:05 A4: badge-success chữ trắng trên nền xanh Lexa #34c38f */
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1): Agent 3 (uiux-agent3-lexa.css:30)
+   đổi fill `.badge-success` sang xanh Lexa #34c38f nhưng giữ chữ trắng của
+   Bootstrap → chỉ 2.25:1 (đo bằng script luminance), thấp nhất trong các badge.
+   Dùng ở nhiều màn admin: "Đang bán"/"Món mới" (ProductListPage.razor:74-94),
+   "+x%/−x%" (Dashboard.razor:1015), "Đã tặng" (Customers.razor:126), trạng thái
+   "Completed" (Orders). Fix: chữ #212529 (xám đậm Bootstrap, sẵn trong palette)
+   trên #34c38f đạt 6.87:1 — giữ nguyên fill brand, không đổi layout. Nền badge
+   không đổi theo dark mode nên 1 rule dùng chung cả 2 mode. Nhân đôi class
+   (0,2,0) để chắc thắng rule Bootstrap .badge-success (0,1,0). */
+.badge-success.badge-success {
+    color: #212529; /* was #fff (2.25:1 trên #34c38f) */
+}
+
+/* UIUX 23:05 A4: vòng focus nút "Sao chép" mã đơn (TrackOrder) */
+/* Fix 2 — WCAG 2.4.7 (Focus Visible): `.to-copy-btn` (TrackOrder.razor.css:263,
+   nút "Sao chép" mã đơn — khách dùng khi cần gửi mã cho shop) là nút chữ không
+   viền/không nền (`border:none; background:none; padding:0`) và không có style
+   focus nào (đã grep toàn repo: 0 hit :focus-visible) → tab bằng bàn phím chỉ
+   còn outline mặc định mờ nhạt của trình duyệt, người cao tuổi khó nhận ra.
+   Thêm vòng tím brand rõ ràng, cùng pattern các fix focus của team. Dark mode:
+   #a49de0 (khớp vòng focus dark toàn team; chữ nút dark là #a89ee0). */
+.to-copy-btn.to-copy-btn:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+html.dark .to-copy-btn.to-copy-btn:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* UIUX 23:05 A4: vòng focus nút −/+ stepper dòng món (Shop) */
+/* Fix 3 — WCAG 2.4.7 (Focus Visible): `.shop-row-stepper button`
+   (Shop.razor.css:592, nút −/+ kiểu ShopeeFood trên mỗi dòng món) chưa có
+   :focus-visible (đã grep: 0 hit; hover đã có từ run 19:45 của Agent 4).
+   Người dùng bàn phím tab tới chỉ thấy outline mặc định. Vòng tím #7a6fbe nổi
+   trên cả 2 nút (nền trắng và nền tím #7a6fbe). Dark mode: nút nền #241d17 /
+   viền #8f86d4 (fix Agent 2 run 19:40) → vòng #a49de0. */
+.shop-row-stepper.shop-row-stepper button:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .shop-row-stepper.shop-row-stepper button:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* UIUX 23:05 A4: vòng focus 2 nút CTA trang /error */
+/* Fix 4 — WCAG 2.4.7 (Focus Visible): `.sg-error-btn-primary` /
+   `.sg-error-btn-outline` (Error.razor.css:45/56 — thẻ <a> style thành nút
+   "Về trang chủ" / "Đặt món" ở trang lỗi) không có :focus-visible (đã grep:
+   0 hit; hover đã có từ run 21:35). Trang lỗi là nơi khách bối rối nhất —
+   người dùng bàn phím phải thấy rõ mình đang ở nút nào. Vòng tím brand,
+   offset 3px vì nút có padding lớn; dark mode #a49de0. */
+.sg-error-btn-primary.sg-error-btn-primary:focus-visible,
+.sg-error-btn-outline.sg-error-btn-outline:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 3px;
+}
+html.dark .sg-error-btn-primary.sg-error-btn-primary:focus-visible,
+html.dark .sg-error-btn-outline.sg-error-btn-outline:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* UIUX 23:05 A4: banner off-peak gradient tối hơn cho đủ contrast */
+/* Fix 5 — WCAG 1.4.3 (Contrast, AA 4.5:1): `.sg-offpeak-bar` (Index.razor:95,
+   banner "Khung giờ vắng khách" trên landing) dùng gradient
+   `90deg, #2a6b3a → #3a9d4a`. Chữ trắng 14px trên đầu phải #3a9d4a chỉ 3.44:1,
+   link vàng #ffd75e ("Đặt ngay →") chỉ 2.48:1 (đo bằng script luminance) —
+   nửa phải banner gần như không đọc được. Fix: dời gradient về tông xanh đậm
+   hơn `90deg, #245c31 → #2a6b3a`: chữ trắng đạt 7.92–6.44:1, link vàng đạt
+   5.71–4.64:1 trên toàn banner — vẫn là gradient xanh lá cùng hướng, không đổi
+   thiết kế. Nhân đôi class (0,2,0) để thắng rule scoped (Index.razor.css:1897).
+   Không có override dark riêng cho bar nên 1 rule dùng chung cả 2 mode. */
+.sg-offpeak-bar.sg-offpeak-bar {
+    background: linear-gradient(90deg, #245c31, #2a6b3a); /* was #2a6b3a -> #3a9d4a */
+}
+
+/* ===== END UIUX 23:05 A4 ===== */
