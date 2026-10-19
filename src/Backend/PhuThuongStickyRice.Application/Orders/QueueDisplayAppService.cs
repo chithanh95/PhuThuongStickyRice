@@ -41,6 +41,11 @@ namespace PhuThuongStickyRice.Application.Orders
         private const string NowServingCacheKey = "queue:now-serving";
         private static readonly TimeSpan NowServingCacheTtl = TimeSpan.FromSeconds(15);
 
+        /// <summary>Nhãn trạng thái vé chờ trên màn hình TV khi đơn đang chuẩn bị.</summary>
+        private const string PreparingStatusLabel = "Preparing";
+        /// <summary>Nhãn trạng thái vé chờ trên màn hình TV khi đơn đã xong, mời khách ra lấy món.</summary>
+        private const string ReadyStatusLabel = "Ready";
+
         /// <summary>
         /// Khởi tạo service hiển thị hàng chờ.
         /// </summary>
@@ -79,10 +84,10 @@ namespace PhuThuongStickyRice.Application.Orders
 
         private async Task<List<QueueTicketDto>> QueryNowServingAsync()
         {
-            // Vietnam day bounds (UTC+7, no DST). CreatedAt is stored as UTC.
+            // Biên ngày theo giờ Việt Nam (không có DST, offset lấy từ VietnamTime). CreatedAt lưu dạng UTC.
             var vnNow = VietnamTime.ToVietnamTime(DateTime.UtcNow);
-            var dayStartUtc = vnNow.Date.AddHours(-7);
-            var dayEndUtc = dayStartUtc.AddDays(1);
+            var dayStartUtc = VietnamTime.DayStartUtc(vnNow.Date);
+            var dayEndUtc = VietnamTime.DayEndExclusiveUtc(vnNow.Date);
 
             var visibleStatuses = new[]
                 { OrderStatus.Confirmed, OrderStatus.Preparing, OrderStatus.Delivering };
@@ -119,13 +124,13 @@ namespace PhuThuongStickyRice.Application.Orders
                     ShortCode = number.Length <= 3
                         ? number.ToUpperInvariant()
                         : number[^3..].ToUpperInvariant(),
-                    Status = order.Status == OrderStatus.Delivering ? "Ready" : "Preparing"
+                    Status = order.Status == OrderStatus.Delivering ? ReadyStatusLabel : PreparingStatusLabel
                 });
             }
 
             // "Mời lấy món" first — those customers need to act.
             return result
-                .OrderBy(x => x.Status == "Ready" ? 0 : 1)
+                .OrderBy(x => x.Status == ReadyStatusLabel ? 0 : 1)
                 .ThenBy(x => x.QueueNumber)
                 .ToList();
         }

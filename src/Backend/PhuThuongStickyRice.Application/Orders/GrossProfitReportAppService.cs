@@ -64,6 +64,8 @@ namespace PhuThuongStickyRice.Application.Orders
         private const decimal LowMarginPercentThreshold = 30m;
         // Số tên món tối đa liệt kê trong gợi ý "chưa nhập giá vốn".
         private const int MaxUnpricedNamesInSuggestion = 3;
+        // Nhãn hiển thị cho món không có tên (dòng legacy/combo thiếu tên món).
+        private const string UnnamedProductLabel = "(không tên)";
 
         /// <summary>
         /// Admin: báo cáo lãi gộp theo món trong khoảng ngày (giờ VN,
@@ -174,14 +176,12 @@ namespace PhuThuongStickyRice.Application.Orders
                     {
                         ProductId = g.ProductId,
                         ProductName = string.IsNullOrWhiteSpace(g.ProductName)
-                            ? "(không tên)" : g.ProductName.Trim(),
+                            ? UnnamedProductLabel : g.ProductName.Trim(),
                         QuantitySold = g.QuantitySold,
                         Revenue = g.Revenue,
                         Cost = cost,
                         Profit = profit,
-                        MarginPercent = g.Revenue > 0
-                            ? Math.Round(profit / g.Revenue * PercentFactor, MarginRoundDecimals)
-                            : (decimal?)null,
+                        MarginPercent = ComputeMarginPercent(profit, g.Revenue),
                         CostPrice = g.UnitCost,
                         CostMissing = g.UnitCost <= 0m
                     };
@@ -205,10 +205,20 @@ namespace PhuThuongStickyRice.Application.Orders
                 Revenue = totalRevenue,
                 Cost = totalCost,
                 Profit = totalProfit,
-                MarginPercent = totalRevenue > 0
-                    ? Math.Round(totalProfit / totalRevenue * PercentFactor, MarginRoundDecimals)
-                    : (decimal?)null
+                MarginPercent = ComputeMarginPercent(totalProfit, totalRevenue)
             };
+        }
+
+        /// <summary>
+        /// Biên lãi gộp theo phần trăm, làm tròn theo <see cref="MarginRoundDecimals"/>.
+        /// Doanh thu bằng 0 thì không tính được biên lãi → trả null thay vì chia cho 0.
+        /// Dùng chung cho cả dòng chi tiết và dòng tổng cộng để logic không bị lệch nhau.
+        /// </summary>
+        private static decimal? ComputeMarginPercent(decimal profit, decimal revenue)
+        {
+            return revenue > 0
+                ? Math.Round(profit / revenue * PercentFactor, MarginRoundDecimals)
+                : (decimal?)null;
         }
 
         /// <summary>

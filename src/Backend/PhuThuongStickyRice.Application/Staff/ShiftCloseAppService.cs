@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Staff;
 
 namespace PhuThuongStickyRice.Application.Staff
@@ -66,8 +67,9 @@ namespace PhuThuongStickyRice.Application.Staff
         public virtual async Task<decimal> GetExpectedCodAsync(DateTime date)
         {
             var day = date.Date;
-            var startUtc = day.AddHours(-7); // VN 00:00 → UTC
-            var endUtc = startUtc.AddDays(1);
+            // Biên ngày giờ VN → UTC (offset lấy từ VietnamTime, không hardcode 7).
+            var startUtc = VietnamTime.DayStartUtc(day);
+            var endUtc = VietnamTime.DayEndExclusiveUtc(day);
 
             var queryable = await _orders.GetQueryableAsync();
 
