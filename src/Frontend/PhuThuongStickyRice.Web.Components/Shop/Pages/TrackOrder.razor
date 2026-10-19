@@ -210,7 +210,7 @@
                     </div>
                     @if (!string.IsNullOrEmpty(_birthdayMessage))
                     {
-                        <div class="col-12"><small class="text-success">@_birthdayMessage</small></div>
+                        <div class="col-12"><small class="@(_birthdayIsError ? "text-danger" : "text-success")">@_birthdayMessage</small></div>
                     }
                 </div>
             }
@@ -805,6 +805,7 @@
     private DateTime? _birthdayInput;
     private bool _savingBirthday;
     private string _birthdayMessage;
+    private bool _birthdayIsError;
 
     // Item 119: address book.
     private System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel> _addresses;
@@ -1530,6 +1531,7 @@
     private async Task SaveBirthday()
     {
         _birthdayMessage = null;
+        _birthdayIsError = false;
         if (_order == null || _birthdayInput == null)
         {
             return;
@@ -1543,7 +1545,11 @@
         }
         catch (Exception)
         {
-            _birthdayMessage = null;
+            // Bug-hunt 2026-10-19: trước đây lỗi API bị nuốt im lặng
+            // (message = null) — khách tưởng đã lưu trong khi ngày sinh
+            // chưa được ghi, voucher sinh nhật không kích hoạt.
+            _birthdayMessage = "Không lưu được ngày sinh. Vui lòng thử lại.";
+            _birthdayIsError = true;
         }
         finally
         {
@@ -1763,9 +1769,13 @@
         }
 
         var toppingsTotal = chosen.Sum(t => t.ExtraPrice);
+        // Bug-hunt 2026-10-19: "Đặt lại đơn" trước đây cho giá gốc vào giỏ
+        // trong khi card /shop niêm yết giá KM (item 256) — giỏ/preview hiện
+        // tổng cao hơn giá đã quảng cáo. Dùng chung EffectivePrice như mọi
+        // đường thêm vào giỏ khác; server vẫn re-validate khi tạo đơn.
         CartState.AddConfigured(
             product.Id, product.Name, product.Code,
-            (size?.Price ?? product.Price) + toppingsTotal, qty,
+            ShopProductModel.EffectivePrice(product, size?.Price ?? product.Price) + toppingsTotal, qty,
             size?.Id, size?.Name ?? line.SizeName,
             chosen.Select(t => t.Id).ToList(),
             line.ToppingNames, toppingsTotal,

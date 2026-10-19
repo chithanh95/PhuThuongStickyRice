@@ -59,7 +59,20 @@ else
 
     protected override void OnInitialized()
     {
-        var query = ParseQuery(Navigation.Uri);
+        // Bug-hunt 2026-10-19: ParseQuery dùng Uri.UnescapeDataString —
+        // URL chứa % sai định dạng (vd /momo-simulator?orderId=%zz) sẽ ném
+        // exception; bọc try để trang không crash về error boundary
+        // (pattern đã dùng ở Cart.razor và TrackOrder.razor).
+        System.Collections.Generic.Dictionary<string, string> query;
+        try
+        {
+            query = ParseQuery(Navigation.Uri);
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
         query.TryGetValue("orderId", out _orderId);
         query.TryGetValue("orderNumber", out _orderNumber);
         query.TryGetValue("requestId", out _requestId);
