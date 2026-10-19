@@ -223,26 +223,36 @@ namespace PhuThuongStickyRice.Application.Loyalty
         [Authorize(Roles = "Admin")]
         public virtual async Task<LoyaltyAccountDto> AdjustAsync(string phone, AdjustPointsInput input)
         {
-            var account = await GetOrCreateAsync(phone);
-            // Chặn điểm âm: đơn đã đổi điểm rồi hủy thì RefundRedeemedPoints
-            // hoàn sau, nên trừ ở đây không được cho về âm.
-            var next = account.Points + input.PointsDelta;
-            if (next < 0)
+            var normalized = NormalizePhone(phone);
+            await GetOrCreateAsync(phone);
+            if (input.PointsDelta < 0)
             {
-                throw new Domain.Exceptions.DomainException("Điểm không thể âm.");
+                // Trừ điểm NGUYÊN TỬ (UPDATE ... WHERE Phone = @phone
+                // AND Points >= @points): 2 admin trừ cùng lúc không ghi đè
+                // lẫn nhau và không làm điểm về âm. Trả false cũng chính là
+                // case "điểm không thể âm" (kể cả khi tài khoản vừa được tạo
+                // với 0 điểm).
+                var ok = await _accounts.TryDecrementPointsAsync(normalized, -input.PointsDelta);
+                if (!ok)
+                {
+                    throw new Domain.Exceptions.DomainException("Điểm không thể âm.");
+                }
             }
-
-            account.Points = next;
-            if (input.PointsDelta > 0)
+            else if (input.PointsDelta > 0)
             {
-                // TotalEarned là lịch sử "đã kiếm" nên chỉ tăng khi cộng điểm
-                // (kể cả admin cộng tay); trừ điểm không trừ lịch sử này.
-                account.TotalEarned += input.PointsDelta;
+                // Cộng điểm NGUYÊN TỬ (Points và TotalEarned tăng trong 1 câu
+                // UPDATE). TotalEarned là lịch sử "đã kiếm" nên chỉ tăng khi
+                // cộng điểm, giữ đúng ngữ nghĩa cũ.
+                await _accounts.TryIncrementPointsAsync(normalized, input.PointsDelta);
             }
+            // Delta = 0: no-op (bản cũ chỉ chạm UpdatedAt), bỏ qua.
 
-            account.UpdatedAt = DateTime.UtcNow;
-            await _accounts.UpdateAsync(account, autoSave: true);
-            return await MapToDtoAsync(account);
+            // Đọc lại sau câu UPDATE nguyên tử (bypass change tracker) để
+            // DTO phản ánh đúng số điểm mới nhất.
+            var fresh = await FindByPhoneAsync(normalized)
+                ?? throw new Domain.Exceptions.DomainException(
+                    "Không tạo được tài khoản tích điểm, vui lòng thử lại.");
+            return await MapToDtoAsync(fresh);
         }
 
         /// <summary>

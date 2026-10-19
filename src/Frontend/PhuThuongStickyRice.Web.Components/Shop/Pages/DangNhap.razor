@@ -215,6 +215,9 @@
 
     private async Task LoginAsync()
     {
+        // Chặn bấm đúp / Enter 2 lần nhanh: nút disabled chỉ có hiệu lực sau
+        // re-render, trong khi handler vẫn chạy song song -> 2 request login.
+        if (_busy) return;
         _error = null;
         _infoMessage = null;
         if (!IsValidPhone(_phone))
@@ -250,6 +253,9 @@
 
     private async Task RegisterAsync()
     {
+        // Chặn submit đúp như LoginAsync: 2 request song song có thể tạo
+        // đăng ký trùng SĐT (lần 1 thành công, lần 2 báo lỗi khó hiểu).
+        if (_busy) return;
         _error = null;
         _infoMessage = null;
         if (!IsValidPhone(_phone))

@@ -178,6 +178,9 @@
 
     private async Task RequestOtpAsync()
     {
+        // Chặn bấm đúp "Gửi lại": 2 request song song -> OTP đầu bị vô hiệu
+        // (mã sau ghi đè) + đốt 2/3 quota rate-limit 3 req/giờ.
+        if (_busy) return;
         _error = null;
         _infoMessage = null;
         if (!IsValidPhone(_phone))
@@ -209,6 +212,9 @@
 
     private async Task ResetPasswordAsync()
     {
+        // Chặn bấm đúp như RequestOtpAsync: nút disabled chỉ có hiệu lực
+        // sau re-render, 2 request song song có thể đổi pass rồi báo lỗi OTP.
+        if (_busy) return;
         _error = null;
         _infoMessage = null;
         if (string.IsNullOrWhiteSpace(_otp) || _otp.Trim().Length != 6)

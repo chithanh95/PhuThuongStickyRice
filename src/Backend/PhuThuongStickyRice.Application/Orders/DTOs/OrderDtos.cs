@@ -339,6 +339,13 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         [Required]
         public string CustomerPhone { get; set; }
+
+        /// <summary>
+        /// Item 233: lý do hủy đơn — bắt buộc chọn (Đổi ý / Đặt nhầm món /
+        /// Chờ quá lâu / Món hết hàng / Lý do khác).
+        /// </summary>
+        [Required]
+        public string CancelReason { get; set; }
     }
 
     public class UpdateOrderLineQtyDto
@@ -691,6 +698,12 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
     {
         [Required]
         public string Status { get; set; }
+
+        /// <summary>
+        /// Item 233: lý do hủy — nhân viên chọn khi chuyển sang Cancelled.
+        /// Bỏ trống = giữ nguyên lý do cũ (nếu có).
+        /// </summary>
+        public string CancelReason { get; set; }
     }
 
     /// <summary>Admin: assign/unassign a delivery shipper.</summary>
@@ -843,5 +856,34 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public long QuantitySold { get; set; }
 
         public decimal Revenue { get; set; }
+    }
+
+    /// <summary>Item 233 (Admin): một dòng báo cáo số đơn hủy theo lý do.</summary>
+    public class CancelReasonReportDto
+    {
+        /// <summary>Lý do hủy (null/rỗng đã được gộp thành "Không rõ lý do").</summary>
+        public string Reason { get; set; }
+
+        /// <summary>Số đơn hủy với lý do này trong khoảng thời gian.</summary>
+        public int Count { get; set; }
+    }
+
+    /// <summary>Item 234 (Admin): món có ≥3 đánh giá 1–2 sao trong 30 ngày qua.</summary>
+    public class PoorlyRatedDishDto
+    {
+        /// <summary>Tên món (null/rỗng gộp thành "(không rõ món)").</summary>
+        public string ProductName { get; set; }
+
+        /// <summary>Số lượt đánh giá thấp (≤2 sao) của món.</summary>
+        public int BadCount { get; set; }
+
+        /// <summary>Điểm trung bình các lượt đánh giá thấp (làm tròn 1 số lẻ).</summary>
+        public double AvgRating { get; set; }
+
+        /// <summary>Tối đa 3 bình luận chê mẫu (không trùng) để xem lại chất lượng.</summary>
+        public List<string> SampleComments { get; set; } = new List<string>();
+
+        /// <summary>Thời điểm đánh giá thấp gần nhất.</summary>
+        public DateTime LastBadAt { get; set; }
     }
 }
