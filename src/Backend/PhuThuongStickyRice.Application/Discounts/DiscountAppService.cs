@@ -187,6 +187,18 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         /// <param name="spinPrizeCode">Mã voucher đã lưu trên đơn (Order.SpinPrizeCode).</param>
         Task RevokeSpinPrizeAsync(string? spinPrizeCode);
+
+        /// <summary>
+        /// Internal: thu hồi voucher trúng vòng quay cho nhiều đơn bị hủy
+        /// theo batch — 1 SELECT gộp (WHERE Code IN) + chỉ 1 lần invalidate
+        /// cache public, ngữ nghĩa giống hệt gọi <see cref="RevokeSpinPrizeAsync"/>
+        /// cho từng mã (bỏ qua mã trống/không tồn tại/đã tắt/đã dùng thật).
+        /// Dùng ở worker tự hủy đơn: mỗi lần gọi đơn lẻ đều đánh sập toàn bộ
+        /// cache public (products/ratings/promos...), N đơn trong 1 lần worker
+        /// chạy sẽ gây N đợt cache-miss dây chuyền trên các endpoint nóng nhất.
+        /// </summary>
+        /// <param name="spinPrizeCodes">Mã voucher đã lưu trên các đơn (Order.SpinPrizeCode).</param>
+        Task RevokeSpinPrizesAsync(IEnumerable<string?> spinPrizeCodes);
     }
 
     /// <summary>
@@ -622,6 +634,60 @@ namespace PhuThuongStickyRice.Application.Discounts
             entity.IsActive = false;
             await _discounts.UpdateAsync(entity, autoSave: true);
             _catalogCache.Invalidate();
+        }
+
+        /// <summary>
+        /// Thu hồi voucher trúng vòng quay cho nhiều đơn bị hủy theo batch:
+        /// chuẩn hóa + gom mã trùng, 1 SELECT (WHERE Code IN) thay vì N lần
+        /// FindByCodeAsync, rồi tắt các mã còn hiệu lực. Chỉ invalidate cache
+        /// public 1 lần khi có ít nhất 1 mã bị thu hồi — gọi đơn lẻ từng mã
+        /// sẽ đánh sập toàn bộ cache nóng (products/ratings/promos...) mỗi
+        /// lần, gây cache-miss dây chuyền. Ngữ nghĩa giống hệt gọi
+        /// <see cref="RevokeSpinPrizeAsync"/> cho từng mã: bỏ qua mã trống,
+        /// mã không tồn tại, mã đã tắt, mã đã dùng thật (UsedCount &gt; 0);
+        /// không throw — đơn hủy phải luôn thành công.
+        /// </summary>
+        public virtual async Task RevokeSpinPrizesAsync(IEnumerable<string?> spinPrizeCodes)
+        {
+            if (spinPrizeCodes == null)
+            {
+                return;
+            }
+
+            // Chuẩn hóa giống hệt RevokeSpinPrizeAsync (không dùng
+            // NormalizeCode vì nó ném khi mã trống — ở đây chỉ bỏ qua).
+            var codes = spinPrizeCodes
+                .Select(c => c?.Trim().ToUpperInvariant())
+                .Where(c => !string.IsNullOrEmpty(c))
+                .Distinct()
+                .ToList();
+
+            if (codes.Count == 0)
+            {
+                return;
+            }
+
+            var queryable = await _discounts.GetQueryableAsync();
+            var entities = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => codes.Contains(x.Code)));
+
+            var revokedAny = false;
+            foreach (var entity in entities)
+            {
+                if (!entity.IsActive || entity.UsedCount > 0)
+                {
+                    continue;
+                }
+
+                entity.IsActive = false;
+                await _discounts.UpdateAsync(entity, autoSave: true);
+                revokedAny = true;
+            }
+
+            if (revokedAny)
+            {
+                _catalogCache.Invalidate();
+            }
         }
 
         /// <summary>

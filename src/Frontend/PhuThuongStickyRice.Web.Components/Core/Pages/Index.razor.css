@@ -2336,3 +2336,31 @@ html.dark .sg-tl-card p {
 .sg-trust-review-name {
     color: #6f5d48; /* was #8a7a68 — 4.15:1 → 6.3:1 trên nền trắng */
 }
+
+/* ===== UIUX run 2026-10-20 03:05 — Agent 2 Dark mode: 3 lỗi còn sót trên
+   landing, đều là màu cứng #6F0707/#5a4a3a không theo biến --sg-* nên không
+   tự đổi khi html.dark set --sg-surface:#262019 / --sg-ink:#f0e8d8.
+   Quy ước: accent vàng #e8a013 (đã dùng cho .sg-stat strong/.sg-tl-card
+   strong dark), chữ phụ #b3a48a (= --sg-muted khi dark). */
+
+/* FIX 3 — FAQ: icon "+" trong summary (Index.razor:~FAQ section) #6F0707 trên
+   nền card tối #262019 chỉ ~1.3:1 — người dùng không thấy nút mở câu hỏi.
+   Vàng gold #e8a013 (~7:1), trạng thái [open] "−" cùng màu. */
+html.dark .sg-faq-item summary::after {
+    color: #e8a013; /* was #6F0707 — ~1.3:1 → ~7:1 trên #262019 */
+}
+
+/* FIX 4 — FAQ: đoạn trả lời .sg-faq-item p #5a4a3a trên #262019 chỉ ~1.9:1,
+   nội dung trả lời chìm gần hết ở dark mode. Sáng lên #b3a48a (~6.6:1). */
+html.dark .sg-faq-item p {
+    color: #b3a48a; /* was #5a4a3a — ~1.9:1 → ~6.6:1 trên #262019 */
+}
+
+/* FIX 5 — Nút chia sẻ món 🔗 (.sg-share-btn, kế tên món trong card): icon
+   #6F0707 trên nền surface tối #262019 chỉ ~1.3:1 — không thấy nút chia sẻ
+   ở dark mode. Vàng gold #e8a013 (~7:1). Hover (nền #6F0707 chữ trắng)
+   đọc tốt cả 2 mode nên giữ nguyên. */
+html.dark .sg-share-btn {
+    color: #e8a013; /* was #6F0707 — ~1.3:1 → ~7:1 trên #262019 */
+}
+/* ===== END UIUX run 2026-10-20 03:05 - Agent2 FIX 3+4+5 ===== */

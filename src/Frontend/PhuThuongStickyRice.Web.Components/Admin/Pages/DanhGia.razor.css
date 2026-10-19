@@ -32,3 +32,19 @@ html.dark .dg-stars .dg-stars-off { color: #4a4a66; }
 html.dark .table .table-secondary,
 html.dark .table .table-secondary > th,
 html.dark .table .table-secondary > td { background-color: #31314f; }
+
+/* ===== UIUX run 03:05 — Agent3 Lexa =====
+   FIX 5 — Gom style inline độ rộng cột bảng (DanhGia.razor) vào class
+   (quy tắc Lexa-sync: không style inline). */
+.dg-col-che {
+    width: 110px;
+}
+
+.dg-col-avg {
+    width: 90px;
+}
+
+.dg-col-latest {
+    width: 150px;
+}
+/* ===== END UIUX run 03:05 - Agent3 FIX 5 ===== */

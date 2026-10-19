@@ -1154,7 +1154,10 @@ namespace PhuThuongStickyRice.Application.Orders
                 // Toppings: extra charge summed on top of the unit price.
                 string toppingNames = null;
                 decimal toppingsExtra = 0;
-                var lineToppings = (line.ToppingIds ?? Enumerable.Empty<Guid>()).Distinct().ToList();
+                // HashSet: tra cứu O(1) trong Where() bên dưới thay vì
+                // List.Contains O(n) cho mỗi topping của catalog; ctor
+                // HashSet đã khử trùng nên thay luôn Distinct().ToList().
+                var lineToppings = new HashSet<Guid>(line.ToppingIds ?? Enumerable.Empty<Guid>());
                 if (lineToppings.Count > 0)
                 {
                     var resolved = catalog.Toppings.Where(x => lineToppings.Contains(x.Id)).ToList();
@@ -2502,8 +2505,10 @@ namespace PhuThuongStickyRice.Application.Orders
                 .GroupBy(x => string.IsNullOrWhiteSpace(x.ProductName)
                     ? "(không rõ món)" : x.ProductName.Trim()))
             {
-                var items = group.ToList();
-                if (items.Count < 3)
+                // Dùng thẳng IGrouping thay vì group.ToList(): GroupBy đã
+                // buffer trong memory nên enumerate nhiều lần không tốn thêm,
+                // tránh 1 lần cấp phát list cho mỗi nhóm.
+                if (group.Count() < 3)
                 {
                     continue;
                 }
@@ -2511,15 +2516,15 @@ namespace PhuThuongStickyRice.Application.Orders
                 result.Add(new PoorlyRatedDishDto
                 {
                     ProductName = group.Key,
-                    BadCount = items.Count,
-                    AvgRating = Math.Round(items.Average(x => x.Rating), 1),
-                    SampleComments = items
+                    BadCount = group.Count(),
+                    AvgRating = Math.Round(group.Average(x => x.Rating), 1),
+                    SampleComments = group
                         .Where(x => !string.IsNullOrWhiteSpace(x.Comment))
                         .Select(x => x.Comment!.Trim())
                         .Distinct()
                         .Take(SampleCommentsTake)
                         .ToList(),
-                    LastBadAt = items.Max(x => x.CreatedAt)
+                    LastBadAt = group.Max(x => x.CreatedAt)
                 });
             }
 
@@ -2742,10 +2747,14 @@ namespace PhuThuongStickyRice.Application.Orders
             // bug-hunt 2026-10-20: đơn chuyển khoản quá hạn bị hệ thống tự hủy
             // cũng thu hồi voucher trúng từ vòng quay của từng đơn (chống
             // farm: quay trên đơn Pending rồi chờ hệ thống hủy).
-            foreach (var cancelled in cancelledThisRun)
-            {
-                await _discounts.RevokeSpinPrizeAsync(cancelled.SpinPrizeCode);
-            }
+            // perf-hunt 2026-10-20: thu hồi theo batch — 1 SELECT gộp
+            // (WHERE Code IN) + chỉ 1 lần invalidate cache public cho cả
+            // batch, thay vì RevokeSpinPrizeAsync từng đơn (mỗi lần gọi cũ
+            // đánh sập toàn bộ cache nóng products/ratings/promos..., N đơn
+            // trong 1 lần worker chạy gây N đợt cache-miss dây chuyền trên
+            // các endpoint nhiều lượt truy cập nhất).
+            await _discounts.RevokeSpinPrizesAsync(
+                cancelledThisRun.Select(x => x.SpinPrizeCode));
 
             return cancelledThisRun.Count;
         }
@@ -3347,13 +3356,13 @@ namespace PhuThuongStickyRice.Application.Orders
             // Pre-filter bằng CustomerPhoneNorm (9 số cuối, có index, set tại Order.cs:378)
             // để chỉ đọc đơn của đúng SĐT — trước đây Take(50) trên toàn shop nên khách cũ
             // có đơn cuối cách >50 đơn của shop không bao giờ được prefill tên/địa chỉ.
-            var last9 = NormalizePhoneKey(phone);
+            var phoneSuffix = NormalizePhoneKey(phone);
             var orderQueryable = await _orders.GetQueryableAsync();
             var recent = await _asyncExecuter.ToListAsync(
                 orderQueryable
                     .Where(x => x.Status != OrderStatus.Cancelled
                         && !string.IsNullOrWhiteSpace(x.CustomerAddress)
-                        && x.CustomerPhoneNorm == last9)
+                        && x.CustomerPhoneNorm == phoneSuffix)
                     .OrderByDescending(x => x.CreatedAt)
                     .Select(x => new
                     {
@@ -3497,8 +3506,8 @@ namespace PhuThuongStickyRice.Application.Orders
             // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
             // operator thay Substring(digits.Length - TailDigitCount) — regex
             // ở trên đảm bảo đủ 10 số nên tương đương.
-            var last9 = digits[^PhoneNumber.TailDigitCount..];
-            var candidates = await LoadOrderCandidatesAsync(last9);
+            var phoneSuffix = digits[^PhoneNumber.TailDigitCount..];
+            var candidates = await LoadOrderCandidatesAsync(phoneSuffix);
 
             var matched = candidates.Where(x => PhoneNumber.PhonesMatch(x.CustomerPhone, digits)).ToList();
             if (matched.Count == 0)
@@ -3539,13 +3548,13 @@ namespace PhuThuongStickyRice.Application.Orders
         /// viên (phase 2 vẫn lọc khoan dung bằng PhonesMatch), cùng thứ tự
         /// mới nhất lên trước.
         /// </summary>
-        /// <param name="last9">9 số cuối SĐT (tìm khoan dung định dạng).</param>
-        private async Task<List<OrderPhoneCandidate>> LoadOrderCandidatesAsync(string last9)
+        /// <param name="phoneSuffix">9 số cuối SĐT (tìm khoan dung định dạng).</param>
+        private async Task<List<OrderPhoneCandidate>> LoadOrderCandidatesAsync(string phoneSuffix)
         {
             var orderQueryable = await _orders.GetQueryableAsync();
             return await _asyncExecuter.ToListAsync(
                 orderQueryable
-                    .Where(x => x.CustomerPhoneNorm == last9)
+                    .Where(x => x.CustomerPhoneNorm == phoneSuffix)
                     .OrderByDescending(x => x.CreatedAt)
                     .Select(x => new OrderPhoneCandidate(x.Id, x.CustomerPhone, x.CreatedAt))
                     .Take(PhoneLookupCandidatesTake));

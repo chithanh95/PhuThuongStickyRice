@@ -40,3 +40,23 @@ html.dark .auth-card .btn:focus-visible {
     }
 }
 /* ===== END UIUX run 17:36 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 03:10 — Agent1 Mobile =====
+   FIX 5 — Link "🔒 Quên mật khẩu?" (~15px) và "← Về trang chủ" (small
+   ~12.8px) cuối trang: vùng bấm chỉ bằng dòng chữ — trên mobile người lớn
+   tuổi khó bấm trúng, nhất là link về trang chủ nằm sát mép dưới. Nâng vùng
+   bấm lên 44px, chữ 15px; vẫn căn giữa, PC giữ nguyên.
+   (Verify: DangNhap.razor — selector chỉ khớp đúng 2 link này; 2 tab Đăng
+   nhập/Đăng ký đã cao 48px theo inline style.) */
+@media (max-width: 767.98px) {
+    .auth-card .text-center.mt-3 > .auth-link,
+    .auth-wrap > .text-center.mt-4 > a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 8px 16px;
+        font-size: 15px;
+    }
+}
+/* ===== END UIUX run 03:10 - Agent1 FIX 5 ===== */

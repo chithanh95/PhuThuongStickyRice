@@ -63,3 +63,39 @@
         font-size: 1.05rem;
     }
 }
+
+/* ===== UIUX run 03:10 — Agent1 Mobile =====
+   FIX 1 — Chữ lỗi validation (Họ tên/SĐT/Số suất: small.text-danger ~12.8px)
+   + ghi chú checkbox "🔔 Nhắc tôi mỗi tháng" (small.text-muted ~12.8px):
+   khách BẮT BUỘC đọc được để sửa form/nhận nhắc cúng, người lớn tuổi khó
+   đọc ở 12.8px. Nâng lên 14px trên mobile, PC giữ nguyên.
+   (Verify: DatCung.razor — small.text-danger chỉ ở 3 ô form (name/phone/qty);
+   small trong .form-check-label chỉ ở checkbox nhắc tháng.) */
+@media (max-width: 767.98px) {
+    .form-group > small.text-danger {
+        font-size: 14px;
+    }
+    .form-group.form-check .form-check-label small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 03:10 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 03:10 — Agent1 Mobile =====
+   FIX 2 — Nút "Xem thực đơn" sau khi gửi thành công (DatCung.razor, nút
+   .btn-primary đứng ngay sau .alert-success — nằm NGOÀI .card-body nên rule
+   FIX 4 "submit 48px" run 17:48 không phủ tới): chỉ ~38px trên mobile.
+   Xếp full-width, cao 48px cho dễ bấm.
+   (Verify: selector .alert-success + .btn-primary chỉ khớp đúng nút này —
+   alert-success trong _submitted không còn nút anh em nào khác.) */
+@media (max-width: 767.98px) {
+    .alert-success + .btn-primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+    }
+}
+/* ===== END UIUX run 03:10 - Agent1 FIX 2 ===== */

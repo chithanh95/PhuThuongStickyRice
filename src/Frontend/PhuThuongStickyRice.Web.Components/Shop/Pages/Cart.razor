@@ -45,10 +45,10 @@
                 <div class="col-6 col-md-3 mb-3" @key="s.Id">
                     <div class="card h-100">
                         <img src="@SuggestionImage(s)" alt="@s.Name" loading="lazy"
-                             class="card-img-top" style="height: 120px; object-fit: cover;"
+                             class="card-img-top cart-suggest-img"
                              onerror="this.onerror=null;this.style.display='none';" />
                         <div class="card-body p-2 text-center">
-                            <div class="font-weight-bold" style="font-size: 0.9rem;">@s.Name</div>
+                            <div class="font-weight-bold cart-suggest-name">@s.Name</div>
                             @* bug-hunt 2026-10-19: hiện giá KM (giá thực trả khi bấm Thêm) thay vì giá gốc. *@
                             <div class="text-danger font-weight-bold">@FormatPrice(ShopProductModel.EffectivePrice(s, s.Price))</div>
                             <button class="btn btn-sm btn-primary mt-1 w-100"
@@ -110,7 +110,7 @@ else
                             @* BA cart: bỏ mã sản phẩm nội bộ (XOI-DO...) — khách không cần thấy. *@
                             @* Wave 6a (item 24): per-item note ("ghi chú món"). *@
                             <br />
-                            <input class="form-control form-control-sm mt-1" style="max-width: 230px;"
+                            <input class="form-control form-control-sm mt-1 cart-item-note"
                                    maxlength="500" placeholder="@AppI18n.Translate("shop.item_note_placeholder")"
                                    aria-label="Ghi chú cho món @cartItem.ProductName"
                                    value="@cartItem.Note"
@@ -136,7 +136,7 @@ else
             <tfoot>
                 <tr>
                     <td colspan="3" class="text-right"><strong>@AppI18n.Translate("common.total"):</strong></td>
-                    <td class="text-right"><strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(CartState.TotalAmount)</strong></td>
+                    <td class="text-right"><strong class="text-danger cart-total-amount">@FormatPrice(CartState.TotalAmount)</strong></td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -144,7 +144,7 @@ else
     </div>
 
     @* GH2: optional phone — carried over to checkout (?phone=) and saved for next time. *@
-    <div class="form-group gh-cart-phone mb-3" style="max-width: 340px;">
+    <div class="form-group gh-cart-phone mb-3">
         <label for="cart-phone"><small class="text-muted">📱 SĐT của bạn <span class="text-muted">(tùy chọn — tự điền sẵn ở bước thanh toán)</span></small></label>
         <input id="cart-phone" class="form-control" inputmode="tel" placeholder="0901234567"
                value="@_phone" @oninput="OnPhoneInput" maxlength="11" />
@@ -183,7 +183,7 @@ else
                             <div class="d-flex align-items-center justify-content-between border rounded p-2">
                                 <div class="d-flex align-items-center">
                                     <img src="@SuggestionImage(s)" alt="@s.Name" loading="lazy"
-                                         style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; margin-right: 8px;"
+                                         class="cart-upsell-thumb"
                                          onerror="this.onerror=null;this.style.display='none';" />
                                     <div>
                                         <strong>@s.Name</strong><br />

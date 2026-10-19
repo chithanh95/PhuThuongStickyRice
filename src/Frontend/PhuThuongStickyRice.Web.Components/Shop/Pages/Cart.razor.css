@@ -396,3 +396,36 @@ html.dark .gh-freeship .progress {
         border-color: #3a3226;
     }
 }
+
+/* ===== UIUX run 03:05 — Agent3 Lexa =====
+   FIX 1 — Gom 6 style inline trong Cart.razor vào class CSS (quy tắc
+   Lexa-sync: không style inline, không đổi giao diện). */
+.cart-suggest-img {
+    height: 120px;
+    object-fit: cover;
+}
+
+.cart-suggest-name {
+    font-size: 0.9rem;
+}
+
+.cart-item-note {
+    max-width: 230px;
+}
+
+.cart-total-amount {
+    font-size: 1.2rem;
+}
+
+.gh-cart-phone {
+    max-width: 340px;
+}
+
+.cart-upsell-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 8px;
+}
+/* ===== END UIUX run 03:05 - Agent3 FIX 1 ===== */

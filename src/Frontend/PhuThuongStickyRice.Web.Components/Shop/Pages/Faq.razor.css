@@ -44,3 +44,11 @@
         font-size: 1.05rem;
     }
 }
+
+/* ===== UIUX run 03:05 — Agent3 Lexa =====
+   FIX 2 — Gom style inline max-width:480px trong Faq.razor vào class
+   .faq-search (quy tắc Lexa-sync: không style inline). */
+.faq-search {
+    max-width: 480px;
+}
+/* ===== END UIUX run 03:05 - Agent3 FIX 2 ===== */

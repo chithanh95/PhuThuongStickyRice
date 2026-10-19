@@ -1,0 +1,7 @@
+/* ===== UIUX run 03:05 — Agent3 Lexa =====
+   FIX 5 — Gom style inline độ rộng cột "Thao tác" (KhuyenMai.razor)
+   vào class (quy tắc Lexa-sync: không style inline). */
+.km-actions-col {
+    width: 120px;
+}
+/* ===== END UIUX run 03:05 - Agent3 FIX 5 ===== */

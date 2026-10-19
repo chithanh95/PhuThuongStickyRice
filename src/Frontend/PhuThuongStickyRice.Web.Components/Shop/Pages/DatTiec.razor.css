@@ -30,3 +30,22 @@
     }
 }
 /* ===== END UIUX run 17:36 - Agent1 FIX 5 ===== */
+
+/* ===== UIUX run 03:10 — Agent1 Mobile =====
+   FIX 4 — 2 nút sau khi gửi thành công ("Xem thực đơn" btn-primary + "💬 Trao
+   đổi thêm qua Zalo" btn-success ml-2 mt-2): chỉ ~38px, nút Zalo bị thụt vào
+   do .ml-2 — trên mobile xếp dọc full-width, mỗi nút 48px cho dễ bấm.
+   (Verify: DatTiec.razor — .alert-success ~ .btn chỉ khớp đúng 2 nút này;
+   alert lỗi .alert-danger ở form không có nút anh em nào.) */
+@media (max-width: 767.98px) {
+    .alert-success ~ .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        margin: 8px 0 0 !important; /* đè .ml-2 của nút Zalo */
+        font-size: 1.05rem;
+    }
+}
+/* ===== END UIUX run 03:10 - Agent1 FIX 4 ===== */

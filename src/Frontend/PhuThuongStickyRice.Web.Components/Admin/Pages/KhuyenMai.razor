@@ -36,12 +36,12 @@
                         <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th>Tên chương trình</th>
-                                    <th>Giảm giá</th>
-                                    <th>Giờ áp dụng</th>
-                                    <th>Ngày áp dụng</th>
-                                    <th>Trạng thái</th>
-                                    <th style="width:120px;">Thao tác</th>
+                                    <th scope="col">Tên chương trình</th>
+                                    <th scope="col">Giảm giá</th>
+                                    <th scope="col">Giờ áp dụng</th>
+                                    <th scope="col">Ngày áp dụng</th>
+                                    <th scope="col">Trạng thái</th>
+                                    <th scope="col" class="km-actions-col">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -81,7 +81,10 @@
 {
     @* UIUX-1019 Agent4 (run 18:35): role="dialog" + aria-modal + aria-labelledby
        để trình đọc màn hình nhận diện đây là hộp thoại và đọc đúng tiêu đề. *@
-    <div class="modal show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="km-modal-title">
+    <div class="modal show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true"
+         aria-labelledby="km-modal-title" @onkeydown="ModalKeyDown">
+        @* UIUX-1020 Agent4 (a11y): @onkeydown trên lớp phủ modal — bấm Esc đóng
+           modal, đồng bộ với modal Mã giảm giá (người dùng bàn phím). *@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -94,21 +97,23 @@
                         <div class="alert alert-danger">@_error</div>
                     }
                     <div class="form-group">
-                        <label>Tên chương trình</label>
-                        <input class="form-control" @bind="_form.Name" placeholder="VD: Giờ vàng buổi trưa" />
+                        @* UIUX-1020 Agent4 (a11y): for/id liên kết label với ô nhập —
+                           trình đọc màn hình đọc đúng tên trường khi focus. *@
+                        <label for="km-name">Tên chương trình</label>
+                        <input id="km-name" class="form-control" @bind="_form.Name" placeholder="VD: Giờ vàng buổi trưa" />
                     </div>
                     <div class="form-group">
-                        <label>Giảm giá (%)</label>
-                        <input type="number" class="form-control" @bind="_form.DiscountPercent" min="1" max="100" />
+                        <label for="km-pct">Giảm giá (%)</label>
+                        <input id="km-pct" type="number" class="form-control" @bind="_form.DiscountPercent" min="1" max="100" />
                     </div>
                     <div class="form-row">
                         <div class="form-group col-6">
-                            <label>Giờ bắt đầu</label>
-                            <input class="form-control" @bind="_form.StartTime" placeholder="11:00" />
+                            <label for="km-start">Giờ bắt đầu</label>
+                            <input id="km-start" class="form-control" @bind="_form.StartTime" placeholder="11:00" />
                         </div>
                         <div class="form-group col-6">
-                            <label>Giờ kết thúc</label>
-                            <input class="form-control" @bind="_form.EndTime" placeholder="14:00" />
+                            <label for="km-end">Giờ kết thúc</label>
+                            <input id="km-end" class="form-control" @bind="_form.EndTime" placeholder="14:00" />
                         </div>
                     </div>
                     <div class="form-group">
@@ -212,6 +217,14 @@
     }
 
     private void HideForm() => _showForm = false;
+
+    /// <summary>
+    /// Đóng modal khi người dùng bấm Esc (điều hướng bàn phím).
+    /// </summary>
+    private void ModalKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") HideForm();
+    }
 
     private void ToggleDay(int value, bool checked_)
     {

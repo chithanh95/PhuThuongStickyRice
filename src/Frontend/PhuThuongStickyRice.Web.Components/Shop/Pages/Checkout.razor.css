@@ -573,3 +573,46 @@ html.dark .co-mobile-bar .co-total small {
     }
 }
 /* ===== END UIUX run 02:32 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 03:05 — Agent3 Lexa =====
+   FIX 3 — Gom 8 style inline tĩnh trong Checkout.razor vào class CSS
+   (quy tắc Lexa-sync: không style inline; 2 style động _wheelStyle /
+   SpinLabelStyle(i) của vòng quay giữ nguyên vì giá trị tính runtime). */
+.co-greet-title {
+    font-size: 1.1rem;
+}
+
+.co-quick-order-btn {
+    min-height: 52px;
+    font-size: 1.15rem;
+    font-weight: bold;
+}
+
+.co-qr-img {
+    max-width: 260px;
+    width: 100%;
+}
+
+.co-remember-check {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+
+.co-remember-checkbox {
+    width: 20px;
+    height: 20px;
+}
+
+.co-remember-label {
+    font-size: 1.05rem;
+}
+
+.co-apply-discount-btn {
+    min-height: 48px;
+}
+
+.co-auto-applied-note {
+    font-size: 1.05rem;
+}
+/* ===== END UIUX run 03:05 - Agent3 FIX 3 ===== */

@@ -93,6 +93,23 @@ html.dark .xo-checkin-card { background: #2a2a32; }
 html.dark .xo-checkin-meta strong { color: #e8c9a0; }
 html.dark .xo-checkin-meta span { color: #aaa; }
 
+/* ===== UIUX run 2026-10-20 03:05 — Agent 2 Dark mode =====
+   FIX 1 — 3 tiêu đề nâu đỏ #763434 (.xo-sec-title "CHECK-IN TẠI QUÁN",
+   .xo-checkin-form-title, .xo-checkin-wall-title "Tường check-in"): trên
+   nền tối #1c1c22 chỉ ~1.6:1 — chữ tàng hình. Đổi sang kem #e8c9a0
+   (~10:1), đúng tông đã dùng cho .xo-checkin-meta strong ở dark mode.
+   FIX 2 — Họa tiết divider (.xo-sec-div span/em, nâu #9C682C) mờ trên nền
+   tối (~2.9:1): sáng lên vàng gold #e8a013 (~7:1) cho cả gạch lẫn chữ,
+   đồng bộ accent dark đã dùng trên landing. */
+html.dark .xo-sec-title,
+html.dark .xo-checkin-form-title,
+html.dark .xo-checkin-wall-title {
+    color: #e8c9a0; /* was #763434 — ~1.6:1 → ~10:1 trên #1c1c22 */
+}
+html.dark .xo-sec-div span { background: #e8a013; /* was #9C682C */ }
+html.dark .xo-sec-div em { color: #e8a013; /* was #9C682C — ~2.9:1 → ~7:1 */ }
+/* ===== END UIUX run 2026-10-20 03:05 - Agent2 FIX 1+2 ===== */
+
 /* ===== UIUX run 16:48 — Agent1 Mobile =====
    FIX 2 — /check-in: tiêu đề + nút "Đăng ảnh" trên mobile.
    Vấn đề: .xo-sec-title 40px trên màn 360px — chữ "CHECK-IN TẠI QUÁN 📸"
