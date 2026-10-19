@@ -1566,68 +1566,73 @@ else
             // nhau, fail-soft riêng) → chạy song song. EnsurePaymentMethodValid()
             // đọc _walletBalance nên vẫn chạy sau WhenAll như logic cũ.
             await Task.WhenAll(
-                LoadLoyaltyForPhoneAsync(),
-                LoadWalletForPhoneAsync(),
-                LoadLastOrderNameAsync());
+                LoadLoyaltyForPhoneAsync(phone),
+                LoadWalletForPhoneAsync(phone),
+                LoadLastOrderNameAsync(phone));
 
             // Số dư vừa tải về có thể không đủ tổng đơn → gỡ lựa chọn ví vô hình.
             EnsurePaymentMethodValid();
-
-            async Task LoadLoyaltyForPhoneAsync()
-            {
-                // Loyalty summary (points, tier, referral code) for the phone.
-                try
-                {
-                    _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(phone);
-                    _redeemPoints = 0;
-                    _redeemPointsInput = 0;
-                    _redeemMessage = null;
-                }
-                catch (Exception)
-                {
-                    _loyalty = null;
-                }
-            }
-
-            async Task LoadWalletForPhoneAsync()
-            {
-                // Item 140: wallet balance for this phone (enables the ví option).
-                try
-                {
-                    var wallet = await AdminCommerceService.GetWalletBalanceAsync(phone);
-                    _walletBalance = wallet?.Balance ?? 0;
-                }
-                catch (Exception)
-                {
-                    _walletBalance = 0;
-                }
-            }
-
-            async Task LoadLastOrderNameAsync()
-            {
-                // TT2: auto-fill the name from the most recent order — never
-                // overwrite a name the user already typed. (This checkout has no
-                // delivery-address field: the shop doesn't deliver — the order is
-                // ShipperPickup or customer Pickup.)
-                try
-                {
-                    var last = await ShopService.GetLastOrderInfoAsync(phone);
-                    if (last != null
-                        && string.IsNullOrWhiteSpace(_order.CustomerName)
-                        && !string.IsNullOrWhiteSpace(last.CustomerName))
-                    {
-                        _order.CustomerName = last.CustomerName;
-                    }
-                }
-                catch (Exception)
-                {
-                }
-            }
         }
         finally
         {
             _lookingUpPhone = false;
             StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Tải hồ sơ loyalty (điểm, hạng, mã giới thiệu) của SĐT, fail-soft.
+    /// </summary>
+    private async Task LoadLoyaltyForPhoneAsync(string phone)
+    {
+        try
+        {
+            _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(phone);
+            _redeemPoints = 0;
+            _redeemPointsInput = 0;
+            _redeemMessage = null;
+        }
+        catch (Exception)
+        {
+            _loyalty = null;
+        }
+    }
+
+    /// <summary>
+    /// Item 140: số dư ví của SĐT (hiện lựa chọn thanh toán ví), fail-soft.
+    /// </summary>
+    private async Task LoadWalletForPhoneAsync(string phone)
+    {
+        try
+        {
+            var wallet = await AdminCommerceService.GetWalletBalanceAsync(phone);
+            _walletBalance = wallet?.Balance ?? 0;
+        }
+        catch (Exception)
+        {
+            _walletBalance = 0;
+        }
+    }
+
+    /// <summary>
+    /// TT2: tự điền tên từ đơn gần nhất của SĐT — không ghi đè tên khách đã
+    /// nhập. (Checkout này không có trường địa chỉ giao hàng: quán không giao
+    /// hàng — đơn là ShipperPickup hoặc khách tự đến lấy.)
+    /// </summary>
+    private async Task LoadLastOrderNameAsync(string phone)
+    {
+        try
+        {
+            var last = await ShopService.GetLastOrderInfoAsync(phone);
+            if (last != null
+                && string.IsNullOrWhiteSpace(_order.CustomerName)
+                && !string.IsNullOrWhiteSpace(last.CustomerName))
+            {
+                _order.CustomerName = last.CustomerName;
+            }
+        }
+        catch (Exception)
+        {
         }
     }
 
