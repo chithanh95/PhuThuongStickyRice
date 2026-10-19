@@ -47,5 +47,22 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                 queryable.Include(x => x.Lines).Where(x => ids.Contains(x.Id)),
                 cancellationToken);
         }
+
+        /// <summary>
+        /// Đánh dấu lượt quay may mắn nguyên tử bằng ExecuteUpdateAsync
+        /// (1 câu UPDATE ... WHERE Id = orderId AND LuckySpinUsed = false).
+        /// Chạy trong DbContext/UoW hiện tại nên rollback cùng nghiệp vụ khi
+        /// các bước sau (sinh voucher) thất bại.
+        /// </summary>
+        public async Task<bool> TryMarkSpinUsedAsync(System.Guid orderId, CancellationToken cancellationToken = default)
+        {
+            var dbContext = await GetDbContextAsync();
+            var affected = await dbContext.Set<Order>()
+                .Where(x => x.Id == orderId && !x.LuckySpinUsed)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.LuckySpinUsed, true),
+                    cancellationToken);
+            return affected > 0;
+        }
     }
 }

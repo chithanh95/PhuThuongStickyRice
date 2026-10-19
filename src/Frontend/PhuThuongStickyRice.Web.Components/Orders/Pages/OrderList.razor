@@ -292,9 +292,9 @@ else
                                                         }
                                                     </select>
                                                 </div>
-                                                @if (!string.IsNullOrEmpty(_shipperMessage))
+                                                @if (_shipperMessageOrderId == order.Id && !string.IsNullOrEmpty(_shipperMessage))
                                                 {
-                                                    <div class="col-md-8"><small class="text-success">@_shipperMessage</small></div>
+                                                    <div class="col-md-8"><small class="@(_shipperMessageIsError ? "text-danger" : "text-success")">@_shipperMessage</small></div>
                                                 }
                                             </div>
                                         }
@@ -580,8 +580,22 @@ else
     private bool _historyLoading;
 
     // Item 82: shippers for the filter dropdown and assignment.
+    // Message gắn theo từng đơn: message gán shipper của đơn A không hiển thị
+    // sang đơn B đang mở, và lỗi hiển thị màu đỏ (text-danger) thay vì xanh.
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.ShipperModel> _shippers;
+    private Guid? _shipperMessageOrderId;
     private string _shipperMessage;
+    private bool _shipperMessageIsError;
+
+    /// <summary>
+    /// Hiện thông báo gán shipper cho đúng đơn đã thao tác.
+    /// </summary>
+    private void ShowShipperMessage(Guid orderId, string message, bool isError)
+    {
+        _shipperMessageOrderId = orderId;
+        _shipperMessage = message;
+        _shipperMessageIsError = isError;
+    }
 
     // Item 141: keyboard shortcuts.
     private DotNetObjectReference<OrderList> _shortcutsRef;
@@ -1018,7 +1032,9 @@ else
     /// <summary>Item 82: assigns (or unassigns) a shipper to the order.</summary>
     private async Task AssignShipper(OrderModel order, string shipperIdText)
     {
+        _shipperMessageOrderId = null;
         _shipperMessage = null;
+        _shipperMessageIsError = false;
         Guid? shipperId = null;
         if (Guid.TryParse(shipperIdText, out var id) && id != Guid.Empty)
         {
@@ -1030,11 +1046,11 @@ else
             var updated = await OrderService.AssignShipperAsync(order.Id, shipperId);
             order.ShipperId = updated.ShipperId;
             order.ShipperName = updated.ShipperName;
-            _shipperMessage = shipperId.HasValue ? "Đã gán shipper." : "Đã bỏ gán shipper.";
+            ShowShipperMessage(order.Id, shipperId.HasValue ? "Đã gán shipper." : "Đã bỏ gán shipper.", false);
         }
         catch (Exception ex)
         {
-            _shipperMessage = ex.Message;
+            ShowShipperMessage(order.Id, ex.Message, true);
         }
     }
 
@@ -1142,7 +1158,7 @@ else
         }
         catch (Exception ex)
         {
-            _shipperMessage = "Lỗi: " + ex.Message;
+            ShowShipperMessage(order.Id, "Lỗi: " + ex.Message, true);
         }
     }
 

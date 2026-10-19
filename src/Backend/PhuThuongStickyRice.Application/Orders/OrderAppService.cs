@@ -1928,8 +1928,14 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException("Đơn hàng đã hủy không được quay thưởng.");
             }
 
-            order.MarkLuckySpinUsed();
-            await _orders.UpdateAsync(order);
+            // Khóa lượt quay nguyên tử tại DB (UPDATE ... WHERE LuckySpinUsed = false):
+            // 2 request quay đồng thời cùng đơn chỉ 1 qua được — chống nhận 2 voucher
+            // thật từ 1 lượt quay. Nằm trong cùng UoW nên rollback nếu các bước sau lỗi.
+            if (!await _orders.TryMarkSpinUsedAsync(order.Id))
+            {
+                throw new Domain.Exceptions.DomainException("Lượt quay may mắn đã được sử dụng.");
+            }
+            order.MarkLuckySpinUsed(); // đồng bộ entity đang track; UoW flush cùng giá trị
 
             var segment = PickSpinSegment();
             var settings = await _shopSettings.GetAsync();

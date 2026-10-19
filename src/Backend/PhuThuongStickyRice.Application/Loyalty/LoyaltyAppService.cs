@@ -99,13 +99,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private const int DefaultPointsRedeemUnit = 100;
         private const int DefaultPointsRedeemValue = 10000;
 
-        private readonly IRepository<LoyaltyAccount, Guid> _accounts;
+        private readonly Domain.Repositories.ILoyaltyAccountRepository _accounts;
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IShopSettingAppService _shopSettings;
 
         public LoyaltyAppService(
-            IRepository<LoyaltyAccount, Guid> accounts,
+            Domain.Repositories.ILoyaltyAccountRepository accounts,
             IRepository<Order, Guid> orders,
             IAsyncQueryableExecuter asyncExecuter,
             IShopSettingAppService shopSettings)
@@ -538,9 +538,17 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             var points = steps * unit;
-            account.Points -= points;
-            account.UpdatedAt = DateTime.UtcNow;
-            await _accounts.UpdateAsync(account, autoSave: true);
+            // Trừ điểm nguyên tử tại DB (UPDATE ... WHERE Phone = ... AND Points >= points):
+            // 2 request đổi điểm đồng thời cùng SĐT không thể cùng trừ — chống double-spend
+            // (trừ điểm 2 lần / giảm giá 2 lần cho 1 lượt đổi) của race check-then-set cũ.
+            if (!await _accounts.TryDecrementPointsAsync(NormalizePhone(phone), points))
+            {
+                // Hiếm: điểm vừa bị request khác trừ sau bước check — đọc lại số dư
+                // mới nhất để báo message chính xác.
+                var fresh = await FindByPhoneAsync(NormalizePhone(phone));
+                throw new Domain.Exceptions.DomainException(
+                    $"Bạn chỉ có {fresh?.Points ?? 0} điểm.");
+            }
 
             return (points, steps * value);
         }
