@@ -115,7 +115,21 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
 
             var landingRepo = provider.GetRequiredService<IRepository<LandingPageContent, Guid>>();
             var landingQueryable = await landingRepo.GetQueryableAsync();
-            var contents = await executer.ToListAsync(landingQueryable);
+            // perf-hunt 2026-10-19 (run 18:05): chỉ cần 7 cột URL ảnh —
+            // project ngay trong SQL, không nạp full entity LandingPageContent
+            // (gồm StoryBody/NewsItemsJson/ReviewsEmbedHtml/PopupBody hàng
+            // nghìn ký tự). Logic AddUrl giữ nguyên → kết quả đồng nhất.
+            var contents = await executer.ToListAsync(
+                landingQueryable.Select(c => new
+                {
+                    c.HeroImageUrl,
+                    c.BannerImageUrl,
+                    c.MenuImage1Url,
+                    c.MenuImage2Url,
+                    c.MenuImage3Url,
+                    c.FooterBackgroundUrl,
+                    c.PopupImageUrl
+                }));
             foreach (var c in contents)
             {
                 AddUrl(referenced, c.HeroImageUrl);
@@ -129,10 +143,14 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
 
             var articleRepo = provider.GetRequiredService<IRepository<Article, Guid>>();
             var articleQueryable = await articleRepo.GetQueryableAsync();
-            var articles = await executer.ToListAsync(articleQueryable);
-            foreach (var a in articles)
+            // perf-hunt 2026-10-19 (run 18:05): chỉ cần ImageUrl — project
+            // trong SQL, không nạp full entity Article (gồm Body tới 10000
+            // ký tự). Kết quả đồng nhất với bản cũ.
+            var articles = await executer.ToListAsync(
+                articleQueryable.Select(a => a.ImageUrl));
+            foreach (var imageUrl in articles)
             {
-                AddUrl(referenced, a.ImageUrl);
+                AddUrl(referenced, imageUrl);
             }
 
             return referenced;

@@ -262,11 +262,16 @@ namespace PhuThuongStickyRice.Application.Catalog
             if (productIds.Count > 0)
             {
                 var queryable = await _products.GetQueryableAsync();
-                var products = await _asyncExecuter.ToListAsync(
-                    queryable.Where(x => productIds.Contains(x.Id)));
-                foreach (var product in products)
+                // perf-hunt 2026-10-19 (run 18:05): chỉ dùng Name + Price nên
+                // project 3 cột trong SQL, không nạp full entity Product
+                // (description, JSON, owned Money VOs, audit fields).
+                // Dictionary giữ nguyên shape → DTO không đổi.
+                var rows = await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => productIds.Contains(x.Id))
+                        .Select(x => new { x.Id, x.Name, Price = x.Price.Amount }));
+                foreach (var row in rows)
                 {
-                    names[product.Id] = (product.Name, product.Price.Amount);
+                    names[row.Id] = (row.Name, row.Price);
                 }
             }
 
