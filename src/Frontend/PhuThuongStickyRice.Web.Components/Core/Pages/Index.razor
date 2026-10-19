@@ -1053,15 +1053,18 @@ else
     // 43, 55, 60
     private List<CourseModel> _courses = new List<CourseModel>();
     private string _coursePhone = "";
-    // Dark mode toggle (persisted in localStorage via ptToggleTheme).
+    // Dark mode toggle nhị phân (persisted in localStorage via ptSetTheme).
     private bool _isDark;
 
     private async Task ToggleTheme()
     {
+        // 2026-10-19: toggle NHỊ PHÂN Sáng↔Tối — 1 lần bấm = đổi giao diện ngay.
+        // Trước đây dùng ptToggleTheme xoay vòng 3 chế độ (sáng→tối→tự động→sáng):
+        // bấm từ "tối" sang "tự động" (ban đêm = tối) chỉ đổi icon mà màn vẫn đen.
         try
         {
-            var theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop");
-            _isDark = theme == "dark";
+            _isDark = !_isDark;
+            await JSRuntime.InvokeVoidAsync("ptSetTheme", "pt-theme-shop", _isDark ? "dark" : "light");
         }
         catch { }
     }
@@ -1105,7 +1108,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        try { _isDark = await JSRuntime.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") == "dark"; } catch { }
+        try { _isDark = await JSRuntime.InvokeAsync<bool>("ptIsDark", "pt-theme-shop"); } catch { }
         AppI18n.OnChange -= OnLangChanged;
         AppI18n.OnChange += OnLangChanged;
         CartState.OnChange -= OnCartChanged;
