@@ -1655,7 +1655,9 @@ else
         try
         {
             var result = await ShopService.CreateMoMoPaymentAsync(_placedOrder.Id);
-            Navigation.NavigateTo(result.PayUrl);
+            // forceLoad: PayUrl ngoài (MoMo production) — NavigateTo URI ngoài
+            // mà không forceLoad sẽ ném InvalidOperationException.
+            Navigation.NavigateTo(result.PayUrl, forceLoad: true);
         }
         catch (Exception)
         {

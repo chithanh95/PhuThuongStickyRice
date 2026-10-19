@@ -35,13 +35,18 @@ namespace PhuThuongStickyRice.Application.Loyalty
         Task RefundAsync(string phone, decimal amount, string orderNumber);
     }
 
-    /// <summary>Item 140: customer wallet.</summary>
+    /// <summary>
+    /// Item 140: ví tiền của khách hàng (định danh bằng SĐT, không cần tài khoản đăng nhập).
+    /// Ví dùng để thanh toán đơn hàng khi số dư đủ và được hoàn tiền khi đơn bị hủy.
+    /// Mọi biến động số dư đều ghi lại vào <see cref="WalletTransaction"/> để đối soát.
+    /// </summary>
     public class WalletAppService : ApplicationService, IWalletAppService
     {
         private readonly IRepository<WalletAccount, Guid> _wallets;
         private readonly IRepository<WalletTransaction, Guid> _transactions;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Khởi tạo service ví tiền với repository tài khoản và lịch sử giao dịch.</summary>
         public WalletAppService(
             IRepository<WalletAccount, Guid> wallets,
             IRepository<WalletTransaction, Guid> transactions,
@@ -52,6 +57,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Lấy số dư ví theo SĐT (public — trang checkout gọi để hiện lựa chọn "thanh toán bằng ví"
+        /// khi số dư đủ). Không yêu cầu đăng nhập để khách vãng lai vẫn kiểm tra được.
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng (tự chuẩn hóa đầu số Việt Nam).</param>
+        /// <returns>DTO số dư; trả ví số dư 0 nếu SĐT chưa từng có ví (thay vì lỗi 404).</returns>
         [AllowAnonymous]
         public virtual async Task<WalletAccountDto> GetBalanceAsync(string phone)
         {
@@ -67,6 +78,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 : MapToDto(account);
         }
 
+        /// <summary>
+        /// Admin: liệt kê toàn bộ ví tiền, tìm kiếm theo SĐT (chỉ lọc theo chữ số
+        /// vì khách có thể nhập kèm dấu cách, dấu chấm).
+        /// </summary>
+        /// <param name="searchTerm">Chuỗi tìm kiếm SĐT (tùy chọn).</param>
+        /// <returns>Danh sách ví sắp xếp theo số dư giảm dần, tối đa 200 dòng.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<WalletAccountDto>> GetListAsync(string searchTerm)
         {
@@ -84,6 +101,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return list.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: cộng (số dương) hoặc trừ tay (số âm) số dư ví kèm lý do.
+        /// Số dư không bao giờ được âm — trừ quá số dư hiện có sẽ bị từ chối.
+        /// </summary>
+        /// <param name="input">SĐT, số tiền điều chỉnh (khác 0) và lý do.</param>
+        /// <returns>Ví sau khi điều chỉnh.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<WalletAccountDto> AdjustAsync(AdjustWalletInput input)
         {
@@ -115,6 +138,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return MapToDto(account);
         }
 
+        /// <summary>Admin: lịch sử biến động ví của một SĐT (100 giao dịch mới nhất).</summary>
+        /// <param name="phone">SĐT cần tra cứu.</param>
+        /// <returns>Danh sách giao dịch sắp xếp mới nhất trước.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<WalletTransactionDto>> GetTransactionsAsync(string phone)
         {
@@ -132,6 +158,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return list.Select(MapToTransactionDto).ToList();
         }
 
+        /// <summary>
+        /// Internal: trừ tiền ví khi tạo đơn hàng mới. Chỉ checkout gọi.
+        /// Ném lỗi khi số dư không đủ — đơn sẽ không được tạo, tránh số dư âm.
+        /// </summary>
+        /// <param name="phone">SĐT chủ ví.</param>
+        /// <param name="amount">Số tiền cần trừ (phải &gt; 0).</param>
+        /// <param name="orderNumber">Mã đơn để ghi vào lịch sử giao dịch.</param>
         public virtual async Task ChargeAsync(string phone, decimal amount, string orderNumber)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
@@ -160,10 +193,30 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 $"Thanh toán đơn {orderNumber}", "system");
         }
 
+        /// <summary>
+        /// Internal: cộng lại tiền vào ví khi đơn hàng bị hủy.
+        /// Không ném lỗi với input không hợp lệ — hoàn tiền phải idempotent:
+        /// webhook hủy đơn có thể gọi lặp, nên input xấu thì bỏ qua thay vì làm vỡ luồng hủy.
+        /// </summary>
+        /// <param name="phone">SĐT chủ ví.</param>
+        /// <param name="amount">Số tiền hoàn lại.</param>
+        /// <param name="orderNumber">Mã đơn bị hủy, ghi vào lịch sử giao dịch.</param>
         public virtual async Task RefundAsync(string phone, decimal amount, string orderNumber)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized) || amount <= 0)
+            {
+                return;
+            }
+
+            // Idempotent: cùng mã đơn chỉ hoàn đúng 1 lần. Luồng hủy đơn có thể
+            // được gọi lặp (webhook gọi lại, customer + staff cùng hủy) — kiểm tra
+            // lịch sử giao dịch trước khi cộng tiền để tránh hoàn trùng.
+            var refundReason = $"Hoàn tiền hủy đơn {orderNumber}";
+            var txQueryable = await _transactions.GetQueryableAsync();
+            var alreadyRefunded = await _asyncExecuter.AnyAsync(
+                txQueryable.Where(x => x.Phone == normalized && x.Reason == refundReason));
+            if (alreadyRefunded)
             {
                 return;
             }
@@ -173,8 +226,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             account.UpdatedAt = DateTime.UtcNow;
             await _wallets.UpdateAsync(account, autoSave: true);
 
-            await LogAsync(normalized, amount, account.Balance,
-                $"Hoàn tiền hủy đơn {orderNumber}", "system");
+            await LogAsync(normalized, amount, account.Balance, refundReason, "system");
         }
 
         private async Task<WalletAccount> FindAsync(string phone)

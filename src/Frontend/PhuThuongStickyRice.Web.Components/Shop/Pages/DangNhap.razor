@@ -151,7 +151,7 @@
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             if (authState.User.Identity?.IsAuthenticated == true)
             {
-                Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? "/tai-khoan" : _returnUrl);
+                Navigation.NavigateTo(SafeReturnUrl(_returnUrl));
             }
         }
         catch (Exception) { }
@@ -268,8 +268,22 @@
 
         await TokenManager.StoreTokenAsync(result.AccessToken, result.ExpiresAt);
         // Reload so the JWT auth state provider picks up the new token.
-        Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? "/tai-khoan" : _returnUrl, forceLoad: true);
+        Navigation.NavigateTo(SafeReturnUrl(_returnUrl), forceLoad: true);
     }
+
+    private static string SafeReturnUrl(string returnUrl) =>
+        IsLocalUrl(returnUrl) ? returnUrl : "/tai-khoan";
+
+    /// <summary>
+    /// Chặn open redirect: chỉ chấp nhận URL nội bộ (bắt đầu bằng "/" đơn,
+    /// không phải "//" hay "http"). Link /dang-nhap?returnUrl=https://evil.com
+    /// của attacker sẽ bị ép về "/tai-khoan".
+    /// </summary>
+    private static bool IsLocalUrl(string url) =>
+        !string.IsNullOrWhiteSpace(url)
+        && url.StartsWith("/", StringComparison.Ordinal)
+        && !url.StartsWith("//", StringComparison.Ordinal)
+        && !url.StartsWith("/\\", StringComparison.Ordinal);
 
     private static string GetQueryValue(string uri, string key)
     {
