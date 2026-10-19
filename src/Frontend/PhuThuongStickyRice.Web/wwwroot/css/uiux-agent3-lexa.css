@@ -56,9 +56,8 @@
       nguyên: html.dark .text-* (admin-lexa.css:1149-1153, specificity
       (0,2,1)) vẫn thắng rule này.
    2. bg-* utilities -> palette Lexa (mới): .bg-* của Bootstrap cũng
-      !important. Đã grep toàn frontend: chỉ 8 chỗ dùng — Cart.razor:82
-      thanh freeship .bg-success, NhomDatMon.razor:146 + GomDon.razor:167
-      card-header "Chốt đơn" .bg-success, Shop.razor:31 jumbotron promo
+      !important. Đã grep toàn frontend: chỉ 6 chỗ dùng — Cart.razor:82
+      thanh freeship .bg-success, Shop.razor:31 jumbotron promo
       .bg-warning, 4 progress-bar trang demo Lexa/UiGeneral.
    3. .lx-pill-success/warning/danger/info (light) -> Lexa soft tints:
       admin-lexa.css:717-720 đang dùng text #28a745/#b57e00/#d63a52/#0a9fc0

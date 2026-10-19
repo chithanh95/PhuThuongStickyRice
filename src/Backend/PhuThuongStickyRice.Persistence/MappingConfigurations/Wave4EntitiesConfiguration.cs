@@ -80,24 +80,6 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
-    public class GroupOrderConfiguration : IEntityTypeConfiguration<GroupOrder>
-    {
-        public void Configure(EntityTypeBuilder<GroupOrder> builder)
-        {
-            builder.ToTable("GroupOrders");
-            builder.Property(x => x.Id).HasDefaultValueSql("newsequentialid()");
-
-            builder.Property(x => x.Code).HasMaxLength(GroupOrder.CodeMaxLength).IsRequired();
-            builder.HasIndex(x => x.Code).IsUnique();
-
-            builder.Property(x => x.CreatorPhone).HasMaxLength(GroupOrder.PhoneMaxLength);
-            builder.Property(x => x.GroupName).HasMaxLength(100);
-            builder.Property(x => x.Status).HasMaxLength(GroupOrder.StatusMaxLength).IsRequired();
-            builder.Property(x => x.CreatedAt).IsRequired();
-            builder.Property(x => x.ResultOrderNumber).HasMaxLength(50);
-        }
-    }
-
     public class AddressBookConfiguration : IEntityTypeConfiguration<AddressBook>
     {
         public void Configure(EntityTypeBuilder<AddressBook> builder)

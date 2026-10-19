@@ -153,37 +153,6 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             return await GetAsync<SystemStatusModel>("api/system/status");
         }
 
-        // ---- Group orders (item 117) ----
-
-        public async Task<GroupOrderModel> CreateGroupOrderAsync(string creatorPhone)
-        {
-            return await CreateGroupOrderAsync(creatorPhone, null, null);
-        }
-
-        public async Task<GroupOrderModel> CreateGroupOrderAsync(string creatorPhone, string groupName, DateTime? cutoffAt)
-        {
-            return await PostAsync<GroupOrderModel>("api/grouporders", new { CreatorPhone = creatorPhone, GroupName = groupName, CutoffAt = cutoffAt });
-        }
-
-        public async Task<GroupOrderModel> GetGroupOrderAsync(string code)
-        {
-            return await GetAsync<GroupOrderModel>($"api/grouporders/{Uri.EscapeDataString(code)}");
-        }
-
-        public async Task<GroupOrderModel> AddGroupOrderLineAsync(string code, Guid productId, int qty, string note, string addedBy)
-        {
-            return await PostAsync<GroupOrderModel>($"api/grouporders/{Uri.EscapeDataString(code)}/lines",
-                new { ProductId = productId, Quantity = qty, Note = note, AddedBy = addedBy });
-        }
-
-        public async Task<CloseGroupOrderResultModel> CloseGroupOrderAsync(
-            string code, string customerName, string customerPhone, string customerAddress, string notes)
-        {
-            return await PostAsync<CloseGroupOrderResultModel>(
-                $"api/grouporders/{Uri.EscapeDataString(code)}/close",
-                new { CustomerName = customerName, CustomerPhone = customerPhone, CustomerAddress = customerAddress, Notes = notes });
-        }
-
         // ---- Address book (item 119) ----
 
         public async Task<List<AddressBookModel>> GetAddressesAsync(string phone)

@@ -120,40 +120,6 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public string MaintenanceMessage { get; set; }
     }
 
-    // ---------- Group orders (item 117) ----------
-
-    public class GroupOrderLineModel
-    {
-        public Guid ProductId { get; set; }
-        public string ProductName { get; set; }
-        public decimal UnitPrice { get; set; }
-        public int Quantity { get; set; }
-        public string Note { get; set; }
-        public string AddedBy { get; set; }
-    }
-
-    public class GroupOrderModel
-    {
-        public Guid Id { get; set; }
-        public string Code { get; set; }
-        public string CreatorPhone { get; set; }
-        public string GroupName { get; set; }
-        public DateTime? CutoffAt { get; set; }
-        public string Status { get; set; }
-        public List<GroupOrderLineModel> Lines { get; set; } = new List<GroupOrderLineModel>();
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ClosedAt { get; set; }
-        public string ResultOrderNumber { get; set; }
-        public bool IsOpen => string.Equals(Status, "Open", StringComparison.OrdinalIgnoreCase);
-    }
-
-    public class CloseGroupOrderResultModel
-    {
-        public GroupOrderModel Group { get; set; }
-        public string OrderNumber { get; set; }
-        public decimal TotalAmount { get; set; }
-    }
-
     // ---------- Address book (item 119) ----------
 
     public class AddressBookModel

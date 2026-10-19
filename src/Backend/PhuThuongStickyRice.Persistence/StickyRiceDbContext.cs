@@ -56,7 +56,6 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<FaqItem> FaqItems { get; set; }
         public DbSet<FeatureFlag> FeatureFlags { get; set; }
         public DbSet<FunnelEvent> FunnelEvents { get; set; }
-        public DbSet<GroupOrder> GroupOrders { get; set; }
         public DbSet<HolidaySchedule> HolidaySchedules { get; set; }
         public DbSet<LandingPageContent> LandingPageContents { get; set; }
         public DbSet<LoginAudit> LoginAudits { get; set; }
