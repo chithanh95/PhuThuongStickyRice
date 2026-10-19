@@ -65,8 +65,19 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Gửi các email đang chờ (chạy mỗi 10s bởi SendEmailWorker).
+        /// perf-hunt 2026-10-19: lấy theo từng đợt tối đa 100 mail (ưu tiên
+        /// mail đến hạn trước — NULL NextAttemptDateTime xếp đầu khi sắp
+        /// tăng dần) thay vì nạp toàn bộ hàng đợi vào bộ nhớ; nếu SMTP chết
+        /// lâu, hàng đợi phình to sẽ không còn làm mỗi vòng lặp nặng dần.
+        /// Worker quay lại ngay khi còn mail (rs &gt; 0) nên các đợt sau vẫn
+        /// được gửi tiếp, hành vi không đổi.
+        /// </summary>
+        /// <returns>Số mail đã xử lý trong đợt này.</returns>
         public async Task<int> SendEmailMessagesAsync()
         {
+            const int BatchSize = 100;
             var circuit = _circuitBreakerManager.GetCircuitBreaker(EmailCircuitBreakerName, CircuitOpenDuration);
             circuit.EnsureOkStatus();
 
@@ -77,7 +88,9 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
                     .Where(x => x.SentDateTime == null)
                     .Where(x => x.ExpiredDateTime == null || x.ExpiredDateTime > dateTime)
                     .Where(x => (x.MaxAttemptCount == 0 && x.AttemptCount < DefaultAttemptCount) || x.AttemptCount < x.MaxAttemptCount)
-                    .Where(x => x.NextAttemptDateTime == null || x.NextAttemptDateTime <= dateTime));
+                    .Where(x => x.NextAttemptDateTime == null || x.NextAttemptDateTime <= dateTime)
+                    .OrderBy(x => x.NextAttemptDateTime)
+                    .Take(BatchSize));
 
             if (messages.Any())
             {

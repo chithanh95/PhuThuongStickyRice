@@ -211,10 +211,17 @@ namespace PhuThuongStickyRice.Application.Products
             if (status == ProductStatus.Active)
             {
                 var today = DateTime.UtcNow.Date;
+                var tomorrow = today.AddDays(1);
+                // perf-hunt 2026-10-19: so sánh range thuần túy thay vì gọi
+                // .Date trên cột (EF dịch .Date thành CONVERT(date, col) →
+                // non-sargable, index trên AvailableFrom/AvailableTo không
+                // seek được). Tương đương logic chính xác từng dòng:
+                // d.Date <= today ⟺ d < tomorrow;
+                // d.Date >= today ⟺ d >= today.
                 query = query.Where(x =>
                     x.Status == ProductStatus.Inactive
-                    || ((x.AvailableFrom == null || x.AvailableFrom.Value.Date <= today)
-                        && (x.AvailableTo == null || x.AvailableTo.Value.Date >= today)));
+                    || ((x.AvailableFrom == null || x.AvailableFrom < tomorrow)
+                        && (x.AvailableTo == null || x.AvailableTo >= today)));
             }
 
             return query;

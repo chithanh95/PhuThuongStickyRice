@@ -133,6 +133,11 @@ namespace PhuThuongStickyRice.Application.Shop
         /// <param name="skip">Số dòng bỏ qua (phân trang).</param>
         /// <param name="take">Số dòng lấy, mặc định 20.</param>
         [Authorize(Roles = "Admin")]
+        /// <summary>
+        /// Admin: danh sách thẻ (tìm theo tên/SĐT/mã thẻ), phân trang.
+        /// perf-hunt 2026-10-19: chặn `take` tối đa 200 ở server — tham số do
+        /// client truyền, không chặn thì 1 request có thể kéo toàn bộ bảng.
+        /// </summary>
         public virtual async Task<List<PrepaidCardDto>> GetListAsync(string searchTerm, int skip = 0, int take = 20)
         {
             var query = await _cards.GetQueryableAsync();
@@ -147,7 +152,9 @@ namespace PhuThuongStickyRice.Application.Shop
             }
 
             var cards = await _asyncExecuter.ToListAsync(
-                query.OrderByDescending(c => c.CreatedAt).Skip(skip).Take(take));
+                query.OrderByDescending(c => c.CreatedAt)
+                    .Skip(Math.Max(0, skip))
+                    .Take(Math.Clamp(take, 1, 200)));
 
             return cards.Select(MapToDto).ToList();
         }
