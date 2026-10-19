@@ -507,6 +507,9 @@
 
     private async Task SaveAddressAsync()
     {
+        // Guard chống double-tap: nút chỉ disabled="@_addrBusy" sau re-render,
+        // tap đúp trước await đầu tiên sẽ gọi CreateAsync 2 lần → 2 địa chỉ trùng.
+        if (_addrBusy) return;
         _addrError = null;
         if (string.IsNullOrWhiteSpace(_form.ReceiverName)
             || string.IsNullOrWhiteSpace(_form.ReceiverPhone)

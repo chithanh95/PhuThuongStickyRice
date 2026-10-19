@@ -86,9 +86,10 @@ namespace PhuThuongStickyRice.Application.Inventory
             return products.ToDictionary(p => p.Id, p => p.Name);
         }
 
-        /// <summary>Kiểm tra số lượng không âm và sản phẩm tồn tại cho từng dòng kiểm kê.</summary>
+        /// <summary>Kiểm tra số lượng không âm, sản phẩm tồn tại và không trùng món cho từng dòng kiểm kê.</summary>
         private static void ValidateLines(List<InventoryLineInput> lines, Dictionary<Guid, string> productNamesById)
         {
+            var seen = new HashSet<Guid>();
             foreach (var line in lines)
             {
                 if (line.RemainingQty < 0)
@@ -99,6 +100,14 @@ namespace PhuThuongStickyRice.Application.Inventory
                 if (!productNamesById.ContainsKey(line.ProductId))
                 {
                     throw new Domain.Exceptions.DomainException("Sản phẩm không tồn tại.");
+                }
+
+                // Mỗi món chỉ 1 dòng/ngày: trùng ProductId sẽ insert 2 row cùng
+                // (Date, ProductId) làm lệch báo cáo tồn kho → từ chối ngay.
+                if (!seen.Add(line.ProductId))
+                {
+                    throw new Domain.Exceptions.DomainException(
+                        $"Sản phẩm '{productNamesById[line.ProductId]}' bị nhập trùng 2 dòng. Mỗi món chỉ nhập 1 dòng.");
                 }
             }
         }

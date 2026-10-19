@@ -1794,6 +1794,9 @@
 
     private async Task PayWithMoMo()
     {
+        // Guard chống double-tap: tap đúp trước re-render sẽ gọi
+        // CreateMoMoPaymentAsync 2 lần → tạo 2 phiên thanh toán cùng 1 đơn.
+        if (_payingMoMo) return;
         _momoError = null;
         _payingMoMo = true;
         try
