@@ -500,7 +500,7 @@ else
     {
         try
         {
-            _model = await ShopSettingsService.GetAdminAsync() ?? new ShopSettingModel();
+            _model = await ShopSettingsService.GetFullSettingsAsync() ?? new ShopSettingModel();
         }
         catch (Exception)
         {

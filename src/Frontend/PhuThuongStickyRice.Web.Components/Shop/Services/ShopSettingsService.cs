@@ -32,7 +32,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// settings including integration secrets for the settings form.
         /// Anonymous storefront code must use <see cref="GetPublicAsync"/>.
         /// </summary>
-        public async Task<ShopSettingModel> GetAdminAsync()
+        public async Task<ShopSettingModel> GetFullSettingsAsync()
         {
             return await GetAsync<ShopSettingModel>("api/shop-settings");
         }
@@ -40,7 +40,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>
         /// Item 117: storefront view — a full-day holiday today automatically
         /// pauses ordering with the holiday reason. The landing/shop/checkout
-        /// pages use this instead of <see cref="GetAdminAsync"/>. Integration
+        /// pages use this instead of <see cref="GetFullSettingsAsync"/>. Integration
         /// secrets are stripped server-side on this endpoint.
         /// Kết quả được cache client-side 2 phút (static, vì service là Transient):
         /// cắt ~1 HTTP round-trip trên mỗi trang mở mà dữ liệu không đổi.
