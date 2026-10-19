@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.CrossCuttingConcerns.OS;
@@ -248,7 +249,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return InvalidPhoneResult();
             }
 
-            var today = DateTime.UtcNow.Date;
+            // bug-hunt 2026-10-19: "ngày" quay thưởng tính theo giờ VN.
+            // Dùng UtcNow.Date thì ngày lật lúc 07:00 sáng VN → quay lúc
+            // 6:30 rồi 8:00 sáng cùng ngày VN được quay 2 lần.
+            var today = VietnamTime.Today();
             var alreadySpun = await _db.LuckySpins
                 .AnyAsync(s => s.Phone == phone && s.SpinDate == today, cancellationToken);
 
@@ -747,7 +751,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return InvalidPhoneResult();
             }
 
-            var today = DateTime.UtcNow.Date;
+            // bug-hunt 2026-10-19: ngày điểm danh tính theo giờ VN.
+            // Dùng UtcNow.Date thì ngày lật lúc 07:00 sáng VN → check-in
+            // 23:30 tối rồi 6:30 sáng hôm sau bị từ chối trùng, streak gãy oan.
+            var today = VietnamTime.Today();
             var exists = await _db.CheckInStreaks
                 .AnyAsync(c => c.Phone == phone && c.CheckInDate == today, cancellationToken);
 

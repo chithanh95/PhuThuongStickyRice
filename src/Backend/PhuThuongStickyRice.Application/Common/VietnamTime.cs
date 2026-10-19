@@ -5,8 +5,10 @@ namespace PhuThuongStickyRice.Application.Common
 {
     /// <summary>
     /// Vietnam local time helpers (UTC+7, no daylight saving).
+    /// Public để WebAPI (BackgroundWorkers, Controllers) dùng chung
+    /// logic "ngày theo giờ VN" với Application.
     /// </summary>
-    internal static class VietnamTime
+    public static class VietnamTime
     {
         /// <summary>
         /// Độ lệch giờ của Việt Nam so với UTC: +7, không có giờ mùa hè (DST).

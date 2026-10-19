@@ -10,6 +10,7 @@ using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using Volo.Abp.Threading;
 using PhuThuongStickyRice.Domain.Entities;
+using PhuThuongStickyRice.Application.Common;
 using System.Linq;
 
 namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
@@ -40,7 +41,11 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 var discounts = provider.GetRequiredService<IDiscountAppService>();
                 var asyncExecuter = provider.GetRequiredService<IAsyncQueryableExecuter>();
 
-                var today = DateTime.UtcNow.Date;
+                // bug-hunt 2026-10-19: dùng ngày theo giờ VN thay vì
+                // UtcNow.Date. Worker chạy 24h/lần; nếu lần chạy rơi vào
+                // 00:00–06:59 giờ VN thì UtcNow.Date lệch 1 ngày → voucher
+                // sinh nhật bị tạo trễ/nhầm ngày.
+                var today = VietnamTime.Today();
                 var queryable = await accounts.GetQueryableAsync();
                 var celebrants = await asyncExecuter.ToListAsync(
                     queryable.Where(x =>
