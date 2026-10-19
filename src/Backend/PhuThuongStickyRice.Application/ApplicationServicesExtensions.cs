@@ -11,9 +11,9 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class ApplicationServicesExtensions
     {
         /// <summary>
-        /// Đăng ký service tầng application: domain event handlers, CrudService
+        /// Đăng ký service tầng application: domain event handlers, EntityCrudService
         /// generic và EmailMessageService. Tham số interceptor (tùy chọn) bọc
-        /// CrudService của từng aggregate root (dùng cho audit/UoW interceptor).
+        /// EntityCrudService của từng aggregate root (dùng cho audit/UoW interceptor).
         /// </summary>
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, Action<Type, Type, ServiceLifetime> configureInterceptor = null)
         {
@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services
                 .AddScoped<IDomainEvents, DomainEvents>()
-                .AddScoped(typeof(ICrudService<>), typeof(CrudService<>))
+                .AddScoped(typeof(IEntityCrudService<>), typeof(EntityCrudService<>))
                 .AddScoped<EmailMessageService>();
 
             if (configureInterceptor != null)
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 var aggregateRootTypes = typeof(IAggregateRoot).Assembly.GetTypes().Where(x => x.BaseType == typeof(Entity<Guid>) && x.GetInterfaces().Contains(typeof(IAggregateRoot))).ToList();
                 foreach (var type in aggregateRootTypes)
                 {
-                    configureInterceptor(typeof(ICrudService<>).MakeGenericType(type), typeof(CrudService<>).MakeGenericType(type), ServiceLifetime.Scoped);
+                    configureInterceptor(typeof(IEntityCrudService<>).MakeGenericType(type), typeof(EntityCrudService<>).MakeGenericType(type), ServiceLifetime.Scoped);
                 }
             }
 
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         public static IServiceCollection AddMessageHandlers(this IServiceCollection services)
         {
-            services.AddScoped<Dispatcher>();
+            services.AddScoped<CommandQueryDispatcher>();
 
             RegisterConcreteHandlers(services, Assembly.GetExecutingAssembly().GetTypes());
             RegisterGenericEntityHandlers(services);

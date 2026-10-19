@@ -48,7 +48,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             try
             {
                 await _permissions.UpdateRolePermissionsAsync(input);
-                await _activityLogger.LogAsync(StaffActions.PermissionChange,
+                await _activityLogger.LogAsync(StaffActivityActions.PermissionChange,
                     $"Đổi phân quyền vai trò {input.Role}: {(input.GrantedKeys?.Count ?? 0)} quyền.");
                 return Ok(new { message = "Đã lưu phân quyền." });
             }

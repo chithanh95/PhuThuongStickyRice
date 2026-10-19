@@ -155,7 +155,7 @@ namespace PhuThuongStickyRice.Application.Customer
             var user = await GetCurrentUserAsync();
             dto ??= new UpdateCustomerProfileDto();
 
-            user.TastePreferences = SerializeTastePrefs(dto);
+            user.TastePreferences = SerializeTastePreferences(dto);
 
             if (dto.DateOfBirth.HasValue)
             {
@@ -184,7 +184,7 @@ namespace PhuThuongStickyRice.Application.Customer
         private const int MaxDobAgeYears = 120;
 
         /// <summary>Validates and serializes the customer's taste preferences.</summary>
-        private static string SerializeTastePrefs(UpdateCustomerProfileDto dto)
+        private static string SerializeTastePreferences(UpdateCustomerProfileDto dto)
         {
             var tags = (dto.TasteTags ?? new List<string>())
                 .Select(t => (t ?? string.Empty).Trim())
@@ -203,7 +203,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 throw new UserFriendlyException($"Ghi chú khẩu vị tối đa {MaxTasteNoteLength} ký tự.");
             }
 
-            return JsonSerializer.Serialize(new TastePrefs { Tags = tags, Note = note });
+            return JsonSerializer.Serialize(new TastePreferences { Tags = tags, Note = note });
         }
 
         /// <summary>Validates a date of birth (past date, not older than 120 years).</summary>
@@ -322,7 +322,7 @@ namespace PhuThuongStickyRice.Application.Customer
             await _users.UpdateAsync(user);
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.BirthdayGift,
+            await _activityLogger.LogAsync(StaffActivityActions.BirthdayGift,
                 $"Tặng quà sinh nhật {amount:N0}₫ (mã {code}) cho SĐT {phone}.");
 
             return new BirthdayGiftResultDto
@@ -500,7 +500,7 @@ namespace PhuThuongStickyRice.Application.Customer
             {
                 if (!string.IsNullOrWhiteSpace(json))
                 {
-                    var prefs = JsonSerializer.Deserialize<TastePrefs>(json);
+                    var prefs = JsonSerializer.Deserialize<TastePreferences>(json);
                     dto.TasteTags = prefs?.Tags ?? new List<string>();
                     dto.TasteNote = prefs?.Note;
                     return;
@@ -533,7 +533,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return VnPhoneRegex().IsMatch(phone ?? string.Empty);
         }
 
-        private class TastePrefs
+        private class TastePreferences
         {
             public List<string> Tags { get; set; } = new List<string>();
 

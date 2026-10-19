@@ -9,7 +9,7 @@ namespace PhuThuongStickyRice.ArchTests
         [Fact]
         public void ApplicationShouldNotHaveDependencyOnInfrastructure()
         {
-            var result = Types.InAssembly(typeof(Dispatcher).Assembly)
+            var result = Types.InAssembly(typeof(CommandQueryDispatcher).Assembly)
                 .ShouldNot()
                 .HaveDependencyOn("PhuThuongStickyRice.Infrastructure")
                 .GetResult();
@@ -20,7 +20,7 @@ namespace PhuThuongStickyRice.ArchTests
         [Fact]
         public void ApplicationShouldNotHaveDependencyOnPersistence()
         {
-            var result = Types.InAssembly(typeof(Dispatcher).Assembly)
+            var result = Types.InAssembly(typeof(CommandQueryDispatcher).Assembly)
                 .ShouldNot()
                 .HaveDependencyOn("PhuThuongStickyRice.Persistence")
                 .GetResult();

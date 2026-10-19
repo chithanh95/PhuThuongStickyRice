@@ -1426,9 +1426,9 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Item 156: maps a status transition to its staff activity log action.</summary>
         private static string GetStatusChangeAction(OrderStatus status) =>
-            status == OrderStatus.Cancelled ? StaffActions.OrderCancel
-            : status == OrderStatus.Confirmed ? StaffActions.OrderConfirm
-            : StaffActions.OrderStatusChange;
+            status == OrderStatus.Cancelled ? StaffActivityActions.OrderCancel
+            : status == OrderStatus.Confirmed ? StaffActivityActions.OrderConfirm
+            : StaffActivityActions.OrderStatusChange;
 
         /// <summary>
         /// Side effect khi đơn hoàn thành: cộng điểm loyalty + thưởng giới
@@ -1612,7 +1612,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Item 156: staff activity log (kitchen advances are role-gated,
             // no extra permission needed).
-            await _activityLogger.LogAsync(StaffActions.OrderStatusChange,
+            await _activityLogger.LogAsync(StaffActivityActions.OrderStatusChange,
                 $"Bếp chuyển đơn {order.OrderNumber}: {fromStatus} → {order.Status}.");
 
             var dto = _objectMapper.Map<Order, OrderDto>(order);
@@ -1690,7 +1690,7 @@ namespace PhuThuongStickyRice.Application.Orders
             await _orders.UpdateAsync(order);
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.OrderPickedUp,
+            await _activityLogger.LogAsync(StaffActivityActions.OrderPickedUp,
                 $"Xác nhận đã lấy hàng đơn {order.OrderNumber}.");
 
             var dto = _objectMapper.Map<Order, OrderDto>(order);
@@ -2684,7 +2684,7 @@ namespace PhuThuongStickyRice.Application.Orders
             await _orders.UpdateAsync(order);
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.OrderConfirmPayment,
+            await _activityLogger.LogAsync(StaffActivityActions.OrderConfirmPayment,
                 $"Xác nhận đã nhận tiền đơn {order.OrderNumber}.");
 
             return _objectMapper.Map<Order, OrderDto>(order);

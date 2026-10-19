@@ -382,7 +382,7 @@ namespace PhuThuongStickyRice.Application.Products
             _catalogCache.Invalidate();
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.ProductCreate,
+            await _activityLogger.LogAsync(StaffActivityActions.ProductCreate,
                 $"Thêm món {product.Name} ({product.Code.Value}).");
 
             return _objectMapper.Map<Product, ProductDto>(product);
@@ -430,7 +430,7 @@ namespace PhuThuongStickyRice.Application.Products
             _catalogCache.Invalidate();
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.ProductUpdate,
+            await _activityLogger.LogAsync(StaffActivityActions.ProductUpdate,
                 $"Sửa món {product.Name} ({product.Code.Value}).");
 
             return _objectMapper.Map<Product, ProductDto>(product);
@@ -470,7 +470,7 @@ namespace PhuThuongStickyRice.Application.Products
             _catalogCache.Invalidate();
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.ProductUpdate,
+            await _activityLogger.LogAsync(StaffActivityActions.ProductUpdate,
                 $"Bật/tắt món {product.Name} ({product.Code.Value}) → {product.Status}.");
 
             return _objectMapper.Map<Product, ProductDto>(product);
@@ -751,7 +751,7 @@ namespace PhuThuongStickyRice.Application.Products
                 // chuyển sang ngưng bán để giữ lịch sử đơn hàng.
                 product.Discontinue();
                 await _products.UpdateAsync(product);
-                await _activityLogger.LogAsync(StaffActions.ProductDelete,
+                await _activityLogger.LogAsync(StaffActivityActions.ProductDelete,
                     $"Món {product.Name} ({product.Code.Value}) có lịch sử đơn hàng nên chuyển sang Ngưng bán.");
             }
             else
@@ -763,7 +763,7 @@ namespace PhuThuongStickyRice.Application.Products
                     await _sizeOptions.DeleteAsync(opt);
                 }
                 await _products.DeleteAsync(product);
-                await _activityLogger.LogAsync(StaffActions.ProductDelete,
+                await _activityLogger.LogAsync(StaffActivityActions.ProductDelete,
                     $"Xóa món {product.Name} ({product.Code.Value}).");
             }
 

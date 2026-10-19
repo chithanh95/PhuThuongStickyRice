@@ -7,7 +7,7 @@ namespace PhuThuongStickyRice.Application
 {
     /// <summary>
     /// Command sửa 1 entity đã có — xử lý bởi
-    /// <c>UpdateEntityCommandHandler&lt;T&gt;</c> qua <see cref="ICrudService{T}"/>.
+    /// <c>UpdateEntityCommandHandler&lt;T&gt;</c> qua <see cref="IEntityCrudService{T}"/>.
     /// </summary>
     /// <typeparam name="TEntity">Aggregate root cần sửa.</typeparam>
     public class UpdateEntityCommand<TEntity> : ICommand
@@ -26,9 +26,9 @@ namespace PhuThuongStickyRice.Application
     internal class UpdateEntityCommandHandler<TEntity> : ICommandHandler<UpdateEntityCommand<TEntity>>
     where TEntity : Entity<Guid>, IAggregateRoot
     {
-        private readonly ICrudService<TEntity> _crudService;
+        private readonly IEntityCrudService<TEntity> _crudService;
 
-        public UpdateEntityCommandHandler(ICrudService<TEntity> crudService)
+        public UpdateEntityCommandHandler(IEntityCrudService<TEntity> crudService)
         {
             _crudService = crudService;
         }

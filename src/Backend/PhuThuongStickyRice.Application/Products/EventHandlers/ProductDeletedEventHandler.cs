@@ -11,11 +11,11 @@ namespace PhuThuongStickyRice.Application.Products.EventHandlers
 {
     public class ProductDeletedEventHandler : IDomainEventHandler<EntityDeletedEvent<Product>>
     {
-        private readonly ICrudService<AuditLogEntry> _auditSerivce;
+        private readonly IEntityCrudService<AuditLogEntry> _auditSerivce;
         private readonly ICurrentUser _currentUser;
         private readonly IRepository<OutboxEvent, long> _outboxEventRepository;
 
-        public ProductDeletedEventHandler(ICrudService<AuditLogEntry> auditSerivce,
+        public ProductDeletedEventHandler(IEntityCrudService<AuditLogEntry> auditSerivce,
             ICurrentUser currentUser,
             IRepository<OutboxEvent, long> outboxEventRepository)
         {

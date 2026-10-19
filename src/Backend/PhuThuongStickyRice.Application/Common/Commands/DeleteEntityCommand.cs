@@ -7,7 +7,7 @@ namespace PhuThuongStickyRice.Application
 {
     /// <summary>
     /// Command xóa 1 entity — xử lý bởi
-    /// <c>DeleteEntityCommandHandler&lt;T&gt;</c> qua <see cref="ICrudService{T}"/>.
+    /// <c>DeleteEntityCommandHandler&lt;T&gt;</c> qua <see cref="IEntityCrudService{T}"/>.
     /// </summary>
     /// <typeparam name="TEntity">Aggregate root cần xóa.</typeparam>
     public class DeleteEntityCommand<TEntity> : ICommand
@@ -19,9 +19,9 @@ namespace PhuThuongStickyRice.Application
     internal class DeleteEntityCommandHandler<TEntity> : ICommandHandler<DeleteEntityCommand<TEntity>>
     where TEntity : Entity<Guid>, IAggregateRoot
     {
-        private readonly ICrudService<TEntity> _crudService;
+        private readonly IEntityCrudService<TEntity> _crudService;
 
-        public DeleteEntityCommandHandler(ICrudService<TEntity> crudService)
+        public DeleteEntityCommandHandler(IEntityCrudService<TEntity> crudService)
         {
             _crudService = crudService;
         }

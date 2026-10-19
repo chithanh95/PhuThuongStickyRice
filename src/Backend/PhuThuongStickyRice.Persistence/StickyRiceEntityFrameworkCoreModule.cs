@@ -63,7 +63,7 @@ namespace PhuThuongStickyRice.Persistence
             context.Services.AddScoped<IDiscountCodeRepository, DiscountCodeRepository>();
 
             // Template repositories + template IUnitOfWork for the legacy
-            // Dispatcher/CrudService paths.
+            // CommandQueryDispatcher/EntityCrudService paths.
             context.Services.AddScoped(typeof(IUnitOfWork), sp => sp.GetRequiredService<StickyRiceDbContext>());
             context.Services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
             // CA2263: overload generic an toàn kiểu lúc compile (xem chú thích ở

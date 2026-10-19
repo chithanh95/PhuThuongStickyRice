@@ -26,9 +26,9 @@ namespace PhuThuongStickyRice.Application
     internal class AddOrUpdateEntityCommandHandler<TEntity> : ICommandHandler<AddOrUpdateEntityCommand<TEntity>>
     where TEntity : Entity<Guid>, IAggregateRoot
     {
-        private readonly ICrudService<TEntity> _crudService;
+        private readonly IEntityCrudService<TEntity> _crudService;
 
-        public AddOrUpdateEntityCommandHandler(ICrudService<TEntity> crudService)
+        public AddOrUpdateEntityCommandHandler(IEntityCrudService<TEntity> crudService)
         {
             _crudService = crudService;
         }

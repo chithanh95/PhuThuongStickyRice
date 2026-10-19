@@ -16,7 +16,7 @@ namespace PhuThuongStickyRice.Application
     /// (Add/Update/Delete entity) đều dùng chung service này.
     /// </summary>
     /// <typeparam name="T">Aggregate root thao tác.</typeparam>
-    public class CrudService<T> : ICrudService<T>
+    public class EntityCrudService<T> : IEntityCrudService<T>
         where T : Entity<Guid>, IAggregateRoot
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -27,7 +27,7 @@ namespace PhuThuongStickyRice.Application
         /// Khởi tạo service CRUD với repository của entity và bus domain events.
         /// UnitOfWork lấy từ repository để 1 giao dịch bao hết thao tác + event.
         /// </summary>
-        public CrudService(IRepository<T, Guid> repository, IDomainEvents domainEvents)
+        public EntityCrudService(IRepository<T, Guid> repository, IDomainEvents domainEvents)
         {
             _unitOfWork = repository.UnitOfWork;
             _repository = repository;

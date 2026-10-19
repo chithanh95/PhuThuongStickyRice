@@ -17,7 +17,7 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public string UserName { get; set; }
 
-        /// <summary>Machine key, e.g. "order.cancel" (see StaffActions).</summary>
+        /// <summary>Machine key, e.g. "order.cancel" (see StaffActivityActions).</summary>
         public string Action { get; set; }
 
         /// <summary>Human-readable detail, e.g. order number.</summary>

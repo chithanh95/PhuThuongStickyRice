@@ -70,7 +70,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         {
             try
             {
-                var response = await GetAsync<MyPermissionsResponse>("api/auth/my-permissions");
+                var response = await GetAsync<PermissionsApiResponse>("api/auth/my-permissions");
                 return new HashSet<string>(
                     response?.Permissions ?? new List<string>(),
                     StringComparer.OrdinalIgnoreCase);
@@ -100,7 +100,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
                 new { role, grantedKeys = grantedKeys ?? new List<string>() });
 
         // CA1852: private nested type không có subtype → sealed để JIT devirtualize.
-        private sealed class MyPermissionsResponse
+        private sealed class PermissionsApiResponse
         {
             public List<string> Permissions { get; set; }
         }

@@ -493,7 +493,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // Item 156: log staff logins trong staff activity log.
             if (roles.Any(IsStaffRole))
             {
-                await _activityLogger.LogForUserAsync(user.Id, user.UserName, StaffActions.Login, staffLoginNote);
+                await _activityLogger.LogForUserAsync(user.Id, user.UserName, StaffActivityActions.Login, staffLoginNote);
             }
 
             return (roles, newIpWarning);

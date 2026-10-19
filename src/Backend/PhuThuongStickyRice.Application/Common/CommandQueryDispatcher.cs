@@ -9,12 +9,12 @@ namespace PhuThuongStickyRice.Application
     /// tương ứng (ICommandHandler&lt;T&gt;/IQueryHandler&lt;T,R&gt;) rồi gọi
     /// HandleAsync. Dùng dynamic để tránh reflection phức tạp trên generics.
     /// </summary>
-    public class Dispatcher
+    public class CommandQueryDispatcher
     {
         private readonly IServiceProvider _provider;
 
         /// <summary>Khởi tạo dispatcher với service provider dùng để tra handler.</summary>
-        public Dispatcher(IServiceProvider provider)
+        public CommandQueryDispatcher(IServiceProvider provider)
         {
             _provider = provider;
         }

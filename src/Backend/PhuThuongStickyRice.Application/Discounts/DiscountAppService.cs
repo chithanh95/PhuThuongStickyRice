@@ -304,7 +304,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             _catalogCache.Invalidate();
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.DiscountCreate, $"Thêm mã giảm giá {entity.Code}.");
+            await _activityLogger.LogAsync(StaffActivityActions.DiscountCreate, $"Thêm mã giảm giá {entity.Code}.");
 
             return MapToDto(entity);
         }
@@ -336,7 +336,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             _catalogCache.Invalidate();
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.DiscountUpdate, $"Sửa mã giảm giá {entity.Code}.");
+            await _activityLogger.LogAsync(StaffActivityActions.DiscountUpdate, $"Sửa mã giảm giá {entity.Code}.");
 
             return MapToDto(entity);
         }
@@ -353,7 +353,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             _catalogCache.Invalidate();
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.DiscountDelete, $"Xóa mã giảm giá {entity.Code}.");
+            await _activityLogger.LogAsync(StaffActivityActions.DiscountDelete, $"Xóa mã giảm giá {entity.Code}.");
         }
 
         /// <summary>

@@ -3,7 +3,7 @@ namespace PhuThuongStickyRice.Application.Staff
     /// <summary>
     /// Item 156: machine keys for <see cref="Domain.Entities.StaffActivityLog"/> rows.
     /// </summary>
-    public static class StaffActions
+    public static class StaffActivityActions
     {
         public const string Login = "staff.login";
         public const string OrderConfirm = "order.confirm";

@@ -153,7 +153,7 @@ namespace PhuThuongStickyRice.Application.Staff
             UserId = x.UserId,
             UserName = x.UserName,
             Action = x.Action,
-            ActionLabel = StaffActions.Label(x.Action),
+            ActionLabel = StaffActivityActions.Label(x.Action),
             Detail = x.Detail,
             CreatedAt = x.CreatedAt,
         };

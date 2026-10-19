@@ -17,7 +17,7 @@ namespace PhuThuongStickyRice.Persistence
 {
     /// <summary>
     /// ABP DbContext. Still implements the template <see cref="IUnitOfWork"/> so the
-    /// legacy Dispatcher/CrudService paths keep working unchanged.
+    /// legacy CommandQueryDispatcher/EntityCrudService paths keep working unchanged.
     /// </summary>
     public class StickyRiceDbContext : AbpDbContext<StickyRiceDbContext>, IUnitOfWork, IDataProtectionKeyContext
     {

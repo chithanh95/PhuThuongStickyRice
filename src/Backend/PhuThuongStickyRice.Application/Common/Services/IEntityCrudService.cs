@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application
 {
-    public interface ICrudService<T>
+    public interface IEntityCrudService<T>
         where T : Entity<Guid>, IAggregateRoot
     {
         Task<List<T>> GetAsync(CancellationToken cancellationToken = default);

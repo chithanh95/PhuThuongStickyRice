@@ -12,7 +12,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Id user (nhân viên/admin) thực hiện hành động.</summary>
         public Guid UserId { get; set; }
 
-        /// <summary>Mã hành động (vd OrderRefundRequest) — xem StaffActions.</summary>
+        /// <summary>Mã hành động (vd OrderRefundRequest) — xem StaffActivityActions.</summary>
         public string Action { get; set; }
 
         /// <summary>Id đối tượng bị tác động (vd mã đơn hàng), dạng chuỗi để dùng chung mọi entity.</summary>

@@ -128,7 +128,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             await AssignRoleAsync(user.Id, request.Role, cancellationToken);
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.StaffCreate,
+            await _activityLogger.LogAsync(StaffActivityActions.StaffCreate,
                 $"Tạo tài khoản {user.UserName} vai trò {request.Role}.");
 
             return Ok(new { id = user.Id });
@@ -155,7 +155,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             await AssignRoleAsync(user.Id, request.Role, cancellationToken);
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.StaffRoleChange,
+            await _activityLogger.LogAsync(StaffActivityActions.StaffRoleChange,
                 $"Gán vai trò {request.Role} cho {user.UserName}.");
 
             return Ok();
@@ -188,7 +188,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 await _db.SaveChangesAsync(cancellationToken);
 
                 // Item 156: staff activity log.
-                await _activityLogger.LogAsync(StaffActions.StaffRoleChange,
+                await _activityLogger.LogAsync(StaffActivityActions.StaffRoleChange,
                     $"Gỡ vai trò {role} khỏi {user.UserName}.");
             }
 

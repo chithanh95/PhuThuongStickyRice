@@ -159,7 +159,7 @@ namespace PhuThuongStickyRice.Application.Orders
             await _orders.UpdateAsync(order, autoSave: true);
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.OrderRefundRequest,
+            await _activityLogger.LogAsync(StaffActivityActions.OrderRefundRequest,
                 $"Yêu cầu hoàn tiền đơn {order.OrderNumber}.");
         }
 
@@ -178,7 +178,7 @@ namespace PhuThuongStickyRice.Application.Orders
             await _orders.UpdateAsync(order, autoSave: true);
 
             // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActions.OrderRefundConfirm,
+            await _activityLogger.LogAsync(StaffActivityActions.OrderRefundConfirm,
                 $"Xác nhận hoàn tiền đơn {order.OrderNumber}.");
         }
     }
