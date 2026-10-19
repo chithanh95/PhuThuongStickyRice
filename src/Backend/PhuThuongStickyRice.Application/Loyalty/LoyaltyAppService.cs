@@ -72,6 +72,17 @@ namespace PhuThuongStickyRice.Application.Loyalty
         Task RefundRedeemedPointsAsync(Order order);
 
         /// <summary>
+        /// Internal (bug-hunt 2026-10-19): hoàn lại phần điểm đổi DƯ khi khách
+        /// bớt món làm LoyaltyDiscount bị kẹp xuống theo subtotal mới
+        /// (RecalculateTotals) — không hoàn thì khách mất điểm oan cho phần
+        /// giảm không còn áp dụng được. Chỉ cộng Points, KHÔNG cộng TotalEarned
+        /// (giống RefundRedeemedPointsAsync: hoàn là trả số dư, không phải kiếm mới).
+        /// </summary>
+        /// <param name="order">Đơn hàng vừa bớt món.</param>
+        /// <param name="pointsToRefund">Số điểm dư cần hoàn (&gt; 0).</param>
+        Task RefundExcessRedeemedPointsAsync(Order order, int pointsToRefund);
+
+        /// <summary>
         /// Internal: hoàn lại điểm đã đổi cho nhiều đơn bị hủy cùng lúc
         /// (worker tự hủy đơn bank-transfer quá hạn) — 1 query load accounts
         /// + 1 lần commit cuối thay vì 2 roundtrip cho mỗi đơn có đổi điểm.
@@ -666,6 +677,26 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
             await _accounts.TryRefundPointsAsync(
                 NormalizePhone(order.CustomerPhone), order.LoyaltyPointsRedeemed);
+        }
+
+        /// <summary>
+        /// Internal (bug-hunt 2026-10-19): hoàn phần điểm đổi dư khi khách bớt
+        /// món. RecalculateTotals kẹp LoyaltyDiscount theo subtotal mới nhưng
+        /// LoyaltyPointsRedeemed giữ nguyên — không hoàn thì khách mất điểm oan
+        /// cho phần giảm không còn áp dụng được. Cộng nguyên tử tại DB
+        /// (TryRefundPointsAsync): chỉ Points, không phình TotalEarned.
+        /// </summary>
+        /// <param name="order">Đơn hàng vừa bớt món.</param>
+        /// <param name="pointsToRefund">Số điểm dư cần hoàn (&gt; 0).</param>
+        public virtual async Task RefundExcessRedeemedPointsAsync(Order order, int pointsToRefund)
+        {
+            if (order == null || pointsToRefund <= 0 || order.LoyaltyPointsRedeemed <= 0)
+            {
+                return;
+            }
+
+            await _accounts.TryRefundPointsAsync(
+                NormalizePhone(order.CustomerPhone), pointsToRefund);
         }
 
         /// <summary>

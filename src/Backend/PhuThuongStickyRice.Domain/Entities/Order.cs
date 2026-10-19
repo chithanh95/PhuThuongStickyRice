@@ -828,6 +828,25 @@ namespace PhuThuongStickyRice.Domain.Entities
         }
 
         /// <summary>
+        /// Bug-hunt 2026-10-19: điều chỉnh số điểm đã đổi sau khi khách bớt món.
+        /// <see cref="RecalculateTotals"/> kẹp <see cref="LoyaltyDiscount"/> theo
+        /// subtotal mới nhưng không động tới bộ đếm này — AppService hoàn phần
+        /// điểm dư (theo đúng quy ước làm tròn xuống của lúc đổi điểm) rồi gọi
+        /// đây để bộ đếm khớp, tránh hủy đơn sau này hoàn trùng
+        /// (RefundRedeemedPointsAsync hoàn theo đúng số này).
+        /// </summary>
+        /// <param name="newRedeemedPoints">Số điểm đã đổi còn lại (≥ 0).</param>
+        public void AdjustRedeemedPoints(int newRedeemedPoints)
+        {
+            if (newRedeemedPoints < 0)
+            {
+                throw new DomainException("Số điểm đã đổi không thể âm.");
+            }
+
+            LoyaltyPointsRedeemed = newRedeemedPoints;
+        }
+
+        /// <summary>
         /// Customer self-service: changes the delivery address / time slot of
         /// a still-Pending order (track-order "Đổi địa chỉ"). Only address and
         /// slot — totals are unaffected.

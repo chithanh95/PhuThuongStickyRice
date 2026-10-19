@@ -1962,9 +1962,13 @@ namespace PhuThuongStickyRice.Application.Orders
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
 
             var oldTotal = order.TotalAmount.Amount;
+            var oldLoyaltyValue = order.LoyaltyDiscount.Amount;
+            var oldRedeemedPoints = order.LoyaltyPointsRedeemed;
 
             order.UpdateLineQuantities(
                 input.Lines.Select(x => (x.LineId, x.Quantity)));
+
+            await RefundExcessRedeemedPointsAsync(order, oldLoyaltyValue, oldRedeemedPoints);
 
             await ValidateMinOrderAmountAsync(order);
             await ReconcileLineChangePaymentAsync(order, oldTotal);
@@ -1988,6 +1992,41 @@ namespace PhuThuongStickyRice.Application.Orders
             var shopSetting = await _shopSettings.GetAsync();
             var subtotal = order.Lines.Sum(x => x.LineTotal.Amount);
             EnsureMinOrderAmount(shopSetting, subtotal);
+        }
+
+        /// <summary>
+        /// Bug-hunt 2026-10-19: hoàn điểm đổi dư khi khách tự bớt món.
+        /// RecalculateTotals kẹp LoyaltyDiscount theo subtotal mới nhưng
+        /// LoyaltyPointsRedeemed giữ nguyên — không hoàn thì khách mất điểm oan
+        /// cho phần giảm không còn áp dụng được. Tính lại số điểm mà phần giảm
+        /// mới "đỡ" được bằng chính CapRedeemPoints (quy ước làm tròn xuống
+        /// của checkout), hoàn phần chênh nguyên tử, rồi chỉnh bộ đếm trên đơn
+        /// để hủy đơn sau này không hoàn trùng (RefundRedeemedPointsAsync hoàn
+        /// theo đúng số LoyaltyPointsRedeemed).
+        /// </summary>
+        /// <param name="order">Đơn hàng sau khi đã đổi số lượng dòng.</param>
+        /// <param name="oldLoyaltyValue">Tiền giảm điểm trước khi bớt món.</param>
+        /// <param name="oldRedeemedPoints">Số điểm đã đổi trước khi bớt món.</param>
+        private async Task RefundExcessRedeemedPointsAsync(
+            Order order, decimal oldLoyaltyValue, int oldRedeemedPoints)
+        {
+            var newLoyaltyValue = order.LoyaltyDiscount.Amount;
+            if (oldRedeemedPoints <= 0 || newLoyaltyValue >= oldLoyaltyValue)
+            {
+                return;
+            }
+
+            var shopSetting = await _shopSettings.GetAsync();
+            var newRedeemedPoints = _loyalty.CapRedeemPoints(
+                oldRedeemedPoints, newLoyaltyValue, shopSetting);
+            var refundPoints = oldRedeemedPoints - newRedeemedPoints;
+            if (refundPoints <= 0)
+            {
+                return;
+            }
+
+            await _loyalty.RefundExcessRedeemedPointsAsync(order, refundPoints);
+            order.AdjustRedeemedPoints(newRedeemedPoints);
         }
 
         /// <summary>
