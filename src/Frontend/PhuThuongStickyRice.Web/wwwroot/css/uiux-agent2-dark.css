@@ -1483,3 +1483,53 @@ html.dark .sg-error-wrap a[style*="transparent"] {
 }
 
 /* === end UIUX run 2026-10-19 19:55 — Agent 2 (5 fix) === */
+
+/* ===== UIUX run 2026-10-19 20:35 - Agent2 Dark mode (2 fix mới) =====
+   Phương pháp: quét property-level toàn bộ .razor.css + <style> trong .razor
+   + inline style + wwwroot/css + 8 file global, đối chiếu từng màu với ~540
+   selector đã có rule html.dark (19 đợt Agent 2 trước + admin-lexa + app.css +
+   uiux-dark-fixes + agent1/3/4). Bề mặt phủ gần như kín (script đối chiếu:
+   nền trắng/chữ tối/viền sáng còn sót = 0 ở CSS thường, trừ trang in + demo
+   Lexa giữ chủ ý). Còn đúng 2 lỗi MỚI thật, đều đã grep + verify markup,
+   specificity và contrast. */
+
+/* ---------- FIX 1 — /admin/phan-quyen: hàng nhóm quyền .table-light trắng lọt ở dark ----------
+   Vấn đề: PhanQuyen.razor:60/86 — 2 hàng nhóm quyền
+   `<tr class="table-light">` (Bootstrap: background #fdfdfe, border #fbfcfc).
+   Không rule dark nào phủ (đã grep toàn bộ css = 0 kết quả). Ở dark mode 2
+   dải trắng sáng chạy ngang bảng phân quyền tối #262640 — lạc hẳn palette.
+   thead.thead-light của cùng bảng đã được fix (run 13:55) nên chỉ còn tr.
+   Fix: nền/viền/chữ theo palette dark admin (#2e2e4e, cùng thead đã fix);
+   hover (table có .table-hover) → #34345a, cùng tone .cal-selected dark
+   của LichTongHop. !important để thắng Bootstrap (.table-light không có
+   !important nhưng chắc chắn thắng mọi thứ tự load). Scope .lx-admin vì
+   đây là chỗ DUY NHẤT dùng table-light (đã grep: chỉ PhanQuyen). */
+html.dark .lx-admin tr.table-light > td,
+html.dark .lx-admin tr.table-light > th {
+    background-color: #2e2e4e !important; /* was #fdfdfe */
+    color: #f0eef5;
+    border-color: #3a3a58; /* was #fbfcfc */
+}
+html.dark .lx-admin .table-hover tr.table-light:hover > td,
+html.dark .lx-admin .table-hover tr.table-light:hover > th {
+    background-color: #34345a !important; /* was #ececf6 */
+}
+
+/* ---------- FIX 2 — /admin/du-bao: nhãn ngày trục X dùng var() trong presentation attribute ----------
+   Vấn đề: DuBao.razor:216 (BuildChart) — `<text ... fill="var(--db-axis,#6c757d)">`.
+   var() KHÔNG hoạt động trong SVG presentation attribute (thuộc tính fill=""
+   chỉ nhận giá trị màu tĩnh) → attribute bị coi là màu không hợp lệ, nhãn
+   ngày trục X rơi về fill mặc định ĐEN thay vì xám #6c757d ở light mode
+   (lệch thiết kế, chữ đen gắt trên card trắng). Ở dark mode hiện vẫn đúng
+   nhờ rule `html.dark .db-chart text` (file này, run 17:50) đè attribute,
+   nhưng light mode thì sai.
+   Fix: chuyển sang style="fill:var(--db-axis,#6c757d)" — var() trong style
+   attribute hoạt động đúng ở mọi trình duyệt:
+   - light: --db-axis chưa định nghĩa → fallback #6c757d (đúng thiết kế cũ);
+   - dark: --db-axis = #a5a2bd (DuBao.razor.css: `html.dark .card-body`,
+     svg nằm trong .card-body dòng 58-64 nên kế thừa đúng).
+   Không đụng nhãn trục Y (dòng 192, fill="#6c757d" tĩnh — đã đúng) và lưới
+   (rule `html.dark .db-chart line` vẫn phủ). */
+   /* (sửa trong DuBao.razor: fill="var(--db-axis,#6c757d)" → style="fill:var(--db-axis,#6c757d)") */
+
+/* ===== END UIUX run 2026-10-19 20:35 - Agent2 ===== */
