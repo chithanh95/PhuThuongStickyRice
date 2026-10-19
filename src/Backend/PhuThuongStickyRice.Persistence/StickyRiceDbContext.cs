@@ -125,12 +125,24 @@ namespace PhuThuongStickyRice.Persistence
         public DbSet<WebhookEndpoint> WebhookEndpoints { get; set; }
         public DbSet<WorkShift> WorkShifts { get; set; }
 
+        /// <summary>
+        /// Mở transaction DB mới; giữ reference vào field để
+        /// <see cref="CommitTransactionAsync"/> commit cùng transaction này
+        /// (legacy template IUnitOfWork API).
+        /// </summary>
         public async Task<IDisposable> BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted, CancellationToken cancellationToken = default)
         {
             _dbContextTransaction = await Database.BeginTransactionAsync(isolationLevel, cancellationToken);
             return _dbContextTransaction;
         }
 
+        /// <summary>
+        /// Mở transaction DB và giữ thêm distributed lock (sp_getapplock theo
+        /// transaction) tên <paramref name="lockName"/>: dùng khi 1 nghiệp vụ
+        /// cần khóa phạm vi rộng vượt qua 1 row của 1 bảng. Ném
+        /// <see cref="CouldNotAcquireLockException"/> nếu không lấy được lock
+        /// — caller không được tiếp tục nghiệp vụ khi không có lock.
+        /// </summary>
         public async Task<IDisposable> BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted, string lockName = null, CancellationToken cancellationToken = default)
         {
             _dbContextTransaction = await Database.BeginTransactionAsync(isolationLevel, cancellationToken);
@@ -148,6 +160,9 @@ namespace PhuThuongStickyRice.Persistence
             return _dbContextTransaction;
         }
 
+        /// <summary>
+        /// Commit transaction đã mở bởi <c>BeginTransactionAsync</c>.
+        /// </summary>
         public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
         {
             await _dbContextTransaction.CommitAsync(cancellationToken);

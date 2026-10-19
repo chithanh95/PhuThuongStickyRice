@@ -10,6 +10,13 @@ using Volo.Abp.EntityFrameworkCore;
 
 namespace PhuThuongStickyRice.Persistence.Repositories
 {
+    /// <summary>
+    /// Repository truy vấn đơn hàng: mọi update trạng thái/đánh dấu lượt quay
+    /// đều dùng ExecuteUpdateAsync nguyên tử (UPDATE ... WHERE có điều kiện
+    /// trạng thái cũ) để chống race khi 2 request cùng xử lý 1 đơn — chỉ
+    /// request đầu tiên thắng được phép chạy side-effect (cộng/hoàn điểm,
+    /// hoàn ví). Các truy vấn read-only dùng AsNoTracking để giảm tải memory/CPU.
+    /// </summary>
     public class OrderRepository : EfCoreRepository<StickyRiceDbContext, Order, System.Guid>, IOrderRepository
     {
         public OrderRepository(IDbContextProvider<StickyRiceDbContext> dbContextProvider,
@@ -33,6 +40,10 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                 queryable.Include(x => x.Lines).Where(x => x.OrderNumber == orderNumber), cancellationToken);
         }
 
+        /// <summary>
+        /// Kiểm tra mã đơn đã tồn tại chưa (AnyAsync — không nạp entity, nhẹ hơn
+        /// GetByOrderNumberAsync); dùng khi sinh mã đơn mới để tránh trùng.
+        /// </summary>
         public async Task<bool> ExistsWithOrderNumberAsync(string orderNumber, CancellationToken cancellationToken = default)
         {
             var queryable = await GetQueryableAsync();
@@ -40,6 +51,11 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                 queryable.Where(x => x.OrderNumber == orderNumber), cancellationToken);
         }
 
+        /// <summary>
+        /// Nạp nhiều đơn KÈM Lines ở chế độ read-only cho export báo cáo:
+        /// dedupe Id đầu vào, trả về rỗng ngay khi không có Id (tránh query
+        /// WHERE IN () không cần thiết).
+        /// </summary>
         public async Task<List<Order>> GetListWithLinesAsync(IEnumerable<System.Guid> orderIds, CancellationToken cancellationToken = default)
         {
             var ids = orderIds.Distinct().ToList();

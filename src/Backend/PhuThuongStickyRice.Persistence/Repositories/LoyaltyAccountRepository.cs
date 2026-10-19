@@ -10,6 +10,12 @@ using Volo.Abp.EntityFrameworkCore;
 
 namespace PhuThuongStickyRice.Persistence.Repositories
 {
+    /// <summary>
+    /// Repository tài khoản tích điểm (loyalty) theo SĐT: cộng/trừ/hoàn điểm
+    /// đều là UPDATE nguyên tử (ExecuteUpdateAsync) để chống race khi 2 request
+    /// cùng chạm vào 1 tài khoản — trừ điểm chỉ thành công khi số dư đủ
+    /// (WHERE Points &gt;= points), không bao giờ âm điểm.
+    /// </summary>
     public class LoyaltyAccountRepository
         : EfCoreRepository<StickyRiceDbContext, LoyaltyAccount, System.Guid>, ILoyaltyAccountRepository
     {
@@ -103,6 +109,11 @@ namespace PhuThuongStickyRice.Persistence.Repositories
 
         /// <summary>
         /// Tạo tài khoản loyalty nguyên tử (xem <see cref="ILoyaltyAccountRepository.TryInsertAsync"/>).
+        /// Check-then-insert có race: 2 request cùng tạo tài khoản 1 SĐT cùng lúc
+        /// đều qua được kiểm tra <c>AnyAsync</c>, request thua sẽ vi phạm unique
+        /// constraint ở <c>SaveChangesAsync</c> — catch bên dưới phân biệt: nếu
+        /// tài khoản đã tồn tại thật (request kia thắng) thì trả về null như
+        /// chưa bao giờ tạo, chỉ ném lại khi nguyên nhân là lỗi khác.
         /// </summary>
         public async Task<LoyaltyAccount> TryInsertAsync(
             LoyaltyAccount account, CancellationToken cancellationToken = default)
@@ -128,6 +139,9 @@ namespace PhuThuongStickyRice.Persistence.Repositories
             }
             catch (DbUpdateException)
             {
+                // Race ở trên: request khác đã insert cùng SĐT trước — detach
+                // entity thất bại khỏi tracker (không dùng nữa) rồi xác nhận
+                // lại; chỉ ném tiếp khi lỗi không phải do trùng tài khoản.
                 dbContext.Entry(account).State = EntityState.Detached;
                 var winnerExists = await dbContext.Set<LoyaltyAccount>()
                     .AnyAsync(x => x.Phone == account.Phone, cancellationToken);

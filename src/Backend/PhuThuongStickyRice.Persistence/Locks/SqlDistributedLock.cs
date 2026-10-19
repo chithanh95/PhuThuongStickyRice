@@ -6,6 +6,12 @@ using System.Data;
 
 namespace PhuThuongStickyRice.Persistence.Locks
 {
+    /// <summary>
+    /// Distributed lock trên SQL Server bằng <c>sp_getapplock</c>. Lock owner
+    /// là "Transaction" khi tạo từ <see cref="SqlTransaction"/> (tự release khi
+    /// transaction commit/rollback — an toàn cho lock trong nghiệp vụ), ngược
+    /// lại là "Session" (phải release thủ công qua scope).
+    /// </summary>
     public class SqlDistributedLock : IDistributedLock
     {
         public const int AlreadyHeldReturnCode = 103;
@@ -39,10 +45,15 @@ namespace PhuThuongStickyRice.Persistence.Locks
             _connection = new SqlConnection(connectionString);
         }
 
+        /// <summary>
+        /// Lấy lock, chờ không giới hạn cho tới khi có lock (lockTimeout -1).
+        /// Trả về scope để release, hoặc null nếu lock đang bị giữ (mã 103).
+        /// </summary>
         public IDistributedLockScope Acquire(string lockName)
         {
             SqlParameter returnValue;
             // SqlCommand giữ handle phía server — dispose ngay sau khi dùng xong.
+            // commandTimeout 0 (không chờ kết nối), lockTimeout -1 (chờ lock vô hạn).
             using var acquireCommand = CreateAcquireCommand(0, lockName, -1, out returnValue);
 
             acquireCommand.ExecuteNonQuery();
@@ -57,10 +68,17 @@ namespace PhuThuongStickyRice.Persistence.Locks
             }
         }
 
+        /// <summary>
+        /// Thử lấy lock, không chờ (lockTimeout 0): lấy được trả về scope,
+        /// không lấy được trả về null ngay — dùng khi caller có phương án dự
+        /// phòng thay vì block. Command timeout 30s cho sp_getapplock.
+        /// </summary>
         public IDistributedLockScope TryAcquire(string lockName)
         {
             SqlParameter returnValue;
             // SqlCommand giữ handle phía server — dispose ngay sau khi dùng xong.
+            // Tham số theo thứ tự (commandTimeout, lockName, lockTimeout):
+            // 30s chờ command, 0 = thử lấy lock 1 lần, không chờ.
             using var acquireCommand = CreateAcquireCommand(30, lockName, 0, out returnValue);
 
             acquireCommand.ExecuteNonQuery();

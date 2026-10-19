@@ -9,6 +9,13 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.BackgroundServer.HostedServices
 {
+    /// <summary>
+    /// Worker nền gửi email trong hàng đợi (<c>EmailMessage</c>) ra SMTP/SendGrid.
+    /// Chạy vòng quét liên tục: có mail thì gửi ngay, hết mail thì nghỉ
+    /// <c>IdlePollDelay</c> rồi quét lại. Lỗi thoáng qua (mất DB, SMTP chết,
+    /// circuit breaker mở) chỉ bị log rồi thử lại vòng sau — worker không bao
+    /// giờ tự tắt để 1 sự cố tạm thời không làm mất hàng đợi mail.
+    /// </summary>
     public class SendEmailWorker : BackgroundService
     {
         // Khoảng chờ giữa 2 vòng quét hàng đợi email khi không có mail nào
