@@ -159,7 +159,7 @@
 .pt-success-title {
     font-size: 1.7rem;
     font-weight: 800;
-    color: #1c7c3e;
+    color: #1e7a52; /* UIUX-1019 A3: xanh lá đậm chuẩn Lexa = màu chữ alert-success (trước #1c7c3e lạ) */
     margin: 0 0 .75rem;
 }
 
@@ -242,7 +242,7 @@
 }
 
 .pt-item-remain strong {
-    color: #1c7c3e;
+    color: #1e7a52; /* UIUX-1019 A3: xanh lá đậm chuẩn Lexa (trước #1c7c3e lạ) */
 }
 
 /* Dark mode */

@@ -706,3 +706,67 @@ html.dark .alert-secondary {
 }
 
 /* === end Agent 2 run 12:55 === */
+
+/* === UIUX run 2026-10-19 13:15 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (các đợt trước đã phủ gần như toàn bộ shop/admin/landing. Đợt này quét
+   lại toàn bộ .razor.css + inline style trong .razor, phát hiện 4 lỗi MỚI
+   thật — đều là chỗ các đợt trước "tưởng đã fix" nhưng selector chết
+   (attribute [style*=] bám inline style đã bị Agent 3 (Lexa) chuyển sang
+   class ở run 11:55), hoặc các trang demo Lexa chưa ai quét tới.) */
+
+/* ---------- FIX 1 — Shop: popup khảo sát hài lòng (/track-order) ----------
+   Vấn đề: .to-survey-sheet (popup sau khi nhận hàng) — rule dark ở
+   TrackOrder.razor.css:449 và ở file này (đợt 11:40) đều dùng attribute
+   selector [style*="background: #fff"], nhưng Agent 3 (run 11:55) đã
+   chuyển inline style sang class (.to-survey-sheet { background:#fff },
+   .to-survey-title { color:#763434 }) → cả 2 rule đều CHẾT, không match.
+   Trong khi đó rule `html.dark .to-survey-sheet h5` (dòng 453, CÒN SỐNG)
+   đã đổi tiêu đề sang #f0d9b5 (kem sáng) → ở dark mode: popup NỀN TRẮNG
+   + chữ tiêu đề KEM SÁNG = không đọc được gì (tương phản ~1.2:1).
+   Đã grep xác minh: markup hiện tại không còn inline style nào trên sheet.
+   Fix: rule dark THẬT cho .to-survey-sheet (không attribute selector).
+   Tiêu đề giữ #f0d9b5 của rule dòng 453 (đọc tốt ~9:1 trên nền mới);
+   nút cam #FFBA31, sao #f6c453, .btn-outline-secondary đã có rule dark. */
+html.dark .to-survey-sheet {
+    background: #262019 !important; /* was #fff */
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+}
+
+/* ---------- FIX 2 — Admin demo: hộp "Doanh số năm" (/admin/lexa/dashboard) ----------
+   Vấn đề: Lexa/Dashboard.razor:140 — div inline style="background:#f8f8fb"
+   (hộp xám nhạt chứa "Doanh số năm / 52.345"). Không rule dark nào phủ
+   (đã grep xác minh). Ở dark mode: h5 kế thừa màu body dark #f0eef5
+   (app.css) → chữ SÁNG trên hộp SÁNG, tiêu đề "Doanh số năm" tàng hình.
+   Fix: nền tối theo palette admin-lexa (#2e2e4e) + h5 sáng. !important để
+   thắng inline style. :not([style*="min-height:100vh"]) để loại trừ
+   wrapper trang auth (đợt 10:42 đã fix riêng bằng selector khác). */
+html.dark div[style*="background:#f8f8fb"]:not([style*="min-height:100vh"]) {
+    background: #2e2e4e !important; /* was #f8f8fb */
+}
+html.dark div[style*="background:#f8f8fb"]:not([style*="min-height:100vh"]) h5 {
+    color: #f0eef5 !important; /* h5 kế thừa #f0eef5 đã đúng, khóa lại cho chắc */
+}
+
+/* ---------- FIX 3 — Admin demo: thead hóa đơn (/admin/lexa/pages-invoice) ----------
+   Vấn đề: PagesInvoice.razor:42 — <thead style="background:#f8f8fb;">,
+   không rule dark nào phủ (đã grep xác minh). Ở dark mode, th kế thừa
+   màu dark #a5a2bd (admin-lexa.css:1004) → chữ XÁM SÁNG trên nền thead
+   XÁM SÁNG (#, Món ăn, SL, Đơn giá, Thành tiền đều khó đọc, ~2:1).
+   Fix: nền thead tối; màu th #a5a2bd có sẵn đọc tốt (~5.9:1) trên nền mới.
+   !important để thắng inline style. */
+html.dark thead[style*="background:#f8f8fb"] {
+    background: #2e2e4e !important; /* was #f8f8fb */
+}
+
+/* ---------- FIX 4 — Admin demo: header accordion (/admin/lexa/ui-tabs) ----------
+   Vấn đề: UiTabs.razor:68 — .card-header inline style="background:#f8f8fb;",
+   không rule dark nào phủ (đã grep xác minh). Ở dark mode cả dải header
+   xám sáng lọt thỏm trên card tối #262640. Nếu chỉ tối nền thì nút bên
+   trong (inline color:#2b3a4a, dòng 69) sẽ chìm → phải sáng chữ nút cùng.
+   Fix: nền tối + chữ nút sáng (dùng chung rule div[style*=] của FIX 2,
+   thêm rule riêng cho button). */
+html.dark div[style*="background:#f8f8fb"]:not([style*="min-height:100vh"]) button[style*="2b3a4a"] {
+    color: #f0eef5 !important; /* was #2b3a4a */
+}
+
+/* === end Agent 2 run 13:15 === */

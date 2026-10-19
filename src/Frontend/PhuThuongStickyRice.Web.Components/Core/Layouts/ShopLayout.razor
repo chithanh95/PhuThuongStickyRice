@@ -31,10 +31,10 @@
             </button>
 
             <nav class="shp-nav @(_menuOpen ? "open" : "")" id="shp-nav-menu">
-                <a href="/" class="@NavActive("/")">@AppI18n.T("nav.home")</a>
-                <a href="/shop" class="@NavActive("/shop")">@AppI18n.T("nav.menu")</a>
-                <a href="/goi-tra-truoc" class="@NavActive("/goi-tra-truoc")">🎫 Gói trả trước</a>
-                <a href="/dat-so-luong-lon" class="@NavActive("/dat-so-luong-lon")">@AppI18n.T("nav.bulk_order")</a>
+                <a href="/" class="@NavActive("/")" aria-current="@(NavActive("/") == "active" ? "page" : null)">@AppI18n.T("nav.home")</a>
+                <a href="/shop" class="@NavActive("/shop")" aria-current="@(NavActive("/shop") == "active" ? "page" : null)">@AppI18n.T("nav.menu")</a>
+                <a href="/goi-tra-truoc" class="@NavActive("/goi-tra-truoc")" aria-current="@(NavActive("/goi-tra-truoc") == "active" ? "page" : null)">🎫 Gói trả trước</a>
+                <a href="/dat-so-luong-lon" class="@NavActive("/dat-so-luong-lon")" aria-current="@(NavActive("/dat-so-luong-lon") == "active" ? "page" : null)">@AppI18n.T("nav.bulk_order")</a>
                 <a href="#lien-he" class="">@AppI18n.T("nav.contact")</a>
                 <a href="/dang-nhap" class="shp-nav-login">👤 @AppI18n.T("common.login")</a>
             </nav>
@@ -48,8 +48,9 @@
                         📞 @_hotline
                     </a>
                 }
-                <a class="shp-cart" href="/cart" title="@AppI18n.T("common.cart")">
-                    🛒
+                <a class="shp-cart" href="/cart" title="@AppI18n.T("common.cart")"
+                   aria-label="@($"{AppI18n.T("common.cart")} ({CartState.TotalQuantity})")">
+                    <span aria-hidden="true">🛒</span>
                     @if (CartState.TotalQuantity > 0)
                     {
                         <span class="shp-cart-badge">@CartState.TotalQuantity</span>

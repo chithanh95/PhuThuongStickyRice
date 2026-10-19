@@ -26,7 +26,8 @@
                         <span class="lx-hnav-label">Kết quả tìm kiếm</span>
                         @foreach (var item in FilteredItems)
                         {
-                            <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile">
+                            <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile"
+                               aria-current="@(IsActive(item.Href) == "active" ? "page" : null)">
                                 <i class="@item.Icon" aria-hidden="true"></i>
                                 <span class="lx-hnav-text">@item.Label</span>
                             </a>
@@ -42,7 +43,8 @@
                     @foreach (var (group, items) in VisibleMenu())
                     {
                         <div class="lx-hnav-group @(IsGroupActive(group) ? "active" : "") @(IsGroupOpen(group.Key) ? "open" : "")">
-                            <button type="button" class="lx-hnav-toggle" @onclick="() => ToggleGroup(group.Key)" aria-haspopup="true">
+                            <button type="button" class="lx-hnav-toggle" @onclick="() => ToggleGroup(group.Key)" aria-haspopup="true"
+                                    aria-expanded="@IsGroupOpen(group.Key)">
                                 <i class="@group.Icon" aria-hidden="true"></i>
                                 <span class="lx-hnav-text">@group.Label</span>
                                 <span class="fa-solid fa-chevron-down lx-hnav-caret" aria-hidden="true"></span>
@@ -50,7 +52,8 @@
                             <div class="lx-hnav-drop">
                                 @foreach (var item in items)
                                 {
-                                    <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile">
+                                    <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile"
+                                       aria-current="@(IsActive(item.Href) == "active" ? "page" : null)">
                                         <i class="@item.Icon" aria-hidden="true"></i>
                                         <span class="lx-hnav-text">@item.Label</span>
                                         @if (!string.IsNullOrEmpty(item.Badge))
@@ -140,7 +143,8 @@
                     }
                 </div>
                 <div class="lx-dropdown lx-lang-wrap">
-                    <button class="lx-lang-btn" @onclick="ToggleLangMenu" title="Ngôn ngữ" aria-label="Ngôn ngữ — chọn ngôn ngữ hiển thị">
+                    <button class="lx-lang-btn" @onclick="ToggleLangMenu" title="Ngôn ngữ" aria-label="Ngôn ngữ — chọn ngôn ngữ hiển thị"
+                            aria-expanded="@_langMenuOpen" aria-haspopup="true">
                         <img src="/images/flags/@(_lang == "en" ? "gb" : "vn").png" alt="" style="width:20px;height:14px;border-radius:2px;" />
                         <span>@(_lang == "en" ? "English" : "Tiếng Việt")</span>
                         <span class="fa-solid fa-chevron-down" aria-hidden="true" style="font-size:10px"></span>
@@ -200,7 +204,8 @@
                     }
                 </div>
                 <div class="lx-dropdown lx-user-wrap">
-                    <button class="lx-avatar" @onclick="ToggleUserMenu" title="Tài khoản" aria-label="Tài khoản — mở menu người dùng">
+                    <button class="lx-avatar" @onclick="ToggleUserMenu" title="Tài khoản" aria-label="Tài khoản — mở menu người dùng"
+                            aria-expanded="@_userMenuOpen" aria-haspopup="true">
                         <AuthorizeView>
                             <Authorized>@UserInitial(context.User.Identity?.Name)</Authorized>
                             <NotAuthorized>A</NotAuthorized>

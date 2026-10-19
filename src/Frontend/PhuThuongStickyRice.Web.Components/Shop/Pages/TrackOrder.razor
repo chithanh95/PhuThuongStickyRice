@@ -114,29 +114,30 @@
             @* TC2: visual status timeline. *@
             @if (string.Equals(_order.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
             {
-                <div class="to-timeline to-timeline-cancelled">
-                    <div class="to-tl-step to-tl-cancelled">
-                        <span class="to-tl-dot"><i class="fa-solid fa-xmark"></i></span>
+                <div class="to-timeline to-timeline-cancelled" role="list" aria-label="Trạng thái đơn hàng">
+                    <div class="to-tl-step to-tl-cancelled" role="listitem" aria-current="step">
+                        <span class="to-tl-dot"><i class="fa-solid fa-xmark" aria-hidden="true"></i></span>
                         <span class="to-tl-label">Đơn hàng đã bị hủy</span>
                     </div>
                 </div>
             }
             else
             {
-                <div class="to-timeline">
+                <div class="to-timeline" role="list" aria-label="Tiến trình đơn hàng">
                     @for (var stepIndex = 0; stepIndex < StatusSteps.Length; stepIndex++)
                     {
                         var stepState = stepIndex < CurrentStatusIndex ? "done"
                             : stepIndex == CurrentStatusIndex ? "current" : "todo";
-                        <div class="to-tl-step to-tl-@stepState">
+                        <div class="to-tl-step to-tl-@stepState" role="listitem"
+                             aria-current="@(stepState == "current" ? "step" : null)">
                             <span class="to-tl-dot">
                                 @if (stepState == "done")
                                 {
-                                    <i class="fa-solid fa-check"></i>
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i>
                                 }
                                 else
                                 {
-                                    <i class="fa-solid @StatusSteps[stepIndex].Icon"></i>
+                                    <i class="fa-solid @StatusSteps[stepIndex].Icon" aria-hidden="true"></i>
                                 }
                             </span>
                             <span class="to-tl-label">@StatusSteps[stepIndex].Label</span>
@@ -144,7 +145,7 @@
                         @if (stepIndex < StatusSteps.Length - 1)
                         {
                             var lineState = stepIndex < CurrentStatusIndex ? "done" : "todo";
-                            <div class="to-tl-line to-tl-@lineState"></div>
+                            <div class="to-tl-line to-tl-@lineState" aria-hidden="true"></div>
                         }
                     }
                 </div>

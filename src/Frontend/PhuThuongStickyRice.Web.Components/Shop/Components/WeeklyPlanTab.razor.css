@@ -93,7 +93,7 @@
     padding: 0.45rem 1.1rem;
     font-size: 1.1rem;
     border: none;
-    background: #2e9e5b;
+    background: #34c38f; /* UIUX-1019 A3: xanh lá Lexa (trước #2e9e5b lạ) */
     color: #fff;
 }
 
@@ -103,7 +103,7 @@
 }
 
 .wpt-error {
-    color: #a5272f;
+    color: #bd4a4a; /* UIUX-1019 A3: đỏ đậm chuẩn Lexa = màu chữ alert-danger (trước #a5272f lạ) */
     font-size: 1.2rem;
     font-weight: 700;
     margin-top: 0.8rem;
@@ -140,7 +140,7 @@
 
 .wpt-claimed {
     margin-left: auto;
-    color: #1e7e34;
+    color: #34c38f; /* UIUX-1019 A3: xanh lá Lexa (trước #1e7e34) — đồng bộ source với override toàn cục */
     font-weight: 800;
     font-size: 1.2rem;
 }
@@ -160,5 +160,5 @@ html.dark .wpt-claimed {
 }
 
 html.dark .wpt-btn-claim {
-    background: #2e9e5b;
+    background: #34c38f; /* UIUX-1019 A3: đồng bộ dark với light (trước #2e9e5b lạ) */
 }

@@ -1164,3 +1164,113 @@
 }
 
 /* ===== END UIUX run 12:55 - Agent1 Mobile ===== */
+
+/* ===== UIUX run 13:15 — agent1-mobile: 5 fix mobile mới ===== */
+
+/* ------------------------------------------------------------
+   FIX 1 — ShopLayout: khe hở 768–991px (tablet) không có nút
+   hamburger, mất menu điều hướng.
+   Vấn đề: `.shp-nav` bị `display:none` ở ≤991.98px trừ khi mở
+   (ShopLayout.razor.css:324) — nhưng rule hiện hamburger của run
+   12:55 chỉ phủ ≤767.98px. Ở 768–991px không có cách nào mở menu
+   → mất lối vào "Đăng nhập" (.shp-nav-login nằm trong menu),
+   "Gói trả trước", "Đặt số lượng lớn", "Liên hệ".
+   Giải pháp: mở rộng rule hamburger lên 991.98px, vùng bấm 44px.
+   Doubled-class để thắng `display:none` của scoped CSS.
+   (Verify: ShopLayout.razor.css:212 display:none; :324 nav ẩn
+   ≤991.98px; rule 12:55 trong file này chỉ max-width:767.98px)
+   ------------------------------------------------------------ */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .shp-hamburger.shp-hamburger {
+        display: flex;
+        min-width: 44px;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — Landing: nút đổi sáng/tối (.sg-theme-toggle) chỉ 38px.
+   Vấn đề: width/height 38px cố định (Index.razor.css:252-253) —
+   dưới chuẩn chạm 44px; nút header dùng mỗi lần khách muốn đổi
+   giao diện, tương tự nút shop (.shp-theme-toggle) đã được nâng
+   ở run 12:55 nhưng bản landing bị sót.
+   Giải pháp: lên 44×44px, vẫn tròn. Doubled-class để thắng
+   scoped CSS (file này load sau cùng nên thắng theo cascade).
+   (Verify: Index.razor:119 button.sg-theme-toggle;
+   Index.razor.css:248-256 width/height 38px)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-theme-toggle.sg-theme-toggle {
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — Landing: nút đóng banner flash sale (.sg-flash-close).
+   Vấn đề: font-size 22px, không padding (Index.razor.css:159-170)
+   → vùng bấm chỉ ~22px; khách lớn tuổi khó bấm "×" để tắt banner,
+   nhất là khi banner chiếm đầu màn hình trên điện thoại.
+   Giải pháp: padding 11px 14px → vùng bấm 44px mà chữ "×" vẫn
+   nằm đúng vị trí cũ (căn giữa dọc nhờ translateY(-50%)).
+   Doubled-class để thắng scoped CSS.
+   (Verify: Index.razor:51 button.sg-flash-close;
+   Index.razor.css:159-170)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-flash-close.sg-flash-close {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 11px 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — Landing: chip lọc giá thực đơn (.sg-price-filter button).
+   Vấn đề: padding 8px 20px, font 14px (Index.razor.css:1452-1461)
+   → cao chỉ ~38px, dưới chuẩn chạm 44px; 4 chip (Tất cả / Dưới
+   30k / 30k–50k / Trên 50k) là cách lọc chính của thực đơn landing.
+   Giải pháp: cao 44px, chữ canh giữa dọc, giữ nguyên kiểu pill.
+   Doubled-class để thắng scoped CSS.
+   (Verify: Index.razor:410-413; Index.razor.css:1452-1461)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-price-filter.sg-price-filter button {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — Landing: nút "+ Thêm nhanh" trên ảnh món
+   (.sg-dish-quick button).
+   Vấn đề: padding 9px 20px, font 14px (Index.razor.css:1233-1244)
+   → cao chỉ ~40px, dưới chuẩn chạm 44px; đây là nút thêm món
+   nhanh ngay trên ảnh món ở thực đơn landing — khách bấm nhiều.
+   Giải pháp: cao 44px, giữ hiệu ứng hover scale. Doubled-class
+   để thắng scoped CSS.
+   (Verify: Index.razor:432; Index.razor.css:1233-1244)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-dish-quick.sg-dish-quick button {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ===== END UIUX run 13:15 - Agent1 Mobile ===== */
