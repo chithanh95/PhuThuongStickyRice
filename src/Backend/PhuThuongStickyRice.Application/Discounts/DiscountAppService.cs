@@ -1201,7 +1201,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             {
                 var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 // Chunk 1000 để dưới giới hạn tham số của SQL Server.
-                foreach (var chunk in pending.Select(i => codes[i]).ToList().Chunk(1000))
+                // Best practice LINQ: Chunk nhận IEnumerable và stream từng
+                // chunk — không cần .ToList() materialize cả danh sách trước
+                // (bản cũ cấp phát 1 List trung gian vô ích mỗi attempt).
+                foreach (var chunk in pending.Select(i => codes[i]).Chunk(1000))
                 {
                     var found = await _asyncExecuter.ToListAsync(
                         queryable.Where(x => chunk.Contains(x.Code)).Select(x => x.Code));
