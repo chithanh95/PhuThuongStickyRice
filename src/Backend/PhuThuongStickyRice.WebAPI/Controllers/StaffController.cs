@@ -8,6 +8,7 @@ using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Persistence;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
@@ -47,9 +48,28 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpGet("users")]
         public async Task<ActionResult> GetUsers(CancellationToken cancellationToken = default)
         {
-            var users = await _db.Set<User>().OrderBy(u => u.UserName).ToListAsync(cancellationToken);
-            var userRoles = await _db.Set<UserRole>().ToListAsync(cancellationToken);
-            var roles = await _db.Set<Role>().ToListAsync(cancellationToken);
+            // perf-hunt 2026-10-19: chỉ lấy đúng 6 cột cần trong SQL + join role
+            // trong SQL. Trước đây nạp full entity User (kéo theo PasswordHash,
+            // SecurityStamp...) và toàn bộ 2 bảng về memory rồi join tay O(n*m).
+            var users = await _db.Set<User>().OrderBy(u => u.UserName)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.UserName,
+                    u.Email,
+                    u.PhoneNumber,
+                    u.LockoutEnd
+                })
+                .ToListAsync(cancellationToken);
+            var roleNames = await (from ur in _db.Set<UserRole>()
+                                   join r in _db.Set<Role>() on ur.RoleId equals r.Id
+                                   select new { ur.UserId, r.Name })
+                .ToListAsync(cancellationToken);
+            var rolesByUser = roleNames
+                .GroupBy(x => x.UserId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => x.Name).OrderBy(n => n).ToList());
 
             var result = users.Select(u => new
             {
@@ -58,11 +78,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 email = u.Email,
                 phoneNumber = u.PhoneNumber,
                 isLocked = u.LockoutEnd.HasValue && u.LockoutEnd.Value > DateTimeOffset.UtcNow,
-                roles = userRoles
-                    .Where(ur => ur.UserId == u.Id)
-                    .Join(roles, ur => ur.RoleId, r => r.Id, (_, r) => r.Name)
-                    .OrderBy(n => n)
-                    .ToList()
+                roles = rolesByUser.TryGetValue(u.Id, out var names)
+                    ? names
+                    : new List<string>()
             });
 
             return Ok(result);

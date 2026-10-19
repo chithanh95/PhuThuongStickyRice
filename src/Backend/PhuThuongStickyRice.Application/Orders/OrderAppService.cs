@@ -2433,25 +2433,34 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <returns>Danh sách khách kèm tổng chi tiêu và ngày đặt gần nhất.</returns>
         public virtual async Task<List<CustomerDto>> GetInactiveCustomersAsync(int days, int take = 50)
         {
-            var cutoff = DateTime.UtcNow.AddDays(-Math.Max(1, days));
-            var orderQueryable = await _orders.GetQueryableAsync();
+            // perf-hunt 2026-10-19: cache 5 phút. GROUP BY toàn bảng Orders (bảng
+            // nóng nhất, tăng vô hạn) mỗi lần admin mở màn hình là quá tốn; màn
+            // "khách không mua N ngày" không cần real-time nên dữ liệu cũ tối đa
+            // 5 phút là chấp nhận được. Semantics không đổi.
+            days = Math.Max(1, days);
+            take = Math.Clamp(take, 1, 200);
+            return await _catalogCache.GetOrAddAsync(
+                $"orders:inactive-customers:{days}:{take}",
+                async () =>
+                {
+                    var cutoff = DateTime.UtcNow.AddDays(-days);
+                    var orderQueryable = await _orders.GetQueryableAsync();
 
-            var customers = await _asyncExecuter.ToListAsync(
-                orderQueryable.Where(x => x.Status != OrderStatus.Cancelled)
-                    .GroupBy(x => x.CustomerPhone)
-                    .Select(g => new CustomerDto
-                    {
-                        CustomerPhone = g.Key,
-                        CustomerName = g.Max(x => x.CustomerName),
-                        OrderCount = g.LongCount(),
-                        TotalSpent = g.Sum(x => x.TotalAmount.Amount),
-                        LastOrderAt = g.Max(x => x.CreatedAt)
-                    })
-                    .Where(x => x.LastOrderAt < cutoff)
-                    .OrderBy(x => x.LastOrderAt)
-                    .Take(Math.Clamp(take, 1, 200)));
-
-            return customers;
+                    return await _asyncExecuter.ToListAsync(
+                        orderQueryable.Where(x => x.Status != OrderStatus.Cancelled)
+                            .GroupBy(x => x.CustomerPhone)
+                            .Select(g => new CustomerDto
+                            {
+                                CustomerPhone = g.Key,
+                                CustomerName = g.Max(x => x.CustomerName),
+                                OrderCount = g.LongCount(),
+                                TotalSpent = g.Sum(x => x.TotalAmount.Amount),
+                                LastOrderAt = g.Max(x => x.CreatedAt)
+                            })
+                            .Where(x => x.LastOrderAt < cutoff)
+                            .OrderBy(x => x.LastOrderAt)
+                            .Take(take));
+                });
         }
         /// same phone (tolerant match), placed within the last 30 minutes,
         /// still Pending or Confirmed. The shop never merges automatically;

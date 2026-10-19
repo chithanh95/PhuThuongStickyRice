@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
@@ -87,6 +88,16 @@ namespace PhuThuongStickyRice.Application.AuditLogs
         /// <summary>Số dòng log tối đa giữ lại trong bảng AppLogs.</summary>
         public const int MaxRows = 2000;
 
+        /// <summary>
+        /// Chu kỳ cắt dòng cũ: chỉ prune mỗi N lần ghi thay vì mỗi lần ghi.
+        /// Caller duy nhất hiện nay là endpoint public báo lỗi client (đã
+        /// rate-limit), nên bảng phình thêm tối đa ~N dòng giữa 2 lần prune.
+        /// </summary>
+        private const int PruneEveryNWrites = 100;
+
+        /// <summary>Đếm số lần ghi toàn process để quyết định kỳ prune.</summary>
+        private static int _writesSincePrune;
+
         private readonly IRepository<AppLog, Guid> _logs;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Volo.Abp.Timing.IClock _clock;
@@ -136,16 +147,23 @@ namespace PhuThuongStickyRice.Application.AuditLogs
             }, autoSave: true);
 
             // Prune: keep only the latest MaxRows.
-            var queryable = await _logs.GetQueryableAsync();
-            var cutoff = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.OrderByDescending(x => x.At).Skip(MaxRows - 1).Take(1));
-            if (cutoff != null)
+            // perf-hunt 2026-10-19: prune theo chu kỳ (mỗi 100 lần ghi) thay vì
+            // chạy 3 round-trip trên MỖI lần ghi; mỗi lần prune chỉ xóa số dòng
+            // dư (~100 dòng) thay vì quét/cân nhắc xóa trên mọi lần ghi.
+            // Vẫn giữ tối đa ~2000 dòng mới nhất.
+            if (Interlocked.Increment(ref _writesSincePrune) % PruneEveryNWrites == 0)
             {
-                var old = await _asyncExecuter.ToListAsync(
-                    queryable.Where(x => x.At < cutoff.At));
-                if (old.Count > 0)
+                var queryable = await _logs.GetQueryableAsync();
+                var cutoff = await _asyncExecuter.FirstOrDefaultAsync(
+                    queryable.OrderByDescending(x => x.At).Skip(MaxRows - 1).Take(1));
+                if (cutoff != null)
                 {
-                    await _logs.DeleteManyAsync(old, autoSave: true);
+                    var old = await _asyncExecuter.ToListAsync(
+                        queryable.Where(x => x.At < cutoff.At));
+                    if (old.Count > 0)
+                    {
+                        await _logs.DeleteManyAsync(old, autoSave: true);
+                    }
                 }
             }
         }
