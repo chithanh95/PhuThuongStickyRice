@@ -130,26 +130,34 @@ html.dark .shop-info-strip {
         display: none;
     }
 
-    /* Quantity + add-to-cart row */
+    /* ===== UIUX run 20:10 — Agent1 Mobile =====
+       FIX 1 — Hàng "số lượng + Thêm vào giỏ" trên card lưới mobile: nút
+       "Thêm vào giỏ" chỉ 42px (< 44px chuẩn chạm cho người lớn tuổi), chữ
+       12px khó đọc; ô số lượng 42px lệch hàng với nút. Nâng nút lên 44px,
+       chữ 13px; ô nhập lên 44px cho ngang hàng. (Chỉ phủ ≤575px; PC giữ
+       nguyên.) */
     .shop-add-row input[type="number"] {
         width: 58px !important;
-        min-height: 42px;
+        min-height: 44px;
         padding: 6px 4px;
     }
 
     .shop-add-row .btn {
-        min-height: 42px;
+        min-height: 44px;
         font-size: 13px;
         padding: 6px 8px;
         white-space: nowrap;
     }
+    /* ===== END UIUX run 20:10 - Agent1 FIX 1 ===== */
 
-    /* Nút thêm giỏ trên card mobile: full-width, không tràn */
+    /* Nút thêm giỏ trên card mobile: full-width, không tràn — chữ 13px để
+       người lớn tuổi đọc được (rule .shop-add-row .btn font-size:13px ở
+       trên vẫn giữ min-height 44px). */
     .shop-add-row {
         flex-wrap: wrap;
     }
     .shop-add-row .btn {
-        font-size: 12px;
+        font-size: 13px;
         flex: 1 1 100%;
     }
 

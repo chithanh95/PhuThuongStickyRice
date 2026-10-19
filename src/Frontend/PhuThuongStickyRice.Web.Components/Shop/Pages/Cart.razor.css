@@ -159,10 +159,15 @@
         text-overflow: ellipsis;
     }
 
+    /* ===== UIUX run 20:10 — Agent1 Mobile =====
+       FIX 2 — Nhãn "Tổng cộng" trong thanh thanh toán cố định (.cart-sticky-total
+       small) chỉ 12px — nằm ngay trên số tiền lớn, người lớn tuổi liếc nhanh
+       khó đọc. Nâng lên 13px (đồng bộ với fix tương tự ở /checkout, run 19:40). */
     .cart-sticky-total small {
         display: block;
-        font-size: 12px;
+        font-size: 13px;
     }
+    /* ===== END UIUX run 20:10 - Agent1 FIX 2 ===== */
 
     .cart-sticky-total strong {
         font-size: 1.2rem;
