@@ -127,6 +127,15 @@ else if (_logs != null)
 
     protected override async Task OnInitializedAsync()
     {
+        // perf-hunt 2026-10-19 (run 22:55): tải danh sách nhân viên (dropdown lọc)
+        // và trang log đầu tiên song song — LoadPage không phụ thuộc _staffUsers
+        // (_filterUserId mặc định rỗng → tải toàn bộ log như cũ). Mỗi loader
+        // giữ try/catch fail-soft riêng.
+        await Task.WhenAll(LoadStaffUsersAsync(), LoadPage());
+    }
+
+    private async Task LoadStaffUsersAsync()
+    {
         try
         {
             _staffUsers = await StaffService.GetUsersAsync() ?? new List<StaffUserModel>();
@@ -135,8 +144,6 @@ else if (_logs != null)
         {
             _staffUsers = new List<StaffUserModel>();
         }
-
-        await LoadPage();
     }
 
     private async Task ApplyFilter()

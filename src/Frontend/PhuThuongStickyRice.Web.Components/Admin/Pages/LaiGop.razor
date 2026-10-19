@@ -243,8 +243,10 @@ else if (_report != null)
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadCostsAsync();
-        await LoadAsync();
+        // perf-hunt 2026-10-19 (run 22:55): 2 loader độc lập (giá vốn để sửa +
+        // báo cáo lãi gộp) chạy song song, cắt 1 round-trip khi mở trang.
+        // Mỗi loader giữ try/catch fail-soft riêng, ghi field khác nhau.
+        await Task.WhenAll(LoadCostsAsync(), LoadAsync());
     }
 
     private void SetPreset(int days)

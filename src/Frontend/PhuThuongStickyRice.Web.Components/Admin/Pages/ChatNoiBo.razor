@@ -107,8 +107,11 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadStaffAsync();
-        await LoadMessagesAsync();
+        // perf-hunt 2026-10-19 (run 22:55): 2 loader độc lập (danh sách nhân viên
+        // + tin nhắn) chạy song song, cắt 1 round-trip khi mở trang. Mỗi loader
+        // giữ try/catch fail-soft riêng; timer poll 10s khởi động sau khi cả 2
+        // xong như cũ.
+        await Task.WhenAll(LoadStaffAsync(), LoadMessagesAsync());
         _timer = new System.Threading.Timer(async _ =>
         {
             await InvokeAsync(async () => { await LoadMessagesAsync(silent: true); StateHasChanged(); });
