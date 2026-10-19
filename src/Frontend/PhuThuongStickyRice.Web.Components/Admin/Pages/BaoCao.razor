@@ -1,3 +1,8 @@
+@* Trang báo cáo doanh thu (admin): chọn khoảng ngày → xuất Excel 2 sheet
+   (Tổng hợp theo ngày + Chi tiết đơn). Đơn đã hủy không tính vào doanh thu.
+   Có chế độ "So sánh cùng kỳ" (doanh thu/số đơn/TB đơn + top món, 2 kỳ đặt
+   cạnh nhau với biểu đồ cột đôi) và bảng lý do hủy đơn (item 233) luôn đồng
+   bộ theo khoảng thời gian đang chọn ở trên. *@
 @page "/admin/bao-cao"
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Orders.Services
@@ -146,6 +151,9 @@
                     <div class="card-body">
                         <h4 class="card-title">📊 Chênh lệch (kỳ hiện tại so với kỳ so sánh)</h4>
                         @{
+                            // Chuẩn hóa chiều cao cột theo giá trị lớn nhất của từng chỉ số
+                            // (2 kỳ nhìn tương đối với nhau, không theo giá trị tuyệt đối).
+                            // Cột có giá trị 0 vẫn vẽ 4px để không "biến mất" khỏi biểu đồ.
                             var cmpMaxRev = Math.Max(_current.TotalRevenue, _previous.TotalRevenue);
                             var cmpMaxOrd = Math.Max((decimal)_current.OrderCount, (decimal)_previous.OrderCount);
                             var cmpMaxAvg = Math.Max(_current.AvgOrderValue, _previous.AvgOrderValue);
@@ -316,6 +324,8 @@
         var today = DateTime.Today;
         _fromDate = new DateTime(today.Year, today.Month, 1);
         _toDate = today;
+        // Báo cáo lý do hủy (item 233) phải luôn đồng bộ khoảng ngày đang
+        // chọn nên tải lại ở đây, giống 2 nút khoảng ngày còn lại.
         _ = LoadCancelReport();
     }
 
@@ -330,6 +340,8 @@
     {
         _compareMode = !_compareMode;
         _compareError = null;
+        // Bật lần đầu thì tự tải so sánh mặc định "tháng này vs tháng trước"
+        // để màn hình không trống rỗng.
         if (_compareMode && _current == null)
         {
             _ = CompareThisMonth();
@@ -343,6 +355,9 @@
         var curFrom = new DateTime(today.Year, today.Month, 1);
         var prevMonth = curFrom.AddMonths(-1);
         var days = (today - curFrom).Days;
+        // Kỳ trước lấy đúng số ngày đã qua của tháng này; Math.Min để không
+        // vượt quá số ngày thực của tháng trước (vd so sánh ngày 31/3 → kỳ
+        // trước là 1–28/2, tránh tạo ngày 29–31/2 không tồn tại).
         var prevFrom = prevMonth;
         var prevTo = prevMonth.AddDays(Math.Min(days, DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month) - 1));
         await RunCompare(curFrom, today, prevFrom, prevTo,
@@ -363,6 +378,8 @@
     private async Task CompareThisWeek()
     {
         var today = DateTime.Today;
+        // Tìm thứ Hai đầu tuần: DayOfWeek enum coi Chủ nhật = 0 nên phải
+        // dịch +6 trước khi mod 7 (tuần Việt Nam bắt đầu từ thứ Hai).
         var monday = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
         var days = (today - monday).Days;
         var prevMonday = monday.AddDays(-7);
@@ -397,6 +414,8 @@
 
     private static decimal ChangePct(decimal current, decimal previous)
     {
+        // Kỳ so sánh không có doanh thu (previous = 0) mà kỳ này có → coi như
+        // tăng 100% để tránh lỗi chia 0 và vẫn hiện được màu xanh.
         if (previous == 0)
         {
             return current > 0 ? 100 : 0;
@@ -408,6 +427,7 @@
     private static string ChangeText(decimal current, decimal previous)
     {
         var pct = ChangePct(current, previous);
+        // Giữ dấu + cho số dương để dễ đọc ("+12,5%" thay vì "12,5%").
         var sign = pct > 0 ? "+" : "";
         return $"{sign}{pct:0.0}%";
     }
@@ -424,6 +444,7 @@
         _exporting = true;
         try
         {
+            // Validate khoảng ngày trước khi xuất để file không rỗng/khó hiểu.
             if (_fromDate > _toDate)
             {
                 _error = "Từ ngày phải trước hoặc bằng đến ngày.";
@@ -434,6 +455,8 @@
             var url = OrderService.GetExportRevenueUrl(_fromDate, _toDate);
             var from = (_fromDate ?? DateTime.Today).ToString("yyyy-MM-dd");
             var to = (_toDate ?? DateTime.Today).ToString("yyyy-MM-dd");
+            // Tải file qua JS interop kèm access token (API export yêu cầu
+            // quyền Admin, không cho link trực tiếp vào href).
             await JSRuntime.InvokeVoidAsync("interop.downloadFile", url, token, $"bao-cao-doanh-thu-{from}_{to}.xlsx");
         }
         catch (Exception ex)

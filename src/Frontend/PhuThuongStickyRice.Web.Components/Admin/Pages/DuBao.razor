@@ -1,3 +1,8 @@
+@* Trang dự báo doanh thu (admin): đọc dự báo từ API (dựa trên 30 ngày lịch sử
+   + mẫu hình theo thứ trong tuần) → 3 thẻ tổng quan (7 ngày, 30 ngày, trung
+   bình ngày), biểu đồ SVG vẽ tay (30 ngày thực tế đường liền + 7 ngày dự báo
+   nét đứt nối tiếp nhau), bảng mẫu hình theo thứ và chi tiết 7 ngày tới.
+   Cột "Suất nên chuẩn bị" giúp quán ước lượng nguyên liệu cần làm. *@
 @page "/admin/du-bao"
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Orders.Models
@@ -61,6 +66,8 @@ else if (_forecast != null)
                 <span class="mr-3"><span class="lexa-dot lexa-dot-primary"></span> Thực tế</span>
                 <span><span class="lexa-dash-line"></span> Dự báo</span>
             </div>
+            @* Biểu đồ vẽ bằng SVG thô (string) thay vì thẻ Blazor — Blazor cấm
+               đặt attribute trên thẻ <text>, mà biểu đồ này cần nhiều text/label. *@
             @((MarkupString)_svgMarkup)
         </div>
     </div>
@@ -101,6 +108,9 @@ else if (_forecast != null)
     <div class="card">
         <div class="card-body p-0">
             <h4 class="card-title px-3 pt-3">Chi tiết dự báo 7 ngày tới</h4>
+            @* Cột "Cơ sở": con số dựa trên TB của đúng thứ đó (vd thứ 2 dự theo
+               các thứ 2 trước đây); thứ nào chưa đủ dữ liệu lịch sử thì dùng
+               TB chung 30 ngày — vẫn ra số để quán chuẩn bị. *@
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
@@ -146,6 +156,8 @@ else if (_forecast != null)
         try
         {
             _forecast = await OrderService.GetRevenueForecastAsync();
+            // Vẽ biểu đồ SVG sau khi có dữ liệu (BuildChart đọc _forecast) —
+            // tách riêng để lỗi tải dữ liệu không làm crash trang.
             BuildChart();
         }
         catch (Exception ex)
@@ -160,6 +172,8 @@ else if (_forecast != null)
 
     private static string FmtMoney(decimal v) => v.ToString("N0") + "₫";
 
+    // Ngưỡng tô màu cột "So với TB chung": ≥1,5× là ngày đông bất thường
+    // (xanh lá), 1,0–1,5× là trên TB (xanh dương), dưới TB (vàng cảnh báo).
     private static string RatioClass(double r) =>
         r >= 1.5 ? "lx-pill-success" : r >= 1.0 ? "lx-pill-info" : "lx-pill-warning";
 
@@ -178,10 +192,18 @@ else if (_forecast != null)
         if (pointCount > 0)
         {
             var maxV = hist.Concat(fc).Max(x => x.Item2);
+            // Chưa có dữ liệu (tất cả = 0): ép maxV = 1 để không chia 0 —
+            // mọi điểm nằm sát trục X, biểu đồ vẫn vẽ được khung.
             if (maxV <= 0) maxV = 1;
 
+            // Ánh xạ chỉ số ngày → tọa độ px (trừ padding 2 biên); Math.Max
+            // tránh chia 0 khi chỉ có 1 điểm dữ liệu.
             double X(int i) => PadL + i * (W - PadL - PadR) / Math.Max(pointCount - 1, 1);
+            // Ánh xạ doanh thu → tọa độ px: trục Y của SVG đi xuống dưới nên
+            // phải đảo (1 − v/maxV) để giá trị lớn nằm trên cao.
             double Y(decimal v) => PadT + (H - PadT - PadB) * (1 - (double)v / (double)maxV);
+            // Định dạng số cho attribute SVG: bắt buộc InvariantCulture vì SVG
+            // yêu cầu dấu chấm thập phân, bất kể locale vi-VN của trình duyệt.
             string F(double d) => d.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
             AppendGridlines(sb, maxV, Y, F);
@@ -225,6 +247,8 @@ else if (_forecast != null)
     {
         var lastHist = hist.Count - 1;
         // Nối chuỗi trong vòng lặp nên dùng StringBuilder (tránh tạo string mới mỗi vòng).
+        // Đường dự báo bắt đầu từ ĐIỂM THỰC TẾ CUỐI CÙNG để 2 đoạn nối liền
+        // nhau, không bị khoảng trống giữa quá khứ và tương lai.
         var fcPts = new System.Text.StringBuilder($"{F(X(lastHist))},{F(Y(hist[lastHist].Revenue))}");
         var dots = new System.Text.StringBuilder();
         for (var i = 0; i < fc.Count; i++)
@@ -245,6 +269,8 @@ else if (_forecast != null)
         int pointCount, Func<int, double> X, Func<double, string> F)
     {
         var all = hist.Select(x => x.Date).Concat(fc.Select(x => x.Date)).ToList();
+        // Chỉ hiện khoảng 7 nhãn ngày (dd/MM) trên trục X để nhãn không đè
+        // lên nhau khi có ~37 điểm dữ liệu.
         var step = Math.Max(1, pointCount / 7);
         for (var i = 0; i < pointCount; i += step)
         {
@@ -252,6 +278,8 @@ else if (_forecast != null)
         }
     }
 
+    // Nhãn tiền rút gọn trên trục Y của biểu đồ (vd 1,5tr / 20K) để nhãn
+    // không tràn ra ngoài vùng padding trái.
     private static string CompactMoney(decimal amount)
     {
         if (amount >= 1_000_000m) return (amount / 1_000_000m).ToString("0.#") + "tr";

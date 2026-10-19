@@ -1,3 +1,7 @@
+@* Trang đối soát theo ngày (admin): doanh thu 1 ngày chia theo từng kênh
+   thanh toán (giờ Việt Nam) — số đơn, doanh thu, đã thanh toán, chưa thanh
+   toán. Đơn đã hủy không tính. Cột "Chưa thanh toán" > 0 được tô đỏ để nhân
+   viên dễ phát hiện công nợ còn treo cuối ngày. *@
 @page "/admin/doi-soat-ngay"
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Orders.Models
@@ -22,6 +26,8 @@
         <div class="form-row align-items-end">
             <div class="col-md-3 col-8">
                 <label class="mb-1"><small class="text-muted">Ngày</small></label>
+                @* Đổi ngày là tự tải lại ngay (bind:after), không cần bấm "Xem" —
+                   nút "Xem" chỉ là dự phòng cho trường hợp trình duyệt không bắn sự kiện. *@
                 <input type="date" class="form-control" @bind="_date" @bind:after="LoadAsync" />
             </div>
             <div class="col-md-9 col-4 text-right">
@@ -58,6 +64,8 @@ else
                             <th scope="col" class="text-right">Số đơn</th>
                             <th scope="col" class="text-right">Doanh thu</th>
                             <th scope="col" class="text-right">Đã thanh toán</th>
+                            @* Cột "Chưa thanh toán" > 0 thì tô đỏ ở dòng dữ liệu bên
+                               dưới để nhân viên phát hiện ngay công nợ còn treo. *@
                             <th scope="col" class="text-right">Chưa thanh toán</th>
                         </tr>
                     </thead>
@@ -115,6 +123,8 @@ else
         }
         catch (Exception ex)
         {
+            // Fail-soft: lỗi mạng thì hiện cảnh báo nhưng GIỮ bảng cũ
+            // (_reconciliation không bị set null) để màn hình không trống rỗng.
             _error = "Không tải được dữ liệu: " + ex.Message;
         }
         finally

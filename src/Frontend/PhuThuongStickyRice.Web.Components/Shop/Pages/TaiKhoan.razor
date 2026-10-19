@@ -1,4 +1,11 @@
-﻿@page "/tai-khoan"
+﻿@* Trang tài khoản khách hàng: gồm 6 khối — thông tin cá nhân, hạng thành
+   viên loyalty (Đồng/Bạc/Vàng + điểm + tổng đã mua), lịch sử đơn hàng
+   (20 đơn gần nhất, có nút "Đặt lại" thêm toàn bộ món của đơn cũ vào giỏ),
+   khẩu vị (item 90 — quán tự điền vào ghi chú mỗi lần đặt), ngày sinh +
+   quà sinh nhật (item 92 — chỉ được đổi 1 lần/năm, chống gian lận quà),
+   đổi mật khẩu và địa chỉ đã lưu. Nhân viên (Admin/Cashier/Kitchen) bị
+   chuyển sang trang hồ sơ admin riêng, không dùng trang này. *@
+@page "/tai-khoan"
 @using System.Collections.Generic
 @using System.Linq
 @using System.Threading.Tasks
@@ -470,6 +477,12 @@
         }
     }
 
+    /// <summary>
+    /// Đổi mật khẩu: validate đủ 2 ô + tối thiểu 6 ký tự ở client trước khi
+    /// gọi API để giảm request lỗi. Lỗi nghiệp vụ từ API (sai mật khẩu hiện
+    /// tại) được ném dưới dạng InvalidOperationException nên hiện nguyên văn;
+    /// lỗi khác hiện thông báo chung để không lộ chi tiết kỹ thuật.
+    /// </summary>
     private async Task ChangePasswordAsync()
     {
         _pwError = null;
@@ -506,6 +519,11 @@
         }
     }
 
+    /// <summary>
+    /// Mở form thêm địa chỉ mới: _editingId = Guid.Empty là cờ phân biệt
+    /// "Thêm mới" với "Sửa" (Guid không có null nên dùng Guid rỗng làm cờ);
+    /// SĐT người nhận điền sẵn = SĐT đăng nhập cho nhanh.
+    /// </summary>
     private void StartAdd()
     {
         _editing = true;
@@ -514,6 +532,11 @@
         _addrError = null;
     }
 
+    /// <summary>
+    /// Mở form sửa: copy giá trị sang _form riêng (không bind trực tiếp vào
+    /// item trong danh sách) để bấm "Hủy" thì dữ liệu hiển thị không bị bẩn.
+    /// </summary>
+    /// <param name="address">Địa chỉ cần sửa.</param>
     private void StartEdit(CustomerAddressModel address)
     {
         _editing = true;
@@ -537,6 +560,11 @@
         _addrError = null;
     }
 
+    /// <summary>
+    /// Lưu địa chỉ: _editingId rỗng → tạo mới, ngược lại → cập nhật.
+    /// Xong thì tải lại toàn bộ danh sách từ server (không patch local) để
+    /// trạng thái "Mặc định" luôn đúng theo server.
+    /// </summary>
     private async Task SaveAddressAsync()
     {
         // Guard chống double-tap: nút chỉ disabled="@_addrBusy" sau re-render,
@@ -596,6 +624,11 @@
         catch (Exception) { }
     }
 
+    /// <summary>
+    /// Đăng xuất: xóa token rồi forceLoad về trang chủ — forceLoad để WASM
+    /// tải lại toàn bộ ứng dụng, state cũ (giỏ hàng, thông tin user) không
+    /// còn vương lại trong bộ nhớ.
+    /// </summary>
     private async Task LogoutAsync()
     {
         try
@@ -650,6 +683,11 @@
 
     // Item 90: taste preferences.
 
+    /// <summary>
+    /// Bật/tắt 1 khẩu vị: HashSet.Add trả false khi tag đã tồn tại nên
+    /// 1 lệnh if vừa thêm vừa đảo trạng thái (chọn → bỏ chọn).
+    /// </summary>
+    /// <param name="tag">Khẩu vị được bấm.</param>
     private void ToggleTag(string tag)
     {
         _tasteMsg = null;
@@ -659,6 +697,10 @@
         }
     }
 
+    /// <summary>
+    /// Thêm khẩu vị tự nhập: cắt khoảng trắng, bỏ qua chuỗi rỗng, giới hạn
+    /// độ dài để ô hiển thị không vỡ giao diện.
+    /// </summary>
     private void AddCustomTag()
     {
         _tasteMsg = null;
@@ -679,6 +721,11 @@
         _customTag = null;
     }
 
+    /// <summary>
+    /// Lưu khẩu vị (item 90): gửi mảng tag lên server rồi dùng lại model
+    /// server trả về (đã chuẩn hóa) để hiển thị, tránh lệch giữa client/server.
+    /// Quán sẽ tự điền khẩu vị này vào ghi chú mỗi lần khách đặt hàng.
+    /// </summary>
     private async Task SaveTasteAsync()
     {
         _tasteMsg = null;
@@ -709,6 +756,8 @@
 
     // Item 92: birthday.
 
+    /// <summary>Màu badge theo hạng thành viên: Vàng nổi bật nhất, Đồng dùng màu mặc định.</summary>
+    /// <param name="tier">Tên hạng (Đồng/Bạc/Vàng).</param>
     private static string TierBadgeClass(string tier) => tier switch
     {
         "Vàng" => "badge-warning",
@@ -716,6 +765,8 @@
         _ => "badge-info",
     };
 
+    /// <summary>Màu badge theo trạng thái đơn (mã trạng thái của backend).</summary>
+    /// <param name="status">Mã trạng thái đơn (Pending/Confirmed/...).</param>
     private static string OrderStatusBadge(string status) => status switch
     {
         "Completed" => "badge-success",
@@ -726,6 +777,8 @@
         _ => "badge-secondary",
     };
 
+    /// <summary>Dịch mã trạng thái đơn của backend sang tiếng Việt cho khách đọc.</summary>
+    /// <param name="status">Mã trạng thái đơn.</param>
     private static string OrderStatusText(string status) => status switch
     {
         "Pending" => "Chờ xác nhận",
@@ -737,6 +790,11 @@
         _ => status,
     };
 
+    /// <summary>
+    /// Lưu ngày sinh (item 92): chỉ lưu phần ngày (bỏ giờ). Nút bị disable khi
+    /// hết lượt đổi trong năm (CanChangeDateOfBirth) — quy định chống gian lận
+    /// quà sinh nhật (đổi ngày sinh để nhận quà nhiều lần).
+    /// </summary>
     private async Task SaveDobAsync()
     {
         _dobMsg = null;
