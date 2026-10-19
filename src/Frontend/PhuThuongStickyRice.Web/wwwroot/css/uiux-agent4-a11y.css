@@ -430,3 +430,40 @@ html.dark .toast .close:focus-visible {
     outline-color: #a49de0;
 }
 /* === end UIUX Agent 4 — run 13:55 === */
+
+/* ===== UIUX run 14:05 - Agent4 A11y ===== */
+/* uiux-a4-1405-fix1: WCAG 2.1.1 (Keyboard) — ô chọn size/topping trong sheet
+   "xem nhanh" món (Shop quick-view) là <div> @onclick → người dùng bàn phím
+   không tab/bấm được (input native bên trong bị tabindex="-1"). Markup:
+   Shop.razor thêm role="button" tabindex="0" aria-pressed (trạng thái đã
+   chọn) + @onkeydown kích hoạt bằng Enter/Space — theo đúng pattern sẵn có
+   ở HangCho.razor (ZoomOnKey, role="button" tabindex="0"). */
+/* uiux-a4-1405-fix2: WCAG 3.3.2 (Labels or Instructions) — ô tìm kiếm
+   "Tìm tên / SĐT..." ở trang Khách hàng (Customers.razor) chỉ có placeholder,
+   không có label → screen reader đọc thiếu tên ô. Markup thêm
+   aria-label="Tìm khách hàng theo tên hoặc số điện thoại". */
+/* uiux-a4-1405-fix3: WCAG 3.3.2 — ô "Tên tag..." (Customers.razor, popup gắn
+   tag khách hàng, input đi kèm datalist) chỉ có placeholder → thêm
+   aria-label="Nhập tên tag mới cho khách hàng". */
+/* uiux-a4-1405-fix4: WCAG 3.3.2 — 2 ô "Tên shipper"/"SĐT shipper"
+   (OrderList.razor, xác nhận giao hàng) có label hiển thị nhưng KHÔNG ghép
+   for/id → screen reader không tự liên kết. Thêm aria-label khớp đúng text
+   label ("(tùy chọn)") để tên accessible chắc chắn. */
+
+/* uiux-a4-1405-fix5: WCAG 2.4.7 (Focus Visible) — 2 loại "nút giả" dạng div
+   có tabindex="0" (mới: .qv-sheet-opt của Shop; cũ: .cho-ticket của HangCho
+   từ fix keyboard trước) nhưng KHÔNG có bất kỳ focus indicator nào →
+   tab bằng bàn phím không biết đang đứng ở đâu. Vòng tím Lexa #7a6fbe
+   (dark: #a49de0) như các fix :focus-visible trước; :focus-visible để chuột
+   click không dính viền thừa. */
+.qv-sheet-opt:focus-visible,
+.cho-ticket:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+html.dark .qv-sheet-opt:focus-visible,
+html.dark .cho-ticket:focus-visible {
+    outline-color: #a49de0;
+}
+/* ===== END UIUX run 14:05 - Agent4 ===== */

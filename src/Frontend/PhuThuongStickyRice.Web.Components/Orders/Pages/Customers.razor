@@ -25,6 +25,7 @@
         <div class="form-row align-items-center">
             <div class="col-md-3">
                 <input class="form-control" placeholder="Tìm tên / SĐT..."
+                       aria-label="Tìm khách hàng theo tên hoặc số điện thoại"
                        @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchChanged" />
             </div>
             <div class="col-md-3">
@@ -219,7 +220,8 @@ else
                                     {
                                         <span class="d-inline-block">
                                             <input class="form-control form-control-sm d-inline-block" style="width: 130px;"
-                                                   placeholder="Tên tag..." list="tag-presets" @bind="_newTagName" />
+                                                   placeholder="Tên tag..." list="tag-presets" @bind="_newTagName"
+                                                   aria-label="Nhập tên tag mới cho khách hàng" />
                                             <datalist id="tag-presets">
                                                 @foreach (var t in TagPresets)
                                                 {

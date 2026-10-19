@@ -334,11 +334,13 @@ else
                                                 <div class="form-row align-items-end mt-2">
                                                     <div class="col-md-4">
                                                         <label class="mb-1"><small class="text-muted">Tên shipper (tùy chọn)</small></label>
-                                                        <input class="form-control form-control-sm" @bind="_pickupShipperName" placeholder="Tên shipper" />
+                                                        <input class="form-control form-control-sm" @bind="_pickupShipperName" placeholder="Tên shipper"
+                                                               aria-label="Tên shipper (tùy chọn)" />
                                                     </div>
                                                     <div class="col-md-3">
                                                         <label class="mb-1"><small class="text-muted">SĐT shipper (tùy chọn)</small></label>
-                                                        <input class="form-control form-control-sm" @bind="_pickupShipperPhone" placeholder="SĐT shipper" />
+                                                        <input class="form-control form-control-sm" @bind="_pickupShipperPhone" placeholder="SĐT shipper"
+                                                               aria-label="Số điện thoại shipper (tùy chọn)" />
                                                     </div>
                                                     <div class="col-md-5">
                                                         @* Item 155: confirming pickup needs orders.confirm. *@
