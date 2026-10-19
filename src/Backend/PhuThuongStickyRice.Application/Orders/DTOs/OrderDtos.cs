@@ -6,6 +6,10 @@ using Volo.Abp.Application.Dtos;
 
 namespace PhuThuongStickyRice.Application.Orders.DTOs
 {
+    /// <summary>
+    /// Một dòng hàng trong đơn: món, số lượng, đơn giá tại thời điểm đặt
+    /// (chốt giá, không đổi khi giá catalog đổi sau) và thành tiền.
+    /// </summary>
     public class OrderLineDto
     {
         public Guid Id { get; set; }
@@ -32,6 +36,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string Note { get; set; }
     }
 
+    /// <summary>
+    /// DTO đơn hàng đầy đủ: thông tin khách, các dòng hàng, tổng tiền,
+    /// trạng thái đơn/thanh toán, mã giảm giá, điểm đã đổi và lịch sử trạng thái.
+    /// </summary>
     public class OrderDto : EntityDto<Guid>
     {
         public string OrderNumber { get; set; }
@@ -192,6 +200,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public List<OrderLineDto> Lines { get; set; } = new List<OrderLineDto>();
     }
 
+    /// <summary>
+    /// Dòng hàng đầu vào khi tạo đơn (tầng Application): món, số lượng,
+    /// size/topping tùy chọn.
+    /// </summary>
     public class CreateOrderLineDto
     {
         [Required]
@@ -214,6 +226,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string Note { get; set; }
     }
 
+    /// <summary>
+    /// Dữ liệu tạo đơn mới (tầng Application, đã qua validate ở controller):
+    /// thông tin khách, thanh toán, mã giảm giá, điểm đổi và các dòng hàng.
+    /// </summary>
     public class CreateOrderDto
     {
         [Required]
@@ -355,6 +371,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string CancelReason { get; set; }
     }
 
+    /// <summary>
+    /// Đổi số lượng một dòng hàng trong đơn (tầng Application).
+    /// </summary>
     public class UpdateOrderLineQtyDto
     {
         [Required]
@@ -443,6 +462,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public int Rating { get; set; }
     }
 
+    /// <summary>
+    /// Điểm đánh giá chi tiết cho một món trong đơn.
+    /// </summary>
     public class OrderReviewLineDto
     {
         public Guid ProductId { get; set; }
@@ -452,6 +474,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public int Rating { get; set; }
     }
 
+    /// <summary>
+    /// Đánh giá của khách cho một đơn hàng: điểm sao, nhận xét, ảnh và
+    /// điểm chi tiết từng món.
+    /// </summary>
     public class OrderReviewDto
     {
         public Guid Id { get; set; }
@@ -541,6 +567,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string CustomerPhone { get; set; }
     }
 
+    /// <summary>
+    /// Kết quả một lượt quay vòng quay may mắn: ô trúng, nhãn giải thưởng
+    /// và mã giảm giá dùng 1 lần được sinh ra (null khi quay vào ô trượt).
+    /// </summary>
     public class SpinResultDto
     {
         /// <summary>Segment key: Percent5, Percent10, Percent15, FreeShip, Cash20k, Miss.</summary>
@@ -590,6 +620,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public bool IsVip { get; set; }
     }
 
+    /// <summary>
+    /// Tham số lọc/phân trang danh sách đơn hàng (admin): tìm kiếm, trạng
+    /// thái, shipper được gán...
+    /// </summary>
     public class GetOrdersInput : PagedAndSortedResultRequestDto
     {
         // Nullable: filter không bắt buộc, query string vắng mặt => null.
@@ -701,6 +735,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public decimal TotalUnpaidAmount { get; set; }
     }
 
+    /// <summary>
+    /// Đổi trạng thái đơn hàng (tầng Application, kèm lý do khi hủy).
+    /// </summary>
     public class UpdateOrderStatusDto
     {
         [Required]
@@ -804,6 +841,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public bool Simulated { get; set; }
     }
 
+    /// <summary>
+    /// Thống kê tổng quan dashboard: tổng đơn, đơn chờ xử lý, doanh thu,
+    /// cảnh báo đơn chờ quá lâu (UnconfirmedAlertMinutes)...
+    /// </summary>
     public class DashboardStatsDto
     {
         public long TotalOrders { get; set; }
@@ -838,6 +879,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public List<OrderDto> UpcomingPreOrders { get; set; } = new List<OrderDto>();
     }
 
+    /// <summary>
+    /// Số lượng đơn theo từng trạng thái (dùng vẽ biểu đồ trạng thái đơn).
+    /// </summary>
     public class OrdersByStatusDto
     {
         public string Status { get; set; }
@@ -845,6 +889,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public long Count { get; set; }
     }
 
+    /// <summary>
+    /// Doanh thu của một ngày (dùng vẽ biểu đồ doanh thu theo ngày).
+    /// </summary>
     public class RevenueByDayDto
     {
         public DateTime Date { get; set; }
@@ -854,6 +901,9 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public long Orders { get; set; }
     }
 
+    /// <summary>
+    /// Một món trong bảng xếp hạng bán chạy: số lượng đã bán và doanh thu.
+    /// </summary>
     public class TopProductDto
     {
         public Guid ProductId { get; set; }

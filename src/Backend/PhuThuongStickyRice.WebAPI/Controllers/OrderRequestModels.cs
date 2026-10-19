@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+    /// <summary>
+    /// Một dòng hàng trong đơn mới: món, số lượng, size, topping, combo và
+    /// ghi chú món (in trên nhãn dán).
+    /// </summary>
     public sealed class CreateOrderLineRequestModel
     {
         public Guid ProductId { get; set; }
@@ -19,6 +23,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string Note { get; set; }
     }
 
+    /// <summary>
+    /// Body tạo đơn hàng mới ở checkout: thông tin khách, hình thức thanh
+    /// toán/nhận hàng, mã giảm giá, điểm loyalty muốn đổi, mã giới thiệu,
+    /// khóa chống trùng đơn (IdempotencyKey), token reCAPTCHA và nguồn đơn.
+    /// </summary>
         public sealed class CreateOrderRequestModel
     {
         public string CustomerName { get; set; }
@@ -102,6 +111,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public List<CreateOrderLineRequestModel> Lines { get; set; } = new List<CreateOrderLineRequestModel>();
     }
 
+    /// <summary>
+    /// Khách tự hủy đơn ở trang tra cứu: mã đơn + SĐT để xác thực đúng chủ
+    /// đơn, kèm lý do hủy bắt buộc (item 233).
+    /// </summary>
     public sealed class CancelOrderRequestModel
     {
         public string OrderNumber { get; set; }
@@ -117,6 +130,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string CancelReason { get; set; }
     }
 
+    /// <summary>
+    /// Đổi số lượng của một dòng hàng trong đơn (dùng khi khách sửa đơn
+    /// chưa xác nhận).
+    /// </summary>
     public sealed class UpdateOrderLineRequestModel
     {
         public Guid LineId { get; set; }
@@ -124,6 +141,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public int Quantity { get; set; }
     }
 
+    /// <summary>
+    /// Khách sửa các dòng hàng của đơn đã đặt: mã đơn + SĐT xác thực chủ
+    /// đơn + danh sách dòng hàng mới.
+    /// </summary>
     public sealed class UpdateOrderLinesRequestModel
     {
         public string OrderNumber { get; set; }
@@ -133,6 +154,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public List<UpdateOrderLineRequestModel> Lines { get; set; } = new List<UpdateOrderLineRequestModel>();
     }
 
+    /// <summary>
+    /// Khách đổi địa chỉ giao hàng / khung giờ nhận của đơn đã đặt.
+    /// </summary>
     public sealed class UpdateOrderAddressRequestModel
     {
         public string OrderNumber { get; set; }
@@ -144,6 +168,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string DeliverySlot { get; set; }
     }
 
+    /// <summary>
+    /// Khách đổi SĐT người nhận / ghi chú của đơn đã đặt.
+    /// </summary>
     public sealed class UpdateOrderContactRequestModel
     {
         public string OrderNumber { get; set; }
@@ -155,6 +182,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string Notes { get; set; }
     }
 
+    /// <summary>
+    /// Khách đánh giá đơn hàng: điểm sao, nhận xét, ảnh chụp và điểm sao
+    /// chi tiết từng món (Lines).
+    /// </summary>
     public sealed class SubmitReviewRequestModel
     {
         public string OrderNumber { get; set; }
@@ -172,6 +203,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public List<ReviewLineRequestModel> Lines { get; set; } = new List<ReviewLineRequestModel>();
     }
 
+    /// <summary>
+    /// Điểm sao chi tiết cho một món trong đánh giá đơn hàng.
+    /// </summary>
     public sealed class ReviewLineRequestModel
     {
         public Guid ProductId { get; set; }
@@ -179,6 +213,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public int Rating { get; set; }
     }
 
+    /// <summary>
+    /// Lượt quay vòng quay may mắn sau khi đặt đơn: mã đơn + SĐT xác thực
+    /// đúng chủ đơn được quay.
+    /// </summary>
     public sealed class SpinRequestModel
     {
         public Guid OrderId { get; set; }
@@ -186,6 +224,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string CustomerPhone { get; set; }
     }
 
+    /// <summary>
+    /// Admin đổi trạng thái đơn hàng (kèm lý do bắt buộc khi hủy đơn).
+    /// </summary>
     public sealed class UpdateOrderStatusRequestModel
     {
         public string Status { get; set; }
@@ -194,6 +235,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string CancelReason { get; set; }
     }
 
+    /// <summary>
+    /// Khách báo đã chuyển khoản cho đơn: SĐT để xác thực đúng chủ đơn
+    /// trước khi bếp ưu tiên xử lý.
+    /// </summary>
     public sealed class MarkTransferredRequestModel
     {
         public string CustomerPhone { get; set; }

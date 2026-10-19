@@ -13,6 +13,11 @@ using PhuThuongStickyRice.Application.Products;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng báo cáo lợi nhuận gộp (admin): lợi nhuận theo từng món trong
+    /// khoảng ngày, xem/sửa giá vốn. Giá vốn tính theo giá hiện tại của món
+    /// (hệ thống không lưu lịch sử giá vốn — sửa giá làm đổi cả kỳ cũ).
+    /// </summary>
     public interface IGrossProfitReportAppService : IApplicationService
     {
         /// <summary>

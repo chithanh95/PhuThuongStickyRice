@@ -12,6 +12,11 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng chi tiết khách hàng (item 168, admin/thu ngân): lịch sử mua
+    /// hàng theo SĐT — tổng chi tiêu, đơn đầu/cuối, top 3 món, 10 đơn gần
+    /// nhất và tag CRM. Chỉ đọc, đơn hủy tách riêng không tính vào doanh thu.
+    /// </summary>
     public interface ICustomerDetailAppService : IApplicationService
     {
         /// <summary>
