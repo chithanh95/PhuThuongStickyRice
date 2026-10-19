@@ -45,6 +45,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         // Phân trang mặc định cho danh sách đơn: dùng chung ở tham số
         // mặc định của endpoint và ở fallback khi client gửi pageSize < 1.
         private const int DefaultPageSize = 20;
+        // Prefix URL công khai của ảnh đánh giá + thư mục vật lý lưu file —
+        // dùng chung cho cả kiểm tra URL (IsUploadedReviewPhoto) và lưu file
+        // (SaveReviewPhotoAsync), tránh hardcode "/uploads/review-photos/" rời
+        // rạc nhiều chỗ lệch nhau khi đổi cấu trúc thư mục.
+        private const string ReviewPhotoUrlPrefix = "/uploads/review-photos/";
+        private string ReviewPhotosFolder =>
+            Path.Combine(
+                (_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")),
+                "uploads", "review-photos");
 
         public OrdersController(
             IOrderAppService orderAppService,
@@ -645,40 +654,36 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Lưu file ảnh đánh giá vào wwwroot/uploads/review-photos với tên
-        /// ngẫu nhiên (tránh trùng và lộ tên gốc), trả về URL tương đối để
-        /// client gửi kèm khi submit đánh giá.
-        /// </summary>
-        /// <summary>
         /// Kiểm tra PhotoUrl có phải ảnh thật sự được tải lên qua
         /// <c>POST api/orders/track/review/photo</c> không. Chặn farm voucher
         /// đánh giá kèm ảnh bằng URL giả. Bug-hunt 2026-10-19 (17:55).
         /// </summary>
         private bool IsUploadedReviewPhoto(string photoUrl)
         {
-            const string Prefix = "/uploads/review-photos/";
-            if (!photoUrl.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
+            if (!photoUrl.StartsWith(ReviewPhotoUrlPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
             // Path.GetFileName loại bỏ mọi thành phần thư mục — chặn path traversal
             // (vd /uploads/review-photos/../../appsettings.json).
-            var fileName = System.IO.Path.GetFileName(photoUrl.Substring(Prefix.Length));
+            var fileName = System.IO.Path.GetFileName(photoUrl.Substring(ReviewPhotoUrlPrefix.Length));
             if (string.IsNullOrEmpty(fileName))
             {
                 return false;
             }
 
-            var folder = System.IO.Path.Combine(
-                (_environment.WebRootPath ?? System.IO.Path.Combine(_environment.ContentRootPath, "wwwroot")),
-                "uploads", "review-photos");
-            return System.IO.File.Exists(System.IO.Path.Combine(folder, fileName));
+            return System.IO.File.Exists(System.IO.Path.Combine(ReviewPhotosFolder, fileName));
         }
 
+        /// <summary>
+        /// Lưu file ảnh đánh giá vào wwwroot/uploads/review-photos với tên
+        /// ngẫu nhiên (tránh trùng và lộ tên gốc), trả về URL tương đối để
+        /// client gửi kèm khi submit đánh giá.
+        /// </summary>
         private async Task<string> SaveReviewPhotoAsync(IFormFile file, CancellationToken cancellationToken)
         {
-            var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "review-photos");
+            var folder = ReviewPhotosFolder;
             Directory.CreateDirectory(folder);
 
             var fileName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName).ToLowerInvariant()}";
@@ -688,7 +693,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 await file.CopyToAsync(stream, cancellationToken);
             }
 
-            return $"/uploads/review-photos/{fileName}";
+            return $"{ReviewPhotoUrlPrefix}{fileName}";
         }
 
         /// <summary>

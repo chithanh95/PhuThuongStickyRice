@@ -1,6 +1,7 @@
 ﻿using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Core.Services
@@ -91,7 +92,9 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         /// <summary>true khi mã ngôn ngữ nằm trong <see cref="SupportedLanguages"/>.</summary>
         public static bool IsSupported(string language)
         {
-            return language == "vi" || language == "en" || language == "zh" || language == "ja";
+            // Dùng chung mảng SupportedLanguages thay vì hardcode "vi"/"en"/"zh"/"ja"
+            // — thêm ngôn ngữ mới vào SupportedLanguages thì hàm này tự nhận.
+            return SupportedLanguages.Contains(language);
         }
 
         /// <summary>

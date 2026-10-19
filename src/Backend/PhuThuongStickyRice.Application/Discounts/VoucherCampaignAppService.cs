@@ -57,6 +57,11 @@ namespace PhuThuongStickyRice.Application.Discounts
         private const int CodeMaxAttempts = 20;
         // Kích thước chunk khi kiểm tra trùng mã với DB (dưới giới hạn tham số của SQL Server).
         private const int CodeCheckChunkSize = 1000;
+        // Số voucher tối đa sinh trong 1 lần GenerateAsync: chặn click nhầm
+        // "Tất cả khách" với base lớn gây OOM/timeout. Đồng nhất với
+        // MaxExportRows = 5000 của các màn hình export; shop quy mô nhỏ không
+        // phát hành hợp lệ >5000 voucher/lần.
+        private const int MaxGenerateVouchers = 5000;
 
         private readonly IRepository<LoyaltyAccount, Guid> _loyaltyAccounts;
         private readonly IRepository<Order, Guid> _orders;
@@ -136,13 +141,10 @@ namespace PhuThuongStickyRice.Application.Discounts
                 throw new DomainException("Không có khách hàng nào trong đối tượng đã chọn.");
             }
 
-            // perf-hunt 2026-10-19 (run 18:25): chặn đối tượng quá lớn.
-            // GenerateUniqueCodesAsync dựng toàn bộ N mã ứng viên trong 1
-            // HashSet ở memory rồi InsertAsync N lần trong 1 UoW — 1 cú click
-            // nhầm "Tất cả khách" với base lớn có thể gây OOM/timeout request.
-            // Đồng nhất với MaxExportRows = 5000 của các màn hình export;
-            // shop quy mô nhỏ không phát hành hợp lệ >5000 voucher/lần.
-            const int MaxGenerateVouchers = 5000;
+            // Chặn đối tượng quá lớn: GenerateUniqueCodesAsync dựng toàn bộ N mã
+            // ứng viên trong 1 HashSet ở memory rồi InsertAsync N lần trong 1
+            // UoW — 1 cú click nhầm "Tất cả khách" với base lớn có thể gây
+            // OOM/timeout request.
             if (phones.Count > MaxGenerateVouchers)
             {
                 throw new DomainException(

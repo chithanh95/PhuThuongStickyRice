@@ -49,6 +49,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         };
 
         private const string InvalidPhoneMessage = "Số điện thoại không hợp lệ.";
+        // Thông báo khi khách đã quay vòng quay may mắn trong ngày (giờ VN) —
+        // dùng chung cho nhánh kiểm tra và nhánh thua race 2 request đồng thời.
+        private const string AlreadySpunMessage = "Hôm nay bạn đã quay rồi, hẹn mai quay tiếp nhé!";
 
         // Quà sinh nhật (item 43): tặng trước trong vòng N ngày trước sinh nhật.
         private const int BirthdayGiftWindowDays = 7;
@@ -94,6 +97,25 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return (SpinPrizes[^1].Label, SpinPrizes[^1].Value);
         }
 
+        /// <summary>
+        /// Helper dùng chung cho các endpoint landing public có cache: trả
+        /// <c>Ok</c> từ cache nếu còn hạn, ngược lại chạy
+        /// <paramref name="loader"/>, cache kết quả đúng TTL rồi trả
+        /// <c>Ok</c>. Giữ nguyên key/TTL của từng endpoint nên hành vi không đổi.
+        /// </summary>
+        private async Task<ActionResult> GetOrCacheJsonAsync(
+            string cacheKey, TimeSpan ttl, Func<Task<object>> loader)
+        {
+            if (_memoryCache.TryGetValue(cacheKey, out object cached))
+            {
+                return Ok(cached);
+            }
+
+            var value = await loader();
+            _memoryCache.Set(cacheKey, value, ttl);
+            return Ok(value);
+        }
+
         public LandingPublicController(
             StickyRiceDbContext db,
             IDateTimeProvider dateTimeProvider,
@@ -115,27 +137,22 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             // Perf: reviews widget on every landing load. Cache 5 minutes
             // like stats/courses; stale reviews are acceptable.
-            if (_memoryCache.TryGetValue(LandingReviewsCacheKey, out object cached))
-            {
-                return Ok(cached);
-            }
-
-            var reviews = await _db.OrderReviews
-                .Where(r => !r.IsHidden)
-                .OrderByDescending(r => r.CreatedAt)
-                .Take(20)
-                .Select(r => new
-                {
-                    displayName = PhoneNumber.MaskForPublicDisplay(r.CustomerPhone),
-                    rating = r.Rating,
-                    comment = r.Comment,
-                    photoUrl = r.PhotoUrl,
-                    createdAt = r.CreatedAt
-                })
-                .ToListAsync(cancellationToken);
-
-            _memoryCache.Set(LandingReviewsCacheKey, reviews, TimeSpan.FromMinutes(5));
-            return Ok(reviews);
+            return await GetOrCacheJsonAsync(
+                LandingReviewsCacheKey,
+                TimeSpan.FromMinutes(5),
+                async () => await _db.OrderReviews
+                    .Where(r => !r.IsHidden)
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Take(20)
+                    .Select(r => new
+                    {
+                        displayName = PhoneNumber.MaskForPublicDisplay(r.CustomerPhone),
+                        rating = r.Rating,
+                        comment = r.Comment,
+                        photoUrl = r.PhotoUrl,
+                        createdAt = r.CreatedAt
+                    })
+                    .ToListAsync(cancellationToken));
         }
 
         /// <summary>Public: headline stats for the landing page.</summary>
@@ -145,28 +162,26 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             // Perf: headline marketing stats on every landing load — 3
             // aggregate queries. Cache 5 minutes; stale stats are fine.
-            if (_memoryCache.TryGetValue(LandingStatsCacheKey, out object cached))
-            {
-                return Ok(cached);
-            }
+            return await GetOrCacheJsonAsync(
+                LandingStatsCacheKey,
+                TimeSpan.FromMinutes(5),
+                async () =>
+                {
+                    var totalOrders = await _db.Orders.CountAsync(cancellationToken);
 
-            var totalOrders = await _db.Orders.CountAsync(cancellationToken);
+                    var visibleRatings = _db.OrderReviews.Where(r => !r.IsHidden);
+                    var reviewCount = await visibleRatings.CountAsync(cancellationToken);
+                    var avgRating = reviewCount == 0
+                        ? 0
+                        : Math.Round(await visibleRatings.AverageAsync(r => (double)r.Rating, cancellationToken), 1);
 
-            var visibleRatings = _db.OrderReviews.Where(r => !r.IsHidden);
-            var reviewCount = await visibleRatings.CountAsync(cancellationToken);
-            var avgRating = reviewCount == 0
-                ? 0
-                : Math.Round(await visibleRatings.AverageAsync(r => (double)r.Rating, cancellationToken), 1);
-
-            var result = new
-            {
-                totalOrders,
-                avgRating,
-                reviewCount
-            };
-            _memoryCache.Set(LandingStatsCacheKey, result, TimeSpan.FromMinutes(5));
-
-            return Ok(result);
+                    return (object)new
+                    {
+                        totalOrders,
+                        avgRating,
+                        reviewCount
+                    };
+                });
         }
 
         /// <summary>Public: approved customer photos (max 12).</summary>
@@ -176,25 +191,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             // Perf: gallery on every landing load. Cache 5 minutes like
             // reviews/stats; admin photo approvals can wait a few minutes.
-            if (_memoryCache.TryGetValue(LandingGalleryCacheKey, out object cached))
-            {
-                return Ok(cached);
-            }
-
-            var photos = await _db.CustomerPhotos
-                .Where(p => p.IsApproved)
-                .OrderByDescending(p => p.CreatedAt)
-                .Take(12)
-                .Select(p => new
-                {
-                    imageUrl = p.ImageUrl,
-                    caption = p.Caption,
-                    name = p.Name
-                })
-                .ToListAsync(cancellationToken);
-
-            _memoryCache.Set(LandingGalleryCacheKey, photos, TimeSpan.FromMinutes(5));
-            return Ok(photos);
+            return await GetOrCacheJsonAsync(
+                LandingGalleryCacheKey,
+                TimeSpan.FromMinutes(5),
+                async () => await _db.CustomerPhotos
+                    .Where(p => p.IsApproved)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Take(12)
+                    .Select(p => new
+                    {
+                        imageUrl = p.ImageUrl,
+                        caption = p.Caption,
+                        name = p.Name
+                    })
+                    .ToListAsync(cancellationToken));
         }
 
         public class SubscribeRequest
@@ -271,7 +281,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             if (alreadySpun)
             {
-                return Ok(new { success = false, message = "Hôm nay bạn đã quay rồi, hẹn mai quay tiếp nhé!" });
+                return Ok(new { success = false, message = AlreadySpunMessage });
             }
 
             // Weighted random prize.
@@ -299,7 +309,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var recorded = await TryRecordSpinAsync(phone, today, prizeLabel, prizeValue, voucherCode, cancellationToken);
             if (!recorded)
             {
-                return Ok(new { success = false, message = "Hôm nay bạn đã quay rồi, hẹn mai quay tiếp nhé!" });
+                return Ok(new { success = false, message = AlreadySpunMessage });
             }
 
             return Ok(new { success = true, prizeLabel, prizeValue, voucherCode });
@@ -713,27 +723,22 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             // Perf: unbounded active-courses list on every landing load.
             // Cache 5 minutes; no admin CRUD exists for courses (DB-seeded).
-            if (_memoryCache.TryGetValue(LandingCoursesCacheKey, out object cached))
-            {
-                return Ok(cached);
-            }
-
-            var courses = await _db.Courses
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.SortOrder)
-                .ThenBy(c => c.Title)
-                .Select(c => new
-                {
-                    id = c.Id,
-                    title = c.Title,
-                    description = c.Description,
-                    price = c.Price,
-                    thumbnailUrl = c.ThumbnailUrl
-                })
-                .ToListAsync(cancellationToken);
-
-            _memoryCache.Set(LandingCoursesCacheKey, courses, TimeSpan.FromMinutes(5));
-            return Ok(courses);
+            return await GetOrCacheJsonAsync(
+                LandingCoursesCacheKey,
+                TimeSpan.FromMinutes(5),
+                async () => await _db.Courses
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.SortOrder)
+                    .ThenBy(c => c.Title)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        title = c.Title,
+                        description = c.Description,
+                        price = c.Price,
+                        thumbnailUrl = c.ThumbnailUrl
+                    })
+                    .ToListAsync(cancellationToken));
         }
 
         public class CourseEnrollRequest
@@ -793,26 +798,24 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // semantics stay exactly the same.
             var nowHour = _dateTimeProvider.Now.Hour;
             var cacheKey = LandingOffPeakCacheKeyPrefix + nowHour;
-            if (_memoryCache.TryGetValue(cacheKey, out object cached))
-            {
-                return Ok(cached);
-            }
-
-            var promos = await _db.OffPeakPromos
-                .Where(p => p.IsActive)
-                .OrderBy(p => p.StartHour)
-                .Select(p => new
-                {
-                    id = p.Id,
-                    startHour = p.StartHour,
-                    endHour = p.EndHour,
-                    discountAmount = p.DiscountAmount,
-                    isNow = nowHour >= p.StartHour && nowHour < p.EndHour
-                })
-                .ToListAsync(cancellationToken);
-
-            _memoryCache.Set(cacheKey, promos, TimeSpan.FromMinutes(60));
-            return Ok(promos);
+            // Perf: off-peak promo list on every landing load. `isNow`
+            // depends on the current hour, so the cache key includes it —
+            // semantics stay exactly the same.
+            return await GetOrCacheJsonAsync(
+                cacheKey,
+                TimeSpan.FromMinutes(60),
+                async () => await _db.OffPeakPromos
+                    .Where(p => p.IsActive)
+                    .OrderBy(p => p.StartHour)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        startHour = p.StartHour,
+                        endHour = p.EndHour,
+                        discountAmount = p.DiscountAmount,
+                        isNow = nowHour >= p.StartHour && nowHour < p.EndHour
+                    })
+                    .ToListAsync(cancellationToken));
         }
 
         // ============ Retention: 7-day check-in challenge (item 53) ============
@@ -888,27 +891,22 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // Perf: active dish polls on every landing load. Cache 2
             // minutes (voteCount changes often); invalidated on VotePoll
             // below so a vote shows up immediately.
-            if (_memoryCache.TryGetValue(LandingPollsCacheKey, out object cached))
-            {
-                return Ok(cached);
-            }
-
-            var polls = await _db.DishPolls
-                .Where(p => p.IsActive)
-                .OrderByDescending(p => p.VoteCount)
-                .ThenByDescending(p => p.CreatedAt)
-                .Select(p => new
-                {
-                    id = p.Id,
-                    dishName = p.DishName,
-                    description = p.Description,
-                    imageUrl = p.ImageUrl,
-                    voteCount = p.VoteCount
-                })
-                .ToListAsync(cancellationToken);
-
-            _memoryCache.Set(LandingPollsCacheKey, polls, TimeSpan.FromMinutes(2));
-            return Ok(polls);
+            return await GetOrCacheJsonAsync(
+                LandingPollsCacheKey,
+                TimeSpan.FromMinutes(2),
+                async () => await _db.DishPolls
+                    .Where(p => p.IsActive)
+                    .OrderByDescending(p => p.VoteCount)
+                    .ThenByDescending(p => p.CreatedAt)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        dishName = p.DishName,
+                        description = p.Description,
+                        imageUrl = p.ImageUrl,
+                        voteCount = p.VoteCount
+                    })
+                    .ToListAsync(cancellationToken));
         }
 
         public class VoteRequest
