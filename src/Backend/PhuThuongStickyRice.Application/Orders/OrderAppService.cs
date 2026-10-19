@@ -539,7 +539,13 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // Loyalty account (created on first order) + tier discount.
-            var loyaltyAccount = await _loyalty.GetOrCreateAsync(input.CustomerPhone);
+            // SĐT placeholder (POS "0000000000" cho khách vãng lai): không
+            // đụng tới loyalty — không tạo/tìm tài khoản pool chung, không
+            // tier, không redeem. Dùng account transient (không lưu DB) để
+            // code phía dưới gán DateOfBirth / check referral không bị null.
+            var loyaltyAccount = _loyalty.IsPlaceholderPhone(input.CustomerPhone)
+                ? new LoyaltyAccount { Phone = input.CustomerPhone ?? string.Empty }
+                : await _loyalty.GetOrCreateAsync(input.CustomerPhone);
             var (_, tierPercent) = _loyalty.GetTier(loyaltyAccount.TotalSpent, shopSetting);
             decimal tierValue = 0;
             if (loyaltyAccount.TotalSpent > 0 && tierPercent > 0)

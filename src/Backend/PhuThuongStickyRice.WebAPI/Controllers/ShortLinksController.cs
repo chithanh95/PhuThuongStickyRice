@@ -42,6 +42,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 [FromBody] CreateShortLinkDto dto,
                 CancellationToken cancellationToken = default)
             {
+                // Chặn phishing: endpoint public chỉ được rút gọn URL nội bộ
+                // (relative) hoặc cùng host với website — không cho tạo
+                // short-link dạng https://shop/s/xxxxxx trỏ ra site lạ.
+                if (!IsSameHostUrl(dto?.TargetUrl))
+                {
+                    return BadRequest("Chỉ cho phép rút gọn liên kết thuộc website của quán.");
+                }
+
                 return Ok(await _links.CreateAsync(dto));
             }
 
@@ -52,6 +60,32 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 await _links.DeleteAsync(id);
                 return Ok();
+            }
+
+            /// <summary>
+            /// True khi URL là nội bộ (relative) hoặc tuyệt đối cùng host với
+            /// request hiện tại và scheme http/https. URL rỗng để [Required] /
+            /// [Url] trên DTO báo lỗi chuẩn.
+            /// </summary>
+            private bool IsSameHostUrl(string targetUrl)
+            {
+                if (string.IsNullOrWhiteSpace(targetUrl))
+                {
+                    return true;
+                }
+
+                var trimmed = targetUrl.Trim();
+                if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+                {
+                    return true; // URL tương đối = nội bộ
+                }
+
+                if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+                {
+                    return false;
+                }
+
+                return string.Equals(uri.Host, Request.Host.Host, StringComparison.OrdinalIgnoreCase);
             }
         }
 }

@@ -60,6 +60,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
         (string Tier, decimal DiscountPercent) GetTier(decimal totalSpent, ShopSettingDto settings);
 
         string NormalizePhone(string phone);
+
+        /// <summary>
+        /// True cho SĐT placeholder kiểu "0000000000" (POS gán cho khách vãng
+        /// lai không để lại SĐT): mọi chữ số đều giống nhau, không phải SĐT thật.
+        /// </summary>
+        bool IsPlaceholderPhone(string phone);
     }
 
     /// <summary>
@@ -235,6 +241,14 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
         public virtual async Task AwardCompletedOrderAsync(Order order)
         {
+            // POS gán "0000000000" cho khách vãng lai không để lại SĐT: không
+            // tích điểm/tiền vào tài khoản chung này, kẻo điểm của mọi đơn
+            // vãng lai dồn vào 1 pool mà bất kỳ ai nhập SĐT đó cũng redeem được.
+            if (IsPlaceholderPhone(order.CustomerPhone))
+            {
+                return;
+            }
+
             var settings = await _shopSettings.GetAsync();
             var buyer = await GetOrCreateAsync(order.CustomerPhone);
 
@@ -257,11 +271,22 @@ namespace PhuThuongStickyRice.Application.Loyalty
             if (!string.IsNullOrWhiteSpace(order.ReferralCodeUsed))
             {
                 var orderQueryable = await _orders.GetQueryableAsync();
-                var priorCompletedCount = await _asyncExecuter.LongCountAsync(
-                    orderQueryable.Where(x =>
-                        x.Id != order.Id
-                        && x.Status == OrderStatus.Completed
-                        && x.CustomerPhone == buyer.Phone));
+                // So sánh tolerant theo 9 số cuối (pattern như
+                // HasOrderedBeforeAsync): Order.CustomerPhone lưu raw theo
+                // cách khách gõ, buyer.Phone đã chuẩn hóa digits — so raw
+                // trực tiếp cho phép đổi format SĐT để farm bonus nhiều lần.
+                var buyerKey = buyer.Phone.Length >= 9
+                    ? buyer.Phone.Substring(buyer.Phone.Length - 9)
+                    : buyer.Phone;
+                var candidatePhones = await _asyncExecuter.ToListAsync(
+                    orderQueryable
+                        .Where(x => x.Id != order.Id
+                            && x.Status == OrderStatus.Completed
+                            && x.CustomerPhone != null
+                            && x.CustomerPhone.Contains(buyerKey))
+                        .Select(x => x.CustomerPhone));
+                var priorCompletedCount = candidatePhones
+                    .Count(p => PhonesEqualTolerant(p, buyer.Phone));
 
                 if (priorCompletedCount == 0)
                 {
@@ -290,6 +315,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
             string phone, int pointsRequested, ShopSettingDto settings)
         {
             if (pointsRequested <= 0)
+            {
+                return (0, 0);
+            }
+
+            // SĐT placeholder (POS "0000000000"): không cho redeem pool điểm
+            // chung của các đơn vãng lai — trả 0 thay vì trừ tiền.
+            if (IsPlaceholderPhone(phone))
             {
                 return (0, 0);
             }
@@ -373,6 +405,36 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
             var digits = new string(phone.Where(char.IsDigit).ToArray());
             return digits.Length >= 9 ? digits : null;
+        }
+
+        /// <summary>
+        /// SĐT placeholder (vd "0000000000" POS gán cho khách vãng lai): mọi
+        /// chữ số đều giống nhau — không bao giờ là SĐT thật của khách.
+        /// </summary>
+        public bool IsPlaceholderPhone(string phone)
+        {
+            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            return digits.Length > 0 && digits.All(c => c == digits[0]);
+        }
+
+        /// <summary>
+        /// So sánh 2 SĐT theo 9 số cuối (cùng chuẩn với
+        /// OrderAppService.PhonesMatch): "0912 345 678", "+84912345678" và
+        /// "0912345678" là cùng 1 số — chống farm bằng cách đổi format.
+        /// </summary>
+        private static bool PhonesEqualTolerant(string a, string b)
+        {
+            var da = new string((a ?? string.Empty).Where(char.IsDigit).ToArray());
+            var db = new string((b ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (da.Length < 9 || db.Length < 9)
+            {
+                return string.Equals(da, db, StringComparison.Ordinal);
+            }
+
+            return string.Equals(
+                da.Substring(da.Length - 9),
+                db.Substring(db.Length - 9),
+                StringComparison.Ordinal);
         }
 
         private async Task<LoyaltyAccount> FindByPhoneAsync(string normalizedPhone)
