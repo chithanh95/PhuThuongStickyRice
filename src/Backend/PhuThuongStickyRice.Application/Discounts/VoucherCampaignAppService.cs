@@ -84,14 +84,16 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <returns>Danh sách 3 nhóm: khách không mua 30+ ngày, khách theo hạng, tất cả khách.</returns>
         public virtual async Task<List<VoucherCampaignAudienceDto>> GetAudiencesAsync(string tier)
         {
-            var inactive = await GetInactivePhonesAsync();
-            var tierPhones = await GetTierPhonesAsync(tier);
+            // perf-hunt 2026-10-19: chỉ cần số lượng để hiển thị quy mô nhóm,
+            // dùng SELECT COUNT trên SQL thay vì nạp toàn bộ SĐT về memory.
+            var inactiveCount = await GetInactiveCountAsync();
+            var tierCount = await GetTierCountAsync(tier);
             var allCount = await GetAllCountAsync();
 
             return new List<VoucherCampaignAudienceDto>
             {
-                new VoucherCampaignAudienceDto { Key = AudienceInactive30, Name = "Không mua 30+ ngày", RecipientCount = inactive.Count },
-                new VoucherCampaignAudienceDto { Key = AudienceTier, Name = $"Hạng {tier ?? "Vàng"}", RecipientCount = tierPhones.Count },
+                new VoucherCampaignAudienceDto { Key = AudienceInactive30, Name = "Không mua 30+ ngày", RecipientCount = inactiveCount },
+                new VoucherCampaignAudienceDto { Key = AudienceTier, Name = $"Hạng {tier ?? "Vàng"}", RecipientCount = tierCount },
                 new VoucherCampaignAudienceDto { Key = AudienceAll, Name = "Tất cả khách", RecipientCount = allCount }
             };
         }
@@ -250,6 +252,52 @@ namespace PhuThuongStickyRice.Application.Discounts
 
             return await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.TotalSpent > min).Select(x => x.Phone));
+        }
+
+        /// <summary>
+        /// Đếm khách "không mua 30+ ngày" bằng SELECT COUNT — cùng điều kiện
+        /// <see cref="GetInactivePhonesAsync"/> nhưng không nạp SĐT về memory.
+        /// </summary>
+        private async Task<int> GetInactiveCountAsync()
+        {
+            var since = DateTime.UtcNow.AddDays(-30);
+            var orderQuery = await _orders.GetQueryableAsync();
+            var activeNorms = orderQuery
+                .Where(x => x.CreatedAt >= since && x.Status != OrderStatus.Cancelled)
+                .Select(x => x.CustomerPhoneNorm)
+                .Distinct();
+
+            var loyaltyQuery = await _loyaltyAccounts.GetQueryableAsync();
+            return await _asyncExecuter.CountAsync(
+                loyaltyQuery
+                    .Where(x => !activeNorms.Contains(
+                        x.Phone.Length <= 9 ? x.Phone : x.Phone.Substring(x.Phone.Length - 9))));
+        }
+
+        /// <summary>
+        /// Đếm khách theo hạng bằng SELECT COUNT — cùng điều kiện
+        /// <see cref="GetTierPhonesAsync"/> nhưng không nạp SĐT về memory.
+        /// </summary>
+        private async Task<int> GetTierCountAsync(string tier)
+        {
+            var settings = await _shopSettings.GetAsync();
+            var isSilver = string.Equals(tier, "Bạc", StringComparison.OrdinalIgnoreCase);
+            var min = isSilver ? settings.TierSilverMin : settings.TierGoldMin;
+
+            if (min <= 0)
+            {
+                return 0;
+            }
+
+            var queryable = await _loyaltyAccounts.GetQueryableAsync();
+            if (isSilver)
+            {
+                return await _asyncExecuter.CountAsync(
+                    queryable.Where(x => x.TotalSpent >= min));
+            }
+
+            return await _asyncExecuter.CountAsync(
+                queryable.Where(x => x.TotalSpent > min));
         }
 
         /// <summary>Đếm tổng số tài khoản loyalty (dùng hiển thị quy mô nhóm "tất cả khách").</summary>

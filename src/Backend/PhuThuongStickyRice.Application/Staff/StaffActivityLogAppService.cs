@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,16 +38,24 @@ namespace PhuThuongStickyRice.Application.Staff
     {
         private readonly IRepository<StaffActivityLog, Guid> _logs;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IMemoryCache _memoryCache;
+
+        /// <summary>Cache key danh sách loại thao tác — số action hiếm khi đổi nên cache 5 phút.</summary>
+        private const string DistinctActionsCacheKey = "staff-log:distinct-actions";
+        /// <summary>TTL cache danh sách loại thao tác (phút).</summary>
+        private const int DistinctActionsCacheMinutes = 5;
 
         /// <summary>
         /// Khởi tạo service tra cứu nhật ký hoạt động nhân viên (Admin).
         /// </summary>
         public StaffActivityLogAppService(
             IRepository<StaffActivityLog, Guid> logs,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            IMemoryCache memoryCache)
         {
             _logs = logs;
             _asyncExecuter = asyncExecuter;
+            _memoryCache = memoryCache;
         }
 
         public virtual async Task<StaffActivityLogListDto> GetListAsync(GetStaffActivityLogsInput input)
@@ -121,9 +130,21 @@ namespace PhuThuongStickyRice.Application.Staff
         /// </summary>
         private async Task<List<string>> GetDistinctActionsAsync()
         {
+            // perf-hunt 2026-10-19: trước đây mỗi request phân trang đều chạy
+            // SELECT DISTINCT Action quét toàn bộ bảng log (tăng vô hạn theo
+            // thời gian). Danh sách action hiếm khi đổi nên cache 5 phút —
+            // action mới tạo tối đa 5 phút sau mới hiện trong dropdown lọc.
+            if (_memoryCache.TryGetValue(DistinctActionsCacheKey, out List<string> cached))
+            {
+                return cached;
+            }
+
             var actionsQueryable = await _logs.GetQueryableAsync();
-            return await _asyncExecuter.ToListAsync(
+            var actions = await _asyncExecuter.ToListAsync(
                 actionsQueryable.Select(x => x.Action).Distinct());
+            _memoryCache.Set(DistinctActionsCacheKey, actions,
+                TimeSpan.FromMinutes(DistinctActionsCacheMinutes));
+            return actions;
         }
 
         private static StaffActivityLogDto MapToDto(StaffActivityLog x) => new()
