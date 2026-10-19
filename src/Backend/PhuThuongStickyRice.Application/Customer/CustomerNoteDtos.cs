@@ -4,6 +4,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Application.Customer
 {
+        /// <summary>
+        /// Ghi chú nội bộ của staff về một khách hàng (tra theo SĐT): dùng để lưu
+        /// nhớ xử lý đặc biệt (dị ứng, địa chỉ khó tìm, thái độ...) khi nhân viên
+        /// nhận đơn hoặc giao hàng.
+        /// </summary>
         public class CustomerNoteDto
         {
             public Guid Id { get; set; }
@@ -17,6 +22,10 @@ namespace PhuThuongStickyRice.Application.Customer
             public DateTime CreatedAt { get; set; }
         }
 
+        /// <summary>
+        /// Dữ liệu tạo ghi chú khách hàng mới: SĐT (để tra khách) và nội dung
+        /// ghi chú bắt buộc; độ dài nội dung tối đa 2000 ký tự.
+        /// </summary>
         public class CreateCustomerNoteDto
         {
             [Required]
