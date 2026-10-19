@@ -247,6 +247,21 @@ namespace PhuThuongStickyRice.Application.Discounts
         // không shop nào chạy >200 mã công khai đồng thời còn sống.
         private const int MaxPublicCodes = 200;
 
+        // perf-hunt 2026-10-19: bảng DiscountCodes tăng không giới hạn
+        // (vòng quay may mắn / sinh nhật / quy tắc thưởng sinh mã cho
+        // từng khách). Trang admin không nạp hết để không nặng — chỉ lấy
+        // N mã mới nhất.
+        private const int MaxAdminListRows = 500;
+
+        // Trang "mã hết lượt" chỉ là cảnh báo để admin biết mã nào cần gia
+        // hạn — 50 mã mới nhất là đủ, không cần liệt kê hết lịch sử.
+        private const int MaxExhaustedCodes = 50;
+
+        // Kích thước batch khi lọc SĐT theo IN clause. SQL Server giới hạn
+        // ~2100 tham số/query — Chunk 1000 giữ biên độ an toàn, kết quả
+        // tương đương với không chunk.
+        private const int PhoneCheckBatchSize = 1000;
+
         /// <summary>
         /// Điều kiện "mã còn dùng được" dùng chung cho cả kiểm tra 1 mã,
         /// kiểm tra 1 SĐT và kiểm tra hàng loạt — gom 1 chỗ để logic lọc
@@ -305,7 +320,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             // Take(200) của danh sách ví/loyalty.
             var queryable = await _discounts.GetQueryableAsync();
             var entities = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.CreatedDateTime).Take(500));
+                queryable.OrderByDescending(x => x.CreatedDateTime).Take(MaxAdminListRows));
             return entities.Select(MapToDto).ToList();
         }
 
@@ -332,7 +347,7 @@ namespace PhuThuongStickyRice.Application.Discounts
                         && x.MaxUses.HasValue
                         && x.UsedCount >= x.MaxUses.Value)
                     .OrderByDescending(x => x.CreatedDateTime)
-                    .Take(50));
+                    .Take(MaxExhaustedCodes));
             return entities.Select(MapToDto).ToList();
         }
 
@@ -743,12 +758,24 @@ namespace PhuThuongStickyRice.Application.Discounts
                 return new List<DiscountCodeDto>();
             }
 
-            // Validate + sinh mã duy nhất cho từng DTO trước khi insert —
-            // DTO lỗi vẫn ném DomainException như bản đơn, không tạo mã nào.
-            var entities = new List<DiscountCode>(dtos.Count);
+            // Validate toàn bộ DTO trước khi chạm DB — DTO lỗi vẫn ném
+            // DomainException như bản đơn, không tạo mã nào.
+            var prefixes = new List<string>(dtos.Count);
             foreach (var dto in dtos)
             {
-                entities.Add(await BuildGeneratedEntityAsync(dto));
+                ValidateGeneratedDiscountDto(dto);
+                prefixes.Add(NormalizeGeneratedCodePrefix(dto));
+            }
+
+            // perf-hunt 2026-10-20: N mã ứng viên sinh trong memory rồi kiểm
+            // tra trùng 1 lần bằng query WHERE Code IN (chunk 1000) thay vì
+            // 1 query kiểm tra trùng/mã — tiết kiệm N-1 roundtrip DB mỗi đợt.
+            var codes = await GenerateUniqueCodesAsync(prefixes);
+
+            var entities = new List<DiscountCode>(dtos.Count);
+            for (var i = 0; i < dtos.Count; i++)
+            {
+                entities.Add(BuildGeneratedEntity(dtos[i], codes[i]));
             }
 
             // perf-hunt 2026-10-20: gom insert (không SaveChanges từng mã) và
@@ -766,21 +793,52 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
-        /// Validate DTO + sinh mã duy nhất rồi dựng entity DiscountCode dùng
-        /// 1 lần (MaxUses = 1, gắn SĐT chủ sở hữu). Logic dùng chung cho bản
-        /// đơn và bản batch để 2 luồng không lệch nhau.
+        /// Kiểm tra DTO mã sinh tự động: phải có phần trăm giảm hoặc số tiền
+        /// giảm. Ném <see cref="Domain.Exceptions.DomainException"/> khi DTO
+        /// không hợp lệ (giống bản cũ để bản đơn và bản batch không lệch nhau).
         /// </summary>
-        private async Task<DiscountCode> BuildGeneratedEntityAsync(CreateGeneratedDiscountDto dto)
+        /// <param name="dto">DTO cần kiểm tra.</param>
+        private static void ValidateGeneratedDiscountDto(CreateGeneratedDiscountDto dto)
         {
             if (!dto.DiscountPercent.HasValue && !dto.DiscountAmount.HasValue)
             {
                 throw new Domain.Exceptions.DomainException(
                     "Phải nhập phần trăm giảm hoặc số tiền giảm.");
             }
+        }
 
-            var code = await GenerateUniqueCodeAsync(
-                string.IsNullOrWhiteSpace(dto.Prefix) ? "VOUCHER" : dto.Prefix.Trim().ToUpperInvariant());
+        /// <summary>
+        /// Chuẩn hóa tiền tố mã sinh tự động (trim + chữ hoa), mặc định
+        /// "VOUCHER" khi DTO không đặt tiền tố.
+        /// </summary>
+        /// <param name="dto">DTO chứa tiền tố cần chuẩn hóa.</param>
+        /// <returns>Tiền tố đã chuẩn hóa.</returns>
+        private static string NormalizeGeneratedCodePrefix(CreateGeneratedDiscountDto dto)
+            => string.IsNullOrWhiteSpace(dto.Prefix) ? "VOUCHER" : dto.Prefix.Trim().ToUpperInvariant();
 
+        /// <summary>
+        /// Validate DTO + sinh mã duy nhất rồi dựng entity DiscountCode dùng
+        /// 1 lần (MaxUses = 1, gắn SĐT chủ sở hữu). Bản đơn giữ nguyên logic
+        /// cũ; bản batch dùng <see cref="GenerateUniqueCodesAsync"/> để gom
+        /// bước kiểm tra trùng.
+        /// </summary>
+        private async Task<DiscountCode> BuildGeneratedEntityAsync(CreateGeneratedDiscountDto dto)
+        {
+            ValidateGeneratedDiscountDto(dto);
+            var code = await GenerateUniqueCodeAsync(NormalizeGeneratedCodePrefix(dto));
+            return BuildGeneratedEntity(dto, code);
+        }
+
+        /// <summary>
+        /// Dựng entity DiscountCode dùng 1 lần từ DTO đã validate và mã đã
+        /// được đảm bảo duy nhất. Dùng chung cho bản đơn và bản batch để
+        /// 2 luồng không lệch nhau.
+        /// </summary>
+        /// <param name="dto">DTO đã validate.</param>
+        /// <param name="code">Mã giảm giá đã đảm bảo duy nhất.</param>
+        /// <returns>Entity DiscountCode dùng 1 lần.</returns>
+        private static DiscountCode BuildGeneratedEntity(CreateGeneratedDiscountDto dto, string code)
+        {
             return new DiscountCode
             {
                 Code = code,
@@ -861,7 +919,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             // Chunk IN clause theo batch 1000 (SQL Server giới hạn ~2100
             // params) — cùng pattern GetTagsByPhonesAsync; caller tương lai
             // truyền >2100 SĐT sẽ không còn SqlException. Kết quả tương đương.
-            foreach (var batch in list.Chunk(1000))
+            foreach (var batch in list.Chunk(PhoneCheckBatchSize))
             {
                 var rows = await _asyncExecuter.ToListAsync(
                     queryable
@@ -1062,18 +1120,41 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         /// <param name="prefix">Tiền tố mã (đã chuẩn hóa in hoa).</param>
         /// <returns>Mã chưa từng tồn tại trong DB.</returns>
-        private async Task<string> GenerateUniqueCodeAsync(string prefix)
+        /// <summary>
+        /// Sinh 1 mã ứng viên theo tiền tố (chưa kiểm tra trùng): tiền tố +
+        /// phần ngẫu nhiên mật mã (<see cref="RandomNumberGenerator"/>),
+        /// bộ ký tự bỏ I/O/0/1 để khách đọc to không nhầm khi nhập mã.
+        /// </summary>
+        /// <param name="prefix">Tiền tố mã (đã chuẩn hóa in hoa).</param>
+        /// <returns>Mã ứng viên dạng "PREFIX-XXXXXX".</returns>
+        private static string BuildGeneratedCodeCandidate(string prefix)
         {
             // Bộ ký tự bỏ I/O/0/1 (dễ nhầm lẫn khi khách đọc to).
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
             // CA5394: mã giảm giá quy ra tiền nên phải dùng RNG mật mã —
             // Random.Shared đoán được (deterministic PRNG), kẻ xấu có thể dò mã.
+            return prefix + "-" + new string(
+                Enumerable.Range(0, GeneratedCodeRandomPartLength).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
+        }
+
+        /// <summary>
+        /// Fallback khi hết số lần thử sinh ngẫu nhiên (xác suất cực thấp):
+        /// hậu tố từ GUID thay vì retry vô hạn (không kiểm tra DB, như bản cũ).
+        /// </summary>
+        /// <param name="prefix">Tiền tố mã (đã chuẩn hóa in hoa).</param>
+        /// <returns>Mã dạng "PREFIX-XXXXXX" từ GUID.</returns>
+        private static string BuildGeneratedCodeFallback(string prefix)
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+            // operator thay Substring(0, N) — ToString("N") dài 32 ký tự ≥ 6.
+            => prefix + "-" + Guid.NewGuid().ToString("N")[..GeneratedCodeRandomPartLength].ToUpperInvariant();
+
+        private async Task<string> GenerateUniqueCodeAsync(string prefix)
+        {
             var queryable = await _discounts.GetQueryableAsync();
 
             for (var attempt = 0; attempt < GeneratedCodeMaxAttempts; attempt++)
             {
-                var code = prefix + "-" + new string(
-                    Enumerable.Range(0, GeneratedCodeRandomPartLength).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
+                var code = BuildGeneratedCodeCandidate(prefix);
 
                 // [codequality-practices 2026-10-19] Mã vừa sinh đã ở dạng chuẩn
                 // hóa (prefix + ký tự hoa, không khoảng trắng) nên kiểm tra tồn tại
@@ -1084,9 +1165,79 @@ namespace PhuThuongStickyRice.Application.Discounts
                 }
             }
 
-            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
-            // operator thay Substring(0, N) — ToString("N") dài 32 ký tự ≥ 6.
-            return prefix + "-" + Guid.NewGuid().ToString("N")[..GeneratedCodeRandomPartLength].ToUpperInvariant();
+            return BuildGeneratedCodeFallback(prefix);
+        }
+
+        /// <summary>
+        /// perf-hunt 2026-10-20: sinh hàng loạt mã duy nhất cho bản batch —
+        /// toàn bộ mã ứng viên được sinh trong memory rồi kiểm tra trùng 1 lần
+        /// bằng query WHERE Code IN (chunk 1000 tham số), thay vì 1 query/mã.
+        /// Chỉ các mã bị đụng độ mới được sinh lại và kiểm tra tiếp. Ngữ nghĩa
+        /// giữ nguyên như bản đơn <see cref="GenerateUniqueCodeAsync"/>: cùng
+        /// tiền tố/định dạng, cùng giới hạn số lần thử, cùng fallback GUID khi
+        /// hết lần thử; DB vẫn là chốt chặn cuối qua unique index
+        /// IX_DiscountCodes_Code.
+        /// </summary>
+        /// <param name="prefixes">Tiền tố (đã chuẩn hóa) của từng mã, giữ đúng thứ tự.</param>
+        /// <returns>Danh sách mã duy nhất, thứ tự khớp <paramref name="prefixes"/>.</returns>
+        private async Task<List<string>> GenerateUniqueCodesAsync(IReadOnlyList<string> prefixes)
+        {
+            var codes = prefixes.Select(BuildGeneratedCodeCandidate).ToList();
+
+            // Loại trùng trong batch ngay từ đầu (xác suất ~0 nhưng chặn được
+            // unique-index violation ở bước insert).
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < codes.Count; i++)
+            {
+                while (!used.Add(codes[i]))
+                {
+                    codes[i] = BuildGeneratedCodeCandidate(prefixes[i]);
+                }
+            }
+
+            var queryable = await _discounts.GetQueryableAsync();
+            var pending = new HashSet<int>(Enumerable.Range(0, codes.Count));
+            for (var attempt = 0; attempt < GeneratedCodeMaxAttempts && pending.Count > 0; attempt++)
+            {
+                var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                // Chunk 1000 để dưới giới hạn tham số của SQL Server.
+                foreach (var chunk in pending.Select(i => codes[i]).ToList().Chunk(1000))
+                {
+                    var found = await _asyncExecuter.ToListAsync(
+                        queryable.Where(x => chunk.Contains(x.Code)).Select(x => x.Code));
+                    foreach (var code in found)
+                    {
+                        existing.Add(code);
+                    }
+                }
+
+                var collided = pending.Where(i => existing.Contains(codes[i])).ToList();
+                if (collided.Count == 0)
+                {
+                    pending.Clear();
+                    break;
+                }
+
+                // Sinh lại mã bị đụng, vẫn giữ tính duy nhất trong batch.
+                foreach (var i in collided)
+                {
+                    used.Remove(codes[i]);
+                    do
+                    {
+                        codes[i] = BuildGeneratedCodeCandidate(prefixes[i]);
+                    }
+                    while (!used.Add(codes[i]));
+                }
+                pending = new HashSet<int>(collided);
+            }
+
+            // Hết số lần thử mà vẫn đụng: fallback GUID như bản đơn (không check DB).
+            foreach (var i in pending)
+            {
+                codes[i] = BuildGeneratedCodeFallback(prefixes[i]);
+            }
+
+            return codes;
         }
 
         /// <summary>
