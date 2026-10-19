@@ -481,7 +481,7 @@ else
             <div class="card h-100">
                 <div class="card-body">
                     <h4 class="card-title">Khách mới / khách quay lại</h4>
-                    @if (_newReturning == null)
+                    @if (_newAndReturning == null)
                     {
                         <p class="text-muted mb-0"><em>Đang tải...</em></p>
                     }
@@ -489,12 +489,12 @@ else
                     {
                         <div class="row text-center">
                             <div class="col-6">
-                                <h3 class="text-success mb-0">@_newReturning.NewCustomers</h3>
-                                <small class="text-muted">Khách mới<br />@_newReturning.NewCustomerOrders đơn</small>
+                                <h3 class="text-success mb-0">@_newAndReturning.NewCustomers</h3>
+                                <small class="text-muted">Khách mới<br />@_newAndReturning.NewCustomerOrders đơn</small>
                             </div>
                             <div class="col-6">
-                                <h3 class="text-info mb-0">@_newReturning.ReturningCustomers</h3>
-                                <small class="text-muted">Khách quay lại<br />@_newReturning.ReturningCustomerOrders đơn</small>
+                                <h3 class="text-info mb-0">@_newAndReturning.ReturningCustomers</h3>
+                                <small class="text-muted">Khách quay lại<br />@_newAndReturning.ReturningCustomerOrders đơn</small>
                             </div>
                         </div>
                         <small class="text-muted d-block mt-2">Khách mới = lần đầu đặt trong khoảng thời gian đã chọn.</small>
@@ -613,7 +613,7 @@ else
     private DailyTargetModel _dailyTarget;
     private List<SourceStatModel> _sourceStats;
     private List<TopProductModel> _topProducts;
-    private NewAndReturningCustomersModel _newReturning;
+    private NewAndReturningCustomersModel _newAndReturning;
 
     // Wave 6d (item 36): today-vs-yesterday comparison card.
     private TodayVsYesterdayModel _todayVsYesterday;
@@ -703,7 +703,7 @@ else
     {
         try
         {
-            _newReturning = await DashboardService.GetNewAndReturningCustomersAsync(_from, _to);
+            _newAndReturning = await DashboardService.GetNewAndReturningCustomersAsync(_from, _to);
         }
         catch (Exception)
         {

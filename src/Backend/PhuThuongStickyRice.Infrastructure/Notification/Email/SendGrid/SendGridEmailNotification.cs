@@ -34,8 +34,8 @@ namespace PhuThuongStickyRice.Infrastructure.Notification.Email.SendGrid
                 throw new ArgumentException("Email phải có ít nhất một người nhận (Tos).", nameof(emailMessage));
             }
 
-            var msg = MailHelper.CreateSingleEmailToMultipleRecipients(from, tos, emailMessage.Subject, string.Empty, emailMessage.Body, showAllRecipients: true);
-            await client.SendEmailAsync(msg, cancellationToken);
+            var mail = MailHelper.CreateSingleEmailToMultipleRecipients(from, tos, emailMessage.Subject, string.Empty, emailMessage.Body, showAllRecipients: true);
+            await client.SendEmailAsync(mail, cancellationToken);
         }
     }
 }
