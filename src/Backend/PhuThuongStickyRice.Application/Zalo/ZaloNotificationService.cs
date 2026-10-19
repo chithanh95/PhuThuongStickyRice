@@ -4,6 +4,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application.Zalo
 {
+    /// <summary>
+    /// Hợp đồng gửi thông báo qua Zalo OA: biên nhận điện tử sau khi tạo đơn,
+    /// nhắc nhở và tin nhắn chăm sóc khách. Chưa cấu hình token thì chỉ ghi
+    /// log stub để không làm gãy luồng chính.
+    /// </summary>
     public interface IZaloNotificationService
     {
         /// <summary>

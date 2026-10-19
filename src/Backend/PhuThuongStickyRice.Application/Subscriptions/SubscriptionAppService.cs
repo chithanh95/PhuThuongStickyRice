@@ -18,6 +18,11 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Subscriptions
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ gói đăng ký (subscription): khách tạo gói món ăn
+    /// định kỳ, giá chốt theo snapshot catalog lúc tạo (không bị ảnh hưởng
+    /// khi giá món đổi sau), tra cứu và quản lý gói của mình.
+    /// </summary>
     public interface ISubscriptionAppService : IApplicationService
     {
         /// <summary>Public: customer creates a daily subscription.</summary>

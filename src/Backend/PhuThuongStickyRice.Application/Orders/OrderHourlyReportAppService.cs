@@ -12,6 +12,10 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng báo cáo doanh thu theo giờ (admin): gom đơn trong ngày theo
+    /// khung giờ VN, kèm ma trận giờ×món và gợi ý chuẩn bị nguyên liệu cho bếp.
+    /// </summary>
     public interface IOrderHourlyReportAppService : IApplicationService
     {
         /// <summary>

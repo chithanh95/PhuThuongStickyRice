@@ -14,6 +14,10 @@ using PhuThuongStickyRice.Application.Customer;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ báo cáo đơn hàng (admin): đối soát theo kênh thanh
+    /// toán trong ngày, doanh thu/lợi nhuận, báo cáo hủy đơn và món bị chê.
+    /// </summary>
     public interface IOrderReportsAppService : IApplicationService
     {
         /// <summary>

@@ -12,6 +12,11 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng màn hình số thứ tự chờ của quán (item 178): trả về các đơn
+    /// đang chuẩn bị và được mời lấy món để hiển thị trên TV trang /cho.
+    /// Public không cần đăng nhập, không lộ thông tin khách hàng.
+    /// </summary>
     public interface IQueueDisplayAppService : IApplicationService
     {
         /// <summary>
