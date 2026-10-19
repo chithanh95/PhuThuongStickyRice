@@ -114,6 +114,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// hạn vẫn tự bị loại khi quá 30 phút, chậm tối đa 60s không ảnh hưởng.
         /// </summary>
         private static DateTime _lastPruneUtc = DateTime.MinValue;
+        private static readonly object _pruneLock = new();
 
         /// <summary>
         /// Khởi tạo chatbot Messenger với cài đặt shop (token/secret), catalog
@@ -613,13 +614,16 @@ namespace PhuThuongStickyRice.Application.Messenger
         {
             // Throttle: mỗi 60 giây mới quét 1 lần — gọi trên mỗi tin nhắn
             // (ProcessMessageAsync) với O(n) scan sẽ tốn CPU vô ích khi bot
-            // đông. Volatile read/write đủ vì đây chỉ là heuristic best-effort.
+            // đông. Lock nhẹ là đủ vì đây chỉ là heuristic best-effort.
             var now = DateTime.UtcNow;
-            if (now - Volatile.Read(ref _lastPruneUtc) < TimeSpan.FromSeconds(60))
+            lock (_pruneLock)
             {
-                return;
+                if (now - _lastPruneUtc < TimeSpan.FromSeconds(60))
+                {
+                    return;
+                }
+                _lastPruneUtc = now;
             }
-            Volatile.Write(ref _lastPruneUtc, now);
 
             var cutoff = now - SessionTimeout;
             foreach (var kv in _sessions)
