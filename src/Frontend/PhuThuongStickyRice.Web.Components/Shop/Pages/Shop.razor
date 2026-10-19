@@ -668,7 +668,6 @@ else
 
     // Wave 6b (item 29): client-side product search, debounced 300ms.
     private string _searchTerm = string.Empty;
-    private System.Threading.CancellationTokenSource _searchCts;
 
     // Wave 6b (item 26): per-product rating aggregates {avg, count}.
     private Dictionary<Guid, (double Avg, int Count)> _ratings = new Dictionary<Guid, (double Avg, int Count)>();
@@ -1163,7 +1162,6 @@ else
 
     private void ClearSearch()
     {
-        _searchCts?.Cancel();
         _searchTerm = string.Empty;
         ApplyFilters();
     }
@@ -1981,7 +1979,5 @@ else
     {
         I18n.OnChange -= OnLangChanged;
         CartState.OnChange -= OnCartChanged;
-        _searchCts?.Cancel();
-        _searchCts?.Dispose();
     }
 }

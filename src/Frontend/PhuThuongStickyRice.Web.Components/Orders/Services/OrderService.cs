@@ -4,6 +4,7 @@ using PhuThuongStickyRice.Web.Components.Orders.Models;
 using PhuThuongStickyRice.Web.Components.Shop.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -198,7 +199,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         /// <summary>Item 99: hourly best-sellers report for one day.</summary>
         public async Task<HourlySalesReportModel> GetHourlySalesReportAsync(DateTime date)
         {
-            var dateString = date.ToString("yyyy-MM-dd");
+            // CA1305: format ngày cố định cho query string API — dùng
+            // InvariantCulture để không phụ thuộc culture của máy client.
+            var dateString = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             return await GetAsync<HourlySalesReportModel>($"api/admin/orders/hourly-sales?date={dateString}");
         }
 

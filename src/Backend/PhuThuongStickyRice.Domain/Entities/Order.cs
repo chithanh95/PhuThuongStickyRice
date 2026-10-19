@@ -1,3 +1,4 @@
+#nullable enable annotations
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.ValueObjects;
 using System;

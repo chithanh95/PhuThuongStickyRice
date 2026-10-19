@@ -1,3 +1,4 @@
+#nullable enable annotations
 using PhuThuongStickyRice.Web.Components.Admin.Models;
 using PhuThuongStickyRice.Web.Components.Core.Services;
 using System;

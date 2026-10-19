@@ -1,3 +1,4 @@
+#nullable enable annotations
 using PhuThuongStickyRice.Web.Components.Shop.Models;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using System;
@@ -235,7 +236,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// </summary>
         private static async Task<string> ReadServerErrorMessageAsync(HttpResponseMessage response)
         {
-            string body = null;
+            // string?: null là trạng thái hợp lệ (body rỗng / đọc lỗi) —
+            // caller kiểm tra IsNullOrWhiteSpace trước khi dùng.
+            string? body = null;
             try
             {
                 body = await response.Content.ReadAsStringAsync();

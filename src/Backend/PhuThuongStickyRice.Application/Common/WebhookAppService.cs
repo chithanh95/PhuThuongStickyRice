@@ -249,9 +249,10 @@ namespace PhuThuongStickyRice.Application.Common
         {
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
             var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(body));
-            // Convert.ToHexString (.NET 5+): nhanh và ít cấp phát hơn
-            // BitConverter.ToString(...).Replace("-", ...) — output giống hệt (hex chữ thường).
-            return Convert.ToHexString(hash).ToLowerInvariant();
+            // Convert.ToHexStringLower (.NET 5+): hex chữ thường ngay từ đầu,
+            // không cấp phát thêm 1 chuỗi trung gian như ToHexString(...).ToLowerInvariant()
+            // (BitConverter.ToString(...).Replace("-", ...) còn tệ hơn) — output giống hệt.
+            return Convert.ToHexStringLower(hash);
         }
     }
 
