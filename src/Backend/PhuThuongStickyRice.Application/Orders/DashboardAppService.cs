@@ -96,6 +96,12 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int PreOrderLookbackHours = 2;
         /// <summary>Kích thước mỗi batch khi truy vấn SĐT khách cũ (SQL Server giới hạn ~2100 tham số/query).</summary>
         private const int ReturningPhoneQueryBatchSize = 1000;
+        /// <summary>Số sản phẩm mặc định của GetTopProductsAsync khi không truyền hoặc top ≤ 0.</summary>
+        private const int DefaultTopProducts = 5;
+        /// <summary>Số sản phẩm mặc định của API bán chạy khi client không truyền top.</summary>
+        private const int BestSellersDefaultTop = 100;
+        /// <summary>Số lượng tối đa bản ghi bán chạy lưu trong cache (cắt payload trả về).</summary>
+        private const int BestSellersMaxTop = 200;
 
         public DashboardAppService(
             IOrderRepository orders,
@@ -384,7 +390,7 @@ namespace PhuThuongStickyRice.Application.Orders
                         Revenue = g.Sum(x => x.LineTotal.Amount)
                     })
                     .OrderByDescending(x => x.QuantitySold)
-                    .Take(top < 1 ? 5 : top));
+                    .Take(top < 1 ? DefaultTopProducts : top));
         }
 
         /// <summary>
@@ -397,10 +403,10 @@ namespace PhuThuongStickyRice.Application.Orders
             // every shop menu load. The all-time OrderLines aggregate is expensive, so
             // cache the top-200 list (same 5-min TTL semantics as GetSoldQuantitiesAsync)
             // and slice the requested top in memory. Clamp top to avoid huge payloads.
-            var clamped = top < 1 ? 100 : Math.Min(top, 200);
+            var clamped = top < 1 ? BestSellersDefaultTop : Math.Min(top, BestSellersMaxTop);
             var products = await _catalogCache.GetOrAddAsync(
                 "best-sellers",
-                () => GetTopProductsAsync(null, null, 200));
+                () => GetTopProductsAsync(null, null, BestSellersMaxTop));
             return products.Take(clamped).Select(x => x.ProductId).ToList();
         }
 

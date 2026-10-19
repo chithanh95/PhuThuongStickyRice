@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
@@ -103,11 +104,13 @@ namespace PhuThuongStickyRice.Application.Common
 
         private async Task<string> GenerateUniqueCodeAsync()
         {
-            var random = Random.Shared; // perf-hunt 2026-10-19: Random.Shared is thread-safe and avoids same-tick seed collisions across concurrent requests
+            // Dùng RNG an toàn mật mã thay vì Random.Shared để mã short-link
+            // không đoán được từ các mã đã lộ (RandomNumberGenerator.GetInt32
+            // là thread-safe nên vẫn an toàn khi nhiều request đồng thời).
             for (var attempt = 0; attempt < 20; attempt++)
             {
                 var code = new string(
-                    Enumerable.Range(0, 6).Select(_ => CodeChars[random.Next(CodeChars.Length)]).ToArray());
+                    Enumerable.Range(0, 6).Select(_ => CodeChars[RandomNumberGenerator.GetInt32(CodeChars.Length)]).ToArray());
 
                 var queryable = await _links.GetQueryableAsync();
                 var exists = await _asyncExecuter.FirstOrDefaultAsync(

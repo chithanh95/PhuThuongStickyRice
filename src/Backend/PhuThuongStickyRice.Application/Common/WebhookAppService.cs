@@ -218,7 +218,7 @@ namespace PhuThuongStickyRice.Application.Common
 
         /// <summary>Cắt error cho vừa cột DB — giữ phần đầu (loại exception + nguyên nhân).</summary>
         private static string TruncateError(string error) =>
-            error.Length > MaxErrorLength ? error.Substring(0, MaxErrorLength) : error;
+            error.Length > MaxErrorLength ? error[..MaxErrorLength] : error;
 
         /// <summary>HMAC-SHA256 of the raw body, hex-encoded (lowercase).</summary>
         public static string ComputeSignature(string secret, string body)

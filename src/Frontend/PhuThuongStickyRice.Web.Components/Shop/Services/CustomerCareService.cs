@@ -33,7 +33,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 new { DiscountAmount = amount });
             if (!response.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException(await CustomerCareErrorReader.ReadErrorMessageAsync(response));
+                throw new InvalidOperationException(await HttpErrorMessageReader.ReadErrorMessageAsync(response, "Thao tác thất bại. Vui lòng thử lại."));
             }
 
             return await response.Content.ReadFromJsonAsync<BirthdayGiftResultModel>();
@@ -62,7 +62,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 new { Phone = phone, CustomerName = customerName, Message = message });
             if (!response.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException(await CustomerCareErrorReader.ReadErrorMessageAsync(response));
+                throw new InvalidOperationException(await HttpErrorMessageReader.ReadErrorMessageAsync(response, "Thao tác thất bại. Vui lòng thử lại."));
             }
 
             return await response.Content.ReadFromJsonAsync<CustomerReminderModel>();
@@ -139,9 +139,15 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         public DateTime CreatedAt { get; set; }
     }
 
-    internal static class CustomerCareErrorReader
+    /// <summary>
+    /// Helper dùng chung để trích thông điệp lỗi thân thiện từ response HTTP:
+    /// ưu tiên field "message" trong JSON, nếu không có thì dùng nguyên body
+    /// (khi body ngắn), cuối cùng dùng thông điệp dự phòng truyền vào.
+    /// </summary>
+    internal static class HttpErrorMessageReader
     {
-        internal static async Task<string> ReadErrorMessageAsync(HttpResponseMessage response)
+        internal static async Task<string> ReadErrorMessageAsync(
+            HttpResponseMessage response, string fallbackMessage)
         {
             try
             {
@@ -168,7 +174,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 // Fall through to the generic message.
             }
 
-            return "Thao tác thất bại. Vui lòng thử lại.";
+            return fallbackMessage;
         }
     }
 }

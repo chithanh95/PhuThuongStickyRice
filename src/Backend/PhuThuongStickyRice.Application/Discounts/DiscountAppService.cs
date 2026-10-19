@@ -677,23 +677,23 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>Phone equality tolerant of formatting (digits compared, last 9).</summary>
-        private static bool PhonesEqual(string a, string b)
+        private static bool PhonesEqual(string firstPhone, string secondPhone)
         {
-            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+            if (string.IsNullOrWhiteSpace(firstPhone) || string.IsNullOrWhiteSpace(secondPhone))
             {
                 return false;
             }
 
-            var da = new string(a.Where(char.IsDigit).ToArray());
-            var db = new string(b.Where(char.IsDigit).ToArray());
-            if (da.Length < 9 || db.Length < 9)
+            var firstDigits = new string(firstPhone.Where(char.IsDigit).ToArray());
+            var secondDigits = new string(secondPhone.Where(char.IsDigit).ToArray());
+            if (firstDigits.Length < 9 || secondDigits.Length < 9)
             {
-                return string.Equals(da, db, StringComparison.Ordinal);
+                return string.Equals(firstDigits, secondDigits, StringComparison.Ordinal);
             }
 
             return string.Equals(
-                da.Substring(da.Length - 9),
-                db.Substring(db.Length - 9),
+                firstDigits.Substring(firstDigits.Length - 9),
+                secondDigits.Substring(secondDigits.Length - 9),
                 StringComparison.Ordinal);
         }
 

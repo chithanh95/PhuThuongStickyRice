@@ -196,7 +196,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             var session = _sessions.GetOrAdd(psid, key => new ChatSession { Psid = key });
             session.LastActivity = DateTime.UtcNow;
 
-            var norm = Normalize(text);
+            var norm = NormalizeForMatching(text);
 
             if (IsCancel(norm))
             {
@@ -275,7 +275,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                 name = "Khách Messenger";
             }
 
-            var norm = Normalize(text);
+            var norm = NormalizeForMatching(text);
             var fulfillment = norm.Contains("shipper") ? "ShipperPickup" : "CustomerPickup";
 
             try
@@ -410,7 +410,7 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         private static ProductDto MatchProduct(string part, List<ProductDto> items)
         {
-            var normPart = Normalize(part);
+            var normPart = NormalizeForMatching(part);
             if (normPart.Length < 2)
             {
                 return null;
@@ -420,7 +420,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             var bestScore = 0;
             foreach (var p in items)
             {
-                var normName = Normalize(p.Name);
+                var normName = NormalizeForMatching(p.Name);
                 var score = 0;
                 // every word of the query found in the product name scores
                 foreach (var w in normPart.Split(' ', StringSplitOptions.RemoveEmptyEntries))
@@ -518,13 +518,18 @@ namespace PhuThuongStickyRice.Application.Messenger
             return norm is "huy" or "huỷ" or "cancel" || norm.Contains("huy don") || norm.Contains("huỷ đơn");
         }
 
-        private static string Normalize(string s)
+        /// <summary>
+        /// Chuẩn hoá văn bản tin nhắn để so khớp từ khoá: bỏ dấu tiếng Việt, gộp
+        /// khoảng trắng, chữ thường. Dùng khi bot Messenger nhận diện ý định
+        /// (huỷ đơn, hỏi giá...) bất kể khách gõ có dấu hay không.
+        /// </summary>
+        private static string NormalizeForMatching(string text)
         {
-            if (string.IsNullOrWhiteSpace(s))
+            if (string.IsNullOrWhiteSpace(text))
             {
                 return string.Empty;
             }
-            var normalized = s.Normalize(NormalizationForm.FormD);
+            var normalized = text.Normalize(NormalizationForm.FormD);
             var sb = new StringBuilder();
             foreach (var c in normalized)
             {

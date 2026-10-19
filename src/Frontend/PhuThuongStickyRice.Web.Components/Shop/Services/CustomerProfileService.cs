@@ -37,41 +37,11 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             var response = await _httpClient.PutAsJsonAsync("api/customer/profile", model);
             if (!response.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException(await ReadErrorMessageAsync(response));
+                throw new InvalidOperationException(await HttpErrorMessageReader.ReadErrorMessageAsync(
+                    response, "Lưu thất bại. Vui lòng thử lại."));
             }
 
             return await response.Content.ReadFromJsonAsync<CustomerProfileModel>();
-        }
-
-        private static async Task<string> ReadErrorMessageAsync(HttpResponseMessage response)
-        {
-            try
-            {
-                var body = await response.Content.ReadAsStringAsync();
-                // API returns { message: "..." } for user-friendly errors.
-                var start = body.IndexOf("\"message\"", StringComparison.OrdinalIgnoreCase);
-                if (start >= 0)
-                {
-                    var colon = body.IndexOf(':', start);
-                    var quote1 = body.IndexOf('"', colon);
-                    var quote2 = body.IndexOf('"', quote1 + 1);
-                    if (quote1 >= 0 && quote2 > quote1)
-                    {
-                        return body.Substring(quote1 + 1, quote2 - quote1 - 1);
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(body) && body.Length < 300)
-                {
-                    return body;
-                }
-            }
-            catch (Exception)
-            {
-                // Fall through to the generic message.
-            }
-
-            return "Lưu thất bại. Vui lòng thử lại.";
         }
     }
 

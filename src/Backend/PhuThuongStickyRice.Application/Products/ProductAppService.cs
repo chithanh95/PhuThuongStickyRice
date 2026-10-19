@@ -571,7 +571,9 @@ namespace PhuThuongStickyRice.Application.Products
                 return value;
             }
 
-            return value.Substring(0, maxLength);
+            // Range operator [..maxLength] thay Substring(0, maxLength):
+            // ngắn gọn, không sợ nhầm startIndex/length.
+            return value[..maxLength];
         }
 
         private static string FormatMoney(decimal amount)

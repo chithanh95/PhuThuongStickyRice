@@ -1354,7 +1354,9 @@ else
     /// otherwise the generic placeholder (no hardcoded product images).</summary>
     private string ProductImage(ShopProductModel product)
     {
-        var first = FirstImageUrl(product?.ImageUrlsJson);
+        // Gom parse "ảnh đầu tiên" về helper chung CartState.FirstImageUrl
+        // (trước đây Index.razor parse JSON thủ công trùng với CartState).
+        var first = CartState.FirstImageUrl(product?.ImageUrlsJson);
         if (!string.IsNullOrEmpty(first))
         {
             return LandingService.ResolveImageUrl(first);
@@ -1381,40 +1383,6 @@ else
         // (hiển thị placeholder) thay vì làm vỡ cả trang — bỏ qua lỗi có chủ ý.
         catch { }
         return list;
-    }
-
-    private static string FirstImageUrl(string imageUrlsJson)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrlsJson))
-        {
-            return null;
-        }
-
-        try
-        {
-            using var doc = System.Text.Json.JsonDocument.Parse(imageUrlsJson);
-            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
-            {
-                return null;
-            }
-
-            foreach (var el in doc.RootElement.EnumerateArray())
-            {
-                if (el.ValueKind == System.Text.Json.JsonValueKind.String)
-                {
-                    var url = el.GetString()?.Trim();
-                    if (!string.IsNullOrEmpty(url))
-                    {
-                        return url;
-                    }
-                }
-            }
-        }
-        catch (System.Text.Json.JsonException)
-        {
-        }
-
-        return null;
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";

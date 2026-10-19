@@ -28,7 +28,7 @@ namespace PhuThuongStickyRice.Application
 
         public async Task HandleAsync(AddOrUpdateEntityCommand<TEntity> command, CancellationToken cancellationToken = default)
         {
-            await _crudService.AddOrUpdateAsync(command.Entity);
+            await _crudService.AddOrUpdateAsync(command.Entity, cancellationToken);
         }
     }
 }

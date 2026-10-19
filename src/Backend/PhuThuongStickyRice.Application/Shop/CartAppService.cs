@@ -24,9 +24,11 @@ namespace PhuThuongStickyRice.Application.Shop
     [Authorize]
     public class CartAppService : ApplicationService, ICartAppService
     {
+        /// <summary>Repository giỏ hàng (bảng ShoppingCart — mỗi user đúng 1 bản ghi).</summary>
         private readonly IRepository<ShoppingCart, Guid> _carts;
 
-        /// <summary>Khởi tạo service giỏ hàng.</summary>
+        /// <summary>Khởi tạo service giỏ hàng với repository giỏ hàng server.</summary>
+        /// <param name="carts">Repository bảng ShoppingCart.</param>
         public CartAppService(IRepository<ShoppingCart, Guid> carts)
         {
             _carts = carts;

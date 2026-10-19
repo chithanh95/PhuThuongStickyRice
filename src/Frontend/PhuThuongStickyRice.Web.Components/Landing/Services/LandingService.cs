@@ -51,8 +51,8 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
         /// <summary>Đăng ký nhận ưu đãi qua SĐT.</summary>
         public async Task<bool> SubscribeAsync(string phone)
         {
-            var res = await PostAsync<object>("api/landing/subscribe", new { phone });
-            return res != null;
+            var response = await PostAsync<object>("api/landing/subscribe", new { phone });
+            return response != null;
         }
 
         /// <summary>FAQ public cho landing.</summary>
@@ -76,22 +76,22 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
         /// <summary>Giới thiệu bạn bè (item 29).</summary>
         public async Task<bool> ReferAsync(string referrerPhone, string referredPhone)
         {
-            var res = await PostAsync<object>("api/landing/referral", new { referrerPhone, referredPhone });
-            return res != null;
+            var response = await PostAsync<object>("api/landing/referral", new { referrerPhone, referredPhone });
+            return response != null;
         }
 
         /// <summary>Chấm sao nhanh (item 36).</summary>
         public async Task<bool> QuickRateAsync(int rating, Guid? productId = null)
         {
-            var res = await PostAsync<object>("api/landing/quick-rating", new { rating, productId });
-            return res != null;
+            var response = await PostAsync<object>("api/landing/quick-rating", new { rating, productId });
+            return response != null;
         }
 
         /// <summary>Chat với quán (item 37).</summary>
         public async Task<bool> SendChatAsync(string sessionId, string message)
         {
-            var res = await PostAsync<object>("api/landing/chat", new { sessionId, message });
-            return res != null;
+            var response = await PostAsync<object>("api/landing/chat", new { sessionId, message });
+            return response != null;
         }
 
         public async Task<List<ChatMessageModel>> GetChatMessagesAsync(string sessionId)
@@ -119,8 +119,8 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
 
         public async Task<bool> VotePollAsync(Guid pollId, string phone)
         {
-            var res = await PostAsync<object>($"api/landing/polls/{pollId}/vote", new { phone });
-            return res != null;
+            var response = await PostAsync<object>($"api/landing/polls/{pollId}/vote", new { phone });
+            return response != null;
         }
 
         /// <summary>Sinh nhật (item 43).</summary>
@@ -185,8 +185,8 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
 
         public async Task<bool> EnrollCourseAsync(Guid id, string phone)
         {
-            var res = await PostAsync<object>($"api/landing/courses/{id}/enroll", new { phone });
-            return res != null;
+            var response = await PostAsync<object>($"api/landing/courses/{id}/enroll", new { phone });
+            return response != null;
         }
 
         public async Task<LandingContentModel> UpdateContentAsync(LandingContentModel model)

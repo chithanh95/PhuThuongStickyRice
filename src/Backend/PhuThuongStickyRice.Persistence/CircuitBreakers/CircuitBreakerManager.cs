@@ -21,7 +21,7 @@ namespace PhuThuongStickyRice.Persistence.CircuitBreakers
         {
             CircuitBreaker GetCircuitBreakerByName()
             {
-                return _dbContext.Set<CircuitBreaker>().Where(x => x.Name.Equals(name)).FirstOrDefault();
+                return _dbContext.Set<CircuitBreaker>().FirstOrDefault(x => x.Name == name);
             }
 
             var circuitBreaker = GetCircuitBreakerByName();

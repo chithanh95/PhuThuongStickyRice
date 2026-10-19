@@ -189,12 +189,12 @@ namespace PhuThuongStickyRice.Application.Orders
                 return MinParsedQuantity;
             }
 
-            if (int.TryParse(qtyGroup.Value, out var n))
+            if (int.TryParse(qtyGroup.Value, out var parsedQuantity))
             {
-                return n;
+                return parsedQuantity;
             }
 
-            return TextNumbers.TryGetValue(qtyGroup.Value, out var t) ? t : MinParsedQuantity;
+            return TextNumbers.TryGetValue(qtyGroup.Value, out var textQuantity) ? textQuantity : MinParsedQuantity;
         }
     }
 }

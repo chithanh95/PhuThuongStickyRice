@@ -34,7 +34,7 @@ namespace PhuThuongStickyRice.Application.Products.EventHandlers
                 Action = "DELETED_PRODUCT",
                 ObjectId = domainEvent.Entity.Id.ToString(),
                 Log = domainEvent.Entity.AsJsonString(),
-            });
+            }, cancellationToken);
 
             await _outboxEventRepository.AddOrUpdateAsync(new OutboxEvent
             {

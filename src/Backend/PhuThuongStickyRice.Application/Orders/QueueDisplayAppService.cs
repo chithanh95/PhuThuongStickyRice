@@ -23,7 +23,12 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<List<QueueTicketDto>> GetNowServingAsync();
     }
 
-    /// <summary>Item 178: public queue-number display for the waiting area TV.</summary>
+    /// <summary>
+    /// Item 178: màn hình số thứ tự chờ ("Đang chuẩn bị" / "Mời lấy món")
+    /// cho khu vực chờ của quán (trang /cho, thường hiển thị trên TV).
+    /// Public không cần đăng nhập; chỉ trả về số thứ tự, mã đơn rút gọn
+    /// và trạng thái thô — không lộ thông tin khách hàng.
+    /// </summary>
     public class QueueDisplayAppService : ApplicationService, IQueueDisplayAppService
     {
         private readonly IRepository<Order, Guid> _orders;
@@ -36,6 +41,11 @@ namespace PhuThuongStickyRice.Application.Orders
         private const string NowServingCacheKey = "queue:now-serving";
         private static readonly TimeSpan NowServingCacheTtl = TimeSpan.FromSeconds(15);
 
+        /// <summary>
+        /// Khởi tạo service hiển thị hàng chờ.
+        /// </summary>
+        /// <param name="orders">Repository đơn hàng.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
         public QueueDisplayAppService(
             IRepository<Order, Guid> orders,
             IAsyncQueryableExecuter asyncExecuter,
@@ -46,6 +56,15 @@ namespace PhuThuongStickyRice.Application.Orders
             _memoryCache = memoryCache;
         }
 
+        /// <summary>
+        /// Public: danh sách vé số thứ tự cho màn hình chờ (/cho, TV khu vực chờ).
+        /// Chỉ lấy các đơn trong ngày hôm nay (giờ Việt Nam), chưa hủy, ở trạng
+        /// thái Đã xác nhận / Đang chuẩn bị / Mời lấy món. Số thứ tự là vị trí
+        /// của đơn trong tổng số đơn hôm nay — lọc trạng thái trong memory để
+        /// không đánh lại số trên màn hình. Đơn "Mời lấy món" xếp trước vì
+        /// khách cần ra quầy lấy ngay.
+        /// </summary>
+        /// <returns>Danh sách vé: số thứ tự, mã đơn rút gọn (3 ký tự cuối), trạng thái Ready/Preparing.</returns>
         public virtual async Task<List<QueueTicketDto>> GetNowServingAsync()
         {
             if (_memoryCache.TryGetValue(NowServingCacheKey, out List<QueueTicketDto> cached))

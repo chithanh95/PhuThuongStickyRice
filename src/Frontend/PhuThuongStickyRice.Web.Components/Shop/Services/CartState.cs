@@ -19,6 +19,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     {
         private const string StorageKey = "phuthuong.cart.v1";
 
+        /// <summary>
+        /// Giới hạn độ dài ghi chú 1 món (ký tự): ghi chú chỉ in trên nhãn
+        /// dán bếp, quá dài làm tràn nhãn và chật cột ghi chú trong đơn.
+        /// </summary>
+        private const int MaxNoteLength = 500;
+
         private readonly IJSRuntime _jsRuntime;
         private readonly AdminCommerceService _commerceService;
         private readonly List<CartItemModel> _items = new List<CartItemModel>();
@@ -199,16 +205,17 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
 
             var trimmed = note.Trim();
-            // Giới hạn 500 ký tự: ghi chú chỉ in trên nhãn dán bếp, quá dài
-            // làm tràn nhãn và chật cột ghi chú trong đơn.
-            return trimmed.Length > 500 ? trimmed.Substring(0, 500) : trimmed;
+            return trimmed.Length > MaxNoteLength
+                ? trimmed.Substring(0, MaxNoteLength)
+                : trimmed;
         }
 
         /// <summary>
-        /// First non-empty URL from the product's ImageUrlsJson array
-        /// (same parse as the shop/cart Razor pages).
+        /// First non-empty URL from the product's ImageUrlsJson array.
+        /// Shared helper — Cart.razor, DatSoLuongLon.razor and the landing
+        /// Index.razor use this instead of duplicating the same JSON parse.
         /// </summary>
-        private static string FirstImageUrl(string imageUrlsJson)
+        public static string FirstImageUrl(string imageUrlsJson)
         {
             if (string.IsNullOrWhiteSpace(imageUrlsJson))
             {

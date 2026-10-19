@@ -293,7 +293,7 @@ namespace PhuThuongStickyRice.Application.Reports
         private static string FormatVnd(decimal amount) =>
             $"{amount.ToString("N0", new CultureInfo("vi-VN"))}₫";
 
-        private async Task<ShopSetting> GetSingleSettingAsync()
+        private async Task<ShopSetting?> GetSingleSettingAsync()
         {
             var queryable = await _settings.GetQueryableAsync();
             return await _asyncExecuter.FirstOrDefaultAsync(queryable);

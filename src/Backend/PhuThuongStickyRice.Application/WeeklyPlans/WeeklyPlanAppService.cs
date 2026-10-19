@@ -51,6 +51,9 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
         /// <summary>Gói tuần giảm 10% so với mua lẻ từng món.</summary>
         private const decimal WeeklyPlanDiscountFactor = 0.9m;
 
+        /// <summary>Số ngày trong gói tuần (thứ 2 → thứ 6) — đổi ở 1 chỗ duy nhất.</summary>
+        private const int WeekdayCount = 5;
+
         private readonly IRepository<WeeklyPlan, Guid> _plans;
         private readonly IRepository<WeeklyPlanOrder, Guid> _orders;
         private readonly IRepository<Product, Guid> _products;
@@ -253,7 +256,7 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
         private static List<WeeklyPlanDayInput> ValidateCreateInput(
             CreateWeeklyPlanDto dto, List<string> orderedDays)
         {
-            if (dto == null || dto.Days == null || dto.Days.Count != 5)
+            if (dto == null || dto.Days == null || dto.Days.Count != WeekdayCount)
             {
                 throw new DomainException("Gói tuần cần đủ 5 ngày từ thứ 2 đến thứ 6.");
             }
@@ -274,7 +277,7 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             }
 
             var distinct = days.Select(d => d.DayOfWeek.Trim().ToLowerInvariant()).Distinct().Count();
-            if (distinct != 5)
+            if (distinct != WeekdayCount)
             {
                 throw new DomainException("Mỗi ngày từ thứ 2 đến thứ 6 chỉ được chọn 1 lần.");
             }

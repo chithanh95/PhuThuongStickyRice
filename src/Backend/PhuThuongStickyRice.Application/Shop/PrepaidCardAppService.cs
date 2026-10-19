@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
@@ -14,16 +15,26 @@ namespace PhuThuongStickyRice.Application.Shop
 {
     public interface IPrepaidCardAppService : IApplicationService
     {
-        /// <summary>Public: customer buys a prepaid card package.</summary>
+        /// <summary>Public: khách mua gói thẻ trả trước (gói 20 hoặc 30 suất).</summary>
+        /// <param name="dto">Tên, SĐT khách và gói suất.</param>
+        /// <returns>Thông tin thẻ vừa tạo (kèm mã thẻ để khách giữ).</returns>
         Task<PrepaidCardDto> BuyAsync(BuyPrepaidCardDto dto);
 
-        /// <summary>Public: list cards of a phone number, newest first.</summary>
+        /// <summary>Public: liệt kê các thẻ của một SĐT, mới nhất trước (khách tra cứu thẻ của mình).</summary>
+        /// <param name="phone">SĐT đã đăng ký thẻ.</param>
+        /// <returns>Danh sách thẻ, mới nhất trước.</returns>
         Task<List<PrepaidCardDto>> GetMyCardsAsync(string phone);
 
-        /// <summary>Admin: paged card list, search by name/phone/code.</summary>
+        /// <summary>Admin: danh sách thẻ có phân trang, tìm kiếm theo tên/SĐT/mã thẻ.</summary>
+        /// <param name="searchTerm">Từ khóa tìm kiếm (tùy chọn).</param>
+        /// <param name="skip">Số dòng bỏ qua (phân trang).</param>
+        /// <param name="take">Số dòng lấy, mặc định 20, tối đa 200.</param>
+        /// <returns>Danh sách thẻ, mới nhất trước.</returns>
         Task<List<PrepaidCardDto>> GetListAsync(string searchTerm, int skip = 0, int take = 20);
 
-        /// <summary>Admin: redeem one suit from a card code.</summary>
+        /// <summary>Admin: trừ 1 suất khỏi thẻ theo mã thẻ (nhân viên quầy thực hiện khi khách đến ăn).</summary>
+        /// <param name="cardCode">Mã thẻ (ví dụ TX482193).</param>
+        /// <returns>Thông tin thẻ sau khi trừ suất.</returns>
         Task<PrepaidCardDto> RedeemAsync(string cardCode);
     }
 
@@ -37,11 +48,16 @@ namespace PhuThuongStickyRice.Application.Shop
         /// <summary>Giá niêm yết 1 suất xôi (25.000đ) — làm gốc tính giá gói thẻ.</summary>
         public const decimal BaseSuitPrice = 25000m;
 
+        /// <summary>
+        /// Regex SĐT Việt Nam 10 số, bắt đầu bằng 0 và đầu số di động hợp lệ
+        /// (03/05/07/08/09) — dùng validate khi mua thẻ trả trước.
+        /// </summary>
         private static readonly Regex VnPhoneRegex = new(@"^(0)(3|5|7|8|9)\d{8}$", RegexOptions.Compiled);
 
         private readonly IRepository<PrepaidCard, Guid> _cards;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Khởi tạo service thẻ trả trước.</summary>
         public PrepaidCardAppService(
             IRepository<PrepaidCard, Guid> cards,
             IAsyncQueryableExecuter asyncExecuter)
@@ -206,7 +222,10 @@ namespace PhuThuongStickyRice.Application.Shop
         {
             for (var attempt = 0; attempt < 5; attempt++)
             {
-                var code = "TX" + Random.Shared.Next(0, 999999).ToString("D6");
+                // Mã thẻ nạp được tiền thật nên dùng RNG an toàn mật mã:
+                // Random.Shared có thể bị đoán mã tiếp theo từ các mã đã lộ.
+                // GetInt32(min, max) giữ nguyên ngữ nghĩa max-exclusive như Random.Next.
+                var code = "TX" + RandomNumberGenerator.GetInt32(0, 999999).ToString("D6");
                 var exists = await _cards.FirstOrDefaultAsync(c => c.CardCode == code);
                 if (exists == null)
                 {

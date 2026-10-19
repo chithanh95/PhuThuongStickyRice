@@ -6,8 +6,10 @@ using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.Repositories;
 using System;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application.Orders.Payments
@@ -30,7 +32,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
     /// database first (admin-editable at /admin/thanh-toan), falling back to
     /// appsettings. Secrets stay in appsettings only.
     /// </summary>
-    public class MoMoPaymentService : IMoMoPaymentService
+    public partial class MoMoPaymentService : IMoMoPaymentService
     {
         private const string RequestType = "captureWallet";
         /// <summary>Giá trị placeholder trong cấu hình — gặp giá trị này ở PartnerCode/AccessKey/SecretKey thì coi như MoMo chưa được cấu hình.</summary>
@@ -200,7 +202,9 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
             response.EnsureSuccessStatusCode();
 
-            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            // Parse thẳng từ stream (async) thay vì buffer toàn bộ body thành
+            // string rồi parse lại — ít allocation, không chặn thread I/O.
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
             var root = doc.RootElement;
             var resultCode = root.TryGetProperty("resultCode", out var rc) ? rc.GetInt32() : -1;
             if (resultCode != 0)
@@ -250,7 +254,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             // Verify the echoed create-signature: recompute it from the same
             // deterministic inputs used at create time.
             var expectedSignature = await BuildCreateSignatureAsync(order);
-            if (!string.Equals(expectedSignature, callback.SimulatedSignature, StringComparison.Ordinal))
+            if (!SignaturesEqual(expectedSignature, callback.SimulatedSignature))
             {
                 throw new DomainException("Invalid simulated MoMo signature.");
             }
@@ -283,7 +287,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 callback.RequestId ?? string.Empty, callback.ResponseTime, callback.ResultCode,
                 callback.TransId ?? string.Empty);
             var expectedSignature = MoMoSigner.Sign(rawString, options.SecretKey);
-            if (!string.Equals(expectedSignature, callback.Signature, StringComparison.Ordinal))
+            if (!SignaturesEqual(expectedSignature, callback.Signature))
             {
                 throw new DomainException("Invalid MoMo callback signature.");
             }
@@ -339,9 +343,36 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 return null;
             }
 
-            var match = System.Text.RegularExpressions.Regex.Match(
-                orderInfo, @"PX-\d{8}-\d+");
+            // GeneratedRegex: regex được biên dịch ngay lúc build (không tốn
+            // Regex.Compile ở runtime, không cache động như Regex.Match static) —
+            // cùng convention với MessengerChatService/OrderIntentParser.
+            var match = OrderNumberRegex().Match(orderInfo);
             return match.Success ? match.Value : null;
+        }
+
+        [GeneratedRegex(@"PX-\d{8}-\d+")]
+        private static partial Regex OrderNumberRegex();
+
+        /// <summary>
+        /// So sánh chữ ký HMAC chống timing attack: CryptographicOperations.
+        /// FixedTimeEquals so sánh byte-by-byte trong thời gian cố định, còn
+        /// string.Equals(Ordinal) thoát sớm ở ký tự khác nhau đầu tiên — kẻ
+        /// tấn công có thể đo thời gian phản hồi để đoán dần từng ký tự của
+        /// chữ ký đúng (đặc biệt nguy hiểm với callback IPN MoMo tiền thật).
+        /// Null ở bất kỳ phía nào → false (không ném).
+        /// </summary>
+        private static bool SignaturesEqual(string expected, string actual)
+        {
+            if (expected == null || actual == null)
+            {
+                return false;
+            }
+
+            // Cả hai đều là chuỗi hex chữ thường do MoMoSigner.Sign sinh —
+            // encode UTF-8 1 byte/ký tự nên so byte tương đương so ký tự.
+            return CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(expected),
+                Encoding.UTF8.GetBytes(actual));
         }
 
         private async Task<string> BuildCreateSignatureAsync(Order order)

@@ -446,30 +446,9 @@ else
 
     private static string ProductImage(ShopProductModel product)
     {
-        string first = null;
-        try
-        {
-            if (!string.IsNullOrWhiteSpace(product?.ImageUrlsJson))
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(product.ImageUrlsJson);
-                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
-                {
-                    foreach (var el in doc.RootElement.EnumerateArray())
-                    {
-                        if (el.ValueKind == System.Text.Json.JsonValueKind.String)
-                        {
-                            var url = el.GetString()?.Trim();
-                            if (!string.IsNullOrEmpty(url))
-                            {
-                                first = url;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception) { }
+        // Parse "ảnh đầu tiên" gom về CartState.FirstImageUrl thay vì parse
+        // JSON thủ công trùng lặp (đã từng có 4 bản copy logic này).
+        var first = CartState.FirstImageUrl(product?.ImageUrlsJson);
         if (!string.IsNullOrEmpty(first))
         {
             return first;

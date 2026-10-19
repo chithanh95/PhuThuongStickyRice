@@ -218,34 +218,10 @@ else
 
     private string SuggestionImage(ShopProductModel s)
     {
-        var first = FirstImageUrl(s?.ImageUrlsJson);
+        var first = CartState.FirstImageUrl(s?.ImageUrlsJson);
         if (!string.IsNullOrEmpty(first))
             return AdminCommerceService.ResolveImageUrl(first);
         return PlaceholderImage;
-    }
-
-    private static string FirstImageUrl(string imageUrlsJson)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrlsJson))
-            return null;
-        try
-        {
-            using var doc = System.Text.Json.JsonDocument.Parse(imageUrlsJson);
-            if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
-            {
-                foreach (var el in doc.RootElement.EnumerateArray())
-                {
-                    if (el.ValueKind == System.Text.Json.JsonValueKind.String)
-                    {
-                        var url = el.GetString()?.Trim();
-                        if (!string.IsNullOrEmpty(url))
-                            return url;
-                    }
-                }
-            }
-        }
-        catch { }
-        return null;
     }
 
     // GH1: freeship progress bar (0 = not configured → hidden).

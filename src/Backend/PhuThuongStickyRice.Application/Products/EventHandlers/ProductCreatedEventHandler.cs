@@ -35,7 +35,7 @@ namespace PhuThuongStickyRice.Application.Products.EventHandlers
                 Action = "CREATED_PRODUCT",
                 ObjectId = domainEvent.Entity.Id.ToString(),
                 Log = domainEvent.Entity.AsJsonString(),
-            });
+            }, cancellationToken);
 
             await _outboxEventRepository.AddOrUpdateAsync(new OutboxEvent
             {

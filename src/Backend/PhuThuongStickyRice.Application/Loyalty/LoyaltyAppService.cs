@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
@@ -716,12 +717,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private async Task<string> GenerateReferralCodeAsync()
         {
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            var random = Random.Shared; // perf-hunt 2026-10-19: Random.Shared is thread-safe and avoids same-tick seed collisions across concurrent requests
+            // Mã giới thiệu gắn với điểm thưởng nên dùng RNG an toàn mật mã
+            // thay vì Random.Shared (có thể bị đoán mã tiếp theo từ mã đã lộ).
 
             for (var attempt = 0; attempt < 10; attempt++)
             {
                 var code = "PT-" + new string(
-                    Enumerable.Range(0, 6).Select(_ => chars[random.Next(chars.Length)]).ToArray());
+                    Enumerable.Range(0, 6).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
 
                 var queryable = await _accounts.GetQueryableAsync();
                 var exists = await _asyncExecuter.FirstOrDefaultAsync(

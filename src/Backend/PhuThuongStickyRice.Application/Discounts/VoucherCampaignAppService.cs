@@ -20,10 +20,14 @@ namespace PhuThuongStickyRice.Application.Discounts
     /// </summary>
     public interface IVoucherCampaignAppService : IApplicationService
     {
-        /// <summary>Admin: audience sizes for the campaign picker.</summary>
+        /// <summary>Admin: quy mô đối tượng cho khung chọn chiến dịch (3 nhóm: không mua 30+ ngày, theo hạng, tất cả).</summary>
+        /// <param name="tier">Tên hạng ("Bạc"/"Vàng") cho nhóm theo hạng; trống thì mặc định hạng Vàng.</param>
+        /// <returns>Danh sách 3 nhóm kèm số lượng người nhận ước tính.</returns>
         Task<List<VoucherCampaignAudienceDto>> GetAudiencesAsync(string tier);
 
-        /// <summary>Admin: generates one personal DiscountCode per recipient phone.</summary>
+        /// <summary>Admin: phát hành 1 mã giảm giá cá nhân cho mỗi SĐT thuộc đối tượng đã chọn.</summary>
+        /// <param name="input">Đối tượng, mức giảm, tiền tố mã, số ngày hiệu lực.</param>
+        /// <returns>Danh sách cặp SĐT → mã voucher đã tạo, để admin copy đi gửi.</returns>
         Task<List<GeneratedVoucherDto>> GenerateAsync(CreateVoucherCampaignInput input);
     }
 
@@ -50,6 +54,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         private readonly IShopSettingAppService _shopSettings;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Khởi tạo service chiến dịch voucher với các repository và service liên quan.</summary>
         public VoucherCampaignAppService(
             IRepository<LoyaltyAccount, Guid> loyaltyAccounts,
             IRepository<Order, Guid> orders,
@@ -156,10 +161,14 @@ namespace PhuThuongStickyRice.Application.Discounts
                 result.Add(new GeneratedVoucherDto { Phone = phones[i], Code = codes[i] });
             }
 
-            // The ambient ABP unit of work commits the batch on completion.
+            // ABP unit of work tự commit toàn bộ batch khi method kết thúc (không cần SaveChanges thủ công).
             return result;
         }
 
+        /// <summary>
+        /// Lấy SĐT khách "không mua 30+ ngày": có tài khoản loyalty nhưng không có
+        /// đơn nào (trừ đơn đã hủy) trong 30 ngày gần nhất.
+        /// </summary>
         private async Task<List<string>> GetInactivePhonesAsync()
         {
             // Khách "không mua 30+ ngày": có tài khoản loyalty nhưng không có
@@ -178,6 +187,11 @@ namespace PhuThuongStickyRice.Application.Discounts
             return all.Where(p => !activeSet.Contains(p)).ToList();
         }
 
+        /// <summary>
+        /// Lấy SĐT khách theo hạng: tổng chi tiêu ≥ ngưỡng của hạng.
+        /// Ngưỡng hạng lấy từ cài đặt shop (mặc định "Vàng" nếu tier khác "Bạc").
+        /// </summary>
+        /// <param name="tier">Tên hạng ("Bạc" dùng ngưỡng Bạc, còn lại dùng ngưỡng Vàng).</param>
         private async Task<List<string>> GetTierPhonesAsync(string tier)
         {
             var settings = await _shopSettings.GetAsync();
@@ -190,12 +204,14 @@ namespace PhuThuongStickyRice.Application.Discounts
                 queryable.Where(x => x.TotalSpent >= min).Select(x => x.Phone));
         }
 
+        /// <summary>Đếm tổng số tài khoản loyalty (dùng hiển thị quy mô nhóm "tất cả khách").</summary>
         private async Task<int> GetAllCountAsync()
         {
             var queryable = await _loyaltyAccounts.GetQueryableAsync();
             return await _asyncExecuter.CountAsync(queryable);
         }
 
+        /// <summary>Lấy toàn bộ SĐT có tài khoản loyalty (nhóm "tất cả khách").</summary>
         private async Task<List<string>> GetAllPhonesAsync()
         {
             var queryable = await _loyaltyAccounts.GetQueryableAsync();
@@ -203,12 +219,15 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
-        /// Generates <paramref name="count"/> unique voucher codes.
-        /// In-batch duplicates are excluded via a HashSet; DB collisions are
-        /// detected with a single batched query per attempt (chunked at 1000
-        /// to stay under SQL Server's parameter limit) and only colliding
-        /// codes are regenerated. Semantics match the old per-code check.
+        /// Sinh <paramref name="count"/> mã voucher duy nhất dạng "TIỀN TỐ + '-' + 6 ký tự".
+        /// Trùng mã trong batch loại bằng HashSet; trùng với DB phát hiện bằng 1 query
+        /// gộp mỗi lần thử (cắt chunk 1000 để dưới giới hạn tham số của SQL Server),
+        /// chỉ sinh lại những mã bị trùng. Thử tối đa 20 lần rồi báo lỗi để không treo request.
         /// </summary>
+        /// <param name="prefix">Tiền tố mã (đã chuẩn hóa chữ hoa).</param>
+        /// <param name="count">Số mã cần sinh (= số người nhận).</param>
+        /// <returns>Danh sách mã chưa từng tồn tại trong DB.</returns>
+        /// <exception cref="DomainException">Ném khi sau 20 lần thử vẫn còn trùng mã.</exception>
         private async Task<List<string>> GenerateUniqueCodesAsync(string prefix, int count)
         {
             var codes = new List<string>(count);
@@ -223,6 +242,7 @@ namespace PhuThuongStickyRice.Application.Discounts
                 codes.Add(code);
             }
 
+            // Giới hạn 20 lần thử để tránh vòng lặp vô hạn nếu DB gần như đầy mã.
             for (var attempt = 0; attempt < 20; attempt++)
             {
                 var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

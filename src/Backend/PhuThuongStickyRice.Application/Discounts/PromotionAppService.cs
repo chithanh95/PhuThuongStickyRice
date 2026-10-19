@@ -15,8 +15,8 @@ using PhuThuongStickyRice.Application.Discounts;
 namespace PhuThuongStickyRice.Application.Discounts
 {
     /// <summary>
-    /// Item 91: "Khuyến mãi giờ vàng" time-window promotions.
-    /// The best active promotion is auto-applied at checkout (Vietnam time).
+    /// Item 91: hợp đồng khuyến mãi "giờ vàng" theo khung giờ.
+    /// Khuyến mãi có % giảm cao nhất đang diễn ra được checkout tự áp theo giờ Việt Nam.
     /// <para>
     /// Hợp đồng khuyến mãi "giờ vàng": admin CRUD; checkout gọi
     /// <c>GetBestActiveAsync</c> (không cần login) để lấy khuyến mãi tốt nhất
@@ -45,9 +45,11 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task DeleteAsync(Guid id);
 
         /// <summary>
-        /// Best (highest percent) active promotion for the given moment
-        /// (Vietnam local time). Null when none applies.
+        /// Khuyến mãi có % giảm cao nhất đang diễn ra tại thời điểm cho trước
+        /// (giờ Việt Nam). Trả null khi không có khuyến mãi nào áp dụng.
         /// </summary>
+        /// <param name="vnNow">Thời điểm kiểm tra (giờ Việt Nam); null thì dùng thời gian hiện tại.</param>
+        /// <returns>DTO khuyến mãi tốt nhất, hoặc null.</returns>
         Task<PromotionDto> GetBestActiveAsync(DateTime? vnNow = null);
     }
 
@@ -65,6 +67,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>Khởi tạo service khuyến mãi giờ vàng.</summary>
         public PromotionAppService(
             IRepository<Promotion, Guid> promotions,
             IAsyncQueryableExecuter asyncExecuter,
@@ -142,13 +145,18 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
-        /// Public: the checkout page previews the active promotion.
-        /// The IsActive list is cached (5 min); the time-window filter still
-        /// runs per call so start/end semantics are unchanged.
+        /// Public: checkout gọi để xem trước khuyến mãi đang diễn ra.
+        /// Danh sách KM đang bật được cache 5 phút (giống mô tả class), còn
+        /// lọc theo khung giờ vẫn chạy theo từng request nên giờ bắt đầu/kết
+        /// thúc luôn chính xác khi admin đổi.
         /// </summary>
+        /// <param name="vnNow">Thời điểm kiểm tra (giờ Việt Nam); null thì dùng thời gian hiện tại.</param>
+        /// <returns>DTO khuyến mãi có % giảm cao nhất đang diễn ra, hoặc null.</returns>
         [AllowAnonymous]
         public virtual async Task<PromotionDto> GetBestActiveAsync(DateTime? vnNow = null)
         {
+            // Admin có thể truyền vnNow để preview "lúc này có KM nào"; nếu không
+            // truyền thì dùng giờ hiện tại của Việt Nam (UTC+7).
             var now = vnNow ?? DateTime.UtcNow.AddHours(VietnamTime.UtcOffsetHours);
             var active = await _catalogCache.GetOrAddAsync("promotions:active-list", QueryActiveAsync);
             var best = active
@@ -158,6 +166,11 @@ namespace PhuThuongStickyRice.Application.Discounts
             return best?.Dto;
         }
 
+        /// <summary>
+        /// Truy vấn DB lấy các khuyến mãi đang bật để nạp vào cache.
+        /// Lọc khung giờ (giờ/ngày) không làm ở đây — cache chỉ giữ snapshot,
+        /// còn kiểm tra khung giờ chạy riêng mỗi request trong <c>GetBestActiveAsync</c>.
+        /// </summary>
         private async Task<List<CachedActivePromotion>> QueryActiveAsync()
         {
             var queryable = await _promotions.GetQueryableAsync();
@@ -224,6 +237,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             return time >= p.StartTime || time < p.EndTime;
         }
 
+        /// <summary>Map entity Promotion → DTO (định dạng giờ về chuỗi "HH:mm" cho API/admin).</summary>
         private static PromotionDto Map(Promotion p) => new PromotionDto
         {
             Id = p.Id,

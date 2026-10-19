@@ -14,8 +14,8 @@ namespace PhuThuongStickyRice.Application.Admin
 {
     public interface IAdminSearchNotificationAppService : IApplicationService
     {
-        /// <summary>Item 157: global admin search across orders, products, customers.</summary>
-        Task<GlobalSearchResultDto> SearchAsync(string q);
+        /// <summary>Tìm kiếm toàn cục trong admin theo từ khoá: đơn hàng, sản phẩm, khách hàng.</summary>
+        Task<GlobalSearchResultDto> SearchAsync(string query);
 
         /// <summary>Item 158: aggregated admin notifications.</summary>
         Task<List<NotificationDto>> GetNotificationsAsync();
@@ -51,15 +51,15 @@ namespace PhuThuongStickyRice.Application.Admin
             _customerProfile = customerProfile;
         }
 
-        public virtual async Task<GlobalSearchResultDto> SearchAsync(string q)
+        public virtual async Task<GlobalSearchResultDto> SearchAsync(string query)
         {
             var result = new GlobalSearchResultDto();
-            if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+            if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 2)
             {
                 return result;
             }
 
-            var term = q.Trim();
+            var term = query.Trim();
 
             // Sequential awaits: all repositories in one UoW share a single DbContext,
             // so concurrent EF operations throw "A second operation was started

@@ -149,7 +149,9 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 var executer = provider.GetRequiredService<IAsyncQueryableExecuter>();
                 var since = DateTime.UtcNow.AddHours(-1);
                 var queryable = await logs.GetQueryableAsync();
-                return (int)await executer.LongCountAsync(queryable.Where(x =>
+                // CountAsync trả về int luôn — không cần LongCountAsync rồi
+                // ép kiểu về int (đếm 64-bit vô nghĩa cho bảng log).
+                return await executer.CountAsync(queryable.Where(x =>
                     x.At >= since && (x.Level == "Error" || x.Level == "Critical")));
             }
             catch (Exception ex)
