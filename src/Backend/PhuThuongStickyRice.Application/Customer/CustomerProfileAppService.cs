@@ -233,16 +233,27 @@ namespace PhuThuongStickyRice.Application.Customer
             var userQuery = await _users.GetQueryableAsync();
             var roleQuery = await _userRoles.GetQueryableAsync();
 
+            // perf-hunt 2026-10-19 (run 14:05): trước đây select full entity
+            // IdentityUser (gồm PasswordHash, SecurityStamp...) về memory trong khi
+            // chỉ cần 6 cột → project 6 cột ngay trong SQL, kết quả GIONG HET.
             var query = from u in userQuery
                         join ur in roleQuery on u.Id equals ur.UserId
                         where ur.RoleId == role.Id
                               && u.DateOfBirth.HasValue
                               && u.DateOfBirth.Value.Month == month
                         orderby u.DateOfBirth.Value.Day
-                        select u;
+                        select new
+                        {
+                            u.Id,
+                            u.PhoneNumber,
+                            u.UserName,
+                            u.DateOfBirth,
+                            u.BirthdayGiftYear,
+                            u.BirthdayGiftCode
+                        };
 
-            var users = await _asyncExecuter.ToListAsync(query);
-            return users.Select(u => new BirthdayMemberDto
+            var rows = await _asyncExecuter.ToListAsync(query);
+            return rows.Select(u => new BirthdayMemberDto
             {
                 UserId = u.Id,
                 Phone = u.PhoneNumber,

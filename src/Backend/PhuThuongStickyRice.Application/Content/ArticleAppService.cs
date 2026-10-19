@@ -49,9 +49,11 @@ namespace PhuThuongStickyRice.Application.Content
 
         public virtual async Task<List<ArticleDto>> GetListAsync()
         {
+            // perf-hunt 2026-10-19 (run 14:05): trước đây materialize toàn bảng
+            // Article (kể cả Body dài mỗi bài) cho trang admin; cap 200 mới nhất.
             var queryable = await _articles.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.PublishedAt));
+                queryable.OrderByDescending(x => x.PublishedAt).Take(200));
             return items.Select(Map).ToList();
         }
 

@@ -116,7 +116,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.BalanceAfter).HasColumnType("decimal(18,0)").IsRequired();
             builder.Property(x => x.CreatedBy).HasMaxLength(200);
             builder.Property(x => x.CreatedAt).IsRequired();
-            builder.HasIndex(x => x.Phone);
+            // perf-hunt 2026-10-19 (run 14:05): GetTransactionsAsync (admin tra
+            // cứu ví theo SĐT) lọc Phone + sort CreatedAt desc + Take(100) mỗi lần
+            // tra cứu; bảng WalletTransactions tăng vô hạn (không bao giờ xóa).
+            // Composite (Phone, CreatedAt): seek equality trên Phone rồi sort ngay
+            // trên index, thay index đơn IX_WalletTransactions_Phone (redundant).
+            builder.HasIndex(x => new { x.Phone, x.CreatedAt });
         }
     }
 
