@@ -10,7 +10,6 @@ using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Shop;
-using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Discounts
 {
@@ -181,18 +180,28 @@ namespace PhuThuongStickyRice.Application.Discounts
         {
             // Khách "không mua 30+ ngày": có tài khoản loyalty nhưng không có
             // đơn nào (trừ đơn đã hủy) trong 30 ngày gần nhất.
+            // perf-hunt 2026-10-19: anti-join ngay trên SQL (NOT EXISTS) thay vì
+            // nạp toàn bộ SĐT bảng LoyaltyAccount (tăng vô hạn theo thời gian)
+            // về memory rồi trừ bằng HashSet — mỗi lần admin mở màn hình chọn
+            // đối tượng chiến dịch đều quét full bảng trước đây.
+            // So khớp khoan dung theo 9 số cuối — cùng chuẩn
+            // Order.CustomerPhoneNorm (đã backfill + index từ migration
+            // 20261019160000) — nên khách đổi cách gõ SĐT ("0912..." vs
+            // "+84912...") vẫn tính là đã mua, thay vì lọt nhầm vào nhóm
+            // "không mua" như bản so full-digits trước đây.
             var since = DateTime.UtcNow.AddDays(-30);
             var orderQuery = await _orders.GetQueryableAsync();
-            var activePhones = await _asyncExecuter.ToListAsync(
-                orderQuery.Where(x => x.CreatedAt >= since && x.Status != OrderStatus.Cancelled)
-                    .Select(x => x.CustomerPhone)
-                    .Distinct());
+            var activeNorms = orderQuery
+                .Where(x => x.CreatedAt >= since && x.Status != OrderStatus.Cancelled)
+                .Select(x => x.CustomerPhoneNorm)
+                .Distinct();
 
             var loyaltyQuery = await _loyaltyAccounts.GetQueryableAsync();
-            var all = await _asyncExecuter.ToListAsync(loyaltyQuery.Select(x => x.Phone));
-
-            var activeSet = new HashSet<string>(activePhones.Select(p => VietnamTime.NormalizePhone(p) ?? p));
-            return all.Where(p => !activeSet.Contains(p)).ToList();
+            return await _asyncExecuter.ToListAsync(
+                loyaltyQuery
+                    .Where(x => !activeNorms.Contains(
+                        x.Phone.Length <= 9 ? x.Phone : x.Phone.Substring(x.Phone.Length - 9)))
+                    .Select(x => x.Phone));
         }
 
         /// <summary>

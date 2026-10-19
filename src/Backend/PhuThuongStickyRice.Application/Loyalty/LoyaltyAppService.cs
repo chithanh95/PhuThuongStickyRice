@@ -236,8 +236,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>
         /// Admin: tài khoản có sinh nhật trong N ngày tới (phục vụ chiến dịch
         /// gửi voucher sinh nhật). Kẹp daysAhead trong 0..60 ngày để admin
-        /// không vô tình quét cả năm. So sánh tháng/ngày chạy in-memory (bảng
-        /// nhỏ, không phụ thuộc DB provider) và chỉ SELECT 6 cột cần cho DTO.
+        /// không vô tình quét cả năm. Pre-filter theo tháng chạy trên SQL
+        /// (superset, tối đa 3 tháng), so sánh tháng/ngày chính xác chạy
+        /// in-memory (không phụ thuộc DB provider) và chỉ SELECT 6 cột cần cho DTO.
         /// </summary>
         /// <param name="daysAhead">Số ngày tới cần quét (0..60).</param>
         /// <returns>Danh sách tài khoản kèm hạng, sắp xếp theo ngày sinh nhật gần nhất.</returns>
@@ -273,15 +274,26 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// Tải các dòng sinh nhật sắp tới, sắp xếp theo ngày sinh nhật gần nhất.
         /// </summary>
         /// <remarks>
-        /// So sánh tháng/ngày chạy trong bộ nhớ — bảng nhỏ và giữ truy vấn
-        /// không phụ thuộc nhà cung cấp DB. Chỉ 6 cột DTO cần được select từ
-        /// SQL thay vì materialize full entity.
+        /// So sánh tháng/ngày chi tiết chạy trong bộ nhớ — giữ truy vấn không
+        /// phụ thuộc nhà cung cấp DB (năm nhuận v.v.). Chỉ 6 cột DTO cần được
+        /// select từ SQL thay vì materialize full entity.
+        /// perf-hunt 2026-10-19: pre-filter theo tháng ngay trên SQL —
+        /// sinh nhật trong [today, today+daysAhead] (tối đa 60 ngày) chỉ rơi
+        /// vào tối đa 3 tháng, nên không cần quét toàn bộ tài khoản có ngày
+        /// sinh (bảng tăng vô hạn). Đây là superset của filter chính xác theo
+        /// ngày bên dưới nên kết quả trả về giống hệt.
         /// </remarks>
         private async Task<List<BirthdayRow>> LoadUpcomingBirthdayRowsAsync(DateTime today, int daysAhead)
         {
+            var months = Enumerable.Range(0, daysAhead + 1)
+                .Select(d => today.AddDays(d).Month)
+                .Distinct()
+                .ToList();
+
             var queryable = await _accounts.GetQueryableAsync();
             var rows = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.DateOfBirth.HasValue)
+                queryable.Where(x => x.DateOfBirth.HasValue
+                            && months.Contains(x.DateOfBirth.Value.Month))
                          .Select(x => new BirthdayRow(
                              x.Phone,
                              x.Points,
