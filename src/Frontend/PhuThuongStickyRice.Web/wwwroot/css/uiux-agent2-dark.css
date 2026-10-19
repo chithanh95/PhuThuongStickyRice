@@ -1996,3 +1996,66 @@ html.dark .lexa-xedit:hover {
 }
 
 /* ===== END UIUX 00:15 A2 ===== */
+
+/* ===== UIUX run 00:25 - Agent2 Dark mode (4 fix mới) ===== */
+
+/* ---------- FIX 1 — /admin/lexa/auth-* (4 trang demo): cả viewport sáng lọt ở dark ----------
+   Vấn đề: AuthLogin/AuthRegister/AuthRecover/AuthLock dùng inline style, KHÔNG có
+   một rule html.dark nào trong <style> — ở dark mode toàn bộ viewport là mảng sáng
+   #f8f8fb (wrapper min-height:100vh) + card trắng #fff. Chữ brand "Lexa"
+   color:#2b3a4a trên card khi card tối đi sẽ chỉ ~1.26:1 (tàng hình); link tím
+   #7a6fbe trên card tối chỉ ~3.38:1 (dưới WCAG AA 4.5:1).
+   Fix: wrapper → #1a1a2e (nền dark chuẩn app), card → #262640 (card dark chuẩn),
+   brand → #f0eef5 (~1.26:1 → ~12.73:1), link → #a49de0 tím sáng Lexa
+   (~3.38:1 → ~5.91:1). Selector bám substring inline duy nhất của 4 file
+   (đã grep repo-wide: chỉ 4 file Auth* khớp). !important để thắng inline style. */
+html.dark div[style*="min-height:100vh;background:#f8f8fb"] {
+    background: #1a1a2e !important; /* was #f8f8fb */
+}
+html.dark div[style*="background:#fff;border-radius:8px;box-shadow:0 2px 20px rgba(0,0,0,.08);padding:40px 35px"] {
+    background: #262640 !important; /* was #fff */
+}
+html.dark div[style*="min-height:100vh;background:#f8f8fb"] span[style*="color:#2b3a4a"] {
+    color: #f0eef5 !important; /* was #2b3a4a — ~1.26:1 → ~12.73:1 trên card #262640 */
+}
+html.dark div[style*="min-height:100vh;background:#f8f8fb"] a[style="color:#7a6fbe;"] {
+    color: #a49de0 !important; /* was #7a6fbe — ~3.38:1 → ~5.91:1 trên card #262640 */
+}
+
+/* ---------- FIX 2 — /admin/lexa/ui-tabs + invoice: dải #f8f8fb sáng lọt ở dark ----------
+   Vấn đề: UiTabs.razor:68 card-header accordion style="background:#f8f8fb;" chứa
+   nút tiêu đề style="color:#2b3a4a;..." (UiTabs.razor:69); PagesInvoice.razor:42
+   thead style="background:#f8f8fb;". Cả 2 đều không có rule dark → ở dark mode là
+   2 dải sáng lọt, chữ #2b3a4a trên nền tối của trang chỉ ~1.26–1.47:1 (tàng hình).
+   Fix: dải nền → #2c2c4e (nền phụ dark chuẩn), chữ nút accordion → #f0eef5
+   (~1.26:1 → ~12.73:1). Selector exact-match style="background:#f8f8fb;" —
+   đã grep repo-wide: chỉ 2 chỗ này khớp. */
+html.dark [style="background:#f8f8fb;"] {
+    background: #2c2c4e !important; /* was #f8f8fb */
+}
+html.dark button[style*="color:#2b3a4a;text-decoration:none"] {
+    color: #f0eef5 !important; /* was #2b3a4a — ~1.26:1 → ~12.73:1 trên nền #2c2c4e */
+}
+
+/* ---------- FIX 3 — /admin/lexa/ui-cards: chip icon tím nhạt sáng lọt ở dark ----------
+   Vấn đề: UiCards.razor:75 <div class="lexa-stat-icon" style="background:#e8e6f7;
+   color:#7a6fbe;"> — chip icon nền tím nhạt sáng lọt giữa card dark, chữ/icon
+   #7a6fbe trên #e8e6f7 chỉ ~3.53:1 (dưới WCAG AA).
+   Fix: nền → #2c2c4e, chữ → #a49de0 (~3.53:1 → ~5.37:1). Selector exact-match
+   inline duy nhất (đã grep repo-wide: chỉ UiCards.razor:75). */
+html.dark div[style="background:#e8e6f7;color:#7a6fbe;"] {
+    background: #2c2c4e !important; /* was #e8e6f7 */
+    color: #a49de0 !important; /* was #7a6fbe — ~3.53:1 → ~5.37:1 */
+}
+
+/* ---------- FIX 4 — /admin/lexa/icons: icon tím #7a6fbe chìm trên card dark ----------
+   Vấn đề: Icons.razor <style> — `.lexa-icon { font-size:26px; color:#7a6fbe }`
+   không có rule dark (hover bg đã có rule ở fix trước). Trên card dark #262640,
+   icon tím #7a6fbe chỉ ~3.38:1 — icon 26px là nội dung chính của ô, khó nhìn.
+   Fix: #a49de0 — convention "tím Lexa sáng trên nền tối" (~3.38:1 → ~5.91:1).
+   !important để thắng rule scoped [b-xxx] (cùng specificity 0,2,0). */
+html.dark .lexa-icon {
+    color: #a49de0 !important; /* was #7a6fbe — ~3.38:1 → ~5.91:1 trên card #262640 */
+}
+
+/* ===== END UIUX run 00:25 - Agent2 ===== */
