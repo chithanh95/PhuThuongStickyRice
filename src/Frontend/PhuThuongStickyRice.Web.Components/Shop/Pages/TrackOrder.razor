@@ -1197,6 +1197,17 @@
     private async Task ViewHistoryDetail(TrackedOrderModel order)
     {
         ResetEditStates(); // form sửa của đơn cũ không được kéo sang đơn mới
+        // Reset trạng thái đánh giá của đơn cũ — Lookup() reset đầy đủ nhóm này
+        // nhưng ViewHistoryDetail() sót: nếu không reset, panel đơn B hiện lời cảm ơn
+        // + mã thưởng của đơn A, nút đánh giá biến mất và popup khảo sát của đơn B bị chặn.
+        _reviewError = null;
+        _reviewSubmitted = false;
+        _rating = 0;
+        _reviewComment = null;
+        _reviewPhotoFile = null;
+        _reviewPhotoPreviewUrl = null;
+        _reviewRewardCode = null;
+        _lineRatings.Clear();
         _order = order;
         _reorderMessage = null;
         await AfterOrderLoadedAsync();

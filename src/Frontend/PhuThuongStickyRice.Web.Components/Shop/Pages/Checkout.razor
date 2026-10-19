@@ -793,6 +793,15 @@ else
     private PhuThuongStickyRice.Web.Components.Admin.Models.PromotionModel _activePromotion;
     private decimal _promotionDiscountPreview =>
         _activePromotion != null ? Math.Round(_subtotal * _activePromotion.DiscountPercent / 100, 0) : 0;
+
+    /// <summary>
+    /// Subtotal dùng làm base tính mã giảm giá ở preview. Server tính mã trên
+    /// (subtotal − khuyến mãi giờ vàng) — OrderAppService.CreateAsync gọi
+    /// ValidateAndComputeWithFreeshipAsync(input.DiscountCode, subtotal - promotionDiscount, ...).
+    /// Preview phải dùng đúng base này, nếu không mã % sẽ trừ nhiều hơn thực tế
+    /// (vd subtotal 200k, promo 20k, mã 10%: preview hiện −20k nhưng server chỉ −18k).
+    /// </summary>
+    private decimal _subtotalForDiscount => Math.Max(0, _subtotal - _promotionDiscountPreview);
     private BankTransferInfoModel _bankInfo;
     private ShopSettingModel _shopSettings = new ShopSettingModel();
     private bool _submitting;
@@ -1153,7 +1162,7 @@ else
         _applyingDiscount = true;
         try
         {
-            var result = await DiscountService.ValidateAsync(_appliedCode, _subtotal, _order.CustomerPhone);
+            var result = await DiscountService.ValidateAsync(_appliedCode, _subtotalForDiscount, _order.CustomerPhone);
             if (result.Valid)
             {
                 _discountAmount = result.DiscountAmount;
@@ -1365,7 +1374,7 @@ else
         _applyingDiscount = true;
         try
         {
-            var result = await DiscountService.ValidateAsync(code, _subtotal, _order.CustomerPhone);
+            var result = await DiscountService.ValidateAsync(code, _subtotalForDiscount, _order.CustomerPhone);
             if (result.Valid)
             {
                 _discountAmount = result.DiscountAmount;
@@ -1410,7 +1419,7 @@ else
             // ValidateAsync tuần tự trên hot path checkout. Server dùng đúng
             // logic CheckUsable/ComputeDiscount của ValidateAsync nên kết quả
             // giống hệt vòng lặp cũ (bỏ freeship, hòa thì giữ mã mới nhất).
-            var best = await DiscountService.EvaluateBestAsync(_subtotal, _order.CustomerPhone);
+            var best = await DiscountService.EvaluateBestAsync(_subtotalForDiscount, _order.CustomerPhone);
             var bestCode = best?.Code;
             var bestAmount = best?.DiscountAmount ?? 0;
 

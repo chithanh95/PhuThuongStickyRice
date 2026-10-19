@@ -1916,6 +1916,12 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException("Lượt quay may mắn đã được sử dụng.");
             }
 
+            // Đơn đã hủy không được quay thưởng — nếu không, hủy đơn rồi quay vẫn nhận voucher thật.
+            if (order.Status == OrderStatus.Cancelled)
+            {
+                throw new Domain.Exceptions.DomainException("Đơn hàng đã hủy không được quay thưởng.");
+            }
+
             order.MarkLuckySpinUsed();
             await _orders.UpdateAsync(order);
 
