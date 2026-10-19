@@ -44,3 +44,72 @@ html.dark .qty-spinner .qty-input:focus-visible {
         transform: none;
     }
 }
+/* === UIUX run 08:35 (job uiux-team-2days) — Agent 4 A11y & Polish === */
+/* Tất cả fix CSS-only, override theo cascade (file này load sau cùng),
+   không đổi layout/typography/màu nền hiện tại. */
+
+/* Fix 1 — WCAG 2.4.7 (Focus Visible): Bootstrap đặt
+   `[tabindex="-1"]:focus { outline: 0 !important }`, triệt tiêu HOÀN TOÀN
+   vòng focus của skip-link target (#shp-main-content, #lx-main-content)
+   và các modal tabindex="-1" (ConfirmDialog, OrderList, Shop quick-view,
+   UpsellPopup) khi dùng bàn phím. Rule :focus-visible dưới đây (có
+   !important để thắng Bootstrap) khôi phục vòng focus chỉ cho keyboard,
+   chuột/chạm không bị ảnh hưởng. */
+[tabindex="-1"]:focus-visible {
+    outline: 2px solid #7a6fbe !important;
+    outline-offset: 2px;
+}
+html.dark [tabindex="-1"]:focus-visible {
+    outline-color: #a49de0 !important;
+}
+
+/* Fix 2 — WCAG 2.4.7 + 1.4.1: dropdown ngôn ngữ landing (.sg-lang-select,
+   Core/Pages/Index.razor.css:1675) và shop (.shp-lang-select,
+   Core/Layouts/ShopLayout.razor.css:444) dùng `outline: none` + chỉ đổi
+   border-color khi focus (tín hiệu chỉ-bằng-màu, khó thấy). Rule scoped
+   (0,3,0) thắng rule :where() toàn cục, nên cần lặp class để specificity
+   ngang bằng và thắng theo thứ tự cascade. */
+.sg-lang-select.sg-lang-select:focus-visible,
+.shp-lang-select.shp-lang-select:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .sg-lang-select.sg-lang-select:focus-visible,
+html.dark .shp-lang-select.shp-lang-select:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* Fix 3 — WCAG 2.4.7: ô "ghi chú món" trong quick-view sheet
+   (.qv-sheet-note-input, Shop.razor.css:761) không viền + `outline: none`,
+   keyboard tab vào không có bất kỳ tín hiệu focus nào (rule scoped thắng
+   rule focus toàn cục). Thêm vòng focus tím rõ ràng cho người cao tuổi. */
+.qv-sheet-note-input.qv-sheet-note-input:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+html.dark .qv-sheet-note-input.qv-sheet-note-input:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* Fix 4 — WCAG 1.4.3 (Contrast, AA 4.5:1): placeholder input shop ở dark
+   mode quá mờ — #7d6c58 trên #1c1712 (~3.3:1, ShopLayout.razor.css:422) và
+   #8a7a63 trên #2e2620 (~3.45:1, Shop.razor.css:412). Nâng lên #b8a88f
+   (~6:1), cùng tông mô tả đã dùng ở dark shop. Lặp .form-control để thắng
+   rule scoped (0,4,2) theo thứ tự cascade. */
+html.dark .shp-page .form-control.form-control::placeholder {
+    color: #b8a88f;
+}
+
+/* Fix 5a — WCAG 1.4.3: `.shop-dropzone-hint` (app.css:383) chữ 12px màu
+   #999 trên nền #fafafa (~2.8:1) → #6c757d (~4.7:1). */
+/* Fix 5b — WCAG 1.4.3: placeholder ô ghi chú quick-view sheet
+   (Shop.razor.css:763) #b8a88f trên nền trắng (~2.7:1) → #7d6c58 (~5:1).
+   Selector 2 class thắng rule scoped (0,2,1) theo thứ tự cascade. */
+.shop-dropzone-hint {
+    color: #6c757d;
+}
+.qv-sheet .qv-sheet-note-input::placeholder {
+    color: #7d6c58;
+}
+/* === end Agent 4 run 08:35 === */

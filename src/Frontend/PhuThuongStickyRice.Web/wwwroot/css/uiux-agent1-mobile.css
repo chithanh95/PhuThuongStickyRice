@@ -105,3 +105,127 @@
         justify-content: center;
     }
 }
+
+/* === UIUX run 08:35 (job uiux-team-2days) — Agent 1 Mobile UX === */
+
+/* ------------------------------------------------------------
+   FIX 1 — /checkout: nút − / + trong bảng tóm tắt đơn (.co-summary).
+   Vấn đề: 2 nút stepper + nút × đều là `btn btn-sm` (~31px) —
+   khách lớn tuổi khó bấm đúng khi chốt đơn trên điện thoại.
+   Giải pháp: nút − / + lên ≥44px, chữ to; ẩn cột nút × trên mobile
+   (giảm số lượng về 0 là tự xóa dòng — Checkout.razor:1112 ghi rõ
+   "Reducing to 0 removes the line", đồng nhất với /cart vốn đã ẩn
+   cột Xóa trên mobile). Không mất chức năng.
+   (Verify: Checkout.razor:528 .co-summary, thead:533, btn-sm:559/563/569)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .co-summary table .btn-sm {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    /* Ẩn cột nút × trên mobile */
+    .co-summary table thead th:last-child,
+    .co-summary table tbody td:last-child {
+        display: none;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /checkout: cụm "Số điểm muốn đổi" (input-group-sm).
+   Vấn đề: ô nhập + nút "Đổi điểm" cao ~30px, chữ nhỏ — dưới chuẩn
+   chạm 44px, dễ bấm nhầm; iOS có thể auto-zoom khi focus input <16px.
+   Giải pháp: cả hai ≥44px, chữ input 16px.
+   (Verify: Checkout.razor:694 — input-group-sm duy nhất trong shop;
+   input có aria-label="Số điểm muốn đổi" duy nhất toàn app)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    input[aria-label="Số điểm muốn đổi"] {
+        min-height: 44px;
+        font-size: 16px;
+    }
+    input[aria-label="Số điểm muốn đổi"] + .input-group-append .btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /track-order: nút "Chi tiết" / "Đặt lại" trong bảng
+   lịch sử đơn (.to-history).
+   Vấn đề: cả hai là `btn btn-sm` (~31px) — khó bấm trên điện thoại.
+   Giải pháp: cao ≥44px, chữ canh giữa dọc.
+   (Verify: TrackOrder.razor:52 .to-history, btn-sm:93-94)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .to-history table .btn-sm {
+        min-height: 44px;
+        padding-top: 0;
+        padding-bottom: 0;
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /track-order: các nút `btn-sm` trong card chi tiết đơn.
+   Vấn đề: "✏️ Sửa đơn", "📍 Đổi địa chỉ / giờ giao", "📞 Sửa SĐT /
+   ghi chú", "Hủy đơn", "Đặt lại", cặp "Lưu"/"Bỏ qua" ở các form
+   sửa (địa chỉ, SĐT, số lượng, sinh nhật) — tất cả chỉ ~31px,
+   4 nút hành động xếp ngang chật trên màn nhỏ.
+   Giải pháp: tất cả ≥44px, có khoảng cách dưới để tự xuống dòng
+   thoáng khi xếp chồng.
+   (Verify: TrackOrder.razor:158/201/235/247/358-361/389-446;
+   .to-info-row chỉ tồn tại ở TrackOrder nên selector :has() an toàn.
+   :has() được mọi trình duyệt hiện đại hỗ trợ; trình duyệt cũ bỏ
+   qua rule — không vỡ giao diện.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body:has(.to-info-row) .btn-sm {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /track-order: sao đánh giá trong chi tiết đơn.
+   Vấn đề: 5 sao "Đánh giá chung" (font-size 28px → vùng bấm ~28px)
+   và 5 sao "Đánh giá từng món" (font-size 20px → vùng bấm ~20px)
+   đều dưới chuẩn chạm — khách khó chọn đúng số sao trên điện thoại.
+   (Sao trong popup khảo sát .to-survey-sheet đã được fix ở đợt
+   trước — không đụng.)
+   Giải pháp: vùng bấm sao lên 44×44px; hàng sao từng món được phép
+   xuống dòng trên mobile để không tràn ngang.
+   (Verify: TrackOrder.razor:496-497 sao 20px, 510-511 sao 28px —
+   selector theo inline style, chỉ khớp đúng các nút sao này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body:has(.to-info-row) button.btn-link[style*="font-size: 28px"],
+    .card-body:has(.to-info-row) button.btn-link[style*="font-size: 20px"] {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    /* Hàng "tên món + 5 sao" tự xuống dòng cho đủ chỗ 5 sao 44px */
+    .card-body:has(.to-info-row) div.d-flex:has(button[style*="font-size: 20px"]) {
+        flex-wrap: wrap;
+        row-gap: 4px;
+    }
+}
+
+/* === end Agent 1 run 08:35 === */
