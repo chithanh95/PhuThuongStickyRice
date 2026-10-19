@@ -115,7 +115,9 @@ namespace PhuThuongStickyRice.Application.Security
             // không phụ thuộc culture) thay vì overload mặc định culture-sensitive.
             if (digits.StartsWith("84", StringComparison.Ordinal) && digits.Length == 11)
             {
-                digits = "0" + digits.Substring(2);
+
+                // CA1845: span-based Concat thay cho Substring — không cấp phát chuỗi trung gian.
+                digits = string.Concat("0".AsSpan(), digits.AsSpan(2));
             }
 
             return digits;

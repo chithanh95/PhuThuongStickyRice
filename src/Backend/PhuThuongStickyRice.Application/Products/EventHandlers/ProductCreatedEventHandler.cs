@@ -4,7 +4,6 @@ using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Events;
 using PhuThuongStickyRice.Domain.Identity;
 using PhuThuongStickyRice.Domain.Repositories;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 

@@ -576,7 +576,7 @@
     /// Item 122: "Đặt lại" — thêm toàn bộ món của đơn cũ vào giỏ (kèm size/topping theo tên),
     /// rồi chuyển sang trang giỏ hàng.
     /// </summary>
-    private async Task ReorderAsync(TrackedOrderModel order)
+    private void ReorderAsync(TrackedOrderModel order)
     {
         if (order?.Lines == null || order.Lines.Count == 0)
         {

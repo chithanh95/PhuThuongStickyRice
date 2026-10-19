@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 
 namespace PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods
 {
@@ -7,7 +6,8 @@ namespace PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods
     {
         public static Type MakeGenericTypeSafe(this Type type, params Type[] typeArguments)
         {
-            return type.IsGenericType && !type.GenericTypeArguments.Any()
+            // CA1860: với mảng (Type[]) dùng Length thay vì Any() — nhanh hơn và rõ hơn.
+            return type.IsGenericType && type.GenericTypeArguments.Length == 0
                 ? type.MakeGenericType(typeArguments)
                 : type;
         }

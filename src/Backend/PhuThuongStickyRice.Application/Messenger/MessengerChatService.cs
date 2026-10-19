@@ -90,6 +90,9 @@ namespace PhuThuongStickyRice.Application.Messenger
         // Sending limits & catalog fetch sizes (keep these named, not inline).
         private const int MenuMaxItems = 20;
         private const int ParseOrderMaxItems = 100;
+        // CA1861: mảng phân tách dùng lặp đi lặp lại — để static readonly
+        // thay vì new[] mỗi lần gọi (Split không mutate mảng).
+        private static readonly char[] OrderPartSeparators = { ',', ';', '+' };
         private const int MessengerMessageChunkSize = 1800; // Messenger caps text ~2000 chars
         private static readonly TimeSpan BetweenChunksDelay = TimeSpan.FromMilliseconds(300);
 
@@ -433,7 +436,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                 .ToList();
 
             var body = OrderPrefixRegex().Replace(text, " ").Trim();
-            var parts = body.Split(new[] { ',', ';', '+' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = body.Split(OrderPartSeparators, StringSplitOptions.RemoveEmptyEntries);
             foreach (var rawPart in parts)
             {
                 var part = rawPart.Trim();
@@ -486,7 +489,11 @@ namespace PhuThuongStickyRice.Application.Messenger
             if (quantityMatch.Success)
             {
                 qty = Math.Max(1, Math.Min(100, int.Parse(quantityMatch.Groups[1].Value)));
-                part = (part.Substring(0, quantityMatch.Index) + " " + part.Substring(quantityMatch.Index + quantityMatch.Length)).Trim();
+                // CA1845: dùng span-based Concat thay cho Substring — không cấp phát chuỗi trung gian.
+                part = string.Concat(
+                    part.AsSpan(0, quantityMatch.Index),
+                    " ".AsSpan(),
+                    part.AsSpan(quantityMatch.Index + quantityMatch.Length)).Trim();
             }
 
             var product = MatchProduct(part, items);
