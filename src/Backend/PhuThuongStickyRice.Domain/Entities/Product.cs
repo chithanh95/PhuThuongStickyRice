@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 
+// codequality-team 2026-10-20 run-0245 Agent1-Naming
+
 namespace PhuThuongStickyRice.Domain.Entities
 {
     /// <summary>
@@ -410,11 +412,11 @@ namespace PhuThuongStickyRice.Domain.Entities
                     return urls;
                 }
 
-                foreach (var el in doc.RootElement.EnumerateArray())
+                foreach (var element in doc.RootElement.EnumerateArray())
                 {
-                    if (el.ValueKind == JsonValueKind.String)
+                    if (element.ValueKind == JsonValueKind.String)
                     {
-                        var url = el.GetString()?.Trim();
+                        var url = element.GetString()?.Trim();
                         if (!string.IsNullOrEmpty(url) && url.Length <= 500)
                         {
                             urls.Add(url);
@@ -441,21 +443,21 @@ namespace PhuThuongStickyRice.Domain.Entities
                     return windows;
                 }
 
-                foreach (var el in doc.RootElement.EnumerateArray())
+                foreach (var element in doc.RootElement.EnumerateArray())
                 {
-                    if (el.ValueKind != JsonValueKind.Object)
+                    if (element.ValueKind != JsonValueKind.Object)
                     {
                         return new List<(TimeSpan From, TimeSpan To)>();
                     }
 
-                    if (!el.TryGetProperty("from", out var fromEl)
-                        || !el.TryGetProperty("to", out var toEl))
+                    if (!element.TryGetProperty("from", out var fromElement)
+                        || !element.TryGetProperty("to", out var toElement))
                     {
                         return new List<(TimeSpan From, TimeSpan To)>();
                     }
 
-                    var fromStr = fromEl.GetString();
-                    var toStr = toEl.GetString();
+                    var fromStr = fromElement.GetString();
+                    var toStr = toElement.GetString();
                     if (!TimeSpan.TryParse(fromStr, out var from)
                         || !TimeSpan.TryParse(toStr, out var to)
                         || from >= to)
@@ -594,9 +596,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 {
                     var vnNow = utcNow.AddHours(VietnamUtcOffsetHours).TimeOfDay;
                     var inWindow = false;
-                    foreach (var w in windows)
+                    foreach (var window in windows)
                     {
-                        if (vnNow >= w.From && vnNow < w.To)
+                        if (vnNow >= window.From && vnNow < window.To)
                         {
                             inWindow = true;
                             break;
@@ -627,9 +629,9 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             var windows = ParseHourWindows(AvailableHoursJson.Trim());
             var parts = new List<string>();
-            foreach (var w in windows)
+            foreach (var window in windows)
             {
-                parts.Add($"{FormatHour(w.From)}–{FormatHour(w.To)}");
+                parts.Add($"{FormatHour(window.From)}–{FormatHour(window.To)}");
             }
 
             return string.Join(", ", parts);

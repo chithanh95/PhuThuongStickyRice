@@ -19,6 +19,8 @@ using Volo.Abp;
 using Volo.Abp.Application.Services;
 using Volo.Abp.DependencyInjection;
 
+// codequality-team 2026-10-20 run-0245 Agent1-Naming
+
 namespace PhuThuongStickyRice.Application.Messenger
 {
     /// <summary>
@@ -371,9 +373,9 @@ namespace PhuThuongStickyRice.Application.Messenger
             session.State = ChatState.Confirming;
             var total = parsed.Sum(x => x.UnitPrice * x.Quantity);
             var sb = new StringBuilder("Bạn đặt:\n");
-            foreach (var l in parsed)
+            foreach (var line in parsed)
             {
-                sb.AppendLine($"- {l.Quantity} x {l.ProductName} ({FormatVnd(l.UnitPrice * l.Quantity)})");
+                sb.AppendLine($"- {line.Quantity} x {line.ProductName} ({FormatVnd(line.UnitPrice * line.Quantity)})");
             }
             sb.AppendLine($"Tổng: {FormatVnd(total)} (COD).");
             sb.Append("Trả lời \"OK\" để xác nhận, hoặc \"hủy\" để làm lại nhé!");
@@ -477,9 +479,9 @@ namespace PhuThuongStickyRice.Application.Messenger
             }
             else
             {
-                foreach (var p in items.Take(MenuMaxItems))
+                foreach (var product in items.Take(MenuMaxItems))
                 {
-                    sb.AppendLine($"- {p.Name}: {FormatVnd(p.Price)}");
+                    sb.AppendLine($"- {product.Name}: {FormatVnd(product.Price)}");
                 }
             }
             sb.Append("\nĐặt theo mẫu: đặt xôi gấc x 2, chả cốm x 1");

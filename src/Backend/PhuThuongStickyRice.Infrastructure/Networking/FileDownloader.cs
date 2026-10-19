@@ -5,6 +5,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
+// codequality-team 2026-10-20 run-0245 Agent1-Naming
+
 namespace PhuThuongStickyRice.Infrastructure.Networking
 {
     public class FileDownloader : IFileDownloader
@@ -15,20 +17,20 @@ namespace PhuThuongStickyRice.Infrastructure.Networking
         // gọi nên dùng 1 instance static là tương đương hành vi bản cũ.
         private static readonly HttpClient SharedHttpClient = new HttpClient();
 
-        public void DownloadFile(string url, string path)
+        public void DownloadFile(string url, string destinationPath)
         {
             // WebClient là IDisposable — using var để đóng handle/socket ngay khi xong.
             using var client = new WebClient();
-            client.DownloadFile(url, path);
+            client.DownloadFile(url, destinationPath);
         }
 
-        public async Task DownloadFileAsync(string url, string path, CancellationToken cancellationToken = default)
+        public async Task DownloadFileAsync(string url, string destinationPath, CancellationToken cancellationToken = default)
         {
             // WebClient.DownloadFileTaskAsync không có overload nhận
             // CancellationToken nên token của caller bị bỏ qua trong im lặng.
             // Dùng HttpClient stream + CopyToAsync để cancellation được tôn trọng.
             await using var responseStream = await SharedHttpClient.GetStreamAsync(url, cancellationToken);
-            await using var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+            await using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
             await responseStream.CopyToAsync(fileStream, cancellationToken);
         }
     }
