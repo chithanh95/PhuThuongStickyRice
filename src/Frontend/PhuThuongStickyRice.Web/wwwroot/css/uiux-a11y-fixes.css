@@ -1,0 +1,50 @@
+/* ============================================================
+   uiux-a11y-fixes.css — Accessibility & polish (Agent 4, run 2026-10-19 09:55)
+   Load SAU css/uiux-agent4-a11y.css (thêm <link> sau dòng đó trong
+   wwwroot/index.html).
+   Chỉ override nhỏ theo cascade: không đổi layout/typography/màu nền
+   hiện tại, không thêm thư viện.
+   Các fix của run 08:35/09:40 (focus-visible, placeholder contrast,
+   timeline, blog-date, chat landing) đã có trong a11y.css và
+   uiux-agent4-a11y.css — file này KHÔNG lặp lại.
+   ============================================================ */
+
+/* Fix 1 — Polish hover: nút "Thêm vào giỏ hàng" trong quick-view sheet
+   (.qv-sheet-add, Shop.razor.css:769) là CTA chính của luồng mua trên
+   mobile nhưng hoàn toàn không có :hover/:active → người dùng không nhận
+   được phản hồi thị giác khi chạm/di chuột. Thêm nền đậm hơn khi hover
+   và scale nhẹ khi nhấn để người cao tuổi thấy rõ thao tác đã ăn.
+   Tương phản chữ trắng trên #665ca6 đạt ~5.76:1 (WCAG AA).
+   Selector :hover (0,2,0) thắng rule gốc (0,1,0) theo cascade. */
+.qv-sheet-add:hover {
+    background: #665ca6;
+}
+.qv-sheet-add:active {
+    transform: scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+    .qv-sheet-add:active {
+        transform: none;
+    }
+}
+
+/* Fix 2 — WCAG 1.4.3 (Contrast): tên người đánh giá `.sg-review-name`
+   (Index.razor.css:1405) 13px đậm màu #8a7a68 trên nền trắng chỉ đạt
+   ~4.15:1, dưới chuẩn AA 4.5:1 cho chữ nhỏ — người cao tuổi khó đọc.
+   Đổi sang #6f5f4c (~6.1:1), cùng tông nâu ấm đã dùng cho .sg-blog-date
+   ở run trước. Dark mode giữ nguyên rule html.dark riêng (#a08c78 trên
+   nền tối đạt 4.6–5.5:1, đã đủ chuẩn). */
+.sg-review-name {
+    color: #6f5f4c;
+}
+
+/* Fix 3 — Polish hover: các dòng chọn size/topping trong quick-view sheet
+   (.qv-sheet-opt, Shop.razor.css:731) bấm được (cursor: pointer) nhưng
+   không có tín hiệu hover → khách lớn tuổi không biết dòng nào đang
+   trỏ tới. Thêm nền hover nhẹ; dark mode dùng nền tối tương ứng. */
+.qv-sheet-opt:hover {
+    background: #f7f3ec;
+}
+html.dark .qv-sheet-opt:hover {
+    background: #2c231a;
+}

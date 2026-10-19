@@ -100,10 +100,10 @@
         flex: 0 0 auto;
     }
 
-    /* Quantity steppers in the order summary: tappable */
+    /* Quantity steppers in the order summary: đạt chuẩn chạm 44px */
     .co-summary .btn {
-        min-height: 42px;
-        min-width: 42px;
+        min-height: 44px;
+        min-width: 44px;
     }
 
     .co-summary table {

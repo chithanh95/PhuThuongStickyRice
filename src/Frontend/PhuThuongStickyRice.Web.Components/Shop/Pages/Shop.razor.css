@@ -450,7 +450,8 @@ html.dark .shop-filters-sticky {
     .shop-cat-item {
         border: none;
         background: none;
-        padding: 12px 6px;
+        /* Nút danh mục sidebar ~43.5px → nới lên ≥44px: người lớn tuổi dễ bấm */
+        padding: 14px 6px;
         font-size: 13px;
         font-weight: 600;
         color: #5a4f43;

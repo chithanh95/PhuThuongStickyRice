@@ -1,0 +1,74 @@
+/* ============================================================
+   uiux-dark-fixes.css — Agent 2 (Dark mode) — đợt uiux-hunt
+   2026-10-19 (job uiux-team-2days, run 10:04).
+   Mọi rule là override `html.dark ...` (dark mode của web bật bằng
+   class `dark` trên thẻ <html> — xem index.html).
+   File này cần được link trong index.html SAU uiux-agent2-dark.css
+   (các run trước đã có file uiux-agent2-dark.css + app.css; file này
+   chỉ chứa fix MỚI, không trùng).
+   Các rule scoped Blazor (.foo[b-xxx]) có specificity cao hơn
+   `html.dark .foo`, nên chỗ cần thắng rule scoped/inline thì dùng
+   !important (đã ghi chú từng chỗ).
+   ============================================================ */
+
+/* ---------- FIX 1 — Shop: card lỗi "Không kết nối được tới máy chủ" (/shop) ----------
+   Vấn đề: Shop.razor (card `_loadFailed`) dùng inline
+   style="background: #f5ebcd" + h2 inline color:#7a1b2e + p inline
+   color:#4a2b1a. Không có rule dark nào phủ (đã grep xác minh:
+   `f5ebcd` chỉ xuất hiện đúng 1 lần này) → ở dark mode cả card vàng
+   nhạt chói lóa trên nền shop tối #241d17.
+   Fix: attribute selector [style*="f5ebcd"] + !important để thắng inline
+   style; nền tối theo palette shop, chữ sáng. Nút "Thử lại" (bg #7a1b2e,
+   chữ trắng) giữ nguyên — đã đọc được trên nền tối. */
+html.dark .shp-page .card[style*="f5ebcd"] {
+    background: #262019 !important; /* was #f5ebcd */
+}
+html.dark .shp-page .card[style*="f5ebcd"] h2 {
+    color: #f2b8b8 !important; /* was #7a1b2e */
+}
+html.dark .shp-page .card[style*="f5ebcd"] p {
+    color: #d8c8a8 !important; /* was #4a2b1a */
+}
+
+/* ---------- FIX 2 — Admin: cột "Kỳ so sánh" trên biểu đồ /admin/bao-cao ----------
+   Vấn đề: BaoCao.razor vẽ bar chart bằng div với inline
+   background:#c9c7dd cho "Kỳ so sánh" (và .lexa-dot legend). Trên card
+   admin tối #262640, các cột xám-lavender sáng chói, lấn át cột "Kỳ này"
+   #7a6fbe (ngược hẳn ý đồ: cột so sánh phải mờ hơn, không phải sáng hơn).
+   Fix: attribute selector (đã grep — chỉ BaoCao dùng #c9c7dd trong
+   inline style) + !important để thắng inline style. */
+html.dark .lexa-col[style*="c9c7dd"],
+html.dark .lexa-dot[style*="c9c7dd"] {
+    background: #5a5a8a !important; /* was #c9c7dd — vẫn phân biệt với #7a6fbe */
+}
+
+/* ---------- FIX 3 — Shop: đường kẻ phân cách trong mini-FAQ ----------
+   Vấn đề: FaqMini.razor.css — .faq-mini-item + .faq-mini-item dùng
+   border-top: 1px dashed #e8dcc3 (vàng nhạt). Trên nền tối, đường kẻ
+   sáng gắt, lạc khỏi palette (không có rule dark nào phủ — đã grep).
+   Fix: viền theo palette dark của shop. !important để thắng rule scoped. */
+html.dark .faq-mini-item + .faq-mini-item {
+    border-top-color: #3a3226 !important; /* was #e8dcc3 */
+}
+
+/* ---------- FIX 4 — Header shop: mũi tên dropdown chọn ngôn ngữ ----------
+   Vấn đề: LanguageSelector.razor.css — .lang-caret (mũi tên nhỏ 10px
+   cạnh cờ quốc gia) giữ color:#8a7a63 trên nút nền tối #241d17 ở dark
+   mode (có rule dark cho nền menu và item, nhưng quên caret) → tương
+   phản chỉ ~3.1:1, mũi tên mờ. Fix: sáng lên cùng tone palette. */
+html.dark .lang-caret {
+    color: #b8a88f !important; /* was #8a7a63 — tương phản ~5.4:1 */
+}
+
+/* ---------- FIX 5 — Shop: bottom sheet "Thêm món mới" (quick view, mobile) ----------
+   Vấn đề: Shop.razor.css — sheet đã có 5 rule dark phủ nền (.qv-sheet,
+   .qv-sheet-top/section/opt/footer), nhưng 3 chỗ chữ #8a7a63 bị quên:
+   .qv-sheet-close (nút × 32px), .qv-sheet-meta (mô tả món), 
+   .qv-sheet-opt-price (giá option) → tương phản chỉ ~3.1:1 trên nền
+   sheet tối #241d17, chữ xám mờ khó đọc. Fix: sáng lên cùng tone palette.
+   !important để thắng rule scoped (.qv-sheet-close[b-xxx]). */
+html.dark .qv-sheet-close,
+html.dark .qv-sheet-meta,
+html.dark .qv-sheet-opt-price {
+    color: #b8a88f !important; /* was #8a7a63 */
+}

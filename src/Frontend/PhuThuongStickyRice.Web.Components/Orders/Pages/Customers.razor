@@ -35,7 +35,7 @@
             </div>
             <div class="col-md-3 mt-2 mt-md-0">
                 @* Item 149: filter customers by tag. *@
-                <select class="form-control" @bind="_tagFilter">
+                <select class="form-control" @bind="_tagFilter" aria-label="Lọc khách hàng theo tag">
                     <option value="">🏷️ Tất cả tag</option>
                     @foreach (var t in TagPresets)
                     {
@@ -71,7 +71,7 @@
                     <button class="btn btn-sm btn-success mr-2" @onclick="GenerateBirthdayVouchers" disabled="@_voucherBusy">
                         @(_voucherBusy ? "Đang tạo..." : "🎟️ Tạo voucher SN")
                     </button>
-                    <select class="form-control" style="width: 140px;" @bind="_birthdayMonth" @bind:after="LoadBirthdaysAsync">
+                    <select class="form-control" style="width: 140px;" @bind="_birthdayMonth" @bind:after="LoadBirthdaysAsync" aria-label="Chọn tháng để xem sinh nhật">
                         @for (var m = 1; m <= 12; m++)
                         {
                             <option value="@m">Tháng @m</option>

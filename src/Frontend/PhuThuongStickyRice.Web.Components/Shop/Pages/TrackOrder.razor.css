@@ -312,3 +312,26 @@ html.dark .to-total-row {
     }
 }
 /* ===== END UIUX-0855 A4 ===== */
+
+/* ===== UIUX-Mobile: popup khảo sát sau giao hàng trên mobile ===== */
+/* 1) 5 nút sao đánh giá chỉ ~36px (font-size 36px, p-0) → nới hit area
+      lên 44px để dễ bấm, nhất là với khách lớn tuổi.
+   2) Popup không có max-height → trên màn hình thấp (landscape) nội dung
+      có thể tràn khỏi viewport; giới hạn theo dvh và cho cuộn trong. */
+@media (max-width: 767.98px) {
+    .to-survey-sheet .btn-link {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2px !important;
+        margin-right: 2px;
+    }
+    .to-survey-sheet {
+        max-height: calc(100vh - 32px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+    }
+}
+/* ===== END UIUX-Mobile ===== */

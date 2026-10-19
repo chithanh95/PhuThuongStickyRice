@@ -210,7 +210,7 @@
     border: none;
 }
 
-.lx-search .oi {
+.lx-search .fa-solid {
     color: var(--lx-topbar-icon);
     font-size: 13px;
 }
@@ -357,16 +357,7 @@
     background: rgba(255, 255, 255, .06);
 }
 
-.lx-hnav-group.active > .lx-hnav-toggle .oi {
-    color: var(--lx-primary);
-}
-
-.lx-hnav-toggle .oi {
-    font-size: 16px;
-    width: 20px;
-    text-align: center;
-    flex-shrink: 0;
-}
+/* Icon sidebar đã chuyển sang Font Awesome 6 — rule .oi cũ đã xóa hẳn (bản .fa-solid tương đương ở cuối file) */
 
 .lx-hnav-text {
     flex: 1;
@@ -422,13 +413,7 @@
     box-shadow: inset 3px 0 0 var(--lx-primary);
 }
 
-.lx-hnav-link .oi {
-    width: 20px;
-    text-align: center;
-    font-size: 13px;
-    flex-shrink: 0;
-    opacity: .85;
-}
+/* (đã xóa rule .lx-hnav-link .oi — bản .fa-solid tương đương ở cuối file) */
 
 .lx-hnav-label {
     display: block;
@@ -683,6 +668,46 @@
     color: #fff;
 }
 
+/* Nút outline success/danger/warning: về đúng palette Lexa
+   (mặc định Bootstrap dùng #198754/#dc3545/#ffc107 — lệch chuẩn Lexa).
+   Các trang Quotes, LichNghi, MaGiamGia, Articles, DanhGia đang dùng. */
+.lx-admin .btn-outline-success {
+    color: #34c38f !important;
+    border-color: #34c38f !important;
+    border-radius: 4px !important;
+}
+.lx-admin .btn-outline-success:hover,
+.lx-admin .btn-outline-success:focus,
+.lx-admin .btn-outline-success:active {
+    background: #34c38f !important;
+    border-color: #34c38f !important;
+    color: #fff !important;
+}
+.lx-admin .btn-outline-danger {
+    color: #f46a6a !important;
+    border-color: #f46a6a !important;
+    border-radius: 4px !important;
+}
+.lx-admin .btn-outline-danger:hover,
+.lx-admin .btn-outline-danger:focus,
+.lx-admin .btn-outline-danger:active {
+    background: #f46a6a !important;
+    border-color: #f46a6a !important;
+    color: #fff !important;
+}
+.lx-admin .btn-outline-warning {
+    color: #f1b44c !important;
+    border-color: #f1b44c !important;
+    border-radius: 4px !important;
+}
+.lx-admin .btn-outline-warning:hover,
+.lx-admin .btn-outline-warning:focus,
+.lx-admin .btn-outline-warning:active {
+    background: #f1b44c !important;
+    border-color: #f1b44c !important;
+    color: #212529 !important;
+}
+
 .lx-admin .btn {
     border-radius: var(--lx-radius);
     font-size: 13px;
@@ -714,7 +739,7 @@
     white-space: nowrap;
 }
 
-.lx-pill-success { background: rgba(88, 219, 131, 0.18); color: #28a745; }
+.lx-pill-success { background: rgba(52, 195, 143, 0.16); color: #34c38f; }
 .lx-pill-warning { background: rgba(245, 178, 37, 0.18); color: #b57e00; }
 .lx-pill-danger { background: rgba(236, 83, 108, 0.14); color: #d63a52; }
 .lx-pill-info { background: rgba(13, 202, 240, 0.16); color: #0a9fc0; }
@@ -858,7 +883,7 @@
         padding: 6px 8px;
         min-height: 36px;
     }
-    .lx-lang-btn span:not(.lx-flag):not(.oi) {
+    .lx-lang-btn span:not(.lx-flag):not(.fa-solid) {
         display: none;
     }
     .lx-avatar {
@@ -1065,7 +1090,7 @@ html.dark .lx-page-head {
     background: var(--lx-search-bg);
 }
 
-.lx-search-item .oi {
+.lx-search-item .fa-solid {
     margin-top: 2px;
     color: var(--lx-primary);
 }
@@ -1104,7 +1129,8 @@ html.dark .lx-notif-unread {
 }
 
 /* ---------- Item 160: voice report button ---------- */
-.lx-voice-btn.spinning .oi {
+/* Icon oi-* đã thay bằng Font Awesome 6 (không còn icon oi nào trong markup) */
+.lx-voice-btn.spinning .fa-solid {
     animation: lx-spin 1s linear infinite;
 }
 
@@ -1133,7 +1159,7 @@ html.dark .lx-notif-unread {
 .card.lexa-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(122,111,190,.35); }
 .card.lexa-stat-card .card-body { padding: 20px; background: transparent; display: flex; flex-direction: column; justify-content: center; min-height: 130px; }
 .lexa-stat-label { color: rgba(255,255,255,.75) !important; margin-bottom: 5px; font-size: 14px; }
-.lexa-stat-label .oi { margin-right: 6px; font-size: 16px; opacity: .9; }
+.lexa-stat-label .fa-solid { margin-right: 6px; font-size: 16px; opacity: .9; }
 .lexa-stat-value { color: #fff !important; font-weight: 600; margin-bottom: 10px; }
 .lexa-stat-foot { color: rgba(255,255,255,.65) !important; }
 .lexa-stat-foot a { color: #fff !important; }
@@ -1591,7 +1617,7 @@ html.dark .lx-toast {
 .lx-bell-ring {
     animation: lx-bell-ring 0.5s ease;
 }
-.lx-bell-ring .oi-bell {
+.lx-bell-ring .fa-bell {
     animation: lx-bell-shake 0.5s ease;
 }
 @keyframes lx-bell-ring {
@@ -1767,12 +1793,12 @@ html.dark .lx-toast {
         font-size: .75rem;
         min-height: 44px;
     }
-    .lx-admin .table .btn .oi,
+    .lx-admin .table .btn .fa-solid,
     .lx-admin .table .btn .fa,
     .lx-admin .table .btn .fas {
         margin-right: 0;
     }
-    .lx-admin .table .btn span:not(.oi):not(.fa):not(.fas) {
+    .lx-admin .table .btn span:not(.oi):not(.fa):not(.fas):not(.fa-solid) {
         display: none;
     }
 

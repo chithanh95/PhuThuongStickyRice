@@ -54,7 +54,7 @@ else
                     <tr class="@(r.IsHidden ? "table-secondary" : "")">
                         <td><a href="/orders">@r.OrderNumber</a></td>
                         <td>@r.CustomerPhone</td>
-                        <td style="color: #f6c453; font-size: 16px; white-space: nowrap;">
+                        <td style="color: #f1b44c; font-size: 16px; white-space: nowrap;">
                             @(new string('★', r.Rating))<span style="color: #ddd;">@(new string('★', 5 - r.Rating))</span>
                         </td>
                         <td>

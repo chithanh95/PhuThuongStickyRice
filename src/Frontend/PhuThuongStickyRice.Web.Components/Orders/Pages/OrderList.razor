@@ -27,7 +27,7 @@
                        @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchChanged" />
             </div>
             <div class="col-md-3">
-                <select class="form-control" @bind="_statusFilter" @bind:after="() => LoadOrders(1)">
+                <select class="form-control" @bind="_statusFilter" @bind:after="() => LoadOrders(1)" aria-label="Lọc đơn hàng theo trạng thái">
                     <option value="">Tất cả trạng thái</option>
                     <option value="Pending">Chờ xác nhận</option>
                     <option value="Confirmed">Đã xác nhận</option>
@@ -38,7 +38,7 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <select class="form-control" @bind="_shipperFilter" @bind:after="() => LoadOrders(1)">
+                <select class="form-control" @bind="_shipperFilter" @bind:after="() => LoadOrders(1)" aria-label="Lọc đơn hàng theo shipper">
                     <option value="">Tất cả shipper</option>
                     @if (_shippers != null)
                     {

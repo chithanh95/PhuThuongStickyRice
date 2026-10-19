@@ -38,7 +38,7 @@
     .cart-lines tbody td:nth-child(1) input.form-control {
         max-width: none !important;
         width: 100%;
-        min-height: 42px;
+        min-height: 44px; /* 42px cũ → 44px: chuẩn chạm, người lớn tuổi dễ bấm */
         font-size: 16px; /* iOS không auto-zoom khi focus input >=16px */
     }
 
