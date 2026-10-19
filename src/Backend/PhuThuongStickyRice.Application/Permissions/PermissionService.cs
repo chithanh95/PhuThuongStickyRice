@@ -69,7 +69,7 @@ namespace PhuThuongStickyRice.Application.Permissions
         /// bao giờ bị khóa khỏi tính năng khi admin thêm key quyền mới.
         /// </summary>
         /// <returns>Tập key quyền (so sánh không phân biệt hoa thường).</returns>
-        public async Task<HashSet<string>> GetUserPermissionsAsync()
+        public virtual async Task<HashSet<string>> GetUserPermissionsAsync()
         {
             var roles = await GetCurrentRoleNamesAsync();
 
@@ -96,7 +96,7 @@ namespace PhuThuongStickyRice.Application.Permissions
         /// </summary>
         /// <param name="permissionKey">Key quyền (vd "orders.refund"); rỗng thì coi như không có.</param>
         /// <returns>true khi user được cấp quyền.</returns>
-        public async Task<bool> HasPermissionAsync(string permissionKey)
+        public virtual async Task<bool> HasPermissionAsync(string permissionKey)
         {
             if (string.IsNullOrWhiteSpace(permissionKey))
             {
@@ -113,7 +113,7 @@ namespace PhuThuongStickyRice.Application.Permissions
         /// </summary>
         /// <param name="permissionKey">Key quyền yêu cầu.</param>
         /// <exception cref="Volo.Abp.Authorization.AbpAuthorizationException">Ném khi user thiếu quyền.</exception>
-        public async Task RequirePermissionAsync(string permissionKey)
+        public virtual async Task RequirePermissionAsync(string permissionKey)
         {
             if (!await HasPermissionAsync(permissionKey))
             {
@@ -132,7 +132,7 @@ namespace PhuThuongStickyRice.Application.Permissions
         /// có toàn quyền.
         /// </summary>
         [Authorize(Roles = "Admin")]
-        public async Task<PermissionMatrixDto> GetMatrixAsync()
+        public virtual async Task<PermissionMatrixDto> GetMatrixAsync()
         {
             var queryable = await _rolePermissions.GetQueryableAsync();
             var all = await _asyncExecuter.ToListAsync(queryable);
@@ -167,7 +167,7 @@ namespace PhuThuongStickyRice.Application.Permissions
         /// </summary>
         /// <param name="input">Role cần phân quyền và danh sách key được cấp.</param>
         [Authorize(Roles = "Admin")]
-        public async Task UpdateRolePermissionsAsync(UpdateRolePermissionsDto input)
+        public virtual async Task UpdateRolePermissionsAsync(UpdateRolePermissionsDto input)
         {
             var role = (input?.Role ?? string.Empty).Trim();
             if (!PermissionKeys.MatrixRoles.Contains(role, StringComparer.OrdinalIgnoreCase))

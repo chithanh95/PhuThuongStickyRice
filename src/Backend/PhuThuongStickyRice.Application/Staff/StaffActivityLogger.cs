@@ -64,7 +64,7 @@ namespace PhuThuongStickyRice.Application.Staff
         /// không phải role nhân viên (Admin/Cashier/Kitchen). Dùng
         /// autoSave vì nơi gọi gồm cả controller không có ambient UOW.
         /// </summary>
-        public async Task LogAsync(string action, string detail = null)
+        public virtual async Task LogAsync(string action, string detail = null)
         {
             try
             {
@@ -101,7 +101,7 @@ namespace PhuThuongStickyRice.Application.Staff
         /// Ghi log cho 1 user chỉ định (vd ngay sau login, lúc chưa có
         /// CurrentUser xác thực). Cũng best-effort như <see cref="LogAsync"/>.
         /// </summary>
-        public async Task LogForUserAsync(Guid userId, string userName, string action, string detail = null)
+        public virtual async Task LogForUserAsync(Guid userId, string userName, string action, string detail = null)
         {
             try
             {

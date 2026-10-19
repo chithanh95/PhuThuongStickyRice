@@ -112,26 +112,28 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             List<string> celebrantPhones,
             HashSet<string> phonesWithCode)
         {
-            var created = 0;
-            foreach (var phone in celebrantPhones)
-            {
-                // Skip when a usable birthday voucher already exists.
-                if (phonesWithCode.Contains(phone))
-                {
-                    continue;
-                }
-
-                await discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
+            // perf-hunt 2026-10-20: gom thành 1 batch — trước đây mỗi SĐT là
+            // 1 CreateGeneratedAsync = 1 AnyAsync + 1 InsertAsync(autoSave: true)
+            // + 1 _catalogCache.Invalidate() toàn cục (bump version → mọi cache
+            // public nóng stale đồng loạt). Dùng CreateGeneratedBatchAsync có
+            // sẵn: validate + sinh mã duy nhất y hệt bản đơn, gom insert vào
+            // 1 UoW, invalidate đúng 1 lần. Tương đương ngữ nghĩa vì vòng lặp
+            // cũ không có try/catch từng phone (lỗi 1 phone là cả run abort,
+            // giống hệt batch).
+            var expiresAt = DateTime.UtcNow.AddDays(BirthdayVoucherExpiryDays);
+            var dtos = celebrantPhones
+                .Where(phone => !phonesWithCode.Contains(phone))
+                .Select(phone => new CreateGeneratedDiscountDto
                 {
                     Prefix = BirthdayVoucherPrefix,
                     DiscountPercent = BirthdayDiscountPercent,
-                    ExpiresAt = DateTime.UtcNow.AddDays(BirthdayVoucherExpiryDays),
+                    ExpiresAt = expiresAt,
                     OwnerPhone = phone
-                });
-                created++;
-            }
+                })
+                .ToList();
 
-            return created;
+            var created = await discounts.CreateGeneratedBatchAsync(dtos);
+            return created.Count;
         }
     }
 }
