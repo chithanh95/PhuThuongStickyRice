@@ -60,6 +60,15 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string customerPhone);
 
         /// <summary>
+        /// Gộp <see cref="ValidateAndComputeAsync"/> và <see cref="IsFreeshipAsync"/>
+        /// thành 1 query duy nhất: validate mã, tính số tiền giảm và cho biết mã
+        /// có phải freeship không. Dùng ở checkout để tránh SELECT cùng 1 row
+        /// DiscountCode 2 lần cho mỗi đơn. Ném DomainException khi mã không dùng được.
+        /// </summary>
+        Task<(decimal DiscountValue, bool IsFreeship)> ValidateAndComputeWithFreeshipAsync(
+            string code, decimal subtotal, string customerPhone);
+
+        /// <summary>
         /// Bumps the usage counter for a code. Call after order creation succeeds.
         /// </summary>
         Task IncrementUsageAsync(string code);
@@ -315,6 +324,30 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             return ComputeDiscount(entity, subtotal);
+        }
+
+        /// <summary>
+        /// Gộp validate + tính tiền giảm + xác định freeship trong 1 lần SELECT
+        /// DiscountCode (perf-hunt 2026-10-19: checkout trước đây gọi
+        /// ValidateAndComputeAsync rồi IsFreeshipAsync = 2 query cùng 1 row).
+        /// Ngữ nghĩa giữ nguyên: validate ném DomainException khi mã không dùng
+        /// được; IsFreeship chỉ true khi mã hợp lệ và là loại Freeship.
+        /// </summary>
+        public virtual async Task<(decimal DiscountValue, bool IsFreeship)> ValidateAndComputeWithFreeshipAsync(
+            string code, decimal subtotal, string customerPhone)
+        {
+            var normalized = NormalizeCode(code);
+            var queryable = await _discounts.GetQueryableAsync();
+            var entity = await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x => x.Code == normalized));
+
+            var (valid, message) = CheckUsable(entity, subtotal, customerPhone);
+            if (!valid)
+            {
+                throw new Domain.Exceptions.DomainException(message);
+            }
+
+            return (ComputeDiscount(entity, subtotal), entity.VoucherType == VoucherType.Freeship);
         }
 
         /// <summary>

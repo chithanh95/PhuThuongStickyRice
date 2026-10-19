@@ -529,14 +529,11 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 // Validate only here — usage is bumped after the order row
                 // is written (see below), so a failed order never burns a use.
-                discountValue = await _discounts.ValidateAndComputeAsync(
+                // Perf-hunt 2026-10-19: gộp validate + xác định freeship thành
+                // 1 query (trước đây gọi 2 method = 2 SELECT cùng 1 row mã).
+                (discountValue, isFreeship) = await _discounts.ValidateAndComputeWithFreeshipAsync(
                     input.DiscountCode, subtotal - promotionDiscount, input.CustomerPhone);
                 appliedCode = input.DiscountCode.Trim().ToUpperInvariant();
-
-                // Item 120: freeship vouchers zero the delivery fee instead
-                // of reducing the subtotal.
-                isFreeship = await _discounts.IsFreeshipAsync(
-                    input.DiscountCode, subtotal - promotionDiscount, input.CustomerPhone);
             }
 
             // Loyalty account (created on first order) + tier discount.
@@ -620,7 +617,7 @@ namespace PhuThuongStickyRice.Application.Orders
             decimal feeValue = 0;
             var isPickup = fulfillment == FulfillmentMethod.Pickup
                 || fulfillment == FulfillmentMethod.ShipperPickup;
-            if (!isPickup && shopSetting.DeliveryFee > 0 && !isFreeship)
+            if (!isPickup && shopSetting.DeliveryFee > 0 && !isFreeship) // Item 120: freeship voucher -> phí ship = 0
             {
                 var afterDiscount = subtotal - promotionDiscount - discountValue;
                 var freeShip = shopSetting.FreeShipThreshold > 0 && afterDiscount >= shopSetting.FreeShipThreshold;

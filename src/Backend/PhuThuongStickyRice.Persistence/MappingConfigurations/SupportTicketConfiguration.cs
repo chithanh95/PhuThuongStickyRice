@@ -28,6 +28,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.ReplyNote)
                 .HasMaxLength(SupportTicket.ReplyNoteMaxLength);
             builder.Property(x => x.CreatedAt).IsRequired();
+            // perf-hunt 2026-10-19: admin lọc ticket theo Status + sort
+            // CreatedAt desc (GetListAsync), bảng chưa có index nào.
+            builder.HasIndex(x => new { x.Status, x.CreatedAt });
         }
     }
 }

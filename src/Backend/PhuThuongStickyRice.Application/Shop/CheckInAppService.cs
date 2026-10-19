@@ -145,27 +145,53 @@ namespace PhuThuongStickyRice.Application.Shop
             return account;
         }
 
+        /// <summary>
+        /// Đếm số ngày điểm danh liên tiếp tính đến hôm nay.
+        /// Perf-hunt 2026-10-19: nạp theo từng đợt (mỗi đợt tối đa 370 ngày)
+        /// thay vì toàn bộ lịch sử điểm danh của SĐT. Vòng lặp dừng ngay khi
+        /// gặp ngày đứt quãng nên hầu hết trường hợp chỉ cần đúng 1 query có
+        /// Take; kết quả trả về giống hệt bản cũ kể cả streak dài hơn 370 ngày.
+        /// </summary>
         private async Task<int> GetStreakAsync(string phone, DateTime today)
         {
+            const int ChunkSize = 370;
             var queryable = await _checkIns.GetQueryableAsync();
-            var dates = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.Phone == phone && x.Date <= today)
-                    .OrderByDescending(x => x.Date)
-                    .Select(x => x.Date));
 
             var streak = 0;
             var expected = today;
-            foreach (var date in dates)
+            var upperBound = today; // đợt hiện tại chỉ lấy các ngày <= upperBound
+            while (true)
             {
-                if (date == expected)
+                var dates = await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => x.Phone == phone && x.Date <= upperBound)
+                        .OrderByDescending(x => x.Date)
+                        .Select(x => x.Date)
+                        .Take(ChunkSize));
+
+                var gapFound = false;
+                foreach (var date in dates)
                 {
-                    streak++;
-                    expected = expected.AddDays(-1);
+                    if (date == expected)
+                    {
+                        streak++;
+                        expected = expected.AddDays(-1);
+                    }
+                    else if (date < expected)
+                    {
+                        gapFound = true;
+                        break;
+                    }
+                    // date > expected không xảy ra: mỗi SĐT chỉ có tối đa
+                    // 1 bản ghi/ngày và các đợt đi từ mới đến cũ, không chồng lấn.
                 }
-                else if (date < expected)
+
+                if (gapFound || dates.Count < ChunkSize)
                 {
-                    break;
+                    break; // gặp ngày đứt quãng, hoặc đã hết lịch sử
                 }
+
+                // Cả đợt đều liên tiếp nhau: lấy tiếp đợt cũ hơn.
+                upperBound = dates[dates.Count - 1].AddDays(-1);
             }
 
             return streak;

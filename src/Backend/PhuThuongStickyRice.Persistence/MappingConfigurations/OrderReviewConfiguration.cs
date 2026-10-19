@@ -16,6 +16,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .HasMaxLength(OrderReview.OrderNumberMaxLength)
                 .IsRequired();
             builder.HasIndex(x => x.OrderId).IsUnique();
+            // perf-hunt 2026-10-19: landing GetReviews (public) lọc
+            // !IsHidden + sort CreatedAt desc mỗi lần cache-miss 5 phút.
+            builder.HasIndex(x => new { x.IsHidden, x.CreatedAt });
 
             builder.Property(x => x.CustomerPhone)
                 .HasMaxLength(OrderReview.PhoneMaxLength)
