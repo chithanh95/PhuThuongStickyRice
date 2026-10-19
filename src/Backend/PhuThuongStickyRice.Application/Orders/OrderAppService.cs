@@ -2644,7 +2644,18 @@ namespace PhuThuongStickyRice.Application.Orders
                 order.Cancel();
                 // Item 233: đơn hệ thống tự hủy cũng ghi lý do để báo cáo đầy đủ.
                 order.SetCancelReason(OrderCancelReasons.SystemExpiredPayment);
-                if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled))
+                // bug-hunt 2026-10-19: guard nguyên tử cả PaymentStatus —
+                // khách có thể bấm "Tôi đã chuyển khoản" (PaymentStatus chuyển
+                // Unpaid -> PendingConfirmation) GIỮA lúc worker load danh sách
+                // và chạy UPDATE này. Nếu chỉ check Status thì worker vẫn thắng
+                // rồi UpdateAsync(order) ghi đè entity cũ (PaymentStatus=Unpaid)
+                // lên khai báo PendingConfirmation của khách: đơn hiện "Đã hủy/
+                // Chưa thanh toán" trong khi tiền thật đã vào tài khoản quán.
+                // WHERE ... AND PaymentStatus = Unpaid khiến worker thua trong
+                // trường hợp đó và bỏ qua đơn (khai báo của khách được giữ).
+                if (!await _orders.TryTransitionStatusAsync(
+                    order.Id, OrderStatus.Pending, OrderStatus.Cancelled,
+                    expectedPaymentStatus: PaymentStatus.Unpaid))
                 {
                     continue;
                 }

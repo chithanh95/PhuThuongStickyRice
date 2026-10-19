@@ -23,7 +23,8 @@
                         <div class="d-flex align-items-center justify-content-between border rounded p-2 mb-2" @key="p.Id">
                             <div class="mr-2">
                                 <div><strong>@p.Name</strong></div>
-                                <small class="text-danger">@p.Price.ToString("N0") ₫</small>
+                                @* bug-hunt 2026-10-19: hiện giá KM (giá thực trả khi bấm + Thêm) thay vì giá gốc. *@
+                                <small class="text-danger">@ShopProductModel.EffectivePrice(p, p.Price).ToString("N0") ₫</small>
                             </div>
                             <button class="btn btn-sm btn-warning" @onclick="() => Add(p)" disabled="@_adding">
                                 + Thêm

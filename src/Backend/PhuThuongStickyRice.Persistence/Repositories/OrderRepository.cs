@@ -102,14 +102,25 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         /// được UPDATE mới chạy side-effect (cộng/hoàn điểm, hoàn ví, thưởng
         /// giới thiệu), request thua nhận false và phải báo lỗi rõ ràng cho
         /// người dùng thay vì xử lý tiếp.
+        /// Tham số <paramref name="expectedPaymentStatus"/> cho phép gắn thêm
+        /// điều kiện PaymentStatus vào WHERE nguyên tử — worker tự hủy đơn
+        /// chuyển khoản dùng để không hủy (và không ghi đè) đơn mà khách vừa
+        /// khai báo "đã chuyển khoản" (PendingConfirmation).
         /// </summary>
         public async Task<bool> TryTransitionStatusAsync(
             System.Guid orderId, OrderStatus expectedFrom, OrderStatus to,
+            PaymentStatus? expectedPaymentStatus = null,
             CancellationToken cancellationToken = default)
         {
             var dbContext = await GetDbContextAsync();
-            var affected = await dbContext.Set<Order>()
-                .Where(x => x.Id == orderId && x.Status == expectedFrom)
+            var query = dbContext.Set<Order>()
+                .Where(x => x.Id == orderId && x.Status == expectedFrom);
+            if (expectedPaymentStatus.HasValue)
+            {
+                var paymentStatus = expectedPaymentStatus.Value;
+                query = query.Where(x => x.PaymentStatus == paymentStatus);
+            }
+            var affected = await query
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.Status, to),
                     cancellationToken);

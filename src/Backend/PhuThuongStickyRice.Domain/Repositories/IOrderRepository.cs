@@ -46,8 +46,19 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// được — chống chạy side-effect 2 lần: cộng/hoàn điểm loyalty, hoàn
         /// tiền ví, thưởng giới thiệu).
         /// </summary>
+        /// <param name="orderId">Id đơn cần chuyển trạng thái.</param>
+        /// <param name="expectedFrom">Trạng thái kỳ vọng hiện tại.</param>
+        /// <param name="to">Trạng thái đích.</param>
+        /// <param name="expectedPaymentStatus">
+        /// Nếu có, điều kiện PaymentStatus cũng được gắn vào mệnh đề WHERE
+        /// nguyên tử — dùng cho worker tự hủy đơn chuyển khoản: khách bấm
+        /// "Tôi đã chuyển khoản" (PendingConfirmation) giữa lúc worker xử lý
+        /// thì worker PHẢI bỏ qua, không được ghi đè mất khai báo đã chuyển
+        /// khoản của khách.
+        /// </param>
         Task<bool> TryTransitionStatusAsync(
             Guid orderId, OrderStatus expectedFrom, OrderStatus to,
+            PaymentStatus? expectedPaymentStatus = null,
             CancellationToken cancellationToken = default);
     }
 }

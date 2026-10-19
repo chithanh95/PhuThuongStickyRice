@@ -119,8 +119,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             // has an image in the DB (same ResolveImageUrl pattern as the
             // shop quick-view path).
             var imageUrl = _commerceService.ResolveImageUrl(FirstImageUrl(product?.ImageUrlsJson));
+            // bug-hunt 2026-10-19: đường thêm nhanh (popup upsell, gợi ý ở
+            // /cart, trang chủ, chat) trước đây cho GIÁ GỐC vào giỏ trong khi
+            // card /shop niêm yết giá KM — giỏ/checkout hiện tổng cao hơn giá
+            // đã quảng cáo. Dùng chung EffectivePrice với card và quick-view.
             AddConfigured(
-                product.Id, product.Name, product.Code, product.Price, quantity,
+                product.Id, product.Name, product.Code,
+                ShopProductModel.EffectivePrice(product, product.Price), quantity,
                 sizeOptionId: null, sizeName: null,
                 toppingIds: null, toppingNames: null, toppingsTotal: 0,
                 isCombo: false, imageUrl: imageUrl);

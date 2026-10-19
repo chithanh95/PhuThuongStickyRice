@@ -49,7 +49,8 @@
                              onerror="this.onerror=null;this.style.display='none';" />
                         <div class="card-body p-2 text-center">
                             <div class="font-weight-bold" style="font-size: 0.9rem;">@s.Name</div>
-                            <div class="text-danger font-weight-bold">@FormatPrice(s.Price)</div>
+                            @* bug-hunt 2026-10-19: hiện giá KM (giá thực trả khi bấm Thêm) thay vì giá gốc. *@
+                            <div class="text-danger font-weight-bold">@FormatPrice(ShopProductModel.EffectivePrice(s, s.Price))</div>
                             <button class="btn btn-sm btn-primary mt-1 w-100"
                                     @onclick="() => QuickAddSuggestion(s)">
                                 <i class="fa-solid fa-plus"></i> Thêm
@@ -200,7 +201,8 @@ else
                                          onerror="this.onerror=null;this.style.display='none';" />
                                     <div>
                                         <strong>@s.Name</strong><br />
-                                        <span class="text-danger">@FormatPrice(s.Price)</span>
+                                        @* bug-hunt 2026-10-19: hiện giá KM (giá thực trả khi bấm Thêm) thay vì giá gốc. *@
+                                        <span class="text-danger">@FormatPrice(ShopProductModel.EffectivePrice(s, s.Price))</span>
                                     </div>
                                 </div>
                                 <button class="btn btn-sm btn-primary" @onclick="() => QuickAddSuggestion(s)">@AppI18n.T("shop.add")</button>

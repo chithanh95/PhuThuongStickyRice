@@ -424,7 +424,7 @@ else
                                 <span class="sg-badge sg-badge-morning">🌅 Xôi sáng</span>
                             }
                             <img src="@ProductImage(product)" alt="@product.Name" />
-                            @if (!IsSoldOut(product) && !OrdersPaused)
+                            @if (CanOrder(product))
                             {
                                 <div class="sg-dish-quick">
                                     <button @onclick="() => AddToCart(product)">+ Thêm nhanh</button>
@@ -433,9 +433,10 @@ else
                         </div>
                         <div class="sg-dish-body">
                             <h3 class="sg-dish-name">@product.Name</h3>
-                            <div class="sg-dish-price">@FormatPrice(product.Price)<small>@UnitSuffix(product)</small></div>
-                            <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddToCart(product)" disabled="@(OrdersPaused || IsSoldOut(product))">
-                                @(IsSoldOut(product) ? "Tạm hết" : "Thêm vào giỏ")
+                            @* bug-hunt 2026-10-19: hiện giá KM (giá thực trả khi bấm Thêm vào giỏ) thay vì giá gốc. *@
+                            <div class="sg-dish-price">@FormatPrice(ShopProductModel.EffectivePrice(product, product.Price))<small>@UnitSuffix(product)</small></div>
+                            <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">
+                                @AddButtonLabel(product)
                             </button>
                         </div>
                     </div>
@@ -928,6 +929,88 @@ else
         !string.Equals(p?.Status, "Active", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
+    /// bug-hunt 2026-10-19: port từ Shop.razor (item 164) — true khi giờ hiện
+    /// tại của trình duyệt nằm trong một khung giờ bán của món, hoặc món không
+    /// đặt khung giờ. Fail-open khi JSON lỗi để không chặn bán nhầm.
+    /// </summary>
+    private static bool IsInSaleHours(ShopProductModel product)
+    {
+        var json = product?.AvailableHoursJson;
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return true;
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+            {
+                return true;
+            }
+
+            var now = DateTime.Now.TimeOfDay;
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                if (el.ValueKind != System.Text.Json.JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                if (el.TryGetProperty("from", out var fromEl)
+                    && el.TryGetProperty("to", out var toEl)
+                    && TimeSpan.TryParse(fromEl.GetString(), out var from)
+                    && TimeSpan.TryParse(toEl.GetString(), out var to)
+                    && now >= from && now < to)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return true;
+        }
+    }
+
+    /// <summary>bug-hunt 2026-10-19: port từ Shop.razor (item 165) — true khi đã hết suất bán hôm nay.</summary>
+    private static bool IsDailyLimitReached(ShopProductModel p) =>
+        p?.RemainingToday.HasValue == true && p.RemainingToday.Value <= 0;
+
+    /// <summary>
+    /// bug-hunt 2026-10-19: nút "Thêm vào giỏ" ở trang chủ chỉ bật khi đặt
+    /// được — cùng luật với CanOrder ở /shop: quán không tạm ngưng, món còn
+    /// hàng, đang trong giờ bán, chưa hết suất hôm nay. Trước đây trang chủ
+    /// chỉ check Tạm hết nên món "Hết suất hôm nay"/ngoài giờ bán vẫn cho vào
+    /// giỏ, ra checkout mới bị server từ chối (EnsureDailyLimitsAsync).
+    /// </summary>
+    private bool CanOrder(ShopProductModel product) =>
+        !OrdersPaused && !IsSoldOut(product) && IsInSaleHours(product) && !IsDailyLimitReached(product);
+
+    /// <summary>Nhãn nút giải thích TẠI SAO không đặt được (mirror AddButtonLabel ở /shop).</summary>
+    private static string AddButtonLabel(ShopProductModel product)
+    {
+        if (IsSoldOut(product))
+        {
+            return "Tạm hết";
+        }
+
+        if (!IsInSaleHours(product))
+        {
+            return "Chưa tới giờ bán";
+        }
+
+        if (IsDailyLimitReached(product))
+        {
+            return "Hết suất hôm nay";
+        }
+
+        return "Thêm vào giỏ";
+    }
+
+    /// <summary>
     /// Số chữ số tối thiểu để coi SĐT là hợp lệ: SĐT VN có 10 số, bỏ số 0 ở đầu
     /// (khi khách nhập thiếu) vẫn còn 9 chữ số.
     /// </summary>
@@ -1340,13 +1423,29 @@ else
             Toasts.Show($"'{product?.Name}' tạm hết, vui lòng chọn món khác.");
             return;
         }
+        // bug-hunt 2026-10-19: guard phòng thủ như /shop — món vừa hết suất
+        // hoặc ra khỏi giờ bán sau khi trang đã load (nút đã disable nhưng
+        // event cũ vẫn có thể lọt).
+        if (!IsInSaleHours(product))
+        {
+            Toasts.Show($"'{product?.Name}' chưa tới giờ bán, bạn quay lại sau nhé.");
+            return;
+        }
+        if (IsDailyLimitReached(product))
+        {
+            Toasts.Show($"'{product?.Name}' đã hết suất hôm nay, vui lòng quay lại ngày mai.");
+            return;
+        }
         CartState.Add(product, 1);
 
         // Upsell: xôi → suggest Chả cốm / Chả giò.
         if (IsXoi(product))
         {
+            // bug-hunt 2026-10-19: lọc upsell bằng CanOrder như bản /shop —
+            // trước đây chỉ lọc Status == "Active" nên popup vẫn gợi ý món đã
+            // "Hết suất hôm nay" hoặc ngoài giờ bán.
             var upsells = _allProducts
-                .Where(p => !IsXoi(p) && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .Where(p => !IsXoi(p) && CanOrder(p))
                 .OrderBy(p => p.Code == "CHA-COM" ? 0 : p.Code == "CHA-GIO" ? 1 : 2)
                 .ThenBy(p => p.Price)
                 .Take(4)
@@ -1376,6 +1475,13 @@ else
 
     private void AddUpsell(ShopProductModel product)
     {
+        // bug-hunt 2026-10-19: guard phòng thủ như bản /shop — món vừa hết
+        // suất/giờ bán sau khi popup đã mở thì từ chối thay vì cho vào giỏ.
+        if (!CanOrder(product))
+        {
+            Toasts.Show("Món này vừa hết suất hoặc chưa tới giờ bán, bạn chọn món khác nhé.");
+            return;
+        }
         CartState.Add(product, 1);
         Toasts.Show($"Đã thêm {product.Name} × 1 vào giỏ", "Xem giỏ hàng", "/cart");
     }

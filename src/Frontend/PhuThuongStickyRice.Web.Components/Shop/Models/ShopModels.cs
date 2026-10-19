@@ -31,6 +31,27 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// </summary>
         public decimal? PromoPrice { get; set; }
 
+        /// <summary>
+        /// Item 256 (bug-hunt 2026-10-19): giá bán hiệu dụng đưa vào giỏ —
+        /// giá KM nếu có và rẻ hơn giá đang xét, ngược lại giữ giá gốc.
+        /// Helper dùng chung cho MỌI đường thêm vào giỏ (card /shop,
+        /// quick-view, popup upsell, gợi ý ở /cart, trang chủ, chat) để giá
+        /// trong giỏ luôn khớp giá KM niêm yết — trước đây chỉ card chính
+        /// và quick-view dùng giá KM, các đường còn lại cho giá gốc vào giỏ
+        /// khiến tổng giỏ/checkout cao hơn giá đã quảng cáo. Cùng luật với
+        /// Product.ResolveEffectivePrice ở backend (server vẫn là nguồn
+        /// quyết định cuối khi tạo đơn).
+        /// </summary>
+        /// <param name="product">Món hàng (có thể mang giá KM từ API).</param>
+        /// <param name="basePrice">Giá đang xét (giá gốc hoặc giá size đã chọn).</param>
+        /// <returns>Giá KM nếu hợp lệ và rẻ hơn, ngược lại giá gốc.</returns>
+        public static decimal EffectivePrice(ShopProductModel product, decimal basePrice)
+        {
+            return product?.PromoPrice is decimal promo && promo > 0 && promo < basePrice
+                ? promo
+                : basePrice;
+        }
+
         public string Currency { get; set; }
 
         /// <summary>Item 81: selling unit — "suất" (per portion) or "kg" (per kilogram).</summary>

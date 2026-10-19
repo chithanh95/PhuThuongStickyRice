@@ -1263,17 +1263,14 @@ else
     /// Item 256 fix (bug-hunt 2026-10-19): giá bán hiệu dụng đưa vào giỏ.
     /// Giá KM hiển thị trên card phải là giá khách thực sự trả — trước đây
     /// giỏ và đơn hàng tính theo giá gốc trong khi card hiện giá KM.
-    /// Cùng luật với Product.ResolveEffectivePrice ở backend.
+    /// Gom về helper dùng chung <see cref="ShopProductModel.EffectivePrice"/>
+    /// để mọi đường thêm vào giỏ (upsell, gợi ý, trang chủ) cùng một luật.
     /// </summary>
     /// <param name="product">Món hàng (có thể mang giá KM từ API).</param>
     /// <param name="basePrice">Giá đang xét (giá gốc hoặc giá size đã chọn).</param>
     /// <returns>Giá KM nếu có và rẻ hơn, ngược lại giá gốc.</returns>
-    private static decimal EffectivePrice(ShopProductModel product, decimal basePrice)
-    {
-        return product?.PromoPrice is decimal promo && promo > 0 && promo < basePrice
-            ? promo
-            : basePrice;
-    }
+    private static decimal EffectivePrice(ShopProductModel product, decimal basePrice) =>
+        ShopProductModel.EffectivePrice(product, basePrice);
 
     // ---------- Cart ----------
 
