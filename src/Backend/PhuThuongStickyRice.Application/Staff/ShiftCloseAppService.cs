@@ -50,12 +50,16 @@ namespace PhuThuongStickyRice.Application.Staff
             var endUtc = startUtc.AddDays(1);
 
             var queryable = await _orders.GetQueryableAsync();
-            var orders = await _asyncExecuter.ToListAsync(
+
+            // perf-hunt 2026-10-19: tính tổng ngay trên SQL (SUM) thay vì nạp
+            // toàn bộ đơn COD của ngày về memory rồi Sum in-memory. Kết quả
+            // giống hệt (WHERE giữ nguyên, SUM trên SQL Server dịch
+            // được Money.Amount như các endpoint dashboard đã làm).
+            return await _asyncExecuter.SumAsync(
                 queryable.Where(x => x.CreatedAt >= startUtc && x.CreatedAt < endUtc
                     && x.Status == OrderStatus.Completed
-                    && x.PaymentMethod == PaymentMethod.Cod));
-
-            return orders.Sum(x => x.TotalAmount.Amount);
+                    && x.PaymentMethod == PaymentMethod.Cod)
+                .Select(x => x.TotalAmount.Amount));
         }
 
         public virtual async Task<ShiftCloseDto> GetByDateAsync(DateTime date)

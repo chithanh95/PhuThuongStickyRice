@@ -82,6 +82,12 @@ namespace PhuThuongStickyRice.Application.Common
 
             foreach (var result in results)
             {
+                // perf-hunt 2026-10-19: autoSave:false — gom các row delivery
+                // vào 1 commit cuối UoW của method (ABP tự SaveChanges khi
+                // UoW hoàn thành, cùng pattern với RecordStatusChangeAsync).
+                // Trước đây mỗi row 1 SaveChanges = 1 round-trip. Kết quả
+                // giống hệt khi dispatch thành công; nếu luồng gọi (tạo đơn)
+                // rollback thì delivery row cũng rollback theo — nhất quán hơn.
                 await _deliveries.InsertAsync(new WebhookDelivery
                 {
                     At = result.At,
@@ -91,7 +97,7 @@ namespace PhuThuongStickyRice.Application.Common
                     Success = result.Success,
                     StatusCode = result.StatusCode,
                     Error = result.Error
-                }, autoSave: true);
+                }, autoSave: false);
             }
         }
 
