@@ -177,6 +177,11 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .WithMany()
                 .HasForeignKey(x => x.ShipperId)
                 .OnDelete(DeleteBehavior.SetNull);
+            // perf-hunt 2026-10-19: admin order list (OrderAppService.GetListAsync)
+            // + order reports (OrderReportsAppService) filter Where(ShipperId == ...)
+            // — equality on Guid without index = table scan on the hottest table.
+            // Non-unique index: lookup only, no business change.
+            builder.HasIndex(x => x.ShipperId);
 
             // Multi-branch foundation (item 109).
             builder.Property(x => x.BranchId);
