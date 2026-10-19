@@ -149,6 +149,37 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 queryable.Where(x => x.IsActive && x.MinAmount <= order.TotalAmount.Amount)
                     .OrderBy(x => x.MinAmount));
 
+            // perf-hunt 2026-10-20: gom các rule DiscountCode rồi tạo mã 1 lần
+            // bằng CreateGeneratedBatchAsync — trước đây mỗi rule là 1 lần
+            // GenerateUniqueCodeAsync + InsertAsync(autoSave: true) + 1 lần
+            // _catalogCache.Invalidate() toàn bộ cache public (products,
+            // ratings, FAQs, promos...) trên đường hoàn tất đơn. Ghi chú quà
+            // vẫn theo đúng thứ tự rule như cũ (kể cả khi topping và mã giảm
+            // đan xen nhau).
+            var ownerPhone = NormalizePhone(order.CustomerPhone);
+            var discountPercents = new List<decimal>();
+            foreach (var rule in rules)
+            {
+                // Mặc định 5% nếu rule không đặt — mã dùng 1 lần, gắn đúng SĐT khách
+                // và có hạn 30 ngày, để khách quay lại mua lần sau.
+                if (rule.RewardType == OrderRewardType.DiscountCode)
+                {
+                    discountPercents.Add(rule.DiscountPercent ?? DefaultRewardDiscountPercent);
+                }
+            }
+
+            var generatedCodes = discountPercents.Count > 0
+                ? await _discounts.CreateGeneratedBatchAsync(
+                    discountPercents.Select(percent => new CreateGeneratedDiscountDto
+                    {
+                        Prefix = "THUONG",
+                        DiscountPercent = percent,
+                        ExpiresAt = DateTime.UtcNow.AddDays(RewardVoucherValidDays),
+                        OwnerPhone = ownerPhone
+                    }).ToList())
+                : new List<DiscountCodeDto>();
+
+            var discountIndex = 0;
             foreach (var rule in rules)
             {
                 switch (rule.RewardType)
@@ -163,18 +194,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
                         break;
 
                     case OrderRewardType.DiscountCode:
-                        // Mặc định 5% nếu rule không đặt — mã dùng 1 lần, gắn đúng SĐT khách
-                        // và có hạn 30 ngày, để khách quay lại mua lần sau.
-                        var percent = rule.DiscountPercent ?? DefaultRewardDiscountPercent;
-                        var code = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
-                        {
-                            Prefix = "THUONG",
-                            DiscountPercent = percent,
-                            ExpiresAt = DateTime.UtcNow.AddDays(RewardVoucherValidDays),
-                            OwnerPhone = NormalizePhone(order.CustomerPhone)
-                        });
+                        var percent = discountPercents[discountIndex];
                         order.AddRewardNote(
-                            $"[Quà tặng] Mã giảm {percent:N0}% cho lần sau: {code.Code} (áp dụng cho SĐT {order.CustomerPhone}).");
+                            $"[Quà tặng] Mã giảm {percent:N0}% cho lần sau: {generatedCodes[discountIndex].Code} (áp dụng cho SĐT {order.CustomerPhone}).");
+                        discountIndex++;
                         break;
                 }
             }

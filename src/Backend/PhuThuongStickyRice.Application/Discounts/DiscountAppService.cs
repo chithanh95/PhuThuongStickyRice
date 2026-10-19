@@ -145,6 +145,17 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task<DiscountCodeDto> CreateGeneratedAsync(CreateGeneratedDiscountDto dto);
 
         /// <summary>
+        /// Internal: tạo hàng loạt mã dùng 1 lần do hệ thống sinh (quy tắc
+        /// thưởng khi đơn hoàn tất). Gom toàn bộ insert vào UoW hiện tại
+        /// (autoSave: false) và chỉ invalidate cache 1 lần — thay vì mỗi mã
+        /// 1 SaveChanges + 1 invalidate toàn bộ cache public như gọi
+        /// <see cref="CreateGeneratedAsync"/> trong vòng lặp. Thứ tự kết quả
+        /// khớp thứ tự đầu vào; validate từng DTO giống hệt bản đơn.
+        /// </summary>
+        /// <param name="dtos">Danh sách yêu cầu tạo mã, rỗng thì trả về rỗng.</param>
+        Task<List<DiscountCodeDto>> CreateGeneratedBatchAsync(IReadOnlyList<CreateGeneratedDiscountDto> dtos);
+
+        /// <summary>
         /// Internal: true khi SĐT đã có mã còn dùng được với tiền tố cho trước
         /// (chặn sinh trùng mã quay số/sinh nhật).
         /// </summary>
@@ -575,6 +586,56 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         public virtual async Task<DiscountCodeDto> CreateGeneratedAsync(CreateGeneratedDiscountDto dto)
         {
+            var entity = await BuildGeneratedEntityAsync(dto);
+            await _discounts.InsertAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
+            return MapToDto(entity);
+        }
+
+        /// <summary>
+        /// Internal: tạo hàng loạt mã dùng 1 lần do hệ thống sinh. Mỗi DTO
+        /// validate + sinh mã duy nhất y hệt <see cref="CreateGeneratedAsync"/>,
+        /// nhưng gom insert vào UoW hiện tại (autoSave: false — ABP flush 1 lần
+        /// khi UoW hoàn thành) và invalidate cache đúng 1 lần. Không đổi dữ
+        /// liệu tạo ra: cùng prefix/mã/owner/hạn dùng.
+        /// </summary>
+        public virtual async Task<List<DiscountCodeDto>> CreateGeneratedBatchAsync(
+            IReadOnlyList<CreateGeneratedDiscountDto> dtos)
+        {
+            if (dtos == null || dtos.Count == 0)
+            {
+                return new List<DiscountCodeDto>();
+            }
+
+            // Validate + sinh mã duy nhất cho từng DTO trước khi insert —
+            // DTO lỗi vẫn ném DomainException như bản đơn, không tạo mã nào.
+            var entities = new List<DiscountCode>(dtos.Count);
+            foreach (var dto in dtos)
+            {
+                entities.Add(await BuildGeneratedEntityAsync(dto));
+            }
+
+            // perf-hunt 2026-10-20: gom insert (không SaveChanges từng mã) và
+            // chỉ 1 lần _catalogCache.Invalidate() cho cả batch — trước đây
+            // mỗi rule thưởng là 1 SaveChanges + 1 invalidate toàn bộ cache
+            // public (products, ratings, FAQs, promos...) trên đường hoàn tất
+            // đơn. Mã đã sinh phía client nên không cần SaveChanges để lấy.
+            foreach (var entity in entities)
+            {
+                await _discounts.InsertAsync(entity, autoSave: false);
+            }
+
+            _catalogCache.Invalidate();
+            return entities.Select(MapToDto).ToList();
+        }
+
+        /// <summary>
+        /// Validate DTO + sinh mã duy nhất rồi dựng entity DiscountCode dùng
+        /// 1 lần (MaxUses = 1, gắn SĐT chủ sở hữu). Logic dùng chung cho bản
+        /// đơn và bản batch để 2 luồng không lệch nhau.
+        /// </summary>
+        private async Task<DiscountCode> BuildGeneratedEntityAsync(CreateGeneratedDiscountDto dto)
+        {
             if (!dto.DiscountPercent.HasValue && !dto.DiscountAmount.HasValue)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -584,7 +645,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             var code = await GenerateUniqueCodeAsync(
                 string.IsNullOrWhiteSpace(dto.Prefix) ? "VOUCHER" : dto.Prefix.Trim().ToUpperInvariant());
 
-            var entity = new DiscountCode
+            return new DiscountCode
             {
                 Code = code,
                 DiscountPercent = dto.DiscountPercent,
@@ -596,9 +657,6 @@ namespace PhuThuongStickyRice.Application.Discounts
                 IsActive = true,
                 OwnerPhone = string.IsNullOrWhiteSpace(dto.OwnerPhone) ? null : dto.OwnerPhone.Trim()
             };
-            await _discounts.InsertAsync(entity, autoSave: true);
-            _catalogCache.Invalidate();
-            return MapToDto(entity);
         }
 
         /// <summary>

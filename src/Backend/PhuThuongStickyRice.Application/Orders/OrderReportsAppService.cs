@@ -223,7 +223,27 @@ namespace PhuThuongStickyRice.Application.Orders
                 rowIndex++;
             }
 
-            sheet.Columns().AdjustToContents();
+            // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents()
+            // (ClosedXML đo font từng cell — O(dòng × cột), export 5000 dòng
+            // tốn vài giây chỉ để căn cột).
+            SetFixedColumnWidths(sheet, 14, 18, 24, 14, 30, 32, 14, 12, 12, 16, 16, 16, 40);
+        }
+
+        /// <summary>
+        /// Đặt độ rộng cột cố định cho sheet export (thay AdjustToContents()):
+        /// ClosedXML đo font từng cell khi auto-fit — O(dòng × cột), export
+        /// 5000 dòng tốn vài giây chỉ để căn cột. Độ rộng cố định render ngay
+        /// lập tức, không đổi dữ liệu trong cell (chữ dài vẫn đầy đủ, chỉ
+        /// không tự giãn cột).
+        /// </summary>
+        /// <param name="sheet">Sheet cần đặt độ rộng.</param>
+        /// <param name="widths">Độ rộng từng cột, theo thứ tự cột 1..N.</param>
+        private static void SetFixedColumnWidths(IXLWorksheet sheet, params double[] widths)
+        {
+            for (var i = 0; i < widths.Length; i++)
+            {
+                sheet.Column(i + 1).Width = widths[i];
+            }
         }
 
         /// <summary>
@@ -317,7 +337,8 @@ namespace PhuThuongStickyRice.Application.Orders
             summary.Cell(rowIndex, 4).Value = totalOrders > 0 ? totalRevenue / totalOrders : 0m;
             summary.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
             summary.Row(rowIndex).Style.Font.Bold = true;
-            summary.Columns().AdjustToContents();
+            // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents().
+            SetFixedColumnWidths(summary, 14, 10, 18, 20);
         }
 
         /// <summary>
@@ -359,7 +380,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 sheet.Cell(rowIndex, 8).Value = OrderLabels.OrderStatus(order.Status);
                 rowIndex++;
             }
-            sheet.Columns().AdjustToContents();
+            // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents().
+            SetFixedColumnWidths(sheet, 14, 18, 24, 14, 40, 14, 16, 16);
         }
 
         /// <summary>
