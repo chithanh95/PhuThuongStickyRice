@@ -250,8 +250,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 // lẫn nhau và không làm điểm về âm. Trả false cũng chính là
                 // case "điểm không thể âm" (kể cả khi tài khoản vừa được tạo
                 // với 0 điểm).
-                var ok = await _accounts.TryDecrementPointsAsync(normalized, -input.PointsDelta);
-                if (!ok)
+                var decremented = await _accounts.TryDecrementPointsAsync(normalized, -input.PointsDelta);
+                if (!decremented)
                 {
                     throw new Domain.Exceptions.DomainException("Điểm không thể âm.");
                 }

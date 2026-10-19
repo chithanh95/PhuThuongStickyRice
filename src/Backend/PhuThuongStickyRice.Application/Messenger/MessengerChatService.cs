@@ -653,12 +653,12 @@ namespace PhuThuongStickyRice.Application.Messenger
                     };
                     var json = JsonSerializer.Serialize(body);
                     using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    using var resp = await client.PostAsync(url, content);
-                    if (!resp.IsSuccessStatusCode)
+                    using var response = await client.PostAsync(url, content);
+                    if (!response.IsSuccessStatusCode)
                     {
-                        var err = await resp.Content.ReadAsStringAsync();
+                        var err = await response.Content.ReadAsStringAsync();
                         Logger.LogWarning("Messenger send failed ({Status}): {Error}",
-                            (int)resp.StatusCode, err);
+                            (int)response.StatusCode, err);
                         break;
                     }
                     await Task.Delay(BetweenChunksDelay);

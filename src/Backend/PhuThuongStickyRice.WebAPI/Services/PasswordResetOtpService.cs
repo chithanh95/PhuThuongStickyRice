@@ -67,7 +67,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
             // Rate limit: max 3 OTP requests per phone per hour.
             var rateKey = $"pwdreset:ratelimit:{phone}";
-            var count = _cache.TryGetValue<int>(rateKey, out var c) ? c : 0;
+            var count = _cache.TryGetValue<int>(rateKey, out var cachedCount) ? cachedCount : 0;
             if (count >= MaxOtpRequestsPerHour)
             {
                 _logger.LogWarning("Quên mật khẩu: SĐT {Phone} vượt quá giới hạn yêu cầu OTP.", phone);

@@ -6,17 +6,19 @@ namespace PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods
 {
     public static class ListExtensions
     {
-        public static List<T> Combines<T>(this List<T> collection1, List<T> collection2)
+        /// <summary>Gộp <paramref name="second"/> vào cuối <paramref name="first"/> (sửa trực tiếp trên list gốc) rồi trả về chính nó.</summary>
+        public static List<T> Combine<T>(this List<T> first, List<T> second)
         {
-            collection1.AddRange(collection2);
-            return collection1;
+            first.AddRange(second);
+            return first;
         }
 
-        public static ICollection<T> Combines<T>(this ICollection<T> collection1, ICollection<T> collection2)
+        /// <summary>Tạo list mới gồm các phần tử của <paramref name="first"/> rồi đến <paramref name="second"/>; không sửa 2 collection gốc.</summary>
+        public static ICollection<T> Combine<T>(this ICollection<T> first, ICollection<T> second)
         {
             var list = new List<T>();
-            list.AddRange(collection1);
-            list.AddRange(collection2);
+            list.AddRange(first);
+            list.AddRange(second);
             return list;
         }
     }

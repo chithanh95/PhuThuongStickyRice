@@ -459,8 +459,8 @@ namespace PhuThuongStickyRice.Application.Shop
 
             try
             {
-                var ok = await PostNewOrderWebhookAsync(target, payload);
-                return ok
+                var webhookSucceeded = await PostNewOrderWebhookAsync(target, payload);
+                return webhookSucceeded
                     ? (true, $"Đã gửi thử tới {target} — máy chủ trả về thành công.")
                     : (false, $"Đã gửi tới {target} nhưng máy chủ không trả về thành công. Kiểm tra log WebAPI để biết chi tiết.");
             }
