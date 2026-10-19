@@ -155,12 +155,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Dish polls ============
 
-        /// <summary>Lấy danh sách bình chọn món ăn (Admin, mới nhất lên trước).</summary>
+        /// <summary>Lấy danh sách bình chọn món ăn (Admin, mới nhất lên trước, tối đa 500 dòng).</summary>
         [HttpGet("polls")]
         public async Task<ActionResult> GetPolls(CancellationToken cancellationToken = default)
         {
             var polls = await _db.DishPolls
                 .OrderByDescending(p => p.CreatedAt)
+                .Take(500)
                 .Select(p => new
                 {
                     id = p.Id,

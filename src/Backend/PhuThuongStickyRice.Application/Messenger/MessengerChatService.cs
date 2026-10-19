@@ -108,6 +108,14 @@ namespace PhuThuongStickyRice.Application.Messenger
             new ConcurrentDictionary<string, ChatSession>();
 
         /// <summary>
+        /// perf-hunt 2026-10-19: mốc lần dọn session gần nhất. PruneSessions()
+        /// quét toàn bộ dictionary O(n) nên không chạy trên mỗi tin nhắn —
+        /// throttle tối đa 1 lần/60 giây. Dọn dẹp là best-effort: session hết
+        /// hạn vẫn tự bị loại khi quá 30 phút, chậm tối đa 60s không ảnh hưởng.
+        /// </summary>
+        private static DateTime _lastPruneUtc = DateTime.MinValue;
+
+        /// <summary>
         /// Khởi tạo chatbot Messenger với cài đặt shop (token/secret), catalog
         /// sản phẩm, đơn hàng và HTTP client để gửi tin nhắn qua Graph API.
         /// </summary>
@@ -603,7 +611,17 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         private static void PruneSessions()
         {
-            var cutoff = DateTime.UtcNow - SessionTimeout;
+            // Throttle: mỗi 60 giây mới quét 1 lần — gọi trên mỗi tin nhắn
+            // (ProcessMessageAsync) với O(n) scan sẽ tốn CPU vô ích khi bot
+            // đông. Volatile read/write đủ vì đây chỉ là heuristic best-effort.
+            var now = DateTime.UtcNow;
+            if (now - Volatile.Read(ref _lastPruneUtc) < TimeSpan.FromSeconds(60))
+            {
+                return;
+            }
+            Volatile.Write(ref _lastPruneUtc, now);
+
+            var cutoff = now - SessionTimeout;
             foreach (var kv in _sessions)
             {
                 if (kv.Value.LastActivity < cutoff)
