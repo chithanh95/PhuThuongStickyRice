@@ -49,6 +49,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         private const string VnPhonePattern = @"^(0)(3|5|7|8|9)\d{8}$";
         private const int MinPasswordLength = 6;
+        // Thông báo lỗi định dạng SĐT dùng chung ở Register + UpdateProfile
+        // (trước đây lặp lại y nguyên 2 nơi — đổi nội dung chỉ cần 1 chỗ).
+        private const string InvalidVnPhoneMessage = "Số điện thoại không đúng định dạng (VD: 0901234567).";
         private const int AccountLockedStatusCode = 423;
         private static readonly string[] StaffRoleNames = { "Admin", "Cashier", "Kitchen" };
 
@@ -159,7 +162,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var phone = (model.Phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))
             {
-                return BadRequest("Số điện thoại không đúng định dạng (VD: 0901234567).");
+                return BadRequest(InvalidVnPhoneMessage);
             }
 
             if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < MinPasswordLength)
@@ -301,7 +304,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var phone = model.PhoneNumber.Trim();
                 if (!IsValidVnPhone(phone))
-                    return BadRequest("Số điện thoại không đúng định dạng (VD: 0901234567).");
+                    return BadRequest(InvalidVnPhoneMessage);
                 var setPhone = await _userManager.SetPhoneNumberAsync(user, phone);
                 if (!setPhone.Succeeded)
                     return BadRequest(string.Join("; ", setPhone.Errors.Select(e => e.Description)));

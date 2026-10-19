@@ -16,12 +16,16 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
     /// </summary>
     public class OrderAutoCancelWorker : AsyncPeriodicBackgroundWorkerBase
     {
+        // Quét định kỳ mỗi 5 phút: đủ nhanh để đơn chuyển khoản hết hạn sớm
+        // bị hủy kịp thời, nhưng không quét quá dày gây tốn tài nguyên DB.
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
+
         public OrderAutoCancelWorker(
             AbpAsyncTimer timer,
             IServiceScopeFactory serviceScopeFactory)
             : base(timer, serviceScopeFactory)
         {
-            Timer.Period = 5 * 60 * 1000; // 5 minutes
+            Timer.Period = (int)CheckInterval.TotalMilliseconds;
             Timer.RunOnStart = false;
         }
 

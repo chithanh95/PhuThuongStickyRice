@@ -79,6 +79,10 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public const int ImageUrlsJsonMaxLength = 4000;
 
+        // Giới hạn số ảnh trong gallery mỗi món: quá nhiều ảnh làm trang
+        // shop tải chậm và JSON dài hơn cột cho phép (ImageUrlsJsonMaxLength).
+        public const int MaxImageUrlsPerProduct = 10;
+
         public ProductStatus Status { get; private set; }
 
         /// <summary>
@@ -317,7 +321,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("Danh sách ảnh không hợp lệ.");
             }
 
-            if (urls.Count > 10)
+            if (urls.Count > MaxImageUrlsPerProduct)
             {
                 throw new DomainException("Tối đa 10 ảnh cho mỗi món.");
             }

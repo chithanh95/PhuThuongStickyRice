@@ -58,6 +58,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private const decimal BirthdayVoucherAmount = 20000;
         // Thời hạn dùng của voucher do vòng quay/quà sinh nhật phát hành.
         private const int GeneratedVoucherValidityDays = 30;
+        // Ngưỡng fallback để công nhận VIP (đủ điều kiện vào nhóm Zalo VIP):
+        // khi admin chưa cấu hình TierGoldMin hoặc khách chưa tới hạng Vàng,
+        // tổng chi từ 500.000đ vẫn được tính là VIP.
+        private const decimal VipTotalSpentThresholdVnd = 500000m;
 
         /// <summary>400 response for endpoints that require a valid VN phone number.</summary>
         private BadRequestObjectResult InvalidPhoneResult()
@@ -644,7 +648,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 tier = "Bạc";
             }
 
-            var isVip = tier == "Vàng" || totalSpent > 500000m;
+            var isVip = tier == "Vàng" || totalSpent > VipTotalSpentThresholdVnd;
             return Ok(new
             {
                 tier,

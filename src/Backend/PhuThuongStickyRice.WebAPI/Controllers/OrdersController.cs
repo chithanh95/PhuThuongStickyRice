@@ -37,6 +37,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private static readonly string[] AllowedReviewPhotoExtensions =
             { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
         private const long MaxReviewPhotoBytes = 5 * 1024 * 1024;
+        // Phân trang mặc định cho danh sách đơn: dùng chung ở tham số
+        // mặc định của endpoint và ở fallback khi client gửi pageSize < 1.
+        private const int DefaultPageSize = 20;
 
         public OrdersController(
             IOrderAppService orderAppService,
@@ -108,7 +111,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         [Authorize(Roles = "Admin,Cashier")]
         [HttpGet]
-        public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = DefaultPageSize,
             [FromQuery] string searchTerm = null, [FromQuery] string status = null,
             [FromQuery] Guid? shipperId = null,
             // Wave 6c (item 35): date-only range filter (Vietnam day boundaries).
@@ -121,8 +124,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             var paged = await _orderAppService.GetListAsync(new GetOrdersInput
             {
-                MaxResultCount = pageSize < 1 ? 20 : pageSize,
-                SkipCount = (page < 1 ? 0 : page - 1) * (pageSize < 1 ? 20 : pageSize),
+                MaxResultCount = pageSize < 1 ? DefaultPageSize : pageSize,
+                SkipCount = (page < 1 ? 0 : page - 1) * (pageSize < 1 ? DefaultPageSize : pageSize),
                 SearchTerm = searchTerm,
                 Status = status,
                 ShipperId = shipperId,
