@@ -44,7 +44,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
     /// </summary>
     public class SubscriptionAppService : ApplicationService, ISubscriptionAppService
     {
-        private readonly Volo.Abp.Domain.Repositories.IRepository<Subscription, Guid> _subscriptions;
+        private readonly ISubscriptionRepository _subscriptions;
         private readonly IOrderRepository _orders;
         private readonly IProductRepository _products;
         private readonly Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> _sizeOptions;
@@ -53,7 +53,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         private readonly IShopSettingAppService _shopSettings;
 
         public SubscriptionAppService(
-            Volo.Abp.Domain.Repositories.IRepository<Subscription, Guid> subscriptions,
+            ISubscriptionRepository subscriptions,
             IOrderRepository orders,
             IProductRepository products,
             Volo.Abp.Domain.Repositories.IRepository<ProductSizeOption, Guid> sizeOptions,
@@ -183,11 +183,20 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             var numberIndex = 0;
             foreach (var sub in due)
             {
+                // Claim nguyên tử TRƯỚC khi sinh đơn: 2 lần chạy đồng thời
+                // (worker 6h sáng + admin bấm tay) cùng thấy gói "đến hạn" —
+                // chỉ bên claim thành công được sinh đơn, chống trùng 2 đơn
+                // COD cùng ngày cho 1 gói (khách bị giao 2 lần/quán đối soát
+                // sai). Claim tham gia UoW nên nếu InsertAsync phía dưới lỗi,
+                // claim cũng rollback và lần chạy sau làm lại.
+                if (!await _subscriptions.TryClaimDueAsync(sub.Id, today))
+                {
+                    continue;
+                }
+
                 var order = BuildDueOrder(sub, orderNumbers[numberIndex++], settings);
 
                 await _orders.InsertAsync(order);
-                sub.LastOrderDate = today;
-                await _subscriptions.UpdateAsync(sub);
                 created++;
             }
 

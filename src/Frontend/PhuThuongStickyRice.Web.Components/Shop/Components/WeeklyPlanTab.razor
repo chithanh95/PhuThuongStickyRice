@@ -11,7 +11,16 @@
     }
     else if (_plan == null)
     {
-        <p class="wpt-big">Tuần này chưa có gói ăn sáng.<br />Quay lại sau nhé.</p>
+        @* Load lỗi (mạng/API sập) cũng rơi vào nhánh này vì _plan vẫn null:
+           hiện đúng lỗi thay vì báo nhầm "chưa có gói ăn sáng". *@
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <p class="wpt-error">@_error</p>
+        }
+        else
+        {
+            <p class="wpt-big">Tuần này chưa có gói ăn sáng.<br />Quay lại sau nhé.</p>
+        }
     }
     else if (_bought != null)
     {

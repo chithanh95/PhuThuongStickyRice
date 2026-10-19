@@ -134,6 +134,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>
         /// Admin: cộng (số dương) hoặc trừ tay (số âm) số dư ví kèm lý do.
         /// Số dư không bao giờ được âm — trừ quá số dư hiện có sẽ bị từ chối.
+        /// Điều chỉnh số dư bằng câu UPDATE nguyên tử (không đọc-modify-ghi)
+        /// để 2 thao tác đồng thời không ghi đè mất nhau.
         /// </summary>
         /// <param name="input">SĐT, số tiền điều chỉnh (khác 0) và lý do.</param>
         /// <returns>Ví sau khi điều chỉnh.</returns>
@@ -167,20 +169,45 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             var account = await GetOrCreateAsync(normalized);
-            var newBalance = account.Balance + input.Amount;
-            if (newBalance < 0)
+
+            decimal newBalance;
+            if (input.Amount > 0)
             {
-                throw new DomainException("Số dư ví không đủ để trừ.");
+                // Cộng số dư nguyên tử: 2 admin điều chỉnh cộng đồng thời
+                // (hoặc cộng đúng lúc khách checkout ví trừ tiền) không ghi
+                // đè mất phần cộng của nhau — lỗi tiền thật.
+                newBalance = await _wallets.IncrementBalanceAsync(account.Id, input.Amount);
+            }
+            else
+            {
+                var amount = -input.Amount; // > 0 (input.Amount == 0 đã bị chặn ở trên)
+                // Check sớm để message lỗi thân thiện trong thao tác thông
+                // thường; guard thật là TryDecrementBalanceAsync nguyên tử bên
+                // dưới — chống race check-then-set (admin trừ tay đúng lúc
+                // khách checkout ví trừ tiền thì bên vào sau bị từ chối thay
+                // vì cùng đọc số dư cũ rồi cùng trừ).
+                if (account.Balance < amount)
+                {
+                    throw new DomainException("Số dư ví không đủ để trừ.");
+                }
+
+                var decremented = await _wallets.TryDecrementBalanceAsync(account.Id, amount);
+                if (!decremented)
+                {
+                    throw new DomainException("Số dư ví không đủ để trừ.");
+                }
+
+                newBalance = account.Balance - amount;
             }
 
-            account.Balance = newBalance;
-            account.UpdatedAt = DateTime.UtcNow;
-            await _wallets.UpdateAsync(account, autoSave: true);
-
+            // KHÔNG gán lại account.Balance trên entity đang track:
+            // ExecuteUpdateAsync bypass change tracker, gán lại sẽ khiến UoW
+            // commit câu UPDATE ghi đè số dư mới nhất bằng giá trị cũ (đúng
+            // lỗi race vừa fix). Chỉ dùng giá trị trả về cho log/DTO.
             await LogAsync(normalized, input.Amount, newBalance, input.Reason.Trim(),
                 CurrentUser?.Email ?? CurrentUser?.UserName ?? "system");
 
-            return MapToDto(account);
+            return new WalletAccountDto { Id = account.Id, Phone = account.Phone, Balance = newBalance };
         }
 
         /// <summary>Admin: lịch sử biến động ví của một SĐT (100 giao dịch mới nhất).</summary>
