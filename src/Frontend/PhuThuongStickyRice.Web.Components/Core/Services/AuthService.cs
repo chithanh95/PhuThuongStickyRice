@@ -19,6 +19,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             PropertyNameCaseInsensitive = true
         };
 
+        /// <summary>Khởi tạo service xác thực với HttpClient và nơi lưu token đăng nhập.</summary>
         public AuthService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)
         {
@@ -87,12 +88,21 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             var body = await response.Content.ReadAsStringAsync();
             throw new InvalidOperationException(ExtractMessage(body));
         }
+        /// <summary>
+        /// GET api/auth/profile: hồ sơ tài khoản đang đăng nhập (tên, email,
+        /// SĐT). Cần token — gắn tự động từ <see cref="ITokenStore"/>.
+        /// </summary>
         public async Task<UserProfile> GetProfileAsync()
         {
             await SetBearerToken();
             return await _httpClient.GetFromJsonAsync<UserProfile>("api/auth/profile");
         }
 
+        /// <summary>
+        /// PUT api/auth/profile: cập nhật tên hiển thị, email, SĐT của tài
+        /// khoản đang đăng nhập. Ném <see cref="InvalidOperationException"/>
+        /// kèm message server khi bị từ chối (vd SĐT đã dùng).
+        /// </summary>
         public async Task UpdateProfileAsync(string userName, string email, string phoneNumber)
         {
             await SetBearerToken();
@@ -123,6 +133,12 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         }
 
 
+        /// <summary>
+        /// POST api/auth/forgot-password/request: yêu cầu gửi OTP 6 số qua SMS
+        /// về SĐT đăng ký (OTP hiệu lực 5 phút, giới hạn 3 req/giờ). Ném
+        /// <see cref="InvalidOperationException"/> kèm message server khi bị
+        /// từ chối (vd quá giới hạn yêu cầu).
+        /// </summary>
         public async Task RequestPasswordResetOtpAsync(string phone)
         {
             using var response = await _httpClient.PostAsJsonAsync(
@@ -138,6 +154,11 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             throw new InvalidOperationException(ExtractMessage(body));
         }
 
+        /// <summary>
+        /// POST api/auth/forgot-password/reset: đặt lại mật khẩu mới bằng OTP
+        /// đã gửi. OTP sai quá 3 lần thì khóa — ném
+        /// <see cref="InvalidOperationException"/> kèm message server.
+        /// </summary>
         public async Task ResetPasswordWithOtpAsync(string phone, string otp, string newPassword)
         {
             using var response = await _httpClient.PostAsJsonAsync(

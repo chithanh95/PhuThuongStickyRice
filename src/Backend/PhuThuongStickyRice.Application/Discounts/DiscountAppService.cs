@@ -216,6 +216,10 @@ namespace PhuThuongStickyRice.Application.Discounts
                 && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
                 && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value);
 
+        /// <summary>
+        /// Khởi tạo service mã giảm giá: repository mã, cache catalog (cho mã
+        /// công khai ở giỏ/checkout), kiểm tra quyền và log hoạt động admin.
+        /// </summary>
         public DiscountAppService(
             IDiscountCodeRepository discounts,
             IAsyncQueryableExecuter asyncExecuter,

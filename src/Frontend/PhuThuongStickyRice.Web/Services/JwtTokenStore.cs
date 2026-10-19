@@ -16,6 +16,7 @@ namespace PhuThuongStickyRice.Web.Services
 
         private readonly IJSRuntime _jsRuntime;
 
+        /// <summary>Khởi tạo kho token với JS runtime để đọc/ghi localStorage trình duyệt.</summary>
         public JwtTokenStore(IJSRuntime jsRuntime)
         {
             _jsRuntime = jsRuntime;
@@ -24,6 +25,11 @@ namespace PhuThuongStickyRice.Web.Services
         /// <summary>Tokens are attached manually by ApiClientBase, not by a message handler.</summary>
         public bool AttachTokenAutomatically => false;
 
+        /// <summary>
+        /// Đọc token đang lưu trong localStorage. Trả null khi chưa đăng nhập
+        /// hoặc token đã bị xóa (trang gọi sẽ chuyển về login).
+        /// </summary>
+        /// <returns>Cặp token + thời điểm hết hạn; null nếu không có token.</returns>
         public async Task<AuthTokenPair> GetToken()
         {
             var token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", TokenKey);
@@ -45,12 +51,22 @@ namespace PhuThuongStickyRice.Web.Services
         /// <summary>No refresh tokens — the admin logs in again when the token expires.</summary>
         public Task RefreshToken() => Task.CompletedTask;
 
+        /// <summary>
+        /// Lưu token sau khi đăng nhập thành công. Thời điểm hết hạn lưu
+        /// định dạng "O" (round-trip) để đọc lại chính xác múi giờ.
+        /// </summary>
+        /// <param name="token">Chuỗi JWT do WebAPI cấp.</param>
+        /// <param name="expiresAt">Thời điểm token hết hạn.</param>
         public async Task StoreTokenAsync(string token, DateTimeOffset expiresAt)
         {
             await _jsRuntime.InvokeVoidAsync("localStorage.setItem", TokenKey, token);
             await _jsRuntime.InvokeVoidAsync("localStorage.setItem", ExpiresKey, expiresAt.ToString("O"));
         }
 
+        /// <summary>
+        /// Xóa token khỏi localStorage khi đăng xuất — các request sau đó
+        /// không còn gắn token và trang sẽ chuyển về login.
+        /// </summary>
         public async Task ClearTokenAsync()
         {
             await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", TokenKey);

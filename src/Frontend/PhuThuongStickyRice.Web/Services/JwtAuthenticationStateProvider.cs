@@ -17,11 +17,17 @@ namespace PhuThuongStickyRice.Web.Services
     {
         private readonly JwtTokenStore _tokenStore;
 
+        /// <summary>Khởi tạo provider trạng thái đăng nhập với kho lưu token của app.</summary>
         public JwtAuthenticationStateProvider(JwtTokenStore tokenStore)
         {
             _tokenStore = tokenStore;
         }
 
+        /// <summary>
+        /// Dựng trạng thái đăng nhập của Blazor từ JWT đã lưu: không có token
+        /// → anonymous; có token → đọc claims từ payload (chỉ để hiển thị,
+        /// API vẫn là nơi xác thực chữ ký thật trên mỗi request).
+        /// </summary>
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
             var token = await _tokenStore.GetToken();
@@ -34,11 +40,20 @@ namespace PhuThuongStickyRice.Web.Services
             return new AuthenticationState(new ClaimsPrincipal(identity));
         }
 
+        /// <summary>
+        /// Báo cho Blazor biết vừa đăng nhập xong (đọc lại token từ kho) để
+        /// toàn bộ trang/menu cập nhật trạng thái đăng nhập ngay lập tức.
+        /// </summary>
         public void NotifyUserAuthentication()
         {
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
+        /// <summary>
+        /// Báo cho Blazor biết vừa đăng xuất — đẩy trạng thái anonymous để
+        /// UI chuyển ngay về dạng chưa đăng nhập (token đã bị xóa ở
+        /// <see cref="JwtTokenStore.ClearTokenAsync"/>).
+        /// </summary>
         public void NotifyUserLogout()
         {
             NotifyAuthenticationStateChanged(

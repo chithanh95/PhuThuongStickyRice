@@ -50,10 +50,22 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         Task<OrderDto> CreateAsync(CreateOrderDto input, bool skipRecaptchaCheck = false);
 
+        /// <summary>Danh sách đơn hàng có phân trang + lọc (theo trạng thái, ngày, SĐT...) cho trang quản lý đơn của admin.</summary>
+        /// <param name="input">Điều kiện lọc và phân trang.</param>
         Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInput input);
 
+        /// <summary>Chi tiết 1 đơn hàng theo id (dùng cho trang chi tiết đơn của admin và khách tra cứu).</summary>
+        /// <param name="id">Id đơn hàng.</param>
         Task<OrderDto> GetAsync(Guid id);
 
+        /// <summary>
+        /// Chuyển trạng thái đơn hàng (xác nhận → bếp → giao → hoàn tất...).
+        /// Mọi chuyển trạng thái bắt buộc đi qua method này vì nó ghi lịch sử
+        /// trạng thái, log hoạt động nhân viên, bắn webhook và khi hoàn tất thì
+        /// cộng điểm loyalty + chạy quy tắc thưởng tự động.
+        /// </summary>
+        /// <param name="id">Id đơn hàng.</param>
+        /// <param name="input">Trạng thái mới + ghi chú (nếu có).</param>
         Task<OrderDto> UpdateStatusAsync(Guid id, UpdateOrderStatusDto input);
 
         /// <summary>Admin: assigns (or unassigns with null) a delivery shipper.</summary>
@@ -319,6 +331,12 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>perf-hunt 2026-10-19: cache for public review listing (landing hot path).</summary>
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>
+        /// Khởi tạo service đơn hàng với toàn bộ dependency vòng đời đơn:
+        /// catalog sản phẩm/topping/combo, khuyến mãi (giờ vàng, mã giảm giá),
+        /// loyalty (điểm, hạng), thanh toán (MoMo, ví), thông báo (Zalo, email),
+        /// bếp/shipper và audit. Các dependency được DI container cung cấp.
+        /// </summary>
         public OrderAppService(
             IOrderRepository orders,
             IProductRepository products,
