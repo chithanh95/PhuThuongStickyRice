@@ -243,16 +243,25 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // Phones that already ordered before the range = returning.
-            var beforePhones = new HashSet<string>(await _asyncExecuter.ToListAsync(
-                orderQueryable
-                    .Where(x => x.Status != OrderStatus.Cancelled
-                        && x.CreatedAt < fromDate
-                        && inRangePhones.Contains(x.CustomerPhone))
-                    .Select(x => x.CustomerPhone)
-                    .Distinct()));
+            // Batch the IN clause (<= 1000 params/query; SQL Server allows ~2100).
+            var beforePhones = new HashSet<string>();
+            foreach (var batch in inRangePhones.Chunk(1000))
+            {
+                var found = await _asyncExecuter.ToListAsync(
+                    orderQueryable
+                        .Where(x => x.Status != OrderStatus.Cancelled
+                            && x.CreatedAt < fromDate
+                            && batch.Contains(x.CustomerPhone))
+                        .Select(x => x.CustomerPhone)
+                        .Distinct());
+                foreach (var p in found)
+                {
+                    beforePhones.Add(p);
+                }
+            }
 
-            var newPhones = inRangePhones.Where(p => !beforePhones.Contains(p)).ToList();
-            var returningPhones = inRangePhones.Where(p => beforePhones.Contains(p)).ToList();
+            var newPhones = new HashSet<string>(inRangePhones.Where(p => !beforePhones.Contains(p)));
+            var returningPhones = new HashSet<string>(inRangePhones.Where(p => beforePhones.Contains(p)));
 
             result.NewCustomers = newPhones.Count;
             result.ReturningCustomers = returningPhones.Count;

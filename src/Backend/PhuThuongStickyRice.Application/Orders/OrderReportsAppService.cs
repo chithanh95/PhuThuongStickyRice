@@ -287,37 +287,26 @@ namespace PhuThuongStickyRice.Application.Orders
             var startUtc = from.HasValue ? VietnamTime.DayStartUtc(from.Value) : DateTime.MinValue;
             var endUtc = to.HasValue ? VietnamTime.DayEndExclusiveUtc(to.Value) : DateTime.MaxValue;
 
-            var rows = await _asyncExecuter.ToListAsync(
-                queryable
-                    .Where(x => x.CreatedAt >= startUtc
-                        && x.CreatedAt < endUtc
-                        && x.Status != OrderStatus.Cancelled)
-                    .Select(x => new
+            // Aggregates computed in SQL — never materialize all orders+lines.
+            var billable = queryable
+                .Where(x => x.CreatedAt >= startUtc
+                    && x.CreatedAt < endUtc
+                    && x.Status != OrderStatus.Cancelled);
+
+            var orderCount = await _asyncExecuter.LongCountAsync(billable);
+            var totalRevenue = await _asyncExecuter.SumAsync(billable.Select(x => x.TotalAmount.Amount));
+
+            var topProducts = await _asyncExecuter.ToListAsync(
+                billable.SelectMany(x => x.Lines)
+                    .GroupBy(l => l.ProductName)
+                    .Select(g => new RevenueSummaryTopProductDto
                     {
-                        Total = x.TotalAmount.Amount,
-                        Lines = x.Lines.Select(l => new
-                        {
-                            l.ProductName,
-                            l.Quantity,
-                            LineRevenue = l.LineTotal.Amount
-                        }).ToList()
-                    }));
-
-            var totalRevenue = rows.Sum(x => x.Total);
-            var orderCount = rows.Count;
-
-            var topProducts = rows
-                .SelectMany(x => x.Lines)
-                .GroupBy(l => l.ProductName)
-                .Select(g => new RevenueSummaryTopProductDto
-                {
-                    ProductName = g.Key,
-                    Quantity = g.Sum(l => (long)l.Quantity),
-                    Revenue = g.Sum(l => l.LineRevenue)
-                })
-                .OrderByDescending(x => x.Quantity)
-                .Take(5)
-                .ToList();
+                        ProductName = g.Key,
+                        Quantity = g.Sum(l => (long)l.Quantity),
+                        Revenue = g.Sum(l => l.LineTotal.Amount)
+                    })
+                    .OrderByDescending(x => x.Quantity)
+                    .Take(5));
 
             return new RevenueSummaryDto
             {

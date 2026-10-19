@@ -78,7 +78,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 query = query.Where(x => x.Phone.Contains(term));
             }
 
-            var list = await _asyncExecuter.ToListAsync(query);
+            // perf-hunt: cap at 200 like LoyaltyAppService.GetListAsync (admin list only;
+            // without Take the whole wallet table is materialized and sorted).
+            var list = await _asyncExecuter.ToListAsync(query.Take(200));
             return list.Select(MapToDto).ToList();
         }
 
