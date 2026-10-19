@@ -862,7 +862,7 @@ else
                 {
                     <div class="sg-chat-order-row"><span>@i.Quantity × @i.ProductName</span><b>@((i.Price * i.Quantity).ToString("N0"))đ</b></div>
                 }
-                <input @bind="_chatPhone" placeholder="SĐT nhận hàng" inputmode="tel" maxlength="15" class="sg-chat-phone" />
+                <input @bind="_chatPhone" placeholder="SĐT nhận hàng" aria-label="Số điện thoại nhận hàng" inputmode="tel" maxlength="15" class="sg-chat-phone" />
                 <div class="sg-chat-order-btns">
                     <button class="sg-btn sg-btn-solid" @onclick="ConfirmChatOrder">✓ Đặt đơn này</button>
                     <button class="sg-btn sg-btn-outline" @onclick="() => _chatOrder = null">Hủy</button>
@@ -870,7 +870,7 @@ else
             </div>
         }
         <form class="sg-chat-input" @onsubmit="SendChat">
-            <input @bind="_chatInput" placeholder="Nhắn tin... (vd: 2 xôi gấc)" maxlength="500" />
+            <input @bind="_chatInput" placeholder="Nhắn tin... (vd: 2 xôi gấc)" aria-label="Nhắn tin đặt xôi" maxlength="500" />
             <button type="submit">Gửi</button>
         </form>
     </div>

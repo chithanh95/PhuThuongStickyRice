@@ -108,3 +108,80 @@ html.dark .alert-danger { background-color: #3a1e24; border-color: #5a2d36; colo
 html.dark .alert-primary { background-color: #2c2848; border-color: #453d75; color: #b3a8e8; }
 
 /* === end Agent 3 run 08:35 === */
+
+/* === UIUX run 09:40 (job uiux-team-2days) — Agent 3 Lexa sync, đợt 3 ===
+   5 fix MỚI (đã verify bằng grep, không trùng đợt 08:35).
+   File này load sau cùng trong index.html (dòng 154, sau Bootstrap +
+   app.css + admin-lexa.css) nên thắng rule cùng specificity mà không
+   cần !important — chỉ dùng !important khi đè Bootstrap utility có
+   !important (border-*) hoặc style đã scoped trước đó. */
+
+/* ---------- Fix 1: .btn-link màu xanh GitHub #0366d6 -> tím Lexa ----------
+   app.css:21 `a, .btn-link { color: #0366d6; }` thắng màu .btn-link gốc
+   của Bootstrap (#007bff) nhưng cả hai đều lệch palette Lexa.
+   `.shp-page a` chỉ cover thẻ <a>, còn <button class="btn-link"> ở
+   TaiKhoan.razor:282 ("Hủy"), Checkout.razor:447 (toggle VAT),
+   Faq.razor:41 và AdminLayout.razor:178 ("Đánh dấu đã đọc", trong
+   .lx-admin nhưng chưa có rule .lx-admin .btn-link) vẫn xanh #0366d6. */
+.shp-page .btn-link { color: #7a6fbe; }
+.shp-page .btn-link:hover { color: #625998; }
+.lx-admin .btn-link { color: #7a6fbe; }
+.lx-admin .btn-link:hover { color: #625998; }
+
+/* ---------- Fix 2: ô nhập shop focus viền xanh Bootstrap -> viền tím Lexa ----------
+   Bootstrap .form-control:focus dùng border #80bdff + glow xanh
+   rgba(0,123,255,.25). Admin đã có .lx-admin .form-control:focus viền
+   tím (admin-lexa.css:1360) nhưng shop chưa có — mọi ô nhập trên
+   DangNhap/DangKy/Checkout/TrackOrder vẫn glow xanh khi focus.
+   Đồng bộ đúng pattern admin. */
+.shp-page .form-control:focus,
+.shp-page .custom-select:focus {
+    border-color: #7a6fbe;
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25);
+}
+
+/* ---------- Fix 3: border-*-utilities lệch palette -> màu viền Lexa ----------
+   Bootstrap: .border-warning #ffc107, .border-info #17a2b8,
+   .border-primary #007bff. Đang dùng ở card khuyến mãi Shop.razor:137
+   (border-warning), card so-sánh Shop.razor:180 (border-info),
+   Customers/OrderList/BaoCao (card border-warning/border-info) và trang
+   demo Lexa UiCards (border-primary). !important vì Bootstrap khai báo
+   các utility này với !important. */
+.border-primary { border-color: #7a6fbe !important; }
+.border-success { border-color: #34c38f !important; }
+.border-danger { border-color: #f46a6a !important; }
+.border-warning { border-color: #f1b44c !important; }
+.border-info { border-color: #50a5f1 !important; }
+
+/* ---------- Fix 4: dòng table-primary/table-success -> tint Lexa ----------
+   OrderList.razor:148 (dòng ưu tiên table-success -> nền #c3e6cb),
+   OrderList.razor:202 (dòng đang chọn table-primary -> nền #b8daff xanh
+   dương Bootstrap), Checkout.razor:622 (dòng "Bạn tiết kiệm được"
+   table-success). Cả 3 table đều có table-hover nên override luôn
+   trạng thái hover. Bootstrap không dùng !important cho table variant,
+   file này load sau nên thắng. */
+.table-primary > th, .table-primary > td { background-color: rgba(122,111,190,.18); }
+.table-success > th, .table-success > td { background-color: rgba(52,195,143,.18); }
+.table-hover .table-primary:hover > th, .table-hover .table-primary:hover > td { background-color: rgba(122,111,190,.28); }
+.table-hover .table-success:hover > th, .table-hover .table-success:hover > td { background-color: rgba(52,195,143,.28); }
+
+/* ---------- Fix 5: btn-outline-* trên shop (trừ primary) -> màu Lexa ----------
+   .shp-page chỉ override .btn-outline-primary; còn lại vẫn màu gốc
+   Bootstrap: outline-success #28a745, outline-danger #dc3545,
+   outline-info #17a2b8, outline-warning #ffc107. Đang dùng ở nút thật
+   khách bấm: Shop.razor:193,269,447 ("Hỏi qua Zalo" outline-success),
+   TrackOrder.razor:93,94,158,359,361 ("Đặt lại", "Chi tiết",
+   "Đổi địa chỉ", "Hủy đơn"), Checkout.razor:569,700 ("Đổi điểm"),
+   TaiKhoan.razor:320 ("Xóa" địa chỉ). Giữ chữ trắng khi hover/fill. */
+.shp-page .btn-outline-success { color: #34c38f !important; border-color: #34c38f !important; }
+.shp-page .btn-outline-success:hover { background: #34c38f !important; border-color: #34c38f !important; color: #fff !important; }
+.shp-page .btn-outline-danger { color: #f46a6a !important; border-color: #f46a6a !important; }
+.shp-page .btn-outline-danger:hover { background: #f46a6a !important; border-color: #f46a6a !important; color: #fff !important; }
+.shp-page .btn-outline-info { color: #50a5f1 !important; border-color: #50a5f1 !important; }
+.shp-page .btn-outline-info:hover { background: #50a5f1 !important; border-color: #50a5f1 !important; color: #fff !important; }
+.shp-page .btn-outline-warning { color: #f1b44c !important; border-color: #f1b44c !important; }
+.shp-page .btn-outline-warning:hover { background: #f1b44c !important; border-color: #f1b44c !important; color: #fff !important; }
+.shp-page .btn-outline-secondary { color: #6c757d !important; border-color: #6c757d !important; }
+.shp-page .btn-outline-secondary:hover { background: #6c757d !important; border-color: #6c757d !important; color: #fff !important; }
+
+/* === end Agent 3 run 09:40 === */

@@ -344,3 +344,87 @@
     }
 }
 /* ===== END UIUX-0855 A1 ===== */
+
+/* ===== UIUX-0910 A1 (run 09:35) — 4 fix mobile mới ===== */
+/* ------------------------------------------------------------
+   FIX 1 — /track-order + /checkout (màn hình sau khi đặt đơn):
+   bảng "Chuyển khoản ngân hàng" (ngân hàng / số tài khoản / nội
+   dung) không bọc .table-responsive — số tài khoản dài không dấu
+   cách đẩy bảng rộng hơn card → tràn ngang trên màn 360px.
+   Giải pháp: mobile khóa layout bảng, cho phép nội dung ô xuống
+   dòng; cột nhãn cố định 38%.
+   (Verify: TrackOrder.razor:599-600 và Checkout.razor:219-221 —
+   `.col-md-7 > table.table-sm` chỉ khớp đúng 2 bảng này toàn app)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .col-md-7 > table.table-sm {
+        table-layout: fixed;
+        width: 100%;
+    }
+    .col-md-7 > table.table-sm td {
+        word-break: break-word;
+    }
+    .col-md-7 > table.table-sm td:first-child {
+        width: 38%;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /track-order, card "📸 Chia sẻ ảnh món bạn đã nhận":
+   nút "Chia sẻ" là `btn-sm btn-block` — full-width nhưng chỉ ~31px,
+   dưới chuẩn chạm; đây là nút gửi ảnh đánh giá của khách.
+   Giải pháp: cao 48px, chữ đậm.
+   (Verify: TrackOrder.razor:678-679 — `.col-md-2` chỉ tồn tại ở
+   đúng card này trên cả 4 trang shop)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .col-md-2 > .btn-block {
+        min-height: 48px;
+        font-size: 1rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /track-order: các ô nhập/textarea `form-control-sm`
+   còn sót (font ~14px, cao ~31px) — iOS Safari tự động zoom khi
+   focus input <16px, làm vỡ layout trang trên iPhone; ô thấp khó
+   bấm với người già. Gồm: ô ngày sinh, nhãn/địa chỉ mới, các ô
+   trong form sửa (địa chỉ, giờ giao, SĐT, ghi chú, số lượng),
+   textarea "Chia sẻ cảm nhận" ở card đánh giá, ô "Chú thích ảnh",
+   textarea "Góp ý thêm" ở popup khảo sát.
+   Giải pháp: font 16px (hết auto-zoom), cao 44px.
+   (Verify: card chi tiết đơn chứa .to-info-row — selector :has()
+   chỉ khớp đúng card này; card đánh giá lồng bên trong nên cũng
+   được phủ; popup .to-survey-sheet và ô chú thích (placeholder
+   "Chú thích…") là 2 vị trí còn lại)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card.mb-3:has(.to-info-row) .form-control-sm,
+    .to-survey-sheet .form-control-sm,
+    input[placeholder^="Chú thích"] {
+        font-size: 16px;
+        min-height: 44px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /track-order, card "Chuyển khoản ngân hàng": nút
+   "Tôi đã chuyển khoản" đã 48px (fix cũ) nhưng dòng chữ nhỏ phía
+   dưới ("Sau khi bạn bấm nút này…") chỉ ~12px, mờ trên nền trắng —
+   khách lớn tuổi dễ bỏ qua bước xác nhận quan trọng này.
+   Giải pháp: chữ to 14px, màu đậm hơn, dễ đọc.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body > .btn-success:not(.btn-sm) + p.text-muted {
+        font-size: 14px;
+    }
+    .card-body > .btn-success:not(.btn-sm) + p.text-muted small {
+        font-size: 14px;
+        color: #495057;
+    }
+}
+/* ===== END UIUX-0910 A1 ===== */

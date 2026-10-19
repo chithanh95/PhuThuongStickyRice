@@ -177,3 +177,62 @@ html.dark .shp-logout:hover {
 /* ===== END UIUX-0855 A2 ===== */
 
 /* === end Agent 2 run 08:55 === */
+
+/* === UIUX run 09:40 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (đợt 08:55 đã fix: nq-form-card label, to-info-label, shp-logout:hover
+   — đợt này chỉ tìm lỗi MỚI) */
+
+/* ---------- FIX 1 — Admin: biểu đồ SVG trang Dự báo (/admin/du-bao) ----------
+   Vấn đề: chart vẽ bằng raw SVG (MarkupString, DuBao.razor BuildChart):
+   nhãn trục fill="#6c757d" 11px (~3.1:1 trên card tối #262640 → mờ),
+   đường lưới stroke="#e9ecef" gần như tàng hình trên nền tối.
+   Fix: attribute selector (CSS thắng presentation attribute của SVG;
+   đã grep — chỉ DuBao dùng fill #6c757d trong SVG nên an toàn). */
+html.dark svg text[fill="#6c757d"] {
+    fill: #a5a2bd; /* was #6c757d — tương phản ~5.9:1 */
+}
+html.dark svg line[stroke="#e9ecef"] {
+    stroke: #3a3a58; /* was #e9ecef — lưới hiện lại trên nền tối */
+}
+
+/* ---------- FIX 2 — Shop: giá trong chip chọn size (/shop) ----------
+   Vấn đề: .shop-size-price color:#b5462a (đỏ cam đậm) trên chip nền tối
+   #262019 (html.dark .shop-size-chip) → tương phản chỉ ~2.9:1, giá khó đọc.
+   Rule dark hiện có chỉ phủ chữ chip, quên giá. Fix: sáng lên cùng tone. */
+html.dark .shop-size-chip .shop-size-price {
+    color: #f0a08a !important; /* was #b5462a — tương phản ~7.7:1 */
+}
+
+/* ---------- FIX 3 — Cart mobile: nút Xóa (/cart, <=575px) ----------
+   Vấn đề: ở mobile nút xóa là text-button "🗑 Xóa" color:#c0392b trên card
+   tối #262640 → tương phản ~2.7:1, chữ Xóa chìm. Fix: đỏ sáng #e08070
+   (cùng tone fix hover Đăng xuất đợt 08:55), ~5.2:1. Giữ trong media query
+   vì desktop nút là btn-danger (chữ trắng trên nền đỏ — đã ổn, không đụng). */
+@media (max-width: 575.98px) {
+    html.dark .cart-lines tbody td:nth-child(5) .btn {
+        color: #e08070 !important; /* was #c0392b */
+    }
+}
+
+/* ---------- FIX 4 — Landing: nút lọc giá món ăn (trang chủ) ----------
+   Vấn đề: .sg-price-filter button color:#5a4a3a (nâu đậm) trên
+   background:var(--sg-surface) — dark mode surface là #262019 → tương phản
+   chỉ ~1.9:1, chữ gần như tàng hình. Nút .active (trắng trên #6F0707) vẫn ổn
+   nên không đụng. Fix: chữ nâu sáng. */
+html.dark .sg-price-filter button {
+    color: #d8c8a8 !important; /* was #5a4a3a — tương phản ~9.6:1 */
+}
+
+/* ---------- FIX 5 — Landing: chữ card timeline/FAQ/blog/poll (trang chủ) ----------
+   Vấn đề: .sg-tl-card p, .sg-faq-item p, .sg-blog-body p, .sg-poll-body p
+   đều color:#5a4a3a trên nền var(--sg-surface) (= #262019 ở dark) → ~1.9:1,
+   đoạn mô tả chìm hẳn. Không có rule dark nào phủ (đã grep xác minh).
+   Fix: cùng 1 rule, chữ nâu sáng đọc được trên card tối. */
+html.dark .sg-tl-card p,
+html.dark .sg-faq-item p,
+html.dark .sg-blog-body p,
+html.dark .sg-poll-body p {
+    color: #d8c8a8 !important; /* was #5a4a3a */
+}
+
+/* === end Agent 2 run 09:40 === */

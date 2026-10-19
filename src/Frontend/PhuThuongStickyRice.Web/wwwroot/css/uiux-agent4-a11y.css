@@ -113,3 +113,39 @@ html.dark .shp-page .form-control.form-control::placeholder {
     color: #7d6c58;
 }
 /* === end Agent 4 run 08:35 === */
+/* === Agent 4 — a11y run 09:40 (2026-10-19) — 5 fix mới, không trùng run 08:55 === */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast): placeholder ô tìm kiếm topbar admin
+   `.lx-search input::placeholder` (admin-lexa.css:228) dùng #adb5bd trên nền
+   #f1f5f7 (tương phản ~1.89:1 — người cao tuổi đọc không nổi, placeholder còn
+   là gợi ý duy nhất của ô này). Nâng lên #6c757d (~4.27:1), cùng tông
+   text-muted chuẩn Lexa. File này load sau admin-lexa.css nên thắng cascade;
+   lặp class cho chắc specificity (0,2,1). */
+.lx-search.lx-search input::placeholder {
+    color: #6c757d;
+}
+
+/* Fix 2 — WCAG 2.4.7 (Focus Visible): ô nhập tin nhắn chat landing
+   `.sg-chat-input input` (Index.razor.css:1785) border:none và không có style
+   focus riêng → keyboard tab vào chỉ còn outline mặc định mờ, dễ bị lướt qua.
+   Thêm vòng focus màu đồng (--sg-accent) rõ ràng để khách lớn tuổi biết ô nào
+   đang nhập. Dùng var của brand thay vì hardcode để ăn theo theme. */
+.sg-chat-input.sg-chat-input input:focus-visible {
+    outline: 2px solid var(--sg-accent);
+    outline-offset: -2px;
+}
+
+/* Fix 3 — WCAG 2.4.7 + polish hover: nút "Gửi" chat landing
+   `.sg-chat-input button` (Index.razor.css:1786) hoàn toàn không có
+   :hover/:focus-visible → người dùng không nhận được phản hồi thị giác khi
+   di chuột hoặc tab tới. Thêm hover đậm hơn và vòng focus trắng nổi trên nền
+   đỏ sậm #6F0707. */
+.sg-chat-input button:hover {
+    background: #8a0b0b;
+}
+.sg-chat-input.sg-chat-input button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* === end Agent 4 run 09:40 === */
