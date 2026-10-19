@@ -51,7 +51,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         /// <summary>
         /// Wave 6c (item 32): exports the orders matching the given filters
-        /// (search / status / shipper / date range) as an .xlsx file.
+        /// (search / status / shipper / date range / cash-collected / VIP-only)
+        /// as an .xlsx file.
         /// </summary>
         [HttpGet("export")]
         public async Task<ActionResult> Export(
@@ -60,6 +61,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] Guid? shipperId = null,
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null,
+            [FromQuery] bool? cashCollected = null,
+            [FromQuery] bool vipOnly = false,
             CancellationToken cancellationToken = default)
         {
             var bytes = await _reports.ExportOrdersAsync(new GetOrdersInput
@@ -69,7 +72,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 Status = status,
                 ShipperId = shipperId,
                 FromDate = fromDate,
-                ToDate = toDate
+                ToDate = toDate,
+                CashCollected = cashCollected,
+                VipOnly = vipOnly
             });
 
             // Filename like don-hang-2026-10-14.xlsx: prefer the filtered

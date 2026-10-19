@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
 using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.Application.Customer;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
@@ -56,13 +57,16 @@ namespace PhuThuongStickyRice.Application.Orders
 
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IVipPriorityAppService _vipPriority;
 
         public OrderReportsAppService(
             IOrderRepository orders,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            IVipPriorityAppService vipPriority)
         {
             _orders = orders;
             _asyncExecuter = asyncExecuter;
+            _vipPriority = vipPriority;
         }
 
         public virtual async Task<DailyReconciliationDto> GetDailyReconciliationAsync(DateTime? date)
@@ -126,7 +130,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<byte[]> ExportOrdersAsync(GetOrdersInput input)
         {
             var query = await _orders.GetQueryableAsync();
-            var filtered = ApplyFilters(query, input ?? new GetOrdersInput());
+            var filtered = await ApplyFiltersAsync(query, input ?? new GetOrdersInput());
 
             var items = await _asyncExecuter.ToListAsync(
                 filtered
@@ -376,7 +380,12 @@ namespace PhuThuongStickyRice.Application.Orders
         /// thái, shipper và khoảng ngày VN. Trạng thái nhập sai chính tả thì
         /// bỏ qua bộ lọc (không lỗi trang).
         /// </summary>
-        private static IQueryable<Order> ApplyFilters(IQueryable<Order> query, GetOrdersInput input)
+        /// <summary>
+        /// Lọc đơn theo filter danh sách: tìm kiếm / trạng thái / shipper /
+        /// khoảng ngày / thu tiền / chỉ VIP — phải đồng nhất với GetListAsync
+        /// ở OrderAppService để file Excel xuất ra khớp danh sách đang xem.
+        /// </summary>
+        private async Task<IQueryable<Order>> ApplyFiltersAsync(IQueryable<Order> query, GetOrdersInput input)
         {
             if (!string.IsNullOrWhiteSpace(input.SearchTerm))
             {
@@ -409,6 +418,22 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 var toUtc = VietnamTime.DayEndExclusiveUtc(input.ToDate.Value);
                 query = query.Where(x => x.CreatedAt < toUtc);
+            }
+
+            // SH5 (bug-hunt): export bỏ sót 2 filter này nên file Excel lệch
+            // âm thầm so với danh sách — bổ sung cho khớp GetListAsync.
+            // Item 163: filter by cash-collection state.
+            if (input.CashCollected.HasValue)
+            {
+                var collected = input.CashCollected.Value;
+                query = query.Where(x => x.CashCollected == collected);
+            }
+
+            // Item 130 (đúng): only orders whose customer is marked VIP.
+            if (input.VipOnly)
+            {
+                var vipPhones = await _vipPriority.GetVipPhonesAsync();
+                query = query.Where(x => vipPhones.Contains(x.CustomerPhone));
             }
 
             return query;

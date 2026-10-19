@@ -735,14 +735,21 @@ else
         await LoadOrders(1);
     }
 
-    /// <summary>Wave 6c (item 32): downloads the Excel export with the current filters.</summary>
+    /// <summary>Wave 6c (item 32): downloads the Excel export with the current filters.
+    /// SH5: truyền đủ cashCollected + vipOnly để file khớp danh sách đang xem.</summary>
     private async Task ExportExcel()
     {
         _exporting = true;
         try
         {
             var token = await OrderService.GetAccessToken();
-            var url = OrderService.GetExportOrdersUrl(_searchTerm, _statusFilter, ShipperFilterId, _fromDate, _toDate);
+            bool? cashCollected = _cashFilter switch
+            {
+                "collected" => true,
+                "uncollected" => false,
+                _ => null
+            };
+            var url = OrderService.GetExportOrdersUrl(_searchTerm, _statusFilter, ShipperFilterId, _fromDate, _toDate, cashCollected, _vipOnly);
             var day = _toDate?.Date ?? _fromDate?.Date ?? DateTime.Now.Date;
             await JSRuntime.InvokeVoidAsync("interop.downloadFile", url, token, $"don-hang-{day:yyyy-MM-dd}.xlsx");
         }

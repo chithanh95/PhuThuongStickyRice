@@ -91,7 +91,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         /// (bearer token auth) because a plain anchor cannot set headers.
         /// </summary>
         public string GetExportOrdersUrl(string searchTerm = null, string status = null,
-            Guid? shipperId = null, DateTime? fromDate = null, DateTime? toDate = null)
+            Guid? shipperId = null, DateTime? fromDate = null, DateTime? toDate = null,
+            bool? cashCollected = null, bool vipOnly = false)
         {
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -117,6 +118,17 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             if (toDate.HasValue)
             {
                 parts.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+            }
+
+            // SH5: export phải khớp danh sách — bổ sung 2 filter bị thiếu.
+            if (cashCollected.HasValue)
+            {
+                parts.Add($"cashCollected={cashCollected.Value.ToString().ToLowerInvariant()}");
+            }
+
+            if (vipOnly)
+            {
+                parts.Add("vipOnly=true");
             }
 
             var query = parts.Count == 0 ? "" : "?" + string.Join("&", parts);

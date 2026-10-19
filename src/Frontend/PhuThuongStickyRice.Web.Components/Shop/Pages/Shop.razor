@@ -149,7 +149,7 @@ else
                         </ul>
                         <div class="d-flex align-items-center justify-content-between">
                             <strong class="text-danger" style="font-size: 1.3rem;">@FormatPrice(combo.Price)</strong>
-                            <button class="btn btn-warning" @onclick="() => AddComboToCart(combo)">
+                            <button class="btn btn-warning" disabled="@OrdersPaused" @onclick="() => AddComboToCart(combo)">
                                 Thêm combo vào giỏ
                             </button>
                         </div>
@@ -1232,6 +1232,13 @@ else
 
     private void AddComboToCart(ComboModel combo)
     {
+        // SH5: combo cũng phải tôn trọng trạng thái tạm ngưng như món lẻ
+        // (AddToCart/AddQuickViewToCart đã guard, chỗ này bị sót).
+        if (OrdersPaused)
+        {
+            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.");
+            return;
+        }
         CartState.AddCombo(combo);
         Toasts.Show($"Đã thêm {combo.Name} vào giỏ", "Xem giỏ hàng", "/cart");
     }

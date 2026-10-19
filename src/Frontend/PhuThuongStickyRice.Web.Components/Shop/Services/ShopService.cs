@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
@@ -215,8 +216,55 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             request.Content = order.AsJsonContent();
 
             using var response = await _httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+            // SH5: đọc message lỗi tiếng Việt từ server trước khi ném.
+            // EnsureSuccessStatusCode() cũ chỉ ném "Response status code does not
+            // indicate success: 400 (Bad Request)." nên Checkout không bao giờ
+            // hiện được lý do thật (mã hết hạn, hết hàng, SĐT bị chặn, ví thiếu...).
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(await ReadServerErrorMessageAsync(response));
+            }
             return await response.Content.ReadAs<PlacedOrderModel>();
+        }
+
+        /// <summary>
+        /// Trích message lỗi từ body response: ưu tiên <c>error.message</c>
+        /// theo format lỗi chuẩn của ABP, fallback là body thô (cắt 500 ký tự).
+        /// </summary>
+        private static async Task<string> ReadServerErrorMessageAsync(HttpResponseMessage response)
+        {
+            string body = null;
+            try
+            {
+                body = await response.Content.ReadAsStringAsync();
+            }
+            catch
+            {
+                // Không đọc được body thì dùng message chung bên dưới.
+            }
+
+            if (!string.IsNullOrWhiteSpace(body))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(body);
+                    if (doc.RootElement.TryGetProperty("error", out var error)
+                        && error.TryGetProperty("message", out var message)
+                        && message.ValueKind == JsonValueKind.String
+                        && !string.IsNullOrWhiteSpace(message.GetString()))
+                    {
+                        return message.GetString();
+                    }
+                }
+                catch
+                {
+                    // Body không phải JSON thì trả nguyên văn bên dưới.
+                }
+
+                return body.Length > 500 ? body.Substring(0, 500).Trim() : body.Trim();
+            }
+
+            return $"Đặt hàng thất bại (mã lỗi {(int)response.StatusCode}).";
         }
 
         /// <summary>Public bank-transfer details (account info + VietQR config).</summary>
