@@ -232,6 +232,12 @@ namespace PhuThuongStickyRice.Application.Orders
         private static readonly TimeSpan DefaultOpenHour = new(6, 0, 0);
         /// <summary>Giờ đóng cửa mặc định (10:30) khi shop chưa cấu hình.</summary>
         private static readonly TimeSpan DefaultCloseHour = new(10, 30, 0);
+        /// <summary>Mẫu số khi đổi phần trăm thành tỉ lệ (ví dụ giảm 10% = * 10 / 100).</summary>
+        private const int PercentDivisor = 100;
+        /// <summary>Số đơn hoàn thành tối thiểu để được trả sau (item 50).</summary>
+        private const int PayLaterMinCompletedOrders = 5;
+        /// <summary>Đơn đặt trước phải cách hiện tại ít nhất số giờ này.</summary>
+        private const int PreOrderMinLeadTimeHours = 1;
         /// <summary>
         /// Số đơn tối đa xử lý mỗi tick của worker tự hủy đơn chuyển khoản quá hạn
         /// (chạy mỗi 5 phút; tick sau xử lý tiếp phần còn lại) — tránh nạp toàn bộ
@@ -432,7 +438,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (paymentMethod == PaymentMethod.PayLater)
             {
                 var completedCount = await CountCompletedOrdersByPhoneAsync(input.CustomerPhone);
-                if (completedCount < 5)
+                if (completedCount < PayLaterMinCompletedOrders)
                 {
                     throw new Domain.Exceptions.DomainException(
                         "Trả sau chỉ áp dụng cho khách đã có ít nhất 5 đơn hoàn thành.");
@@ -472,7 +478,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (bestPromo != null && bestPromo.DiscountPercent > 0)
             {
                 promotionName = bestPromo.Name;
-                promotionDiscount = Math.Round(subtotal * bestPromo.DiscountPercent / 100, 0);
+                promotionDiscount = Math.Round(subtotal * bestPromo.DiscountPercent / PercentDivisor, 0);
             }
 
             // Minimum order amount (shop setting, loaded once at the top of CreateAsync).
@@ -518,7 +524,7 @@ namespace PhuThuongStickyRice.Application.Orders
             decimal tierValue = 0;
             if (loyaltyAccount.TotalSpent > 0 && tierPercent > 0)
             {
-                tierValue = Math.Round((subtotal - promotionDiscount - discountValue) * tierPercent / 100, 0);
+                tierValue = Math.Round((subtotal - promotionDiscount - discountValue) * tierPercent / PercentDivisor, 0);
             }
 
             // Loyalty points redemption.
@@ -638,7 +644,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     scheduledDateTime = scheduledDateTime.ToUniversalTime();
                 }
 
-                if (scheduledDateTime <= DateTime.UtcNow.AddHours(1))
+                if (scheduledDateTime <= DateTime.UtcNow.AddHours(PreOrderMinLeadTimeHours))
                 {
                     throw new Domain.Exceptions.DomainException("Giờ đặt trước phải sau thời điểm hiện tại ít nhất 1 tiếng.");
                 }
@@ -952,27 +958,36 @@ namespace PhuThuongStickyRice.Application.Orders
             await _zalo.SendOrderReceiptAsync(
                 order.OrderNumber, order.CustomerPhone, order.TotalAmount.Amount);
 
-            // Order-confirmation email (order creation only, never on payment
-            // confirmation). Only when the customer gave an email address.
-            // The row is queued via the existing EmailMessage pipeline; with
-            // the current Fake/test provider nothing is actually delivered.
-            if (!string.IsNullOrWhiteSpace(order.CustomerEmail))
-            {
-                var bankTransfer = await _paymentConfig.GetBankTransferAsync();
-                var (subject, body) = OrderConfirmationEmailComposer.Compose(order, bankTransfer);
-                await _emailMessages.AddAsync(new EmailMessage
-                {
-                    From = OrderConfirmationEmailComposer.FromAddress,
-                    Tos = order.CustomerEmail,
-                    Subject = subject,
-                    Body = body
-                });
+            await QueueOrderConfirmationEmailAsync(order);
+        }
 
-                // Same explicit-save pattern as the Product*EventHandlers:
-                // the template repository only stages the row in the DbSet.
-                await _emailMessages.UnitOfWork.SaveChangesAsync();
+        /// <summary>
+        /// Xếp hàng email xác nhận đơn (chỉ khi tạo đơn, không gửi lại khi
+        /// xác nhận thanh toán). Chỉ gửi khi khách có nhập địa chỉ email.
+        /// Email được xếp qua pipeline EmailMessage có sẵn; với provider
+        /// Fake/test hiện tại thì chưa thực sự gửi đi.
+        /// </summary>
+        /// <param name="order">Đơn vừa được tạo.</param>
+        private async Task QueueOrderConfirmationEmailAsync(Order order)
+        {
+            if (string.IsNullOrWhiteSpace(order.CustomerEmail))
+            {
+                return;
             }
 
+            var bankTransfer = await _paymentConfig.GetBankTransferAsync();
+            var (subject, body) = OrderConfirmationEmailComposer.Compose(order, bankTransfer);
+            await _emailMessages.AddAsync(new EmailMessage
+            {
+                From = OrderConfirmationEmailComposer.FromAddress,
+                Tos = order.CustomerEmail,
+                Subject = subject,
+                Body = body
+            });
+
+            // Same explicit-save pattern as the Product*EventHandlers:
+            // the template repository only stages the row in the DbSet.
+            await _emailMessages.UnitOfWork.SaveChangesAsync();
         }
 
         /// <summary>
@@ -2551,39 +2566,50 @@ namespace PhuThuongStickyRice.Application.Orders
                 await MergeOneSecondaryAsync(primary, other);
             }
 
-            // bug-hunt 2026-10-19 (run 15:35): đối soát ví đơn chính sau gộp.
-            // MergeOneSecondaryAsync đã hoàn TRỌN tiền ví của từng đơn phụ,
-            // nhưng các dòng hàng của chúng đã chuyển sang đơn chính làm tổng
-            // đơn chính tăng — đơn chính trả bằng ví mà không thu thêm phần
-            // chênh lệch thì quán mất đúng số tiền đó (khách nhận hàng nhưng
-            // chỉ trả theo tổng cũ). Mirror luồng khách tự sửa đơn đã thanh
-            // toán ví (delta > 0 thu thêm, delta < 0 hoàn lại): ChargeAsync
-            // ném lỗi khi số dư không đủ -> cả vụ gộp rollback, admin thấy
-            // message rõ ràng thay vì gộp xong quán mất tiền im lặng.
-            if (primary.PaymentMethod == PaymentMethod.Wallet
-                && primary.PaymentStatus == PaymentStatus.Paid)
-            {
-                var delta = primary.TotalAmount.Amount - primaryTotalBefore;
-                if (delta > 0)
-                {
-                    await _wallets.ChargeAsync(primary.CustomerPhone, delta, primary.OrderNumber);
-                }
-                else if (delta < 0)
-                {
-                    // Như hoàn bớt món: lý do phải RIÊNG CHO MỖI LẦN gộp
-                    // (kèm timestamp) — nếu dùng lý do tĩnh theo mã đơn, lần
-                    // gộp thứ 2 trên cùng đơn chính sẽ bị idempotency chặn nhầm
-                    // và khách mất phần chênh lệch.
-                    await _wallets.RefundAsync(primary.CustomerPhone, -delta, primary.OrderNumber,
-                        $"Hoàn tiền chênh lệch gộp đơn {primary.OrderNumber} {DateTime.UtcNow:yyyyMMddHHmmssfff}");
-                }
-            }
+            await SettleWalletDeltaAfterMergeAsync(primary, primaryTotalBefore);
 
             await _orders.UpdateAsync(primary);
 
             var dto = _objectMapper.Map<Order, OrderDto>(primary);
             await FillShipperNamesAsync(new[] { dto });
             return dto;
+        }
+
+        /// <summary>
+        /// Đối soát ví của đơn chính sau khi gộp đơn (bug-hunt 2026-10-19).
+        /// MergeOneSecondaryAsync đã hoàn TRỌN tiền ví của từng đơn phụ,
+        /// nhưng các dòng hàng của chúng đã chuyển sang đơn chính làm tổng
+        /// đơn chính tăng — đơn chính trả bằng ví mà không thu thêm phần
+        /// chênh lệch thì quán mất đúng số tiền đó (khách nhận hàng nhưng
+        /// chỉ trả theo tổng cũ). Mirror luồng khách tự sửa đơn đã thanh
+        /// toán ví (delta > 0 thu thêm, delta &lt; 0 hoàn lại): ChargeAsync
+        /// ném lỗi khi số dư không đủ -&gt; cả vụ gộp rollback, admin thấy
+        /// message rõ ràng thay vì gộp xong quán mất tiền im lặng.
+        /// </summary>
+        /// <param name="primary">Đơn chính sau khi đã gộp các đơn phụ.</param>
+        /// <param name="primaryTotalBefore">Tổng đơn chính TRƯỚC khi gộp.</param>
+        private async Task SettleWalletDeltaAfterMergeAsync(Order primary, decimal primaryTotalBefore)
+        {
+            if (primary.PaymentMethod != PaymentMethod.Wallet
+                || primary.PaymentStatus != PaymentStatus.Paid)
+            {
+                return;
+            }
+
+            var delta = primary.TotalAmount.Amount - primaryTotalBefore;
+            if (delta > 0)
+            {
+                await _wallets.ChargeAsync(primary.CustomerPhone, delta, primary.OrderNumber);
+            }
+            else if (delta < 0)
+            {
+                // Như hoàn bớt món: lý do phải RIÊNG CHO MỖI LẦN gộp
+                // (kèm timestamp) — nếu dùng lý do tĩnh theo mã đơn, lần
+                // gộp thứ 2 trên cùng đơn chính sẽ bị idempotency chặn nhầm
+                // và khách mất phần chênh lệch.
+                await _wallets.RefundAsync(primary.CustomerPhone, -delta, primary.OrderNumber,
+                    $"Hoàn tiền chênh lệch gộp đơn {primary.OrderNumber} {DateTime.UtcNow:yyyyMMddHHmmssfff}");
+            }
         }
 
         /// <summary>
