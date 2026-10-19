@@ -21,6 +21,7 @@ using PhuThuongStickyRice.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.Application.Dtos;
@@ -2788,7 +2789,11 @@ namespace PhuThuongStickyRice.Application.Orders
             };
 
             var total = segments.Sum(x => x.Weight);
-            var roll = Random.Shared.Next(total);
+            // CA5394: vòng quay sinh voucher giảm giá THẬT (có giá trị tiền) — dùng
+            // RNG an toàn mật mã thay vì Random.Shared (PRNG đoán được, kẻ xấu có thể
+            // canh thời điểm quay để trúng thưởng lớn). GetInt32(total) vẫn uniform
+            // trên [0, total) nên xác suất các segment giữ nguyên.
+            var roll = RandomNumberGenerator.GetInt32(total);
             var acc = 0;
             foreach (var (key, weight) in segments)
             {

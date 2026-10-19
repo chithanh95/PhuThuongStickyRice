@@ -15,6 +15,7 @@ using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -285,7 +286,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             // Weighted random prize.
-            var roll = Random.Shared.NextDouble();
+            // CA5394: quay trúng voucher giảm giá THẬT — dùng RNG an toàn mật mã thay
+            // vì Random.Shared (PRNG đoán được). Vẫn uniform trên [0,1) nên tỉ lệ
+            // trúng các giải giữ nguyên.
+            var roll = (double)RandomNumberGenerator.GetInt32(int.MaxValue) / int.MaxValue;
             var (prizeLabel, prizeValue) = PickPrize(roll);
 
             // Voucher phải là mã THẬT lưu trong DiscountCodes để checkout chấp
