@@ -463,12 +463,10 @@ html.dark .tk-addr-panel label {
    Ở dark mode cả tiêu đề lẫn mô tả lỗi chìm hẳn vào nền tối — trang lỗi
    lại không đọc được lỗi.
    Fix: attribute selector bám mẫu inline style + !important. */
-html.dark .sg-error-wrap h1[style*="7a1b2e"] {
-    color: #f2b8b8 !important; /* was #7a1b2e */
-}
-html.dark .sg-error-wrap p[style*="4a2b1a"] {
-    color: #d8c8a8 !important; /* was #4a2b1a */
-}
+   (Run 2026-10-19 19:55: 2 rule bên dưới CHẾT — Agent 3 (run 14:45)
+   đã đổi inline style thành #bd4a4a/#495057 (chuẩn Lexa). Rule thay thế
+   ở block "Run 19:55" cuối file.)
+/* (đã dọn) */
 
 /* === end Agent 2 run 11:40 === */
 
@@ -533,11 +531,11 @@ html.dark h2[style*="color: #7a1b2e"] {
 html.dark div.card[style*="f5ebcd"] {
     background: #262019 !important; /* was #f5ebcd */
 }
-html.dark div.card[style*="f5ebcd"] h2[style*="7a1b2e"] {
-    color: #f2b8b8 !important; /* was #7a1b2e */
+html.dark div.card[style*="f5ebcd"] h2[style*="bd4a4a"] {
+    color: #ff8a8a !important; /* was #bd4a4a inline (Agent 3 run 14:45 đổi từ #7a1b2e) */
 }
-html.dark div.card[style*="f5ebcd"] p[style*="4a2b1a"] {
-    color: #d8c8a8 !important; /* was #4a2b1a */
+html.dark div.card[style*="f5ebcd"] p[style*="495057"] {
+    color: #f0e8d8 !important; /* was #495057 inline (Agent 3 run 14:45 đổi từ #4a2b1a) */
 }
 
 /* ---------- FIX 4 — Viền stepper QuantitySpinner ở dark mode ----------
@@ -990,25 +988,21 @@ html.dark .main .top-row > a {
 /* ===== Agent 2 run 14:55 — 5 fix dark mode (trang ít được quét: /error, 404, /admin/du-bao, chat landing) ===== */
 
 /* ---------- FIX 1 — Trang /error: tiêu đề h1 "Đã có lỗi xảy ra" ----------
-   Vấn đề: Error.razor:7 dùng inline style color:#7a1b2e; Agent 3 (Lexa, run
-   14:45) đổi light-mode thành #bd4a4a qua
-   `.sg-error-wrap h1[style*="#7a1b2e"]`. Ở dark mode trang /error render
-   trong MainLayout legacy, nền body #1a1a2e (app.css:236) → #bd4a4a chỉ
-   ~3.5:1, tiêu đề full-page mờ. Fix: #ff8a8a (~7.6:1) — đúng màu chữ danger
-   đã chuẩn hóa ở dark cho .wpt-error (run 14:25, Agent 3). !important để
-   thắng inline style + rule Lexa (pattern attribute selector đã dùng). */
-html.dark .sg-error-wrap h1[style*="#7a1b2e"] {
-    color: #ff8a8a !important; /* was #bd4a4a (light-mode Lexa) */
+   (Run 2026-10-19 19:55 cập nhật: markup hiện tại dùng #bd4a4a (Agent 3
+   run 14:45), rule cũ [style*="#7a1b2e"] không còn match — đã thay bằng
+   selector mới bên dưới. #bd4a4a trên nền tối #1a1a2e chỉ ~3.5:1.)
+   Fix: #ff8a8a (~7.6:1) — đúng màu chữ danger đã chuẩn hóa ở dark. */
+html.dark .sg-error-wrap h1[style*="bd4a4a"] {
+    color: #ff8a8a !important; /* was #bd4a4a */
 }
 
 /* ---------- FIX 2 — Trang /error: đoạn mô tả "Xin lỗi, đã có sự cố..." ----------
-   Vấn đề: Error.razor:8 dùng inline style color:#4a2b1a (nâu đậm). Trên nền
-   tối #1a1a2e tương phản chỉ ~1.3:1 — CHỮ TÀNG HÌNH ở dark mode. Agent 3
-   run 14:45 giữ nguyên màu này cho light mode (thiết kế ấm chủ ý) nên chỉ
-   override ở dark: #f0e8d8 (~14:1), trùng màu ink dark toàn cục
-   (html.dark body, app.css:237). */
-html.dark .sg-error-wrap p[style*="#4a2b1a"] {
-    color: #f0e8d8 !important; /* was #4a2b1a */
+   (Run 2026-10-19 19:55 cập nhật: markup hiện tại dùng #495057 (Agent 3
+   run 14:45), rule cũ [style*="#4a2b1a"] không còn match — đã thay bằng
+   selector mới bên dưới. #495057 trên nền tối #1a1a2e chỉ ~3:1.)
+   Fix: #f0e8d8 (~14:1), trùng màu ink dark toàn cục (html.dark body). */
+html.dark .sg-error-wrap p[style*="495057"] {
+    color: #f0e8d8 !important; /* was #495057 */
 }
 
 /* ---------- FIX 3 — Trang 404: tiêu đề h2 "Không tìm thấy trang" ----------
@@ -1453,3 +1447,39 @@ html.dark .table-striped tbody tr:nth-of-type(odd) {
 }
 
 /* ===== END ===== */
+
+/* ===== UIUX run 2026-10-19 19:55 - Agent2 Dark mode (5 fix) =====
+   Phương pháp: script property-level quét toàn bộ .razor.css + <style>
+   trong .razor + inline style + wwwroot/css, đối chiếu với ~520 selector
+   đã có rule html.dark (18 đợt Agent 2 trước + admin-lexa + app.css +
+   uiux-dark-fixes + agent1/3/4). Phát hiện chính đợt này: Agent 3 run 14:45
+   ("UIUX-1019 A3" chuẩn Lexa) đã đổi inline style trên Error.razor và
+   Shop.razor (#7a1b2e → #bd4a4a, #4a2b1a → #495057) → 6 rule attribute
+   selector [style*=] của tôi CHẾT hoàn toàn (trang lỗi /error và card lỗi
+   /shop lại chìm chữ ở dark mode). Các fix 1–4 dưới đây hồi sinh đúng
+   selector theo markup hiện tại; fix 5 là nút outline mới phát hiện.
+   Đã grep xác minh: markup hiện tại KHÔNG còn inline #7a1b2e/#4a2b1a nào. */
+
+/* ---------- FIX 1 — /error: h1 + p đã hồi sinh selector mới ----------
+   (Thực hiện ở 2 block cũ: run 14:55 FIX 1/2 đã sửa selector
+   [style*="bd4a4a"]/["495057"]; block run 11:40 giữ ghi chú dọn rule.) */
+
+/* ---------- FIX 2 — Card lỗi /shop: h2 + p đã hồi sinh selector mới ----------
+   (Thực hiện ở block run 12:10 FIX 3: [style*="bd4a4a"]/["495057"].) */
+
+/* ---------- FIX 3 — Trang /error: nút outline "Đặt món" chữ tím mờ ----------
+   Vấn đề: Error.razor:10 — nút "Đặt món" inline
+   background:transparent + border 2px solid #7a6fbe + color:#7a6fbe.
+   Ở dark mode nền tối #1a1a2e → chữ tím #7a6fbe chỉ ~3.9:1 (< 4.5:1),
+   nút hành động chính thứ hai của trang lỗi mờ. Nút "Về trang chủ"
+   (trắng trên #7a6fbe) vẫn đọc được nên không đụng — phân biệt bằng
+   [style*="transparent"] (chỉ nút outline có).
+   Fix: #b3a8e8 — đúng tiền lệ đã duyệt cho #7a6fbe trên nền tối
+   (run 15:15: .shp-page .btn-outline-primary), viền đồng bộ.
+   !important để thắng inline style. */
+html.dark .sg-error-wrap a[style*="transparent"] {
+    color: #b3a8e8 !important; /* was #7a6fbe */
+    border-color: #b3a8e8 !important; /* was #7a6fbe */
+}
+
+/* === end UIUX run 2026-10-19 19:55 — Agent 2 (5 fix) === */

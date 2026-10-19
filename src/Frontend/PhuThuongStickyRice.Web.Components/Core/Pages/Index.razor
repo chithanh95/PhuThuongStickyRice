@@ -407,10 +407,10 @@ else
         @if (_menuTab == "xoi")
         {
             <div class="sg-price-filter">
-                <button class="@(_priceFilter == "all" ? "active" : "")" @onclick='() => _priceFilter = "all"'>Tất cả</button>
-                <button class="@(_priceFilter == "under30" ? "active" : "")" @onclick='() => _priceFilter = "under30"'>Dưới 30k</button>
-                <button class="@(_priceFilter == "30to50" ? "active" : "")" @onclick='() => _priceFilter = "30to50"'>30k – 50k</button>
-                <button class="@(_priceFilter == "over50" ? "active" : "")" @onclick='() => _priceFilter = "over50"'>Trên 50k</button>
+                <button class="@(_priceFilter == "all" ? "active" : "")" aria-pressed="@(_priceFilter == "all")" @onclick='() => _priceFilter = "all"'>Tất cả</button>
+                <button class="@(_priceFilter == "under30" ? "active" : "")" aria-pressed="@(_priceFilter == "under30")" @onclick='() => _priceFilter = "under30"'>Dưới 30k</button>
+                <button class="@(_priceFilter == "30to50" ? "active" : "")" aria-pressed="@(_priceFilter == "30to50")" @onclick='() => _priceFilter = "30to50"'>30k – 50k</button>
+                <button class="@(_priceFilter == "over50" ? "active" : "")" aria-pressed="@(_priceFilter == "over50")" @onclick='() => _priceFilter = "over50"'>Trên 50k</button>
             </div>
             <div class="sg-dish-grid">
                 @foreach (var product in FilteredMenuProducts())

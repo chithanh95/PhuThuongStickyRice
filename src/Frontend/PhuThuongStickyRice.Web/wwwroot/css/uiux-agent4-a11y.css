@@ -1156,3 +1156,69 @@ html.dark .sg-sticky-call:hover {
 }
 
 /* ===== END UIUX-1940 A4 ===== */
+
+/* ===== UIUX run 19:45 - Agent4 A11y & Polish (4 CSS + 1 markup, khong trung cac run truoc) ===== */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast, AA 4.5:1): banner trang thai quan
+   `.shop-status-banner.closed` (ShopStatusBanner.razor:17 — "Quan dang nghi —
+   mo lai luc ...") chu #6c757d tren nen #f1f2f4 chi dat ~4.19:1, nguoi lon
+   tuoi kho doc gio mo lai (thong tin quan trong khi quan dang nghi). Dam len
+   #5a6268 (~5.54:1), van giu sac xam "tam nghi". Dark mode GIU NGUYEN #adb5bd
+   (tren nen gan den dat ~7.5:1, da qua chuan). Lap class (0,3,0) de thang
+   rule scoped [b-xxx] theo thu tu cascade (file nay load sau cung). */
+.shop-status-banner.shop-status-banner.closed {
+    color: #5a6268;
+}
+
+/* Fix 2 — WCAG 1.4.3 (Contrast, AA 4.5:1): mau nau mo #8a7a63 dung cho chu
+   nho tren shop mobile (mo ta mon, meta, hau to "d/phan", meta/section/gia
+   option trong quick-view sheet, nut × dong sheet) tren nen sang chi dat
+   ~4.16:1 — duoi chuan cho chu 13-16px, nguoi lon tuoi doc rat kho. Dam len
+   #6f5f4c (~6.06:1 tren nen trang, ~5.65:1 tren #f5f3ef cua .qv-sheet-section,
+   cung tong nau am brand da dung cho landing o run 11:20).
+   QUAN TRONG: scope `html:not(.dark)` de KHONG de len cac override dark mode
+   cua Agent 2 (uiux-agent2-dark.css, #b8a88f) — file nay load sau cung nen
+   cung specificity se thang neu khong loai tru. */
+html:not(.dark) .shop-row-desc.shop-row-desc,
+html:not(.dark) .shop-row-meta.shop-row-meta,
+html:not(.dark) .shop-row-price small,
+html:not(.dark) .qv-sheet .qv-sheet-meta,
+html:not(.dark) .qv-sheet .qv-sheet-section,
+html:not(.dark) .qv-sheet .qv-sheet-opt-price,
+html:not(.dark) .qv-sheet-close.qv-sheet-close {
+    color: #6f5f4c;
+}
+
+/* Fix 3 — WCAG 2.4.7 (Focus Visible): accordion Hoi dap landing
+   `.sg-faq-item summary` (Index.razor.css:1492, <details>/<summary> native)
+   KHONG nam trong selector list cua rule focus-visible toan cuc
+   (css/a11y.css chi phu a, button, input, select, textarea, [tabindex],
+   [role="button"]) → nguoi dung tab bang ban phim chi thay vong focus mac
+   dinh cua trinh duyet (manh, lech brand). Ve vong 2px mau do nau brand
+   #763434 (dong bo .sg-field focus-visible o run 19:40); dark mode dung
+   #f0d9b5 (dong bo .nq-faq-q o run 19:25, tuong phan tot tren --sg-surface
+   toi). :focus-visible nen chuot/cham khong bi ve vien thua. */
+.sg-faq-item summary:focus-visible {
+    outline: 2px solid #763434;
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+html.dark .sg-faq-item summary:focus-visible {
+    outline-color: #f0d9b5;
+}
+
+/* Fix 5 — Polish hover: nut stepper -/+ `.shop-row-stepper button`
+   (Shop.razor.css:601, nut bam nhieu nhat tren shop mobile kieu ShopeeFood)
+   HOAN TOAN khong co :hover — desktop di chuot qua khong nhan duoc phan hoi
+   thi giac, khong biet nut "song" (dac biet khi o input so luong hien tai
+   khong phai button). Hover: nen tim rat nhat #f4f2fd (light, trung mau
+   .pt-package.active); dark: nen #33291d (sang hon chut so voi #241d17 goc).
+   :not(:disabled) phong khi sau nay them trang thai disable; khong can
+   prefers-reduced-motion vi khong co transform/transition. */
+.shop-row-stepper button:hover:not(:disabled) {
+    background: #f4f2fd;
+}
+html.dark .shop-row-stepper button:hover:not(:disabled) {
+    background: #33291d;
+}
+/* ===== END UIUX run 19:45 - Agent4 ===== */

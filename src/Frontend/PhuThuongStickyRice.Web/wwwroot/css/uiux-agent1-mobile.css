@@ -2090,3 +2090,96 @@
     }
 }
 /* ===== END ===== */
+
+/* ===== UIUX-1945 A1 (run 19:45 2026-10-19) — 5 fix chữ <13px mobile =====
+   Đợt này quét kỹ shop/cart/checkout/track-order/tai-khoan: nút bấm,
+   input, radio/checkbox, tràn ngang, bottom sheet đều đã được ~20 đợt
+   trước phủ kín (không bịa thêm). Còn sót 5 điểm chữ Bootstrap `small`
+   (= 80% ≈ 12.8px < 13px) mang thông tin tiền/quyền lợi/đơn hàng —
+   khách lớn tuổi khó đọc. Tất cả chỉ nâng lên 13px trên mobile,
+   PC giữ nguyên, không đổi layout/chức năng.
+   ------------------------------------------------------------
+   FIX 1 — /checkout: dòng "HSD: ... — dùng 1 lần cho số ..." dưới mã
+   voucher trúng thưởng (vòng quay may mắn).
+   Vấn đề: `small.d-block.text-muted` ≈ 12.8px — đây là điều kiện dùng
+   voucher (hạn + SĐT áp dụng), khách lớn tuổi dễ bỏ qua rồi tiếc khi
+   voucher hết hạn/không dùng được.
+   Giải pháp: 13px trên mobile.
+   (Verify: Checkout.razor:193-196 — `strong.h5.text-danger` (mã voucher)
+   duy nhất toàn app (KdsOrderCard dùng strong.h5.mb-0, không trong
+   alert[role=status]); selector `+ small.d-block` chỉ khớp đúng dòng này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert[role="status"] strong.h5.text-danger + small.d-block {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /tai-khoan: dòng quy tắc hạng thành viên.
+   Vấn đề: "Hạng Bạc: từ 1.000.000₫ (giảm 2%) • Hạng Vàng: từ
+   5.000.000₫ (giảm 5%)" là `small.text-muted.d-block` ≈ 12.8px —
+   thông tin quyền lợi tiền trực tiếp, khách lớn tuổi cần đọc rõ để
+   biết mình được giảm bao nhiêu.
+   Giải pháp: 13px trên mobile.
+   (Verify: TaiKhoan.razor:80 — small là con trực tiếp của card-body
+   chứa .tk-tier-badge; các label "Điểm tích lũy"/"Tổng đã mua" là
+   `small.text-muted` (không .d-block) nằm trong .col-4 nên selector
+   `> small.text-muted.d-block` không khớp nhầm)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .tk-page .card-body:has(.tk-tier-badge) > small.text-muted.d-block {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /track-order: dòng "⭐ Đánh giá 5 sao được thưởng +20 điểm!"
+   trong header card "Đánh giá đơn hàng".
+   Vấn đề: `small.text-success` ≈ 12.8px — đây là ưu đãi điểm thưởng,
+   động lực để khách đánh giá; chữ quá nhỏ khách lớn tuổi bỏ qua.
+   Giải pháp: 13px trên mobile.
+   (Verify: TrackOrder.razor:519 — grep toàn app: `small.text-success`
+   là con trực tiếp của .card-header chỉ có đúng 1 chỗ này;
+   các chỗ khác nằm trong .form-check-label/.col-12)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-header > small.text-success {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /cart: dòng "Size: ..." / "Topping: ..." trong mỗi dòng món.
+   Vấn đề: `small.text-muted` ≈ 12.8px — mô tả đúng biến thể khách đã
+   chọn (size, món ăn kèm); trên mobile bảng chuyển thành stacked
+   cards, chữ nhỏ khiến khách lớn tuổi khó đối chiếu đơn trước khi
+   thanh toán.
+   Giải pháp: 13px trên mobile.
+   (Verify: Cart.razor:117/121 — .cart-lines chỉ tồn tại ở Cart.razor:91;
+   2 small này nằm ở td đầu (flex 1 1 100%, hiển thị trên mobile),
+   không bị rule display:none nào ẩn)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .cart-lines small.text-muted {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /checkout: dòng "Thông tin bên dưới đã điền sẵn — bạn vẫn
+   có thể sửa trước khi đặt." trong alert checkout 1 chạm.
+   Vấn đề: `small.text-muted.d-block` ≈ 12.8px — hướng dẫn quan trọng
+   ngay dưới nút "⚡ Đặt ngay với thông tin đã lưu": khách lớn tuổi
+   cần biết vẫn sửa được thông tin trước khi chốt, nếu không đọc
+   được sẽ hoang mang bấm đặt luôn.
+   Giải pháp: 13px trên mobile.
+   (Verify: Checkout.razor:62 — alert role="note" còn lại (dòng 45)
+   không có small con; selector chỉ khớp đúng dòng này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert[role="note"] > small.text-muted.d-block {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX-1945 A1 ===== */
