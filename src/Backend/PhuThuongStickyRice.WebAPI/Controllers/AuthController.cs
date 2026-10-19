@@ -72,6 +72,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _passwordReset = passwordReset;
         }
 
+        /// <summary>
+        /// Đăng nhập bằng username/email + mật khẩu: kiểm tra tài khoản bị
+        /// khóa, xác thực mật khẩu, ghi audit mọi lần thử (Item 99), cảnh báo
+        /// IP mới, log hoạt động của staff (Item 156). Nếu tài khoản bật 2FA
+        /// thì trả về thử thách TOTP thay vì JWT (Item 98).
+        /// </summary>
         [AllowAnonymous]
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginRequestModel model,
@@ -111,18 +117,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             await _userManager.ResetAccessFailedCountAsync(user);
 
-            // Item 99: warn when the successful login comes from an IP never
-            // seen before for this user.
-            var newIpWarning = await _loginAudits.IsNewIpForUserAsync(user.UserName, ip);
-            await _loginAudits.RecordAsync(user.UserName, ip, true);
-
-            var roles = await GetRoleNamesAsync(user.Id);
-
-            // Item 156: log staff logins in the staff activity log.
-            if (roles.Any(IsStaffRole))
-            {
-                await _activityLogger.LogForUserAsync(user.Id, user.UserName, StaffActions.Login, "Đăng nhập trang quản trị.");
-            }
+            var (roles, newIpWarning) = await AuditSuccessfulLoginAsync(
+                user, ip, "Đăng nhập trang quản trị.");
 
             // Item 98: 2FA — password OK, now require the 6-digit TOTP code.
             if (user.TwoFactorEnabled)
@@ -136,18 +132,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 });
             }
 
-            var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
-
-            return Ok(new LoginResponseModel
-            {
-                AccessToken = token,
-                ExpiresAt = expiresAt,
-                UserName = user.UserName,
-                Email = user.Email,
-                Roles = roles,
-                NewIpWarning = newIpWarning,
-                NewIpAddress = newIpWarning ? ip : null
-            });
+            return BuildLoginResponse(user, roles, ip, newIpWarning);
         }
 
         /// <summary>
@@ -260,29 +245,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             await _userManager.ResetAccessFailedCountAsync(user);
 
-            var newIpWarning = await _loginAudits.IsNewIpForUserAsync(user.UserName, ip);
-            await _loginAudits.RecordAsync(user.UserName, ip, true);
+            var (roles, newIpWarning) = await AuditSuccessfulLoginAsync(
+                user, ip, "Đăng nhập trang quản trị (2FA).");
 
-            var roles = await GetRoleNamesAsync(user.Id);
-
-            // Item 156: log staff logins (2FA path) in the staff activity log.
-            if (roles.Any(IsStaffRole))
-            {
-                await _activityLogger.LogForUserAsync(user.Id, user.UserName, StaffActions.Login, "Đăng nhập trang quản trị (2FA).");
-            }
-
-            var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
-
-            return Ok(new LoginResponseModel
-            {
-                AccessToken = token,
-                ExpiresAt = expiresAt,
-                UserName = user.UserName,
-                Email = user.Email,
-                Roles = roles,
-                NewIpWarning = newIpWarning,
-                NewIpAddress = newIpWarning ? ip : null
-            });
+            return BuildLoginResponse(user, roles, ip, newIpWarning);
         }
 
         [Authorize(Roles = "Admin")]
@@ -462,6 +428,51 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             var permissions = await _permissions.GetUserPermissionsAsync();
             return Ok(new { permissions = permissions.OrderBy(p => p).ToList() });
+        }
+
+        /// <summary>
+        /// Ghi audit cho một lần đăng nhập thành công: kiểm tra IP mới
+        /// (Item 99), ghi log đăng nhập, log hoạt động của staff (Item 156).
+        /// Trả về danh sách role và cờ cảnh báo IP mới để dựng response.
+        /// Dùng chung cho Login thường và VerifyTwoFactor.
+        /// </summary>
+        private async Task<(string[] Roles, bool NewIpWarning)> AuditSuccessfulLoginAsync(
+            User user, string? ip, string staffLoginNote)
+        {
+            // Item 99: cảnh báo khi đăng nhập thành công từ IP chưa từng thấy của user.
+            var newIpWarning = await _loginAudits.IsNewIpForUserAsync(user.UserName, ip);
+            await _loginAudits.RecordAsync(user.UserName, ip, true);
+
+            var roles = await GetRoleNamesAsync(user.Id);
+
+            // Item 156: log staff logins trong staff activity log.
+            if (roles.Any(IsStaffRole))
+            {
+                await _activityLogger.LogForUserAsync(user.Id, user.UserName, StaffActions.Login, staffLoginNote);
+            }
+
+            return (roles, newIpWarning);
+        }
+
+        /// <summary>
+        /// Dựng response đăng nhập thành công: cấp JWT và đóng gói
+        /// <see cref="LoginResponseModel"/>. Dùng chung cho Login thường và
+        /// VerifyTwoFactor (sau khi 2FA đã xác thực xong).
+        /// </summary>
+        private ActionResult BuildLoginResponse(User user, string[] roles, string? ip, bool newIpWarning)
+        {
+            var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
+
+            return Ok(new LoginResponseModel
+            {
+                AccessToken = token,
+                ExpiresAt = expiresAt,
+                UserName = user.UserName,
+                Email = user.Email,
+                Roles = roles,
+                NewIpWarning = newIpWarning,
+                NewIpAddress = newIpWarning ? ip : null
+            });
         }
 
         /// <summary>

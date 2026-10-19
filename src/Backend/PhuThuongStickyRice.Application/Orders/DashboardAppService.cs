@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Shop;
-
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using System;
@@ -12,9 +11,7 @@ using Volo.Abp.Application.Services;
 using Volo.Abp.Linq;
 using Volo.Abp.ObjectMapping;
 using PhuThuongStickyRice.Application.Orders;
-using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Reports;
-using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Orders
@@ -81,7 +78,26 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IObjectMapper _objectMapper;
         private readonly IShopSettingAppService _shopSettings;
         private readonly Products.IProductCatalogCache _catalogCache;
-        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _memoryCache;
+        private readonly IMemoryCache _memoryCache;
+
+        /// <summary>TTL cache cho thống kê dashboard (giây) — query nặng, số liệu không cần real-time.</summary>
+        private const int DashboardStatsCacheSeconds = 45;
+        /// <summary>TTL cache cho "Đã bán N gói hôm nay" (giây) — số marketing hiển thị mỗi lần tải trang.</summary>
+        private const int TodaySoldCacheSeconds = 60;
+        /// <summary>Số phút mặc định coi đơn Pending là "quá hạn chưa xác nhận" khi shop chưa cấu hình.</summary>
+        private const int DefaultStalePendingMinutes = 15;
+        /// <summary>Mục tiêu doanh thu ngày mặc định (₫) khi shop chưa cấu hình.</summary>
+        private const decimal DefaultDailyTargetAmount = 2000000;
+        /// <summary>Số đơn mới nhất hiển thị trên dashboard.</summary>
+        private const int RecentOrdersTake = 5;
+        /// <summary>Số đơn đặt trước sắp tới hiển thị trên dashboard cho bếp.</summary>
+        private const int UpcomingPreOrdersTake = 8;
+        /// <summary>Số giờ nhìn lại quá khứ khi tìm đơn đặt trước (đơn quá giờ hẹn mà khách chưa nhận vẫn hiện cho bếp xử lý).</summary>
+        private const int PreOrderLookbackHours = 2;
+        /// <summary>Kích thước mỗi batch khi truy vấn SĐT khách cũ (SQL Server giới hạn ~2100 tham số/query).</summary>
+        private const int ReturningPhoneQueryBatchSize = 1000;
+        /// <summary>Múi giờ VN (UTC+7): CreatedAt lưu UTC nên cộng/trừ bấy nhiêu giờ khi quy đổi ngày VN.</summary>
+        private const int VietnamUtcOffsetHours = 7;
 
         public DashboardAppService(
             IOrderRepository orders,
@@ -90,7 +106,7 @@ namespace PhuThuongStickyRice.Application.Orders
             IObjectMapper objectMapper,
             IShopSettingAppService shopSettings,
             Products.IProductCatalogCache catalogCache,
-            Microsoft.Extensions.Caching.Memory.IMemoryCache memoryCache)
+            IMemoryCache memoryCache)
         {
             _orders = orders;
             _products = products;
@@ -117,7 +133,19 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             var (fromDate, toDate) = NormalizeRange(from, to);
+            var stats = await BuildDashboardStatsAsync(fromDate, toDate);
 
+            _memoryCache.Set(cacheKey, stats, TimeSpan.FromSeconds(DashboardStatsCacheSeconds));
+            return stats;
+        }
+
+        /// <summary>
+        /// Dựng toàn bộ số liệu dashboard cho khoảng ngày: gọi các truy vấn
+        /// con rồi ghép vào <see cref="DashboardStatsDto"/>. Tách riêng để
+        /// GetStatsAsync chỉ còn lo cache.
+        /// </summary>
+        private async Task<DashboardStatsDto> BuildDashboardStatsAsync(DateTime fromDate, DateTime toDate)
+        {
             var orderQueryable = await _orders.GetQueryableAsync();
             var productQueryable = await _products.GetQueryableAsync();
 
@@ -135,7 +163,18 @@ namespace PhuThuongStickyRice.Application.Orders
                 TotalProducts = await _asyncExecuter.LongCountAsync(productQueryable)
             };
 
-            stats.OrdersByStatus = await _asyncExecuter.ToListAsync(
+            stats.OrdersByStatus = await LoadOrdersByStatusAsync(ranged);
+            stats.RevenueByDay = await LoadRevenueByDayAsync(billable);
+            stats.RecentOrders = await LoadRecentOrdersAsync(orderQueryable);
+            stats.UpcomingPreOrders = await LoadUpcomingPreOrdersAsync(orderQueryable);
+            (stats.StalePendingOrders, stats.StalePendingMinutes) = await LoadStalePendingAsync(orderQueryable);
+
+            return stats;
+        }
+
+        /// <summary>Số đơn theo từng trạng thái trong khoảng ngày.</summary>
+        private async Task<List<OrdersByStatusDto>> LoadOrdersByStatusAsync(IQueryable<Order> ranged) =>
+            await _asyncExecuter.ToListAsync(
                 ranged.GroupBy(x => x.Status)
                     .Select(g => new OrdersByStatusDto
                     {
@@ -143,7 +182,9 @@ namespace PhuThuongStickyRice.Application.Orders
                         Count = g.LongCount()
                     }));
 
-            stats.RevenueByDay = await _asyncExecuter.ToListAsync(
+        /// <summary>Doanh thu + số đơn theo từng ngày trong khoảng (đơn hủy bị loại).</summary>
+        private async Task<List<RevenueByDayDto>> LoadRevenueByDayAsync(IQueryable<Order> billable) =>
+            await _asyncExecuter.ToListAsync(
                 billable.GroupBy(x => x.CreatedAt.Date)
                     .Select(g => new RevenueByDayDto
                     {
@@ -153,36 +194,50 @@ namespace PhuThuongStickyRice.Application.Orders
                     })
                     .OrderBy(x => x.Date));
 
+        /// <summary>Các đơn mới nhất (mọi trạng thái) để dashboard hiển thị nhanh.</summary>
+        private async Task<List<OrderDto>> LoadRecentOrdersAsync(IQueryable<Order> orderQueryable)
+        {
             var recent = await _asyncExecuter.ToListAsync(
-                orderQueryable.OrderByDescending(x => x.CreatedAt).Take(5));
-            stats.RecentOrders = _objectMapper.Map<List<Order>, List<OrderDto>>(recent);
+                orderQueryable.OrderByDescending(x => x.CreatedAt).Take(RecentOrdersTake));
+            return _objectMapper.Map<List<Order>, List<OrderDto>>(recent);
+        }
 
-            // Đơn đặt trước (bếp ưu tiên xử lý): có giờ hẹn từ 2 tiếng trước tới
-            // nay (đơn quá giờ hẹn mà khách chưa bấm nhận vẫn hiện để bếp xử
-            // lý), chưa nhận hàng, chưa hủy/hoàn thành — giờ hẹn sớm nhất lên trước.
+        /// <summary>
+        /// Đơn đặt trước sắp tới cho bếp ưu tiên xử lý: có giờ hẹn từ
+        /// <see cref="PreOrderLookbackHours"/> giờ trước tới nay (đơn quá giờ
+        /// hẹn mà khách chưa bấm nhận vẫn hiện để bếp xử lý), chưa nhận hàng,
+        /// chưa hủy/hoàn thành — giờ hẹn sớm nhất lên trước.
+        /// </summary>
+        private async Task<List<OrderDto>> LoadUpcomingPreOrdersAsync(IQueryable<Order> orderQueryable)
+        {
             var now = DateTime.UtcNow;
             var upcoming = await _asyncExecuter.ToListAsync(
                 orderQueryable
                     .Where(x => x.ScheduledFor != null
-                        && x.ScheduledFor >= now.AddHours(-2)
+                        && x.ScheduledFor >= now.AddHours(-PreOrderLookbackHours)
                         && !x.PickedUpAt.HasValue
                         && x.Status != OrderStatus.Cancelled
                         && x.Status != OrderStatus.Completed)
                     .OrderBy(x => x.ScheduledFor)
-                    .Take(8));
-            stats.UpcomingPreOrders = _objectMapper.Map<List<Order>, List<OrderDto>>(upcoming);
+                    .Take(UpcomingPreOrdersTake));
+            return _objectMapper.Map<List<Order>, List<OrderDto>>(upcoming);
+        }
 
-            // Đơn còn Pending quá số phút cấu hình: dashboard bật cảnh báo khẩn
-            // riêng để quán không bỏ sót đơn chưa xác nhận.
+        /// <summary>
+        /// Số đơn còn Pending quá số phút cấu hình (mặc định
+        /// <see cref="DefaultStalePendingMinutes"/> phút): dashboard bật cảnh
+        /// báo khẩn riêng để quán không bỏ sót đơn chưa xác nhận.
+        /// </summary>
+        private async Task<(long StaleCount, int StaleMinutes)> LoadStalePendingAsync(IQueryable<Order> orderQueryable)
+        {
             var settings = await _shopSettings.GetAsync();
-            var staleMinutes = settings.UnconfirmedAlertMinutes < 1 ? 15 : settings.UnconfirmedAlertMinutes;
+            var staleMinutes = settings.UnconfirmedAlertMinutes < 1
+                ? DefaultStalePendingMinutes
+                : settings.UnconfirmedAlertMinutes;
             var staleCutoff = DateTime.UtcNow.AddMinutes(-staleMinutes);
-            stats.StalePendingOrders = await _asyncExecuter.LongCountAsync(
+            var count = await _asyncExecuter.LongCountAsync(
                 orderQueryable.Where(x => x.Status == OrderStatus.Pending && x.CreatedAt < staleCutoff));
-            stats.StalePendingMinutes = staleMinutes;
-
-            _memoryCache.Set(cacheKey, stats, TimeSpan.FromSeconds(45));
-            return stats;
+            return (count, staleMinutes);
         }
 
         /// <summary>
@@ -193,10 +248,10 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<DailyTargetDto> GetDailyTargetAsync()
         {
             var settings = await _shopSettings.GetAsync();
-            var target = settings.DailyTargetAmount > 0 ? settings.DailyTargetAmount : 2000000;
+            var target = settings.DailyTargetAmount > 0 ? settings.DailyTargetAmount : DefaultDailyTargetAmount;
 
             var todayVn = VietnamTime.Today();
-            var startUtc = todayVn.AddHours(-7); // VN 00:00 → UTC
+            var startUtc = todayVn.AddHours(-VietnamUtcOffsetHours); // VN 00:00 → UTC
             var endUtc = startUtc.AddDays(1);
 
             var orderQueryable = await _orders.GetQueryableAsync();
@@ -239,6 +294,10 @@ namespace PhuThuongStickyRice.Application.Orders
             return rows;
         }
 
+        /// <summary>
+        /// Khách mới (có đơn đầu tiên trong khoảng ngày) so với khách cũ
+        /// (đã có đơn trước đó), tính trên khoảng ngày đã chọn (Item 90).
+        /// </summary>
         public virtual async Task<NewReturningCustomersDto> GetNewReturningCustomersAsync(
             DateTime? from = null, DateTime? to = null)
         {
@@ -263,10 +322,29 @@ namespace PhuThuongStickyRice.Application.Orders
                 return result;
             }
 
-            // Phones that already ordered before the range = returning.
-            // Batch the IN clause (<= 1000 params/query; SQL Server allows ~2100).
+            var beforePhones = await FindReturningPhonesAsync(orderQueryable, inRangePhones, fromDate);
+
+            var newPhones = new HashSet<string>(inRangePhones.Where(p => !beforePhones.Contains(p)));
+            var returningPhones = new HashSet<string>(inRangePhones.Where(p => beforePhones.Contains(p)));
+
+            result.NewCustomers = newPhones.Count;
+            result.ReturningCustomers = returningPhones.Count;
+            result.NewCustomerOrders = inRange.Count(x => newPhones.Contains((x.CustomerPhone ?? string.Empty).Trim()));
+            result.ReturningCustomerOrders = inRange.Count(x => returningPhones.Contains((x.CustomerPhone ?? string.Empty).Trim()));
+            return result;
+        }
+
+        /// <summary>
+        /// Tìm các SĐT đã có đơn (không hủy) trước mốc fromDate — tức là
+        /// khách cũ. Chia nhỏ mệnh đề IN (mỗi batch tối đa
+        /// <see cref="ReturningPhoneQueryBatchSize"/> SĐT) vì SQL Server giới
+        /// hạn ~2100 tham số mỗi query.
+        /// </summary>
+        private async Task<HashSet<string>> FindReturningPhonesAsync(
+            IQueryable<Order> orderQueryable, List<string> inRangePhones, DateTime fromDate)
+        {
             var beforePhones = new HashSet<string>();
-            foreach (var batch in inRangePhones.Chunk(1000))
+            foreach (var batch in inRangePhones.Chunk(ReturningPhoneQueryBatchSize))
             {
                 var found = await _asyncExecuter.ToListAsync(
                     orderQueryable
@@ -281,14 +359,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
             }
 
-            var newPhones = new HashSet<string>(inRangePhones.Where(p => !beforePhones.Contains(p)));
-            var returningPhones = new HashSet<string>(inRangePhones.Where(p => beforePhones.Contains(p)));
-
-            result.NewCustomers = newPhones.Count;
-            result.ReturningCustomers = returningPhones.Count;
-            result.NewCustomerOrders = inRange.Count(x => newPhones.Contains((x.CustomerPhone ?? string.Empty).Trim()));
-            result.ReturningCustomerOrders = inRange.Count(x => returningPhones.Contains((x.CustomerPhone ?? string.Empty).Trim()));
-            return result;
+            return beforePhones;
         }
 
         /// <summary>
@@ -364,7 +435,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<TodayVsYesterdayDto> GetTodayVsYesterdayAsync()
         {
             var todayVn = VietnamTime.Today();
-            var startUtc = todayVn.AddHours(-7); // VN 00:00 today → UTC
+            var startUtc = todayVn.AddHours(-VietnamUtcOffsetHours); // VN 00:00 today → UTC
             var yesterdayStartUtc = startUtc.AddDays(-1);
             var endUtc = startUtc.AddDays(1);
 
@@ -415,7 +486,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // load. Cache 60s keyed by VN date — a marketing number, not
             // real-time; the heavy SUM over today's order lines must not
             // run per page view.
-            var vnDate = DateTime.UtcNow.AddHours(7).Date;
+            var vnDate = DateTime.UtcNow.AddHours(VietnamUtcOffsetHours).Date;
             var cacheKey = $"dashboard:today-sold:{vnDate:yyyyMMdd}";
             if (_memoryCache.TryGetValue(cacheKey, out long cached))
             {
@@ -423,7 +494,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // The shop runs on Vietnam time (UTC+7); CreatedAt is UTC.
-            var startOfTodayUtc = vnDate.AddHours(-7);
+            var startOfTodayUtc = vnDate.AddHours(-VietnamUtcOffsetHours);
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var billable = orderQueryable.Where(x =>
@@ -433,7 +504,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var result = await _asyncExecuter.SumAsync(
                 billable.SelectMany(x => x.Lines).Select(x => (long)x.Quantity));
 
-            _memoryCache.Set(cacheKey, result, TimeSpan.FromSeconds(60));
+            _memoryCache.Set(cacheKey, result, TimeSpan.FromSeconds(TodaySoldCacheSeconds));
             return result;
         }
 

@@ -493,24 +493,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromForm] string customerPhone,
             CancellationToken cancellationToken = default)
         {
-            if (file == null || file.Length == 0)
+            var validationError = ValidateReviewPhoto(file);
+            if (validationError != null)
             {
-                return BadRequest(new { message = "Vui lòng chọn một file ảnh." });
-            }
-
-            var extension = Path.GetExtension(file.FileName);
-            if (string.IsNullOrWhiteSpace(extension)
-                || !AllowedReviewPhotoExtensions.Contains(extension.ToLowerInvariant()))
-            {
-                return BadRequest(new
-                {
-                    message = "Định dạng ảnh không hợp lệ. Chỉ nhận: jpg, jpeg, png, webp, gif."
-                });
-            }
-
-            if (file.Length > MaxReviewPhotoBytes)
-            {
-                return BadRequest(new { message = "File ảnh tối đa 5 MB." });
+                return BadRequest(new { message = validationError });
             }
 
             // The order must exist and belong to this phone.
@@ -533,17 +519,56 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = "Không tìm thấy đơn hàng." });
             }
 
+            var photoUrl = await SaveReviewPhotoAsync(file, cancellationToken);
+            return Ok(new { photoUrl });
+        }
+
+        /// <summary>
+        /// Kiểm tra file ảnh đánh giá: bắt buộc có file, đúng định dạng
+        /// (jpg/jpeg/png/webp/gif) và không vượt quá
+        /// <see cref="MaxReviewPhotoBytes"/>. Trả về null khi hợp lệ,
+        /// ngược lại là thông báo lỗi tiếng Việt.
+        /// </summary>
+        private static string? ValidateReviewPhoto(IFormFile? file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return "Vui lòng chọn một file ảnh.";
+            }
+
+            var extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrWhiteSpace(extension)
+                || !AllowedReviewPhotoExtensions.Contains(extension.ToLowerInvariant()))
+            {
+                return "Định dạng ảnh không hợp lệ. Chỉ nhận: jpg, jpeg, png, webp, gif.";
+            }
+
+            if (file.Length > MaxReviewPhotoBytes)
+            {
+                return "File ảnh tối đa 5 MB.";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Lưu file ảnh đánh giá vào wwwroot/uploads/review-photos với tên
+        /// ngẫu nhiên (tránh trùng và lộ tên gốc), trả về URL tương đối để
+        /// client gửi kèm khi submit đánh giá.
+        /// </summary>
+        private async Task<string> SaveReviewPhotoAsync(IFormFile file, CancellationToken cancellationToken)
+        {
             var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "review-photos");
             Directory.CreateDirectory(folder);
 
-            var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+            var fileName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName).ToLowerInvariant()}";
             var filePath = Path.Combine(folder, fileName);
             await using (var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write))
             {
                 await file.CopyToAsync(stream, cancellationToken);
             }
 
-            return Ok(new { photoUrl = $"/uploads/review-photos/{fileName}" });
+            return $"/uploads/review-photos/{fileName}";
         }
 
         /// <summary>

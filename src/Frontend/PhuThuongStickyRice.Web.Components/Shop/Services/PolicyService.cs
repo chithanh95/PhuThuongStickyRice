@@ -30,7 +30,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         public async Task<PolicyPageModel> GetBySlugAsync(string slug)
         {
             await SetBearerToken();
-            var response = await _httpClient.GetAsync(
+            // Dispose response để trả kết nối HTTP về pool — using var vẫn
+            // dispose đúng cả khi return sớm ở nhánh 404 (CA2000).
+            using var response = await _httpClient.GetAsync(
                 $"api/policies/{Uri.EscapeDataString(slug ?? string.Empty)}");
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {

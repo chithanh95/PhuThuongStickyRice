@@ -11,22 +11,50 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Catalog
 {
+    /// <summary>
+    /// Hợp đồng quản lý combo món ăn (gói nhiều món bán chung 1 giá).
+    /// </summary>
     public interface IComboAppService : IApplicationService
     {
         /// <summary>Public: active combos for the shop.</summary>
         Task<List<ComboDto>> GetActiveAsync();
 
+        /// <summary>Admin: toàn bộ combo (kể cả đã tắt), mới nhất trước.</summary>
         Task<List<ComboDto>> GetListAsync();
 
+        /// <summary>Admin: chi tiết 1 combo.</summary>
+        /// <param name="id">Id combo.</param>
+        /// <returns>Combo kèm danh sách món trong combo.</returns>
         Task<ComboDto> GetAsync(Guid id);
 
+        /// <summary>
+        /// Admin: tạo combo mới. Giá combo không được âm; các món trong combo
+        /// phải là sản phẩm đang tồn tại.
+        /// </summary>
+        /// <param name="dto">Tên, giá, trạng thái và danh sách món của combo.</param>
+        /// <returns>Combo vừa tạo.</returns>
         Task<ComboDto> CreateAsync(CreateUpdateComboDto dto);
 
+        /// <summary>
+        /// Admin: cập nhật combo (thay toàn bộ danh sách món bằng danh sách mới).
+        /// </summary>
+        /// <param name="id">Id combo cần cập nhật.</param>
+        /// <param name="dto">Thông tin combo mới.</param>
+        /// <returns>Combo sau cập nhật.</returns>
         Task<ComboDto> UpdateAsync(Guid id, CreateUpdateComboDto dto);
 
+        /// <summary>
+        /// Admin: xóa combo. Combo đã từng xuất hiện trong đơn hàng thì chỉ
+        /// tắt (Ngưng bán) để không làm gãy lịch sử đơn, chưa từng bán mới xóa cứng.
+        /// </summary>
+        /// <param name="id">Id combo cần xóa.</param>
         Task DeleteAsync(Guid id);
     }
 
+    /// <summary>
+    /// Quản lý combo món ăn cho shop và admin. Combo shop lấy từ cache
+    /// (product catalog cache) nên mọi thay đổi phải invalidate cache.
+    /// </summary>
     public class ComboAppService : ApplicationService, IComboAppService
     {
         private readonly IRepository<Combo, Guid> _combos;
@@ -35,6 +63,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>Khởi tạo service combo với repository combo/sản phẩm/dòng đơn và cache catalog.</summary>
         public ComboAppService(
             IRepository<Combo, Guid> combos,
             IRepository<Product, Guid> products,
@@ -49,12 +78,21 @@ namespace PhuThuongStickyRice.Application.Catalog
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Public (không cần đăng nhập): danh sách combo đang bán cho shop,
+        /// lấy từ cache catalog. Combo có món đã ngừng bán sẽ bị ẩn ở shop.
+        /// </summary>
+        /// <returns>Combo đang bán, giá tăng dần.</returns>
         [AllowAnonymous]
         public virtual async Task<List<ComboDto>> GetActiveAsync()
         {
             return await _catalogCache.GetOrAddAsync("combos:active", QueryActiveAsync);
         }
 
+        /// <summary>
+        /// Truy vấn combo đang bán từ DB (dùng làm factory cho cache).
+        /// Ẩn combo không còn món hợp lệ nào để shop không bán combo trống.
+        /// </summary>
         private async Task<List<ComboDto>> QueryActiveAsync()
         {
             var queryable = await _combos.GetQueryableAsync();
@@ -63,6 +101,10 @@ namespace PhuThuongStickyRice.Application.Catalog
             return await MapToDtosAsync(entities, includeInvalidItems: false);
         }
 
+        /// <summary>
+        /// Admin: toàn bộ combo (kể cả đã tắt), mới nhất trước.
+        /// </summary>
+        /// <returns>Danh sách combo kèm tên/giá món trong combo.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<ComboDto>> GetListAsync()
         {
@@ -72,6 +114,9 @@ namespace PhuThuongStickyRice.Application.Catalog
             return await MapToDtosAsync(entities);
         }
 
+        /// <summary>Admin: chi tiết 1 combo.</summary>
+        /// <param name="id">Id combo.</param>
+        /// <returns>Combo kèm danh sách món.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<ComboDto> GetAsync(Guid id)
         {
@@ -79,6 +124,12 @@ namespace PhuThuongStickyRice.Application.Catalog
             return (await MapToDtosAsync(new[] { entity })).First();
         }
 
+        /// <summary>
+        /// Admin: tạo combo mới. Giá combo ép về không âm; validate món tồn tại
+        /// trước khi lưu; xong thì invalidate cache catalog để shop thấy ngay.
+        /// </summary>
+        /// <param name="dto">Tên, giá, trạng thái và danh sách món của combo.</param>
+        /// <returns>Combo vừa tạo.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<ComboDto> CreateAsync(CreateUpdateComboDto dto)
         {
@@ -106,6 +157,13 @@ namespace PhuThuongStickyRice.Application.Catalog
             return (await MapToDtosAsync(new[] { entity })).First();
         }
 
+        /// <summary>
+        /// Admin: cập nhật combo — thay toàn bộ danh sách món bằng danh sách mới
+        /// (xóa items cũ rồi thêm lại) để tránh rắc rối đối chiếu từng dòng.
+        /// </summary>
+        /// <param name="id">Id combo cần cập nhật.</param>
+        /// <param name="dto">Thông tin combo mới.</param>
+        /// <returns>Combo sau cập nhật.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<ComboDto> UpdateAsync(Guid id, CreateUpdateComboDto dto)
         {
@@ -134,6 +192,11 @@ namespace PhuThuongStickyRice.Application.Catalog
             return (await MapToDtosAsync(new[] { entity })).First();
         }
 
+        /// <summary>
+        /// Admin: xóa combo. Combo đã từng xuất hiện trong đơn hàng thì chỉ tắt
+        /// (Ngưng bán) để không làm gãy lịch sử đơn, chưa từng bán mới xóa cứng.
+        /// </summary>
+        /// <param name="id">Id combo cần xóa.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task DeleteAsync(Guid id)
         {
@@ -155,6 +218,12 @@ namespace PhuThuongStickyRice.Application.Catalog
             _catalogCache.Invalidate();
         }
 
+        /// <summary>
+        /// Kiểm tra danh sách món của combo: phải có ít nhất 1 món và mọi
+        /// ProductId đều trỏ tới sản phẩm đang tồn tại (tránh combo chứa món ảo).
+        /// </summary>
+        /// <param name="dto">Dữ liệu combo cần kiểm tra.</param>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi combo rỗng hoặc chứa sản phẩm không tồn tại.</exception>
         private async Task EnsureItemsValidAsync(CreateUpdateComboDto dto)
         {
             var items = dto.Items ?? new List<CreateUpdateComboItemDto>();
@@ -173,6 +242,17 @@ namespace PhuThuongStickyRice.Application.Catalog
             }
         }
 
+        /// <summary>
+        /// Map combo sang DTO, gắn tên/giá hiện tại của từng món (1 query batch).
+        /// Món đã ngừng bán hiện tên "(Món đã ngừng bán)", giá 0 — admin vẫn thấy,
+        /// còn shop thì combo sẽ bị ẩn nếu không còn món hợp lệ nào.
+        /// </summary>
+        /// <param name="entities">Các combo cần map.</param>
+        /// <param name="includeInvalidItems">
+        /// false (luồng shop): loại món không hợp lệ và ẩn combo trống;
+        /// true (luồng admin): giữ nguyên để admin thấy và sửa.
+        /// </param>
+        /// <returns>Danh sách ComboDto.</returns>
         private async Task<List<ComboDto>> MapToDtosAsync(IEnumerable<Combo> entities, bool includeInvalidItems = true)
         {
             var list = entities.ToList();

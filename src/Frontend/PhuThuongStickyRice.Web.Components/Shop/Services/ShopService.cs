@@ -20,6 +20,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             _httpClient = httpClient;
         }
 
+        /// <summary>Lấy trang đầu danh sách sản phẩm đang bán (không lọc chi nhánh).</summary>
         public async Task<PagedResult<ShopProductModel>> GetProductsAsync()
         {
             return await GetProductsAsync(null);
@@ -35,7 +36,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 url += $"&branch={branchId.Value}";
             }
 
-            var response = await _httpClient.GetAsync(url);
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<PagedResult<ShopProductModel>>();
         }
@@ -43,7 +45,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Validates a single product id (used when importing a shared cart).</summary>
         public async Task<ShopProductModel> GetProductAsync(Guid id)
         {
-            var response = await _httpClient.GetAsync($"api/products/{id}");
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync($"api/products/{id}");
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<ShopProductModel>();
         }
@@ -51,7 +54,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Active toppings for the quick-view checkboxes.</summary>
         public async Task<List<ToppingModel>> GetToppingsAsync()
         {
-            var response = await _httpClient.GetAsync("api/toppings/active");
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync("api/toppings/active");
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<List<ToppingModel>>();
         }
@@ -59,7 +63,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Active family combos for the shop.</summary>
         public async Task<List<ComboModel>> GetCombosAsync()
         {
-            var response = await _httpClient.GetAsync("api/combos/active");
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync("api/combos/active");
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<List<ComboModel>>();
         }
@@ -67,7 +72,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Product ids ordered by quantity sold (for "Bán chạy" sort).</summary>
         public async Task<List<Guid>> GetBestSellerIdsAsync()
         {
-            var response = await _httpClient.GetAsync("api/products/best-sellers?top=100");
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync("api/products/best-sellers?top=100");
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<List<Guid>>();
         }
@@ -80,7 +86,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync("api/products/sold-quantities");
+                // Dispose response để trả kết nối HTTP về pool (CA2000).
+                using var response = await _httpClient.GetAsync("api/products/sold-quantities");
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadAs<Dictionary<Guid, long>>()
                     ?? new Dictionary<Guid, long>();
@@ -98,7 +105,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// </summary>
         public async Task<List<ProductRatingModel>> GetProductRatingsAsync()
         {
-            var response = await _httpClient.GetAsync("api/products/ratings");
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync("api/products/ratings");
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<List<ProductRatingModel>>()
                 ?? new List<ProductRatingModel>();
@@ -107,7 +115,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Quantity of items sold today ("Đã bán N gói hôm nay").</summary>
         public async Task<long> GetTodaySoldAsync()
         {
-            var response = await _httpClient.GetAsync("api/dashboard/today-sold");
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync("api/dashboard/today-sold");
             response.EnsureSuccessStatusCode();
             var model = await response.Content.ReadAs<TodaySoldModel>();
             return model?.QuantitySold ?? 0;
@@ -119,7 +128,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// </summary>
         public async Task<List<ProductDailyRemainingModel>> GetDailyRemainingAsync()
         {
-            var response = await _httpClient.GetAsync("api/products/daily-remaining");
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync("api/products/daily-remaining");
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<List<ProductDailyRemainingModel>>()
                 ?? new List<ProductDailyRemainingModel>();
@@ -128,22 +138,26 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Submits a bulk/event quote request (đặt tiệc). No payment.</summary>
         public async Task CreateQuoteAsync(QuoteRequestModel quote)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/quotes");
+            // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
+            // dispose cả hai sau khi dùng xong (CA2000).
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/quotes");
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = quote.AsJsonContent();
 
-            var response = await _httpClient.SendAsync(request);
+            using var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
         }
 
         /// <summary>Subscribes a phone to monthly cung reminders (public).</summary>
         public async Task<CungReminderModel> CreateCungReminderAsync(CungReminderModel model)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/quotes/cung-reminders");
+            // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
+            // dispose cả hai sau khi dùng xong (CA2000).
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/quotes/cung-reminders");
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = model.AsJsonContent();
 
-            var response = await _httpClient.SendAsync(request);
+            using var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<CungReminderModel>();
         }
@@ -154,7 +168,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// </summary>
         public async Task<LastOrderInfoModel> GetLastOrderInfoAsync(string phone)
         {
-            var response = await _httpClient.GetAsync(
+            // Dispose response để trả kết nối HTTP về pool — using var vẫn
+            // dispose đúng cả khi return sớm ở nhánh 204 NoContent (CA2000).
+            using var response = await _httpClient.GetAsync(
                 $"api/orders/last-by-phone?phone={Uri.EscapeDataString(phone ?? string.Empty)}");
             if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
             {
@@ -173,7 +189,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync(
+                // Dispose response để trả kết nối HTTP về pool (CA2000).
+                using var response = await _httpClient.GetAsync(
                     $"api/orders/first-order-voucher?phone={Uri.EscapeDataString(phone ?? string.Empty)}");
                 if (!response.IsSuccessStatusCode)
                 {
@@ -188,13 +205,16 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
         }
 
+        /// <summary>Tạo đơn hàng mới (checkout) và trả về đơn đã đặt.</summary>
         public async Task<PlacedOrderModel> CreateOrderAsync(CreateOrderModel order)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/orders");
+            // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
+            // dispose cả hai sau khi dùng xong (CA2000).
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/orders");
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = order.AsJsonContent();
 
-            var response = await _httpClient.SendAsync(request);
+            using var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<PlacedOrderModel>();
         }
@@ -202,7 +222,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Public bank-transfer details (account info + VietQR config).</summary>
         public async Task<BankTransferInfoModel> GetBankTransferInfoAsync()
         {
-            var response = await _httpClient.GetAsync("api/payments/bank-transfer-info");
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync("api/payments/bank-transfer-info");
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<BankTransferInfoModel>();
         }
@@ -210,11 +231,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Customer reports they sent the bank transfer (phone must match the order).</summary>
         public async Task<TrackedOrderModel> MarkTransferredAsync(Guid orderId, string phone)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, $"api/orders/{orderId}/mark-transferred");
+            // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
+            // dispose cả hai sau khi dùng xong (CA2000).
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"api/orders/{orderId}/mark-transferred");
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = new { CustomerPhone = phone }.AsJsonContent();
 
-            var response = await _httpClient.SendAsync(request);
+            using var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<TrackedOrderModel>();
         }
@@ -222,10 +245,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Creates a MoMo payment (test simulator payUrl while TestMode is on).</summary>
         public async Task<MoMoCreatePaymentResultModel> CreateMoMoPaymentAsync(Guid orderId)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, $"api/orders/{orderId}/momo/create");
+            // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
+            // dispose cả hai sau khi dùng xong (CA2000).
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"api/orders/{orderId}/momo/create");
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            var response = await _httpClient.SendAsync(request);
+            using var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<MoMoCreatePaymentResultModel>();
         }
@@ -233,11 +258,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Posts a MoMo return/callback (used by the TEST simulator page).</summary>
         public async Task MoMoCallbackAsync(MoMoCallbackModel callback)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/payments/momo/callback");
+            // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
+            // dispose cả hai sau khi dùng xong (CA2000).
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/payments/momo/callback");
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = callback.AsJsonContent();
 
-            var response = await _httpClient.SendAsync(request);
+            using var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
         }
 
@@ -246,7 +273,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         {
             var url = $"api/orders/track?orderNumber={Uri.EscapeDataString(orderNumber ?? string.Empty)}"
                 + $"&phone={Uri.EscapeDataString(phone ?? string.Empty)}";
-            var response = await _httpClient.GetAsync(url);
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<TrackedOrderModel>();
         }
@@ -255,7 +283,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         public async Task<List<TrackedOrderModel>> GetOrdersByPhoneAsync(string phone)
         {
             var url = $"api/orders/by-phone?phone={Uri.EscapeDataString(phone ?? string.Empty)}";
-            var response = await _httpClient.GetAsync(url);
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<List<TrackedOrderModel>>();
         }

@@ -96,7 +96,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
                 new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
             form.Add(fileContent, "file", fileName);
 
-            var response = await _httpClient.PostAsync("api/products/images/upload", form);
+            // HttpResponseMessage giữ kết nối/stream phía dưới — dispose ngay
+            // sau khi đọc xong body để trả kết nối về pool (CA2000).
+            using var response = await _httpClient.PostAsync("api/products/images/upload", form);
             var body = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -139,7 +141,8 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
         {
             await SetBearerToken();
             // URL ảnh có thể chứa ký tự đặc biệt — phải encode trước khi đưa vào query string.
-            var response = await _httpClient.DeleteAsync(
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.DeleteAsync(
                 $"api/products/images?url={Uri.EscapeDataString(url)}");
             response.EnsureSuccessStatusCode();
         }

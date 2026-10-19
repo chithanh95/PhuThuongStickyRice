@@ -18,6 +18,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         {
         }
 
+        /// <summary>
+        /// Lấy danh sách địa chỉ đã lưu của khách đang đăng nhập.
+        /// Lỗi mạng/API thì trả danh sách rỗng để shop vẫn chạy được.
+        /// </summary>
         public async Task<List<CustomerAddressModel>> GetMineAsync()
         {
             try
@@ -31,33 +35,41 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
         }
 
+        /// <summary>Thêm một địa chỉ nhận hàng mới cho khách đang đăng nhập.</summary>
         public async Task<CustomerAddressModel> CreateAsync(CustomerAddressModel model)
         {
             await SetBearerToken();
-            var response = await _httpClient.PostAsJsonAsync("api/customer/addresses", model);
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.PostAsJsonAsync("api/customer/addresses", model);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<CustomerAddressModel>();
         }
 
+        /// <summary>Cập nhật địa chỉ đã lưu theo id.</summary>
         public async Task<CustomerAddressModel> UpdateAsync(Guid id, CustomerAddressModel model)
         {
             await SetBearerToken();
-            var response = await _httpClient.PutAsJsonAsync($"api/customer/addresses/{id}", model);
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.PutAsJsonAsync($"api/customer/addresses/{id}", model);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<CustomerAddressModel>();
         }
 
+        /// <summary>Xóa địa chỉ đã lưu theo id.</summary>
         public async Task DeleteAsync(Guid id)
         {
             await SetBearerToken();
-            var response = await _httpClient.DeleteAsync($"api/customer/addresses/{id}");
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.DeleteAsync($"api/customer/addresses/{id}");
             response.EnsureSuccessStatusCode();
         }
 
+        /// <summary>Đặt một địa chỉ làm mặc định.</summary>
         public async Task SetDefaultAsync(Guid id)
         {
             await SetBearerToken();
-            var response = await _httpClient.PostAsync($"api/customer/addresses/{id}/default", null);
+            // Dispose response để trả kết nối HTTP về pool (CA2000).
+            using var response = await _httpClient.PostAsync($"api/customer/addresses/{id}/default", null);
             response.EnsureSuccessStatusCode();
         }
     }

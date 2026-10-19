@@ -13,6 +13,10 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Products.Components
 {
+    /// <summary>
+    /// Code-behind của form thêm/sửa sản phẩm: đồng bộ giờ bán và ảnh từ
+    /// JSON của sản phẩm vào editor, xử lý upload/xóa ảnh trên server.
+    /// </summary>
     public partial class AddEditProduct
     {
         [CascadingParameter]
@@ -152,6 +156,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 }
                 catch (JsonException)
                 {
+                    // Cố ý bỏ qua: dữ liệu giờ bán cũ có thể không phải JSON
+                    // hợp lệ — khi đó editor chỉ hiện danh sách giờ trống để
+                    // user nhập lại, không được làm sập form.
                 }
             }
 
@@ -178,6 +185,8 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 }
                 catch (JsonException)
                 {
+                    // Cố ý bỏ qua: JSON ảnh cũ có thể hỏng — khi đó ô ảnh chỉ
+                    // hiện trống để user tải lại, không được làm sập form.
                 }
             }
         }
