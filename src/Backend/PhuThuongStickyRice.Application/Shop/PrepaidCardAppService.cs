@@ -142,18 +142,15 @@ namespace PhuThuongStickyRice.Application.Shop
             return cards.Select(MapToDto).ToList();
         }
 
-        /// <summary>
-        /// Admin: danh sách thẻ có phân trang, tìm kiếm theo tên/SĐT/mã thẻ.
-        /// </summary>
-        /// <param name="searchTerm">Từ khóa tìm kiếm (tùy chọn).</param>
-        /// <param name="skip">Số dòng bỏ qua (phân trang).</param>
-        /// <param name="take">Số dòng lấy, mặc định 20.</param>
         [Authorize(Roles = "Admin")]
         /// <summary>
         /// Admin: danh sách thẻ (tìm theo tên/SĐT/mã thẻ), phân trang.
         /// perf-hunt 2026-10-19: chặn `take` tối đa 200 ở server — tham số do
         /// client truyền, không chặn thì 1 request có thể kéo toàn bộ bảng.
         /// </summary>
+        /// <param name="searchTerm">Từ khóa tìm kiếm (tùy chọn).</param>
+        /// <param name="skip">Số dòng bỏ qua (phân trang).</param>
+        /// <param name="take">Số dòng lấy, mặc định 20.</param>
         public virtual async Task<List<PrepaidCardDto>> GetListAsync(string searchTerm, int skip = 0, int take = 20)
         {
             var query = await _cards.GetQueryableAsync();

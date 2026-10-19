@@ -9,7 +9,9 @@ namespace PhuThuongStickyRice.Domain.Entities
     /// </summary>
     public class LoyaltyAccount : Entity<Guid>, IAggregateRoot
     {
+        /// <summary>Độ dài tối đa cột SĐT trong DB.</summary>
         public const int PhoneMaxLength = 30;
+        /// <summary>Độ dài tối đa cột mã giới thiệu trong DB.</summary>
         public const int ReferralCodeMaxLength = 20;
 
         /// <summary>Phone number, digits only where possible. Unique.</summary>
@@ -33,8 +35,10 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Optional date of birth (birthday voucher worker).</summary>
         public DateTime? DateOfBirth { get; set; }
 
+        /// <summary>Thời điểm tạo tài khoản (UTC).</summary>
         public DateTime CreatedAt { get; set; }
 
+        /// <summary>Thời điểm tài khoản được cập nhật lần cuối (UTC).</summary>
         public DateTime UpdatedAt { get; set; }
     }
 }
