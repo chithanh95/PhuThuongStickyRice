@@ -166,6 +166,11 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Status) serves both the phone+status and phone-only predicates.
             builder.HasIndex(x => new { x.CustomerPhone, x.Status });
 
+            // perf-hunt 2026-10-19: báo cáo hoàn tiền (RefundAppService) lọc theo
+            // RefundStatus; trang đối soát MoMo lọc (PaymentMethod, PaymentStatus).
+            builder.HasIndex(x => x.RefundStatus);
+            builder.HasIndex(x => new { x.PaymentMethod, x.PaymentStatus });
+
             // Delivery shipper assignment (optional).
             builder.Property(x => x.ShipperId);
             builder.HasOne(x => x.Shipper)

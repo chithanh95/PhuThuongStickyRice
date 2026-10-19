@@ -10,6 +10,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         {
             builder.ToTable("AuditLogEntries");
             builder.Property(x => x.Id).HasDefaultValueSql("newsequentialid()");
+
+            // perf-hunt 2026-10-19: trang admin xem log sort + count theo
+            // CreatedDateTime; bảng tăng theo mỗi lần tạo/sửa/xóa sản phẩm.
+            builder.HasIndex(x => x.CreatedDateTime);
         }
     }
 }

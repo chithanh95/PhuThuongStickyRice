@@ -47,6 +47,8 @@ namespace PhuThuongStickyRice.Application.Orders
     [Authorize(Roles = "Admin")]
     public class RefundAppService : ApplicationService, IRefundAppService
     {
+        private const int MaxReportRows = 500;
+
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IPermissionService _permissions;
@@ -72,9 +74,13 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<List<RefundReportRowDto>> GetReportAsync()
         {
             var queryable = await _orders.GetQueryableAsync();
+            // perf-hunt 2026-10-19: Take(500) server-side — bảng Orders tăng
+            // không giới hạn, không bao giờ materialize toàn bộ lịch sử hoàn
+            // tiền. Có index IX_Orders_RefundStatus phục vụ filter này.
             var list = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.RefundStatus != RefundStatus.None)
-                    .OrderByDescending(x => x.CreatedAt));
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(MaxReportRows));
 
             return list.Select(x => new RefundReportRowDto
             {
