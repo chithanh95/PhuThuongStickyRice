@@ -313,9 +313,9 @@ else if (CartState.Items.Count == 0)
 }
 else
 {
-    @if (!string.IsNullOrEmpty(_error))
+    @if (!string.IsNullOrEmpty(_checkoutError))
     {
-        <div class="alert alert-danger" role="alert">@_error</div>
+        <div class="alert alert-danger" role="alert">@_checkoutError</div>
     }
 
     @if (_minOrderBlocked)
@@ -871,7 +871,7 @@ else
     private bool _orderingBlocked;
 
     private string _closedNotice;
-    private string _error;
+    private string _checkoutError;
 
     // Fulfillment: "ShipperPickup" (default) or "Pickup". The shop does
     // not deliver — no address, no delivery fee, no time slot.
@@ -1808,24 +1808,24 @@ else
     /// </summary>
     private async Task PlaceOrder()
     {
-        _error = null;
+        _checkoutError = null;
 
         if (!ValidateFields())
         {
-            _error = "Vui lòng kiểm tra lại các thông tin được đánh dấu.";
+            _checkoutError = "Vui lòng kiểm tra lại các thông tin được đánh dấu.";
             return;
         }
 
         if (_minOrderBlocked)
         {
-            _error = $"Đơn hàng tối thiểu {FormatPrice(_shopSettings.MinOrderAmount)}. Vui lòng thêm món vào giỏ.";
+            _checkoutError = $"Đơn hàng tối thiểu {FormatPrice(_shopSettings.MinOrderAmount)}. Vui lòng thêm món vào giỏ.";
             return;
         }
 
         // Wave 6b (item 30): client-side guard; the server is the real gate.
         if (_orderingBlocked)
         {
-            _error = _closedNotice ?? "Quán đang tạm ngừng nhận đơn.";
+            _checkoutError = _closedNotice ?? "Quán đang tạm ngừng nhận đơn.";
             return;
         }
 
@@ -1872,7 +1872,7 @@ else
             // quán tạm ngừng nhận đơn...) — hiện nguyên văn để khách biết lý do thật.
             // Whitelist cũ chỉ cho qua message chứa "tối thiểu"/"Mã" nên các lý do
             // thật còn lại bị nuốt thành message chung chung.
-            _error = string.IsNullOrWhiteSpace(ex.Message)
+            _checkoutError = string.IsNullOrWhiteSpace(ex.Message)
                 ? "Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin và thử lại."
                 : ex.Message;
         }

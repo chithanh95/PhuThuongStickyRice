@@ -295,18 +295,18 @@ namespace PhuThuongStickyRice.Application.Orders
                 SuggestedPortions = result.Next7Days.Sum(x => x.SuggestedPortions)
             };
 
-            var total30 = new ForecastTotalDto();
+            var next30DaysTotal = new ForecastTotalDto();
             for (var i = 1; i <= Forecast30d; i++)
             {
                 var dayForecast = ForecastOneDay(
                     today.AddDays(i), result, perDay, vi, totalOrders, portionsPerOrder);
-                total30.ForecastRevenue += dayForecast.ForecastRevenue;
-                total30.ForecastOrders += dayForecast.ForecastOrders;
-                total30.SuggestedPortions += dayForecast.SuggestedPortions;
+                next30DaysTotal.ForecastRevenue += dayForecast.ForecastRevenue;
+                next30DaysTotal.ForecastOrders += dayForecast.ForecastOrders;
+                next30DaysTotal.SuggestedPortions += dayForecast.SuggestedPortions;
             }
 
-            total30.ForecastOrders = Math.Round(total30.ForecastOrders, 1);
-            result.Next30DaysTotal = total30;
+            next30DaysTotal.ForecastOrders = Math.Round(next30DaysTotal.ForecastOrders, 1);
+            result.Next30DaysTotal = next30DaysTotal;
         }
 
         /// <summary>Dự báo 1 ngày từ pattern của đúng thứ đó (hoặc fallback).</summary>

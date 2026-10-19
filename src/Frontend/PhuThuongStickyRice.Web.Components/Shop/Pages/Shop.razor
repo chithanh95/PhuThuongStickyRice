@@ -130,9 +130,9 @@ else
 }
 else
 {
-@if (!string.IsNullOrEmpty(_error))
+@if (!string.IsNullOrEmpty(_loadError))
 {
-    <div class="alert alert-danger">@_error</div>
+    <div class="alert alert-danger">@_loadError</div>
 }
 }
 
@@ -209,14 +209,14 @@ else
         </div>
     }
 
-    @if (_filtered.Count == 0)
+    @if (_filteredProducts.Count == 0)
     {
         <div class="alert alert-info">Không có món nào phù hợp với bộ lọc. <a href="javascript:void(0)" @onclick="ClearFilters">Xóa bộ lọc</a></div>
     }
     else
     {
         <div class="row shop-desktop-grid">
-            @foreach (var product in _filtered)
+            @foreach (var product in _filteredProducts)
             {
                 <div class="col-6 col-md-4 col-lg-3 mb-4" @key="product.Id">
                     <div class="card h-100">
@@ -307,7 +307,7 @@ else
                     }
                 </aside>
                 <div class="shop-mobile-items">
-                    @foreach (var product in _filtered)
+                    @foreach (var product in _filteredProducts)
                     {
                         <div class="shop-row-item" @key="product.Id">
                             <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" class="shop-row-img">
@@ -616,15 +616,15 @@ else
 @code {
     private string _activeTab = "products";
     private List<ShopProductModel> _products;
-    private List<ShopProductModel> _filtered = new List<ShopProductModel>();
+    private List<ShopProductModel> _filteredProducts = new List<ShopProductModel>();
     private List<string> _categories = new List<string>();
     private List<ComboModel> _combos;
     private List<ToppingModel> _toppings;
-    private Dictionary<Guid, int> _rank = new Dictionary<Guid, int>();
+    private Dictionary<Guid, int> _productRank = new Dictionary<Guid, int>();
     private long _todaySold;
     private Dictionary<Guid, int> _quantities = new Dictionary<Guid, int>();
     private Dictionary<Guid, Guid?> _cardSizes = new Dictionary<Guid, Guid?>();
-    private string _error;
+    private string _loadError;
 
     // Wave 6d (item 38): initial product load failed → full-page error state.
     private bool _loadFailed;
@@ -869,7 +869,7 @@ else
             var rank = 0;
             foreach (var id in bestSellersTask.Result ?? new List<Guid>())
             {
-                _rank[id] = rank++;
+                _productRank[id] = rank++;
             }
 
             foreach (var p in _products)
@@ -904,7 +904,7 @@ else
         {
             // Non-critical extras (combos, toppings, best-sellers) failed;
             // products have their own _loadFailed flag (item 38).
-            _error = "Một số thông tin bổ sung không tải được. Vui lòng thử lại sau.";
+            _loadError = "Một số thông tin bổ sung không tải được. Vui lòng thử lại sau.";
             _products ??= new List<ShopProductModel>();
         }
     }
@@ -970,7 +970,7 @@ else
         }
         catch (Exception)
         {
-            _error = "Không tải được sản phẩm theo chi nhánh.";
+            _loadError = "Không tải được sản phẩm theo chi nhánh.";
         }
     }
 
@@ -1108,7 +1108,7 @@ else
     {
         if (_products == null)
         {
-            _filtered = new List<ShopProductModel>();
+            _filteredProducts = new List<ShopProductModel>();
             return;
         }
 
@@ -1138,7 +1138,7 @@ else
                 RemoveDiacritics(p.Name ?? string.Empty).IndexOf(termNoDiacritics, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
-        _filtered = _sort switch
+        _filteredProducts = _sort switch
         {
             "priceAsc" => query.OrderBy(p => MinPrice(p)).ToList(),
             "priceDesc" => query.OrderByDescending(p => MinPrice(p)).ToList(),
@@ -1146,7 +1146,7 @@ else
             // Item 146: manual display order (drag & drop on /products) first;
             // best-seller rank and name are the tiebreaks (all zero by default).
             _ => query.OrderBy(p => p.SortOrder)
-                .ThenBy(p => _rank.TryGetValue(p.Id, out var r) ? r : int.MaxValue)
+                .ThenBy(p => _productRank.TryGetValue(p.Id, out var r) ? r : int.MaxValue)
                 .ThenBy(p => p.Name).ToList()
         };
     }
