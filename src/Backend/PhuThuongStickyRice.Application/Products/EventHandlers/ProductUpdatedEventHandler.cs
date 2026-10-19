@@ -9,6 +9,13 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application.Products.EventHandlers
 {
+    /// <summary>
+    /// Xử lý khi món ăn bị sửa: ghi AuditLogEntry ("UPDATED_PRODUCT") lưu
+    /// snapshot món sau sửa + OutboxEvent ("PRODUCT_UPDATED") cho worker
+    /// nền đẩy sang hệ thống ngoài. Cùng lý do với
+    /// <see cref="ProductCreatedEventHandler"/>: không để tích hợp ngoài
+    /// làm chậm/gãy luồng sửa món trong DB.
+    /// </summary>
     public class ProductUpdatedEventHandler : IDomainEventHandler<EntityUpdatedEvent<Product>>
     {
         private readonly IEntityCrudService<AuditLogEntry> _auditService;
@@ -24,6 +31,12 @@ namespace PhuThuongStickyRice.Application.Products.EventHandlers
             _outboxEventRepository = outboxEventRepository;
         }
 
+        /// <summary>
+        /// Ghi audit + xếp outbox cho món vừa sửa. Chạy trong UoW của thao
+        /// tác sửa món nên cả 2 dấu vết được commit/rollback cùng món.
+        /// </summary>
+        /// <param name="domainEvent">Sự kiện sửa món (mang entity + thời điểm).</param>
+        /// <param name="cancellationToken">Token hủy.</param>
         public async Task HandleAsync(EntityUpdatedEvent<Product> domainEvent, CancellationToken cancellationToken = default)
         {
             await _auditService.AddOrUpdateAsync(new AuditLogEntry

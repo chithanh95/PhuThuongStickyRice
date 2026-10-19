@@ -21,6 +21,13 @@ namespace PhuThuongStickyRice.Application.AuditLogs
     /// <summary>Item 99: login history (Admin).</summary>
     public interface ILoginAuditAppService : IApplicationService
     {
+        /// <summary>
+        /// Admin: danh sách lịch sử đăng nhập (cả thành công lẫn thất bại),
+        /// mới nhất trước — phục vụ rà soát tài khoản bị dò mật khẩu.
+        /// </summary>
+        /// <param name="skipCount">Số dòng bỏ qua (phân trang).</param>
+        /// <param name="maxResultCount">Số dòng mỗi trang (kẹp 1..200).</param>
+        /// <returns>Kết quả phân trang kèm tổng số dòng.</returns>
         Task<PagedResultDto<LoginAuditDto>> GetListAsync(int skipCount = 0, int maxResultCount = 50);
 
         /// <summary>
@@ -35,6 +42,13 @@ namespace PhuThuongStickyRice.Application.AuditLogs
         Task<bool> IsNewIpForUserAsync(string userName, string ipAddress);
     }
 
+    /// <summary>
+    /// Item 99: nhật ký đăng nhập của nhân viên — ghi mọi lần đăng nhập
+    /// (thành công/thất bại) để admin rà soát tài khoản bị dò mật khẩu,
+    /// và phát hiện đăng nhập từ IP lạ (<see cref="IsNewIpForUserAsync"/>).
+    /// Ghi log KHÔNG BAO GIỜ được làm gãy luồng đăng nhập
+    /// (xem try/catch trong <see cref="RecordAsync"/>).
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class LoginAuditAppService : ApplicationService, ILoginAuditAppService
     {
@@ -58,6 +72,10 @@ namespace PhuThuongStickyRice.Application.AuditLogs
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Admin: liệt kê lịch sử đăng nhập, mới nhất trước, phân trang
+        /// 200 dòng tối đa (kẹp cứng để bảng log phình to không làm nặng DB).
+        /// </summary>
         public virtual async Task<PagedResultDto<LoginAuditDto>> GetListAsync(int skipCount = 0, int maxResultCount = 50)
         {
             var queryable = await _audits.GetQueryableAsync();

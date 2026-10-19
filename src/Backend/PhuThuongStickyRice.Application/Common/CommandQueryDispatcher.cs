@@ -19,6 +19,13 @@ namespace PhuThuongStickyRice.Application
             _provider = provider;
         }
 
+        /// <summary>
+        /// Điều phối 1 command: tra DI tìm <c>ICommandHandler&lt;T&gt;</c>
+        /// khớp kiểu runtime của command rồi gọi HandleAsync. Ném khi không
+        /// tìm thấy handler đã đăng ký.
+        /// </summary>
+        /// <param name="command">Command cần xử lý.</param>
+        /// <param name="cancellationToken">Token hủy.</param>
         public async Task DispatchAsync(ICommand command, CancellationToken cancellationToken = default)
         {
             Type type = typeof(ICommandHandler<>);
@@ -29,6 +36,15 @@ namespace PhuThuongStickyRice.Application
             await handler.HandleAsync((dynamic)command, cancellationToken);
         }
 
+        /// <summary>
+        /// Điều phối 1 query: tra DI tìm <c>IQueryHandler&lt;T,R&gt;</c> khớp
+        /// kiểu runtime của query rồi gọi HandleAsync, trả kết quả về.
+        /// Ném khi không tìm thấy handler đã đăng ký.
+        /// </summary>
+        /// <typeparam name="T">Kiểu kết quả query trả về.</typeparam>
+        /// <param name="query">Query cần xử lý.</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        /// <returns>Kết quả do handler của query trả về.</returns>
         public async Task<T> DispatchAsync<T>(IQuery<T> query, CancellationToken cancellationToken = default)
         {
             Type type = typeof(IQueryHandler<,>);

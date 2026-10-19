@@ -25,6 +25,14 @@ namespace PhuThuongStickyRice.Application.Staff
         public const string StaffCreate = "staff.create";
         public const string StaffRoleChange = "staff.role-change";
 
+        /// <summary>
+        /// Nhãn tiếng Việt hiển thị cho 1 action ở trang nhật ký nhân viên.
+        /// LƯU Ý khi thêm action mới vào class này: phải thêm mapping ở đây,
+        /// nếu không UI sẽ hiện nguyên machine key (vd "discount.create")
+        /// thay vì nhãn đẹp — nhánh default trả nguyên key đầu vào.
+        /// </summary>
+        /// <param name="action">Machine key (vd <see cref="OrderConfirm"/>).</param>
+        /// <returns>Nhãn tiếng Việt, hoặc nguyên key khi chưa có mapping.</returns>
         public static string Label(string action) => action switch
         {
             Login => "Đăng nhập",
