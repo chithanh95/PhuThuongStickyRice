@@ -208,8 +208,8 @@ else
                             <th scope="col">Trạng thái</th>
                             <th scope="col">Thanh toán</th>
                             <th scope="col">Shipper</th>
-                            <th>Ngày đặt</th>
-                            <th></th>
+                            <th scope="col">Ngày đặt</th>
+                            <th scope="col"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -453,7 +453,7 @@ else
                                         }
                                         <table class="table table-hover table-sm mt-2 mb-0">
                                             <thead>
-                                                <tr><th>Món</th><th class="text-right">Đơn giá</th><th class="text-right">SL</th><th class="text-right">Thành tiền</th></tr>
+                                                <tr><th scope="col">Món</th><th scope="col" class="text-right">Đơn giá</th><th scope="col" class="text-right">SL</th><th scope="col" class="text-right">Thành tiền</th></tr>
                                             </thead>
                                             <tbody>
                                                 @foreach (var line in order.Lines)

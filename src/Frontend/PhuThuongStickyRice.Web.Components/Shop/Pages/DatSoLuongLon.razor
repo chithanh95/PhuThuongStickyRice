@@ -28,7 +28,7 @@
     <h2>Báo giá đặt số lượng lớn</h2>
     <p><strong>Xôi Phú Thượng</strong> — Ngày báo giá: @DateTime.Today.ToString("dd/MM/yyyy")</p>
     <table>
-        <thead><tr><th>Món</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th></tr></thead>
+        <thead><tr><th scope="col">Món</th><th scope="col">Đơn giá</th><th scope="col">Số lượng</th><th scope="col">Thành tiền</th></tr></thead>
         <tbody>
             @foreach (var product in _products.Where(x => _bulkProductIds.Contains(x.Id)))
             {

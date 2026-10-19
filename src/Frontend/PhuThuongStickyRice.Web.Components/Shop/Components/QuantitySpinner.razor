@@ -6,64 +6,6 @@
     <button type="button" class="qty-btn qty-plus" @onclick="Increment" disabled="@(Value >= Max)" aria-label="Tăng số lượng">+</button>
 </div>
 
-<style>
-    /* Lexa Bootstrap TouchSpin — nút tím 2 đầu */
-    .qty-spinner {
-        display: inline-flex;
-        align-items: stretch;
-        border-radius: 6px;
-        overflow: hidden;
-        background: #fff;
-        flex-shrink: 0;
-    }
-    .qty-btn {
-        width: 44px;
-        min-width: 44px;
-        height: 44px;
-        border: none;
-        background: #7a6fbe;
-        color: #fff;
-        font-size: 18px;
-        font-weight: 700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background .15s;
-        padding: 0;
-    }
-    .qty-btn:hover:not(:disabled) { background: #625998; }
-    .qty-btn:disabled { opacity: .5; cursor: not-allowed; }
-    .qty-minus { border-radius: 6px 0 0 6px; }
-    .qty-plus { border-radius: 0 6px 6px 0; }
-    .qty-input {
-        width: 44px;
-        height: 44px; /* A11y-1458: khớp chiều cao 44px của 2 nút +/− (trước 38px
-                         làm ô nhập lùn hơn, viền trên/dưới lệch) */
-        border: 1px solid #ced4da;
-        border-left: none;
-        border-right: none;
-        text-align: center;
-        font-weight: 700;
-        font-size: 16px; /* A11y-1458: 15px -> 16px, iOS không auto-zoom khi focus
-                            (khách lớn tuổi dùng điện thoại) */
-        background: #fff;
-        color: #212529;
-        padding: 0;
-    }
-    html.dark .qty-input {
-        background: #1e1e36;
-        border-color: #4a4a6e;
-        color: #f0eef5;
-    }
-    /* bug-hunt 2026-10-20: wrapper .qty-spinner không có override dark →
-       lộ viền trắng mỏng quanh input ở góc bo tròn khi dark mode. */
-    html.dark .qty-spinner {
-        background: #1e1e36;
-    }
-    /* uiux-20261019: focus visible cho người dùng bàn phím (không xóa outline mà không thay thế) */
-    .qty-input:focus { outline: 2px solid #7a6fbe; outline-offset: 1px; }
-</style>
 
 @code {
     [Parameter] public int Value { get; set; } = 1;

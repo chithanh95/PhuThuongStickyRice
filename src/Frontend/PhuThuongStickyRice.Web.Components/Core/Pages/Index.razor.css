@@ -1194,6 +1194,29 @@ html.dark .sg-book-form {
 
 html.dark .sg-poem { color: var(--sg-accent); }
 
+/* UIUX run 04:15 — Agent2 Dark mode
+   FIX 1 — Timeline "Hành trình": .sg-tl-card nền var(--sg-surface) (tối
+   #262019 ở dark) nhưng chữ strong #6F0707 (đỏ đậm) và p #5a4a3a (nâu đậm)
+   là màu cứng light-mode → trên nền tối không đọc được. Override sang
+   --sg-accent/--sg-muted cho đủ tương phản. */
+html.dark .sg-tl-card strong { color: var(--sg-accent); }
+html.dark .sg-tl-card p { color: var(--sg-muted); }
+
+/* UIUX run 04:15 — Agent2 Dark mode
+   FIX 2 — Carousel đánh giá: .sg-review-card nền var(--sg-surface) tối,
+   nhưng .sg-review-text #4a3f33 (nâu đậm cứng) → chữ mất hẳn trên nền tối.
+   .sg-review-name #8a7a68 chỉ đạt ~3.9:1 trên #262019 (< 4.5:1) → mờ.
+   Override cả hai sang --sg-ink/--sg-muted. */
+html.dark .sg-review-text { color: var(--sg-ink); }
+html.dark .sg-review-name { color: var(--sg-muted); }
+
+/* UIUX run 04:15 — Agent2 Dark mode
+   FIX 3 — Pills lọc giá thực đơn: nút chưa active nền var(--sg-surface)
+   (tối ở dark) nhưng chữ #5a4a3a (nâu đậm cứng) → không đọc được
+   "Tất cả / Dưới 30k / ...". Override chữ sang --sg-ink. Nút .active
+   (nền #6F0707 + chữ trắng) giữ nguyên vì vẫn đọc tốt. */
+html.dark .sg-price-filter button:not(.active) { color: var(--sg-ink); }
+
 /* ---------- Điểm nhấn ảnh: reveal khi cuộn ----------
    AN TOÀN: mặc định luôn hiển thị. Chỉ khi JS chạy thành công
    (thêm class pt-reveal vào <html>) thì .sg-reveal mới ẩn để chờ reveal.

@@ -1,0 +1,7 @@
+/* UIUX run 2026-10-20 04:25 — Agent 3 Đồng bộ Lexa:
+   chuyển style inline của ảnh card (height/object-fit) từ GalleryKhachHang.razor
+   sang scoped CSS — đúng quy ước dự án (không style inline trong .razor). */
+.xo-gallery-img {
+    height: 200px;
+    object-fit: cover;
+}

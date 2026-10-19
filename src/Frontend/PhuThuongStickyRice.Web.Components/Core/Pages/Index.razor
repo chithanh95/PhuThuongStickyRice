@@ -811,7 +811,7 @@ else
 <!-- VIEWER 360° (item 64) -->
 @if (_view360Product != null)
 {
-    <div class="sg-modal-backdrop" @onclick="CloseProduct360View">
+    <div class="sg-modal-backdrop" @onclick="CloseProduct360View" tabindex="-1" @onkeydown="Product360KeyDown">
         @* A11y-1458: role="dialog" để screen reader nhận diện hộp thoại *@
         <div class="sg-modal-360" @onclick:stopPropagation role="dialog" aria-modal="true"
              aria-label="Xem 360 độ @_view360Product.Name">
@@ -1632,6 +1632,16 @@ else
     }
 
     private void CloseProduct360View() { _view360Product = null; }
+
+    /// <summary>
+    /// UIUX-1020 Agent4 (a11y): đóng modal xem 360° khi người dùng bấm Escape —
+    /// @onkeydown đặt trên lớp phủ modal, sự kiện bàn phím bubble từ các nút
+    /// bên trong lên đây (người dùng bàn phím không phải tab tới nút Đóng).
+    /// </summary>
+    private void Product360KeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") CloseProduct360View();
+    }
     private void Rotate360(int dir)
     {
         var imageCount = AllImageUrls(_view360Product?.ImageUrlsJson).Count;

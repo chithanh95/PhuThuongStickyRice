@@ -5,67 +5,6 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 
-<style>
-    .auth-page {
-        min-height: 100vh; width: 100%;
-        background: #f8f8fb;
-        display: flex; align-items: center; justify-content: center;
-        padding: 40px 20px; margin: 0; box-sizing: border-box;
-    }
-    html.dark .auth-page { background: #1a1a2e; }
-    .auth-card {
-        background: #fff; border-radius: 8px;
-        box-shadow: 0 2px 20px rgba(0,0,0,.08);
-        padding: 40px 35px; width: 100%;
-    }
-    html.dark .auth-card { background: #262640; box-shadow: 0 2px 20px rgba(0,0,0,.4); }
-    html.dark .auth-card label { color: #f0eef5 !important; }
-    html.dark .auth-card h4 { color: #f0eef5 !important; }
-    html.dark .auth-card .auth-sub { color: #a5a2bd !important; }
-    html.dark .auth-card .text-muted { color: #a5a2bd !important; }
-    html.dark .auth-card .form-control {
-        background: #1e1e36; border-color: #4a4a6e; color: #f0eef5;
-    }
-    html.dark .auth-card .form-control::placeholder { color: #8a87a3; }
-    .auth-steps { display: flex; justify-content: center; margin-bottom: 25px; }
-    .auth-step {
-        width: 32px; height: 32px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 700; font-size: 14px;
-        background: #e9ecef; color: #6c757d; margin: 0 6px;
-    }
-    .auth-step.active { background: #7a6fbe; color: #fff; }
-    .auth-step.done { background: #34c38f; color: #fff; } /* UIUX-1019 A3: xanh success Lexa (trước #28a745 Bootstrap) */
-    html.dark .auth-step { background: #2c2c4e; color: #a5a2bd; }
-    html.dark .auth-step.active { background: #7a6fbe; color: #fff; }
-    html.dark .auth-step.done { background: #34c38f; color: #fff; } /* UIUX-1019 A3: xanh success Lexa (trước #28a745 Bootstrap) */
-    .auth-theme-btn {
-        position: fixed; top: 16px; right: 16px; z-index: 1000;
-        width: 40px; height: 40px; border-radius: 50%;
-        border: 1px solid #e0e0e0; background: #fff; cursor: pointer; font-size: 18px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.1);
-    }
-    html.dark .auth-theme-btn { background: #262640; border-color: #3a3a58; }
-    /* UIUX-1019 A3: gom style inline vào class (đồng bộ Lexa, dễ maintain) */
-    .auth-wrap { width: 100%; max-width: 440px; }
-    .auth-brand { text-align: center; margin-bottom: 20px; }
-    .auth-brand-emoji { font-size: 36px; }
-    .auth-brand-name { font-size: 26px; font-weight: 600; margin-left: 8px; vertical-align: middle; }
-    .auth-title { text-align: center; color: #1a1a2e; font-weight: 600; font-size: 22px; margin-bottom: 5px; }
-    .auth-sub { text-align: center; color: #5a6c7d; font-size: 14px; margin-bottom: 20px; }
-    .auth-label { color: #1a1a2e; font-weight: 600; font-size: 14px; }
-    .auth-btn { background: #7a6fbe; border-color: #7a6fbe; padding: 10px; }
-    .auth-link { color: #7a6fbe; }
-    .auth-link-btn { color: #7a6fbe; }
-    /* UIUX run 16:48 - Agent2 Dark: nút "← Nhập lại SĐT" giữ #7a6fbe trên
-       card dark #262640 (~3.4:1, dưới chuẩn 4.5:1) — không rule dark nào phủ
-       (đã grep xác minh). Sáng lên #a49de0 (~5.6:1), đồng bộ convention
-       `html.dark .auth-card .auth-link` của trang Đăng nhập. */
-    html.dark .auth-card .auth-link-btn { color: #a49de0 !important; }
-    .auth-otp-input { letter-spacing: 4px; font-weight: 700; font-size: 18px; }
-    .auth-success-emoji { font-size: 40px; }
-    html.dark .auth-brand-name { color: #f0eef5; }
-</style>
 
 <div class="auth-page">
     <button class="auth-theme-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">

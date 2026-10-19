@@ -60,3 +60,60 @@ html.dark .auth-card .btn:focus-visible {
     }
 }
 /* ===== END UIUX run 03:10 - Agent1 FIX 5 ===== */
+
+/* UIUX run 2026-10-20 04:25 — Agent 3 Đồng bộ Lexa:
+   chuyển toàn bộ <style> nhúng trong DangNhap.razor sang scoped CSS
+   (quy ước dự án: style của component nằm trong file .razor.css riêng;
+   nội dung giữ nguyên 100%, Blazor tự gắn scope [b-xxx] khi build). */
+    .auth-page {
+        min-height: 100vh; width: 100%;
+        background: #f8f8fb;
+        display: flex; align-items: center; justify-content: center;
+        padding: 40px 20px; margin: 0; box-sizing: border-box;
+    }
+    html.dark .auth-page { background: #1a1a2e; }
+    .auth-card {
+        background: #fff; border-radius: 8px;
+        box-shadow: 0 2px 20px rgba(0,0,0,.08);
+        padding: 40px 35px; width: 100%;
+    }
+    html.dark .auth-card { background: #262640; box-shadow: 0 2px 20px rgba(0,0,0,.4); }
+    html.dark .auth-card label { color: #f0eef5 !important; }
+    html.dark .auth-card h4 { color: #f0eef5 !important; }
+    html.dark .auth-card .auth-sub { color: #a5a2bd !important; }
+    html.dark .auth-card .text-muted { color: #a5a2bd !important; }
+    html.dark .auth-card .form-control {
+        background: #1e1e36; border-color: #4a4a6e; color: #f0eef5;
+    }
+    html.dark .auth-card .form-control::placeholder { color: #8a87a3; }
+    .auth-tab {
+        flex: 1; text-align: center; padding: 10px;
+        min-height: 48px; /* a11y (người cao tuổi): mục tiêu chạm ≥48px */
+        font-weight: 600; font-size: 15px; color: #6c757d;
+        background: transparent; border: none; border-bottom: 2px solid #e9ecef;
+        cursor: pointer;
+    }
+    .auth-tab.active { color: #7a6fbe; border-bottom-color: #7a6fbe; }
+    html.dark .auth-tab { color: #a5a2bd; border-bottom-color: #3a3a58; }
+    html.dark .auth-tab.active { color: #fff; border-bottom-color: #7a6fbe; }
+    .auth-theme-btn {
+        position: fixed; top: 16px; right: 16px; z-index: 1000;
+        width: 40px; height: 40px; border-radius: 50%;
+        border: 1px solid #e0e0e0; background: #fff; cursor: pointer; font-size: 18px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    }
+    html.dark .auth-theme-btn { background: #262640; border-color: #3a3a58; }
+    /* UIUX-1019 A3: gom style inline vào class (đồng bộ Lexa, dễ maintain) */
+    .auth-wrap { width: 100%; max-width: 440px; }
+    .auth-brand { text-align: center; margin-bottom: 20px; }
+    .auth-brand-emoji { font-size: 36px; }
+    .auth-brand-name { font-size: 26px; font-weight: 600; margin-left: 8px; vertical-align: middle; }
+    .auth-title { text-align: center; color: #1a1a2e; font-weight: 600; font-size: 22px; margin-bottom: 5px; }
+    .auth-sub { text-align: center; color: #5a6c7d; font-size: 14px; margin-bottom: 25px; }
+    .auth-tabs { display: flex; margin-bottom: 25px; }
+    .auth-label { color: #1a1a2e; font-weight: 600; font-size: 14px; }
+    .auth-btn { background: #7a6fbe; border-color: #7a6fbe; padding: 10px; }
+    .auth-link { color: #7a6fbe; }
+    /* a11y (WCAG 1.4.3): #7a6fbe trên nền card tối #262640 chỉ ~3:1 → #a49de0 (~5.6:1) */
+    html.dark .auth-card .auth-link { color: #a49de0; }
+    html.dark .auth-brand-name { color: #f0eef5; }

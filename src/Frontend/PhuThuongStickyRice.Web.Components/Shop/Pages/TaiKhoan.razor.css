@@ -135,3 +135,46 @@ html.dark .tk-addr-panel {
     }
 }
 /* ===== END UIUX run 03:10 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 04:15 — Agent1 Mobile =====
+   FIX 1 — Thẻ "⭐ Hạng thành viên" (TaiKhoan.razor:66-84): 3 nhãn
+   "Điểm tích lũy / Tổng đã mua / Tổng điểm đã kiếm" ở <small> ~12.8px và
+   dòng giải thích "Hạng Bạc: từ 1.000.000₫ (giảm 2%) • Hạng Vàng..."
+   cũng ~12.8px — thông tin tiền/điểm/quyền lợi quan trọng với khách lớn
+   tuổi. Mobile: nâng lên 13px. Thêm word-break cho số liệu .h5 (vd
+   "125.000.000 ₫" dài hơn ~98px của col-4 ở màn 320px → tràn/đè chữ).
+   FIX 2 — Ghi chú "Ngày sinh chỉ được thay đổi 1 lần mỗi năm"
+   (TaiKhoan.razor:194): small ~12.8px — quy tắc BẮT BUỘC đọc trước khi
+   bấm "Lưu ngày sinh" (lưu xong không sửa được trong 1 năm). Nâng lên
+   13px trên mobile. (Selector .form-row chỉ khớp card sinh nhật — panel
+   địa chỉ dùng .form-row nhưng không có small.)
+   FIX 3 — Ngày đặt đơn trong lịch sử đơn (TaiKhoan.razor:112): small
+   ~12.8px — người lớn tuổi cần ngày giờ để phân biệt các đơn. Nâng lên
+   13px, cùng block wrap đã có từ run 17:36.
+   FIX 4 — Checkbox "Đặt làm mặc định" trong panel thêm/sửa địa chỉ
+   (TaiKhoan.razor, .tk-addr-panel): checkbox mặc định ~16px — các
+   checkbox/radio khác trên web (checkout "Nhớ tôi", form-check) đã lên
+   20px. Đồng bộ: 20px trên mobile, dễ bấm với người lớn tuổi. */
+@media (max-width: 767.98px) {
+    .tk-page .row.text-center .col-4 small {
+        font-size: 13px;
+    }
+    .tk-page .row.text-center + small.text-muted {
+        font-size: 13px;
+        line-height: 1.55;
+    }
+    .tk-page .row.text-center .col-4 .h5 {
+        word-break: break-word; /* số tiền lớn không tràn cột ở màn 320px */
+    }
+    .tk-page .form-row .form-group > small.text-muted {
+        font-size: 13px;
+    }
+    .tk-page .card-body > .border.rounded.p-3.mb-2 > .d-flex.justify-content-between.align-items-center > .text-right small {
+        font-size: 13px;
+    }
+    .tk-addr-panel .form-check-input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+    }
+}
+/* ===== END UIUX run 04:15 - Agent1 FIX 1-4 ===== */

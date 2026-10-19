@@ -76,10 +76,10 @@ else
                     <tfoot>
                         <tr class="lx-total-row">
                             <th scope="row">Tổng cộng</th>
-                            <th class="text-right">@_reconciliation.TotalOrderCount</th>
-                            <th class="text-right">@FormatPrice(_reconciliation.TotalRevenue)</th>
-                            <th class="text-right">@FormatPrice(_reconciliation.TotalPaidAmount)</th>
-                            <th class="text-right">@FormatPrice(_reconciliation.TotalUnpaidAmount)</th>
+                            <th scope="row" class="text-right">@_reconciliation.TotalOrderCount</th>
+                            <th scope="row" class="text-right">@FormatPrice(_reconciliation.TotalRevenue)</th>
+                            <th scope="row" class="text-right">@FormatPrice(_reconciliation.TotalPaidAmount)</th>
+                            <th scope="row" class="text-right">@FormatPrice(_reconciliation.TotalUnpaidAmount)</th>
                         </tr>
                     </tfoot>
                 </table>

@@ -16,9 +16,13 @@
     border-radius: 50%;
     flex-shrink: 0;
 }
+/* UIUX run 2026-10-20 04:25 — Agent 3 Đồng bộ Lexa:
+   banner "quán đang mở" dùng nền/chữ xanh lá #e8f9f0/#1a7a4a lệch palette —
+   đồng nhất với tint success Lexa chuẩn (.alert-success: #d3f1e2/#1e7a52,
+   đã chuẩn hóa ở uiux-agent3-lexa.css). */
 .shop-status-banner.open {
-    background: #e8f9f0;
-    color: #1a7a4a;
+    background: #d3f1e2;
+    color: #1e7a52;
 }
 .shop-status-banner.open .dot {
     background: #34c38f;

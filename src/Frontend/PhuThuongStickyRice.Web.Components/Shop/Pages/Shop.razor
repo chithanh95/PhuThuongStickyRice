@@ -102,7 +102,7 @@
             <h4 class="card-title">Xôi nào hợp bạn?</h4>
             <div class="table-responsive">
                 <table class="table table-striped">
-                    <thead class="thead-dark"><tr><th>Món</th><th>Vị</th><th>Giá</th><th>Hợp với</th></tr></thead>
+                    <thead class="thead-dark"><tr><th scope="col">Món</th><th scope="col">Vị</th><th scope="col">Giá</th><th scope="col">Hợp với</th></tr></thead>
                     <tbody>
                         <tr><td><strong>Xôi gấc</strong></td><td>Ngọt nhẹ, béo</td><td>35k</td><td>Tiệc, cúng, biếu</td></tr>
                         <tr><td><strong>Xôi xéo</strong></td><td>Mặn, thơm hành</td><td>25k</td><td>Ăn sáng mỗi ngày</td></tr>
@@ -387,7 +387,7 @@ else
 
 @if (_quickView != null)
 {
-    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="qv-modal-title" @onclick="CloseQuickView">
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="qv-modal-title" @onclick="CloseQuickView" @onkeydown="QuickViewKeyDown">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable shop-quickview-dialog" role="document" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1453,6 +1453,16 @@ else
     {
         _quickView = null;
         _showShareRow = false;
+    }
+
+    /// <summary>
+    /// UIUX-1020 Agent4 (a11y): đóng quick-view khi người dùng bấm Escape —
+    /// @onkeydown đặt trên lớp phủ modal, sự kiện bàn phím bubble từ các ô nhập
+    /// bên trong lên đây (người dùng bàn phím không phải tab tới nút Đóng).
+    /// </summary>
+    private void QuickViewKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") CloseQuickView();
     }
 
     /// <summary>Item 237: hiện/ẩn hàng nút chia sẻ món.</summary>

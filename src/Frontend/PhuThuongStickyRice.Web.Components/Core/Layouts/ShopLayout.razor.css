@@ -471,6 +471,19 @@ html.dark .shp-page .btn-primary {
     outline-offset: 2px;
 }
 
+/* A11y: vòng focus rõ cho mọi control trong vùng nội dung shop (Cart/Checkout/
+   Faq/HoTro/TaiKhoan... đều chưa có rule :focus-visible riêng). :focus-visible
+   chỉ hiện khi tab bằng bàn phím, chạm/chuột trên mobile không bị ảnh hưởng. */
+.shp-page a:focus-visible,
+.shp-page button:focus-visible,
+.shp-page input:focus-visible,
+.shp-page select:focus-visible,
+.shp-page textarea:focus-visible,
+.shp-page [tabindex]:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+
 @media (max-width: 768px) {
     .shp-lang-select { padding: 6px 4px; font-size: 16px; max-width: 52px; text-align: center; }
 }
