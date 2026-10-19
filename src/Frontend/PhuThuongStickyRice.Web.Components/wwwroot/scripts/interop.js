@@ -212,6 +212,16 @@ interop.compressImage = function (file, maxDim, quality) {
  * @param {number} [quality=0.85]
  * @returns {Promise<{bytes: number[], fileName: string, contentType: string}>}
  */
+/* bug-hunt 2026-10-20 run 04:55: xóa value của input file để chọn lại đúng
+   file cũ vẫn kích hoạt sự kiện change (trình duyệt không fire change khi
+   value không đổi). Gọi sau khi upload ảnh thành công. */
+interop.resetFileInput = function (elementId) {
+    try {
+        var el = document.getElementById(elementId);
+        if (el) el.value = '';
+    } catch (e) { }
+};
+
 interop.compressImageFromInput = function (elementId, maxDim, quality) {
     return new Promise(function (resolve, reject) {
         var input = document.getElementById(elementId);

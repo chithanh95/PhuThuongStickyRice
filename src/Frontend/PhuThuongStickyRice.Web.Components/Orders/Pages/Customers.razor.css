@@ -7,3 +7,15 @@
 .ctm-gift-amount { width: 110px; }
 .ctm-tag-remove { color: #fff; line-height: 1; }
 .ctm-tag-input { width: 130px; }
+
+/* bug-hunt 2026-10-20 run 04:55 — Dark mode: vùng chi tiết khách hàng dùng
+   .bg-light (td colspan) và các thẻ thống kê/bảng dùng .bg-white của Bootstrap
+   bị nền trắng chói trên dark mode, chữ khó đọc. Ghi đè theo palette dark admin
+   (#262640 nền card, #3a3a58 viền, #f0eef5 chữ — cùng tông với html.dark .card
+   trong app.css). !important để thắng utility !important của Bootstrap. */
+html.dark .bg-light,
+html.dark .bg-white {
+    background-color: #262640 !important;
+    border-color: #3a3a58 !important;
+    color: #f0eef5;
+}

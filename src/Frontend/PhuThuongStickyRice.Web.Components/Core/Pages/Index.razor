@@ -808,41 +808,6 @@ else
     <a href="/shop" class="sg-sticky-order">Đặt xôi ngay →</a>
 </div>
 
-<!-- VIEWER 360° (item 64) -->
-@if (_view360Product != null)
-{
-    <div class="sg-modal-backdrop" @onclick="CloseProduct360View" tabindex="-1" @onkeydown="Product360KeyDown">
-        @* A11y-1458: role="dialog" để screen reader nhận diện hộp thoại *@
-        <div class="sg-modal-360" @onclick:stopPropagation role="dialog" aria-modal="true"
-             aria-label="Xem 360 độ @_view360Product.Name">
-            <button class="sg-modal-close" @onclick="CloseProduct360View" aria-label="Đóng">×</button>
-            <h3>🔄 @_view360Product.Name — xem 360°</h3>
-            @{
-                var view360ImageUrls = AllImageUrls(_view360Product.ImageUrlsJson);
-            }
-            <div class="sg-360-stage">
-                @if (view360ImageUrls.Count > 0)
-                {
-                    <img src="@view360ImageUrls[_view360Index % view360ImageUrls.Count]" alt="@_view360Product.Name" />
-                }
-                else
-                {
-                    <p class="sg-muted">Chưa có ảnh 360° — xem ảnh món ở menu nhé.</p>
-                }
-            </div>
-            @if (view360ImageUrls.Count > 1)
-            {
-                <div class="sg-360-ctrl">
-                    <button class="sg-btn sg-btn-outline" @onclick="() => Rotate360(-1)">◀ Xoay trái</button>
-                    <span>@(_view360Index % view360ImageUrls.Count + 1)/@view360ImageUrls.Count</span>
-                    <button class="sg-btn sg-btn-outline" @onclick="() => Rotate360(1)">Xoay phải ▶</button>
-                </div>
-            }
-            <p class="sg-muted sg-center">Kéo xem từng góc — ảnh thật từ quán.</p>
-        </div>
-    </div>
-}
-
 <!-- CHAT VỚI QUÁN (item 37) -->
 <button class="sg-chat-fab" @onclick="ToggleChat" aria-label="Chat với quán">💬</button>
 @if (_chatOpen)
@@ -1123,9 +1088,6 @@ else
     // 61: parse đặt hàng trong chat
     private ParseOrderResult _chatOrder;
     private string _chatPhone = "";
-    // 64: 360 viewer
-    private ShopProductModel _view360Product;
-    private int _view360Index;
     // 75, 77
     private MarketplaceLinksModel _marketLinks;
     private string _mapsUrl;
@@ -1626,24 +1588,6 @@ else
         }
         catch { }
         try { await LandingService.SendChatAsync(_chatSession, msg); } catch { }
-    }
-
-    private void CloseProduct360View() { _view360Product = null; }
-
-    /// <summary>
-    /// UIUX-1020 Agent4 (a11y): đóng modal xem 360° khi người dùng bấm Escape —
-    /// @onkeydown đặt trên lớp phủ modal, sự kiện bàn phím bubble từ các nút
-    /// bên trong lên đây (người dùng bàn phím không phải tab tới nút Đóng).
-    /// </summary>
-    private void Product360KeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Escape") CloseProduct360View();
-    }
-    private void Rotate360(int dir)
-    {
-        var imageCount = AllImageUrls(_view360Product?.ImageUrlsJson).Count;
-        if (imageCount == 0) return;
-        _view360Index = (_view360Index + dir + imageCount) % imageCount;
     }
 
 

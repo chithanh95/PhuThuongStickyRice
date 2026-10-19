@@ -124,6 +124,10 @@
             _message = "Cảm ơn bạn! Ảnh đang chờ duyệt và sẽ sớm hiện trên tường ảnh.";
             _name = null;
             _selectedFileName = null;
+            // bug-hunt 2026-10-20 run 04:55: xóa value của input file để chọn lại
+            // đúng file cũ vẫn kích hoạt sự kiện change (không thì lần upload sau
+            // với cùng 1 file sẽ không fire OnPhotoSelected).
+            await JSRuntime.InvokeVoidAsync("interop.resetFileInput", "checkin-photo-input");
         }
         catch (Exception ex)
         {
