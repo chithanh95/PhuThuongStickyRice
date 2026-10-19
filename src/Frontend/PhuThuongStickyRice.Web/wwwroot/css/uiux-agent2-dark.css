@@ -1793,3 +1793,58 @@ html.dark .lx-admin .page-item.active .page-link:hover {
 }
 
 /* ===== END UIUX 22:45 A2 ===== */
+
+/* ===== UIUX 23:05 A2 =====
+   Phương pháp: script quét property-level toàn bộ .razor.css + <style>
+   trong .razor + inline style (47 rule nền sáng, toàn bộ text-color tối),
+   đối chiếu với ~1800 dòng rule html.dark hiện có (file này + app.css +
+   admin-lexa.css + uiux-agent3-lexa + uiux-agent4-a11y), verify DOM thật
+   + đo contrast (luminance) từng ứng viên, loại false positive
+   (login-title/label/sub đã được phủ bởi element selector h4/label/p;
+   db-chart đã fix run 17:50; qv-sheet/shop-row/checkout bar đã phủ).
+   Bề mặt đã bão hòa sau ~20 đợt — còn đúng 2 lỗi THẬT mới, cùng một họ
+   bug: rule mobile của Agent 1 (run 22:25) ép màu chữ SÁNG (#495057) TRỰC
+   TIẾP lên element con bằng selector cụ thể trong @media. Declaration
+   trực tiếp luôn thắng giá trị INHERIT từ
+   `html.dark .text-muted { color:#a5a2bd !important }` (app.css:283) của
+   thẻ cha — !important của cha KHÔNG lan importance xuống giá trị kế
+   thừa. Kết quả ở dark mode mobile: chữ #495057 trên card tối #262640,
+   tương phản chỉ ~2:1 — không đọc được. */
+
+/* ---------- UIUX 23:05 A2: /track-order mobile — dòng "📅 Dự kiến giao" tàng hình ở dark ----------
+   Vấn đề: TrackOrder.razor:159 `<p class="text-muted mb-2"><small>📅 Dự kiến
+   giao: ...` (giờ hẹn giao = thông tin quan trọng nhất khi tra cứu đơn)
+   nằm trong `.card` → dark bg #262640 (app.css:240). Agent 1 run 22:25 thêm
+   rule mobile `p.text-muted.mb-2 > small { color:#495057 }`
+   (TrackOrder.razor.css:834, trong @media max-width:767.98px, scoped
+   (0,3,1)) — thắng inherit #a5a2bd !important từ cha p.text-muted.
+   Contrast #495057 trên #262640 = ~2.03:1 — khách không đọc được giờ giao.
+   Fix: #a5a2bd (đúng màu dark dự kiến của .text-muted) → ~5.9:1.
+   Specificity (0,3,1) hòa rule scoped nhưng file này load sau bundle
+   (index.html:170 > :166); +!important cho chắc. Giữ trong cùng media
+   query mobile. */
+@media (max-width: 767.98px) {
+    html.dark p.text-muted.mb-2 > small {
+        color: #a5a2bd !important; /* was #495057 — ~2.03:1 → ~5.9:1 trên card #262640 */
+    }
+}
+
+/* ---------- UIUX 23:05 A2: /checkout mobile — hướng dẫn "tự book shipper" tàng hình ở dark ----------
+   Vấn đề: Checkout.razor:347
+   `<small class="text-muted d-block mt-1">Quán chuẩn bị sẵn theo mã đơn.
+   Bạn tự đặt xe (Grab/Ahamove...) và báo tài xế đọc mã đơn để lấy...`
+   — hướng dẫn nghiệp vụ CỰC KỲ quan trọng (quán KHÔNG giao hàng), kề sau
+   `div[aria-labelledby="co-fulfillment-label"]`, nằm trong `.card` →
+   dark bg #262640. Agent 1 run 22:25 thêm rule mobile
+   `div[aria-labelledby="co-fulfillment-label"] + small { color:#495057 }`
+   (Checkout.razor.css:398, scoped (0,2,2)) — cùng cơ chế thắng inherit
+   như fix trên. Contrast ~2.03:1 — khách không đọc được hướng dẫn nhận hàng.
+   Fix: #a5a2bd → ~5.9:1. Specificity (0,2,2) hòa rule scoped, file load
+   sau nên thắng; +!important. */
+@media (max-width: 767.98px) {
+    html.dark div[aria-labelledby="co-fulfillment-label"] + small {
+        color: #a5a2bd !important; /* was #495057 — ~2.03:1 → ~5.9:1 trên card #262640 */
+    }
+}
+
+/* ===== END UIUX 23:05 A2 ===== */
