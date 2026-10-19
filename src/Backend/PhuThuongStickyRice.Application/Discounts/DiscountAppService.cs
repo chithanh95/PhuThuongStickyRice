@@ -700,7 +700,12 @@ namespace PhuThuongStickyRice.Application.Discounts
                 }
 
                 entity.IsActive = false;
-                await _discounts.UpdateAsync(entity, autoSave: true);
+                // perf-hunt 2026-10-20: autoSave: false — entity đã tracked,
+                // UoW (virtual method) commit 1 lần duy nhất cuối method thay vì
+                // N lần SaveChanges (N roundtrip + N commit) cho mỗi mã.
+                // Ngữ nghĩa không đổi: vẫn tắt đúng tập mã, vẫn invalidate
+                // cache 1 lần.
+                await _discounts.UpdateAsync(entity, autoSave: false);
                 revokedAny = true;
             }
 
