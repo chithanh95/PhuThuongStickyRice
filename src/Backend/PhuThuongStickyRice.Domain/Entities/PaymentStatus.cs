@@ -1,20 +1,20 @@
 namespace PhuThuongStickyRice.Domain.Entities
 {
     /// <summary>
-    /// Payment state of an order, independent from the fulfilment <see cref="OrderStatus"/>.
+    /// Trạng thái thanh toán của đơn, độc lập với trạng thái giao hàng <see cref="OrderStatus"/>.
     /// </summary>
     public enum PaymentStatus
     {
-        /// <summary>Not paid yet (COD awaiting delivery, or bank transfer / MoMo not started).</summary>
+        /// <summary>Chưa thanh toán (COD chờ giao, hoặc chuyển khoản/MoMo chưa bắt đầu).</summary>
         Unpaid = 0,
 
-        /// <summary>Customer says the bank transfer was sent; awaiting admin confirmation.</summary>
+        /// <summary>Khách báo đã chuyển khoản, đang chờ admin xác nhận.</summary>
         PendingConfirmation = 1,
 
-        /// <summary>Payment confirmed (admin confirmed the transfer, or MoMo reported success).</summary>
+        /// <summary>Đã thanh toán (admin xác nhận chuyển khoản, hoặc MoMo báo thành công).</summary>
         Paid = 2,
 
-        /// <summary>Payment failed (MoMo reported failure).</summary>
+        /// <summary>Thanh toán thất bại (MoMo báo lỗi).</summary>
         Failed = 3
     }
 }

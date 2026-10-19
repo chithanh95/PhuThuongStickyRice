@@ -3,9 +3,9 @@ using System;
 namespace PhuThuongStickyRice.Domain.Entities
 {
     /// <summary>
-    /// Loyalty account keyed by phone number. Tracks points earned on
-    /// completed orders, referral codes, birthday vouchers and lifetime
-    /// spend (used for membership tiers).
+    /// Tài khoản tích điểm loyalty, định danh bằng SĐT. Theo dõi điểm tích
+    /// được từ đơn hoàn thành, mã giới thiệu, voucher sinh nhật và tổng
+    /// chi tiêu trọn đời (để xếp hạng thành viên Đồng / Bạc / Vàng).
     /// </summary>
     public class LoyaltyAccount : Entity<Guid>, IAggregateRoot
     {
@@ -14,25 +14,25 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Độ dài tối đa cột mã giới thiệu trong DB.</summary>
         public const int ReferralCodeMaxLength = 20;
 
-        /// <summary>Phone number, digits only where possible. Unique.</summary>
+        /// <summary>SĐT chủ tài khoản (chỉ số), duy nhất trong hệ thống.</summary>
         public string Phone { get; set; }
 
-        /// <summary>Current redeemable point balance.</summary>
+        /// <summary>Số điểm còn dùng được (điểm khả dụng để đổi).</summary>
         public int Points { get; set; }
 
-        /// <summary>Cumulative points ever earned (for reporting).</summary>
+        /// <summary>Tổng điểm từng tích lũy được (phục vụ báo cáo).</summary>
         public long TotalEarned { get; set; }
 
         /// <summary>
-        /// Lifetime spend on completed (non-cancelled) orders, in VND.
-        /// Drives the membership tier (Đồng / Bạc / Vàng).
+        /// Tổng chi tiêu trọn đời trên các đơn đã hoàn thành (không tính
+        /// đơn hủy), VND. Là căn cứ xếp hạng thành viên (Đồng / Bạc / Vàng).
         /// </summary>
         public decimal TotalSpent { get; set; }
 
-        /// <summary>Unique referral code, e.g. "PT-AB12CD".</summary>
+        /// <summary>Mã giới thiệu duy nhất, dạng "PT-AB12CD" — khách nhập mã này khi đặt đơn đầu tiên.</summary>
         public string ReferralCode { get; set; }
 
-        /// <summary>Optional date of birth (birthday voucher worker).</summary>
+        /// <summary>Ngày sinh (không bắt buộc) — worker sinh nhật dùng để tự phát voucher.</summary>
         public DateTime? DateOfBirth { get; set; }
 
         /// <summary>Thời điểm tạo tài khoản (UTC).</summary>

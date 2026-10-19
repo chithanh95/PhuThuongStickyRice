@@ -5,14 +5,19 @@ using System;
 namespace PhuThuongStickyRice.Domain.Entities
 {
     /// <summary>
-    /// A line item inside an <see cref="Order"/>. Belongs to the Order aggregate.
+    /// Một dòng hàng trong <see cref="Order"/>. Thuộc aggregate Order —
+    /// chỉ aggregate root Order mới được tạo/sửa dòng này.
     /// </summary>
     public class OrderLine : Entity<Guid>
     {
+        /// <summary>Độ dài tối đa cột tên size trong DB.</summary>
         public const int SizeNameMaxLength = 100;
+        /// <summary>Độ dài tối đa cột tên topping (gộp bằng dấu phẩy) trong DB.</summary>
         public const int ToppingNamesMaxLength = 500;
+        /// <summary>Độ dài tối đa cột ghi chú khách trong DB.</summary>
         public const int NoteMaxLength = 500;
 
+        /// <summary>Id đơn hàng chứa dòng này.</summary>
         public Guid OrderId { get; private set; }
 
         /// <summary>
@@ -22,12 +27,16 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public Guid ProductId { get; private set; }
 
+        /// <summary>Tên sản phẩm tại thời điểm đặt (chụp lại, không lấy theo catalog sau này).</summary>
         public string ProductName { get; private set; }
 
+        /// <summary>Đơn giá một phần (đã gồm giá size/topping), dùng <see cref="Money"/> để giữ nguyên đơn vị tiền tệ.</summary>
         public Money UnitPrice { get; private set; }
 
+        /// <summary>Số lượng đặt.</summary>
         public int Quantity { get; private set; }
 
+        /// <summary>Thành tiền dòng = <see cref="UnitPrice"/> × <see cref="Quantity"/>; tự tính lại khi đổi số lượng.</summary>
         public Money LineTotal { get; private set; }
 
         /// <summary>Chosen size option name (Nhỏ / Vừa / Lớn), if any.</summary>
@@ -76,6 +85,12 @@ namespace PhuThuongStickyRice.Domain.Entities
             Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
         }
 
+        /// <summary>
+        /// Factory duy nhất để tạo dòng hàng — ép toàn bộ bất biến domain trước
+        /// khi khởi tạo: id sản phẩm khác rỗng, có tên, có đơn giá, số lượng ≥ 1,
+        /// phí topping không âm và độ dài text trong giới hạn DB. Setter private
+        /// nên code ngoài aggregate Order không thể bỏ qua kiểm tra này.
+        /// </summary>
         internal static OrderLine Create(
             Guid productId,
             string productName,

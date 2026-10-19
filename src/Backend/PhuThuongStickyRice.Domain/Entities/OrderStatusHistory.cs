@@ -12,12 +12,16 @@ namespace PhuThuongStickyRice.Domain.Entities
     {
         public const int ByUserMaxLength = 200;
 
+        /// <summary>Id đơn hàng bị đổi trạng thái.</summary>
         public Guid OrderId { get; set; }
 
+        /// <summary>Navigation tới đơn hàng.</summary>
         public Order Order { get; set; }
 
+        /// <summary>Trạng thái trước khi đổi.</summary>
         public OrderStatus FromStatus { get; set; }
 
+        /// <summary>Trạng thái sau khi đổi.</summary>
         public OrderStatus ToStatus { get; set; }
 
         /// <summary>UTC timestamp of the transition.</summary>

@@ -1,18 +1,19 @@
 namespace PhuThuongStickyRice.Domain.Entities
 {
     /// <summary>
-    /// Refund state of an order (item 130). The money movement itself is
-    /// manual (cash / bank / wallet credit); this only records the state.
+    /// Trạng thái hoàn tiền của đơn (item 130). Việc chuyển tiền thực tế
+    /// là thủ công (tiền mặt / chuyển khoản / cộng vào ví); trường này
+    /// chỉ ghi lại trạng thái để theo dõi.
     /// </summary>
     public enum RefundStatus
     {
-        /// <summary>No refund requested.</summary>
+        /// <summary>Chưa yêu cầu hoàn tiền.</summary>
         None = 0,
 
-        /// <summary>Refund requested, not yet paid out.</summary>
+        /// <summary>Đã yêu cầu hoàn, chưa thực hiện chuyển tiền.</summary>
         Requested = 1,
 
-        /// <summary>Refund paid out (recorded).</summary>
+        /// <summary>Đã hoàn tiền xong (ghi nhận).</summary>
         Refunded = 2
     }
 }

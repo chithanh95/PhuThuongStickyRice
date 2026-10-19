@@ -1,23 +1,23 @@
 namespace PhuThuongStickyRice.Domain.Entities
 {
     /// <summary>
-    /// How the customer pays for an order.
+    /// Hình thức khách trả tiền cho đơn hàng.
     /// </summary>
     public enum PaymentMethod
     {
-        /// <summary>Cash on delivery — pay when the order arrives.</summary>
+        /// <summary>COD — nhận hàng rồi trả tiền mặt.</summary>
         Cod = 0,
 
-        /// <summary>Bank transfer via VietQR — customer transfers, admin confirms.</summary>
+        /// <summary>Chuyển khoản qua VietQR — khách chuyển, admin xác nhận.</summary>
         BankTransfer = 1,
 
-        /// <summary>MoMo e-wallet (test/simulated until real merchant credentials exist).</summary>
+        /// <summary>Ví MoMo (đang chạy chế độ thử nghiệm/mô phỏng cho tới khi có merchant thật).</summary>
         MoMo = 2,
 
-        /// <summary>Customer prepaid wallet balance (item 140).</summary>
+        /// <summary>Trừ số dư ví trả trước của khách (item 140).</summary>
         Wallet = 3,
 
-        /// <summary>Pay later — customer pays on next order or via transfer (item 50). Requires >= 5 completed orders.</summary>
+        /// <summary>Nợ đơn — trả sau (item 50). Chỉ khách có ≥ 5 đơn hoàn thành mới được dùng.</summary>
         PayLater = 4
     }
 }
