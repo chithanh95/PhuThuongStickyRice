@@ -1037,6 +1037,48 @@ html.dark .shop-dropzone:focus-within {
 }
 /* ===== END UIUX run 03:50 - Agent1 FIX 1 ===== */
 
+/* ===== UIUX run 04:55 — Agent1 Mobile =====
+   FIX 1 — Hàng phí trong "Tóm tắt đơn hàng" (.to-fee-row, TrackOrder.razor:
+   301-332): flex 2 cột nhưng span nhãn không có min-width:0 (flex item mặc
+   định min-width:auto → không co được) và span giá tiền không giữ nguyên
+   độ rộng. Tên khuyến mãi dài (vd "🏷 Khuyến mãi giờ vàng (MUA 2 TẶNG 1
+   NGÀY THỨ 7)") đẩy số tiền bị cắt mất bên phải ở màn 320px — khách không
+   thấy số tiền giảm, trong khi đây là thông tin TIỀN. Mobile: cho nhãn co
+   lại (xuống dòng), giá tiền giữ nguyên không bị ép, thêm gap cho thoáng.
+   (Verify: .to-fee-row chỉ dùng trong tóm tắt đơn trang này — grep toàn
+   bộ css chỉ có 1 definition; .to-item-row/.to-total-row đã có min-width:0
+   nên không chạm. PC giữ nguyên.) */
+@media (max-width: 767.98px) {
+    .to-fee-row {
+        gap: 10px;
+    }
+    .to-fee-row > span:first-child {
+        min-width: 0;
+    }
+    .to-fee-row > span:last-child {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+}
+/* ===== END UIUX run 04:55 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 04:55 — Agent1 Mobile =====
+   FIX 2 — Hàng thông tin đơn (.to-info-row, TrackOrder.razor:342-361):
+   .to-info-label flex-shrink:0 (đúng) nhưng .to-info-value không có
+   min-width:0 → "Ghi chú"/địa chỉ khách nhập dài đẩy tràn, bị
+   .shp-page{overflow-x:clip} cắt mất ở màn 320px — khách không đọc được
+   ghi chú/địa chỉ của chính mình. Mobile: value co được + tự ngắt chữ
+   (overflow-wrap) cho cả chuỗi dài không dấu cách.
+   (Verify: .to-info-value chỉ dùng trong card "Thông tin đơn hàng" trang
+   này — PC giữ nguyên.) */
+@media (max-width: 767.98px) {
+    .to-info-value {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+}
+/* ===== END UIUX run 04:55 - Agent1 FIX 2 ===== */
+
 /* ===== UIUX run 04:35 (job uiux-team-2days) — Agent2 Dark mode =====
    FIX 5 — Nút "Xóa" địa chỉ đã lưu (.btn-link.text-danger, TrackOrder.razor:241):
    #dc3545 trên card tối chỉ 3.24:1 (dưới chuẩn 4.5:1) — nút xóa (hành động

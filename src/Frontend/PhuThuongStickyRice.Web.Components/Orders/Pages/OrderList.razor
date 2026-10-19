@@ -294,7 +294,8 @@ else
                                                 <div class="col-md-4">
                                                     <select class="form-control form-control-sm"
                                                             value="@(order.ShipperId?.ToString() ?? "")"
-                                                            @onchange="(e) => AssignShipper(order, e.Value?.ToString())">
+                                                            @onchange="(e) => AssignShipper(order, e.Value?.ToString())"
+                                                            aria-label="Gán shipper cho đơn hàng @order.OrderNumber">
                                                         <option value="">— Gán shipper —</option>
                                                         @foreach (var s in _shippers)
                                                         {
