@@ -1426,12 +1426,12 @@ else
     {
         if (OrdersPaused)
         {
-            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.");
+            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.", kind: ToastKind.Warning);
             return;
         }
         if (IsSoldOut(product))
         {
-            Toasts.Show($"'{product?.Name}' tạm hết, vui lòng chọn món khác.");
+            Toasts.Show($"'{product?.Name}' tạm hết, vui lòng chọn món khác.", kind: ToastKind.Warning);
             return;
         }
         // bug-hunt 2026-10-19: guard phòng thủ như /shop — món vừa hết suất
@@ -1439,12 +1439,12 @@ else
         // event cũ vẫn có thể lọt).
         if (!IsInSaleHours(product))
         {
-            Toasts.Show($"'{product?.Name}' chưa tới giờ bán, bạn quay lại sau nhé.");
+            Toasts.Show($"'{product?.Name}' chưa tới giờ bán, bạn quay lại sau nhé.", kind: ToastKind.Warning);
             return;
         }
         if (IsDailyLimitReached(product))
         {
-            Toasts.Show($"'{product?.Name}' đã hết suất hôm nay, vui lòng quay lại ngày mai.");
+            Toasts.Show($"'{product?.Name}' đã hết suất hôm nay, vui lòng quay lại ngày mai.", kind: ToastKind.Warning);
             return;
         }
         CartState.Add(product, 1);
@@ -1477,7 +1477,7 @@ else
     {
         if (OrdersPaused)
         {
-            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.");
+            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.", kind: ToastKind.Warning);
             return;
         }
         CartState.AddCombo(combo);
@@ -1490,7 +1490,7 @@ else
         // suất/giờ bán sau khi popup đã mở thì từ chối thay vì cho vào giỏ.
         if (!CanOrder(product))
         {
-            Toasts.Show("Món này vừa hết suất hoặc chưa tới giờ bán, bạn chọn món khác nhé.");
+            Toasts.Show("Món này vừa hết suất hoặc chưa tới giờ bán, bạn chọn món khác nhé.", kind: ToastKind.Warning);
             return;
         }
         CartState.Add(product, 1);
@@ -1577,7 +1577,7 @@ else
     private async Task EnrollCourse(Guid id)
     {
         var digits = NormalizePhoneDigits(_coursePhone);
-        if (digits.Length < MinPhoneDigits) { Toasts.Show("Nhập SĐT để đăng ký khóa học."); return; }
+        if (digits.Length < MinPhoneDigits) { Toasts.Show("Nhập SĐT để đăng ký khóa học.", kind: ToastKind.Warning); return; }
         try
         {
             if (await LandingService.EnrollCourseAsync(id, digits))
@@ -1648,7 +1648,7 @@ else
     {
         if (_chatOrder?.Items == null || _chatOrder.Items.Count == 0) return;
         var digits = NormalizePhoneDigits(_chatPhone);
-        if (digits.Length < MinPhoneDigits) { Toasts.Show("Nhập SĐT để đặt hàng."); return; }
+        if (digits.Length < MinPhoneDigits) { Toasts.Show("Nhập SĐT để đặt hàng.", kind: ToastKind.Warning); return; }
         // bug-hunt 2026-10-20: đường chat-order từng bypass guard CanOrder —
         // món "Hết suất hôm nay"/ngoài giờ bán vẫn lọt thẳng vào giỏ rồi sang
         // checkout (AddToCart/AddUpsell đã guard từ fix 2026-10-19).
@@ -1664,12 +1664,12 @@ else
         }
         if (added == 0)
         {
-            Toasts.Show("Các món trong đơn chat hiện không đặt được (hết suất hoặc chưa tới giờ bán).");
+            Toasts.Show("Các món trong đơn chat hiện không đặt được (hết suất hoặc chưa tới giờ bán).", kind: ToastKind.Warning);
             return;
         }
         try { JSRuntime.InvokeVoidAsync("localStorage.setItem", "pt-checkout-phone", digits); } catch { }
         _chatOrder = null;
-        if (skipped > 0) Toasts.Show("Một số món đã hết suất hoặc chưa tới giờ bán nên không thêm vào giỏ.");
+        if (skipped > 0) Toasts.Show("Một số món đã hết suất hoặc chưa tới giờ bán nên không thêm vào giỏ.", kind: ToastKind.Warning);
         Navigation.NavigateTo("/checkout");
     }
 

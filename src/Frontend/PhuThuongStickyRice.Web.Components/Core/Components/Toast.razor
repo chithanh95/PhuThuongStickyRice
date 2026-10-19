@@ -3,11 +3,16 @@
 @implements IDisposable
 
 <div class="toast-container" aria-live="polite">
+    @* UIUX-1020 Agent4 (a11y): toast trước đây luôn hiện icon check xanh lá
+       dù tin nhắn là cảnh báo ("tạm ngưng nhận đơn", "tạm hết món") — người dùng
+       nhìn icon tưởng thành công. Giờ icon theo loại toast; Warning dùng
+       role="alert" để trình đọc màn hình thông báo ngay thay vì chờ lượt đọc. *@
     @foreach (var toast in _toasts)
     {
-        <div class="toast show mb-2" @key="toast.Id" role="status">
+        <div class="toast show mb-2 toast-@toast.Kind.ToString().ToLower()" @key="toast.Id"
+             role="@(toast.Kind == ToastKind.Warning ? "alert" : "status")">
             <div class="d-flex align-items-center">
-                <i class="fa-solid fa-circle-check mr-2" aria-hidden="true"></i>
+                <i class="fa-solid @ToastIconClass(toast.Kind) mr-2" aria-hidden="true"></i>
                 <div class="mr-3">
                     @toast.Message
                     @if (!string.IsNullOrWhiteSpace(toast.LinkText) && !string.IsNullOrWhiteSpace(toast.LinkUrl))
@@ -52,6 +57,16 @@
         if (_disposed) return;
         Dismiss(id);
     }
+
+    /// <summary>Icon theo loại toast — phân biệt bằng HÌNH DẠNG icon (không chỉ
+    /// màu sắc) để người mù màu vẫn nhận biết: check = thành công, tam giác
+    /// cảnh báo = lỗi/cảnh báo nghiệp vụ, chữ "i" = thông tin.</summary>
+    private static string ToastIconClass(ToastKind kind) => kind switch
+    {
+        ToastKind.Warning => "fa-triangle-exclamation",
+        ToastKind.Info => "fa-circle-info",
+        _ => "fa-circle-check",
+    };
 
     private void Dismiss(Guid id)
     {

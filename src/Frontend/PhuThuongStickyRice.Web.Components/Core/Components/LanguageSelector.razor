@@ -7,13 +7,14 @@
     @* UIUX-1019 Agent4 (a11y): ảnh cờ chỉ mang tính trang trí — nút đã có
        aria-label, menu item đã có text tên ngôn ngữ, nên alt="" để trình đọc
        màn hình không đọc trùng ("Language / Ngôn ngữ, vi"). *@
-    <button type="button" class="lang-btn" @onclick="ToggleOpen" aria-label="Language / Ngôn ngữ" aria-haspopup="true" aria-expanded="@_open">
+    <button type="button" class="lang-btn" @ref="_toggleButton" @onclick="ToggleOpen" aria-label="Language / Ngôn ngữ"
+            aria-haspopup="menu" aria-expanded="@_open" @onkeydown="HandleToggleKeyDown">
         <img src="@FlagUrl(AppI18n.CurrentLanguage)" alt="" class="lang-flag" aria-hidden="true" />
         <span class="lang-caret">▾</span>
     </button>
     @if (_open)
     {
-        <div class="lang-menu" role="menu">
+        <div class="lang-menu" role="menu" @onkeydown="HandleMenuKeyDown">
             @foreach (var lang in Langs)
             {
                 <button type="button" class="lang-item @(AppI18n.CurrentLanguage == lang.Code ? "active" : "")"
@@ -48,6 +49,35 @@
     }
 
     private void ToggleOpen() => _open = !_open;
+
+    // UIUX-1020 Agent4 (a11y): role="menu" ngụ ý hành vi menu của ARIA APG —
+    // người dùng bàn phím phải thoát được bằng Escape. Trước đây menu mở là
+    // không có cách nào đóng bằng bàn phím (phải Tab ra ngoài từng item hoặc
+    // click chuột). Escape đóng menu + trả focus về nút bật/tắt để vị trí đọc
+    // không bị "lạc" giữa trang.
+    private ElementReference _toggleButton;
+
+    private async Task HandleMenuKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            _open = false;
+            await _toggleButton.FocusAsync();
+        }
+    }
+
+    // Escape khi focus đang ở nút toggle cũng đóng menu (nếu đang mở) — đối
+    // xứng với hành vi trong menu, tránh trường hợp mở menu rồi Shift+Tab quay
+    // lại nút mà không đóng được.
+    private Task HandleToggleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && _open)
+        {
+            _open = false;
+            StateHasChanged();
+        }
+        return Task.CompletedTask;
+    }
 
     private async Task SelectLang(string code)
     {

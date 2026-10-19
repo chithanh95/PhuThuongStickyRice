@@ -461,3 +461,80 @@ html.dark .co-mobile-bar .co-total small {
     }
 }
 /* ===== END UIUX run 00:10 - Agent1 FIX 5 ===== */
+
+/* ===== UIUX run 00:47 — Agent1 Mobile =====
+   FIX 1 — Lỗi validation form (Tên/SĐT/Email/Người nhận/MST/Tên công ty:
+   Checkout.razor:404/419/445/480/491/513/524, small.text-danger ~12.8px)
+   + kết quả áp mã giảm giá (:710, small.text-success/text-danger, liên
+   quan TIỀN) + trạng thái "⏳ Đang tìm thông tin đơn cũ" (:415): đều là
+   con trực tiếp của .form-group — thông tin khách BẮT BUỘC đọc được để
+   sửa form/áp mã, người lớn tuổi khó đọc ở 12.8px. Nâng lên 14px mobile.
+   (Các small trong label — "(tùy chọn)", "(lưu trên máy này)" — không phải
+   con trực tiếp nên giữ nguyên; PC không đổi.) */
+@media (max-width: 767.98px) {
+    .form-group > small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 00:47 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 00:47 — Agent1 Mobile =====
+   FIX 2 — 2 alert giải thích hình thức nhận hàng (Checkout.razor:450-457,
+   .alert.alert-info > small ~12.8px): "Bạn tự book shipper... miễn phí
+   ship" / "Bạn sẽ tự đến lấy tại quán" — quán KHÔNG giao hàng nên đây là
+   thông tin nghiệp vụ cốt lõi, khách phải đọc trước khi đặt. Nâng lên
+   14px, giãn dòng 1.55 trên mobile.
+   (Verify: .alert.alert-info > small chỉ khớp đúng 2 alert này — các
+   alert-info khác (:205/:268/:310) không có small con trực tiếp.) */
+@media (max-width: 767.98px) {
+    .alert.alert-info > small {
+        font-size: 14px;
+        line-height: 1.55;
+    }
+}
+/* ===== END UIUX run 00:47 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 02:15 — Agent1 Mobile =====
+   FIX 3 — Màn hình xác nhận sau khi đặt đơn (Checkout.razor): thông tin
+   "Hóa đơn VAT: Tên công ty + MST" (:110), "Người nhận: tên + SĐT" (:117)
+   và hướng dẫn "shipper đến đọc mã đơn ... để lấy" (:134) đều ở <small>
+   ~12.8px — khách CẦN đọc kỹ để kiểm tra đơn vừa đặt đúng hay sai, nhưng
+   chữ quá nhỏ với người lớn tuổi. Nâng lên 14px trên mobile.
+   (Verify: .alert.alert-success td small chỉ khớp đúng 3 chỗ này — các
+   alert-success khác (:53/:211/:252/:272/:284/:352) không chứa table/td.) */
+@media (max-width: 767.98px) {
+    .alert.alert-success td small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 02:15 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 02:15 — Agent1 Mobile =====
+   FIX 4 — Hướng dẫn thanh toán chuyển khoản (Checkout.razor): "Quét mã để
+   chuyển khoản nhanh" (:236) và "Sau khi bạn bấm nút này, shop sẽ xác nhận
+   và trang tra cứu đơn hàng sẽ hiện 'Đã thanh toán'" (:264) ở <small>
+   ~12.8px — liên quan TIỀN, khách phải đọc trước khi chuyển khoản để khỏi
+   chuyển nhầm/thiếu bước xác nhận. Nâng lên 14px trên mobile.
+   (Verify: p.text-muted.mt-2 > small chỉ khớp đúng 2 chỗ này trên trang.) */
+@media (max-width: 767.98px) {
+    p.text-muted.mt-2 > small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 02:15 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 02:15 — Agent1 Mobile =====
+   FIX 5 — Ghi chú luồng đặt nhanh + thông tin voucher (Checkout.razor):
+   "Thông tin bên dưới đã điền sẵn — bạn vẫn có thể sửa trước khi đặt"
+   (:59, banner đặt 1 chạm) và "HSD: ... — dùng 1 lần cho số ..." (:191,
+   mã voucher trúng vòng quay, liên quan TIỀN/quyền lợi) đều ở <small>
+   ~12.8px. Nâng lên 14px trên mobile.
+   (Verify: .alert.alert-success small.d-block.text-muted chỉ khớp 2 chỗ
+   này — các small.d-block.text-muted khác (:348/:415/:681) nằm ngoài
+   alert-success và đã 14px từ các fix trước nên không bị ảnh hưởng.) */
+@media (max-width: 767.98px) {
+    .alert.alert-success small.d-block.text-muted {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 02:15 - Agent1 FIX 5 ===== */

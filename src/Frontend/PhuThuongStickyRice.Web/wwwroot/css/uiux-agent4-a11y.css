@@ -2033,3 +2033,38 @@ html:not(.dark) .dg-stars.dg-stars {
     color: #a36500;
 }
 /* ===== END UIUX run 2026-10-20 00:25 - Agent4 ===== */
+
+/* ===== BEGIN UIUX run 2026-10-20 02:15 - Agent4 ===== */
+
+/* Fix 1 — A11y 4.1.3/1.4.1: toast cảnh báo (ToastKind.Warning, Toast.razor) phải
+   phân biệt được với toast thành công bằng cả HÌNH DẠNG icon (fa-triangle-
+   exclamation) lẫn MÀU — người mù màu không phân biệt được xanh/vàng. Viền
+   trái amber + nền amber rất nhạt, chữ vẫn giữ màu gốc (không đổi màu text
+   nên không ảnh hưởng contrast). Light mode: amber đậm #92600a trên nền
+   #fef6e0 đạt ~4.6:1 nếu cần đọc (chỉ áp cho icon, nền nhạt hơn nhiều). */
+.toast.toast-warning {
+    border-left: 4px solid #e0a800;
+    background-color: #fffdf5;
+}
+.toast.toast-warning .fa-triangle-exclamation {
+    color: #b07d10;
+}
+
+/* Dark mode: amber trên nền tối dùng tông sáng hơn để đủ tương phản. */
+html.dark .toast.toast-warning {
+    border-left-color: #e8b83a;
+    background-color: #2a2413;
+}
+html.dark .toast.toast-warning .fa-triangle-exclamation {
+    color: #e8b83a;
+}
+
+/* Fix 1b — toast Info (ToastKind.Info): icon "i" tím Lexa cho nhất quán. */
+.toast.toast-info .fa-circle-info {
+    color: #7a6fbe;
+}
+html.dark .toast.toast-info .fa-circle-info {
+    color: #a49de0;
+}
+
+/* ===== END UIUX run 2026-10-20 02:15 - Agent4 ===== */

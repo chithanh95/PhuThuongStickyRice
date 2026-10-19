@@ -8,33 +8,43 @@
 
 @if (!string.IsNullOrEmpty(_error))
 {
-    <div class="alert alert-danger">@_error</div>
+    <div class="alert alert-danger" role="alert">@_error</div>
 }
 
 <div class="card dm-form-card">
     <div class="card-body">
         <div class="form-group">
             <label for="cp-current">Mật khẩu hiện tại</label>
-            <input id="cp-current" type="password" class="form-control" @bind="_currentPassword" autocomplete="current-password" />
+            @* UIUX-1020 Agent4 (a11y): liên kết lỗi với ô nhập bằng aria-invalid +
+               aria-describedby và role="alert" trên text lỗi — trình đọc màn hình
+               đọc được lỗi ngay khi validate thất bại (đồng bộ pattern
+               NhuongQuyen/CungGio/DatCung, trước đây chỉ hiện chữ đỏ không báo). *@
+            <input id="cp-current" type="password" class="form-control" @bind="_currentPassword" autocomplete="current-password"
+                   aria-invalid="@(!string.IsNullOrEmpty(_currentError) ? "true" : null)"
+                   aria-describedby="@(!string.IsNullOrEmpty(_currentError) ? "cp-current-error" : null)" />
             @if (!string.IsNullOrEmpty(_currentError))
             {
-                <small class="text-danger">@_currentError</small>
+                <small class="text-danger" id="cp-current-error" role="alert">@_currentError</small>
             }
         </div>
         <div class="form-group">
             <label for="cp-new">Mật khẩu mới</label>
-            <input id="cp-new" type="password" class="form-control" @bind="_newPassword" autocomplete="new-password" />
+            <input id="cp-new" type="password" class="form-control" @bind="_newPassword" autocomplete="new-password"
+                   aria-invalid="@(!string.IsNullOrEmpty(_newError) ? "true" : null)"
+                   aria-describedby="@(!string.IsNullOrEmpty(_newError) ? "cp-new-error" : null)" />
             @if (!string.IsNullOrEmpty(_newError))
             {
-                <small class="text-danger">@_newError</small>
+                <small class="text-danger" id="cp-new-error" role="alert">@_newError</small>
             }
         </div>
         <div class="form-group">
             <label for="cp-confirm">Nhập lại mật khẩu mới</label>
-            <input id="cp-confirm" type="password" class="form-control" @bind="_confirmPassword" autocomplete="new-password" />
+            <input id="cp-confirm" type="password" class="form-control" @bind="_confirmPassword" autocomplete="new-password"
+                   aria-invalid="@(!string.IsNullOrEmpty(_confirmError) ? "true" : null)"
+                   aria-describedby="@(!string.IsNullOrEmpty(_confirmError) ? "cp-confirm-error" : null)" />
             @if (!string.IsNullOrEmpty(_confirmError))
             {
-                <small class="text-danger">@_confirmError</small>
+                <small class="text-danger" id="cp-confirm-error" role="alert">@_confirmError</small>
             }
         </div>
         <button class="btn btn-primary" @onclick="ChangeAsync" disabled="@_saving">

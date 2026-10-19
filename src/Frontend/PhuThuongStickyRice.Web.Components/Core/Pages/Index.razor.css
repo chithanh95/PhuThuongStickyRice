@@ -2265,3 +2265,46 @@ html.dark .sg-blog-date {
     color: #b3a48a;
 }
 /* ===== END UIUX-1538 A4 ===== */
+
+/* ===== UIUX run 2026-10-20 02:12 — Agent 2 Dark mode: 3 lỗi chữ nâu đậm
+   tàng hình trên nền tối của landing (đều dùng màu cứng, không theo
+   biến --sg-ink/--sg-muted nên không tự đổi khi html.dark set
+   --sg-bg:#1c1712 / --sg-surface:#262019 / --sg-cream:#2a231b).
+   Quy ước màu dark: accent vàng #e8a013 (đã dùng cho .sg-review-stars,
+   .sg-video-sec .sg-eyebrow), chữ phụ #b3a48a (= --sg-muted khi dark).
+   Specificity html.dark .x (0,2,1) thắng rule light .x (0,1,1); scoped
+   [b-xxx] được Blazor gắn đều cả 2 vế nên so sánh giữ nguyên. */
+
+/* FIX 1 — Nút lọc giá "Tất cả / Dưới 30k / ..." (Index.razor:407):
+   .sg-price-filter button { color:#5a4a3a } trên nền var(--sg-surface)
+   → dark #262019 chỉ đạt 1.90:1 (gần như không đọc được). Chữ sáng
+   #d8c8a8 (tông kem đã dùng cho .sg-qbadge dark) → 9.78:1.
+   Trạng thái .active (nền #6F0707, chữ #fff) đọc tốt cả 2 mode, giữ nguyên. */
+html.dark .sg-price-filter button {
+    color: #d8c8a8; /* was #5a4a3a — 1.90:1 → 9.78:1 trên #262019 */
+}
+
+/* FIX 2 — Dải số liệu trust-bar "1.234 đơn đã giao / 4.9/5 điểm đánh giá"
+   (Index.razor:178-183): .sg-stat strong #6F0707 trên var(--sg-cream)
+   → dark #2a231b chỉ 1.26:1 (tàng hình); .sg-stat span #8a7a68 chỉ 3.74:1
+   (dưới chuẩn chữ nhỏ 4.5:1). Số liệu → vàng gold #e8a013 (7:1),
+   nhãn → #b3a48a (6.34:1). */
+html.dark .sg-stat strong {
+    color: #e8a013; /* was #6F0707 — 1.26:1 → 6.99:1 trên #2a231b */
+}
+html.dark .sg-stat span {
+    color: #b3a48a; /* was #8a7a68 — 3.74:1 → 6.34:1 trên #2a231b */
+}
+
+/* FIX 3 — Timeline "Hơn 100 năm giữ lửa" (Index.razor:283-300):
+   .sg-tl-card strong #6F0707 + .sg-tl-card p #5a4a3a trên
+   var(--sg-surface) → dark #262019 chỉ 1.31:1 / 1.90:1 (cả tiêu đề
+   mốc thời gian lẫn mô tả đều chìm). Tiêu đề → vàng gold #e8a013,
+   mô tả → #b3a48a. */
+html.dark .sg-tl-card strong {
+    color: #e8a013; /* was #6F0707 — 1.31:1 → 7.27:1 trên #262019 */
+}
+html.dark .sg-tl-card p {
+    color: #b3a48a; /* was #5a4a3a — 1.90:1 → 6.60:1 trên #262019 */
+}
+/* ===== END UIUX run 2026-10-20 02:12 - Agent2 ===== */

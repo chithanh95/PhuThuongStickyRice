@@ -898,6 +898,58 @@ html.dark .shop-dropzone:focus-within {
 }
 /* ===== END UIUX run 00:10 - Agent1 FIX 3 ===== */
 
+/* ===== UIUX run 00:47 — Agent1 Mobile =====
+   FIX 3 — Thông báo phản hồi thao tác (TrackOrder.razor): lỗi "Đặt lại"
+   đơn (:169, small.text-danger), kết quả lưu ngày sinh (:213,
+   small.text-danger/text-success), kết quả lưu sổ địa chỉ (:260,
+   small.text-success) — đều ~12.8px, khách không đọc được mình vừa làm
+   đúng hay sai. Nâng lên 14px trên mobile.
+   (Verify: .card-body small.text-danger/text-success chỉ khớp 3 chỗ này —
+   "Đánh giá 5 sao được thưởng +20 điểm" nằm ở card-header, không bị chạm.) */
+@media (max-width: 767.98px) {
+    .card-body small.text-danger,
+    .card-body small.text-success {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 00:47 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 00:47 — Agent1 Mobile =====
+   FIX 4 — Sổ địa chỉ (TrackOrder.razor:226-240): tiêu đề "📒 Sổ địa chỉ",
+   "Chưa có địa chỉ nào được lưu" và từng dòng địa chỉ đã lưu đều ~12.8px —
+   đây là địa chỉ của chính khách, cần đọc rõ để kiểm tra trước khi đặt.
+   Nâng lên 14px trên mobile.
+   (Verify: .card-body > small và .card-body > .d-flex.border-bottom > small
+   chỉ khớp card sổ địa chỉ — .d-flex.border-bottom duy nhất ở :239.) */
+@media (max-width: 767.98px) {
+    .card-body > small,
+    .card-body > .d-flex.border-bottom > small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 00:47 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 00:47 — Agent1 Mobile =====
+   FIX 5 — Chữ nhỏ còn sót trên trang tra cứu (đều ~12.8px, nâng lên 14px):
+   - "Lý do hủy: ..." (TrackOrder.razor:126, p.text-muted.small)
+   - "(0 = bỏ món)" trong header card sửa số lượng (:479, .card-header small)
+   - "⭐ Đánh giá 5 sao được thưởng +20 điểm!" (:519, .card-header small —
+     thông tin thưởng điểm, khách cần thấy rõ)
+   - "📞 Đơn đã được shop xác nhận..." (:510, .alert.alert-info > small —
+     hướng dẫn khi đơn đã xác nhận, chỉ còn cách gọi hotline)
+   - "Đánh giá của bạn giúp Xôi Phú Thượng phục vụ tốt hơn."
+     (:756, p.text-muted.small trong popup khảo sát)
+   (Verify: p.small chỉ khớp 2 chỗ trên; .card-header small chỉ 2 chỗ trên;
+   .alert.alert-info > small chỉ khớp :510.) */
+@media (max-width: 767.98px) {
+    p.small,
+    .card-header small,
+    .alert.alert-info > small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 00:47 - Agent1 FIX 5 ===== */
+
 /* ===== UIUX run 01:52 — Agent1 Mobile =====
    FIX 2 — Form "Sửa số lượng" (TrackOrder.razor:479-487): hàng tên món
    (.col-8) + ô nhập số lượng (.col-4) chia cứng 66.7%/33.3% — ở màn 320px
@@ -919,3 +971,32 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 01:52 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 02:15 — Agent1 Mobile =====
+   FIX 1 — Chi tiết dòng món trong "Tóm tắt đơn hàng" (TrackOrder.razor:280/
+   284/288): "Size: ...", "Ăn kèm: ...", "📝 Ghi chú" ở <small> ~12.8px —
+   đây là chi tiết món khách đã chọn, cần đọc rõ khi đối chiếu đơn trước
+   khi nhận hàng, nhưng mờ với người lớn tuổi. Nâng lên 13px trên mobile,
+   đồng bộ với fix tương tự ở /cart (run 21:23 Agent1 FIX 4).
+   (Verify: .to-item-name small chỉ khớp đúng 3 dòng này — selector không
+   chạm small ở card khác vì .to-item-name chỉ tồn tại trong tóm tắt đơn.) */
+@media (max-width: 767.98px) {
+    .to-item-name small {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX run 02:15 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 02:15 — Agent1 Mobile =====
+   FIX 2 — Tên món trong form "Sửa số lượng" (TrackOrder.razor:484):
+   .col-8 > small ~12.8px — khách cần đọc tên món để sửa đúng số lượng
+   của từng món; chữ nhỏ dễ sửa nhầm món. Nâng lên 14px trên mobile.
+   (Verify: .to-selfservice .col-8 > small chỉ khớp các hàng tên món trong
+   form này — rule 01:52 FIX 2 chỉ chỉnh flex width, không chỉnh font-size;
+   input số lượng .form-control-sm đã 16px từ trước.) */
+@media (max-width: 767.98px) {
+    .to-selfservice .col-8 > small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 02:15 - Agent1 FIX 2 ===== */
