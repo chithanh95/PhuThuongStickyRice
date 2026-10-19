@@ -18,7 +18,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
     public interface ILoyaltyAppService : IApplicationService
     {
         /// <summary>Public: tóm tắt loyalty (điểm, hạng, tổng chi tiêu) theo SĐT.</summary>
-        Task<LoyaltyAccountDto> GetByPhoneAsync(string phone);
+        Task<LoyaltyAccountDto?> GetByPhoneAsync(string phone);
 
         /// <summary>Public: khách tự cập nhật ngày sinh của mình (trang tra cứu đơn "hồ sơ").</summary>
         Task<LoyaltyAccountDto> UpdateBirthdayAsync(string phone, UpdateBirthdayInput input);
@@ -41,7 +41,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>
         /// Internal: tìm tài khoản theo mã giới thiệu (không phân biệt hoa/thường).
         /// </summary>
-        Task<LoyaltyAccount> FindByReferralCodeAsync(string referralCode);
+        Task<LoyaltyAccount?> FindByReferralCodeAsync(string referralCode);
 
         /// <summary>
         /// Internal: gọi đúng 1 lần khi đơn đạt trạng thái Completed — cộng điểm,
@@ -79,7 +79,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// Chuẩn hóa SĐT về chuỗi chữ số (bỏ dấu cách, dấu chấm, +84...), yêu
         /// cầu ≥ 9 chữ số — SĐT VN đủ 9-10 số; ngắn hơn coi như nhập sai, trả null.
         /// </summary>
-        string NormalizePhone(string phone);
+        string? NormalizePhone(string phone);
 
         /// <summary>
         /// True cho SĐT placeholder kiểu "0000000000" (POS gán cho khách vãng
@@ -126,7 +126,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <param name="phone">SĐT khách hàng (chuẩn hóa digits đầu vào).</param>
         /// <returns>DTO tài khoản kèm hạng; null nếu SĐT không hợp lệ hoặc chưa có tài khoản.</returns>
         [AllowAnonymous]
-        public virtual async Task<LoyaltyAccountDto> GetByPhoneAsync(string phone)
+        public virtual async Task<LoyaltyAccountDto?> GetByPhoneAsync(string phone)
         {
             var normalized = NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
@@ -352,7 +352,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// </summary>
         /// <param name="referralCode">Mã giới thiệu cần tìm.</param>
         /// <returns>Tài khoản chủ mã; null nếu không tồn tại.</returns>
-        public virtual async Task<LoyaltyAccount> FindByReferralCodeAsync(string referralCode)
+        public virtual async Task<LoyaltyAccount?> FindByReferralCodeAsync(string referralCode)
         {
             if (string.IsNullOrWhiteSpace(referralCode))
             {
@@ -658,7 +658,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// Chuẩn hóa SĐT về chuỗi chữ số (bỏ dấu cách, dấu chấm, +84...), yêu
         /// cầu ≥ 9 chữ số — SĐT VN đủ 9-10 số; ngắn hơn coi như nhập sai, trả null.
         /// </summary>
-        public string NormalizePhone(string phone)
+        public string? NormalizePhone(string phone)
         {
             if (string.IsNullOrWhiteSpace(phone))
             {
@@ -699,7 +699,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 StringComparison.Ordinal);
         }
 
-        private async Task<LoyaltyAccount> FindByPhoneAsync(string normalizedPhone)
+        private async Task<LoyaltyAccount?> FindByPhoneAsync(string normalizedPhone)
         {
             if (string.IsNullOrEmpty(normalizedPhone))
             {

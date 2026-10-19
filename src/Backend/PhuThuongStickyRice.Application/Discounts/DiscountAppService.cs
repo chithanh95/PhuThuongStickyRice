@@ -65,7 +65,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// True when the code is a usable freeship voucher (item 120).
         /// Used by order creation to zero the delivery fee.
         /// </summary>
-        Task<bool> IsFreeshipAsync(string code, decimal subtotal, string customerPhone);
+        Task<bool> IsFreeshipAsync(string code, decimal subtotal, string? customerPhone);
         /// <summary>
         /// Order creation: returns the discount amount and bumps the usage
         /// counter. Throws DomainException when the code cannot be applied.
@@ -76,14 +76,14 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// Order creation with an owner phone (single-use spin/birthday
         /// codes are tied to a phone). Throws when the code cannot be applied.
         /// </summary>
-        Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone);
+        Task<decimal> ApplyAsync(string code, decimal subtotal, string? customerPhone);
 
         /// <summary>
         /// Validates a code and returns the discount amount WITHOUT bumping
         /// the usage counter. Call <see cref="IncrementUsageAsync"/> after the
         /// order is successfully created.
         /// </summary>
-        Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string customerPhone);
+        Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string? customerPhone);
 
         /// <summary>
         /// Gộp <see cref="ValidateAndComputeAsync"/> và <see cref="IsFreeshipAsync"/>
@@ -92,7 +92,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// DiscountCode 2 lần cho mỗi đơn. Ném DomainException khi mã không dùng được.
         /// </summary>
         Task<(decimal DiscountValue, bool IsFreeship)> ValidateAndComputeWithFreeshipAsync(
-            string code, decimal subtotal, string customerPhone);
+            string code, decimal subtotal, string? customerPhone);
 
         /// <summary>
         /// Bumps the usage counter for a code. Call after order creation succeeds.
@@ -102,7 +102,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <summary>
         /// Public: checks a code against a cart subtotal for a given phone.
         /// </summary>
-        Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string customerPhone);
+        Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string? customerPhone);
 
         /// <summary>
         /// Creates a system-generated single-use code (lucky spin, birthday
@@ -130,7 +130,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// Item 143 (Internal): code of the first usable code with the given
         /// prefix for the phone, or null when none exists.
         /// </summary>
-        Task<string> GetUsableCodeAsync(string codePrefix, string ownerPhone);
+        Task<string?> GetUsableCodeAsync(string codePrefix, string ownerPhone);
     }
 
     /// <summary>
@@ -316,7 +316,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// quay/sinh nhật chỉ chủ SĐT mới dùng được).
         /// </summary>
         [AllowAnonymous]
-        public virtual async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string customerPhone)
+        public virtual async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string? customerPhone)
         {
             var code = NormalizeCode(input.Code);
             var queryable = await _discounts.GetQueryableAsync();
@@ -339,7 +339,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// True khi mã tồn tại, là loại freeship và còn dùng được với tổng
         /// tiền + SĐT cho trước. Checkout dùng để quyết định miễn phí ship.
         /// </summary>
-        public virtual async Task<bool> IsFreeshipAsync(string code, decimal subtotal, string customerPhone)
+        public virtual async Task<bool> IsFreeshipAsync(string code, decimal subtotal, string? customerPhone)
         {
             var normalized = NormalizeCode(code);
             var queryable = await _discounts.GetQueryableAsync();
@@ -376,7 +376,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="subtotal">Tổng tiền hàng trước khi giảm.</param>
         /// <param name="customerPhone">SĐT chủ đơn (null với khách vãng lai).</param>
         /// <returns>Số tiền được giảm.</returns>
-        public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal, string customerPhone)
+        public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal, string? customerPhone)
         {
             // Validate trước rồi mới tăng lượt dùng: đơn lỗi không được đốt lượt mã.
             var amount = await ValidateAndComputeAsync(code, subtotal, customerPhone);
@@ -391,7 +391,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// lỗi (thanh toán hỏng, khách bỏ giỏ) không đốt lượt mã.
         /// Ném <see cref="Domain.Exceptions.DomainException"/> khi mã không dùng được.
         /// </summary>
-        public virtual async Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string customerPhone)
+        public virtual async Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string? customerPhone)
         {
             var normalized = NormalizeCode(code);
             var queryable = await _discounts.GetQueryableAsync();
@@ -415,7 +415,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// được; IsFreeship chỉ true khi mã hợp lệ và là loại Freeship.
         /// </summary>
         public virtual async Task<(decimal DiscountValue, bool IsFreeship)> ValidateAndComputeWithFreeshipAsync(
-            string code, decimal subtotal, string customerPhone)
+            string code, decimal subtotal, string? customerPhone)
         {
             var normalized = NormalizeCode(code);
             var queryable = await _discounts.GetQueryableAsync();
@@ -504,11 +504,12 @@ namespace PhuThuongStickyRice.Application.Discounts
 
             var prefix = codePrefix.Trim().ToUpperInvariant();
             var queryable = await _discounts.GetQueryableAsync();
-            var existing = await _asyncExecuter.FirstOrDefaultAsync(
+            // Chỉ cần biết "có tồn tại mã nào không" nên dùng AnyAsync —
+            // không materialize cả row entity vào bộ nhớ như FirstOrDefaultAsync.
+            return await _asyncExecuter.AnyAsync(
                 queryable
                     .Where(UsableCodeFilter(prefix, DateTime.UtcNow))
                     .Where(x => x.OwnerPhone == ownerPhone));
-            return existing != null;
         }
 
         /// <summary>
@@ -554,7 +555,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// Item 143: code of the first usable code with the given prefix for
         /// the phone, or null when none exists.
         /// </summary>
-        public virtual async Task<string> GetUsableCodeAsync(string codePrefix, string ownerPhone)
+        public virtual async Task<string?> GetUsableCodeAsync(string codePrefix, string ownerPhone)
         {
             if (string.IsNullOrWhiteSpace(codePrefix) || string.IsNullOrWhiteSpace(ownerPhone))
             {
@@ -616,7 +617,7 @@ namespace PhuThuongStickyRice.Application.Discounts
                     .Where(PublicActiveCodeFilter(now))
                     .OrderByDescending(x => x.CreatedDateTime));
 
-            string bestCode = null;
+            string? bestCode = null;
             decimal bestAmount = 0;
             foreach (var entity in entities)
             {
@@ -659,7 +660,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="customerPhone">SĐT khách; mã riêng tư chỉ đúng chủ SĐT mới dùng được.</param>
         /// <returns>Tuple: hợp lệ hay không + message tiếng Việt.</returns>
         private static (bool Valid, string Message) CheckUsable(
-            DiscountCode entity, decimal subtotal, string customerPhone = null)
+            DiscountCode? entity, decimal subtotal, string? customerPhone = null)
         {
             // Thứ tự kiểm tra từ rẻ tới "đắt": tồn tại → đang bật → còn hạn →
             // còn lượt → đúng chủ sở hữu → đạt đơn tối thiểu. Message trả về
@@ -699,7 +700,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>Phone equality tolerant of formatting (digits compared, last 9).</summary>
-        private static bool PhonesEqual(string firstPhone, string secondPhone)
+        private static bool PhonesEqual(string? firstPhone, string? secondPhone)
         {
             if (string.IsNullOrWhiteSpace(firstPhone) || string.IsNullOrWhiteSpace(secondPhone))
             {

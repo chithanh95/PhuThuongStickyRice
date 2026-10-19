@@ -57,7 +57,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <param name="amount">Số tiền hoàn lại.</param>
         /// <param name="orderNumber">Mã đơn bị hủy, ghi vào lịch sử giao dịch.</param>
         /// <param name="refundReason">Lý do hoàn (tùy chọn; mặc định "Hoàn tiền hủy đơn &lt;mã đơn&gt;").</param>
-        Task RefundAsync(string phone, decimal amount, string orderNumber, string refundReason = null);
+        Task RefundAsync(string phone, decimal amount, string orderNumber, string? refundReason = null);
     }
 
     /// <summary>
@@ -239,7 +239,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <param name="phone">SĐT chủ ví.</param>
         /// <param name="amount">Số tiền hoàn lại.</param>
         /// <param name="orderNumber">Mã đơn bị hủy, ghi vào lịch sử giao dịch.</param>
-        public virtual async Task RefundAsync(string phone, decimal amount, string orderNumber, string refundReason = null)
+        public virtual async Task RefundAsync(string phone, decimal amount, string orderNumber, string? refundReason = null)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized) || amount <= 0)

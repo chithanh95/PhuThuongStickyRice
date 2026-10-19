@@ -50,7 +50,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         /// <param name="vnNow">Thời điểm kiểm tra (giờ Việt Nam); null thì dùng thời gian hiện tại.</param>
         /// <returns>DTO khuyến mãi tốt nhất, hoặc null.</returns>
-        Task<PromotionDto> GetBestActiveAsync(DateTime? vnNow = null);
+        Task<PromotionDto?> GetBestActiveAsync(DateTime? vnNow = null);
     }
 
     /// <summary>
@@ -153,7 +153,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="vnNow">Thời điểm kiểm tra (giờ Việt Nam); null thì dùng thời gian hiện tại.</param>
         /// <returns>DTO khuyến mãi có % giảm cao nhất đang diễn ra, hoặc null.</returns>
         [AllowAnonymous]
-        public virtual async Task<PromotionDto> GetBestActiveAsync(DateTime? vnNow = null)
+        public virtual async Task<PromotionDto?> GetBestActiveAsync(DateTime? vnNow = null)
         {
             // Admin có thể truyền vnNow để preview "lúc này có KM nào"; nếu không
             // truyền thì dùng giờ hiện tại của Việt Nam (UTC+7).
