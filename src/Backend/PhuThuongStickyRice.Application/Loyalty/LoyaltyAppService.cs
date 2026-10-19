@@ -187,25 +187,50 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             // Month/day comparison runs in memory — the table is small and
-            // this keeps the query provider-agnostic.
+            // this keeps the query provider-agnostic. Only the 6 columns the
+            // birthday DTO needs are selected from SQL instead of materializing
+            // full LoyaltyAccount entities.
             var queryable = await _accounts.GetQueryableAsync();
-            var withBirthday = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => x.DateOfBirth.HasValue));
+            var rows = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => x.DateOfBirth.HasValue)
+                         .Select(x => new
+                         {
+                             x.Phone,
+                             x.Points,
+                             x.TotalEarned,
+                             x.TotalSpent,
+                             x.ReferralCode,
+                             x.DateOfBirth
+                         }));
 
             var today = DateTime.UtcNow.Date;
-            var upcoming = withBirthday
+            var upcoming = rows
                 .Select(x => new
                 {
-                    Account = x,
-                    Next = NextBirthday(x.DateOfBirth.Value, today)
+                    Row = x,
+                    Next = NextBirthday(x.DateOfBirth!.Value, today)
                 })
                 .Where(x => (x.Next - today).TotalDays <= daysAhead)
                 .OrderBy(x => x.Next)
-                .Select(x => x.Account)
+                .Select(x => x.Row)
                 .ToList();
 
             var settings = await _shopSettings.GetAsync();
-            return upcoming.Select(x => MapToDto(x, settings)).ToList();
+            return upcoming.Select(x =>
+            {
+                var (tier, pct) = GetTier(x.TotalSpent, settings);
+                return new LoyaltyAccountDto
+                {
+                    Phone = x.Phone,
+                    Points = x.Points,
+                    TotalEarned = x.TotalEarned,
+                    TotalSpent = x.TotalSpent,
+                    ReferralCode = x.ReferralCode,
+                    DateOfBirth = x.DateOfBirth,
+                    Tier = tier,
+                    TierDiscountPercent = pct
+                };
+            }).ToList();
         }
 
         public virtual async Task<LoyaltyAccount> GetOrCreateAsync(string phone)
@@ -459,18 +484,18 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// OrderAppService.PhonesMatch): "0912 345 678", "+84912345678" và
         /// "0912345678" là cùng 1 số — chống farm bằng cách đổi format.
         /// </summary>
-        private static bool PhonesEqualTolerant(string a, string b)
+        private static bool PhonesEqualTolerant(string phone1, string phone2)
         {
-            var da = new string((a ?? string.Empty).Where(char.IsDigit).ToArray());
-            var db = new string((b ?? string.Empty).Where(char.IsDigit).ToArray());
-            if (da.Length < 9 || db.Length < 9)
+            var digits1 = new string((phone1 ?? string.Empty).Where(char.IsDigit).ToArray());
+            var digits2 = new string((phone2 ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (digits1.Length < 9 || digits2.Length < 9)
             {
-                return string.Equals(da, db, StringComparison.Ordinal);
+                return string.Equals(digits1, digits2, StringComparison.Ordinal);
             }
 
             return string.Equals(
-                da.Substring(da.Length - 9),
-                db.Substring(db.Length - 9),
+                digits1.Substring(digits1.Length - 9),
+                digits2.Substring(digits2.Length - 9),
                 StringComparison.Ordinal);
         }
 

@@ -206,6 +206,8 @@ namespace PhuThuongStickyRice.Application.Orders
         private const string SpinFreeshipCodePrefix = "FREESHIP";
         private const int SpinCodeValidityDays = 30;
         private const decimal SpinFreeshipFallbackAmount = 15000m;
+        /// <summary>Số tiền giảm của giải "tiền mặt" vòng quay may mắn (20.000đ) khi quay trúng segment Cash20k.</summary>
+        private const decimal SpinCashPrizeAmount = 20000m;
         /// <summary>Tiền tố mã voucher tặng khách đặt đơn đầu tiên.</summary>
         private const string FirstOrderVoucherPrefix = "CHAO";
         /// <summary>Phần trăm giảm giá của voucher đơn đầu tiên.</summary>
@@ -1723,35 +1725,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var phone = _loyalty.NormalizePhone(input.CustomerPhone);
             var expiresAt = DateTime.UtcNow.AddDays(SpinCodeValidityDays);
 
-            string code = null;
-            string prizeLabel;
-            switch (segment)
-            {
-                case "Percent5":
-                    prizeLabel = "Giảm 5%";
-                    code = await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, phone, discountPercent: 5);
-                    break;
-                case "Percent10":
-                    prizeLabel = "Giảm 10%";
-                    code = await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, phone, discountPercent: 10);
-                    break;
-                case "Percent15":
-                    prizeLabel = "Giảm 15%";
-                    code = await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, phone, discountPercent: 15);
-                    break;
-                case "FreeShip":
-                    prizeLabel = "Miễn phí ship";
-                    var freeshipAmount = settings.DeliveryFee > 0 ? settings.DeliveryFee : SpinFreeshipFallbackAmount;
-                    code = await CreateSpinPrizeCodeAsync(SpinFreeshipCodePrefix, expiresAt, phone, discountAmount: freeshipAmount);
-                    break;
-                case "Cash20k":
-                    prizeLabel = "Giảm 20.000đ";
-                    code = await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, phone, discountAmount: 20000);
-                    break;
-                default:
-                    prizeLabel = "Chúc may mắn lần sau!";
-                    break;
-            }
+            var (prizeLabel, code) = await BuildSpinPrizeAsync(segment, expiresAt, phone, settings.DeliveryFee);
 
             return new SpinResultDto
             {
@@ -1760,6 +1734,41 @@ namespace PhuThuongStickyRice.Application.Orders
                 Code = code,
                 ExpiresAt = code == null ? (DateTime?)null : expiresAt
             };
+        }
+
+        /// <summary>
+        /// Dựng nhãn giải và mã voucher cho một segment của vòng quay may mắn.
+        /// Segment "Miss" không có giải nên trả về code null; các segment còn lại
+        /// sinh mã giảm giá dùng một lần gắn với số điện thoại khách.
+        /// </summary>
+        /// <param name="segment">Segment đã quay trúng (Percent5, FreeShip, Cash20k, Miss...).</param>
+        /// <param name="expiresAt">Hạn sử dụng của mã voucher được sinh.</param>
+        /// <param name="ownerPhone">Số điện thoại nhận mã (đã chuẩn hóa).</param>
+        /// <param name="deliveryFee">Phí ship hiện tại, dùng làm giá trị giải FreeShip.</param>
+        /// <returns>Cặp (nhãn giải hiển thị, mã voucher hoặc null khi không trúng).</returns>
+        private async Task<(string PrizeLabel, string Code)> BuildSpinPrizeAsync(
+            string segment, DateTime expiresAt, string ownerPhone, decimal deliveryFee)
+        {
+            switch (segment)
+            {
+                case "Percent5":
+                    return ("Giảm 5%", await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, ownerPhone, discountPercent: 5));
+                case "Percent10":
+                    return ("Giảm 10%", await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, ownerPhone, discountPercent: 10));
+                case "Percent15":
+                    return ("Giảm 15%", await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, ownerPhone, discountPercent: 15));
+                case "FreeShip":
+                {
+                    // Phí ship > 0 thì giải bằng đúng phí ship hiện tại; khi chưa
+                    // cấu hình phí ship thì dùng mức dự phòng cố định.
+                    var freeshipAmount = deliveryFee > 0 ? deliveryFee : SpinFreeshipFallbackAmount;
+                    return ("Miễn phí ship", await CreateSpinPrizeCodeAsync(SpinFreeshipCodePrefix, expiresAt, ownerPhone, discountAmount: freeshipAmount));
+                }
+                case "Cash20k":
+                    return ("Giảm 20.000đ", await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, ownerPhone, discountAmount: SpinCashPrizeAmount));
+                default:
+                    return ("Chúc may mắn lần sau!", null);
+            }
         }
 
         /// <summary>
@@ -2150,27 +2159,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             foreach (var other in secondaries)
             {
-                primary.MergeLinesFrom(other);
-
-                var stamp = $"Gộp vào đơn {primary.OrderNumber} lúc {DateTime.UtcNow:dd/MM HH:mm}.";
-                primary.SetAdminNote(AppendNote(primary.AdminNote, stamp));
-
-                var existing = other.AdminNote;
-                other.SetAdminNote(AppendNote(existing, $"Gộp vào đơn {primary.OrderNumber}."));
-
-                var fromStatus = other.Status;
-                other.Cancel();
-                await _orders.UpdateAsync(other);
-                await RecordStatusChangeAsync(other.Id, fromStatus, OrderStatus.Cancelled);
-
-                // Mirror the cancel path: refund redeemed loyalty points and
-                // wallet payments so the customer does not lose money.
-                await _loyalty.RefundRedeemedPointsAsync(other);
-                if (other.PaymentMethod == PaymentMethod.Wallet
-                    && other.PaymentStatus == PaymentStatus.Paid)
-                {
-                    await _wallets.RefundAsync(other.CustomerPhone, other.TotalAmount.Amount, other.OrderNumber);
-                }
+                await MergeOneSecondaryAsync(primary, other);
             }
 
             await _orders.UpdateAsync(primary);
@@ -2178,6 +2167,37 @@ namespace PhuThuongStickyRice.Application.Orders
             var dto = _objectMapper.Map<Order, OrderDto>(primary);
             await FillShipperNamesAsync(new[] { dto });
             return dto;
+        }
+
+        /// <summary>
+        /// Gộp một đơn phụ vào đơn chính: chuyển các dòng hàng sang đơn chính,
+        /// ghi chú admin ở cả hai đơn, hủy đơn phụ (hoàn điểm loyalty đã đổi và
+        /// hoàn tiền ví như luồng hủy đơn) và ghi audit lịch sử trạng thái.
+        /// Thứ tự các bước giữ nguyên như trước khi tách method.
+        /// </summary>
+        private async Task MergeOneSecondaryAsync(Order primary, Order other)
+        {
+            primary.MergeLinesFrom(other);
+
+            var stamp = $"Gộp vào đơn {primary.OrderNumber} lúc {DateTime.UtcNow:dd/MM HH:mm}.";
+            primary.SetAdminNote(AppendNote(primary.AdminNote, stamp));
+
+            var existing = other.AdminNote;
+            other.SetAdminNote(AppendNote(existing, $"Gộp vào đơn {primary.OrderNumber}."));
+
+            var fromStatus = other.Status;
+            other.Cancel();
+            await _orders.UpdateAsync(other);
+            await RecordStatusChangeAsync(other.Id, fromStatus, OrderStatus.Cancelled);
+
+            // Mirror the cancel path: refund redeemed loyalty points and
+            // wallet payments so the customer does not lose money.
+            await _loyalty.RefundRedeemedPointsAsync(other);
+            if (other.PaymentMethod == PaymentMethod.Wallet
+                && other.PaymentStatus == PaymentStatus.Paid)
+            {
+                await _wallets.RefundAsync(other.CustomerPhone, other.TotalAmount.Amount, other.OrderNumber);
+            }
         }
 
         private static void EnsureMergeable(Order order)
@@ -2271,9 +2291,12 @@ namespace PhuThuongStickyRice.Application.Orders
             var orderQueryable = await _orders.GetQueryableAsync();
             // SQL pre-filter on the phone suffix (LIKE, provider-agnostic), then the
             // exact tolerant match in memory — same pattern as GetLastOrderInfoByPhoneAsync.
-            var candidates = await _asyncExecuter.ToListAsync(
-                orderQueryable.Where(x => x.CustomerPhone != null && x.CustomerPhone.Contains(suffix)));
-            return candidates.Any(x => PhonesMatch(x.CustomerPhone, phone));
+            // Only the CustomerPhone column is selected: the check never needs the
+            // full Order row, so full-entity materialization is pure waste.
+            var phones = await _asyncExecuter.ToListAsync(
+                orderQueryable.Where(x => x.CustomerPhone != null && x.CustomerPhone.Contains(suffix))
+                              .Select(x => x.CustomerPhone));
+            return phones.Any(x => PhonesMatch(x, phone));
         }
 
         /// <summary>
