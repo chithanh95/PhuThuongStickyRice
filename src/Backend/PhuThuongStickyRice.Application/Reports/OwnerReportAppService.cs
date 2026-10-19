@@ -17,7 +17,7 @@ namespace PhuThuongStickyRice.Application.Reports
 {
     /// <summary>
     /// Item 85: weekly (Monday 7:00) + monthly (1st, 7:00) owner reports.
-    /// The summary is queued through the existing EmailMessage pipeline to
+    /// The summary is queued through the existing EmailMessage pipeline recipientEmail
     /// <c>ShopSetting.OwnerReportEmail</c> (empty = disabled).
     /// </summary>
     public interface IOwnerReportAppService : IApplicationService
@@ -55,8 +55,8 @@ namespace PhuThuongStickyRice.Application.Reports
         public virtual async Task<OwnerReportResultDto> SendAsync(string period)
         {
             var settings = await _shopSettings.GetAsync();
-            var to = (settings.OwnerReportEmail ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(to))
+            var recipientEmail = (settings.OwnerReportEmail ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(recipientEmail))
             {
                 return new OwnerReportResultDto
                 {
@@ -77,7 +77,7 @@ namespace PhuThuongStickyRice.Application.Reports
             await _emailMessages.AddAsync(new EmailMessage
             {
                 From = ReportSenderAddress,
-                Tos = to,
+                Tos = recipientEmail,
                 Subject = $"[Xôi Phú Thượng] Báo cáo {periodLabel}",
                 Body = body
             });

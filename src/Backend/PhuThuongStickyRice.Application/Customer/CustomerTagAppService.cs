@@ -164,15 +164,15 @@ namespace PhuThuongStickyRice.Application.Customer
             var rows = await GetCustomerRowsAsync(searchTerm, tag, inactiveOnly, MaxExportRows);
 
             using var workbook = new XLWorkbook();
-            var ws = workbook.Worksheets.Add("Khách hàng");
+            var worksheet = workbook.Worksheets.Add("Khách hàng");
 
             var headers = new[] { "Tên khách hàng", "SĐT", "Tổng đơn", "Tổng chi tiêu (₫)", "Lần mua cuối", "Tags" };
             for (var i = 0; i < headers.Length; i++)
             {
-                ws.Cell(1, i + 1).Value = headers[i];
+                worksheet.Cell(1, i + 1).Value = headers[i];
             }
 
-            var headerRow = ws.Row(1);
+            var headerRow = worksheet.Row(1);
             headerRow.Style.Font.Bold = true;
             headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#7a6fbe");
             headerRow.Style.Font.FontColor = XLColor.White;
@@ -180,18 +180,18 @@ namespace PhuThuongStickyRice.Application.Customer
             var rowIndex = 2;
             foreach (var r in rows)
             {
-                ws.Cell(rowIndex, 1).Value = r.CustomerName;
-                ws.Cell(rowIndex, 2).Value = r.CustomerPhone;
-                ws.Cell(rowIndex, 3).Value = r.OrderCount;
-                ws.Cell(rowIndex, 4).Value = r.TotalSpent;
-                ws.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
-                ws.Cell(rowIndex, 5).Value = r.LastOrderAt.AddHours(VietnamTime.UtcOffsetHours);
-                ws.Cell(rowIndex, 5).Style.NumberFormat.Format = "dd/mm/yyyy hh:mm";
-                ws.Cell(rowIndex, 6).Value = string.Join(", ", r.Tags.Select(t => t.TagName));
+                worksheet.Cell(rowIndex, 1).Value = r.CustomerName;
+                worksheet.Cell(rowIndex, 2).Value = r.CustomerPhone;
+                worksheet.Cell(rowIndex, 3).Value = r.OrderCount;
+                worksheet.Cell(rowIndex, 4).Value = r.TotalSpent;
+                worksheet.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
+                worksheet.Cell(rowIndex, 5).Value = r.LastOrderAt.AddHours(VietnamTime.UtcOffsetHours);
+                worksheet.Cell(rowIndex, 5).Style.NumberFormat.Format = "dd/mm/yyyy hh:mm";
+                worksheet.Cell(rowIndex, 6).Value = string.Join(", ", r.Tags.Select(t => t.TagName));
                 rowIndex++;
             }
 
-            ws.Columns().AdjustToContents();
+            worksheet.Columns().AdjustToContents();
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);

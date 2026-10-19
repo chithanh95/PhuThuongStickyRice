@@ -88,10 +88,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             try
             {
                 var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(body, _jsonOptions);
-                if (dict != null && dict.TryGetValue("message", out var el)
-                    && el.ValueKind == JsonValueKind.String)
+                if (dict != null && dict.TryGetValue("message", out var messageElement)
+                    && messageElement.ValueKind == JsonValueKind.String)
                 {
-                    return el.GetString();
+                    return messageElement.GetString();
                 }
             }
             catch

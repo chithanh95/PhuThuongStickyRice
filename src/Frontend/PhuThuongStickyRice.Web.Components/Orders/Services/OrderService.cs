@@ -206,20 +206,20 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         public async Task<GrossProfitReportModel> GetGrossProfitReportAsync(DateTime? from, DateTime? to)
         {
             var url = "api/admin/reports/gross-profit";
-            var qs = new List<string>();
+            var queryParams = new List<string>();
             if (from.HasValue)
             {
-                qs.Add($"from={from.Value:yyyy-MM-dd}");
+                queryParams.Add($"from={from.Value:yyyy-MM-dd}");
             }
 
             if (to.HasValue)
             {
-                qs.Add($"to={to.Value:yyyy-MM-dd}");
+                queryParams.Add($"to={to.Value:yyyy-MM-dd}");
             }
 
-            if (qs.Count > 0)
+            if (queryParams.Count > 0)
             {
-                url += "?" + string.Join("&", qs);
+                url += "?" + string.Join("&", queryParams);
             }
 
             return await GetAsync<GrossProfitReportModel>(url);

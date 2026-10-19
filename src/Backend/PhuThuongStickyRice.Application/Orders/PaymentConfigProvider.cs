@@ -67,30 +67,30 @@ namespace PhuThuongStickyRice.Application.Orders
                 QrTemplate = defaults.QrTemplate
             };
 
-            var db = await _shopSettings.GetAsync();
-            if (!string.IsNullOrWhiteSpace(db.BankName))
+            var shopSettings = await _shopSettings.GetAsync();
+            if (!string.IsNullOrWhiteSpace(shopSettings.BankName))
             {
-                merged.BankName = db.BankName;
+                merged.BankName = shopSettings.BankName;
             }
 
-            if (!string.IsNullOrWhiteSpace(db.BankId))
+            if (!string.IsNullOrWhiteSpace(shopSettings.BankId))
             {
-                merged.BankId = db.BankId;
+                merged.BankId = shopSettings.BankId;
             }
 
-            if (!string.IsNullOrWhiteSpace(db.BankAccountNumber))
+            if (!string.IsNullOrWhiteSpace(shopSettings.BankAccountNumber))
             {
-                merged.AccountNumber = db.BankAccountNumber;
+                merged.AccountNumber = shopSettings.BankAccountNumber;
             }
 
-            if (!string.IsNullOrWhiteSpace(db.BankAccountName))
+            if (!string.IsNullOrWhiteSpace(shopSettings.BankAccountName))
             {
-                merged.AccountName = db.BankAccountName;
+                merged.AccountName = shopSettings.BankAccountName;
             }
 
-            if (!string.IsNullOrWhiteSpace(db.BankQrTemplate))
+            if (!string.IsNullOrWhiteSpace(shopSettings.BankQrTemplate))
             {
-                merged.QrTemplate = db.BankQrTemplate;
+                merged.QrTemplate = shopSettings.BankQrTemplate;
             }
 
             return merged;
@@ -119,15 +119,15 @@ namespace PhuThuongStickyRice.Application.Orders
                 ApiBaseUrl = defaults.ApiBaseUrl
             };
 
-            var db = await _shopSettings.GetAsync();
-            if (!string.IsNullOrWhiteSpace(db.MoMoPartnerCode))
+            var shopSettings = await _shopSettings.GetAsync();
+            if (!string.IsNullOrWhiteSpace(shopSettings.MoMoPartnerCode))
             {
-                merged.PartnerCode = db.MoMoPartnerCode;
+                merged.PartnerCode = shopSettings.MoMoPartnerCode;
             }
 
-            if (!string.IsNullOrWhiteSpace(db.MoMoEndpoint))
+            if (!string.IsNullOrWhiteSpace(shopSettings.MoMoEndpoint))
             {
-                merged.Endpoint = db.MoMoEndpoint;
+                merged.Endpoint = shopSettings.MoMoEndpoint;
             }
 
             return merged;
