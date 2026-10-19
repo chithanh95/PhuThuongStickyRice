@@ -55,9 +55,13 @@
                         <span class="shp-cart-badge">@CartState.TotalQuantity</span>
                     }
                 </a>
-                @* Dark mode toggle — đồng bộ với landing. *@
-                <button type="button" class="shp-theme-toggle" @onclick="ToggleTheme" title="Sáng/tối" aria-label="Chế độ sáng/tối">
-                    @(_isDark ? "☀️" : "🌙")
+                @* #196: Chữ lớn cho người lớn tuổi. *@
+                <button type="button" class="shp-theme-toggle" @onclick="ToggleLargeText" title="Chữ lớn" aria-label="Chế độ chữ lớn" aria-pressed="@_isLargeText">
+                    <span style="font-weight:bold;font-size:1.1em;">A+</span>
+                </button>
+                @* #197: Dark mode 3 chế độ Sáng/Tối/Tự động — đồng bộ với landing. *@
+                <button type="button" class="shp-theme-toggle" @onclick="ToggleTheme" title="@_themeTitle" aria-label="Chế độ sáng/tối/tự động">
+                    @_themeIcon
                 </button>
                 <a class="shp-order-btn" href="/cart">@AppI18n.T("shop.order_now")</a>
 
@@ -132,14 +136,41 @@
     private string _hotline;
     private string _address;
     private string _email;
-    private bool _isDark;
+    private string _theme = "light"; // light | dark | auto
+    private bool _isLargeText;
+
+    private string _themeIcon => _theme switch
+    {
+        "dark" => "☀️",
+        "auto" => "🌓",
+        _ => "🌙",
+    };
+
+    private string _themeTitle => _theme switch
+    {
+        "dark" => "Đang: Tối — bấm để chuyển Tự động",
+        "auto" => "Đang: Tự động theo giờ — bấm để chuyển Sáng",
+        _ => "Đang: Sáng — bấm để chuyển Tối",
+    };
+
+    private bool _isDark => _theme == "dark" || _theme == "auto"; // for backwards compat checks
 
     private async Task ToggleTheme()
     {
         try
         {
-            var theme = await JS.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop");
-            _isDark = theme == "dark";
+            _theme = await JS.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop");
+            StateHasChanged();
+        }
+        catch { }
+    }
+
+    private async Task ToggleLargeText()
+    {
+        try
+        {
+            _isLargeText = await JS.InvokeAsync<bool>("ptToggleLargeText");
+            StateHasChanged();
         }
         catch { }
     }
@@ -160,7 +191,9 @@
             try
             {
                 await JS.InvokeVoidAsync("ptApplyTheme", "pt-theme-shop");
-                _isDark = await JS.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") == "dark";
+                await JS.InvokeVoidAsync("ptApplyLargeText");
+                _theme = await JS.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") ?? "light";
+                _isLargeText = await JS.InvokeAsync<bool>("ptGetLargeText");
                 StateHasChanged();
             }
             catch { }

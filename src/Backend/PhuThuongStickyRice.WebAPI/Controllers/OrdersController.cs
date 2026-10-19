@@ -713,7 +713,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
-        /// <summary>Item 52: customer rates the shipper (1-5) for an order review.</summary>
+        /// <summary>Item 52: customer rates the shipper (1-5) for an order review.
+        /// Requires the order phone to prove ownership of the review.</summary>
         [AllowAnonymous]
         [HttpPost("reviews/{id:guid}/shipper-rating")]
         public async Task<ActionResult> SetShipperRating(Guid id,
@@ -724,7 +725,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var review = await _orderAppService.SetShipperRatingAsync(id, new SetShipperRatingDto
                 {
-                    Rating = model?.Rating ?? 0
+                    Rating = model?.Rating ?? 0,
+                    CustomerPhone = model?.CustomerPhone
                 });
                 return Ok(review);
             }
@@ -762,5 +764,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public sealed class SetShipperRatingRequestModel
     {
         public int Rating { get; set; }
+
+        /// <summary>SĐT đặt hàng — xác thực quyền đánh giá review này.</summary>
+        public string CustomerPhone { get; set; }
     }
 }

@@ -222,6 +222,9 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
 
         public string CustomerPhone { get; set; }
 
+        /// <summary>Server-masked phone from api/orders/reviews/public ("090***67"); preferred over CustomerPhone.</summary>
+        public string MaskedCustomerPhone { get; set; }
+
         public int Rating { get; set; }
 
         public string Comment { get; set; }

@@ -562,3 +562,16 @@ html.dark .sg-sticky-call {
     color: #f2c9c9;
     border-color: #a01818;
 }
+
+/* #196: Chế độ chữ lớn cho người lớn tuổi — tăng font toàn trang 25%. */
+html.large-text {
+    font-size: 125%;
+}
+html.large-text body {
+    line-height: 1.6;
+}
+html.large-text .btn,
+html.large-text button {
+    min-height: 48px;
+    font-size: 1.05rem;
+}

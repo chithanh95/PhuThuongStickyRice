@@ -14,23 +14,60 @@
         })();
         window.ptGetTheme = function (key) {
             key = key || 'pt-theme';
-            try { return localStorage.getItem(key) === 'dark' ? 'dark' : 'light'; }
+            try {
+                var v = localStorage.getItem(key);
+                if (v === 'auto') return 'auto';
+                return v === 'dark' ? 'dark' : 'light';
+            }
             catch (e) { return 'light'; }
+        };
+        window.ptResolveAutoTheme = function () {
+            // Tự động: 18:00–06:00 → dark, còn lại → light (giờ địa phương).
+            var h = new Date().getHours();
+            return (h >= 18 || h < 6) ? 'dark' : 'light';
         };
         window.ptToggleTheme = function (key) {
             key = key || 'pt-theme';
-            var dark = !document.documentElement.classList.contains('dark');
-            document.documentElement.classList.toggle('dark', dark);
-            try { localStorage.setItem(key, dark ? 'dark' : 'light'); } catch (e) { }
-            return dark ? 'dark' : 'light';
+            // Chuyển vòng: light → dark → auto → light
+            var cur = 'light';
+            try { cur = localStorage.getItem(key) || 'light'; } catch (e) { }
+            var next = cur === 'light' ? 'dark' : (cur === 'dark' ? 'auto' : 'light');
+            window.ptApplyTheme(key);
+            return next;
         };
         window.ptApplyTheme = function (key) {
             key = key || 'pt-theme';
             try {
-                var dark = localStorage.getItem(key) === 'dark';
+                var v = localStorage.getItem(key);
+                var dark = v === 'dark' || (v === 'auto' && window.ptResolveAutoTheme() === 'dark');
                 document.documentElement.classList.toggle('dark', dark);
             } catch (e) { }
         };
+        // Chữ lớn cho người lớn tuổi (#196).
+        window.ptGetLargeText = function () {
+            try { return localStorage.getItem('pt-large-text') === '1'; }
+            catch (e) { return false; }
+        };
+        window.ptToggleLargeText = function () {
+            var on = !document.documentElement.classList.contains('large-text');
+            document.documentElement.classList.toggle('large-text', on);
+            try { localStorage.setItem('pt-large-text', on ? '1' : '0'); } catch (e) { }
+            return on;
+        };
+        window.ptApplyLargeText = function () {
+            try {
+                var on = localStorage.getItem('pt-large-text') === '1';
+                document.documentElement.classList.toggle('large-text', on);
+            } catch (e) { }
+        };
+        // Áp dụng chữ lớn ngay trước khi vẽ để tránh nhấp nháy.
+        (function () {
+            try {
+                if (localStorage.getItem('pt-large-text') === '1') {
+                    document.documentElement.classList.add('large-text');
+                }
+            } catch (e) { }
+        })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="Xôi Phú Thượng — xôi ngon Hà Nội, đặt xôi online. Xôi gấc, xôi xéo, xôi đỗ, xôi vò, xôi ngũ sắc chuẩn vị làng nghề Phú Thượng. Đặt hàng nhanh, shipper đến lấy tận quán, thanh toán COD, chuyển khoản QR hoặc MoMo." />

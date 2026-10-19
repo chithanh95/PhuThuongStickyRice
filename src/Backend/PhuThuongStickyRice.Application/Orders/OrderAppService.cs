@@ -65,11 +65,12 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Admin: reply to an order review (shown publicly).</summary>
         Task<OrderReviewDto> ReplyReviewAsync(Guid id, ReplyReviewDto input);
 
-        /// <summary>Item 52: customer rates the shipper (1-5) for an order review.</summary>
+        /// <summary>Item 52: customer rates the shipper (1-5) for an order review.
+        /// Ownership is verified via CustomerPhone (same no-login pattern as order tracking).</summary>
         Task<OrderReviewDto> SetShipperRatingAsync(Guid id, SetShipperRatingDto input);
 
-        /// <summary>Public: non-hidden reviews for the landing page.</summary>
-        Task<List<OrderReviewDto>> GetPublicReviewsAsync();
+        /// <summary>Public: non-hidden reviews for the landing page (masked phone, no voucher code).</summary>
+        Task<List<PublicOrderReviewDto>> GetPublicReviewsAsync();
 
         /// <summary>Customer marks their bank-transfer order as transferred.</summary>
         Task<OrderDto> MarkTransferredAsync(Guid id, MarkTransferredDto input);
@@ -1292,29 +1293,67 @@ namespace PhuThuongStickyRice.Application.Orders
             return MapReviewToDto(review);
         }
 
-        /// <summary>Item 52: customer rates the shipper (1-5) for an order review.</summary>
+        /// <summary>Item 52: customer rates the shipper (1-5) for an order review.
+        /// Ownership is verified via CustomerPhone — without it anyone could overwrite
+        /// anyone else's ShipperRating using review ids from the public listing.</summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<OrderReviewDto> SetShipperRatingAsync(Guid id, SetShipperRatingDto input)
         {
             if (input.Rating < 1 || input.Rating > 5)
                 throw new Domain.Exceptions.DomainException("Đánh giá shipper phải từ 1 đến 5 sao.");
 
+            var phone = NormalizePhoneKey(input.CustomerPhone);
+            if (string.IsNullOrEmpty(phone))
+                throw new Domain.Exceptions.DomainException("Vui lòng nhập số điện thoại đặt hàng để xác thực.");
+
             var review = await _reviews.GetAsync(id);
+            if (NormalizePhoneKey(review.CustomerPhone) != phone)
+                throw new Domain.Exceptions.DomainException("Số điện thoại không khớp với đơn hàng của đánh giá này.");
+
             review.ShipperRating = input.Rating;
             await _reviews.UpdateAsync(review, autoSave: true);
             return MapReviewToDto(review);
         }
 
-        /// <summary>Item 87: public non-hidden reviews, newest first.</summary>
+        /// <summary>Item 87: public non-hidden reviews, newest first.
+        /// Returns only public-safe fields: phone is masked server-side, and the
+        /// review reward voucher code is NEVER exposed (it is bound to the phone).</summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
-        public virtual async Task<List<OrderReviewDto>> GetPublicReviewsAsync()
+        public virtual async Task<List<PublicOrderReviewDto>> GetPublicReviewsAsync()
         {
             var reviewQueryable = await _reviews.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
                 reviewQueryable.Where(x => !x.IsHidden)
                     .OrderByDescending(x => x.CreatedAt)
                     .Take(20));
-            return items.Select(MapReviewToDto).ToList();
+            return items.Select(MapReviewToPublicDto).ToList();
+        }
+
+        private static PublicOrderReviewDto MapReviewToPublicDto(OrderReview review)
+        {
+            return new PublicOrderReviewDto
+            {
+                MaskedCustomerPhone = MaskPhoneForDisplay(review.CustomerPhone),
+                Rating = review.Rating,
+                Comment = review.Comment,
+                PhotoUrl = review.PhotoUrl,
+                AdminReply = review.AdminReply,
+                CreatedAt = review.CreatedAt,
+                Lines = review.Lines?.Select(x => new OrderReviewLineDto
+                {
+                    ProductId = x.ProductId,
+                    ProductName = x.ProductName,
+                    Rating = x.Rating
+                }).ToList() ?? new List<OrderReviewLineDto>()
+            };
+        }
+
+        /// <summary>Server-side phone masking (mirrors landing MaskPhone): "0901234567" → "090***67".</summary>
+        private static string MaskPhoneForDisplay(string phone)
+        {
+            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (digits.Length < 5) return "Khách hàng";
+            return digits.Substring(0, 3) + "***" + digits.Substring(digits.Length - 2);
         }
 
         public virtual async Task<OrderDto> CancelByCustomerAsync(CancelOrderByCustomerInput input)

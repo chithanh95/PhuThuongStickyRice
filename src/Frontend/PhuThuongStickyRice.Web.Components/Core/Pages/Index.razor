@@ -192,7 +192,7 @@ else
                     <div class="sg-trust-review">
                         <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, r.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, r.Rating))))</div>
                         <p class="sg-trust-review-text">"@r.Comment"</p>
-                        <p class="sg-trust-review-name">— @MaskPhone(r.CustomerPhone)</p>
+                        <p class="sg-trust-review-name">— @(string.IsNullOrWhiteSpace(r.MaskedCustomerPhone) ? MaskPhone(r.CustomerPhone) : r.MaskedCustomerPhone)</p>
                     </div>
                 }
             </div>
@@ -319,7 +319,7 @@ else
                     <div class="sg-review-card sg-reveal">
                         <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, r.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, r.Rating))))</div>
                         <p class="sg-review-text">"@r.Comment"</p>
-                        <p class="sg-review-name">— @MaskPhone(r.CustomerPhone)</p>
+                        <p class="sg-review-name">— @(string.IsNullOrWhiteSpace(r.MaskedCustomerPhone) ? MaskPhone(r.CustomerPhone) : r.MaskedCustomerPhone)</p>
                         @if (!string.IsNullOrWhiteSpace(r.AdminReply))
                         {
                             <p class="sg-review-reply">💬 Quán: @r.AdminReply</p>

@@ -1,0 +1,65 @@
+@* #199: Banner "Quán đang mở / nghỉ" — gọn 1 dòng ở đầu trang /shop. *@
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject ShopSettingsService ShopSettingsService
+
+@if (_loaded)
+{
+    <div class="shop-status-banner @(_isOpen ? "open" : "closed")" role="status">
+        @if (_isOpen)
+        {
+            <span class="dot"></span>
+            <span>Quán đang mở — hôm nay bán đến @_closeTime</span>
+        }
+        else
+        {
+            <span class="dot"></span>
+            <span>Quán đang nghỉ — mở lại lúc @_openTime@(_isTomorrow ? " sáng mai" : "")</span>
+        }
+    </div>
+}
+
+@code {
+    private bool _loaded;
+    private bool _isOpen;
+    private bool _isTomorrow;
+    private string _openTime = "06:00";
+    private string _closeTime = "10:30";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var s = await ShopSettingsService.GetPublicAsync();
+            if (!string.IsNullOrWhiteSpace(s?.OpenTime)) _openTime = s.OpenTime;
+            if (!string.IsNullOrWhiteSpace(s?.CloseTime)) _closeTime = s.CloseTime;
+        }
+        catch { }
+
+        UpdateStatus();
+        _loaded = true;
+    }
+
+    private void UpdateStatus()
+    {
+        // Giờ VN (UTC+7).
+        var now = DateTime.UtcNow.AddHours(7).TimeOfDay;
+        if (TimeSpan.TryParse(_openTime, out var open) && TimeSpan.TryParse(_closeTime, out var close))
+        {
+            if (open <= close)
+            {
+                _isOpen = now >= open && now < close;
+                _isTomorrow = now >= close;
+            }
+            else
+            {
+                // Ca qua đêm (vd 18:00–06:00).
+                _isOpen = now >= open || now < close;
+                _isTomorrow = now >= close && now < open;
+            }
+        }
+        else
+        {
+            _isOpen = true;
+        }
+    }
+}

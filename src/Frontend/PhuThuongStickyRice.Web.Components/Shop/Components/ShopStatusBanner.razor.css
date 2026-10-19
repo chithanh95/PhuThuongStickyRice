@@ -1,0 +1,41 @@
+/* #199: Banner trạng thái quán — gọn 1 dòng, chữ đủ lớn. */
+.shop-status-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.shop-status-banner .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.shop-status-banner.open {
+    background: #e8f9f0;
+    color: #1a7a4a;
+}
+.shop-status-banner.open .dot {
+    background: #34c38f;
+    box-shadow: 0 0 0 4px rgba(52,195,143,0.2);
+}
+.shop-status-banner.closed {
+    background: #f1f2f4;
+    color: #6c757d;
+}
+.shop-status-banner.closed .dot {
+    background: #adb5bd;
+}
+html.dark .shop-status-banner.open {
+    background: rgba(52,195,143,0.12);
+    color: #7ce3b1;
+}
+html.dark .shop-status-banner.closed {
+    background: rgba(255,255,255,0.04);
+    color: #adb5bd;
+}

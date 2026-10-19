@@ -483,11 +483,38 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string Reply { get; set; }
     }
 
-    /// <summary>Item 52: customer rates the shipper (1-5) for an order review.</summary>
+    /// <summary>Item 52: customer rates the shipper (1-5) for an order review.
+    /// CustomerPhone proves ownership of the review (no login on this flow).</summary>
     public class SetShipperRatingDto
     {
         [Range(1, 5)]
         public int Rating { get; set; }
+
+        /// <summary>SĐT đặt hàng của review — dùng để xác thực quyền đánh giá.</summary>
+        [Required]
+        [StringLength(30)]
+        public string CustomerPhone { get; set; }
+    }
+
+    /// <summary>Item 87: public review shown on the landing page.
+    /// Never contains Id, CustomerPhone (raw), OrderNumber or RewardCode —
+    /// only the server-masked phone so voucher codes cannot be stolen.</summary>
+    public class PublicOrderReviewDto
+    {
+        /// <summary>Masked phone, e.g. "090***67" — safe to display publicly.</summary>
+        public string MaskedCustomerPhone { get; set; }
+
+        public int Rating { get; set; }
+
+        public string Comment { get; set; }
+
+        public string PhotoUrl { get; set; }
+
+        public string AdminReply { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public List<OrderReviewLineDto> Lines { get; set; } = new List<OrderReviewLineDto>();
     }
 
     /// <summary>Lucky-spin request after checkout.</summary>
