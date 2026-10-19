@@ -1275,3 +1275,50 @@ html.dark .lx-tabbtn:not(.active):hover {
     color: #6f5f4c;
 }
 /* ===== END UIUX run 20:10 - Agent4 ===== */
+
+/* ===== UIUX run 20:35 - Agent4 A11y & Polish (3 CSS, khong trung cac run truoc) ===== */
+
+/* Fix 3 — WCAG 1.4.3 (Contrast, AA 4.5:1): `.badge-info` Bootstrap nền
+   #17a2b8 + chữ trắng chỉ ~3.03:1 — trên trang shop dùng cho thông tin
+   QUAN TRỌNG: banner "🍽 Đơn tại bàn" (Shop.razor:45) và badge "⏰ Chỉ bán
+   6:00–9:00" trong quick-view (Shop.razor:467); khách lớn tuổi khó đọc giờ
+   bán. Đậm nền xuống #0e7c99 (~4.79:1 với chữ trắng, cùng màu với remedy
+   `.text-info` run 16:50 nên đồng bộ). Áp dụng cả light lẫn dark mode vì
+   Bootstrap giữ nguyên nền badge ở dark mode (card tối nhưng badge vẫn
+   #17a2b8 → vẫn fail). Scope `.shp-page` nên không chạm badge admin Lexa. */
+.shp-page .badge-info.badge-info,
+html.dark .shp-page .badge-info.badge-info {
+    background-color: #0e7c99;
+}
+
+/* Fix 4 — WCAG 2.3.3 (Animation from Interactions): thẻ "sẵn sàng lấy món"
+   `.cho-ready` (HangCho.razor — màn hình chờ công khai tại quán) nhấp nháy
+   box-shadow liên tục (cho-blink 1.2s infinite), gây khó chịu/chóng mặt cho
+   người nhạy cảm chuyển động, mà trang này khách nhìn chằm chằm lúc chờ món.
+   Khi người dùng bật "giảm chuyển động" ở hệ điều hành: tắt hẳn animation,
+   GIỮ NGUYÊN trạng thái tĩnh (viền + nền xanh lá #0b3d1b, số màu #34c38f)
+   nên tín hiệu "đã sẵn sàng" không mất. Chỉ ảnh hưởng người bật setting. */
+@media (prefers-reduced-motion: reduce) {
+    .cho-ready {
+        animation: none !important;
+    }
+}
+
+/* Fix 5 — WCAG 2.4.7 (Focus Visible): 2 nút đặt món chính trên mobile —
+   `.shop-row-add` (nút + đỏ-cam thêm nhanh) và `.shop-row-stepper button`
+   (nút −/+ tăng giảm số lượng, Shop.razor.css:585-626) KHÔNG có chỉ báo
+   focus: Bootstrap không vẽ vòng focus cho <button> không có class .btn,
+   người dùng bàn phím (kể cả bàn phím ngoài cắm điện thoại) tab tới không
+   biết đang đứng ở món nào. Vẽ vòng tím #7a6fbe quanh nút khi :focus-visible
+   (chuột/chạm không bị vẽ thừa); dark mode dùng #a49de0 nổi trên nền tối.
+   Không đổi kích thước/layout (outline, không border). */
+.shop-row-add:focus-visible,
+.shop-row-stepper button:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .shop-row-add:focus-visible,
+html.dark .shop-row-stepper button:focus-visible {
+    outline-color: #a49de0;
+}
+/* ===== END UIUX run 20:35 - Agent4 ===== */

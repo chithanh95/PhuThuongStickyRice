@@ -120,22 +120,26 @@
                     </tbody>
                 </table>
                 @* Phân trang kiểu Lexa *@
+                @* A11y 20:35 Agent4: nav có aria-label; nút Trước/Sau disabled thật ở
+                   biên (trước đây chỉ class CSS "disabled", nút vẫn focus/bấm được
+                   bằng bàn phím); trang hiện tại có aria-current="page"; mỗi nút số
+                   trang có aria-label "Trang N" cho trình đọc màn hình. *@
                 @if (TotalPages > 1)
                 {
-                    <nav class="mt-3">
+                    <nav class="mt-3" aria-label="Phân trang danh sách sản phẩm">
                         <ul class="pagination justify-content-center mb-0">
                             <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
-                                <button class="page-link" @onclick="() => GoToPage(CurrentPage - 1)">Trước</button>
+                                <button class="page-link" @onclick="() => GoToPage(CurrentPage - 1)" disabled="@(CurrentPage == 1)" aria-label="Trang trước">Trước</button>
                             </li>
                             @for (int p = 1; p <= TotalPages; p++)
                             {
                                 var pageNum = p;
                                 <li class="page-item @(CurrentPage == pageNum ? "active" : "")">
-                                    <button class="page-link" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                                    <button class="page-link" @onclick="() => GoToPage(pageNum)" aria-label="Trang @pageNum" aria-current="@(CurrentPage == pageNum ? "page" : null)">@pageNum</button>
                                 </li>
                             }
                             <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
-                                <button class="page-link" @onclick="() => GoToPage(CurrentPage + 1)">Sau</button>
+                                <button class="page-link" @onclick="() => GoToPage(CurrentPage + 1)" disabled="@(CurrentPage == TotalPages)" aria-label="Trang sau">Sau</button>
                             </li>
                         </ul>
                     </nav>
