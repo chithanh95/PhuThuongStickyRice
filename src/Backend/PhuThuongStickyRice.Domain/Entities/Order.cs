@@ -814,6 +814,20 @@ namespace PhuThuongStickyRice.Domain.Entities
         }
 
         /// <summary>
+        /// Bug-hunt 2026-10-20: gỡ mã giảm giá khỏi đơn — dùng khi khách tự
+        /// sửa đơn (bớt món) làm tổng tiền tụt dưới mức tối thiểu của mã.
+        /// Theo đúng quy tắc lúc áp mã ở checkout (mã không còn đủ điều kiện
+        /// thì gỡ khỏi đơn): xóa mã + tiền giảm rồi tính lại tổng. Lượt dùng
+        /// mã được hoàn ở tầng application (DiscountAppService.RefundUsageAsync).
+        /// </summary>
+        public void RemoveDiscountCode()
+        {
+            DiscountCode = null;
+            DiscountAmount = Money.Of(0, TotalAmount.Currency);
+            RecalculateTotals();
+        }
+
+        /// <summary>
         /// Bug-hunt 2026-10-19: điều chỉnh số điểm đã đổi sau khi khách bớt món.
         /// <see cref="RecalculateTotals"/> kẹp <see cref="LoyaltyDiscount"/> theo
         /// subtotal mới nhưng không động tới bộ đếm này — AppService hoàn phần

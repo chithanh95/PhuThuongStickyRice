@@ -113,6 +113,17 @@ namespace PhuThuongStickyRice.Application.Discounts
             string code, decimal subtotal, string? customerPhone);
 
         /// <summary>
+        /// Bug-hunt 2026-10-20: lấy mức đơn tối thiểu (MinOrderAmount) của mã
+        /// để kiểm tra lại khi khách tự sửa đơn (bớt món). Trả 0 khi mã không
+        /// tồn tại (không còn ràng buộc). Chỉ đọc 1 field, không re-validate
+        /// toàn bộ — mã dùng 1 lần (SN-/SPIN-...) đã tăng UsedCount nên
+        /// CheckUsable đầy đủ sẽ báo sai là hết lượt.
+        /// </summary>
+        /// <param name="code">Mã giảm giá (đã chuẩn hóa).</param>
+        /// <returns>Mức đơn tối thiểu của mã, hoặc 0 khi mã không tồn tại.</returns>
+        Task<decimal> GetMinOrderAmountAsync(string code);
+
+        /// <summary>
         /// Tăng bộ đếm lượt dùng của mã. Gọi sau khi tạo đơn thành công.
         /// </summary>
         Task IncrementUsageAsync(string code);
@@ -534,6 +545,15 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             return (ComputeDiscount(entity, subtotal), entity.VoucherType == VoucherType.Freeship);
+        }
+
+        /// <summary>
+        /// Bug-hunt 2026-10-20: lấy mức đơn tối thiểu của mã (xem interface).
+        /// </summary>
+        public virtual async Task<decimal> GetMinOrderAmountAsync(string code)
+        {
+            var entity = await FindByCodeAsync(code);
+            return entity?.MinOrderAmount ?? 0;
         }
 
         /// <summary>

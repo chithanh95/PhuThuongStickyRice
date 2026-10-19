@@ -2034,10 +2034,26 @@ namespace PhuThuongStickyRice.Application.Orders
             var oldLoyaltyValue = order.LoyaltyDiscount.Amount;
             var oldRedeemedPoints = order.LoyaltyPointsRedeemed;
 
+            // Bug-hunt 2026-10-20: snapshot số lượng cũ theo món để kiểm tra
+            // giới hạn suất/ngày trên phần tăng thêm (đơn đang sửa đã nằm
+            // trong "sold" của DB — xem EnsureDailyLimitIncreasesAsync).
+            var oldQtyByProduct = order.Lines
+                .GroupBy(l => l.ProductId)
+                .ToDictionary(g => g.Key, g => g.Sum(l => l.Quantity));
+
             order.UpdateLineQuantities(
                 input.Lines.Select(x => (x.LineId, x.Quantity)));
 
             await RefundExcessRedeemedPointsAsync(order, oldLoyaltyValue, oldRedeemedPoints);
+
+            // Bug-hunt 2026-10-20: bớt món có thể làm subtotal tụt dưới mức
+            // tối thiểu của mã giảm giá đã áp — gỡ mã (theo đúng quy tắc
+            // checkout) thay vì giữ nguyên tiền giảm.
+            await RemoveDiscountIfBelowMinOrderAsync(order);
+
+            // Bug-hunt 2026-10-20: chặn lách giới hạn suất/ngày bằng cách tăng
+            // số lượng sau khi tạo đơn (trước đây luồng sửa đơn không kiểm tra).
+            await EnsureDailyLimitIncreasesAsync(order, oldQtyByProduct);
 
             await ValidateMinOrderAmountAsync(order);
             await ReconcileLineChangePaymentAsync(order, oldTotal);
@@ -2058,6 +2074,42 @@ namespace PhuThuongStickyRice.Application.Orders
             var linesDto = _objectMapper.Map<Order, OrderDto>(order);
             linesDto.AdminNote = null;
             return linesDto;
+        }
+
+        /// <summary>
+        /// Bug-hunt 2026-10-20: kiểm tra lại mức đơn tối thiểu của mã giảm giá
+        /// sau khi khách tự sửa đơn. Trước đây <c>RecalculateTotals</c> chỉ kẹp
+        /// tiền giảm theo subtotal mới mà không kiểm tra <c>MinOrderAmount</c>
+        /// của mã → khai thác "độn món cho đủ ngưỡng → áp mã → bớt món", giữ
+        /// nguyên tiền giảm trên đơn không còn đủ điều kiện. Theo đúng quy tắc
+        /// ở checkout (mã không còn đủ điều kiện với giỏ mới thì gỡ khỏi đơn):
+        /// gỡ mã + hoàn lượt dùng. CHỈ kiểm tra MinOrderAmount, không
+        /// re-validate toàn bộ — mã dùng 1 lần (SN-/SPIN-...) đã tăng UsedCount
+        /// nên CheckUsable đầy đủ sẽ báo sai là hết lượt và gỡ oan mã hợp lệ.
+        /// </summary>
+        /// <param name="order">Đơn hàng sau khi đã đổi số lượng dòng.</param>
+        private async Task RemoveDiscountIfBelowMinOrderAsync(Order order)
+        {
+            var code = order.DiscountCode;
+            if (string.IsNullOrWhiteSpace(code) || order.DiscountAmount.Amount <= 0)
+            {
+                return;
+            }
+
+            var minOrderAmount = await _discounts.GetMinOrderAmountAsync(code);
+            if (minOrderAmount <= 0)
+            {
+                return;
+            }
+
+            var subtotal = order.Lines.Sum(x => x.LineTotal.Amount);
+            if (subtotal >= minOrderAmount)
+            {
+                return;
+            }
+
+            order.RemoveDiscountCode();
+            await _discounts.RefundUsageAsync(code);
         }
 
         /// <summary>
@@ -3716,12 +3768,22 @@ namespace PhuThuongStickyRice.Application.Orders
             var wanted = lines
                 .Where(x => !x.IsCombo)
                 .GroupBy(x => x.ProductId)
-                .ToDictionary(g => g.Key, g => new
-                {
-                    Name = g.First().ProductName,
-                    Quantity = g.Sum(x => x.Quantity)
-                });
+                .ToDictionary(
+                    g => g.Key,
+                    g => (Name: g.First().ProductName, Quantity: g.Sum(x => x.Quantity)));
+            await EnsureDailyLimitsCoreAsync(wanted);
+        }
 
+        /// <summary>
+        /// Bug-hunt 2026-10-20: lõi kiểm tra giới hạn suất/ngày — nhận sẵn
+        /// map món → (tên, số lượng cần thêm) để dùng chung cho cả luồng tạo
+        /// đơn mới và luồng khách tự sửa đơn (chỉ kiểm tra phần tăng thêm).
+        /// </summary>
+        /// <param name="wanted">Món → (tên hiển thị khi báo lỗi, số lượng muốn thêm hôm nay).</param>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi món nào đó vượt giới hạn suất còn lại hôm nay.</exception>
+        private async Task EnsureDailyLimitsCoreAsync(
+            Dictionary<Guid, (string Name, int Quantity)> wanted)
+        {
             if (wanted.Count == 0)
             {
                 return;
@@ -3757,8 +3819,38 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
+        /// Bug-hunt 2026-10-20: kiểm tra giới hạn suất/ngày khi khách tự sửa
+        /// đơn (tăng số lượng món). Trước đây luồng sửa đơn không gọi
+        /// <c>EnsureDailyLimitsAsync</c> → lách được giới hạn bằng cách tạo đơn
+        /// trong ngưỡng rồi tăng số lượng sau. Chỉ xét phần TĂNG thêm so với số
+        /// lượng cũ của từng món: đơn đang sửa đã nằm trong "sold" của DB nên
+        /// không thể cộng nguyên số lượng mới (sẽ báo sai khi món đã hết suất).
+        /// Combo không bị giới hạn (theo đúng quy tắc lúc tạo đơn).
+        /// </summary>
+        /// <param name="order">Đơn hàng sau khi đã đổi số lượng dòng.</param>
+        /// <param name="oldQtyByProduct">Số lượng cũ của từng món trước khi sửa.</param>
+        private async Task EnsureDailyLimitIncreasesAsync(
+            Order order, Dictionary<Guid, int> oldQtyByProduct)
+        {
+            var wanted = new Dictionary<Guid, (string Name, int Quantity)>();
+            foreach (var group in order.Lines.Where(l => !l.IsCombo).GroupBy(l => l.ProductId))
+            {
+                var oldQty = oldQtyByProduct.TryGetValue(group.Key, out var q) ? q : 0;
+                var delta = group.Sum(l => l.Quantity) - oldQty;
+                if (delta > 0)
+                {
+                    wanted[group.Key] = (group.First().ProductName, delta);
+                }
+            }
+
+            await EnsureDailyLimitsCoreAsync(wanted);
+        }
+
+        /// <summary>
         /// Tổng số lượng đã bán hôm nay (giờ VN) của từng món, tính từ các đơn
         /// chưa hủy — dùng kiểm tra giới hạn suất/ngày của sản phẩm (item 165).
+        /// Ủy thác cho <see cref="Common.OrderStatisticsQuery.SoldByProductAsync"/>
+        /// dùng chung với trang tồn kho ngày của ProductAppService.
         /// </summary>
         /// <param name="fromUtc">Đầu ngày VN (quy về UTC).</param>
         /// <param name="toUtc">Cuối ngày VN, exclusive (quy về UTC).</param>
@@ -3766,16 +3858,8 @@ namespace PhuThuongStickyRice.Application.Orders
             DateTime fromUtc, DateTime toUtc)
         {
             var orderQueryable = await _orders.GetQueryableAsync();
-            var soldRows = await _asyncExecuter.ToListAsync(
-                orderQueryable
-                    .Where(x => x.Status != OrderStatus.Cancelled
-                        && x.CreatedAt >= fromUtc
-                        && x.CreatedAt < toUtc)
-                    .SelectMany(x => x.Lines)
-                    .GroupBy(l => l.ProductId)
-                    .Select(g => new { ProductId = g.Key, Sold = g.Sum(l => l.Quantity) }));
-
-            return soldRows.ToDictionary(x => x.ProductId, x => (int)x.Sold);
+            return await OrderStatisticsQuery.SoldByProductAsync(
+                orderQueryable, _asyncExecuter, fromUtc, toUtc);
         }
 
         /// <summary>

@@ -51,11 +51,11 @@
                 <table class="table table-hover table-sm mb-0">
                     <thead>
                         <tr>
-                            <th>Món</th>
-                            <th class="dg-col-che">Lượt chê</th>
-                            <th class="dg-col-avg">Điểm TB</th>
-                            <th>Khách chê gì</th>
-                            <th class="dg-col-latest">Gần nhất</th>
+                            <th scope="col">Món</th>
+                            <th scope="col" class="dg-col-che">Lượt chê</th>
+                            <th scope="col" class="dg-col-avg">Điểm TB</th>
+                            <th scope="col">Khách chê gì</th>
+                            <th scope="col" class="dg-col-latest">Gần nhất</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -109,7 +109,7 @@ else
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead>
-                <tr><th>Đơn hàng</th><th>SĐT</th><th>Sao</th><th>Nhận xét</th><th>Ảnh</th><th>Quà tặng</th><th>Phản hồi</th><th>Ngày</th><th></th></tr>
+                <tr><th scope="col">Đơn hàng</th><th scope="col">SĐT</th><th scope="col">Sao</th><th scope="col">Nhận xét</th><th scope="col">Ảnh</th><th scope="col">Quà tặng</th><th scope="col">Phản hồi</th><th scope="col">Ngày</th><th scope="col"></th></tr>
             </thead>
             <tbody>
                 @foreach (var r in _reviews)
@@ -250,6 +250,15 @@ else
     </div>
 </div>
 
+@* Bug-hunt 2026-10-20: hỏi xác nhận trước khi lưu phản hồi TRỐNG đè lên
+   phản hồi đã có — trước đây bấm Lưu với ô trống là xóa vĩnh viễn phản hồi
+   cũ mà không hỏi, không báo. Dùng chung ConfirmDialog như trang Khuyến mãi. *@
+<ConfirmDialog @ref="EmptyReplyDialog" Title="Xóa phản hồi" YesText="Xóa phản hồi" NoText="Giữ lại" ConfirmEventCallback="ConfirmedEmptyReply">
+    <Message>
+        Nội dung phản hồi đang để trống — bấm <strong>Xóa phản hồi</strong> sẽ xóa vĩnh viễn phản hồi hiện tại của đánh giá này.
+    </Message>
+</ConfirmDialog>
+
 @code {
     private List<OrderReviewModel> _reviews;
     private string _error;
@@ -258,6 +267,11 @@ else
     // Reply-in-progress state.
     private Guid _replyingId;
     private string _replyText;
+
+    // Bug-hunt 2026-10-20: review đang chờ xác nhận xóa phản hồi (dialog
+    // "Xóa phản hồi") — tránh bấm Lưu với ô trống xóa nhầm phản hồi cũ.
+    private ConfirmDialog EmptyReplyDialog;
+    private OrderReviewModel _pendingEmptyReply;
 
     // Check-in photos pending moderation (item 93).
     private List<CustomerPhotoModel> _pendingPhotos;
@@ -377,6 +391,49 @@ else
     }
 
     private async Task SaveReply(OrderReviewModel r)
+    {
+        _error = null;
+        _message = null;
+
+        // Bug-hunt 2026-10-20: ô phản hồi để trống —
+        // - chưa từng có phản hồi: chặn luôn (lưu trống là vô nghĩa);
+        // - đã có phản hồi: hỏi xác nhận vì bấm Lưu = xóa vĩnh viễn phản hồi cũ.
+        if (string.IsNullOrWhiteSpace(_replyText))
+        {
+            if (!string.IsNullOrWhiteSpace(r.AdminReply))
+            {
+                _pendingEmptyReply = r;
+                EmptyReplyDialog.Show();
+                return;
+            }
+
+            _error = "Vui lòng nhập nội dung phản hồi.";
+            return;
+        }
+
+        await DoSaveReplyAsync(r);
+    }
+
+    /// <summary>
+    /// Bug-hunt 2026-10-20: admin đã xác nhận xóa phản hồi ở dialog —
+    /// lưu nội dung trống (server trim thành null) đè lên phản hồi cũ.
+    /// </summary>
+    private async Task ConfirmedEmptyReply()
+    {
+        var r = _pendingEmptyReply;
+        _pendingEmptyReply = null;
+        EmptyReplyDialog.Close();
+        if (r == null)
+        {
+            return;
+        }
+
+        _replyText = string.Empty;
+        await DoSaveReplyAsync(r);
+        _message = "Đã xóa phản hồi.";
+    }
+
+    private async Task DoSaveReplyAsync(OrderReviewModel r)
     {
         _error = null;
         _message = null;
