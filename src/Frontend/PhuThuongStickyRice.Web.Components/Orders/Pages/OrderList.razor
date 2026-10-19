@@ -84,12 +84,13 @@
         @* Wave 6c (item 35): date-range filter. *@
         <div class="form-row mt-2">
             <div class="col-md-2 col-6">
-                <label class="mb-1"><small class="text-muted">Từ ngày</small></label>
-                <input type="date" class="form-control" @bind="_fromDate" @bind:after="() => LoadOrders(1)" />
+                @* uiux-a11y 2026-10-19: gắn label với input qua for/id để screen reader đọc đúng *@
+                <label class="mb-1" for="ord-from-date"><small class="text-muted">Từ ngày</small></label>
+                <input type="date" id="ord-from-date" class="form-control" @bind="_fromDate" @bind:after="() => LoadOrders(1)" />
             </div>
             <div class="col-md-2 col-6">
-                <label class="mb-1"><small class="text-muted">Đến ngày</small></label>
-                <input type="date" class="form-control" @bind="_toDate" @bind:after="() => LoadOrders(1)" />
+                <label class="mb-1" for="ord-to-date"><small class="text-muted">Đến ngày</small></label>
+                <input type="date" id="ord-to-date" class="form-control" @bind="_toDate" @bind:after="() => LoadOrders(1)" />
             </div>
             <div class="col-md-8 d-flex align-items-end justify-content-end">
                 @if (_fromDate.HasValue || _toDate.HasValue)

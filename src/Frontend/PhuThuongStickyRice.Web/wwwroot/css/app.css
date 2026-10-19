@@ -371,7 +371,9 @@ html.dark .toast {
 }
 .shop-dropzone-icon {
     font-size: 32px;
-    color: #999;
+    /* uiux-a11y 2026-10-19: #767676 thay #999 — icon cần 3:1 (WCAG 1.4.11)
+       trên #fafafa, trước #999 chỉ ~2.8:1 */
+    color: #767676;
     margin-bottom: 8px;
 }
 .shop-dropzone:hover .shop-dropzone-icon {
@@ -381,9 +383,11 @@ html.dark .toast {
     font-weight: 500;
     margin-bottom: 4px;
 }
+/* uiux-a11y 2026-10-19: #767676 thay #999 — hint 12px đạt 4.5:1 trên #fafafa
+   (trước #999 chỉ ~2.8:1, chữ mờ khó đọc) */
 .shop-dropzone-hint {
     font-size: 12px;
-    color: #999;
+    color: #767676;
 }
 
 /* A11y (WCAG 2.4.7 Focus Visible): input file bên trong dropzone bị ẩn

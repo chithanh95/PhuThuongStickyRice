@@ -707,3 +707,33 @@ html.dark .shp-page .shop-status-banner.open { color: #7ce3b1 !important; }
 }
 
 /* ===== end UI/UX run 2026-10-19 14:45 - Agent3 Lexa ===== */
+
+/* ===== UI/UX run 2026-10-19 15:45 - Agent3 Lexa (4 fix mới) ===== */
+
+/* ---------- Fix 1: link/button-link toàn site #0366d6 -> tím Lexa ----------
+   app.css:21 `a, .btn-link { color: #0366d6; }` là màu link mặc định của
+   Blazor template (kèm `a:hover` #0056b3 của Bootstrap). Đợt trước mới phủ
+   .shp-page/.lx-admin; các trang ngoài 2 scope (404, /error, trang auth...)
+   vẫn xanh dương. Phủ global tại đây (file load sau cùng nên thắng rule
+   cùng specificity). Dark mode: tím nhạt #b3a8e8 cho dễ đọc. */
+a, .btn-link { color: #7a6fbe; }
+a:hover, .btn-link:hover { color: #625998; }
+html.dark a, html.dark .btn-link { color: #b3a8e8; }
+html.dark a:hover, html.dark .btn-link:hover { color: #d5cdf5; }
+
+/* ---------- Fix 2: số trang phân trang dark mode #d9a94e (vàng gold) -> tím nhạt Lexa ----------
+   app.css `html.dark .page-link { color: #d9a94e; }` — số trang vàng gold
+   trong dark mode, lệch hẳn palette. Đồng nhất với
+   `html.dark .lx-admin .page-link` (color #b3a8e8, admin-lexa.css:1204).
+   Specificity bằng nhau (0,2,1), file này load sau nên thắng. */
+html.dark .page-link { color: #b3a8e8; }
+
+/* ---------- Fix 3: viền validation của Blazor -> palette Lexa ----------
+   app.css: `.valid.modified:not([type=checkbox])` outline #26b050 (xanh lá
+   Bootstrap), `.invalid` outline `red` (đỏ thuần) — màu mặc định Blazor
+   template còn sót. Đồng nhất với success #34c38f / danger #f46a6a Lexa.
+   Chỉ đổi outline-color để giữ nguyên độ dày/kiểu viền. */
+.valid.modified:not([type=checkbox]) { outline-color: #34c38f; }
+.invalid { outline-color: #f46a6a; }
+
+/* ===== end UI/UX run 2026-10-19 15:45 - Agent3 Lexa ===== */

@@ -2100,6 +2100,22 @@ html.pt-reveal .sg-reveal.in {
 .sg-cart-float:hover { color: #fff; text-decoration: none; transform: scale(1.05); }
 .sg-cart-float strong { font-variant-numeric: tabular-nums; }
 html.dark .sg-cart-float { background: #a01818; }
+
+/* uiux-dark-2026-10-19 (Agent 2, run 15:45) — FIX 1: nút "📞 Gọi quán" trong
+   sticky CTA mobile (Index.razor:801). Base `.sg-sticky-call` nền #fff chữ
+   đỏ #6F0707 — ở dark mode thành mảng trắng chói giữa trang tối, trong khi
+   nút "Đặt xôi" bên cạnh đã là đỏ đậm. Fix: nền nâu tối + chữ kem + viền đỏ
+   sáng hơn để vẫn nhận diện được là CTA gọi điện. */
+html.dark .sg-sticky-call {
+    background: #262019;
+    color: #f0d9b5;
+    border-color: #b05757;
+}
+
+/* uiux-dark-2026-10-19 (Agent 2, run 15:45) — FIX 2: dòng gợi ý trong khung
+   chat AI `.sg-chat-hint` #8a7a68 trên nền --sg-surface (#262019 ở dark) chỉ
+   ~3.9:1, dưới chuẩn AA 4.5:1 cho chữ 14px. Sáng lên đúng tông --sg-muted. */
+html.dark .sg-chat-hint { color: #b3a48a; }
 @media (max-width: 768px) {
     .sg-cart-float { bottom: 96px; right: 12px; padding: 12px 18px; font-size: 14px; }
 }

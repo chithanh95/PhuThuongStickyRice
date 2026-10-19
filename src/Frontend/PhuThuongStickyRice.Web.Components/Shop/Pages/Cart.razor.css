@@ -309,3 +309,28 @@ html.dark .gh-freeship .progress {
     }
 }
 /* ===== END UIUX run 15:38 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 15:52 — Agent1 Mobile =====
+   FIX 3 — Hàng gợi ý "🔥 Món bán chạy / Thường được mua cùng" (Cart.razor):
+   khối tên+giá (div.d-flex.align-items-center) không có min-width:0 nên tên
+   món dài đẩy nút "Thêm" (btn-sm 44px) lệch/tràn ở màn 320px — nút tiền
+   quan trọng bị ép sát mép phải. Cho khối chữ co lại (tên ellipsis 1 dòng
+   kiểu ShopeeFood, giá giữ nguyên), nút giữ nguyên vị trí.
+   (Scope .cart-upsell nên không chạm .cart-item-main của dòng giỏ chính.) */
+@media (max-width: 767.98px) {
+    .cart-upsell .d-flex.align-items-center.justify-content-between > .d-flex.align-items-center {
+        flex: 1;
+        min-width: 0;
+        margin-right: 8px;
+    }
+    .cart-upsell .d-flex.align-items-center.justify-content-between > .btn {
+        flex-shrink: 0;
+    }
+    .cart-upsell .d-flex.align-items-center > div > strong {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+/* ===== END UIUX run 15:52 - Agent1 FIX 3 ===== */

@@ -22,12 +22,13 @@
         <h4 class="card-title">Khoảng thời gian</h4>
         <div class="form-row align-items-end">
             <div class="col-md-3 col-6">
-                <label class="mb-1"><small class="text-muted">Từ ngày</small></label>
-                <input type="date" class="form-control" @bind="_fromDate" />
+                @* uiux-a11y 2026-10-19: gắn label với input qua for/id để screen reader đọc đúng *@
+                <label class="mb-1" for="bc-from-date"><small class="text-muted">Từ ngày</small></label>
+                <input type="date" id="bc-from-date" class="form-control" @bind="_fromDate" />
             </div>
             <div class="col-md-3 col-6">
-                <label class="mb-1"><small class="text-muted">Đến ngày</small></label>
-                <input type="date" class="form-control" @bind="_toDate" />
+                <label class="mb-1" for="bc-to-date"><small class="text-muted">Đến ngày</small></label>
+                <input type="date" id="bc-to-date" class="form-control" @bind="_toDate" />
             </div>
             <div class="col-md-6 col-12 text-right mt-2 mt-md-0">
                 <button class="btn btn-outline-secondary mr-2" @onclick="SetThisMonth">Tháng này</button>

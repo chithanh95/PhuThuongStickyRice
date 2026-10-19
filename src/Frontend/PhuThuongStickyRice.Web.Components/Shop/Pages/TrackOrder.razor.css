@@ -564,7 +564,7 @@ html.dark .shop-dropzone:focus-within {
 }
 /* ===== END UIUX run 14:58 - Agent1 FIX 4 ===== */
 
-/* ===== UIUX run 15:38 — Agent1 Mobile =====
+/* ===== UIUX run 15:52 — Agent1 Mobile =====
    FIX 3 — Ô nhập .form-control-sm (ngày sinh, nhãn/địa chỉ mới trong "Sổ địa
    chỉ", các ô sửa đơn / SĐT / ghi chú khi tự phục vụ) chỉ cao ~31-34px trên
    mobile, trong khi nút "Lưu"/"Bỏ qua" bên cạnh đã 44px (btn-sm) — cụm
@@ -579,3 +579,61 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 15:38 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 15:52 — Agent1 Mobile =====
+   FIX 1 — Dòng địa chỉ trong "Sổ địa chỉ" (TrackOrder.razor:237):
+   .d-flex.justify-content-between > small là flex item với min-width:auto
+   nên địa chỉ dài không co lại, đẩy nút "Xóa" (44px) tràn khỏi card ở màn
+   320px. Cho chữ co lại + xuống dòng (word-break), nút giữ nguyên vị trí.
+   (Base scope — chỉ tác động khi chữ quá dài, PC không đổi gì.) */
+.to-info-card .card-body > .d-flex.border-bottom > small {
+    flex: 1;
+    min-width: 0;
+    margin-right: 8px;
+    word-break: break-word;
+}
+.to-info-card .card-body > .d-flex.border-bottom .btn {
+    flex-shrink: 0;
+}
+/* ===== END UIUX run 15:52 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 15:52 — Agent1 Mobile =====
+   FIX 4 — Form thêm địa chỉ trong "Sổ địa chỉ" (TrackOrder.razor:242-252):
+   .col-4 (ô nhãn) chỉ ~80px, .col-8 (ô địa chỉ + nút "Lưu") ~160px ở màn
+   320px — ô nhập chật, khó gõ với người lớn tuổi. Màn ≤575px xếp dọc
+   full-width, ô địa chỉ xuống dòng dưới có khoảng cách rõ ràng.
+   (Scope: .to-info-card .form-row chỉ có form này dùng col-4/col-8 —
+   form-row ngày sinh dùng col-auto nên không bị ảnh hưởng.) */
+@media (max-width: 575.98px) {
+    .to-info-card .form-row > .col-4,
+    .to-info-card .form-row > .col-8 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    .to-info-card .form-row > .col-8 {
+        margin-top: 8px;
+    }
+}
+/* ===== END UIUX run 15:52 - Agent1 FIX 4 ===== */
+
+/* ===== UIUX run 15:52 — Agent1 Mobile =====
+   FIX 5 — Header card chi tiết đơn (TrackOrder.razor:109-112): "Đơn hàng
+   PX-20261014-4821" + badge trạng thái .float-right — ở màn 320px tổng
+   ~280px vượt ~250px nội dung header nên badge rớt dòng lệch, trông chật.
+   Màn ≤575px: header thành flex-wrap, badge (margin-left:auto) đậu phải khi
+   còn chỗ, tự xuống dòng phải khi hết chỗ — gọn, không đè mã đơn.
+   (Các .card-header khác trong trang chỉ có 1 <strong> nên flex không đổi
+   gì về mặt hình ảnh.) */
+@media (max-width: 575.98px) {
+    .card-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 10px;
+    }
+    .card-header .float-right {
+        float: none !important;
+        margin-left: auto;
+    }
+}
+/* ===== END UIUX run 15:52 - Agent1 FIX 5 ===== */

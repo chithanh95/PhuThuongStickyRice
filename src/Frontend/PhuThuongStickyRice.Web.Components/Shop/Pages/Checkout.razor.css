@@ -275,3 +275,23 @@ html.dark .co-mobile-bar .co-total small {
     }
 }
 /* ===== END UIUX run 15:38 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 15:52 — Agent1 Mobile =====
+   FIX 2 — Bảng thông tin chuyển khoản QR (Checkout.razor:224: ngân hàng, số
+   tài khoản, chủ tài khoản, số tiền, nội dung): tên ngân hàng/chủ tài khoản
+   dài làm bảng rộng hơn card → tràn ngang ở màn 320px. (Bảng tóm tắt đơn
+   trong .alert-success đã được fix kiểu này ở run 14:58 — bảng này bị sót.)
+   Giải pháp: khóa layout bảng, cho chữ ô xuống dòng.
+   (Verify: .card-body > .row > .col-md-7 > table.table-sm chỉ khớp đúng bảng
+   này — bảng tóm tắt đơn là con trực tiếp của .co-summary .card-body.) */
+@media (max-width: 767.98px) {
+    .card-body > .row > .col-md-7 > table.table-sm {
+        table-layout: fixed;
+        width: 100%;
+    }
+    .card-body > .row > .col-md-7 > table.table-sm td {
+        word-break: break-word;
+        min-width: 0;
+    }
+}
+/* ===== END UIUX run 15:52 - Agent1 FIX 2 ===== */
