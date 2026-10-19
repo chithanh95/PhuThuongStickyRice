@@ -9,6 +9,7 @@
 <link href="_content/PhuThuongStickyRice.Web.Components/css/admin-lexa.css" rel="stylesheet" />
 
 <div class="lx-admin">
+    <a href="#lx-main-content" class="a11y-skip-link">Bỏ qua tới nội dung chính</a>
     <div class="lx-wrapper @(_collapsed ? "lx-collapsed" : "") @(_mobileOpen ? "lx-mobile-open" : "")">
         @* ============ SIDEBAR TRÁI (Lexa style, fixed) ============ *@
         <aside class="lx-sidebar" aria-label="Menu quản trị">
@@ -79,7 +80,7 @@
                 <a class="lx-icon-btn" href="/shop" target="_blank" rel="noopener" title="Xem cửa hàng (giao diện khách)">
                     <span class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></span>
                 </a>
-                <button class="lx-icon-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng">
+                <button class="lx-icon-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
                     <span aria-hidden="true">@(_isDark ? "☀️" : "🌙")</span>
                 </button>
                 <div class="lx-dropdown lx-search-wrap">
@@ -233,7 +234,7 @@
         <div class="lx-backdrop" @onclick="CloseNavMobile"></div>
 
         @* ============ MAIN ============ *@
-        <div class="lx-main">
+        <div class="lx-main" id="lx-main-content" tabindex="-1">
             <div class="lx-content">
                 @Body
             </div>

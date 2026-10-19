@@ -10,6 +10,7 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject DashboardService DashboardService
 @inject Wave5Service Wave5Service
+@inject PhuThuongStickyRice.Web.Components.Shop.Services.ShopService ShopService
 @inject IJSRuntime JSRuntime
 <div class="lx-page-head">
     <div>
@@ -72,6 +73,19 @@
         <button type="button" class="close ml-auto" aria-label="Đóng" @onclick="DismissStaleAlert">
             <span aria-hidden="true">&times;</span>
         </button>
+    </div>
+}
+
+@* Item 135: cảnh báo món hết suất hôm nay. *@
+@if (_soldOutToday != null && _soldOutToday.Count > 0)
+{
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <span class="mr-2" aria-hidden="true">⚠️</span>
+        <div>
+            <strong>Hết suất hôm nay (@_soldOutToday.Count món):</strong>
+            @string.Join(", ", _soldOutToday)
+            <a href="/admin/san-pham" class="alert-link ml-2">Kiểm tra tồn kho →</a>
+        </div>
     </div>
 }
 
@@ -628,6 +642,9 @@ else
     private string _newIpWarning;
     private const string IpWarningKey = "phuthuong.last-login-ip-warning";
 
+    // Item 135: món hết suất hôm nay (từ DailyInventory).
+    private List<string> _soldOutToday = new List<string>();
+
     protected override async Task OnInitializedAsync()
     {
         await LoadStatsAsync();
@@ -688,6 +705,21 @@ else
             catch (Exception)
             {
                 _weeklyReport = null;
+            }
+
+            // Item 135: món hết suất hôm nay (fail-soft — alert ẩn khi lỗi).
+            try
+            {
+                var remaining = await ShopService.GetDailyRemainingAsync();
+                _soldOutToday = (remaining ?? new List<PhuThuongStickyRice.Web.Components.Shop.Models.ProductDailyRemainingModel>())
+                    .Where(r => r.RemainingToday <= 0)
+                    .Select(r => r.ProductName)
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .ToList();
+            }
+            catch (Exception)
+            {
+                _soldOutToday = new List<string>();
             }
         }
         catch (Exception)

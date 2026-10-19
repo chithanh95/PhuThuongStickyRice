@@ -151,8 +151,11 @@
             <div class="cho-grid mb-4">
                 @foreach (var t in ready)
                 {
-                    <div class="cho-ticket cho-ready" @onclick="() => Zoom(t)">
-                        <button class="cho-zoom" title="Phóng to" @onclick:stopPropagation="true" @onclick="() => Zoom(t)">⤢</button>
+                    <div class="cho-ticket cho-ready" role="button" tabindex="0"
+                         aria-label="Phóng to vé số @t.QueueNumber"
+                         @onclick="() => Zoom(t)"
+                         @onkeydown="@(e => ZoomOnKey(e, t))">
+                        <button class="cho-zoom" title="Phóng to" aria-label="Phóng to vé số @t.QueueNumber" @onclick:stopPropagation="true" @onclick="() => Zoom(t)">⤢</button>
                         <div class="cho-num">@t.QueueNumber</div>
                         <div class="cho-code">@t.ShortCode</div>
                     </div>
@@ -174,8 +177,11 @@
             <div class="cho-grid">
                 @foreach (var t in preparing)
                 {
-                    <div class="cho-ticket cho-preparing" @onclick="() => Zoom(t)">
-                        <button class="cho-zoom" title="Phóng to" @onclick:stopPropagation="true" @onclick="() => Zoom(t)">⤢</button>
+                    <div class="cho-ticket cho-preparing" role="button" tabindex="0"
+                         aria-label="Phóng to vé số @t.QueueNumber"
+                         @onclick="() => Zoom(t)"
+                         @onkeydown="@(e => ZoomOnKey(e, t))">
+                        <button class="cho-zoom" title="Phóng to" aria-label="Phóng to vé số @t.QueueNumber" @onclick:stopPropagation="true" @onclick="() => Zoom(t)">⤢</button>
                         <div class="cho-num">@t.QueueNumber</div>
                         <div class="cho-code">@t.ShortCode</div>
                     </div>
@@ -246,6 +252,14 @@
     private void Zoom(QueueTicketModel ticket)
     {
         _zoomed = ticket;
+    }
+
+    private void ZoomOnKey(KeyboardEventArgs e, QueueTicketModel ticket)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            Zoom(ticket);
+        }
     }
 
     public void Dispose()

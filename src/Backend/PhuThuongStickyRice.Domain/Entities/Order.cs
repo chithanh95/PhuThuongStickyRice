@@ -777,6 +777,37 @@ namespace PhuThuongStickyRice.Domain.Entities
             DeliverySlot = string.IsNullOrEmpty(slot) ? null : slot;
         }
 
+        /// <summary>
+        /// Item 138: khách tự sửa SĐT người nhận + ghi chú khi đơn còn Pending.
+        /// </summary>
+        public void UpdateContactByCustomer(string recipientPhone, string notes)
+        {
+            if (Status != OrderStatus.Pending)
+            {
+                throw new DomainException("Chỉ đơn hàng đang chờ xác nhận mới được sửa thông tin liên hệ.");
+            }
+
+            var phone = (recipientPhone ?? "").Trim();
+            if (!string.IsNullOrEmpty(phone))
+            {
+                // Validate SĐT VN: 0 + (3|5|7|8|9) + 8 số.
+                if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(0)(3|5|7|8|9)\d{8}$"))
+                {
+                    throw new DomainException("SĐT không đúng định dạng (VD: 0901234567).");
+                }
+
+                if (phone.Length > RecipientPhoneMaxLength)
+                {
+                    throw new DomainException($"SĐT không được vượt quá {RecipientPhoneMaxLength} ký tự.");
+                }
+
+                RecipientPhone = phone;
+            }
+
+            var note = (notes ?? "").Trim();
+            Notes = string.IsNullOrEmpty(note) ? null : note;
+        }
+
         private void RecalculateTotals()
         {
             var currency = TotalAmount.Currency;

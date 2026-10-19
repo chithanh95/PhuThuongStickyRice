@@ -352,10 +352,11 @@
             @if (_order.Status == "Pending")
             {
                 <div class="mb-3">
-                    @if (!_editingLines && !_editingAddress)
+                    @if (!_editingLines && !_editingAddress && !_editingContact)
                     {
                         <button class="btn btn-outline-secondary btn-sm" @onclick="StartEditLines">✏️ Sửa đơn (số lượng)</button>
                         <button class="btn btn-outline-info btn-sm ml-2" @onclick="StartEditAddress">📍 Đổi địa chỉ / giờ giao</button>
+                        <button class="btn btn-outline-primary btn-sm ml-2" @onclick="StartEditContact">📞 Sửa SĐT / ghi chú</button>
                         <button class="btn btn-outline-danger btn-sm ml-2" @onclick="CancelOrder" disabled="@_cancelling">
                             @(_cancelling ? "Đang hủy..." : "Hủy đơn")
                         </button>
@@ -388,6 +389,33 @@
                                     @(_savingAddrForm ? "Đang lưu..." : "Lưu thay đổi")
                                 </button>
                                 <button class="btn btn-outline-secondary btn-sm mt-1 ml-2" @onclick="() => _editingAddress = false">Bỏ qua</button>
+                            </div>
+                        </div>
+                    }
+                    else if (_editingContact)
+                    {
+                        @* Item 138: sửa SĐT người nhận + ghi chú khi đơn còn Pending. *@
+                        <div class="card">
+                            <div class="card-header py-2"><strong>📞 Sửa SĐT / ghi chú</strong></div>
+                            <div class="card-body py-2">
+                                <div class="form-group mb-2">
+                                    <label><small>SĐT người nhận</small></label>
+                                    <input class="form-control form-control-sm" @bind="_editRecipientPhone"
+                                           maxlength="11" inputmode="tel" placeholder="0901234567" />
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label><small>Ghi chú <span class="text-muted">(VD: ít hành, không cay...)</span></small></label>
+                                    <input class="form-control form-control-sm" @bind="_editNotes"
+                                           maxlength="500" placeholder="Ghi chú cho quán" />
+                                </div>
+                                @if (!string.IsNullOrEmpty(_editContactError))
+                                {
+                                    <div class="alert alert-danger mt-2 mb-1">@_editContactError</div>
+                                }
+                                <button class="btn btn-success btn-sm mt-1" @onclick="SaveEditedContact" disabled="@_savingContactForm">
+                                    @(_savingContactForm ? "Đang lưu..." : "Lưu thay đổi")
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm mt-1 ml-2" @onclick="() => _editingContact = false">Bỏ qua</button>
                             </div>
                         </div>
                     }
@@ -431,7 +459,10 @@
             @if (_order.Status == "Completed")
             {
                 <div class="card mb-3">
-                    <div class="card-header py-2"><strong>Đánh giá đơn hàng</strong></div>
+                    <div class="card-header py-2">
+                        <strong>Đánh giá đơn hàng</strong>
+                        <small class="text-success ml-2">⭐ Đánh giá 5 sao được thưởng +20 điểm!</small>
+                    </div>
                     <div class="card-body py-2">
                         @if (_reviewSubmitted)
                         {
@@ -747,6 +778,13 @@
     private bool _savingAddrForm;
     private string _editAddressError;
 
+    // Item 138: customer self-service — update recipient phone + notes (Pending only).
+    private bool _editingContact;
+    private string _editRecipientPhone;
+    private string _editNotes;
+    private bool _savingContactForm;
+    private string _editContactError;
+
     // TC3: shop hotline for the "call hotline to change" note (fail-soft).
     private string _hotline;
 
@@ -831,6 +869,41 @@
         _editDeliverySlot = _order.DeliverySlot;
         _editingLines = false;
         _editingAddress = true;
+    }
+
+    /// <summary>Item 138: bắt đầu sửa SĐT người nhận + ghi chú.</summary>
+    private void StartEditContact()
+    {
+        _editContactError = null;
+        _editRecipientPhone = _order.RecipientPhone;
+        _editNotes = _order.Notes;
+        _editingLines = false;
+        _editingAddress = false;
+        _editingContact = true;
+    }
+
+    /// <summary>Item 138: lưu SĐT người nhận + ghi chú (Pending only, server-enforced).</summary>
+    private async Task SaveEditedContact()
+    {
+        _editContactError = null;
+        _savingContactForm = true;
+        try
+        {
+            _order = await Wave2Service.UpdateContactByCustomerAsync(
+                _order.OrderNumber, _order.CustomerPhone, _editRecipientPhone, _editNotes);
+            _editingContact = false;
+            Toasts.Show("Đã cập nhật SĐT / ghi chú.");
+        }
+        catch (Exception ex)
+        {
+            _editContactError = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Không lưu được thay đổi. Vui lòng thử lại."
+                : ex.Message;
+        }
+        finally
+        {
+            _savingContactForm = false;
+        }
     }
 
     /// <summary>TC3: saves the new address / delivery slot (Pending only, server-enforced).</summary>

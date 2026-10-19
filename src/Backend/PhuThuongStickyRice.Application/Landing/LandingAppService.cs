@@ -23,20 +23,29 @@ namespace PhuThuongStickyRice.Application.Landing
     {
         private readonly IRepository<LandingPageContent, Guid> _contentRepository;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public LandingAppService(
             IRepository<LandingPageContent, Guid> contentRepository,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _contentRepository = contentRepository;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         [AllowAnonymous]
         public virtual async Task<LandingContentDto> GetContentAsync()
         {
-            var entity = await GetSingleAsync();
-            return entity == null ? LandingContentDefaults.GetDefaultDto() : MapToDto(entity);
+            // Perf: landing content is fetched by every public layout/header/
+            // footer on each page visit. Cache 5 minutes, invalidated on
+            // admin save (UpdateContentAsync below).
+            return await _catalogCache.GetOrAddAsync("landing:content", async () =>
+            {
+                var entity = await GetSingleAsync();
+                return entity == null ? LandingContentDefaults.GetDefaultDto() : MapToDto(entity);
+            });
         }
 
         [Authorize(Roles = "Admin")]
@@ -85,6 +94,9 @@ namespace PhuThuongStickyRice.Application.Landing
                     dto.ReviewVideoTitle, dto.ReviewVideoUrl);
                 await _contentRepository.UpdateAsync(entity, autoSave: true);
             }
+
+            // Perf: bust the public landing-content cache so the edit shows immediately.
+            _catalogCache.Invalidate();
 
             return dto;
         }

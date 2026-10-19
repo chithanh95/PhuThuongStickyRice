@@ -31,6 +31,7 @@ namespace PhuThuongStickyRice.Application.Common
     {
         private readonly IRepository<FeatureFlag, Guid> _flags;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         private static readonly (string Key, string Name, string Description)[] Defaults =
         {
@@ -42,10 +43,12 @@ namespace PhuThuongStickyRice.Application.Common
 
         public FeatureFlagAppService(
             IRepository<FeatureFlag, Guid> flags,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _flags = flags;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         [Authorize(Roles = "Admin")]
@@ -64,26 +67,32 @@ namespace PhuThuongStickyRice.Application.Common
             var entity = await FindOrThrowAsync(key);
             entity.IsEnabled = enabled;
             await _flags.UpdateAsync(entity, autoSave: true);
+            // Perf: bust the public flags cache so the toggle takes effect immediately.
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
         [AllowAnonymous]
         public virtual async Task<Dictionary<string, bool>> GetEnabledMapAsync()
         {
-            await EnsureDefaultsAsync();
-            var queryable = await _flags.GetQueryableAsync();
-            var entities = await _asyncExecuter.ToListAsync(queryable);
-            return entities.ToDictionary(x => x.Key, x => x.IsEnabled);
+            // Perf: the public map is fetched by the storefront on page load.
+            // Cache 5 minutes; invalidated by SetEnabledAsync above.
+            return await _catalogCache.GetOrAddAsync("feature-flags:enabled-map", async () =>
+            {
+                await EnsureDefaultsAsync();
+                var queryable = await _flags.GetQueryableAsync();
+                var entities = await _asyncExecuter.ToListAsync(queryable);
+                return entities.ToDictionary(x => x.Key, x => x.IsEnabled);
+            });
         }
 
         public virtual async Task<bool> IsEnabledAsync(string key)
         {
-            var queryable = await _flags.GetQueryableAsync();
-            var entity = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Key == key));
+            // Perf: serve from the cached map instead of a per-call DB query.
+            var map = await GetEnabledMapAsync();
             // Unknown flags default to enabled so a missing seed row can
             // never break an existing feature.
-            return entity == null || entity.IsEnabled;
+            return !map.TryGetValue(key, out var enabled) || enabled;
         }
 
         private async Task EnsureDefaultsAsync()

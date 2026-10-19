@@ -125,6 +125,20 @@
         padding: 8px 0;
         display: inline-block;
     }
+
+    /* iOS không auto-zoom khi focus input >=16px; input cao 44px dễ bấm */
+    .form-control {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    /* Radio/checkbox hình thức nhận hàng to ra (20px), căn giữa dòng label */
+    .form-check-input[type="radio"],
+    .form-check-input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin-top: 10px;
+    }
 }
 
 /* Dark mode: the fixed bar follows the dark card palette */

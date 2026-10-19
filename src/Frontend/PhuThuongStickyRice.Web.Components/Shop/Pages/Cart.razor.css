@@ -39,6 +39,7 @@
         max-width: none !important;
         width: 100%;
         min-height: 42px;
+        font-size: 16px; /* iOS không auto-zoom khi focus input >=16px */
     }
 
     /* 2: unit price — hidden on mobile (line total is what matters) */

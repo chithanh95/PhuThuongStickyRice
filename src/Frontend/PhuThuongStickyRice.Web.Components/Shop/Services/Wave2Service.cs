@@ -102,6 +102,16 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
+        /// Item 138: customer self-service — update recipient phone + notes of a Pending order.
+        /// </summary>
+        public async Task<TrackedOrderModel> UpdateContactByCustomerAsync(
+            string orderNumber, string phone, string recipientPhone, string notes)
+        {
+            return await PutAsync<TrackedOrderModel>("api/orders/track/contact",
+                new { OrderNumber = orderNumber, CustomerPhone = phone, RecipientPhone = recipientPhone, Notes = notes });
+        }
+
+        /// <summary>
         /// Submits the post-delivery survey. dishRatings: optional per-dish
         /// stars as {ProductId, Rating} objects (Wave 6b, item 26).
         /// </summary>

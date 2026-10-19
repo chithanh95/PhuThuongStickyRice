@@ -95,6 +95,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
     {
         public Guid ProductId { get; set; }
 
+        public string ProductName { get; set; }
+
         public int DailyLimit { get; set; }
 
         public int SoldToday { get; set; }

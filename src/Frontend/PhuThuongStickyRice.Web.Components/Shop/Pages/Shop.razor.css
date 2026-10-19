@@ -793,4 +793,8 @@ html.dark .shop-filters-sticky {
     .shop-row-stepper button { min-width: 44px; min-height: 44px; }
     .shop-row-add { min-width: 44px; min-height: 44px; }
     .shop-size-chip { min-height: 44px; }
+    /* Nút "+ Thêm" / "Hỏi qua Zalo" trên card gợi ý chỉ ~31px — nâng lên 44px */
+    .btn-sm { min-height: 44px; }
+    /* Nút "Thêm combo vào giỏ" ~38px — nâng lên 44px */
+    .card .btn-warning { min-height: 44px; }
 }

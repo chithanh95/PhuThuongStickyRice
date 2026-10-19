@@ -377,6 +377,33 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Public: customer self-service — update recipient phone + notes of a Pending order.
+        /// Item 138.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPut("track/contact")]
+        public async Task<ActionResult> UpdateContactByCustomer(
+            [FromBody] UpdateOrderContactRequestModel model,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var order = await _orderAppService.UpdateContactByCustomerAsync(new UpdateOrderContactByCustomerInput
+                {
+                    OrderNumber = model?.OrderNumber,
+                    CustomerPhone = model?.CustomerPhone,
+                    RecipientPhone = model?.RecipientPhone,
+                    Notes = model?.Notes
+                });
+                return Ok(order);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Public: submit a star rating for a completed order.
         /// </summary>
         [AllowAnonymous]

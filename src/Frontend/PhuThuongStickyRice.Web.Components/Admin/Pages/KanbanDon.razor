@@ -62,6 +62,15 @@ else
                                 {
                                     <span class="badge badge-warning">VIP</span>
                                 }
+                                @* Item 136: cảnh báo đơn Pending quá lâu (mặc định 15 phút). *@
+                                @if (col.Key == "Pending")
+                                {
+                                    var waitMins = (int)(DateTime.UtcNow - o.CreatedAt).TotalMinutes;
+                                    if (waitMins >= 15)
+                                    {
+                                        <span class="badge badge-danger ml-1">⏰ Chờ @waitMins phút</span>
+                                    }
+                                }
                             </div>
                             <div class="kanban-customer">@o.CustomerName</div>
                             <div class="kanban-phone text-muted">@o.CustomerPhone</div>

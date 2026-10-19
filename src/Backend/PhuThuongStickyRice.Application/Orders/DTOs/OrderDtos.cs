@@ -379,6 +379,20 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         public string DeliverySlot { get; set; }
     }
 
+    /// <summary>Item 138: customer self-service — update recipient phone + notes.</summary>
+    public class UpdateOrderContactByCustomerInput
+    {
+        [Required]
+        public string OrderNumber { get; set; }
+
+        [Required]
+        public string CustomerPhone { get; set; }
+
+        public string RecipientPhone { get; set; }
+
+        public string Notes { get; set; }
+    }
+
     /// <summary>Post-delivery survey for a completed order.</summary>
     public class SubmitReviewInput
     {

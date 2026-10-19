@@ -40,7 +40,7 @@
     <p>Giá gốc: @FormatPrice(BulkOriginalTotal)</p>
     <p>Chiết khấu (@(BulkDiscountPct.ToString("0"))% theo số lượng): −@FormatPrice(BulkDiscountAmount)</p>
     <p><strong>Thành tiền ước tính: @FormatPrice(BulkFinalTotal)</strong></p>
-    <p>Ngày cần hàng: @(_bulkDate?.ToString("dd/MM/yyyy") ?? "—") · Loại sự kiện: @_bulkEventType</p>
+    <p>Ngày muốn nhận hàng: @(_bulkDate?.ToString("dd/MM/yyyy") ?? "—") · Loại sự kiện: @_bulkEventType</p>
     <p>Hình thức nhận hàng: quý khách tự đến lấy tại quán hoặc tự book shipper đến lấy. Shop liên hệ xác nhận báo giá và phương thức thanh toán sau khi nhận yêu cầu.</p>
     <p><small>Báo giá tham khảo — giá chính thức do shop xác nhận. Cam kết phản hồi trong 2 giờ làm việc.</small></p>
 </div>
@@ -138,9 +138,10 @@ else
                 </div>
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label>Ngày cần hàng *</label>
+                        <label>Ngày muốn nhận hàng *</label>
                         <input type="date" class="form-control" @bind="_bulkDate"
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                               min="@DateTime.Today.AddDays(3).ToString("yyyy-MM-dd")" />
+                        <small class="form-text text-muted">Đơn số lượng lớn cần đặt trước ít nhất 3 ngày để quán chuẩn bị.</small>
                     </div>
                     <div class="form-group col-md-6">
                         <label>Số lượng dự kiến (gói) *</label>
@@ -317,7 +318,12 @@ else
         }
         if (_bulkDate == null)
         {
-            _bulkError = "Vui lòng chọn ngày cần hàng.";
+            _bulkError = "Vui lòng chọn ngày muốn nhận hàng.";
+            return;
+        }
+        if (_bulkDate.Value.Date < DateTime.Today.AddDays(3))
+        {
+            _bulkError = "Vui lòng đặt trước ít nhất 3 ngày.";
             return;
         }
         if (_bulk.Quantity < 50)
@@ -431,207 +437,6 @@ else
         }
     }
 
-    private void OnSubProductChanged(ChangeEventArgs e)
-    {
-        _sub.ToppingIds.Clear();
-        _sub.SizeOptionId = null;
-        if (Guid.TryParse(e.Value?.ToString(), out var id))
-        {
-            _sub.ProductId = id;
-            _subSelectedProduct = _products.FirstOrDefault(p => p.Id == id);
-        }
-        else
-        {
-            _sub.ProductId = Guid.Empty;
-            _subSelectedProduct = null;
-        }
-    }
-
-    private void ToggleSubTopping(Guid id, bool selected)
-    {
-        if (selected && !_sub.ToppingIds.Contains(id))
-        {
-            _sub.ToppingIds.Add(id);
-        }
-        else if (!selected)
-        {
-            _sub.ToppingIds.Remove(id);
-        }
-    }
-
-    private decimal EstimatedPerDelivery
-    {
-        get
-        {
-            var unit = _subSelectedProduct?.Price ?? 0;
-            if (_sub.SizeOptionId.HasValue && _subSelectedProduct != null)
-            {
-                var size = _subSelectedProduct.Sizes.FirstOrDefault(s => s.Id == _sub.SizeOptionId.Value);
-                if (size != null)
-                {
-                    unit = size.Price;
-                }
-            }
-
-            unit += _toppings.Where(t => _sub.ToppingIds.Contains(t.Id)).Sum(t => t.ExtraPrice);
-            return unit * Math.Max(1, _sub.Quantity);
-        }
-    }
-
-    // ---- DK1: weekday selection helpers ----
-    private static string ShortDayName(DayOfWeek d) => d switch
-    {
-        DayOfWeek.Monday => "T2",
-        DayOfWeek.Tuesday => "T3",
-        DayOfWeek.Wednesday => "T4",
-        DayOfWeek.Thursday => "T5",
-        DayOfWeek.Friday => "T6",
-        DayOfWeek.Saturday => "T7",
-        DayOfWeek.Sunday => "CN",
-        _ => "",
-    };
-
-    private static string LongDayName(DayOfWeek d) => d switch
-    {
-        DayOfWeek.Monday => "Thứ 2",
-        DayOfWeek.Tuesday => "Thứ 3",
-        DayOfWeek.Wednesday => "Thứ 4",
-        DayOfWeek.Thursday => "Thứ 5",
-        DayOfWeek.Friday => "Thứ 6",
-        DayOfWeek.Saturday => "Thứ 7",
-        DayOfWeek.Sunday => "Chủ nhật",
-        _ => "",
-    };
-
-    private void SetWeekdayPreset(string preset)
-    {
-        _weekdayPreset = preset;
-        _subWeekdays.Clear();
-        if (preset == "daily")
-        {
-            foreach (var d in WeekdayOrder)
-            {
-                _subWeekdays.Add(d);
-            }
-        }
-        else if (preset == "weekdays")
-        {
-            _subWeekdays.Add(DayOfWeek.Monday);
-            _subWeekdays.Add(DayOfWeek.Tuesday);
-            _subWeekdays.Add(DayOfWeek.Wednesday);
-            _subWeekdays.Add(DayOfWeek.Thursday);
-            _subWeekdays.Add(DayOfWeek.Friday);
-        }
-        // "custom": keep the user's current picks
-    }
-
-    private void ToggleSubWeekday(DayOfWeek d, bool on)
-    {
-        if (on)
-        {
-            _subWeekdays.Add(d);
-        }
-        else
-        {
-            _subWeekdays.Remove(d);
-        }
-        _weekdayPreset = "custom";
-    }
-
-    private string SubscriptionScheduleLabel => _subWeekdays.Count == 0 ? "Chưa chọn ngày giao"
-        : _subWeekdays.Count == 7 ? "Hằng ngày"
-        : string.Join(", ", WeekdayOrder.Where(d => _subWeekdays.Contains(d)).Select(LongDayName));
-
-    // ---- DK4: deliveries + monthly estimate for the next 30 days ----
-    private int DeliveriesNext30Days
-    {
-        get
-        {
-            if (_subWeekdays.Count == 0)
-            {
-                return 0;
-            }
-
-            var start = _sub.StartDate.Date < DateTime.Today ? DateTime.Today : _sub.StartDate.Date;
-            var count = 0;
-            for (var d = start; d < start.AddDays(30); d = d.AddDays(1))
-            {
-                if (_subWeekdays.Contains(d.DayOfWeek))
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-    }
-
-    private decimal MonthlyEstimate => EstimatedPerDelivery * DeliveriesNext30Days;
-
-    private async Task SubmitSub()
-    {
-        _subError = null;
-        if (string.IsNullOrWhiteSpace(_sub.CustomerName)
-            || string.IsNullOrWhiteSpace(_sub.DeliveryAddress))
-        {
-            _subError = "Vui lòng nhập đầy đủ họ tên và địa chỉ.";
-            return;
-        }
-        if (!IsValidPhone(_sub.Phone))
-        {
-            _subError = "Số điện thoại không đúng định dạng (VD: 0901234567).";
-            return;
-        }
-        if (_sub.ProductId == Guid.Empty)
-        {
-            _subError = "Vui lòng chọn món xôi.";
-            return;
-        }
-        if (_sub.StartDate.Date < DateTime.Today)
-        {
-            _subError = "Ngày bắt đầu không được trong quá khứ.";
-            return;
-        }
-        if (_subWeekdays.Count == 0)
-        {
-            _subError = "Vui lòng chọn ít nhất một ngày giao trong tuần.";
-            return;
-        }
-
-        _submitting = true;
-        try
-        {
-            var notes = _sub.Notes?.Trim();
-            _sub.Notes = $"[Lịch giao: {SubscriptionScheduleLabel}]" + (string.IsNullOrEmpty(notes) ? "" : $" {notes}");
-            _created = await Wave2Service.CreateSubscriptionAsync(_sub);
-            // SL2: 30% deposit on the first month's estimate
-            _depositAmount = MonthlyEstimate * 0.30m;
-            _depositCode = "DK" + new string((_sub.Phone ?? "").Where(char.IsDigit).ToArray());
-            _depositConfirmed = false;
-            await LoadBankInfoAsync();
-            _subDone = true;
-        }
-        catch (Exception ex)
-        {
-            _subError = ex.Message.Contains("ngừng bán") || ex.Message.Contains("quá khứ")
-                ? ex.Message
-                : "Không đăng ký được. Vui lòng thử lại.";
-        }
-        finally
-        {
-            _submitting = false;
-        }
-    }
-
-    private void ResetSub()
-    {
-        _subDone = false;
-        _created = null;
-        _depositConfirmed = false;
-        _depositAmount = 0;
-        _depositCode = string.Empty;
-        _bankInfo = null;
-    }
 
     private static bool IsValidPhone(string phone) =>
         !string.IsNullOrWhiteSpace(phone)

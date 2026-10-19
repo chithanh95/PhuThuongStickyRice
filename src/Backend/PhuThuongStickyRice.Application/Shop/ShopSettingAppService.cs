@@ -118,10 +118,18 @@ namespace PhuThuongStickyRice.Application.Shop
             try
             {
                 var today = DateTime.UtcNow.AddHours(7).Date;
-                var queryable = await _holidays.GetQueryableAsync();
-                var holiday = await _asyncExecuter.FirstOrDefaultAsync(
-                    queryable.Where(x => x.HolidayDate == today && x.IsFullDay));
-                return holiday?.Reason;
+                // Perf: GetPublicAsync runs on every storefront page load, so the
+                // holiday lookup must not hit the DB each time. Keyed by Vietnam
+                // date so it rolls over at midnight; admin holiday CRUD busts it
+                // via IProductCatalogCache.Invalidate.
+                return await _catalogCache.GetOrAddAsync(
+                    $"shop-settings:holiday:{today:yyyyMMdd}", async () =>
+                    {
+                        var queryable = await _holidays.GetQueryableAsync();
+                        var holiday = await _asyncExecuter.FirstOrDefaultAsync(
+                            queryable.Where(x => x.HolidayDate == today && x.IsFullDay));
+                        return holiday?.Reason;
+                    });
             }
             catch
             {

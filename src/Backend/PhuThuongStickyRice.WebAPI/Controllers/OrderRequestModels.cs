@@ -130,6 +130,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string DeliverySlot { get; set; }
     }
 
+    public sealed class UpdateOrderContactRequestModel
+    {
+        public string OrderNumber { get; set; }
+
+        public string CustomerPhone { get; set; }
+
+        public string RecipientPhone { get; set; }
+
+        public string Notes { get; set; }
+    }
+
     public sealed class SubmitReviewRequestModel
     {
         public string OrderNumber { get; set; }

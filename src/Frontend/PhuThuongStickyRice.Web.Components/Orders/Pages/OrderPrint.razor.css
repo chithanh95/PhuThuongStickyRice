@@ -12,7 +12,7 @@
 .invoice-shop {
     font-family: 'Cormorant Garamond', Georgia, serif;
     letter-spacing: 0.15em;
-    color: #7a1b2e;
+    color: #763434; /* brand title maroon (landing theme) */
 }
 
 .invoice-info {

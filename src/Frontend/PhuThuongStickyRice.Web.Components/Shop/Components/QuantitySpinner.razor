@@ -1,9 +1,9 @@
 @* Lexa-style TouchSpin quantity selector *@
 
 <div class="qty-spinner">
-    <button type="button" class="qty-btn qty-minus" @onclick="Decrement" disabled="@(Value <= Min)">−</button>
-    <input type="text" class="qty-input" value="@Value" readonly />
-    <button type="button" class="qty-btn qty-plus" @onclick="Increment" disabled="@(Value >= Max)">+</button>
+    <button type="button" class="qty-btn qty-minus" @onclick="Decrement" disabled="@(Value <= Min)" aria-label="Giảm số lượng">−</button>
+    <input type="text" class="qty-input" value="@Value" readonly aria-label="Số lượng" />
+    <button type="button" class="qty-btn qty-plus" @onclick="Increment" disabled="@(Value >= Max)" aria-label="Tăng số lượng">+</button>
 </div>
 
 <style>

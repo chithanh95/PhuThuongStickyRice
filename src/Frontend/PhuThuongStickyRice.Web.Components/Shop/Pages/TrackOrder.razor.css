@@ -269,6 +269,13 @@ html.dark .to-total-row {
 @media (max-width: 767.98px) {
     .to-copy-btn { min-width: 44px; min-height: 44px; }
 
+    /* Input tra cứu/lịch sử: chữ 16px (iOS không auto-zoom), cao bằng nút tra cứu 46px */
+    .to-lookup .form-control,
+    .to-history .form-control {
+        font-size: 16px;
+        min-height: 46px;
+    }
+
     /* Mobile: label nằm trên, giá trị xuống dòng — ghi chú dài không bị ép */
     .to-info-row {
         flex-direction: column;

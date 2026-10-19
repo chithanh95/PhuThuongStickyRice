@@ -35,13 +35,16 @@ namespace PhuThuongStickyRice.Application.Shop
     {
         private readonly IRepository<HolidaySchedule, Guid> _holidays;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly Products.IProductCatalogCache _catalogCache;
 
         public HolidayScheduleAppService(
             IRepository<HolidaySchedule, Guid> holidays,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            Products.IProductCatalogCache catalogCache)
         {
             _holidays = holidays;
             _asyncExecuter = asyncExecuter;
+            _catalogCache = catalogCache;
         }
 
         /// <summary>Vietnam calendar date (UTC+7, no DST).</summary>
@@ -78,6 +81,8 @@ namespace PhuThuongStickyRice.Application.Shop
                 CreatedAt = DateTime.UtcNow
             };
             await _holidays.InsertAsync(entity, autoSave: true);
+            // Perf: bust the cached per-day holiday reason used by public shop settings.
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
@@ -100,6 +105,8 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.Reason = reason;
             entity.IsFullDay = dto.IsFullDay;
             await _holidays.UpdateAsync(entity, autoSave: true);
+            // Perf: bust the cached per-day holiday reason used by public shop settings.
+            _catalogCache.Invalidate();
             return MapToDto(entity);
         }
 
@@ -107,6 +114,8 @@ namespace PhuThuongStickyRice.Application.Shop
         public virtual async Task DeleteAsync(Guid id)
         {
             await _holidays.DeleteAsync(id, autoSave: true);
+            // Perf: bust the cached per-day holiday reason used by public shop settings.
+            _catalogCache.Invalidate();
         }
 
         [AllowAnonymous]

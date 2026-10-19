@@ -10,6 +10,7 @@ using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Loyalty;
+using PhuThuongStickyRice.Application.Loyalty.DTOs;
 using PhuThuongStickyRice.Application.Customer;
 using PhuThuongStickyRice.Application.Zalo;
 
@@ -134,6 +135,9 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>Customer self-service: change address / delivery slot of a Pending order (phone must match).</summary>
         Task<OrderDto> UpdateAddressByCustomerAsync(UpdateOrderAddressByCustomerInput input);
+
+        /// <summary>Item 138: customer self-service — update recipient phone + notes of a Pending order.</summary>
+        Task<OrderDto> UpdateContactByCustomerAsync(UpdateOrderContactByCustomerInput input);
 
         /// <summary>
         /// Item 142 (Admin): groups of possibly-duplicate orders — same
@@ -1345,6 +1349,18 @@ namespace PhuThuongStickyRice.Application.Orders
             return dto;
         }
 
+        public virtual async Task<OrderDto> UpdateContactByCustomerAsync(UpdateOrderContactByCustomerInput input)
+        {
+            var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
+
+            order.UpdateContactByCustomer(input.RecipientPhone, input.Notes);
+
+            await _orders.UpdateAsync(order);
+            var dto = _objectMapper.Map<Order, OrderDto>(order);
+            dto.AdminNote = null;
+            return dto;
+        }
+
         public virtual async Task<OrderReviewDto> SubmitReviewAsync(SubmitReviewInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
@@ -1393,6 +1409,23 @@ namespace PhuThuongStickyRice.Application.Orders
                     });
                 review.RewardCode = voucher.Code;
                 await _reviews.UpdateAsync(review, autoSave: true);
+            }
+
+            // Item 134: đánh giá 5 sao được thưởng +20 điểm loyalty.
+            if (review.Rating >= 5)
+            {
+                try
+                {
+                    await _loyalty.AdjustAsync(order.CustomerPhone, new AdjustPointsInput
+                    {
+                        PointsDelta = 20,
+                        Reason = $"Thưởng đánh giá 5 sao đơn {order.OrderNumber}"
+                    });
+                }
+                catch (Exception)
+                {
+                    // Thưởng điểm là nice-to-have — không fail review vì lỗi này.
+                }
             }
 
             return MapReviewToDto(review);

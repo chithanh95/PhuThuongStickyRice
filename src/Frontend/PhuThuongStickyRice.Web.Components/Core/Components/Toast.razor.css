@@ -10,7 +10,7 @@
     background: #34c38f;
     border: 1px solid #34c38f;
     color: #fff;
-    border-radius: 8px;
+    border-radius: 6px; /* Lexa toast radius (admin-lexa.css .lx-toast) */
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
     padding: 0.6rem 0.8rem;
     opacity: 1;

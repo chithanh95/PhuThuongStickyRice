@@ -1,4 +1,5 @@
 using Microsoft.JSInterop;
+using PhuThuongStickyRice.Web.Components.Admin.Services;
 using PhuThuongStickyRice.Web.Components.Shop.Models;
 using System;
 using System.Collections.Generic;
@@ -19,12 +20,14 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         private const string StorageKey = "phuthuong.cart.v1";
 
         private readonly IJSRuntime _jsRuntime;
+        private readonly Wave5Service _wave5;
         private readonly List<CartItemModel> _items = new List<CartItemModel>();
         private bool _loaded;
 
-        public CartState(IJSRuntime jsRuntime)
+        public CartState(IJSRuntime jsRuntime, Wave5Service wave5)
         {
             _jsRuntime = jsRuntime;
+            _wave5 = wave5;
         }
 
         public event Action OnChange;
@@ -94,11 +97,16 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// </summary>
         public void Add(ShopProductModel product, int quantity = 1)
         {
+            // Bug fix: quick-add used to leave ImageUrl null, so the cart
+            // page showed the "no image" placeholder even when the product
+            // has an image in the DB (same ResolveImageUrl pattern as the
+            // shop quick-view path).
+            var imageUrl = _wave5.ResolveImageUrl(FirstImageUrl(product?.ImageUrlsJson));
             AddConfigured(
                 product.Id, product.Name, product.Code, product.Price, quantity,
                 sizeOptionId: null, sizeName: null,
                 toppingIds: null, toppingNames: null, toppingsTotal: 0,
-                isCombo: false);
+                isCombo: false, imageUrl: imageUrl);
         }
 
         /// <summary>
@@ -151,6 +159,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 {
                     existing.Note = TrimNote(note);
                 }
+                // Backfill images for lines saved before quick-add carried
+                // the product image (old localStorage carts).
+                if (string.IsNullOrWhiteSpace(existing.ImageUrl)
+                    && !string.IsNullOrWhiteSpace(imageUrl))
+                {
+                    existing.ImageUrl = imageUrl;
+                }
             }
 
             NotifyChanged();
@@ -185,6 +200,43 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
             var trimmed = note.Trim();
             return trimmed.Length > 500 ? trimmed.Substring(0, 500) : trimmed;
+        }
+
+        /// <summary>
+        /// First non-empty URL from the product's ImageUrlsJson array
+        /// (same parse as the shop/cart Razor pages).
+        /// </summary>
+        private static string FirstImageUrl(string imageUrlsJson)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrlsJson))
+            {
+                return null;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(imageUrlsJson);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var el in doc.RootElement.EnumerateArray())
+                    {
+                        if (el.ValueKind == JsonValueKind.String)
+                        {
+                            var url = el.GetString()?.Trim();
+                            if (!string.IsNullOrEmpty(url))
+                            {
+                                return url;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Corrupt JSON: treat as no image.
+            }
+
+            return null;
         }
 
         /// <summary>Adds a family combo as a single line at the combo price.</summary>

@@ -14,6 +14,7 @@
    Luồng khách: Trang chủ (/) → Thực đơn (/shop) → Giỏ hàng (/cart) → Đặt hàng (/checkout). *@
 
 <div class="shp-page">
+    <a href="#shp-main-content" class="a11y-skip-link">Bỏ qua tới nội dung chính</a>
     <header class="shp-header">
         <div class="shp-header-inner">
             @if (!IsShopHome)
@@ -25,11 +26,11 @@
                 <span class="shp-logo-sub">Làng nghề Hà Nội</span>
             </a>
 
-            <button class="shp-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
+            <button class="shp-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu" aria-expanded="@_menuOpen" aria-controls="shp-nav-menu">
                 <span></span><span></span><span></span>
             </button>
 
-            <nav class="shp-nav @(_menuOpen ? "open" : "")">
+            <nav class="shp-nav @(_menuOpen ? "open" : "")" id="shp-nav-menu">
                 <a href="/" class="@NavActive("/")">@AppI18n.T("nav.home")</a>
                 <a href="/shop" class="@NavActive("/shop")">@AppI18n.T("nav.menu")</a>
                 <a href="/dat-so-luong-lon" class="@NavActive("/dat-so-luong-lon")">@AppI18n.T("nav.bulk_order")</a>
@@ -87,7 +88,7 @@
         </div>
     </header>
 
-    <main class="shp-main">
+    <main class="shp-main" id="shp-main-content" tabindex="-1">
         @Body
     </main>
 

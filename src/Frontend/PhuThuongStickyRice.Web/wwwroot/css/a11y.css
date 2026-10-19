@@ -1,0 +1,57 @@
+/* ============================================================
+   a11y.css — Accessibility & polish layer (Agent 4, 2026-10-19)
+   - Focus-visible toàn cục: outline tím Lexa #7a6fbe (chỉ hiện
+     khi điều hướng bằng bàn phím, không ảnh hưởng chuột/chạm).
+   - Skip-link: ẩn khỏi màn hình, chỉ hiện khi tab tới.
+   - Tôn trọng prefers-reduced-motion của người dùng.
+   Không đổi màu sắc/typography/layout hiện tại.
+   ============================================================ */
+
+/* 1. Focus rõ ràng khi dùng bàn phím */
+:where(a, button, input, select, textarea, [tabindex], [role="button"]):focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Dark mode: outline nhạt hơn để đủ tương phản trên nền tối */
+html.dark :where(a, button, input, select, textarea, [tabindex], [role="button"]):focus-visible {
+    outline-color: #a49de0;
+}
+
+/* 2. Skip-link: chỉ hiện khi nhận focus bằng bàn phím */
+.a11y-skip-link {
+    position: absolute;
+    top: -100px;
+    left: 12px;
+    z-index: 2000;
+    padding: 10px 16px;
+    background: #7a6fbe;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: top 0.15s ease;
+}
+
+.a11y-skip-link:focus-visible {
+    top: 12px;
+    color: #fff;
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* 3. Con trỏ "tay" cho phần tử có role="button" (vd: vé xếp hàng trang Chờ) */
+[role="button"] {
+    cursor: pointer;
+}
+
+/* 4. Tôn trọng người dùng tắt hiệu ứng chuyển động */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
