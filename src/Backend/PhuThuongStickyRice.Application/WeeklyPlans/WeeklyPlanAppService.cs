@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -373,7 +374,9 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             var queryable = await _orders.GetQueryableAsync();
             for (var attempt = 0; attempt < 10; attempt++)
             {
-                var code = "TUAN" + Random.Shared.Next(100000, 999999).ToString();
+                // CA1305: ToString với InvariantCulture để mã số không phụ thuộc locale máy chạy.
+                // Random.Shared giữ nguyên theo quyết định team (mã TUAN- không phải secret).
+                var code = "TUAN" + Random.Shared.Next(100000, 999999).ToString(CultureInfo.InvariantCulture);
                 var exists = await _asyncExecuter.AnyAsync(
                     queryable.Where(o => o.OrderCode == code));
                 if (!exists)

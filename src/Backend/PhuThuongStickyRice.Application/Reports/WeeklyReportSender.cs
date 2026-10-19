@@ -115,24 +115,24 @@ namespace PhuThuongStickyRice.Application.Reports
             return dto;
         }
 
-        public string BuildMessageText(WeeklyReportDto r)
+        public string BuildMessageText(WeeklyReportDto report)
         {
             var sb = new StringBuilder();
             sb.AppendLine("📊 BÁO CÁO TUẦN — XÔI PHÚ THƯỢNG");
-            sb.AppendLine(r.WeekLabel);
+            sb.AppendLine(report.WeekLabel);
             sb.AppendLine();
-            sb.Append("💰 Doanh thu: ").Append(FormatVnd(r.TotalRevenue));
-            sb.AppendLine(ChangeSuffix(r.RevenueChangePercent, "doanh thu"));
-            sb.Append("🧾 Số đơn: ").Append(r.OrderCount.ToString("N0", CultureInfo.InvariantCulture));
-            sb.AppendLine(ChangeSuffix(r.OrderChangePercent, "số đơn"));
-            sb.AppendLine($"❌ Đơn hủy: {r.CancelledCount:N0}");
-            sb.AppendLine($"🧮 Giá trị TB/đơn: {FormatVnd(r.AverageOrderValue)}");
+            sb.Append("💰 Doanh thu: ").Append(FormatVnd(report.TotalRevenue));
+            sb.AppendLine(ChangeSuffix(report.RevenueChangePercent, "doanh thu"));
+            sb.Append("🧾 Số đơn: ").Append(report.OrderCount.ToString("N0", CultureInfo.InvariantCulture));
+            sb.AppendLine(ChangeSuffix(report.OrderChangePercent, "số đơn"));
+            sb.AppendLine($"❌ Đơn hủy: {report.CancelledCount:N0}");
+            sb.AppendLine($"🧮 Giá trị TB/đơn: {FormatVnd(report.AverageOrderValue)}");
             sb.AppendLine();
-            if (r.TopProducts.Count > 0)
+            if (report.TopProducts.Count > 0)
             {
                 sb.AppendLine("🏆 Món bán chạy:");
                 var i = 1;
-                foreach (var p in r.TopProducts)
+                foreach (var p in report.TopProducts)
                 {
                     sb.AppendLine($"{i}. {p.ProductName} — {p.Quantity:N0} suất");
                     i++;

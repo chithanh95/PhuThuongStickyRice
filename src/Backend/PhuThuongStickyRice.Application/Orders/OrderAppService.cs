@@ -411,7 +411,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             if ((!Enum.TryParse<PaymentMethod>(input.PaymentMethod, ignoreCase: true, out var paymentMethod)
-                    || !Enum.IsDefined(typeof(PaymentMethod), paymentMethod))
+                    || !Enum.IsDefined<PaymentMethod>(paymentMethod))
                 && !string.IsNullOrWhiteSpace(input.PaymentMethod))
             {
                 throw new Domain.Exceptions.DomainException($"Unknown payment method '{input.PaymentMethod}'.");
@@ -437,7 +437,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var fulfillment = FulfillmentMethod.ShipperPickup;
             if (!string.IsNullOrWhiteSpace(input.FulfillmentMethod)
                 && Enum.TryParse<FulfillmentMethod>(input.FulfillmentMethod, ignoreCase: true, out var parsedFulfillment)
-                && Enum.IsDefined(typeof(FulfillmentMethod), parsedFulfillment))
+                && Enum.IsDefined<FulfillmentMethod>(parsedFulfillment))
             {
                 fulfillment = parsedFulfillment;
             }
@@ -1602,7 +1602,9 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var digits = DigitsOnly(phone);
             if (digits.Length < 5) return "Khách hàng";
-            return digits.Substring(0, 3) + "***" + digits.Substring(digits.Length - 2);
+
+            // CA1845: dùng span-based string.Concat thay vì Substring để tránh cấp phát chuỗi trung gian.
+            return string.Concat(digits.AsSpan(0, 3), "***", digits.AsSpan(digits.Length - 2));
         }
 
         /// <summary>

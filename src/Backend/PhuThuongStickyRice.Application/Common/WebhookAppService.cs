@@ -249,6 +249,9 @@ namespace PhuThuongStickyRice.Application.Common
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly WebhookDispatcher _dispatcher;
 
+        // CA1861: mảng separator dùng lại thay vì cấp phát new[] mỗi lần gọi NormalizeEvents.
+        private static readonly char[] EventSeparators = { ',', ';' };
+
         public WebhookAppService(
             IRepository<WebhookEndpoint, Guid> endpoints,
             IRepository<WebhookDelivery, Guid> deliveries,
@@ -358,7 +361,7 @@ namespace PhuThuongStickyRice.Application.Common
                 WebhookEndpoint.EventOrderCreated,
                 WebhookEndpoint.EventOrderStatusChanged
             };
-            var picked = events.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+            var picked = events.Split(EventSeparators, StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => x.Trim())
                 .Where(allowed.Contains)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
