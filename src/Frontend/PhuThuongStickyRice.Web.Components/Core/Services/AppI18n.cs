@@ -98,9 +98,10 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         }
 
         /// <summary>
-        /// Translate a chrome key. Falls back to Vietnamese, then to the key itself.
+        /// Dịch một khóa chrome. Trả về bản dịch theo ngôn ngữ hiện tại,
+        /// fallback sang tiếng Việt rồi tới chính khóa khi thiếu bản dịch.
         /// </summary>
-        public string T(string key)
+        public string Translate(string key)
         {
             if (_strings.TryGetValue(_language, out var dict)
                 && dict.TryGetValue(key, out var value)

@@ -32,7 +32,7 @@
 @inject CustomerProfileService CustomerProfileService
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
-<h1>@AppI18n.T("common.checkout")</h1>
+<h1>@AppI18n.Translate("common.checkout")</h1>
 
 @* Gợi ý nhẹ cho khách vãng lai — không bắt buộc, checkout vẫn chạy bình thường khi chưa đăng nhập. *@
 <AuthorizeView>
@@ -67,7 +67,7 @@
         <p>Mã đơn hàng của bạn: <strong>@_placedOrder.OrderNumber</strong></p>
         <table class="table table-sm mb-2">
             <tbody>
-                <tr><td>@AppI18n.T("shop.subtotal")</td><td class="text-right">@FormatPrice(_placedOrder.Subtotal)</td></tr>
+                <tr><td>@AppI18n.Translate("shop.subtotal")</td><td class="text-right">@FormatPrice(_placedOrder.Subtotal)</td></tr>
                 @if (_placedOrder.PromotionDiscountAmount > 0)
                 {
                     <tr>
@@ -78,7 +78,7 @@
                 @if (_placedOrder.DiscountAmount > 0)
                 {
                     <tr>
-                        <td>@AppI18n.T("shop.discount") @(!string.IsNullOrWhiteSpace(_placedOrder.DiscountCode) ? $"({_placedOrder.DiscountCode})" : "")</td>
+                        <td>@AppI18n.Translate("shop.discount") @(!string.IsNullOrWhiteSpace(_placedOrder.DiscountCode) ? $"({_placedOrder.DiscountCode})" : "")</td>
                         <td class="text-right text-success">−@FormatPrice(_placedOrder.DiscountAmount)</td>
                     </tr>
                 }
@@ -329,7 +329,7 @@ else
     <div class="row">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">@AppI18n.T("shop.your_info")</div>
+                <div class="card-header">@AppI18n.Translate("shop.your_info")</div>
                 <div class="card-body">
                     <div class="form-group">
                         <label id="co-fulfillment-label">Hình thức nhận hàng *</label>
@@ -392,7 +392,7 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label for="co-name">@AppI18n.T("common.name") *</label>
+                        <label for="co-name">@AppI18n.Translate("common.name") *</label>
                         @* A11y-1610: lỗi validation gắn với input qua aria-describedby +
                            aria-invalid để trình đọc màn hình đọc được lỗi khi focus.
                            Áp dụng cùng pattern cho mọi field có lỗi bên dưới. *@
@@ -404,7 +404,7 @@ else
                             <small class="text-danger" id="co-name-error">@_nameError</small>
                         }                    </div>
                     <div class="form-group">
-                        <label for="co-phone">@AppI18n.T("common.phone") *</label>
+                        <label for="co-phone">@AppI18n.Translate("common.phone") *</label>
                         <input id="co-phone" class="form-control @FieldClass(_phoneError)" value="@_order.CustomerPhone"
                                @oninput="OnPhoneInputAsync" @onblur="LookupLastOrderAsync"
                                placeholder="0901234567" inputmode="tel" maxlength="11"
@@ -458,14 +458,14 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label for="co-note">@AppI18n.T("shop.note")</label>
+                        <label for="co-note">@AppI18n.Translate("shop.note")</label>
                         <textarea id="co-note" class="form-control" @bind="_order.Notes" rows="2"
                                   placeholder="Ví dụ: giao giờ hành chính..."></textarea>
                     </div>
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" id="recipient-toggle"
                                @bind="_orderForSomeoneElse" />
-                        <label class="form-check-label" for="recipient-toggle">@AppI18n.T("shop.other_recipient")</label>
+                        <label class="form-check-label" for="recipient-toggle">@AppI18n.Translate("shop.other_recipient")</label>
                     </div>
                     @if (_orderForSomeoneElse)
                     {
@@ -535,22 +535,22 @@ else
                            trước đây <label> mồ côi không gắn input nào, trình đọc
                            màn hình không đọc được tên nhóm (đồng bộ pattern
                            fulfillment ở trên). *@
-                        <label id="co-payment-label">@AppI18n.T("shop.payment_method") *</label>
+                        <label id="co-payment-label">@AppI18n.Translate("shop.payment_method") *</label>
                         <div role="radiogroup" aria-labelledby="co-payment-label">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-cod"
                                    checked="@(_order.PaymentMethod == "Cod")" @onchange="@(() => _order.PaymentMethod = "Cod")" />
-                            <label class="form-check-label" for="pm-cod">@AppI18n.T("shop.pay_cod")</label>
+                            <label class="form-check-label" for="pm-cod">@AppI18n.Translate("shop.pay_cod")</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-bank"
                                    checked="@(_order.PaymentMethod == "BankTransfer")" @onchange="@(() => _order.PaymentMethod = "BankTransfer")" />
-                            <label class="form-check-label" for="pm-bank">@AppI18n.T("shop.pay_bank")</label>
+                            <label class="form-check-label" for="pm-bank">@AppI18n.Translate("shop.pay_bank")</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-momo"
                                    checked="@(_order.PaymentMethod == "MoMo")" @onchange="@(() => _order.PaymentMethod = "MoMo")" />
-                            <label class="form-check-label" for="pm-momo">@AppI18n.T("shop.pay_momo") <span class="badge badge-warning">TEST</span></label>
+                            <label class="form-check-label" for="pm-momo">@AppI18n.Translate("shop.pay_momo") <span class="badge badge-warning">TEST</span></label>
                         </div>
                         @* Item 140: wallet payment — shown when the balance covers the total. *@
                         @if (_walletBalance >= _estimatedTotal && _estimatedTotal > 0)
@@ -559,7 +559,7 @@ else
                                 <input class="form-check-input" type="radio" name="paymentMethod" id="pm-wallet"
                                        checked="@(_order.PaymentMethod == "Wallet")" @onchange="@(() => _order.PaymentMethod = "Wallet")" />
                                 <label class="form-check-label" for="pm-wallet">
-                                    💰 @AppI18n.T("shop.pay_wallet") <small class="text-muted">(số dư @_walletBalance.ToString("N0") ₫)</small>
+                                    💰 @AppI18n.Translate("shop.pay_wallet") <small class="text-muted">(số dư @_walletBalance.ToString("N0") ₫)</small>
                                 </label>
                             </div>
                         }
@@ -570,7 +570,7 @@ else
         </div>
         <div class="col-md-6">
             <div class="card co-summary">
-                <div class="card-header">@AppI18n.T("shop.order_summary")</div>
+                <div class="card-header">@AppI18n.Translate("shop.order_summary")</div>
                 <div class="card-body">
                     <table class="table table-sm">
                         <thead>
@@ -617,7 +617,7 @@ else
                                 </tr>
                             }
                             <tr>
-                                <td class="text-muted" colspan="3">@AppI18n.T("shop.subtotal")</td>
+                                <td class="text-muted" colspan="3">@AppI18n.Translate("shop.subtotal")</td>
                                 <td class="text-right text-muted">@FormatPrice(_subtotal)</td>
                             </tr>
                             @if (_activePromotion != null)
@@ -688,14 +688,14 @@ else
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="3"><strong>@AppI18n.T("common.total")</strong></td>
+                                <td colspan="3"><strong>@AppI18n.Translate("common.total")</strong></td>
                                 <td class="text-right"><strong class="text-danger">@FormatPrice(_grandTotal)</strong></td>
                             </tr>
                         </tfoot>
                     </table>
 
                     <div class="form-group">
-                        <label for="co-discount">@AppI18n.T("shop.discount_code")</label>
+                        <label for="co-discount">@AppI18n.Translate("shop.discount_code")</label>
                         <div class="input-group">
                             <input id="co-discount" class="form-control" @bind="_discountCodeInput" @bind:after="ClearAutoAppliedNote" placeholder="Nhập mã (nếu có)"
                                    disabled="@_applyingDiscount" />
@@ -771,7 +771,7 @@ else
                     }
 
                     <button class="btn btn-success btn-block btn-lg co-flow-submit" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
-                        @(_submitting ? AppI18n.T("shop.processing") : AppI18n.T("shop.order_now"))
+                        @(_submitting ? AppI18n.Translate("shop.processing") : AppI18n.Translate("shop.order_now"))
                     </button>
                     @if (_orderingBlocked && !string.IsNullOrEmpty(_closedNotice))
                     {
@@ -785,11 +785,11 @@ else
     @* Mobile: fixed bottom order bar (CSS shows it only on small screens). *@
     <div class="co-mobile-bar">
         <div class="co-total">
-            <small>@AppI18n.T("common.total")</small>
+            <small>@AppI18n.Translate("common.total")</small>
             <strong class="text-danger">@FormatPrice(_grandTotal)</strong>
         </div>
         <button class="btn btn-success" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
-            @(_submitting ? AppI18n.T("shop.processing") : AppI18n.T("shop.order_now"))
+            @(_submitting ? AppI18n.Translate("shop.processing") : AppI18n.Translate("shop.order_now"))
         </button>
     </div>
     @* In-flow spacer so the fixed bar never covers the page bottom *@

@@ -80,8 +80,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             OnChange?.Invoke();
         }
 
-        /// <summary>Translate a chrome key; falls back to the key itself.</summary>
-        public string T(string key)
+        /// <summary>
+        /// Dịch một khóa theo ngôn ngữ hiện tại; thiếu bản dịch thì trả về chính khóa.
+        /// </summary>
+        public string Translate(string key)
         {
             if (_strings.TryGetValue(_language, out var dict)
                 && dict.TryGetValue(key, out var value))

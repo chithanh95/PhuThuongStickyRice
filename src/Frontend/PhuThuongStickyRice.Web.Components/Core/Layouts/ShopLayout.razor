@@ -31,11 +31,11 @@
             </button>
 
             <nav class="shp-nav @(_menuOpen ? "open" : "")" id="shp-nav-menu">
-                <a href="/" class="@NavActive("/")" aria-current="@(NavActive("/") == "active" ? "page" : null)">@AppI18n.T("nav.home")</a>
-                <a href="/shop" class="@NavActive("/shop")" aria-current="@(NavActive("/shop") == "active" ? "page" : null)">@AppI18n.T("nav.menu")</a>
-                <a href="/dat-so-luong-lon" class="@NavActive("/dat-so-luong-lon")" aria-current="@(NavActive("/dat-so-luong-lon") == "active" ? "page" : null)">@AppI18n.T("nav.bulk_order")</a>
-                <a href="#lien-he" class="">@AppI18n.T("nav.contact")</a>
-                <a href="/dang-nhap" class="shp-nav-login">👤 @AppI18n.T("common.login")</a>
+                <a href="/" class="@NavActive("/")" aria-current="@(NavActive("/") == "active" ? "page" : null)">@AppI18n.Translate("nav.home")</a>
+                <a href="/shop" class="@NavActive("/shop")" aria-current="@(NavActive("/shop") == "active" ? "page" : null)">@AppI18n.Translate("nav.menu")</a>
+                <a href="/dat-so-luong-lon" class="@NavActive("/dat-so-luong-lon")" aria-current="@(NavActive("/dat-so-luong-lon") == "active" ? "page" : null)">@AppI18n.Translate("nav.bulk_order")</a>
+                <a href="#lien-he" class="">@AppI18n.Translate("nav.contact")</a>
+                <a href="/dang-nhap" class="shp-nav-login">👤 @AppI18n.Translate("common.login")</a>
             </nav>
 
             <div class="shp-header-right">
@@ -47,8 +47,8 @@
                         📞 @_hotline
                     </a>
                 }
-                <a class="shp-cart" href="/cart" title="@AppI18n.T("common.cart")"
-                   aria-label="@($"{AppI18n.T("common.cart")} ({CartState.TotalQuantity})")">
+                <a class="shp-cart" href="/cart" title="@AppI18n.Translate("common.cart")"
+                   aria-label="@($"{AppI18n.Translate("common.cart")} ({CartState.TotalQuantity})")">
                     <span aria-hidden="true">🛒</span>
                     @if (CartState.TotalQuantity > 0)
                     {
@@ -66,7 +66,7 @@
                 <button type="button" class="shp-theme-toggle" @onclick="ToggleTheme" title="@_themeTitle" aria-label="@_themeTitle">
                     @_themeIcon
                 </button>
-                <a class="shp-order-btn" href="/cart">@AppI18n.T("shop.order_now")</a>
+                <a class="shp-order-btn" href="/cart">@AppI18n.Translate("shop.order_now")</a>
 
                 <AuthorizeView>
                     <Authorized>
@@ -82,13 +82,13 @@
                                 <a class="shp-account" href="/tai-khoan" title="Tài khoản mua hàng của bạn">
                                     👤 Xin chào, @(context.User.Identity?.Name ?? "bạn")
                                 </a>
-                                <button type="button" class="shp-logout" @onclick="SignOut" title="@AppI18n.T("shop.logout")">@AppI18n.T("shop.logout")</button>
+                                <button type="button" class="shp-logout" @onclick="SignOut" title="@AppI18n.Translate("shop.logout")">@AppI18n.Translate("shop.logout")</button>
                             </div>
                         }
                     </Authorized>
                     <NotAuthorized>
                         <a class="shp-account" href="/dang-nhap" title="Đăng nhập / đăng ký tài khoản mua hàng">
-                            👤 @AppI18n.T("common.login")
+                            👤 @AppI18n.Translate("common.login")
                         </a>
                     </NotAuthorized>
                 </AuthorizeView>

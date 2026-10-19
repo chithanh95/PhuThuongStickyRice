@@ -36,11 +36,11 @@
                 <p class="lead mb-1">Xôi dẻo thơm chuẩn vị làng nghề — đặt hàng online, nhận ngay.</p>
                 @if (!string.IsNullOrWhiteSpace(_tableLabel))
                 {
-                    <p class="mb-1"><span class="badge badge-info" style="font-size: 1rem;">🍽 @I18n.T("table_order") @_tableLabel</span></p>
+                    <p class="mb-1"><span class="badge badge-info" style="font-size: 1rem;">🍽 @I18n.Translate("table_order") @_tableLabel</span></p>
                 }
                 @if (_todaySold > 0)
                 {
-                    <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 @I18n.T("sold_today"): @_todaySold</span></p>
+                    <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 @I18n.Translate("sold_today"): @_todaySold</span></p>
                 }
                 @* Wave 6a (item 22): open-hours display (VN time). *@
                 @if (!string.IsNullOrEmpty(_openStatusText))
@@ -501,7 +501,7 @@ else
                         <a class="btn btn-outline-success" href="@ZaloChatUrl(_quickView.Name)" target="_blank" rel="noopener">💬 Hỏi qua Zalo</a>
                     }
                     <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart" disabled="@(!CanOrder(_quickView))">
-                        @(CanOrder(_quickView) ? $"{I18n.T("add_to_cart")} — {FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))}" : AddButtonLabel(_quickView))
+                        @(CanOrder(_quickView) ? $"{I18n.Translate("add_to_cart")} — {FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))}" : AddButtonLabel(_quickView))
                     </button>
                 </div>
             </div>
@@ -1812,7 +1812,7 @@ else
             return "Hết suất hôm nay";
         }
 
-        return defaultLabel ?? I18n.T("add_to_cart");
+        return defaultLabel ?? I18n.Translate("add_to_cart");
     }
 
     private static string FormatPrice(decimal price) => $"{price:N0} ₫";

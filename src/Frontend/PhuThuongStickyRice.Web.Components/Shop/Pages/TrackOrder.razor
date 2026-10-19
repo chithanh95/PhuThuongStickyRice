@@ -22,22 +22,22 @@
 @inject FunnelService Funnel
 @implements IDisposable
 
-<h1>@AppI18n.T("shop.track_title")</h1>
+<h1>@AppI18n.Translate("shop.track_title")</h1>
 
 <div class="card mb-3 to-lookup">
     <div class="card-body">
         <div class="form-row">
             <div class="col-md-4">
-                <label for="to-order-number">@AppI18n.T("shop.order_number")</label>
+                <label for="to-order-number">@AppI18n.Translate("shop.order_number")</label>
                 <input id="to-order-number" class="form-control" @bind="_orderNumber" placeholder="PX-20261014-0001" />
             </div>
             <div class="col-md-4">
-                <label for="to-phone">@AppI18n.T("shop.order_phone")</label>
+                <label for="to-phone">@AppI18n.Translate("shop.order_phone")</label>
                 <input id="to-phone" class="form-control" @bind="_phone" placeholder="0901234567" />
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button class="btn btn-primary" @onclick="Lookup" disabled="@_loading">
-                    @(_loading ? AppI18n.T("shop.looking_up") : AppI18n.T("shop.lookup"))
+                    @(_loading ? AppI18n.Translate("shop.looking_up") : AppI18n.Translate("shop.lookup"))
                 </button>
             </div>
         </div>
@@ -51,16 +51,16 @@
 @* Lịch sử đơn hàng theo SĐT — không cần đăng nhập. *@
 <div class="card mb-3 to-history">
     <div class="card-body">
-        <h5>@AppI18n.T("shop.order_history")</h5>
-        <p class="text-muted"><small>@AppI18n.T("shop.history_hint")</small></p>
+        <h5>@AppI18n.Translate("shop.order_history")</h5>
+        <p class="text-muted"><small>@AppI18n.Translate("shop.history_hint")</small></p>
         <div class="form-row">
             <div class="col-md-4">
-                <label for="to-history-phone">@AppI18n.T("shop.order_phone")</label>
+                <label for="to-history-phone">@AppI18n.Translate("shop.order_phone")</label>
                 <input id="to-history-phone" class="form-control" @bind="_historyPhone" placeholder="0901234567" inputmode="tel" />
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button class="btn btn-outline-primary" @onclick="LoadHistoryAsync" disabled="@_historyLoading">
-                    @(_historyLoading ? AppI18n.T("common.loading") : AppI18n.T("shop.view_history"))
+                    @(_historyLoading ? AppI18n.Translate("common.loading") : AppI18n.Translate("shop.view_history"))
                 </button>
             </div>
         </div>
@@ -72,14 +72,14 @@
         {
             if (_history.Count == 0)
             {
-                <p class="text-muted mt-3 mb-0"><em>@AppI18n.T("shop.no_orders")</em></p>
+                <p class="text-muted mt-3 mb-0"><em>@AppI18n.Translate("shop.no_orders")</em></p>
             }
             else
             {
                 <div class="table-responsive mt-3">
                     <table class="table table-sm">
                         <thead>
-                            <tr><th>@AppI18n.T("shop.order_number")</th><th>@AppI18n.T("shop.order_date")</th><th class="text-right">@AppI18n.T("shop.order_total")</th><th>@AppI18n.T("common.status")</th><th></th></tr>
+                            <tr><th>@AppI18n.Translate("shop.order_number")</th><th>@AppI18n.Translate("shop.order_date")</th><th class="text-right">@AppI18n.Translate("shop.order_total")</th><th>@AppI18n.Translate("common.status")</th><th></th></tr>
                         </thead>
                         <tbody>
                             @foreach (var h in _history)
@@ -90,8 +90,8 @@
                                     <td class="text-right">@FormatPrice(h.TotalAmount)</td>
                                     <td>@OrderStatusBadge(h.Status)</td>
                                     <td class="text-right text-nowrap">
-                                        <button class="btn btn-sm btn-outline-info mr-1" @onclick="() => ViewHistoryDetail(h)">@AppI18n.T("shop.detail")</button>
-                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ReorderAsync(h)" disabled="@_reordering">@AppI18n.T("shop.reorder")</button>
+                                        <button class="btn btn-sm btn-outline-info mr-1" @onclick="() => ViewHistoryDetail(h)">@AppI18n.Translate("shop.detail")</button>
+                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ReorderAsync(h)" disabled="@_reordering">@AppI18n.Translate("shop.reorder")</button>
                                     </td>
                                 </tr>
                             }
@@ -162,7 +162,7 @@
             @* Wave 6a (item 21): reorder — restores the order's lines into the cart. *@
             <div class="mb-2">
                 <button class="btn btn-outline-success btn-sm" @onclick="() => ReorderAsync(_order)" disabled="@_reordering">
-                    @(_reordering ? AppI18n.T("shop.reordering") : AppI18n.T("shop.reorder"))
+                    @(_reordering ? AppI18n.Translate("shop.reordering") : AppI18n.Translate("shop.reorder"))
                 </button>
                 @if (!string.IsNullOrEmpty(_reorderMessage))
                 {
