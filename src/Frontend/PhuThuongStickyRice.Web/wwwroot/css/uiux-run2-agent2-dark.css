@@ -1,0 +1,94 @@
+/* ============================================================
+   uiux-run2-agent2-dark.css — Agent 2 (Dark mode) — job uiux-team-2days,
+   run 2026-10-20 06:16 (run 2).
+   Toàn bộ rule là override `html.dark ...` (project bật dark mode bằng
+   class `dark` trên <html>).
+   LƯU Ý CHO ĐIỀU PHỐI VIÊN: file này phải được <link> trong index.html
+   SAU `css/uiux-agent2-dark.css` (hiện ở dòng 179) thì mới có tác dụng.
+   Agent 2 không được sửa file khác nên chưa tự thêm link.
+   Phương pháp đợt này: quét property-level toàn bộ .razor.css + <style>
+   trong .razor + inline style + wwwroot/css, đối chiếu với ~2000 dòng
+   rule html.dark hiện có (25+ đợt Agent 2 trước + app.css + admin-lexa +
+   agent3/4). Bề mặt đã bão hòa — 3 fix dưới đều là lỗi THẬT mới, trong đó
+   2 fix là regression do các run khác thêm rule trong 24h qua (họ bug
+   "dark base !important đè chữ trắng của light :hover" từng gặp ở run
+   22:45). Các ứng viên đã loại (đã có rule dark hoặc intentional): modal,
+   table header (thead-light/table-light/striped/contextual), toast,
+   skeleton (không tồn tại), landing, KanbanDon/LichTongHop/NhanVien/
+   PhanQuyen, custom-checkbox/switch, nav-tabs, dropdown, pagination,
+   form-text (đã phủ qua html.dark .text-muted), invalid-feedback (chỉ demo).
+   ============================================================ */
+
+/* [uiux-run2-a2] FIX 1 — Shop/Admin: ô nhập bị disabled/readonly sáng lọt ở dark mode
+   Vấn đề: Bootstrap `.form-control:disabled, .form-control[readonly]
+   { background-color: #e9ecef }` (xám sáng), KHÔNG có rule html.dark nào
+   phủ (đã grep toàn bộ css = 0 kết quả). Ở dark mode ô nhập thành mảng
+   xám sáng lọt thỏm giữa form tối.
+   Gặp thật: Checkout.razor:713 — ô "Nhập mã giảm giá" bị
+   disabled="@_applyingDiscount" trong lúc "Đang kiểm tra...".
+   Fix: nền/viền/chữ theo đúng convention input dark của app.css
+   (form-control dark: #1e1e36/#4a4a6e/#f0eef5) — bản disabled dùng nền
+   #2a2a40 hơi khác để vẫn phân biệt trạng thái, chữ mờ #8a87a3.
+   Specificity html.dark .form-control:disabled (0,2,1) thắng Bootstrap
+   (0,2,0) nên không cần !important. */
+html.dark .form-control:disabled,
+html.dark .form-control[readonly] {
+    background-color: #2a2a40; /* was #e9ecef */
+    border-color: #4a4a6e;
+    color: #8a87a3; /* was #495057 */
+    opacity: 1;
+}
+
+/* [uiux-run2-a2] FIX 2 — /shop: nút .btn-outline-secondary hover/nhấn chữ mờ chìm ở dark mode
+   Vấn đề: cùng họ bug run 22:45 (FIX 1) nhưng sót nút secondary.
+   Rule dark base `html.dark .shp-page .btn-outline-secondary`
+   (uiux-agent2-dark.css:1106, (0,3,1), color #a5a2bd !important) thắng rule
+   light `.shp-page .btn-outline-secondary:hover` (uiux-agent3-lexa.css:185,
+   (0,3,0), color #fff !important) ở phần MÀU CHỮ, trong khi background
+   #6c757d !important của rule light vẫn áp dụng → hover/nhấn: chữ #a5a2bd
+   trên nền #6c757d chỉ ~2:1, không đọc được (đã đo luminance).
+   Dùng thật: Checkout.razor:136 ("Về trang chủ"), 565/569/672 ("Áp dụng"
+   mã giảm giá), DatSoLuongLon.razor:199/203 ("In/Lưu báo giá", "Quay lại").
+   Fix: hover/active ép chữ trắng + viền đồng bộ nền fill #6c757d — đúng ý
+   đồ gốc của rule dark ("Hover giữ nguyên (nền #6c757d + chữ trắng ~4.6:1)").
+   Specificity (0,4,1) + !important thắng cả dark base lẫn light hover.
+   Không đụng popup khảo sát: rule scoped `html.dark .to-survey-sheet
+   .btn-outline-secondary:hover` của TrackOrder.razor.css (0,4,1) không
+   !important nên thua ở đó? — KHÔNG: chỗ đó agent3 (0,3,0) !important thắng
+   cho cả 2 rule → #fff trên #6c757d, vẫn đọc tốt, không cần đụng. */
+html.dark .shp-page .btn-outline-secondary:hover,
+html.dark .shp-page .btn-outline-secondary:active {
+    color: #fff !important; /* was #a5a2bd từ dark base — ~2:1 → ~4.6:1 trên #6c757d */
+    border-color: #6c757d !important; /* was #6b6b8c từ dark base — đồng bộ viền với nền fill */
+}
+
+/* [uiux-run2-a2] FIX 3 — /admin: nút .btn-outline-danger/.btn-outline-success
+   hover/focus/nhấn chữ TÀNG HÌNH ở dark mode
+   Vấn đề: REGRESSION do Agent 3 run 01:50 hôm nay thêm 2 rule dark base
+   (uiux-agent3-lexa.css:1181/1185):
+   `html.dark .lx-admin .btn-outline-danger { color:#ff8a8a !important }`
+   (0,3,1) thắng rule light `.lx-admin .btn-outline-danger:hover`
+   (admin-lexa.css:691, (0,3,0), color #fff !important) ở phần MÀU CHỮ,
+   trong khi background #f46a6a !important của rule light vẫn áp dụng →
+   hover/focus/active: chữ #ff8a8a trên nền #f46a6a chỉ ~1.5:1, GẦN NHƯ
+   TÀNG HÌNH. Tương tự success: chữ #5dd39e trên nền #34c38f chỉ ~1.3:1.
+   Comment của Agent 3 ghi "Hover giữ nguyên fill đặc + chữ trắng" nhưng
+   !important ở base đã phá ý đồ đó — đúng họ bug run 22:45 (FIX 1/2).
+   Dùng thật: nút "Xóa" (AddEditProduct.razor:199, ProductListPage.razor:122),
+   "Dừng đọc" (Dashboard.razor:38), nút trạng thái (OrderList.razor:1488),
+   Customers.razor:279 — các nút bấm hàng ngày ở admin.
+   Fix: chữ trắng + viền đồng bộ nền fill — khôi phục đúng thiết kế gốc
+   "fill đặc + chữ trắng". Specificity (0,4,1) + !important thắng cả dark
+   base lẫn light hover. Không đụng light mode. */
+html.dark .lx-admin .btn-outline-danger:hover,
+html.dark .lx-admin .btn-outline-danger:focus,
+html.dark .lx-admin .btn-outline-danger:active {
+    color: #fff !important; /* was #ff8a8a từ dark base — ~1.5:1, tàng hình trên #f46a6a */
+    border-color: #f46a6a !important; /* was #ff8a8a từ dark base — đồng bộ viền với nền fill */
+}
+html.dark .lx-admin .btn-outline-success:hover,
+html.dark .lx-admin .btn-outline-success:focus,
+html.dark .lx-admin .btn-outline-success:active {
+    color: #fff !important; /* was #5dd39e từ dark base — ~1.3:1, tàng hình trên #34c38f */
+    border-color: #34c38f !important; /* was #5dd39e từ dark base — đồng bộ viền với nền fill */
+}

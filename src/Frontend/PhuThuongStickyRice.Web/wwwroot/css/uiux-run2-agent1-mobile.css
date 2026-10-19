@@ -1,0 +1,131 @@
+/* ============================================================
+   AGENT 1 — Mobile UX (chuẩn ShopeeFood) — uiux-team-2days run 06:15
+   File fix MỚI DUY NHẤT của Agent 1 đợt này.
+   Chỉ chứa rule mobile: mọi fix bọc trong @media (max-width: 767.98px).
+   Mỗi fix có marker [uiux-run2-a1] + comment tiếng Việt giải thích TẠI SAO.
+   Không đổi layout PC, không xóa chức năng, không thêm thư viện.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   [uiux-run2-a1] FIX 1 — /menu-print: 2 nút "← Về cửa hàng" và
+   "🖨️ In / Lưu PDF" (MenuPrint.razor:13-14) chỉ ~38px theo mặc định
+   Bootstrap, xếp ngang sát nhau — trang in thực đơn chưa từng được
+   fix mobile đợt nào. Khách lớn tuổi muốn lưu thực đơn PDF khó bấm
+   trúng trên điện thoại.
+   Giải pháp: mobile xếp dọc full-width, mỗi nút 48px, chữ đậm.
+   (Verify: .no-print > .btn chỉ khớp 2 nút này — alert lỗi
+   .alert-danger.no-print không phải button; trang admin OrderLabels
+   cũng dùng .no-print nhưng nút nằm trong div lồng, không phải con
+   trực tiếp nên không bị ảnh hưởng.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .no-print > .btn {
+        width: 100%;
+        min-height: 48px;
+        margin: 6px 0 0 !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+    .no-print > .btn:first-child {
+        margin-top: 0 !important;
+    }
+}
+
+/* ------------------------------------------------------------
+   [uiux-run2-a1] FIX 2 — /nhuong-quyen: nút mở/đóng từng câu hỏi
+   trong accordion "Hỏi đáp nhượng quyền" (.nq-faq-q,
+   NhuongQuyen.razor:121) chỉ cao bằng dòng chữ (~30px, padding p-1).
+   Fix accordion ở /faq (run 17:15) đã cố tình loại nút này bằng
+   :not(.nq-faq-q) để fix riêng — nhưng chưa đợt nào fix, bị sót.
+   Người lớn tuổi tìm hiểu nhượng quyền khó bấm trúng câu hỏi.
+   Giải pháp: min-height 44px, chữ canh giữa dọc, giữ nguyên kiểu
+   btn-link (không đổi màu sắc layout).
+   (Verify: .nq-faq-q chỉ tồn tại ở NhuongQuyen.razor:121.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .nq-faq-q {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   [uiux-run2-a1] FIX 3 — /checkout: các ô nhập thông tin nhận hàng
+   (chi nhánh, địa chỉ đã lưu, họ tên, SĐT, email, ghi chú, tên/SĐT
+   người nhận, mã số thuế, tên công ty — Checkout.razor:382-530)
+   đều là .form-control Bootstrap mặc định cao ~38px (<44px).
+   Các đợt trước chỉ fix ô mã giảm giá, ô đổi điểm, ô SĐT giỏ hàng —
+   cụm form nhận hàng (bước quan trọng nhất trước khi đặt) bị sót.
+   Khách lớn tuổi nhập liệu trên điện thoại dễ bấm trượt ô.
+   Giải pháp: mobile — các ô này cao 44px, chữ 16px (vừa chống
+   iOS auto-zoom, vừa dễ đọc). Select cũng được 44px.
+   (Verify: các id co-* chỉ tồn tại ở Checkout.razor; textarea
+   #co-note giữ rows, chỉ tăng chiều cao tối thiểu.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    #co-branch,
+    #co-saved-address,
+    #co-name,
+    #co-phone,
+    #co-email,
+    #co-note,
+    #co-recipient-name,
+    #co-recipient-phone,
+    #co-tax-code,
+    #co-company-name {
+        min-height: 44px;
+        font-size: 16px;
+    }
+}
+
+/* ------------------------------------------------------------
+   [uiux-run2-a1] FIX 4 — /tai-khoan: các ô nhập trong form "Hồ sơ"
+   (khẩu vị, ghi chú, ngày sinh), "Đổi mật khẩu" và "Thêm/sửa địa
+   chỉ" (TaiKhoan.razor:160-287) đều là .form-control mặc định
+   cao ~38px (<44px). Các đợt trước chỉ fix nút bấm và chữ nhỏ ở
+   trang này — cụm ô nhập chưa đợt nào chạm tới.
+   Giải pháp: mobile — các ô này cao 44px, chữ 16px (chống iOS
+   auto-zoom khi nhập SĐT/địa chỉ). Input date #tk-dob cũng 44px
+   để vùng bấm mở lịch iOS/Android đủ lớn.
+   (Verify: các id tk-* chỉ tồn tại ở TaiKhoan.razor; ô "Thêm khẩu
+   vị khác" không có id nên bắt bằng aria-label duy nhất của nó.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    #tk-taste-note,
+    #tk-dob,
+    #tk-current-pw,
+    #tk-new-pw,
+    #tk-addr-label,
+    #tk-addr-receiver,
+    #tk-addr-phone,
+    #tk-addr-detail,
+    #tk-addr-note,
+    input[aria-label="Thêm khẩu vị khác"] {
+        min-height: 44px;
+        font-size: 16px;
+    }
+}
+
+/* ------------------------------------------------------------
+   [uiux-run2-a1] FIX 5 — /faq: các link "Xem thêm" chính sách
+   (Faq.razor:64, <a class="mr-3" href="/chinh-sach/...">) là link
+   chữ inline, vùng bấm chỉ cao bằng dòng chữ (~24px) <44px.
+   Các đợt trước đã fix nút Tìm, accordion, nút hotline/Zalo ở
+   trang này — cụm link chính sách dưới cùng bị sót.
+   Giải pháp: mobile — mỗi link thành hàng bấm 44px (inline-flex,
+   canh giữa dọc), vẫn xếp ngang khi đủ chỗ nhờ flex-wrap của p.
+   (Verify: selector a[href^="/chinh-sach/"] chỉ khớp link chính
+   sách; trang /faq là nơi duy nhất render cụm này.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    a.mr-3[href^="/chinh-sach/"] {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        margin-bottom: 4px;
+    }
+}

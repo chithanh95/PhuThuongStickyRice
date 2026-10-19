@@ -1,0 +1,101 @@
+/* ============================================================
+   uiux-run2-agent4-a11y.css — Accessibility & Polish (Agent 4,
+   job uiux-team-2days, run 2026-10-20 06:16)
+   File override CSS-only, load SAU CÙNG trong <head> (thêm
+   <link href="css/uiux-run2-agent4-a11y.css" rel="stylesheet" />
+   sau dòng a11y-fixes.css trong wwwroot/index.html — điều phối
+   viên thêm link, agent KHÔNG sửa file khác).
+   Không đổi layout/typography/màu nền hiện tại, không thêm thư viện.
+   Mỗi fix có marker [uiux-run2-a4] + giải thích TẠI SAO bằng tiếng Việt.
+   ============================================================ */
+
+/* ---------- Fix 1 [uiux-run2-a4] — WCAG 1.4.3 (Contrast, AA 4.5:1):
+   Tab đang chọn "Đăng nhập"/"Đăng ký" (.auth-tab.active, DangNhap.razor)
+   dùng chữ tím #7a6fbe trên card trắng #fff chỉ đạt ~4.33:1 — dưới chuẩn
+   cho chữ 15px, người lớn tuổi khó phân biệt tab nào đang mở (đây chính
+   là chỉ báo trạng thái "đang ở đâu"). Đậm lên #625998 (~6.17:1, đúng
+   tông tím đậm Lexa team đã dùng cho .btn-outline-primary ở run 22:45).
+   Scope html:not(.dark): dark mode đã có rule riêng chữ #fff trên card
+   tối #262640 (đạt chuẩn) — không động tới. Specificity (0,4,1) thắng
+   rule scoped .auth-tab.active[b-xxx] (0,3,0) theo thứ tự cascade. */
+html:not(.dark) .auth-tab.auth-tab.active {
+    color: #625998; /* was #7a6fbe (4.33:1 trên #fff) → 6.17:1 */
+}
+
+/* ---------- Fix 2 [uiux-run2-a4] — WCAG 1.4.3 (Contrast) + polish hover:
+   Các link chữ tím #7a6fbe trên card trắng #fff chỉ ~4.33:1, dưới chuẩn:
+   - .auth-link (DangNhap.razor): "🔒 Quên mật khẩu?", "← Về trang chủ"
+   - .auth-link (QuenMatKhau.razor, bước 3): "Đăng nhập ngay →" trong
+     alert-success (nền #d4edda còn tệ hơn: ~3.9:1)
+   - .auth-link-btn (QuenMatKhau.razor:71): nút "← Nhập lại SĐT"
+   Người lớn tuổi bấm các link này khi gặp sự cố đăng nhập — đúng lúc cần
+   đọc rõ nhất. Đậm lên #625998 (~6.17:1 trên trắng, ~5.6:1 trên #d4edda),
+   đồng bộ remedy Fix 1. Thêm :hover (gạch chân + đậm hơn) vì các link này
+   HOÀN TOÀN không có phản hồi hover — desktop di chuột qua không biết
+   bấm được. Scope html:not(.dark): dark đã có #a49de0 riêng (đạt chuẩn). */
+html:not(.dark) .auth-card .auth-link.auth-link,
+html:not(.dark) .auth-card .auth-link-btn.auth-link-btn {
+    color: #625998; /* was #7a6fbe (4.33:1) → 6.17:1 */
+}
+html:not(.dark) .auth-card .auth-link.auth-link:hover,
+html:not(.dark) .auth-card .auth-link-btn.auth-link-btn:hover {
+    color: #4e4777; /* đậm hơn để phân biệt hover (~8.4:1) */
+    text-decoration: underline;
+}
+
+/* ---------- Fix 3 [uiux-run2-a4] — WCAG 1.4.3 (Contrast):
+   Placeholder các ô nhập trong .auth-card (SĐT, mật khẩu, OTP — trang
+   Đăng nhập/Quên mật khẩu) ở LIGHT mode không set màu → dùng màu mặc
+   định của trình duyệt (~#9c9c9c trên nền trắng, chỉ ~2.75:1). Đây là gợi
+   ý DUY NHẤT cho biết ô cần nhập gì (vd "Nhập số điện thoại"), người lớn
+   tuổi đọc rất khó. Đậm lên #6c757d (~4.69:1, cùng tông text-muted Lexa
+   team đã dùng cho placeholder ở run 09:40/13:25/14:45).
+   Không cần scope :not(.dark): rule dark có sẵn
+   `html.dark .auth-card .form-control::placeholder` specificity (0,3,1)
+   cao hơn rule này (0,2,1) nên dark mode giữ nguyên #8a87a3. */
+.auth-card .form-control::placeholder {
+    color: #6c757d; /* was UA default ~#9c9c9c (2.75:1) → 4.69:1 */
+}
+
+/* ---------- Fix 4 [uiux-run2-a4] — WCAG 1.4.3 (Contrast):
+   Pill nav đang chọn (.shp-nav a.active — "Trang chủ"/"Thực đơn"...,
+   ShopLayout.razor) chữ trắng #fff trên nền var(--shp-accent):
+   - Light: #a67c3d → chỉ ~3.77:1 (< 4.5:1)
+   - Dark: #d08b8b → chỉ ~2.71:1 (càng tệ)
+   Người dùng không đọc được mình đang ở mục nào.
+   Light: đổi nền sang var(--shp-accent-dark) (#86652f) → chữ trắng đạt
+   ~5.36:1, vẫn tông đồng brand (đúng token design system, pattern đã dùng
+   cho .wpt-btn-primary:hover ở run 21:35).
+   Dark: giữ nền #d08b8b brand, đổi chữ sang nâu espresso #2e2620 →
+   ~5.48:1 (đổi nền đậm hơn sẽ phá tông hồng đất của dark shop).
+   Nhân class (0,4,1)/(0,5,2) để thắng rule scoped [b-xxx] theo cascade. */
+.shp-nav.shp-nav a.active {
+    background: var(--shp-accent-dark); /* was var(--shp-accent) #a67c3d (3.77:1) → 5.36:1 */
+}
+html.dark .shp-nav.shp-nav a.active {
+    background: var(--shp-accent); /* giữ #d08b8b */
+    color: #2e2620; /* was #fff (2.71:1) → 5.48:1 */
+}
+
+/* ---------- Fix 5 [uiux-run2-a4] — WCAG 1.4.3 (Contrast):
+   Agent 3 (uiux-agent3-lexa.css) đổi nền badge sang tông Lexa nhưng giữ
+   chữ trắng Bootstrap → 2 badge fail nặng, chưa từng được fix:
+   a) .badge-danger: chữ trắng trên #f46a6a chỉ ~2.95:1. Dùng ở: banner
+      "🔥 đã bán" + trạng thái mở/đóng (Shop.razor), badge "-x%" KM,
+      "Cancelled"/"Failed" (TrackOrder, TaiKhoan, OrderStatusBadge),
+      Dashboard, Customers, OrderList, Quotes, DanhGia, KanbanDon.
+      Remedy: chữ #212529 → ~5.23:1 (đúng pattern .btn-danger run 00:10,
+      giữ nguyên nền đỏ brand). Nền badge không đổi theo dark mode nên
+      1 rule dùng chung cả 2 mode. Nhân class (0,2,0) thắng Bootstrap và
+      rule Agent 3 (0,1,0) theo thứ tự cascade.
+   b) .badge-info (chỉ admin, shop đã fix ở run 20:35): chữ trắng trên
+      #50a5f1 chỉ ~2.63:1 — "Freeship" (MaGiamGia), "Đã liên hệ" (Quotes),
+      "Giao ..." (KdsOrderCard), nhật ký (NhatKy). Remedy: nền #0e7c99
+      → chữ trắng ~4.79:1, ĐỒNG BỘ đúng màu shop đã duyệt ở run 20:35.
+      Dark mode nền vẫn #50a5f1 (không có override) nên 1 rule cả 2 mode. */
+.badge-danger.badge-danger {
+    color: #212529; /* was #fff (2.95:1 trên #f46a6a) → 5.23:1 */
+}
+.lx-admin .badge-info {
+    background-color: #0e7c99; /* was #50a5f1 (2.63:1 với chữ trắng) → 4.79:1 */
+}

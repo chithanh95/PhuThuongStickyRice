@@ -1,0 +1,66 @@
+/* ============================================================
+   uiux-run2-agent3-lexa.css — Agent 3 (Đồng bộ Lexa), đợt uiux-team-2days run 2
+   Ngày: 2026-10-20. Chỉ chứa fix MỚI của đợt này, không trùng 14 đợt trước
+   (xem uiux-agent3-lexa.css).
+   YÊU CẦU: load SAU CÙNG trong <head> của index.html (sau
+   uiux-agent3-lexa.css) để thắng rule cùng specificity mà không cần
+   !important — chỉ dùng !important khi đè CSS isolation [b-xxx] của Blazor
+   (đã ghi chú từng chỗ).
+   Palette chuẩn Lexa:
+     primary #7a6fbe (hover #625998) | success #34c38f (chữ #1e7a52,
+       chữ trên nền tối #7ce3b1) | danger #f46a6a (chữ #bd4a4a,
+       chữ trên nền tối #ff8a8a) | warning #f1b44c | info #50a5f1
+   Quy ước màu chữ success/danger trên nền sáng (#1e7a52/#bd4a4a) và nền
+   tối (#7ce3b1/#ff8a8a) đã được thiết lập ở các đợt trước (.alert-*,
+   .shop-status-banner.open, .wpt-claimed, fix dark của Agent 2) — đợt này
+   tái dùng đúng quy ước đó.
+   ============================================================ */
+
+/* ---------- [uiux-run2-a3] Fix 1: chữ báo đăng ký Zalo thành công ----------
+   Verify: Core/Pages/Index.razor.css:839-844 (.sg-form-ok), dùng ở
+   Index.razor:714 (form "Nhận ưu đãi qua Zalo" — khách để lại SĐT).
+     .sg-form-ok { color: #3d7a3d; }
+   #3d7a3d là xanh lá đậm "tự chế", lệch với màu chữ success chuẩn #1e7a52
+   đã thống nhất cho .alert-success và banner "quán đang mở". Đồng nhất về
+   #1e7a52 để mọi thông báo thành công dùng chung một tông chữ.
+   !important để thắng CSS isolation [b-xxx]. Chưa có variant dark ->
+   bổ sung html.dark #7ce3b1 (quy ước chữ success trên nền tối, khớp
+   .shop-status-banner.open dark) để dark mode vẫn đủ contrast. */
+.sg-form-ok { color: #1e7a52 !important; /* was #3d7a3d */ }
+html.dark .sg-form-ok { color: #7ce3b1 !important; }
+
+/* ---------- [uiux-run2-a3] Fix 2: chữ báo lỗi form đăng ký Zalo ----------
+   Verify: Core/Pages/Index.razor.css:832-837 (.sg-form-error), dùng ở
+   Index.razor:724 (báo lỗi khi SĐT đăng ký nhận tin không hợp lệ).
+     .sg-form-error { color: #b3402e; }
+   #b3402e là đỏ nâu "tự chế", lệch với màu chữ danger chuẩn #bd4a4a
+   (= màu chữ .alert-danger, tiêu đề trang /error, thẻ lỗi mất mạng
+   /shop — đã chuẩn hóa ở các đợt trước). Cùng một loại UI "báo lỗi"
+   nên đồng nhất về #bd4a4a.
+   !important để thắng CSS isolation [b-xxx]. Chưa có variant dark ->
+   bổ sung html.dark #ff8a8a (quy ước chữ danger trên nền tối của
+   Agent 2: .text-danger dark ở TrackOrder/KanbanDon/KdsOrderCard). */
+.sg-form-error { color: #bd4a4a !important; /* was #b3402e */ }
+html.dark .sg-form-error { color: #ff8a8a !important; }
+
+/* ===== end UIUX run2 2026-10-20 - Agent3 Lexa (2 fix) =====
+   Ghi chú quét đợt này (đã verify bằng grep, không đoán):
+   - Chỉ 2 lệch chuẩn THẬT còn sót trên UI đang live (web đã qua 14 đợt
+     đồng bộ nên gần như sạch). Không cố đủ 5 theo quy tắc "cấm sửa cho có".
+   - Đã LOẠI 1 ứng viên: .sg-spin-win (border #2a9d2a, Index.razor.css:1752)
+     — class này không còn được dùng ở bất kỳ file .razor nào (grep toàn
+     src/Frontend cho 0 hit), CSS chết nên fix cũng không cải thiện gì.
+   - Icon oi-* (Open Iconic): KHÔNG CÒN trong markup — grep
+     'class="oi' / 'oi oi-' trên toàn bộ *.razor cho 0 kết quả (các hit
+     'oi-' trước đây chỉ là từ tiếng Việt doi-/goi-/gioi-). Không có gì
+     để báo cáo cho điều phối viên.
+   - Các màu còn lại KHÔNG đụng (đã kiểm từng hex): brand ấm chủ ý
+     (landing terracotta #763434/#D08B8B/#6F0707, cam #FFBA31/#e8a013,
+     vàng gold #9C682C, nâu #4a2b1a, chip #b5462a, thanh giỏ #7a1b2e),
+     màu brand bên thứ ba (Zalo #0068ff, Facebook #1877f2),
+     palette trang demo /admin/lexa/* (pixel-exact: #ec536c/#3ac9d6/
+     #f5b225/#29bbe3), tint trung tính (#6c757d/#e9ecef/#ced4da...),
+     màu dark-mode của Agent 2 (#ff8a8a/#7ce3b1/#b3a8e8/#5dd39e...),
+     gradient trang trí (weather/offpeak bar — đổi sang Lexa sáng sẽ
+     làm giảm contrast chữ trắng nên giữ nguyên).
+   ============================================================ */
