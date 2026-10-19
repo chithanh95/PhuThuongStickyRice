@@ -1461,3 +1461,94 @@ html.dark .shop-sticky-cart-cta:hover {
     background: rgba(255, 255, 255, 0.15);
 }
 /* ===== END UIUX 22:05 A4 ===== */
+
+/* ===== UIUX run 22:25 - Agent4 A11y & Polish (5 fix moi, CSS-only, khong trung cac run truoc) ===== */
+
+/* uiux-hunt 2026-10-19 run 22:25 agent4-a11y */
+/* Fix 1 — Polish hover: 2 nhom sao danh gia con lai tren trang tra cuu don
+   HOAN TOAN khong co phan hoi :hover (mau chu nam inline style nen rule
+   `.shp-page .btn-link:hover` tim cua Agent 3 khong de duoc — nhung cung
+   khong co bat ky feedback nao khi di chuot, desktop khong biet sao bam duoc):
+   - "Danh gia chung" (TrackOrder.razor:568, button[role="radio"] khong class):
+     dung :not(.to-survey-star) de loai nhom sao popup khao sat (da co hover
+     scale tu run 17:05, tranh de rule).
+   - "Danh gia tung mon" (TrackOrder.razor:550, nut khong co class rieng):
+     bat bang [aria-label*="Danh gia mon"] — aria-label bat dau bang
+     "Danh gia mon <ten>: <n> sao" (them tu run 16:30).
+   Them scale 1.18 khi hover (dong bo pattern .to-survey-star run 17:05);
+   mau inline (vang #f1b44c / xam #8f8f8f) giu nguyen. Guard
+   prefers-reduced-motion cho nguoi nhay cam chuyen dong. */
+.shp-page button[role="radio"]:not(.to-survey-star):hover,
+.shp-page button[aria-label*="Đánh giá món"]:hover {
+    transform: scale(1.18);
+}
+@media (prefers-reduced-motion: reduce) {
+    .shp-page button[role="radio"]:not(.to-survey-star):hover,
+    .shp-page button[aria-label*="Đánh giá món"]:hover {
+        transform: none;
+    }
+}
+
+/* uiux-hunt 2026-10-19 run 22:25 agent4-a11y */
+/* Fix 2 — Polish hover: hang chon size/topping `.qv-sheet-opt`
+   (Shop.razor:553-571, div role="button" tabindex="0" — da keyboard-accessible
+   tu run 14:05, da co :focus-visible) nhung KHONG co :hover → desktop di chuot
+   qua hang khong biet bam duoc. Hover: nen kem rat nhat + bo goc; trang thai
+   da chon the hien bang radio/checkbox native (accent tim #7a6fbe) nen khong
+   nham lan. Dark mode: nen nau toi #33291d (dong bo fix .shop-row-stepper
+   run 19:45). Lap class (0,3,0) de thang rule scoped trong media query. */
+.qv-sheet-opt.qv-sheet-opt:hover {
+    background: #f8f5ef;
+    border-radius: 8px;
+}
+html.dark .qv-sheet-opt.qv-sheet-opt:hover {
+    background: #33291d;
+}
+
+/* uiux-hunt 2026-10-19 run 22:25 agent4-a11y */
+/* Fix 3 — Polish hover: cau hoi accordion `.sg-faq-item summary`
+   (Index.razor.css:1492, <details>/<summary> native, cursor:pointer, da co
+   :focus-visible tu run 19:45) nhung KHONG co :hover → desktop di chuot qua
+   khong co phan hoi thi giac. Hover: nen kem rat nhat (light) / trang mo 4%
+   (dark) — dong bo pattern `.shp-page .form-check:hover` run 16:50.
+   Card `.sg-faq-item` da co border-radius 12px + overflow:hidden nen nen
+   hover khong tran vien. */
+.sg-faq-item summary:hover {
+    background: #faf8f3;
+}
+html.dark .sg-faq-item summary:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* uiux-hunt 2026-10-19 run 22:25 agent4-a11y */
+/* Fix 4 — WCAG 2.5.8 (Target Size Minimum, AA: toi thieu 24x24px): nut × dong
+   khung chat `.sg-chat-head button` (Index.razor.css:1780, tren nen do sam
+   #6F0707 cua header chat landing) chi ~22px (font-size 22px, khong padding)
+   — DUOI chuan 24px, nguoi kho khan van dong dung chuot kho bam trung. Nang
+   vung bam len 32px, can giua ky tu × (header da co padding 14px 18px nen
+   khong vo layout). :hover (nen trang mo, run 22:05) va :focus-visible (vong
+   trang, run 11:20) giu nguyen, khong dung toi. */
+.sg-chat-head.sg-chat-head button {
+    min-width: 32px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+/* uiux-hunt 2026-10-19 run 22:25 agent4-a11y */
+/* Fix 5 — Mobile a11y (iOS Safari): o nhap SDT 2 form landing —
+   `.sg-zalo-form input` (Index.razor.css:1531) va `.sg-loyal-form input`
+   (Index.razor.css:1827) — font-size 15px. iOS TU ZOOM khi focus input <16px,
+   gay lech layout va roi mat nguoi lon tuoi. Nang len 16px trong breakpoint
+   mobile (dong bo fix `.faq-search .form-control` cua Agent 1 run 17:48).
+   Lap class (0,3,1) de thang rule scoped; khong doi desktop. */
+@media (max-width: 768px) {
+    .sg-zalo-form.sg-zalo-form input,
+    .sg-loyal-form.sg-loyal-form input {
+        font-size: 16px;
+    }
+}
+
+/* ===== END UIUX run 22:25 - Agent4 ===== */
