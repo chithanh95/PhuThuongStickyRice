@@ -160,18 +160,30 @@ else
         }
     }
 
-    private void StartEdit(ArticleModel a)
+    private async Task StartEdit(ArticleModel a)
     {
-        _editing = a;
+        // perf-hunt 2026-10-19 (run 14:46): list chỉ trả excerpt Body (220 ký
+        // tự) để giảm payload — form sửa phải nạp full Body qua endpoint riêng,
+        // nếu lỗi thì dùng dữ liệu list (không chặn user).
+        ArticleModel src = a;
+        try
+        {
+            src = await AdminOperationsService.GetArticleAsync(a.Id) ?? a;
+        }
+        catch (Exception)
+        {
+            // giữ nguyên dữ liệu từ list
+        }
+        _editing = src;
         _form = new ArticleModel
         {
-            Id = a.Id,
-            Title = a.Title,
-            Body = a.Body,
-            ImageUrl = a.ImageUrl,
-            IsPublished = a.IsPublished
+            Id = src.Id,
+            Title = src.Title,
+            Body = src.Body,
+            ImageUrl = src.ImageUrl,
+            IsPublished = src.IsPublished
         };
-        _publishedDate = a.PublishedAt.ToLocalTime().Date;
+        _publishedDate = src.PublishedAt.ToLocalTime().Date;
     }
 
     private void CancelEdit()

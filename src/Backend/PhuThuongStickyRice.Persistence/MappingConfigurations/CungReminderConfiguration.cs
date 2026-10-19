@@ -24,6 +24,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.CreatedAt).IsRequired();
 
             builder.HasIndex(x => x.CustomerPhone);
+
+            // perf-hunt 2026-10-19 (run 14:46): GetRemindersAsync chạy
+            // OrderByDescending(CreatedAt) + Take(200) mỗi lần admin mở
+            // trang nhắc cúng; bảng tăng vô hạn, không retention. Index
+            // non-unique, lookup-only, không đổi nghiệp vụ.
+            builder.HasIndex(x => x.CreatedAt);
         }
     }
 }

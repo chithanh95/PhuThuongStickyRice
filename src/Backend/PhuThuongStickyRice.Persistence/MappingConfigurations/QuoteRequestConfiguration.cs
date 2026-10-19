@@ -27,6 +27,11 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // trang báo giá; bảng tăng theo mỗi yêu cầu. Index non-unique,
             // lookup-only, không đổi nghiệp vụ.
             builder.HasIndex(x => x.CreatedAt);
+
+            // perf-hunt 2026-10-19 (run 14:46): GetListAsync lọc
+            // Where(Status) khi admin chọn trạng thái; không index thì
+            // full scan toàn bảng. Index non-unique, lookup-only.
+            builder.HasIndex(x => x.Status);
         }
     }
 }

@@ -16,6 +16,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.ImageUrl).HasMaxLength(Article.ImageUrlMaxLength);
             builder.Property(x => x.PublishedAt).IsRequired();
             builder.Property(x => x.IsPublished).IsRequired();
+
+            // perf-hunt 2026-10-19 (run 14:46): GetListAsync chạy
+            // OrderByDescending(PublishedAt) + Take(200) mỗi lần admin mở
+            // trang bài viết; bảng tăng theo thời gian. Index non-unique,
+            // lookup-only, không đổi nghiệp vụ.
+            builder.HasIndex(x => x.PublishedAt);
         }
     }
 }

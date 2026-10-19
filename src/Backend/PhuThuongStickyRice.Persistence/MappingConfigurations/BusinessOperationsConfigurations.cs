@@ -105,6 +105,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.Balance).HasColumnType("decimal(18,0)").IsRequired();
             builder.Property(x => x.CreatedAt).IsRequired();
             builder.Property(x => x.UpdatedAt).IsRequired();
+
+            // perf-hunt 2026-10-19 (run 14:46): WalletAppService.GetListAsync
+            // chạy OrderByDescending(Balance) + Take(200) mỗi lần admin mở
+            // trang ví tiền; bảng tăng theo mỗi khách. Index non-unique,
+            // lookup-only, không đổi nghiệp vụ.
+            builder.HasIndex(x => x.Balance);
         }
     }
 

@@ -28,6 +28,9 @@ namespace PhuThuongStickyRice.Application.Customer
         private readonly IRepository<CustomerNote, Guid> _notes;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Giới hạn server-side cho lịch sử ghi chú 1 SĐT.</summary>
+        private const int MaxNotesPerPhone = 200;
+
         public CustomerNoteAppService(
             IRepository<CustomerNote, Guid> notes,
             IAsyncQueryableExecuter asyncExecuter)
@@ -40,9 +43,14 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             var normalized = (phone ?? string.Empty).Trim();
             var queryable = await _notes.GetQueryableAsync();
+            // perf-hunt 2026-10-19 (run 14:46): Take(200) server-side — bảng
+            // CustomerNote tăng vô hạn theo ghi chú của nhân viên; trước đây
+            // nạp toàn bộ lịch sử ghi chú của 1 SĐT (cùng pattern đã fix ở
+            // AddressBook/GetReminders run 14:35).
             var items = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.Phone == normalized)
-                    .OrderByDescending(x => x.CreatedAt));
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(MaxNotesPerPhone));
             return items.Select(Map).ToList();
         }
 

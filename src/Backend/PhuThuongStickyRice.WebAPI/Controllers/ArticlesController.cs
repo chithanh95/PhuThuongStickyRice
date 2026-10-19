@@ -34,6 +34,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _articles.GetListAsync());
         }
 
+        /// <summary>
+        /// Admin: 1 bài viết đầy đủ nội dung (form sửa). List chỉ trả excerpt
+        /// Body nên edit phải gọi riêng endpoint này — xem ArticleAppService.
+        /// </summary>
+        [HttpGet("{id:guid}")]
+        public async Task<ActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
+        {
+            return Ok(await _articles.GetByIdAsync(id));
+        }
+
         [HttpPost]
         public async Task<ActionResult> Create(
             [FromBody] CreateArticleDto dto,

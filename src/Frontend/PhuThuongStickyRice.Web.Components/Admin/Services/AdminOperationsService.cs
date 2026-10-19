@@ -205,6 +205,15 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             return await GetAsync<List<ArticleModel>>("api/articles");
         }
 
+        /// <summary>
+        /// Lấy 1 bài viết đầy đủ nội dung (form sửa — list chỉ trả excerpt Body).
+        /// </summary>
+        /// <param name="id">Id bài viết.</param>
+        public async Task<ArticleModel> GetArticleAsync(Guid id)
+        {
+            return await GetAsync<ArticleModel>($"api/articles/{id}");
+        }
+
         /// <summary>Tạo bài viết mới.</summary>
         /// <param name="model">Thông tin bài viết.</param>
         public async Task<ArticleModel> CreateArticleAsync(ArticleModel model)

@@ -20,6 +20,12 @@ namespace PhuThuongStickyRice.Application.Content
     {
         Task<List<ArticleDto>> GetListAsync();
 
+        /// <summary>
+        /// Admin: lấy 1 bài viết đầy đủ nội dung để sửa. List chỉ trả excerpt
+        /// Body (xem GetListAsync) nên form edit phải gọi riêng endpoint này.
+        /// </summary>
+        Task<ArticleDto> GetByIdAsync(Guid id);
+
         Task<ArticleDto> CreateAsync(CreateArticleDto input);
 
         Task<ArticleDto> UpdateAsync(Guid id, CreateArticleDto input);
@@ -37,6 +43,14 @@ namespace PhuThuongStickyRice.Application.Content
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>
+        /// Độ dài excerpt Body trả về cho list admin — khớp đúng
+        /// Truncate(a.Body, 220) mà trang Articles.razor đang hiển thị nên
+        /// giao diện không đổi, chỉ giảm payload DB → JSON (trước đây mỗi lần
+        /// mở trang admin nạp full Body × 200 bài viết, ~MB).
+        /// </summary>
+        private const int BodyExcerptLength = 220;
+
         public ArticleAppService(
             IRepository<Article, Guid> articles,
             IAsyncQueryableExecuter asyncExecuter,
@@ -49,12 +63,31 @@ namespace PhuThuongStickyRice.Application.Content
 
         public virtual async Task<List<ArticleDto>> GetListAsync()
         {
-            // perf-hunt 2026-10-19 (run 14:05): trước đây materialize toàn bảng
-            // Article (kể cả Body dài mỗi bài) cho trang admin; cap 200 mới nhất.
+            // perf-hunt 2026-10-19 (run 14:46): trước đây materialize full
+            // Body của 200 bài viết cho trang admin (payload ~MB); giờ chỉ
+            // project excerpt 220 ký tự server-side — đúng bằng phần admin
+            // hiển thị (Truncate 220). Form sửa lấy full Body qua GetByIdAsync.
             var queryable = await _articles.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.PublishedAt).Take(200));
-            return items.Select(Map).ToList();
+                queryable.OrderByDescending(x => x.PublishedAt).Take(200)
+                    .Select(x => new ArticleDto
+                    {
+                        Id = x.Id,
+                        Title = x.Title,
+                        Body = x.Body.Length > BodyExcerptLength
+                            ? x.Body.Substring(0, BodyExcerptLength)
+                            : x.Body,
+                        ImageUrl = x.ImageUrl,
+                        PublishedAt = x.PublishedAt,
+                        IsPublished = x.IsPublished
+                    }));
+            return items;
+        }
+
+        public virtual async Task<ArticleDto> GetByIdAsync(Guid id)
+        {
+            var article = await _articles.GetAsync(id);
+            return Map(article);
         }
 
         public virtual async Task<ArticleDto> CreateAsync(CreateArticleDto input)
