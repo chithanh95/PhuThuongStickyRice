@@ -342,6 +342,22 @@ else
     }
 
     /// <summary>
+    /// Validate số lượng tối thiểu (BulkTier1MinQty = 50 gói): dùng chung cho
+    /// bước 1 và bước 2 — bước 2 cho sửa lại số lượng nên phải re-validate để
+    /// không qua mặt được điều kiện tối thiểu của bước 1.
+    /// </summary>
+    private bool ValidateBulkMinQuantity()
+    {
+        if (_bulk.Quantity >= BulkTier1MinQty)
+        {
+            return true;
+        }
+
+        _bulkError = "Đơn số lượng lớn từ 50 gói trở lên. Đơn nhỏ hơn vui lòng đặt tại cửa hàng.";
+        return false;
+    }
+
+    /// <summary>
     /// Validate bước 1 (sự kiện & số lượng): bắt chọn loại sự kiện, ngày nhận phải
     /// trước ít nhất 3 ngày (shop cần thời gian chuẩn bị nguyên liệu số lượng lớn),
     /// và tối thiểu 50 gói (đơn nhỏ hơn đặt trực tiếp ở /shop).
@@ -364,9 +380,8 @@ else
             _bulkError = "Vui lòng đặt trước ít nhất 3 ngày.";
             return;
         }
-        if (_bulk.Quantity < 50)
+        if (!ValidateBulkMinQuantity())
         {
-            _bulkError = "Đơn số lượng lớn từ 50 gói trở lên. Đơn nhỏ hơn vui lòng đặt tại cửa hàng.";
             return;
         }
         _bulkStep = 2;
@@ -387,9 +402,8 @@ else
         // bug-hunt 2026-10-19: bước 2 cho sửa lại số lượng (@bind:event="oninput")
         // nhưng không re-validate -> đổi 50 thành 10 ở bước 2 vẫn qua được, qua mặt
         // điều kiện "tối thiểu 50 gói" của bước 1. Validate lại ở đây.
-        if (_bulk.Quantity < 50)
+        if (!ValidateBulkMinQuantity())
         {
-            _bulkError = "Đơn số lượng lớn từ 50 gói trở lên. Đơn nhỏ hơn vui lòng đặt tại cửa hàng.";
             return;
         }
         _bulkStep = 3;
