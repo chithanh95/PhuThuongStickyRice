@@ -274,8 +274,6 @@ namespace PhuThuongStickyRice.WebAPI
         {
             app.InitializeApplication();
 
-            app.UseDebuggingMiddleware();
-
             // Item 102: must run before UseStaticFiles/UseRouting so API and
             // static responses are compressed.
             app.UseResponseCompression();
@@ -289,8 +287,6 @@ namespace PhuThuongStickyRice.WebAPI
             var blazorFileProvider = ConfigureBlazorStaticFiles(app);
 
             app.UseAccessTokenFromFormMiddleware();
-
-            app.UseLoggingStatusCodeMiddleware();
 
             if (env.IsDevelopment())
             {
@@ -311,6 +307,12 @@ namespace PhuThuongStickyRice.WebAPI
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            // Đăng ký SAU UseAuthentication/UseAuthorization để context.User đã có
+            // principal khi log 401/403 (trước đây UserId luôn trống vì middleware
+            // chạy trước auth). Middleware chỉ quan sát status code nên dời vị trí
+            // không đổi hành vi xử lý request/response.
+            app.UseLoggingStatusCodeMiddleware();
 
             app.UseRateLimiter();
 

@@ -43,15 +43,30 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
             _logger = logger;
         }
 
+        /// <summary>
+        /// Chặn mọi service call đã đăng ký interceptor: log Debug khi bắt đầu/kết thúc.
+        /// Lưu ý perf: chỉ serialize arguments sang JSON khi Debug log đang bật —
+        /// ở production (Information trở lên) việc serialize này chạy trên MỌI call
+        /// nhưng kết quả bị vứt đi, lãng phí CPU/GC trên hot path.
+        /// </summary>
         public void Intercept(IInvocation invocation)
         {
             var method = invocation.Method;
             var className = method.DeclaringType.Name;
             var methodName = method.Name;
 
-            var arguments = JsonSerializer.Serialize(invocation.Arguments.Where(x => x.GetType() != typeof(CancellationToken)), LogArgumentsOptions);
+            // Chỉ serialize arguments khi Debug log đang bật — tránh JSON serialization
+            // vô ích trên mọi service call ở production. Dùng pattern null-safe
+            // "x is not CancellationToken" như ErrorCatchingInterceptor (x.GetType()
+            // cũ ném NullReferenceException khi argument là null, che mất lỗi gốc).
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                var arguments = JsonSerializer.Serialize(
+                    invocation.Arguments.Where(x => x is not CancellationToken),
+                    LogArgumentsOptions);
 
-            LogMethodStart(_logger, className, methodName, arguments, null);
+                LogMethodStart(_logger, className, methodName, arguments, null);
+            }
 
             var watch = new Stopwatch();
             watch.Start();
