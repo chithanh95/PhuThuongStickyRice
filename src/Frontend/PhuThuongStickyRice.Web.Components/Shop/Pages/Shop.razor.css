@@ -880,3 +880,22 @@ html.dark .shop-filters-sticky {
         align-items: center;
     }
 }
+
+/* ===== UIUX-Mobile-A2: hàng món ShopeeFood trên màn rất nhỏ (≤377px) ===== */
+/* Tính toán: sidebar 88px + margin 10px + padding trang 12px×2 → hàng món chỉ
+   còn W−122px. Stepper (− qty +) 124px + ảnh 96px + gap/padding 36px = tối
+   thiểu 256px → màn ≤377px (iPhone SE 375, Android 360/320) bị tràn, và
+   .shp-page{overflow-x:clip} cắt mất nút "+" của stepper. Cho hàng wrap:
+   ảnh + tên ở dòng 1, cụm nút (stepper / nút +) xuống dòng 2 căn phải —
+   mọi nút vẫn ≥44px, không nút nào bị cắt. */
+@media (max-width: 377.98px) {
+    .shop-row-item {
+        flex-wrap: wrap;
+    }
+    .shop-row-action {
+        flex: 1 1 100%;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 8px;
+    }
+}

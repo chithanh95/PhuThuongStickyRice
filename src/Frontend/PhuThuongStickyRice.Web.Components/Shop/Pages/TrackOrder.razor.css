@@ -475,3 +475,19 @@ html.dark .to-survey-sheet .btn-outline-secondary:hover {
     background: #34345a;
     color: #fff;
 }
+
+/* ===== UIUX-Mobile-A2: nút thanh toán xếp cạnh nhau trên mobile ===== */
+/* "Tôi đã chuyển khoản" + "🔗 Sao chép link thanh toán" (+ "Thanh toán MoMo")
+   là con trực tiếp của .card-body, xếp cạnh nhau ~396px — trên màn nhỏ nút 2
+   rớt dòng lệch (do .ml-2). Xếp dọc full-width 48px cho người lớn tuổi dễ bấm.
+   (Nút .btn-sm tự phục vụ và nút nằm trong .d-flex không bị ảnh hưởng.) */
+@media (max-width: 767.98px) {
+    .card-body > .btn-success:not(.btn-sm),
+    .card-body > .btn-outline-primary:not(.btn-sm),
+    .card-body > .btn-primary:not(.btn-sm) {
+        display: block;
+        width: 100%;
+        min-height: 48px;
+        margin: 8px 0 0 !important;
+    }
+}
