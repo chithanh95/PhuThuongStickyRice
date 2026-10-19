@@ -145,10 +145,10 @@ namespace PhuThuongStickyRice.Application.AuditLogs
                 Level = level,
                 Source = source == null || source.Length <= AppLog.SourceMaxLength
                     ? source
-                    : source.Substring(0, AppLog.SourceMaxLength),
+                    : source[..AppLog.SourceMaxLength],
                 Message = message == null || message.Length <= AppLog.MessageMaxLength
                     ? message
-                    : message.Substring(0, AppLog.MessageMaxLength)
+                    : message[..AppLog.MessageMaxLength]
             }, autoSave: true);
 
             // Prune: keep only the latest MaxRows.

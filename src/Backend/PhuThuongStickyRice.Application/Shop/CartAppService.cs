@@ -15,7 +15,7 @@ namespace PhuThuongStickyRice.Application.Shop
     public interface ICartAppService : IApplicationService
     {
         /// <summary>Item 137: lấy giỏ hàng của user đang đăng nhập (null nếu chưa có).</summary>
-        Task<string> GetAsync();
+        Task<string?> GetAsync();
 
         /// <summary>Item 137: lưu giỏ hàng của user đang đăng nhập.</summary>
         Task SaveAsync(string itemsJson);
@@ -43,7 +43,7 @@ namespace PhuThuongStickyRice.Application.Shop
         /// Lấy giỏ hàng của user đang đăng nhập.
         /// </summary>
         /// <returns>Chuỗi JSON các món trong giỏ; null nếu chưa có hoặc chưa đăng nhập.</returns>
-        public virtual async Task<string> GetAsync()
+        public virtual async Task<string?> GetAsync()
         {
             var userId = CurrentUser?.Id?.ToString();
             if (string.IsNullOrEmpty(userId))

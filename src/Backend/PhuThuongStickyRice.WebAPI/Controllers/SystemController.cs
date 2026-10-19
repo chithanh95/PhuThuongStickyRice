@@ -78,13 +78,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             var message = model.Message.Length > 2000
-                ? model.Message.Substring(0, 2000)
+                ? model.Message[..2000]
                 : model.Message;
 
             var stack = string.IsNullOrWhiteSpace(model.StackTrace)
                 ? null
                 : (model.StackTrace.Length > 4000
-                    ? model.StackTrace.Substring(0, 4000)
+                    ? model.StackTrace[..4000]
                     : model.StackTrace);
 
             var text = $"[client-js] {message}";
