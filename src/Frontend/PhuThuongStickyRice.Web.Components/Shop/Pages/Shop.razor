@@ -728,19 +728,48 @@ else
         _tableLabel = GetQueryValue(Navigation.Uri, "ban");
 
         // Item 238: nhớ lựa chọn chế độ "Gọn" cho lần sau.
+        _compactMode = await LoadCompactModePreferenceAsync();
+
+        // Item 133: nguồn đơn từ tham số khi vào shop.
+        ResolveOrderSource();
+
+        // Wave 6a (item 22): open-hours badge in the hero (fail-safe — the
+        // shop works fine with the built-in defaults).
+        await LoadShopSettingsAsync();
+
+        // Item 143: banner mã giảm giá cho khách mới (fail-soft — shop vẫn
+        // chạy bình thường khi không lấy được).
+        await LoadFirstOrderVoucherAsync();
+
+        // Wave 6d (item 38): tải sản phẩm + dữ liệu bổ sung (combo, topping,
+        // bán chạy, đánh giá, tồn kho ngày).
+        await LoadCatalogAsync();
+    }
+
+    /// <summary>
+    /// Item 238: đọc lựa chọn chế độ "Gọn" đã lưu trong localStorage. Lỗi
+    /// (JS chưa sẵn sàng) thì mặc định tắt — chỉ là giao diện, không chặn shop.
+    /// </summary>
+    private async Task<bool> LoadCompactModePreferenceAsync()
+    {
         try
         {
-            _compactMode = string.Equals(
+            return string.Equals(
                 await JSRuntime.InvokeAsync<string>("localStorage.getItem", CompactModeStorageKey),
                 "1", StringComparison.Ordinal);
         }
         catch (Exception)
         {
-            _compactMode = false;
+            return false;
         }
+    }
 
-        // Item 133: order source from shop entry params.
-        // ?ban= → "QR bàn", ?share= → "Link chia sẻ", ?nhom= → "Nhóm", else "Web".
+    /// <summary>
+    /// Item 133: suy ra nguồn đơn từ tham số khi vào shop —
+    /// ?ban= → "QR bàn", ?share= → "Link chia sẻ", ?nhom= → "Nhóm", còn lại "Web".
+    /// </summary>
+    private void ResolveOrderSource()
+    {
         if (!string.IsNullOrWhiteSpace(_tableLabel))
         {
             CartState.Source = "QR bàn";
@@ -757,9 +786,14 @@ else
         {
             CartState.Source = "Web";
         }
+    }
 
-        // Wave 6a (item 22): open-hours badge in the hero (fail-safe —
-        // the shop works fine with the built-in defaults).
+    /// <summary>
+    /// Wave 6a (item 22): tải setting shop để hiện badge trạng thái mở/đóng
+    /// cửa trên hero. Fail-safe — shop dùng giá trị mặc định khi không lấy được.
+    /// </summary>
+    private async Task LoadShopSettingsAsync()
+    {
         try
         {
             _shopSettings = await ShopSettingsService.GetPublicAsync();
@@ -775,9 +809,14 @@ else
             _openNow = isOpen;
             _openStatusText = text;
         }
+    }
 
-        // Item 143: banner mã giảm giá cho khách mới (fail-soft — shop
-        // vẫn chạy bình thường khi không lấy được).
+    /// <summary>
+    /// Item 143: voucher đơn đầu cho khách mới. Fail-soft — shop vẫn chạy
+    /// bình thường khi không lấy được.
+    /// </summary>
+    private async Task LoadFirstOrderVoucherAsync()
+    {
         try
         {
             var phone = await ResolveCustomerPhoneAsync();
@@ -793,11 +832,18 @@ else
         catch (Exception)
         {
         }
+    }
 
+    /// <summary>
+    /// Wave 6d (item 38): tải sản phẩm là load quan trọng nhất — lỗi của riêng
+    /// nó gắn cờ _loadFailed (màn hình lỗi toàn trang + nút thử lại). Combo,
+    /// topping, bán chạy, đánh giá, tồn kho ngày tải song song trong 2 batch
+    /// (fail-soft, shop vẫn chạy khi chúng lỗi).
+    /// </summary>
+    private async Task LoadCatalogAsync()
+    {
         try
         {
-            // Wave 6d (item 38): products are the critical load — their
-            // failure gets the full-page error state with a retry button.
             try
             {
                 var paged = await ShopService.GetProductsAsync();
