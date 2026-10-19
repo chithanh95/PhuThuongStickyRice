@@ -26,13 +26,13 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
         // CA1848: interceptor chạy trên MỌI method call được intercept — dùng
         // LoggerMessage delegate thay LogDebug nội suy chuỗi để không cấp phát
         // chuỗi log khi level Debug đang tắt. Nội dung log giữ nguyên.
-        private static readonly Action<ILogger, string, string, string, Exception?> LogMethodStart =
+        private static readonly Action<ILogger, string, string, string, Exception> LogMethodStart =
             LoggerMessage.Define<string, string, string>(
                 LogLevel.Debug,
                 new EventId(1, "MethodStart"),
                 "Start calling method: {ClassName}.{MethodName} with ({Arguments}).");
 
-        private static readonly Action<ILogger, string, string, long, Exception?> LogMethodFinished =
+        private static readonly Action<ILogger, string, string, long, Exception> LogMethodFinished =
             LoggerMessage.Define<string, string, long>(
                 LogLevel.Debug,
                 new EventId(2, "MethodFinished"),
