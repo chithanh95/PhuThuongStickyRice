@@ -66,9 +66,12 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 }
 
                 // Never persist logs about the log pipeline itself.
-                if (_category.IndexOf("AppLog", StringComparison.OrdinalIgnoreCase) >= 0
-                    || _category.IndexOf("Webhook", StringComparison.OrdinalIgnoreCase) >= 0
-                    || _category.IndexOf("SystemHealth", StringComparison.OrdinalIgnoreCase) >= 0)
+                // CA2249: dùng Contains(value, comparison) thay cho
+                // IndexOf(value, comparison) >= 0 — tương đương ngữ nghĩa,
+                // đọc rõ ý "chứa chuỗi con" hơn.
+                if (_category.Contains("AppLog", StringComparison.OrdinalIgnoreCase)
+                    || _category.Contains("Webhook", StringComparison.OrdinalIgnoreCase)
+                    || _category.Contains("SystemHealth", StringComparison.OrdinalIgnoreCase))
                 {
                     return;
                 }

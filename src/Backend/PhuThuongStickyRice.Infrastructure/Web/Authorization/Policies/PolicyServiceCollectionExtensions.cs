@@ -9,6 +9,10 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class PolicyServiceCollectionExtensions
     {
+        /// <summary>
+        /// Đăng ký các authorization policy theo quyền (permission) và các
+        /// <see cref="IAuthorizationHandler"/> tương ứng vào DI.
+        /// </summary>
         public static IServiceCollection AddAuthorizationPolicies(this IServiceCollection services, Assembly assembly, IEnumerable<string> policies)
         {
             services.Configure<AuthorizationOptions>(options =>
@@ -25,7 +29,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             });
 
-            services.AddSingleton(typeof(IAuthorizationHandler), typeof(PermissionRequirementHandler));
+            // CA2263: dùng overload generic AddSingleton{TService, TImplementation}()
+            // thay cho AddSingleton(typeof, typeof) — cùng hành vi đăng ký.
+            services.AddSingleton<IAuthorizationHandler, PermissionRequirementHandler>();
 
             var requirementHandlerTypes = assembly.GetTypes()
                 .Where(IsAuthorizationHandler)

@@ -7,9 +7,14 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class DinkToPdfConverterCollectionExtensions
     {
+        /// <summary>
+        /// Đăng ký bộ chuyển đổi HTML sang PDF (DinkToPdf) vào DI.
+        /// </summary>
         public static IServiceCollection AddDinkToPdfConverter(this IServiceCollection services)
         {
-            services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+            // CA2263: dùng overload generic AddSingleton{TService}(instance)
+            // thay cho AddSingleton(typeof, instance) — cùng hành vi.
+            services.AddSingleton<IConverter>(new SynchronizedConverter(new PdfTools()));
             services.AddSingleton<IPdfConverter, DinkToPdfConverter>();
 
             return services;

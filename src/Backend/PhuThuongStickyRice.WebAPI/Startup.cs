@@ -115,7 +115,9 @@ namespace PhuThuongStickyRice.WebAPI
 
             services.AddControllers(configure =>
             {
-                configure.Filters.Add(typeof(GlobalExceptionFilter));
+                // CA2263: dùng overload generic Filters.Add{TFilterType}()
+                // thay cho Add(typeof(...)) — cùng hành vi đăng ký filter.
+                configure.Filters.Add<GlobalExceptionFilter>();
             })
             .ConfigureApiBehaviorOptions(options =>
             {

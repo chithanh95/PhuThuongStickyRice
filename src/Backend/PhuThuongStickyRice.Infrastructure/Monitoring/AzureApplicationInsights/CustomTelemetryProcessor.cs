@@ -23,7 +23,9 @@ namespace PhuThuongStickyRice.Infrastructure.Monitoring.AzureApplicationInsights
             Next.Process(item);
         }
 
-        private bool OKtoSend(ITelemetry item)
+        // CA1822: không dùng dữ liệu instance nào nên đánh dấu static —
+        // tránh tạo delegate/capture không cần thiết khi gọi từ Process.
+        private static bool OKtoSend(ITelemetry item)
         {
             if (item is RequestTelemetry request)
             {
