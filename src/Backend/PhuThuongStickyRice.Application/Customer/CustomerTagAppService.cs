@@ -75,7 +75,7 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <returns>Danh sách tag.</returns>
         public virtual async Task<List<CustomerTagDto>> GetTagsAsync(string phone)
         {
-            phone = NormalizePhone(phone);
+            phone = CustomerPhoneNormalizer.NormalizePhone(phone);
             if (string.IsNullOrEmpty(phone))
             {
                 return new List<CustomerTagDto>();
@@ -97,7 +97,7 @@ namespace PhuThuongStickyRice.Application.Customer
         public virtual async Task<Dictionary<string, List<CustomerTagDto>>> GetTagsByPhonesAsync(IEnumerable<string> phones)
         {
             var list = (phones ?? Enumerable.Empty<string>())
-                .Select(NormalizePhone)
+                .Select(CustomerPhoneNormalizer.NormalizePhone)
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Distinct()
                 .ToList();
@@ -140,7 +140,7 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <returns>Tag vừa tạo.</returns>
         public virtual async Task<CustomerTagDto> AddTagAsync(CreateCustomerTagDto dto)
         {
-            var phone = NormalizePhone(dto?.CustomerPhone);
+            var phone = CustomerPhoneNormalizer.NormalizePhone(dto?.CustomerPhone);
             var name = dto?.TagName?.Trim();
             if (string.IsNullOrEmpty(phone))
             {
@@ -382,9 +382,6 @@ namespace PhuThuongStickyRice.Application.Customer
                 })
                 .ToList();
         }
-
-        private static string NormalizePhone(string phone) =>
-            string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
 
         private static CustomerTagDto ToDto(CustomerTag x) => new CustomerTagDto
         {

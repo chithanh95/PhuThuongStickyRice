@@ -294,24 +294,11 @@ namespace PhuThuongStickyRice.Application.Customer
             return await KeyedAsyncLock.RunAsync($"birthday-gift:{userId}", async () =>
             {
                 var user = await _users.GetAsync(userId);
-                var phone = (user.PhoneNumber ?? string.Empty).Trim();
-                if (!PhoneNumber.IsValidVn(phone))
-                {
-                    throw new UserFriendlyException("Tài khoản này chưa có SĐT hợp lệ, không thể tặng quà.");
-                }
 
                 var thisYear = DateTime.UtcNow.Year;
-                if (user.BirthdayGiftYear == thisYear)
-                {
-                    throw new UserFriendlyException(
-                        $"Đã tặng quà sinh nhật năm {thisYear} rồi (mã {user.BirthdayGiftCode}).");
-                }
-
-                var amount = dto?.DiscountAmount ?? DefaultBirthdayGiftAmount;
-                if (amount < MinBirthdayGiftAmount || amount > MaxBirthdayGiftAmount)
-                {
-                    throw new UserFriendlyException("Mệnh giá quà từ 5.000₫ đến 1.000.000₫.");
-                }
+                // Tách validate ra helper để method chính gọn dưới 50 dòng
+                // (logic giữ nguyên).
+                var (phone, amount) = ValidateBirthdayGiftInput(user, dto, thisYear);
 
                 var code = await GenerateUniqueCodeAsync();
                 var expiresAt = DateTime.UtcNow.AddDays(BirthdayGiftValidityDays);
@@ -333,6 +320,41 @@ namespace PhuThuongStickyRice.Application.Customer
                     ExpiresAt = expiresAt
                 };
             });
+        }
+
+        /// <summary>
+        /// Validate đầu vào khi tặng quà sinh nhật: SĐT tài khoản phải hợp lệ,
+        /// khách chưa nhận quà trong năm nay, mệnh giá trong giới hạn
+        /// 5.000₫–1.000.000₫ (để trống thì dùng mặc định 25.000₫). Tách từ
+        /// <see cref="GrantBirthdayGiftAsync"/> để method chính gọn dưới 50 dòng.
+        /// </summary>
+        /// <param name="user">Tài khoản khách nhận quà.</param>
+        /// <param name="dto">Mệnh giá quà yêu cầu (null thì dùng mặc định).</param>
+        /// <param name="thisYear">Năm hiện tại (UTC) để kiểm tra tặng trùng năm.</param>
+        /// <returns>SĐT đã trim và mệnh giá hợp lệ.</returns>
+        /// <exception cref="UserFriendlyException">Ném khi SĐT không hợp lệ, đã tặng năm nay, hoặc mệnh giá ngoài giới hạn.</exception>
+        private static (string Phone, decimal Amount) ValidateBirthdayGiftInput(
+            User user, GrantBirthdayGiftDto dto, int thisYear)
+        {
+            var phone = (user.PhoneNumber ?? string.Empty).Trim();
+            if (!PhoneNumber.IsValidVn(phone))
+            {
+                throw new UserFriendlyException("Tài khoản này chưa có SĐT hợp lệ, không thể tặng quà.");
+            }
+
+            if (user.BirthdayGiftYear == thisYear)
+            {
+                throw new UserFriendlyException(
+                    $"Đã tặng quà sinh nhật năm {thisYear} rồi (mã {user.BirthdayGiftCode}).");
+            }
+
+            var amount = dto?.DiscountAmount ?? DefaultBirthdayGiftAmount;
+            if (amount < MinBirthdayGiftAmount || amount > MaxBirthdayGiftAmount)
+            {
+                throw new UserFriendlyException("Mệnh giá quà từ 5.000₫ đến 1.000.000₫.");
+            }
+
+            return (phone, amount);
         }
 
         /// <summary>

@@ -1,3 +1,4 @@
+#nullable enable annotations // Task<WalletAccount?> ở dưới cần nullable annotations context (CS8632)
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -80,7 +81,7 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         /// ví đã tồn tại thật (request kia thắng) thì trả về null như chưa bao
         /// giờ tạo, chỉ ném lại khi nguyên nhân là lỗi khác.
         /// </summary>
-        public async Task<WalletAccount> TryInsertAsync(
+        public async Task<WalletAccount?> TryInsertAsync(
             WalletAccount account, CancellationToken cancellationToken = default)
         {
             var dbContext = await GetDbContextAsync();

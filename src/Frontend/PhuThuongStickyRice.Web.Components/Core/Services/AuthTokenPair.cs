@@ -13,7 +13,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
         public DateTimeOffset ExpiresAt { get; set; }
 
-        public bool TokenExpired
+        public bool IsTokenExpired
         {
             get
             {

@@ -88,7 +88,7 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <returns>True nếu là khách VIP.</returns>
         public virtual async Task<bool> IsVipAsync(string phone)
         {
-            phone = NormalizePhone(phone);
+            phone = CustomerPhoneNormalizer.NormalizePhone(phone);
             if (string.IsNullOrEmpty(phone))
             {
                 return false;
@@ -109,7 +109,7 @@ namespace PhuThuongStickyRice.Application.Customer
         public virtual async Task<Dictionary<string, bool>> IsVipByPhonesAsync(IEnumerable<string> phones)
         {
             var list = (phones ?? Enumerable.Empty<string>())
-                .Select(NormalizePhone)
+                .Select(CustomerPhoneNormalizer.NormalizePhone)
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Distinct()
                 .ToList();
@@ -188,15 +188,14 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <returns>Tag VIP của khách.</returns>
         public virtual async Task<CustomerTagDto> MarkVipAsync(string phone)
         {
-            phone = NormalizePhone(phone);
+            phone = CustomerPhoneNormalizer.NormalizePhone(phone);
             if (string.IsNullOrEmpty(phone))
             {
                 throw new UserFriendlyException("Vui lòng nhập số điện thoại.");
             }
 
             var existing = await _tags.GetTagsAsync(phone);
-            var vip = existing.FirstOrDefault(t =>
-                string.Equals(t.TagName, VipTagName, StringComparison.OrdinalIgnoreCase));
+            var vip = FindVipTag(existing);
             if (vip != null)
             {
                 // Idempotent: already VIP, just return the tag.
@@ -220,15 +219,14 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <param name="phone">Số điện thoại khách.</param>
         public virtual async Task UnmarkVipAsync(string phone)
         {
-            phone = NormalizePhone(phone);
+            phone = CustomerPhoneNormalizer.NormalizePhone(phone);
             if (string.IsNullOrEmpty(phone))
             {
                 return;
             }
 
             var existing = await _tags.GetTagsAsync(phone);
-            var vip = existing.FirstOrDefault(t =>
-                string.Equals(t.TagName, VipTagName, StringComparison.OrdinalIgnoreCase));
+            var vip = FindVipTag(existing);
             if (vip != null)
             {
                 await _tags.DeleteTagAsync(vip.Id);
@@ -236,7 +234,15 @@ namespace PhuThuongStickyRice.Application.Customer
             }
         }
 
-        private static string NormalizePhone(string phone) =>
-            string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+        /// <summary>
+        /// Tìm tag VIP trong danh sách tag của khách (so sánh tên tag không
+        /// phân biệt hoa thường). Dùng chung cho Mark/Unmark để không lặp
+        /// lại predicate so sánh ở 2 nơi.
+        /// </summary>
+        /// <param name="tags">Danh sách tag của khách.</param>
+        /// <returns>Tag VIP, hoặc null nếu khách chưa gắn.</returns>
+        private static CustomerTagDto FindVipTag(IEnumerable<CustomerTagDto> tags) =>
+            tags.FirstOrDefault(t =>
+                string.Equals(t.TagName, VipTagName, StringComparison.OrdinalIgnoreCase));
     }
 }

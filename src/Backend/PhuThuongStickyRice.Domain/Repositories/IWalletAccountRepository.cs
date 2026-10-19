@@ -1,3 +1,4 @@
+#nullable enable annotations // Task<WalletAccount?> ở dưới cần nullable annotations context (CS8632)
 using PhuThuongStickyRice.Domain.Entities;
 using System;
 using System.Threading;
@@ -49,7 +50,8 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// </summary>
         /// <param name="account">Ví cần tạo (Phone đã chuẩn hóa).</param>
         /// <param name="cancellationToken">Token hủy.</param>
-        Task<WalletAccount> TryInsertAsync(
+        /// <returns>Ví vừa tạo, hoặc null khi SĐT đã có ví (bên khác thắng race).</returns>
+        Task<WalletAccount?> TryInsertAsync(
             WalletAccount account, CancellationToken cancellationToken = default);
     }
 }

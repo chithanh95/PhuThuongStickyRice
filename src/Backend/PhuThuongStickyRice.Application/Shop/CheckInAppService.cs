@@ -96,21 +96,33 @@ namespace PhuThuongStickyRice.Application.Shop
                 return await BuildAlreadyCheckedInResultAsync(normalized, today, current?.Points ?? loyalty.Points);
             }
 
-            // Cộng điểm nguyên tử tại DB (bug-hunt run 16:05): bản cũ đọc
-            // loyalty.Points vào memory rồi += và UpdateAsync — nếu cùng lúc
-            // có luồng khác đổi điểm của SĐT này (tích điểm khi đơn hoàn
-            // thành, đổi điểm ở checkout, thưởng giới thiệu) thì 1 bên ghi
-            // đè làm mất phần cộng của bên kia. TryIncrementPointsAsync chạy
-            // UPDATE ... SET Points = Points + @points ... nên không mất mát;
-            // 3 field cộng/ghi giống hệt bản cũ (Points, TotalEarned, UpdatedAt).
-            var incremented = await _loyaltyAccounts.TryIncrementPointsAsync(normalized, points);
+            // Cộng điểm nguyên tử tại DB — tách ra để CheckInAsync gọn
+            // dưới 50 dòng (logic giữ nguyên, xem comment chi tiết ở helper).
+            await IncrementLoyaltyPointsAsync(normalized, points);
+
+            return await BuildResultAsync(normalized, today,
+                alreadyCheckedIn: false, pointsAwarded: points, loyaltyPoints: loyalty.Points + points);
+        }
+
+        /// <summary>
+        /// Cộng điểm điểm danh vào tài khoản loyalty theo cách nguyên tử tại DB.
+        /// bug-hunt run 16:05: bản cũ đọc loyalty.Points vào memory rồi += và
+        /// UpdateAsync — nếu cùng lúc có luồng khác đổi điểm của SĐT này (tích
+        /// điểm khi đơn hoàn thành, đổi điểm ở checkout, thưởng giới thiệu) thì
+        /// 1 bên ghi đè làm mất phần cộng của bên kia. TryIncrementPointsAsync
+        /// chạy UPDATE ... SET Points = Points + @points ... nên không mất mát;
+        /// 3 field cộng/ghi giống hệt bản cũ (Points, TotalEarned, UpdatedAt).
+        /// </summary>
+        /// <param name="phone">SĐT đã chuẩn hóa của khách.</param>
+        /// <param name="points">Số điểm cần cộng (theo cài đặt quán).</param>
+        /// <exception cref="DomainException">Ném khi DB không cộng được điểm.</exception>
+        private async Task IncrementLoyaltyPointsAsync(string phone, int points)
+        {
+            var incremented = await _loyaltyAccounts.TryIncrementPointsAsync(phone, points);
             if (!incremented)
             {
                 throw new DomainException("Không cộng được điểm tích lũy, vui lòng thử lại.");
             }
-
-            return await BuildResultAsync(normalized, today,
-                alreadyCheckedIn: false, pointsAwarded: points, loyaltyPoints: loyalty.Points + points);
         }
 
         /// <summary>

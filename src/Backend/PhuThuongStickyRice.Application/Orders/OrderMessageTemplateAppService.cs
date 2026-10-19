@@ -66,6 +66,12 @@ namespace PhuThuongStickyRice.Application.Orders
         public bool HasTemplate { get; set; }
     }
 
+    /// <summary>
+    /// Mẫu tin nhắn chăm sóc khách theo trạng thái đơn: admin soạn sẵn nội dung
+    /// (có placeholder {MaDon}, {TenKhach}, {TongTien}, {NgayDat}), nút
+    /// "📋 Copy tin nhắn" ở trang đơn hàng render mẫu với dữ liệu đơn thật để
+    /// nhân viên gửi Zalo/tin nhắn — hệ thống KHÔNG tự gửi gì cả.
+    /// </summary>
     public interface IOrderMessageTemplateAppService : IApplicationService
     {
         /// <summary>Admin: all templates (one per status).</summary>

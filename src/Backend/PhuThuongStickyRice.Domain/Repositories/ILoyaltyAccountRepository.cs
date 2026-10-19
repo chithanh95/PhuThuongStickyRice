@@ -1,3 +1,4 @@
+#nullable enable annotations // Task<LoyaltyAccount?> ở dưới cần nullable annotations context (CS8632)
 using PhuThuongStickyRice.Domain.Entities;
 using System.Threading;
 using System.Threading.Tasks;
@@ -80,7 +81,8 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// </summary>
         /// <param name="account">Tài khoản cần tạo (Phone đã chuẩn hóa).</param>
         /// <param name="cancellationToken">Token hủy.</param>
-        Task<LoyaltyAccount> TryInsertAsync(
+        /// <returns>Tài khoản đã tạo, hoặc null khi SĐT đã có tài khoản (bên khác thắng race).</returns>
+        Task<LoyaltyAccount?> TryInsertAsync(
             LoyaltyAccount account, CancellationToken cancellationToken = default);
     }
 }

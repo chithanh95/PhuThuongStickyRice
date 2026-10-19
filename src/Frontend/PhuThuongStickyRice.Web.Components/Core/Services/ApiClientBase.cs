@@ -66,7 +66,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
                 return null;
             }
 
-            if (token.TokenExpired)
+            if (token.IsTokenExpired)
             {
                 await _tokenStore.RefreshToken();
                 token = await _tokenStore.GetToken();

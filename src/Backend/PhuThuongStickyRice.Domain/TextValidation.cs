@@ -1,3 +1,4 @@
+#nullable enable annotations // CS8632: annotation string? ở dưới chỉ hợp lệ trong nullable annotations context
 using PhuThuongStickyRice.Domain.Exceptions;
 
 // [codequality-smell 2026-10-20] Guard kiểm tra độ dài text dùng chung.

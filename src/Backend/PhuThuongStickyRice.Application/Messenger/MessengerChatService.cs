@@ -483,7 +483,9 @@ namespace PhuThuongStickyRice.Application.Messenger
             }
             else
             {
-                foreach (var product in items.Take(MenuMaxItems))
+                // LoadActiveProductsAsync đã giới hạn server-side đúng
+                // MenuMaxItems (MaxResultCount) nên không Take lại ở đây.
+                foreach (var product in items)
                 {
                     sb.AppendLine($"- {product.Name}: {FormatVnd(product.Price)}");
                 }
