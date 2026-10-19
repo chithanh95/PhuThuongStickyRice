@@ -530,29 +530,9 @@ else
                             </div>
                         }
                     </div>
-                    @* Item 105: gift-wrap is feature-flagged. *@
-                    @if (_giftWrapEnabled)
-                    {
-                        <div class="form-check mb-2">
-                            @* Bug-hunt 2026-10-19: bật/tắt gói quà đổi tổng đơn — nếu ví
-                               không còn đủ số dư, reset về COD ngay (cùng logic như
-                               OnCartChanged/ApplyDiscount), tránh server từ chối ví. *@
-                            <input class="form-check-input" type="checkbox" id="gift-toggle"
-                                   @bind="_order.IsGift"
-                                   @bind:after="EnsurePaymentMethodValid" />
-                            <label class="form-check-label" for="gift-toggle">
-                                🎁 Gói quà (+@FormatPrice(_shopSettings.GiftFee))
-                            </label>
-                        </div>
-                        @if (_order.IsGift)
-                        {
-                            <div class="form-group">
-                                <label for="co-gift-message">Lời nhắn trên thiệp</label>
-                                <textarea id="co-gift-message" class="form-control" @bind="_order.GiftMessage" rows="2"
-                                          placeholder="Ví dụ: Chúc mừng sinh nhật!"></textarea>
-                            </div>
-                        }
-                    }
+                    @* 2026-10-19: bỏ tính năng gói quà ở checkout theo yêu cầu user
+                       ("checkbox gói quà không cần thiết") — backend giữ nguyên để
+                       đơn cũ vẫn hiển thị đúng, chỉ không cho chọn mới. *@
                     <div class="form-group">
                         @* A11y-1019: gộp radio thanh toán thành radiogroup có label —
                            trước đây <label> mồ côi không gắn input nào, trình đọc
@@ -693,13 +673,6 @@ else
                                 <tr class="table-success">
                                     <td class="text-success font-weight-bold" colspan="3">💰 Bạn tiết kiệm được</td>
                                     <td class="text-right text-success font-weight-bold">@FormatPrice(totalSaved)</td>
-                                </tr>
-                            }
-                            @if (_giftFeePreview > 0)
-                            {
-                                <tr>
-                                    <td class="text-muted" colspan="3">🎁 Phí gói quà</td>
-                                    <td class="text-right text-muted">+@FormatPrice(_giftFeePreview)</td>
                                 </tr>
                             }
                             <tr>
@@ -924,7 +897,7 @@ else
     private bool _showVat;
 
     // Item 105: feature flags (UI gating; backend enforces too).
-    private bool _giftWrapEnabled = true;
+    // 2026-10-19: _giftWrapEnabled bỏ — user xóa checkbox gói quà khỏi checkout.
     private bool _referralsEnabled = true;
     private bool _luckySpinEnabled = true;
 
@@ -982,7 +955,7 @@ else
     }
 
     private decimal _grandTotal => Math.Max(0,
-        _subtotal - _promotionDiscountPreview - _discountAmount - _tierDiscountPreview - _redeemDiscountPreview + _fee + _giftFeePreview);
+        _subtotal - _promotionDiscountPreview - _discountAmount - _tierDiscountPreview - _redeemDiscountPreview + _fee);
 
     /// <summary>Item 140: estimated total used to gate the ví payment option.</summary>
     private decimal _estimatedTotal => _grandTotal;
@@ -1016,7 +989,7 @@ else
         }
     }
 
-    private decimal _giftFeePreview => _order.IsGift ? Math.Max(0, _shopSettings.GiftFee) : 0;
+    // 2026-10-19: bỏ _giftFeePreview — user xóa gói quà khỏi checkout.
 
     /// <summary>Deposit preview for large bank-transfer orders.</summary>
     private decimal _depositPreview
@@ -1106,7 +1079,6 @@ else
         try
         {
             var flags = await AdminSystemService.GetFeatureFlagMapAsync();
-            _giftWrapEnabled = GetFlag(flags, "gift-wrap", true);
             _referralsEnabled = GetFlag(flags, "referrals", true);
             _luckySpinEnabled = GetFlag(flags, "lucky-spin", true);
         }
@@ -1943,10 +1915,10 @@ else
             _order.CompanyName = null;
         }
 
-        if (!_order.IsGift)
-        {
-            _order.GiftMessage = null;
-        }
+        // 2026-10-19: gói quà đã bỏ khỏi checkout — ép false để không bao giờ
+        // gửi IsGift lên server từ luồng này (đơn cũ vẫn giữ nguyên).
+        _order.IsGift = false;
+        _order.GiftMessage = null;
 
         _order.Lines = CartState.Items
             .Select(x => new CreateOrderLineModel

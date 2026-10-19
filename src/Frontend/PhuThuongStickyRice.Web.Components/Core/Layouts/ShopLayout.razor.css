@@ -624,7 +624,12 @@ html.dark .shp-back:hover {
         display: none;
     }
 }
-@media (max-width: 400px) {
+@media (max-width: 480px) {
+    /* 2026-10-19: mở rộng từ 400px lên 480px — user báo nút dark mode bị khuất
+       ở checkout mobile. Header mobile có 6 item (back + logo + hamburger +
+       cờ + giỏ + A+ + dark mode); màn 360–480px không đủ chỗ 1 hàng dù đã
+       thu gọn logo. Cho cụm nút xuống 2 hàng để KHÔNG item nào bị cắt,
+       giữ nguyên vùng bấm 44px cho người lớn tuổi. */
     .shp-header-right {
         flex-wrap: wrap;
         max-width: 100px;
