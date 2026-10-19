@@ -115,6 +115,15 @@ namespace PhuThuongStickyRice.Application.Messenger
         private const int MessengerMessageChunkSize = 1800; // Messenger caps text ~2000 chars
         private static readonly TimeSpan BetweenChunksDelay = TimeSpan.FromMilliseconds(300);
 
+        private const string FulfillmentShipperPickup = "ShipperPickup";
+        private const string FulfillmentCustomerPickup = "CustomerPickup";
+        private const string PaymentMethodCod = "Cod";
+        private const string OrderSourceMessenger = "Messenger";
+        private const string DefaultCustomerName = "Khách Messenger";
+        private const string ShipperKeyword = "shipper";
+        private const int SendTimeoutSeconds = 15;
+        private const int PruneThrottleSeconds = 60;
+
         private readonly IShopSettingAppService _shopSettings;
         private readonly IProductAppService _products;
         private readonly IOrderAppService _orders;
@@ -382,7 +391,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             }
 
             var norm = NormalizeForMatching(text);
-            var fulfillment = norm.Contains("shipper") ? "ShipperPickup" : "CustomerPickup";
+            var fulfillment = norm.Contains(ShipperKeyword) ? FulfillmentShipperPickup : FulfillmentCustomerPickup;
 
             try
             {
@@ -391,7 +400,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                     skipRecaptchaCheck: true);
 
                 _sessions.TryRemove(session.Psid ?? string.Empty, out _);
-                var pickupNote = fulfillment == "ShipperPickup"
+                var pickupNote = fulfillment == FulfillmentShipperPickup
                     ? "Shipper đến quán đọc mã đơn để lấy hàng nhé!"
                     : "Bạn đến quán đọc mã đơn để lấy hàng nhé!";
                 return $"✅ Đặt đơn thành công!\nMã đơn: {order.OrderNumber}\n"
@@ -423,7 +432,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             name = WhitespaceRegex().Replace(name, " ");
             if (string.IsNullOrWhiteSpace(name) || name.Length < 2)
             {
-                name = "Khách Messenger";
+                name = DefaultCustomerName;
             }
 
             return (phoneMatch.Value, name);
@@ -441,11 +450,11 @@ namespace PhuThuongStickyRice.Application.Messenger
             {
                 CustomerName = name.Length > MaxCustomerNameLength ? name.Substring(0, MaxCustomerNameLength) : name,
                 CustomerPhone = phone,
-                CustomerAddress = fulfillment == "CustomerPickup" ? "Khách tự đến quán lấy" : "Shipper đến quán lấy",
+                CustomerAddress = fulfillment == FulfillmentCustomerPickup ? "Khách tự đến quán lấy" : "Shipper đến quán lấy",
                 Notes = $"Đặt qua Messenger chat (PSID {session.Psid ?? "?"})",
-                PaymentMethod = "Cod",
+                PaymentMethod = PaymentMethodCod,
                 FulfillmentMethod = fulfillment,
-                Source = "Messenger",
+                Source = OrderSourceMessenger,
                 Lines = session.PendingLines.Select(x => new CreateOrderLineDto
                 {
                     ProductId = x.ProductId,
@@ -613,7 +622,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             try
             {
                 var client = _httpClientFactory.CreateClient();
-                client.Timeout = TimeSpan.FromSeconds(15);
+                client.Timeout = TimeSpan.FromSeconds(SendTimeoutSeconds);
                 // Messenger caps a single text message around 2000 chars.
                 foreach (var chunk in SplitMessage(text, MessengerMessageChunkSize))
                 {
@@ -654,7 +663,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             var now = DateTime.UtcNow;
             lock (_pruneLock)
             {
-                if (now - _lastPruneUtc < TimeSpan.FromSeconds(60))
+                if (now - _lastPruneUtc < TimeSpan.FromSeconds(PruneThrottleSeconds))
                 {
                     return;
                 }

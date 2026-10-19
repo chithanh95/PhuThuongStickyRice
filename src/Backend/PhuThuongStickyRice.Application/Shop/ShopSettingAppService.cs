@@ -86,6 +86,9 @@ namespace PhuThuongStickyRice.Application.Shop
         private const int DefaultNepPerPortionGrams = 150;
         private const int MaxOrdersPerPhonePerDayLimit = 1000;
         private const int MaxWebhookUrlLength = 1000;
+        private const int WebhookPostTimeoutSeconds = 5;
+        private const decimal PercentMinValue = 0m;
+        private const decimal PercentMaxValue = 100m;
         private const string DefaultImageBackupProvider = "None";
         private const string DefaultOpenTime = "06:00";
         private const string DefaultCloseTime = "10:30";
@@ -420,7 +423,7 @@ namespace PhuThuongStickyRice.Application.Shop
         /// <summary>Clamps a percentage setting to 0–100.</summary>
         private static decimal ClampPercent(decimal value)
         {
-            return Math.Min(100, Math.Max(0, value));
+            return Math.Min(PercentMaxValue, Math.Max(PercentMinValue, value));
         }
 
         /// <summary>
@@ -475,7 +478,7 @@ namespace PhuThuongStickyRice.Application.Shop
             System.Net.Http.IHttpClientFactory httpClientFactory, string url, object payload)
         {
             var client = httpClientFactory.CreateClient("PhuThuongStickyRice.Webhook");
-            client.Timeout = TimeSpan.FromSeconds(5);
+            client.Timeout = TimeSpan.FromSeconds(WebhookPostTimeoutSeconds);
 
             var body = System.Text.Json.JsonSerializer.Serialize(payload);
             using var request = new System.Net.Http.HttpRequestMessage(

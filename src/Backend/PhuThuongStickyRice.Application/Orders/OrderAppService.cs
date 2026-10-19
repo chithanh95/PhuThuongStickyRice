@@ -2805,10 +2805,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <returns>Chuỗi khóa đã chuẩn hóa.</returns>
         private static string OrderPhoneLockKey(string operation, string? orderNumber, string? customerPhone)
         {
-            var digits = PhoneNumber.DigitsOnly(customerPhone);
-            var tail = digits.Length > PhoneNumber.TailDigitCount
-                ? digits.Substring(digits.Length - PhoneNumber.TailDigitCount)
-                : digits;
+            var tail = PhoneNumber.PhoneTailKey(customerPhone);
             return $"{operation}:{orderNumber?.Trim().ToUpperInvariant()}:{tail}";
         }
 
@@ -3279,7 +3276,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private static string NormalizePhoneKey(string phone)
         {
             var digits = PhoneNumber.DigitsOnly(phone);
-            return digits.Length >= 9 ? digits[^9..] : null;
+            return digits.Length >= PhoneNumber.TailDigitCount ? digits[^PhoneNumber.TailDigitCount..] : null;
         }
 
         private static string AppendNote(string existing, string addition)
@@ -3306,7 +3303,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             var normalized = PhoneNumber.DigitsOnly(phone);
-            if (normalized.Length < 9)
+            if (normalized.Length < PhoneNumber.TailDigitCount)
             {
                 return null;
             }
@@ -3357,12 +3354,12 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<bool> HasOrderedBeforeAsync(string phone)
         {
             var digits = PhoneNumber.DigitsOnly(phone);
-            if (digits.Length < 9)
+            if (digits.Length < PhoneNumber.TailDigitCount)
             {
                 return false;
             }
 
-            var suffix = digits.Substring(digits.Length - 9);
+            var suffix = digits.Substring(digits.Length - PhoneNumber.TailDigitCount);
             var orderQueryable = await _orders.GetQueryableAsync();
             // SQL pre-filter on the normalized 9-digit suffix (index seek on
             // CustomerPhoneNorm), then the exact tolerant match in memory —
@@ -3395,7 +3392,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<FirstOrderVoucherDto> GetFirstOrderVoucherAsync(string phone)
         {
             var digits = PhoneNumber.DigitsOnly(phone);
-            if (digits.Length < 9)
+            if (digits.Length < PhoneNumber.TailDigitCount)
             {
                 throw new Domain.Exceptions.DomainException(
                     InvalidPhoneFormatMessage);
@@ -3464,7 +3461,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     InvalidPhoneFormatMessage);
             }
 
-            var last9 = digits.Substring(digits.Length - 9);
+            var last9 = digits.Substring(digits.Length - PhoneNumber.TailDigitCount);
             var candidates = await LoadOrderCandidatesAsync(last9);
 
             var matched = candidates.Where(x => PhoneNumber.PhonesMatch(x.CustomerPhone, digits)).ToList();
@@ -3587,27 +3584,16 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         private async Task<int> CountCompletedOrdersByPhoneAsync(string customerPhone)
         {
-            var digits = PhoneNumber.DigitsOnly(customerPhone);
             var orderQueryable = await _orders.GetQueryableAsync();
             var completedQuery = orderQueryable.Where(o => o.Status == OrderStatus.Completed);
 
             // Same digit-tolerance as EnsurePhoneDailyLimitAsync: SQL-side
             // suffix pre-filter on the normalized column (index seek), then
             // the tolerant in-memory compare.
-            List<string> candidatePhones;
-            if (digits.Length >= 9)
-            {
-                var last9 = digits.Substring(digits.Length - 9);
-                candidatePhones = await _asyncExecuter.ToListAsync(completedQuery
-                    .Where(o => o.CustomerPhoneNorm == last9)
-                    .Select(o => o.CustomerPhone));
-            }
-            else
-            {
-                candidatePhones = await _asyncExecuter.ToListAsync(completedQuery
-                    .Where(o => o.CustomerPhoneNorm == digits)
-                    .Select(o => o.CustomerPhone));
-            }
+            var tailKey = PhoneNumber.PhoneTailKey(customerPhone);
+            var candidatePhones = await _asyncExecuter.ToListAsync(completedQuery
+                .Where(o => o.CustomerPhoneNorm == tailKey)
+                .Select(o => o.CustomerPhone));
 
             return candidatePhones.Count(p => PhoneNumber.PhonesMatch(p, customerPhone));
         }
@@ -3651,19 +3637,9 @@ namespace PhuThuongStickyRice.Application.Orders
             // TailDigitCount digits (or the exact digit string when shorter)
             // via the normalized column — index seek instead of a REPLACE()
             // table scan.
-            var digits = PhoneNumber.DigitsOnly(customerPhone);
-            int count;
-            if (digits.Length >= PhoneNumber.TailDigitCount)
-            {
-                var last9 = digits.Substring(digits.Length - PhoneNumber.TailDigitCount);
-                count = await _asyncExecuter.CountAsync(todayQuery.Where(x =>
-                    x.CustomerPhoneNorm == last9));
-            }
-            else
-            {
-                count = await _asyncExecuter.CountAsync(todayQuery.Where(x =>
-                    x.CustomerPhoneNorm == digits));
-            }
+            var tailKey = PhoneNumber.PhoneTailKey(customerPhone);
+            var count = await _asyncExecuter.CountAsync(todayQuery.Where(x =>
+                x.CustomerPhoneNorm == tailKey));
 
             if (count >= maxPerDay)
             {

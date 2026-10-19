@@ -563,23 +563,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private async Task<bool> HasNoPriorCompletedOrderAsync(
             IQueryable<Order> orderQueryable, Order order, LoyaltyAccount buyer)
         {
-            var buyerKey = LastNineDigits(buyer.Phone);
+            var buyerKey = PhoneNumber.PhoneTailKey(buyer.Phone);
             return !await _asyncExecuter.AnyAsync(
                 orderQueryable
                     .Where(x => x.Id != order.Id
                         && x.Status == OrderStatus.Completed
                         && x.CustomerPhoneNorm == buyerKey));
         }
-
-        /// <summary>
-        /// Lấy 9 ký tự cuối của chuỗi SĐT đã chuẩn hóa digits — cùng chuẩn so
-        /// sánh tolerant với <see cref="PhoneNumber.PhonesMatch"/>; chuỗi ngắn hơn
-        /// 9 ký tự trả nguyên để không vứt mất số nhập thiếu.
-        /// </summary>
-        private static string LastNineDigits(string normalizedPhone) =>
-            normalizedPhone.Length >= PhoneNumber.TailDigitCount
-                ? normalizedPhone.Substring(normalizedPhone.Length - PhoneNumber.TailDigitCount)
-                : normalizedPhone;
 
         /// <summary>
         /// Kẹp số điểm muốn đổi theo số tiền tối đa có thể giảm (làm tròn xuống

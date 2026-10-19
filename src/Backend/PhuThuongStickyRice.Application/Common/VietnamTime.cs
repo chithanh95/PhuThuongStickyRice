@@ -103,7 +103,7 @@ namespace PhuThuongStickyRice.Application.Common
             }
 
             var digits = new string(phone.Where(char.IsDigit).ToArray());
-            return digits.Length >= 9 ? digits : null;
+            return digits.Length >= PhoneNumber.TailDigitCount ? digits : null;
         }
     }
 }

@@ -10,6 +10,7 @@ using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using PhuThuongStickyRice.Application.Discounts;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Shop;
 
 namespace PhuThuongStickyRice.Application.Discounts
@@ -230,7 +231,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             return await _asyncExecuter.ToListAsync(
                 loyaltyQuery
                     .Where(x => !activeNorms.Contains(
-                        x.Phone.Length <= 9 ? x.Phone : x.Phone.Substring(x.Phone.Length - 9)))
+                        x.Phone.Length <= PhoneNumber.TailDigitCount ? x.Phone : x.Phone.Substring(x.Phone.Length - PhoneNumber.TailDigitCount)))
                     .Select(x => x.Phone));
         }
 
@@ -313,7 +314,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             return await _asyncExecuter.CountAsync(
                 loyaltyQuery
                     .Where(x => !activeNorms.Contains(
-                        x.Phone.Length <= 9 ? x.Phone : x.Phone.Substring(x.Phone.Length - 9))));
+                        x.Phone.Length <= PhoneNumber.TailDigitCount ? x.Phone : x.Phone.Substring(x.Phone.Length - PhoneNumber.TailDigitCount))));
         }
 
         /// <summary>
