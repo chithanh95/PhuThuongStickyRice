@@ -86,8 +86,11 @@ namespace PhuThuongStickyRice.Application.Discounts
         public virtual async Task<List<PromotionDto>> GetListAsync()
         {
             var queryable = await _promotions.GetQueryableAsync();
+            // Cap 500 dòng phía server: bảng promotions chỉ do admin tạo thủ công (vài chục dòng),
+            // chặn materialize vô hạn theo thời gian (cùng pattern DiscountAppService.GetListAsync Take(500)).
+            const int MaxPromotionRows = 500;
             var items = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.IsActive).ThenBy(x => x.Name));
+                queryable.OrderByDescending(x => x.IsActive).ThenBy(x => x.Name).Take(MaxPromotionRows));
             return items.Select(Map).ToList();
         }
 
