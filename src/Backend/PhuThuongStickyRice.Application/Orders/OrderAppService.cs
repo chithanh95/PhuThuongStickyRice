@@ -210,6 +210,13 @@ namespace PhuThuongStickyRice.Application.Orders
         private const decimal SpinCashPrizeAmount = 20000m;
         /// <summary>Tiền tố mã voucher tặng khách đặt đơn đầu tiên.</summary>
         private const string FirstOrderVoucherPrefix = "CHAO";
+
+        // Nhóm role dùng trong [Authorize] của class này — gom thành const để
+        // sửa 1 chỗ khi thay đổi phân quyền, tránh gõ sai chuỗi ở từng attribute.
+        private const string RolesAdminCashier = "Admin,Cashier";
+        private const string RolesAdminKitchen = "Admin,Kitchen";
+        /// <summary>Key của segment "trượt" (không trúng giải) trong vòng quay may mắn.</summary>
+        private const string MissSegmentKey = "Miss";
         /// <summary>Phần trăm giảm giá của voucher đơn đầu tiên.</summary>
         private const int FirstOrderVoucherDiscountPercent = 10;
         /// <summary>Voucher đơn đầu tiên có hiệu lực 30 ngày kể từ ngày tạo.</summary>
@@ -1151,7 +1158,7 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>Item 82: admin assigns (or unassigns) a delivery shipper.</summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
         public virtual async Task<OrderDto> AssignShipperAsync(Guid id, AssignShipperDto input)
         {
             var order = await FindOrThrowAsync(id);
@@ -1180,7 +1187,7 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>Item 81: kitchen display — Pending/Confirmed/Preparing, oldest first.</summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Kitchen")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminKitchen)]
         public virtual async Task<List<OrderDto>> GetKitchenOrdersAsync()
         {
             var kitchenStatuses = new[]
@@ -1202,7 +1209,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Item 81: kitchen display tap advances one stage:
         /// Pending→Confirmed→Preparing→Delivering.
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Kitchen")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminKitchen)]
         public virtual async Task<OrderDto> AdvanceKitchenStatusAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
@@ -1266,7 +1273,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>
         /// Wave 6c (item 33): admin sets or clears the internal note.
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
         public virtual async Task<OrderDto> UpdateAdminNoteAsync(Guid id, UpdateAdminNoteDto input)
         {
             var order = await FindOrThrowAsync(id);
@@ -1284,7 +1291,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// shipper info. When the order is being prepared, it advances to
         /// Delivering (the shipper is now transporting it).
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
         public virtual async Task<OrderDto> MarkPickedUpAsync(Guid id, MarkPickedUpDto input)
         {
             // Item 155: confirming a pickup needs orders.confirm.
@@ -1322,7 +1329,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Typically used on COD orders; the server only requires "not
         /// cancelled, not yet collected".
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
         public virtual async Task<OrderDto> MarkCashCollectedAsync(Guid id)
         {
             // Item 155: cash handling needs orders.confirm-payment.
@@ -1987,7 +1994,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 ("Percent15", 12),
                 ("FreeShip", 15),
                 ("Cash20k", 18),
-                ("Miss", 10)
+                (MissSegmentKey, 10)
             };
 
             var total = segments.Sum(x => x.Weight);
@@ -2002,7 +2009,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
             }
 
-            return "Miss";
+            return MissSegmentKey;
         }
 
         /// <summary>
@@ -2214,7 +2221,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// ("gộp vào đơn ..."). Totals are recalculated server-side.
         /// Always explicit — the shop must press the button.
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Cashier")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
         public virtual async Task<OrderDto> MergeOrdersAsync(MergeOrdersInput input)
         {
             if (input == null || input.OrderIds == null || input.OrderIds.Count == 0)

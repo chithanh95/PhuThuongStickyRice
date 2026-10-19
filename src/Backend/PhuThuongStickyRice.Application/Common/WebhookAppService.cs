@@ -70,7 +70,7 @@ namespace PhuThuongStickyRice.Application.Common
             foreach (var endpoint in endpoints)
             {
                 var events = (endpoint.Events ?? string.Empty)
-                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(x => x.Trim());
                 if (events.Any(x => string.Equals(x, eventName, StringComparison.OrdinalIgnoreCase)))
                 {

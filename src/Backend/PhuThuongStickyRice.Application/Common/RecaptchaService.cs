@@ -48,7 +48,9 @@ namespace PhuThuongStickyRice.Application.Common
                 return false;
             }
 
-            var form = new FormUrlEncodedContent(new[]
+            // FormUrlEncodedContent là IDisposable (giữ buffer đã encode):
+            // dispose sau khi request hoàn tất, tránh rò rỉ tài nguyên.
+            using var form = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>("secret", settings.RecaptchaSecretKey),
                 new KeyValuePair<string, string>("response", token),

@@ -279,12 +279,18 @@ namespace PhuThuongStickyRice.Application.Catalog
                 IsActive = e.IsActive,
                 Items = e.Items
                     .Where(i => includeInvalidItems || names.ContainsKey(i.ProductId))
-                    .Select(i => new ComboItemDto
+                    .Select(i =>
                     {
-                        ProductId = i.ProductId,
-                        ProductName = names.TryGetValue(i.ProductId, out var n) ? n.Name : "(Món đã ngừng bán)",
-                        ProductPrice = names.TryGetValue(i.ProductId, out var n2) ? n2.Price : 0,
-                        Quantity = i.Quantity
+                        // Chỉ lookup dictionary 1 lần/món (tránh 2 lần băm
+                        // trùng lặp cho Name và Price).
+                        var hasProduct = names.TryGetValue(i.ProductId, out var productInfo);
+                        return new ComboItemDto
+                        {
+                            ProductId = i.ProductId,
+                            ProductName = hasProduct ? productInfo.Name : "(Món đã ngừng bán)",
+                            ProductPrice = hasProduct ? productInfo.Price : 0,
+                            Quantity = i.Quantity
+                        };
                     }).ToList()
             });
 

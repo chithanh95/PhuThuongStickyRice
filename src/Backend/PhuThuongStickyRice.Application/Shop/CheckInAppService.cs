@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
-using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Shop
@@ -26,6 +25,9 @@ namespace PhuThuongStickyRice.Application.Shop
     /// <summary>Item 121: daily check-in awarding loyalty points.</summary>
     public class CheckInAppService : ApplicationService, ICheckInAppService
     {
+        /// <summary>Số điểm tặng mặc định mỗi lần điểm danh khi cài đặt chưa cấu hình.</summary>
+        private const int DefaultCheckInPoints = 5;
+
         private readonly IRepository<CheckIn, Guid> _checkIns;
         private readonly IRepository<LoyaltyAccount, Guid> _loyaltyAccounts;
         private readonly IShopSettingAppService _shopSettings;
@@ -58,17 +60,12 @@ namespace PhuThuongStickyRice.Application.Shop
 
             if (existing != null)
             {
-                return new CheckInResultDto
-                {
-                    AlreadyCheckedIn = true,
-                    PointsAwarded = 0,
-                    StreakDays = await GetStreakAsync(normalized, today),
-                    LoyaltyPoints = loyalty.Points
-                };
+                return await BuildResultAsync(normalized, today,
+                    alreadyCheckedIn: true, pointsAwarded: 0, loyaltyPoints: loyalty.Points);
             }
 
             var settings = await _shopSettings.GetAsync();
-            var points = settings.CheckInPoints > 0 ? settings.CheckInPoints : 5;
+            var points = settings.CheckInPoints > 0 ? settings.CheckInPoints : DefaultCheckInPoints;
 
             await _checkIns.InsertAsync(new CheckIn
             {
@@ -83,13 +80,8 @@ namespace PhuThuongStickyRice.Application.Shop
             loyalty.UpdatedAt = DateTime.UtcNow;
             await _loyaltyAccounts.UpdateAsync(loyalty, autoSave: true);
 
-            return new CheckInResultDto
-            {
-                AlreadyCheckedIn = false,
-                PointsAwarded = points,
-                StreakDays = await GetStreakAsync(normalized, today),
-                LoyaltyPoints = loyalty.Points
-            };
+            return await BuildResultAsync(normalized, today,
+                alreadyCheckedIn: false, pointsAwarded: points, loyaltyPoints: loyalty.Points);
         }
 
         [AllowAnonymous]
@@ -107,6 +99,22 @@ namespace PhuThuongStickyRice.Application.Shop
                 PointsAwarded = 0,
                 StreakDays = normalized == null ? 0 : await GetStreakAsync(normalized, today),
                 LoyaltyPoints = loyalty?.Points ?? 0
+            };
+        }
+
+        /// <summary>
+        /// Dựng DTO kết quả điểm danh — dùng chung cho cả 2 luồng (đã điểm danh
+        /// hôm nay / điểm danh mới) để không lặp khối khởi tạo DTO.
+        /// </summary>
+        private async Task<CheckInResultDto> BuildResultAsync(
+            string phone, DateTime today, bool alreadyCheckedIn, int pointsAwarded, int loyaltyPoints)
+        {
+            return new CheckInResultDto
+            {
+                AlreadyCheckedIn = alreadyCheckedIn,
+                PointsAwarded = pointsAwarded,
+                StreakDays = await GetStreakAsync(phone, today),
+                LoyaltyPoints = loyaltyPoints
             };
         }
 

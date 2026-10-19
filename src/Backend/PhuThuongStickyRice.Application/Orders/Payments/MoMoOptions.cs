@@ -7,10 +7,13 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
     /// </summary>
     public class MoMoOptions
     {
+        /// <summary>Mã đối tác MoMo cấp khi quán đăng ký tài khoản doanh nghiệp.</summary>
         public string PartnerCode { get; set; } = string.Empty;
 
+        /// <summary>Access key MoMo cấp cùng PartnerCode.</summary>
         public string AccessKey { get; set; } = string.Empty;
 
+        /// <summary>Secret key dùng ký HMAC — để trống cho tới khi có tài khoản thật (không commit vào repo).</summary>
         public string SecretKey { get; set; } = string.Empty;
 
         /// <summary>

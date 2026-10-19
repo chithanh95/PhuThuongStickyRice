@@ -30,9 +30,7 @@ namespace PhuThuongStickyRice.Application
             Type handlerType = type.MakeGenericType(typeArgs);
 
             dynamic handler = _provider.GetService(handlerType);
-            Task<T> result = handler.HandleAsync((dynamic)query, cancellationToken);
-
-            return await result;
+            return await handler.HandleAsync((dynamic)query, cancellationToken);
         }
     }
 }

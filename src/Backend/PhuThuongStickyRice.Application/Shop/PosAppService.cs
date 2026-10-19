@@ -25,6 +25,9 @@ namespace PhuThuongStickyRice.Application.Shop
     [Authorize(Roles = "Admin,Cashier")]
     public class PosAppService : ApplicationService, IPosAppService
     {
+        /// <summary>Thông báo lỗi khi POS chưa chọn món nào (dùng ở 2 điểm validate).</summary>
+        private const string NoItemsSelectedMessage = "POS: chưa chọn món nào.";
+
         private readonly IOrderAppService _orders;
 
         public PosAppService(IOrderAppService orders)
@@ -50,7 +53,7 @@ namespace PhuThuongStickyRice.Application.Shop
         {
             if (input?.Lines == null || input.Lines.Count == 0)
             {
-                throw new DomainException("POS: chưa chọn món nào.");
+                throw new DomainException(NoItemsSelectedMessage);
             }
 
             var phone = VietnamTime.NormalizePhone(input.CustomerPhone);
@@ -79,7 +82,7 @@ namespace PhuThuongStickyRice.Application.Shop
 
             if (order.Lines == null || order.Lines.Count == 0)
             {
-                throw new DomainException("POS: chưa chọn món nào.");
+                throw new DomainException(NoItemsSelectedMessage);
             }
 
             // Walk-in: cash collected at the counter, order fulfilled immediately.

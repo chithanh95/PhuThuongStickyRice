@@ -12,6 +12,15 @@ namespace PhuThuongStickyRice.Application.Common
         /// Độ lệch giờ của Việt Nam so với UTC: +7, không có giờ mùa hè (DST).
         /// </summary>
         public const int UtcOffsetHours = 7;
+
+        /// <summary>
+        /// ID timezone Việt Nam theo OS: Linux dùng IANA, Windows dùng
+        /// Windows zone ID. Để static readonly để không cấp phát mảng mới
+        /// mỗi lần gọi <see cref="ToVietnamTime"/>.
+        /// </summary>
+        private static readonly string[] VietnamTimeZoneIds =
+            { "Asia/Ho_Chi_Minh", "SE Asia Standard Time" };
+
         public static DateTime Today()
         {
             return ToVietnamTime(DateTime.UtcNow).Date;
@@ -20,7 +29,7 @@ namespace PhuThuongStickyRice.Application.Common
         public static DateTime ToVietnamTime(DateTime utc)
         {
             var utcDateTime = utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc);
-            foreach (var id in new[] { "Asia/Ho_Chi_Minh", "SE Asia Standard Time" })
+            foreach (var id in VietnamTimeZoneIds)
             {
                 try
                 {

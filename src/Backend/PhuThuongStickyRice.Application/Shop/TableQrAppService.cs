@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
-using PhuThuongStickyRice.Application.Shop;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
@@ -34,6 +33,9 @@ namespace PhuThuongStickyRice.Application.Shop
     [Authorize(Roles = "Admin")]
     public class TableQrAppService : ApplicationService, ITableQrAppService
     {
+        /// <summary>Thời gian cache PNG QR bàn (giờ) — PNG chỉ đổi khi WebBaseUrl/nhãn đổi.</summary>
+        private const int PngCacheHours = 24;
+
         private readonly IRepository<TableQr, Guid> _tableQrs;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IShopSettingAppService _shopSettings;
@@ -115,7 +117,7 @@ namespace PhuThuongStickyRice.Application.Shop
             // evicted whenever the row is regenerated or deleted below.
             return await _cache.GetOrCreateAsync(PngCacheKey(id), async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(PngCacheHours);
                 var row = await _tableQrs.GetAsync(id);
                 return RenderPng(row.EncodedUrl);
             });
