@@ -933,6 +933,11 @@ else
     private string _discountMessage;
     private bool _applyingDiscount;
 
+    // Guard sau Dispose: RefreshAppliedDiscountAsync chạy fire-and-forget,
+    // khách rời trang giữa lúc API đang bay → finally không được chạm
+    // renderer đã detach (cùng pattern _disposed của Cart.razor).
+    private bool _disposed;
+
     // Item 139: note shown when the best public code was auto-applied.
     private string _autoAppliedNote;
 
@@ -1392,6 +1397,13 @@ else
             return;
         }
 
+        // Trang có thể đã dispose giữa lúc handler fire-and-forget này chờ
+        // API: bỏ qua để finally không chạm renderer đã detach.
+        if (_disposed)
+        {
+            return;
+        }
+
         _applyingDiscount = true;
         try
         {
@@ -1417,7 +1429,13 @@ else
         {
             _applyingDiscount = false;
             RefreshMinOrderState();
-            await InvokeAsync(StateHasChanged);
+            // Không StateHasChanged sau Dispose: component đã detach khỏi
+            // render tree, gọi sẽ ném InvalidOperationException vào task
+            // fire-and-forget (unobserved). Cùng pattern Cart.razor.
+            if (!_disposed)
+            {
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
 
@@ -2127,6 +2145,7 @@ else
 
     public void Dispose()
     {
+        _disposed = true;
         CartState.OnChange -= OnCartChanged;
         AppI18n.OnChange -= OnLangChanged;
         _phoneLookupCts?.Cancel();

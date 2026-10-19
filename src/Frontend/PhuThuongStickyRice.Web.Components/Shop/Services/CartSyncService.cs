@@ -54,6 +54,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                     _httpClient.DefaultRequestHeaders.Authorization =
                         new AuthenticationHeaderValue("Bearer", token);
                 }
+                else
+                {
+                    // bug-hunt 2026-10-19: token null/rỗng (đã đăng xuất) mà
+                    // không xóa header → Bearer <redacted>ũ vẫn dính trên HttpClient
+                    // dùng chung, request sau gửi nhầm identity phiên cũ.
+                    _httpClient.DefaultRequestHeaders.Authorization = null;
+                }
             }
             catch
             {

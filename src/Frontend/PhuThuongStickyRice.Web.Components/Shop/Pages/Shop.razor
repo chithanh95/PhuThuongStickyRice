@@ -1822,7 +1822,22 @@ else
             return null;
         }
 
-        var query = uri.Substring(question + 1);
+        // bug-hunt 2026-10-19: query chứa % sai định dạng (vd /shop?ban=%zz)
+        // làm Uri.UnescapeDataString ném UriFormatException → OnInitializedAsync
+        // nổ → trang trắng. Cùng pattern đã fix ở Cart.razor/TrackOrder.razor:
+        // URL hỏng thì bỏ qua êm (trả null) thay vì crash cả trang.
+        try
+        {
+            return GetQueryValueCore(uri.Substring(question + 1), key);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static string GetQueryValueCore(string query, string key)
+    {
         var hash = query.IndexOf('#');
         if (hash >= 0)
         {
