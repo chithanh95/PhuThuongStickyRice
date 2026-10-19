@@ -658,7 +658,7 @@ else
                         </div>
                         @if (!string.IsNullOrEmpty(_discountMessage))
                         {
-                            <small class="@(_discountAmount > 0 ? "text-success" : "text-danger")">@_discountMessage</small>
+                            <small class="@(_discountAmount > 0 || _isFreeship ? "text-success" : "text-danger")">@_discountMessage</small>
                         }
                     </div>
 
@@ -863,7 +863,7 @@ else
     }
 
     private decimal _grandTotal => Math.Max(0,
-        _subtotal - _discountAmount - _tierDiscountPreview - _redeemDiscountPreview + _fee + _giftFeePreview);
+        _subtotal - _promotionDiscountPreview - _discountAmount - _tierDiscountPreview - _redeemDiscountPreview + _fee + _giftFeePreview);
 
     /// <summary>Item 140: estimated total used to gate the ví payment option.</summary>
     private decimal _estimatedTotal => _grandTotal;
