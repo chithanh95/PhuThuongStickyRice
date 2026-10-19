@@ -11,6 +11,11 @@
             <span class="dot"></span>
             <span>Quán đang mở — hôm nay bán đến @_closeTime</span>
         }
+        else if (_isPaused)
+        {
+            <span class="dot"></span>
+            <span>⏸ @_pausedText</span>
+        }
         else
         {
             <span class="dot"></span>
@@ -23,6 +28,10 @@
     private bool _loaded;
     private bool _isOpen;
     private bool _isTomorrow;
+    /// <summary>bug-hunt 2026-10-20: true khi admin tạm ngưng nhận đơn (AcceptingOrders = false) hoặc nghỉ lễ hôm nay.</summary>
+    private bool _isPaused;
+    /// <summary>bug-hunt 2026-10-20: text banner khi _isPaused — dùng lý do admin nhập thay vì "mở lại lúc ..." theo giờ.</summary>
+    private string _pausedText = "Quán tạm ngưng nhận đơn";
     private string _openTime = "06:00";
     private string _closeTime = "10:30";
 
@@ -31,8 +40,22 @@
         try
         {
             var settings = await ShopSettingsService.GetPublicAsync();
-            if (!string.IsNullOrWhiteSpace(settings?.OpenTime)) _openTime = settings.OpenTime;
-            if (!string.IsNullOrWhiteSpace(settings?.CloseTime)) _closeTime = settings.CloseTime;
+            if (settings != null)
+            {
+                if (!string.IsNullOrWhiteSpace(settings?.OpenTime)) _openTime = settings.OpenTime;
+                if (!string.IsNullOrWhiteSpace(settings?.CloseTime)) _closeTime = settings.CloseTime;
+                // bug-hunt 2026-10-20: admin pause quán thì banner phải báo nghỉ. Trước đây chỉ tính giờ
+                // wall-clock nên banner vẫn xanh "Quán đang mở" chồng lên alert vàng "tạm ngưng nhận đơn"
+                // của Shop.razor — mâu thuẫn khi khách nhìn trang /shop.
+                if (!settings.AcceptingOrders || settings.IsHolidayPaused)
+                {
+                    _isPaused = true;
+                    var reason = (settings.PausedReason ?? "").Trim();
+                    _pausedText = string.IsNullOrEmpty(reason)
+                        ? "Quán tạm ngưng nhận đơn"
+                        : "Quán tạm ngưng nhận đơn: " + reason;
+                }
+            }
         }
         catch { }
 
@@ -43,6 +66,12 @@
     private void UpdateStatus()
     {
         // Giờ VN (UTC+7) — dùng helper chung để khỏi hardcode múi giờ ở nhiều nơi.
+        if (_isPaused)
+        {
+            // bug-hunt 2026-10-20: admin đã tạm ngưng nhận đơn — không tính giờ mở/đóng nữa.
+            _isOpen = false;
+            return;
+        }
         var now = ShopHours.NowInVietnam();
         if (TimeSpan.TryParse(_openTime, out var open) && TimeSpan.TryParse(_closeTime, out var close))
         {

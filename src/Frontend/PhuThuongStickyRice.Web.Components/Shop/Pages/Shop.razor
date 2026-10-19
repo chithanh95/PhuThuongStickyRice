@@ -832,9 +832,20 @@ else
 
         if (_shopSettings != null)
         {
-            var (isOpen, text) = ShopHours.StatusText(_shopSettings.OpenTime, _shopSettings.CloseTime);
-            _openNow = isOpen;
-            _openStatusText = text;
+            // bug-hunt 2026-10-20: khi admin tạm ngưng nhận đơn, badge hero phải báo nghỉ.
+            // Trước đây chỉ tính giờ mở/đóng nên badge vẫn xanh "Đang mở cửa" chồng lên
+            // alert vàng "tạm ngưng nhận đơn" ngay trên cùng hero — mâu thuẫn.
+            if (OrdersPaused)
+            {
+                _openNow = false;
+                _openStatusText = "⏸ Quán tạm ngưng nhận đơn";
+            }
+            else
+            {
+                var (isOpen, text) = ShopHours.StatusText(_shopSettings.OpenTime, _shopSettings.CloseTime);
+                _openNow = isOpen;
+                _openStatusText = text;
+            }
         }
     }
 

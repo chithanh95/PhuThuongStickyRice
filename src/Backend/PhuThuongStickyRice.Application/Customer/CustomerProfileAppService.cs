@@ -284,45 +284,55 @@ namespace PhuThuongStickyRice.Application.Customer
         [Authorize(Roles = "Admin")]
         public virtual async Task<BirthdayGiftResultDto> GrantBirthdayGiftAsync(Guid userId, GrantBirthdayGiftDto dto)
         {
-            var user = await _users.GetAsync(userId);
-            var phone = (user.PhoneNumber ?? string.Empty).Trim();
-            if (!PhoneNumber.IsValidVn(phone))
+            // bug-hunt 2026-10-20: 2 admin tặng quà cùng khách đồng thời (2 tab)
+            // đều qua check BirthdayGiftYear == thisYear rồi cùng tạo 2 mã giảm
+            // giá — chỉ mã sau được ghi vào user, mã đầu vẫn còn dùng được
+            // (thất thoát, mệnh giá tối đa 1.000.000₫/mã). Serialize theo userId
+            // bằng KeyedAsyncLock (pattern như các endpoint voucher sinh nhật
+            // khác); vector hẹp (frontend admin đã disabled khi lưu) nhưng fix
+            // rẻ và chắc chắn đúng.
+            return await KeyedAsyncLock.RunAsync($"birthday-gift:{userId}", async () =>
             {
-                throw new UserFriendlyException("Tài khoản này chưa có SĐT hợp lệ, không thể tặng quà.");
-            }
+                var user = await _users.GetAsync(userId);
+                var phone = (user.PhoneNumber ?? string.Empty).Trim();
+                if (!PhoneNumber.IsValidVn(phone))
+                {
+                    throw new UserFriendlyException("Tài khoản này chưa có SĐT hợp lệ, không thể tặng quà.");
+                }
 
-            var thisYear = DateTime.UtcNow.Year;
-            if (user.BirthdayGiftYear == thisYear)
-            {
-                throw new UserFriendlyException(
-                    $"Đã tặng quà sinh nhật năm {thisYear} rồi (mã {user.BirthdayGiftCode}).");
-            }
+                var thisYear = DateTime.UtcNow.Year;
+                if (user.BirthdayGiftYear == thisYear)
+                {
+                    throw new UserFriendlyException(
+                        $"Đã tặng quà sinh nhật năm {thisYear} rồi (mã {user.BirthdayGiftCode}).");
+                }
 
-            var amount = dto?.DiscountAmount ?? DefaultBirthdayGiftAmount;
-            if (amount < MinBirthdayGiftAmount || amount > MaxBirthdayGiftAmount)
-            {
-                throw new UserFriendlyException("Mệnh giá quà từ 5.000₫ đến 1.000.000₫.");
-            }
+                var amount = dto?.DiscountAmount ?? DefaultBirthdayGiftAmount;
+                if (amount < MinBirthdayGiftAmount || amount > MaxBirthdayGiftAmount)
+                {
+                    throw new UserFriendlyException("Mệnh giá quà từ 5.000₫ đến 1.000.000₫.");
+                }
 
-            var code = await GenerateUniqueCodeAsync();
-            var expiresAt = DateTime.UtcNow.AddDays(BirthdayGiftValidityDays);
+                var code = await GenerateUniqueCodeAsync();
+                var expiresAt = DateTime.UtcNow.AddDays(BirthdayGiftValidityDays);
 
-            await InsertBirthdayDiscountCodeAsync(code, amount, expiresAt, phone);
+                await InsertBirthdayDiscountCodeAsync(code, amount, expiresAt, phone);
 
-            user.BirthdayGiftYear = thisYear;
-            user.BirthdayGiftCode = code;
-            await _users.UpdateAsync(user);
+                user.BirthdayGiftYear = thisYear;
+                user.BirthdayGiftCode = code;
+                await _users.UpdateAsync(user);
 
-            // Item 156: staff activity log.
-            await _activityLogger.LogAsync(StaffActivityActions.BirthdayGift,
-                $"Tặng quà sinh nhật {amount:N0}₫ (mã {code}) cho SĐT {phone}.");
+                // Item 156: staff activity log.
+                await _activityLogger.LogAsync(StaffActivityActions.BirthdayGift,
+                    $"Tặng quà sinh nhật {amount:N0}₫ (mã {code}) cho SĐT {phone}.");
 
-            return new BirthdayGiftResultDto
-            {
-                Code = code,
-                DiscountAmount = amount,
-                ExpiresAt = expiresAt
-            };
+                return new BirthdayGiftResultDto
+                {
+                    Code = code,
+                    DiscountAmount = amount,
+                    ExpiresAt = expiresAt
+                };
+            });
         }
 
         /// <summary>
