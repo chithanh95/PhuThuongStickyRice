@@ -42,16 +42,16 @@ else
     <div class="card">
         <div class="card-body">
             <div class="form-group">
-                <label>Họ tên *</label>
-                <input class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
+                <label for="dt-name">Họ tên *</label>
+                <input id="dt-name" class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
                 @if (!string.IsNullOrEmpty(_nameError))
                 {
                     <small class="text-danger">@_nameError</small>
                 }
             </div>
             <div class="form-group">
-                <label>Số điện thoại *</label>
-                <input class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
+                <label for="dt-phone">Số điện thoại *</label>
+                <input id="dt-phone" inputmode="tel" class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
                 @if (!string.IsNullOrEmpty(_phoneError))
                 {
                     <small class="text-danger">@_phoneError</small>
@@ -59,8 +59,8 @@ else
             </div>
             @* DT2: loại tiệc điều chỉnh gợi ý & placeholder. *@
             <div class="form-group">
-                <label>Loại tiệc</label>
-                <select class="form-control" @bind="_partyType">
+                <label for="dt-party-type">Loại tiệc</label>
+                <select id="dt-party-type" class="form-control" @bind="_partyType">
                     <option value="">— Chọn loại tiệc —</option>
                     <option>Cưới hỏi</option>
                     <option>Giỗ</option>
@@ -75,11 +75,11 @@ else
             </div>
             <div class="form-row">
                 <div class="form-group col-md-6">
-                    <label>Ngày tổ chức (dự kiến)</label>
-                    <input type="date" class="form-control" @bind="_model.EventDate" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    <label for="dt-date">Ngày tổ chức (dự kiến)</label>
+                    <input id="dt-date" type="date" class="form-control" @bind="_model.EventDate" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
                 <div class="form-group col-md-6">
-                    <label>Số lượng (gói/mâm) *</label>
+                    <label for="dt-qty">Số lượng (gói/mâm) *</label>
                     @* DT1: gói mẫu theo số khách — điền sẵn, sửa lại được. *@
                     <div class="mb-2">
                         <div class="btn-group btn-group-sm" role="group" aria-label="Gói mẫu theo số khách">
@@ -88,7 +88,7 @@ else
                             <button type="button" class="btn btn-outline-primary" @onclick="() => ApplyGuestPreset(100)">100 khách</button>
                         </div>
                     </div>
-                    <input type="number" min="30" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity" />
+                    <input id="dt-qty" type="number" min="30" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity" />
                     @if (!string.IsNullOrEmpty(_qtyError))
                     {
                         <small class="text-danger">@_qtyError</small>
@@ -96,12 +96,12 @@ else
                 </div>
             </div>
             <div class="form-group">
-                <label>Địa điểm tổ chức</label>
-                <input class="form-control" @bind="_model.EventLocation" placeholder="VD: 123 Phố Huế, Hai Bà Trưng, Hà Nội" />
+                <label for="dt-location">Địa điểm tổ chức</label>
+                <input id="dt-location" class="form-control" @bind="_model.EventLocation" placeholder="VD: 123 Phố Huế, Hai Bà Trưng, Hà Nội" />
             </div>
             <div class="form-group">
-                <label>Ghi chú món ăn</label>
-                <textarea class="form-control" rows="3" @bind="_model.Notes"
+                <label for="dt-notes">Ghi chú món ăn</label>
+                <textarea id="dt-notes" class="form-control" rows="3" @bind="_model.Notes"
                           placeholder="@NotesPlaceholder"></textarea>
             </div>
             <button class="btn btn-success btn-lg" @onclick="SubmitAsync" disabled="@_submitting">

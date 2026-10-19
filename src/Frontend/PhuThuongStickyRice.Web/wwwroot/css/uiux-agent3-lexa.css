@@ -513,3 +513,46 @@ a:hover, a:focus { color: #625998; }
 }
 
 /* === end Agent 3 run 12:05 === */
+
+/* ===== UIUX-1225 A3 =====
+   3 fix MỚI (đã verify bằng grep, không trùng 7 đợt trước).
+   Chủ đề đợt này: chữ TRẮNG trên nền vàng warning #f1b44c của shop
+   (tương phản chỉ ~1.9:1 — người lớn tuổi khó đọc), trong khi CHÍNH
+   chuẩn Lexa lẫn rule toàn cục trong file này đều dùng chữ ĐẬM trên
+   nền vàng. Cả 3 rule gốc nằm ở Shop.razor.css (CSS isolation, bundle
+   load ở index.html:149, TRƯỚC file này ở :155) và đều dùng
+   !important — nên override ở đây cần !important + cùng specificity,
+   file load sau thắng. */
+
+/* ---------- Fix 1: .shp-page .badge-warning -> chữ đậm #212529 ----------
+   Verify: Shop.razor.css:337
+   `.shp-page .badge-warning { background:#f1b44c !important; color:#fff !important; }`
+   Rule toàn cục trong file này (:32) đã là
+   `.badge-warning { background-color:#f1b44c; color:#212529; }` nhưng KHÔNG
+   !important nên thua rule scoped trên trang shop -> badge "Hết mùa"/
+   promo vàng chữ trắng nhòe. Chuẩn Lexa .badge-warning cũng chữ #212529. */
+.shp-page .badge-warning {
+    color: #212529 !important;
+}
+
+/* ---------- Fix 2: .shp-page .btn-warning đặc -> chữ đậm #212529 ----------
+   Verify: Shop.razor.css:309-314
+   `.shp-page .btn-warning { background:#f1b44c !important; ... color:#fff !important; }`
+   Nút vàng chữ trắng trên mobile nắng gắt gần như không đọc được, lại
+   lệch chuẩn Lexa/Bootstrap — cả hai đều định nghĩa .btn-warning chữ
+   #212529. Chữ đậm cho tương phản ~8:1, hover (#df9d34) kế thừa luôn. */
+.shp-page .btn-warning {
+    color: #212529 !important;
+}
+
+/* ---------- Fix 3: .shp-page .btn-outline-warning:hover -> chữ đậm #212529 ----------
+   Verify: uiux-agent3-lexa.css:182-183 (đợt 09:40)
+   `.shp-page .btn-outline-warning:hover { background:#f1b44c !important; ... color:#fff !important; }`
+   Khi hover nút viền vàng, nền fill vàng nhưng chữ ép trắng -> nhòe.
+   Chính Bootstrap mặc định `.btn-outline-warning:hover` đã dùng chữ
+   #212529; fix này đưa về đúng chuẩn, đồng nhất với Fix 2. */
+.shp-page .btn-outline-warning:hover {
+    color: #212529 !important;
+}
+
+/* ===== END UIUX-1225 A3 ===== */

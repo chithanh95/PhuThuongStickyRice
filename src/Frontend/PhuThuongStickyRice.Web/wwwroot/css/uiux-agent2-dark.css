@@ -573,3 +573,59 @@ html.dark .qty-spinner {
 }
 
 /* === end Agent 2 run 12:10 === */
+
+/* ===== UIUX-1225 A2 =====
+   Run 12:25 — Agent 2 Dark mode. Quét toàn bộ 117 file .razor + 27 file
+   .razor.css + inline style: các đợt trước đã phủ rất kỹ (kanban, check-in,
+   cart/checkout sticky bar, survey popup, tai-khoan, error/404/maint page,
+   QuantitySpinner, NhuongQuyen, bulk, chat, poll, spin, lang menu, auth
+   pages, Lexa demos giữ sáng có chủ đích, print pages giữ trắng để in).
+   Đợt này chỉ 3 lỗi MỚI thật, đều đã grep xác minh tồn tại. */
+
+/* ---------- FIX 1 — Native controls ở dark mode (toàn web) ----------
+   Vấn đề: không một file CSS nào khai báo `color-scheme` (đã grep toàn bộ
+   css = 0 kết quả), trong khi input date/time/month/select dùng khắp nơi:
+   Dashboard, OrderList, CungGio, DatSoLuongLon, DatTiec, TaiKhoan (ngày
+   sinh), DoiSoatNgay, BaoCao, Checkout (chi nhánh)... Ở dark mode trình
+   duyệt vẫn render các control native theo theme sáng: icon lịch
+   (::-webkit-calendar-picker-indicator) đen trên nền input tối → tàng hình,
+   popup chọn ngày/giờ và dropdown của <select> bung ra nền trắng chói,
+   scrollbar sáng. Đây là lỗi nền tảng, không phải từng trang.
+   Fix: 1 rule duy nhất trên root — báo trình duyệt render mọi control
+   native (date/time/select/scrollbar/checkbox) theo theme tối. Chỉ tác dụng
+   khi html.dark nên light mode không đổi gì. */
+html.dark {
+    color-scheme: dark;
+}
+
+/* ---------- FIX 2 — Banner lỗi Blazor (#blazor-error-ui) ----------
+   Vấn đề: wwwroot/css/app.css:134 — #blazor-error-ui dùng
+   `background: lightyellow` hardcode, không rule dark nào phủ (đã grep
+   "blazor-error-ui" trong css = chỉ app.css, không có html.dark).
+   Khi có unhandled exception, dải vàng sáng chạy ngang đáy màn hình,
+   lạc hẳn giữa UI tối + chữ mặc định khó chịu.
+   Fix: nền/viền theo palette dark của shop; chữ sáng; link Reload giữ
+   nhìn thấy được. Specificity html.dark #id (1,1,1) thắng #id (1,0,0)
+   của app.css nên không cần !important. */
+html.dark #blazor-error-ui {
+    background: #3a3226; /* was lightyellow */
+    color: #f0d9b5;
+    box-shadow: 0 -1px 8px rgba(0, 0, 0, .5);
+}
+html.dark #blazor-error-ui a {
+    color: #d9ab68;
+}
+
+/* ---------- FIX 3 — Chữ báo lỗi validation ở dark mode ----------
+   Vấn đề: wwwroot/css/app.css:130 — `.validation-message { color: red; }`
+   (đỏ thuần #ff0000) áp dụng toàn cục cho mọi form (checkout, đăng nhập,
+   đặt tiệc, đặt cúng, admin...). Trên nền tối #262019/#262640 tương phản
+   chỉ ~3.7:1 (< chuẩn AA 4.5:1 cho chữ nhỏ) → thông báo lỗi khó đọc đúng
+   lúc người dùng cần đọc nhất. Không rule dark nào phủ (đã grep).
+   Fix: đỏ sáng #ff8a8a — cùng tone với rule dark của .text-danger đã duyệt
+   trong ShopLayout (html.dark .shp-page .text-danger), tương phản ~7:1. */
+html.dark .validation-message {
+    color: #ff8a8a; /* was red (#ff0000) — ~3.7:1 → ~7:1 trên nền tối */
+}
+
+/* ===== END UIUX-1225 A2 ===== */

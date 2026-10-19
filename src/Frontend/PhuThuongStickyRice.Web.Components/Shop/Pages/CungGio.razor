@@ -33,16 +33,16 @@ else
     <div class="card">
         <div class="card-body">
             <div class="form-group">
-                <label>Họ tên *</label>
-                <input class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
+                <label for="cg-name">Họ tên *</label>
+                <input id="cg-name" class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
                 @if (!string.IsNullOrEmpty(_nameError))
                 {
                     <small class="text-danger">@_nameError</small>
                 }
             </div>
             <div class="form-group">
-                <label>Số điện thoại *</label>
-                <input class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
+                <label for="cg-phone">Số điện thoại *</label>
+                <input id="cg-phone" inputmode="tel" class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
                 @if (!string.IsNullOrEmpty(_phoneError))
                 {
                     <small class="text-danger">@_phoneError</small>
@@ -50,8 +50,8 @@ else
             </div>
             <div class="form-row">
                 <div class="form-group col-md-6">
-                    <label>Ngày giỗ *</label>
-                    <input type="date" class="form-control @FieldClass(_dateError)" @bind="_model.EventDate"
+                    <label for="cg-date">Ngày giỗ *</label>
+                    <input id="cg-date" type="date" class="form-control @FieldClass(_dateError)" @bind="_model.EventDate"
                            min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                     @if (!string.IsNullOrEmpty(_dateError))
                     {
@@ -59,8 +59,8 @@ else
                     }
                 </div>
                 <div class="form-group col-md-6">
-                    <label>Số mâm *</label>
-                    <input type="number" min="1" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity" />
+                    <label for="cg-qty">Số mâm *</label>
+                    <input id="cg-qty" type="number" min="1" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity" />
                     @if (!string.IsNullOrEmpty(_qtyError))
                     {
                         <small class="text-danger">@_qtyError</small>
@@ -68,8 +68,8 @@ else
                 </div>
             </div>
             <div class="form-group">
-                <label>Loại mâm *</label>
-                <div>
+                <label id="cg-loaimam">Loại mâm *</label>
+                <div role="group" aria-labelledby="cg-loaimam">
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" id="mam-chay" name="loaimam"
                                checked="@(_loaiMam == "Chay")" @onchange="@(() => _loaiMam = "Chay")" />
@@ -83,8 +83,8 @@ else
                 </div>
             </div>
             <div class="form-group">
-                <label>Ghi chú</label>
-                <textarea class="form-control" rows="3" @bind="_model.Notes"
+                <label for="cg-notes">Ghi chú</label>
+                <textarea id="cg-notes" class="form-control" rows="3" @bind="_model.Notes"
                           placeholder="VD: giỗ ông nội, cần giao trước 9h sáng, thêm chè đỗ đen..."></textarea>
             </div>
             <button class="btn btn-success btn-lg" @onclick="SubmitAsync" disabled="@_submitting">

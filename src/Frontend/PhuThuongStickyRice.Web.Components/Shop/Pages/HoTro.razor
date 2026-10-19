@@ -24,21 +24,21 @@ else
         <div class="card-body">
             <div class="form-row">
                 <div class="form-group col-md-6">
-                    <label>Họ tên *</label>
-                    <input class="form-control" @bind="_model.Name" placeholder="Nguyễn Văn A" />
+                    <label for="ht-name">Họ tên *</label>
+                    <input id="ht-name" class="form-control" @bind="_model.Name" placeholder="Nguyễn Văn A" />
                 </div>
                 <div class="form-group col-md-6">
-                    <label>Số điện thoại *</label>
-                    <input class="form-control" @bind="_model.Phone" placeholder="0901234567" />
+                    <label for="ht-phone">Số điện thoại *</label>
+                    <input id="ht-phone" inputmode="tel" class="form-control" @bind="_model.Phone" placeholder="0901234567" />
                 </div>
             </div>
             <div class="form-group">
-                <label>Mã đơn hàng <small class="text-muted">(nếu có)</small></label>
-                <input class="form-control" @bind="_model.OrderNumber" placeholder="PX-20261014-0001" />
+                <label for="ht-order">Mã đơn hàng <small class="text-muted">(nếu có)</small></label>
+                <input id="ht-order" class="form-control" @bind="_model.OrderNumber" placeholder="PX-20261014-0001" />
             </div>
             <div class="form-group">
-                <label>Nội dung cần hỗ trợ *</label>
-                <textarea class="form-control" rows="5" @bind="_model.Message"
+                <label for="ht-message">Nội dung cần hỗ trợ *</label>
+                <textarea id="ht-message" class="form-control" rows="5" @bind="_model.Message"
                           placeholder="Mô tả vấn đề bạn gặp phải..."></textarea>
             </div>
             <button class="btn btn-primary" @onclick="Submit" disabled="@_submitting">

@@ -127,8 +127,8 @@ else
         <div class="card">
             <div class="card-body">
                 <div class="form-group">
-                    <label>Loại sự kiện *</label>
-                    <select class="form-control" @bind="_bulkEventType">
+                    <label for="bsl-event-type">Loại sự kiện *</label>
+                    <select id="bsl-event-type" class="form-control" @bind="_bulkEventType">
                         <option>Đám tiệc</option>
                         <option>Công ty / văn phòng</option>
                         <option>Cúng giỗ</option>
@@ -138,14 +138,14 @@ else
                 </div>
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label>Ngày muốn nhận hàng *</label>
-                        <input type="date" class="form-control" @bind="_bulkDate"
+                        <label for="bsl-date">Ngày muốn nhận hàng *</label>
+                        <input id="bsl-date" type="date" class="form-control" @bind="_bulkDate"
                                min="@DateTime.Today.AddDays(3).ToString("yyyy-MM-dd")" />
                         <small class="form-text text-muted">Đơn số lượng lớn cần đặt trước ít nhất 3 ngày để quán chuẩn bị.</small>
                     </div>
                     <div class="form-group col-md-6">
-                        <label>Số lượng dự kiến (gói) *</label>
-                        <input type="number" min="50" class="form-control" @bind="_bulk.Quantity" />
+                        <label for="bsl-qty">Số lượng dự kiến (gói) *</label>
+                        <input id="bsl-qty" type="number" min="50" class="form-control" @bind="_bulk.Quantity" />
                         <small class="form-text text-muted">Đơn số lượng lớn từ 50 gói trở lên.</small>
                     </div>
                 </div>
@@ -157,8 +157,8 @@ else
     {
         <div class="card">
             <div class="card-body">
-                <div class="form-group">
-                    <label>Chọn món *</label>
+                <div class="form-group" role="group" aria-labelledby="bsl-products">
+                    <label id="bsl-products">Chọn món *</label>
                     @if (_products.Count == 0)
                     {
                         <p class="text-muted">Đang tải danh sách món...</p>
@@ -184,8 +184,8 @@ else
                     <div class="card-body py-2">
                         <div class="form-row align-items-end mb-2">
                             <div class="form-group col-6 col-md-4 mb-0">
-                                <label class="mb-1">Số lượng (gói)</label>
-                                <input type="number" min="50" class="form-control" @bind="_bulk.Quantity" @bind:event="oninput" />
+                                <label class="mb-1" for="bsl-qty2">Số lượng (gói)</label>
+                                <input id="bsl-qty2" type="number" min="50" class="form-control" @bind="_bulk.Quantity" @bind:event="oninput" />
                             </div>
                         </div>
                         <div class="d-flex justify-content-between"><span>Giá gốc</span><strong>@FormatPrice(BulkOriginalTotal)</strong></div>
@@ -208,25 +208,25 @@ else
             <div class="card-body">
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label>Họ tên *</label>
-                        <input class="form-control" @bind="_bulk.CustomerName" placeholder="Nguyễn Văn A" />
+                        <label for="bsl-name">Họ tên *</label>
+                        <input id="bsl-name" class="form-control" @bind="_bulk.CustomerName" placeholder="Nguyễn Văn A" />
                     </div>
                     <div class="form-group col-md-6">
-                        <label>Số điện thoại *</label>
-                        <input class="form-control" @bind="_bulk.CustomerPhone" placeholder="0901234567" />
+                        <label for="bsl-phone">Số điện thoại *</label>
+                        <input id="bsl-phone" inputmode="tel" class="form-control" @bind="_bulk.CustomerPhone" placeholder="0901234567" />
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Địa điểm tổ chức</label>
-                    <input class="form-control" @bind="_bulk.EventLocation" placeholder="VD: Nhà văn hóa phường..." />
+                    <label for="bsl-location">Địa điểm tổ chức</label>
+                    <input id="bsl-location" class="form-control" @bind="_bulk.EventLocation" placeholder="VD: Nhà văn hóa phường..." />
                 </div>
                 <div class="form-group">
-                    <label>Ngân sách dự kiến (không bắt buộc)</label>
-                    <input class="form-control" @bind="_bulk.Budget" placeholder="VD: khoảng 2 triệu" />
+                    <label for="bsl-budget">Ngân sách dự kiến (không bắt buộc)</label>
+                    <input id="bsl-budget" class="form-control" @bind="_bulk.Budget" placeholder="VD: khoảng 2 triệu" />
                 </div>
                 <div class="form-group">
-                    <label>Ghi chú thêm</label>
-                    <textarea class="form-control" rows="3" @bind="_bulkNotes"
+                    <label for="bsl-notes">Ghi chú thêm</label>
+                    <textarea id="bsl-notes" class="form-control" rows="3" @bind="_bulkNotes"
                               placeholder="VD: giao trước 9h sáng, chia 2 đợt, cần hóa đơn..."></textarea>
                 </div>
                 <p class="text-muted">📞 <strong>Cam kết phản hồi báo giá trong 2 giờ làm việc.</strong></p>

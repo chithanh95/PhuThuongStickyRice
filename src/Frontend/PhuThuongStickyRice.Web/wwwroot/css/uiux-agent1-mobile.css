@@ -819,3 +819,102 @@
    Vị trí bottom:84px giữ nguyên — không đè thanh sticky.
    ------------------------------------------------------------ */
 /* ===== END UIUX-1215 A1 ===== */
+
+/* ===== UIUX-1225 A1 (run 12:25) — 5 fix mobile mới ===== */
+
+/* ------------------------------------------------------------
+   FIX 1 — /dat-tiec: 3 nút "gói mẫu theo số khách" (30/50/100 khách).
+   Vấn đề: `btn-group btn-group-sm` → mỗi nút chỉ ~31px; đây là preset
+   điền nhanh số lượng đặt tiệc — khách lớn tuổi khó bấm trúng.
+   Giải pháp: cao 44px, chữ canh giữa dọc. Selector dùng aria-label
+   duy nhất của nhóm này (TaiKhoan.razor:314 cũng có btn-group-sm
+   nên không dùng selector trần).
+   (Verify: DatTiec.razor:85-88)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    [aria-label="Gói mẫu theo số khách"] > .btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /dat-so-luong-lon (bước 2, card tóm tắt): nút
+   "🖨 In / Lưu báo giá".
+   Vấn đề: `btn btn-outline-secondary btn-sm` chỉ ~31px — các nút
+   chốt khác của trang (bulk-submit, cặp Quay lại/Tiếp tục) đã được
+   nâng ở run 12:10, còn nút này bị sót.
+   Giải pháp: cao 44px, chữ canh giữa dọc.
+   (Verify: DatSoLuongLon.razor:196; class .bulk-total chỉ tồn tại
+   ở card tóm tắt này nên selector :has() an toàn.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card:has(.bulk-total) .btn-outline-secondary.btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /ho-tro: nút "Gửi yêu cầu" (CTA duy nhất của form hỗ trợ).
+   Vấn đề: `btn btn-primary` mặc định chỉ ~38px — dưới chuẩn chạm;
+   đây là hành động chốt để gửi yêu cầu, khách lớn tuổi cần nút to.
+   Giải pháp: full-width, cao 48px, chữ đậm — đồng bộ chuẩn CTA
+   mobile của các trang khác.
+   (Verify: HoTro.razor:44; textarea#ht-message chỉ tồn tại ở trang
+   này nên selector :has() an toàn.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body > .form-group:has(#ht-message) + .btn-primary {
+        width: 100%;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /faq: ô tìm kiếm + nút "Tìm".
+   Vấn đề: cả ô input và nút trong input-group chỉ ~38px — dưới
+   chuẩn chạm 44px; nút trong input-group-append không tự cao theo ô.
+   Giải pháp: cả hai cao 44px trên mobile.
+   (Verify: Faq.razor:17-22; placeholder "Tìm kiếm câu hỏi..." chỉ
+   tồn tại ở trang này.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .input-group:has(input[placeholder^="Tìm kiếm câu hỏi"]) > .form-control,
+    .input-group:has(input[placeholder^="Tìm kiếm câu hỏi"]) .input-group-append > .btn {
+        min-height: 44px;
+        font-size: 1rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /faq: vùng bấm của từng câu hỏi trong accordion.
+   Vấn đề: `btn btn-link btn-block text-left p-1` — full-width nhưng
+   chỉ cao ~32px (chữ + padding 4px), dưới chuẩn chạm; khách lớn tuổi
+   hay bấm trượt khi mở/đóng câu hỏi.
+   Giải pháp: min-height 44px, chữ canh giữa dọc. :not(.nq-faq-q)
+   loại nút accordion tương tự ở trang Nhượng quyền.
+   (Verify: Faq.razor:41; NhuongQuyen.razor:121 có class nq-faq-q)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .btn-link.btn-block.text-left:not(.nq-faq-q) {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* ===== END UIUX-1225 A1 ===== */

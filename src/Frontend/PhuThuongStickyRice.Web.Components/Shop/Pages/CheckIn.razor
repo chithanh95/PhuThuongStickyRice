@@ -17,11 +17,11 @@
                 <h5 class="xo-checkin-form-title">Đăng ảnh của bạn</h5>
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label>Tên của bạn</label>
-                        <input class="form-control" @bind="_name" maxlength="100" placeholder="VD: Chị Lan Anh" />
+                        <label for="ci-name">Tên của bạn</label>
+                        <input id="ci-name" class="form-control" @bind="_name" maxlength="100" placeholder="VD: Chị Lan Anh" />
                     </div>
                     <div class="form-group col-md-6">
-                        <label>Chọn ảnh</label>
+                        <label for="checkin-photo-input">Chọn ảnh</label>
                         <input id="checkin-photo-input" type="file" accept="image/*" class="form-control-file"
                                @onchange="OnPhotoSelected" />
                         <small class="form-text text-muted">Ảnh tự nén trước khi tải lên (tối đa 5MB).</small>
