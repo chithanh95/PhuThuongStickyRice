@@ -1,0 +1,33 @@
+/* UIUX 21:35 A3-fix1: chuyen <style> inline sang scoped CSS (18 rule, chat bubble tim Lexa #7a6fbe, online #34c38f + 5 rule html.dark) */
+    .staff-list { display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto; }
+    .staff-item { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 6px; background: #f8f9fa; }
+    .staff-avatar {
+        width: 36px; height: 36px; border-radius: 50%;
+        background: #7a6fbe; color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; flex-shrink: 0;
+    }
+    .online-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .online-dot.on { background: #34c38f; box-shadow: 0 0 4px #34c38f; } /* UIUX-1019 A3: xanh online đúng chuẩn Lexa (trước #28a745 Bootstrap) */
+    .online-dot.off { background: #ccc; }
+    .chat-box {
+        height: 440px; overflow-y: auto;
+        border: 1px solid #e9ecef; border-radius: 8px;
+        padding: 12px; background: #fafbfe;
+        display: flex; flex-direction: column; gap: 8px;
+    }
+    .chat-msg { display: flex; }
+    .chat-msg.mine { justify-content: flex-end; }
+    .chat-bubble {
+        max-width: 75%; padding: 8px 12px; border-radius: 12px;
+        background: #fff; border: 1px solid #e9ecef;
+        word-break: break-word;
+    }
+    .chat-msg.mine .chat-bubble { background: #7a6fbe; color: #fff; border-color: #7a6fbe; }
+    .chat-sender { font-size: 12px; font-weight: 700; color: #7a6fbe; margin-bottom: 2px; }
+    .chat-time { font-size: 11px; opacity: .7; margin-top: 2px; text-align: right; }
+    html.dark .staff-item { background: #20203a; }
+    html.dark .chat-box { background: #1c1c34; border-color: #3a3a58; }
+    html.dark .chat-bubble { background: #262640; border-color: #3a3a58; color: #f0eef5; }
+    html.dark .chat-msg.mine .chat-bubble { background: #7a6fbe; }
+    html.dark .chat-sender { color: #b3a8e8; }

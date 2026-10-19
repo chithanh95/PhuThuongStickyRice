@@ -1,0 +1,3 @@
+/* UIUX 21:35 A3-fix2: chuyen <style> inline sang scoped CSS (2 rule, hang tong tim Lexa #7a6fbe + dark) */
+    .lx-total-row th { background: #7a6fbe; color: #fff; border-color: #7a6fbe; }
+    html.dark .lx-total-row th { background: #5a4fa0; border-color: #5a4fa0; }

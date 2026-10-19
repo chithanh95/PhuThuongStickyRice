@@ -17,20 +17,6 @@
     </ol>
 </div>
 
-<style>
-    .lx-upload-slot { min-height: 120px; background: #f8f9fa; }
-    html.dark .lx-upload-slot { background: #2c2c4e; border-color: #3a3a5c; }
-    /* UIUX-1019 A3: bỏ inline style — preview ảnh slot + input file ẩn */
-    .lx-upload-preview { max-height: 150px; }
-    .lx-hidden-file-input {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-        overflow: hidden;
-    }
-</style>
-
 @if (!string.IsNullOrEmpty(_error))
 {
     <div class="alert alert-danger">@_error</div>

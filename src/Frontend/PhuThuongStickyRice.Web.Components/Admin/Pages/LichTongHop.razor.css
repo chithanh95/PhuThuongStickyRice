@@ -1,0 +1,49 @@
+/* UIUX 21:35 A3-fix3: chuyen <style> inline sang scoped CSS (19 rule, luoi lich, cham #7a6fbe/#f46a6a/#34c38f + 4 rule html.dark) */
+    .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+    }
+    .cal-dow {
+        text-align: center;
+        font-weight: 600;
+        color: #7a6fbe;
+        padding: 6px 0;
+        font-size: 13px;
+    }
+    .cal-day {
+        min-height: 74px;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 4px 6px;
+        cursor: pointer;
+        background: #fff;
+        transition: box-shadow .15s;
+    }
+    .cal-day:hover { box-shadow: 0 0 0 2px rgba(122,111,190,.35); }
+    .cal-out { opacity: .35; }
+    .cal-today { border: 2px solid #7a6fbe; }
+    .cal-selected { background: #f0edff; }
+    .cal-num { font-weight: 600; font-size: 14px; }
+    .cal-marks { display: flex; gap: 4px; margin-top: 4px; }
+    .cal-dot {
+        display: inline-block;
+        width: 10px; height: 10px;
+        border-radius: 50%;
+    }
+    /* UIUX-1019 A3: gom 7 style inline background/color vào class (đồng bộ Lexa, dễ maintain) */
+    .cal-dot-sched { background: #7a6fbe; }
+    .cal-dot-hol { background: #f46a6a; }
+    .cal-dot-promo { background: #34c38f; }
+    .cal-sched-title { color: #7a6fbe; }
+    .cal-order {
+        border-left: 3px solid #7a6fbe;
+        padding: 4px 8px;
+        margin-bottom: 8px;
+        background: #faf9ff;
+        border-radius: 0 4px 4px 0;
+    }
+    html.dark .cal-day { background: #262640; border-color: #3a3a58; color: #f0eef5; }
+    html.dark .cal-selected { background: #34345a; }
+    html.dark .cal-dow { color: #a5a2bd; }
+    html.dark .cal-order { background: #20203a; }
