@@ -821,6 +821,13 @@
         display: none;
     }
 
+    .lx-search-menu {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        min-width: 0;
+    }
+
     .lx-user-name {
         display: none;
     }
@@ -1733,31 +1740,32 @@ html.dark .lx-toast {
         font-size: .9rem;
     }
 
-    /* ---- Table: chu nho hon, padding chat, cot dau sticky mac dinh ---- */
+    /* ---- Table: chu nho hon, padding chat ---- */
     .lx-admin .table {
         font-size: .82rem;
     }
-    .lx-admin .table th,
-    .lx-admin .table td {
+    .lx-admin .table-responsive .table th,
+    .lx-admin .table-responsive .table td {
         padding: .55rem .6rem;
         white-space: nowrap;
     }
-    .lx-admin .table thead th:first-child,
-    .lx-admin .table tbody td:first-child {
+    /* Cot dau sticky: opt-in qua class .lx-table-sticky-first tren table */
+    .lx-admin table.lx-table-sticky-first thead th:first-child,
+    .lx-admin table.lx-table-sticky-first tbody td:first-child {
         position: sticky;
         left: 0;
         z-index: 2;
         background: var(--lx-card-bg);
         box-shadow: 1px 0 0 var(--lx-border);
     }
-    .lx-admin .table thead th:first-child {
+    .lx-admin table.lx-table-sticky-first thead th:first-child {
         z-index: 3;
     }
     /* Nut hanh dong trong bang: gon lai */
     .lx-admin .table .btn {
         padding: .3rem .5rem;
         font-size: .75rem;
-        min-height: 36px;
+        min-height: 44px;
     }
     .lx-admin .table .btn .oi,
     .lx-admin .table .btn .fa,

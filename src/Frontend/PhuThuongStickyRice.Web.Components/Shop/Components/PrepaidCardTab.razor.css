@@ -331,3 +331,17 @@ html.dark .pt-alert-error {
         padding: 1.25rem 1rem;
     }
 }
+
+@media (max-width: 576px) {
+    .pt-item {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .pt-item-code {
+        font-size: 1.25rem;
+        letter-spacing: 2px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+}

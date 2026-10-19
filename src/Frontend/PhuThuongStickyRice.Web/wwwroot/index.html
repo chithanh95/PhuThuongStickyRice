@@ -32,6 +32,7 @@
             var cur = 'light';
             try { cur = localStorage.getItem(key) || 'light'; } catch (e) { }
             var next = cur === 'light' ? 'dark' : (cur === 'dark' ? 'auto' : 'light');
+            try { localStorage.setItem(key, next); } catch (e) { }
             window.ptApplyTheme(key);
             return next;
         };

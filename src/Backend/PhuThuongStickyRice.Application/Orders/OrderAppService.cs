@@ -1434,6 +1434,17 @@ namespace PhuThuongStickyRice.Application.Orders
                     await _wallets.RefundAsync(order.CustomerPhone, -delta, order.OrderNumber);
                 }
             }
+            else if (order.PaymentMethod != PaymentMethod.Wallet
+                && (order.PaymentStatus == PaymentStatus.Paid
+                    || order.PaymentStatus == PaymentStatus.PendingConfirmation))
+            {
+                // Non-wallet methods (bank transfer, MoMo) cannot be auto-charged:
+                // letting the customer change the total after paying (or after
+                // claiming the transfer) would hand out extra items for free.
+                // The customer must contact the shop to change a paid order.
+                throw new Domain.Exceptions.DomainException(
+                    "Đơn hàng đã thanh toán hoặc đã khai báo chuyển khoản không thể tự sửa. Vui lòng liên hệ quán để thay đổi.");
+            }
 
             await _orders.UpdateAsync(order);
             // Wave 6c (item 33): internal note is never serialized publicly.

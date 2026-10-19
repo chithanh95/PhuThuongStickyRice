@@ -134,10 +134,16 @@
     line-height: 1.6;
 }
 
+.nq-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+}
+
 .nq-table {
     background: #ffffff;
     border-radius: 12px;
-    overflow: hidden;
+    min-width: 520px;
 }
 
 .nq-table td {

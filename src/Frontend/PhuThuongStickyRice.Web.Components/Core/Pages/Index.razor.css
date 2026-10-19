@@ -1153,7 +1153,7 @@ body.sg-at-top .sg-fixed-btns {
     /* Footer: chừa chỗ cho nút nổi bên trái */
     .sg-footer .container,
     .sg-footer-grid {
-        padding-left: 70px;
+        padding-left: max(24px, env(safe-area-inset-left));
     }
 }
 
@@ -1758,7 +1758,7 @@ html.pt-reveal .sg-reveal.in {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    z-index: 81;
+    z-index: 850;
     border: 1px solid var(--sg-line);
 }
 .sg-chat-head {

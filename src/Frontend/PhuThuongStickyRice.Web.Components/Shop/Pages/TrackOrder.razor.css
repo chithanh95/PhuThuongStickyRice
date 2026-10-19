@@ -158,14 +158,14 @@ html.dark .to-tl-current .to-tl-label {
     }
 
     .to-history td:last-child .btn {
-        min-height: 40px;
+        min-height: 44px;
         margin-bottom: 6px;
         width: 100%;
     }
 
     /* All small buttons on this page get a decent touch target */
     .btn-sm {
-        min-height: 40px;
+        min-height: 44px;
     }
 }
 

@@ -88,8 +88,19 @@
             return;
         }
 
+        var open = ShopHours.ParseOpen(_settings.OpenTime);
         var close = ShopHours.ParseClose(_settings.CloseTime);
         var now = ShopHours.NowInVietnam();
+
+        // Chưa đến giờ mở cửa: ShopStatusBanner đã báo "Quán đang nghỉ — mở lại lúc ...",
+        // banner đếm ngược sẽ báo sai "còn N phút để đặt" trong khi checkout chặn đặt đơn
+        // ngoài giờ mở → ẩn đi. Sau giờ đóng giữ nguyên thông báo "Đã hết giờ".
+        if (close > open && now < open)
+        {
+            _visible = false;
+            return;
+        }
+
         var remaining = close - now;
         var closeText = $"{(int)close.TotalHours}:{close.Minutes:D2}";
 
