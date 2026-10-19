@@ -512,6 +512,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         public decimal DeliveryFee { get; set; }
 
+        public string PromotionName { get; set; }
+
+        public decimal PromotionDiscountAmount { get; set; }
+
         public string DiscountCode { get; set; }
 
         public decimal DiscountAmount { get; set; }
@@ -675,6 +679,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         /// <summary>Item 53: verify token for the Facebook webhook subscription.</summary>
         public string FacebookVerifyToken { get; set; }
+
+        /// <summary>
+        /// bug-hunt 2026-10-19: Facebook App Secret để verify chữ ký
+        /// X-Hub-Signature-256 của webhook (chống giả mạo tạo đơn ảo).
+        /// </summary>
+        public string FacebookAppSecret { get; set; }
 
         /// <summary>Wave 6b (item 30): when false, checkout is blocked.</summary>
         public bool AcceptingOrders { get; set; } = true;

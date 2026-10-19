@@ -172,6 +172,7 @@ namespace PhuThuongStickyRice.Application.Shop
             dto.TelegramBotToken = null;
             dto.FacebookPageAccessToken = null;
             dto.FacebookVerifyToken = null;
+            dto.FacebookAppSecret = null;
             dto.ZaloOaAccessToken = null;
             dto.ImageBackupSettingsJson = null;
         }
@@ -357,6 +358,7 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.TelegramChatId = TrimOrNull(dto.TelegramChatId);
             entity.FacebookPageAccessToken = ProtectSecret(dto.FacebookPageAccessToken);
             entity.FacebookVerifyToken = TrimOrNull(dto.FacebookVerifyToken);
+            entity.FacebookAppSecret = ProtectSecret(dto.FacebookAppSecret);
             entity.ZaloOaAccessToken = ProtectSecret(dto.ZaloOaAccessToken);
         }
 
@@ -629,6 +631,7 @@ namespace PhuThuongStickyRice.Application.Shop
                 GoogleMapsUrl = entity.GoogleMapsUrl,
                 FacebookPageAccessToken = UnprotectSecret(entity.FacebookPageAccessToken),
                 FacebookVerifyToken = entity.FacebookVerifyToken,
+                FacebookAppSecret = UnprotectSecret(entity.FacebookAppSecret),
                 // Item 138: weekly owner report via Zalo OA.
                 ZaloOaAccessToken = UnprotectSecret(entity.ZaloOaAccessToken),
                 OwnerPhone = entity.OwnerPhone,

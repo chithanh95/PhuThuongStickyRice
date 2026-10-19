@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -30,6 +31,14 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         /// <summary>Handles an incoming Messenger webhook payload (POST).</summary>
         Task HandleWebhookAsync(JsonDocument payload);
+
+        /// <summary>
+        /// Verify chữ ký X-Hub-Signature-256 (HMAC-SHA256 bằng App Secret) của
+        /// webhook POST — chống giả mạo callback tạo đơn ảo. Trả về false khi
+        /// đã cấu hình App Secret mà chữ ký thiếu/sai. Khi chưa cấu hình secret
+        /// thì log cảnh báo và trả về true để webhook đang chạy không bị gãy.
+        /// </summary>
+        Task<bool> VerifyWebhookSignatureAsync(byte[] body, string signatureHeader);
     }
 
     /// <summary>
@@ -123,6 +132,51 @@ namespace PhuThuongStickyRice.Application.Messenger
 
             Logger.LogInformation("Messenger webhook verified successfully.");
             return challenge;
+        }
+
+        public async Task<bool> VerifyWebhookSignatureAsync(byte[] body, string signatureHeader)
+        {
+            var settings = await _shopSettings.GetAsync();
+            var appSecret = settings?.FacebookAppSecret;
+            if (string.IsNullOrWhiteSpace(appSecret))
+            {
+                // Chưa cấu hình App Secret: không thể verify — log cảnh báo
+                // và cho qua để webhook đang chạy theo hướng dẫn cũ không gãy.
+                // Admin nên dán App Secret (App dashboard > Settings > Basic)
+                // tại Cài đặt cửa hàng > Chatbot Messenger.
+                Logger.LogWarning(
+                    "Messenger webhook signature NOT verified: FacebookAppSecret chưa được cấu hình.");
+                return true;
+            }
+
+            const string prefix = "sha256=";
+            if (string.IsNullOrWhiteSpace(signatureHeader)
+                || !signatureHeader.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.LogWarning("Messenger webhook bị từ chối: thiếu header X-Hub-Signature-256.");
+                return false;
+            }
+
+            byte[] actual;
+            try
+            {
+                actual = Convert.FromHexString(signatureHeader.Substring(prefix.Length).Trim());
+            }
+            catch (FormatException)
+            {
+                Logger.LogWarning("Messenger webhook bị từ chối: chữ ký không phải hex hợp lệ.");
+                return false;
+            }
+
+            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(appSecret));
+            var expected = hmac.ComputeHash(body);
+            if (!CryptographicOperations.FixedTimeEquals(expected, actual))
+            {
+                Logger.LogWarning("Messenger webhook bị từ chối: chữ ký X-Hub-Signature-256 không hợp lệ.");
+                return false;
+            }
+
+            return true;
         }
 
         public async Task HandleWebhookAsync(JsonDocument payload)

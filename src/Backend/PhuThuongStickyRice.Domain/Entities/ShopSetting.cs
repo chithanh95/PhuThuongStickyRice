@@ -210,6 +210,14 @@ namespace PhuThuongStickyRice.Domain.Entities
         public string FacebookVerifyToken { get; set; }
 
         /// <summary>
+        /// Facebook App Secret (App dashboard &gt; Settings &gt; Basic) dùng để
+        /// verify chữ ký X-Hub-Signature-256 của webhook POST — chống giả mạo
+        /// callback tạo đơn ảo. Empty = bỏ qua verify (chỉ nên để trống khi
+        /// chưa cấu hình). Stored data-protected, không trả ra API public.
+        /// </summary>
+        public string FacebookAppSecret { get; set; }
+
+        /// <summary>
         /// Wave 6b (item 30): when false, checkout is blocked with a
         /// friendly message, even inside open hours. Default true.
         /// </summary>

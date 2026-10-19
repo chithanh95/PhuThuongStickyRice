@@ -87,6 +87,11 @@
                 </tbody>
                 <tfoot>
                     <tr><td colspan="4" class="r">Tạm tính</td><td class="r">@FormatPrice(_order.Subtotal)</td></tr>
+                    @if (_order.PromotionDiscountAmount > 0)
+                    {
+                        <tr><td colspan="4" class="r">🏷 Khuyến mãi giờ vàng @(!string.IsNullOrWhiteSpace(_order.PromotionName) ? $"({_order.PromotionName})" : "")</td>
+                            <td class="r">−@FormatPrice(_order.PromotionDiscountAmount)</td></tr>
+                    }
                     @if (_order.DiscountAmount > 0)
                     {
                         <tr><td colspan="4" class="r">Giảm giá @(!string.IsNullOrWhiteSpace(_order.DiscountCode) ? $"({_order.DiscountCode})" : "")</td>

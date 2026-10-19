@@ -291,6 +291,13 @@
                     <span><strong>Tổng (@_order.Lines.Sum(l => l.Quantity) món)</strong></span>
                     <span><strong>@FormatPrice(_order.Lines.Sum(l => l.LineTotal))</strong></span>
                 </div>
+                @if (_order.PromotionDiscountAmount > 0)
+                {
+                    <div class="to-fee-row text-success">
+                        <span>🏷 Khuyến mãi giờ vàng @(!string.IsNullOrWhiteSpace(_order.PromotionName) ? $"({_order.PromotionName})" : "")</span>
+                        <span>−@FormatPrice(_order.PromotionDiscountAmount)</span>
+                    </div>
+                }
                 @if (_order.DiscountAmount > 0)
                 {
                     <div class="to-fee-row text-success">

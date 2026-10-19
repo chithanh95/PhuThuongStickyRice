@@ -210,6 +210,13 @@ namespace PhuThuongStickyRice.Application.Shop.DTOs
         [StringLength(200)]
         public string FacebookVerifyToken { get; set; }
 
+        /// <summary>
+        /// Facebook App Secret để verify X-Hub-Signature-256 của webhook.
+        /// Secret: mã hóa khi lưu, che khỏi API public.
+        /// </summary>
+        [StringLength(500)]
+        public string FacebookAppSecret { get; set; }
+
         /// <summary>When false, checkout is blocked. Default true.</summary>
         public bool AcceptingOrders { get; set; } = true;
 

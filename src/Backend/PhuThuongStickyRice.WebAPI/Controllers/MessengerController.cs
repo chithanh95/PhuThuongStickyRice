@@ -52,22 +52,41 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Content(result, "text/plain");
         }
 
-        /// <summary>Receives Messenger events (messages, etc.).</summary>
+        /// <summary>
+        /// Receives Messenger events (messages, etc.). The
+        /// X-Hub-Signature-256 header is verified against the configured
+        /// Facebook App Secret before the payload is processed.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult> Receive()
         {
+            byte[] bodyBytes;
+            using (var ms = new MemoryStream())
+            {
+                await Request.Body.CopyToAsync(ms);
+                bodyBytes = ms.ToArray();
+            }
+
             JsonDocument payload;
             try
             {
-                using var reader = new StreamReader(Request.Body);
-                var body = await reader.ReadToEndAsync();
-                payload = JsonDocument.Parse(body);
+                payload = JsonDocument.Parse(bodyBytes);
             }
             catch (JsonException ex)
             {
                 _logger.LogWarning(ex, "Invalid JSON on Messenger webhook.");
                 return BadRequest();
+            }
+
+            // bug-hunt 2026-10-19: verify chữ ký chống giả mạo callback
+            // (kẻ lạ POST payload giả có thể điều khiển bot tạo đơn thật,
+            // bỏ qua reCAPTCHA). Không có secret cấu hình -> service log
+            // cảnh báo và cho qua để không gãy webhook đang chạy.
+            var signature = Request.Headers["X-Hub-Signature-256"].ToString();
+            if (!await _chat.VerifyWebhookSignatureAsync(bodyBytes, signature))
+            {
+                return Unauthorized();
             }
 
             using (payload)

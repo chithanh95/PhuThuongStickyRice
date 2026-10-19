@@ -91,13 +91,19 @@ else
                             <input class="form-control" @bind="_model.FacebookVerifyToken" />
                             <small class="form-text text-muted">Chuỗi tự chọn, nhập trùng khi đăng ký webhook trên Facebook.</small>
                         </div>
+                        <div class="form-group col-md-6">
+                            <label>App Secret</label>
+                            <input type="password" class="form-control" @bind="_model.FacebookAppSecret" autocomplete="off" />
+                            <small class="form-text text-muted">Facebook App → Settings → Basic → App Secret. Dùng để xác thực chữ ký webhook, chống giả mạo tin nhắn tạo đơn ảo. Để trống = không kiểm tra chữ ký.</small>
+                        </div>
                     </div>
                     <div class="alert alert-info mb-0">
                         <strong>Cách bật chatbot:</strong>
                         <ol class="mb-0">
                             <li>Tạo App tại <em>developers.facebook.com</em>, thêm sản phẩm Messenger, liên kết Fanpage.</li>
                             <li>Lấy <em>Page Access Token</em> → dán vào ô trên.</li>
-                            <li>Chọn một <em>Verify Token</em> → dán vào ô trên → <strong>Lưu</strong>.</li>
+                            <li>Chọn một <em>Verify Token</em> → dán vào ô trên.</li>
+                            <li>Lấy <em>App Secret</em> (Settings → Basic) → dán vào ô trên → <strong>Lưu</strong> (bật xác thực chữ ký webhook).</li>
                             <li>Trong App → Messenger → Webhooks: Callback URL = <code>https://&lt;tên-miền&gt;/api/webhooks/messenger</code>, Verify Token = chuỗi ở bước 3, đăng ký field <em>messages</em>.</li>
                         </ol>
                     </div>
