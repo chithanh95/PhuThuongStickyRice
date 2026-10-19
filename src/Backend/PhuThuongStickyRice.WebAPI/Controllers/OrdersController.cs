@@ -458,6 +458,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     CustomerPhone = model?.CustomerPhone,
                     Rating = model?.Rating ?? 0,
                     Comment = model?.Comment,
+                    PhotoUrl = model?.PhotoUrl,
                     Lines = model?.Lines?
                         .Select(x => new SubmitReviewLineInput
                         {

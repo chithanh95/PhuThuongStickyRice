@@ -697,6 +697,14 @@ else
         }
     }
 
+    /// <summary>
+    /// Tải trang đơn hàng hiện tại. Bọc try/catch ngay tại đây (thay vì từng call site)
+    /// vì loader này được gọi từ rất nhiều nơi không có guard: filter, phân trang,
+    /// timer debounce tìm kiếm, <see cref="ClearDateFilter"/> và <c>OnInitializedAsync</c>.
+    /// HttpService dùng EnsureSuccessStatusCode() nên API trả 401/500/mất mạng sẽ ném
+    /// exception — nếu không bắt, cả trang /orders rơi vào error boundary và staff mất
+    /// hết filter đang xem. Khi lỗi, giữ dữ liệu cũ và hiện alert đỏ đầu trang để thử lại.
+    /// </summary>
     private async Task LoadOrders(int page)
     {
         _page = page < 1 ? 1 : page;
@@ -708,7 +716,15 @@ else
             "uncollected" => false,
             _ => null
         };
-        _paged = await OrderService.GetOrdersAsync(_page, 20, _searchTerm, _statusFilter, ShipperFilterId, _fromDate, _toDate, cashCollected, _vipOnly);
+        try
+        {
+            _paged = await OrderService.GetOrdersAsync(_page, 20, _searchTerm, _statusFilter, ShipperFilterId, _fromDate, _toDate, cashCollected, _vipOnly);
+            _actionError = null;
+        }
+        catch (Exception ex)
+        {
+            _actionError = "Tải danh sách đơn thất bại: " + ex.Message;
+        }
     }
 
     /// <summary>Wave 6c (item 35): clears the date-range filter.</summary>
