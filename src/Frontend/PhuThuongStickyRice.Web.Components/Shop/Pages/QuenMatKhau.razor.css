@@ -1,0 +1,46 @@
+/* ============================================================
+   QuenMatKhau — mobile (<=767px).
+   UIUX run 17:48 — Agent1 Mobile
+   Trang quên mật khẩu dùng chung với auth (mobile TaiKhoan/DangNhap đã
+   fix ở run 17:25 — trang này bị sót). Fix: input chống iOS auto-zoom,
+   CTA đủ cao, nút chuyển theme đủ chuẩn chạm.
+   ============================================================ */
+@media (max-width: 767.98px) {
+    /* FIX 1 — input cao 44px, chữ 16px: iOS không auto-zoom khi focus,
+       người lớn tuổi gõ SĐT/OTP/mật khẩu mới không bị giật màn hình.
+       (OTP input .auth-otp-input đang 18px nên không bị ảnh hưởng.) */
+    .form-control {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    /* FIX 2 — nút CTA "Gửi mã OTP" / "Đặt lại mật khẩu" (~42px, padding
+       10px): nâng lên 48px chuẩn nút hành động chính trên mobile, chữ
+       to rõ hơn. */
+    .auth-btn {
+        min-height: 48px;
+        font-size: 1.05rem;
+    }
+
+    /* FIX 3 — nút chuyển sáng/tối fixed góc màn hình chỉ 40x40 — nâng
+       lên 44x44 cho đủ chuẩn chạm. */
+    .auth-theme-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* FIX 4 — card padding 40px 35px trên màn nhỏ chiếm chỗ: gọn lại
+       24px/20px để vùng form rộng hơn, đỡ phải cuộn. */
+    .auth-card {
+        padding: 24px 20px;
+    }
+
+    /* FIX 5 — nút "← Nhập lại SĐT" (btn-link) chỉ cao ~38px: nâng vùng
+       bấm lên 44px. */
+    .auth-link-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}

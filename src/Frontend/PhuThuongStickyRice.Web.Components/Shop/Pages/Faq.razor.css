@@ -1,0 +1,46 @@
+/* ============================================================
+   FAQ — mobile (<=767px).
+   UIUX run 17:48 — Agent1 Mobile
+   Trang chưa có CSS mobile riêng: nút accordion câu hỏi vùng bấm thấp,
+   nút "Tìm" trong input-group nhỏ, hotline/Zalo nằm cạnh nhau.
+   ============================================================ */
+@media (max-width: 767.98px) {
+    /* FIX 1 — h1 "Câu hỏi thường gặp" 2.5rem quá to trên mobile (đồng bộ
+       h1 1.75rem của /cart, /checkout, /track-order). */
+    h1 {
+        font-size: 1.75rem;
+        line-height: 1.3;
+    }
+
+    /* FIX 2 — ô tìm kiếm: chữ 16px (iOS không auto-zoom), cao ngang nút
+       "Tìm" 44px cho cả cụm input-group đều tay. */
+    .faq-search .form-control {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    .faq-search .btn {
+        min-height: 44px;
+        min-width: 64px;
+    }
+
+    /* FIX 3 — nút accordion từng câu hỏi (btn-link p-1) vùng bấm chỉ bằng
+       dòng chữ: nâng lên 48px, cả hàng bấm được — người lớn tuổi mở câu
+       hỏi dễ hơn. */
+    .faq-list .card-header .btn-block {
+        min-height: 48px;
+        padding: 12px 8px !important; /* đè .p-1 của Bootstrap */
+    }
+
+    /* FIX 4 — hotline + Chat Zalo xếp cạnh nhau, mỗi nút ~38px: xếp dọc
+       full-width, mỗi nút 48px — CTA liên hệ là mục tiêu chính của trang. */
+    .faq-contact .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        margin: 8px 0 0 !important;
+        font-size: 1.05rem;
+    }
+}

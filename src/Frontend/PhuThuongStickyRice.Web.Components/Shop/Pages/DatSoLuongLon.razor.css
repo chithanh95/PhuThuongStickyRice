@@ -109,3 +109,71 @@ html.dark .bulk-qr {
     background: #fff;
     border-color: #3a3226;
 }
+
+/* ============================================================
+   Mobile (<=767px) — UIUX run 17:48 — Agent1 Mobile
+   Trang đặt số lượng lớn chưa có rule mobile nào (ngoài .bulk-steps ≤576):
+   input chưa chống iOS zoom, nút bước/step nhỏ, nút cọc "Tôi đã chuyển
+   khoản" ~38px, nút "Tải lại"/"In báo giá" chật.
+   ============================================================ */
+@media (max-width: 767.98px) {
+    /* FIX 1 — mọi input/select/textarea: chữ 16px (iOS không auto-zoom),
+       input cao 44px (textarea giữ rows, chỉ chỉnh chữ). */
+    .form-control {
+        font-size: 16px;
+    }
+    input.form-control,
+    select.form-control {
+        min-height: 44px;
+    }
+
+    /* FIX 2 — nút bước "← Quay lại" + "Tiếp tục →" / "Gửi yêu cầu báo giá"
+       xếp ngang ~38px: xếp dọc full-width, mỗi nút 48px — người lớn tuổi
+       dễ bấm, đồng bộ CTA ở các trang khác. */
+    .card-body > .btn-outline-secondary:not(.btn-sm),
+    .card-body > .bulk-submit {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        margin: 8px 0 0 !important;
+        font-size: 1.05rem;
+    }
+
+    /* FIX 3 — nút "Tôi đã chuyển khoản" (panel cọc 30%, :106, .btn-success
+       không có .bulk-submit) chỉ ~38px: full-width 48px — đồng bộ nút
+       "Tôi đã chuyển khoản" ở /checkout và /track-order. */
+    .card-body > .btn-success:not(.btn-sm):not(.bulk-submit) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+    }
+
+    /* FIX 4 — alert "Không tải được danh sách món" + nút "Tải lại" xếp
+       ngang chật, nút btn-sm ~31px: cho wrap, nút 44px full-width hàng 2. */
+    .alert-warning.d-flex {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .alert-warning .btn-sm {
+        width: 100%;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* FIX 5 — nút "🖨 In / Lưu báo giá" (btn-sm, ~31px) khó bấm:
+       nâng lên 44px, giữ full-width vừa khung báo giá. */
+    .card .card-body > div > .btn-outline-secondary.btn-sm {
+        width: 100%;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}

@@ -1,0 +1,65 @@
+/* ============================================================
+   DatCung (đặt xôi cúng Rằm/mùng 1) — mobile (<=767px).
+   UIUX run 17:48 — Agent1 Mobile
+   Trang chưa có CSS mobile riêng: input chưa chống iOS zoom, radio
+   "Dịp cúng"/"Loại mâm" nằm cạnh nhau khó bấm với người lớn tuổi.
+   ============================================================ */
+@media (max-width: 767.98px) {
+    /* FIX 1 — input 44px, chữ 16px (iOS không auto-zoom khi focus):
+       họ tên, SĐT, số suất, ghi chú. */
+    .form-control {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    /* FIX 2 — radio "Dịp cúng" / "Loại mâm" (.form-check-inline) xếp
+       ngang ~140-150px mỗi cái, chữ nhỏ, vùng bấm chỉ bằng dòng chữ —
+       người lớn tuổi dễ bấm nhầm. Xếp dọc full-width, mỗi option một
+       hàng cao 44px, cả hàng bấm được (label block); radio to 20px. */
+    .form-check-inline {
+        display: flex;
+        align-items: center;
+        flex: 1 1 100%;
+        min-height: 44px;
+        margin: 0 0 6px;
+    }
+
+    .form-check-inline .form-check-label {
+        display: block;
+        flex: 1;
+        min-height: 44px;
+        padding: 10px 0 10px 4px;
+        font-size: 15px;
+    }
+
+    .form-check-input[type="radio"] {
+        width: 20px;
+        height: 20px;
+        margin-top: 0;
+        flex-shrink: 0;
+    }
+
+    /* FIX 3 — checkbox "🔔 Nhắc tôi mỗi tháng" vùng bấm chỉ bằng dòng
+       chữ: mở full-row 44px, cả hàng bấm được. */
+    .form-group.form-check {
+        min-height: 44px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    .form-group.form-check .form-check-label {
+        display: block;
+        padding: 6px 0;
+    }
+
+    /* FIX 4 — nút submit "Gửi yêu cầu đặt cúng" (btn-lg, không full-width
+       trên mobile): full-width, 48px — CTA chính phải to nhất, dễ bấm. */
+    .card-body > .btn-lg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+    }
+}
