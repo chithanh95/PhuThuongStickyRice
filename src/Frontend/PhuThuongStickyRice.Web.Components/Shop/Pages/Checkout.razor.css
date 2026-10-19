@@ -538,3 +538,38 @@ html.dark .co-mobile-bar .co-total small {
     }
 }
 /* ===== END UIUX run 02:15 - Agent1 FIX 5 ===== */
+
+/* ===== UIUX run 02:32 — Agent1 Mobile =====
+   FIX 3 — Chú thích trong label form (Checkout.razor:369 "Chi nhánh
+   (tùy chọn)", :757 "Mã giới thiệu (nếu có)"): <small> ~12.8px — bị sót
+   vì các rule trước chỉ phủ .form-check-label small (14px, run 22:25) và
+   .form-group > small (14px, run 00:47 — con trực tiếp của .form-group).
+   Nâng lên 13px trên mobile, PC giữ nguyên.
+   (Selector .form-group > label > small không chạm các label
+   .form-check-label đã 14px — chúng nằm trong .form-check, không phải
+   con trực tiếp của .form-group.) */
+/* uiux-2026-10-20 */
+@media (max-width: 767.98px) {
+    .form-group > label > small {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX run 02:32 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 02:32 — Agent1 Mobile =====
+   FIX 4 — Nút −/+/× trong bảng tóm tắt đơn (.co-summary .btn): rule cũ chỉ
+   đặt min-height/min-width 44px nhưng giữ display inline-block của
+   Bootstrap — glyph chữ dồn lên đỉnh nút, ~15px trống thừa phía dưới,
+   nhìn lệch trên mobile. Căn giữa dọc/ngang bằng inline-flex.
+   (Không đổi border-radius của nút "Đổi điểm" trong input-group;
+   các nút full-width .card-body > .btn-success/.btn-primary đã có
+   display:flex riêng với specificity cao hơn nên giữ nguyên.) */
+/* uiux-2026-10-20 */
+@media (max-width: 767.98px) {
+    .co-summary .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+/* ===== END UIUX run 02:32 - Agent1 FIX 4 ===== */

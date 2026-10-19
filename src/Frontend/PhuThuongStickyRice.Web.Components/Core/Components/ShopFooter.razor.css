@@ -78,3 +78,26 @@
 @media (max-width: 575.98px) {
     .sg-footer-grid { grid-template-columns: 1fr; gap: 32px; }
 }
+
+/* ===== UIUX run 02:32 — Agent1 Mobile =====
+   FIX 1 — Link footer trên mobile: vùng bấm chỉ ~18px (chữ 15px, không
+   padding) — người lớn tuổi cuộn tới cuối trang dễ bấm trượt. Mobile: mỗi
+   link cao tối thiểu 44px (padding 10px, căn giữa dọc), giữ nguyên thứ tự
+   và hành vi. Giảm padding-top footer 72px → 48px cho đỡ cuộn dài ở
+   layout 1 cột.
+   (Scope .sg-footer-col > a nên không chạm link email nằm trong thẻ p;
+   PC giữ nguyên.) */
+/* uiux-2026-10-20 */
+@media (max-width: 767.98px) {
+    .sg-footer {
+        padding-top: 48px;
+    }
+    .sg-footer-col > a {
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 10px 0;
+        margin-bottom: 2px;
+    }
+}
+/* ===== END UIUX run 02:32 - Agent1 FIX 1 ===== */

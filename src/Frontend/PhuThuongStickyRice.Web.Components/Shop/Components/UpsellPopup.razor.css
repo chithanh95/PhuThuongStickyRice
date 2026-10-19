@@ -64,3 +64,18 @@
     }
     /* ===== END UIUX run 18:09 - Agent1 FIX 1 ===== */
 }
+
+/* ===== UIUX run 02:32 — Agent1 Mobile =====
+   FIX 2 — Chữ nhỏ trong popup gợi ý món ăn kèm (UpsellPopup.razor): dòng
+   giới thiệu "Bạn vừa thêm X — thêm món ăn kèm" và giá tiền mỗi dòng đều
+   ở <small> ~12.8px — popup hiện ngay sau khi thêm vào giỏ, khách lớn
+   tuổi cần đọc nhanh để quyết định có thêm món kèm không. Nâng lên 14px
+   trên mobile, PC giữ nguyên.
+   (Verify: .modal-body small chỉ khớp 2 loại này — không chạm các nút.) */
+/* uiux-2026-10-20 */
+@media (max-width: 767.98px) {
+    .modal-body small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 02:32 - Agent1 FIX 2 ===== */
