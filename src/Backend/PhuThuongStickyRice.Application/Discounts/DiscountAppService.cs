@@ -781,6 +781,14 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// True khi SĐT đã có mã còn dùng được với tiền tố cho trước — chống
         /// cấp trùng mã quay/sinh nhật cho cùng 1 khách.
         /// </summary>
+        /// <summary>
+        /// Internal: true khi SĐT còn ít nhất 1 mã dùng được với tiền tố cho
+        /// trước (đang bật, còn hạn, còn lượt dùng). Chỉ SELECT 1 (AnyAsync)
+        /// thay vì tải entity — dùng kiểm tra nhanh trước khi sinh mã mới.
+        /// </summary>
+        /// <param name="codePrefix">Tiền tố mã cần kiểm tra.</param>
+        /// <param name="ownerPhone">SĐT chủ sở hữu mã.</param>
+        /// <returns>true khi còn mã dùng được.</returns>
         public virtual async Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone)
         {
             var prefix = NormalizeCodePrefix(codePrefix);

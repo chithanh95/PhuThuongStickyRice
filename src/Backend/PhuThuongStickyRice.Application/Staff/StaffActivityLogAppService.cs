@@ -58,6 +58,14 @@ namespace PhuThuongStickyRice.Application.Staff
             _memoryCache = memoryCache;
         }
 
+        /// <summary>
+        /// Admin: tra cứu nhật ký hoạt động nhân viên, mới nhất trước, kèm
+        /// tổng số dòng và danh sách loại thao tác để dựng bộ lọc. Phân trang
+        /// bị chặn 1..200 dòng/trang và SkipCount âm về 0 để request tham số
+        /// lạ không kéo sập DB.
+        /// </summary>
+        /// <param name="input">Bộ lọc (nhân viên, loại thao tác, khoảng ngày) + phân trang.</param>
+        /// <returns>Danh sách log đã phân trang, tổng số dòng và các loại thao tác.</returns>
         public virtual async Task<StaffActivityLogListDto> GetListAsync(GetStaffActivityLogsInput input)
         {
             // Client có thể không truyền filter — thay vì báo lỗi, dùng bộ

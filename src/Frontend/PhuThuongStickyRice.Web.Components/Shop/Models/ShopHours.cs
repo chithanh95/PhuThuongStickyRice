@@ -11,10 +11,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
     /// </summary>
     public static class ShopHours
     {
+        /// <summary>Giờ mở cửa mặc định khi setting chưa cấu hình hoặc parse lỗi ("HH:mm").</summary>
         public const string DefaultOpenTime = "06:00";
 
+        /// <summary>Giờ đóng cửa mặc định khi setting chưa cấu hình hoặc parse lỗi ("HH:mm").</summary>
         public const string DefaultCloseTime = "10:30";
 
+        /// <summary>Độ dài 1 khung giờ nhận đơn (phút) — hero và trang checkout chia slot theo bước này.</summary>
         public const int SlotMinutes = 30;
 
         /// <summary>Múi giờ Việt Nam so với UTC (không có giờ mùa hè).</summary>
@@ -26,11 +29,19 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
             return DateTimeOffset.UtcNow.AddHours(VietnamUtcOffsetHours).TimeOfDay;
         }
 
+        /// <summary>
+        /// Parse giờ mở cửa từ setting; giá trị lỗi/thiếu thì dùng
+        /// <see cref="DefaultOpenTime"/> để shop vẫn có giờ mở hợp lệ.
+        /// </summary>
         public static TimeSpan ParseOpen(string openTime)
         {
             return TryParseHour(openTime, DefaultOpenTime);
         }
 
+        /// <summary>
+        /// Parse giờ đóng cửa từ setting; giá trị lỗi/thiếu thì dùng
+        /// <see cref="DefaultCloseTime"/> để shop vẫn có giờ đóng hợp lệ.
+        /// </summary>
         public static TimeSpan ParseClose(string closeTime)
         {
             return TryParseHour(closeTime, DefaultCloseTime);
@@ -56,6 +67,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
             return $"{(int)time.TotalHours}:{time.Minutes:D2}";
         }
 
+        /// <summary>
+        /// Quán có đang mở không, tính theo giờ Việt Nam hiện tại.
+        /// Close &lt;= open coi như cấu hình sai → luôn trả false (đang nghỉ).
+        /// </summary>
         public static bool IsOpen(string openTime, string closeTime)
         {
             return IsOpen(openTime, closeTime, NowInVietnam());
@@ -98,6 +113,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// 30-minute delivery slots for today ("6:00–6:30", ...), from the
         /// open hour to the close hour. Slots that already started are
         /// skipped; empty when the shop is already closed today.
+        /// </summary>
+        /// <summary>
+        /// Dựng danh sách khung giờ nhận đơn hôm nay theo giờ Việt Nam hiện tại:
+        /// các slot đã bắt đầu bị bỏ qua, quán đã đóng thì trả danh sách rỗng.
         /// </summary>
         public static List<string> BuildSlots(string openTime, string closeTime)
         {

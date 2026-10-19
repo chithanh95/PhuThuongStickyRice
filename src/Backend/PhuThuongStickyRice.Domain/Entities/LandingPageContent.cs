@@ -134,6 +134,13 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
         }
 
+        /// <summary>
+        /// Factory tạo snapshot nội dung landing đầy đủ trong 1 lần gọi —
+        /// dùng khi seed dòng nội dung mặc định (ủy thác toàn bộ cho
+        /// <see cref="Update"/> nên tập tham số giữ đồng nhất với method đó).
+        /// Các URL ảnh/video và nội dung popup/banner để null/tắt mặc định;
+        /// admin chỉnh sửa sau tại /admin/landing.
+        /// </summary>
         public static LandingPageContent Create(
             string heroTitle, string heroTagline, string heroButtonText,
             string storyTitle, string storyBody,

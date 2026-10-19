@@ -210,6 +210,7 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             return response != null;
         }
 
+        /// <summary>Lấy lịch sử tin nhắn chat của 1 phiên trò chuyện với quán (item 37).</summary>
         public async Task<List<ChatMessageModel>> GetChatMessagesAsync(string sessionId)
         {
             return await GetAsync<List<ChatMessageModel>>($"api/landing/chat/{sessionId}");
@@ -238,6 +239,7 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             return await GetAsync<List<DishPollModel>>("api/landing/polls");
         }
 
+        /// <summary>Gửi 1 lượt bình chọn cho cuộc thăm dò món mới (item 54).</summary>
         public async Task<bool> SubmitPollVoteAsync(Guid pollId, string phone)
         {
             var response = await PostAsync<object>($"api/landing/polls/{pollId}/vote", new { phone });
@@ -274,17 +276,20 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             await PostAsync<object>("api/landing/favorites", new { phone, productId });
         }
 
+        /// <summary>Bỏ 1 món khỏi danh sách yêu thích của khách (item 63).</summary>
         public async Task RemoveFavoriteAsync(string phone, Guid productId)
         {
             await DeleteAsync($"api/landing/favorites?phone={phone}&productId={productId}");
         }
 
+        /// <summary>Danh sách Id món yêu thích của khách theo SĐT (item 63).</summary>
         public async Task<List<Guid>> GetFavoritesAsync(string phone)
         {
             var wrapper = await GetAsync<ProductIdsApiResponse>($"api/landing/favorites?phone={phone}");
             return wrapper?.ProductIds ?? new List<Guid>();
         }
 
+        /// <summary>Món yêu thích của khách vừa có hàng trở lại — dùng báo "món đã có hàng" (item 63).</summary>
         public async Task<List<BackInStockItem>> GetBackInStockFavoritesAsync(string phone)
         {
             var wrapper = await GetAsync<ItemsApiResponse<BackInStockItem>>($"api/landing/favorites/back-in-stock?phone={phone}");
@@ -304,12 +309,14 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             return await GetAsync<MarketplaceLinksModel>("api/landing/marketplace-links");
         }
 
+        /// <summary>Đăng ký 1 khóa học cho khách (item 60); true khi ghi danh thành công.</summary>
         public async Task<bool> EnrollCourseAsync(Guid id, string phone)
         {
             var response = await PostAsync<object>($"api/landing/courses/{id}/enroll", new { phone });
             return response != null;
         }
 
+        /// <summary>Admin lưu nội dung landing; xóa cache public để trang landing thấy nội dung mới ngay.</summary>
         public async Task<LandingContentModel> UpdateContentAsync(LandingContentModel model)
         {
             var result = await PutAsync<LandingContentModel>("api/landing/content", model);
