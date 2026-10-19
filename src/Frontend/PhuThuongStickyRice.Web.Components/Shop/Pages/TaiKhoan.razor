@@ -392,34 +392,15 @@
                     Navigation.NavigateTo("/admin/ho-so", replace: true);
                     return;
                 }
-                _addresses = await AddressService.GetMineAsync();
-
-                // Item 90+92: load taste preferences + birthday.
-                try
-                {
-                    _profile = await ProfileService.GetMyAsync() ?? new CustomerProfileModel();
-                    _selectedTags = new HashSet<string>(_profile.TasteTags ?? new List<string>());
-                    _dobValue = _profile.DateOfBirth;
-                }
-                catch (Exception)
-                {
-                    _profile = new CustomerProfileModel();
-                }
-
-                // Hạng thành viên + lịch sử đơn hàng (theo SĐT đăng nhập).
-                try
-                {
-                    _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(_userName);
-                }
-                catch (Exception) { }
-                try
-                {
-                    _orders = await ShopService.GetOrdersByPhoneAsync(_userName) ?? new List<TrackedOrderModel>();
-                }
-                catch (Exception)
-                {
-                    _orders = new List<TrackedOrderModel>();
-                }
+                // perf-hunt 2026-10-19: 4 read độc lập chạy song song (mỗi loader
+                // fail-soft riêng như cũ, ghi field riêng). Riêng _addresses
+                // giữ nguyên ngữ cảnh: lỗi ở đây vẫn rớt về catch ngoài như cũ.
+                var addressesTask = AddressService.GetMineAsync();
+                var profileTask = LoadProfileAsync();
+                var loyaltyTask = LoadLoyaltyAsync();
+                var ordersTask = LoadOrdersAsync();
+                _addresses = await addressesTask;
+                await Task.WhenAll(profileTask, loyaltyTask, ordersTask);
 
                 // Item 137: đồng bộ giỏ hàng từ server (nếu có).
                 try
@@ -436,6 +417,45 @@
         finally
         {
             _checked = true;
+        }
+    }
+
+    /// <summary>Tải hồ sơ khách (sở thích vị + ngày sinh) — lỗi thì dùng model trống.</summary>
+    private async Task LoadProfileAsync()
+    {
+        // Item 90+92: load taste preferences + birthday.
+        try
+        {
+            _profile = await ProfileService.GetMyAsync() ?? new CustomerProfileModel();
+            _selectedTags = new HashSet<string>(_profile.TasteTags ?? new List<string>());
+            _dobValue = _profile.DateOfBirth;
+        }
+        catch (Exception)
+        {
+            _profile = new CustomerProfileModel();
+        }
+    }
+
+    /// <summary>Tải hạng thành viên theo SĐT đăng nhập — lỗi thì ẩn thẻ hạng.</summary>
+    private async Task LoadLoyaltyAsync()
+    {
+        try
+        {
+            _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(_userName);
+        }
+        catch (Exception) { }
+    }
+
+    /// <summary>Tải lịch sử đơn hàng theo SĐT — lỗi thì hiện danh sách trống.</summary>
+    private async Task LoadOrdersAsync()
+    {
+        try
+        {
+            _orders = await ShopService.GetOrdersByPhoneAsync(_userName) ?? new List<TrackedOrderModel>();
+        }
+        catch (Exception)
+        {
+            _orders = new List<TrackedOrderModel>();
         }
     }
 

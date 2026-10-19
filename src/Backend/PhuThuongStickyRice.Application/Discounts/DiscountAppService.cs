@@ -121,6 +121,14 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task RefundUsageAsync(string? code);
 
         /// <summary>
+        /// Hoàn lại lượt dùng của nhiều mã theo batch: gộp các mã trùng (đã
+        /// chuẩn hóa) rồi giảm 1 lần cho mỗi mã — dùng ở worker tự hủy đơn để
+        /// không tốn 1 round-trip cho mỗi đơn bị hủy. Không throw khi mã trống
+        /// hoặc không tồn tại, giống <see cref="RefundUsageAsync"/>.
+        /// </summary>
+        Task RefundUsageBatchAsync(IEnumerable<string?> codes);
+
+        /// <summary>
         /// Public: kiểm tra 1 mã với tổng giỏ hàng cho 1 SĐT cụ thể.
         /// </summary>
         Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string? customerPhone);
@@ -520,6 +528,35 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             await _discounts.TryDecrementUsageAsync(normalized);
+        }
+
+        /// <summary>
+        /// Hoàn lượt dùng của nhiều mã theo batch: chuẩn hóa từng mã, gộp số
+        /// lượt theo mã rồi gọi 1 UPDATE cho mỗi mã khác nhau — kết quả giống
+        /// hệt gọi <see cref="RefundUsageAsync"/> cho từng mã (không về âm,
+        /// bỏ qua mã trống), nhưng chỉ tốn 1 round-trip/mã.
+        /// </summary>
+        public virtual async Task RefundUsageBatchAsync(IEnumerable<string?> codes)
+        {
+            if (codes == null)
+            {
+                return;
+            }
+
+            var decrements = new Dictionary<string, int>();
+            foreach (var code in codes)
+            {
+                var normalized = code?.Trim().ToUpperInvariant();
+                if (string.IsNullOrEmpty(normalized))
+                {
+                    continue;
+                }
+
+                decrements.TryGetValue(normalized, out var current);
+                decrements[normalized] = current + 1;
+            }
+
+            await _discounts.TryDecrementUsageBatchAsync(decrements);
         }
 
         /// <summary>

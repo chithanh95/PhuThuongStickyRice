@@ -1,6 +1,8 @@
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -63,6 +65,40 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                     .SetProperty(x => x.UsedCount, x => x.UsedCount - 1),
                     cancellationToken);
             return affected > 0;
+        }
+
+        /// <summary>
+        /// Giảm UsedCount theo batch bằng ExecuteUpdateAsync: 1 câu UPDATE
+        /// cho mỗi mã (UsedCount = Max(0, UsedCount - số lượng)) — kết quả
+        /// cuối giống hệt N lần gọi TryDecrementUsageAsync cho cùng 1 mã
+        /// (mỗi lần chỉ giảm khi UsedCount &gt; 0, không bao giờ về âm), nhưng
+        /// chỉ tốn 1 round-trip cho mỗi mã khác nhau. Math.Max dịch thành
+        /// CASE WHEN trên SQL Server. Chạy trong DbContext/UoW hiện tại nên
+        /// tham gia cùng transaction với nghiệp vụ hủy đơn.
+        /// </summary>
+        public async Task TryDecrementUsageBatchAsync(
+            IReadOnlyDictionary<string, int> decrements,
+            CancellationToken cancellationToken = default)
+        {
+            if (decrements == null || decrements.Count == 0)
+            {
+                return;
+            }
+
+            var dbContext = await GetDbContextAsync();
+            foreach (var (code, count) in decrements)
+            {
+                if (count <= 0)
+                {
+                    continue;
+                }
+
+                await dbContext.Set<DiscountCode>()
+                    .Where(x => x.Code == code)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.UsedCount, x => Math.Max(0, x.UsedCount - count)),
+                        cancellationToken);
+            }
         }
     }
 }

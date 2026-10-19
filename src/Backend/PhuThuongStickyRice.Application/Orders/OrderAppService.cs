@@ -2550,13 +2550,11 @@ namespace PhuThuongStickyRice.Application.Orders
             // + 1 commit) thay vì 2 roundtrip cho mỗi đơn có đổi điểm.
             await _loyalty.RefundRedeemedPointsBatchAsync(cancelledThisRun);
 
-            // bug-hunt 2026-10-19: worker tự hủy cũng hoàn lượt mã giảm giá
-            // cho từng đơn nó thắng (cùng cancelledThisRun — đơn bị hủy tay
-            // giữa chừng đã được luồng kia hoàn).
-            foreach (var cancelled in cancelledThisRun)
-            {
-                await _discounts.RefundUsageAsync(cancelled.DiscountCode);
-            }
+            // perf-hunt 2026-10-19: hoàn lượt mã theo batch (1 UPDATE cho mỗi
+            // mã khác nhau) thay vì 1 round-trip ExecuteUpdateAsync cho mỗi
+            // đơn bị hủy — cùng pattern batch như hoàn điểm loyalty ở trên.
+            await _discounts.RefundUsageBatchAsync(
+                cancelledThisRun.Select(x => x.DiscountCode));
 
             return cancelledThisRun.Count;
         }

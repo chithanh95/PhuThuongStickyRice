@@ -35,11 +35,12 @@
         {
             @if (_speaking)
             {
-                <button class="btn btn-sm btn-outline-danger mr-2 mb-1 mb-md-0" @onclick="StopSpeaking">⏹ Dừng đọc</button>
+                <button class="btn btn-sm btn-outline-danger mr-2 mb-1 mb-md-0" @onclick="StopSpeaking"><span aria-hidden="true">⏹</span> Dừng đọc</button>
             }
             else
             {
-                <button class="btn btn-sm btn-outline-primary mr-2 mb-1 mb-md-0" @onclick="SpeakReport" title="Đọc báo cáo doanh thu">🔊 Đọc báo cáo</button>
+                @* A11y: emoji chỉ trang trí — ẩn khỏi trình đọc màn hình để không đọc thành "loa"/"hình vuông". *@
+                <button class="btn btn-sm btn-outline-primary mr-2 mb-1 mb-md-0" @onclick="SpeakReport" title="Đọc báo cáo doanh thu"><span aria-hidden="true">🔊</span> Đọc báo cáo</button>
             }
         }
         <div class="form-check form-check-inline mb-1 mb-md-0">
@@ -666,40 +667,47 @@ else
     {
         try
         {
-            var stats = await DashboardService.GetStatsAsync(_from, _to);
-            var top = await DashboardService.GetTopProductsAsync(_from, _to);
-            NewAndReturningCustomersModel newReturning = null;
-            try
-            {
-                newReturning = await DashboardService.GetNewReturningCustomersAsync(_from, _to);
-            }
-            catch (Exception)
-            {
-                // Non-critical section.
-            }
+            // perf-hunt 2026-10-19: 2 call chính chạy song song (giữ nguyên
+            // ngữ cảnh lỗi cũ: một trong hai lỗi -> rớt xuống catch, cả hai
+            // đều không set — chỉ nhanh hơn, không đổi hành vi).
+            var statsTask = DashboardService.GetStatsAsync(_from, _to);
+            var topTask = DashboardService.GetTopProductsAsync(_from, _to);
+            var stats = await statsTask;
+            var top = await topTask;
 
             DetectNewOrders(stats);
             DetectStaleOrders(stats);
             _stats = stats;
             _topProducts = top;
-            _newReturning = newReturning;
             _lastUpdated = DateTime.Now;
 
-            // Wave 5 widgets: daily target, source stats, corporate due, forecast.
-            await LoadDashboardWidgetsAsync();
-
-            // Wave 6d (item 36): today-vs-yesterday card (fail-soft).
-            await LoadTodayVsYesterdayAsync();
-
-            // Item 138: weekly report card (fail-soft; Admin-only API).
-            await LoadWeeklyReportAsync();
-
-            // Item 135: món hết suất hôm nay (fail-soft — alert ẩn khi lỗi).
-            await LoadSoldOutTodayAsync();
+            // perf-hunt 2026-10-19: các loader phụ đều fail-soft độc lập
+            // (mỗi cái tự try/catch, ghi field riêng) -> batch 1 lượt thay vì
+            // chờ tuần tự. RefreshLoop 30s chạy lại toàn bộ nên mỗi lần cắt
+            // ~5 round-trip nối tiếp.
+            await Task.WhenAll(
+                LoadNewReturningCustomersAsync(),
+                LoadDashboardWidgetsAsync(),
+                LoadTodayVsYesterdayAsync(),
+                LoadWeeklyReportAsync(),
+                LoadSoldOutTodayAsync());
         }
         catch (Exception)
         {
             _stats ??= new DashboardStatsModel();
+        }
+    }
+
+    /// <summary>Thẻ khách mới/quay lại — lỗi thì ẩn thẻ (không chặn dashboard).</summary>
+    private async Task LoadNewReturningCustomersAsync()
+    {
+        try
+        {
+            _newReturning = await DashboardService.GetNewReturningCustomersAsync(_from, _to);
+        }
+        catch (Exception)
+        {
+            // Non-critical section.
         }
     }
 

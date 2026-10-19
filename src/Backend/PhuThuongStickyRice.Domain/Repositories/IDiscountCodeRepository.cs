@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Domain.Entities;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -35,5 +36,19 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// <param name="cancellationToken">Token hủy.</param>
         Task<bool> TryDecrementUsageAsync(
             string normalizedCode, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Giảm <see cref="DiscountCode.UsedCount"/> theo batch, nguyên tử cho
+        /// từng mã: mỗi mã 1 câu UPDATE (UsedCount = Max(0, UsedCount - số
+        /// lượng)) — tương đương gọi <see cref="TryDecrementUsageAsync"/> N
+        /// lần cho cùng 1 mã (kết quả cuối giống hệt, không bao giờ về âm),
+        /// nhưng chỉ tốn 1 round-trip cho mỗi mã khác nhau. Dùng ở worker tự
+        /// hủy đơn, nơi N đơn bị hủy có thể cùng dùng 1 mã.
+        /// </summary>
+        /// <param name="decrements">Mã đã chuẩn hóa → số lượt cần hoàn (&gt; 0).</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        Task TryDecrementUsageBatchAsync(
+            IReadOnlyDictionary<string, int> decrements,
+            CancellationToken cancellationToken = default);
     }
 }
