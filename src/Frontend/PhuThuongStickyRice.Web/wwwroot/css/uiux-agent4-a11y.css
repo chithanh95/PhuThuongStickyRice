@@ -1973,3 +1973,25 @@ html:not(.dark) .kanban-sched.kanban-sched {
 html.dark .kanban-sched.kanban-sched {
     color: #b3a8e8;
 }
+
+/* Fix 3 — WCAG 1.4.3: vòng số bước "đang làm" (.bulk-step.active span,
+   DatSoLuongLon.razor:126-129 / DatSoLuongLon.razor.css:41-44) — số trắng
+   #fff trên nền vàng gold #a67c3d chỉ ~3.78:1 (< 4.5:1). Đậm nền vòng tròn
+   sang #8a652f (~5.27:1): giữ chữ trắng, giữ tông vàng brand, thay đổi gần
+   như không nhận ra ở vòng 30px.
+   Chỉ light mode (html:not(.dark)): dark mode rule gốc
+   `html.dark .bulk-step span` (#d8cbb2 trên #3a3226, ~7.87:1) đã qua chuẩn
+   nên giữ nguyên. */
+html:not(.dark) .bulk-step.bulk-step.active span {
+    background-color: #8a652f;
+}
+
+/* Fix 4 — WCAG 1.4.3: vòng số bước "đã xong" (.bulk-step.done span,
+   DatSoLuongLon.razor.css:46-49) — số trắng #fff trên nền xanh Lexa #34c38f
+   chỉ ~2.24:1, gần như tàng hình (khách lớn tuổi không biết mình đang ở
+   bước mấy). Giữ nguyên nền xanh Lexa, đổi chữ sang xanh đậm #0b3d2e
+   (~5.57:1) theo pattern soft-badge (chữ đậm trên nền sáng).
+   Chỉ light mode: dark mode đã đạt ~7.87:1 nhờ rule html.dark gốc. */
+html:not(.dark) .bulk-step.bulk-step.done span {
+    color: #0b3d2e;
+}
