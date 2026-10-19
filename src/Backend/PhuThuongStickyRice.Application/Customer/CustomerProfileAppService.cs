@@ -470,9 +470,11 @@ namespace PhuThuongStickyRice.Application.Customer
 
         private async Task<string> GenerateUniqueCodeAsync()
         {
-            // Bảng chữ cái cố ý bỏ I/O (dễ nhầm 1), số 0/1 (dễ nhầm O/l) để
-            // mã quà đọc qua điện thoại cho khách không bị nhầm.
-            const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            // [codequality-smell 2026-10-19] Dùng bảng chữ cái dùng chung
+            // (Domain.ReadableCodeAlphabet) thay vì hardcode: cố ý bỏ I/O
+            // (dễ nhầm 1), số 0/1 (dễ nhầm O/l) để mã quà đọc qua điện thoại
+            // cho khách không bị nhầm.
+            var alphabet = Domain.ReadableCodeAlphabet.Value;
             for (var attempt = 0; attempt < GiftCodeMaxAttempts; attempt++)
             {
                 var chars = new char[GiftCodeRandomPartLength];

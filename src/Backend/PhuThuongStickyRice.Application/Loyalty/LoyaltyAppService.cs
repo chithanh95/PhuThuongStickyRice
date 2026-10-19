@@ -771,7 +771,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <returns>Mã giới thiệu chưa từng tồn tại trong DB.</returns>
         private async Task<string> GenerateReferralCodeAsync()
         {
-            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            // [codequality-smell 2026-10-19] Dùng bảng chữ cái dùng chung
+            // (Domain.ReadableCodeAlphabet) thay vì hardcode.
+            var chars = Domain.ReadableCodeAlphabet.Value;
             // Mã giới thiệu gắn với điểm thưởng nên dùng RNG an toàn mật mã
             // thay vì Random.Shared (có thể bị đoán mã tiếp theo từ mã đã lộ).
 
