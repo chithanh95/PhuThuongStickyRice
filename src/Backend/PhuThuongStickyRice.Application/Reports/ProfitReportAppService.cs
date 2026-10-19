@@ -44,66 +44,80 @@ namespace PhuThuongStickyRice.Application.Reports
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
 
-            var productQueryable = await _products.GetQueryableAsync();
-            var costRows = await _asyncExecuter.ToListAsync(
-                productQueryable.Select(x => new { x.Id, x.CostPrice }));
-            var costMap = costRows.ToDictionary(x => x.Id, x => x.CostPrice);
-
             var orderQueryable = await _orders.GetQueryableAsync();
-            var orders = await _asyncExecuter.ToListAsync(
-                orderQueryable
-                    .Where(x => x.Status != OrderStatus.Cancelled
-                        && x.CreatedAt >= fromDate && x.CreatedAt < toDate)
-                    .Select(x => new
-                    {
-                        Day = x.CreatedAt.Date,
-                        Lines = x.Lines.Select(l => new
-                        {
-                            l.ProductId,
-                            l.ProductName,
-                            l.Quantity,
-                            LineTotal = l.LineTotal.Amount
-                        }).ToList()
-                    }));
+            var rangeOrders = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled
+                && x.CreatedAt >= fromDate && x.CreatedAt < toDate);
 
-            decimal CostOf(Guid productId, int quantity) =>
-                quantity * (costMap.TryGetValue(productId, out var c) ? c : 0);
+            var productQueryable = await _products.GetQueryableAsync();
 
-            var byDay = orders
-                .GroupBy(x => x.Day)
-                .Select(g =>
+            // Perf: aggregate in SQL instead of materializing every order +
+            // line in range (range is unbounded — admin can request a full year).
+            // Same numbers as before; cost uses each product's CURRENT cost
+            // price (retroactive, like the old costMap lookup).
+
+            // Orders per day (SQL) — includes orders with no lines, like before.
+            var orderCounts = await _asyncExecuter.ToListAsync(
+                rangeOrders
+                    .GroupBy(x => x.CreatedAt.Date)
+                    .Select(g => new { Day = g.Key, Orders = g.LongCount() }));
+
+            // Line aggregates, joined to current cost prices (SQL). Lines whose
+            // id has no product row (combos) join NULL → zero cost, same as
+            // the old costMap.TryGetValue fallback.
+            var lineGroups = await _asyncExecuter.ToListAsync(
+                from o in rangeOrders
+                from l in o.Lines
+                join p in productQueryable on l.ProductId equals p.Id into ps
+                from p in ps.DefaultIfEmpty()
+                group new
                 {
-                    var lines = g.SelectMany(x => x.Lines).ToList();
-                    var revenue = lines.Sum(l => l.LineTotal);
-                    var cost = lines.Sum(l => CostOf(l.ProductId, l.Quantity));
+                    Quantity = (long)l.Quantity,
+                    Revenue = l.LineTotal.Amount,
+                    Cost = (long)l.Quantity * (p == null ? 0m : p.CostPrice),
+                    ProductName = l.ProductName
+                }
+                by new { Day = o.CreatedAt.Date, l.ProductId, l.ProductName } into g
+                select new
+                {
+                    Day = g.Key.Day,
+                    ProductId = g.Key.ProductId,
+                    ProductName = g.Max(x => x.ProductName),
+                    Quantity = g.Sum(x => x.Quantity),
+                    Revenue = g.Sum(x => x.Revenue),
+                    Cost = g.Sum(x => x.Cost)
+                });
+
+            var revenueCostByDay = lineGroups
+                .GroupBy(x => x.Day)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (Revenue: g.Sum(x => x.Revenue), Cost: g.Sum(x => x.Cost)));
+
+            var byDay = orderCounts
+                .OrderBy(x => x.Day)
+                .Select(x =>
+                {
+                    revenueCostByDay.TryGetValue(x.Day, out var rc);
                     return new ProfitDayDto
                     {
-                        Date = g.Key,
-                        Revenue = revenue,
-                        Cost = cost,
-                        Profit = revenue - cost,
-                        Orders = g.LongCount()
+                        Date = x.Day,
+                        Revenue = rc.Revenue,
+                        Cost = rc.Cost,
+                        Profit = rc.Revenue - rc.Cost,
+                        Orders = x.Orders
                     };
                 })
-                .OrderBy(x => x.Date)
                 .ToList();
 
-            var byProduct = orders
-                .SelectMany(x => x.Lines)
-                .GroupBy(l => new { l.ProductId, l.ProductName })
-                .Select(g =>
+            var byProduct = lineGroups
+                .GroupBy(x => new { x.ProductId, x.ProductName })
+                .Select(g => new ProfitProductDto
                 {
-                    var revenue = g.Sum(l => l.LineTotal);
-                    var qty = g.Sum(l => (long)l.Quantity);
-                    var cost = g.Sum(l => CostOf(l.ProductId, l.Quantity));
-                    return new ProfitProductDto
-                    {
-                        ProductName = g.Key.ProductName,
-                        QuantitySold = qty,
-                        Revenue = revenue,
-                        Cost = cost,
-                        Profit = revenue - cost
-                    };
+                    ProductName = g.Key.ProductName,
+                    QuantitySold = g.Sum(x => x.Quantity),
+                    Revenue = g.Sum(x => x.Revenue),
+                    Cost = g.Sum(x => x.Cost),
+                    Profit = g.Sum(x => x.Revenue) - g.Sum(x => x.Cost)
                 })
                 .OrderByDescending(x => x.Revenue)
                 .ToList();

@@ -82,8 +82,16 @@ namespace PhuThuongStickyRice.Application.Customer
             }
 
             var queryable = await _tags.GetQueryableAsync();
-            var rows = await _asyncExecuter.ToListAsync(
-                queryable.Where(x => list.Contains(x.CustomerPhone)));
+
+            // Chunk the IN clause (<= 1000 params/query; SQL Server allows ~2100).
+            // Callers may pass thousands of phones (export tags lookup), which
+            // would otherwise fail with "too many parameters" on SQL Server.
+            var rows = new List<CustomerTag>();
+            foreach (var batch in list.Chunk(1000))
+            {
+                rows.AddRange(await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => batch.Contains(x.CustomerPhone))));
+            }
             foreach (var row in rows)
             {
                 if (!result.TryGetValue(row.CustomerPhone, out var tags))
@@ -203,22 +211,39 @@ namespace PhuThuongStickyRice.Application.Customer
                     x.CustomerPhone.Contains(term) || x.CustomerName.Contains(term));
             }
 
-            var customers = await _asyncExecuter.ToListAsync(
-                query.GroupBy(x => x.CustomerPhone)
-                    .Select(g => new
-                    {
-                        CustomerPhone = g.Key,
-                        CustomerName = g.Max(x => x.CustomerName),
-                        OrderCount = g.LongCount(),
-                        TotalSpent = g.Sum(x => x.TotalAmount.Amount),
-                        LastOrderAt = g.Max(x => x.CreatedAt),
-                    })
-                    .OrderByDescending(x => x.TotalSpent));
+            // Grouped aggregation stays on SQL (same numbers as before).
+            var grouped = query.GroupBy(x => x.CustomerPhone)
+                .Select(g => new CustomerAggregateRow
+                {
+                    CustomerPhone = g.Key,
+                    CustomerName = g.Max(x => x.CustomerName),
+                    OrderCount = g.LongCount(),
+                    TotalSpent = g.Sum(x => x.TotalAmount.Amount),
+                    LastOrderAt = g.Max(x => x.CreatedAt),
+                });
 
+            // Push the inactive cutoff down to SQL (was an in-memory filter).
             if (inactiveOnly)
             {
                 var cutoff = DateTime.UtcNow.AddDays(-30);
-                customers = customers.Where(x => x.LastOrderAt < cutoff).ToList();
+                grouped = grouped.Where(x => x.LastOrderAt < cutoff);
+            }
+
+            List<CustomerAggregateRow> customers;
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                // No tag filter: stop at maxRows in SQL instead of materializing
+                // every customer group then Take()ing in memory. Ordering kept
+                // (TotalSpent desc) so the result is identical.
+                customers = await _asyncExecuter.ToListAsync(
+                    grouped.OrderByDescending(x => x.TotalSpent).Take(maxRows));
+            }
+            else
+            {
+                // Tag filter needs the tag rows first; keep the old order:
+                // materialize groups, filter by tag in memory, then Take.
+                customers = await _asyncExecuter.ToListAsync(
+                    grouped.OrderByDescending(x => x.TotalSpent));
             }
 
             var phones = customers.Select(x => x.CustomerPhone).ToList();
@@ -275,6 +300,23 @@ namespace PhuThuongStickyRice.Application.Customer
             public DateTime LastOrderAt { get; set; }
 
             public List<CustomerTagDto> Tags { get; set; }
+        }
+
+        /// <summary>
+        /// One aggregated row per customer phone (same rule as the admin
+        /// customer page: excludes cancelled orders).
+        /// </summary>
+        internal class CustomerAggregateRow
+        {
+            public string CustomerPhone { get; set; }
+
+            public string CustomerName { get; set; }
+
+            public long OrderCount { get; set; }
+
+            public decimal TotalSpent { get; set; }
+
+            public DateTime LastOrderAt { get; set; }
         }
     }
 }

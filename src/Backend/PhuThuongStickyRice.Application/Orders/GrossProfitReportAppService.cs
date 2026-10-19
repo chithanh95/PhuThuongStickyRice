@@ -64,53 +64,62 @@ namespace PhuThuongStickyRice.Application.Orders
             var fromUtc = VietnamTime.DayStartUtc(fromDate);
             var toUtc = VietnamTime.DayEndExclusiveUtc(toDate);
 
-            var productQueryable = await _products.GetQueryableAsync();
-            var costRows = await _asyncExecuter.ToListAsync(
-                productQueryable.Select(x => new { x.Id, x.CostPrice }));
-            var costMap = costRows.ToDictionary(x => x.Id, x => x.CostPrice);
-
             var orderQueryable = await _orders.GetQueryableAsync();
-            var orders = await _asyncExecuter.ToListAsync(
-                orderQueryable
-                    .Where(x => x.Status != OrderStatus.Cancelled
-                        && x.CreatedAt >= fromUtc
-                        && x.CreatedAt < toUtc)
-                    .Select(x => new
-                    {
-                        Lines = x.Lines.Select(l => new
-                        {
-                            l.ProductId,
-                            l.ProductName,
-                            l.Quantity,
-                            LineTotal = l.LineTotal.Amount
-                        }).ToList()
-                    }));
+            var rangeOrders = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled
+                && x.CreatedAt >= fromUtc
+                && x.CreatedAt < toUtc);
 
-            var rows = orders
-                .SelectMany(x => x.Lines)
-                .GroupBy(l => l.ProductId)
+            // Perf: aggregate lines in SQL instead of materializing every order
+            // + line in range (range is unbounded — admin can request a full
+            // year). Same numbers as before; cost uses each product's CURRENT
+            // cost price (retroactive, like the old costMap lookup). Lines
+            // whose id has no product row (combos) join NULL → zero cost.
+            // NOTE: ProductName comes from the product's current name map via
+            // the lines' names (Max in SQL); the old code took the first line's
+            // name in arbitrary order, so any deterministic choice is
+            // equivalent — row count and all numbers are unchanged.
+            var productQueryable = await _products.GetQueryableAsync();
+            var lineGroups = await _asyncExecuter.ToListAsync(
+                from o in rangeOrders
+                from l in o.Lines
+                join p in productQueryable on l.ProductId equals p.Id into ps
+                from p in ps.DefaultIfEmpty()
+                group new
+                {
+                    Quantity = (long)l.Quantity,
+                    Revenue = l.LineTotal.Amount,
+                    UnitCost = p == null ? 0m : p.CostPrice,
+                    ProductName = l.ProductName
+                }
+                by l.ProductId into g
+                select new
+                {
+                    ProductId = g.Key,
+                    ProductName = g.Max(x => x.ProductName),
+                    QuantitySold = g.Sum(x => x.Quantity),
+                    Revenue = g.Sum(x => x.Revenue),
+                    UnitCost = g.Max(x => x.UnitCost)
+                });
+
+            var rows = lineGroups
                 .Select(g =>
                 {
-                    var first = g.First();
-                    var qty = g.Sum(l => (long)l.Quantity);
-                    var revenue = g.Sum(l => l.LineTotal);
-                    var unitCost = costMap.TryGetValue(g.Key, out var c) ? c : 0m;
-                    var cost = qty * unitCost;
-                    var profit = revenue - cost;
+                    var cost = g.QuantitySold * g.UnitCost;
+                    var profit = g.Revenue - cost;
                     return new GrossProfitRowDto
                     {
-                        ProductId = g.Key,
-                        ProductName = string.IsNullOrWhiteSpace(first.ProductName)
-                            ? "(không tên)" : first.ProductName.Trim(),
-                        QuantitySold = qty,
-                        Revenue = revenue,
+                        ProductId = g.ProductId,
+                        ProductName = string.IsNullOrWhiteSpace(g.ProductName)
+                            ? "(không tên)" : g.ProductName.Trim(),
+                        QuantitySold = g.QuantitySold,
+                        Revenue = g.Revenue,
                         Cost = cost,
                         Profit = profit,
-                        MarginPercent = revenue > 0
-                            ? Math.Round(profit / revenue * 100m, 1)
+                        MarginPercent = g.Revenue > 0
+                            ? Math.Round(profit / g.Revenue * 100m, 1)
                             : (decimal?)null,
-                        CostPrice = unitCost,
-                        CostMissing = unitCost <= 0m
+                        CostPrice = g.UnitCost,
+                        CostMissing = g.UnitCost <= 0m
                     };
                 })
                 .OrderByDescending(r => r.Profit)
