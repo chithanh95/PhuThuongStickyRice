@@ -15,8 +15,8 @@ namespace PhuThuongStickyRice.Domain.Events
     /// </summary>
     public class DomainEvents : IDomainEvents
     {
-        private static List<Type> _handlers = new List<Type>();
-        private IServiceProvider _serviceProvider;
+        private static readonly List<Type> _handlers = new List<Type>();
+        private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
         /// Quét assembly tìm mọi class implement <see cref="IDomainEventHandler{T}"/>

@@ -53,8 +53,22 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
                         await Task.Delay(IdlePollDelay, stoppingToken);
                     }
                 }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    // Host đang dừng (Task.Delay bị hủy): thoát vòng lặp, đây là
+                    // shutdown bình thường chứ không phải lỗi.
+                    break;
+                }
                 catch (CircuitBreakerOpenException)
                 {
+                    await Task.Delay(IdlePollDelay, stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    // Lỗi thoáng qua (mất kết nối DB, SMTP chết...): log rồi thử
+                    // lại ở vòng sau — không để 1 lần lỗi giết chết worker vĩnh
+                    // viễn (cùng pattern với WeeklyReportWorker).
+                    _logger.LogError(ex, "SendEmailWorker failed; will retry on the next poll.");
                     await Task.Delay(IdlePollDelay, stoppingToken);
                 }
             }

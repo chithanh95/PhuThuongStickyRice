@@ -4,6 +4,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
+        /// <summary>
+        /// Thông tin chi nhánh cửa hàng trả về cho client (hiển thị địa chỉ,
+        /// hotline từng chi nhánh trên web).
+        /// </summary>
         public class BranchDto
         {
             public Guid Id { get; set; }
@@ -13,6 +17,9 @@ namespace PhuThuongStickyRice.Application.Shop
             public bool IsActive { get; set; }
         }
 
+        /// <summary>
+        /// Dữ liệu tạo/cập nhật chi nhánh (form nhập ở trang admin).
+        /// </summary>
         public class CreateUpdateBranchDto
         {
             [Required]

@@ -4,6 +4,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
+        /// <summary>
+        /// Một dòng món trong đơn bán tại quầy (POS): món + số lượng + tùy chọn
+        /// size và topping kèm theo.
+        /// </summary>
         public class PosOrderLineDto
         {
             public Guid ProductId { get; set; }
@@ -12,6 +16,10 @@ namespace PhuThuongStickyRice.Application.Shop
             public List<Guid> ToppingIds { get; set; } = new List<Guid>();
         }
 
+        /// <summary>
+        /// Dữ liệu đầu vào khi nhân viên tạo đơn tại quầy (POS).
+        /// Khác checkout online ở chỗ không cần địa chỉ giao hàng.
+        /// </summary>
         public class CreatePosOrderInput
         {
             [StringLength(200)]

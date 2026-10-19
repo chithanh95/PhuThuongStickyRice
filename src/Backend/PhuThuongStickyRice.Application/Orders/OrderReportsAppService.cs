@@ -55,6 +55,12 @@ namespace PhuThuongStickyRice.Application.Orders
     {
         private const int MaxExportRows = 5000;
 
+        /// <summary>
+        /// Số món bán chạy nhất trong <see cref="GetRevenueSummaryAsync"/> —
+        /// phần "top sản phẩm" của bản đồ doanh thu.
+        /// </summary>
+        private const int TopProductsCount = 5;
+
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IVipPriorityAppService _vipPriority;
@@ -413,28 +419,9 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Gộp count + sum thành 1 query (GROUP BY hằng số): trước đây là
             // 2 round-trip riêng trên cùng tập billable.
-            var totals = await _asyncExecuter.FirstOrDefaultAsync(
-                billable.GroupBy(x => 1)
-                    .Select(g => new
-                    {
-                        OrderCount = g.LongCount(),
-                        TotalRevenue = g.Sum(x => (decimal?)x.TotalAmount.Amount)
-                    }));
-            var orderCount = totals?.OrderCount ?? 0L;
-            // Sum trên tập rỗng trả NULL trong SQL -> ?? 0m giữ đúng hành vi cũ.
-            var totalRevenue = totals?.TotalRevenue ?? 0m;
+            var (orderCount, totalRevenue) = await LoadRevenueTotalsAsync(billable);
 
-            var topProducts = await _asyncExecuter.ToListAsync(
-                billable.SelectMany(x => x.Lines)
-                    .GroupBy(l => l.ProductName)
-                    .Select(g => new RevenueSummaryTopProductDto
-                    {
-                        ProductName = g.Key,
-                        Quantity = g.Sum(l => (long)l.Quantity),
-                        Revenue = g.Sum(l => l.LineTotal.Amount)
-                    })
-                    .OrderByDescending(x => x.Quantity)
-                    .Take(5));
+            var topProducts = await LoadTopProductsAsync(billable);
 
             return new RevenueSummaryDto
             {
@@ -445,6 +432,50 @@ namespace PhuThuongStickyRice.Application.Orders
                 AvgOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0m,
                 TopProducts = topProducts
             };
+        }
+
+        /// <summary>
+        /// Đếm đơn + tổng doanh thu của tập đơn thanh toán được (đã trừ đơn
+        /// hủy) bằng 1 query SQL (GROUP BY hằng số) — không materialize toàn
+        /// bộ đơn + dòng đơn về memory. Sum trên tập rỗng trả NULL trong SQL
+        /// nên doanh thu phải ?? 0m để giữ đúng hành vi cũ.
+        /// </summary>
+        /// <param name="billable">Query đơn đã lọc khoảng ngày, trừ đơn hủy.</param>
+        /// <returns>(Số đơn, tổng doanh thu VND).</returns>
+        private async Task<(long OrderCount, decimal TotalRevenue)> LoadRevenueTotalsAsync(
+            IQueryable<Order> billable)
+        {
+            var totals = await _asyncExecuter.FirstOrDefaultAsync(
+                billable.GroupBy(x => 1)
+                    .Select(g => new
+                    {
+                        OrderCount = g.LongCount(),
+                        TotalRevenue = g.Sum(x => (decimal?)x.TotalAmount.Amount)
+                    }));
+            return (totals?.OrderCount ?? 0L, totals?.TotalRevenue ?? 0m);
+        }
+
+        /// <summary>
+        /// Top <see cref="TopProductsCount"/> món bán chạy nhất (theo số lượng,
+        /// giảm dần) của tập đơn thanh toán được: gom số lượng + doanh thu theo
+        /// tên món ngay trong SQL, không tải dòng đơn về memory.
+        /// </summary>
+        /// <param name="billable">Query đơn đã lọc khoảng ngày, trừ đơn hủy.</param>
+        /// <returns>Danh sách top món, doanh thu tính theo đơn giá thực tế.</returns>
+        private async Task<List<RevenueSummaryTopProductDto>> LoadTopProductsAsync(
+            IQueryable<Order> billable)
+        {
+            return await _asyncExecuter.ToListAsync(
+                billable.SelectMany(x => x.Lines)
+                    .GroupBy(l => l.ProductName)
+                    .Select(g => new RevenueSummaryTopProductDto
+                    {
+                        ProductName = g.Key,
+                        Quantity = g.Sum(l => (long)l.Quantity),
+                        Revenue = g.Sum(l => l.LineTotal.Amount)
+                    })
+                    .OrderByDescending(x => x.Quantity)
+                    .Take(TopProductsCount));
         }
 
         /// <summary>

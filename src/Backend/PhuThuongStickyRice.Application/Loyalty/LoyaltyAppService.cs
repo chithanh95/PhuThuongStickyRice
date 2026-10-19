@@ -521,15 +521,21 @@ namespace PhuThuongStickyRice.Application.Loyalty
             // đọc Points vào memory rồi += và UpdateAsync — 2 đơn có thưởng
             // giới thiệu hoàn thành đồng thời (hoặc trùng với điểm danh/đổi
             // điểm cùng SĐT) sẽ ghi đè làm mất bonus của nhau.
-            var referrerAwarded = await _accounts.TryIncrementPointsAsync(referrer.Phone, bonus);
-            if (!referrerAwarded)
-            {
-                throw new Domain.Exceptions.DomainException(
-                    "Không cộng được điểm thưởng giới thiệu, vui lòng thử lại.");
-            }
+            await TryIncrementPointsOrThrowAsync(referrer.Phone, bonus);
+            await TryIncrementPointsOrThrowAsync(buyer.Phone, bonus);
+        }
 
-            var buyerAwarded = await _accounts.TryIncrementPointsAsync(buyer.Phone, bonus);
-            if (!buyerAwarded)
+        /// <summary>
+        /// Cộng bonus nguyên tử cho 1 bên (người giới thiệu hoặc người mua) —
+        /// gom 2 khối TryIncrementPointsAsync + throw y hệt nhau ở trên, giữ
+        /// nguyên hành vi: DB cập nhật thất bại thì báo lỗi để thử lại.
+        /// </summary>
+        /// <param name="phone">SĐT đã chuẩn hóa của bên nhận bonus.</param>
+        /// <param name="bonus">Số điểm thưởng (&gt; 0).</param>
+        private async Task TryIncrementPointsOrThrowAsync(string phone, int bonus)
+        {
+            var awarded = await _accounts.TryIncrementPointsAsync(phone, bonus);
+            if (!awarded)
             {
                 throw new Domain.Exceptions.DomainException(
                     "Không cộng được điểm thưởng giới thiệu, vui lòng thử lại.");
@@ -642,19 +648,29 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             var points = steps * unit;
-            // Trừ điểm nguyên tử tại DB (UPDATE ... WHERE Phone = ... AND Points >= points):
-            // 2 request đổi điểm đồng thời cùng SĐT không thể cùng trừ — chống double-spend
-            // (trừ điểm 2 lần / giảm giá 2 lần cho 1 lượt đổi) của race check-then-set cũ.
-            if (!await _accounts.TryDecrementPointsAsync(NormalizePhone(phone), points))
+            await TryDecrementPointsOrThrowAsync(phone, points);
+
+            return (points, steps * value);
+        }
+
+        /// <summary>
+        /// Trừ điểm nguyên tử tại DB (UPDATE ... WHERE Phone = ... AND Points
+        /// &gt;= points): 2 request đổi điểm đồng thời cùng SĐT không thể cùng
+        /// trừ — chống double-spend (trừ điểm 2 lần / giảm giá 2 lần cho 1 lượt
+        /// đổi) của race check-then-set cũ. Lỗi hiếm (điểm vừa bị request khác
+        /// trừ sau bước check) thì đọc lại số dư mới nhất để báo message chính xác.
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng (chưa chuẩn hóa).</param>
+        /// <param name="points">Số điểm cần trừ (&gt; 0).</param>
+        private async Task TryDecrementPointsOrThrowAsync(string phone, int points)
+        {
+            var normalized = NormalizePhone(phone);
+            if (!await _accounts.TryDecrementPointsAsync(normalized, points))
             {
-                // Hiếm: điểm vừa bị request khác trừ sau bước check — đọc lại số dư
-                // mới nhất để báo message chính xác.
-                var fresh = await FindByPhoneAsync(NormalizePhone(phone));
+                var fresh = await FindByPhoneAsync(normalized);
                 throw new Domain.Exceptions.DomainException(
                     $"Bạn chỉ có {fresh?.Points ?? 0} điểm.");
             }
-
-            return (points, steps * value);
         }
 
         /// <summary>
@@ -722,6 +738,25 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return;
             }
 
+            var increments = GroupRefundPointsByPhone(targets);
+
+            foreach (var (phone, points) in increments)
+            {
+                // Hoàn theo batch cũng chỉ cộng Points, không phình TotalEarned.
+                await _accounts.TryRefundPointsAsync(phone, points);
+            }
+        }
+
+        /// <summary>
+        /// Gom số điểm cần hoàn theo từng SĐT đã chuẩn hóa (một SĐT có thể
+        /// có nhiều đơn hủy cùng lúc): tách vòng lặp gom delta khỏi vòng lặp
+        /// ghi DB trong <see cref="RefundRedeemedPointsBatchAsync"/> để mỗi
+        /// vòng làm đúng 1 việc. SĐT không chuẩn hóa được thì bỏ qua.
+        /// </summary>
+        /// <param name="targets">Các đơn có điểm cần hoàn (&gt; 0).</param>
+        /// <returns>Map SĐT đã chuẩn hóa → tổng điểm cần cộng lại.</returns>
+        private Dictionary<string, int> GroupRefundPointsByPhone(IReadOnlyList<Order> targets)
+        {
             var increments = new Dictionary<string, int>();
             foreach (var order in targets)
             {
@@ -735,11 +770,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 increments[phone] = current + order.LoyaltyPointsRedeemed;
             }
 
-            foreach (var (phone, points) in increments)
-            {
-                // Hoàn theo batch cũng chỉ cộng Points, không phình TotalEarned.
-                await _accounts.TryRefundPointsAsync(phone, points);
-            }
+            return increments;
         }
 
         /// <summary>

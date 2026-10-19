@@ -3,6 +3,12 @@ using System;
 
 namespace PhuThuongStickyRice.Domain.Entities
 {
+    /// <summary>
+    /// Email chờ gửi trong hệ thống (hàng đợi gửi mail).
+    /// Gửi mail không đồng bộ: email được lưu vào DB trước, BackgroundServer
+    /// lấy ra gửi dần, đếm số lần thử (AttemptCount) và lên lịch thử lại
+    /// (NextAttemptDateTime) thay vì gửi trực tiếp từ request web.
+    /// </summary>
     public class EmailMessage : Entity<Guid>, IAggregateRoot, IEmailMessage
     {
         public string From { get; set; }

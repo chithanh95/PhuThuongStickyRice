@@ -742,6 +742,30 @@ namespace PhuThuongStickyRice.Application.Discounts
                     .OrderByDescending(x => x.CreatedDateTime)
                     .Take(MaxPublicCodes));
 
+            var (bestCode, bestAmount) = PickBestDiscountCode(entities, subtotal, customerPhone);
+
+            return new BestDiscountResultDto
+            {
+                Code = bestCode,
+                DiscountAmount = bestAmount
+            };
+        }
+
+        /// <summary>
+        /// Chọn trong danh sách mã công khai đang kích hoạt mã cho số tiền
+        /// giảm lớn nhất trên tổng giỏ hàng: mã phải vượt <see cref="CheckUsable"/>
+        /// và được tính bằng <see cref="ComputeDiscount"/> nên kết quả khớp
+        /// đúng với validate từng mã riêng lẻ. Tách vòng lặp chọn mã tốt nhất
+        /// khỏi <see cref="EvaluateBestAsync"/> (query DB) để mỗi method làm
+        /// đúng 1 việc.
+        /// </summary>
+        /// <param name="entities">Các mã công khai đang kích hoạt (đã sắp xếp mới nhất trước).</param>
+        /// <param name="subtotal">Tổng tiền giỏ hàng.</param>
+        /// <param name="customerPhone">SĐT khách dùng mã (kiểm tra mã gắn SĐT).</param>
+        /// <returns>(Mã tốt nhất, số tiền giảm); không mã nào hợp lệ trả (null, 0).</returns>
+        private static (string? Code, decimal Amount) PickBestDiscountCode(
+            IReadOnlyList<DiscountCode> entities, decimal subtotal, string? customerPhone)
+        {
             string? bestCode = null;
             decimal bestAmount = 0;
             foreach (var entity in entities)
@@ -768,11 +792,7 @@ namespace PhuThuongStickyRice.Application.Discounts
                 }
             }
 
-            return new BestDiscountResultDto
-            {
-                Code = bestCode,
-                DiscountAmount = bestAmount
-            };
+            return (bestCode, bestAmount);
         }
 
         /// <summary>

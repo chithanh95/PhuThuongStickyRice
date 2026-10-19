@@ -1,6 +1,7 @@
 ﻿using PhuThuongStickyRice.Domain.Notification;
 using SendGrid;
 using SendGrid.Helpers.Mail;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,8 +27,15 @@ namespace PhuThuongStickyRice.Infrastructure.Notification.Email.SendGrid
                 .Select(x => new EmailAddress(x))
                 .ToList();
 
+            // Fail-fast với message rõ ràng thay vì NullReferenceException sâu
+            // trong helper của SendGrid khi Tos null/rỗng.
+            if (tos == null || tos.Count == 0)
+            {
+                throw new ArgumentException("Email phải có ít nhất một người nhận (Tos).", nameof(emailMessage));
+            }
+
             var msg = MailHelper.CreateSingleEmailToMultipleRecipients(from, tos, emailMessage.Subject, string.Empty, emailMessage.Body, showAllRecipients: true);
-            var response = await client.SendEmailAsync(msg, cancellationToken);
+            await client.SendEmailAsync(msg, cancellationToken);
         }
     }
 }
