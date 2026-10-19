@@ -162,7 +162,14 @@ else
             <div class="card-body">
                 <div class="form-group" role="group" aria-labelledby="bsl-products">
                     <label id="bsl-products">Chọn món *</label>
-                    @if (_products.Count == 0)
+                    @if (_loadFailed)
+                    {
+                        <div class="alert alert-warning d-flex align-items-center justify-content-between">
+                            <span>Không tải được danh sách món. Kiểm tra kết nối mạng rồi thử lại nhé.</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary ms-2" @onclick="LoadProductsAsync">Tải lại</button>
+                        </div>
+                    }
+                    else if (_products.Count == 0)
                     {
                         <p class="text-muted">Đang tải danh sách món...</p>
                     }
@@ -246,6 +253,7 @@ else
     private bool _submitting;
 
     private List<ShopProductModel> _products = new List<ShopProductModel>();
+    private bool _loadFailed;
 
     // ---- Bulk (QuoteRequest) ----
     private readonly QuoteRequestModel _bulk = new QuoteRequestModel { QuoteType = "SoLuongLon", Quantity = 50 };
@@ -300,11 +308,17 @@ else
     private bool _depositConfirmed;
 
     /// <summary>
-    /// Tải món còn bán cho bước 2 (chọn món). Lỗi mạng → form hiện trạng thái
-    /// trống, khách bấm lại để thử.
+    /// Tải món còn bán cho bước 2 (chọn món). Lỗi mạng → hiện nút "Tải lại"
+    /// thay vì kẹt ở chữ "Đang tải..." vĩnh viễn.
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        await LoadProductsAsync();
+    }
+
+    private async Task LoadProductsAsync()
+    {
+        _loadFailed = false;
         try
         {
             var paged = await ShopService.GetProductsAsync();
@@ -313,7 +327,7 @@ else
         }
         catch (Exception)
         {
-            // Form shows empty state; the user can retry.
+            _loadFailed = true;
         }
     }
 

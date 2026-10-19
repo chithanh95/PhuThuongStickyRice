@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
+using PhuThuongStickyRice.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
@@ -55,12 +56,12 @@ namespace PhuThuongStickyRice.Application.Shop
         /// </summary>
         private static readonly Regex VnPhoneRegex = new(@"^(0)(3|5|7|8|9)\d{8}$", RegexOptions.Compiled);
 
-        private readonly IRepository<PrepaidCard, Guid> _cards;
+        private readonly IPrepaidCardRepository _cards;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
         /// <summary>Khởi tạo service thẻ trả trước.</summary>
         public PrepaidCardAppService(
-            IRepository<PrepaidCard, Guid> cards,
+            IPrepaidCardRepository cards,
             IAsyncQueryableExecuter asyncExecuter)
         {
             _cards = cards;
@@ -177,6 +178,8 @@ namespace PhuThuongStickyRice.Application.Shop
         /// Admin: trừ 1 suất khỏi thẻ theo mã thẻ (nhân viên quầy thực hiện khi khách đến ăn).
         /// Mã thẻ so sánh không phân biệt hoa/thường để nhân viên nhập nhanh không bị lỗi.
         /// Khi hết suất, thẻ tự chuyển trạng thái "đã dùng hết" và không trừ thêm được nữa.
+        /// Trừ suất bằng UPDATE nguyên tử (<see cref="IPrepaidCardRepository.TryRedeemAsync"/>)
+        /// để 2 lượt trừ đồng thời không làm mất suất (lost update).
         /// </summary>
         /// <param name="cardCode">Mã thẻ (ví dụ TX482193).</param>
         /// <returns>Thông tin thẻ sau khi trừ suất.</returns>
@@ -185,30 +188,33 @@ namespace PhuThuongStickyRice.Application.Shop
         {
             var code = (cardCode ?? string.Empty).Trim().ToUpperInvariant();
 
-            var card = await _cards.FirstOrDefaultAsync(
-                c => c.CardCode == code && c.Status == PrepaidCardStatus.Active);
+            if (!await _cards.TryRedeemAsync(code))
+            {
+                // Không trừ được: hoặc không có thẻ Active với mã này, hoặc thẻ đã hết suất.
+                // Giữ đúng thứ tự message như bản cũ: ưu tiên "Không tìm thấy thẻ."
+                var card = await _cards.FirstOrDefaultAsync(c => c.CardCode == code);
+                if (card == null || card.Status != PrepaidCardStatus.Active)
+                {
+                    throw new DomainException("Không tìm thấy thẻ.");
+                }
+                throw new DomainException("Thẻ đã hết suất.");
+            }
 
-            if (card == null)
+            var updated = await _cards.FirstOrDefaultAsync(c => c.CardCode == code);
+            if (updated == null)
             {
                 throw new DomainException("Không tìm thấy thẻ.");
             }
 
-            if (card.UsedSuits >= card.TotalSuits)
+            // Thẻ vừa chạm trần suất ở lượt trừ này → đánh dấu đã dùng hết.
+            if (updated.Status == PrepaidCardStatus.Active && updated.UsedSuits >= updated.TotalSuits)
             {
-                throw new DomainException("Thẻ đã hết suất.");
+                updated.Status = PrepaidCardStatus.UsedUp;
+                updated.CompletedAt = DateTime.UtcNow;
+                await _cards.UpdateAsync(updated, autoSave: true);
             }
 
-            card.UsedSuits++;
-
-            if (card.UsedSuits >= card.TotalSuits)
-            {
-                card.Status = PrepaidCardStatus.UsedUp;
-                card.CompletedAt = DateTime.UtcNow;
-            }
-
-            await _cards.UpdateAsync(card, autoSave: true);
-
-            return MapToDto(card);
+            return MapToDto(updated);
         }
 
         /// <summary>

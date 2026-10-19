@@ -31,9 +31,24 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         /// <summary>Item 148: change history ("ai sửa gì, khi nào").</summary>
         protected List<ProductChangeLogModel> _changeLog { get; private set; }
 
+        /// <summary>true khi sản phẩm không tải được (không tồn tại, đã bị xóa hoặc lỗi mạng) — trang hiện thông báo thay vì crash.</summary>
+        public bool IsNotFound { get; set; }
+
         protected override async Task OnInitializedAsync()
         {
-            Product = await ProductService.GetProductByIdAsync(ProductId);
+            try
+            {
+                Product = await ProductService.GetProductByIdAsync(ProductId);
+                IsNotFound = Product == null;
+            }
+            catch
+            {
+                IsNotFound = true;
+            }
+            if (IsNotFound)
+            {
+                return;
+            }
             try
             {
                 _changeLog = await ProductService.GetChangeLogAsync(ProductId);
