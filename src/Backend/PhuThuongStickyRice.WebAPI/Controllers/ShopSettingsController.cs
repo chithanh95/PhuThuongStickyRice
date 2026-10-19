@@ -22,8 +22,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _shopSettingAppService = shopSettingAppService;
         }
 
-        /// <summary>Public — the checkout page needs the fee rules.</summary>
-        [AllowAnonymous]
+        /// <summary>
+        /// Admin — full settings including integration secrets (the settings
+        /// form). Anonymous storefront pages must use GET api/shop-settings/public.
+        /// </summary>
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult> Get(CancellationToken cancellationToken = default)
         {

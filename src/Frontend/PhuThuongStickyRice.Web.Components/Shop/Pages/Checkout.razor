@@ -1102,7 +1102,50 @@ else
     private void OnCartChanged()
     {
         RefreshMinOrderState();
+        _ = RefreshAppliedDiscountAsync();
         InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Giữ mã giảm giá đồng bộ với giỏ hàng: khách có thể đổi số lượng ngay
+    /// trên checkout SAU khi đã áp mã. Nếu giữ nguyên _discountAmount cũ,
+    /// preview sẽ trừ sai so với số tiền server thực thu. Re-validate mã
+    /// với subtotal mới (fail-soft); mã không còn hợp lệ thì gỡ kèm thông báo.
+    /// </summary>
+    private async Task RefreshAppliedDiscountAsync()
+    {
+        if (string.IsNullOrEmpty(_appliedCode) || _applyingDiscount)
+        {
+            return;
+        }
+
+        _applyingDiscount = true;
+        try
+        {
+            var result = await DiscountService.ValidateAsync(_appliedCode, _subtotal, _order.CustomerPhone);
+            if (result.Valid)
+            {
+                _discountAmount = result.DiscountAmount;
+                _isFreeship = result.IsFreeship;
+            }
+            else
+            {
+                _discountMessage = $"Mã {_appliedCode} không còn đủ điều kiện với giỏ hàng mới, đã gỡ khỏi đơn.";
+                _discountAmount = 0;
+                _appliedCode = null;
+                _isFreeship = false;
+            }
+        }
+        catch (Exception)
+        {
+            // Fail-soft: giữ nguyên mức đã áp; server sẽ tính lại khi đặt hàng.
+        }
+        finally
+        {
+            _applyingDiscount = false;
+            RefreshMinOrderState();
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     /// <summary>

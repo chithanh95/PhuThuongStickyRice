@@ -546,7 +546,7 @@ else
     {
         try
         {
-            _settings = await ShopSettingsService.GetAsync()
+            _settings = await ShopSettingsService.GetPublicAsync()
                 ?? new PhuThuongStickyRice.Web.Components.Shop.Models.ShopSettingModel();
         }
         catch (Exception)

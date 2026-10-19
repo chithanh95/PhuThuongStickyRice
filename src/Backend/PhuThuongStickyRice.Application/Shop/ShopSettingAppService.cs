@@ -113,11 +113,29 @@ namespace PhuThuongStickyRice.Application.Shop
         /// on a full-day holiday the shop is shown as paused with the holiday
         /// reason, without changing the stored manual toggle. A manual pause
         /// (AcceptingOrders = false) always wins over the holiday reason.
+        ///
+        /// SECURITY: this is the only settings view exposed to anonymous
+        /// callers. Integration secrets (API tokens, backup credentials) are
+        /// stripped before serialization — the admin form loads them through
+        /// the Admin-only GET api/shop-settings instead.
         /// </summary>
         [AllowAnonymous]
         public virtual async Task<ShopSettingDto> GetPublicAsync()
         {
-            var dto = await GetAsync();
+            // Separate cache entry (keyed by Vietnam date) so the public
+            // redacted view never shares an instance with the full
+            // "shop-settings" cache used by the admin and internal callers.
+            // The date in the key also stops a holiday auto-pause from
+            // leaking into the next day via a stale cached flag.
+            var today = DateTime.UtcNow.AddHours(7).ToString("yyyyMMdd");
+            var dto = await _catalogCache.GetOrAddAsync($"shop-settings:public:{today}", async () =>
+            {
+                var entity = await GetSingleAsync();
+                var publicDto = MapToDto(entity ?? ShopSetting.CreateDefault());
+                RedactSecrets(publicDto);
+                return publicDto;
+            });
+
             if (dto.AcceptingOrders)
             {
                 var reason = await GetTodayHolidayReasonAsync();
@@ -129,6 +147,22 @@ namespace PhuThuongStickyRice.Application.Shop
                 }
             }
             return dto;
+        }
+
+        /// <summary>
+        /// Strips integration secrets from a settings DTO before it leaves
+        /// the server on an anonymous endpoint. Anonymous callers never
+        /// need API tokens or credentials; the admin form loads them
+        /// through the Admin-only GET api/shop-settings.
+        /// </summary>
+        private static void RedactSecrets(ShopSettingDto dto)
+        {
+            dto.RecaptchaSecretKey = null;
+            dto.TelegramBotToken = null;
+            dto.FacebookPageAccessToken = null;
+            dto.FacebookVerifyToken = null;
+            dto.ZaloOaAccessToken = null;
+            dto.ImageBackupSettingsJson = null;
         }
 
         /// <summary>Vietnam calendar date (UTC+7, no DST).</summary>
@@ -170,25 +204,80 @@ namespace PhuThuongStickyRice.Application.Shop
                 await _settings.InsertAsync(entity, autoSave: true);
             }
 
+            ApplyPricingSettings(entity, dto);
+            ApplyLoyaltySettings(entity, dto);
+            ApplyOrderingSettings(entity, dto);
+            ApplyContactSettings(entity, dto);
+            ApplyIntegrationSettings(entity, dto);
+
+            await _settings.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
+
+            return MapToDto(entity);
+        }
+
+        /// <summary>Giá cả, phí ship, đơn tối thiểu, thời gian giao dự kiến.</summary>
+        private void ApplyPricingSettings(ShopSetting entity, ShopSettingDto dto)
+        {
             entity.DeliveryFee = Math.Max(0, dto.DeliveryFee);
             entity.FreeShipThreshold = Math.Max(0, dto.FreeShipThreshold);
             entity.MinOrderAmount = Math.Max(0, dto.MinOrderAmount);
             entity.EstimatedDeliveryMinutes = dto.EstimatedDeliveryMinutes < 0 ? DefaultEstimatedDeliveryMinutes : dto.EstimatedDeliveryMinutes;
             entity.BankTransferExpiryMinutes = dto.BankTransferExpiryMinutes < 1 ? DefaultBankTransferExpiryMinutes : dto.BankTransferExpiryMinutes;
-            entity.PointsPerVnd = dto.PointsPerVnd <= 0 ? DefaultPointsPerVnd : dto.PointsPerVnd;
-            entity.PointsRedeemUnit = dto.PointsRedeemUnit < 1 ? DefaultPointsRedeemUnit : dto.PointsRedeemUnit;
             entity.PointsRedeemValue = Math.Max(0, dto.PointsRedeemValue);
-            entity.ReferralBonusPoints = Math.Max(0, dto.ReferralBonusPoints);
             entity.DepositThreshold = Math.Max(0, dto.DepositThreshold);
             entity.DepositPercent = ClampPercent(dto.DepositPercent);
             entity.GiftFee = Math.Max(0, dto.GiftFee);
+        }
+
+        /// <summary>Điểm thưởng, hạng thành viên (Đồng/Bạc/Vàng).</summary>
+        private void ApplyLoyaltySettings(ShopSetting entity, ShopSettingDto dto)
+        {
+            entity.PointsPerVnd = dto.PointsPerVnd <= 0 ? DefaultPointsPerVnd : dto.PointsPerVnd;
+            entity.PointsRedeemUnit = dto.PointsRedeemUnit < 1 ? DefaultPointsRedeemUnit : dto.PointsRedeemUnit;
+            entity.ReferralBonusPoints = Math.Max(0, dto.ReferralBonusPoints);
             entity.TierSilverMin = Math.Max(0, dto.TierSilverMin);
             entity.TierSilverDiscount = ClampPercent(dto.TierSilverDiscount);
             entity.TierGoldMin = Math.Max(0, dto.TierGoldMin);
             entity.TierGoldDiscount = ClampPercent(dto.TierGoldDiscount);
+        }
+
+        /// <summary>Giờ mở cửa, nhận đơn, giới hạn đơn theo SĐT/ngày.</summary>
+        private void ApplyOrderingSettings(ShopSetting entity, ShopSettingDto dto)
+        {
+            entity.CheckInPoints = dto.CheckInPoints < 0 ? DefaultCheckInPoints : dto.CheckInPoints;
+            entity.NepPerPortionGrams = dto.NepPerPortionGrams < 1 ? DefaultNepPerPortionGrams : dto.NepPerPortionGrams;
+            entity.DailyTargetAmount = Math.Max(0, dto.DailyTargetAmount);
+            // Wave 6a (item 22): normalized to "HH:mm"; admin config UI arrives in Wave 6b.
+            entity.OpenTime = NormalizeHour(dto.OpenTime, DefaultOpenTime);
+            entity.CloseTime = NormalizeHour(dto.CloseTime, DefaultCloseTime);
+            // Item 101: per-product Zalo chat button toggle.
+            entity.ShowZaloChatButton = dto.ShowZaloChatButton;
+            entity.AcceptingOrders = dto.AcceptingOrders;
+            entity.PausedReason = TrimOrNull(dto.PausedReason);
+            // Wave 6d (item 39): 0 = unlimited, otherwise cap at 1000.
+            entity.MaxOrdersPerPhonePerDay = Math.Min(MaxOrdersPerPhonePerDayLimit, Math.Max(0, dto.MaxOrdersPerPhonePerDay));
+        }
+
+        /// <summary>Hotline, Zalo, bản đồ, email/SĐT nhận báo cáo.</summary>
+        private void ApplyContactSettings(ShopSetting entity, ShopSettingDto dto)
+        {
             entity.OwnerReportEmail = string.IsNullOrWhiteSpace(dto.OwnerReportEmail)
                 ? null
                 : dto.OwnerReportEmail.Trim();
+            // Wave 6b (items 27, 30): floating contact numbers + pause toggle.
+            entity.Hotline = TrimOrNull(dto.Hotline);
+            entity.ZaloPhone = TrimOrNull(dto.ZaloPhone);
+            entity.GoogleMapsUrl = TrimOrNull(dto.GoogleMapsUrl);
+            // Item 138: weekly owner report via Zalo OA (token encrypted at rest).
+            entity.OwnerPhone = TrimOrNull(dto.OwnerPhone);
+            entity.OwnerZaloUserId = TrimOrNull(dto.OwnerZaloUserId);
+            entity.LastWeeklyReportSentWeek = TrimOrNull(dto.LastWeeklyReportSentWeek);
+        }
+
+        /// <summary>reCAPTCHA, Telegram, ngân hàng, MoMo, Facebook, Zalo OA, cảnh báo hệ thống.</summary>
+        private void ApplyIntegrationSettings(ShopSetting entity, ShopSettingDto dto)
+        {
             entity.UnconfirmedAlertMinutes = dto.UnconfirmedAlertMinutes < 1 ? DefaultUnconfirmedAlertMinutes : dto.UnconfirmedAlertMinutes;
             entity.RecaptchaSiteKey = string.IsNullOrWhiteSpace(dto.RecaptchaSiteKey)
                 ? null
@@ -219,33 +308,9 @@ namespace PhuThuongStickyRice.Application.Shop
                 ? DefaultImageBackupProvider
                 : dto.ImageBackupProvider.Trim();
             entity.ImageBackupSettingsJson = TrimOrNull(dto.ImageBackupSettingsJson);
-            entity.CheckInPoints = dto.CheckInPoints < 0 ? DefaultCheckInPoints : dto.CheckInPoints;
-            entity.NepPerPortionGrams = dto.NepPerPortionGrams < 1 ? DefaultNepPerPortionGrams : dto.NepPerPortionGrams;
-            entity.DailyTargetAmount = Math.Max(0, dto.DailyTargetAmount);
-            // Wave 6a (item 22): normalized to "HH:mm"; admin config UI arrives in Wave 6b.
-            entity.OpenTime = NormalizeHour(dto.OpenTime, DefaultOpenTime);
-            entity.CloseTime = NormalizeHour(dto.CloseTime, DefaultCloseTime);
-            // Wave 6b (items 27, 30): floating contact numbers + pause toggle.
-            entity.Hotline = TrimOrNull(dto.Hotline);
-            entity.ZaloPhone = TrimOrNull(dto.ZaloPhone);
-            // Item 101: per-product Zalo chat button toggle.
-            entity.ShowZaloChatButton = dto.ShowZaloChatButton;
-            entity.GoogleMapsUrl = TrimOrNull(dto.GoogleMapsUrl);
             entity.FacebookPageAccessToken = ProtectSecret(dto.FacebookPageAccessToken);
             entity.FacebookVerifyToken = TrimOrNull(dto.FacebookVerifyToken);
-            // Item 138: weekly owner report via Zalo OA (token encrypted at rest).
             entity.ZaloOaAccessToken = ProtectSecret(dto.ZaloOaAccessToken);
-            entity.OwnerPhone = TrimOrNull(dto.OwnerPhone);
-            entity.OwnerZaloUserId = TrimOrNull(dto.OwnerZaloUserId);
-            entity.LastWeeklyReportSentWeek = TrimOrNull(dto.LastWeeklyReportSentWeek);
-            entity.AcceptingOrders = dto.AcceptingOrders;
-            entity.PausedReason = TrimOrNull(dto.PausedReason);
-            // Wave 6d (item 39): 0 = unlimited, otherwise cap at 1000.
-            entity.MaxOrdersPerPhonePerDay = Math.Min(MaxOrdersPerPhonePerDayLimit, Math.Max(0, dto.MaxOrdersPerPhonePerDay));
-            await _settings.UpdateAsync(entity, autoSave: true);
-            _catalogCache.Invalidate();
-
-            return MapToDto(entity);
         }
 
         private static string TrimOrNull(string value)

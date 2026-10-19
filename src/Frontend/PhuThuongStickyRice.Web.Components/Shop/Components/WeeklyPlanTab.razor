@@ -226,7 +226,7 @@
         _lookupError = null;
         try
         {
-            var updated = await WeeklyPlanService.ClaimAsync(order.Id, day);
+            var updated = await WeeklyPlanService.ClaimAsync(order.Id, day, _lookupPhone);
             var idx = _orders.FindIndex(o => o.Id == order.Id);
             if (idx >= 0)
             {

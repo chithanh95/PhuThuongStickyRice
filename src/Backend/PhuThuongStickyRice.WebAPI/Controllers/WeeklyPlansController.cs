@@ -103,7 +103,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             try
             {
-                return Ok(await _weeklyPlans.MarkClaimedAsync(id, input?.Day));
+                return Ok(await _weeklyPlans.MarkClaimedAsync(id, input?.Day, input?.Phone));
             }
             catch (DomainException ex)
             {
@@ -115,6 +115,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             /// <summary>Mon..Fri.</summary>
             public string Day { get; set; }
+
+            /// <summary>SĐT đặt gói — dùng để xác thực sở hữu trước khi bấm "Đã nhận".</summary>
+            public string Phone { get; set; }
         }
     }
 }

@@ -30,8 +30,11 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
         /// <summary>Public: đơn mua gói theo SĐT.</summary>
         Task<List<WeeklyPlanOrderDto>> GetMyOrdersAsync(string phone);
 
-        /// <summary>Public: khách tự bấm "Đã nhận" cho 1 ngày.</summary>
-        Task<WeeklyPlanOrderDto> MarkClaimedAsync(Guid orderId, string day);
+        /// <summary>
+        /// Public: khách tự bấm "Đã nhận" cho 1 ngày. Ownership verified qua
+        /// SĐT — nếu không, ai có GUID đơn (lộ từ my-orders) cũng bấm nhận hộ được.
+        /// </summary>
+        Task<WeeklyPlanOrderDto> MarkClaimedAsync(Guid orderId, string day, string customerPhone);
     }
 
     /// <summary>
@@ -245,8 +248,11 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
             return orders.Select(MapToDto).ToList();
         }
 
+        /// <summary>Public: khách tự bấm "Đã nhận" cho 1 ngày.
+        /// Ownership verified qua SĐT — không thì ai có GUID đơn (lộ từ
+        /// my-orders theo SĐT) cũng bấm nhận hộ được.</summary>
         [AllowAnonymous]
-        public virtual async Task<WeeklyPlanOrderDto> MarkClaimedAsync(Guid orderId, string day)
+        public virtual async Task<WeeklyPlanOrderDto> MarkClaimedAsync(Guid orderId, string day, string customerPhone)
         {
             day = (day ?? string.Empty).Trim();
             if (!ValidDays.Contains(day, StringComparer.OrdinalIgnoreCase))
@@ -254,7 +260,18 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
                 throw new DomainException("Ngày không hợp lệ (chỉ Mon..Fri).");
             }
 
+            var phoneKey = NormalizePhoneKey(customerPhone);
+            if (string.IsNullOrEmpty(phoneKey))
+            {
+                throw new DomainException("Vui lòng nhập số điện thoại đặt gói để xác thực.");
+            }
+
             var order = await _orders.GetAsync(orderId);
+            if (NormalizePhoneKey(order.CustomerPhone) != phoneKey)
+            {
+                throw new DomainException("Số điện thoại không khớp với đơn gói tuần này.");
+            }
+
             if (order.Status != WeeklyPlanOrderStatus.Paid)
             {
                 throw new DomainException("Đơn này đã hoàn tất hoặc đã hủy.");
@@ -275,6 +292,16 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
         }
 
         // ---- helpers ----
+
+        /// <summary>
+        /// Chuẩn hóa SĐT về 9 số cuối để so sánh sở hữu tolerant format
+        /// (0901234567 == 0901 234 567), cùng pattern với SetShipperRatingAsync.
+        /// </summary>
+        private static string NormalizePhoneKey(string phone)
+        {
+            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            return digits.Length >= 9 ? digits.Substring(digits.Length - 9) : null;
+        }
 
         private static DateTime GetMonday(DateTime date)
         {

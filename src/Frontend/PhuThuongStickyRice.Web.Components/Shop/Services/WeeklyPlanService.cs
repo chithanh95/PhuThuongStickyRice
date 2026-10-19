@@ -48,10 +48,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 ?? new List<WeeklyPlanOrderModel>();
         }
 
-        public async Task<WeeklyPlanOrderModel> ClaimAsync(Guid orderId, string day)
+        public async Task<WeeklyPlanOrderModel> ClaimAsync(Guid orderId, string day, string phone)
         {
             var response = await _httpClient.PostAsJsonAsync(
-                $"api/weekly-plans/orders/{orderId}/claim", new { day });
+                $"api/weekly-plans/orders/{orderId}/claim", new { day, phone });
             return await ReadOrThrowAsync<WeeklyPlanOrderModel>(response);
         }
 

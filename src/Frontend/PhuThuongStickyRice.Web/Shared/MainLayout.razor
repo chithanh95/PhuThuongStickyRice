@@ -124,7 +124,7 @@
         string zalo = null;
         try
         {
-            var settings = await ShopSettingsService.GetAsync();
+            var settings = await ShopSettingsService.GetPublicAsync();
             hotline = NormalizePhone(settings?.Hotline);
             zalo = NormalizePhone(settings?.ZaloPhone);
         }
