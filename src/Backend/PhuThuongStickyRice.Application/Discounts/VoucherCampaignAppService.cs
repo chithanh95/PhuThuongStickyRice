@@ -131,6 +131,19 @@ namespace PhuThuongStickyRice.Application.Discounts
                 throw new DomainException("Không có khách hàng nào trong đối tượng đã chọn.");
             }
 
+            // perf-hunt 2026-10-19 (run 18:25): chặn đối tượng quá lớn.
+            // GenerateUniqueCodesAsync dựng toàn bộ N mã ứng viên trong 1
+            // HashSet ở memory rồi InsertAsync N lần trong 1 UoW — 1 cú click
+            // nhầm "Tất cả khách" với base lớn có thể gây OOM/timeout request.
+            // Đồng nhất với MaxExportRows = 5000 của các màn hình export;
+            // shop quy mô nhỏ không phát hành hợp lệ >5000 voucher/lần.
+            const int MaxGenerateVouchers = 5000;
+            if (phones.Count > MaxGenerateVouchers)
+            {
+                throw new DomainException(
+                    $"Đối tượng quá lớn ({phones.Count} khách). Vui lòng thu hẹp đối tượng chiến dịch (tối đa {MaxGenerateVouchers}) rồi thử lại.");
+            }
+
             // Chỉ lọc ký tự chữ/số và viết hoa tiền tố để mã voucher gọn, dễ đọc,
             // tránh SĐT/ký tự đặc biệt lọt vào mã.
             var prefix = string.IsNullOrWhiteSpace(input.Prefix)

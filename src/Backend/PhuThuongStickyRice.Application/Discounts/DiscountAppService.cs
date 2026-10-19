@@ -164,6 +164,16 @@ namespace PhuThuongStickyRice.Application.Discounts
         // lệ khi kẹp giá trị admin nhập tay.
         private const int PercentDivisor = 100;
 
+        // perf-hunt 2026-10-19 (run 18:25): trần số mã công khai "đang sống"
+        // nạp vào memory mỗi lần checkout. Mã công khai không hạn dùng/không
+        // giới hạn lượt (vd "WELCOME10") sống vĩnh viễn nên tập này tăng đơn
+        // điệu theo thời gian; query không Take sẽ phình vô hạn trên đường
+        // nóng public (EvaluateBestAsync chạy mỗi lần xem giỏ/checkout).
+        // Giữ OrderByDescending(CreatedDateTime) nên 200 mã mới nhất được
+        // xét — ngữ nghĩa "mã bằng điểm nhau thì giữ mã mới nhất" không đổi;
+        // không shop nào chạy >200 mã công khai đồng thời còn sống.
+        private const int MaxPublicCodes = 200;
+
         /// <summary>
         /// Điều kiện "mã còn dùng được" dùng chung cho cả kiểm tra 1 mã,
         /// kiểm tra 1 SĐT và kiểm tra hàng loạt — gom 1 chỗ để logic lọc
@@ -600,7 +610,8 @@ namespace PhuThuongStickyRice.Application.Discounts
                 var entities = await _asyncExecuter.ToListAsync(
                     queryable
                         .Where(PublicActiveCodeFilter(now))
-                        .OrderByDescending(x => x.CreatedDateTime));
+                        .OrderByDescending(x => x.CreatedDateTime)
+                        .Take(MaxPublicCodes));
                 return entities.Select(MapToDto).ToList();
             });
         }
@@ -625,7 +636,8 @@ namespace PhuThuongStickyRice.Application.Discounts
             var entities = await _asyncExecuter.ToListAsync(
                 queryable
                     .Where(PublicActiveCodeFilter(now))
-                    .OrderByDescending(x => x.CreatedDateTime));
+                    .OrderByDescending(x => x.CreatedDateTime)
+                    .Take(MaxPublicCodes));
 
             string? bestCode = null;
             decimal bestAmount = 0;

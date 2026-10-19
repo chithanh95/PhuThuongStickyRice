@@ -2817,6 +2817,14 @@ namespace PhuThuongStickyRice.Application.Orders
                 await MergeOneSecondaryAsync(primary, other);
             }
 
+            // perf-hunt 2026-10-19 (run 18:25): hoàn điểm loyalty 1 lần cho
+            // cả vụ gộp (gom theo SĐT, UPDATE nguyên tử) thay vì 1 round-trip
+            // cho mỗi đơn phụ trong MergeOneSecondaryAsync. Ngữ nghĩa tương
+            // đương (tự bỏ qua đơn không đổi điểm), lại chống race
+            // read-modify-write tốt hơn — cùng pattern đã dùng ở
+            // AutoCancelExpiredBankTransfersAsync.
+            await _loyalty.RefundRedeemedPointsBatchAsync(secondaries);
+
             await SettleWalletDeltaAfterMergeAsync(primary, primaryTotalBefore);
 
             await _orders.UpdateAsync(primary);
@@ -2886,9 +2894,10 @@ namespace PhuThuongStickyRice.Application.Orders
             await _orders.UpdateAsync(other);
             await RecordStatusChangeAsync(other.Id, fromStatus, OrderStatus.Cancelled);
 
-            // Mirror the cancel path: refund redeemed loyalty points and
-            // wallet payments so the customer does not lose money.
-            await _loyalty.RefundRedeemedPointsAsync(other);
+            // Mirror the cancel path: refund wallet payments so the customer
+            // does not lose money. (Loyalty points are refunded once for the
+            // whole merge via RefundRedeemedPointsBatchAsync in
+            // MergeOrdersAsync — perf-hunt 2026-10-19.)
             if (other.PaymentMethod == PaymentMethod.Wallet
                 && other.PaymentStatus == PaymentStatus.Paid)
             {
