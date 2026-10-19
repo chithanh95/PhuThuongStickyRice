@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
+using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Staff
 {
@@ -33,15 +34,18 @@ namespace PhuThuongStickyRice.Application.Staff
         private readonly IRepository<StaffActivityLog, Guid> _logs;
         private readonly IRepository<UserRole, Guid> _userRoles;
         private readonly ILogger<StaffActivityLogger> _logger;
+        private readonly IAsyncQueryableExecuter _asyncExecuter;
 
         public StaffActivityLogger(
             IRepository<StaffActivityLog, Guid> logs,
             IRepository<UserRole, Guid> userRoles,
-            ILogger<StaffActivityLogger> logger)
+            ILogger<StaffActivityLogger> logger,
+            IAsyncQueryableExecuter asyncExecuter)
         {
             _logs = logs;
             _userRoles = userRoles;
             _logger = logger;
+            _asyncExecuter = asyncExecuter;
         }
 
         public async Task LogAsync(string action, string detail = null)
@@ -97,25 +101,20 @@ namespace PhuThuongStickyRice.Application.Staff
             }
         }
 
+        /// <summary>
+        /// perf-hunt 2026-10-19: kiểm tra role bằng EXISTS trên SQL
+        /// (mảng StaffRoles thành IN clause) thay vì stream toàn bộ tên role
+        /// về client rồi so chuỗi lồng nhau trong C# — 1 query có index thay
+        /// vì O(n) streaming. So khớp không phân biệt hoa thường như cũ nhờ
+        /// collation CI của database.
+        /// </summary>
         private async Task<bool> IsStaffAsync(Guid userId)
         {
             var queryable = await _userRoles.GetQueryableAsync();
-            var roleNames = queryable
-                .Where(ur => ur.UserId == userId)
-                .Select(ur => ur.Role.Name);
-
-            foreach (var name in roleNames)
-            {
-                foreach (var staffRole in StaffRoles)
-                {
-                    if (string.Equals(name, staffRole, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return await _asyncExecuter.AnyAsync(
+                queryable.Where(ur => ur.UserId == userId)
+                    .Select(ur => ur.Role.Name)
+                    .Where(n => StaffRoles.Contains(n)));
         }
     }
 }

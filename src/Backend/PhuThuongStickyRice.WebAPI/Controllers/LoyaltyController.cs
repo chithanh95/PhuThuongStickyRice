@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -113,14 +114,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var birthdays = await _loyaltyAppService.GetUpcomingBirthdaysAsync(daysAhead);
             var created = new List<object>();
 
+            // perf-hunt 2026-10-19: kiểm tra mã SN còn dùng được cho TẤT CẢ
+            // khách trong 1 query (IN clause) thay vì gọi HasUsableCodeAsync
+            // từng khách (N+1). Điều kiện lọc giữ nguyên nên kết quả tương
+            // đương từng phần tử.
+            var phonesWithCode = await _discountAppService.GetPhonesWithUsableCodeAsync(
+                "SN", birthdays.Select(b => b.Phone));
+
             foreach (var b in birthdays)
             {
                 try
                 {
-                    // Mỗi khách chỉ 1 mã SN còn dùng được — cùng pattern dedup
-                    // như BirthdayVoucherWorker (HasUsableCodeAsync "BDAY").
-                    // Không có check này, admin bấm nút 2 lần sẽ sinh 2 mã/khách.
-                    if (await _discountAppService.HasUsableCodeAsync("SN", b.Phone))
+                    // Mỗi khách chỉ 1 mã SN còn dùng được — không có check
+                    // này, admin bấm nút 2 lần sẽ sinh 2 mã/khách.
+                    if (phonesWithCode.Contains(b.Phone))
                     {
                         continue;
                     }

@@ -26,6 +26,10 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
         private static readonly TimeSpan CircuitOpenDuration = TimeSpan.FromMinutes(1);
 
         // Lịch chờ thử lại theo số lần đã thử (Fibonacci phút: 1, 2, 3, 5, ...).
+        // Độ dài tối đa của email.Log — mỗi lần gửi lỗi cũ cộng dồn cả
+        // ex.ToString() (full stack trace) qua nhiều lần retry sẽ phình
+        // vô hạn. Chỉ giữ phần mới nhất.
+        private const int MaxLogLength = 4000;
         private static readonly TimeSpan[] RetryDelays =
         {
             TimeSpan.FromMinutes(1),
@@ -72,7 +76,8 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
         /// tăng dần) thay vì nạp toàn bộ hàng đợi vào bộ nhớ; nếu SMTP chết
         /// lâu, hàng đợi phình to sẽ không còn làm mỗi vòng lặp nặng dần.
         /// Worker quay lại ngay khi còn mail (rs &gt; 0) nên các đợt sau vẫn
-        /// được gửi tiếp, hành vi không đổi.
+        /// được gửi tiếp, hành vi không đổi. Trạng thái các mail được lưu
+        /// 1 lần cuối đợt (try/finally) thay vì SaveChanges sau mỗi mail.
         /// </summary>
         /// <returns>Số mail đã xử lý trong đợt này.</returns>
         public async Task<int> SendEmailMessagesAsync()
@@ -94,9 +99,21 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
 
             if (messages.Any())
             {
-                foreach (var email in messages)
+                try
                 {
-                    await SendOneAsync(email, circuit);
+                    foreach (var email in messages)
+                    {
+                        await SendOneAsync(email, circuit);
+                    }
+                }
+                finally
+                {
+                    // perf-hunt 2026-10-19: gom 1 lần SaveChanges/đợt thay vì
+                    // 1 lần/mail (tối đa 100 roundtrip DB mỗi 10 giây).
+                    // finally để trạng thái các mail đã xử lý vẫn được lưu khi
+                    // circuit mở giữa đợt (bản cũ đã save từng mail trước khi
+                    // EnsureOkStatus ném) — hành vi "mỗi mail độc lập" không đổi.
+                    await _repository.UnitOfWork.SaveChangesAsync();
                 }
             }
             else
@@ -125,14 +142,25 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
             }
             catch (Exception ex)
             {
-                email.Log += log + ex.ToString();
-                email.NextAttemptDateTime = _dateTimeProvider.OffsetNow + RetryDelays[email.AttemptCount];
+                // perf-hunt 2026-10-19: chỉ ghi ex.Message (bản cũ cộng dồn
+                // ex.ToString() — full stack trace — qua nhiều lần retry làm
+                // cột Log phình vô hạn); TruncateLog bên dưới giữ phần mới nhất.
+                email.Log += log + ex.Message;
+
+                // Guard: RetryDelays chỉ có 10 phần tử trong khi AttemptCount
+                // có thể vượt 10 khi MaxAttemptCount đặt lớn — bản cũ ném
+                // IndexOutOfRange làm chết cả vòng lặp batch.
+                email.NextAttemptDateTime = _dateTimeProvider.OffsetNow
+                    + RetryDelays[Math.Min(email.AttemptCount, RetryDelays.Length - 1)];
 
                 _circuitBreakerManager.LogFailure(circuit, CircuitFailureThreshold, TimeSpan.FromMinutes(5));
             }
 
             email.AttemptCount += 1;
-            email.Log = email.Log.Trim();
+
+            // perf-hunt 2026-10-19: cắt Log giữ tối đa MaxLogLength ký tự
+            // mới nhất — chặn phình vô hạn qua các lần retry.
+            email.Log = TruncateLog(email.Log.Trim());
             email.UpdatedDateTime = _dateTimeProvider.OffsetNow;
 
             if (email.MaxAttemptCount == 0)
@@ -140,9 +168,13 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
                 email.MaxAttemptCount = DefaultAttemptCount;
             }
 
-            await _repository.UnitOfWork.SaveChangesAsync();
-
             circuit.EnsureOkStatus();
         }
+
+        /// <summary>Giữ lại tối đa <see cref="MaxLogLength"/> ký tự mới nhất của log.</summary>
+        private static string TruncateLog(string log) =>
+            string.IsNullOrEmpty(log) || log.Length <= MaxLogLength
+                ? log
+                : log.Substring(log.Length - MaxLogLength);
     }
 }

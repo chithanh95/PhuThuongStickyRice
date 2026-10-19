@@ -48,11 +48,19 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                         && x.DateOfBirth.Value.Month == today.Month
                         && x.DateOfBirth.Value.Day == today.Day));
 
+                // perf-hunt 2026-10-19: kiểm tra mã BDAY còn dùng được cho
+                // TẤT CẢ người sinh nhật trong 1 query (IN clause) thay vì
+                // gọi HasUsableCodeAsync từng người (N+1). Điều kiện lọc
+                // trong GetPhonesWithUsableCodeAsync giữ nguyên nên kết quả
+                // tương đương từng phần tử.
+                var phonesWithCode = await discounts.GetPhonesWithUsableCodeAsync(
+                    "BDAY", celebrants.Select(x => x.Phone));
+
                 var created = 0;
                 foreach (var account in celebrants)
                 {
                     // Skip when a usable birthday voucher already exists.
-                    if (await discounts.HasUsableCodeAsync("BDAY", account.Phone))
+                    if (phonesWithCode.Contains(account.Phone))
                     {
                         continue;
                     }

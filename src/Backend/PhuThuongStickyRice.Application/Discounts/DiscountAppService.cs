@@ -101,6 +101,16 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone);
 
         /// <summary>
+        /// Internal: subset of the given phones that already own a usable
+        /// code with the given prefix — one batched query instead of calling
+        /// <see cref="HasUsableCodeAsync"/> per phone (N+1 in birthday
+        /// voucher loops). Filters are identical to
+        /// <see cref="HasUsableCodeAsync"/>; membership of the returned set
+        /// is equivalent to that method's result for each input phone.
+        /// </summary>
+        Task<HashSet<string>> GetPhonesWithUsableCodeAsync(string codePrefix, IEnumerable<string> phones);
+
+        /// <summary>
         /// Item 143 (Internal): code of the first usable code with the given
         /// prefix for the phone, or null when none exists.
         /// </summary>
@@ -433,6 +443,48 @@ namespace PhuThuongStickyRice.Application.Discounts
                     && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > DateTime.UtcNow)
                     && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value)));
             return existing != null;
+        }
+
+        /// <summary>
+        /// Batch version của <see cref="HasUsableCodeAsync"/>: trả về các SĐT
+        /// trong danh sách đã có mã còn dùng được với tiền tố cho trước — 1
+        /// query duy nhất (IN clause) thay vì 1 query/SĐT. Điều kiện lọc giữ
+        /// nguyên như HasUsableCodeAsync nên kết quả tương đương từng phần tử.
+        /// </summary>
+        public virtual async Task<HashSet<string>> GetPhonesWithUsableCodeAsync(
+            string codePrefix, IEnumerable<string> phones)
+        {
+            var result = new HashSet<string>();
+            if (string.IsNullOrWhiteSpace(codePrefix))
+            {
+                return result;
+            }
+
+            var list = (phones ?? Enumerable.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+            if (list.Count == 0)
+            {
+                return result;
+            }
+
+            var prefix = codePrefix.Trim().ToUpperInvariant();
+            var queryable = await _discounts.GetQueryableAsync();
+            var rows = await _asyncExecuter.ToListAsync(
+                queryable.Where(x =>
+                    x.Code.StartsWith(prefix)
+                    && list.Contains(x.OwnerPhone)
+                    && x.IsActive
+                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > DateTime.UtcNow)
+                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
+                    .Select(x => x.OwnerPhone));
+            foreach (var phone in rows)
+            {
+                result.Add(phone);
+            }
+
+            return result;
         }
 
         /// <summary>
