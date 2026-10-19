@@ -212,6 +212,9 @@
     {
         CartState.OnChange += OnCartChanged;
         AppI18n.OnChange += OnLangChanged;
+        // Đóng menu hamburger mobile sau khi chuyển trang — trước đây menu
+        // vẫn mở nguyên, che nội dung trang mới trên màn hình nhỏ.
+        Navigation.LocationChanged += OnLocationChanged;
         await AppI18n.InitializeAsync();
 
         // perf-hunt 2026-10-20: 2 call độc lập chạy song song (mỗi cái tự
@@ -278,9 +281,19 @@
         Navigation.NavigateTo("/", forceLoad: true);
     }
 
+    private void OnLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        if (_menuOpen)
+        {
+            _menuOpen = false;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
     public void Dispose()
     {
         CartState.OnChange -= OnCartChanged;
         AppI18n.OnChange -= OnLangChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }

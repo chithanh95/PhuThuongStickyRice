@@ -263,6 +263,12 @@ else
                                             👑 VIP
                                         </button>
                                     }
+                                    @* Lỗi toggle VIP hiển thị riêng ở đây (trước đây gán vào _tagError
+                                       nhưng ô đó chỉ render khi đang mở form tag → lỗi bị nuốt im lặng). *@
+                                    @if (_vipErrorPhone == c.CustomerPhone && !string.IsNullOrEmpty(_vipError))
+                                    {
+                                        <div><small class="text-danger">👑 @_vipError</small></div>
+                                    }
                                     @if (IsInactive(c))
                                     {
                                         <button class="btn btn-sm btn-outline-warning mr-1"
@@ -544,6 +550,9 @@ else
     private string _newTagName;
     private string _tagError;
     private bool _tagBusy;
+    // Item 130: lỗi toggle VIP (hiển thị cạnh nút 👑, tách khỏi _tagError của form tag).
+    private string _vipError;
+    private string _vipErrorPhone;
 
     // Item 151: export customers to Excel.
     private bool _exporting;
@@ -881,6 +890,9 @@ else
         }
 
         _vipBusy = true;
+        // Xóa lỗi VIP cũ của khách khác (không xóa nhầm form tag).
+        _vipError = null;
+        _vipErrorPhone = null;
         try
         {
             if (customer.IsVip)
@@ -903,7 +915,11 @@ else
         }
         catch (Exception ex)
         {
-            _tagError = ex.Message;
+            // Lỗi hiển thị cạnh nút 👑 của đúng khách này (trước đây gán vào
+            // _tagError nhưng render của _tagError chỉ khi đang mở form tag
+            // của cùng khách → staff không bao giờ thấy lỗi).
+            _vipError = ex.Message;
+            _vipErrorPhone = customer.CustomerPhone;
         }
         finally
         {

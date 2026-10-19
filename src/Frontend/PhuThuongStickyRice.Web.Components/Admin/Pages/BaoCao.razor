@@ -57,9 +57,9 @@
             <h4 class="card-title">⚖️ So sánh cùng kỳ</h4>
             <p class="card-title-desc">So sánh doanh thu, số đơn, giá trị TB/đơn và top món giữa 2 kỳ. Đơn đã hủy không tính.</p>
             <div class="mb-3">
-                <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareThisMonth">Tháng này vs tháng trước</button>
-                <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareLast7Days">7 ngày qua vs 7 ngày trước đó</button>
-                <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareThisWeek">Tuần này vs tuần trước</button>
+                <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareThisMonth" disabled="@_comparing">Tháng này vs tháng trước</button>
+                <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareLast7Days" disabled="@_comparing">7 ngày qua vs 7 ngày trước đó</button>
+                <button class="btn btn-outline-secondary btn-sm mr-2 mb-1" @onclick="CompareThisWeek" disabled="@_comparing">Tuần này vs tuần trước</button>
             </div>
             @if (!string.IsNullOrEmpty(_compareError))
             {
@@ -391,6 +391,9 @@
     private async Task RunCompare(DateTime curFrom, DateTime curTo,
         DateTime prevFrom, DateTime prevTo, string curLabel, string prevLabel)
     {
+        // Guard cứng chống race: bấm nhanh 2 nút khác nhau khi request đầu chưa về
+        // sẽ làm _current/_previous/_currentLabel/_previousLabel lẫn của 2 kỳ.
+        if (_comparing) return;
         _compareError = null;
         _comparing = true;
         _current = null;
