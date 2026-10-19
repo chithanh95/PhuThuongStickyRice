@@ -394,7 +394,7 @@ else
                                 @foreach (var item in _stats.OrdersByStatus)
                                 {
                                     <tr>
-                                        <td>@StatusBadge(item.Status)</td>
+                                        <td><OrderStatusBadge Status="@item.Status" /></td>
                                         <td class="text-right"><strong>@item.Count</strong></td>
                                     </tr>
                                 }
@@ -418,7 +418,7 @@ else
                                 @foreach (var item in _stats.OrdersByStatus)
                                 {
                                     <tr>
-                                        <td>@StatusBadge(item.Status)</td>
+                                        <td><OrderStatusBadge Status="@item.Status" /></td>
                                         <td class="text-right"><strong>@item.Count</strong></td>
                                     </tr>
                                 }
@@ -593,7 +593,7 @@ else
                                 <td>@order.CustomerName</td>
                                 <td>@order.CustomerPhone</td>
                                 <td class="text-right">@FormatPrice(order.TotalAmount)</td>
-                                <td>@StatusBadge(order.Status)</td>
+                                <td><OrderStatusBadge Status="@order.Status" /></td>
                                 <td class="text-muted">@order.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
                             </tr>
                         }
@@ -1017,21 +1017,4 @@ else
         builder.CloseElement();
     };
 
-    private static RenderFragment StatusBadge(string status) => builder =>
-    {
-        var css = status switch
-        {
-            "Pending" => "badge badge-warning",
-            "Confirmed" => "badge badge-info",
-            "Preparing" => "badge badge-primary",
-            "Delivering" => "badge badge-secondary",
-            "Completed" => "badge badge-success",
-            "Cancelled" => "badge badge-danger",
-            _ => "badge badge-light"
-        };
-        builder.OpenElement(0, "span");
-        builder.AddAttribute(1, "class", css);
-        builder.AddContent(2, status);
-        builder.CloseElement();
-    };
 }

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Web.Components.Orders.Models
 {
+    /// <summary>
+    /// Kết quả phân trang chung cho các danh sách ở frontend (đơn hàng, sản phẩm...).
+    /// </summary>
     public class PagedResult<T>
     {
         public long TotalCount { get; set; }
@@ -10,6 +13,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public List<T> Items { get; set; } = new List<T>();
     }
 
+    /// <summary>
+    /// 1 dòng món trong đơn hàng ở frontend: món, size/topping đã chọn, đơn giá và thành tiền dòng.
+    /// </summary>
     public class OrderLineModel
     {
         public Guid ProductId { get; set; }
@@ -30,6 +36,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public string Note { get; set; }
     }
 
+    /// <summary>
+    /// Đơn hàng đầy đủ ở frontend — dùng cho trang quản lý đơn, bếp, tra cứu đơn của khách: tiền hàng, phí ship, các khoản giảm (mã KM, điểm loyalty, hạng thành viên) và trạng thái thanh toán/giao nhận.
+    /// </summary>
     public class OrderModel
     {
         public Guid Id { get; set; }
@@ -236,6 +245,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public decimal TotalUnpaidAmount { get; set; }
     }
 
+    /// <summary>
+    /// Số đơn theo từng trạng thái — vẽ biểu đồ phân bố đơn trên dashboard admin.
+    /// </summary>
     public class OrdersByStatusModel
     {
         public string Status { get; set; }
@@ -243,6 +255,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public long Count { get; set; }
     }
 
+    /// <summary>
+    /// Doanh thu + số đơn của 1 ngày — điểm dữ liệu cho biểu đồ doanh thu theo ngày.
+    /// </summary>
     public class RevenueByDayModel
     {
         public DateTime Date { get; set; }
@@ -252,6 +267,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public long Orders { get; set; }
     }
 
+    /// <summary>
+    /// Toàn bộ số liệu tổng quan dashboard admin: tổng đơn, đơn chờ, doanh thu, món đã bán và top đơn gần nhất.
+    /// </summary>
     public class DashboardStatsModel
     {
         public long TotalOrders { get; set; }
@@ -288,6 +306,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public long Portions { get; set; }
     }
 
+    /// <summary>
+    /// Mẫu bán hàng theo thứ trong tuần (doanh thu/số đơn trung bình) — cơ sở dự báo nhu cầu.
+    /// </summary>
     public class WeekdayPatternModel
     {
         public DayOfWeek DayOfWeek { get; set; }
@@ -299,6 +320,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public double RatioVsAverage { get; set; }
     }
 
+    /// <summary>
+    /// Dự báo 1 ngày tới: doanh thu, số đơn dự kiến và số suất nên chuẩn bị.
+    /// </summary>
     public class ForecastDayModel
     {
         public DateTime Date { get; set; }
@@ -309,6 +333,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public bool BasedOnWeekdayPattern { get; set; }
     }
 
+    /// <summary>
+    /// Tổng dự báo cho cả giai đoạn (7/30 ngày): doanh thu, số đơn và tổng suất nên chuẩn bị.
+    /// </summary>
     public class ForecastTotalModel
     {
         public decimal ForecastRevenue { get; set; }
@@ -316,6 +343,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public long SuggestedPortions { get; set; }
     }
 
+    /// <summary>
+    /// Kết quả dự báo doanh thu cho trang /admin/du-bao: lịch sử, mẫu theo thứ, dự báo 7 ngày tới và ghi chú phương pháp.
+    /// </summary>
     public class RevenueForecastModel
     {
         public DateTime GeneratedAt { get; set; }
@@ -340,6 +370,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public long Total { get; set; }
     }
 
+    /// <summary>
+    /// Khung giờ bán chạy nhất trong ngày: số suất và số đơn.
+    /// </summary>
     public class TopHourModel
     {
         public int Hour { get; set; }
@@ -347,6 +380,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public long Orders { get; set; }
     }
 
+    /// <summary>
+    /// Báo cáo bán theo giờ (nguồn vẽ heatmap món bán chạy): ma trận giờ × món, top giờ và gợi ý.
+    /// </summary>
     public class HourlySalesReportModel
     {
         public DateTime Date { get; set; }
@@ -370,6 +406,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public string CostBasisNote { get; set; }
     }
 
+    /// <summary>
+    /// 1 dòng lãi gộp của 1 món ở frontend (mirror của GrossProfitRowDto): doanh thu − giá vốn theo CostPrice hiện tại.
+    /// </summary>
     public class GrossProfitRowModel
     {
         public Guid ProductId { get; set; }
@@ -383,6 +422,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public bool CostMissing { get; set; }
     }
 
+    /// <summary>
+    /// Dòng tổng lãi gộp ở frontend (mirror của GrossProfitTotalDto).
+    /// </summary>
     public class GrossProfitTotalModel
     {
         public long QuantitySold { get; set; }
@@ -392,6 +434,9 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Models
         public decimal? MarginPercent { get; set; }
     }
 
+    /// <summary>
+    /// Giá vốn 1 món ở frontend — dùng cho màn nhập giá vốn phục vụ báo cáo lãi gộp.
+    /// </summary>
     public class ProductCostModel
     {
         public Guid Id { get; set; }

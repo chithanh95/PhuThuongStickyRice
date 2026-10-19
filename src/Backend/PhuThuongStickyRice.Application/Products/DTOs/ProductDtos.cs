@@ -5,14 +5,23 @@ using Volo.Abp.Application.Dtos;
 
 namespace PhuThuongStickyRice.Application.Products.DTOs
 {
+    /// <summary>
+    /// Món xôi trong catalog — bản đọc đầy đủ dùng cho cả shop (menu, card món)
+    /// và admin (quản lý món): giá bán, giá vốn (chỉ admin thấy), giá khuyến
+    /// mãi, khung giờ bán, giới hạn suất/ngày và gallery ảnh.
+    /// </summary>
     public class ProductDto : EntityDto<Guid>
     {
+        /// <summary>Mã món duy nhất (vd: XOI-001) — dùng tra cứu nhanh và in bill.</summary>
         public string Code { get; set; }
 
+        /// <summary>Tên món hiển thị trên menu.</summary>
         public string Name { get; set; }
 
+        /// <summary>Mô tả ngắn hiển thị dưới tên món.</summary>
         public string Description { get; set; }
 
+        /// <summary>Giá bán hiện tại (đ) — giá thực tính vào đơn hàng khi không có KM.</summary>
         public decimal Price { get; set; }
 
         public string Currency { get; set; }
@@ -53,6 +62,7 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         /// </summary>
         public int? RemainingToday { get; set; }
 
+        /// <summary>Trạng thái món: Active (đang bán) / Inactive (tạm hết) / Discontinued (ngưng bán).</summary>
         public string Status { get; set; }
 
         public DateTime? CreatedAt { get; set; }
@@ -62,16 +72,22 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         /// <summary>Comma-separated dietary tags: "chay", "man", "cay".</summary>
         public string Tags { get; set; }
 
+        /// <summary>Nhóm món (vd: xôi mặn, xôi ngọt) — dùng lọc menu ở shop.</summary>
         public string Category { get; set; }
 
+        /// <summary>Thông tin dị ứng (vd: có đậu phộng) — hiển thị cảnh báo cho khách.</summary>
         public string AllergenInfo { get; set; }
 
+        /// <summary>True = gắn nhãn "Món mới" trên card menu.</summary>
         public bool IsNew { get; set; }
 
+        /// <summary>True = gắn nhãn "Đặc trưng" (món signature của quán).</summary>
         public bool IsSignature { get; set; }
 
+        /// <summary>Ngày bắt đầu bán (món theo mùa); null = bán quanh năm.</summary>
         public DateTime? AvailableFrom { get; set; }
 
+        /// <summary>Ngày kết thúc bán (món theo mùa); null = bán quanh năm.</summary>
         public DateTime? AvailableTo { get; set; }
 
         public List<ProductSizeOptionDto> Sizes { get; set; } = new List<ProductSizeOptionDto>();
@@ -82,6 +98,11 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         public DateTimeOffset CreatedDateTime { get; set; }
     }
 
+    /// <summary>
+    /// Dữ liệu tạo/sửa món xôi ở màn quản lý món của admin — đã validate
+    /// (tên, mã, giá bắt buộc hợp lệ). Không chứa giá vốn khi trả về cho
+    /// shop công khai (API public che CostPrice).
+    /// </summary>
     public class CreateUpdateProductDto
     {
         [Required]
@@ -158,10 +179,16 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         public Guid? BranchId { get; set; }
     }
 
+    /// <summary>
+    /// Điều kiện lọc + phân trang danh sách món — dùng chung cho trang quản lý
+    /// món của admin và API menu công khai của shop.
+    /// </summary>
     public class GetProductsInput : PagedAndSortedResultRequestDto
     {
+        /// <summary>Từ khóa tìm theo tên/mã món (không phân biệt hoa thường).</summary>
         public string SearchTerm { get; set; }
 
+        /// <summary>Lọc theo trạng thái món (Active/Inactive/Discontinued); trống = tất cả.</summary>
         public string Status { get; set; }
 
         /// <summary>Optional branch filter (item 109): products of this
@@ -176,20 +203,30 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         public bool IncludeInactive { get; set; }
     }
 
+    /// <summary>
+    /// Tùy chọn size của 1 món (vd: nhỏ/vừa/lớn) — bản đọc: mỗi size có giá
+    /// tuyệt đối riêng, khách chọn size khi đặt món.
+    /// </summary>
     public class ProductSizeOptionDto : EntityDto<Guid>
     {
         public Guid ProductId { get; set; }
 
+        /// <summary>Tên size hiển thị (vd: "Nhỏ", "Vừa", "Lớn").</summary>
         public string Name { get; set; }
 
         /// <summary>Absolute price of this size, in VND.</summary>
         public decimal Price { get; set; }
 
+        /// <summary>Thứ tự hiển thị size trên card món (tăng dần).</summary>
         public int SortOrder { get; set; }
 
+        /// <summary>False = size đang tắt, khách không chọn được.</summary>
         public bool IsActive { get; set; }
     }
 
+    /// <summary>
+    /// Dữ liệu tạo/sửa 1 tùy chọn size của món ở màn quản lý món của admin.
+    /// </summary>
     public class CreateUpdateProductSizeOptionDto
     {
         [Required]

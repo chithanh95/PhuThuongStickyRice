@@ -87,8 +87,10 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
                     if (logEvent.Level >= options.File.MinimumLogEventLevel
                     || logEvent.Level >= options.Elasticsearch.MinimumLogEventLevel)
                     {
-                        var sourceContext = logEvent.Properties.ContainsKey("SourceContext")
-                             ? logEvent.Properties["SourceContext"].ToString()
+                        // CA1854: TryGetValue 1 lần thay vì ContainsKey + indexer
+                        // (filter chạy trên mọi log event).
+                        var sourceContext = logEvent.Properties.TryGetValue("SourceContext", out var prop)
+                             ? prop.ToString()
                              : null;
 
                         var logLevel = GetLogLevel(sourceContext, options);

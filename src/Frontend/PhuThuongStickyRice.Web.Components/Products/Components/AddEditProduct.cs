@@ -314,7 +314,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             }
         }
 
-        private async Task RemoveImage()
+        private void RemoveImage()
         {
             if (!string.IsNullOrEmpty(_imageUrl))
             {
@@ -328,8 +328,6 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
 
                 _imageUrl = null;
             }
-
-            await Task.CompletedTask;
         }
 
         /// <summary>

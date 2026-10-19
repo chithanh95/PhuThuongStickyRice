@@ -1,0 +1,24 @@
+<span class="@CssClass">@Status</span>
+
+@code {
+    /// <summary>
+    /// Trạng thái đơn hàng dạng chuỗi (Pending, Confirmed, Preparing,
+    /// Delivering, Completed, Cancelled).
+    /// </summary>
+    [Parameter]
+    public string Status { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Badge Lexa tương ứng với trạng thái đơn hàng.
+    /// </summary>
+    private string CssClass => Status switch
+    {
+        "Pending" => "badge badge-warning",
+        "Confirmed" => "badge badge-info",
+        "Preparing" => "badge badge-primary",
+        "Delivering" => "badge badge-secondary",
+        "Completed" => "badge badge-success",
+        "Cancelled" => "badge badge-danger",
+        _ => "badge badge-light"
+    };
+}

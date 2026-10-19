@@ -261,7 +261,7 @@ else
                                 </td>
                                 <td><small>@order.CustomerAddress</small></td>
                                 <td class="text-right"><strong>@FormatPrice(order.TotalAmount)</strong></td>
-                                <td>@StatusBadge(order.Status)</td>
+                                <td><OrderStatusBadge Status="@order.Status" /></td>
                                 <td>@PaymentInfo(order)</td>
                                 <td><small>@order.ShipperName</small></td>
                                 <td>@order.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
@@ -1082,6 +1082,29 @@ else
         }
     }
 
+    /// <summary>Tên hiển thị của phương thức thanh toán (BankTransfer → "VietQR").</summary>
+    /// <param name="method">Mã phương thức thanh toán.</param>
+    /// <returns>Tên hiển thị; mã lạ giữ nguyên.</returns>
+    private static string PaymentMethodLabel(string method) => method switch
+    {
+        "Cod" => "COD",
+        "BankTransfer" => "VietQR",
+        "MoMo" => "MoMo",
+        _ => method
+    };
+
+    /// <summary>Badge Lexa cho trạng thái thanh toán (kèm với <see cref="PaymentStatusLabel"/>).</summary>
+    /// <param name="status">Mã trạng thái thanh toán.</param>
+    /// <returns>CSS badge; mã lạ dùng badge sáng.</returns>
+    private static string PaymentStatusCss(string status) => status switch
+    {
+        "Unpaid" => "badge badge-warning",
+        "PendingConfirmation" => "badge badge-info",
+        "Paid" => "badge badge-success",
+        "Failed" => "badge badge-danger",
+        _ => "badge badge-light"
+    };
+
     /// <summary>Nhãn tiếng Việt cho trạng thái thanh toán (badge ở hàng đơn).</summary>
     /// <param name="status">Mã trạng thái thanh toán.</param>
     /// <returns>Nhãn hiển thị (vd "Chờ xác nhận"); mã lạ giữ nguyên.</returns>
@@ -1397,21 +1420,9 @@ else
     /// <returns>Fragment hiển thị phương thức + trạng thái.</returns>
     private static RenderFragment PaymentInfo(OrderModel order) => builder =>
     {
-        var method = order.PaymentMethod switch
-        {
-            "Cod" => "COD",
-            "BankTransfer" => "VietQR",
-            "MoMo" => "MoMo",
-            _ => order.PaymentMethod
-        };
-        var (css, label) = order.PaymentStatus switch
-        {
-            "Unpaid" => ("badge badge-warning", "Chưa thanh toán"),
-            "PendingConfirmation" => ("badge badge-info", "Chờ xác nhận"),
-            "Paid" => ("badge badge-success", "Đã thanh toán"),
-            "Failed" => ("badge badge-danger", "Thất bại"),
-            _ => ("badge badge-light", order.PaymentStatus)
-        };
+        var method = PaymentMethodLabel(order.PaymentMethod);
+        var css = PaymentStatusCss(order.PaymentStatus);
+        var label = PaymentStatusLabel(order.PaymentStatus);
         builder.OpenElement(0, "div");
         builder.AddContent(1, method);
         builder.CloseElement();
@@ -1545,21 +1556,4 @@ else
     /// <summary>Màu badge theo mã trạng thái đơn (Pending vàng → Completed xanh lá, Cancelled đỏ).</summary>
     /// <param name="status">Mã trạng thái đơn.</param>
     /// <returns>Fragment badge trạng thái.</returns>
-    private static RenderFragment StatusBadge(string status) => builder =>
-    {
-        var css = status switch
-        {
-            "Pending" => "badge badge-warning",
-            "Confirmed" => "badge badge-info",
-            "Preparing" => "badge badge-primary",
-            "Delivering" => "badge badge-secondary",
-            "Completed" => "badge badge-success",
-            "Cancelled" => "badge badge-danger",
-            _ => "badge badge-light"
-        };
-        builder.OpenElement(0, "span");
-        builder.AddAttribute(1, "class", css);
-        builder.AddContent(2, status);
-        builder.CloseElement();
-    };
 }

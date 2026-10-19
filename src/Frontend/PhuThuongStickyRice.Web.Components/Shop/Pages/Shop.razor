@@ -871,107 +871,11 @@ else
     {
         try
         {
-            try
-            {
-                var paged = await ShopService.GetProductsAsync();
-                _products = paged.Items ?? new List<ShopProductModel>();
-            }
-            catch (Exception)
-            {
-                _loadFailed = true;
-                _products = new List<ShopProductModel>();
-            }
-
-            var branchesTask = AdminSystemService.GetActiveBranchesAsync();
-            var combosTask = ShopService.GetCombosAsync();
-            var toppingsTask = ShopService.GetToppingsAsync();
-            var todaySoldTask = ShopService.GetTodaySoldAsync();
-            var bestSellersTask = ShopService.GetBestSellerIdsAsync();
-
-            await Task.WhenAll(branchesTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
-
-            // Ratings / sold-quantities / daily-remaining are independent of
-            // each other — start all three now so they resolve in one parallel
-            // batch instead of three sequential round-trips. Each keeps its own
-            // failure handling below, so semantics are unchanged.
-            var ratingsTask = ShopService.GetProductRatingsAsync();
-            var soldQuantitiesTask = ShopService.GetSoldQuantitiesAsync();
-            var dailyRemainingTask = ShopService.GetDailyRemainingAsync();
-
-            // Wave 6b (item 26): rating aggregates are fail-soft — the shop
-            // hides the stars when the call fails.
-            try
-            {
-                var ratings = await ratingsTask;
-                _ratings = (ratings ?? new List<ProductRatingModel>())
-                    .Where(r => r.ReviewCount > 0)
-                    .ToDictionary(r => r.ProductId, r => (r.AverageRating, r.ReviewCount));
-            }
-            catch (Exception)
-            {
-                _ratings = new Dictionary<Guid, (double Avg, int Count)>();
-            }
-
-            // BA shop item 4: sold quantities for "Đã bán N suất" — fail-soft.
-            _soldQuantities = await soldQuantitiesTask;
-
-            // Item 165: daily-limit status ("Còn N suất") — fail-soft, the
-            // badge simply hides when the call fails.
-            try
-            {
-                var remaining = await dailyRemainingTask;
-                var byId = (remaining ?? new List<ProductDailyRemainingModel>())
-                    .ToDictionary(r => r.ProductId);
-                foreach (var p in _products)
-                {
-                    if (byId.TryGetValue(p.Id, out var r))
-                    {
-                        p.RemainingToday = r.RemainingToday;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-            }
-
-            _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
-            _combos = combosTask.Result ?? new List<ComboModel>();
-            _toppings = toppingsTask.Result ?? new List<ToppingModel>();
-            _todaySold = todaySoldTask.Result;
-
-            var rank = 0;
-            foreach (var id in bestSellersTask.Result ?? new List<Guid>())
-            {
-                _productRank[id] = rank++;
-            }
-
-            foreach (var p in _products)
-            {
-                InitCardState(p);
-            }
-
-            _categories = _products
-                .Select(p => p.Category)
-                .Where(c => !string.IsNullOrWhiteSpace(c))
-                .Distinct()
-                .OrderBy(c => c)
-                .ToList();
-
-            ApplyFilters();
-            BuildSuggestions();
-
-            // Item 116: ?tim={productCode} opens the quick-view directly
-            // (target of the short links created from the quick-view).
-            var tim = GetQueryValue(Navigation.Uri, "tim");
-            if (!string.IsNullOrWhiteSpace(tim))
-            {
-                var match = _products.FirstOrDefault(p =>
-                    string.Equals(p.Code, tim.Trim(), StringComparison.OrdinalIgnoreCase));
-                if (match != null)
-                {
-                    OpenQuickView(match);
-                }
-            }
+            await LoadProductsAsync();
+            await LoadCoreExtrasAsync();
+            await LoadRatingAndStockExtrasAsync();
+            InitializeProductCatalog();
+            OpenQuickViewFromQuery();
         }
         catch (Exception)
         {
@@ -979,6 +883,143 @@ else
             // products have their own _loadFailed flag (item 38).
             _loadError = "Một số thông tin bổ sung không tải được. Vui lòng thử lại sau.";
             _products ??= new List<ShopProductModel>();
+        }
+    }
+
+    /// <summary>
+    /// Tải danh sách sản phẩm chính của shop. Lỗi → đánh dấu
+    /// <c>_loadFailed</c>, danh sách trống (không ném lên).
+    /// </summary>
+    private async Task LoadProductsAsync()
+    {
+        try
+        {
+            var paged = await ShopService.GetProductsAsync();
+            _products = paged.Items ?? new List<ShopProductModel>();
+        }
+        catch (Exception)
+        {
+            _loadFailed = true;
+            _products = new List<ShopProductModel>();
+        }
+    }
+
+    /// <summary>
+    /// Tải các thông tin phụ lõi (chi nhánh, combo, topping, tổng đã bán hôm
+    /// nay, xếp hạng bán chạy) trong 1 batch song song. Lỗi → ném cho
+    /// <see cref="LoadCatalogAsync"/> xử lý chung ở catch ngoài.
+    /// </summary>
+    private async Task LoadCoreExtrasAsync()
+    {
+        var branchesTask = AdminSystemService.GetActiveBranchesAsync();
+        var combosTask = ShopService.GetCombosAsync();
+        var toppingsTask = ShopService.GetToppingsAsync();
+        var todaySoldTask = ShopService.GetTodaySoldAsync();
+        var bestSellersTask = ShopService.GetBestSellerIdsAsync();
+
+        await Task.WhenAll(branchesTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
+
+        _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
+        _combos = combosTask.Result ?? new List<ComboModel>();
+        _toppings = toppingsTask.Result ?? new List<ToppingModel>();
+        _todaySold = todaySoldTask.Result;
+
+        var rank = 0;
+        foreach (var id in bestSellersTask.Result ?? new List<Guid>())
+        {
+            _productRank[id] = rank++;
+        }
+    }
+
+    /// <summary>
+    /// Tải đánh giá, số lượng đã bán và hạn mức/ngày trong 1 batch song song.
+    /// Ratings và daily-remaining fail-soft (hàng tự ẩn khi lỗi); số lượng đã
+    /// bán lỗi thì ném cho <see cref="LoadCatalogAsync"/> xử lý chung.
+    /// </summary>
+    private async Task LoadRatingAndStockExtrasAsync()
+    {
+        // Ratings / sold-quantities / daily-remaining are independent of
+        // each other — start all three now so they resolve in one parallel
+        // batch instead of three sequential round-trips. Each keeps its own
+        // failure handling below, so semantics are unchanged.
+        var ratingsTask = ShopService.GetProductRatingsAsync();
+        var soldQuantitiesTask = ShopService.GetSoldQuantitiesAsync();
+        var dailyRemainingTask = ShopService.GetDailyRemainingAsync();
+
+        // Wave 6b (item 26): rating aggregates are fail-soft — the shop
+        // hides the stars when the call fails.
+        try
+        {
+            var ratings = await ratingsTask;
+            _ratings = (ratings ?? new List<ProductRatingModel>())
+                .Where(r => r.ReviewCount > 0)
+                .ToDictionary(r => r.ProductId, r => (r.AverageRating, r.ReviewCount));
+        }
+        catch (Exception)
+        {
+            _ratings = new Dictionary<Guid, (double Avg, int Count)>();
+        }
+
+        // BA shop item 4: sold quantities for "Đã bán N suất" — fail-soft.
+        _soldQuantities = await soldQuantitiesTask;
+
+        // Item 165: daily-limit status ("Còn N suất") — fail-soft, the
+        // badge simply hides when the call fails.
+        try
+        {
+            var remaining = await dailyRemainingTask;
+            var byId = (remaining ?? new List<ProductDailyRemainingModel>())
+                .ToDictionary(r => r.ProductId);
+            foreach (var p in _products)
+            {
+                if (byId.TryGetValue(p.Id, out var r))
+                {
+                    p.RemainingToday = r.RemainingToday;
+                }
+            }
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Khởi tạo state card cho từng sản phẩm, dựng danh mục từ sản phẩm,
+    /// áp filter/tìm kiếm và gợi ý món bán kèm.
+    /// </summary>
+    private void InitializeProductCatalog()
+    {
+        foreach (var p in _products)
+        {
+            InitCardState(p);
+        }
+
+        _categories = _products
+            .Select(p => p.Category)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        ApplyFilters();
+        BuildSuggestions();
+    }
+
+    /// <summary>
+    /// Item 116: ?tim={productCode} opens the quick-view directly
+    /// (target of the short links created from the quick-view).
+    /// </summary>
+    private void OpenQuickViewFromQuery()
+    {
+        var tim = GetQueryValue(Navigation.Uri, "tim");
+        if (!string.IsNullOrWhiteSpace(tim))
+        {
+            var match = _products.FirstOrDefault(p =>
+                string.Equals(p.Code, tim.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (match != null)
+            {
+                OpenQuickView(match);
+            }
         }
     }
 

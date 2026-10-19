@@ -440,6 +440,14 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="code">Mã giảm giá (khách tự nhập, không gắn SĐT).</param>
         /// <param name="subtotal">Tổng tiền hàng trước khi giảm.</param>
         /// <returns>Số tiền được giảm.</returns>
+        /// <summary>
+        /// Áp mã giảm giá vào tổng tiền (bản rút gọn không SĐT) — chuyển tiếp
+        /// sang bản đầy đủ với customerPhone = null. Dùng cho khách vãng lai;
+        /// mã spin/voucher gắn 1 SĐT sẽ bị từ chối ở bước validate.
+        /// </summary>
+        /// <param name="code">Mã giảm giá đã chuẩn hóa.</param>
+        /// <param name="subtotal">Tổng tiền hàng trước khi giảm.</param>
+        /// <returns>Số tiền được giảm.</returns>
         public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal)
         {
             return await ApplyAsync(code, subtotal, null);
