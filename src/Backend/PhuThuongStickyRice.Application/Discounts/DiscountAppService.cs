@@ -552,17 +552,24 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
+        /// Chuẩn hóa tiền tố mã giảm giá (trim + chữ hoa), hoặc null khi tiền
+        /// tố rỗng — gom 1 dòng trùng lặp ở các method tìm mã theo tiền tố.
+        /// </summary>
+        private static string? NormalizeCodePrefix(string codePrefix)
+            => string.IsNullOrWhiteSpace(codePrefix) ? null : codePrefix.Trim().ToUpperInvariant();
+
+        /// <summary>
         /// True khi SĐT đã có mã còn dùng được với tiền tố cho trước — chống
         /// cấp trùng mã quay/sinh nhật cho cùng 1 khách.
         /// </summary>
         public virtual async Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone)
         {
-            if (string.IsNullOrWhiteSpace(codePrefix) || string.IsNullOrWhiteSpace(ownerPhone))
+            var prefix = NormalizeCodePrefix(codePrefix);
+            if (prefix == null || string.IsNullOrWhiteSpace(ownerPhone))
             {
                 return false;
             }
 
-            var prefix = codePrefix.Trim().ToUpperInvariant();
             var queryable = await _discounts.GetQueryableAsync();
             // Chỉ cần biết "có tồn tại mã nào không" nên dùng AnyAsync —
             // không materialize cả row entity vào bộ nhớ như FirstOrDefaultAsync.
@@ -583,7 +590,8 @@ namespace PhuThuongStickyRice.Application.Discounts
             string codePrefix, IEnumerable<string> phones)
         {
             var result = new HashSet<string>();
-            if (string.IsNullOrWhiteSpace(codePrefix))
+            var prefix = NormalizeCodePrefix(codePrefix);
+            if (prefix == null)
             {
                 return result;
             }
@@ -597,7 +605,6 @@ namespace PhuThuongStickyRice.Application.Discounts
                 return result;
             }
 
-            var prefix = codePrefix.Trim().ToUpperInvariant();
             var queryable = await _discounts.GetQueryableAsync();
             // Chunk IN clause theo batch 1000 (SQL Server giới hạn ~2100
             // params) — cùng pattern GetTagsByPhonesAsync; caller tương lai
@@ -628,12 +635,12 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <returns>Mã đầu tiên còn dùng được, hoặc null.</returns>
         public virtual async Task<string?> GetUsableCodeAsync(string codePrefix, string ownerPhone)
         {
-            if (string.IsNullOrWhiteSpace(codePrefix) || string.IsNullOrWhiteSpace(ownerPhone))
+            var prefix = NormalizeCodePrefix(codePrefix);
+            if (prefix == null || string.IsNullOrWhiteSpace(ownerPhone))
             {
                 return null;
             }
 
-            var prefix = codePrefix.Trim().ToUpperInvariant();
             var queryable = await _discounts.GetQueryableAsync();
             var existing = await _asyncExecuter.FirstOrDefaultAsync(
                 queryable
