@@ -1101,6 +1101,10 @@ else
 
     private void OnCartChanged()
     {
+        // Item 97: the cart content changed, so this is no longer the same
+        // logical order — drop the idempotency key so a later submit mints a
+        // fresh one instead of deduping against the previous cart.
+        _order.IdempotencyKey = null;
         RefreshMinOrderState();
         _ = RefreshAppliedDiscountAsync();
         InvokeAsync(StateHasChanged);
@@ -1530,8 +1534,17 @@ else
             // Item 133: order source captured at shop entry.
             _order.Source = CartState.Source;
 
-            // Item 97: fresh idempotency key per submit attempt, kept in memory.
-            _order.IdempotencyKey = Guid.NewGuid().ToString("D");
+            // Item 97: one idempotency key per logical order, reused across
+            // retries. Minting a fresh key per submit attempt defeated the
+            // server-side dedupe: a retry after a timeout/reconnect created a
+            // DUPLICATE order (double wallet charge, double loyalty redeem,
+            // double discount usage). The key is reset when the cart changes
+            // (OnCartChanged) or after the order succeeds, so a changed cart
+            // never reuses a stale key.
+            if (string.IsNullOrEmpty(_order.IdempotencyKey))
+            {
+                _order.IdempotencyKey = Guid.NewGuid().ToString("D");
+            }
 
             // Item 96: reCAPTCHA v3 token when enabled in shop settings.
             _order.RecaptchaToken = null;
@@ -1583,6 +1596,10 @@ else
                 .ToList();
 
             _placedOrder = await ShopService.CreateOrderAsync(_order);
+            // Item 97: order accepted — drop the key so a later new checkout
+            // mints a fresh one (CartState.Clear below also triggers
+            // OnCartChanged, which resets it as well).
+            _order.IdempotencyKey = null;
             Funnel.Track(FunnelService.Events.OrderPlaced, new Uri(Navigation.Uri).AbsolutePath);
             CartState.Clear();
             CartState.OnChange -= OnCartChanged;

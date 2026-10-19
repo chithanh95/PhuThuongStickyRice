@@ -345,12 +345,13 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // Item 50: pay-later requires at least 5 completed orders from this phone.
+            // Order.CustomerPhone is stored raw as typed, so count by the last
+            // 9 digits (same tolerance as PhonesMatch / EnsurePhoneDailyLimitAsync):
+            // "0912345678" and "+84 912 345 678" are the same customer — a raw ==
+            // compare undercounts and wrongly denies loyal customers "Trả sau".
             if (paymentMethod == PaymentMethod.PayLater)
             {
-                var phone = (input.CustomerPhone ?? string.Empty).Trim();
-                var orderQueryable = await _orders.GetQueryableAsync();
-                var completedCount = await _asyncExecuter.CountAsync(
-                    orderQueryable.Where(o => o.CustomerPhone == phone && o.Status == OrderStatus.Completed));
+                var completedCount = await CountCompletedOrdersByPhoneAsync(input.CustomerPhone);
                 if (completedCount < 5)
                 {
                     throw new Domain.Exceptions.DomainException(
@@ -2340,6 +2341,37 @@ namespace PhuThuongStickyRice.Application.Orders
         /// (digits + spaces/dashes/dots + leading country code); EF Core
         /// translates the chained Replace/EndsWith to nested REPLACE + LIKE.
         /// </summary>
+        /// <summary>
+        /// Item 50: counts completed orders for a phone with the same digit
+        /// tolerance as <see cref="PhonesMatch"/> — order phones are stored raw
+        /// as typed, so the last 9 digits identify the customer.
+        /// </summary>
+        private async Task<int> CountCompletedOrdersByPhoneAsync(string customerPhone)
+        {
+            var digits = new string((customerPhone ?? string.Empty).Where(char.IsDigit).ToArray());
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var completedQuery = orderQueryable.Where(o => o.Status == OrderStatus.Completed);
+
+            // Same digit-tolerance as EnsurePhoneDailyLimitAsync: SQL-side
+            // suffix pre-filter, then the tolerant in-memory compare.
+            List<string> candidatePhones;
+            if (digits.Length >= 9)
+            {
+                var last9 = digits.Substring(digits.Length - 9);
+                candidatePhones = await _asyncExecuter.ToListAsync(completedQuery
+                    .Where(o => o.CustomerPhone.Replace(" ", "").Replace("-", "").Replace(".", "").EndsWith(last9))
+                    .Select(o => o.CustomerPhone));
+            }
+            else
+            {
+                candidatePhones = await _asyncExecuter.ToListAsync(completedQuery
+                    .Where(o => o.CustomerPhone.Replace(" ", "").Replace("-", "").Replace(".", "") == digits)
+                    .Select(o => o.CustomerPhone));
+            }
+
+            return candidatePhones.Count(p => PhonesMatch(p, customerPhone));
+        }
+
         private async Task EnsurePhoneDailyLimitAsync(int maxPerDay, string customerPhone)
         {
             if (maxPerDay <= 0 || string.IsNullOrWhiteSpace(customerPhone))
