@@ -102,6 +102,8 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int BestSellersDefaultTop = 100;
         /// <summary>Số lượng tối đa bản ghi bán chạy lưu trong cache (cắt payload trả về).</summary>
         private const int BestSellersMaxTop = 200;
+        /// <summary>Hệ số quy đổi tỉ lệ sang phần trăm (dùng chung cho các chỉ số % trên dashboard).</summary>
+        private const double PercentMultiplier = 100;
 
         public DashboardAppService(
             IOrderRepository orders,
@@ -247,7 +249,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>
         /// Doanh thu hôm nay (tính theo ngày VN) so với mục tiêu ngày trong cài
         /// đặt shop (mặc định 2.000.000₫ khi chưa cài). CreatedAt lưu UTC nên
-        /// trừ 7 giờ để ra đầu ngày VN.
+        /// trừ <see cref="VietnamTime.UtcOffsetHours"/> giờ để ra đầu ngày VN.
         /// </summary>
         public virtual async Task<DailyTargetDto> GetDailyTargetAsync()
         {
@@ -269,7 +271,7 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 TodayRevenue = revenue,
                 Target = target,
-                Percent = target > 0 ? (double)revenue / (double)target * 100 : 0
+                Percent = target > 0 ? (double)revenue / (double)target * PercentMultiplier : 0
             };
         }
 
@@ -479,10 +481,10 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             if (yesterday == 0)
             {
-                return today > 0 ? 100 : 0;
+                return today > 0 ? PercentMultiplier : 0;
             }
 
-            return (double)(today - yesterday) / (double)yesterday * 100;
+            return (double)(today - yesterday) / (double)yesterday * PercentMultiplier;
         }
 
         /// <summary>

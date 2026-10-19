@@ -17,10 +17,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         public const int SlotMinutes = 30;
 
+        /// <summary>Múi giờ Việt Nam so với UTC (không có giờ mùa hè).</summary>
+        public const int VietnamUtcOffsetHours = 7;
+
         /// <summary>Current Vietnam local time (UTC+7 has no DST).</summary>
         public static TimeSpan NowInVietnam()
         {
-            return DateTimeOffset.UtcNow.AddHours(7).TimeOfDay;
+            return DateTimeOffset.UtcNow.AddHours(VietnamUtcOffsetHours).TimeOfDay;
         }
 
         public static TimeSpan ParseOpen(string openTime)

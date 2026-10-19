@@ -1,6 +1,7 @@
 @page "/orders/print/{id:guid}"
 @attribute [Authorize]
 @using System
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormat;
 @using Microsoft.JSInterop
 @using PhuThuongStickyRice.Web.Components.Orders.Models
 @using PhuThuongStickyRice.Web.Components.Orders.Services
@@ -174,5 +175,4 @@
         _ => method
     };
 
-    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 }

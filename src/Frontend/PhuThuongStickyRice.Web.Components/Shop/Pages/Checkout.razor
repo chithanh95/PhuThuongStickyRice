@@ -5,6 +5,7 @@
 @page "/checkout"
 <PageTitle>Thanh toán — Xôi Phú Thượng</PageTitle>
 @using System
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormat;
 @using System.Linq
 @using System.Text.RegularExpressions
 @using System.Threading.Tasks
@@ -985,6 +986,28 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        await LoadShopSettingsAsync();
+        await LoadActivePromotionAsync();
+        await LoadFeatureFlagsAsync();
+        await LoadBranchesAsync();
+        await LoadCustomerContextAsync();
+
+        RefreshMinOrderState();
+
+        await ApplyCarriedPhoneAsync();
+        await ApplyCarriedDiscountAsync();
+
+        // Wave 6b (item 30): pause/hours notice for the submit button.
+        RefreshOrderingState();
+        CartState.OnChange += OnCartChanged;
+        AppI18n.OnChange += OnLangChanged;
+        await AppI18n.InitializeAsync();
+        Funnel.Track(FunnelService.Events.CheckoutView, new Uri(Navigation.Uri).AbsolutePath);
+    }
+
+    /// <summary>Tải cài đặt shop công khai (fail-soft: lỗi thì dùng mặc định).</summary>
+    private async Task LoadShopSettingsAsync()
+    {
         try
         {
             _shopSettings = await ShopSettingsService.GetPublicAsync() ?? new ShopSettingModel();
@@ -993,8 +1016,13 @@ else
         {
             _shopSettings = new ShopSettingModel();
         }
+    }
 
-        // Item 91: happy-hour promotion preview (auto-applied server-side).
+    /// <summary>
+    /// Item 91: happy-hour promotion preview (auto-applied server-side).
+    /// </summary>
+    private async Task LoadActivePromotionAsync()
+    {
         try
         {
             _activePromotion = await AdminOperationsService.GetActivePromotionAsync();
@@ -1003,9 +1031,14 @@ else
         {
             _activePromotion = null;
         }
+    }
 
-        // Item 105: feature flags (fail open — a status check must never
-        // block checkout).
+    /// <summary>
+    /// Item 105: feature flags (fail open — a status check must never
+    /// block checkout).
+    /// </summary>
+    private async Task LoadFeatureFlagsAsync()
+    {
         try
         {
             var flags = await AdminSystemService.GetFeatureFlagMapAsync();
@@ -1016,8 +1049,11 @@ else
         catch (Exception)
         {
         }
+    }
 
-        // Item 109: active branches for the branch picker.
+    /// <summary>Item 109: active branches for the branch picker.</summary>
+    private async Task LoadBranchesAsync()
+    {
         try
         {
             _branches = await AdminSystemService.GetActiveBranchesAsync();
@@ -1026,8 +1062,14 @@ else
         {
             _branches = new System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
         }
+    }
 
-        // Customer account: load saved addresses for quick-select.
+    /// <summary>
+    /// Customer account: load saved addresses for quick-select, prefill SĐT
+    /// từ tài khoản và ghi chú khẩu vị (item 90).
+    /// </summary>
+    private async Task LoadCustomerContextAsync()
+    {
         try
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -1061,11 +1103,14 @@ else
         {
             _savedAddresses = new List<CustomerAddressModel>();
         }
+    }
 
-        RefreshMinOrderState();
-
-        // GH2: phone carried over from the cart (?phone=) — prefill and run
-        // the last-order auto-fill (fail-soft).
+    /// <summary>
+    /// GH2: phone carried over from the cart (?phone=) — prefill and run
+    /// the last-order auto-fill (fail-soft).
+    /// </summary>
+    private async Task ApplyCarriedPhoneAsync()
+    {
         try
         {
             var query = ParseQuery(Navigation.Uri);
@@ -1080,9 +1125,14 @@ else
         catch (Exception)
         {
         }
+    }
 
-        // Item 139: tự động áp mã giảm giá tốt nhất (fail-soft — không
-        // bao giờ chặn checkout).
+    /// <summary>
+    /// Item 139: tự động áp mã giảm giá tốt nhất (fail-soft — không
+    /// bao giờ chặn checkout).
+    /// </summary>
+    private async Task ApplyCarriedDiscountAsync()
+    {
         try
         {
             var query = ParseQuery(Navigation.Uri);
@@ -1102,13 +1152,6 @@ else
         catch (Exception)
         {
         }
-
-        // Wave 6b (item 30): pause/hours notice for the submit button.
-        RefreshOrderingState();
-        CartState.OnChange += OnCartChanged;
-        AppI18n.OnChange += OnLangChanged;
-        await AppI18n.InitializeAsync();
-        Funnel.Track(FunnelService.Events.CheckoutView, new Uri(Navigation.Uri).AbsolutePath);
     }
 
     /// <summary>
@@ -1913,7 +1956,6 @@ else
     /// <summary>Định dạng tiền VNĐ không số thập phân kèm ký hiệu ₫ (vd 35.000 ₫).</summary>
     /// <param name="price">Số tiền.</param>
     /// <returns>Chuỗi tiền đã định dạng.</returns>
-    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
     /// <summary>Re-render khi người dùng đổi ngôn ngữ (AppI18n.OnChange).</summary>
     private void OnLangChanged() => InvokeAsync(StateHasChanged);

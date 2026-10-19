@@ -8,6 +8,7 @@
 @attribute [Authorize(Roles = "Admin,Cashier")]
 @implements System.IAsyncDisposable
 @using PhuThuongStickyRice.Web.Components.Orders.Models
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormat;
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @inject OrderService OrderService
 @inject NavigationManager Navigation
@@ -1346,7 +1347,6 @@ else
     /// <summary>Định dạng tiền VNĐ không số thập phân kèm ký hiệu ₫ (vd 35.000 ₫).</summary>
     /// <param name="price">Số tiền.</param>
     /// <returns>Chuỗi tiền đã định dạng.</returns>
-    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
     /// <summary>Wave 6c (item 34): Vietnamese labels for the timeline.</summary>
     private static string StatusLabel(string status) => status switch

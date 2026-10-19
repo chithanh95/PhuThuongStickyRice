@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
@@ -18,14 +17,7 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var stopwatch = Stopwatch.StartNew();
             await _next(context);
-            var elapsedTime = stopwatch.Elapsed;
-
-            // inspect the context here
-            // if (context.Request.Path.HasValue && context.Request.Path.Value.Contains("oidc"))
-            // {
-            // }
         }
     }
 }

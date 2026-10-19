@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin,Cashier")]
 @implements IDisposable
 @using System.Threading
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormat;
 @using Microsoft.JSInterop
 @using PhuThuongStickyRice.Web.Components.Dashboard.Models
 @using PhuThuongStickyRice.Web.Components.Dashboard.Services
@@ -995,8 +996,6 @@ else
         _cts?.Dispose();
         try { JSRuntime.InvokeVoidAsync("interop.stopSpeak"); } catch { }
     }
-
-    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
     /// <summary>
     /// Wave 6d (item 36): signed delta badge, green ▲ when up, red ▼ when down.

@@ -4,6 +4,7 @@
 @page "/cart"
 <PageTitle>Giỏ hàng — Xôi Phú Thượng</PageTitle>
 @using System
+@using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormat;
 @using System.Collections.Generic
 @using System.Linq
 @using System.Threading.Tasks
@@ -510,7 +511,6 @@ else
     /// <summary>Định dạng tiền VNĐ không số thập phân kèm ký hiệu ₫ (vd 35.000 ₫).</summary>
     /// <param name="price">Số tiền.</param>
     /// <returns>Chuỗi tiền đã định dạng.</returns>
-    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
 
     /// <summary>Re-render khi người dùng đổi ngôn ngữ (AppI18n.OnChange).</summary>
     private void OnLangChanged() => InvokeAsync(StateHasChanged);

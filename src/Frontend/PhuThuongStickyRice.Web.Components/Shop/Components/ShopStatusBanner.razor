@@ -1,5 +1,6 @@
 @* #199: Banner "Quán đang mở / nghỉ" — gọn 1 dòng ở đầu trang /shop. *@
 @using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Shop.Models
 @inject ShopSettingsService ShopSettingsService
 
 @if (_loaded)
@@ -41,8 +42,8 @@
 
     private void UpdateStatus()
     {
-        // Giờ VN (UTC+7).
-        var now = DateTime.UtcNow.AddHours(7).TimeOfDay;
+        // Giờ VN (UTC+7) — dùng helper chung để khỏi hardcode múi giờ ở nhiều nơi.
+        var now = ShopHours.NowInVietnam();
         if (TimeSpan.TryParse(_openTime, out var open) && TimeSpan.TryParse(_closeTime, out var close))
         {
             if (open <= close)
