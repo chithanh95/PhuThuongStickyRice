@@ -222,12 +222,16 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
 namespace PhuThuongStickyRice.Web.Components.Landing.Models
 {
     // CA1852: internal và không có subtype → sealed để JIT devirtualize.
-    internal sealed class ProductIdsWrapper
+    // Đổi tên: đây là envelope JSON của API "món yêu thích" ({ productIds: [...] }),
+    // không phải wrapper chung chung.
+    internal sealed class ProductIdsApiResponse
     {
         public List<Guid> ProductIds { get; set; }
     }
 
-    internal sealed class ItemsWrapper<T>
+    // Đổi tên: envelope JSON của các API trả về danh sách ({ items: [...] }),
+    // ví dụ "món vừa hết hàng trở lại" và "món của đơn gần nhất".
+    internal sealed class ItemsApiResponse<T>
     {
         public List<T> Items { get; set; }
     }

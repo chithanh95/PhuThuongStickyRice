@@ -166,20 +166,20 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
 
         public async Task<List<Guid>> GetFavoritesAsync(string phone)
         {
-            var wrapper = await GetAsync<ProductIdsWrapper>($"api/landing/favorites?phone={phone}");
+            var wrapper = await GetAsync<ProductIdsApiResponse>($"api/landing/favorites?phone={phone}");
             return wrapper?.ProductIds ?? new List<Guid>();
         }
 
         public async Task<List<BackInStockItem>> GetBackInStockFavoritesAsync(string phone)
         {
-            var wrapper = await GetAsync<ItemsWrapper<BackInStockItem>>($"api/landing/favorites/back-in-stock?phone={phone}");
+            var wrapper = await GetAsync<ItemsApiResponse<BackInStockItem>>($"api/landing/favorites/back-in-stock?phone={phone}");
             return wrapper?.Items ?? new List<BackInStockItem>();
         }
 
         /// <summary>Items đơn gần nhất (item 62).</summary>
         public async Task<List<ParsedOrderItem>> GetLastOrderItemsAsync(string phone)
         {
-            var wrapper = await GetAsync<ItemsWrapper<ParsedOrderItem>>($"api/landing/last-order-items?phone={phone}");
+            var wrapper = await GetAsync<ItemsApiResponse<ParsedOrderItem>>($"api/landing/last-order-items?phone={phone}");
             return wrapper?.Items ?? new List<ParsedOrderItem>();
         }
 

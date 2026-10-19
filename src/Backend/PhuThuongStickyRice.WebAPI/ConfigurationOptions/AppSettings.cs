@@ -17,7 +17,8 @@ namespace PhuThuongStickyRice.WebAPI.ConfigurationOptions
 
         public string AllowedHosts { get; set; }
 
-        public CORS CORS { get; set; }
+        // Tên property giữ nguyên "CORS" để bind đúng section "CORS" trong appsettings.json.
+        public CorsOptions CORS { get; set; }
 
         public Dictionary<string, string> SecurityHeaders { get; set; }
 
