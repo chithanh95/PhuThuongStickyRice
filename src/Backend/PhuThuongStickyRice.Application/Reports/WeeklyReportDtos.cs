@@ -68,7 +68,7 @@ namespace PhuThuongStickyRice.Application.Reports
     {
         /// <summary>True when the message was handed to the Zalo OA service
         /// with a configured token.</summary>
-        public bool Sent { get; set; }
+        public bool IsSent { get; set; }
 
         /// <summary>True when a Zalo OA token + owner recipient are configured.</summary>
         public bool ZaloConfigured { get; set; }

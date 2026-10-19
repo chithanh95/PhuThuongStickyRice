@@ -23,7 +23,7 @@ namespace PhuThuongStickyRice.Application.Reports
         {
             public string Period { get; set; }
 
-            public bool Sent { get; set; }
+            public bool IsSent { get; set; }
 
             public string Reason { get; set; }
         }

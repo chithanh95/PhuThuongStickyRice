@@ -43,7 +43,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 if (IsWeeklyDue(vnNow))
                 {
                     var result = await SendAsync(workerContext, "weekly");
-                    if (result.Sent)
+                    if (result.IsSent)
                     {
                         _lastWeeklySentUtc = DateTime.UtcNow;
                     }
@@ -52,7 +52,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 if (IsMonthlyDue(vnNow))
                 {
                     var result = await SendAsync(workerContext, "monthly");
-                    if (result.Sent)
+                    if (result.IsSent)
                     {
                         _lastMonthlySentUtc = DateTime.UtcNow;
                     }

@@ -61,7 +61,7 @@ namespace PhuThuongStickyRice.Application.Reports
                 return new OwnerReportResultDto
                 {
                     Period = period,
-                    Sent = false,
+                    IsSent = false,
                     Reason = "Chưa cấu hình email nhận báo cáo (OwnerReportEmail)."
                 };
             }
@@ -83,7 +83,7 @@ namespace PhuThuongStickyRice.Application.Reports
             });
             await _emailMessages.UnitOfWork.SaveChangesAsync();
 
-            return new OwnerReportResultDto { Period = normalizedPeriod, Sent = true };
+            return new OwnerReportResultDto { Period = normalizedPeriod, IsSent = true };
         }
 
         /// <summary>

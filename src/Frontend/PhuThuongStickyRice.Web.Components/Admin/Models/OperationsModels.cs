@@ -176,7 +176,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
 
         public string IpAddress { get; set; }
 
-        public bool Success { get; set; }
+        public bool IsSuccess { get; set; }
 
         public string FailureReason { get; set; }
     }

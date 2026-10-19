@@ -60,7 +60,7 @@ namespace PhuThuongStickyRice.Application.AuditLogs
                     UserName = x.UserName,
                     At = x.At,
                     IpAddress = x.IpAddress,
-                    Success = x.Success,
+                    IsSuccess = x.Success,
                     FailureReason = x.FailureReason
                 }).ToList());
         }

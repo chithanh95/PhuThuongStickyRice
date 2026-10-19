@@ -84,7 +84,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
 
             _logger.LogInformation(
                 "Weekly report Monday job finished: sent={Sent}, zaloConfigured={Configured}, note={Note}",
-                result.Sent,
+                result.IsSent,
                 result.ZaloConfigured,
                 result.Note);
         }

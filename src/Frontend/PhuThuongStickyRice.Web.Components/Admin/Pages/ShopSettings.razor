@@ -530,7 +530,7 @@ else
         try
         {
             var result = await ShopSettingsService.TestOrderWebhookAsync(_model.NewOrderWebhookUrl);
-            _webhookTestOk = result?.Ok == true;
+            _webhookTestOk = result?.IsSuccess == true;
             _webhookTestResult = result?.Message ?? "Không có phản hồi.";
         }
         catch (Exception ex)

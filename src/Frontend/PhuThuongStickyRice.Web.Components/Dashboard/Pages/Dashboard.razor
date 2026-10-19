@@ -927,7 +927,7 @@ else
         try
         {
             var result = await DashboardService.SendWeeklyReportAsync();
-            _weeklySendIsError = !result.Sent;
+            _weeklySendIsError = !result.IsSent;
             _weeklySendNote = result.Note;
         }
         catch (Exception ex)

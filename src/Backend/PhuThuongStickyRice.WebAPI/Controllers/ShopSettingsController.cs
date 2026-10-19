@@ -73,7 +73,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             var (ok, message) = await _shopSettingAppService.TestNewOrderWebhookAsync(request?.Url);
-            return Ok(new { ok, message });
+            return Ok(new { isSuccess = ok, message });
         }
     }
 }

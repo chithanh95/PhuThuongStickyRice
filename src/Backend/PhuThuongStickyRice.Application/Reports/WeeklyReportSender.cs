@@ -169,7 +169,7 @@ namespace PhuThuongStickyRice.Application.Reports
                     marker);
                 return new WeeklyReportSendResultDto
                 {
-                    Sent = false,
+                    IsSent = false,
                     ZaloConfigured = false,
                     MessageText = message,
                     Note = "Chưa cấu hình Zalo OA (thiếu Access Token hoặc Zalo User ID/SĐT chủ quán ở Cài đặt cửa hàng). " +
@@ -185,7 +185,7 @@ namespace PhuThuongStickyRice.Application.Reports
 
             return new WeeklyReportSendResultDto
             {
-                Sent = true,
+                IsSent = true,
                 ZaloConfigured = true,
                 MessageText = message,
                 Note = "Đã chuyển báo cáo tới dịch vụ Zalo OA. Lưu ý: tích hợp Zalo OA hiện ở chế độ " +

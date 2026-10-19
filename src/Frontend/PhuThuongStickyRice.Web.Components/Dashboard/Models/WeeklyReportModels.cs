@@ -47,7 +47,7 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Models
     /// <summary>Item 138: result of POST api/admin/reports/weekly/send.</summary>
     public class WeeklyReportSendResultModel
     {
-        public bool Sent { get; set; }
+        public bool IsSent { get; set; }
 
         public bool ZaloConfigured { get; set; }
 
