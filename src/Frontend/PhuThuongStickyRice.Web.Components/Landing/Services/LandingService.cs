@@ -75,14 +75,14 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
         }
 
         /// <summary>Giới thiệu bạn bè (item 29).</summary>
-        public async Task<bool> ReferAsync(string referrerPhone, string referredPhone)
+        public async Task<bool> ReferFriendAsync(string referrerPhone, string referredPhone)
         {
             var response = await PostAsync<object>("api/landing/referral", new { referrerPhone, referredPhone });
             return response != null;
         }
 
         /// <summary>Chấm sao nhanh (item 36).</summary>
-        public async Task<bool> QuickRateAsync(int rating, Guid? productId = null)
+        public async Task<bool> SubmitQuickRatingAsync(int rating, Guid? productId = null)
         {
             var response = await PostAsync<object>("api/landing/quick-rating", new { rating, productId });
             return response != null;
@@ -123,7 +123,7 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             return await GetAsync<List<DishPollModel>>("api/landing/polls");
         }
 
-        public async Task<bool> VotePollAsync(Guid pollId, string phone)
+        public async Task<bool> SubmitPollVoteAsync(Guid pollId, string phone)
         {
             var response = await PostAsync<object>($"api/landing/polls/{pollId}/vote", new { phone });
             return response != null;

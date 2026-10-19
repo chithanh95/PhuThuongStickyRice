@@ -1412,7 +1412,7 @@ else
     {
         if (_ratedDone) return;
         _quickRating = stars;
-        try { await LandingService.QuickRateAsync(stars); _ratedDone = true; }
+        try { await LandingService.SubmitQuickRatingAsync(stars); _ratedDone = true; }
         catch { }
     }
 
@@ -1467,7 +1467,7 @@ else
         if (digits.Length < 9) { _voteMsg = "Nhập SĐT để bình chọn."; return; }
         try
         {
-            if (await LandingService.VotePollAsync(pollId, digits))
+            if (await LandingService.SubmitPollVoteAsync(pollId, digits))
             {
                 _polls = await LandingService.GetPollsAsync() ?? new List<DishPollModel>();
                 _voteMsg = "Đã ghi nhận bình chọn của bạn!";
