@@ -56,6 +56,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>Internal: hoàn lại điểm đã đổi khi đơn bị hủy.</summary>
         Task RefundRedeemedPointsAsync(Order order);
 
+        /// <summary>
+        /// Internal: hoàn lại điểm đã đổi cho nhiều đơn bị hủy cùng lúc
+        /// (worker tự hủy đơn bank-transfer quá hạn) — 1 query load accounts
+        /// + 1 lần commit cuối thay vì 2 roundtrip cho mỗi đơn có đổi điểm.
+        /// </summary>
+        Task RefundRedeemedPointsBatchAsync(IList<Order> orders);
+
         /// <summary>Xếp hạng theo tổng chi tiêu: (Tên hạng, % giảm giá của hạng).</summary>
         (string Tier, decimal DiscountPercent) GetTier(decimal totalSpent, ShopSettingDto settings);
 
@@ -435,6 +442,55 @@ namespace PhuThuongStickyRice.Application.Loyalty
             account.TotalEarned += order.LoyaltyPointsRedeemed;
             account.UpdatedAt = DateTime.UtcNow;
             await _accounts.UpdateAsync(account, autoSave: true);
+        }
+
+        /// <summary>
+        /// Hoàn điểm đổi cho nhiều đơn bị hủy cùng lúc. Gom các SĐT distinct
+        /// có đổi điểm, load accounts bằng 1 query duy nhất, cộng điểm
+        /// in-memory rồi commit 1 lần cuối — thay vì mỗi đơn tốn 1 SELECT
+        /// tìm account + 1 SaveChanges riêng.
+        /// </summary>
+        /// <param name="orders">Các đơn đã hủy cần hoàn điểm.</param>
+        public virtual async Task RefundRedeemedPointsBatchAsync(IList<Order> orders)
+        {
+            var targets = (orders ?? Enumerable.Empty<Order>())
+                .Where(x => x != null && x.LoyaltyPointsRedeemed > 0)
+                .ToList();
+            if (targets.Count == 0)
+            {
+                return;
+            }
+
+            var phones = targets
+                .Select(x => NormalizePhone(x.CustomerPhone))
+                .Where(x => x != null)
+                .Distinct()
+                .ToList();
+            if (phones.Count == 0)
+            {
+                return;
+            }
+
+            var accountQueryable = await _accounts.GetQueryableAsync();
+            var byPhone = (await _asyncExecuter.ToListAsync(
+                    accountQueryable.Where(x => phones.Contains(x.Phone))))
+                .ToDictionary(x => x.Phone);
+
+            var now = DateTime.UtcNow;
+            foreach (var order in targets)
+            {
+                var phone = NormalizePhone(order.CustomerPhone);
+                if (phone == null || !byPhone.TryGetValue(phone, out var account))
+                {
+                    continue;
+                }
+
+                account.Points += order.LoyaltyPointsRedeemed;
+                account.TotalEarned += order.LoyaltyPointsRedeemed;
+                account.UpdatedAt = now;
+            }
+            // Không autoSave từng account: để UoW ambient commit 1 lần cuối
+            // (giống pattern gom commit ở AutoCancelExpiredBankTransfersAsync).
         }
 
         public (string Tier, decimal DiscountPercent) GetTier(decimal totalSpent, ShopSettingDto settings)

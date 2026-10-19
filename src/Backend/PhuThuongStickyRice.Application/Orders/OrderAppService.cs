@@ -1881,8 +1881,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 // SaveChanges riêng cho mỗi đơn.
                 // Wave 6c (item 34): audit the worker cancel ("hệ thống").
                 await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled, autoSave: false);
-                await _loyalty.RefundRedeemedPointsAsync(order);
             }
+
+            // perf-hunt 2026-10-19: hoàn điểm đổi theo batch (1 SELECT accounts
+            // + 1 commit) thay vì 2 roundtrip cho mỗi đơn có đổi điểm.
+            await _loyalty.RefundRedeemedPointsBatchAsync(expired);
 
             return expired.Count;
         }

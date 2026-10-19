@@ -1,4 +1,5 @@
 using PhuThuongStickyRice.Domain.Entities;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -57,18 +58,24 @@ namespace PhuThuongStickyRice.Application.Customer
     {
         public const string VipTagName = "VIP";
 
+        private const string VipPhonesCacheKey = "vip:phones";
+        private static readonly TimeSpan VipPhonesCacheTtl = TimeSpan.FromMinutes(5);
+
         private readonly ICustomerTagAppService _tags;
         private readonly IRepository<CustomerTag, Guid> _tagRepo;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+        private readonly IMemoryCache _memoryCache;
 
         public VipPriorityAppService(
             ICustomerTagAppService tags,
             IRepository<CustomerTag, Guid> tagRepo,
-            IAsyncQueryableExecuter asyncExecuter)
+            IAsyncQueryableExecuter asyncExecuter,
+            IMemoryCache memoryCache)
         {
             _tags = tags;
             _tagRepo = tagRepo;
             _asyncExecuter = asyncExecuter;
+            _memoryCache = memoryCache;
         }
 
         /// <summary>
@@ -125,15 +132,25 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>
         /// Lấy toàn bộ SĐT đang gắn tag VIP (dạng tập hợp, đã loại trùng) để ưu tiên
         /// xử lý đơn / áp chính sách ưu đãi cho khách VIP.
+        /// perf-hunt 2026-10-19: cache 5 phút — admin order list gọi mỗi request
+        /// khi bật filter VIP. Mark/UnmarkVip bust cache; tag CRUD thủ công
+        /// (qua CustomerTagAppService) được TTL 5 phút bao phủ.
         /// </summary>
         /// <returns>Tập hợp SĐT VIP.</returns>
         public virtual async Task<HashSet<string>> GetVipPhonesAsync()
         {
+            if (_memoryCache.TryGetValue(VipPhonesCacheKey, out HashSet<string> cached))
+            {
+                return cached;
+            }
+
             var queryable = await _tagRepo.GetQueryableAsync();
             var phones = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.TagName == VipTagName)
                     .Select(x => x.CustomerPhone));
-            return new HashSet<string>(phones.Distinct());
+            var result = new HashSet<string>(phones.Distinct());
+            _memoryCache.Set(VipPhonesCacheKey, result, VipPhonesCacheTtl);
+            return result;
         }
 
         /// <summary>
@@ -180,12 +197,14 @@ namespace PhuThuongStickyRice.Application.Customer
                 return vip;
             }
 
-            return await _tags.AddTagAsync(new CreateCustomerTagDto
+            var added = await _tags.AddTagAsync(new CreateCustomerTagDto
             {
                 CustomerPhone = phone,
                 TagName = VipTagName,
                 Color = CustomerTagPresets.ColorFor(VipTagName),
             });
+            _memoryCache.Remove(VipPhonesCacheKey);
+            return added;
         }
 
         /// <summary>
@@ -207,6 +226,7 @@ namespace PhuThuongStickyRice.Application.Customer
             if (vip != null)
             {
                 await _tags.DeleteTagAsync(vip.Id);
+                _memoryCache.Remove(VipPhonesCacheKey);
             }
         }
 

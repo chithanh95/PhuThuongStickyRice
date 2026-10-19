@@ -227,15 +227,17 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         /// <summary>
-        /// Admin xem toàn bộ đăng ký nhắc cúng, mới nhất lên trước.
+        /// Admin xem đăng ký nhắc cúng, mới nhất lên trước.
+        /// perf-hunt 2026-10-19: Take(200) ở phía server — bảng nhắc cúng
+        /// tăng vô hạn theo thời gian, không bao giờ materialize toàn bảng.
         /// </summary>
-        /// <returns>Danh sách đăng ký nhắc cúng.</returns>
+        /// <returns>Danh sách đăng ký nhắc cúng (tối đa 200 bản ghi mới nhất).</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<CungReminderDto>> GetRemindersAsync()
         {
             var queryable = await _reminders.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.CreatedAt));
+                queryable.OrderByDescending(x => x.CreatedAt).Take(200));
             return items.Select(MapReminderToDto).ToList();
         }
 
