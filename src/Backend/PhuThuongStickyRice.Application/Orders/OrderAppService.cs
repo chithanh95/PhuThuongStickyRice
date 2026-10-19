@@ -1605,6 +1605,18 @@ namespace PhuThuongStickyRice.Application.Orders
                         $"Đơn hàng ở trạng thái '{order.Status}' không thể chuyển tiếp từ màn hình bếp.");
             }
 
+            // bug-hunt 2026-10-19: guard nguyên tử giống UpdateStatusAsync —
+            // bếp bấm KDS đúng lúc staff hủy/xử lý đơn: chỉ 1 request thắng
+            // UPDATE ... WHERE Status = fromStatus; người thua nhận lỗi rõ
+            // ràng thay vì save entity cũ đè lên đơn vừa bị hủy (đơn "hồi sinh",
+            // tiền/điểm/mã giảm giá đã hoàn không thu lại). Order không có
+            // concurrency token nên guard DB là lớp bảo vệ duy nhất.
+            if (!await _orders.TryTransitionStatusAsync(order.Id, fromStatus, order.Status))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Đơn hàng vừa được xử lý bởi thao tác khác. Vui lòng tải lại trang.");
+            }
+
             await _orders.UpdateAsync(order);
 
             // Wave 6c (item 34): audit the KDS tap.
@@ -1684,6 +1696,24 @@ namespace PhuThuongStickyRice.Application.Orders
             if (order.Status == OrderStatus.Preparing)
             {
                 order.StartDelivering();
+            }
+
+            // bug-hunt 2026-10-19: guard nguyên tử khi trạng thái thực sự đổi
+            // (Preparing → Delivering) — cùng lý do với AdvanceKitchenStatusAsync:
+            // staff xác nhận lấy hàng đúng lúc đơn bị hủy/xử lý thì chỉ 1 thắng
+            // UPDATE ... WHERE Status = fromStatus; người thua nhận lỗi rõ ràng
+            // thay vì save entity cũ đè lên đơn đã hủy (đơn "hồi sinh").
+            // Guard đứng trước RecordStatusChangeAsync để kẻ thua không ghi
+            // lịch sử giả cho transition không xảy ra.
+            if (fromStatus != order.Status
+                && !await _orders.TryTransitionStatusAsync(order.Id, fromStatus, order.Status))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Đơn hàng vừa được xử lý bởi thao tác khác. Vui lòng tải lại trang.");
+            }
+
+            if (fromStatus != order.Status)
+            {
                 await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
             }
 
