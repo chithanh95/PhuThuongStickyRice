@@ -2880,6 +2880,16 @@ namespace PhuThuongStickyRice.Application.Orders
                 return;
             }
 
+            // SĐT placeholder "0000000000" (POS gán cho khách vãng lai không để
+            // lại SĐT) được dùng chung cho mọi đơn vãng lai — không phải SĐT
+            // thật nên không áp giới hạn chống spam theo SĐT (cùng họ với miễn
+            // trừ loyalty ở CreateAsync). Nếu không, sau 10 đơn vãng lai/ngày
+            // quầy POS bị chặn "đã đặt tối đa N đơn hôm nay" và không bán được.
+            if (_loyalty.IsPlaceholderPhone(customerPhone))
+            {
+                return;
+            }
+
             var startOfTodayUtc = VietnamTime.DayStartUtc(VietnamTime.Today()); // VN 00:00 → UTC
 
             var orderQueryable = await _orders.GetQueryableAsync();

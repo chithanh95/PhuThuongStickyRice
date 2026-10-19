@@ -596,10 +596,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
         }
 
         /// <summary>
-        /// Hoàn điểm đổi cho nhiều đơn bị hủy cùng lúc. Gom các SĐT distinct
-        /// có đổi điểm, load accounts bằng 1 query duy nhất, cộng điểm
-        /// in-memory rồi commit 1 lần cuối — thay vì mỗi đơn tốn 1 SELECT
-        /// tìm account + 1 SaveChanges riêng.
+        /// Hoàn điểm đổi cho nhiều đơn bị hủy cùng lúc. Gom delta theo từng
+        /// SĐT distinct rồi cộng bằng <see cref="Domain.Repositories.ILoyaltyAccountRepository.TryIncrementPointsAsync"/>
+        /// (UPDATE nguyên tử) — chống race read-modify-write: worker tự hủy
+        /// đơn quá hạn chạy đồng thời với nhân viên hủy tay cùng đơn/SĐT sẽ
+        /// không còn đọc số dư cũ rồi ghi đè làm mất phần cộng của nhau.
+        /// Tài khoản không tồn tại thì bỏ qua (giống hành vi cũ).
         /// </summary>
         /// <param name="orders">Các đơn đã hủy cần hoàn điểm.</param>
         public virtual async Task RefundRedeemedPointsBatchAsync(IList<Order> orders)
@@ -612,36 +614,23 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return;
             }
 
-            var phones = targets
-                .Select(x => NormalizePhone(x.CustomerPhone))
-                .Where(x => x != null)
-                .Distinct()
-                .ToList();
-            if (phones.Count == 0)
-            {
-                return;
-            }
-
-            var accountQueryable = await _accounts.GetQueryableAsync();
-            var byPhone = (await _asyncExecuter.ToListAsync(
-                    accountQueryable.Where(x => phones.Contains(x.Phone))))
-                .ToDictionary(x => x.Phone);
-
-            var now = DateTime.UtcNow;
+            var increments = new Dictionary<string, int>();
             foreach (var order in targets)
             {
                 var phone = NormalizePhone(order.CustomerPhone);
-                if (phone == null || !byPhone.TryGetValue(phone, out var account))
+                if (phone == null)
                 {
                     continue;
                 }
 
-                account.Points += order.LoyaltyPointsRedeemed;
-                account.TotalEarned += order.LoyaltyPointsRedeemed;
-                account.UpdatedAt = now;
+                increments.TryGetValue(phone, out var current);
+                increments[phone] = current + order.LoyaltyPointsRedeemed;
             }
-            // Không autoSave từng account: để UoW ambient commit 1 lần cuối
-            // (giống pattern gom commit ở AutoCancelExpiredBankTransfersAsync).
+
+            foreach (var (phone, points) in increments)
+            {
+                await _accounts.TryIncrementPointsAsync(phone, points);
+            }
         }
 
         /// <summary>

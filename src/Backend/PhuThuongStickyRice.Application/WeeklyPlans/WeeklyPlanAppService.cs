@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
@@ -81,7 +82,10 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
         {
             // Perf: shop tab hits this on every view; cache 5 minutes.
             // Keyed by the Monday date so the plan rolls over naturally each week.
-            var monday = GetMonday(DateTime.Today);
+            // Dùng ngày VN (không phải giờ server): nếu server chạy UTC, khung
+            // 00:00-06:59 sáng thứ 2 giờ VN vẫn là chủ nhật theo server →
+            // GetMonday tính nhầm tuần trước (cùng họ bug InventoryAppService).
+            var monday = GetMonday(VietnamTime.Today());
             return await _catalogCache.GetOrAddAsync(
                 $"weeklyplan:active:{monday:yyyyMMdd}", async () =>
                 {
