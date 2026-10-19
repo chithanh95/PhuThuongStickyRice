@@ -568,35 +568,12 @@ namespace PhuThuongStickyRice.Domain.Entities
             FulfillmentMethod fulfillmentMethod,
             string deliverySlot)
         {
-            if (string.IsNullOrWhiteSpace(orderNumber))
-            {
-                throw new DomainException("Order number is required.");
-            }
-
-            if (orderNumber.Trim().Length > OrderNumberMaxLength)
-            {
-                throw new DomainException($"Order number must not exceed {OrderNumberMaxLength} characters.");
-            }
-
-            if (string.IsNullOrWhiteSpace(customerName))
-            {
-                throw new DomainException("Customer name must not be empty.");
-            }
-
-            if (customerName.Trim().Length > CustomerNameMaxLength)
-            {
-                throw new DomainException($"Customer name must not exceed {CustomerNameMaxLength} characters.");
-            }
-
-            if (string.IsNullOrWhiteSpace(customerPhone))
-            {
-                throw new DomainException("Customer phone must not be empty.");
-            }
-
-            if (customerPhone.Trim().Length > CustomerPhoneMaxLength)
-            {
-                throw new DomainException($"Customer phone must not exceed {CustomerPhoneMaxLength} characters.");
-            }
+            // [codequality-smell 2026-10-20] Các kiểm tra text rỗng/độ dài
+            // gom về TextValidation dùng chung với OrderLine — logic và
+            // thông điệp lỗi giữ nguyên từng trường hợp.
+            TextValidation.RequireMaxLength(orderNumber, OrderNumberMaxLength, "Order number", "Order number is required.");
+            TextValidation.RequireMaxLength(customerName, CustomerNameMaxLength, "Customer name", "Customer name must not be empty.");
+            TextValidation.RequireMaxLength(customerPhone, CustomerPhoneMaxLength, "Customer phone", "Customer phone must not be empty.");
 
             if (!string.IsNullOrWhiteSpace(customerEmail))
             {
@@ -615,20 +592,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("Customer address must not be empty.");
             }
 
-            if (!string.IsNullOrWhiteSpace(customerAddress) && customerAddress.Trim().Length > CustomerAddressMaxLength)
-            {
-                throw new DomainException($"Customer address must not exceed {CustomerAddressMaxLength} characters.");
-            }
-
-            if (notes != null && notes.Length > NotesMaxLength)
-            {
-                throw new DomainException($"Order notes must not exceed {NotesMaxLength} characters.");
-            }
-
-            if (deliverySlot != null && deliverySlot.Trim().Length > DeliverySlotMaxLength)
-            {
-                throw new DomainException($"Delivery slot must not exceed {DeliverySlotMaxLength} characters.");
-            }
+            TextValidation.MaxLength(customerAddress, CustomerAddressMaxLength, "Customer address");
+            TextValidation.MaxLength(notes, NotesMaxLength, "Order notes", trimBeforeCheck: false);
+            TextValidation.MaxLength(deliverySlot, DeliverySlotMaxLength, "Delivery slot");
         }
 
         /// <summary>

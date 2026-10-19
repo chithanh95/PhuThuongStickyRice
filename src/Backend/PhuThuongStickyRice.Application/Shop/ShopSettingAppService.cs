@@ -80,7 +80,9 @@ namespace PhuThuongStickyRice.Application.Shop
         private const int DefaultUnconfirmedAlertMinutes = 15;
         private const int DefaultErrorRateThreshold = 20;
         private const int DefaultUploadsSizeWarningMb = 500;
-        private const int DefaultCheckInPoints = 5;
+        // [codequality-smell 2026-10-20] DefaultCheckInPoints dùng hằng số
+        // public trên entity ShopSetting (giống CheckInAppService) — trước
+        // đây 3 nơi cùng định nghĩa giá trị 5.
         private const int DefaultNepPerPortionGrams = 150;
         private const int MaxOrdersPerPhonePerDayLimit = 1000;
         private const int MaxWebhookUrlLength = 1000;
@@ -281,7 +283,7 @@ namespace PhuThuongStickyRice.Application.Shop
         /// <summary>Giờ mở cửa, nhận đơn, giới hạn đơn theo SĐT/ngày.</summary>
         private void ApplyOrderingSettings(ShopSetting entity, ShopSettingDto dto)
         {
-            entity.CheckInPoints = dto.CheckInPoints < 0 ? DefaultCheckInPoints : dto.CheckInPoints;
+            entity.CheckInPoints = dto.CheckInPoints < 0 ? ShopSetting.DefaultCheckInPoints : dto.CheckInPoints;
             entity.NepPerPortionGrams = dto.NepPerPortionGrams < 1 ? DefaultNepPerPortionGrams : dto.NepPerPortionGrams;
             entity.DailyTargetAmount = Math.Max(0, dto.DailyTargetAmount);
             // Wave 6a (item 22): normalized to "HH:mm"; admin config UI arrives in Wave 6b.

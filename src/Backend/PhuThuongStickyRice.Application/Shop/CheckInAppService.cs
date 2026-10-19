@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Application.Shop;
 
+using PhuThuongStickyRice.Domain;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
@@ -25,8 +26,10 @@ namespace PhuThuongStickyRice.Application.Shop
     /// <summary>Item 121: daily check-in awarding loyalty points.</summary>
     public class CheckInAppService : ApplicationService, ICheckInAppService
     {
-        /// <summary>Số điểm tặng mặc định mỗi lần điểm danh khi cài đặt chưa cấu hình.</summary>
-        private const int DefaultCheckInPoints = 5;
+        // [codequality-smell 2026-10-20] Dùng hằng số dùng chung
+        // ShopSetting.DefaultCheckInPoints thay vì copy private const = 5
+        // (trước đây 3 nơi cùng định nghĩa 5: entity, service này và
+        // ShopSettingAppService — đổi giá trị 1 nơi quên 1 nơi sẽ lệch).
 
         private readonly ICheckInRepository _checkIns;
         private readonly ILoyaltyAccountRepository _loyaltyAccounts;
@@ -72,7 +75,7 @@ namespace PhuThuongStickyRice.Application.Shop
             }
 
             var settings = await _shopSettings.GetAsync();
-            var points = settings.CheckInPoints > 0 ? settings.CheckInPoints : DefaultCheckInPoints;
+            var points = settings.CheckInPoints > 0 ? settings.CheckInPoints : ShopSetting.DefaultCheckInPoints;
 
             // Ghi nhận điểm danh nguyên tử (bug-hunt run 15:35): 2 request
             // điểm danh đồng thời cùng SĐT cùng ngày đều qua bước check
@@ -200,7 +203,7 @@ namespace PhuThuongStickyRice.Application.Shop
                 Points = 0,
                 TotalEarned = 0,
                 TotalSpent = 0,
-                ReferralCode = "PT-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
+                ReferralCode = ReferralCodes.Prefix + Guid.NewGuid().ToString("N")[..ReferralCodes.SuffixLength].ToUpperInvariant(),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };

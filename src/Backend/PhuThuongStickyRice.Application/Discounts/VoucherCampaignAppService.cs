@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Domain;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
@@ -101,7 +102,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             return new List<VoucherCampaignAudienceDto>
             {
                 new VoucherCampaignAudienceDto { Key = AudienceInactive30, Name = "Không mua 30+ ngày", RecipientCount = inactiveCount },
-                new VoucherCampaignAudienceDto { Key = AudienceTier, Name = $"Hạng {tier ?? "Vàng"}", RecipientCount = tierCount },
+                new VoucherCampaignAudienceDto { Key = AudienceTier, Name = $"Hạng {tier ?? MemberTierNames.Gold}", RecipientCount = tierCount },
                 new VoucherCampaignAudienceDto { Key = AudienceAll, Name = "Tất cả khách", RecipientCount = allCount }
             };
         }
@@ -295,7 +296,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         private async Task<(bool IsSilver, decimal Min)?> ResolveTierMinAsync(string tier)
         {
             var settings = await _shopSettings.GetAsync();
-            var isSilver = string.Equals(tier, "Bạc", StringComparison.OrdinalIgnoreCase);
+            var isSilver = string.Equals(tier, MemberTierNames.Silver, StringComparison.OrdinalIgnoreCase);
             var min = isSilver ? settings.TierSilverMin : settings.TierGoldMin;
             return min <= 0 ? null : (isSilver, min);
         }

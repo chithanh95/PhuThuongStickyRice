@@ -1,5 +1,6 @@
 #nullable enable annotations
 using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.Domain;
 using PhuThuongStickyRice.Application.Loyalty.DTOs;
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Shop.DTOs;
@@ -795,15 +796,15 @@ namespace PhuThuongStickyRice.Application.Loyalty
             // Bạc), Bạc dùng '>=' (đúng bằng mốc Bạc thì lên Bạc).
             if (settings.TierGoldMin > 0 && totalSpent > settings.TierGoldMin)
             {
-                return ("Vàng", Math.Max(0, settings.TierGoldDiscount));
+                return (MemberTierNames.Gold, Math.Max(0, settings.TierGoldDiscount));
             }
 
             if (settings.TierSilverMin > 0 && totalSpent >= settings.TierSilverMin)
             {
-                return ("Bạc", Math.Max(0, settings.TierSilverDiscount));
+                return (MemberTierNames.Silver, Math.Max(0, settings.TierSilverDiscount));
             }
 
-            return ("Đồng", 0);
+            return (MemberTierNames.Bronze, 0);
         }
 
         /// <summary>
@@ -859,8 +860,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
             for (var attempt = 0; attempt < MaxReferralCodeAttempts; attempt++)
             {
-                var code = "PT-" + new string(
-                    Enumerable.Range(0, 6).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
+                var code = ReferralCodes.Prefix + new string(
+                    Enumerable.Range(0, ReferralCodes.SuffixLength).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
 
                 var queryable = await _accounts.GetQueryableAsync();
                 // [codequality-practices 2026-10-19] Chỉ cần biết mã đã tồn tại
@@ -872,7 +873,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 }
             }
 
-            return "PT-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+            return ReferralCodes.Prefix + Guid.NewGuid().ToString("N")[..ReferralCodes.SuffixLength].ToUpperInvariant();
         }
 
         /// <summary>

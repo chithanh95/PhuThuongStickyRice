@@ -107,25 +107,17 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("Order line quantity must be at least 1.");
             }
 
-            if (sizeName != null && sizeName.Length > SizeNameMaxLength)
-            {
-                throw new DomainException($"Size name must not exceed {SizeNameMaxLength} characters.");
-            }
-
-            if (toppingNames != null && toppingNames.Length > ToppingNamesMaxLength)
-            {
-                throw new DomainException($"Topping names must not exceed {ToppingNamesMaxLength} characters.");
-            }
-
             if (toppingsExtra < 0)
             {
                 throw new DomainException("Toppings extra must not be negative.");
             }
 
-            if (note != null && note.Length > NoteMaxLength)
-            {
-                throw new DomainException($"Order line note must not exceed {NoteMaxLength} characters.");
-            }
+            // [codequality-smell 2026-10-20] Kiểm tra độ dài gom về
+            // TextValidation dùng chung với Order — giữ nguyên kiểu đo độ
+            // dài thô (Length, không trim) như bản cũ.
+            TextValidation.MaxLength(sizeName, SizeNameMaxLength, "Size name", trimBeforeCheck: false);
+            TextValidation.MaxLength(toppingNames, ToppingNamesMaxLength, "Topping names", trimBeforeCheck: false);
+            TextValidation.MaxLength(note, NoteMaxLength, "Order line note", trimBeforeCheck: false);
 
             return new OrderLine(
                 productId,
