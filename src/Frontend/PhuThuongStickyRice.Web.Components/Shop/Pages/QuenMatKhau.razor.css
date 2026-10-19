@@ -108,3 +108,59 @@
     .auth-otp-input { letter-spacing: 4px; font-weight: 700; font-size: 18px; }
     .auth-success-emoji { font-size: 40px; }
     html.dark .auth-brand-name { color: #f0eef5; }
+
+/* ===== UIUX run 04:32 — Agent1 Mobile =====
+   FIX 1 — Link "← Về đăng nhập" cuối trang (.auth-wrap > .text-center.mt-4 > a,
+   QuenMatKhau.razor): text-muted small ~12.8px, vùng bấm chỉ bằng dòng chữ,
+   nằm sát mép dưới — người lớn tuổi khó bấm trúng. Trang Đăng nhập đã fix
+   cùng pattern này (DangNhap.razor.css run 03:10 FIX 5) nhưng trang này bị
+   sót. Đồng bộ: vùng bấm 44px, chữ 15px; PC giữ nguyên.
+   (Verify: selector chỉ khớp đúng link này — link "← Về trang chủ" của
+   DangNhap nằm ở file CSS khác nên không bị ảnh hưởng.) */
+@media (max-width: 767.98px) {
+    .auth-wrap > .text-center.mt-4 > a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 8px 16px;
+        font-size: 15px;
+    }
+}
+/* ===== END UIUX run 04:32 - Agent1 FIX 1 ===== */
+
+/* ===== UIUX run 04:32 — Agent1 Mobile =====
+   FIX 2 — 2 dòng thông tin OTP (QuenMatKhau.razor): "Mã OTP sẽ được gửi qua
+   SMS đến số này." (bước 1) và "Mã có hiệu lực 5 phút. Không nhận được? Gửi
+   lại" (bước 2) ở small.text-muted ~12.8px — thông tin QUAN TRỌNG (kênh nhận
+   mã + giới hạn 5 phút) để người lớn tuổi không lúng túng chờ mã sai chỗ,
+   nhưng mờ khó đọc trên mobile. Nâng lên 14px, PC giữ nguyên.
+   (Verify: .form-group > small.text-muted chỉ khớp 2 dòng này — small trong
+   label "Mật khẩu mới (ít nhất 6 ký tự)" nằm trong <label>, không phải con
+   trực tiếp của .form-group nên giữ nguyên.) */
+@media (max-width: 767.98px) {
+    .form-group > small.text-muted {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 04:32 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 04:32 — Agent1 Mobile =====
+   FIX 3 — Link "Đăng nhập ngay →" trong alert "Đặt lại mật khẩu thành công!"
+   (QuenMatKhau.razor, bước 3): CTA chính sau khi đổi pass xong nhưng chỉ là
+   link chữ mỏng (~16px, vùng bấm bằng đúng dòng chữ) — người lớn tuổi cần
+   nút to rõ để bấm tiếp. Nâng vùng bấm lên 44px, chữ 16px; PC giữ nguyên.
+   (Verify: .auth-card .alert-success > .auth-link chỉ khớp link này — các
+   .auth-link khác (bước 1/2, "Gửi lại") không nằm trong .alert-success.) */
+@media (max-width: 767.98px) {
+    .auth-card .alert-success > .auth-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 8px 20px;
+        font-size: 16px;
+        font-weight: 700;
+    }
+}
+/* ===== END UIUX run 04:32 - Agent1 FIX 3 ===== */
