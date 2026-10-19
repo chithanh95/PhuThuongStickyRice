@@ -90,9 +90,9 @@
             {
                 <div class="alert alert-danger py-2" role="alert">@_error</div>
             }
-            @if (!string.IsNullOrEmpty(_info))
+            @if (!string.IsNullOrEmpty(_infoMessage))
             {
-                <div class="alert alert-success py-2" role="status">@_info</div>
+                <div class="alert alert-success py-2" role="status">@_infoMessage</div>
             }
 
             @if (_tab == "login")
@@ -153,7 +153,7 @@
     private string _confirmPassword;
     private string _fullName;
     private string _error;
-    private string _info;
+    private string _infoMessage;
     private bool _busy;
     private string _returnUrl;
     private bool _isDark;
@@ -209,7 +209,7 @@
     private async Task LoginAsync()
     {
         _error = null;
-        _info = null;
+        _infoMessage = null;
         if (!IsValidPhone(_phone))
         {
             _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
@@ -244,7 +244,7 @@
     private async Task RegisterAsync()
     {
         _error = null;
-        _info = null;
+        _infoMessage = null;
         if (!IsValidPhone(_phone))
         {
             _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";

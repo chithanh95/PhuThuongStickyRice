@@ -155,7 +155,10 @@ namespace PhuThuongStickyRice.Application.Common
                 }
             }
 
-            return Guid.NewGuid().ToString("N").Substring(0, 6).ToLowerInvariant();
+            // Range operator [..6] thay Substring(0, 6): ngắn gọn, đúng idiom C# 8+
+            // (cùng cách ProductAppService.Truncate đã dùng), không sợ nhầm
+            // startIndex/length.
+            return Guid.NewGuid().ToString("N")[..6].ToLowerInvariant();
         }
 
         private static ShortLinkDto MapToDto(ShortLink entity)

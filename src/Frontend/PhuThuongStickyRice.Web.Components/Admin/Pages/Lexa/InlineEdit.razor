@@ -25,11 +25,11 @@ else
     <span class="d-inline-flex align-items-center" style="gap:4px;">
         @if (Multiline)
         {
-            <textarea class="form-control form-control-sm" rows="2" @bind="_tmp" @onkeydown="OnKeyDown" style="min-width:200px;"></textarea>
+            <textarea class="form-control form-control-sm" rows="2" @bind="_draftValue" @onkeydown="OnKeyDown" style="min-width:200px;"></textarea>
         }
         else
         {
-            <input type="@InputType" class="form-control form-control-sm" @bind="_tmp" @bind:event="oninput" @onkeydown="OnKeyDown" style="min-width:150px;" />
+            <input type="@InputType" class="form-control form-control-sm" @bind="_draftValue" @bind:event="oninput" @onkeydown="OnKeyDown" style="min-width:150px;" />
         }
         <button type="button" class="btn btn-sm btn-success" @onclick="Confirm" title="Lưu">✓</button>
         <button type="button" class="btn btn-sm btn-danger" @onclick="Cancel" title="Hủy">✕</button>
@@ -52,18 +52,18 @@ else
     [Parameter] public bool Required { get; set; }
 
     private bool _editing;
-    private string _tmp;
+    private string _draftValue;
 
     private void StartEdit()
     {
-        _tmp = Value;
+        _draftValue = Value;
         _editing = true;
     }
 
     private async Task Confirm()
     {
         _editing = false;
-        await ValueChanged.InvokeAsync(_tmp);
+        await ValueChanged.InvokeAsync(_draftValue);
     }
 
     private void Cancel()

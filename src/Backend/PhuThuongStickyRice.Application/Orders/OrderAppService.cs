@@ -790,6 +790,17 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <param name="catalog">Catalog đã nạp bởi <see cref="LoadOrderLineCatalogAsync"/>.</param>
         /// <returns>Danh sách tuple dòng đơn — giữ nguyên tên element để
         /// <c>Order.Create</c> và <c>EnsureDailyLimitsAsync</c> nhận đúng dữ liệu.</returns>
+        /// <summary>
+        /// Dựng các dòng đơn từ giỏ hàng của khách, quyết định đơn giá cuối của
+        /// mỗi dòng: combo dùng giá combo; món thường lấy giá size đã chọn
+        /// (thay giá gốc) rồi cộng thêm tiền topping. Món/combo ngừng bán hoặc
+        /// món ngoài khung giờ bán thì chặn ngay — vì checkout client đã validate
+        /// trước, bước này là "cửa an ninh" phía server (khách sửa request vẫn
+        /// không mua được hàng hết/đóng bán).
+        /// </summary>
+        /// <param name="input">Dữ liệu checkout của khách.</param>
+        /// <param name="catalog">Catalog đã load 1 lần (món, combo, size, topping).</param>
+        /// <returns>Các dòng đơn với đơn giá đã chốt.</returns>
         private List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
                 string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> BuildOrderLines(
             CreateOrderDto input, OrderLineCatalog catalog)
@@ -892,6 +903,17 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <param name="order">Entity đơn đã dựng đầy đủ (chưa ghi DB).</param>
         /// <param name="appliedCode">Mã giảm giá đã áp (nếu có) — tăng lượt dùng sau khi đơn lưu.</param>
         /// <param name="branchName">Tên chi nhánh, gắn vào payload webhook.</param>
+        /// <summary>
+        /// Hoàn tất quy trình tạo đơn sau khi entity <c>Order</c> đã dựng xong.
+        /// Thứ tự an toàn tiền quan trọng ở đây: (1) đơn trả bằng ví bị trừ
+        /// tiền NGAY (số dư không đủ thì abort trước khi ghi đơn); (2) ghi đơn;
+        /// (3) CHỈ sau khi đơn tồn tại mới tăng lượt dùng mã giảm giá — đơn lỗi
+        /// không bao giờ đốt lượt mã của khách. Các bước phụ sau đó (webhook,
+        /// Zalo receipt, email) đều "fire-and-log", lỗi không làm gãy đơn.
+        /// </summary>
+        /// <param name="order">Đơn hàng vừa tạo (chưa lưu DB).</param>
+        /// <param name="appliedCode">Mã giảm giá đã áp (null khi không dùng mã).</param>
+        /// <param name="branchName">Tên chi nhánh denormalize để gửi webhook.</param>
         private async Task FinalizeCreatedOrderAsync(Order order, string appliedCode, string branchName)
         {
             // Item 140: wallet payment — charge the prepaid balance up front;
@@ -1197,9 +1219,11 @@ namespace PhuThuongStickyRice.Application.Orders
             : StaffActions.OrderStatusChange;
 
         /// <summary>
-        /// Post-completion side effects: loyalty points + referral bonuses
-        /// (once per order — Complete() can only run a single time per order)
-        /// and automatic reward rules (item 92).
+        /// Side effect khi đơn hoàn thành: cộng điểm loyalty + thưởng giới
+        /// thiệu cho khách, và chạy các quy tắc thưởng tự động (item 92).
+        /// Chỉ chạy 1 lần/đơn vì entity <c>Order.Complete()</c> chỉ cho chạy
+        /// 1 lần — khách không thể nhận điểm 2 lần bằng cách chuyển trạng
+        /// thái đi-về.
         /// </summary>
         private async Task HandleOrderCompletedAsync(Order order)
         {
@@ -1209,8 +1233,10 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Post-cancellation side effects: refund redeemed loyalty points;
-        /// wallet-paid orders are credited back (item 140).
+        /// Side effect khi đơn bị hủy: hoàn lại điểm loyalty khách đã đổi và
+        /// hoàn tiền ví về tài khoản khách (đơn trả bằng ví). Thứ tự ngược
+        /// với lúc tạo đơn — tiền/điểm chỉ rời hệ thống sau khi đơn thật sự
+        /// tồn tại và thanh toán, nên hủy đơn phải trả đúng những gì đã thu.
         /// </summary>
         private async Task HandleOrderCancelledAsync(Order order)
         {
@@ -1844,6 +1870,13 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>Tạo voucher thưởng cho đánh giá kèm ảnh rồi gắn mã voucher vào review.</summary>
+        /// <summary>
+        /// Tặng voucher 25.000đ cho khách gửi đánh giá kèm ảnh: sinh mã dùng
+        /// 1 lần gắn với SĐT khách (không ai dùng ké) và lưu mã vào review để
+        /// khách xem lại mã ở màn đánh giá của mình.
+        /// </summary>
+        /// <param name="order">Đơn hàng được đánh giá.</param>
+        /// <param name="review">Đánh giá kèm ảnh vừa được tạo.</param>
         private async Task IssuePhotoReviewVoucherAsync(Order order, OrderReview review)
         {
             var phone = _loyalty.NormalizePhone(order.CustomerPhone);
@@ -1950,9 +1983,9 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Post-checkout lucky spin. The server picks the segment (weighted)
-        /// and generates a real single-use voucher tied to the phone; the
-        /// frontend only animates the wheel to the returned segment.
+        /// Vòng quay may mắn sau checkout (không cần đăng nhập). Server quay
+        /// chọn segment theo trọng số và sinh voucher dùng 1 lần gắn SĐT —
+        /// frontend chỉ chạy hiệu ứng quay tới segment server trả về.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<SpinResultDto> SpinAsync(SpinInput input)
@@ -2057,8 +2090,15 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Generates a single-use discount code for a lucky-spin prize.
+        /// Sinh mã giảm giá dùng 1 lần làm quà trúng thưởng của vòng quay may
+        /// mắn (mã gắn SĐT nên chỉ chủ SĐT dùng được).
         /// </summary>
+        /// <param name="prefix">Tiền tố mã (SPIN / FREESHIP).</param>
+        /// <param name="expiresAt">Hạn sử dụng của mã.</param>
+        /// <param name="ownerPhone">SĐT nhận giải (đã chuẩn hóa).</param>
+        /// <param name="discountPercent">% giảm (giải %).</param>
+        /// <param name="discountAmount">Số tiền giảm (giải tiền mặt/freeship).</param>
+        /// <returns>Mã voucher vừa sinh.</returns>
         private async Task<string> CreateSpinPrizeCodeAsync(
             string prefix, DateTime expiresAt, string ownerPhone,
             decimal? discountPercent = null, decimal? discountAmount = null)
@@ -2075,9 +2115,13 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Cancels Pending bank-transfer orders that stayed unpaid past the
-        /// configured expiry (worker entry point).
+        /// Worker tự hủy các đơn chuyển khoản ngân hàng quá hạn chưa trả tiền
+        /// (trạng thái Pending, chưa thanh toán). Mỗi tick xử lý tối đa
+        /// <c>AutoCancelBatchSize</c> đơn để worker chết lâu ngày không nạp
+        /// cả bảng vào memory. Điểm loyalty đã đổi được hoàn lại theo batch —
+        /// khách không mất điểm oan vì đơn bị hệ thống hủy.
         /// </summary>
+        /// <returns>Số đơn đã tự hủy trong lần chạy này.</returns>
         public virtual async Task<int> AutoCancelExpiredBankTransfersAsync()
         {
             var settings = await _shopSettings.GetAsync();
@@ -2240,6 +2284,15 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <param name="id">Id đơn hàng.</param>
         /// <param name="input">SĐT khách dùng để xác thực.</param>
         /// <returns>Đơn hàng sau khi đánh dấu đã nhận.</returns>
+        /// <summary>
+        /// Khách tự khai báo "đã chuyển khoản" cho đơn BankTransfer của mình
+        /// (xác thực bằng mã đơn + SĐT, không cần đăng nhập). Đây mới chỉ là
+        /// khai báo của khách — trạng thái thanh toán thật chỉ được set khi
+        /// nhân viên gọi <c>ConfirmPaymentAsync</c> sau khi đối soát sao kê.
+        /// </summary>
+        /// <param name="id">Id đơn hàng.</param>
+        /// <param name="input">Id đơn và SĐT khách dùng để xác thực.</param>
+        /// <returns>Đơn hàng sau khi đánh dấu đã chuyển khoản.</returns>
         public virtual async Task<OrderDto> MarkTransferredAsync(Guid id, MarkTransferredDto input)
         {
             var order = await FindOrThrowAsync(id);
@@ -2445,6 +2498,18 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Always explicit — the shop must press the button.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
+        /// <summary>
+        /// Admin gộp nhiều đơn của cùng khách thành 1 đơn chính: chuyển toàn bộ
+        /// dòng hàng sang đơn chính rồi hủy các đơn phụ. An toàn tiền ở 2 đầu:
+        /// mỗi đơn phụ được hoàn điểm loyalty và hoàn tiền ví NHƯ luồng hủy đơn
+        /// (khách không mất tiền/điểm), đồng thời đối soát ví đơn chính theo
+        /// chênh lệch tổng — đơn chính trả bằng ví mà không thu thêm phần tăng
+        /// thì quán mất đúng số tiền đó. Lý do hoàn ví mỗi lần phải khác nhau
+        /// (kèm timestamp) vì <c>RefundAsync</c> chống hoàn trùng theo cặp
+        /// (Phone, Reason); lý do tĩnh theo mã đơn sẽ chặn nhầm lần gộp sau.
+        /// </summary>
+        /// <param name="input">Id đơn chính và danh sách Id đơn cần gộp.</param>
+        /// <returns>Đơn chính sau khi gộp.</returns>
         public virtual async Task<OrderDto> MergeOrdersAsync(MergeOrdersInput input)
         {
             if (input == null || input.OrderIds == null || input.OrderIds.Count == 0)
@@ -2668,6 +2733,18 @@ namespace PhuThuongStickyRice.Application.Orders
         /// DomainException on an invalid phone.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        /// <summary>
+        /// Voucher "CHAO" chào khách mới (giảm 10%): SĐT đã từng đặt hàng thì
+        /// trả <c>IsNewCustomer = false</c> (không voucher). SĐT được chuẩn hóa
+        /// về digits 1 lần và dùng chung cho mọi bước kiểm tra + gắn
+        /// <c>OwnerPhone</c> của mã — nếu mỗi bước format khác nhau, khách đổi
+        /// format SĐT là farm được voucher vô hạn.
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng.</param>
+        /// <returns>
+        /// <c>IsNewCustomer = false</c> nếu SĐT đã từng đặt; ngược lại mã voucher
+        /// CHAO- còn dùng được (cũ) hoặc vừa sinh, giảm 10%.
+        /// </returns>
         public virtual async Task<FirstOrderVoucherDto> GetFirstOrderVoucherAsync(string phone)
         {
             var digits = DigitsOnly(phone);
@@ -2928,6 +3005,15 @@ namespace PhuThuongStickyRice.Application.Orders
         /// portion limit. Combos are excluded (they are not portion-based).
         /// Best-effort against races — see the call site comment.
         /// </summary>
+        /// <summary>
+        /// Item 165: kiểm tra giới hạn suất/ngày của từng món (DailyLimit do
+        /// admin cấu hình) trước khi tạo đơn. Số suất đã bán hôm nay tính theo
+        /// giờ VN từ các đơn chưa hủy; combo không bị giới hạn. Chạy ở
+        /// checkout nên chặn quá tải sớm, còn race (2 đơn đồng thời) là
+        /// best-effort — cửa sổ vượt giới hạn rất nhỏ, chấp nhận được.
+        /// </summary>
+        /// <param name="lines">Các dòng hàng của đơn sắp tạo.</param>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi món nào đó vượt giới hạn suất còn lại hôm nay.</exception>
         private async Task EnsureDailyLimitsAsync(
             List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
                 string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> lines)

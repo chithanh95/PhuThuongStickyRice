@@ -26,6 +26,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IDiscountAppService _discountAppService;
         private readonly ILogger<LoyaltyController> _logger;
 
+        // Quà sinh nhật: prefix mã + mệnh giá (VND) + thời hạn dùng của
+        // voucher do admin sinh hàng loạt — dùng chung quy ước với
+        // endpoint public landing birthday-gift (SN/20000/30 ngày).
+        private const string BirthdayVoucherPrefix = "SN";
+        private const decimal BirthdayVoucherAmount = 20000;
+        private const int BirthdayVoucherValidityDays = 30;
+
         public LoyaltyController(
             ILoyaltyAppService loyaltyAppService,
             IDiscountAppService discountAppService,
@@ -135,7 +142,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // từng khách (N+1). Điều kiện lọc giữ nguyên nên kết quả tương
             // đương từng phần tử.
             var phonesWithCode = await _discountAppService.GetPhonesWithUsableCodeAsync(
-                "SN", birthdays.Select(b => b.Phone));
+                BirthdayVoucherPrefix, birthdays.Select(b => b.Phone));
 
             foreach (var b in birthdays)
             {
@@ -150,9 +157,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     var voucher = await _discountAppService.CreateGeneratedAsync(
                         new CreateGeneratedDiscountDto
                         {
-                            Prefix = "SN",
-                            DiscountAmount = 20000,
-                            ExpiresAt = DateTime.UtcNow.AddDays(30),
+                            Prefix = BirthdayVoucherPrefix,
+                            DiscountAmount = BirthdayVoucherAmount,
+                            ExpiresAt = DateTime.UtcNow.AddDays(BirthdayVoucherValidityDays),
                             OwnerPhone = b.Phone
                         });
                     created.Add(new { Phone = b.Phone, Code = voucher.Code });

@@ -15,6 +15,11 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Loyalty
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ điểm thành viên theo SĐT: tích điểm khi đơn hoàn thành,
+    /// đổi điểm trừ tiền, hoàn điểm khi hủy đơn, thưởng giới thiệu, xếp hạng
+    /// Đồng/Bạc/Vàng theo tổng chi tiêu, và tra cứu theo SĐT.
+    /// </summary>
     public interface ILoyaltyAppService : IApplicationService
     {
         /// <summary>Public: tóm tắt loyalty (điểm, hạng, tổng chi tiêu) theo SĐT.</summary>
@@ -106,6 +111,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IShopSettingAppService _shopSettings;
 
+        /// <summary>Khởi tạo service quản lý điểm thành viên với repository và cài đặt shop.</summary>
         public LoyaltyAppService(
             Domain.Repositories.ILoyaltyAccountRepository accounts,
             IRepository<Order, Guid> orders,
@@ -341,8 +347,20 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-            await _accounts.InsertAsync(account, autoSave: true);
-            return account;
+            // Tạo tài khoản nguyên tử (bug-hunt run 16:25): 2 request đồng
+            // thời cho SĐT mới đều thấy chưa có tài khoản rồi cùng insert —
+            // unique (Phone) chỉ cho 1 bên insert, bên thua cũ nhận
+            // DbUpdateException -> 500. TryInsertAsync trả null cho bên thua
+            // -> đọc lại tài khoản bên thắng vừa tạo.
+            var inserted = await _accounts.TryInsertAsync(account);
+            if (inserted != null)
+            {
+                return inserted;
+            }
+
+            return await FindByPhoneAsync(normalized)
+                ?? throw new Domain.Exceptions.DomainException(
+                    "Không tạo được tài khoản tích điểm, vui lòng thử lại.");
         }
 
         /// <summary>
@@ -382,24 +400,29 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             var settings = await _shopSettings.GetAsync();
+            // Entity buyer chỉ dùng để lấy Id/Phone (bất biến) cho bước
+            // thưởng giới thiệu bên dưới; mọi cộng điểm/chi tiêu đều chạy
+            // UPDATE nguyên tử ở DB (bug-hunt run 16:25): bản cũ đọc
+            // Points/TotalSpent vào memory rồi += và UpdateAsync — 2 đơn của
+            // cùng SĐT hoàn thành đồng thời sẽ cùng đọc số dư cũ, bên ghi sau
+            // đè mất phần cộng của bên ghi trước (mất điểm tích lũy của khách
+            // / sai tổng chi tiêu tính hạng thành viên).
             var buyer = await GetOrCreateAsync(order.CustomerPhone);
 
             // 1 điểm cho mỗi PointsPerVnd chi tiêu (mặc định 10.000₫), làm tròn
-            // xuống — đơn nhỏ hơn mốc thì không được điểm nào.
+            // xuống — đơn nhỏ hơn mốc thì không được điểm nào (points = 0,
+            // TotalSpent vẫn cộng bình thường).
             var perVnd = settings.PointsPerVnd > 0 ? settings.PointsPerVnd : DefaultPointsPerVnd;
             var earned = (int)Math.Floor(order.TotalAmount.Amount / perVnd);
-            if (earned > 0)
+            var awarded = await _accounts.TryIncrementEarnedAndSpentAsync(
+                buyer.Phone, earned, order.TotalAmount.Amount);
+            if (!awarded)
             {
-                buyer.Points += earned;
-                buyer.TotalEarned += earned;
+                throw new Domain.Exceptions.DomainException(
+                    "Không cộng được điểm tích lũy, vui lòng thử lại.");
             }
 
-            buyer.TotalSpent += order.TotalAmount.Amount;
-            buyer.UpdatedAt = DateTime.UtcNow;
-
             await AwardReferralBonusIfFirstCompletedOrderAsync(buyer, order, settings);
-
-            await _accounts.UpdateAsync(buyer, autoSave: true);
         }
 
         /// <summary>
@@ -440,14 +463,23 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return;
             }
 
-            referrer.Points += bonus;
-            referrer.TotalEarned += bonus;
-            referrer.UpdatedAt = DateTime.UtcNow;
-            await _accounts.UpdateAsync(referrer, autoSave: true);
+            // Cộng bonus nguyên tử cho cả 2 bên (bug-hunt run 16:25): bản cũ
+            // đọc Points vào memory rồi += và UpdateAsync — 2 đơn có thưởng
+            // giới thiệu hoàn thành đồng thời (hoặc trùng với điểm danh/đổi
+            // điểm cùng SĐT) sẽ ghi đè làm mất bonus của nhau.
+            var referrerAwarded = await _accounts.TryIncrementPointsAsync(referrer.Phone, bonus);
+            if (!referrerAwarded)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Không cộng được điểm thưởng giới thiệu, vui lòng thử lại.");
+            }
 
-            // buyer được lưu bởi method gọi (AwardCompletedOrderAsync) ngay sau đó.
-            buyer.Points += bonus;
-            buyer.TotalEarned += bonus;
+            var buyerAwarded = await _accounts.TryIncrementPointsAsync(buyer.Phone, bonus);
+            if (!buyerAwarded)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Không cộng được điểm thưởng giới thiệu, vui lòng thử lại.");
+            }
         }
 
         /// <summary>
@@ -636,17 +668,17 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>
         /// Xếp hạng thành viên theo tổng chi tiêu: trên mốc Vàng → "Vàng",
         /// từ mốc Bạc trở lên → "Bạc", còn lại → "Đồng" (không % giảm).
-        /// Dùng '>' cho mốc Vàng và '&gt;=' cho mốc Bạc: đơn đúng bằng mốc
-        /// Vàng thì lên Vàng, không bị kẹp lửng giữa hai hạng. % giảm âm do
-        /// nhập nhầm được chặn về 0.
+        /// Dùng '>' cho mốc Vàng và '&gt;=' cho mốc Bạc: phải VƯỢT mốc Vàng
+        /// mới lên Vàng (đúng bằng mốc vẫn ở Bạc). % giảm âm do nhập nhầm
+        /// được chặn về 0.
         /// </summary>
         /// <param name="totalSpent">Tổng số tiền khách đã chi tiêu (₫).</param>
         /// <param name="settings">Cấu hình mốc hạng và % giảm.</param>
         /// <returns>(Tên hạng tiếng Việt, % giảm giá của hạng).</returns>
         public (string Tier, decimal DiscountPercent) GetTier(decimal totalSpent, ShopSettingDto settings)
         {
-            // Vàng dùng '>' còn Bạc dùng '>=': đơn đúng bằng mốc Vàng thì lên
-            // Vàng, không bị kẹp lửng giữa hai hạng.
+            // Vàng dùng '>' (phải vượt mốc mới lên Vàng; đúng bằng mốc vẫn ở
+            // Bạc), Bạc dùng '>=' (đúng bằng mốc Bạc thì lên Bạc).
             if (settings.TierGoldMin > 0 && totalSpent > settings.TierGoldMin)
             {
                 return ("Vàng", Math.Max(0, settings.TierGoldDiscount));
@@ -705,6 +737,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Tìm tài khoản theo SĐT đã chuẩn hóa digits. SĐT rỗng trả null (không
+        /// ném) để các caller public quyết định hành vi (tạo mới hay báo lỗi).
+        /// </summary>
+        /// <param name="normalizedPhone">SĐT đã chuẩn hóa về chữ số.</param>
+        /// <returns>Tài khoản tương ứng; null nếu SĐT rỗng hoặc chưa có tài khoản.</returns>
         private async Task<LoyaltyAccount?> FindByPhoneAsync(string normalizedPhone)
         {
             if (string.IsNullOrEmpty(normalizedPhone))
@@ -717,6 +755,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 queryable.Where(x => x.Phone == normalizedPhone));
         }
 
+        /// <summary>
+        /// Sinh mã giới thiệu duy nhất dạng "PT-XXXXXX" (bỏ ký tự dễ nhầm
+        /// I/O/0/1). Thử tối đa 10 lần rồi fallback sang GUID để không treo
+        /// request khi DB gần đầy mã.
+        /// </summary>
+        /// <returns>Mã giới thiệu chưa từng tồn tại trong DB.</returns>
         private async Task<string> GenerateReferralCodeAsync()
         {
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -769,12 +813,19 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return new DateTime(year, month, day);
         }
 
+        /// <summary>Chuyển tài khoản sang DTO (tự load cài đặt shop để tính hạng).</summary>
+        /// <param name="account">Entity tài khoản loyalty.</param>
+        /// <returns>DTO tài khoản kèm hạng thành viên hiện tại.</returns>
         private async Task<LoyaltyAccountDto> MapToDtoAsync(LoyaltyAccount account)
         {
             var settings = await _shopSettings.GetAsync();
             return MapToDto(account, settings);
         }
 
+        /// <summary>Chuyển tài khoản sang DTO kèm hạng thành viên tính từ <paramref name="settings"/>.</summary>
+        /// <param name="account">Entity tài khoản loyalty.</param>
+        /// <param name="settings">Cấu hình mốc hạng và % giảm.</param>
+        /// <returns>DTO tài khoản kèm hạng thành viên.</returns>
         private LoyaltyAccountDto MapToDto(LoyaltyAccount account, ShopSettingDto settings)
         {
             var (tier, pct) = GetTier(account.TotalSpent, settings);

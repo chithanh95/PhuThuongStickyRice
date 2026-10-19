@@ -361,10 +361,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
-        /// Used by order creation: returns the discount amount and bumps the
-        /// usage counter. Throws <see cref="Domain.Exceptions.DomainException"/>
-        /// when the code cannot be applied.
+        /// Lúc tạo đơn: validate mã, tính số tiền được giảm và tăng bộ đếm
+        /// lượt dùng. Ném <see cref="Domain.Exceptions.DomainException"/> khi
+        /// mã không áp được.
         /// </summary>
+        /// <param name="code">Mã giảm giá (khách tự nhập, không gắn SĐT).</param>
+        /// <param name="subtotal">Tổng tiền hàng trước khi giảm.</param>
+        /// <returns>Số tiền được giảm.</returns>
         public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal)
         {
             return await ApplyAsync(code, subtotal, null);
@@ -557,9 +560,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
-        /// Item 143: code of the first usable code with the given prefix for
-        /// the phone, or null when none exists.
+        /// Item 143 (Internal): mã còn dùng được đầu tiên với tiền tố cho trước
+        /// của SĐT, hoặc null khi không có (dùng kiểm tra "khách đã có voucher
+        /// đơn đầu chưa" trước khi sinh thêm mã).
         /// </summary>
+        /// <param name="codePrefix">Tiền tố mã (đã chuẩn hóa chữ hoa).</param>
+        /// <param name="ownerPhone">SĐT chủ sở hữu mã.</param>
+        /// <returns>Mã đầu tiên còn dùng được, hoặc null.</returns>
         public virtual async Task<string?> GetUsableCodeAsync(string codePrefix, string ownerPhone)
         {
             if (string.IsNullOrWhiteSpace(codePrefix) || string.IsNullOrWhiteSpace(ownerPhone))
@@ -656,17 +663,11 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
-        /// Kiểm tra 1 mã có dùng được với tổng tiền giỏ hàng và SĐT cho trước hay không.
-        /// Thứ tự kiểm tra từ rẻ tới đắt: tồn tại → đang bật → còn hạn → còn lượt →
-        /// đúng chủ sở hữu → đạt đơn tối thiểu; message tiếng Việt hiển thị trực tiếp cho khách.
-        /// </summary>
-        /// <param name="entity">Mã giảm giá cần kiểm tra (null = mã không tồn tại).</param>
-        /// <param name="subtotal">Tổng tiền hàng của giỏ.</param>
-        /// <param name="customerPhone">SĐT khách; mã riêng tư chỉ đúng chủ SĐT mới dùng được.</param>
-        /// <returns>Tuple: hợp lệ hay không + message tiếng Việt.</returns>
-        /// <summary>
         /// Kiểm tra 1 mã còn dùng được không theo 6 điều kiện: tồn tại, đang
         /// bật, còn hạn, còn lượt dùng, đúng SĐT chủ mã, đạt đơn tối thiểu.
+        /// Thứ tự kiểm tra từ rẻ tới đắt (tồn tại → đang bật → còn hạn → còn
+        /// lượt → đúng chủ sở hữu → đạt đơn tối thiểu) để fail nhanh; message
+        /// trả về hiển thị trực tiếp cho khách nên viết rõ nguyên nhân.
         /// </summary>
         /// <param name="entity">Entity mã giảm giá; null = mã không tồn tại.</param>
         /// <param name="subtotal">Tổng tiền giỏ hàng.</param>

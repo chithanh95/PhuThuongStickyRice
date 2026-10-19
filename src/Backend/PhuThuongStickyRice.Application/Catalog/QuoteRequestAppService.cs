@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
@@ -46,8 +47,15 @@ namespace PhuThuongStickyRice.Application.Catalog
     /// "Đặt số lượng lớn". Không tạo đơn, không thanh toán — trạng thái ban
     /// đầu là <c>QuoteStatus.New</c> để admin xử lý thủ công.
     /// </summary>
-    public class QuoteRequestAppService : ApplicationService, IQuoteRequestAppService
+    public partial class QuoteRequestAppService : ApplicationService, IQuoteRequestAppService
     {
+        // Best practice .NET 7+/C# 13: [GeneratedRegex] biên dịch regex ngay
+        // lúc build (không tốn Regex.Compile/cache động ở runtime) — cùng
+        // convention với MessengerChatService/MoMoPaymentService trong cùng
+        // codebase. Ngữ nghĩa kiểm tra SĐT giống hệt bản Regex.IsMatch cũ.
+        [GeneratedRegex(@"^(0)(3|5|7|8|9)\d{8}$")]
+        private static partial Regex PhoneRegex();
+
         private readonly IRepository<QuoteRequest, Guid> _quotes;
         private readonly IRepository<CungReminder, Guid> _reminders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -268,7 +276,7 @@ namespace PhuThuongStickyRice.Application.Catalog
 
         private static bool IsValidPhone(string phone) =>
             !string.IsNullOrWhiteSpace(phone)
-            && System.Text.RegularExpressions.Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
+            && PhoneRegex().IsMatch(phone.Trim());
 
         private static QuoteRequestDto MapToDto(QuoteRequest entity)
         {

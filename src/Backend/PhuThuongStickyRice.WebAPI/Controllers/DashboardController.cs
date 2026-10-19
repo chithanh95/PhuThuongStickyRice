@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Customer;
 using PhuThuongStickyRice.Application.Inventory;
 

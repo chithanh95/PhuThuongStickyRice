@@ -87,9 +87,9 @@
             {
                 <div class="alert alert-danger py-2" role="alert">@_error</div>
             }
-            @if (!string.IsNullOrEmpty(_info))
+            @if (!string.IsNullOrEmpty(_infoMessage))
             {
-                <div class="alert alert-success py-2" role="status">@_info</div>
+                <div class="alert alert-success py-2" role="status">@_infoMessage</div>
             }
 
             @if (_step == 1)
@@ -149,7 +149,7 @@
     private string _newPassword;
     private string _confirmPassword;
     private string _error;
-    private string _info;
+    private string _infoMessage;
     private bool _busy;
     private bool _isDark;
 
@@ -174,7 +174,7 @@
     private async Task RequestOtpAsync()
     {
         _error = null;
-        _info = null;
+        _infoMessage = null;
         if (!IsValidPhone(_phone))
         {
             _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
@@ -185,7 +185,7 @@
         try
         {
             await AuthService.RequestPasswordResetOtpAsync(_phone.Trim());
-            _info = "Đã gửi mã OTP. Vui lòng kiểm tra SMS.";
+            _infoMessage = "Đã gửi mã OTP. Vui lòng kiểm tra SMS.";
             _step = 2;
         }
         catch (InvalidOperationException ex)
@@ -205,7 +205,7 @@
     private async Task ResetPasswordAsync()
     {
         _error = null;
-        _info = null;
+        _infoMessage = null;
         if (string.IsNullOrWhiteSpace(_otp) || _otp.Trim().Length != 6)
         {
             _error = "Vui lòng nhập mã OTP 6 số.";

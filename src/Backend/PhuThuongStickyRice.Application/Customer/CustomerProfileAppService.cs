@@ -52,7 +52,7 @@ namespace PhuThuongStickyRice.Application.Customer
     /// hiệu lực 30 ngày (ghi log hoạt động nhân viên, item 156).</item>
     /// </list>
     /// </summary>
-    public class CustomerProfileAppService : ApplicationService, ICustomerProfileAppService
+    public partial class CustomerProfileAppService : ApplicationService, ICustomerProfileAppService
     {
         public const string CustomerRoleName = "Customer";
         private const string GiftCodePrefix = "SN";
@@ -68,7 +68,13 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>Mã quà sinh nhật có hiệu lực 30 ngày kể từ ngày tặng.</summary>
         private const int BirthdayGiftValidityDays = 30;
         /// <summary>SĐT Việt Nam: bắt đầu bằng 0, đầu số 3/5/7/8/9, tổng 10 chữ số.</summary>
-        private const string VnPhonePattern = @"^(0)(3|5|7|8|9)\d{8}$";
+        // Best practice .NET 7+/C# 13: [GeneratedRegex] biên dịch regex ngay
+        // lúc build (không tốn Regex.Compile/cache động ở runtime, không tạo
+        // chuỗi pattern động) — cùng convention với MessengerChatService và
+        // MoMoPaymentService trong cùng codebase. Ngữ nghĩa kiểm tra giống hệt
+        // bản Regex.IsMatch cũ: cùng pattern, cùng IsMatch(input).
+        [GeneratedRegex(@"^(0)(3|5|7|8|9)\d{8}$")]
+        private static partial Regex VnPhoneRegex();
 
         /// <summary>Số bản ghi nhắc chăm sóc tối đa trả về cho 1 SĐT (tránh nạp toàn bộ lịch sử).</summary>
         private const int MaxReminderHistoryRows = 200;
@@ -516,7 +522,7 @@ namespace PhuThuongStickyRice.Application.Customer
 
         private static bool IsValidVnPhone(string phone)
         {
-            return Regex.IsMatch(phone ?? string.Empty, VnPhonePattern);
+            return VnPhoneRegex().IsMatch(phone ?? string.Empty);
         }
 
         private class TastePrefs

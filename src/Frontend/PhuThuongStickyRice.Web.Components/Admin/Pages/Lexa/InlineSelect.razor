@@ -16,7 +16,7 @@
 else
 {
     <span class="d-inline-flex align-items-center" style="gap:4px;">
-        <select class="form-control form-control-sm" @bind="_tmp" style="min-width:150px;">
+        <select class="form-control form-control-sm" @bind="_draftValue" style="min-width:150px;">
             @foreach (var o in Options)
             {
                 <option value="@o">@o</option>
@@ -39,18 +39,18 @@ else
     [Parameter] public List<string> Options { get; set; } = new();
 
     private bool _editing;
-    private string _tmp;
+    private string _draftValue;
 
     private void StartEdit()
     {
-        _tmp = Value ?? Options.FirstOrDefault();
+        _draftValue = Value ?? Options.FirstOrDefault();
         _editing = true;
     }
 
     private async Task Confirm()
     {
         _editing = false;
-        await ValueChanged.InvokeAsync(_tmp);
+        await ValueChanged.InvokeAsync(_draftValue);
     }
 
     private void Cancel()

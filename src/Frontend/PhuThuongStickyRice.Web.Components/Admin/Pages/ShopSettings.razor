@@ -511,7 +511,7 @@ else
     {
         try
         {
-            _model = await ShopSettingsService.GetAsync() ?? new ShopSettingModel();
+            _model = await ShopSettingsService.GetAdminAsync() ?? new ShopSettingModel();
         }
         catch (Exception)
         {

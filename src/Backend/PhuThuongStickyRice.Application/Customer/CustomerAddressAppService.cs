@@ -30,8 +30,15 @@ namespace PhuThuongStickyRice.Application.Customer
         Task SetDefaultAsync(Guid id);
     }
 
-    public class CustomerAddressAppService : ApplicationService, ICustomerAddressAppService
+    public partial class CustomerAddressAppService : ApplicationService, ICustomerAddressAppService
     {
+        // Best practice .NET 7+/C# 13: [GeneratedRegex] biên dịch regex ngay
+        // lúc build (không tốn Regex.Compile/cache động ở runtime) — cùng
+        // convention với MessengerChatService/MoMoPaymentService trong cùng
+        // codebase. Ngữ nghĩa kiểm tra SĐT giống hệt bản Regex.IsMatch cũ.
+        [GeneratedRegex(@"^(0)(3|5|7|8|9)\d{8}$")]
+        private static partial Regex ReceiverPhoneRegex();
+
         private readonly IRepository<CustomerAddress, Guid> _addresses;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
@@ -158,7 +165,7 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             ArgumentNullException.ThrowIfNull(dto);
 
-            if (!Regex.IsMatch((dto.ReceiverPhone ?? string.Empty).Trim(), @"^(0)(3|5|7|8|9)\d{8}$"))
+            if (!ReceiverPhoneRegex().IsMatch((dto.ReceiverPhone ?? string.Empty).Trim()))
             {
                 throw new UserFriendlyException("Số điện thoại người nhận không đúng định dạng (VD: 0901234567).");
             }

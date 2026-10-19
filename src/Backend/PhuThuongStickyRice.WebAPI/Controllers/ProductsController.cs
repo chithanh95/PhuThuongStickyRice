@@ -42,6 +42,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly PhuThuongStickyRice.Application.Orders.IDashboardAppService _dashboardAppService;
         private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _environment;
 
+        private const long MaxProductImageBytes = 5 * 1024 * 1024;
+
+        private static readonly HashSet<string> AllowedImageExtensions =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+
         public ProductsController(IProductAppService productAppService,
             ILogger<ProductsController> logger,
             IHtmlGenerator htmlGenerator,
@@ -113,27 +119,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             try
             {
-                var created = await _productAppService.CreateAsync(new CreateUpdateProductDto
-                {
-                    Code = model.Code,
-                    Name = model.Name,
-                    Description = model.Description,
-                    Price = model.Price,
-                    Currency = string.IsNullOrWhiteSpace(model.Currency) ? "VND" : model.Currency,
-                    CostPrice = model.CostPrice,
-                    Tags = model.Tags,
-                    Category = model.Category,
-                    AllergenInfo = model.AllergenInfo,
-                    IsNew = model.IsNew,
-                    IsSignature = model.IsSignature,
-                    AvailableFrom = model.AvailableFrom,
-                    AvailableTo = model.AvailableTo,
-                    BranchId = model.BranchId,
-                    Unit = model.Unit,
-                    AvailableHoursJson = model.AvailableHoursJson,
-                    DailyLimit = model.DailyLimit,
-                    ImageUrlsJson = model.ImageUrlsJson
-                });
+                var created = await _productAppService.CreateAsync(ToCreateUpdateDto(model));
                 return Created($"/api/products/{created.Id}", created);
             }
             catch (DomainException ex)
@@ -156,29 +142,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             try
             {
-                var dto = await _productAppService.UpdateAsync(id, new CreateUpdateProductDto
-                {
-                    Code = model.Code,
-                    Name = model.Name,
-                    Description = model.Description,
-                    Price = model.Price,
-                    Currency = string.IsNullOrWhiteSpace(model.Currency) ? "VND" : model.Currency,
-                    CostPrice = model.CostPrice,
-                    Status = model.Status,
-                    Tags = model.Tags,
-                    Category = model.Category,
-                    AllergenInfo = model.AllergenInfo,
-                    IsNew = model.IsNew,
-                    IsSignature = model.IsSignature,
-                    AvailableFrom = model.AvailableFrom,
-                    AvailableTo = model.AvailableTo,
-                    BranchId = model.BranchId,
-                    Unit = model.Unit,
-                    AvailableHoursJson = model.AvailableHoursJson,
-                    DailyLimit = model.DailyLimit,
-                    ImageUrlsJson = model.ImageUrlsJson
-                });
-                return Ok(dto);
+                var dto = ToCreateUpdateDto(model);
+                // Put (sửa) cho phép đổi Status; Post (tạo mới) để service đặt
+                // giá trị mặc định — giữ nguyên behavior cũ của 2 endpoint.
+                dto.Status = model.Status;
+                var result = await _productAppService.UpdateAsync(id, dto);
+                return Ok(result);
             }
             catch (ProductNotFoundException ex)
             {
@@ -319,7 +288,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// </summary>
         [Authorize(AuthorizationPolicyNames.AddProductPolicy)]
         [HttpPost("images/upload")]
-        [RequestSizeLimit(5 * 1024 * 1024)]
+        [RequestSizeLimit(MaxProductImageBytes)]
         public async Task<ActionResult> UploadProductImage(
             [FromForm] IFormFile file,
             CancellationToken cancellationToken = default)
@@ -330,9 +299,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             var extension = Path.GetExtension(file.FileName);
-            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
-            if (string.IsNullOrWhiteSpace(extension)
-                || !allowed.Contains(extension.ToLowerInvariant()))
+            if (string.IsNullOrWhiteSpace(extension) || !AllowedImageExtensions.Contains(extension))
             {
                 return BadRequest(new
                 {
@@ -351,12 +318,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 });
             }
 
-            if (file.Length > 5 * 1024 * 1024)
+            if (file.Length > MaxProductImageBytes)
             {
                 return BadRequest(new { message = "File ảnh tối đa 5 MB." });
             }
 
-            var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "products");
+            var folder = GetProductImageUploadFolder();
             Directory.CreateDirectory(folder);
 
             var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
@@ -388,7 +355,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = "Đường dẫn ảnh không hợp lệ." });
             }
 
-            var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "products");
+            var folder = GetProductImageUploadFolder();
             var filePath = Path.Combine(folder, fileName);
             if (System.IO.File.Exists(filePath))
             {
@@ -428,6 +395,47 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // TODO: import to database
             return Ok(products);
         }
+
+        private const string DefaultCurrency = "VND";
+
+        /// <summary>
+        /// Ánh xạ form sản phẩm (ProductModel) sang DTO nghiệp vụ. Dùng chung
+        /// cho Post (tạo) và Put (sửa); chỉ Put gán thêm Status sau khi gọi.
+        /// </summary>
+        private static CreateUpdateProductDto ToCreateUpdateDto(ProductModel model)
+        {
+            return new CreateUpdateProductDto
+            {
+                Code = model.Code,
+                Name = model.Name,
+                Description = model.Description,
+                Price = model.Price,
+                Currency = string.IsNullOrWhiteSpace(model.Currency) ? DefaultCurrency : model.Currency,
+                CostPrice = model.CostPrice,
+                Tags = model.Tags,
+                Category = model.Category,
+                AllergenInfo = model.AllergenInfo,
+                IsNew = model.IsNew,
+                IsSignature = model.IsSignature,
+                AvailableFrom = model.AvailableFrom,
+                AvailableTo = model.AvailableTo,
+                BranchId = model.BranchId,
+                Unit = model.Unit,
+                AvailableHoursJson = model.AvailableHoursJson,
+                DailyLimit = model.DailyLimit,
+                ImageUrlsJson = model.ImageUrlsJson
+            };
+        }
+
+        /// <summary>
+        /// Thư mục lưu ảnh sản phẩm: wwwroot/uploads/products. Dùng chung
+        /// cho upload và xóa file ảnh.
+        /// </summary>
+        private string GetProductImageUploadFolder() =>
+            Path.Combine(
+                _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"),
+                "uploads",
+                "products");
 
         private async Task<List<ProductModel>> GetAllProductModels(CancellationToken cancellationToken)
         {

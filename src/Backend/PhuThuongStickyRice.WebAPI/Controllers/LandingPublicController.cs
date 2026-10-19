@@ -927,7 +927,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { success = true, voteCount = poll.VoteCount });
         }
 
-        /// <summary>
         // ============ Parse ý định đặt hàng từ text/chatbot/voice (items 61, 80) ============
 
         public class ParseOrderRequest
