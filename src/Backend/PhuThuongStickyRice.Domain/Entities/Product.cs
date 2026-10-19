@@ -375,10 +375,10 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         private static List<string> ParseImageUrls(string json)
         {
-            var result = new List<string>();
+            var urls = new List<string>();
             if (string.IsNullOrWhiteSpace(json))
             {
-                return result;
+                return urls;
             }
 
             try
@@ -386,7 +386,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 using var doc = JsonDocument.Parse(json);
                 if (doc.RootElement.ValueKind != JsonValueKind.Array)
                 {
-                    return result;
+                    return urls;
                 }
 
                 foreach (var el in doc.RootElement.EnumerateArray())
@@ -396,7 +396,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                         var url = el.GetString()?.Trim();
                         if (!string.IsNullOrEmpty(url) && url.Length <= 500)
                         {
-                            result.Add(url);
+                            urls.Add(url);
                         }
                     }
                 }
@@ -406,18 +406,18 @@ namespace PhuThuongStickyRice.Domain.Entities
                 // Fail-open: bad data never hides the gallery logic's fallback.
             }
 
-            return result;
+            return urls;
         }
 
         private static List<(TimeSpan From, TimeSpan To)> ParseHourWindows(string json)
         {
-            var result = new List<(TimeSpan From, TimeSpan To)>();
+            var windows = new List<(TimeSpan From, TimeSpan To)>();
             try
             {
                 using var doc = JsonDocument.Parse(json);
                 if (doc.RootElement.ValueKind != JsonValueKind.Array)
                 {
-                    return result;
+                    return windows;
                 }
 
                 foreach (var el in doc.RootElement.EnumerateArray())
@@ -442,7 +442,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                         return new List<(TimeSpan From, TimeSpan To)>();
                     }
 
-                    result.Add((from, to));
+                    windows.Add((from, to));
                 }
             }
             catch (JsonException)
@@ -450,7 +450,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 return new List<(TimeSpan From, TimeSpan To)>();
             }
 
-            return result;
+            return windows;
         }
 
         public void Activate()

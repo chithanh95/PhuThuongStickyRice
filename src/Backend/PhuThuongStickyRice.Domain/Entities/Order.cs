@@ -607,7 +607,8 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             var orderLines = (lines ?? Enumerable.Empty<(Guid, string, Money, int, string, string, decimal, bool, string)>())
                 .Select(x => OrderLine.Create(
-                    x.Item1, x.Item2, x.Item3, x.Item4, x.Item5, x.Item6, x.Item7, x.Item8, x.Item9))
+                    x.ProductId, x.ProductName, x.UnitPrice, x.Quantity, x.SizeName,
+                    x.ToppingNames, x.ToppingsExtra, x.IsCombo, x.Note))
                 .ToList();
 
             if (orderLines.Count == 0)
@@ -760,8 +761,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             }
 
             var map = (updates ?? Enumerable.Empty<(Guid, int)>())
-                .GroupBy(x => x.Item1)
-                .ToDictionary(g => g.Key, g => g.Last().Item2);
+                .GroupBy(x => x.LineId)
+                .ToDictionary(g => g.Key, g => g.Last().Quantity);
 
             if (map.Count == 0)
             {
