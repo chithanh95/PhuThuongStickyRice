@@ -34,8 +34,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// </summary>
     public class StaffActivityLogService : HttpService
     {
-        public StaffActivityLogService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public StaffActivityLogService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

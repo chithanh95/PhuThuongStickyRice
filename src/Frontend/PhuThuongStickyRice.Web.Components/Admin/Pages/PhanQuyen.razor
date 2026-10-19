@@ -66,14 +66,16 @@ else
                                             <td>@def.Label<br /><small class="text-muted">@def.Key</small></td>
                                             @foreach (var role in _matrix.Roles)
                                             {
-                                                var r = role;
-                                                var d = def;
-                                                var checkboxId = $"pq-{r.Role}-{d.Key}".Replace(".", "-");
+                                                // Copy vòng lặp vào biến cục bộ để lambda @onchange
+                                                // bắt đúng giá trị (tránh closure bắt nhầm biến vòng lặp).
+                                                var capturedRole = role;
+                                                var capturedDef = def;
+                                                var checkboxId = $"pq-{capturedRole.Role}-{capturedDef.Key}".Replace(".", "-");
                                                 <td class="text-center">
                                                     <div class="custom-control custom-checkbox d-inline-block">
                                                         <input type="checkbox" class="custom-control-input" id="@checkboxId"
-                                                               checked="@r.GrantedKeys.Contains(d.Key)"
-                                                               @onchange="(e => OnToggle(r, d.Key, (bool)e.Value))" />
+                                                               checked="@capturedRole.GrantedKeys.Contains(capturedDef.Key)"
+                                                               @onchange="(e => OnToggle(capturedRole, capturedDef.Key, (bool)e.Value))" />
                                                         <label class="custom-control-label" for="@checkboxId"></label>
                                                     </div>
                                                 </td>

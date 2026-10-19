@@ -248,7 +248,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             var digits = new string(phone.Where(char.IsDigit).ToArray());
-            return digits.StartsWith("84") && digits.Length == 11 ? "0" + digits.Substring(2) : digits;
+            // So sánh lập trình trên chuỗi chữ số: Ordinal đúng + nhanh hơn
+            // overload mặc định (culture-sensitive). Giữ nguyên behavior ASCII.
+            return digits.StartsWith("84", StringComparison.Ordinal) && digits.Length == 11 ? "0" + digits.Substring(2) : digits;
         }
     }
 }

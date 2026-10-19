@@ -14,8 +14,8 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
 {
     public class LandingService : HttpService
     {
-        public LandingService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public LandingService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

@@ -14,19 +14,29 @@ namespace PhuThuongStickyRice.Application.Orders
 {
     public interface IMoMoReconciliationAppService : IApplicationService
     {
-        /// <summary>Admin: MoMo-paid orders, optionally filtered by matched state.</summary>
+        /// <summary>
+        /// Admin: liệt kê các đơn đã thanh toán qua MoMo (mới nhất trước),
+        /// có thể lọc theo trạng thái đối soát.
+        /// </summary>
+        /// <param name="matched">true: chỉ đơn đã khớp; false: chỉ đơn chưa khớp; null: tất cả.</param>
+        /// <returns>Danh sách đơn MoMo, tối đa 200 dòng mới nhất.</returns>
         Task<List<MoMoOrderDto>> GetMoMoOrdersAsync(bool? matched);
 
-        /// <summary>Admin: manually flags an order as reconciled.</summary>
+        /// <summary>
+        /// Admin: đánh dấu tay một đơn MoMo là đã đối soát xong (khi đã kiểm tra
+        /// ngoài hệ thống và thấy tiền đã về). Chỉ đổi cờ MoMoMatched, không
+        /// đụng tới trạng thái đơn hay trạng thái thanh toán.
+        /// </summary>
+        /// <param name="orderId">Id đơn hàng MoMo cần đánh dấu.</param>
         Task MarkMatchedAsync(Guid orderId);
     }
 
     /// <summary>
-    /// Item 128: MoMo reconciliation. Callbacks auto-mark
-    /// <c>Order.MoMoMatched</c> when the OrderInfo contains the order number;
-    /// anything unmatched is reviewed here manually. Note: full automatic
-    /// matching (amounts, settlement reports) requires the MoMo business API —
-    /// this covers the payment-link callback we receive today.
+    /// Item 128: đối soát MoMo. Callback tự đánh dấu
+    /// <c>Order.MoMoMatched</c> khi OrderInfo chứa mã đơn; các đơn chưa khớp
+    /// thì kế toán rà soát tay. Lưu ý: đối soát tự động đầy đủ (số tiền,
+    /// báo cáo quyết toán) cần API nghiệp vụ của MoMo — hiện chỉ bao phủ
+    /// callback link thanh toán đã nhận.
     /// </summary>
     [Authorize(Roles = "Admin")]
     public class MoMoReconciliationAppService : ApplicationService, IMoMoReconciliationAppService

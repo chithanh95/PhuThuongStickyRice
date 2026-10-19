@@ -9,8 +9,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 {
     public class DiscountService : HttpService
     {
-        public DiscountService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public DiscountService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

@@ -7,7 +7,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
     /// Hợp đồng lưu trữ/truy xuất JWT ở phía Blazor WASM.
     /// Cài đặt cụ thể: <c>JwtTokenStore</c> (project PhuThuongStickyRice.Web).
     /// </summary>
-    public interface ITokenManager
+    public interface ITokenStore
     {
         bool AttachTokenAutomatically { get; }
 

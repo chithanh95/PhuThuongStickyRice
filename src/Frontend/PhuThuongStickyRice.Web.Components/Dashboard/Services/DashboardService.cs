@@ -16,8 +16,8 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
         /// </summary>
     public class DashboardService : HttpService
     {
-        public DashboardService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public DashboardService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

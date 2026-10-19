@@ -12,8 +12,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// </summary>
     public class MessageTemplateService : HttpService
     {
-        public MessageTemplateService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public MessageTemplateService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

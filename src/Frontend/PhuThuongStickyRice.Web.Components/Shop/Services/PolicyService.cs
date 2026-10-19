@@ -14,8 +14,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// </summary>
     public class PolicyService : HttpService
     {
-        public PolicyService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public PolicyService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

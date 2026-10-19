@@ -11,8 +11,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// </summary>
     public class AdminSearchNotificationService : HttpService
     {
-        public AdminSearchNotificationService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public AdminSearchNotificationService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

@@ -15,8 +15,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     public class PrepaidCardService : HttpService
     {
         /// <summary>Khởi tạo service với HttpClient và token manager dùng chung.</summary>
-        public PrepaidCardService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public PrepaidCardService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

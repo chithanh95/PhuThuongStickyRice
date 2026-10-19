@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Reports;
 
 namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
@@ -37,7 +38,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
         {
             try
             {
-                var vnNow = DateTime.UtcNow.AddHours(7);
+                var vnNow = VietnamTime.ToVietnamTime(DateTime.UtcNow);
 
                 if (IsWeeklyDue(vnNow))
                 {
@@ -73,7 +74,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
 
             var weekStart = vnNow.Date.AddDays(-(((int)vnNow.DayOfWeek + 6) % 7));
             return !_lastWeeklySentUtc.HasValue
-                || _lastWeeklySentUtc.Value.AddHours(7).Date < weekStart;
+                || VietnamTime.ToVietnamTime(_lastWeeklySentUtc.Value).Date < weekStart;
         }
 
         private bool IsMonthlyDue(DateTime vnNow)
@@ -86,7 +87,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
 
             var monthStart = new DateTime(vnNow.Year, vnNow.Month, 1);
             return !_lastMonthlySentUtc.HasValue
-                || _lastMonthlySentUtc.Value.AddHours(7).Date < monthStart;
+                || VietnamTime.ToVietnamTime(_lastMonthlySentUtc.Value).Date < monthStart;
         }
 
         private static async Task<Application.Reports.OwnerReportResultDto> SendAsync(

@@ -12,8 +12,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// </summary>
     public class WeeklyPlanAdminService : HttpService
     {
-        public WeeklyPlanAdminService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public WeeklyPlanAdminService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

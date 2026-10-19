@@ -50,6 +50,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         private const string InvalidPhoneMessage = "Số điện thoại không hợp lệ.";
 
+        // Quà sinh nhật (item 43): tặng trước trong vòng N ngày trước sinh nhật.
+        private const int BirthdayGiftWindowDays = 7;
+        // Prefix + mệnh giá voucher sinh nhật — mã phải tồn tại THẬT trong
+        // DiscountCodes để checkout chấp nhận (không phải chuỗi ngẫu nhiên).
+        private const string BirthdayVoucherPrefix = "SN";
+        private const decimal BirthdayVoucherAmount = 20000;
+        // Thời hạn dùng của voucher do vòng quay/quà sinh nhật phát hành.
+        private const int GeneratedVoucherValidityDays = 30;
+
         /// <summary>400 response for endpoints that require a valid VN phone number.</summary>
         private BadRequestObjectResult InvalidPhoneResult()
         {
@@ -272,24 +281,35 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 Prefix = "XOI",
                 DiscountAmount = prizeValue,
-                ExpiresAt = DateTime.UtcNow.AddDays(30),
+                ExpiresAt = DateTime.UtcNow.AddDays(GeneratedVoucherValidityDays),
                 OwnerPhone = phone
             });
             var voucherCode = voucher.Code;
 
+            await RecordSpinAsync(phone, today, prizeLabel, prizeValue, voucherCode, cancellationToken);
+
+            return Ok(new { success = true, prizeLabel, prizeValue, voucherCode });
+        }
+
+        /// <summary>
+        /// Lưu lượt quay vòng quay may mắn: 1 SĐT chỉ quay 1 lần/ngày VN —
+        /// kiểm tra <c>alreadySpun</c> ở action Spin đã chặn quay lại.
+        /// </summary>
+        private async Task RecordSpinAsync(
+            string phone, DateTime spinDate, string prizeLabel, int prizeValue,
+            string voucherCode, CancellationToken cancellationToken)
+        {
             _db.LuckySpins.Add(new LuckySpin
             {
                 Id = Guid.NewGuid(),
                 Phone = phone,
-                SpinDate = today,
+                SpinDate = spinDate,
                 PrizeLabel = prizeLabel,
                 PrizeValue = prizeValue,
                 VoucherCode = voucherCode,
                 CreatedAt = DateTime.UtcNow
             });
             await _db.SaveChangesAsync(cancellationToken);
-
-            return Ok(new { success = true, prizeLabel, prizeValue, voucherCode });
         }
 
         // ============ Landing engagement: referral (item 29) ============
@@ -493,6 +513,32 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { success = false, message = "Ngày sinh không hợp lệ." });
             }
 
+            await GetOrCreateBirthdayAccountAsync(phone, birthDate.Value, cancellationToken);
+
+            var daysUntil = DaysUntilBirthday(birthDate.Value, DateTime.Today);
+            if (daysUntil <= BirthdayGiftWindowDays)
+            {
+                var giftCode = await ResolveBirthdayGiftCodeAsync(phone, cancellationToken);
+                return Ok(new
+                {
+                    success = true,
+                    giftCode,
+                    message = daysUntil == 0
+                        ? "Chúc mừng sinh nhật! Quán tặng bạn mã quà sinh nhật."
+                        : $"Sinh nhật bạn còn {daysUntil} ngày nữa — quán tặng trước mã quà sinh nhật!"
+                });
+            }
+
+            return Ok(new { success = true, message = "Đã lưu ngày sinh. Đến sinh nhật quán sẽ tặng quà!" });
+        }
+
+        /// <summary>
+        /// Lấy hoặc tạo tài khoản loyalty theo SĐT rồi lưu ngày sinh — ngày
+        /// sinh là điều kiện để hệ thống tặng mã quà đúng ngày sinh nhật.
+        /// </summary>
+        private async Task GetOrCreateBirthdayAccountAsync(
+            string phone, DateTime birthDate, CancellationToken cancellationToken)
+        {
             var account = await _db.LoyaltyAccounts
                 .FirstOrDefaultAsync(a => a.Phone == phone, cancellationToken);
             if (account == null)
@@ -507,40 +553,35 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 _db.LoyaltyAccounts.Add(account);
             }
 
-            account.DateOfBirth = birthDate.Value;
+            account.DateOfBirth = birthDate;
             account.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync(cancellationToken);
+        }
 
-            var daysUntil = DaysUntilBirthday(birthDate.Value, DateTime.Today);
-            if (daysUntil <= 7)
+        /// <summary>
+        /// Trả mã quà sinh nhật cho khách: mỗi khách 1 mã SN còn dùng được
+        /// (cùng quy ước với endpoint admin birthdays/vouchers và worker tặng
+        /// quà) — trả mã có sẵn thay vì sinh trùng. Mã phải lưu THẬT trong
+        /// DiscountCodes: trước đây chỉ trả chuỗi "SN-..." ngẫu nhiên nên
+        /// khách nhập mã luôn bị từ chối.
+        /// </summary>
+        private async Task<string> ResolveBirthdayGiftCodeAsync(
+            string phone, CancellationToken cancellationToken)
+        {
+            var giftCode = await _discounts.GetUsableCodeAsync(BirthdayVoucherPrefix, phone);
+            if (giftCode != null)
             {
-                // Mỗi khách 1 mã SN còn dùng được (cùng quy ước với endpoint admin
-                // birthdays/vouchers và BirthdayVoucherWorker): trả mã có sẵn thay
-                // vì sinh trùng. Mã phải lưu THẬT trong DiscountCodes — trước đây
-                // chỉ trả chuỗi "SN-..." ngẫu nhiên nên không bao giờ dùng được.
-                var giftCode = await _discounts.GetUsableCodeAsync("SN", phone);
-                if (giftCode == null)
-                {
-                    var voucher = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
-                    {
-                        Prefix = "SN",
-                        DiscountAmount = 20000,
-                        ExpiresAt = DateTime.UtcNow.AddDays(30),
-                        OwnerPhone = phone
-                    });
-                    giftCode = voucher.Code;
-                }
-                return Ok(new
-                {
-                    success = true,
-                    giftCode,
-                    message = daysUntil == 0
-                        ? "Chúc mừng sinh nhật! Quán tặng bạn mã quà sinh nhật."
-                        : $"Sinh nhật bạn còn {daysUntil} ngày nữa — quán tặng trước mã quà sinh nhật!"
-                });
+                return giftCode;
             }
 
-            return Ok(new { success = true, message = "Đã lưu ngày sinh. Đến sinh nhật quán sẽ tặng quà!" });
+            var voucher = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
+            {
+                Prefix = BirthdayVoucherPrefix,
+                DiscountAmount = BirthdayVoucherAmount,
+                ExpiresAt = DateTime.UtcNow.AddDays(GeneratedVoucherValidityDays),
+                OwnerPhone = phone
+            });
+            return voucher.Code;
         }
 
         private static int DaysUntilBirthday(DateTime birthDate, DateTime today)

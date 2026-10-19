@@ -13,8 +13,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// </summary>
     public class CustomerCareService : HttpService
     {
-        public CustomerCareService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public CustomerCareService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

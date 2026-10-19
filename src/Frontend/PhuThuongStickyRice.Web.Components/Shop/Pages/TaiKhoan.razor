@@ -13,7 +13,7 @@
 @inject CartState CartState
 @inject CartSyncService CartSyncService
 @inject ShopEngagementService ShopEngagementService
-@inject ITokenManager TokenManager
+@inject ITokenStore TokenStore
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 
@@ -565,7 +565,7 @@
     {
         try
         {
-            await TokenManager.ClearTokenAsync();
+            await TokenStore.ClearTokenAsync();
         }
         catch (Exception) { }
 

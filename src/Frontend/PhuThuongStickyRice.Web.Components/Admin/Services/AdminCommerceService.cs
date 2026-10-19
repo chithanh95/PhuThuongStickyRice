@@ -14,8 +14,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// </summary>
     public class AdminCommerceService : HttpService
     {
-        public AdminCommerceService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public AdminCommerceService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

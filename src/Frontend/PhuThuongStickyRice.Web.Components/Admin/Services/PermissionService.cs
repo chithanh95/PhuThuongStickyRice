@@ -40,8 +40,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         private Task<HashSet<string>> _permissionsTask;
         private readonly object _lock = new object();
 
-        public PermissionService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public PermissionService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

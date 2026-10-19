@@ -86,39 +86,39 @@
                             }
                             else
                             {
-                                @foreach (var u in _users)
+                                @foreach (var user in _users)
                                 {
-                                    <tr @key="u.Id">
+                                    <tr @key="user.Id">
                                         <td>
-                                            <strong>@u.UserName</strong>
-                                            @if (u.Locked)
+                                            <strong>@user.UserName</strong>
+                                            @if (user.Locked)
                                             {
                                                 <span class="lx-pill lx-pill-danger ml-2">Đã khóa</span>
                                             }
                                         </td>
-                                        <td>@u.Email</td>
+                                        <td>@user.Email</td>
                                         <td>
-                                            @foreach (var r in u.Roles)
+                                            @foreach (var role in user.Roles)
                                             {
-                                                <span class="lx-pill @RolePillClass(r) mr-1">
-                                                    @RoleLabel(r)
+                                                <span class="lx-pill @RolePillClass(role) mr-1">
+                                                    @RoleLabel(role)
                                                     <button type="button" class="close ml-1" aria-label="Gỡ"
-                                                            style="font-size:14px;line-height:1;" title="Gỡ vai trò @r"
-                                                            @onclick="() => AskRemoveRole(u, r)">×</button>
+                                                            style="font-size:14px;line-height:1;" title="Gỡ vai trò @role"
+                                                            @onclick="() => AskRemoveRole(user, role)">×</button>
                                                 </span>
                                             }
-                                            @if (u.Roles.Count == 0)
+                                            @if (user.Roles.Count == 0)
                                             {
                                                 <span class="text-muted"><em>Chưa có vai trò</em></span>
                                             }
                                         </td>
                                         <td class="text-center">
                                             <select class="form-control form-control-sm d-inline-block" style="width:auto;"
-                                                    value="" @onchange="(e) => AssignRole(u, e.Value?.ToString())">
+                                                    value="" @onchange="(e) => AssignRole(user, e.Value?.ToString())">
                                                 <option value="">+ Gán vai trò...</option>
-                                                @foreach (var r in AllRoles.Where(r => !u.Roles.Contains(r)))
+                                                @foreach (var role in AllRoles.Where(x => !user.Roles.Contains(x)))
                                                 {
-                                                    <option value="@r">@RoleLabel(r)</option>
+                                                    <option value="@role">@RoleLabel(role)</option>
                                                 }
                                             </select>
                                         </td>
@@ -148,15 +148,15 @@
 
     private static readonly string[] AllRoles = { "Admin", "Cashier", "Kitchen" };
 
-    private static string RoleLabel(string r) => r switch
+    private static string RoleLabel(string role) => role switch
     {
         "Admin" => "Quản trị",
         "Cashier" => "Thu ngân",
         "Kitchen" => "Bếp",
-        _ => r
+        _ => role
     };
 
-    private static string RolePillClass(string r) => r switch
+    private static string RolePillClass(string role) => role switch
     {
         "Admin" => "lx-pill-danger",
         "Cashier" => "lx-pill-primary",
@@ -209,12 +209,12 @@
         }
     }
 
-    private async Task AssignRole(StaffUserModel u, string role)
+    private async Task AssignRole(StaffUserModel user, string role)
     {
         if (string.IsNullOrEmpty(role)) return;
         try
         {
-            await StaffService.AssignRoleAsync(u.Id, role);
+            await StaffService.AssignRoleAsync(user.Id, role);
             await LoadUsers();
         }
         catch (Exception ex)
@@ -230,9 +230,9 @@
     // Gỡ vai trò phải qua hộp thoại xác nhận — tránh bấm nhầm 1 click làm
     // mất quyền của nhân viên. Backend (StaffController.RemoveRole) đã chặn
     // tự gỡ quyền Admin của chính mình; dialog này là lớp bảo vệ ở UI.
-    private void AskRemoveRole(StaffUserModel u, string role)
+    private void AskRemoveRole(StaffUserModel user, string role)
     {
-        _removingUser = u;
+        _removingUser = user;
         _removingRole = role;
         _error = null;
         RemoveRoleDialog.Show();
@@ -240,16 +240,16 @@
 
     private async Task ConfirmedRemoveRole()
     {
-        var u = _removingUser;
+        var removingUser = _removingUser;
         var role = _removingRole;
-        if (u == null || string.IsNullOrEmpty(role))
+        if (removingUser == null || string.IsNullOrEmpty(role))
         {
             return;
         }
 
         try
         {
-            await StaffService.RemoveRoleAsync(u.Id, role);
+            await StaffService.RemoveRoleAsync(removingUser.Id, role);
             await LoadUsers();
         }
         catch (Exception ex)

@@ -9,8 +9,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// <summary>Item 178: public queue-number display (/cho).</summary>
     public class QueueTicketService : HttpService
     {
-        public QueueTicketService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public QueueTicketService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

@@ -18,8 +18,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
     public class StaffService : HttpService
     {
-        public StaffService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public StaffService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

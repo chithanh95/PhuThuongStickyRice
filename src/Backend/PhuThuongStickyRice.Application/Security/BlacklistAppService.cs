@@ -111,8 +111,9 @@ namespace PhuThuongStickyRice.Application.Security
             }
 
             var digits = new string(phone.Where(char.IsDigit).ToArray());
-            // Convert leading country code 84 -> 0 for local matching.
-            if (digits.StartsWith("84") && digits.Length == 11)
+            // So sánh lập trình trên chuỗi chữ số: dùng Ordinal (nhanh hơn,
+            // không phụ thuộc culture) thay vì overload mặc định culture-sensitive.
+            if (digits.StartsWith("84", StringComparison.Ordinal) && digits.Length == 11)
             {
                 digits = "0" + digits.Substring(2);
             }

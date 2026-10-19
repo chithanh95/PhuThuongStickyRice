@@ -13,8 +13,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// </summary>
     public class CustomerAddressService : HttpService
     {
-        public CustomerAddressService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public CustomerAddressService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

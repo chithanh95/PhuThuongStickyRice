@@ -10,8 +10,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// <summary>Item 117: holiday schedule (public upcoming + admin CRUD).</summary>
     public class HolidayService : HttpService
     {
-        public HolidayService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public HolidayService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

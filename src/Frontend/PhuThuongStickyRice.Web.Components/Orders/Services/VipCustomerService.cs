@@ -13,8 +13,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
     /// </summary>
     public class VipCustomerService : HttpService
     {
-        public VipCustomerService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public VipCustomerService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

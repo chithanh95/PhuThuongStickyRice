@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Reports;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -66,7 +67,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
 
         private async Task TrySendIfDueAsync()
         {
-            var vnNow = DateTime.UtcNow.AddHours(7);
+            var vnNow = VietnamTime.ToVietnamTime(DateTime.UtcNow);
             if (vnNow.DayOfWeek != DayOfWeek.Monday)
             {
                 return;

@@ -2,7 +2,7 @@
 
 namespace PhuThuongStickyRice.CrossCuttingConcerns.Locks
 {
-    public interface ILockManager
+    public interface IDistributedLockProvider
     {
         bool AcquireLock(string entityName, string entityId, string ownerId, TimeSpan expiration);
 

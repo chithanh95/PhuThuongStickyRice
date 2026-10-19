@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
@@ -79,7 +80,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             // Filename like don-hang-2026-10-14.xlsx: prefer the filtered
             // range end, else the start, else today (Vietnam time).
-            var day = toDate?.Date ?? fromDate?.Date ?? DateTime.UtcNow.AddHours(7).Date;
+            var day = toDate?.Date ?? fromDate?.Date ?? VietnamTime.Today();
             var fileName = $"don-hang-{day:yyyy-MM-dd}.xlsx";
 
             return File(bytes,
@@ -98,8 +99,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             var bytes = await _reports.ExportRevenueAsync(fromDate, toDate);
-            var from = (fromDate?.Date ?? DateTime.UtcNow.AddHours(7).Date).ToString("yyyy-MM-dd");
-            var to = (toDate?.Date ?? DateTime.UtcNow.AddHours(7).Date).ToString("yyyy-MM-dd");
+            var from = (fromDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd");
+            var to = (toDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd");
             return File(bytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"bao-cao-doanh-thu-{from}_{to}.xlsx");

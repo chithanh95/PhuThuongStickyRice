@@ -10,8 +10,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     /// <summary>Item 164: admin APIs for prepaid cards (list + redeem).</summary>
     public class PrepaidCardAdminService : HttpService
     {
-        public PrepaidCardAdminService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public PrepaidCardAdminService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

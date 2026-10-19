@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Shop.DTOs;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -48,7 +49,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>Vietnam calendar date (UTC+7, no DST).</summary>
-        internal static DateTime VietnamToday() => DateTime.UtcNow.AddHours(7).Date;
+        internal static DateTime VietnamToday() => VietnamTime.Today();
 
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<HolidayScheduleDto>> GetListAsync()

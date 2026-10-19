@@ -12,8 +12,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// </summary>
     public class FunnelService : HttpService
     {
-        public FunnelService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public FunnelService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

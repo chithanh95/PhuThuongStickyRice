@@ -10,7 +10,7 @@ namespace PhuThuongStickyRice.Persistence.Locks
     /// <summary>
     /// Khóa phân tán dùng bảng [Locks] trên SQL Server (MERGE/UPSERT theo từng thực thể).
     /// </summary>
-    public class SqlServerDistributedLockProvider : ILockManager
+    public class SqlServerDistributedLockProvider : IDistributedLockProvider
     {
         private readonly StickyRiceDbContext _dbContext;
         private readonly IDateTimeProvider _dateTimeProvider;

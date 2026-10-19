@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return services.GetRequiredService<StickyRiceDbContext>();
             });
 
-            services.AddScoped<ILockManager, SqlServerDistributedLockProvider>();
+            services.AddScoped<IDistributedLockProvider, SqlServerDistributedLockProvider>();
             services.AddScoped<ICircuitBreakerManager, CircuitBreakerManager>();
 
             return services;

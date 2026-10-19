@@ -13,8 +13,8 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
     /// </summary>
     public class ProductService : HttpService
     {
-        public ProductService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public ProductService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

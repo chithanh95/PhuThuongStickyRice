@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Customer;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
@@ -164,7 +165,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var bytes = await _tags.ExportCustomersAsync(searchTerm, tag, inactiveOnly);
             return File(bytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"khach-hang-{DateTime.UtcNow.AddHours(7):yyyy-MM-dd}.xlsx");
+                $"khach-hang-{VietnamTime.ToVietnamTime(DateTime.UtcNow):yyyy-MM-dd}.xlsx");
         }
     }
 }

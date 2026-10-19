@@ -17,8 +17,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
     /// </summary>
     public class OrderService : HttpService
     {
-        public OrderService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public OrderService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

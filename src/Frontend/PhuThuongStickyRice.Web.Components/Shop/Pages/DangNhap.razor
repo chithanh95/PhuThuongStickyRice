@@ -4,7 +4,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @inject AuthService AuthService
-@inject ITokenManager TokenManager
+@inject ITokenStore TokenStore
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
@@ -289,7 +289,7 @@
             return;
         }
 
-        await TokenManager.StoreTokenAsync(result.AccessToken, result.ExpiresAt);
+        await TokenStore.StoreTokenAsync(result.AccessToken, result.ExpiresAt);
         // Reload so the JWT auth state provider picks up the new token.
         Navigation.NavigateTo(SafeReturnUrl(_returnUrl), forceLoad: true);
     }

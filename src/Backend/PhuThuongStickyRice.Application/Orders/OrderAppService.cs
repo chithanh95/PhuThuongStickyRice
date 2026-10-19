@@ -2367,10 +2367,13 @@ namespace PhuThuongStickyRice.Application.Orders
                 .Select(g =>
                 {
                     var dtos = g.Select(o => _objectMapper.Map<Order, OrderDto>(o)).ToList();
+                    // Lấy First() một lần: tránh enumerate lại group nhiều lần
+                    // (mỗi g.First() duyệt lại group từ đầu).
+                    var first = g.First();
                     return new DuplicateOrderGroupDto
                     {
-                        Phone = g.First().CustomerPhone,
-                        CustomerName = g.First().CustomerName,
+                        Phone = first.CustomerPhone,
+                        CustomerName = first.CustomerName,
                         Orders = dtos
                     };
                 })

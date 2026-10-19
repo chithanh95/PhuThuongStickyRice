@@ -61,10 +61,8 @@ namespace PhuThuongStickyRice.Application.Common
         [AllowAnonymous]
         public virtual async Task<ShortLinkDto> CreateAsync(CreateShortLinkDto dto)
         {
-            if (dto == null)
-            {
-                throw new ArgumentNullException(nameof(dto));
-            }
+            // Best practice .NET 6+: guard clause chuẩn thay cho if-null-throw thủ công.
+            ArgumentNullException.ThrowIfNull(dto);
 
             var target = dto.TargetUrl.Trim();
             var queryable = await _links.GetQueryableAsync();

@@ -14,7 +14,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using PhuThuongStickyRice.Application.Customer;
-using PhuThuongStickyRice.Application.Customer;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
@@ -36,6 +35,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private static readonly HashSet<string> AllowedImageExtensions =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+
+        // Thư mục con trong wwwroot/uploads chứa ảnh khách đăng.
+        private const string CustomerPhotoUploadSubfolder = "customer-photos";
 
         private readonly ICustomerPhotoAppService _photos;
         private readonly IWebHostEnvironment _environment;
@@ -101,7 +103,40 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = "File ảnh tối đa 5 MB." });
             }
 
-            var folder = Path.Combine((_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "customer-photos");
+            var (fileName, filePath) = await SaveUploadedPhotoAsync(file, extension, cancellationToken);
+
+            try
+            {
+                var photo = await _photos.RegisterAsync(
+                    $"/uploads/{CustomerPhotoUploadSubfolder}/{fileName}",
+                    new CreateCustomerPhotoDto { Phone = phone, Caption = caption, Name = name });
+                return Ok(photo);
+            }
+            catch (DomainException ex)
+            {
+                System.IO.File.Delete(filePath);
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Thư mục lưu ảnh khách đăng — wwwroot/uploads/customer-photos;
+        /// dùng chung cho upload và xóa file khi từ chối ảnh.
+        /// </summary>
+        private string GetPhotoUploadFolder() =>
+            Path.Combine(
+                _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"),
+                "uploads",
+                CustomerPhotoUploadSubfolder);
+
+        /// <summary>
+        /// Lưu file ảnh đã validate vào thư mục upload, trả về tên file
+        /// (GUID + đuôi gốc) và đường dẫn đầy đủ để xóa khi đăng ký DB lỗi.
+        /// </summary>
+        private async Task<(string FileName, string FilePath)> SaveUploadedPhotoAsync(
+            IFormFile file, string extension, CancellationToken cancellationToken)
+        {
+            var folder = GetPhotoUploadFolder();
             Directory.CreateDirectory(folder);
 
             var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
@@ -111,18 +146,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 await file.CopyToAsync(stream, cancellationToken);
             }
 
-            try
-            {
-                var photo = await _photos.RegisterAsync(
-                    $"/uploads/customer-photos/{fileName}",
-                    new CreateCustomerPhotoDto { Phone = phone, Caption = caption, Name = name });
-                return Ok(photo);
-            }
-            catch (DomainException ex)
-            {
-                System.IO.File.Delete(filePath);
-                return BadRequest(new { message = ex.Message });
-            }
+            return (fileName, filePath);
         }
 
         [Authorize(Roles = "Admin")]
@@ -153,8 +177,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var fileName = Path.GetFileName(photo.ImageUrl ?? string.Empty);
             if (!string.IsNullOrEmpty(fileName))
             {
-                var path = Path.Combine(
-                    (_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot")), "uploads", "customer-photos", fileName);
+                var path = Path.Combine(GetPhotoUploadFolder(), fileName);
                 if (System.IO.File.Exists(path))
                 {
                     System.IO.File.Delete(path);

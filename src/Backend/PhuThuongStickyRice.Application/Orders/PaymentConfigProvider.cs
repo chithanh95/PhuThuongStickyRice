@@ -7,16 +7,29 @@ using Volo.Abp.DependencyInjection;
 namespace PhuThuongStickyRice.Application.Orders
 {
     /// <summary>
-    /// Payment config resolution (item 106): reads the non-secret display
-    /// values from <c>ShopSetting</c> first (editable at /admin/thanh-toan),
-    /// falling back to appsettings.json / appsettings.Production.json.
-    /// Secrets (MoMo AccessKey/SecretKey, TestMode, URLs) always come from
-    /// appsettings and can never be overridden from the database.
+    /// Giải quyết cấu hình thanh toán (item 106): giá trị hiển thị KHÔNG phải
+    /// bí mật đọc từ <c>ShopSetting</c> trước (sửa được ở /admin/thanh-toan),
+    /// rồi fallback về appsettings.json / appsettings.Production.json.
+    /// Bí mật (MoMo AccessKey/SecretKey, TestMode, URLs) LUÔN chỉ lấy từ
+    /// appsettings, không bao giờ được ghi đè từ database — để bảo mật
+    /// (ai chiếm quyền admin cũng không đổi được khóa ký).
     /// </summary>
     public interface IPaymentConfigProvider : ITransientDependency
     {
+        /// <summary>
+        /// Cấu hình chuyển khoản ngân hàng hiển thị ở checkout (tên NH, số TK,
+        /// chủ TK, mẫu QR): giá trị DB thắng khi đã cấu hình, còn lại dùng
+        /// appsettings làm mặc định.
+        /// </summary>
+        /// <returns>Cấu hình chuyển khoản đã gộp DB + appsettings.</returns>
         Task<BankTransferOptions> GetBankTransferAsync();
 
+        /// <summary>
+        /// Cấu hình MoMo: PartnerCode và Endpoint MAY được từ DB; AccessKey,
+        /// SecretKey, TestMode và các URL LUÔN chỉ từ appsettings (không ghi
+        /// đè từ DB vì lý do bảo mật).
+        /// </summary>
+        /// <returns>Cấu hình MoMo đã gộp.</returns>
         Task<MoMoOptions> GetMoMoAsync();
     }
 
@@ -26,6 +39,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IOptions<MoMoOptions> _momoDefaults;
         private readonly IShopSettingAppService _shopSettings;
 
+        /// <summary>Khởi tạo provider cấu hình thanh toán (đọc mặc định từ appsettings, ghi đè hiển thị từ DB).</summary>
         public PaymentConfigProvider(
             IOptions<BankTransferOptions> bankTransferDefaults,
             IOptions<MoMoOptions> momoDefaults,
@@ -36,6 +50,11 @@ namespace PhuThuongStickyRice.Application.Orders
             _shopSettings = shopSettings;
         }
 
+        /// <summary>
+        /// Cấu hình chuyển khoản ngân hàng hiển thị ở checkout: giá trị DB
+        /// thắng khi admin đã cấu hình, còn lại dùng appsettings.
+        /// </summary>
+        /// <returns>Cấu hình chuyển khoản đã gộp DB + appsettings.</returns>
         public async Task<BankTransferOptions> GetBankTransferAsync()
         {
             var defaults = _bankTransferDefaults.Value;
@@ -77,16 +96,22 @@ namespace PhuThuongStickyRice.Application.Orders
             return merged;
         }
 
+        /// <summary>
+        /// Cấu hình MoMo: PartnerCode và Endpoint MAY được từ DB;
+        /// AccessKey, SecretKey, TestMode và URLs LUÔN chỉ từ appsettings
+        /// (không ghi đè từ DB vì lý do bảo mật).
+        /// </summary>
+        /// <returns>Cấu hình MoMo đã gộp.</returns>
         public async Task<MoMoOptions> GetMoMoAsync()
         {
             var defaults = _momoDefaults.Value;
             var merged = new MoMoOptions
             {
-                // Non-secret values MAY come from the database.
+                // Giá trị KHÔNG phải bí mật MAY được từ database.
                 PartnerCode = defaults.PartnerCode,
                 Endpoint = defaults.Endpoint,
 
-                // Secrets + operational flags ALWAYS come from appsettings.
+                // Bí mật + cờ vận hành LUÔN chỉ từ appsettings (không ghi đè từ DB).
                 AccessKey = defaults.AccessKey,
                 SecretKey = defaults.SecretKey,
                 TestMode = defaults.TestMode,

@@ -17,9 +17,9 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
     {
         /// <summary>Khởi tạo client gọi API vận hành (admin).</summary>
         /// <param name="httpClient">HttpClient đã gắn base address API.</param>
-        /// <param name="tokenManager">Quản lý JWT gắn vào header.</param>
-        public AdminOperationsService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        /// <param name="tokenStore">Quản lý JWT gắn vào header.</param>
+        public AdminOperationsService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

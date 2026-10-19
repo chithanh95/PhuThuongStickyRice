@@ -13,8 +13,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// </summary>
     public class CustomerProfileService : HttpService
     {
-        public CustomerProfileService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public CustomerProfileService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

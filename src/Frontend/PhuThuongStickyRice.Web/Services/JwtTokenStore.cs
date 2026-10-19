@@ -9,7 +9,7 @@ namespace PhuThuongStickyRice.Web.Services
     /// JWT token storage (browser localStorage) for the in-repo admin login.
     /// Tokens are issued by WebAPI itself — no OIDC / external IdentityServer.
     /// </summary>
-    public class JwtTokenStore : ITokenManager
+    public class JwtTokenStore : ITokenStore
     {
         private const string TokenKey = "phuthuong_access_token";
         private const string ExpiresKey = "phuthuong_access_token_expires";

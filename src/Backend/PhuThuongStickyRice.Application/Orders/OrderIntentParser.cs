@@ -9,32 +9,42 @@ using System.Text.RegularExpressions;
 namespace PhuThuongStickyRice.Application.Orders
 {
     /// <summary>
-    /// One parsed dish line: {productId, productName, quantity, price}.
+    /// Một dòng món đã parse được: {productId, productName, quantity, price}.
     /// </summary>
     public class ParsedOrderItem
     {
+        /// <summary>Id sản phẩm trong DB.</summary>
         public Guid ProductId { get; set; }
 
+        /// <summary>Tên sản phẩm như hiển thị trong menu.</summary>
         public string ProductName { get; set; }
 
+        /// <summary>Số lượng (đã kẹp trong khoảng 1–99 ở bước parse).</summary>
         public int Quantity { get; set; }
 
+        /// <summary>Giá đơn vị tại thời điểm parse (dùng để tính thử tổng tiền).</summary>
         public decimal Price { get; set; }
     }
 
+    /// <summary>
+    /// Kết quả parse một đoạn chat/giọng nói thành ý định đặt món.
+    /// </summary>
     public class ParseOrderResult
     {
+        /// <summary>True khi text có từ khóa đặt hàng ("đặt", "mua", "ship"...) hoặc khớp được ít nhất 1 món.</summary>
         public bool IsOrderIntent { get; set; }
 
+        /// <summary>Các dòng món khớp được với catalog.</summary>
         public List<ParsedOrderItem> Items { get; set; } = new List<ParsedOrderItem>();
 
+        /// <summary>Phần text không khớp món nào (để hiển thị lại cho khách sửa/bổ sung).</summary>
         public string UnmatchedText { get; set; }
     }
 
     /// <summary>
-    /// Parses Vietnamese free text (chatbot, voice) into dish lines (items 61, 80).
-    /// Pure static logic — the caller supplies the product catalog; no order is
-    /// created here, the frontend confirms before calling the real order API.
+    /// Parse text tiếng Việt tự do (chatbot, voice) thành các dòng món (item 61, 80).
+    /// Logic tĩnh thuần túy — caller cung cấp catalog sản phẩm; không tạo đơn ở đây,
+    /// frontend xác nhận với khách trước khi gọi API tạo đơn thật.
     /// </summary>
     public static class OrderIntentParser
     {
@@ -50,7 +60,11 @@ namespace PhuThuongStickyRice.Application.Orders
             { "sau", 6 }, { "bay", 7 }, { "tam", 8 }, { "chin", 9 }, { "muoi", 10 }
         };
 
-        /// <summary>Lowercase + strip Vietnamese diacritics so "xôi gấc" matches "xoi gac".</summary>
+        /// <summary>
+        /// Chuẩn hóa text: viết thường + bỏ dấu tiếng Việt để "xôi gấc" khớp với "xoi gac".
+        /// </summary>
+        /// <param name="text">Text gốc do khách nhập/nói.</param>
+        /// <returns>Text đã chuẩn hóa (không dấu, chữ thường).</returns>
         public static string Normalize(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -72,6 +86,12 @@ namespace PhuThuongStickyRice.Application.Orders
             return sb.ToString().Normalize(NormalizationForm.FormC);
         }
 
+        /// <summary>
+        /// Parse text thành các dòng món từ catalog đầy đủ (entity Product).
+        /// </summary>
+        /// <param name="text">Text tiếng Việt tự do ("2 xôi gấc, 1 xôi xéo").</param>
+        /// <param name="products">Catalog sản phẩm để đối chiếu tên món.</param>
+        /// <returns>Kết quả parse: ý định đặt hàng, các dòng món, phần text không khớp.</returns>
         public static ParseOrderResult Parse(string text, IEnumerable<Product> products)
         {
             var candidates = (products ?? Enumerable.Empty<Product>())
@@ -86,13 +106,18 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Slim projection for chatbot parse: only Id/Name/Price are needed,
-        /// so callers can SELECT 3 narrow columns instead of full Product rows.
+        /// Chiếu gọn cho luồng chatbot: chỉ cần Id/Tên/Giá nên caller có thể
+        /// SELECT 3 cột hẹp thay vì nạp toàn bộ dòng Product.
         /// </summary>
         public class ParseProductCandidate
         {
+            /// <summary>Id sản phẩm.</summary>
             public Guid Id { get; set; }
+
+            /// <summary>Tên món như trong menu (dùng để đối chiếu tên).</summary>
             public string Name { get; set; }
+
+            /// <summary>Giá đơn vị (để tính thử tổng tiền khi parse).</summary>
             public decimal PriceAmount { get; set; }
         }
 
@@ -100,6 +125,13 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int MinParsedQuantity = 1;
         private const int MaxParsedQuantity = 99;
 
+        /// <summary>
+        /// Parse text thành các dòng món từ danh sách ứng viên gọn nhẹ
+        /// (chỉ Id/Tên/Giá — dùng cho luồng chatbot để truy vấn DB ít cột).
+        /// </summary>
+        /// <param name="text">Text tiếng Việt tự do.</param>
+        /// <param name="products">Danh sách ứng viên đã chiếu gọn từ catalog.</param>
+        /// <returns>Kết quả parse: ý định đặt hàng, các dòng món, phần text không khớp.</returns>
         public static ParseOrderResult Parse(string text, IEnumerable<ParseProductCandidate> products)
         {
             var result = new ParseOrderResult();

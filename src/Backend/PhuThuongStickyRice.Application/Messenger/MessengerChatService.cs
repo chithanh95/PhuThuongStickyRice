@@ -532,7 +532,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         private static bool IsGreetingOrMenu(string norm)
         {
             return norm.Contains("menu") || norm.Contains("thuc don") || norm.Contains("thực đơn")
-                || norm is "hi" or "hello" or "chao" or "chào" || norm.StartsWith("chao ")
+                || norm is "hi" or "hello" or "chao" or "chào" || norm.StartsWith("chao ", StringComparison.Ordinal)
                 || norm.Contains("gia") && norm.Contains("ban");
         }
 

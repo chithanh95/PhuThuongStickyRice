@@ -22,7 +22,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         private readonly HttpClient _httpClient;
         private readonly CartState _cartState;
         private readonly AuthenticationStateProvider _authStateProvider;
-        private readonly ITokenManager _tokenManager;
+        private readonly ITokenStore _tokenStore;
         private Timer _debounceTimer;
         // 2 giây: đủ lâu để gộp nhiều lần bấm +/- liên tiếp thành 1 lần lưu,
         // đủ nhanh để giỏ vẫn được lưu nếu user tắt tab ngay sau khi sửa.
@@ -32,12 +32,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             HttpClient httpClient,
             CartState cartState,
             AuthenticationStateProvider authStateProvider,
-            ITokenManager tokenManager)
+            ITokenStore tokenStore)
         {
             _httpClient = httpClient;
             _cartState = cartState;
             _authStateProvider = authStateProvider;
-            _tokenManager = tokenManager;
+            _tokenStore = tokenStore;
             _cartState.OnChange += OnCartChanged;
         }
 
@@ -45,7 +45,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         {
             try
             {
-                var tokenModel = await _tokenManager.GetToken();
+                var tokenModel = await _tokenStore.GetToken();
                 var token = tokenModel?.AccessToken;
                 if (!string.IsNullOrWhiteSpace(token))
                 {

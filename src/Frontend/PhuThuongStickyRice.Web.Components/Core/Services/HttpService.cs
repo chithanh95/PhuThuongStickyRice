@@ -16,13 +16,13 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
     public class HttpService
     {
         protected readonly HttpClient _httpClient;
-        protected readonly ITokenManager _tokenManager;
+        protected readonly ITokenStore _tokenStore;
         protected readonly NavigationManager _navigation;
 
-        public HttpService(HttpClient httpClient, ITokenManager tokenManager, NavigationManager navigation = null)
+        public HttpService(HttpClient httpClient, ITokenStore tokenStore, NavigationManager navigation = null)
         {
             _httpClient = httpClient;
-            _tokenManager = tokenManager;
+            _tokenStore = tokenStore;
             _navigation = navigation;
         }
 
@@ -55,7 +55,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         /// </summary>
         public async Task<string> GetAccessToken()
         {
-            var token = await _tokenManager.GetToken();
+            var token = await _tokenStore.GetToken();
             if (token == null)
             {
                 return null;
@@ -63,8 +63,8 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
             if (token.TokenExpired)
             {
-                await _tokenManager.RefreshToken();
-                token = await _tokenManager.GetToken();
+                await _tokenStore.RefreshToken();
+                token = await _tokenStore.GetToken();
             }
 
             return token?.AccessToken;
@@ -72,7 +72,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
         protected async Task SetBearerToken()
         {
-            if (_tokenManager.AttachTokenAutomatically)
+            if (_tokenStore.AttachTokenAutomatically)
             {
                 return;
             }

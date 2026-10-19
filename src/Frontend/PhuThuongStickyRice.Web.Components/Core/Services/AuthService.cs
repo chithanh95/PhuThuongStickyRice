@@ -9,7 +9,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 {
     /// <summary>
     /// Wave 6d (item 37): in-repo auth actions (change password). The JWT is
-    /// attached automatically by HttpService (ITokenManager).
+    /// attached automatically by HttpService (ITokenStore).
     /// </summary>
     public class AuthService : HttpService
     {
@@ -19,8 +19,8 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             PropertyNameCaseInsensitive = true
         };
 
-        public AuthService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public AuthService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 

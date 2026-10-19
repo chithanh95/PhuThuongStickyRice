@@ -61,10 +61,10 @@
     {
         try
         {
-            var p = await AuthService.GetProfileAsync();
-            _userName = p?.UserName;
-            _email = p?.Email;
-            _phone = p?.PhoneNumber;
+            var profile = await AuthService.GetProfileAsync();
+            _userName = profile?.UserName;
+            _email = profile?.Email;
+            _phone = profile?.PhoneNumber;
         }
         catch (Exception ex)
         {

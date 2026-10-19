@@ -65,12 +65,12 @@ namespace PhuThuongStickyRice.Web
             builder.Services.AddScoped<JwtAuthenticationStateProvider>();
             builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
                 sp.GetRequiredService<JwtAuthenticationStateProvider>());
-            builder.Services.AddScoped<ITokenManager>(sp =>
+            builder.Services.AddScoped<ITokenStore>(sp =>
                 sp.GetRequiredService<JwtTokenStore>());
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-            // Admin services attach the JWT via HttpService + ITokenManager.
+            // Admin services attach the JWT via HttpService + ITokenStore.
             AddApiHttpClient<ProductService>(builder, apiBaseUri);
 
             // Item 185: admin quản lý gói "Ăn sáng cả tuần" (JWT).

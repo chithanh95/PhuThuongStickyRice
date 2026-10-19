@@ -8,8 +8,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// <summary>Shop commerce settings (public GET, admin PUT).</summary>
     public class ShopSettingsService : HttpService
     {
-        public ShopSettingsService(HttpClient httpClient, ITokenManager tokenManager)
-            : base(httpClient, tokenManager)
+        public ShopSettingsService(HttpClient httpClient, ITokenStore tokenStore)
+            : base(httpClient, tokenStore)
         {
         }
 
