@@ -1019,13 +1019,17 @@ else
         // bằng Task.WhenAll thay vì tuần tự. Mỗi loader fail-soft riêng (ghi field
         // khác nhau); 2 nhánh login/guest trong LoadCustomerContextAsync và
         // LoadRememberedGuestAsync loại trừ nhau qua cùng auth state → không race.
+        // perf-hunt 2026-10-20: + LoadBankTransferInfoAsync (fail-soft, chỉ ghi
+        // _bankInfo) để khách chọn CK không phải chờ thêm 1 round-trip sau khi
+        // bấm "Đặt hàng" — pattern đã áp dụng ở DatSoLuongLon.razor.
         await Task.WhenAll(
             LoadShopSettingsAsync(),
             LoadActivePromotionAsync(),
             LoadFeatureFlagsAsync(),
             LoadBranchesAsync(),
             LoadCustomerContextAsync(),
-            LoadRememberedGuestAsync());
+            LoadRememberedGuestAsync(),
+            LoadBankTransferInfoAsync());
 
         RefreshMinOrderState();
 
@@ -1865,8 +1869,11 @@ else
                 return;
             }
 
-            if (_placedOrder.PaymentMethod == "BankTransfer")
+            if (_placedOrder.PaymentMethod == "BankTransfer"
+                && (_bankInfo == null || !_bankInfo.IsConfigured))
             {
+                // Thường đã preload ở OnInitializedAsync — chỉ fetch lại khi
+                // preload thất bại hoặc admin tắt CK giữa session.
                 await LoadBankTransferInfoAsync();
             }
         }

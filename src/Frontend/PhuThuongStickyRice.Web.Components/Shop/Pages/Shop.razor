@@ -764,11 +764,11 @@ else
 
         // Item 143: banner mã giảm giá cho khách mới (fail-soft — shop vẫn
         // chạy bình thường khi không lấy được).
-        await LoadFirstOrderVoucherAsync();
-
-        // Wave 6d (item 38): tải sản phẩm + dữ liệu bổ sung (combo, topping,
-        // bán chạy, đánh giá, tồn kho ngày).
-        await LoadCatalogAsync();
+        // perf-hunt 2026-10-20: 2 loader độc lập → song song bằng Task.WhenAll
+        // (cắt ~1 round-trip cho khách hàng cũ). LoadFirstOrderVoucherAsync chỉ
+        // ghi _firstOrderVoucher; LoadCatalogAsync quản lý _loadFailed của riêng
+        // nó → không race, không đổi xử lý lỗi.
+        await Task.WhenAll(LoadFirstOrderVoucherAsync(), LoadCatalogAsync());
     }
 
     /// <summary>
