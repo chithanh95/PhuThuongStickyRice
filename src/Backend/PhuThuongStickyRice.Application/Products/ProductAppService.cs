@@ -757,11 +757,10 @@ namespace PhuThuongStickyRice.Application.Products
             else
             {
                 // Xóa các size options liên quan trước (không có FK cascade).
+                // DeleteManyAsync (RemoveRange) thay vì DeleteAsync từng cái:
+                // cùng ngữ nghĩa trong 1 UoW, gọn 1 lần gọi repository.
                 var options = await _sizeOptions.GetListAsync(x => x.ProductId == id);
-                foreach (var opt in options)
-                {
-                    await _sizeOptions.DeleteAsync(opt);
-                }
+                await _sizeOptions.DeleteManyAsync(options);
                 await _products.DeleteAsync(product);
                 await _activityLogger.LogAsync(StaffActivityActions.ProductDelete,
                     $"Xóa món {product.Name} ({product.Code.Value}).");

@@ -71,7 +71,9 @@ namespace PhuThuongStickyRice.Application.Customer
             return CurrentUser.Id.Value;
         }
 
-        /// <summary>Lấy sổ địa chỉ của tôi: mặc định lên trước, rồi mới nhất.</summary>
+        /// <summary>Lấy sổ địa chỉ của tôi: mặc định lên trước, rồi mới nhất.
+        /// Giới hạn 100 bản ghi ở SQL để payload/ram luôn có trần (thực tế
+        /// 1 người hiếm khi quá vài chục địa chỉ).</summary>
         public virtual async Task<List<CustomerAddressDto>> GetMyAsync()
         {
             var userId = RequireUserId();
@@ -79,7 +81,8 @@ namespace PhuThuongStickyRice.Application.Customer
             var entities = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.UserId == userId)
                     .OrderByDescending(x => x.IsDefault)
-                    .ThenByDescending(x => x.CreatedAt));
+                    .ThenByDescending(x => x.CreatedAt)
+                    .Take(100));
             return entities.Select(MapToDto).ToList();
         }
 
