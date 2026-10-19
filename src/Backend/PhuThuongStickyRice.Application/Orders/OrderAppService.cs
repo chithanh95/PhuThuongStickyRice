@@ -1,3 +1,4 @@
+#nullable enable annotations
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Orders.Email;
 using PhuThuongStickyRice.Application.Orders.Exceptions;

@@ -305,8 +305,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 var medianQty = Median(priced.Select(r => (double)r.QuantitySold).ToList());
                 var highMarginLowVolume = priced
                     .Where(r => r.QuantitySold <= medianQty && r.MarginPercent.HasValue)
-                    .OrderByDescending(r => r.MarginPercent)
-                    .FirstOrDefault();
+                    .MaxBy(r => r.MarginPercent);
                 if (highMarginLowVolume != null)
                 {
                     suggestions.Add(
@@ -317,8 +316,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
                 var lowestMargin = priced
                     .Where(r => r.MarginPercent.HasValue)
-                    .OrderBy(r => r.MarginPercent)
-                    .FirstOrDefault();
+                    .MinBy(r => r.MarginPercent);
                 if (lowestMargin != null && lowestMargin.MarginPercent < LowMarginPercentThreshold
                     && (highMarginLowVolume == null || lowestMargin.ProductId != highMarginLowVolume.ProductId))
                 {

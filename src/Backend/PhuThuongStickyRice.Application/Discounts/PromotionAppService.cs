@@ -162,8 +162,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             var active = await _catalogCache.GetOrAddAsync("promotions:active-list", QueryActiveAsync);
             var best = active
                 .Where(x => MatchesWindow(x, now))
-                .OrderByDescending(x => x.Dto.DiscountPercent)
-                .FirstOrDefault();
+                .MaxBy(x => x.Dto.DiscountPercent);
             return best?.Dto;
         }
 
