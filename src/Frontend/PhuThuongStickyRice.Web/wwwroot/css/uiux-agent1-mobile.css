@@ -2514,4 +2514,115 @@
         font-size: 13px;
     }
 }
-/* ===== END UIUX 23:05 A1 ===== */
+/* ===== END UIUX 23:25 A1 ===== */
+
+/* ===== UIUX 23:25 A1 (run 23:25 2026-10-19) — 5 fix mobile mới ===== */
+
+/* ------------------------------------------------------------
+   uiux-hunt 2026-10-19 run 23:25 — agent1-mobile fix 1: nút −/+ của
+   stepper số lượng trên hàng món kiểu ShopeeFood quá nhỏ.
+   Vấn đề: `.shop-row-stepper button` (Shop.razor.css:592) chỉ 32×32px
+   (<44px) — đây là nút tăng/giảm số lượng CHÍNH trên /shop mobile
+   (hàng ngang ShopeeFood, Shop.razor:356-360), khách già bấm trượt.
+   Nút "+" thêm món (.shop-row-add) đã 44px ở rule trước (Shop.razor.css:906)
+   nên chỉ stepper còn sót. Grep file này: chưa có rule .shop-row-stepper nào.
+   Giải pháp: mobile — 44×44px, căn giữa icon bằng flex. Selector doubled
+   class thắng scoped CSS (file này nạp sau component styles).
+   (Verify: Shop.razor:356 .shop-row-stepper; Shop.razor.css:592)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .shop-row-stepper.shop-row-stepper button {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+}
+
+/* ------------------------------------------------------------
+   uiux-hunt 2026-10-19 run 23:25 — agent1-mobile fix 2: số dư ví trong
+   label phương thức "💰 Thanh toán bằng ví" quá nhỏ.
+   Vấn đề: `<small class="text-muted">(số dư X ₫)</small>` (Checkout.razor:562)
+   ~12.8px — đây là SỐ TIỀN quyết định khách có dùng được phương thức ví
+   không, người lớn tuổi dễ bỏ qua. Các fix chữ nhỏ trước (19:45, 21:23,
+   22:25, 23:05) chưa chạm dòng này. Grep: pm-wallet chỉ tồn tại ở
+   Checkout.razor:559-563 — selector theo for="pm-wallet" an toàn.
+   Giải pháp: mobile 13px, giữ màu muted.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    label[for="pm-wallet"] small {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   uiux-hunt 2026-10-19 run 23:25 — agent1-mobile fix 3: khối điểm loyalty
+   ở /checkout quá nhỏ.
+   Vấn đề: `.alert.alert-light.border.py-2 > small` (Checkout.razor:721-732)
+   ~12.8px — "⭐ Bạn có X điểm / Hạng Y / Mã giới thiệu" là thông tin
+   tiền/điểm khách cần đọc trước khi bấm "Đổi điểm". Grep toàn app:
+   .alert-light.border.py-2 chỉ tồn tại đúng ở đây.
+   Giải pháp: mobile 13px cho cả small lồng trong.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert-light.alert-light.border.py-2 small {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   uiux-hunt 2026-10-19 run 23:25 — agent1-mobile fix 4: dòng giải thích
+   "⚡ Đặt ngay với thông tin đã lưu" quá nhỏ.
+   Vấn đề: `<small class="text-muted d-block mt-2">Thông tin bên dưới đã
+   điền sẵn — bạn vẫn có thể sửa trước khi đặt.</small>` (Checkout.razor:59)
+   ~12.8px — đây là luồng checkout 1 chạm cho khách quen (người già),
+   không đọc dòng này khách sẽ tưởng thông tin bị sai. Selector
+   `.alert-success.mb-3[role="note"]` chỉ khớp đúng block này
+   (Checkout.razor:53; block alert-success khác không có role="note",
+   block role="note" còn lại ở :42 là alert-light).
+   Giải pháp: mobile 13px.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert-success.mb-3[role="note"] > small {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   uiux-hunt 2026-10-19 run 23:25 — agent1-mobile fix 5: popup "Hủy đơn"
+   ở /track-order còn nhiều điểm chạm nhỏ.
+   Vấn đề: (a) radio chọn lý do hủy (`input[name="cancelReason"]`,
+   TrackOrder.razor:397) là radio mặc định ~16px, người già khó bấm đúng;
+   (b) nút "Không hủy nữa" (btn-secondary) ~38px <44px (nút "Xác nhận hủy
+   đơn" đã 48px inline); (c) nút × đóng (Bootstrap .close) chỉ ~24px.
+   Selector scope `.card-body:has(.to-info-row) .modal[aria-label=...]`
+   — aria-label này còn dùng ở trang admin (OrderList, KanbanDon) nhưng
+   admin không có .to-info-row nên không bị ảnh hưởng.
+   Giải pháp: radio 22px, nút footer ≥48px, × 44px vùng bấm.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body:has(.to-info-row) .modal[aria-label="Chọn lý do hủy đơn"] input[name="cancelReason"] {
+        width: 22px;
+        height: 22px;
+        flex-shrink: 0;
+    }
+    .card-body:has(.to-info-row) .modal[aria-label="Chọn lý do hủy đơn"] .modal-footer .btn {
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .card-body:has(.to-info-row) .modal[aria-label="Chọn lý do hủy đơn"] button.close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: -0.5rem -0.5rem -0.5rem auto;
+    }
+}
+/* ===== END UIUX 23:25 A1 ===== */

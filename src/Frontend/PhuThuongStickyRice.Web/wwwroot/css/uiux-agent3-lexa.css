@@ -925,3 +925,33 @@ html.dark .lx-total-row th { background-color: #7a6fbe !important; border-color:
 html.dark .lang-btn:hover { background-color: #2e2620 !important; }
 
 /* ===== END UIUX 23:05 A3 ===== */
+
+/* ===== UIUX 23:25 A3 =====
+   Quét đợt này: toàn bộ hex trong 42 .razor.css + css wwwroot (loại
+   bootstrap.min.css và demo /admin/lexa pixel-exact), inline style có màu
+   trong razor (chỉ còn Customers.razor:216 color:#fff hợp lệ), class
+   "oi oi-*" (không còn — toàn false positive tiếng Việt doi-/noi-/moi),
+   btn-outline-* (6 variant dùng thật đều đã phủ), badge/alert/text/bg/
+   border utilities, validation is-invalid/is-valid (đợt 22:25), focus glow
+   (shp-page + lx-admin), pagination, toast, dropdown-item (dùng
+   lx-dropdown-item custom), list-group/spinner (không dùng), jumbotron
+   (bg-warning đã phủ), breadcrumb (lx-breadcrumb custom), input-group-text
+   (xám trung tính, không lệch chuẩn), svg fill xanh (không còn).
+   Kết luận: sau 15+ đợt đồng bộ, codebase gần như sạch — chỉ còn 1 lệch
+   chuẩn thật sự bên dưới. */
+
+/* ---------- Fix 1: .progress-bar trần (không bg-*) vẫn xanh Bootstrap #007bff -> tím Lexa ----------
+   Verify: LaiGop.razor:115
+     <div class="progress-bar" role="progressbar" style="width:@(pct...)%;">
+   Không kèm class bg-* nào nên ăn màu nền mặc định Bootstrap #007bff —
+   xanh dương lạ giữa admin Lexa. Các chỗ khác đã an toàn: Cart.razor:84
+   (bg-success -> #34c38f qua override dòng 86), BaoCao.razor:237
+   (bg-warning -> #f1b44c dòng 88), Dashboard.razor:226 (lx-progress-*
+   custom trong admin-lexa.css:1216-1218), demo Lexa/UiGeneral + UiGrid
+   (style inline background hoặc bg-*).
+   Selector :not([class*="bg-"]) để KHÔNG đè các bg-* đã override đúng
+   chuẩn; specificity (0,2,0) thắng Bootstrap (0,1,0), file load sau cùng
+   (index.html:172) nên không cần !important. Không đổi layout/chức năng. */
+.progress-bar:not([class*="bg-"]) { background-color: #7a6fbe; }
+
+/* ===== END UIUX 23:25 A3 ===== */

@@ -1713,3 +1713,68 @@ html.dark .sg-error-btn-outline.sg-error-btn-outline:focus-visible {
 }
 
 /* ===== END UIUX 23:05 A4 ===== */
+
+/* ===== UIUX 23:25 A4 — run 23:25 ===== */
+
+/* UIUX 23:25 A4 — Fix 1: chữ footer dưới (bottom bar) quá mờ */
+/* WCAG 1.4.3 (Contrast, AA 4.5:1): `.sg-bottom-bar` (ShopFooter.razor.css:71)
+   chữ #9a8b73 trên nền #211a13 chỉ đạt 3.96:1 — dòng bản quyền/liên hệ 14px
+   đọc khó, nhất là người lớn tuổi. Nâng lên #c9a886 → 7.72:1, vẫn tông
+   nâu ấm của brand. Chưa từng fix (grep file này: 0 hit). Nhân đôi class
+   (0,2,0) để thắng rule scoped `.sg-bottom-bar[b-xxx]` (0,1,1). */
+.sg-bottom-bar.sg-bottom-bar {
+    color: #c9a886; /* was #9a8b73 */
+}
+
+/* UIUX 23:25 A4 — Fix 2: số thứ tự streak (landing) mờ trên nền kem */
+/* WCAG 1.4.3 (Contrast): `.sg-dot` (Index.razor.css:1908) — các vòng tròn
+   số ngày streak, font-weight 800 — chữ #a08c78 trên nền kem --sg-cream
+   (#f7f1e5) chỉ 2.86:1, người cao tuổi gần như không đọc được số. Đổi sang
+   #6f5f4c → 5.46:1 (đúng màu remedy team đã dùng cho text mờ, giữ tông nâu).
+   Dark mode: --sg-cream thành #262019, #a08c78 gốc vẫn đạt 5.0:1 nên giữ
+   nguyên ở dark. Không chạm `.sg-dot.on` (chữ trắng trên nền đỏ đã đạt). */
+.sg-dot.sg-dot {
+    color: #6f5f4c; /* was #a08c78 (light mode) */
+}
+
+/* UIUX 23:25 A4 — Fix 3: nút "Thanh toán" sticky giỏ hàng chữ trắng trên nền xanh lá */
+/* WCAG 1.4.3 (Contrast): `.cart-sticky-checkout .btn-success`
+   (Cart.razor.css:176) — nút CTA chính trên mobile khi giỏ có món — chữ
+   trắng (mặc định Bootstrap) trên nền #34c38f chỉ 2.25:1, vi phạm nặng và
+   chính là nút quan trọng nhất luồng mua hàng. Đổi chữ sang #212529 →
+   6.87:1 (cùng remedy team đã áp cho .badge-success ở run 23:05). Không đổi
+   màu nền nên không phá chuẩn Lexa của nút. */
+.cart-sticky-checkout .btn-success.btn-success {
+    color: #212529; /* was inherited #fff */
+}
+
+/* UIUX 23:25 A4 — Fix 4: vòng focus nút "Thanh toán" sticky giỏ hàng */
+/* WCAG 2.4.7 (Focus Visible): nút `.cart-sticky-checkout .btn-success`
+   (CTA cuối luồng, mobile) không có :focus-visible (đã grep: 0 hit toàn
+   file Cart.razor.css) — người dùng bàn phím tab tới không biết mình đang
+   ở nút đặt hàng. Vòng tím brand #7a6fbe, offset 3px do nút bo góc 12px;
+   dark mode #a49de0. */
+.cart-sticky-checkout .btn-success.btn-success:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 3px;
+    border-radius: 12px;
+}
+html.dark .cart-sticky-checkout .btn-success.btn-success:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* UIUX 23:25 A4 — Fix 5: vòng focus nút "Đặt hàng" sticky thanh checkout */
+/* WCAG 2.4.7 (Focus Visible): `.co-mobile-bar .btn` (Checkout.razor.css:113)
+   — thanh sticky dưới cùng trang checkout mobile với nút xác nhận đơn —
+   không có :focus-visible (đã grep: 0 hit toàn file Checkout.razor.css).
+   Đây là nút chốt đơn cuối cùng; người dùng bàn phím phải thấy rõ khi
+   tab tới. Vòng tím brand #7a6fbe; dark mode #a49de0. */
+.co-mobile-bar .co-mobile-bar .btn:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 3px;
+}
+html.dark .co-mobile-bar .co-mobile-bar .btn:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* ===== END UIUX 23:25 A4 ===== */

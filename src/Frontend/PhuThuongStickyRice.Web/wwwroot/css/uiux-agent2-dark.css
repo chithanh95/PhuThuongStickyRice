@@ -1848,3 +1848,68 @@ html.dark .lx-admin .page-item.active .page-link:hover {
 }
 
 /* ===== END UIUX 23:05 A2 ===== */
+
+/* ===== UIUX 23:25 A2 =====
+   Phương pháp: quét property-level toàn bộ 47 file .razor.css + <style>
+   trong .razor (~94 ứng viên text-color tối, 3 ứng viên nền trắng),
+   đối chiếu với ~1850 dòng rule html.dark hiện có (file này + app.css +
+   admin-lexa.css + uiux-agent3-lexa + uiux-agent4-a11y), verify DOM +
+   đo contrast luminance từng ứng viên, loại false positive.
+   Phát hiện phụ: comment cũ ở file này (:245, :1226) CLAIM đợt
+   uiux-dark-fixes FIX 5 đã sáng ".qv-sheet-close/meta/opt-price" — nhưng
+   grep xác minh KHÔNG tồn tại rule dark nào phủ 3 selector này (chỉ có
+   rule focus-visible ở uiux-agent4-a11y.css:1035 và rule html:not(.dark)
+   ở :1185-1188). Claim sai → đây chính là 3 fix mới thật sự. */
+
+/* ---------- UIUX 23:25 A2 FIX 1 — /shop quick-view: chữ meta món + giá option mờ ở dark ----------
+   Vấn đề: Shop.razor.css — .qv-sheet-meta (13px, dòng "Size M · ít đường"
+   dưới tên món) và .qv-sheet-opt-price (14px, giá từng option trong
+   "Chọn size"/"Món ăn kèm") đều color:#8a7a63. Ở dark mode section nền
+   #2e2620 / đầu sheet nền #241d17 (rule dark dòng 894-900 chính file) →
+   tương phản chỉ ~3.6:1 / ~4.0:1 — chữ giá tiền (thông tin quan trọng
+   nhất khi khách chọn món) mờ, không đạt WCAG AA 4.5:1 cho chữ 13-14px.
+   Fix: #b8a88f — cùng tone ấm các fix sheet trước
+   (qv-sheet-section :245, placeholder :829) → ~6.4:1 trên #2e2620,
+   ~7.2:1 trên #241d17.
+   Specificity (0,2,1) thắng rule scoped (0,1,1); không cần !important. */
+html.dark .qv-sheet-meta {
+    color: #b8a88f; /* was #8a7a63 — ~4.0:1 → ~7.2:1 trên #241d17 */
+}
+html.dark .qv-sheet-opt-price {
+    color: #b8a88f; /* was #8a7a63 — ~3.6:1 → ~6.4:1 trên #2e2620 */
+}
+
+/* ---------- UIUX 23:25 A2 FIX 2 — /shop quick-view: nút × đóng sheet khó thấy ở dark ----------
+   Vấn đề: .qv-sheet-close (icon × 32px, góc phải sheet xem nhanh món)
+   color:#8a7a63 trên nền đầu sheet tối #241d17 (dark rule Shop.razor.css:894)
+   → tương phản ~4.0:1. Icon 32px đạt ngưỡng 3:1 nhưng với khách lớn tuổi
+   (ưu tiên của quán) nút đóng sheet là thao tác thoát quan trọng — cần rõ.
+   Cùng họ bug FIX 1 (claim fix cũ là sai, chưa rule nào phủ).
+   Fix: #b8a88f đồng bộ FIX 1 → ~7.2:1.
+   Specificity (0,2,1) thắng rule scoped (0,1,1); không cần !important. */
+html.dark .qv-sheet-close {
+    color: #b8a88f; /* was #8a7a63 — ~4.0:1 → ~7.2:1 trên #241d17 */
+}
+
+/* ---------- UIUX 23:25 A2 FIX 3 — /checkout: kim chỉ vòng quay may mắn tàng hình ở dark ----------
+   Vấn đề: Checkout.razor:164 — `.spin-pointer` (ký tự ▼ 30px chỉ kết quả
+   vòng quay "Quay may mắn — nhận voucher") color:#7b2d26 (nâu đỏ đậm) nằm
+   trực tiếp trên `.card-body` → dark bg #262640 (app.css:240).
+   Tương phản #7b2d26 trên #262640 chỉ ~1.05:1 — kim chỉ HOÀN TOÀN tàng
+   hình ở dark mode, khách không biết kim đang chỉ ô nào (voucher nào
+   trúng). Viền bánh xe .spin-wheel border #7b2d26 cũng chìm một nửa ở
+   mép ngoài trên nền card tối.
+   Fix: cả kim và viền → #d67a70 (đỏ hồng ấm, đồng bộ 2 chi tiết như bản
+   sáng đồng bộ #7b2d26) → ~4.9:1 trên #262640, vẫn hài hòa với các ô
+   bánh xe sáng (#f6c453, #e8845f...).
+   Specificity (0,2,1) thắng rule scoped (0,1,1); không cần !important.
+   Không đụng .spin-label (#5a1f1a trên ô sáng — bánh xe giữ màu sáng ở
+   dark nên vẫn ổn). */
+html.dark .spin-pointer {
+    color: #d67a70; /* was #7b2d26 — ~1.05:1 → ~4.9:1 trên card #262640 */
+}
+html.dark .spin-wheel {
+    border-color: #d67a70; /* was #7b2d26 — mép ngoài viền không còn chìm vào nền tối */
+}
+
+/* ===== END UIUX 23:25 A2 ===== */
