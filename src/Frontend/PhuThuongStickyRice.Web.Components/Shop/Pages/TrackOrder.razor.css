@@ -821,3 +821,35 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 20:10 - Agent1 FIX 4 ===== */
+
+/* uiux-hunt 2026-10-19 run 22:25 agent1-mobile
+   ===== UIUX run 22:25 — Agent1 Mobile =====
+   FIX 4 — "📅 Dự kiến giao" (TrackOrder.razor:159): giờ hẹn giao hàng là
+   thông tin quan trọng nhất khi tra cứu, nhưng ở small.text-muted
+   ~12.8px — người lớn tuổi khó đọc. Nâng lên 14px, màu đậm hơn trên
+   mobile; PC giữ nguyên.
+   (Verify: p.text-muted.mb-2 > small chỉ khớp đúng dòng này trên trang —
+   hint lịch sử ở :55 là p.text-muted không có mb-2.) */
+@media (max-width: 767.98px) {
+    p.text-muted.mb-2 > small {
+        font-size: 14px;
+        color: #495057;
+    }
+}
+/* ===== END UIUX run 22:25 - Agent1 FIX 4 ===== */
+
+/* uiux-hunt 2026-10-19 run 22:25 agent1-mobile
+   ===== UIUX run 22:25 — Agent1 Mobile =====
+   FIX 5 — Thông báo "💰 Đơn này cần đặt cọc trước để shop xác nhận"
+   (TrackOrder.razor:219-221): liên quan TIỀN, khách cần thấy rõ để
+   chuyển khoản đúng lúc, nhưng small ~12.8px trong alert vàng. Nâng lên
+   14px trên mobile, giữ màu nền alert.
+   (Verify: .alert-warning.py-2 > small chỉ khớp đúng alert này — alert
+   ở :578 là quảng cáo đánh giá kèm ảnh, không chứa small.) */
+@media (max-width: 767.98px) {
+    .alert-warning.py-2 > small {
+        font-size: 14px;
+        line-height: 1.55;
+    }
+}
+/* ===== END UIUX run 22:25 - Agent1 FIX 5 ===== */

@@ -384,15 +384,49 @@ html.dark .co-mobile-bar .co-total small {
 }
 /* ===== END UIUX run 21:23 - Agent1 FIX 2 ===== */
 
-/* ===== UIUX run 21:23 — Agent1 Mobile =====
-   FIX 3 — Thông báo phản hồi sau khi bấm "Áp dụng" mã giảm giá
-   (Checkout.razor:713, small ngay sau .input-group): ~12.8px — phản hồi
-   quan trọng (mã đúng/sai, được giảm bao nhiêu) nhưng khó đọc nhanh với
-   người lớn tuổi. Nâng lên 14px trên mobile.
-   (Selector .input-group + small chỉ khớp đúng dòng phản hồi này.) */
+/* uiux-hunt 2026-10-19 run 22:25 agent1-mobile
+   ===== UIUX run 22:25 — Agent1 Mobile =====
+   FIX 1 — Hướng dẫn book shipper (Checkout.razor:348, small ngay sau
+   radiogroup chọn hình thức nhận hàng): đoạn 2 câu hướng dẫn cách nhận
+   hàng — "bạn tự đặt xe, báo tài xế đọc mã đơn" — cực kỳ quan trọng vì
+   quán KHÔNG giao hàng, nhưng hiển thị ở small.text-muted ~12.8px,
+   người lớn tuổi bỏ qua/không đọc nổi trên mobile. Nâng lên 14px, màu
+   đậm hơn (#495057) cho dễ đọc. (Selector anh em kề div[aria-labelledby]
+   nên chỉ khớp đúng dòng này — radiogroup thanh toán ở :539 không có
+   small sau, không bị ảnh hưởng.) */
 @media (max-width: 767.98px) {
-    .co-summary .input-group + small {
+    div[aria-labelledby="co-fulfillment-label"] + small {
+        font-size: 14px;
+        color: #495057;
+        line-height: 1.55;
+    }
+}
+/* ===== END UIUX run 22:25 - Agent1 FIX 1 ===== */
+
+/* uiux-hunt 2026-10-19 run 22:25 agent1-mobile
+   ===== UIUX run 22:25 — Agent1 Mobile =====
+   FIX 2 — Ghi chú phụ trong label chọn hình thức (Checkout.razor:340/345/428):
+   "(miễn phí ship)" và "(lưu trên máy này)" ở small ~12.8px — thông tin
+   tiền/riêng tư quan trọng với người lớn tuổi. Nâng lên 14px trên mobile,
+   giữ màu gốc (text-success/text-muted) để phân biệt ý nghĩa.
+   (Verify: .form-check-label small chỉ xuất hiện ở 3 chỗ này trên trang.) */
+@media (max-width: 767.98px) {
+    .form-check-label small {
         font-size: 14px;
     }
 }
-/* ===== END UIUX run 21:23 - Agent1 FIX 3 ===== */
+/* ===== END UIUX run 22:25 - Agent1 FIX 2 ===== */
+
+/* uiux-hunt 2026-10-19 run 22:25 agent1-mobile
+   ===== UIUX run 22:25 — Agent1 Mobile =====
+   FIX 3 — "⚡ Nhận ngay (quán chuẩn bị sớm nhất có thể)"
+   (Checkout.razor:363): câu giải thích giờ nhận ở small ~12.8px — khách
+   cần biết quán KHÔNG nhận đặt trước giờ. Nâng lên 14px trên mobile.
+   (Verify: p.mb-0 > small chỉ khớp đúng dòng này — p.mb-0 ở :228 không
+   chứa small.) */
+@media (max-width: 767.98px) {
+    p.mb-0 > small {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 22:25 - Agent1 FIX 3 ===== */
