@@ -167,7 +167,7 @@ else
         <div>
             <a class="btn btn-secondary mb-2 mr-2" href="/shop">@AppI18n.T("shop.continue_shopping")</a>
         </div>
-        <button class="btn btn-success btn-lg mb-2 cart-checkout-flow" @onclick="GoToCheckout">
+        <button class="btn btn-success btn-lg mb-2 cart-checkout-flow" @onclick="NavigateToCheckout">
             @AppI18n.T("common.checkout") (@CartState.TotalQuantity)
         </button>
     </div>
@@ -178,7 +178,7 @@ else
             <small class="text-muted">@AppI18n.T("common.total")</small>
             <strong class="text-danger">@FormatPrice(CartState.TotalAmount)</strong>
         </div>
-        <button class="btn btn-success" @onclick="GoToCheckout">
+        <button class="btn btn-success" @onclick="NavigateToCheckout">
             @AppI18n.T("common.checkout") →
         </button>
     </div>
@@ -359,7 +359,7 @@ else
     /// <summary>
     /// GH2: saves the phone for next time and carries it to checkout (?phone=).
     /// </summary>
-    private void GoToCheckout()
+    private void NavigateToCheckout()
     {
         var phone = (_phone ?? "").Trim();
         try

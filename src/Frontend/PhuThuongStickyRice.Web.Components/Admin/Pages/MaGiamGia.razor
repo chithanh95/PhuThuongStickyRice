@@ -129,17 +129,17 @@
                     <nav class="mt-3" aria-label="Phân trang danh sách mã giảm giá">
                         <ul class="pagination justify-content-center mb-0">
                             <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
-                                <button class="page-link" @onclick="() => GoToPage(CurrentPage - 1)" disabled="@(CurrentPage == 1)" aria-label="Trang trước">Trước</button>
+                                <button class="page-link" @onclick="() => NavigateToPage(CurrentPage - 1)" disabled="@(CurrentPage == 1)" aria-label="Trang trước">Trước</button>
                             </li>
                             @for (int p = 1; p <= TotalPages; p++)
                             {
                                 var pageNum = p;
                                 <li class="page-item @(CurrentPage == pageNum ? "active" : "")">
-                                    <button class="page-link" @onclick="() => GoToPage(pageNum)" aria-label="Trang @pageNum" aria-current="@(CurrentPage == pageNum ? "page" : null)">@pageNum</button>
+                                    <button class="page-link" @onclick="() => NavigateToPage(pageNum)" aria-label="Trang @pageNum" aria-current="@(CurrentPage == pageNum ? "page" : null)">@pageNum</button>
                                 </li>
                             }
                             <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
-                                <button class="page-link" @onclick="() => GoToPage(CurrentPage + 1)" disabled="@(CurrentPage == TotalPages)" aria-label="Trang sau">Sau</button>
+                                <button class="page-link" @onclick="() => NavigateToPage(CurrentPage + 1)" disabled="@(CurrentPage == TotalPages)" aria-label="Trang sau">Sau</button>
                             </li>
                         </ul>
                     </nav>
@@ -282,7 +282,7 @@
         CurrentPage = 1;
     }
 
-    private void GoToPage(int page)
+    private void NavigateToPage(int page)
     {
         if (page >= 1 && page <= TotalPages)
             CurrentPage = page;

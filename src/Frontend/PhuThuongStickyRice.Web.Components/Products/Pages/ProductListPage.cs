@@ -62,7 +62,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
             CurrentPage = 1;
         }
 
-        protected void GoToPage(int page)
+        protected void NavigateToPage(int page)
         {
             if (page >= 1 && page <= TotalPages)
                 CurrentPage = page;

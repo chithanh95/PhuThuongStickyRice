@@ -195,7 +195,7 @@
                                 @foreach (var notification in _notifications)
                                 {
                                     <button class="lx-search-item @(_readNotifIds.Contains(notification.Id) ? "" : "lx-notif-unread")"
-                                            @onclick="() => OpenNotification(notification)">
+                                            @onclick="() => OpenNotificationLinkAsync(notification)">
                                         <span aria-hidden="true">@KindIcon(notification.Kind)</span>
                                         <span><span class="t">@notification.Title</span><br /><span class="s">@notification.Detail</span></span>
                                     </button>
@@ -567,7 +567,7 @@
         await SaveReadIdsAsync();
     }
 
-    private async Task OpenNotification(NotificationModel notification)
+    private async Task OpenNotificationLinkAsync(NotificationModel notification)
     {
         _readNotifIds.Add(notification.Id);
         await SaveReadIdsAsync();

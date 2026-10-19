@@ -22,7 +22,7 @@
     <button class="btn btn-outline-secondary btn-sm mr-2" @onclick="PrevMonth">← Tháng trước</button>
     <h5 class="mb-0 mr-2">Tháng @_viewMonth/@_viewYear</h5>
     <button class="btn btn-outline-secondary btn-sm mr-3" @onclick="NextMonth">Tháng sau →</button>
-    <button class="btn btn-outline-primary btn-sm" @onclick="GoToday">Hôm nay</button>
+    <button class="btn btn-outline-primary btn-sm" @onclick="NavigateToToday">Hôm nay</button>
     <div class="ml-auto d-flex align-items-center text-muted small">
         <span class="cal-dot cal-dot-sched"></span> Đơn đặt trước
         <span class="cal-dot ml-3 cal-dot-hol"></span> Nghỉ lễ
@@ -208,7 +208,7 @@
         await LoadAsync();
     }
 
-    private async Task GoToday()
+    private async Task NavigateToToday()
     {
         _viewYear = DateTime.Today.Year;
         _viewMonth = DateTime.Today.Month;

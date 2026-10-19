@@ -19,7 +19,7 @@
         <div class="shp-header-inner">
             @if (!IsShopHome)
             {
-                <button type="button" class="shp-back" @onclick="GoBack" title="Quay lại" aria-label="Quay lại trang trước">←</button>
+                <button type="button" class="shp-back" @onclick="NavigateBack" title="Quay lại" aria-label="Quay lại trang trước">←</button>
             }
             <a class="shp-logo" href="/">
                 <span class="shp-logo-main">Xôi Phú Thượng</span>
@@ -181,7 +181,7 @@
         catch { }
     }
 
-    private async Task GoBack()
+    private async Task NavigateBack()
     {
         try { await JS.InvokeVoidAsync("history.back"); }
         catch { Navigation.NavigateTo("/shop"); }

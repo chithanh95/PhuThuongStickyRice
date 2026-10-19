@@ -804,11 +804,11 @@ else
 <!-- VIEWER 360° (item 64) -->
 @if (_view360Product != null)
 {
-    <div class="sg-modal-backdrop" @onclick="Close360">
+    <div class="sg-modal-backdrop" @onclick="CloseProduct360View">
         @* A11y-1458: role="dialog" để screen reader nhận diện hộp thoại *@
         <div class="sg-modal-360" @onclick:stopPropagation role="dialog" aria-modal="true"
              aria-label="Xem 360 độ @_view360Product.Name">
-            <button class="sg-modal-close" @onclick="Close360" aria-label="Đóng">×</button>
+            <button class="sg-modal-close" @onclick="CloseProduct360View" aria-label="Đóng">×</button>
             <h3>🔄 @_view360Product.Name — xem 360°</h3>
             @{
                 var imgs360 = AllImageUrls(_view360Product.ImageUrlsJson);
@@ -1512,7 +1512,7 @@ else
         try { await LandingService.SendChatAsync(_chatSession, msg); } catch { }
     }
 
-    private void Close360() { _view360Product = null; }
+    private void CloseProduct360View() { _view360Product = null; }
     private void Rotate360(int dir)
     {
         var imageCount = AllImageUrls(_view360Product?.ImageUrlsJson).Count;

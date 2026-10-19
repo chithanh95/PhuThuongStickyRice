@@ -18,8 +18,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         {
         }
 
-        /// <summary>All phone numbers currently marked VIP.</summary>
-        public async Task<List<CustomerTagModel>> GetVipsAsync()
+        /// <summary>Lấy danh sách tất cả khách hàng đang được gắn dấu VIP.</summary>
+        public async Task<List<CustomerTagModel>> GetVipCustomersAsync()
         {
             return await GetAsync<List<CustomerTagModel>>("api/admin/customer-care/vip")
                 ?? new List<CustomerTagModel>();
