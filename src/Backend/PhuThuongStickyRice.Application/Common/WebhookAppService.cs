@@ -90,7 +90,7 @@ namespace PhuThuongStickyRice.Application.Common
                 }
             }
 
-            var results = await Task.WhenAll(matched.Select(e => PostAsync(e, eventName, payload)));
+            var results = await Task.WhenAll(matched.Select(e => PostToEndpointAsync(e, eventName, payload)));
 
             foreach (var result in results)
             {
@@ -117,7 +117,7 @@ namespace PhuThuongStickyRice.Application.Common
         public virtual async Task<WebhookDeliveryDto> SendTestAsync(Guid endpointId)
         {
             var endpoint = await _endpoints.GetAsync(endpointId);
-            var result = await PostAsync(endpoint, "Ping", new
+            var result = await PostToEndpointAsync(endpoint, "Ping", new
             {
                 message = "Kết nối webhook OK",
                 at = _clock.Now
@@ -163,7 +163,7 @@ namespace PhuThuongStickyRice.Application.Common
         /// in parallel via Task.WhenAll; never touches the DbContext.
         /// Exceptions become an <see cref="PostResult.Error"/> like before.
         /// </summary>
-        private async Task<PostResult> PostAsync(
+        private async Task<PostResult> PostToEndpointAsync(
             WebhookEndpoint endpoint, string eventName, object payload)
         {
             var sentAt = _clock.Now;
