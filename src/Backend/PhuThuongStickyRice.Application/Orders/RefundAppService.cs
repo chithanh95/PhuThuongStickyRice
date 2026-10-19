@@ -26,16 +26,36 @@ namespace PhuThuongStickyRice.Application.Orders
         Task ConfirmRefundAsync(Guid orderId);
     }
 
+    /// <summary>
+    /// Một dòng trong báo cáo hoàn tiền (đơn có yêu cầu hoàn hoặc đã hoàn xong).
+    /// </summary>
     public class RefundReportRowDto
     {
+        /// <summary>Id đơn hàng.</summary>
         public Guid Id { get; set; }
+
+        /// <summary>Mã đơn hàng (vd: PX-20261019-4821).</summary>
         public string OrderNumber { get; set; }
+
+        /// <summary>Tên khách hàng.</summary>
         public string CustomerName { get; set; }
+
+        /// <summary>SĐT khách hàng.</summary>
         public string CustomerPhone { get; set; }
+
+        /// <summary>Tổng tiền đơn hàng (VNĐ).</summary>
         public decimal TotalAmount { get; set; }
+
+        /// <summary>Trạng thái hoàn tiền (Requested/Refunded...).</summary>
         public string RefundStatus { get; set; }
+
+        /// <summary>Số tiền yêu cầu hoàn (VNĐ).</summary>
         public decimal RefundAmount { get; set; }
+
+        /// <summary>Phương thức thanh toán của đơn (vd: MoMo, COD).</summary>
         public string PaymentMethod { get; set; }
+
+        /// <summary>Thời điểm tạo đơn.</summary>
         public DateTime CreatedAt { get; set; }
     }
 
@@ -47,11 +67,22 @@ namespace PhuThuongStickyRice.Application.Orders
     [Authorize(Roles = "Admin")]
     public class RefundAppService : ApplicationService, IRefundAppService
     {
+        /// <summary>
+        /// Số dòng tối đa của báo cáo hoàn tiền — bảng Orders tăng không giới hạn
+        /// nên phải giới hạn server-side, không bao giờ materialize toàn bộ.
+        /// </summary>
         private const int MaxReportRows = 500;
 
+        /// <summary>Repository bảng Order (đơn hàng cần hoàn tiền).</summary>
         private readonly IRepository<Order, Guid> _orders;
+
+        /// <summary>Thực thi query async trên IQueryable (ABP).</summary>
         private readonly IAsyncQueryableExecuter _asyncExecuter;
+
+        /// <summary>Kiểm tra quyền nghiệp vụ (Item 155: quyền "orders.refund").</summary>
         private readonly IPermissionService _permissions;
+
+        /// <summary>Ghi log hoạt động nhân viên (Item 156: truy vết ai hoàn tiền đơn nào).</summary>
         private readonly IStaffActivityLogger _activityLogger;
 
         /// <summary>Khởi tạo service hoàn tiền.</summary>

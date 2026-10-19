@@ -26,11 +26,22 @@ namespace PhuThuongStickyRice.Application.Security
     }
 
     [Authorize(Roles = "Admin")]
+    /// <summary>
+    /// Item 88: quản lý danh sách SĐT bị chặn (blacklist).
+    /// Checkout từ chối các SĐT trong danh sách này — dùng để chặn khách
+    /// quỵt đơn/bom hàng mà vẫn cho phép mua lại sau khi Admin gỡ chặn.
+    /// </summary>
     public class BlacklistAppService : ApplicationService, IBlacklistAppService
     {
+        /// <summary>Repository bảng BlacklistedPhone (SĐT bị chặn).</summary>
         private readonly IRepository<BlacklistedPhone, Guid> _blacklist;
+
+        /// <summary>Thực thi query async trên IQueryable (ABP).</summary>
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Khởi tạo service quản lý danh sách chặn SĐT.</summary>
+        /// <param name="blacklist">Repository bảng BlacklistedPhone.</param>
+        /// <param name="asyncExecuter">Executor chạy query LINQ async.</param>
         public BlacklistAppService(
             IRepository<BlacklistedPhone, Guid> blacklist,
             IAsyncQueryableExecuter asyncExecuter)
@@ -39,6 +50,10 @@ namespace PhuThuongStickyRice.Application.Security
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Admin: lấy danh sách SĐT bị chặn, mới nhất trước.
+        /// </summary>
+        /// <returns>Danh sách SĐT bị chặn (tối đa 500 bản ghi mới nhất).</returns>
         public virtual async Task<List<BlacklistedPhoneDto>> GetListAsync()
         {
             var queryable = await _blacklist.GetQueryableAsync();
@@ -55,6 +70,13 @@ namespace PhuThuongStickyRice.Application.Security
             }).ToList();
         }
 
+        /// <summary>
+        /// Admin: thêm một SĐT vào danh sách chặn.
+        /// Kiểm tra trùng theo SĐT đã chuẩn hóa để cùng một số không bị
+        /// chặn 2 lần dù nhập khác định dạng (vd: 090... và +84 90...).
+        /// </summary>
+        /// <param name="input">SĐT cần chặn và lý do.</param>
+        /// <returns>SĐT vừa được thêm vào danh sách chặn.</returns>
         public virtual async Task<BlacklistedPhoneDto> CreateAsync(CreateBlacklistedPhoneDto input)
         {
             var normalized = NormalizePhone(input.Phone);
@@ -83,11 +105,23 @@ namespace PhuThuongStickyRice.Application.Security
             };
         }
 
+        /// <summary>
+        /// Admin: xóa một SĐT khỏi danh sách chặn (khách được đặt hàng lại).
+        /// </summary>
+        /// <param name="id">Id bản ghi blacklist.</param>
         public virtual async Task DeleteAsync(Guid id)
         {
             await _blacklist.DeleteAsync(id, autoSave: true);
         }
 
+        /// <summary>
+        /// Kiểm tra một SĐT có nằm trong danh sách chặn không.
+        /// Cho phép ẩn danh vì checkout public cần gọi trước khi tạo đơn.
+        /// </summary>
+        /// <param name="phone">SĐT cần kiểm tra (mọi định dạng).</param>
+        /// <returns>true nếu SĐT bị chặn.</returns>
+        // AllowAnonymous: luồng checkout public (khách chưa đăng nhập) cần
+        // gọi được hàm này để từ chối SĐT bị chặn ngay trước khi tạo đơn.
         [AllowAnonymous]
         public virtual async Task<bool> IsBlacklistedAsync(string phone)
         {
@@ -102,7 +136,12 @@ namespace PhuThuongStickyRice.Application.Security
                 queryable.Where(x => x.NormalizedPhone == normalized));
         }
 
-        /// <summary>Digits-only normalization so "+84 901 234 567" matches "0901234567".</summary>
+        /// <summary>
+        /// Chuẩn hóa SĐT về dạng chỉ gồm chữ số, đầu số 0 (vd: "+84 901 234 567" → "0901234567").
+        /// Nhờ đó cùng một số dù nhập khác định dạng vẫn so sánh trùng được.
+        /// </summary>
+        /// <param name="phone">SĐT ở mọi định dạng.</param>
+        /// <returns>Chuỗi chữ số chuẩn hóa; rỗng nếu không có số nào.</returns>
         public static string NormalizePhone(string phone)
         {
             if (string.IsNullOrWhiteSpace(phone))
@@ -113,6 +152,8 @@ namespace PhuThuongStickyRice.Application.Security
             var digits = new string(phone.Where(char.IsDigit).ToArray());
             // So sánh lập trình trên chuỗi chữ số: dùng Ordinal (nhanh hơn,
             // không phụ thuộc culture) thay vì overload mặc định culture-sensitive.
+            // "84" là mã quốc gia Việt Nam; 11 chữ số = 84 + 9 số thuê bao
+            // → đổi về đầu số 0 để khớp định dạng SĐT nội địa.
             if (digits.StartsWith("84", StringComparison.Ordinal) && digits.Length == 11)
             {
 

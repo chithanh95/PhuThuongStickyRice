@@ -61,6 +61,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private static bool IsStaffRole(string roleName) =>
             StaffRoleNames.Contains(roleName, StringComparer.Ordinal);
 
+        /// <summary>
+        /// Khởi tạo controller xác thực: đăng nhập/đăng ký, 2FA, quên mật khẩu (OTP),
+        /// đổi mật khẩu và cập nhật hồ sơ tài khoản.
+        /// </summary>
         public AuthController(
             UserManager<User> userManager,
             IUserRepository users,
@@ -358,6 +362,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Đổi mật khẩu cho tài khoản đang đăng nhập. Yêu cầu nhập đúng mật khẩu hiện tại;
+        /// mật khẩu mới phải đủ độ dài tối thiểu (MinPasswordLength).
+        /// </summary>
+        /// <param name="model">Mật khẩu hiện tại và mật khẩu mới.</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        /// <returns>200 khi đổi thành công; 400/401 khi dữ liệu sai hoặc chưa đăng nhập.</returns>
         [Authorize]
         [HttpPost("change-password")]
         public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordRequestModel model,
@@ -643,10 +654,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string NewIpAddress { get; set; }
     }
 
+    /// <summary>
+    /// Dữ liệu cập nhật hồ sơ tài khoản (tên đăng nhập, email, SĐT).
+    /// </summary>
     public class UpdateProfileModel
     {
+        /// <summary>Tên đăng nhập mới.</summary>
         public string UserName { get; set; }
+
+        /// <summary>Email mới.</summary>
         public string Email { get; set; }
+
+        /// <summary>Số điện thoại mới.</summary>
         public string PhoneNumber { get; set; }
     }
 }

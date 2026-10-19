@@ -11,34 +11,58 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Mẫu tin nhắn theo trạng thái đơn (trả về cho trang quản trị Admin).
+    /// </summary>
     public class OrderMessageTemplateDto
     {
+        /// <summary>Id mẫu tin nhắn.</summary>
         public Guid Id { get; set; }
 
+        /// <summary>Mã trạng thái đơn (Confirmed/Preparing/Completed/Cancelled).</summary>
         public string Status { get; set; }
 
+        /// <summary>Tên trạng thái hiển thị tiếng Việt (vd: "Đã xác nhận").</summary>
         public string StatusLabel { get; set; }
 
+        /// <summary>
+        /// Nội dung mẫu với các placeholder {MaDon}, {TenKhach}, {TongTien}, {NgayDat}.
+        /// </summary>
         public string Template { get; set; }
 
+        /// <summary>true = mẫu đang dùng; false = bỏ qua khi render tin nhắn.</summary>
         public bool IsActive { get; set; }
     }
 
+    /// <summary>
+    /// Dữ liệu Admin nhập khi cập nhật mẫu tin nhắn.
+    /// </summary>
     public class CreateUpdateOrderMessageTemplateDto
     {
+        /// <summary>Nội dung mẫu tin nhắn (không được trống, tối đa TemplateMaxLength ký tự).</summary>
         public string Template { get; set; }
 
+        /// <summary>Bật/tắt mẫu tin nhắn này.</summary>
         public bool IsActive { get; set; } = true;
     }
 
+    /// <summary>
+    /// Tin nhắn đã render sẵn từ mẫu + dữ liệu đơn (cho nút "📋 Copy tin nhắn").
+    /// </summary>
     public class OrderMessagePreviewDto
     {
+        /// <summary>Mã trạng thái đơn đã render.</summary>
         public string Status { get; set; }
 
+        /// <summary>Tên trạng thái hiển thị tiếng Việt.</summary>
         public string StatusLabel { get; set; }
 
+        /// <summary>
+        /// Tin nhắn hoàn chỉnh (null nếu trạng thái chưa có mẫu đang bật).
+        /// </summary>
         public string Message { get; set; }
 
+        /// <summary>true = có mẫu đang bật cho trạng thái này.</summary>
         public bool HasTemplate { get; set; }
     }
 
@@ -66,10 +90,19 @@ namespace PhuThuongStickyRice.Application.Orders
     /// </summary>
     public class OrderMessageTemplateAppService : ApplicationService, IOrderMessageTemplateAppService
     {
+        /// <summary>Repository bảng OrderMessageTemplate (mẫu tin nhắn theo trạng thái).</summary>
         private readonly IRepository<OrderMessageTemplate, Guid> _templates;
+
+        /// <summary>Repository bảng Order (đơn hàng — lấy dữ liệu để render mẫu).</summary>
         private readonly IRepository<Order, Guid> _orders;
+
+        /// <summary>Thực thi query async trên IQueryable (ABP).</summary>
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Khởi tạo service mẫu tin nhắn theo trạng thái đơn.</summary>
+        /// <param name="templates">Repository bảng OrderMessageTemplate.</param>
+        /// <param name="orders">Repository bảng Order.</param>
+        /// <param name="asyncExecuter">Executor chạy query LINQ async.</param>
         public OrderMessageTemplateAppService(
             IRepository<OrderMessageTemplate, Guid> templates,
             IRepository<Order, Guid> orders,
@@ -80,6 +113,11 @@ namespace PhuThuongStickyRice.Application.Orders
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Chuyển mã trạng thái đơn sang nhãn tiếng Việt hiển thị cho nhân viên/khách.
+        /// </summary>
+        /// <param name="status">Mã trạng thái (vd: "Confirmed").</param>
+        /// <returns>Nhãn tiếng Việt; giữ nguyên mã nếu không nhận diện được.</returns>
         public static string StatusLabel(string status) => status switch
         {
             "Confirmed" => "Đã xác nhận",
@@ -90,6 +128,10 @@ namespace PhuThuongStickyRice.Application.Orders
         };
 
         [Authorize(Roles = "Admin")]
+        /// <summary>
+        /// Admin: lấy tất cả mẫu tin nhắn (mỗi trạng thái đơn một mẫu).
+        /// </summary>
+        /// <returns>Danh sách mẫu tin nhắn sắp xếp theo mã trạng thái.</returns>
         public virtual async Task<List<OrderMessageTemplateDto>> GetListAsync()
         {
             var queryable = await _templates.GetQueryableAsync();
@@ -100,6 +142,13 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         [Authorize(Roles = "Admin")]
+        /// <summary>
+        /// Admin: cập nhật nội dung/cờ bật tắt của một mẫu tin nhắn.
+        /// Nội dung phải khác trống và không quá TemplateMaxLength ký tự.
+        /// </summary>
+        /// <param name="id">Id mẫu tin nhắn.</param>
+        /// <param name="dto">Nội dung mới và trạng thái bật/tắt.</param>
+        /// <returns>Mẫu tin nhắn sau khi cập nhật.</returns>
         public virtual async Task<OrderMessageTemplateDto> UpdateAsync(Guid id, CreateUpdateOrderMessageTemplateDto dto)
         {
             var entity = await _templates.GetAsync(id);
@@ -125,11 +174,21 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         [Authorize(Roles = "Admin,Cashier")]
+        /// <summary>
+        /// Admin/Thu ngân: render mẫu tin nhắn đang bật của một trạng thái với
+        /// dữ liệu đơn cụ thể (cho nút "📋 Copy tin nhắn"). Nếu trạng thái truyền
+        /// vào không hợp lệ, dùng luôn trạng thái hiện tại của đơn.
+        /// </summary>
+        /// <param name="orderId">Id đơn hàng lấy dữ liệu (tên khách, tổng tiền...).</param>
+        /// <param name="status">Mã trạng thái cần render; trống thì dùng trạng thái của đơn.</param>
+        /// <returns>Tin nhắn hoàn chỉnh, hoặc HasTemplate=false nếu chưa có mẫu.</returns>
         public virtual async Task<OrderMessagePreviewDto> GetPreviewAsync(Guid orderId, string status)
         {
             var order = await _orders.GetAsync(orderId);
 
             var normalized = string.IsNullOrWhiteSpace(status) ? order.Status.ToString() : status.Trim();
+            // Fail-soft: nếu client gửi trạng thái lạ, render theo trạng thái
+            // thật của đơn thay vì báo lỗi — nhân viên vẫn copy được tin nhắn.
             if (!Enum.TryParse<OrderStatus>(normalized, ignoreCase: true, out var parsed))
             {
                 parsed = order.Status;
@@ -161,9 +220,13 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Replaces {MaDon}, {TenKhach}, {TongTien}, {NgayDat}. Unknown
-        /// placeholders are left untouched.
+        /// Render nội dung mẫu: thay các placeholder {MaDon}, {TenKhach},
+        /// {TongTien}, {NgayDat} bằng dữ liệu đơn. Placeholder lạ giữ nguyên
+        /// để Admin dễ phát hiện lỗi chính tả trong mẫu.
         /// </summary>
+        /// <param name="template">Nội dung mẫu chứa placeholder.</param>
+        /// <param name="order">Đơn hàng cung cấp dữ liệu.</param>
+        /// <returns>Tin nhắn hoàn chỉnh; null/trống nếu không có mẫu hoặc đơn.</returns>
         public static string Render(string template, Order order)
         {
             if (string.IsNullOrEmpty(template) || order == null)

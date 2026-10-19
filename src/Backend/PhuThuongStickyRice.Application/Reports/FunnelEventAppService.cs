@@ -8,16 +8,35 @@ using Volo.Abp.Application.Services;
 
 namespace PhuThuongStickyRice.Application.Reports
 {
+    /// <summary>
+    /// Sự kiện funnel do client gửi về (theo dõi hành trình khách: xem landing → shop → giỏ → checkout → đặt đơn).
+    /// </summary>
     public class TrackFunnelEventDto
     {
+        /// <summary>
+        /// Tên sự kiện — phải nằm trong allowlist (landing_view, shop_view, cart_view,
+        /// checkout_view, order_placed, track_view); tên lạ bị bỏ qua.
+        /// </summary>
         public string EventName { get; set; }
+
+        /// <summary>
+        /// URL trang phát sinh sự kiện. Chỉ lưu path (cắt query string/fragment) để không dính PII.
+        /// </summary>
         public string Url { get; set; }
     }
 
+    /// <summary>
+    /// Số lượt sự kiện funnel theo tên: hôm nay + 7 ngày gần nhất (giờ Việt Nam).
+    /// </summary>
     public class FunnelEventCountDto
     {
+        /// <summary>Tên sự kiện (một trong các giá trị allowlist).</summary>
         public string EventName { get; set; }
+
+        /// <summary>Số lượt trong hôm nay (tính theo giờ Việt Nam).</summary>
         public long Today { get; set; }
+
+        /// <summary>Số lượt trong 7 ngày gần nhất (bao gồm hôm nay).</summary>
         public long Last7Days { get; set; }
     }
 
@@ -33,6 +52,11 @@ namespace PhuThuongStickyRice.Application.Reports
         Task<List<FunnelEventCountDto>> GetReportAsync();
     }
 
+    /// <summary>
+    /// Item funnel analytics: ghi nhận lượt xem trang theo hành trình mua hàng của khách
+    /// (landing → shop → giỏ → checkout → đặt đơn → tra cứu) và báo cáo cho Admin.
+    /// Không lưu PII — URL chỉ giữ path, sự kiện chỉ nhận theo allowlist.
+    /// </summary>
     public class FunnelEventAppService : ApplicationService, IFunnelEventAppService
     {
         /// <summary>GL1 allowlist — the only event names the API accepts.</summary>
@@ -46,13 +70,21 @@ namespace PhuThuongStickyRice.Application.Reports
             "track_view",
         };
 
+        /// <summary>Repository bảng FunnelEvent (lưu từng lượt sự kiện funnel).</summary>
         private readonly IRepository<FunnelEvent, Guid> _events;
 
+        /// <summary>Khởi tạo service theo dõi funnel.</summary>
+        /// <param name="events">Repository bảng FunnelEvent.</param>
         public FunnelEventAppService(IRepository<FunnelEvent, Guid> events)
         {
             _events = events;
         }
 
+        /// <summary>
+        /// Ghi nhận một sự kiện funnel từ client (không yêu cầu đăng nhập).
+        /// Tên sự kiện lạ bị bỏ qua im lặng (fail-soft) để không ảnh hưởng trải nghiệm khách.
+        /// </summary>
+        /// <param name="input">Tên sự kiện và URL trang phát sinh.</param>
         public virtual async Task TrackAsync(TrackFunnelEventDto input)
         {
             var name = (input?.EventName ?? string.Empty).Trim().ToLowerInvariant();
@@ -77,11 +109,17 @@ namespace PhuThuongStickyRice.Application.Reports
             });
         }
 
+        /// <summary>
+        /// Admin: báo cáo số lượt sự kiện hôm nay + 7 ngày gần nhất theo giờ Việt Nam.
+        /// Luôn trả đủ 6 sự kiện trong allowlist (kể cả khi chưa có lượt nào).
+        /// </summary>
+        /// <returns>Số lượt theo từng tên sự kiện.</returns>
         public virtual async Task<List<FunnelEventCountDto>> GetReportAsync()
         {
-            // Vietnam day boundaries (UTC+7, no DST).
+            // Mốc ngày theo giờ Việt Nam (UTC+7, Việt Nam không có giờ mùa hè).
             var vnNow = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7));
             var todayStart = new DateTimeOffset(vnNow.Date, TimeSpan.FromHours(7));
+            // Cửa sổ 7 ngày: lùi 6 ngày từ đầu hôm nay (bao gồm cả hôm nay).
             var weekStart = todayStart.AddDays(-6);
 
             // perf-hunt 2026-10-19: aggregate in SQL (GROUP BY) instead of
