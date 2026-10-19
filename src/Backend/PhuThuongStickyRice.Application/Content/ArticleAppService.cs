@@ -36,6 +36,13 @@ namespace PhuThuongStickyRice.Application.Content
         Task<List<ArticleDto>> GetPublishedAsync();
     }
 
+    /// <summary>
+    /// Item 93: CMS tin tức cho mục "Chuyện nhà xôi" trên landing page.
+    /// Khi có bài viết đã xuất bản, landing dùng bài viết từ DB thay cho
+    /// danh sách tin cứng (hardcoded). Admin: CRUD đầy đủ; list admin chỉ
+    /// trả excerpt 220 ký tự để nhẹ payload, form sửa lấy full Body qua
+    /// GetByIdAsync. Landing đọc qua cache nên mọi thay đổi đều xóa cache.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class ArticleAppService : ApplicationService, IArticleAppService
     {
@@ -51,6 +58,12 @@ namespace PhuThuongStickyRice.Application.Content
         /// </summary>
         private const int BodyExcerptLength = 220;
 
+        /// <summary>
+        /// Khởi tạo service quản lý bài viết.
+        /// </summary>
+        /// <param name="articles">Repository bài viết.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
+        /// <param name="catalogCache">Cache catalog (dùng chung khóa articles:published của landing).</param>
         public ArticleAppService(
             IRepository<Article, Guid> articles,
             IAsyncQueryableExecuter asyncExecuter,
@@ -61,6 +74,12 @@ namespace PhuThuongStickyRice.Application.Content
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Admin: danh sách bài viết, mới nhất trước. Chỉ trả excerpt Body
+        /// (220 ký tự) thay vì full — đủ cho cột xem trước ở bảng admin,
+        /// giảm payload so với nạp full Body của tối đa 200 bài.
+        /// </summary>
+        /// <returns>Danh sách bài viết (Body rút gọn), tối đa 200.</returns>
         public virtual async Task<List<ArticleDto>> GetListAsync()
         {
             // perf-hunt 2026-10-19 (run 14:46): trước đây materialize full
@@ -84,12 +103,25 @@ namespace PhuThuongStickyRice.Application.Content
             return items;
         }
 
+        /// <summary>
+        /// Admin: lấy 1 bài viết đầy đủ nội dung để sửa. List chỉ trả excerpt
+        /// Body (xem GetListAsync) nên form edit phải gọi riêng endpoint này.
+        /// </summary>
+        /// <param name="id">Id bài viết.</param>
+        /// <returns>Bài viết với đầy đủ Body.</returns>
         public virtual async Task<ArticleDto> GetByIdAsync(Guid id)
         {
             var article = await _articles.GetAsync(id);
             return Map(article);
         }
 
+        /// <summary>
+        /// Admin: tạo bài viết mới. Tên và nội dung được trim; ảnh trống lưu
+        /// null; ngày đăng trống thì mặc định là thời điểm tạo. Xóa cache
+        /// catalog để landing thấy bài mới ngay.
+        /// </summary>
+        /// <param name="input">Tiêu đề, nội dung, ảnh, ngày đăng, trạng thái xuất bản.</param>
+        /// <returns>Bài viết vừa tạo.</returns>
         public virtual async Task<ArticleDto> CreateAsync(CreateArticleDto input)
         {
             var article = new Article
@@ -105,6 +137,14 @@ namespace PhuThuongStickyRice.Application.Content
             return Map(article);
         }
 
+        /// <summary>
+        /// Admin: cập nhật bài viết. Ngày đăng chỉ đổi khi form nhập giá trị
+        /// mới — tránh ghi đè về hiện tại mỗi lần sửa tiêu đề. Xóa cache
+        /// catalog để landing thấy nội dung mới ngay.
+        /// </summary>
+        /// <param name="id">Id bài viết cần sửa.</param>
+        /// <param name="input">Dữ liệu mới (tiêu đề, nội dung, ảnh, ngày đăng, trạng thái).</param>
+        /// <returns>Bài viết sau khi cập nhật.</returns>
         public virtual async Task<ArticleDto> UpdateAsync(Guid id, CreateArticleDto input)
         {
             var article = await _articles.GetAsync(id);
@@ -122,6 +162,11 @@ namespace PhuThuongStickyRice.Application.Content
             return Map(article);
         }
 
+        /// <summary>
+        /// Admin: xóa bài viết. Xóa cache catalog để landing không còn
+        /// hiển thị bài đã xóa.
+        /// </summary>
+        /// <param name="id">Id bài viết cần xóa.</param>
         public virtual async Task DeleteAsync(Guid id)
         {
             await _articles.DeleteAsync(id, autoSave: true);
@@ -144,6 +189,7 @@ namespace PhuThuongStickyRice.Application.Content
             });
         }
 
+        /// <summary>Map entity bài viết → DTO trả về API.</summary>
         private static ArticleDto Map(Article a) => new ArticleDto
         {
             Id = a.Id,

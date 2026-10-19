@@ -52,6 +52,11 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>Giới hạn server-side cho lịch sử ghi chú 1 SĐT.</summary>
         private const int MaxNotesPerPhone = 200;
 
+        /// <summary>
+        /// Khởi tạo service ghi chú CRM.
+        /// </summary>
+        /// <param name="notes">Repository ghi chú khách hàng.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
         public CustomerNoteAppService(
             IRepository<CustomerNote, Guid> notes,
             IAsyncQueryableExecuter asyncExecuter)
@@ -60,6 +65,11 @@ namespace PhuThuongStickyRice.Application.Customer
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Lấy lịch sử ghi chú của một SĐT, mới nhất trước (tối đa 200).
+        /// </summary>
+        /// <param name="phone">Số điện thoại khách hàng.</param>
+        /// <returns>Danh sách ghi chú của SĐT, mới nhất trước.</returns>
         public virtual async Task<List<CustomerNoteDto>> GetByPhoneAsync(string phone)
         {
             var normalized = (phone ?? string.Empty).Trim();
@@ -75,6 +85,12 @@ namespace PhuThuongStickyRice.Application.Customer
             return items.Select(Map).ToList();
         }
 
+        /// <summary>
+        /// Nhân viên thêm ghi chú mới cho khách; người tạo được lưu theo tài
+        /// khoản đang đăng nhập để truy vết ai đã ghi chú.
+        /// </summary>
+        /// <param name="input">SĐT khách và nội dung ghi chú.</param>
+        /// <returns>Ghi chú vừa tạo.</returns>
         public virtual async Task<CustomerNoteDto> CreateAsync(CreateCustomerNoteDto input)
         {
             var note = new CustomerNote
@@ -88,11 +104,16 @@ namespace PhuThuongStickyRice.Application.Customer
             return Map(note);
         }
 
+        /// <summary>
+        /// Xóa một ghi chú (ví dụ ghi chú nhầm).
+        /// </summary>
+        /// <param name="id">Id ghi chú cần xóa.</param>
         public virtual async Task DeleteAsync(Guid id)
         {
             await _notes.DeleteAsync(id, autoSave: true);
         }
 
+        /// <summary>Map entity ghi chú → DTO trả về API.</summary>
         private static CustomerNoteDto Map(CustomerNote n) => new CustomerNoteDto
         {
             Id = n.Id,

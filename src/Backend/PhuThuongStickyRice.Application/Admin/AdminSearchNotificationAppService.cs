@@ -12,17 +12,33 @@ using Volo.Abp.Application.Services;
 
 namespace PhuThuongStickyRice.Application.Admin
 {
+    /// <summary>
+    /// Tìm kiếm toàn cục và thông báo tổng hợp cho màn hình admin.
+    /// Tìm kiếm: gõ 1 từ khóa, trả về đơn hàng + sản phẩm + khách hàng khớp.
+    /// Thông báo: các cảnh báo cần xử lý (đơn chờ xác nhận quá hạn, đơn mới
+    /// chưa xử lý, đơn đặt trước sắp đến giờ, đánh giá xấu, sinh nhật khách).
+    /// </summary>
     public interface IAdminSearchNotificationAppService : IApplicationService
     {
         /// <summary>Tìm kiếm toàn cục trong admin theo từ khoá: đơn hàng, sản phẩm, khách hàng.</summary>
+        /// <param name="query">Từ khóa tìm kiếm (ít nhất 2 ký tự sau khi trim).</param>
+        /// <returns>Kết quả tìm kiếm theo 3 nhóm: đơn hàng, sản phẩm, khách hàng.</returns>
         Task<GlobalSearchResultDto> SearchAsync(string query);
 
         /// <summary>Item 158: aggregated admin notifications.</summary>
+        /// <returns>Danh sách thông báo cần xử lý, sắp xếp khẩn cấp trước.</returns>
         Task<List<NotificationDto>> GetNotificationsAsync();
     }
 
+    /// <summary>
+    /// Item 158: tìm kiếm toàn cục và thông báo tổng hợp cho admin.
+    /// Search chạy trên 3 nguồn (đơn/sản phẩm/khách), mỗi nguồn tối đa 5 kết quả
+    /// để dropdown topbar gọn. Notifications được dựng từ dashboard stats +
+    /// đánh giá + sinh nhật khách, dùng cấp độ khẩn (urgent/warning/info).
+    /// </summary>
     public class AdminSearchNotificationAppService : ApplicationService, IAdminSearchNotificationAppService
     {
+        /// <summary>Số kết quả tối đa mỗi nguồn (đơn/sản phẩm/khách) trong dropdown tìm kiếm — giữ dropdown topbar gọn, không tràn.</summary>
         private const int SearchTake = 5;
 
         /// <summary>How far back to look for low-star reviews.</summary>
@@ -39,6 +55,13 @@ namespace PhuThuongStickyRice.Application.Admin
         private readonly IDashboardAppService _dashboard;
         private readonly ICustomerProfileAppService _customerProfile;
 
+        /// <summary>
+        /// Khởi tạo service tìm kiếm và thông báo admin.
+        /// </summary>
+        /// <param name="orders">Service đơn hàng (tìm đơn, lấy đánh giá).</param>
+        /// <param name="products">Service sản phẩm (tìm sản phẩm).</param>
+        /// <param name="dashboard">Service dashboard (số liệu cho thông báo).</param>
+        /// <param name="customerProfile">Service khách hàng (tìm khách, sinh nhật).</param>
         public AdminSearchNotificationAppService(
             IOrderAppService orders,
             IProductAppService products,
@@ -51,9 +74,18 @@ namespace PhuThuongStickyRice.Application.Admin
             _customerProfile = customerProfile;
         }
 
+        /// <summary>
+        /// Tìm kiếm toàn cục: chạy song song logic trên 3 nguồn (đơn hàng,
+        /// sản phẩm, khách hàng) rồi map thành item có link tới màn hình
+        /// tương ứng. Từ khóa dưới 2 ký tự trả về rỗng để tránh quét cả bảng.
+        /// </summary>
+        /// <param name="query">Từ khóa tìm kiếm (ít nhất 2 ký tự sau khi trim).</param>
+        /// <returns>Kết quả tìm kiếm theo 3 nhóm: đơn hàng, sản phẩm, khách hàng.</returns>
         public virtual async Task<GlobalSearchResultDto> SearchAsync(string query)
         {
             var result = new GlobalSearchResultDto();
+            // Từ khóa quá ngắn (1 ký tự) sẽ match gần như toàn bảng — chặn sớm
+            // để vừa nhẹ DB vừa tránh trả về hàng nghìn kết quả vô nghĩa.
             if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 2)
             {
                 return result;
@@ -128,6 +160,14 @@ namespace PhuThuongStickyRice.Application.Admin
                 .ToList();
         }
 
+        /// <summary>
+        /// Dựng danh sách thông báo tổng hợp cho chuông topbar admin: đơn chờ
+        /// xác nhận quá hạn (urgent), đơn mới chưa xử lý (warning), đơn đặt
+        /// trước sắp đến giờ (info), đánh giá 1–2 sao trong 7 ngày (warning),
+        /// sinh nhật khách hôm nay (info). Các ngưỡng (phút quá hạn, số ngày
+        /// nhìn lại đánh giá) lấy từ DashboardStatsDto và hằng số của class.
+        /// </summary>
+        /// <returns>Danh sách thông báo, khẩn cấp trước.</returns>
         public virtual async Task<List<NotificationDto>> GetNotificationsAsync()
         {
             var notifications = new List<NotificationDto>();

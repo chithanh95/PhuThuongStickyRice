@@ -13,18 +13,35 @@ using PhuThuongStickyRice.Application.Customer;
 
 namespace PhuThuongStickyRice.Application.Customer
 {
+        /// <summary>
+        /// Sổ địa chỉ giao hàng đã lưu theo SĐT (dùng ở checkout).
+        /// Khách không cần đăng nhập: SĐT là khóa định danh. Địa chỉ trùng
+        /// nhãn (label) thì ghi đè thay vì tạo trùng — checkout hiện dropdown
+        /// "Nhà"/"Công ty"/... cho khách chọn nhanh thay vì nhập lại.
+        /// </summary>
         public interface IAddressBookAppService : IApplicationService
         {
             /// <summary>Public: saved addresses for a phone (tối đa 50, mới nhất trước).</summary>
+            /// <param name="phone">SĐT khách hàng (được chuẩn hóa về dạng chữ số).</param>
+            /// <returns>Danh sách địa chỉ đã lưu, mới nhất trước.</returns>
             Task<List<AddressBookDto>> GetByPhoneAsync(string phone);
 
             /// <summary>Public: upsert an address (dedupe by label).</summary>
+            /// <param name="dto">SĐT, nhãn và nội dung địa chỉ.</param>
+            /// <returns>Địa chỉ sau khi lưu (tạo mới hoặc ghi đè).</returns>
             Task<AddressBookDto> SaveAsync(SaveAddressDto dto);
 
             /// <summary>Public: delete one entry (phone must match).</summary>
+            /// <param name="id">Id bản ghi địa chỉ cần xóa.</param>
+            /// <param name="phone">SĐT chủ địa chỉ — phải khớp SĐT lưu trên bản ghi mới được xóa.</param>
             Task DeleteAsync(Guid id, string phone);
         }
 
+        /// <summary>
+        /// Sổ địa chỉ giao hàng đã lưu theo SĐT (public — dùng ở checkout).
+        /// Không yêu cầu đăng nhập: khách vãng lai vẫn dùng được sổ địa chỉ
+        /// của mình qua SĐT. Lưu tối đa 50 địa chỉ/SĐT, trùng nhãn thì ghi đè.
+        /// </summary>
         public class AddressBookAppService : ApplicationService, IAddressBookAppService
         {
             private readonly IRepository<AddressBook, Guid> _addresses;
@@ -33,6 +50,11 @@ namespace PhuThuongStickyRice.Application.Customer
             /// <summary>Số địa chỉ đã lưu tối đa trả về cho 1 SĐT (endpoint public).</summary>
             private const int MaxAddressesPerPhone = 50;
 
+            /// <summary>
+            /// Khởi tạo service sổ địa chỉ.
+            /// </summary>
+            /// <param name="addresses">Repository địa chỉ đã lưu.</param>
+            /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
             public AddressBookAppService(
                 IRepository<AddressBook, Guid> addresses,
                 IAsyncQueryableExecuter asyncExecuter)
@@ -41,6 +63,13 @@ namespace PhuThuongStickyRice.Application.Customer
                 _asyncExecuter = asyncExecuter;
             }
 
+            /// <summary>
+            /// Public: lấy địa chỉ đã lưu của 1 SĐT cho checkout (tối đa 50,
+            /// mới nhất trước). SĐT không hợp lệ trả về danh sách rỗng thay vì
+            /// lỗi — form checkout chỉ ẩn dropdown địa chỉ đã lưu.
+            /// </summary>
+            /// <param name="phone">SĐT khách hàng (được chuẩn hóa về dạng chữ số).</param>
+            /// <returns>Danh sách địa chỉ đã lưu, mới nhất trước.</returns>
             [AllowAnonymous]
             public virtual async Task<List<AddressBookDto>> GetByPhoneAsync(string phone)
             {
@@ -60,6 +89,13 @@ namespace PhuThuongStickyRice.Application.Customer
                 return entities.Select(MapToDto).ToList();
             }
 
+            /// <summary>
+            /// Public: lưu địa chỉ giao hàng vào sổ của SĐT. Cùng SĐT + nhãn
+            /// (ví dụ "Nhà") mà lưu lại thì ghi đè địa chỉ cũ — vì 1 nhãn chỉ
+            /// trỏ được 1 địa chỉ, tạo trùng sẽ làm dropdown checkout rối.
+            /// </summary>
+            /// <param name="dto">SĐT, nhãn và nội dung địa chỉ.</param>
+            /// <returns>Địa chỉ sau khi lưu (tạo mới hoặc ghi đè).</returns>
             [AllowAnonymous]
             public virtual async Task<AddressBookDto> SaveAsync(SaveAddressDto dto)
             {
@@ -93,6 +129,13 @@ namespace PhuThuongStickyRice.Application.Customer
                 return MapToDto(entity);
             }
 
+            /// <summary>
+            /// Public: xóa 1 địa chỉ đã lưu. Endpoint public nên bắt buộc SĐT
+            /// truyền vào phải khớp SĐT lưu trên bản ghi — nếu không bất kỳ ai
+            /// biết Id cũng xóa được địa chỉ của khách khác.
+            /// </summary>
+            /// <param name="id">Id bản ghi địa chỉ cần xóa.</param>
+            /// <param name="phone">SĐT chủ địa chỉ — phải khớp SĐT lưu trên bản ghi mới được xóa.</param>
             [AllowAnonymous]
             public virtual async Task DeleteAsync(Guid id, string phone)
             {
@@ -106,6 +149,13 @@ namespace PhuThuongStickyRice.Application.Customer
                 await _addresses.DeleteAsync(entity, autoSave: true);
             }
 
+            /// <summary>
+            /// Chuẩn hóa SĐT về dạng chữ số thuần. Lọc bỏ dấu cách/dấu chấm
+            /// (khách nhập tay ở checkout) rồi yêu cầu ít nhất 9 chữ số —
+            /// số ngắn hơn coi như không hợp lệ để chặn rác.
+            /// </summary>
+            /// <param name="phone">SĐT nhập vào.</param>
+            /// <returns>Chuỗi chữ số, hoặc null nếu không hợp lệ.</returns>
             private static string NormalizePhone(string phone)
             {
                 if (string.IsNullOrWhiteSpace(phone))
@@ -117,6 +167,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 return digits.Length >= 9 ? digits : null;
             }
 
+            /// <summary>Map entity địa chỉ đã lưu → DTO trả về API.</summary>
             private static AddressBookDto MapToDto(AddressBook entity)
             {
                 return new AddressBookDto

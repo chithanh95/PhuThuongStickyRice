@@ -21,19 +21,46 @@ namespace PhuThuongStickyRice.Application.Common
         Task<bool> VerifyAsync(string token, string remoteIp = null);
     }
 
+    /// <summary>
+    /// Item 96: xác minh reCAPTCHA v3 ở phía server (chống bot spam đơn).
+    /// Secret key lấy từ cài đặt shop của admin — bản public của cài đặt
+    /// che secret, chỉ server đọc được đầy đủ. Khi admin chưa cấu hình
+    /// secret thì xác minh bị tắt (luôn pass) để đơn vẫn chạy được.
+    /// Xác minh thất bại hoặc lỗi mạng đều trả về false (fail closed):
+    /// đã bật reCAPTCHA thì bot không được lọt qua khi Google không phản hồi.
+    /// </summary>
     public class RecaptchaService : IRecaptchaService
     {
+        /// <summary>
+        /// Ngưỡng score reCAPTCHA v3 tối thiểu (0–1) để coi là người thật.
+        /// Google trả score càng cao càng giống người; 0.5 là ngưỡng
+        /// mặc định Google khuyến nghị cho form đặt hàng.
+        /// </summary>
         private const double MinimumScore = 0.5;
 
         private readonly HttpClient _httpClient;
         private readonly IShopSettingAppService _shopSettings;
 
+        /// <summary>
+        /// Khởi tạo service xác minh reCAPTCHA.
+        /// </summary>
+        /// <param name="httpClient">HTTP client gọi API siteverify của Google.</param>
+        /// <param name="shopSettings">Service cài đặt shop (đọc secret key reCAPTCHA).</param>
         public RecaptchaService(HttpClient httpClient, IShopSettingAppService shopSettings)
         {
             _httpClient = httpClient;
             _shopSettings = shopSettings;
         }
 
+        /// <summary>
+        /// Xác minh token reCAPTCHA của client với Google. Trả về true khi
+        /// secret chưa cấu hình (tính năng bị tắt) hoặc token đạt score ≥ 0.5;
+        /// false khi token rỗng, Google trả success=false, score thấp, hoặc
+        /// lỗi mạng (fail closed để bot không lọt qua).
+        /// </summary>
+        /// <param name="token">Token reCAPTCHA client gửi lên.</param>
+        /// <param name="remoteIp">IP client (tùy chọn, gửi kèm cho Google chấm điểm chính xác hơn).</param>
+        /// <returns>True khi xác minh đạt (hoặc tính năng bị tắt).</returns>
         public async Task<bool> VerifyAsync(string token, string remoteIp = null)
         {
             var settings = await _shopSettings.GetAsync();
