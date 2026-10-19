@@ -245,6 +245,10 @@
     margin-top: auto;
 }
 
+/* UIUX run 20:45 — Agent3 Lexa sync: logo footer chữ trắng (trước style
+   inline color:#fff trong ShopLayout.razor) — footer nền tối var(--shp-dark) */
+.shp-footer .shp-logo-main { color: #fff; }
+
 .shp-footer-inner {
     max-width: 1200px;
     margin: 0 auto;
@@ -347,8 +351,20 @@
         gap: 8px;
     }
     .shp-hamburger {
+        /* UIUX run 20:45 — Agent1 Mobile FIX 1: KHÔI PHỤC menu hamburger mobile.
+           Commit f234042 (18/10, "Shop mobile: giảm padding main content") vô tình
+           THAY THẾ rule `.shp-hamburger { display: flex; }` bằng `.shp-main { padding... }`
+           → nút hamburger bị `display: none` (rule gốc dòng ~212) trên MỌI viewport,
+           menu điều hướng mobile không mở được — đúng như user từng báo "mất menu".
+           Khôi phục display:flex + nâng vùng bấm lên 44px cho người lớn tuổi. */
+        display: flex;
         order: 3;
         margin-left: 0;
+        min-width: 44px;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 11px;
     }
     .shp-logo { order: 1; }
 
@@ -552,3 +568,67 @@ html.dark .shp-back:hover {
 @media (max-width: 767.98px) {
     .shp-back { min-width: 44px; min-height: 44px; }
 }
+
+/* ===== UIUX run 20:45 — Agent1 Mobile =====
+   FIX 2 — Icon giỏ hàng .shp-cart (font 22px + padding 6px 8px ≈ 37px):
+   nút quan trọng nhất trên header mobile nhưng dưới chuẩn chạm 44px,
+   người lớn tuổi dễ bấm trượt. Nâng lên 44×44px, icon căn giữa; badge đỏ
+   absolute theo góc nút nên không xô lệch.
+   FIX 3 — 2 nút .shp-theme-toggle ("A+ Chữ lớn" + dark mode): padding
+   6px 10px, font 18px ≈ 32px — khó bấm. Nâng lên 44×44px, icon căn giữa.
+   FIX 4 — Link footer .shp-footer-col a: padding 4px 0, chữ 13.5px → vùng
+   bấm chỉ ~31px, các link sát nhau dễ bấm nhầm. Mobile: cao 44px, chữ căn
+   giữa dọc, vẫn full-width như cũ (display:flex là block-level).
+   FIX 5 — Header tràn ngang ở màn nhỏ: sau FIX 1–3, header cần ~395px
+   (logo + 5 nút 44px) — màn ≤400px sẽ cắt mất nút hamburger vừa khôi phục,
+   menu lại không mở được. ≤480px: gọn header (padding/gap nhỏ lại, logo
+   17px, ẩn dòng phụ "LÀNG NGHỀ HÀ NỘI" chỉ mang tính trang trí) → vừa khít
+   màn 390px. ≤400px: cụm nút .shp-header-right xuống 2 hàng (header cao
+   ~108px) → mọi nút giữ 44px, không nút nào bị cắt; sidebar danh mục
+   /shop hạ top xuống 120px cho khớp (xem Shop.razor.css FIX 5).
+   (Tất cả chỉ trong media mobile — PC giữ nguyên.) */
+@media (max-width: 767.98px) {
+    .shp-cart {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .shp-theme-toggle {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+    }
+    .shp-footer-col a {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+@media (max-width: 480px) {
+    .shp-header-inner {
+        padding: 8px 10px;
+        gap: 4px;
+    }
+    .shp-header-right {
+        gap: 4px;
+    }
+    .shp-logo-main {
+        font-size: 17px;
+    }
+    .shp-logo-sub {
+        display: none;
+    }
+}
+@media (max-width: 400px) {
+    .shp-header-right {
+        flex-wrap: wrap;
+        max-width: 100px;
+        row-gap: 4px;
+    }
+}
+/* ===== END UIUX run 20:45 - Agent1 FIX 2+3+4+5 ===== */

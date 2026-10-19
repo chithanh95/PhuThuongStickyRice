@@ -1032,3 +1032,38 @@ html.dark .shop-sticky-cart-cta {
     color: #ffd97a;
 }
 /* ===== END UIUX run 19:40 - Agent2 ===== */
+
+/* ===== UIUX run 20:45 — Agent3 Lexa sync =====
+   FIX — Error card "Không kết nối được tới máy chủ" dùng 5 style inline
+   (A3 run trước đã chuẩn hoá màu nhưng để nguyên inline). Gom vào class
+   scoped để đồng bộ quy ước (màu giữ nguyên 100%):
+   - card nền #f5ebcd (beige PWA offline look), viền bỏ
+   - tiêu đề: đỏ danger Lexa #bd4a4a (khớp /error), chữ Georgia
+   - mô tả: chữ body #495057
+   - nút "Thử lại": tím primary Lexa #7a6fbe, chữ trắng */
+.shp-err-card { background: #f5ebcd; border: none; }
+.shp-err-emoji { font-size: 4rem; }
+.shp-err-title { font-family: Georgia, serif; color: #bd4a4a; }
+.shp-err-desc { color: #495057; }
+.shp-err-retry {
+    background: #7a6fbe;
+    color: #fff;
+    padding: 12px 28px;
+    border-radius: 6px;
+}
+.shp-err-retry:hover, .shp-err-retry:focus { color: #fff; background: #625998; }
+/* ===== END UIUX run 20:45 - Agent3 ===== */
+
+/* ===== UIUX run 20:45 — Agent1 Mobile =====
+   FIX 5 (tiếp) — Header shop ở màn ≤400px xuống 2 hàng, cao ~108px
+   (xem ShopLayout.razor.css FIX 5): sidebar danh mục sticky đang top:76px
+   (tính cho header 1 hàng ~64px) sẽ chui dưới header mới, 1–2 nút danh mục
+   trên cùng bị che không bấm được. Hạ top xuống 120px cho khớp, chỉ trong
+   dải ≤400px; màn lớn hơn và PC giữ nguyên. */
+/* ===== END UIUX run 20:45 - Agent1 FIX 5 ===== */
+@media (max-width: 400px) {
+    .shop-cat-sidebar {
+        top: 120px;
+        max-height: 55vh;
+    }
+}
