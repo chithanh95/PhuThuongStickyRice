@@ -17,6 +17,10 @@ using PhuThuongStickyRice.Application.Orders;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+        /// <summary>
+        /// Admin: đối soát thanh toán MoMo — đối chiếu đơn đã thanh toán MoMo
+        /// với báo cáo đối soát (matched/unmatched) và đánh dấu thủ công khi lệch.
+        /// </summary>
         [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
         [Produces("application/json")]
         [Route("api/[controller]")]
@@ -31,7 +35,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 _reconciliation = reconciliation;
             }
 
-            /// <summary>MoMo-paid orders; filter by matched=true/false (omit for all).</summary>
+            /// <summary>
+            /// Admin: đơn đã thanh toán MoMo để đối soát; lọc theo matched=true/false
+            /// (bỏ qua để lấy tất cả). Đơn unmatched cần admin đối chiếu với báo cáo MoMo.
+            /// </summary>
             [HttpGet("orders")]
             public async Task<ActionResult<List<MoMoOrderDto>>> GetOrders(
                 [FromQuery] bool? matched,
@@ -40,7 +47,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Ok(await _reconciliation.GetMoMoOrdersAsync(matched));
             }
 
-            /// <summary>Manual "đánh dấu đã đối soát".</summary>
+            /// <summary>
+            /// Admin: đánh dấu thủ công 1 đơn MoMo là "đã đối soát" — dùng khi
+            /// tiền thực tế đã về nhưng đối soát tự động không khớp (lệch số
+            /// tiền hoặc thiếu trong báo cáo MoMo).
+            /// </summary>
             [HttpPost("orders/{orderId:guid}/mark-matched")]
             public async Task<ActionResult> MarkMatched(Guid orderId,
                 CancellationToken cancellationToken = default)

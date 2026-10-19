@@ -74,6 +74,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
     }
 
+    /// <summary>
+    /// Model địa chỉ nhận hàng đã lưu của khách (api/customer/addresses) —
+    /// dùng cho checkout chọn địa chỉ có sẵn và màn sổ địa chỉ.
+    /// </summary>
     public class CustomerAddressModel
     {
         public Guid Id { get; set; }

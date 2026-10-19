@@ -99,7 +99,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return NoContent();
         }
 
-        /// <summary>Public: validates a code against a cart subtotal.</summary>
+        /// <summary>
+        /// Public: kiểm tra mã giảm giá có áp được cho giỏ hàng không (còn hạn,
+        /// đủ giá trị đơn tối thiểu, chưa hết lượt dùng, đúng SĐT chủ mã).
+        /// Checkout gọi trước khi áp mã để báo lỗi ngay cho khách.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost("validate")]
         public async Task<ActionResult> Validate(
@@ -116,8 +120,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
-        /// <summary>Item 139 (Public): active public discount codes for
-        /// checkout auto-apply.</summary>
+        /// <summary>
+        /// Item 139 (Public): danh sách mã giảm giá công khai đang chạy để
+        /// checkout tự gợi ý/áp mã tốt nhất (kết hợp endpoint best bên dưới).
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("active")]
         public async Task<ActionResult> GetActivePublic(CancellationToken cancellationToken = default)

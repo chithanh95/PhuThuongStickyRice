@@ -27,12 +27,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _rules = rules;
         }
 
+        /// <summary>
+        /// Admin: danh sách quy tắc thưởng tự động khi đơn hoàn thành
+        /// (tặng điểm/voucher theo điều kiện đơn) — màn cấu hình loyalty ở admin.
+        /// </summary>
         [HttpGet]
         public async Task<ActionResult> GetList(CancellationToken cancellationToken = default)
         {
             return Ok(await _rules.GetListAsync());
         }
 
+        /// <summary>
+        /// Admin: tạo quy tắc thưởng tự động mới. Lỗi nghiệp vụ (điều kiện
+        /// không hợp lệ) trả 400 với message tiếng Việt cho admin.
+        /// </summary>
         [HttpPost]
         public async Task<ActionResult> Create(
             [FromBody] CreateOrderRewardRuleDto dto,
@@ -48,6 +56,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin: cập nhật quy tắc thưởng tự động theo Id. Lỗi nghiệp vụ
+        /// trả 400 với message tiếng Việt.
+        /// </summary>
         [HttpPut("{id:guid}")]
         public async Task<ActionResult> Update(
             Guid id,
@@ -64,6 +76,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin: xóa quy tắc thưởng tự động. Điểm/voucher đã thưởng trước
+        /// đó không bị thu hồi (chỉ áp cho các đơn hoàn thành sau khi xóa).
+        /// </summary>
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
         {
