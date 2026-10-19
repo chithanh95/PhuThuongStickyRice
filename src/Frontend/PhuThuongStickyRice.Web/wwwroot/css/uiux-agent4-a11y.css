@@ -1218,6 +1218,14 @@ html.dark .sg-faq-item summary:focus-visible {
 .shop-row-stepper button:hover:not(:disabled) {
     background: #f4f2fd;
 }
+/* FIX 2026-10-19: root cause "bấm + thì mất dấu cộng" trên mobile.
+   Rule :hover trên cũng dính nút "+" (nền tím đặc #7a6fbe, chữ trắng) —
+   mà :hover trên cảm ứng DÍNH sau khi chạm → nền #f4f2fd + chữ trắng = tàng hình.
+   Cho nút "+" hover riêng: đậm hơn (#625998), dấu cộng trắng vẫn nổi. */
+.shop-row-stepper button:last-child:hover:not(:disabled) {
+    background: #625998;
+    border-color: #625998;
+}
 html.dark .shop-row-stepper button:hover:not(:disabled) {
     background: #33291d;
 }

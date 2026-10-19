@@ -75,13 +75,6 @@
     </div>
 }
 
-@* SH3: delivery info strip from shop settings (fail-soft defaults).
-   Item 238: ẩn ở chế độ "Gọn". *@
-@if (!_compactMode)
-{
-    <div class="shop-info-strip mb-3">🚚 @DeliveryInfoText()</div>
-}
-
 @* Item 238: nút bật/tắt chế độ "Gọn" — nhớ lựa chọn cho lần sau. *@
 <div class="d-flex justify-content-end mb-2">
     <button type="button" class="btn btn-sm @(_compactMode ? "btn-primary" : "btn-outline-secondary")"
@@ -165,7 +158,7 @@ else
                         </ul>
                         <div class="d-flex align-items-center justify-content-between">
                             <strong class="text-danger" style="font-size: 1.3rem;">@FormatPrice(combo.Price)</strong>
-                            <button class="btn btn-warning" disabled="@OrdersPaused" @onclick="() => AddComboToCart(combo)">
+                            <button class="btn btn-primary" disabled="@OrdersPaused" @onclick="() => AddComboToCart(combo)">
                                 Thêm combo vào giỏ
                             </button>
                         </div>
@@ -201,7 +194,7 @@ else
                             <a href="javascript:void(0)" class="text-dark" @onclick="() => OpenQuickView(product)"><strong>@product.Name</strong></a>
                             <div class="d-flex justify-content-between align-items-center mt-1">
                                 <strong class="text-danger">@FormatPrice(product.Price)</strong>
-                                <button class="btn btn-sm btn-warning" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">@AddButtonLabel(product, "+ Thêm")</button>
+                                <button class="btn btn-sm btn-primary" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">@AddButtonLabel(product, "+ Thêm")</button>
                             </div>
                             @* Item 101: ask about this dish on Zalo. *@
                             @if (ShowZaloButton)
@@ -1030,24 +1023,6 @@ else
         "itbeo" => ProductTags(product).Contains("chay"),
         _ => true,
     };
-
-    /// <summary>
-    /// SH3: delivery info line from shop settings. Fail-soft — when settings
-    /// failed to load, sensible defaults are shown.
-    /// </summary>
-    private string DeliveryInfoText()
-    {
-        var parts = new List<string>();
-        var fee = _shopSettings?.DeliveryFee ?? 10000;
-        parts.Add(fee > 0 ? $"Phí giao từ {FormatPrice(fee)}" : "Miễn phí giao hàng");
-        var freeShip = _shopSettings?.FreeShipThreshold ?? 200000;
-        if (freeShip > 0)
-        {
-            parts.Add($"Miễn phí đơn từ {FormatPrice(freeShip)}");
-        }
-        parts.Add($"Giao {FormatHour(ShopHours.ParseOpen(_shopSettings?.OpenTime))}–{FormatHour(ShopHours.ParseClose(_shopSettings?.CloseTime))}");
-        return string.Join(" · ", parts);
-    }
 
     private void SetSort(string sort)
     {

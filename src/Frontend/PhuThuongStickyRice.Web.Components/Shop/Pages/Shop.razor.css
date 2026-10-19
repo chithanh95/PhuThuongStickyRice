@@ -19,23 +19,6 @@
    SH3: delivery info strip
    ============================================================ */
 
-/* SH3: slim delivery-info strip under the hero */
-.shop-info-strip {
-    background: #fff8e6;
-    border: 1px solid #ffe1a8;
-    color: #7a5b00;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 0.85rem;
-    text-align: center;
-}
-
-html.dark .shop-info-strip {
-    background: #2b2410;
-    border-color: #5a4a1a;
-    color: #ffd97a;
-}
-
 /* SH1: full-width fixed bar on mobile */
 .shop-sticky-cart {
     position: fixed;
@@ -1000,18 +983,6 @@ html.dark .shop-filters-sticky {
     }
 }
 /* ===== END UIUX run 15:38 - Agent1 FIX 5 ===== */
-
-/* ===== UIUX run 16:10 — Agent1 Mobile =====
-   FIX 5 — Dải thông tin giao hàng .shop-info-strip (Shop.razor:77): chữ
-   0.85rem (~13.6px) — thông tin quan trọng (tự book shipper/tự đến lấy,
-   miễn phí ship) nhưng hơi nhỏ với khách lớn tuổi trên mobile. Nâng lên
-   0.95rem trên mobile, giữ nguyên PC. */
-@media (max-width: 767.98px) {
-    .shop-info-strip {
-        font-size: 0.95rem;
-    }
-}
-/* ===== END UIUX run 16:10 - Agent1 FIX 5 ===== */
 
 /* ===== UIUX run 19:40 — Agent2 Dark mode =====
    FIX 1 — Nút "−" của stepper (.shop-row-stepper button) nền #fff lọt mảng
