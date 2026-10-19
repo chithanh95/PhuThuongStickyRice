@@ -66,7 +66,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
         /// Item 146: saves the manual display order (drag &amp; drop on
         /// /products). Ids are in display order.
         /// </summary>
-        public async Task ReorderAsync(List<Guid> ids)
+        public async Task SaveDisplayOrderAsync(List<Guid> ids)
         {
             await PostAsync<object>("api/products/reorder", new { ids });
         }

@@ -97,7 +97,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             => await PutAsync<object>("api/admin/permissions/matrix",
                 new { role, grantedKeys = grantedKeys ?? new List<string>() });
 
-        private class MyPermissionsResponse
+        // CA1852: private nested type không có subtype → sealed để JIT devirtualize.
+        private sealed class MyPermissionsResponse
         {
             public List<string> Permissions { get; set; }
         }

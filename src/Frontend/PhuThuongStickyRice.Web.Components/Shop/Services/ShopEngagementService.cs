@@ -218,14 +218,17 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await GetAsync<List<FaqItemModel>>("api/faqs/all");
         }
 
-        public async Task<FaqItemModel> SaveFaqAsync(FaqItemModel faq)
+        /// <summary>
+        /// Lưu 1 mục FAQ (tạo mới khi Id rỗng, cập nhật khi đã có Id).
+        /// </summary>
+        public async Task<FaqItemModel> SaveFaqItemAsync(FaqItemModel faqItem)
         {
-            if (faq.Id == Guid.Empty)
+            if (faqItem.Id == Guid.Empty)
             {
-                return await PostAsync<FaqItemModel>("api/faqs", faq);
+                return await PostAsync<FaqItemModel>("api/faqs", faqItem);
             }
 
-            return await PutAsync<FaqItemModel>($"api/faqs/{faq.Id}", faq);
+            return await PutAsync<FaqItemModel>($"api/faqs/{faqItem.Id}", faqItem);
         }
 
         public async Task DeleteFaqAsync(Guid id)

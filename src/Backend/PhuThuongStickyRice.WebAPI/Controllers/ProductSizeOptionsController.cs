@@ -20,6 +20,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [Produces("application/json")]
     [Route("api/product-size-options")]
     [ApiController]
+    /// <summary>
+    /// API quản lý tùy chọn kích cỡ sản phẩm (size S/M/L, khẩu phần to/nhỏ...).
+    /// Form thêm/sửa sản phẩm (AddEditProduct) gọi các endpoint này.
+    /// Route dạng kebab-case cho khớp frontend (CatalogAdminService gọi
+    /// api/product-size-options/*). Chỉ Admin được gọi.
+    /// </summary>
     public class ProductSizeOptionsController : ControllerBase
     {
         private readonly IProductSizeOptionAppService _appService;
@@ -29,12 +35,21 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _appService = appService;
         }
 
+        /// <summary>
+        /// Liệt kê các tùy chọn kích cỡ của một sản phẩm.
+        /// </summary>
+        /// <param name="productId">Id sản phẩm.</param>
         [HttpGet("by-product/{productId:guid}")]
         public async Task<ActionResult> GetByProduct(Guid productId, CancellationToken cancellationToken = default)
         {
             return Ok(await _appService.GetByProductAsync(productId));
         }
 
+        /// <summary>
+        /// Thêm tùy chọn kích cỡ mới cho sản phẩm.
+        /// Lỗi nghiệp vụ (DomainException, vd tên trùng) trả 400 với message thân thiện.
+        /// </summary>
+        /// <param name="dto">Tên size, giá chênh lệch và thứ tự hiển thị.</param>
         [HttpPost]
         public async Task<ActionResult> Create(
             [FromBody] CreateUpdateProductSizeOptionDto dto,
@@ -50,6 +65,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Cập nhật tùy chọn kích cỡ.
+        /// Lỗi nghiệp vụ (DomainException) trả 400 với message thân thiện.
+        /// </summary>
+        /// <param name="id">Id tùy chọn kích cỡ.</param>
+        /// <param name="dto">Thông tin mới của tùy chọn.</param>
         [HttpPut("{id:guid}")]
         public async Task<ActionResult> Update(
             Guid id,
@@ -66,6 +87,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Xóa tùy chọn kích cỡ.
+        /// </summary>
+        /// <param name="id">Id tùy chọn kích cỡ cần xóa.</param>
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
         {

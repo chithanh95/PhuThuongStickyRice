@@ -230,7 +230,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest("Danh sách id trống.");
             }
 
-            await _productAppService.ReorderAsync(model.Ids);
+            await _productAppService.SaveDisplayOrderAsync(model.Ids);
             return Ok();
         }
 

@@ -40,7 +40,10 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
             }
             catch (Exception ex)
             {
-                Logger?.LogWarning(ex, "Không tải được lịch sử thay đổi của sản phẩm {ProductId}", ProductId);
+                if (Logger != null)
+                {
+                    Log.LoadChangeLogFailed(Logger, ex, ProductId);
+                }
                 _changeLog = new List<ProductChangeLogModel>();
             }
         }
@@ -48,6 +51,14 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         protected static string DisplayValue(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "(trống)" : value;
+        }
+
+        // CA1848: dùng LoggerMessage source-generated thay vì Logger.LogWarning(...) trực tiếp
+        // để tránh boxing/format string khi log level bị tắt.
+        private static partial class Log
+        {
+            [LoggerMessage(Level = LogLevel.Warning, Message = "Không tải được lịch sử thay đổi của sản phẩm {ProductId}")]
+            public static partial void LoadChangeLogFailed(ILogger logger, Exception ex, Guid productId);
         }
     }
 }

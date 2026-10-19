@@ -34,6 +34,13 @@ namespace PhuThuongStickyRice.Application.Common
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IClock _clock;
 
+        /// <summary>Timeout cho 1 lần POST webhook — endpoint chậm không được
+        /// làm treo luồng dispatch (đã POST song song nên chỉ còn chờ đúng timeout này).</summary>
+        private const int WebhookTimeoutSeconds = 10;
+
+        /// <summary>Giới hạn độ dài error lưu DB — message của exception có thể rất dài.</summary>
+        private const int MaxErrorLength = 2000;
+
         public WebhookDispatcher(
             IRepository<WebhookEndpoint, Guid> endpoints,
             IRepository<WebhookDelivery, Guid> deliveries,
@@ -156,20 +163,9 @@ namespace PhuThuongStickyRice.Application.Common
             try
             {
                 var client = _httpClientFactory.CreateClient("Webhooks");
-                client.Timeout = TimeSpan.FromSeconds(10);
+                client.Timeout = TimeSpan.FromSeconds(WebhookTimeoutSeconds);
 
-                using var request = new HttpRequestMessage(HttpMethod.Post, endpoint.Url)
-                {
-                    Content = new StringContent(body, Encoding.UTF8, "application/json")
-                };
-
-                if (!string.IsNullOrWhiteSpace(endpoint.Secret))
-                {
-                    request.Headers.Add(
-                        "X-Webhook-Signature",
-                        ComputeSignature(endpoint.Secret.Trim(), body));
-                }
-
+                using var request = BuildSignedRequest(endpoint, body);
                 using var response = await client.SendAsync(request);
                 statusCode = (int)response.StatusCode;
                 success = response.IsSuccessStatusCode;
@@ -180,11 +176,7 @@ namespace PhuThuongStickyRice.Application.Common
             }
             catch (Exception ex)
             {
-                error = ex.GetType().Name + ": " + (ex.Message ?? string.Empty);
-                if (error.Length > 2000)
-                {
-                    error = error.Substring(0, 2000);
-                }
+                error = TruncateError(ex.GetType().Name + ": " + (ex.Message ?? string.Empty));
             }
 
             return new PostResult
@@ -196,6 +188,31 @@ namespace PhuThuongStickyRice.Application.Common
                 Error = error
             };
         }
+
+        /// <summary>
+        /// Dựng request cho 1 endpoint: body JSON + header chữ ký HMAC khi
+        /// endpoint có secret. Người gọi chịu trách nhiệm dispose request.
+        /// </summary>
+        private static HttpRequestMessage BuildSignedRequest(WebhookEndpoint endpoint, string body)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, endpoint.Url)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+
+            if (!string.IsNullOrWhiteSpace(endpoint.Secret))
+            {
+                request.Headers.Add(
+                    "X-Webhook-Signature",
+                    ComputeSignature(endpoint.Secret.Trim(), body));
+            }
+
+            return request;
+        }
+
+        /// <summary>Cắt error cho vừa cột DB — giữ phần đầu (loại exception + nguyên nhân).</summary>
+        private static string TruncateError(string error) =>
+            error.Length > MaxErrorLength ? error.Substring(0, MaxErrorLength) : error;
 
         /// <summary>HMAC-SHA256 of the raw body, hex-encoded.</summary>
         public static string ComputeSignature(string secret, string body)

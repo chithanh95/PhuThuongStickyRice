@@ -16,11 +16,14 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
     {
         public const string StorageKey = "pt-lang";
 
-        public static readonly string[] SupportedLangs = { "vi", "en", "zh", "ja" };
-        public const string DefaultLang = "vi";
+        /// <summary>Các mã ngôn ngữ được hỗ trợ (vi/en/zh/ja).</summary>
+        public static readonly string[] SupportedLanguages = { "vi", "en", "zh", "ja" };
+
+        /// <summary>Mã ngôn ngữ mặc định (tiếng Việt).</summary>
+        public const string DefaultLanguage = "vi";
 
         private readonly IJSRuntime _jsRuntime;
-        private string _lang = DefaultLang;
+        private string _language = DefaultLanguage;
         private bool _loaded;
 
         public AppI18n(IJSRuntime jsRuntime)
@@ -30,10 +33,15 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
         public event Action OnChange;
 
-        public string CurrentLang => _lang;
+        /// <summary>Mã ngôn ngữ đang dùng (vi/en/zh/ja).</summary>
+        public string CurrentLanguage => _language;
 
-        public bool IsVietnamese => _lang == "vi";
+        /// <summary>true khi ngôn ngữ hiện tại là tiếng Việt.</summary>
+        public bool IsVietnamese => _language == "vi";
 
+        /// <summary>
+        /// Đọc ngôn ngữ đã lưu trong localStorage (gọi 1 lần lúc khởi động).
+        /// </summary>
         public async Task InitializeAsync()
         {
             if (_loaded)
@@ -47,7 +55,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
                 var saved = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKey);
                 if (IsSupported(saved))
                 {
-                    _lang = saved;
+                    _language = saved;
                 }
             }
             catch (Exception)
@@ -56,18 +64,21 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
         }
 
-        public async Task SetLangAsync(string lang)
+        /// <summary>
+        /// Đổi ngôn ngữ và lưu vào localStorage; mã không hỗ trợ → về tiếng Việt.
+        /// </summary>
+        public async Task SetLanguageAsync(string language)
         {
-            var next = IsSupported(lang) ? lang : DefaultLang;
-            if (next == _lang)
+            var next = IsSupported(language) ? language : DefaultLanguage;
+            if (next == _language)
             {
                 return;
             }
 
-            _lang = next;
+            _language = next;
             try
             {
-                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, _lang);
+                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, _language);
             }
             catch (Exception)
             {
@@ -77,9 +88,10 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             OnChange?.Invoke();
         }
 
-        public static bool IsSupported(string lang)
+        /// <summary>true khi mã ngôn ngữ nằm trong <see cref="SupportedLanguages"/>.</summary>
+        public static bool IsSupported(string language)
         {
-            return lang == "vi" || lang == "en" || lang == "zh" || lang == "ja";
+            return language == "vi" || language == "en" || language == "zh" || language == "ja";
         }
 
         /// <summary>
@@ -87,7 +99,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         /// </summary>
         public string T(string key)
         {
-            if (_strings.TryGetValue(_lang, out var dict)
+            if (_strings.TryGetValue(_language, out var dict)
                 && dict.TryGetValue(key, out var value)
                 && !string.IsNullOrEmpty(value))
             {

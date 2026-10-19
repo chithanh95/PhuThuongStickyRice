@@ -43,7 +43,7 @@ namespace PhuThuongStickyRice.Application.Products
         /// /products). The ids are in display order; each product gets
         /// SortOrder = its index.
         /// </summary>
-        Task ReorderAsync(List<Guid> productIds);
+        Task SaveDisplayOrderAsync(List<Guid> productIds);
 
         /// <summary>
         /// Item 148: change history of a product ("ai sửa gì, khi nào"),
@@ -348,7 +348,7 @@ namespace PhuThuongStickyRice.Application.Products
         /// Item 146: saves the manual display order. Unknown ids are
         /// ignored; products not in the list keep their current order.
         /// </summary>
-        public virtual async Task ReorderAsync(List<Guid> productIds)
+        public virtual async Task SaveDisplayOrderAsync(List<Guid> productIds)
         {
             // Item 155: reordering products needs products.edit.
             await _permissions.RequirePermissionAsync(PermissionKeys.ProductsEdit);

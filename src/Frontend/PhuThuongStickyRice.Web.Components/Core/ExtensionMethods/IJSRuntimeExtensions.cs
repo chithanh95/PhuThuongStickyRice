@@ -4,22 +4,28 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components
 {
+    /// <summary>
+    /// Extension debug cho <see cref="IJSRuntime"/>: ghi log/table/alert ra console trình duyệt.
+    /// </summary>
     public static class IJSRuntimeExtensions
     {
-        public static async Task Log(this IJSRuntime jSRuntime, object obj)
+        /// <summary>Ghi giá trị ra console.log kèm timestamp.</summary>
+        public static async Task Log(this IJSRuntime jsRuntime, object value)
         {
-            await jSRuntime.InvokeVoidAsync("console.log", $"[{DateTimeOffset.Now}]", obj);
+            await jsRuntime.InvokeVoidAsync("console.log", $"[{DateTimeOffset.Now}]", value);
         }
 
-        public static async Task Table(this IJSRuntime jSRuntime, object obj)
+        /// <summary>Ghi giá trị ra console.table kèm timestamp.</summary>
+        public static async Task Table(this IJSRuntime jsRuntime, object value)
         {
-            await jSRuntime.InvokeVoidAsync("console.log", $"[{DateTimeOffset.Now}]");
-            await jSRuntime.InvokeVoidAsync("console.table", obj);
+            await jsRuntime.InvokeVoidAsync("console.log", $"[{DateTimeOffset.Now}]");
+            await jsRuntime.InvokeVoidAsync("console.table", value);
         }
 
-        public static async Task Alert(this IJSRuntime jSRuntime, string text)
+        /// <summary>Hiện hộp thoại alert của trình duyệt.</summary>
+        public static async Task Alert(this IJSRuntime jsRuntime, string text)
         {
-          await jSRuntime.InvokeVoidAsync("alert", text);
+          await jsRuntime.InvokeVoidAsync("alert", text);
         }
     }
 }

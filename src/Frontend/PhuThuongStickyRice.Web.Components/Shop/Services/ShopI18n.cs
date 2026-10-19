@@ -15,7 +15,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         private const string StorageKey = "phuthuong.lang";
 
         private readonly IJSRuntime _jsRuntime;
-        private string _lang = "vi";
+        private string _language = "vi";
         private bool _loaded;
 
         public ShopI18n(IJSRuntime jsRuntime)
@@ -25,10 +25,15 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
         public event Action OnChange;
 
-        public string Lang => _lang;
+        /// <summary>Mã ngôn ngữ đang dùng ("vi" hoặc "en").</summary>
+        public string Language => _language;
 
-        public bool IsEnglish => _lang == "en";
+        /// <summary>true khi ngôn ngữ hiện tại là tiếng Anh.</summary>
+        public bool IsEnglish => _language == "en";
 
+        /// <summary>
+        /// Đọc ngôn ngữ đã lưu trong localStorage (gọi 1 lần lúc khởi động).
+        /// </summary>
         public async Task InitializeAsync()
         {
             if (_loaded)
@@ -42,7 +47,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 var saved = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKey);
                 if (saved == "en" || saved == "vi")
                 {
-                    _lang = saved;
+                    _language = saved;
                 }
             }
             catch (Exception)
@@ -51,18 +56,21 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
         }
 
-        public async Task SetLangAsync(string lang)
+        /// <summary>
+        /// Đổi ngôn ngữ và lưu vào localStorage; mã không phải "en" → về tiếng Việt.
+        /// </summary>
+        public async Task SetLanguageAsync(string language)
         {
-            var next = lang == "en" ? "en" : "vi";
-            if (next == _lang)
+            var next = language == "en" ? "en" : "vi";
+            if (next == _language)
             {
                 return;
             }
 
-            _lang = next;
+            _language = next;
             try
             {
-                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, _lang);
+                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, _language);
             }
             catch (Exception)
             {
@@ -75,7 +83,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Translate a chrome key; falls back to the key itself.</summary>
         public string T(string key)
         {
-            if (_strings.TryGetValue(_lang, out var dict)
+            if (_strings.TryGetValue(_language, out var dict)
                 && dict.TryGetValue(key, out var value))
             {
                 return value;

@@ -413,6 +413,21 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>
+        /// Số nguyên: dùng fallback khi thiếu/sai (<= 0). Các cột thêm sau
+        /// qua migration có giá trị 0 ở các row cũ nên phải fallback lúc đọc.
+        /// </summary>
+        private static int FallbackWhenNonPositive(int value, int fallback) =>
+            value < 1 ? fallback : value;
+
+        /// <summary>Bản decimal cho các cột tiền/số lượng dùng kiểu decimal.</summary>
+        private static decimal FallbackWhenNonPositive(decimal value, decimal fallback) =>
+            value < 1 ? fallback : value;
+
+        /// <summary>Chuỗi: dùng fallback khi null/rỗng/toàn khoảng trắng.</summary>
+        private static string FallbackWhenBlank(string value, string fallback) =>
+            string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+        /// <summary>
         /// Wave 6a (item 22): normalizes an "HH:mm" open/close time; anything
         /// unparseable falls back to the documented default so the public
         /// display never breaks on a bad admin value.
@@ -486,9 +501,9 @@ namespace PhuThuongStickyRice.Application.Shop
                 FreeShipThreshold = entity.FreeShipThreshold,
                 MinOrderAmount = entity.MinOrderAmount,
                 EstimatedDeliveryMinutes = entity.EstimatedDeliveryMinutes,
-                BankTransferExpiryMinutes = entity.BankTransferExpiryMinutes < 1 ? DefaultBankTransferExpiryMinutes : entity.BankTransferExpiryMinutes,
-                PointsPerVnd = entity.PointsPerVnd <= 0 ? DefaultPointsPerVnd : entity.PointsPerVnd,
-                PointsRedeemUnit = entity.PointsRedeemUnit < 1 ? DefaultPointsRedeemUnit : entity.PointsRedeemUnit,
+                BankTransferExpiryMinutes = FallbackWhenNonPositive(entity.BankTransferExpiryMinutes, DefaultBankTransferExpiryMinutes),
+                PointsPerVnd = FallbackWhenNonPositive(entity.PointsPerVnd, DefaultPointsPerVnd),
+                PointsRedeemUnit = FallbackWhenNonPositive(entity.PointsRedeemUnit, DefaultPointsRedeemUnit),
                 PointsRedeemValue = entity.PointsRedeemValue,
                 ReferralBonusPoints = entity.ReferralBonusPoints,
                 DepositThreshold = entity.DepositThreshold,
@@ -499,19 +514,17 @@ namespace PhuThuongStickyRice.Application.Shop
                 TierGoldMin = entity.TierGoldMin,
                 TierGoldDiscount = entity.TierGoldDiscount,
                 OwnerReportEmail = entity.OwnerReportEmail,
-                UnconfirmedAlertMinutes = entity.UnconfirmedAlertMinutes < 1 ? DefaultUnconfirmedAlertMinutes : entity.UnconfirmedAlertMinutes,
+                UnconfirmedAlertMinutes = FallbackWhenNonPositive(entity.UnconfirmedAlertMinutes, DefaultUnconfirmedAlertMinutes),
                 RecaptchaSiteKey = entity.RecaptchaSiteKey,
                 RecaptchaSecretKey = UnprotectSecret(entity.RecaptchaSecretKey),
                 WebBaseUrl = entity.WebBaseUrl,
                 MaintenanceMode = entity.MaintenanceMode,
-                MaintenanceMessage = string.IsNullOrWhiteSpace(entity.MaintenanceMessage)
-                    ? DefaultMaintenanceMessage
-                    : entity.MaintenanceMessage,
+                MaintenanceMessage = FallbackWhenBlank(entity.MaintenanceMessage, DefaultMaintenanceMessage),
                 TelegramBotToken = UnprotectSecret(entity.TelegramBotToken),
                 TelegramChatId = entity.TelegramChatId,
                 HealthAlertsEnabled = entity.HealthAlertsEnabled,
-                ErrorRateThreshold = entity.ErrorRateThreshold < 1 ? DefaultErrorRateThreshold : entity.ErrorRateThreshold,
-                UploadsSizeWarningMb = entity.UploadsSizeWarningMb < 1 ? DefaultUploadsSizeWarningMb : entity.UploadsSizeWarningMb,
+                ErrorRateThreshold = FallbackWhenNonPositive(entity.ErrorRateThreshold, DefaultErrorRateThreshold),
+                UploadsSizeWarningMb = FallbackWhenNonPositive(entity.UploadsSizeWarningMb, DefaultUploadsSizeWarningMb),
                 BankName = entity.BankName,
                 BankId = entity.BankId,
                 BankAccountNumber = entity.BankAccountNumber,
@@ -519,12 +532,10 @@ namespace PhuThuongStickyRice.Application.Shop
                 BankQrTemplate = entity.BankQrTemplate,
                 MoMoPartnerCode = entity.MoMoPartnerCode,
                 MoMoEndpoint = entity.MoMoEndpoint,
-                ImageBackupProvider = string.IsNullOrWhiteSpace(entity.ImageBackupProvider)
-                    ? DefaultImageBackupProvider
-                    : entity.ImageBackupProvider,
+                ImageBackupProvider = FallbackWhenBlank(entity.ImageBackupProvider, DefaultImageBackupProvider),
                 ImageBackupSettingsJson = entity.ImageBackupSettingsJson,
                 CheckInPoints = entity.CheckInPoints,
-                NepPerPortionGrams = entity.NepPerPortionGrams < 1 ? DefaultNepPerPortionGrams : entity.NepPerPortionGrams,
+                NepPerPortionGrams = FallbackWhenNonPositive(entity.NepPerPortionGrams, DefaultNepPerPortionGrams),
                 DailyTargetAmount = entity.DailyTargetAmount,
                 OpenTime = NormalizeHour(entity.OpenTime, DefaultOpenTime),
                 CloseTime = NormalizeHour(entity.CloseTime, DefaultCloseTime),

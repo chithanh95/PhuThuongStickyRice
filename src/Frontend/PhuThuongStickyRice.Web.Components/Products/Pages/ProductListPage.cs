@@ -145,6 +145,10 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
             DeleteDialog.Show();
         }
 
+        /// <summary>
+        /// Xóa sản phẩm đã chọn sau khi admin xác nhận ở hộp thoại.
+        /// Tải lại danh sách khi xóa thành công, hiện thông báo lỗi khi thất bại.
+        /// </summary>
         public async Task ConfirmedDeleteProduct()
         {
             try
@@ -156,7 +160,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
             }
             catch (System.Exception ex)
             {
-                Logger.LogError(ex, "Xóa sản phẩm thất bại.");
+                Log.DeleteProductFailed(Logger, ex);
                 DeleteDialog.Close();
                 ToggleError = $"Không xóa được '{DeletingProduct?.Name}'. Vui lòng thử lại.";
                 StateHasChanged();
@@ -173,6 +177,14 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         {
             var token = await ProductService.GetAccessToken();
             await JSRuntime.InvokeVoidAsync("interop.downloadFile", ProductService.GetExportCsvUrl(), token, "Products.csv");
+        }
+
+        // CA1848: dùng LoggerMessage source-generated thay vì Logger.LogError(...) trực tiếp
+        // để tránh boxing/format string khi log level bị tắt.
+        private static partial class Log
+        {
+            [LoggerMessage(Level = LogLevel.Error, Message = "Xóa sản phẩm thất bại.")]
+            public static partial void DeleteProductFailed(ILogger logger, Exception ex);
         }
     }
 }

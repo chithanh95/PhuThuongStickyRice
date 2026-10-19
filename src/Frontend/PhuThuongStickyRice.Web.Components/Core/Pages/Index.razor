@@ -1655,14 +1655,14 @@ else
         Navigation.NavigateTo("/checkout");
     }
 
-    private async Task SetLang(string lang)
+    private async Task SetLanguage(string language)
     {
-        await AppI18n.SetLangAsync(lang);
+        await AppI18n.SetLanguageAsync(language);
     }
 
     private async Task OnLangSelectChanged(ChangeEventArgs e)
     {
-        await SetLang(e.Value?.ToString() ?? "vi");
+        await SetLanguage(e.Value?.ToString() ?? "vi");
     }
 
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
@@ -1785,7 +1785,7 @@ else
 
     private string CountdownEndIso => _content.PromoCountdownEnd?.ToString("o");
 
-    private string T(string vi, string en) => AppI18n.CurrentLang == "en" ? en : vi;
+    private string T(string vi, string en) => AppI18n.CurrentLanguage == "en" ? en : vi;
 
     private string GreetingByHour
     {

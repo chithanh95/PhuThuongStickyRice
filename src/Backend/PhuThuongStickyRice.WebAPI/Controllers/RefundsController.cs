@@ -23,6 +23,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [Route("api/[controller]")]
         [ApiController]
         [Authorize(Roles = "Admin,Cashier")]
+        /// <summary>
+        /// API hoàn tiền cho đơn hàng (Item 130). Controller này chỉ ghi nhận
+        /// trạng thái yêu cầu/xác nhận trên hệ thống — tiền thật do nhân viên
+        /// chuyển khoản tay cho khách. Chỉ Admin/Cashier được gọi.
+        /// </summary>
         public class RefundsController : ControllerBase
         {
             private readonly IRefundAppService _refunds;
@@ -32,12 +37,22 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 _refunds = refunds;
             }
 
+            /// <summary>
+            /// Báo cáo hoàn tiền: các đơn đã yêu cầu hoàn hoặc đã hoàn tiền xong,
+            /// đơn mới nhất trước (tối đa 500 dòng).
+            /// </summary>
             [HttpGet]
             public async Task<ActionResult> GetReport(CancellationToken cancellationToken = default)
             {
                 return Ok(await _refunds.GetReportAsync());
             }
 
+            /// <summary>
+            /// Ghi nhận yêu cầu hoàn tiền cho một đơn (kèm số tiền và lý do).
+            /// Lỗi nghiệp vụ (DomainException) trả 400 với message thân thiện.
+            /// </summary>
+            /// <param name="orderId">Id đơn hàng cần hoàn tiền.</param>
+            /// <param name="input">Số tiền và lý do hoàn tiền.</param>
             [HttpPost("orders/{orderId:guid}/request")]
             public async Task<ActionResult> RequestRefund(Guid orderId,
                 [FromBody] RequestRefundInput input,
@@ -54,6 +69,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 }
             }
 
+            /// <summary>
+            /// Xác nhận đã chuyển tiền hoàn cho khách (gọi sau khi chuyển khoản tay xong).
+            /// Lỗi nghiệp vụ (DomainException) trả 400 với message thân thiện.
+            /// </summary>
+            /// <param name="orderId">Id đơn hàng đã hoàn tiền.</param>
             [HttpPost("orders/{orderId:guid}/confirm")]
             public async Task<ActionResult> ConfirmRefund(Guid orderId,
                 CancellationToken cancellationToken = default)

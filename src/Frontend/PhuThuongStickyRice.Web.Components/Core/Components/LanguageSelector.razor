@@ -5,7 +5,7 @@
 
 <div class="lang-selector @(Compact ? "lang-compact" : "")">
     <button type="button" class="lang-btn" @onclick="ToggleOpen" aria-label="Language / Ngôn ngữ" aria-haspopup="true" aria-expanded="@_open">
-        <img src="@FlagUrl(AppI18n.CurrentLang)" alt="@AppI18n.CurrentLang" class="lang-flag" />
+        <img src="@FlagUrl(AppI18n.CurrentLanguage)" alt="@AppI18n.CurrentLanguage" class="lang-flag" />
         <span class="lang-caret">▾</span>
     </button>
     @if (_open)
@@ -13,7 +13,7 @@
         <div class="lang-menu" role="menu">
             @foreach (var lang in Langs)
             {
-                <button type="button" class="lang-item @(AppI18n.CurrentLang == lang.Code ? "active" : "")"
+                <button type="button" class="lang-item @(AppI18n.CurrentLanguage == lang.Code ? "active" : "")"
                         @onclick="() => SelectLang(lang.Code)" role="menuitem">
                     <img src="@FlagUrl(lang.Code)" alt="@lang.Name" class="lang-flag" />
                     <span class="lang-name">@lang.Name</span>
@@ -48,8 +48,8 @@
     private async Task SelectLang(string code)
     {
         _open = false;
-        if (AppI18n.CurrentLang == code) return;
-        await AppI18n.SetLangAsync(code);
+        if (AppI18n.CurrentLanguage == code) return;
+        await AppI18n.SetLanguageAsync(code);
         // Reload để áp dụng ngôn ngữ cho toàn trang.
         Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
     }

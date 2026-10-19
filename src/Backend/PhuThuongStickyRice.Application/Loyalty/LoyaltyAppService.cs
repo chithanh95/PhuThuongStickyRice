@@ -15,50 +15,54 @@ namespace PhuThuongStickyRice.Application.Loyalty
 {
     public interface ILoyaltyAppService : IApplicationService
     {
-        /// <summary>Public: loyalty summary for a phone number.</summary>
+        /// <summary>Public: tóm tắt loyalty (điểm, hạng, tổng chi tiêu) theo SĐT.</summary>
         Task<LoyaltyAccountDto> GetByPhoneAsync(string phone);
 
-        /// <summary>Public: customer sets their own birthday (track-order "hồ sơ").</summary>
+        /// <summary>Public: khách tự cập nhật ngày sinh của mình (trang tra cứu đơn "hồ sơ").</summary>
         Task<LoyaltyAccountDto> UpdateBirthdayAsync(string phone, UpdateBirthdayInput input);
 
-        /// <summary>Admin: paged list, optional search by phone.</summary>
+        /// <summary>Admin: danh sách tài khoản phân trang, tìm kiếm theo SĐT.</summary>
         Task<List<LoyaltyAccountDto>> GetListAsync(string searchTerm);
 
-        /// <summary>Admin: manually adjust points.</summary>
+        /// <summary>Admin: cộng/trừ điểm thủ công.</summary>
         Task<LoyaltyAccountDto> AdjustAsync(string phone, AdjustPointsInput input);
 
-        /// <summary>Admin: accounts with a birthday in the next N days.</summary>
+        /// <summary>Admin: tài khoản có sinh nhật trong N ngày tới.</summary>
         Task<List<LoyaltyAccountDto>> GetUpcomingBirthdaysAsync(int daysAhead);
 
         /// <summary>
-        /// Internal: get or create the account for a phone. Used by checkout,
-        /// the completion hook and background workers.
+        /// Internal: lấy hoặc tạo tài khoản theo SĐT. Dùng ở checkout,
+        /// hook đơn hoàn thành và background worker.
         /// </summary>
         Task<LoyaltyAccount> GetOrCreateAsync(string phone);
 
         /// <summary>
-        /// Internal: find an account by its referral code (case-insensitive).
+        /// Internal: tìm tài khoản theo mã giới thiệu (không phân biệt hoa/thường).
         /// </summary>
         Task<LoyaltyAccount> FindByReferralCodeAsync(string referralCode);
 
         /// <summary>
-        /// Internal: called once when an order reaches Completed — earns
-        /// points, updates lifetime spend and awards referral bonuses on the
-        /// buyer's first completed order.
+        /// Internal: gọi đúng 1 lần khi đơn đạt trạng thái Completed — cộng điểm,
+        /// cập nhật tổng chi tiêu và thưởng giới thiệu ở đơn hoàn thành đầu tiên
+        /// của khách có dùng mã giới thiệu.
         /// </summary>
         Task AwardCompletedOrderAsync(Order order);
 
         /// <summary>
-        /// Internal: deducts points for a redemption. Returns (points, vndOff).
+        /// Internal: trừ điểm khi đổi điểm. Trả về (điểm đã trừ, số tiền được giảm ₫).
         /// </summary>
         Task<(int Points, decimal VndOff)> RedeemAsync(string phone, int pointsRequested, ShopSettingDto settings);
 
-        /// <summary>Internal: refunds redeemed points when an order is cancelled.</summary>
+        /// <summary>Internal: hoàn lại điểm đã đổi khi đơn bị hủy.</summary>
         Task RefundRedeemedPointsAsync(Order order);
 
-        /// <summary>Tier from lifetime spend: (TierName, DiscountPercent).</summary>
+        /// <summary>Xếp hạng theo tổng chi tiêu: (Tên hạng, % giảm giá của hạng).</summary>
         (string Tier, decimal DiscountPercent) GetTier(decimal totalSpent, ShopSettingDto settings);
 
+        /// <summary>
+        /// Chuẩn hóa SĐT về chuỗi chữ số (bỏ dấu cách, dấu chấm, +84...), yêu
+        /// cầu ≥ 9 chữ số — SĐT VN đủ 9-10 số; ngắn hơn coi như nhập sai, trả null.
+        /// </summary>
         string NormalizePhone(string phone);
 
         /// <summary>
@@ -75,6 +79,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
     /// </summary>
     public class LoyaltyAppService : ApplicationService, ILoyaltyAppService
     {
+        // Giá trị dự phòng khi setting chưa được cấu hình (<= 0) — giữ đồng bộ
+        // với các Default* trong ShopSettingAppService cho cùng 1 khái niệm.
+        private const int DefaultPointsPerVnd = 10000;
+        private const int DefaultPointsRedeemUnit = 100;
+        private const int DefaultPointsRedeemValue = 10000;
+
         private readonly IRepository<LoyaltyAccount, Guid> _accounts;
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -239,6 +249,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 queryable.Where(x => x.ReferralCode == code));
         }
 
+        /// <summary>
+        /// Cộng điểm và tổng chi tiêu khi 1 đơn hàng đạt trạng thái hoàn thành;
+        /// đồng thời thưởng điểm giới thiệu (cả người giới thiệu lẫn người mua)
+        /// nếu đây là đơn hoàn thành đầu tiên của khách dùng mã giới thiệu hợp lệ.
+        /// Bỏ qua SĐT placeholder "0000000000" của POS (khách vãng lai).
+        /// </summary>
         public virtual async Task AwardCompletedOrderAsync(Order order)
         {
             // POS gán "0000000000" cho khách vãng lai không để lại SĐT: không
@@ -254,7 +270,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
             // 1 điểm cho mỗi PointsPerVnd chi tiêu (mặc định 10.000₫), làm tròn
             // xuống — đơn nhỏ hơn mốc thì không được điểm nào.
-            var perVnd = settings.PointsPerVnd > 0 ? settings.PointsPerVnd : 10000;
+            var perVnd = settings.PointsPerVnd > 0 ? settings.PointsPerVnd : DefaultPointsPerVnd;
             var earned = (int)Math.Floor(order.TotalAmount.Amount / perVnd);
             if (earned > 0)
             {
@@ -265,50 +281,71 @@ namespace PhuThuongStickyRice.Application.Loyalty
             buyer.TotalSpent += order.TotalAmount.Amount;
             buyer.UpdatedAt = DateTime.UtcNow;
 
-            // Thưởng giới thiệu: chỉ cho đơn hoàn thành ĐẦU TIÊN có mã giới thiệu
-            // hợp lệ — chống tự giới thiệu nhiều lần ăn bonus; người giới thiệu
-            // và người được giới thiệu không được là cùng 1 tài khoản.
-            if (!string.IsNullOrWhiteSpace(order.ReferralCodeUsed))
-            {
-                var orderQueryable = await _orders.GetQueryableAsync();
-                // So sánh tolerant theo 9 số cuối (pattern như
-                // HasOrderedBeforeAsync): Order.CustomerPhone lưu raw theo
-                // cách khách gõ, buyer.Phone đã chuẩn hóa digits — so raw
-                // trực tiếp cho phép đổi format SĐT để farm bonus nhiều lần.
-                var buyerKey = buyer.Phone.Length >= 9
-                    ? buyer.Phone.Substring(buyer.Phone.Length - 9)
-                    : buyer.Phone;
-                var candidatePhones = await _asyncExecuter.ToListAsync(
-                    orderQueryable
-                        .Where(x => x.Id != order.Id
-                            && x.Status == OrderStatus.Completed
-                            && x.CustomerPhone != null
-                            && x.CustomerPhone.Contains(buyerKey))
-                        .Select(x => x.CustomerPhone));
-                var priorCompletedCount = candidatePhones
-                    .Count(p => PhonesEqualTolerant(p, buyer.Phone));
-
-                if (priorCompletedCount == 0)
-                {
-                    var referrer = await FindByReferralCodeAsync(order.ReferralCodeUsed);
-                    if (referrer != null && referrer.Id != buyer.Id)
-                    {
-                        var bonus = Math.Max(0, settings.ReferralBonusPoints);
-                        if (bonus > 0)
-                        {
-                            referrer.Points += bonus;
-                            referrer.TotalEarned += bonus;
-                            referrer.UpdatedAt = DateTime.UtcNow;
-                            await _accounts.UpdateAsync(referrer, autoSave: true);
-
-                            buyer.Points += bonus;
-                            buyer.TotalEarned += bonus;
-                        }
-                    }
-                }
-            }
+            await AwardReferralBonusIfFirstCompletedOrderAsync(buyer, order, settings);
 
             await _accounts.UpdateAsync(buyer, autoSave: true);
+        }
+
+        /// <summary>
+        /// Thưởng điểm giới thiệu cho người giới thiệu và người mua, nhưng CHỈ
+        /// cho đơn hoàn thành đầu tiên dùng mã giới thiệu hợp lệ — chống tự
+        /// giới thiệu lặp lại để farm bonus; người giới thiệu và người được
+        /// giới thiệu không được là cùng 1 tài khoản.
+        /// </summary>
+        private async Task AwardReferralBonusIfFirstCompletedOrderAsync(
+            LoyaltyAccount buyer, Order order, ShopSettingDto settings)
+        {
+            if (string.IsNullOrWhiteSpace(order.ReferralCodeUsed))
+            {
+                return;
+            }
+
+            var orderQueryable = await _orders.GetQueryableAsync();
+            // So sánh tolerant theo 9 số cuối (pattern như
+            // HasOrderedBeforeAsync): Order.CustomerPhone lưu raw theo
+            // cách khách gõ, buyer.Phone đã chuẩn hóa digits — so raw
+            // trực tiếp cho phép đổi format SĐT để farm bonus nhiều lần.
+            var buyerKey = buyer.Phone.Length >= 9
+                ? buyer.Phone.Substring(buyer.Phone.Length - 9)
+                : buyer.Phone;
+            var candidatePhones = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Id != order.Id
+                        && x.Status == OrderStatus.Completed
+                        && x.CustomerPhone != null
+                        && x.CustomerPhone.Contains(buyerKey))
+                    .Select(x => x.CustomerPhone));
+            var priorCompletedCount = candidatePhones
+                .Count(p => PhonesEqualTolerant(p, buyer.Phone));
+
+            // Đã từng có đơn completed trước đó → không phải đơn đầu tiên,
+            // bỏ qua để chống farm bonus lặp lại.
+            if (priorCompletedCount > 0)
+            {
+                return;
+            }
+
+            var referrer = await FindByReferralCodeAsync(order.ReferralCodeUsed);
+            // Mã không tồn tại hoặc tự giới thiệu chính mình → không thưởng.
+            if (referrer == null || referrer.Id == buyer.Id)
+            {
+                return;
+            }
+
+            var bonus = Math.Max(0, settings.ReferralBonusPoints);
+            if (bonus <= 0)
+            {
+                return;
+            }
+
+            referrer.Points += bonus;
+            referrer.TotalEarned += bonus;
+            referrer.UpdatedAt = DateTime.UtcNow;
+            await _accounts.UpdateAsync(referrer, autoSave: true);
+
+            // buyer được lưu bởi method gọi (AwardCompletedOrderAsync) ngay sau đó.
+            buyer.Points += bonus;
+            buyer.TotalEarned += bonus;
         }
 
         public virtual async Task<(int Points, decimal VndOff)> RedeemAsync(
@@ -326,8 +363,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return (0, 0);
             }
 
-            var unit = settings.PointsRedeemUnit > 0 ? settings.PointsRedeemUnit : 100;
-            var value = settings.PointsRedeemValue > 0 ? settings.PointsRedeemValue : 10000;
+            var unit = settings.PointsRedeemUnit > 0 ? settings.PointsRedeemUnit : DefaultPointsRedeemUnit;
+            var value = settings.PointsRedeemValue > 0 ? settings.PointsRedeemValue : DefaultPointsRedeemValue;
 
             // Làm tròn xuống bước đổi chẵn (vd 100 điểm = 10.000₫): điểm lẻ dưới
             // 1 bước không đổi được vì không có mệnh giá lẻ.

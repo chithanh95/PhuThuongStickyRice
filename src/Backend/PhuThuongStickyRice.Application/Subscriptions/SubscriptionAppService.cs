@@ -237,6 +237,14 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             return (product.Name, unitPrice, sizeName, toppingNames);
         }
 
+        // Mã đơn dạng PX-yyyyMMdd-NNNN: 4 chữ số ngẫu nhiên, chống trùng trong
+        // batch bằng HashSet, chống trùng DB bằng 1 query theo chunk
+        // (chunk 1000 để dưới giới hạn tham số của SQL Server).
+        private const int OrderNumberQueryChunkSize = 1000;
+
+        /// <summary>Số lần thử sinh lại tối đa khi mã ứng viên trùng với DB.</summary>
+        private const int MaxOrderNumberAttempts = 10;
+
         /// <summary>
         /// Generates <paramref name="count"/> unique order numbers of the
         /// form PX-yyyyMMdd-NNNN. Numbers are deduped within the batch via a
@@ -246,55 +254,80 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         /// </summary>
         private async Task<List<string>> GenerateUniqueOrderNumbersAsync(int count)
         {
-            var random = Random.Shared; // thread-safe, avoids same-tick seed collisions across concurrent requests
             var day = DateTime.UtcNow.ToString("yyyyMMdd");
-            var numbers = new List<string>(count);
             var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (var i = 0; i < count; i++)
-            {
-                string number;
-                do
-                {
-                    number = $"PX-{day}-{random.Next(1000, 9999)}";
-                } while (!used.Add(number));
-                numbers.Add(number);
-            }
+            var numbers = BuildCandidateNumbers(count, day, used);
 
-            for (var attempt = 0; attempt < 10; attempt++)
+            for (var attempt = 0; attempt < MaxOrderNumberAttempts; attempt++)
             {
-                var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                var queryable = await _orders.GetQueryableAsync();
-                foreach (var chunk in numbers.Chunk(1000))
-                {
-                    var found = await _asyncExecuter.ToListAsync(
-                        queryable.Where(x => chunk.Contains(x.OrderNumber)).Select(x => x.OrderNumber));
-                    foreach (var number in found)
-                    {
-                        existing.Add(number);
-                    }
-                }
-
+                var existing = await FindExistingOrderNumbersAsync(numbers);
                 if (existing.Count == 0)
                 {
                     return numbers;
                 }
 
-                for (var i = 0; i < numbers.Count; i++)
-                {
-                    if (existing.Contains(numbers[i]))
-                    {
-                        used.Remove(numbers[i]);
-                        string replacement;
-                        do
-                        {
-                            replacement = $"PX-{day}-{random.Next(1000, 9999)}";
-                        } while (!used.Add(replacement));
-                        numbers[i] = replacement;
-                    }
-                }
+                RegenerateCollidingNumbers(numbers, used, existing, day);
             }
 
             throw new Domain.Exceptions.DomainException("Could not generate a unique order number.");
+        }
+
+        /// <summary>Sinh <paramref name="count"/> mã ứng viên, đảm bảo không trùng nhau trong batch.</summary>
+        private static List<string> BuildCandidateNumbers(int count, string day, HashSet<string> used)
+        {
+            var numbers = new List<string>(count);
+            for (var i = 0; i < count; i++)
+            {
+                numbers.Add(NewUniqueOrderNumber(day, used));
+            }
+
+            return numbers;
+        }
+
+        /// <summary>Sinh 1 mã PX-yyyyMMdd-NNNN chưa có trong <paramref name="used"/>.</summary>
+        private static string NewUniqueOrderNumber(string day, HashSet<string> used)
+        {
+            // Random.Shared là thread-safe — tránh trùng seed khi nhiều
+            // request đồng thời sinh mã.
+            string number;
+            do
+            {
+                number = $"PX-{day}-{Random.Shared.Next(1000, 9999)}";
+            } while (!used.Add(number));
+
+            return number;
+        }
+
+        /// <summary>Tìm trong DB các mã ứng viên đã tồn tại (query theo chunk để dưới giới hạn tham số của SQL Server).</summary>
+        private async Task<HashSet<string>> FindExistingOrderNumbersAsync(List<string> numbers)
+        {
+            var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var queryable = await _orders.GetQueryableAsync();
+            foreach (var chunk in numbers.Chunk(OrderNumberQueryChunkSize))
+            {
+                var found = await _asyncExecuter.ToListAsync(
+                    queryable.Where(x => chunk.Contains(x.OrderNumber)).Select(x => x.OrderNumber));
+                foreach (var number in found)
+                {
+                    existing.Add(number);
+                }
+            }
+
+            return existing;
+        }
+
+        /// <summary>Sinh lại các mã bị trùng DB, giữ nguyên các mã đã OK.</summary>
+        private static void RegenerateCollidingNumbers(
+            List<string> numbers, HashSet<string> used, HashSet<string> existing, string day)
+        {
+            for (var i = 0; i < numbers.Count; i++)
+            {
+                if (existing.Contains(numbers[i]))
+                {
+                    used.Remove(numbers[i]);
+                    numbers[i] = NewUniqueOrderNumber(day, used);
+                }
+            }
         }
 
         private static SubscriptionDto MapToDto(Subscription entity)

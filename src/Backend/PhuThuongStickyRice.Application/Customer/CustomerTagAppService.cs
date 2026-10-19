@@ -39,6 +39,9 @@ namespace PhuThuongStickyRice.Application.Customer
     {
         private const int MaxExportRows = 5000;
 
+        /// <summary>Số ngày không mua thì coi là khách ngủ đông (inactive).</summary>
+        private const int InactiveCutoffDays = 30;
+
         private readonly Volo.Abp.Domain.Repositories.IRepository<CustomerTag, Guid> _tags;
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -201,6 +204,27 @@ namespace PhuThuongStickyRice.Application.Customer
         internal async Task<List<CustomerExportRow>> GetCustomerRowsAsync(
             string searchTerm, string tag, bool inactiveOnly, int maxRows)
         {
+            var customers = await QueryCustomerAggregatesAsync(searchTerm, inactiveOnly, tag, maxRows);
+            var tagsByPhone = await GetTagsByPhonesAsync(
+                customers.Select(x => x.CustomerPhone).ToList());
+
+            if (!string.IsNullOrWhiteSpace(tag))
+            {
+                customers = FilterByTag(customers, tagsByPhone, tag.Trim());
+            }
+
+            return ToExportRows(customers, tagsByPhone, maxRows);
+        }
+
+        /// <summary>
+        /// Gom đơn (trừ đơn đã hủy) theo SĐT ngay trên SQL: lọc tìm kiếm và
+        /// khách ngủ đông (&gt; <see cref="InactiveCutoffDays"/> ngày không mua).
+        /// Có filter tag thì materialize toàn bộ để lọc tag ở memory (lọc tag
+        /// phải đọc bảng tag trước), không thì dừng ở maxRows ngay trên SQL.
+        /// </summary>
+        private async Task<List<CustomerAggregateRow>> QueryCustomerAggregatesAsync(
+            string searchTerm, bool inactiveOnly, string tag, int maxRows)
+        {
             var orderQueryable = await _orders.GetQueryableAsync();
             var query = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled);
 
@@ -225,39 +249,43 @@ namespace PhuThuongStickyRice.Application.Customer
             // Push the inactive cutoff down to SQL (was an in-memory filter).
             if (inactiveOnly)
             {
-                var cutoff = DateTime.UtcNow.AddDays(-30);
+                var cutoff = DateTime.UtcNow.AddDays(-InactiveCutoffDays);
                 grouped = grouped.Where(x => x.LastOrderAt < cutoff);
             }
 
-            List<CustomerAggregateRow> customers;
             if (string.IsNullOrWhiteSpace(tag))
             {
                 // No tag filter: stop at maxRows in SQL instead of materializing
                 // every customer group then Take()ing in memory. Ordering kept
                 // (TotalSpent desc) so the result is identical.
-                customers = await _asyncExecuter.ToListAsync(
+                return await _asyncExecuter.ToListAsync(
                     grouped.OrderByDescending(x => x.TotalSpent).Take(maxRows));
             }
-            else
-            {
-                // Tag filter needs the tag rows first; keep the old order:
-                // materialize groups, filter by tag in memory, then Take.
-                customers = await _asyncExecuter.ToListAsync(
-                    grouped.OrderByDescending(x => x.TotalSpent));
-            }
 
-            var phones = customers.Select(x => x.CustomerPhone).ToList();
-            var tagsByPhone = await GetTagsByPhonesAsync(phones);
+            // Tag filter needs the tag rows first; keep the old order:
+            // materialize groups, filter by tag in memory, then Take.
+            return await _asyncExecuter.ToListAsync(
+                grouped.OrderByDescending(x => x.TotalSpent));
+        }
 
-            if (!string.IsNullOrWhiteSpace(tag))
-            {
-                var wanted = tag.Trim();
-                customers = customers
-                    .Where(x => tagsByPhone.TryGetValue(x.CustomerPhone, out var tags)
-                        && tags.Any(t => string.Equals(t.TagName, wanted, StringComparison.OrdinalIgnoreCase)))
-                    .ToList();
-            }
+        /// <summary>Giữ lại các dòng có tag trùng tên (không phân biệt hoa/thường).</summary>
+        private static List<CustomerAggregateRow> FilterByTag(
+            List<CustomerAggregateRow> customers,
+            Dictionary<string, List<CustomerTagDto>> tagsByPhone,
+            string wanted)
+        {
+            return customers
+                .Where(x => tagsByPhone.TryGetValue(x.CustomerPhone, out var tags)
+                    && tags.Any(t => string.Equals(t.TagName, wanted, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+        }
 
+        /// <summary>Chốt maxRows rồi map sang row xuất Excel, gắn tag đã sắp xếp theo tên.</summary>
+        private static List<CustomerExportRow> ToExportRows(
+            List<CustomerAggregateRow> customers,
+            Dictionary<string, List<CustomerTagDto>> tagsByPhone,
+            int maxRows)
+        {
             return customers
                 .Take(maxRows)
                 .Select(x => new CustomerExportRow

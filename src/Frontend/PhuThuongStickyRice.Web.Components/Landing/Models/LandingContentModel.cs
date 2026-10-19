@@ -221,12 +221,13 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
 
 namespace PhuThuongStickyRice.Web.Components.Landing.Models
 {
-    internal class ProductIdsWrapper
+    // CA1852: internal và không có subtype → sealed để JIT devirtualize.
+    internal sealed class ProductIdsWrapper
     {
         public List<Guid> ProductIds { get; set; }
     }
 
-    internal class ItemsWrapper<T>
+    internal sealed class ItemsWrapper<T>
     {
         public List<T> Items { get; set; }
     }

@@ -232,7 +232,7 @@
 
     private async Task ToggleLang()
     {
-        await ShopI18n.SetLangAsync(ShopI18n.IsEnglish ? "vi" : "en");
+        await ShopI18n.SetLanguageAsync(ShopI18n.IsEnglish ? "vi" : "en");
     }
 
     private void OnCartChanged() => InvokeAsync(StateHasChanged);

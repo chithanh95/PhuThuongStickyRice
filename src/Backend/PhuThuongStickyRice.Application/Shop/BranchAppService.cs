@@ -12,16 +12,36 @@ using PhuThuongStickyRice.Application.Shop;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
+    /// <summary>
+    /// Hợp đồng quản lý chi nhánh: admin CRUD đầy đủ; trang shop gọi
+    /// <c>GetActiveAsync</c> (không cần login) để khách chọn chi nhánh nhận hàng.
+    /// </summary>
     public interface IBranchAppService : IApplicationService
     {
+        /// <summary>Admin: liệt kê toàn bộ chi nhánh, sắp xếp theo tên.</summary>
         Task<List<BranchDto>> GetListAsync();
+
+        /// <summary>Public: chi nhánh đang hoạt động (danh sách nhỏ, cache 5 phút).</summary>
         Task<List<BranchDto>> GetActiveAsync();
+
+        /// <summary>Admin: xem chi tiết một chi nhánh.</summary>
         Task<BranchDto> GetAsync(Guid id);
+
+        /// <summary>Admin: tạo chi nhánh mới.</summary>
         Task<BranchDto> CreateAsync(CreateUpdateBranchDto dto);
+
+        /// <summary>Admin: cập nhật thông tin chi nhánh.</summary>
         Task<BranchDto> UpdateAsync(Guid id, CreateUpdateBranchDto dto);
+
+        /// <summary>Admin: xóa chi nhánh.</summary>
         Task DeleteAsync(Guid id);
     }
 
+    /// <summary>
+    /// Quản lý chi nhánh của quán. Admin CRUD đầy đủ (mỗi thay đổi đều xóa cache
+    /// danh sách đang hoạt động để trang shop thấy ngay); khách hàng xem danh sách
+    /// chi nhánh đang hoạt động qua <c>GetActiveAsync</c> (public, cache 5 phút).
+    /// </summary>
     public class BranchAppService : ApplicationService, IBranchAppService
     {
         private readonly IRepository<Branch, Guid> _branches;
