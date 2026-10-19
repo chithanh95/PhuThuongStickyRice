@@ -112,7 +112,7 @@ else if (_report != null)
                         <strong class="@(r.Profit >= 0 ? "lx-profit-pos" : "lx-profit-neg")">@FmtVnd(r.Profit)</strong>
                     </div>
                     <div class="progress" style="height:18px;">
-                        <div class="progress-bar" role="progressbar" style="width:@(pct.ToString("0"))%;background:#7a6fbe;">@(pct.ToString("0"))%</div>
+                        <div class="progress-bar" role="progressbar" style="width:@(pct.ToString("0"))%;">@(pct.ToString("0"))%</div>
                     </div>
                 </div>
             }

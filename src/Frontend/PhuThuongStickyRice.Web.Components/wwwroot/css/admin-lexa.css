@@ -2204,4 +2204,7 @@ html.dark .lx-admin .kanban-code { color: #f0eef5; }
 /* Fix 5: nút tab lớn trang /goi-tra-truoc (shop) — gom inline style min-height/font-size/padding
    lặp 2 lần thành class dùng chung (nút ≥48px giữ nguyên theo chuẩn mobile) */
 .lx-tabbtn { min-height: 48px; font-size: 1.05rem; padding: 10px 20px; }
+/* Fix 6: nút × gỡ vai trò trong pill (NhanVien.razor) — thay inline style font-size/line-height,
+   để Bootstrap .close không kế thừa kích thước chữ to của modal/pill cha */
+.lx-admin .lx-pill .close { font-size: 14px; line-height: 1; }
 /* ===== END UIUX run 2026-10-19 17:35 - Agent3 Lexa ===== */
