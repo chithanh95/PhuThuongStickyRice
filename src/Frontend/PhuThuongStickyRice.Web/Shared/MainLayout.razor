@@ -20,8 +20,8 @@
             </Authorized>
         </AuthorizeView>
         <a href="/shop">Đặt xôi</a>
-        @* Theme toggle — shop pages previously had no way back out of dark mode once enabled from the landing page. *@
-        <button class="theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">@(_isDark ? "☀️" : "🌙")</button>
+        @* Theme toggle — icon = trạng thái hiện tại (tối→🌙, sáng→☀️). *@
+        <button class="theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">@(_isDark ? "🌙" : "☀️")</button>
     </div>
 
     <div class="content px-4">

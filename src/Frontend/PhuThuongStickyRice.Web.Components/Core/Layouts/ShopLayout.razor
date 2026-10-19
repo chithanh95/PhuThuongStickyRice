@@ -143,11 +143,14 @@
     private string _theme = "light"; // light | dark | auto
     private bool _isLargeText;
 
+    // 2026-10-19: icon = TRẠNG THÁI HIỆN TẠI (user yêu cầu): đang tối hiện 🌙,
+    // đang sáng hiện ☀️ — trước đây icon chỉ "hành động kế tiếp" (tối hiện ☀️)
+    // khiến user thấy sai ("mặt trời nhưng lại là màu tối").
     private string _themeIcon => _theme switch
     {
-        "dark" => "☀️",
+        "dark" => "🌙",
         "auto" => "🌓",
-        _ => "🌙",
+        _ => "☀️",
     };
 
     private string _themeTitle => _theme switch

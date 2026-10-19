@@ -625,15 +625,24 @@ html.dark .shp-back:hover {
     }
 }
 @media (max-width: 480px) {
-    /* 2026-10-19: mở rộng từ 400px lên 480px — user báo nút dark mode bị khuất
-       ở checkout mobile. Header mobile có 6 item (back + logo + hamburger +
-       cờ + giỏ + A+ + dark mode); màn 360–480px không đủ chỗ 1 hàng dù đã
-       thu gọn logo. Cho cụm nút xuống 2 hàng để KHÔNG item nào bị cắt,
-       giữ nguyên vùng bấm 44px cho người lớn tuổi. */
-    .shp-header-right {
+    /* 2026-10-19: header mobile 2 hàng CHỦ Ý (thay kiểu gói cụm nút tự phát
+       bị user chê "vỡ"): hàng 1 = logo + hamburger, hàng 2 = dãy nút chức năng
+       (cờ + giỏ + A+ + dark mode) full-width, nút nào cũng thấy, giữ 44px. */
+    .shp-header-inner {
         flex-wrap: wrap;
-        max-width: 100px;
-        row-gap: 4px;
+        row-gap: 6px;
+    }
+    .shp-back { order: 1; }
+    .shp-logo { order: 2; flex: 1 1 auto; }
+    .shp-hamburger { order: 3; }
+    .shp-header-right {
+        order: 4;
+        flex: 1 1 100%;
+        max-width: none;
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        gap: 8px;
     }
 }
 /* ===== END UIUX run 20:45 - Agent1 FIX 2+3+4+5 ===== */

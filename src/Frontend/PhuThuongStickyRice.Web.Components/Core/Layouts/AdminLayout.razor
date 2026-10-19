@@ -84,7 +84,8 @@
                     <span class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></span>
                 </a>
                 <button class="lx-icon-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
-                    <span aria-hidden="true">@(_isDark ? "☀️" : "🌙")</span>
+                    @* 2026-10-19: icon = trạng thái hiện tại (tối→🌙, sáng→☀️) theo yêu cầu user. *@
+                    <span aria-hidden="true">@(_isDark ? "🌙" : "☀️")</span>
                 </button>
                 <div class="lx-dropdown lx-search-wrap">
                     <div class="lx-search">

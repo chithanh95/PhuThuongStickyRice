@@ -4,6 +4,7 @@ using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Shop.Services

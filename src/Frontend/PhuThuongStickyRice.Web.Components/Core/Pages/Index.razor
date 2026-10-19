@@ -117,7 +117,7 @@ else
                 <LanguageSelector Compact="true" />
             </div>
             <button class="sg-theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
-                @(_isDark ? "☀️" : "🌙")
+                @(_isDark ? "🌙" : "☀️")
             </button>
             @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
             {
@@ -140,7 +140,10 @@ else
         <p class="sg-hero-eyebrow">Làng nghề Phú Thượng · Hà Nội</p>
         <h1 class="sg-hero-title">@HeroTitleText</h1>
         <p class="sg-hero-tag">@HeroTaglineText</p>
-        <p class="sg-hero-greet">@GreetingByHour</p>
+        @if (!string.IsNullOrEmpty(GreetingByHour))
+        {
+            <p class="sg-hero-greet">@GreetingByHour</p>
+        }
         @if (!string.IsNullOrEmpty(_openStatusText))
         {
             <p class="sg-hero-open @(_openNow ? "is-open" : "is-closed")">@_openStatusText</p>
@@ -923,14 +926,23 @@ else
     // Best-seller ids (fail-soft) for the "Bán chạy" badges.
     private HashSet<Guid> _bestSellerIds = new HashSet<Guid>();
 
-    private bool IsBestSeller(ShopProductModel p) =>
-        p != null && (_bestSellerIds.Contains(p.Id) || p.IsSignature);
-
     private static bool IsXoi(ShopProductModel p) =>
         (p?.Code ?? "").StartsWith("XOI", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsSoldOut(ShopProductModel p) =>
         !string.Equals(p?.Status, "Active", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Số chữ số tối thiểu để coi SĐT là hợp lệ: SĐT VN có 10 số, bỏ số 0 ở đầu
+    /// (khi khách nhập thiếu) vẫn còn 9 chữ số.
+    /// </summary>
+    private const int MinPhoneDigits = 9;
+
+    /// <summary>Chuẩn hóa SĐT: chỉ giữ lại chữ số, dùng trước khi validate hoặc gửi server.</summary>
+    /// <param name="phone">SĐT thô do khách nhập.</param>
+    /// <returns>Chuỗi chỉ gồm chữ số.</returns>
+    private static string NormalizePhoneDigits(string phone) =>
+        new string((phone ?? "").Where(char.IsDigit).ToArray());
 
     /// <summary>Signature dishes: best sellers / signature first, max 6.</summary>
     private List<ShopProductModel> SignatureProducts =>
@@ -955,7 +967,7 @@ else
     {
         get
         {
-            var digits = new string((_content.ContactPhone ?? "").Where(char.IsDigit).ToArray());
+            var digits = NormalizePhoneDigits(_content.ContactPhone);
             return string.IsNullOrEmpty(digits) ? "https://zalo.me/" : $"https://zalo.me/{digits}";
         }
     }
@@ -998,6 +1010,9 @@ else
     private List<GalleryPhotoModel> _gallery = new List<GalleryPhotoModel>();
     private List<FaqPublicModel> _faqs = new List<FaqPublicModel>();
     private string _priceFilter = "all";
+    /// <summary>Ngưỡng lọc giá "Dưới 30k / 30k–50k / Trên 50k" trên landing (đơn vị VNĐ).</summary>
+    private const decimal PriceBandLow = 30000m;
+    private const decimal PriceBandHigh = 50000m;
     private string _subPhone = "";
     private string _subMsg;
     private bool _subSending;
@@ -1009,9 +1024,6 @@ else
     private List<ShopProductModel> _recentlyViewed = new List<ShopProductModel>();
     // Vòng quay (28)
     // Giới thiệu (29)
-    // Chấm sao (36)
-    private int _quickRating;
-    private bool _ratedDone;
     // Chat (37)
     private bool _chatOpen;
     private string _chatSession = "";
@@ -1023,17 +1035,9 @@ else
     // 64: 360 viewer
     private ShopProductModel _view360Product;
     private int _view360Index;
-    // 67: đặt nhanh
-
-    // 80: đặt bằng giọng nói
-    private string _voiceOrderText;
     // 75, 77
     private MarketplaceLinksModel _marketLinks;
     private string _mapsUrl;
-    // 62: gợi ý đặt lại
-    private List<ParsedOrderItem> _lastOrderItems;
-    // 63: yêu thích
-    private HashSet<Guid> _favorites = new HashSet<Guid>();
     private List<BackInStockItem> _backInStock = new List<BackInStockItem>();
     // 41-60
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel> _articles = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>();
@@ -1049,21 +1053,6 @@ else
     // 43, 55, 60
     private List<CourseModel> _courses = new List<CourseModel>();
     private string _coursePhone = "";
-    // Đặt định kỳ (47)
-    private string _sub2Name = "";
-    private string _sub2Phone = "";
-    private string _sub2Addr = "";
-    private Guid _sub2ProductId = Guid.Empty;
-    private string _sub2Msg;
-    private bool _sub2Done;
-    // Hợp tác KD (56/57/59)
-    private string _bizTab = "nhuongquyen";
-    private string _bizName = "";
-    private string _bizPhone = "";
-    private string _bizNote = "";
-    private string _bizMsg;
-    private bool _bizDone;
-
     // Dark mode toggle (persisted in localStorage via ptToggleTheme).
     private bool _isDark;
 
@@ -1458,63 +1447,11 @@ else
 
 
 
-    private async Task DoQuickRate(int stars)
-    {
-        if (_ratedDone) return;
-        _quickRating = stars;
-        try { await LandingService.SubmitQuickRatingAsync(stars); _ratedDone = true; }
-        catch { }
-    }
-
-    private async Task SubmitSub2()
-    {
-        _sub2Msg = null;
-        var digits = new string((_sub2Phone ?? "").Where(char.IsDigit).ToArray());
-        if (string.IsNullOrWhiteSpace(_sub2Name) || digits.Length < 9 || _sub2ProductId == Guid.Empty)
-        { _sub2Msg = "Vui lòng nhập tên, SĐT và chọn món."; return; }
-        try
-        {
-            await ShopEngagementService.CreateSubscriptionAsync(new CreateSubscriptionModel
-            {
-                CustomerName = _sub2Name.Trim(),
-                Phone = digits,
-                ProductId = _sub2ProductId,
-                Quantity = 1,
-                DeliveryAddress = _sub2Addr?.Trim()
-            });
-            _sub2Done = true;
-        }
-        catch { _sub2Msg = "Chưa gửi được, thử lại nhé."; }
-    }
-
-    private async Task SubmitBiz()
-    {
-        _bizMsg = null;
-        var digits = new string((_bizPhone ?? "").Where(char.IsDigit).ToArray());
-        if (string.IsNullOrWhiteSpace(_bizName) || digits.Length < 9)
-        { _bizMsg = "Vui lòng nhập tên và SĐT."; return; }
-        var type = _bizTab == "nhuongquyen" ? "NhuongQuyen" : _bizTab == "bansi" ? "BanSi" : "QuaBieuDN";
-        try
-        {
-            await ShopService.CreateQuoteAsync(new QuoteRequestModel
-            {
-                CustomerName = _bizName.Trim(),
-                CustomerPhone = digits,
-                Quantity = 1,
-                Notes = _bizNote?.Trim(),
-                QuoteType = type
-            });
-            _bizDone = true;
-        }
-        catch { _bizMsg = "Chưa gửi được, thử lại nhé."; }
-    }
-
-
     private async Task SubmitDishPollVote(Guid pollId)
     {
         _voteMsg = null;
-        var digits = new string((_votePhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { _voteMsg = "Nhập SĐT để bình chọn."; return; }
+        var digits = NormalizePhoneDigits(_votePhone);
+        if (digits.Length < MinPhoneDigits) { _voteMsg = "Nhập SĐT để bình chọn."; return; }
         try
         {
             if (await LandingService.SubmitPollVoteAsync(pollId, digits))
@@ -1531,8 +1468,8 @@ else
 
     private async Task EnrollCourse(Guid id)
     {
-        var digits = new string((_coursePhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { Toasts.Show("Nhập SĐT để đăng ký khóa học."); return; }
+        var digits = NormalizePhoneDigits(_coursePhone);
+        if (digits.Length < MinPhoneDigits) { Toasts.Show("Nhập SĐT để đăng ký khóa học."); return; }
         try
         {
             if (await LandingService.EnrollCourseAsync(id, digits))
@@ -1584,8 +1521,6 @@ else
         try { await LandingService.SendChatAsync(_chatSession, msg); } catch { }
     }
 
-    // 64: mở viewer 360
-    private void Open360(ShopProductModel p) { _view360Product = p; _view360Index = 0; }
     private void Close360() { _view360Product = null; }
     private void Rotate360(int dir)
     {
@@ -1594,84 +1529,18 @@ else
         _view360Index = (_view360Index + dir + imageCount) % imageCount;
     }
 
-    // 66: đánh giá bằng giọng nói (Web Speech API)
 
 
-    // 67: đặt nhanh 1 chạm
 
-    // 80: đặt bằng giọng nói
-    private async Task StartVoiceOrder()
-    {
-        _voiceOrderText = null;
-        try
-        {
-            var text = await JSRuntime.InvokeAsync<string>("ptStartVoiceInput");
-            if (string.IsNullOrWhiteSpace(text)) { Toasts.Show("Không nghe rõ, thử lại nhé."); return; }
-            _voiceOrderText = text;
-            var parsed = await LandingService.ParseOrderAsync(text);
-            if (parsed != null && parsed.IsOrderIntent && parsed.Items?.Count > 0)
-            {
-                foreach (var item in parsed.Items)
-                {
-                    var product = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
-                    if (product != null) CartState.Add(product, item.Quantity);
-                }
-                Toasts.Show($"Đã thêm: {string.Join(", ", parsed.Items.Select(i => $"{i.Quantity} {i.ProductName}"))}");
-                Navigation.NavigateTo("/checkout");
-            }
-            else Toasts.Show("Chưa hiểu món bạn nói, thử nói rõ hơn nhé.");
-        }
-        catch { Toasts.Show("Trình duyệt không hỗ trợ."); }
-    }
 
-    // 62: gợi ý đặt lại theo lịch sử
 
-    private void ReorderAll()
-    {
-        if (_lastOrderItems == null) return;
-        foreach (var item in _lastOrderItems)
-        {
-            var product = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
-            if (product != null) CartState.Add(product, item.Quantity);
-        }
-        Navigation.NavigateTo("/checkout");
-    }
-
-    // 63: yêu thích
-    private string _favPhone = "";
-    private async Task ToggleFavorite(ShopProductModel p)
-    {
-        var digits = new string((_favPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9)
-        {
-            // Lưu local nếu chưa có SĐT
-            try
-            {
-                var key = "pt-fav-local";
-                var cur = await JSRuntime.InvokeAsync<string>("localStorage.getItem", key) ?? "";
-                var ids = cur.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
-                var id = p.Id.ToString();
-                if (ids.Contains(id)) ids.Remove(id); else ids.Add(id);
-                await JSRuntime.InvokeVoidAsync("localStorage.setItem", key, string.Join(",", ids));
-                _favorites = new HashSet<Guid>(ids.Where(x => Guid.TryParse(x, out _)).Select(Guid.Parse));
-            }
-            catch { }
-            return;
-        }
-        try
-        {
-            if (_favorites.Contains(p.Id)) { await LandingService.RemoveFavoriteAsync(digits, p.Id); _favorites.Remove(p.Id); }
-            else { await LandingService.AddFavoriteAsync(digits, p.Id); _favorites.Add(p.Id); }
-        }
-        catch { }
-    }
 
 
     private void ConfirmChatOrder()
     {
         if (_chatOrder?.Items == null || _chatOrder.Items.Count == 0) return;
-        var digits = new string((_chatPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9) { Toasts.Show("Nhập SĐT để đặt hàng."); return; }
+        var digits = NormalizePhoneDigits(_chatPhone);
+        if (digits.Length < MinPhoneDigits) { Toasts.Show("Nhập SĐT để đặt hàng."); return; }
         foreach (var item in _chatOrder.Items)
         {
             var product = _allProducts.FirstOrDefault(x => x.Id == item.ProductId);
@@ -1682,15 +1551,6 @@ else
         Navigation.NavigateTo("/checkout");
     }
 
-    private async Task SetLanguage(string language)
-    {
-        await AppI18n.SetLanguageAsync(language);
-    }
-
-    private async Task OnLangSelectChanged(ChangeEventArgs e)
-    {
-        await SetLanguage(e.Value?.ToString() ?? "vi");
-    }
 
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
 
@@ -1745,34 +1605,14 @@ else
         catch { _cutoffText = null; }
     }
 
-    private async Task PrintMenu()
-    {
-        try { await JSRuntime.InvokeVoidAsync("ptPrintMenu"); } catch { }
-    }
 
-    private async Task TrackView(Guid productId)
-    {
-        try { await JSRuntime.InvokeVoidAsync("ptPushRecentView", productId.ToString()); } catch { }
-    }
-
-    private async Task ShareDish(ShopProductModel p)
-    {
-        await TrackView(p.Id);
-        try
-        {
-            var url = Navigation.BaseUri.TrimEnd('/') + "/shop?ref=landing";
-            var shareResult = await JSRuntime.InvokeAsync<string>("ptShare", p.Name, $"Xôi Phú Thượng - {p.Name} {p.Price:N0}đ", url);
-            if (shareResult == "copied") Toasts.Show("Đã copy link món ăn!");
-        }
-        catch { }
-    }
 
     private async Task SubmitSubscribe()
     {
         _subMsg = null;
         if (_subDone) return;
-        var digits = new string((_subPhone ?? "").Where(char.IsDigit).ToArray());
-        if (digits.Length < 9)
+        var digits = NormalizePhoneDigits(_subPhone);
+        if (digits.Length < MinPhoneDigits)
         {
             _subMsg = "Vui lòng nhập số điện thoại hợp lệ.";
             return;
@@ -1803,9 +1643,9 @@ else
         var searchedProducts = SearchedProducts(XoiProducts).AsEnumerable();
         return _priceFilter switch
         {
-            "under30" => searchedProducts.Where(p => p.Price < 30000),
-            "30to50" => searchedProducts.Where(p => p.Price >= 30000 && p.Price <= 50000),
-            "over50" => searchedProducts.Where(p => p.Price > 50000),
+            "under30" => searchedProducts.Where(p => p.Price < PriceBandLow),
+            "30to50" => searchedProducts.Where(p => p.Price >= PriceBandLow && p.Price <= PriceBandHigh),
+            "over50" => searchedProducts.Where(p => p.Price > PriceBandHigh),
             _ => searchedProducts,
         };
     }
@@ -1822,7 +1662,10 @@ else
             if (hour >= 5 && hour < 10) return "☀️ Chào buổi sáng! Xôi nóng vừa ra lò.";
             if (hour >= 10 && hour < 14) return "🍱 Xôi trưa dẻo thơm, ăn là no tới chiều.";
             if (hour >= 14 && hour < 18) return "🌤️ Xế chiều thèm xôi? Quán còn nóng hổi.";
-            return "🌙 Đặt xôi sáng mai từ bây giờ, mai giao nóng.";
+            // 2026-10-19: bỏ câu chào ban đêm ("đặt xôi sáng mai... giao nóng")
+            // theo yêu cầu user — quán KHÔNG có người giao hàng, cũng không nhận
+            // đặt trước. Trả rỗng, markup sẽ không render dòng này.
+            return "";
         }
     }
 
@@ -1835,7 +1678,7 @@ else
 
     private string MaskPhone(string phone)
     {
-        var digits = new string((phone ?? "").Where(char.IsDigit).ToArray());
+        var digits = NormalizePhoneDigits(phone);
         if (digits.Length < 5) return "Khách hàng";
         return digits.Substring(0, 3) + "***" + digits.Substring(digits.Length - 2);
     }
