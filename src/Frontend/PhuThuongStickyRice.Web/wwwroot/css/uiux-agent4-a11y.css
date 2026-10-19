@@ -149,3 +149,33 @@ html.dark .shp-page .form-control.form-control::placeholder {
 }
 
 /* === end Agent 4 run 09:40 === */
+
+/* === Agent 4 run 10:20 — batch tiếp theo === */
+
+/* Fix 4 — WCAG 2.4.7 (Focus Visible): select ngôn ngữ ở header landing
+   (.sg-lang-select, Index.razor.css:1674) và topbar shop (.shp-lang-select,
+   ShopLayout.razor.css:443) có `:focus { outline: none }` và chỉ đổi
+   border-color → người dùng bàn phím gần như không thấy đã tab tới.
+   :focus-visible khôi phục vòng focus tím rõ; chuột/chạm không bị ảnh hưởng.
+   File này load sau bundle component nên thắng cascade cùng specificity. */
+.sg-lang-select:focus-visible,
+.shp-lang-select:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .sg-lang-select:focus-visible,
+html.dark .shp-lang-select:focus-visible {
+    outline-color: #a49de0;
+}
+
+/* Fix 5 — WCAG 2.4.13 (Focus Appearance): ô input/textarea form landing
+   (.sg-field, Index.razor.css:820) đặt outline:none, chỉ đổi border-color
+   + box-shadow alpha 0.15 — quá mờ, không đạt độ tương phản yêu cầu cho
+   focus indicator (cần ≥3:1). Thêm vòng outline rõ khi dùng bàn phím. */
+.sg-field input:focus-visible,
+.sg-field textarea:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 1px;
+}
+
+/* === end Agent 4 run 10:20 === */

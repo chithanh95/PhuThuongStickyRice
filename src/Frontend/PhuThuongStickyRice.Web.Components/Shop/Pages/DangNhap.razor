@@ -47,26 +47,38 @@
         box-shadow: 0 2px 8px rgba(0,0,0,.1);
     }
     html.dark .auth-theme-btn { background: #262640; border-color: #3a3a58; }
+    /* UIUX-1019 A3: gom style inline vào class (đồng bộ Lexa, dễ maintain) */
+    .auth-wrap { width: 100%; max-width: 440px; }
+    .auth-brand { text-align: center; margin-bottom: 20px; }
+    .auth-brand-emoji { font-size: 36px; }
+    .auth-brand-name { font-size: 26px; font-weight: 600; margin-left: 8px; vertical-align: middle; }
+    .auth-title { text-align: center; color: #1a1a2e; font-weight: 600; font-size: 22px; margin-bottom: 5px; }
+    .auth-sub { text-align: center; color: #5a6c7d; font-size: 14px; margin-bottom: 25px; }
+    .auth-tabs { display: flex; margin-bottom: 25px; }
+    .auth-label { color: #1a1a2e; font-weight: 600; font-size: 14px; }
+    .auth-btn { background: #7a6fbe; border-color: #7a6fbe; padding: 10px; }
+    .auth-link { color: #7a6fbe; }
+    html.dark .auth-brand-name { color: #f0eef5; }
 </style>
 
 <div class="auth-page">
     <button class="auth-theme-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
         @(_isDark ? "☀️" : "🌙")
     </button>
-    <div style="width:100%;max-width:440px;">
+    <div class="auth-wrap">
         <div class="auth-card">
-            <div style="text-align:center;margin-bottom:20px;">
-                <span style="font-size:36px;">🍚</span>
-                <span class="brand-name" style="font-size:26px;font-weight:600;margin-left:8px;vertical-align:middle;">Xôi Phú Thượng</span>
+            <div class="auth-brand">
+                <span class="auth-brand-emoji">🍚</span>
+                <span class="brand-name auth-brand-name">Xôi Phú Thượng</span>
             </div>
-            <h4 style="text-align:center;color:#1a1a2e;font-weight:600;font-size:22px;margin-bottom:5px;">
+            <h4 class="auth-title">
                 @(_tab == "login" ? "Chào mừng trở lại!" : "Tạo tài khoản mới")
             </h4>
-            <p class="auth-sub" style="text-align:center;color:#5a6c7d;font-size:14px;margin-bottom:25px;">
+            <p class="auth-sub">
                 @(_tab == "login" ? "Đăng nhập để đặt xôi nhanh hơn." : "Đăng ký để đặt xôi nhanh hơn.")
             </p>
 
-            <div style="display:flex;margin-bottom:25px;">
+            <div class="auth-tabs">
                 <button type="button" class="auth-tab @(_tab == "login" ? "active" : "")" @onclick='() => _tab = "login"'>Đăng nhập</button>
                 <button type="button" class="auth-tab @(_tab == "register" ? "active" : "")" @onclick='() => _tab = "register"'>Đăng ký</button>
             </div>
@@ -83,42 +95,42 @@
             @if (_tab == "login")
             {
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Số điện thoại</label>
+                    <label class="auth-label">Số điện thoại</label>
                     <input class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
                 </div>
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Mật khẩu</label>
+                    <label class="auth-label">Mật khẩu</label>
                     <input type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu"
                            @onkeyup="OnLoginKeyUp" />
                 </div>
-                <button class="btn btn-primary btn-block" style="background:#7a6fbe;border-color:#7a6fbe;padding:10px;"
+                <button class="btn btn-primary btn-block auth-btn"
                         @onclick="LoginAsync" disabled="@_busy">
                     @(_busy ? "Đang xử lý..." : "Đăng nhập")
                 </button>
                 <div class="text-center mt-3">
-                    <a href="/quen-mat-khau" style="color:#7a6fbe;">🔒 Quên mật khẩu?</a>
+                    <a href="/quen-mat-khau" class="auth-link">🔒 Quên mật khẩu?</a>
                 </div>
             }
             else
             {
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Họ tên</label>
+                    <label class="auth-label">Họ tên</label>
                     <input class="form-control" @bind="_fullName" placeholder="Nhập họ tên" />
                 </div>
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Số điện thoại *</label>
+                    <label class="auth-label">Số điện thoại *</label>
                     <input class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
                     <small class="text-muted">Dùng số điện thoại để đăng nhập những lần sau.</small>
                 </div>
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Mật khẩu * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
+                    <label class="auth-label">Mật khẩu * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
                     <input type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu" />
                 </div>
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Nhập lại mật khẩu *</label>
+                    <label class="auth-label">Nhập lại mật khẩu *</label>
                     <input type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu" />
                 </div>
-                <button class="btn btn-primary btn-block" style="background:#7a6fbe;border-color:#7a6fbe;padding:10px;"
+                <button class="btn btn-primary btn-block auth-btn"
                         @onclick="RegisterAsync" disabled="@_busy">
                     @(_busy ? "Đang xử lý..." : "Đăng ký")
                 </button>

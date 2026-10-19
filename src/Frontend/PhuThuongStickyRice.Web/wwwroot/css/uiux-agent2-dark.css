@@ -236,3 +236,24 @@ html.dark .sg-poll-body p {
 }
 
 /* === end Agent 2 run 09:40 === */
+
+/* === UIUX run 10:20 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (các đợt trước đã phủ: kanban, nhuong-quyen, check-in, the-xoi,
+   cart/checkout sticky bar, track-order, svg DuBao, shop size price,
+   price-filter + card text landing, survey-sheet, bulk, faq-mini,
+   lang-caret, qv-sheet close/meta/opt-price — đợt này chỉ lỗi MỚI) */
+
+/* ---------- FIX 1 — Shop: tiêu đề section trong bottom sheet "quick view" (mobile) ----------
+   Vấn đề: Shop.razor.css — .qv-sheet-section (dải tiêu đề "Chọn size",
+   "Món ăn kèm" trong sheet xem nhanh món) giữ color:#8a7a63 trên nền
+   section đã tối #2e2620 (rule dark của chính file, dòng 795) → tương phản
+   chỉ ~3.6:1, chữ xám mờ khó đọc. Đợt uiux-dark-fixes FIX 5 đã sáng 3 chỗ
+   #8a7a63 khác của sheet (.qv-sheet-close/meta/opt-price) nhưng sót chỗ này
+   (đã grep xác minh: không rule dark nào phủ .qv-sheet-section color).
+   Fix: chữ sáng #b8a88f cùng tone các fix #8a7a63 trước (~6.4:1).
+   !important để thắng rule scoped (.qv-sheet-section[b-xxx]). */
+html.dark .qv-sheet-section {
+    color: #b8a88f !important; /* was #8a7a63 */
+}
+
+/* === end Agent 2 run 10:20 === */

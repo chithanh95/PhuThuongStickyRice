@@ -140,6 +140,16 @@
         margin-top: 10px;
     }
 
+    /* Nút "Cần hóa đơn VAT" trong card-header chỉ ~24px (btn-link btn-sm p-0)
+       — nằm ngoài .co-summary nên rule .co-summary .btn không phủ tới.
+       Nới hit area lên 44px cho dễ bấm trên mobile. */
+    .card-header .btn-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 4px !important; /* đè .p-0 của Bootstrap */
+    }
+
     /* Sau khi đặt hàng thành công: 3 nút "Về trang chủ / Xem thực đơn /
        Tra cứu đơn hàng" chỉ ~31px và xếp ngang chật trên màn nhỏ —
        xếp dọc full-width, mỗi nút >=46px */

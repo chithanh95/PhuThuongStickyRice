@@ -167,6 +167,20 @@ html.dark .to-tl-current .to-tl-label {
     .btn-sm {
         min-height: 44px;
     }
+
+    /* Nút "Xem lịch sử" (form-row) chỉ ~38px và không full-width — đồng bộ
+       với nút "Tra cứu" ở trên: full-width, cao 46px */
+    .to-history .form-row .btn {
+        width: 100%;
+        min-height: 46px;
+    }
+
+    /* Nút thanh toán ("Tôi đã chuyển khoản", "Sao chép link thanh toán",
+       "Thanh toán MoMo") chỉ ~38px — nâng lên 46px cho dễ bấm.
+       (Nút .btn-sm trong bảng giữ nguyên, đã xử lý riêng ở trên.) */
+    .card-body > .btn:not(.btn-sm) {
+        min-height: 46px;
+    }
 }
 
 /* ============ Tóm tắt + Thông tin đơn hàng kiểu ShopeeFood ============ */
@@ -332,6 +346,17 @@ html.dark .to-total-row {
         max-height: calc(100vh - 32px);
         max-height: calc(100dvh - 32px);
         overflow-y: auto;
+    }
+    /* 3) 2 nút "Gửi đánh giá" / "Để sau" chỉ ~38px (btn mặc định) → nâng
+          lên 48px, bằng chuẩn nút hành động chính trên mobile. */
+    .to-survey-sheet .d-flex .btn {
+        min-height: 48px;
+    }
+    /* 4) Ô góp ý (form-control-sm ~14px) + mọi input nhỏ trên trang → 16px:
+          iOS không auto-zoom khi focus, đỡ giật màn hình với người lớn tuổi. */
+    .to-survey-sheet .form-control,
+    .form-control-sm {
+        font-size: 16px;
     }
 }
 /* ===== END UIUX-Mobile ===== */

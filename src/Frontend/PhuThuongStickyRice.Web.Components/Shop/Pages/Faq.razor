@@ -16,7 +16,7 @@
 
 <div class="input-group mb-3" style="max-width: 480px;">
     <input class="form-control" @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp"
-           placeholder="Tìm kiếm câu hỏi..." />
+           placeholder="Tìm kiếm câu hỏi..." aria-label="Tìm kiếm câu hỏi" />
     <div class="input-group-append">
         <button class="btn btn-outline-secondary" @onclick="Search">Tìm</button>
     </div>

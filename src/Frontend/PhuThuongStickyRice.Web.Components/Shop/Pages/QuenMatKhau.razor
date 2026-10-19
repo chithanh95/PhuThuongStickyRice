@@ -35,10 +35,10 @@
         background: #e9ecef; color: #6c757d; margin: 0 6px;
     }
     .auth-step.active { background: #7a6fbe; color: #fff; }
-    .auth-step.done { background: #28a745; color: #fff; }
+    .auth-step.done { background: #34c38f; color: #fff; } /* UIUX-1019 A3: xanh success Lexa (trước #28a745 Bootstrap) */
     html.dark .auth-step { background: #2c2c4e; color: #a5a2bd; }
     html.dark .auth-step.active { background: #7a6fbe; color: #fff; }
-    html.dark .auth-step.done { background: #28a745; color: #fff; }
+    html.dark .auth-step.done { background: #34c38f; color: #fff; } /* UIUX-1019 A3: xanh success Lexa (trước #28a745 Bootstrap) */
     .auth-theme-btn {
         position: fixed; top: 16px; right: 16px; z-index: 1000;
         width: 40px; height: 40px; border-radius: 50%;
@@ -46,20 +46,34 @@
         box-shadow: 0 2px 8px rgba(0,0,0,.1);
     }
     html.dark .auth-theme-btn { background: #262640; border-color: #3a3a58; }
+    /* UIUX-1019 A3: gom style inline vào class (đồng bộ Lexa, dễ maintain) */
+    .auth-wrap { width: 100%; max-width: 440px; }
+    .auth-brand { text-align: center; margin-bottom: 20px; }
+    .auth-brand-emoji { font-size: 36px; }
+    .auth-brand-name { font-size: 26px; font-weight: 600; margin-left: 8px; vertical-align: middle; }
+    .auth-title { text-align: center; color: #1a1a2e; font-weight: 600; font-size: 22px; margin-bottom: 5px; }
+    .auth-sub { text-align: center; color: #5a6c7d; font-size: 14px; margin-bottom: 20px; }
+    .auth-label { color: #1a1a2e; font-weight: 600; font-size: 14px; }
+    .auth-btn { background: #7a6fbe; border-color: #7a6fbe; padding: 10px; }
+    .auth-link { color: #7a6fbe; }
+    .auth-link-btn { color: #7a6fbe; }
+    .auth-otp-input { letter-spacing: 4px; font-weight: 700; font-size: 18px; }
+    .auth-success-emoji { font-size: 40px; }
+    html.dark .auth-brand-name { color: #f0eef5; }
 </style>
 
 <div class="auth-page">
     <button class="auth-theme-btn" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
         @(_isDark ? "☀️" : "🌙")
     </button>
-    <div style="width:100%;max-width:440px;">
+    <div class="auth-wrap">
         <div class="auth-card">
-            <div style="text-align:center;margin-bottom:20px;">
-                <span style="font-size:36px;">🍚</span>
-                <span class="brand-name" style="font-size:26px;font-weight:600;margin-left:8px;vertical-align:middle;">Xôi Phú Thượng</span>
+            <div class="auth-brand">
+                <span class="auth-brand-emoji">🍚</span>
+                <span class="brand-name auth-brand-name">Xôi Phú Thượng</span>
             </div>
-            <h4 style="text-align:center;color:#1a1a2e;font-weight:600;font-size:22px;margin-bottom:5px;">Quên mật khẩu?</h4>
-            <p class="auth-sub" style="text-align:center;color:#5a6c7d;font-size:14px;margin-bottom:20px;">
+            <h4 class="auth-title">Quên mật khẩu?</h4>
+            <p class="auth-sub">
                 Nhập SĐT để nhận mã OTP đặt lại mật khẩu.
             </p>
 
@@ -81,11 +95,11 @@
             @if (_step == 1)
             {
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Số điện thoại *</label>
+                    <label class="auth-label">Số điện thoại *</label>
                     <input class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
                     <small class="text-muted">Mã OTP sẽ được gửi qua SMS đến số này.</small>
                 </div>
-                <button class="btn btn-primary btn-block" style="background:#7a6fbe;border-color:#7a6fbe;padding:10px;"
+                <button class="btn btn-primary btn-block auth-btn"
                         @onclick="RequestOtpAsync" disabled="@_busy">
                     @(_busy ? "Đang gửi..." : "Gửi mã OTP")
                 </button>
@@ -93,31 +107,31 @@
             else if (_step == 2)
             {
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Mã OTP *</label>
-                    <input class="form-control text-center" @bind="_otp" inputmode="numeric" placeholder="Nhập mã 6 số"
-                           maxlength="6" style="letter-spacing:4px;font-weight:700;font-size:18px;" />
-                    <small class="text-muted">Mã có hiệu lực 5 phút. Không nhận được? <a href="javascript:void(0)" style="color:#7a6fbe;" @onclick="RequestOtpAsync">Gửi lại</a></small>
+                    <label class="auth-label">Mã OTP *</label>
+                    <input class="form-control text-center auth-otp-input" @bind="_otp" inputmode="numeric" placeholder="Nhập mã 6 số"
+                           maxlength="6" />
+                    <small class="text-muted">Mã có hiệu lực 5 phút. Không nhận được? <a href="javascript:void(0)" class="auth-link" @onclick="RequestOtpAsync">Gửi lại</a></small>
                 </div>
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Mật khẩu mới * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
+                    <label class="auth-label">Mật khẩu mới * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
                     <input type="password" class="form-control" @bind="_newPassword" placeholder="Nhập mật khẩu mới" />
                 </div>
                 <div class="form-group">
-                    <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Nhập lại mật khẩu mới *</label>
+                    <label class="auth-label">Nhập lại mật khẩu mới *</label>
                     <input type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu mới" />
                 </div>
-                <button class="btn btn-primary btn-block" style="background:#7a6fbe;border-color:#7a6fbe;padding:10px;"
+                <button class="btn btn-primary btn-block auth-btn"
                         @onclick="ResetPasswordAsync" disabled="@_busy">
                     @(_busy ? "Đang xử lý..." : "Đặt lại mật khẩu")
                 </button>
-                <button class="btn btn-link btn-block mt-2" style="color:#7a6fbe;" @onclick="() => _step = 1">← Nhập lại SĐT</button>
+                <button class="btn btn-link btn-block mt-2 auth-link-btn" @onclick="() => _step = 1">← Nhập lại SĐT</button>
             }
             else
             {
                 <div class="alert alert-success text-center">
-                    <div style="font-size:40px;">✅</div>
+                    <div class="auth-success-emoji">✅</div>
                     <div class="mt-2"><strong>Đặt lại mật khẩu thành công!</strong></div>
-                    <a href="/dang-nhap" style="color:#7a6fbe;font-weight:600;">Đăng nhập ngay →</a>
+                    <a href="/dang-nhap" class="auth-link font-weight-bold">Đăng nhập ngay →</a>
                 </div>
             }
         </div>

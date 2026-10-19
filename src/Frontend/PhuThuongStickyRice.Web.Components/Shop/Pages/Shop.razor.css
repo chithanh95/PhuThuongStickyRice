@@ -762,6 +762,14 @@ html.dark .shop-filters-sticky {
         padding: 8px 0;
     }
     .qv-sheet-note-input::placeholder { color: #b8a88f; }
+    /* Keyboard focus: rule gốc đặt outline: none mà không có chỉ báo thay
+       thế → bàn phím/external keyboard trên mobile không thấy ô đang focus.
+       :focus-visible chỉ hiện khi dùng bàn phím, chuột/chạm không ảnh hưởng. */
+    .qv-sheet-note-input:focus-visible {
+        outline: 2px solid #7a6fbe;
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
     .qv-sheet-footer {
         padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
         background: #fff;
