@@ -3,6 +3,7 @@ using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -75,7 +76,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             return value.Length <= 4
                 ? "****"
-                : new string('*', value.Length - 4) + value.Substring(value.Length - 4);
+                : string.Concat(new string('*', value.Length - 4), value.AsSpan(value.Length - 4));
         }
     }
 }

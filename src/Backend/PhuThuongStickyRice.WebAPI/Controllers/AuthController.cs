@@ -101,7 +101,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
             var login = model.UsernameOrEmail.Trim();
             var user = await _userManager.FindByNameAsync(login)
-                ?? (login.Contains("@") ? await _userManager.FindByEmailAsync(login) : null);
+                ?? (login.Contains('@') ? await _userManager.FindByEmailAsync(login) : null);
 
             if (user == null)
             {

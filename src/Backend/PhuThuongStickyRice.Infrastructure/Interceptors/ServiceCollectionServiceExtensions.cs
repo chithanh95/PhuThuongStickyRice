@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddInterceptors(this IServiceCollection services, Type serviceType, Type implementationType, ServiceLifetime serviceLifetime, Type[] interceptorTypes)
         {
-            if (interceptorTypes == null || !interceptorTypes.Any())
+            if (interceptorTypes == null || interceptorTypes.Length == 0)
             {
                 return services;
             }

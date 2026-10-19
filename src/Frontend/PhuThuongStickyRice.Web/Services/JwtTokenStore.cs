@@ -39,7 +39,10 @@ namespace PhuThuongStickyRice.Web.Services
             }
 
             var expiresText = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", ExpiresKey);
-            DateTimeOffset.TryParse(expiresText, out var expiresAt);
+            // Kết quả parse bị bỏ qua có chủ ý: token hỏng định dạng thời gian
+            // thì ExpiresAt = default (MinValue) và logic gọi phía trên tự coi
+            // như hết hạn — giữ nguyên hành vi cũ, chỉ làm rõ ý định (CA1806).
+            _ = DateTimeOffset.TryParse(expiresText, out var expiresAt);
 
             return new AuthTokenPair
             {

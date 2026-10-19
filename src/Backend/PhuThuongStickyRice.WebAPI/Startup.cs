@@ -208,7 +208,7 @@ namespace PhuThuongStickyRice.WebAPI
         /// <summary>
         /// Đăng ký Swagger với JWT Bearer security scheme.
         /// </summary>
-        private void AddSwagger(IServiceCollection services)
+        private static void AddSwagger(IServiceCollection services)
         {
             services.AddSwaggerGen(setupAction =>
             {
@@ -259,7 +259,7 @@ namespace PhuThuongStickyRice.WebAPI
         /// <summary>
         /// Đăng ký service sinh HTML/PDF và đọc/ghi CSV dùng cho báo cáo.
         /// </summary>
-        private void AddDocumentAndCsvServices(IServiceCollection services)
+        private static void AddDocumentAndCsvServices(IServiceCollection services)
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<ICurrentUser, CurrentWebUser>();
@@ -369,7 +369,7 @@ namespace PhuThuongStickyRice.WebAPI
         /// Cấu hình Swagger UI. One-click LAN: Blazor chiếm route "/" nên Swagger
         /// dời sang "/swagger"; bình thường (không serve Blazor) Swagger vẫn ở root.
         /// </summary>
-        private void ConfigureSwaggerUI(IApplicationBuilder app, PhysicalFileProvider blazorFileProvider)
+        private static void ConfigureSwaggerUI(IApplicationBuilder app, PhysicalFileProvider blazorFileProvider)
         {
             app.UseSwaggerUI(setupAction =>
             {
@@ -391,7 +391,7 @@ namespace PhuThuongStickyRice.WebAPI
         /// Map controllers + SPA fallback: mọi route không phải /api/* và không phải
         /// file tĩnh thì trả về index.html của Blazor (để client-side routing hoạt động).
         /// </summary>
-        private void MapBlazorSpaFallback(IApplicationBuilder app, PhysicalFileProvider blazorFileProvider)
+        private static void MapBlazorSpaFallback(IApplicationBuilder app, PhysicalFileProvider blazorFileProvider)
         {
             app.UseEndpoints(endpoints =>
             {
