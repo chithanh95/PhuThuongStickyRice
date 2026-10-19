@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase
 @using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Landing.Services
+@using PhuThuongStickyRice.Web.Components.Landing.Models
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @inject ShopSettingsService ShopSettingsService
 @inject LandingService LandingService
@@ -212,26 +214,36 @@
         AppI18n.OnChange += OnLangChanged;
         await AppI18n.InitializeAsync();
 
-        string hotline = null, address = null, email = null;
-        try
-        {
-            var settings = await ShopSettingsService.GetPublicAsync();
-            hotline = NormalizePhone(settings?.Hotline);
-        }
-        catch { }
+        // perf-hunt 2026-10-20: 2 call độc lập chạy song song (mỗi cái tự
+        // fail-soft trong helper, không ném) — cắt ~1 HTTP round-trip khi
+        // cả 2 cache client-side (TTL 2') cùng hết hạn. Logic fallback
+        // hotline (ưu tiên settings, thiếu mới lấy landing) giữ nguyên,
+        // chỉ chuyển từ "đọc sau await tuần tự" sang "đọc sau WhenAll".
+        var settingsTask = GetShopSettingsSafeAsync();
+        var landingTask = GetLandingContentSafeAsync();
+        await Task.WhenAll(settingsTask, landingTask);
+        var settings = await settingsTask;
+        var landing = await landingTask;
 
-        try
-        {
-            var landing = await LandingService.GetContentAsync();
-            if (string.IsNullOrEmpty(hotline)) hotline = NormalizePhone(landing?.ContactPhone);
-            address = landing?.ContactAddress;
-            if (string.IsNullOrEmpty(email)) email = landing?.ContactEmail;
-        }
-        catch { }
-
+        string hotline = NormalizePhone(settings?.Hotline);
+        if (string.IsNullOrEmpty(hotline)) hotline = NormalizePhone(landing?.ContactPhone);
         _hotline = hotline;
-        _address = address;
-        _email = email;
+        _address = landing?.ContactAddress;
+        _email = landing?.ContactEmail;
+    }
+
+    /// <summary>Đọc settings công khai, lỗi thì trả null (không chặn layout).</summary>
+    private async Task<ShopSettingModel> GetShopSettingsSafeAsync()
+    {
+        try { return await ShopSettingsService.GetPublicAsync(); }
+        catch { return null; }
+    }
+
+    /// <summary>Đọc nội dung landing, lỗi thì trả null (không chặn layout).</summary>
+    private async Task<LandingContentModel> GetLandingContentSafeAsync()
+    {
+        try { return await LandingService.GetContentAsync(); }
+        catch { return null; }
     }
 
     private static string NormalizePhone(string phone)
