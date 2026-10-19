@@ -26,8 +26,15 @@ namespace PhuThuongStickyRice.Application.Common.ImageBackup
         /// <summary>Provider name as stored in ShopSetting.ImageBackupProvider.</summary>
         string Name { get; }
 
-        /// <summary>Copy a file to backup storage. Returns the remote key/URL.</summary>
-        Task<string> BackupFileAsync(string relativePath, Stream content);
+        /// <summary>
+        /// Copy a file to backup storage. Returns the remote key/URL; null
+        /// when the provider stores nothing remotely (e.g. the "None"
+        /// null-object provider).
+        /// </summary>
+        /// codequality-team 2026-10-20 run-0245 Agent3-BestPractices: Task<string?>
+        /// — null là giá trị hợp lệ của NullImageBackupProvider, annotation
+        /// cũ Task<string> sai gây warning nullable (CS8625).
+        Task<string?> BackupFileAsync(string relativePath, Stream content);
 
         /// <summary>True when the provider is configured and usable.</summary>
         Task<bool> IsConfiguredAsync();
@@ -42,9 +49,11 @@ namespace PhuThuongStickyRice.Application.Common.ImageBackup
     {
         public string Name => "None";
 
-        public Task<string> BackupFileAsync(string relativePath, Stream content)
+        // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: Task<string?>
+        // cho khớp annotation nullable mới trên interface.
+        public Task<string?> BackupFileAsync(string relativePath, Stream content)
         {
-            return Task.FromResult<string>(null);
+            return Task.FromResult<string?>(null);
         }
 
         public Task<bool> IsConfiguredAsync()

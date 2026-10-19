@@ -223,7 +223,9 @@ namespace PhuThuongStickyRice.Application.Messenger
             byte[] actual;
             try
             {
-                actual = Convert.FromHexString(signatureHeader.Substring(prefix.Length).Trim());
+                // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+                // operator thay Substring(prefix.Length) — guard StartsWith(prefix) ở trên.
+                actual = Convert.FromHexString(signatureHeader[prefix.Length..].Trim());
             }
             catch (FormatException)
             {
@@ -450,7 +452,9 @@ namespace PhuThuongStickyRice.Application.Messenger
         {
             return new CreateOrderDto
             {
-                CustomerName = name.Length > MaxCustomerNameLength ? name.Substring(0, MaxCustomerNameLength) : name,
+                // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+                // operator thay Substring(0, N) — guard Length ở điều kiện nên tương đương.
+                CustomerName = name.Length > MaxCustomerNameLength ? name[..MaxCustomerNameLength] : name,
                 CustomerPhone = phone,
                 CustomerAddress = fulfillment == FulfillmentCustomerPickup ? "Khách tự đến quán lấy" : "Shipper đến quán lấy",
                 Notes = $"Đặt qua Messenger chat (PSID {session.Psid ?? "?"})",

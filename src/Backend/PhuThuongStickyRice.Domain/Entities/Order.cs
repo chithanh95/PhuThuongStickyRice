@@ -24,6 +24,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int CustomerAddressMaxLength = 500;
         public const int NotesMaxLength = 1000;
         public const int DiscountCodeMaxLength = 50;
+        public const int SpinPrizeCodeMaxLength = 50;
         public const int TaxCodeMaxLength = 30;
         public const int CompanyNameMaxLength = 300;
         public const int RecipientNameMaxLength = 200;
@@ -152,6 +153,14 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         /// <summary>Customer already used the post-checkout lucky spin for this order.</summary>
         public bool LuckySpinUsed { get; private set; }
+
+        /// <summary>
+        /// Mã voucher trúng từ vòng quay may mắn của đơn này (null khi quay
+        /// trúng ô "Miss" hoặc chưa quay). Lưu để khi đơn bị hủy thì thu hồi
+        /// voucher — nếu không, khách quay trên đơn Pending rồi hủy đơn vẫn
+        /// giữ voucher thật và farm không giới hạn (bug-hunt 2026-10-20).
+        /// </summary>
+        public string? SpinPrizeCode { get; private set; }
 
         /// <summary>Assigned delivery shipper (nullable). Set by the admin.</summary>
         public Guid? ShipperId { get; private set; }
@@ -634,6 +643,15 @@ namespace PhuThuongStickyRice.Domain.Entities
         }
 
         /// <summary>
+        /// Lưu mã voucher trúng từ vòng quay may mắn của đơn này (null khi
+        /// quay trúng ô "Miss"). Dùng để thu hồi voucher khi đơn bị hủy.
+        /// </summary>
+        public void SetSpinPrizeCode(string? code)
+        {
+            SpinPrizeCode = string.IsNullOrWhiteSpace(code) ? null : code.Trim().ToUpperInvariant();
+        }
+
+        /// <summary>
         /// Item 128: flags the order as auto-matched by the MoMo IPN callback
         /// (the callback's OrderInfo contained this order's number).
         /// </summary>
@@ -918,8 +936,10 @@ namespace PhuThuongStickyRice.Domain.Entities
         private static string ComputePhoneNorm(string customerPhone)
         {
             var digits = new string((customerPhone ?? string.Empty).Where(char.IsDigit).ToArray());
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+            // operator thay Substring(digits.Length - N) — guard Length ở trên.
             return digits.Length > CustomerPhoneNormMaxLength
-                ? digits.Substring(digits.Length - CustomerPhoneNormMaxLength)
+                ? digits[^CustomerPhoneNormMaxLength..]
                 : digits;
         }
 

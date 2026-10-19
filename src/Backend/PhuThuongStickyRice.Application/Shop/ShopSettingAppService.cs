@@ -417,7 +417,9 @@ namespace PhuThuongStickyRice.Application.Shop
                 return null;
             }
 
-            return trimmed.Length > MaxWebhookUrlLength ? trimmed.Substring(0, MaxWebhookUrlLength) : trimmed;
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+            // operator thay Substring(0, N) — guard Length ở trên nên tương đương.
+            return trimmed.Length > MaxWebhookUrlLength ? trimmed[..MaxWebhookUrlLength] : trimmed;
         }
 
         /// <summary>Clamps a percentage setting to 0–100.</summary>

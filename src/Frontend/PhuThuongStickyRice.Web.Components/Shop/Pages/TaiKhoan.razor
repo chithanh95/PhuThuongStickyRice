@@ -3,6 +3,7 @@
 @using System.Linq
 @using System.Threading.Tasks
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Logging
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @using PhuThuongStickyRice.Web.Components.Shop.Models
@@ -16,6 +17,7 @@
 @inject ITokenStore TokenStore
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject ILogger<TaiKhoan> Logger
 
 <div class="container py-4 tk-page">
     <h3 class="tk-title">Tài khoản của tôi</h3>
@@ -406,11 +408,17 @@
                 await Task.WhenAll(profileTask, loyaltyTask, ordersTask);
 
                 // Item 137: đồng bộ giỏ hàng từ server (nếu có).
+                // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: ghi log
+                // thay vì nuốt exception trong im lặng — vẫn fail-soft như cũ
+                // (lỗi đồng bộ giỏ không được chặn luồng đăng nhập).
                 try
                 {
                     await CartSyncService.SyncOnLoginAsync();
                 }
-                catch (Exception) { }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "TaiKhoan: đồng bộ giỏ hàng sau đăng nhập thất bại.");
+                }
             }
         }
         catch (Exception)

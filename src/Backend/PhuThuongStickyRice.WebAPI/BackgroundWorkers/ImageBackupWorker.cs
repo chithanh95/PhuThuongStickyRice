@@ -138,7 +138,10 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
         {
             var backedUp = 0;
 
-            foreach (var file in Directory.GetFiles(uploads, "*", SearchOption.AllDirectories))
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: EnumerateFiles
+            // (lazy) thay GetFiles — chỉ dùng trong foreach nên tương đương,
+            // không materialize toàn bộ mảng path khi folder lớn.
+            foreach (var file in Directory.EnumerateFiles(uploads, "*", SearchOption.AllDirectories))
             {
                 var name = Path.GetFileName(file);
                 if (string.Equals(name, StateFileName, StringComparison.OrdinalIgnoreCase))

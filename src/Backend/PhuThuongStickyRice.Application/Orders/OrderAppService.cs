@@ -1,3 +1,4 @@
+// codequality-team 2026-10-20 run-0245 Agent2-CleanCode
 #nullable enable annotations
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Orders.Email;
@@ -298,6 +299,12 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int KitchenDisplayMaxOrders = 200;
         /// <summary>Số đánh giá tối đa nạp cho màn kiểm duyệt/trả lời của admin.</summary>
         private const int ReviewModerationMaxItems = 200;
+        /// <summary>Số đánh giá public tối đa hiển thị ở landing — trang chủ tải mỗi lượt vào nên cache 5 phút.</summary>
+        private const int PublicReviewsTake = 20;
+        /// <summary>Số comment mẫu tối đa liệt kê cho 1 món bị chê nhiều — đủ để admin đọc nhanh, không tràn DTO.</summary>
+        private const int SampleCommentsTake = 3;
+        /// <summary>Số đơn gần nhất nạp khi tìm đơn theo SĐT (tra cứu đơn / prefill checkout) — tìm bằng trong memory, không cần nạp toàn bộ lịch sử.</summary>
+        private const int PhoneLookupCandidatesTake = 100;
         /// <summary>Số review tối đa quét khi thống kê món bị chê 1–2 sao — chặn trước khi group trong memory.</summary>
         private const int PoorlyRatedReviewScanCap = 2000;
         /// <summary>Khoảng thời gian (ngày) quét review cho báo cáo món bị chê.</summary>
@@ -1506,6 +1513,12 @@ namespace PhuThuongStickyRice.Application.Orders
             // nên đơn hủy vẫn đốt lượt mã dùng 1 lần của khách.
             await _discounts.RefundUsageAsync(order.DiscountCode);
 
+            // bug-hunt 2026-10-20: thu hồi voucher trúng từ vòng quay may mắn
+            // của đơn này — nếu không, khách quay trên đơn Pending rồi hủy
+            // đơn vẫn giữ voucher thật và farm không giới hạn. Chỉ thu hồi
+            // mã chưa dùng thật (RevokeSpinPrizeAsync tự bỏ qua UsedCount>0).
+            await _discounts.RevokeSpinPrizeAsync(order.SpinPrizeCode);
+
             if (order.PaymentMethod == PaymentMethod.Wallet
                 && order.PaymentStatus == PaymentStatus.Paid)
             {
@@ -1883,7 +1896,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 var items = await _asyncExecuter.ToListAsync(
                     reviewQueryable.Where(x => !x.IsHidden)
                         .OrderByDescending(x => x.CreatedAt)
-                        .Take(20));
+                        .Take(PublicReviewsTake));
                 return items.Select(MapReviewToPublicDto).ToList();
             });
         }
@@ -1963,6 +1976,10 @@ namespace PhuThuongStickyRice.Application.Orders
             // bug-hunt 2026-10-19: khách tự hủy cũng hoàn lượt mã (như luồng
             // admin hủy ở HandleOrderCancelledAsync).
             await _discounts.RefundUsageAsync(order.DiscountCode);
+
+            // bug-hunt 2026-10-20: khách tự hủy cũng thu hồi voucher trúng từ
+            // vòng quay của đơn (chống farm: quay trên đơn Pending rồi hủy).
+            await _discounts.RevokeSpinPrizeAsync(order.SpinPrizeCode);
 
             // Wave 6c (item 34): audit the customer cancel.
             await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled);
@@ -2500,7 +2517,7 @@ namespace PhuThuongStickyRice.Application.Orders
                         .Where(x => !string.IsNullOrWhiteSpace(x.Comment))
                         .Select(x => x.Comment!.Trim())
                         .Distinct()
-                        .Take(3)
+                        .Take(SampleCommentsTake)
                         .ToList(),
                     LastBadAt = items.Max(x => x.CreatedAt)
                 });
@@ -2533,6 +2550,12 @@ namespace PhuThuongStickyRice.Application.Orders
             var expiresAt = DateTime.UtcNow.AddDays(SpinCodeValidityDays);
 
             var (prizeLabel, code) = await BuildSpinPrizeAsync(segment, expiresAt, phone, settings.DeliveryFee);
+
+            // bug-hunt 2026-10-20: lưu mã trúng lên đơn để khi đơn bị hủy thì
+            // thu hồi voucher (RevokeSpinPrizeAsync) — nếu không, khách quay
+            // trên đơn Pending rồi tự hủy đơn vẫn giữ voucher thật và farm
+            // không giới hạn. Entity đang track nên UoW flush cùng lượt quay.
+            order.SetSpinPrizeCode(code);
 
             return new SpinResultDto
             {
@@ -2715,6 +2738,14 @@ namespace PhuThuongStickyRice.Application.Orders
             // đơn bị hủy — cùng pattern batch như hoàn điểm loyalty ở trên.
             await _discounts.RefundUsageBatchAsync(
                 cancelledThisRun.Select(x => x.DiscountCode));
+
+            // bug-hunt 2026-10-20: đơn chuyển khoản quá hạn bị hệ thống tự hủy
+            // cũng thu hồi voucher trúng từ vòng quay của từng đơn (chống
+            // farm: quay trên đơn Pending rồi chờ hệ thống hủy).
+            foreach (var cancelled in cancelledThisRun)
+            {
+                await _discounts.RevokeSpinPrizeAsync(cancelled.SpinPrizeCode);
+            }
 
             return cancelledThisRun.Count;
         }
@@ -3331,7 +3362,7 @@ namespace PhuThuongStickyRice.Application.Orders
                         x.CustomerAddress,
                         x.CreatedAt
                     })
-                    .Take(100));
+                    .Take(PhoneLookupCandidatesTake));
 
             var match = recent.FirstOrDefault(x => PhoneNumber.PhonesMatch(x.CustomerPhone, phone));
             if (match == null)
@@ -3359,7 +3390,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 return false;
             }
 
-            var suffix = digits.Substring(digits.Length - PhoneNumber.TailDigitCount);
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+            // operator thay Substring(digits.Length - TailDigitCount) — guard Length ở trên.
+            var suffix = digits[^PhoneNumber.TailDigitCount..];
             var orderQueryable = await _orders.GetQueryableAsync();
             // SQL pre-filter on the normalized 9-digit suffix (index seek on
             // CustomerPhoneNorm), then the exact tolerant match in memory —
@@ -3461,7 +3494,10 @@ namespace PhuThuongStickyRice.Application.Orders
                     InvalidPhoneFormatMessage);
             }
 
-            var last9 = digits.Substring(digits.Length - PhoneNumber.TailDigitCount);
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+            // operator thay Substring(digits.Length - TailDigitCount) — regex
+            // ở trên đảm bảo đủ 10 số nên tương đương.
+            var last9 = digits[^PhoneNumber.TailDigitCount..];
             var candidates = await LoadOrderCandidatesAsync(last9);
 
             var matched = candidates.Where(x => PhoneNumber.PhonesMatch(x.CustomerPhone, digits)).ToList();
@@ -3512,7 +3548,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     .Where(x => x.CustomerPhoneNorm == last9)
                     .OrderByDescending(x => x.CreatedAt)
                     .Select(x => new OrderPhoneCandidate(x.Id, x.CustomerPhone, x.CreatedAt))
-                    .Take(100));
+                    .Take(PhoneLookupCandidatesTake));
         }
 
         private async Task<Order> FindOrThrowAsync(Guid id)

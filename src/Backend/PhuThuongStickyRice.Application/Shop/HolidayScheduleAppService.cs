@@ -218,7 +218,9 @@ namespace PhuThuongStickyRice.Application.Shop
 
             if (reason.Length > HolidaySchedule.ReasonMaxLength)
             {
-                reason = reason.Substring(0, HolidaySchedule.ReasonMaxLength);
+                // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+                // operator thay Substring(0, N) — guard Length ở trên nên tương đương.
+                reason = reason[..HolidaySchedule.ReasonMaxLength];
             }
 
             return (date, reason);

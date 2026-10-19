@@ -55,9 +55,11 @@ namespace PhuThuongStickyRice.Application.Common
                 return string.Equals(digits1, digits2, StringComparison.Ordinal);
             }
 
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+            // operator thay Substring(digitsN.Length - TailDigitCount) — guard Length ở trên.
             return string.Equals(
-                digits1.Substring(digits1.Length - TailDigitCount),
-                digits2.Substring(digits2.Length - TailDigitCount),
+                digits1[^TailDigitCount..],
+                digits2[^TailDigitCount..],
                 StringComparison.Ordinal);
         }
 
@@ -96,8 +98,10 @@ namespace PhuThuongStickyRice.Application.Common
         public static string PhoneTailKey(string? phone)
         {
             var digits = DigitsOnly(phone);
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+            // operator thay Substring(digits.Length - TailDigitCount) — guard Length ở trên.
             return digits.Length > TailDigitCount
-                ? digits.Substring(digits.Length - TailDigitCount)
+                ? digits[^TailDigitCount..]
                 : digits;
         }
 

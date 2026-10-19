@@ -415,8 +415,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             string candidate;
             do
             {
+                // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+                // operator thay Substring(0, N) — ToString("N") dài 32 ký tự ≥ CodeSuffixLength.
                 candidate = prefix + "-" + Guid.NewGuid().ToString("N")
-                    .Substring(0, CodeSuffixLength).ToUpperInvariant();
+                    [..CodeSuffixLength].ToUpperInvariant();
             } while (!used.Add(candidate));
             return candidate;
         }

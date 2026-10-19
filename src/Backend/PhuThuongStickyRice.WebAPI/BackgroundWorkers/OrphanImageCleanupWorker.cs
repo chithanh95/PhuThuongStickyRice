@@ -62,7 +62,9 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
 
             var cutoff = DateTime.UtcNow - OrphanAge;
             var deleted = 0;
-            foreach (var file in Directory.GetFiles(folder))
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: EnumerateFiles
+            // (lazy) thay GetFiles — chỉ dùng trong foreach nên tương đương.
+            foreach (var file in Directory.EnumerateFiles(folder))
             {
                 var name = Path.GetFileName(file);
                 if (referenced.Contains(name))

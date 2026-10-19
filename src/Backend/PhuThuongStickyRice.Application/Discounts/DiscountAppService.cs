@@ -176,6 +176,17 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// trước của SĐT, hoặc null khi không có.
         /// </summary>
         Task<string?> GetUsableCodeAsync(string codePrefix, string ownerPhone);
+
+        /// <summary>
+        /// Internal: thu hồi voucher trúng từ vòng quay may mắn khi đơn bị
+        /// hủy — tắt mã (IsActive = false) để không dùng được nữa. Bỏ qua khi
+        /// mã trống/không tồn tại; KHÔNG thu hồi mã đã được dùng thật
+        /// (UsedCount &gt; 0 — khách đã đổi voucher lấy đơn thật trước khi
+        /// đơn này bị hủy). Chống farm voucher: quay trên đơn Pending rồi hủy
+        /// đơn giữ lại voucher (bug-hunt 2026-10-20).
+        /// </summary>
+        /// <param name="spinPrizeCode">Mã voucher đã lưu trên đơn (Order.SpinPrizeCode).</param>
+        Task RevokeSpinPrizeAsync(string? spinPrizeCode);
     }
 
     /// <summary>
@@ -588,6 +599,32 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
+        /// Thu hồi voucher trúng từ vòng quay may mắn khi đơn bị hủy: tắt mã
+        /// để không dùng được nữa. Không throw khi mã trống/không tồn tại
+        /// (đơn hủy phải thành công). Mã đã dùng thật (UsedCount &gt; 0) được
+        /// giữ nguyên — khách đã đổi voucher lấy đơn thật trước khi đơn này
+        /// bị hủy thì đó là giao dịch hợp lệ, không phải farm.
+        /// </summary>
+        public virtual async Task RevokeSpinPrizeAsync(string? spinPrizeCode)
+        {
+            var normalized = spinPrizeCode?.Trim().ToUpperInvariant();
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return;
+            }
+
+            var entity = await FindByCodeAsync(normalized);
+            if (entity == null || !entity.IsActive || entity.UsedCount > 0)
+            {
+                return;
+            }
+
+            entity.IsActive = false;
+            await _discounts.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
+        }
+
+        /// <summary>
         /// Tạo mã dùng 1 lần do hệ thống sinh (vòng quay may mắn, quà sinh
         /// nhật): mã ngẫu nhiên theo tiền tố, MaxUses = 1, gắn SĐT chủ sở hữu
         /// để không ai dùng ké. Chỉ các service nội bộ gọi.
@@ -948,7 +985,9 @@ namespace PhuThuongStickyRice.Application.Discounts
                 }
             }
 
-            return prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, GeneratedCodeRandomPartLength).ToUpperInvariant();
+            // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
+            // operator thay Substring(0, N) — ToString("N") dài 32 ký tự ≥ 6.
+            return prefix + "-" + Guid.NewGuid().ToString("N")[..GeneratedCodeRandomPartLength].ToUpperInvariant();
         }
 
         /// <summary>
