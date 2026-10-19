@@ -20,11 +20,17 @@ namespace PhuThuongStickyRice.Persistence.Repositories
             LazyServiceProvider = lazyServiceProvider;
         }
 
+        /// <summary>
+        /// Nạp 1 đơn theo mã đơn, KÈM Lines. Cả 2 nơi dùng (tra cứu đơn cho
+        /// khách, khách sửa số lượng món) đều cần Lines; từ khi bỏ AutoInclude
+        /// (perf 0f1d6b8) thiếu Include ở đây làm trang tra cứu không hiện món
+        /// và UpdateLineQuantities luôn ném "Đơn hàng phải có ít nhất một món."
+        /// </summary>
         public async Task<Order> GetByOrderNumberAsync(string orderNumber, CancellationToken cancellationToken = default)
         {
             var queryable = await GetQueryableAsync();
             return await AsyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.OrderNumber == orderNumber), cancellationToken);
+                queryable.Include(x => x.Lines).Where(x => x.OrderNumber == orderNumber), cancellationToken);
         }
 
         public async Task<bool> ExistsWithOrderNumberAsync(string orderNumber, CancellationToken cancellationToken = default)

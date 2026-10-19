@@ -90,7 +90,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                             if (string.IsNullOrEmpty(item.LineKey))
                             {
                                 item.LineKey = BuildLineKey(
-                                    item.ProductId, item.SizeOptionId,
+                                    item.ProductId, item.SizeOptionId, item.SizeName,
                                     item.ToppingIds, item.IsCombo);
                             }
 
@@ -146,7 +146,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             string imageUrl = null)
         {
             toppingIds ??= new List<Guid>();
-            var key = BuildLineKey(productId, sizeOptionId, toppingIds, isCombo);
+            var key = BuildLineKey(productId, sizeOptionId, sizeName, toppingIds, isCombo);
 
             var existing = _items.FirstOrDefault(x => x.LineKey == key);
             if (existing == null)
@@ -338,17 +338,23 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// Khóa định danh 1 dòng giỏ: món (hoặc combo) + size + tập topping.
         /// Id topping được sắp xếp trước khi ghép chuỗi — khách tick topping theo
         /// thứ tự nào cũng ra cùng 1 key, tránh tạo dòng trùng cho cùng cấu hình.
+        /// Khi không có SizeOptionId (dòng "Đặt lại" từ lịch sử đơn chỉ lưu tên
+        /// size) thì key theo tên size đã chuẩn hoá — 2 dòng cùng món khác size
+        /// ("Nhỏ"×2, "Lớn"×1) không bị gộp nhầm thành 1 dòng sai giá.
         /// </summary>
         public static string BuildLineKey(
             Guid productId,
             Guid? sizeOptionId,
+            string sizeName,
             IEnumerable<Guid> toppingIds,
             bool isCombo)
         {
             var toppings = toppingIds == null
                 ? string.Empty
                 : string.Join(",", toppingIds.OrderBy(x => x).Select(x => x.ToString("N")));
-            return $"{(isCombo ? "combo" : "product")}:{productId:N}:{sizeOptionId?.ToString("N")}:{toppings}";
+            var sizePart = sizeOptionId?.ToString("N")
+                ?? "name:" + (sizeName ?? string.Empty).Trim().ToLowerInvariant();
+            return $"{(isCombo ? "combo" : "product")}:{productId:N}:{sizePart}:{toppings}";
         }
 
         private void NotifyChanged()
