@@ -13,6 +13,15 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Filters
         private readonly ILogger<GlobalExceptionFilter> _logger;
         private readonly GlobalExceptionFilterOptions _options;
 
+        // CA1848: dùng LoggerMessage delegate thay LoggerExtensions.LogError —
+        // template biên dịch sẵn, không parse lại mỗi lần log. Nội dung và
+        // exception kèm theo giữ nguyên.
+        private static readonly Action<ILogger, long, int, Exception> LogUnhandledException =
+            LoggerMessage.Define<long, int>(
+                LogLevel.Error,
+                new EventId(1, "UnhandledException"),
+                "[{Ticks}-{ThreadId}]");
+
         public GlobalExceptionFilter(ILogger<GlobalExceptionFilter> logger,
             IOptionsSnapshot<GlobalExceptionFilterOptions> options)
         {
@@ -34,8 +43,7 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Filters
             {
                 // Message template có parameter (thay vì $"...") để correlation id
                 // thành field có cấu trúc trong log, tra cứu được — message render ra giống hệt.
-                _logger.LogError(context.Exception, "[{Ticks}-{ThreadId}]",
-                    DateTime.UtcNow.Ticks, Environment.CurrentManagedThreadId);
+                LogUnhandledException(_logger, DateTime.UtcNow.Ticks, Environment.CurrentManagedThreadId, context.Exception);
 
                 if (_options.DetailLevel == GlobalExceptionDetailLevel.Throw)
                 {
