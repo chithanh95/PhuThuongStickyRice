@@ -46,6 +46,9 @@ namespace PhuThuongStickyRice.Application.Inventory
         // Làm tròn lượng nếp lên bước 0.5 kg.
         private const double RoundingStepKg = 0.5;
 
+        // Quy đổi gram → kg trong công thức dự báo (suất × gram/suất → kg).
+        private const double GramsPerKilogram = 1000.0;
+
         private readonly IRepository<Order, Guid> _orders;
         private readonly IShopSettingAppService _shopSettings;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -153,7 +156,7 @@ namespace PhuThuongStickyRice.Application.Inventory
             DateTime tomorrow, int weekday, int gramsPerPortion,
             double averagePortions, int weeksWithData)
         {
-            var nepKg = Math.Ceiling(averagePortions * gramsPerPortion / 1000.0 / RoundingStepKg) * RoundingStepKg;
+            var nepKg = Math.Ceiling(averagePortions * gramsPerPortion / GramsPerKilogram / RoundingStepKg) * RoundingStepKg;
             var weekdayName = CultureInfo.GetCultureInfo("vi-VN").DateTimeFormat.DayNames[weekday];
 
             return new IngredientForecastDto

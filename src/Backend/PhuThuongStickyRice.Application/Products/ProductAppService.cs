@@ -93,6 +93,20 @@ namespace PhuThuongStickyRice.Application.Products
         /// </summary>
         private const int DailyRemainingCacheSeconds = 60;
 
+        // perf-hunt 2026-10-19: trần kích thước 1 trang danh sách sản phẩm —
+        // GetProductsInput không có [Range] nên client có thể gửi
+        // MaxResultCount=int.MaxValue, gây query DB nặng + phình cache
+        // (key public chứa nguyên giá trị skip/max do client truyền).
+        private const int MaxListPageSize = 200;
+
+        // Log ghi 1 dòng mỗi field đổi mỗi lần sửa — bảng chỉ tăng, không
+        // bao giờ nạp hết; xem lịch sử 1 món chỉ cần 200 dòng mới nhất.
+        private const int MaxChangeLogRows = 200;
+
+        // Độ dài tối đa của mô tả món trong snapshot nhật ký thay đổi
+        // (item 148): mô tả dài không cần lưu hết, 200 ký tự đủ tra cứu.
+        private const int SnapshotDescriptionMaxLength = 200;
+
         private readonly IProductRepository _products;
         private readonly IDomainEvents _domainEvents;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -154,7 +168,7 @@ namespace PhuThuongStickyRice.Application.Products
             // Shop chỉ có vài chục món, admin dùng 10/trang -> clamp 200 an toàn.
             input ??= new GetProductsInput();
             input.SkipCount = Math.Max(0, input.SkipCount);
-            input.MaxResultCount = Math.Clamp(input.MaxResultCount, 1, 200);
+            input.MaxResultCount = Math.Clamp(input.MaxResultCount, 1, MaxListPageSize);
 
             // Item 101: the public shop path (status=Active) is served from a
             // 5-minute in-memory cache. The admin list (no status filter)
@@ -576,7 +590,7 @@ namespace PhuThuongStickyRice.Application.Products
             var logs = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.ProductId == productId)
                     .OrderByDescending(x => x.ChangedAt)
-                    .Take(200));
+                    .Take(MaxChangeLogRows));
 
             return _objectMapper.Map<List<ProductChangeLog>, List<ProductChangeLogDto>>(logs);
         }
@@ -589,7 +603,7 @@ namespace PhuThuongStickyRice.Application.Products
             return new Dictionary<string, string>
             {
                 ["Tên món"] = product.Name,
-                ["Mô tả"] = Truncate(product.Description, 200),
+                ["Mô tả"] = Truncate(product.Description, SnapshotDescriptionMaxLength),
                 ["Giá bán"] = FormatMoney(product.Price.Amount),
                 // Item 256: log cả giá KM để tra "sao hôm nay đắt hơn".
                 ["Giá KM"] = product.PromoPrice.HasValue

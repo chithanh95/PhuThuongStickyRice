@@ -75,10 +75,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         {
             ArgumentNullException.ThrowIfNull(dto);
 
-            if (!PhoneNumber.IsValidVn(dto.CustomerPhone))
-            {
-                throw new Domain.Exceptions.DomainException("Số điện thoại không đúng định dạng (VD: 0901234567).");
-            }
+            EnsureValidVnPhone(dto.CustomerPhone);
 
             var entity = new QuoteRequest
             {
@@ -191,10 +188,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         {
             ArgumentNullException.ThrowIfNull(dto);
 
-            if (!PhoneNumber.IsValidVn(dto.CustomerPhone))
-            {
-                throw new Domain.Exceptions.DomainException("Số điện thoại không đúng định dạng (VD: 0901234567).");
-            }
+            EnsureValidVnPhone(dto.CustomerPhone);
 
             var type = (dto.ReminderType ?? string.Empty).Trim();
             if (!string.Equals(type, "Ram", StringComparison.OrdinalIgnoreCase)
@@ -238,8 +232,6 @@ namespace PhuThuongStickyRice.Application.Catalog
 
         /// <summary>
         /// Admin xem đăng ký nhắc cúng, mới nhất lên trước.
-        /// perf-hunt 2026-10-19: Take(200) ở phía server — bảng nhắc cúng
-        /// tăng vô hạn theo thời gian, không bao giờ materialize toàn bảng.
         /// </summary>
         /// <returns>Danh sách đăng ký nhắc cúng (tối đa 200 bản ghi mới nhất).</returns>
         [Authorize(Roles = "Admin")]
@@ -247,7 +239,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         {
             var queryable = await _reminders.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.CreatedAt).Take(200));
+                queryable.OrderByDescending(x => x.CreatedAt).Take(MaxReminderRows));
             return items.Select(MapReminderToDto).ToList();
         }
 
@@ -285,6 +277,25 @@ namespace PhuThuongStickyRice.Application.Catalog
         /// </summary>
         private static string TrimToNull(string value) =>
             string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+        /// <summary>
+        /// Chặn sớm SĐT Việt Nam không hợp lệ ở cả 2 luồng public (gửi báo
+        /// giá, đăng ký nhắc cúng): gom 1 chỗ để thông điệp lỗi và quy tắc
+        /// validate không lệch nhau khi sửa sau này.
+        /// </summary>
+        /// <param name="phone">SĐT khách nhập.</param>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi SĐT sai định dạng.</exception>
+        private static void EnsureValidVnPhone(string phone)
+        {
+            if (!PhoneNumber.IsValidVn(phone))
+            {
+                throw new Domain.Exceptions.DomainException("Số điện thoại không đúng định dạng (VD: 0901234567).");
+            }
+        }
+
+        // perf-hunt 2026-10-19: bảng nhắc cúng tăng vô hạn theo thời gian —
+        // không bao giờ materialize toàn bảng, chỉ lấy N mới nhất.
+        private const int MaxReminderRows = 200;
 
         private static QuoteRequestDto MapToDto(QuoteRequest entity)
         {
