@@ -87,13 +87,13 @@ namespace PhuThuongStickyRice.Application.Reports
 
         /// <summary>
         /// Tuần đầy đủ Thứ Hai–Chủ Nhật gần nhất (theo ngày Việt Nam) tính từ
-        /// <paramref name="vnToday"/>. Vào sáng Thứ Hai thì đây là tuần vừa kết thúc.
+        /// <paramref name="vietnamToday"/>. Vào sáng Thứ Hai thì đây là tuần vừa kết thúc.
         /// </summary>
-        /// <param name="vnToday">Ngày hôm nay theo giờ Việt Nam.</param>
+        /// <param name="vietnamToday">Ngày hôm nay theo giờ Việt Nam.</param>
         /// <returns>Ngày bắt đầu (Thứ Hai) và ngày kết thúc (Chủ Nhật) của tuần.</returns>
-        public static (DateTime Start, DateTime End) LastFullWeek(DateTime vnToday)
+        public static (DateTime Start, DateTime End) LastFullWeek(DateTime vietnamToday)
         {
-            var today = vnToday.Date;
+            var today = vietnamToday.Date;
             var daysSinceMonday = ((int)today.DayOfWeek + (DaysPerWeek - 1)) % DaysPerWeek;
             var start = today.AddDays(-daysSinceMonday - DaysPerWeek);
             return (start, start.AddDays(DaysPerWeek - 1));
