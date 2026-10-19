@@ -44,8 +44,11 @@ namespace PhuThuongStickyRice.Application.Customer
         public virtual async Task<List<CorporateClientDto>> GetListAsync()
         {
             var queryable = await _clients.GetQueryableAsync();
+            // perf-hunt 2026-10-19 (run 14:15): chặn số dòng ở server (Take 200)
+            // như các admin list khác — bảng khách hàng doanh nghiệp tăng
+            // theo thời gian, không nên materialize toàn bộ mỗi lần mở trang.
             var list = await _asyncExecuter.ToListAsync(
-                queryable.OrderBy(x => x.CompanyName));
+                queryable.OrderBy(x => x.CompanyName).Take(200));
             return list.Select(MapToDto).ToList();
         }
 

@@ -126,7 +126,11 @@ namespace PhuThuongStickyRice.Application.Catalog
             }
 
             var totalCount = await _asyncExecuter.LongCountAsync(query);
-            var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
+            // perf-hunt 2026-10-19 (run 14:15): chặn MaxResultCount do client
+            // truyền (input không có [Range]) ở server — không chặn thì 1
+            // request có thể materialize toàn bộ bảng QuoteRequests.
+            var items = await _asyncExecuter.ToListAsync(
+                query.Skip(input.SkipCount).Take(Math.Clamp(input.MaxResultCount, 1, 200)));
 
             return new PagedResultDto<QuoteRequestDto>(
                 totalCount,

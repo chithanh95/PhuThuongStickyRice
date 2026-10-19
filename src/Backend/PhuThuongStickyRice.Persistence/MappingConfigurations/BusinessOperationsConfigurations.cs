@@ -52,7 +52,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.Name).HasMaxLength(CustomerPhoto.NameMaxLength);
             builder.Property(x => x.IsApproved).IsRequired();
             builder.Property(x => x.CreatedAt).IsRequired();
-            builder.HasIndex(x => x.IsApproved);
+            // perf-hunt 2026-10-19 (run 14:15): public gallery (cache-miss) và
+            // admin list đều WHERE IsApproved + ORDER BY CreatedAt DESC;
+            // UGC tăng vô hạn. Composite thay index đơn IsApproved: equality
+            // trên IsApproved rồi sort ngay trên index. Non-unique, lookup-only.
+            builder.HasIndex(x => new { x.IsApproved, x.CreatedAt })
+                .HasDatabaseName("IX_CustomerPhotos_IsApproved_CreatedAt");
         }
     }
 

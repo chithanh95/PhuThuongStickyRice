@@ -18,6 +18,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             builder.HasIndex(x => new { x.IsActive, x.CreatedDateTime })        .HasDatabaseName("IX_DiscountCodes_IsActive_CreatedDateTime");
 
+            // perf-hunt 2026-10-19 (run 14:15): admin list sort TRẦN theo
+            // CreatedDateTime DESC + Take(500), không WHERE — composite
+            // (IsActive, CreatedDateTime) không phục vụ ORDER BY trần cột
+            // thứ 2 nên phải sort toàn bảng. Index đơn riêng cho ORDER BY.
+            // Bảng tăng vô hạn (spin/sinh nhật/reward-rule). Non-unique,
+            // lookup-only, không đổi nghiệp vụ.
+            builder.HasIndex(x => x.CreatedDateTime);
+
             // perf-hunt 2026-10-19 (run 13:55): GetUsableCodeAsync (OwnerPhone ==
             // phone, public checkout path) và GetPhonesWithUsableCodeAsync
             // (OwnerPhone IN (...), batch sinh nhật) đều lọc Code.StartsWith(prefix)

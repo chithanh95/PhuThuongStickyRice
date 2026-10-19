@@ -32,6 +32,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.Active).IsRequired();
             builder.Property(x => x.Notes).HasMaxLength(Subscription.NotesMaxLength);
             builder.Property(x => x.CreatedAt).IsRequired();
+
+            // perf-hunt 2026-10-19 (run 14:15): GetListAsync sort
+            // OrderByDescending(CreatedAt) + Take(200) mỗi lần admin mở trang;
+            // bảng gói đăng ký tăng dần. Index non-unique, lookup-only,
+            // không đổi nghiệp vụ.
+            builder.HasIndex(x => x.CreatedAt);
         }
     }
 }
