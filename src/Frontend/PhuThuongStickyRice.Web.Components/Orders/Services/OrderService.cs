@@ -87,8 +87,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             var parts = BuildOrderFilterParts(searchTerm, status, shipperId, fromDate, toDate, cashCollected, vipOnly);
 
             var query = parts.Count == 0 ? "" : "?" + string.Join("&", parts);
-            var baseAddress = _httpClient.BaseAddress?.ToString()?.TrimEnd('/');
-            return $"{baseAddress}/api/admin/orders/export{query}";
+            // Dùng ApiBaseAddress ở ApiClientBase thay vì lặp TrimEnd('/') (codequality-team 2026-10-20).
+            return $"{ApiBaseAddress}/api/admin/orders/export{query}";
         }
 
         /// <summary>
@@ -175,8 +175,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             AddDateRangeParams(parts, fromDate, toDate, "fromDate", "toDate");
 
             var query = parts.Count == 0 ? "" : "?" + string.Join("&", parts);
-            var baseAddress = _httpClient.BaseAddress?.ToString()?.TrimEnd('/');
-            return $"{baseAddress}/api/admin/orders/export-revenue{query}";
+            // Dùng ApiBaseAddress ở ApiClientBase thay vì lặp TrimEnd('/') (codequality-team 2026-10-20).
+            return $"{ApiBaseAddress}/api/admin/orders/export-revenue{query}";
         }
 
         /// <summary>Wave 6c (item 31): daily payment-channel reconciliation.</summary>
@@ -367,8 +367,8 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             }
 
             var query = parts.Count == 0 ? "" : "?" + string.Join("&", parts);
-            var baseAddress = _httpClient.BaseAddress?.ToString()?.TrimEnd('/');
-            return $"{baseAddress}/api/admin/customer-care/customers/export{query}";
+            // Dùng ApiBaseAddress ở ApiClientBase thay vì lặp TrimEnd('/') (codequality-team 2026-10-20).
+            return $"{ApiBaseAddress}/api/admin/customer-care/customers/export{query}";
         }
 
         /// <summary>

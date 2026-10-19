@@ -266,8 +266,9 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         /// <returns>URL tuyệt đối tới file PNG.</returns>
         public string GetTableQrPngUrl(Guid id)
         {
-            var baseUri = _httpClient.BaseAddress?.ToString().TrimEnd('/') ?? string.Empty;
-            return $"{baseUri}/api/tableqrs/{id:D}/png";
+            // Dùng ApiBaseAddress ở ApiClientBase thay vì lặp TrimEnd('/')
+            // (codequality-team 2026-10-20).
+            return $"{ApiBaseAddress}/api/tableqrs/{id:D}/png";
         }
 
         // ---- Profit report (item 84) ----
