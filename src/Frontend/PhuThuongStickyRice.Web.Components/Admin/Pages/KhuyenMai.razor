@@ -64,7 +64,7 @@
                                         </td>
                                         <td>
                                             <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEdit(p)">Sửa</button>
-                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(p)">Xóa</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(p)">Xóa</button>
                                         </td>
                                     </tr>
                                 }
@@ -142,6 +142,12 @@
     </div>
 }
 
+<ConfirmDialog @ref="DeleteDialog" Title="Xóa khuyến mãi" YesText="Xóa" NoText="Hủy" ConfirmEventCallback="ConfirmedDelete">
+    <Message>
+        Bạn có chắc muốn xóa chương trình <strong>@_deleting?.Name</strong>? Khuyến mãi đang chạy sẽ dừng áp dụng ngay và không thể hoàn tác.
+    </Message>
+</ConfirmDialog>
+
 @code {
     private bool _loading = true;
     private bool _showForm;
@@ -150,6 +156,9 @@
     private List<PromotionModel> _promotions = new();
     private PromotionModel _editing;
     private PromotionModel _form = new();
+
+    private ConfirmDialog DeleteDialog;
+    private PromotionModel _deleting;
 
     private readonly List<(int Value, string Name)> _days = new()
     {
@@ -233,13 +242,35 @@
         _saving = false;
     }
 
-    private async Task Delete(PromotionModel p)
+    /// <summary>
+    /// Hỏi xác nhận trước khi xóa khuyến mãi giờ vàng (bug hunt 2026-10-19:
+    /// trước đây xóa ngay không hỏi + nuốt lỗi im lặng). Khuyến mãi đang chạy
+    /// ảnh hưởng giá toàn site nên bấm nhầm rất nguy hiểm.
+    /// </summary>
+    private void AskDelete(PromotionModel p)
     {
+        _deleting = p;
+        _error = null;
+        DeleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete()
+    {
+        if (_deleting == null)
+        {
+            return;
+        }
+
         try
         {
-            await AdminOperationsService.DeletePromotionAsync(p.Id);
+            await AdminOperationsService.DeletePromotionAsync(_deleting.Id);
+            DeleteDialog.Close();
+            _deleting = null;
             await Load();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
     }
 }

@@ -18,6 +18,16 @@
     </ol>
 </div>
 
+@if (!string.IsNullOrEmpty(_actionError))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @_actionError
+        <button type="button" class="close" @onclick="() => _actionError = null" aria-label="Đóng">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
 <div class="card mb-3">
     <div class="card-body">
         <h4 class="card-title">Bộ lọc đơn hàng</h4>
@@ -560,6 +570,9 @@ else
     private bool _savingNote;
     private string _noteMessage;
 
+    /// <summary>Lỗi từ các thao tác đổi trạng thái / xác nhận thanh toán (bug hunt 2026-10-19).</summary>
+    private string _actionError;
+
     // Wave 6c (item 34): status timeline of the expanded order.
     private List<OrderStatusHistoryModel> _statusHistory;
     private bool _historyLoading;
@@ -932,14 +945,49 @@ else
 
     private async Task ChangeStatus(OrderModel order, string status)
     {
-        await OrderService.UpdateStatusAsync(order.Id, status);
-        await LoadOrders(_page);
+        _actionError = null;
+        try
+        {
+            await OrderService.UpdateStatusAsync(order.Id, status);
+            await LoadOrders(_page);
+        }
+        catch (Exception ex)
+        {
+            _actionError = "Đổi trạng thái đơn thất bại: " + ex.Message;
+        }
     }
 
     private async Task ConfirmPayment(OrderModel order)
     {
-        await OrderService.ConfirmPaymentAsync(order.Id);
-        await LoadOrders(_page);
+        _actionError = null;
+        try
+        {
+            await OrderService.ConfirmPaymentAsync(order.Id);
+            await LoadOrders(_page);
+        }
+        catch (Exception ex)
+        {
+            _actionError = "Xác nhận thanh toán thất bại: " + ex.Message;
+        }
+    }
+
+    /// <summary>
+    /// Nút đổi trạng thái trên từng hàng: nút "Hủy" hỏi xác nhận như phím
+    /// tắt (tránh bấm nhầm hủy đơn), các nút còn lại đổi thẳng.
+    /// </summary>
+    private async Task OnStatusButtonClick(OrderModel order, string status)
+    {
+        if (status == "Cancelled")
+        {
+            var ok = await JSRuntime.InvokeAsync<bool>("confirm",
+                $"Hủy đơn {order.OrderNumber} của {order.CustomerName}?");
+            if (!ok)
+            {
+                return;
+            }
+        }
+
+        await ChangeStatus(order, status);
     }
 
     /// <summary>Item 82: assigns (or unassigns) a shipper to the order.</summary>
@@ -1160,7 +1208,7 @@ else
             var css = status == "Cancelled" ? "btn btn-sm btn-outline-danger mr-1" : "btn btn-sm btn-outline-primary mr-1";
             builder.OpenElement(seq++, "button");
             builder.AddAttribute(seq++, "class", css);
-            builder.AddAttribute(seq++, "onclick", Microsoft.AspNetCore.Components.EventCallback.Factory.Create(this, () => ChangeStatus(order, status)));
+            builder.AddAttribute(seq++, "onclick", Microsoft.AspNetCore.Components.EventCallback.Factory.Create(this, () => OnStatusButtonClick(order, status)));
             builder.AddContent(seq++, ButtonLabel(status));
             builder.CloseElement();
         }

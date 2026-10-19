@@ -133,7 +133,8 @@
                                         {
                                             <input type="number" class="form-control form-control-sm d-inline-block"
                                                    style="width: 110px;" step="5000" min="5000" max="1000000"
-                                                   @bind="_giftAmount" />
+                                                   value="@GiftAmountFor(b.UserId)"
+                                                   @onchange="(e) => SetGiftAmount(b.UserId, e.Value)" />
                                             <span class="small text-muted">₫</span>
                                         }
                                     </td>
@@ -502,7 +503,24 @@ else
     private bool _birthdayBusy;
     private string _birthdayMsg;
     private Guid? _giftingUserId;
-    private decimal _giftAmount = 25000;
+    /// <summary>
+    /// Mệnh giá quà sinh nhật theo từng khách (mỗi hàng 1 ô riêng — bug hunt
+    /// 2026-10-19: trước đây mọi hàng bind chung 1 biến _giftAmount).
+    /// </summary>
+    private const decimal DefaultGiftAmount = 25000m;
+
+    private readonly Dictionary<Guid, decimal> _giftAmounts = new();
+
+    private decimal GiftAmountFor(Guid userId) =>
+        _giftAmounts.TryGetValue(userId, out var v) ? v : DefaultGiftAmount;
+
+    private void SetGiftAmount(Guid userId, object value)
+    {
+        if (decimal.TryParse(value?.ToString(), out var v) && v >= 5000 && v <= 1000000)
+        {
+            _giftAmounts[userId] = v;
+        }
+    }
     private string _giftResult;
 
     // Item 132: tạo voucher sinh nhật hàng loạt.
@@ -737,7 +755,7 @@ else
         _giftingUserId = member.UserId;
         try
         {
-            var result = await CareService.GrantBirthdayGiftAsync(member.UserId, _giftAmount);
+            var result = await CareService.GrantBirthdayGiftAsync(member.UserId, GiftAmountFor(member.UserId));
             member.HasGiftThisYear = true;
             member.GiftCode = result.Code;
             _giftResult = $"🎁 Đã tạo mã quà {result.Code} (giảm {result.DiscountAmount:N0} ₫, HSD {(result.ExpiresAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "?")}) cho SĐT {member.Phone}. Hãy đọc mã cho khách qua Zalo/điện thoại.";
