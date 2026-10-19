@@ -2183,3 +2183,93 @@
     }
 }
 /* ===== END UIUX-1945 A1 ===== */
+/* ===== UIUX-2135 A1 (redo sau git reset --hard) ===== */
+
+/* ------------------------------------------------------------
+   UIUX 21:35 A1-fix1: /cung-gio 5 o nhap 38px + chu <16px -> iOS auto-zoom; DatTiec/DatCung/HoTro da fix, CungGio bi sot
+   Vấn đề: các ô nhập #cg-name, #cg-phone, #cg-date, #cg-qty cao ~38px
+   (<44px) và chữ nhỏ hơn 16px → iPhone tự động zoom vào khi chạm
+   focus, làm vỡ bố cục form. #cg-notes (textarea rows=3) chỉ bị
+   lỗi chữ nhỏ, không nâng chiều cao (giữ chiều cao mặc định).
+   (Verify: CungGio.razor:37/47/58/69/95)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    #cg-name, #cg-phone, #cg-date, #cg-qty {
+        min-height: 44px;
+        font-size: 16px;
+    }
+    #cg-notes {
+        font-size: 16px;
+    }
+}
+
+/* ------------------------------------------------------------
+   UIUX 21:35 A1-fix2: /goi-tra-truoc 2 tab The xoi/Goi tuan ~40px
+   Vấn đề: 2 nút tab trong `.nav-pills[aria-label="Loại gói trả trước"]`
+   cao ~40px (<44px) — nút bấm quá nhỏ, khách lớn tuổi khó chạm trúng.
+   Giải pháp: nâng vùng bấm tối thiểu 44px và căn giữa chữ.
+   (Verify: GoiTraTruoc.razor:9 — ul.nav.nav-pills aria-label="Loại gói trả trước")
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .nav-pills[aria-label="Loại gói trả trước"] .nav-link {
+        min-height: 44px;
+        text-align: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   UIUX 21:35 A1-fix3: /cho nut x dong overlay phong to ve .cho-zoom-close khong co CSS (~22px)
+   Vấn đề: nút "×" đóng overlay phóng to vé (#cho-zoom-overlay,
+   position: fixed) không có CSS riêng nên chỉ ~22px — khách lớn tuổi
+   khó bấm để thoát overlay (đây là cách đóng duy nhất ngoài chạm nền).
+   (Verify: HangCho.razor:206 — button.cho-zoom-close con trực tiếp
+   của .cho-zoom-overlay có position: fixed; position: absolute neo
+   vào góc trên-phải overlay)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .cho-zoom-close {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 44px;
+        height: 44px;
+        font-size: 1.5rem;
+        color: #fff;
+        background: rgba(0,0,0,.5);
+        border: none;
+        border-radius: 50%;
+        line-height: 1;
+        cursor: pointer;
+    }
+}
+
+/* ------------------------------------------------------------
+   UIUX 21:35 A1-fix4: /checkout nut 'Xoa thong tin da nho' btn-link btn-sm p-0 ~24px
+   Vấn đề: nút "🗑 Xóa thông tin đã nhớ" (btn-link btn-sm p-0) cao ~24px
+   (<44px) ngay dưới checkbox "Nhớ tôi" — khó chạm, dễ chạm nhầm
+   checkbox cạnh đó.
+   (Verify: Checkout.razor:432 — button.btn.btn-link.btn-sm.p-0 ngay
+   sau .form-check chứa #co-remember)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .form-check:has(#co-remember) + button.btn-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 12px;
+    }
+}
+
+/* ------------------------------------------------------------
+   UIUX 21:35 A1-fix5: /dat-so-luong-lon nut 'Tai lai' btn-sm ~31px trong alert loi - loi thoat duy nhat
+   Vấn đề: khi tải danh sách món thất bại, nút "Tải lại" (btn-sm, ~31px)
+   là lối thoát duy nhất khỏi trạng thái lỗi — phải đủ 44px trên mobile.
+   (Verify: DatSoLuongLon.razor:168-171 — .alert.alert-warning.d-flex
+   > button.btn.btn-sm.btn-outline-primary.ms-2)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert-warning.d-flex > .btn-sm.ms-2 {
+        min-height: 44px;
+    }
+}
+/* ===== END UIUX-2135 A1 ===== */
