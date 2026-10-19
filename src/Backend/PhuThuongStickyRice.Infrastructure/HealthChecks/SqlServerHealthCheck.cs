@@ -6,18 +6,29 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Infrastructure.HealthChecks
 {
+    /// <summary>
+    /// Health check cho SQL Server: mở kết nối và chạy một câu truy vấn probe
+    /// nhẹ (vd: "SELECT 1"). Báo Healthy khi query chạy thành công, ngược lại
+    /// trả về FailureStatus đã đăng ký kèm exception để dễ chẩn đoán.
+    /// </summary>
     public class SqlServerHealthCheck : IHealthCheck
     {
         private readonly string _connectionString;
 
-        private readonly string _sql;
+        private readonly string _healthCheckSql;
 
-        public SqlServerHealthCheck(string connectionString, string sql)
+        /// <summary>Khởi tạo health check SQL Server.</summary>
+        /// <param name="connectionString">Chuỗi kết nối tới database cần kiểm tra.</param>
+        /// <param name="healthCheckSql">Câu truy vấn probe nhẹ (vd: "SELECT 1").</param>
+        public SqlServerHealthCheck(string connectionString, string healthCheckSql)
         {
             _connectionString = connectionString ?? throw new ArgumentNullException("connectionString");
-            _sql = sql ?? throw new ArgumentNullException("sql");
+            _healthCheckSql = healthCheckSql ?? throw new ArgumentNullException("healthCheckSql");
         }
 
+        /// <summary>
+        /// Mở kết nối SQL Server và chạy câu probe; trả về Healthy khi thành công.
+        /// </summary>
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             try
@@ -29,7 +40,7 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
                 await connection.OpenAsync(cancellationToken);
                 await using (SqlCommand command = connection.CreateCommand())
                 {
-                    command.CommandText = _sql;
+                    command.CommandText = _healthCheckSql;
                     await command.ExecuteScalarAsync(cancellationToken);
                 }
 

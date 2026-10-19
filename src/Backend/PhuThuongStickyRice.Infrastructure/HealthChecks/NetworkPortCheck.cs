@@ -4,8 +4,16 @@ using System.Threading;
 
 namespace PhuThuongStickyRice.Infrastructure.HealthChecks
 {
+    /// <summary>
+    /// Kiểm tra cổng TCP (host:port) có chấp nhận kết nối không. Dùng làm
+    /// startup gate — vd: Migrator chờ SQL Server sẵn sàng trước khi migrate.
+    /// </summary>
     public class NetworkPortCheck
     {
+        /// <summary>
+        /// Trả true khi cổng TCP chấp nhận kết nối; false khi timeout/kết nối thất bại.
+        /// </summary>
+        /// <param name="address">Địa chỉ dạng "host:port" (vd: "localhost,1433" phải viết "localhost:1433").</param>
         public static bool IsReady(string address)
         {
             // Fail-fast với message rõ ràng thay vì IndexOutOfRangeException khó hiểu
@@ -40,7 +48,13 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
             }
         }
 
-        public static void Wait(string address, int retries = 0, int timeOut = 30000)
+        /// <summary>
+        /// Chờ cổng TCP sẵn sàng, thử lại tối đa <paramref name="retries"/> lần.
+        /// </summary>
+        /// <param name="address">Địa chỉ dạng "host:port".</param>
+        /// <param name="retries">Số lần thử lại sau khi lần đầu thất bại (0 = chỉ thử 1 lần).</param>
+        /// <param name="timeout">Khoảng nghỉ giữa các lần thử (ms).</param>
+        public static void Wait(string address, int retries = 0, int timeout = 30000)
         {
             int count = 0;
             do
@@ -52,7 +66,7 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
                 }
 
                 count++;
-                Thread.Sleep(timeOut);
+                Thread.Sleep(timeout);
             }
             while (count <= retries);
         }

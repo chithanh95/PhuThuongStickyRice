@@ -26,13 +26,13 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
         {
             Timeout = TimeSpan.FromSeconds(15)
         };
-        private readonly string _uri;
+        private readonly string _url;
 
         /// <summary>Khởi tạo health check cho URL cần ping.</summary>
-        /// <param name="uri">URL đầy đủ sẽ được GET khi check.</param>
-        public HttpHealthCheck(string uri)
+        /// <param name="url">URL đầy đủ sẽ được GET khi check.</param>
+        public HttpHealthCheck(string url)
         {
-            _uri = uri;
+            _url = url;
         }
 
         /// <summary>
@@ -44,19 +44,19 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
         {
             try
             {
-                using var response = await _httpClient.GetAsync(_uri, cancellationToken);
+                using var response = await _httpClient.GetAsync(_url, cancellationToken);
                 if (response.IsSuccessStatusCode)
                 {
-                    return HealthCheckResult.Healthy($"Uri: '{_uri}', StatusCode: '{response.StatusCode}'");
+                    return HealthCheckResult.Healthy($"Url: '{_url}', StatusCode: '{response.StatusCode}'");
                 }
                 else
                 {
-                    return new HealthCheckResult(context.Registration.FailureStatus, $"Uri: '{_uri}', StatusCode: '{response.StatusCode}'");
+                    return new HealthCheckResult(context.Registration.FailureStatus, $"Url: '{_url}', StatusCode: '{response.StatusCode}'");
                 }
             }
             catch (Exception exception)
             {
-                return new HealthCheckResult(context.Registration.FailureStatus, $"Uri: '{_uri}', Exception: '{exception.Message}'", exception);
+                return new HealthCheckResult(context.Registration.FailureStatus, $"Url: '{_url}', Exception: '{exception.Message}'", exception);
             }
         }
     }
