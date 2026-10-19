@@ -156,14 +156,20 @@ namespace PhuThuongStickyRice.Application.Shop
         private async Task<CheckIn> FindAsync(string phone, DateTime date)
         {
             var queryable = await _checkIns.GetQueryableAsync();
+
+            // [codequality-practices 2026-10-19] Truyền predicate thẳng vào
+            // FirstOrDefaultAsync thay vì bọc queryable.Where(...) thừa.
             return await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Phone == phone && x.Date == date));
+                queryable, x => x.Phone == phone && x.Date == date);
         }
 
         private async Task<LoyaltyAccount> FindLoyaltyAsync(string phone)
         {
             var queryable = await _loyaltyAccounts.GetQueryableAsync();
-            return await _asyncExecuter.FirstOrDefaultAsync(queryable.Where(x => x.Phone == phone));
+
+            // [codequality-practices 2026-10-19] Truyền predicate thẳng vào
+            // FirstOrDefaultAsync thay vì bọc queryable.Where(...) thừa.
+            return await _asyncExecuter.FirstOrDefaultAsync(queryable, x => x.Phone == phone);
         }
 
         private async Task<LoyaltyAccount> GetOrCreateLoyaltyAsync(string phone)

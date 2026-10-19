@@ -371,7 +371,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private async Task<WalletAccount?> FindAsync(string phone)
         {
             var queryable = await _wallets.GetQueryableAsync();
-            return await _asyncExecuter.FirstOrDefaultAsync(queryable.Where(x => x.Phone == phone));
+
+            // [codequality-practices 2026-10-19] Truyền predicate thẳng vào
+            // FirstOrDefaultAsync thay vì bọc queryable.Where(...) thừa.
+            return await _asyncExecuter.FirstOrDefaultAsync(queryable, x => x.Phone == phone);
         }
 
         /// <summary>Tìm ví theo SĐT; chưa có thì tạo ví mới số dư 0 (để mọi SĐT đều có ví sẵn sàng dùng).</summary>

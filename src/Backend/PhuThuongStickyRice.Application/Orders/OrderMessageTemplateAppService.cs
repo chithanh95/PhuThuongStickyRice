@@ -196,8 +196,11 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             var queryable = await _templates.GetQueryableAsync();
+
+            // [codequality-practices 2026-10-19] Truyền predicate thẳng vào
+            // FirstOrDefaultAsync thay vì bọc queryable.Where(...) thừa.
             var template = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Status == normalized && x.IsActive));
+                queryable, x => x.Status == normalized && x.IsActive);
 
             if (template == null)
             {
