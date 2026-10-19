@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -115,13 +116,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 // "lines": null trong body sẽ ghi đè initializer thành null —
                 // không guard sẽ NRE 500 tại .Select; để service trả 400 chuẩn
                 // (CreateAsync ném DomainException "Order must contain at least one line.").
-                Lines = (model.Lines ?? new System.Collections.Generic.List<CreateOrderLineRequestModel>())
+                Lines = (model.Lines ?? new List<CreateOrderLineRequestModel>())
                     .Select(x => new CreateOrderLineDto
                     {
                         ProductId = x.ProductId,
                         Quantity = x.Quantity,
                         SizeOptionId = x.SizeOptionId,
-                        ToppingIds = x.ToppingIds ?? new System.Collections.Generic.List<Guid>(),
+                        ToppingIds = x.ToppingIds ?? new List<Guid>(),
                         IsCombo = x.IsCombo,
                         Note = x.Note
                     })
@@ -432,7 +433,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                             LineId = x.LineId,
                             Quantity = x.Quantity
                         })
-                        .ToList() ?? new System.Collections.Generic.List<UpdateOrderLineQtyDto>()
+                        .ToList() ?? new List<UpdateOrderLineQtyDto>()
                 });
                 return Ok(order);
             }
@@ -520,7 +521,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 {
                     OrderNumber = model.OrderNumber,
                     CustomerPhone = model.CustomerPhone,
-                    Rating = model?.Rating ?? 0,
+                    Rating = model.Rating,
                     Comment = model!.Comment,
                     PhotoUrl = model.PhotoUrl,
                     Lines = model.Lines?
@@ -529,7 +530,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                             ProductId = x.ProductId,
                             Rating = x.Rating
                         })
-                        .ToList() ?? new System.Collections.Generic.List<SubmitReviewLineInput>()
+                        .ToList() ?? new List<SubmitReviewLineInput>()
                 });
                 return Ok(review);
             }
@@ -710,7 +711,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var result = await _orderAppService.SpinAsync(new SpinInput
                 {
-                    OrderId = model?.OrderId ?? Guid.Empty,
+                    OrderId = model.OrderId,
                     CustomerPhone = model!.CustomerPhone
                 });
                 return Ok(result);
@@ -875,7 +876,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var review = await _orderAppService.SetShipperRatingAsync(id, new SetShipperRatingDto
                 {
-                    Rating = model?.Rating ?? 0,
+                    Rating = model.Rating,
                     CustomerPhone = model!.CustomerPhone
                 });
                 return Ok(review);

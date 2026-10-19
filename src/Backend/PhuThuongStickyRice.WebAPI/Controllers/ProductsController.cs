@@ -226,7 +226,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> Reorder([FromBody] ReorderProductsModel model, CancellationToken cancellationToken = default)
         {
-            if (model?.Ids == null || model.Ids.Count == 0)
+            if (model.Ids == null || model.Ids.Count == 0)
             {
                 return BadRequest("Danh sách id trống.");
             }

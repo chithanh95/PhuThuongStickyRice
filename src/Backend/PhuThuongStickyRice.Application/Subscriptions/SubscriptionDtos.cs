@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Application.Subscriptions.DTOs
@@ -51,8 +52,8 @@ namespace PhuThuongStickyRice.Application.Subscriptions.DTOs
 
         public Guid? SizeOptionId { get; set; }
 
-        public System.Collections.Generic.List<Guid> ToppingIds { get; set; }
-            = new System.Collections.Generic.List<Guid>();
+        public List<Guid> ToppingIds { get; set; }
+            = new List<Guid>();
 
         [Range(1, 100)]
         public int Quantity { get; set; } = 1;
