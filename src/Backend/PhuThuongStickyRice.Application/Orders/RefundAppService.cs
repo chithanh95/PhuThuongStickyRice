@@ -14,6 +14,11 @@ using PhuThuongStickyRice.Application.Orders;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ hoàn tiền (admin): ghi nhận yêu cầu hoàn tiền,
+    /// xác nhận đã chi tiền, và báo cáo các đơn có yêu cầu hoàn hoặc đã
+    /// hoàn xong. Dòng tiền thực tế vẫn chi tay ngoài hệ thống.
+    /// </summary>
     public interface IRefundAppService : IApplicationService
     {
         /// <summary>Admin: orders with a refund request or a completed refund.</summary>

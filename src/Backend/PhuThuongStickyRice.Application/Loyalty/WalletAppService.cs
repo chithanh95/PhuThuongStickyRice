@@ -17,6 +17,11 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Loyalty
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ ví tiền theo SĐT: tra số dư, admin điều chỉnh tay,
+    /// trừ tiền khi tạo đơn (Charge) và hoàn tiền khi hủy đơn (Refund —
+    /// idempotent theo cặp SĐT + lý do, webhook gọi lặp vẫn an toàn).
+    /// </summary>
     public interface IWalletAppService : IApplicationService
     {
         /// <summary>Public: số dư ví theo SĐT (checkout hiện lựa chọn thanh toán bằng ví khi số dư ≥ tổng đơn).</summary>

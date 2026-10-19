@@ -19,6 +19,11 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Discounts
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ mã giảm giá: admin CRUD mã, khách kiểm tra/áp mã
+    /// ở checkout (Validate/Apply/EvaluateBest), hệ thống tăng lượt dùng
+    /// sau khi tạo đơn thành công và tự tạm dừng mã đã hết lượt (item 252).
+    /// </summary>
     public interface IDiscountAppService : IApplicationService
     {
         /// <summary>Admin: liệt kê 500 mã giảm giá mới nhất.</summary>

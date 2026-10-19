@@ -16,10 +16,29 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ thống kê dashboard (admin): tổng quan doanh thu/đơn
+    /// hàng, top món bán chạy, khách mới so với khách quay lại. Kết quả
+    /// được cache 45 giây vì gọi trên mỗi lần mở dashboard.
+    /// </summary>
     public interface IDashboardAppService : IApplicationService
     {
+        /// <summary>
+        /// Admin: thống kê tổng quan (doanh thu, số đơn, giá trị đơn trung
+        /// bình...) trong khoảng thời gian. Khoảng trống mặc định theo ngày.
+        /// </summary>
+        /// <param name="from">Từ ngày (null = không giới hạn dưới).</param>
+        /// <param name="to">Đến ngày (null = không giới hạn trên).</param>
+        /// <returns>DTO thống kê tổng quan dashboard.</returns>
         Task<DashboardStatsDto> GetStatsAsync(DateTime? from = null, DateTime? to = null);
 
+        /// <summary>
+        /// Admin: danh sách món bán chạy nhất trong khoảng thời gian.
+        /// </summary>
+        /// <param name="from">Từ ngày (null = không giới hạn dưới).</param>
+        /// <param name="to">Đến ngày (null = không giới hạn trên).</param>
+        /// <param name="top">Số món lấy (mặc định 5).</param>
+        /// <returns>Danh sách món kèm số lượng/doanh thu, bán nhiều nhất trước.</returns>
         Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5);
 
         /// <summary>

@@ -12,6 +12,11 @@ using PhuThuongStickyRice.Application.Orders;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ đối soát MoMo (admin): liệt kê các đơn thanh toán
+    /// qua MoMo theo trạng thái khớp tiền, đánh dấu tay đơn đã đối soát
+    /// xong (chỉ đổi cờ MoMoMatched, không đụng trạng thái đơn/thanh toán).
+    /// </summary>
     public interface IMoMoReconciliationAppService : IApplicationService
     {
         /// <summary>
