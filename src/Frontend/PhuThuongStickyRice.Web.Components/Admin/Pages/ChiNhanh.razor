@@ -91,7 +91,7 @@
        UIUX-1020 Agent4: @onkeydown để đóng modal bằng phím Escape — sự kiện
        bàn phím bubble từ các ô nhập bên trong lên đây, người dùng bàn phím
        không phải tab tới nút Đóng mới thoát được. *@
-    <div class="modal show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cn-modal-title" @onkeydown="ModalKeyDown">
+    <div class="modal show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cn-modal-title" @ref="_modalRef" @onkeydown="ModalKeyDown">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -145,6 +145,11 @@
 @code {
     private bool _loading = true;
     private bool _showForm;
+    @* UIUX-1020 Agent4 (a11y): đưa focus vào modal khi mở — screen reader đọc ngay
+       role="dialog" + tiêu đề, người dùng bàn phím tab từ trong modal đi ra thay vì
+       kẹt ở nút nền phía sau. tabindex="-1" trên lớp phủ cho phép FocusAsync() lập trình. *@
+    private ElementReference _modalRef;
+    private bool _focusModalOnOpen;
     private bool _saving;
     private string _error;
     private List<BranchModel> _branches = new();
@@ -175,6 +180,7 @@
         _form = new BranchModel { IsActive = true };
         _error = null;
         _showForm = true;
+        _focusModalOnOpen = true;
     }
 
     private void ShowEdit(BranchModel b)
@@ -183,9 +189,23 @@
         _form = new BranchModel { Id = b.Id, Name = b.Name, Address = b.Address, Phone = b.Phone, IsActive = b.IsActive };
         _error = null;
         _showForm = true;
+        _focusModalOnOpen = true;
     }
 
     private void HideForm() => _showForm = false;
+
+    /// <summary>
+    /// UIUX-1020 Agent4 (a11y): sau khi modal render xong, chuyển focus vào lớp phủ
+    /// modal (đã có tabindex="-1"). Cờ _focusModalOnOpen chỉ bật khi vừa mở modal.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusModalOnOpen && _showForm)
+        {
+            _focusModalOnOpen = false;
+            await _modalRef.FocusAsync();
+        }
+    }
 
     /// <summary>
     /// UIUX-1020 Agent4 (a11y): đóng modal khi người dùng bấm Escape (điều hướng bàn phím).

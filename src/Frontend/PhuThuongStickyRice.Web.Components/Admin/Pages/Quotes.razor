@@ -174,7 +174,7 @@ else
     @* UIUX-1019 Agent4 (run 18:35): role="dialog" + aria-modal + aria-labelledby
        để trình đọc màn hình nhận diện đây là hộp thoại và đọc đúng tiêu đề;
        span × thêm aria-hidden để SR không đọc "times". *@
-    <div class="modal fade show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="quotes-deposit-modal-title" @onkeydown="DepositModalKeyDown">
+    <div class="modal fade show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="quotes-deposit-modal-title" @ref="_modalRef" @onkeydown="DepositModalKeyDown">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -314,6 +314,11 @@ else
 
     // Item 161: duyệt & gửi link cọc.
     private QuoteRequestAdminModel _depositQuote;
+    @* UIUX-1020 Agent4 (a11y): đưa focus vào modal tiền cọc khi mở — screen reader đọc ngay
+       role="dialog" + tiêu đề, người dùng bàn phím tab từ trong modal đi ra thay vì
+       kẹt ở nút nền phía sau. tabindex="-1" trên lớp phủ cho phép FocusAsync() lập trình. *@
+    private ElementReference _modalRef;
+    private bool _focusModalOnOpen;
     private decimal _depositAmount;
     private string _depositInfo;
     private string _depositError;
@@ -329,11 +334,25 @@ else
         _depositError = null;
         _depositSaved = false;
         _depositQrUrl = null;
+        _focusModalOnOpen = true;
     }
 
     private void CloseDepositModal()
     {
         _depositQuote = null;
+    }
+
+    /// <summary>
+    /// UIUX-1020 Agent4 (a11y): sau khi modal tiền cọc render xong, chuyển focus vào
+    /// lớp phủ modal (đã có tabindex="-1"). Cờ _focusModalOnOpen chỉ bật khi vừa mở modal.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusModalOnOpen && _depositQuote != null)
+        {
+            _focusModalOnOpen = false;
+            await _modalRef.FocusAsync();
+        }
     }
 
     /// <summary>

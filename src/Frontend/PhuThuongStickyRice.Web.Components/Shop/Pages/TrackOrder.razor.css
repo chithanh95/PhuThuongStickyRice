@@ -1093,3 +1093,28 @@ html.dark .btn-link.text-danger:hover {
     color: #ffb3b3;
 }
 /* ===== END UIUX run 04:35 - Agent2 FIX 5 ===== */
+
+/* ===== UIUX run 05:22 — Agent1 Mobile =====
+   FIX 1 — Nút "Gửi đánh giá" (TrackOrder.razor:600): btn btn-primary btn-sm,
+   inline hẹp (~110px), cao 44px nhờ rule .btn-sm — nhưng đây là CTA chốt của
+   card "Đánh giá đơn hàng" (đánh giá 5 sao được thưởng +20 điểm/tặng xôi),
+   người lớn tuổi khó bấm trúng nút hẹp. Nâng full-width 48px trên mobile,
+   đồng bộ với chuẩn CTA thanh toán cùng trang ("Tôi đã chuyển khoản"/
+   "Sao chép link"/MoMo đã full-width 48px, run 03:50 FIX 1) và CTA checkout
+   (run 15:38 FIX 1, ≤767.98px).
+   (Verify: .card > .card-body > .btn-primary.btn-sm chỉ khớp đúng nút này —
+   nút "Chia sẻ" ảnh (:738, cũng btn-primary.btn-sm) nằm sâu trong
+   .form-row > .col-md-2 nên không phải con trực tiếp của .card-body;
+   nút MoMo (:709) không có btn-sm. PC giữ nguyên.) */
+@media (max-width: 767.98px) {
+    .card > .card-body > .btn-primary.btn-sm {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+        margin-top: 10px;
+    }
+}
+/* ===== END UIUX run 05:22 - Agent1 FIX 1 ===== */

@@ -154,7 +154,7 @@
     @* UIUX-1019 Agent4 (run 18:35): role="dialog" + aria-modal + aria-labelledby
        để trình đọc màn hình nhận diện đây là hộp thoại và đọc đúng tiêu đề. *@
     <div class="modal show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true"
-         aria-labelledby="mgg-modal-title" @onkeydown="ModalKeyDown">
+         aria-labelledby="mgg-modal-title" @ref="_modalRef" @onkeydown="ModalKeyDown">
         @* UIUX-1020 Agent4 (a11y): @onkeydown trên lớp phủ modal — sự kiện bàn phím
            bubble từ các ô nhập bên trong lên đây, người dùng bàn phím bấm Esc
            để đóng modal mà không phải tab tới nút Hủy. *@
@@ -267,6 +267,11 @@
     private int PageSize = 10;
 
     private bool _showForm;
+    @* UIUX-1020 Agent4 (a11y): đưa focus vào modal khi mở — screen reader đọc ngay
+       role="dialog" + tiêu đề, người dùng bàn phím tab từ trong modal đi ra thay vì
+       kẹt ở nút nền phía sau. tabindex="-1" trên lớp phủ cho phép FocusAsync() lập trình. *@
+    private ElementReference _modalRef;
+    private bool _focusModalOnOpen;
     private bool _saving;
     private string _formError;
     private DiscountCodeModel _editing;
@@ -325,6 +330,7 @@
         _isPercent = true;
         _formError = null;
         _showForm = true;
+        _focusModalOnOpen = true;
     }
 
     private void ShowEdit(DiscountCodeModel c)
@@ -345,9 +351,23 @@
         _isPercent = c.DiscountPercent.HasValue;
         _formError = null;
         _showForm = true;
+        _focusModalOnOpen = true;
     }
 
     private void HideForm() => _showForm = false;
+
+    /// <summary>
+    /// UIUX-1020 Agent4 (a11y): sau khi modal render xong, chuyển focus vào lớp phủ
+    /// modal (đã có tabindex="-1"). Cờ _focusModalOnOpen chỉ bật khi vừa mở modal.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusModalOnOpen && _showForm)
+        {
+            _focusModalOnOpen = false;
+            await _modalRef.FocusAsync();
+        }
+    }
 
     /// <summary>
     /// Đóng modal khi người dùng bấm Esc (điều hướng bàn phím).
