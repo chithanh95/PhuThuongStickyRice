@@ -39,7 +39,7 @@ else
             <div class="card mb-2" @key="faq.Id">
                 <div class="card-header p-2">
                     <button class="btn btn-link btn-block text-left p-1" type="button"
-                            @onclick="() => Toggle(faq.Id)">
+                            @onclick="() => Toggle(faq.Id)" aria-expanded="@isOpen">
                         <strong>@(isOpen ? "▾" : "▸") @faq.Question</strong>
                     </button>
                 </div>

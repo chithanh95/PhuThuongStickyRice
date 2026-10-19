@@ -415,3 +415,18 @@ html.dark .sg-share-btn.sg-share-btn:focus-visible {
 }
 
 /* === end Agent 4 run 13:25 === */
+
+/* === UIUX Agent 4 — run 13:55 (redo sau reset) === */
+/* Fix 6 — WCAG 2.4.7 (Focus Visible): nút × đóng modal/toast chỉ cần nhìn thấy
+   khi tab bằng keyboard. Dùng :focus-visible để chuột click không dính viền,
+   viền tím Lexa #7a6fbe (dark: #a49de0) cho tương phản tốt trên mọi nền. */
+.modal .close:focus-visible,
+.toast .close:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .modal .close:focus-visible,
+html.dark .toast .close:focus-visible {
+    outline-color: #a49de0;
+}
+/* === end UIUX Agent 4 — run 13:55 === */

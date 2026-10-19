@@ -31,6 +31,10 @@ namespace PhuThuongStickyRice.Web.Components.Core.Components
 
         protected async Task HandleClick(int page)
         {
+            // Chặn click vào nút disabled: nút "Previous" khi đang ở trang 1 vẫn fire PageChanged(0),
+            // nút "Next" ở trang cuối fire PageChanged(TotalPages+1) → state phân trang bị sai và
+            // màn hình đọc (screen reader) không hiểu nút đang tắt. Bỏ qua luôn click vào trang hiện tại.
+            if (page < 1 || page > TotalPages || page == CurrentPage) return;
             await PageChanged.InvokeAsync(page);
         }
 
