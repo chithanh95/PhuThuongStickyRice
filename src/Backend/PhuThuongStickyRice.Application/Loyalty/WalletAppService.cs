@@ -1,3 +1,4 @@
+#nullable enable
 
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
@@ -139,7 +140,15 @@ namespace PhuThuongStickyRice.Application.Loyalty
         [Authorize(Roles = "Admin")]
         public virtual async Task<WalletAccountDto> AdjustAsync(AdjustWalletInput input)
         {
-            var normalized = VietnamTime.NormalizePhone(input?.Phone);
+            // Boundary null-check: input null (caller gọi trực tiếp) phải báo
+            // lỗi nghiệp vụ rõ ràng, không để NullReferenceException khi đọc
+            // input.Amount ở dưới.
+            if (input == null)
+            {
+                throw new DomainException("Dữ liệu điều chỉnh ví không hợp lệ.");
+            }
+
+            var normalized = VietnamTime.NormalizePhone(input.Phone);
             if (string.IsNullOrEmpty(normalized))
             {
                 throw new DomainException("Số điện thoại không hợp lệ.");
@@ -314,7 +323,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
         /// <summary>Tìm ví theo SĐT đã chuẩn hóa; null nếu SĐT chưa từng có ví.</summary>
         /// <param name="phone">SĐT đã chuẩn hóa đầu số Việt Nam.</param>
-        private async Task<WalletAccount> FindAsync(string phone)
+        /// <returns>Ví tìm được, hoặc null khi chưa có ví cho SĐT này.</returns>
+        private async Task<WalletAccount?> FindAsync(string phone)
         {
             var queryable = await _wallets.GetQueryableAsync();
             return await _asyncExecuter.FirstOrDefaultAsync(queryable.Where(x => x.Phone == phone));

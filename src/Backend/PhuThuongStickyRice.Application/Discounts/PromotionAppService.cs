@@ -1,3 +1,4 @@
+#nullable enable
 
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -195,7 +196,9 @@ namespace PhuThuongStickyRice.Application.Discounts
             public TimeSpan StartTime { get; init; }
             public TimeSpan EndTime { get; init; }
             public int DaysOfWeekFlags { get; init; }
-            public PromotionDto Dto { get; init; }
+            // required: Map() luôn trả về PromotionDto non-null; snapshot chỉ
+            // hợp lệ khi có Dto, compiler bắt buộc mọi nơi tạo đều phải gán.
+            public required PromotionDto Dto { get; init; }
         }
 
         /// <summary>

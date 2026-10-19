@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.AspNetCore.Components.Authorization;
 using PhuThuongStickyRice.Web.Components.Core.Services;
 using PhuThuongStickyRice.Web.Components.Shop.Models;
@@ -24,7 +25,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         private readonly CartState _cartState;
         private readonly AuthenticationStateProvider _authStateProvider;
         private readonly ITokenStore _tokenStore;
-        private Timer _debounceTimer;
+        private Timer? _debounceTimer;
         // 2 giây: đủ lâu để gộp nhiều lần bấm +/- liên tiếp thành 1 lần lưu,
         // đủ nhanh để giỏ vẫn được lưu nếu user tắt tab ngay sau khi sửa.
         private const int DebounceMs = 2000;
