@@ -159,12 +159,13 @@ else
         _thangCung = _thangOptions[0].Value;
     }
 
-    private async Task SubmitAsync()
+    /// <summary>
+    /// Kiểm tra hợp lệ các trường bắt buộc, gán _nameError/_phoneError/_qtyError
+    /// và _error tổng hợp nếu có lỗi.
+    /// </summary>
+    /// <returns>true khi hợp lệ.</returns>
+    private bool ValidateInputs()
     {
-        // Bug-hunt 2026-10-19 (17:55): chặn bấm đúp tạo 2 yêu cầu trùng.
-        // disabled="@_submitting" chỉ có hiệu lực sau lần re-render đầu tiên.
-        if (_submitting) return;
-
         _error = null;
         _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
         _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
@@ -173,9 +174,16 @@ else
         if (_nameError != null || _phoneError != null || _qtyError != null)
         {
             _error = "Vui lòng kiểm tra lại các thông tin được đánh dấu.";
-            return;
+            return false;
         }
+        return true;
+    }
 
+    /// <summary>
+    /// Gắn tiền tố mô tả mâm cúng vào Notes (guard Contains để bấm "Gửi lại" không gắn 2 lần).
+    /// </summary>
+    private void AttachCungPrefix()
+    {
         var dipLabel = _dipCung == "Ram" ? "Rằm (15 âm lịch)" : "Mùng 1 (âm lịch)";
         var thangLabel = _thangOptions.Find(t => t.Value == _thangCung)?.Text ?? _thangCung;
         // Bug-hunt 2026-10-19: SubmitAsync gắn prefix vào _model.Notes TRƯỚC khi gọi API —
@@ -187,6 +195,18 @@ else
             _model.Notes = cungPrefix
                 + (string.IsNullOrWhiteSpace(_model.Notes) ? string.Empty : " " + _model.Notes.Trim());
         }
+    }
+
+    private async Task SubmitAsync()
+    {
+        // Bug-hunt 2026-10-19 (17:55): chặn bấm đúp tạo 2 yêu cầu trùng.
+        // disabled="@_submitting" chỉ có hiệu lực sau lần re-render đầu tiên.
+        if (_submitting) return;
+
+        if (!ValidateInputs())
+            return;
+
+        AttachCungPrefix();
 
         _submitting = true;
         try

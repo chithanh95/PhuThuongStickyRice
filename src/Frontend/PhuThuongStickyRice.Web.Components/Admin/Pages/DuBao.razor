@@ -184,42 +184,72 @@ else if (_forecast != null)
             double Y(decimal v) => PadT + (H - PadT - PadB) * (1 - (double)v / (double)maxV);
             string F(double d) => d.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
-            for (var g = 0; g <= 4; g++)
-            {
-                var gridValue = maxV * g / 4;
-                var y = Y((decimal)gridValue);
-                sb.Append($"<line x1=\"{F(PadL)}\" y1=\"{F(y)}\" x2=\"{F(W - PadR)}\" y2=\"{F(y)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
-                sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(y + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)gridValue)}</text>");
-            }
-
-            var histPts = string.Join(" ", hist.Select((p, i) => $"{F(X(i))},{F(Y(p.Revenue))}"));
-            var lastHist = hist.Count - 1;
-            sb.Append($"<polygon points=\"{histPts} {F(X(lastHist))},{F(H - PadB)} {F(X(0))},{F(H - PadB)}\" fill=\"rgba(122,111,190,0.12)\"/>");
-            sb.Append($"<polyline points=\"{histPts}\" fill=\"none\" stroke=\"#7a6fbe\" stroke-width=\"2.5\"/>");
-
-            // fcPts cũng dùng StringBuilder: nối chuỗi bằng += trong loop tạo string
-            // mới mỗi vòng (O(n²) bộ nhớ), trong khi dots bên dưới đã dùng StringBuilder.
-            var fcPts = new System.Text.StringBuilder($"{F(X(lastHist))},{F(Y(hist[lastHist].Revenue))}");
-            var dots = new System.Text.StringBuilder();
-            for (var i = 0; i < fc.Count; i++)
-            {
-                var x = X(hist.Count + i);
-                var y = Y(fc[i].ForecastRevenue);
-                fcPts.Append($" {F(x)},{F(y)}");
-                dots.Append($"<circle cx=\"{F(x)}\" cy=\"{F(y)}\" r=\"4\" fill=\"#f1b44c\" stroke=\"#fff\" stroke-width=\"1.5\"/>");
-            }
-            sb.Append($"<polyline points=\"{fcPts}\" fill=\"none\" stroke=\"#f1b44c\" stroke-width=\"2.5\" stroke-dasharray=\"7 4\"/>");
-            sb.Append(dots);
-
-            var all = hist.Select(x => x.Date).Concat(fc.Select(x => x.Date)).ToList();
-            var step = Math.Max(1, pointCount / 7);
-            for (var i = 0; i < pointCount; i += step)
-            {
-                sb.Append($"<text x=\"{F(X(i))}\" y=\"{F(H - 8)}\" text-anchor=\"middle\" font-size=\"11\" style=\"fill:var(--db-axis,#6c757d)\">{all[i]:dd/MM}</text>");
-            }
+            AppendGridlines(sb, maxV, Y, F);
+            AppendHistoryArea(sb, hist, X, Y, F);
+            AppendForecastLine(sb, hist, fc, X, Y, F);
+            AppendXAxisLabels(sb, hist, fc, pointCount, X, F);
         }
         sb.Append("</svg>");
         _svgMarkup = sb.ToString();
+    }
+
+    /// <summary>Vẽ 5 đường lưới ngang và nhãn tiền rút gọn bên trái.</summary>
+    private void AppendGridlines(System.Text.StringBuilder sb, decimal maxV,
+        Func<decimal, double> Y, Func<double, string> F)
+    {
+        for (var g = 0; g <= 4; g++)
+        {
+            var gridValue = maxV * g / 4;
+            var y = Y((decimal)gridValue);
+            sb.Append($"<line x1=\"{F(PadL)}\" y1=\"{F(y)}\" x2=\"{F(W - PadR)}\" y2=\"{F(y)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
+            sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(y + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)gridValue)}</text>");
+        }
+    }
+
+    /// <summary>Vẽ vùng tô dưới đường doanh thu thực tế + đường kẻ liền.</summary>
+    private void AppendHistoryArea(System.Text.StringBuilder sb,
+        List<(DateTime Date, decimal Revenue)> hist,
+        Func<int, double> X, Func<decimal, double> Y, Func<double, string> F)
+    {
+        var histPts = string.Join(" ", hist.Select((p, i) => $"{F(X(i))},{F(Y(p.Revenue))}"));
+        var lastHist = hist.Count - 1;
+        sb.Append($"<polygon points=\"{histPts} {F(X(lastHist))},{F(H - PadB)} {F(X(0))},{F(H - PadB)}\" fill=\"rgba(122,111,190,0.12)\"/>");
+        sb.Append($"<polyline points=\"{histPts}\" fill=\"none\" stroke=\"#7a6fbe\" stroke-width=\"2.5\"/>");
+    }
+
+    /// <summary>Vẽ đường dự báo nét đứt nối tiếp điểm thực tế cuối + chấm tròn từng ngày.</summary>
+    private void AppendForecastLine(System.Text.StringBuilder sb,
+        List<(DateTime Date, decimal Revenue)> hist,
+        List<(DateTime Date, decimal ForecastRevenue)> fc,
+        Func<int, double> X, Func<decimal, double> Y, Func<double, string> F)
+    {
+        var lastHist = hist.Count - 1;
+        // Nối chuỗi trong vòng lặp nên dùng StringBuilder (tránh tạo string mới mỗi vòng).
+        var fcPts = new System.Text.StringBuilder($"{F(X(lastHist))},{F(Y(hist[lastHist].Revenue))}");
+        var dots = new System.Text.StringBuilder();
+        for (var i = 0; i < fc.Count; i++)
+        {
+            var x = X(hist.Count + i);
+            var y = Y(fc[i].ForecastRevenue);
+            fcPts.Append($" {F(x)},{F(y)}");
+            dots.Append($"<circle cx=\"{F(x)}\" cy=\"{F(y)}\" r=\"4\" fill=\"#f1b44c\" stroke=\"#fff\" stroke-width=\"1.5\"/>");
+        }
+        sb.Append($"<polyline points=\"{fcPts}\" fill=\"none\" stroke=\"#f1b44c\" stroke-width=\"2.5\" stroke-dasharray=\"7 4\"/>");
+        sb.Append(dots);
+    }
+
+    /// <summary>Vẽ nhãn ngày (dd/MM) trên trục X, cách đều khoảng 7 nhãn.</summary>
+    private void AppendXAxisLabels(System.Text.StringBuilder sb,
+        List<(DateTime Date, decimal Revenue)> hist,
+        List<(DateTime Date, decimal ForecastRevenue)> fc,
+        int pointCount, Func<int, double> X, Func<double, string> F)
+    {
+        var all = hist.Select(x => x.Date).Concat(fc.Select(x => x.Date)).ToList();
+        var step = Math.Max(1, pointCount / 7);
+        for (var i = 0; i < pointCount; i += step)
+        {
+            sb.Append($"<text x=\"{F(X(i))}\" y=\"{F(H - 8)}\" text-anchor=\"middle\" font-size=\"11\" style=\"fill:var(--db-axis,#6c757d)\">{all[i]:dd/MM}</text>");
+        }
     }
 
     private static string CompactMoney(decimal amount)

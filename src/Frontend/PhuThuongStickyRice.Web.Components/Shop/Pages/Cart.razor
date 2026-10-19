@@ -203,6 +203,8 @@ else
 
 @code {
     private List<ShopProductModel> _suggestions;
+    private const int SuggestionCount = 3;
+    private const string SideDishKeyword = "kèm";
     private const string PlaceholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIxMiI+Tm8gaW1hZ2U8L3RleHQ+PC9zdmc+";
 
     /// <summary>
@@ -382,45 +384,64 @@ else
 
         try
         {
-            var picks = new List<ShopProductModel>();
-            try
-            {
-                var bestIds = await bestIdsTask ?? new List<Guid>();
-                var byId = available.ToDictionary(p => p.Id);
-                foreach (var id in bestIds)
-                {
-                    if (picks.Count >= 3)
-                    {
-                        break;
-                    }
-
-                    if (byId.TryGetValue(id, out var p))
-                    {
-                        picks.Add(p);
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                // Best-seller ranking is nice-to-have — fall through to the backfill.
-            }
-
-            if (picks.Count < 3)
-            {
-                var pickedIds = new HashSet<Guid>(picks.Select(p => p.Id));
-                picks.AddRange(available
-                    .Where(p => !pickedIds.Contains(p.Id))
-                    .OrderByDescending(p => (p.Category ?? "").Contains("kèm") ? 1 : 0)
-                    .ThenBy(p => p.Name)
-                    .Take(3 - picks.Count));
-            }
-
+            var picks = await PickBestSellersAsync(available, bestIdsTask);
+            BackfillWithSideDishes(picks, available);
             _suggestions = picks;
         }
         catch (Exception)
         {
             _suggestions = new List<ShopProductModel>();
         }
+    }
+
+    /// <summary>
+    /// Chọn tối đa <see cref="SuggestionCount"/> món theo thứ hạng bán chạy.
+    /// Thứ hạng là nice-to-have: lỗi thì bỏ qua, để BackfillWithSideDishes bổ sung sau.
+    /// </summary>
+    private static async Task<List<ShopProductModel>> PickBestSellersAsync(
+        List<ShopProductModel> available, Task<List<Guid>> bestIdsTask)
+    {
+        var picks = new List<ShopProductModel>();
+        try
+        {
+            var bestIds = await bestIdsTask ?? new List<Guid>();
+            var byId = available.ToDictionary(p => p.Id);
+            foreach (var id in bestIds)
+            {
+                if (picks.Count >= SuggestionCount)
+                {
+                    break;
+                }
+
+                if (byId.TryGetValue(id, out var p))
+                {
+                    picks.Add(p);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Best-seller ranking is nice-to-have — fall through to the backfill.
+        }
+        return picks;
+    }
+
+    /// <summary>
+    /// Bổ sung cho đủ <see cref="SuggestionCount"/> gợi ý: ưu tiên món kèm, rồi xếp theo tên.
+    /// </summary>
+    private static void BackfillWithSideDishes(List<ShopProductModel> picks, List<ShopProductModel> available)
+    {
+        if (picks.Count >= SuggestionCount)
+        {
+            return;
+        }
+
+        var pickedIds = new HashSet<Guid>(picks.Select(p => p.Id));
+        picks.AddRange(available
+            .Where(p => !pickedIds.Contains(p.Id))
+            .OrderByDescending(p => (p.Category ?? "").Contains(SideDishKeyword) ? 1 : 0)
+            .ThenBy(p => p.Name)
+            .Take(SuggestionCount - picks.Count));
     }
 
     /// <summary>

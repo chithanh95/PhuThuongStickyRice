@@ -338,14 +338,19 @@
 
     private void HideForm() => _showForm = false;
 
-    private async Task Save()
+    /// <summary>
+    /// Kiểm tra hợp lệ form mã giảm giá, đồng thời chuẩn hóa Code (trim + in hoa)
+    /// và dọn các trường giảm giá không dùng theo loại voucher. Gán _formError nếu lỗi.
+    /// </summary>
+    /// <returns>true khi form hợp lệ, false khi có lỗi (đã gán _formError).</returns>
+    private bool ValidateForm()
     {
         _formError = null;
 
         if (string.IsNullOrWhiteSpace(_form.Code))
         {
             _formError = "Vui lòng nhập mã.";
-            return;
+            return false;
         }
         _form.Code = _form.Code.Trim().ToUpperInvariant();
 
@@ -357,7 +362,7 @@
                 if (!_form.DiscountPercent.HasValue || _form.DiscountPercent < 1 || _form.DiscountPercent > 100)
                 {
                     _formError = "Phần trăm giảm phải từ 1 đến 100.";
-                    return;
+                    return false;
                 }
             }
             else
@@ -366,7 +371,7 @@
                 if (!_form.DiscountAmount.HasValue || _form.DiscountAmount <= 0)
                 {
                     _formError = "Số tiền giảm phải lớn hơn 0.";
-                    return;
+                    return false;
                 }
             }
         }
@@ -378,6 +383,14 @@
 
         if (_form.MinOrderAmount < 0)
             _form.MinOrderAmount = 0;
+
+        return true;
+    }
+
+    private async Task Save()
+    {
+        if (!ValidateForm())
+            return;
 
         _saving = true;
         try

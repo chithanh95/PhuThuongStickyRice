@@ -309,6 +309,8 @@ else
     private decimal BulkFinalTotal => BulkOriginalTotal - BulkDiscountAmount;
 
     // ---- SL2: 30% deposit via VietQR ----
+    private const decimal DepositRate = 0.30m; // Tỷ lệ cọc đơn số lượng lớn (quy định chung của shop).
+    private const string DepositCodePrefix = "COC"; // Prefix mã cọc: "COC" + SĐT khách, dễ đối chiếu trên sao kê.
     private BankTransferInfoModel _bankInfo;
     private decimal _depositAmount;
     private string _depositCode = string.Empty;
@@ -424,22 +426,37 @@ else
     /// trên tổng đã chiết khấu, sinh mã cọc "COC" + SĐT (dễ tra soát), tải thông
     /// tin chuyển khoản và hiện QR VietQR.
     /// </summary>
+    /// <summary>
+    /// Kiểm tra hợp lệ họ tên + SĐT đơn số lượng lớn, gán _bulkError nếu có lỗi.
+    /// </summary>
+    /// <returns>true khi hợp lệ.</returns>
+    private bool ValidateBulk()
+    {
+        _bulkError = null;
+        if (string.IsNullOrWhiteSpace(_bulk.CustomerName))
+        {
+            _bulkError = "Vui lòng nhập họ tên.";
+            return false;
+        }
+        if (!IsValidPhone(_bulk.CustomerPhone))
+        {
+            _bulkError = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>Sinh mã cọc "COC" + SĐT khách (chỉ giữ chữ số) để dễ tra soát.</summary>
+    private static string BuildDepositCode(string phone) =>
+        DepositCodePrefix + new string((phone ?? "").Where(char.IsDigit).ToArray());
+
     private async Task SubmitBulk()
     {
         // Bug-hunt 2026-10-19 (17:55): chặn bấm đúp tạo 2 yêu cầu báo giá trùng.
         if (_submitting) return;
 
-        _bulkError = null;
-        if (string.IsNullOrWhiteSpace(_bulk.CustomerName))
-        {
-            _bulkError = "Vui lòng nhập họ tên.";
+        if (!ValidateBulk())
             return;
-        }
-        if (!IsValidPhone(_bulk.CustomerPhone))
-        {
-            _bulkError = "Số điện thoại không đúng định dạng (VD: 0901234567).";
-            return;
-        }
 
         _submitting = true;
         try
@@ -453,9 +470,9 @@ else
             await ShopService.CreateQuoteAsync(_bulk);
             // SL2: cọc 30% trên tổng ĐÃ chiết khấu theo bậc — giữ chân khách đơn lớn,
             // shop có cơ sở chuẩn bị nguyên liệu; 30% là quy định chung của shop.
-            _depositAmount = BulkFinalTotal * 0.30m;
+            _depositAmount = BulkFinalTotal * DepositRate;
             // Mã cọc tra soát: "COC" + SĐT khách (dễ đối chiếu trên sao kê).
-            _depositCode = "COC" + new string((_bulk.CustomerPhone ?? "").Where(char.IsDigit).ToArray());
+            _depositCode = BuildDepositCode(_bulk.CustomerPhone);
             _depositConfirmed = false;
             // Bank info đã preload song song khi mở trang: không tốn thêm
             // round-trip sau khi bấm gửi. Chỉ tải lại nếu preload thất bại
