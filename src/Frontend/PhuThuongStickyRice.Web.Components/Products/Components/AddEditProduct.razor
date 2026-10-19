@@ -250,6 +250,9 @@
 
     // Item 109: branch picker.
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel> _branches;
+    // perf-hunt 2026-10-20: OnParametersSetAsync chạy lại mỗi khi parent
+    // re-render — nhớ Product.Id đã tải sizes để không gọi API thừa.
+    private Guid _lastSizesProductId = Guid.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -260,7 +263,7 @@
         // branches cho branch picker) chạy song song thay vì tuần tự —
         // ghi field khác nhau, fail-soft riêng nên không race.
         var loadTasks = new List<Task>();
-        if (Product?.Id != Guid.Empty)
+        if (Product?.Id != Guid.Empty && Product.Id != _lastSizesProductId)
         {
             loadTasks.Add(LoadSizesAsync());
         }
@@ -278,6 +281,9 @@
         try
         {
             _sizes = await CatalogService.GetSizeOptionsAsync(Product.Id);
+            // Chỉ nhớ Id khi tải thành công — tải lỗi thì lần re-render sau
+            // vẫn thử lại như hành vi cũ (fail-soft).
+            _lastSizesProductId = Product.Id;
         }
         catch (Exception)
         {

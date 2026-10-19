@@ -49,9 +49,20 @@ else
     private PolicyPageModel _page;
     private List<PolicyPageSummaryModel> _siblings = new List<PolicyPageSummaryModel>();
     private bool _loading = true;
+    // perf-hunt 2026-10-20: OnParametersSetAsync chạy lại mỗi khi parent
+    // re-render (vd toggle sáng/tối ở ShopLayout) dù Slug không đổi — nhớ
+    // slug đã tải để tránh refetch thừa (GetBySlugAsync không có cache).
+    private string _lastSlug;
 
     protected override async Task OnParametersSetAsync()
     {
+        // Slug không đổi và đã có dữ liệu → bỏ qua, giữ nguyên trang.
+        // Fetch lỗi (_page == null) thì vẫn thử lại như hành vi cũ.
+        if (string.Equals(_lastSlug, Slug, StringComparison.OrdinalIgnoreCase) && _page != null)
+        {
+            return;
+        }
+        _lastSlug = Slug;
         _loading = true;
         _page = null;
         _siblings = new List<PolicyPageSummaryModel>();
