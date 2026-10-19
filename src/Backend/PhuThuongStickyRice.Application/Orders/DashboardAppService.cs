@@ -94,8 +94,6 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int UpcomingPreOrdersTake = 8;
         /// <summary>Số giờ nhìn lại quá khứ khi tìm đơn đặt trước (đơn quá giờ hẹn mà khách chưa nhận vẫn hiện cho bếp xử lý).</summary>
         private const int PreOrderLookbackHours = 2;
-        /// <summary>Kích thước mỗi batch khi truy vấn SĐT khách cũ (SQL Server giới hạn ~2100 tham số/query).</summary>
-        private const int ReturningPhoneQueryBatchSize = 1000;
         /// <summary>Số sản phẩm mặc định của GetTopProductsAsync khi không truyền hoặc top ≤ 0.</summary>
         private const int DefaultTopProducts = 5;
         /// <summary>Số sản phẩm mặc định của API bán chạy khi client không truyền top.</summary>
@@ -314,7 +312,8 @@ namespace PhuThuongStickyRice.Application.Orders
             // số đơn) thay vì nạp toàn bộ đơn trong khoảng ngày vào memory —
             // khoảng ngày càng rộng thì bản cũ càng nặng. Tập SĐT (đã Trim,
             // loại rỗng) GIONG HET bản cũ nên phân loại mới/cũ và số đơn theo
-            // từng nhóm không đổi; FindReturningPhonesAsync giữ nguyên.
+            // từng nhóm không đổi; FindReturningPhonesAsync quét lịch sử 1
+            // lần duy nhất bằng subquery thay vì chia batch.
             var inRangeGroups = await _asyncExecuter.ToListAsync(
                 orderQueryable
                     .Where(x => x.Status != OrderStatus.Cancelled
@@ -332,7 +331,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return result;
             }
 
-            var beforePhones = await FindReturningPhonesAsync(orderQueryable, inRangePhones, fromDate);
+            var beforePhones = await FindReturningPhonesAsync(orderQueryable, fromDate, toDate);
 
             var newPhones = new HashSet<string>(inRangePhones.Where(p => !beforePhones.Contains(p)));
             var returningPhones = new HashSet<string>(inRangePhones.Where(p => beforePhones.Contains(p)));
@@ -348,30 +347,35 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>
         /// Tìm các SĐT đã có đơn (không hủy) trước mốc fromDate — tức là
-        /// khách cũ. Chia nhỏ mệnh đề IN (mỗi batch tối đa
-        /// <see cref="ReturningPhoneQueryBatchSize"/> SĐT) vì SQL Server giới
-        /// hạn ~2100 tham số mỗi query.
+        /// khách cũ. Dùng subquery IN (SELECT ...) nên chỉ cần 1 lần quét
+        /// lịch sử, không còn chia batch: giới hạn ~2100 tham số của SQL
+        /// Server chỉ áp dụng khi nhét list literal vào mệnh đề IN, còn
+        /// subquery thì không.
         /// </summary>
         private async Task<HashSet<string>> FindReturningPhonesAsync(
-            IQueryable<Order> orderQueryable, List<string> inRangePhones, DateTime fromDate)
+            IQueryable<Order> orderQueryable, DateTime fromDate, DateTime toDate)
         {
-            var beforePhones = new HashSet<string>();
-            foreach (var batch in inRangePhones.Chunk(ReturningPhoneQueryBatchSize))
-            {
-                var found = await _asyncExecuter.ToListAsync(
-                    orderQueryable
-                        .Where(x => x.Status != OrderStatus.Cancelled
-                            && x.CreatedAt < fromDate
-                            && batch.Contains(x.CustomerPhone))
-                        .Select(x => x.CustomerPhone)
-                        .Distinct());
-                foreach (var p in found)
-                {
-                    beforePhones.Add(p);
-                }
-            }
+            // perf-hunt 2026-10-19: gộp ceil(N/1000) lần quét toàn bộ lịch sử
+            // thành 1 query duy nhất. So sánh sau khi Trim cả 2 vế cho nhất
+            // quán với GroupBy ở GetNewReturningCustomersAsync (bản cũ so
+            // sánh SĐT thô của lịch sử với SĐT đã trim trong khoảng ngày nên
+            // có thể bỏ sót khách cũ khi SĐT dính khoảng trắng thừa).
+            var inRangePhones = orderQueryable
+                .Where(x => x.Status != OrderStatus.Cancelled
+                    && x.CreatedAt >= fromDate && x.CreatedAt < toDate
+                    && !string.IsNullOrEmpty(x.CustomerPhone))
+                .Select(x => x.CustomerPhone.Trim())
+                .Distinct();
 
-            return beforePhones;
+            var found = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Status != OrderStatus.Cancelled
+                        && x.CreatedAt < fromDate
+                        && inRangePhones.Contains(x.CustomerPhone.Trim()))
+                    .Select(x => x.CustomerPhone.Trim())
+                    .Distinct());
+
+            return new HashSet<string>(found);
         }
 
         /// <summary>

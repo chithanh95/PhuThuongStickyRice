@@ -189,6 +189,15 @@ namespace PhuThuongStickyRice.Application.Orders
         Task<List<OrderReviewDto>> GetReviewsAsync();
 
         /// <summary>
+        /// Admin: đánh giá xấu (sao ≤ <paramref name="maxRating"/>) từ mốc
+        /// <paramref name="from"/>, mới nhất lên trước, tối đa <paramref name="take"/>
+        /// dòng. Lọc ngay trên SQL cho chuông thông báo topbar — bản cũ nạp
+        /// 200 review mới nhất về memory rồi mới lọc nên vừa tốn vừa có thể
+        /// bỏ sót đánh giá xấu nằm ngoài 200 dòng mới nhất.
+        /// </summary>
+        Task<List<OrderReviewDto>> GetBadReviewsAsync(int maxRating, DateTime from, int take);
+
+        /// <summary>
         /// Item 233 (Admin): báo cáo số đơn hủy theo lý do trong khoảng thời gian.
         /// </summary>
         Task<List<CancelReasonReportDto>> GetCancelReasonReportAsync(DateTime from, DateTime to);
@@ -2296,6 +2305,26 @@ namespace PhuThuongStickyRice.Application.Orders
             var reviewQueryable = await _reviews.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
                 reviewQueryable.OrderByDescending(x => x.CreatedAt).Take(ReviewModerationMaxItems));
+            return items.Select(MapReviewToDto).ToList();
+        }
+
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        /// <summary>
+        /// Đánh giá xấu cho chuông thông báo: lọc sao + mốc thời gian ngay
+        /// trên SQL, chỉ lấy đúng số dòng cần thay vì nạp 200 review về
+        /// memory. Kết quả tương đương bản cũ (sao ≤ max, từ mốc from, mới
+        /// nhất trước, tối đa take) nhưng không bỏ sót khi có hơn
+        /// <see cref="ReviewModerationMaxItems"/> review trong kỳ.
+        /// </summary>
+        public virtual async Task<List<OrderReviewDto>> GetBadReviewsAsync(
+            int maxRating, DateTime from, int take)
+        {
+            var reviewQueryable = await _reviews.GetQueryableAsync();
+            var items = await _asyncExecuter.ToListAsync(
+                reviewQueryable
+                    .Where(x => x.Rating <= maxRating && x.CreatedAt >= from)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(Math.Max(1, take)));
             return items.Select(MapReviewToDto).ToList();
         }
 

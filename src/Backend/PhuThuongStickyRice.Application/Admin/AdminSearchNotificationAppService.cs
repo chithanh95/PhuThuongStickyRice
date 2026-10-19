@@ -49,6 +49,9 @@ namespace PhuThuongStickyRice.Application.Admin
         /// <summary>Max low-star reviews surfaced per notification batch.</summary>
         private const int BadReviewTake = 5;
 
+        /// <summary>Ngưỡng sao tối đa vẫn tính là "đánh giá xấu".</summary>
+        private const int BadReviewMaxRating = 2;
+
         /// <summary>Max birthday customer names shown in the notification detail.</summary>
         private const int BirthdayNamesTake = 3;
 
@@ -181,14 +184,19 @@ namespace PhuThuongStickyRice.Application.Admin
 
             // Sequential awaits (same single-DbContext reason as SearchAsync above).
             var stats = await _dashboard.GetStatsAsync();
-            var reviewsResult = await _orders.GetReviewsAsync();
+            // perf-hunt 2026-10-19: lấy đúng đánh giá xấu cần thiết ngay trên
+            // SQL (sao ≤ 2, trong 7 ngày, tối đa 5) thay vì nạp 200 review mới
+            // nhất về memory rồi lọc — bản cũ vừa tốn vừa có thể bỏ sót đánh
+            // giá xấu khi 7 ngày có hơn 200 review.
+            var badReviewsResult = await _orders.GetBadReviewsAsync(
+                BadReviewMaxRating, nowVn.Subtract(BadReviewLookback), BadReviewTake);
             var birthdaysResult = await _customerProfile.GetBirthdaysAsync(nowVn.Month);
             var exhaustedCodes = await _discounts.GetExhaustedCodesAsync();
 
             AddStalePendingNotification(notifications, stats);
             AddPendingOrdersNotification(notifications, stats);
             AddUpcomingPreOrderNotification(notifications, stats);
-            AddBadReviewNotifications(notifications, reviewsResult, nowVn);
+            AddBadReviewNotifications(notifications, badReviewsResult);
             AddBirthdayNotification(notifications, birthdaysResult, nowVn);
             AddExhaustedDiscountNotifications(notifications, exhaustedCodes);
 
@@ -284,18 +292,16 @@ namespace PhuThuongStickyRice.Application.Admin
         }
 
         /// <summary>New 1–2 star reviews (last 7 days) — warning.</summary>
+        /// <summary>
+        /// Đánh giá 1–2 sao trong 7 ngày — warning. Danh sách đã được lọc
+        /// (sao ≤ ngưỡng), sắp xếp mới nhất trước và giới hạn số dòng ngay
+        /// trên SQL nên ở đây chỉ việc dựng notification.
+        /// </summary>
         private static void AddBadReviewNotifications(
             List<NotificationDto> notifications,
-            List<OrderReviewDto> reviewsResult,
-            DateTime nowVn)
+            List<OrderReviewDto> badReviews)
         {
-            var cutoff = nowVn.Subtract(BadReviewLookback);
-            var badReviews = (reviewsResult ?? new List<OrderReviewDto>())
-                .Where(r => r.Rating <= 2 && r.CreatedAt >= cutoff)
-                .OrderByDescending(r => r.CreatedAt)
-                .Take(BadReviewTake)
-                .ToList();
-            foreach (var r in badReviews)
+            foreach (var r in badReviews ?? new List<OrderReviewDto>())
             {
                 notifications.Add(new NotificationDto
                 {
