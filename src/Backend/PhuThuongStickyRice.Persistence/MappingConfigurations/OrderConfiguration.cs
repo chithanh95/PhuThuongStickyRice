@@ -160,6 +160,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.HasIndex(x => x.CustomerUserId);
             builder.HasIndex(x => new { x.Status, x.CreatedAt });
 
+            // perf-hunt 2026-10-19: phone-based lookups run on hot paths
+            // (pay-later eligibility + referral checks at checkout, customer
+            // order history, admin customer detail). Composite (CustomerPhone,
+            // Status) serves both the phone+status and phone-only predicates.
+            builder.HasIndex(x => new { x.CustomerPhone, x.Status });
+
             // Delivery shipper assignment (optional).
             builder.Property(x => x.ShipperId);
             builder.HasOne(x => x.Shipper)

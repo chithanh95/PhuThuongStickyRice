@@ -84,15 +84,34 @@ namespace PhuThuongStickyRice.Application.Reports
             var todayStart = new DateTimeOffset(vnNow.Date, TimeSpan.FromHours(7));
             var weekStart = todayStart.AddDays(-6);
 
-            var rows = await _events.ToListAsync(
-                _events.GetAll().Where(e => e.CreatedDateTime >= weekStart));
+            // perf-hunt 2026-10-19: aggregate in SQL (GROUP BY) instead of
+            // loading every row of the last 7 days into memory. The table
+            // grows one row per page view, so the in-memory version gets
+            // heavier every day. Same semantics: per-event counts for the
+            // 7-day window, with the today-subset counted conditionally.
+            var grouped = await _events.ToListAsync(
+                _events.GetAll()
+                    .Where(e => e.CreatedDateTime >= weekStart)
+                    .GroupBy(e => e.EventName)
+                    .Select(g => new
+                    {
+                        EventName = g.Key,
+                        Today = g.LongCount(e => e.CreatedDateTime >= todayStart),
+                        Last7Days = g.LongCount(),
+                    }));
+
+            var byName = grouped.ToDictionary(x => x.EventName, x => x);
 
             return AllowedEvents
-                .Select(name => new FunnelEventCountDto
+                .Select(name =>
                 {
-                    EventName = name,
-                    Today = rows.LongCount(r => r.EventName == name && r.CreatedDateTime >= todayStart),
-                    Last7Days = rows.LongCount(r => r.EventName == name),
+                    byName.TryGetValue(name, out var row);
+                    return new FunnelEventCountDto
+                    {
+                        EventName = name,
+                        Today = row?.Today ?? 0,
+                        Last7Days = row?.Last7Days ?? 0,
+                    };
                 })
                 .ToList();
         }
