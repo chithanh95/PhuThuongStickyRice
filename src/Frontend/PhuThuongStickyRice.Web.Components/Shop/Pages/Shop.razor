@@ -775,12 +775,7 @@ else
 
             foreach (var p in _products)
             {
-                _quantities[p.Id] = 1;
-                _cardSizes[p.Id] = DefaultSizeId(p);
-                if (p.Sizes == null)
-                {
-                    p.Sizes = new List<ProductSizeOptionModel>();
-                }
+                InitCardState(p);
             }
 
             _categories = _products
@@ -863,12 +858,34 @@ else
         {
             var paged = await ShopService.GetProductsAsync(branchId);
             _products = paged.Items ?? new List<ShopProductModel>();
+            // Chi nhánh khác có thể có món mới chưa từng render: khởi tạo
+            // lại state thẻ (số lượng/size mặc định) để @bind
+            // _quantities[product.Id] ở markup không ném KeyNotFoundException.
+            foreach (var p in _products)
+            {
+                InitCardState(p);
+            }
+
             ApplyFilters();
             BuildSuggestions();
         }
         catch (Exception)
         {
             _error = "Không tải được sản phẩm theo chi nhánh.";
+        }
+    }
+
+    /// <summary>
+    /// Khởi tạo state mặc định của thẻ món (số lượng = 1, size mặc định) —
+    /// gọi mỗi khi danh sách món thay đổi (lần đầu + đổi chi nhánh).
+    /// </summary>
+    private void InitCardState(ShopProductModel p)
+    {
+        _quantities[p.Id] = 1;
+        _cardSizes[p.Id] = DefaultSizeId(p);
+        if (p.Sizes == null)
+        {
+            p.Sizes = new List<ProductSizeOptionModel>();
         }
     }
 

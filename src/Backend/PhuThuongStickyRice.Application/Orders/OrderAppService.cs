@@ -519,8 +519,14 @@ namespace PhuThuongStickyRice.Application.Orders
             decimal loyaltyValue = 0;
             if (input.RedeemPoints > 0)
             {
+                // Kẹp điểm đổi theo phần còn lại của đơn (sau khuyến mãi giờ
+                // vàng + mã giảm giá): Order.Create cũng kẹp phần tiền giảm,
+                // nhưng RedeemAsync trừ toàn bộ điểm yêu cầu — không kẹp ở đây
+                // thì khách mất điểm oan cho phần giảm không áp dụng được.
+                var remainingForLoyalty = Math.Max(0, subtotal - promotionDiscount - discountValue);
+                var cappedPoints = _loyalty.CapRedeemPoints(input.RedeemPoints, remainingForLoyalty, shopSetting);
                 (redeemedPoints, loyaltyValue) = await _loyalty.RedeemAsync(
-                    input.CustomerPhone, input.RedeemPoints, shopSetting);
+                    input.CustomerPhone, cappedPoints, shopSetting);
             }
 
             // Referral code: must exist and must not be the buyer's own.

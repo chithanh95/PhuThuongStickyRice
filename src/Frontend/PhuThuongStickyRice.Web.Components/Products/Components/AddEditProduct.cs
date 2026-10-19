@@ -67,6 +67,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 Product.ImageUrlsJson = SerializeImages();
                 var isNew = Product.Id == Guid.Empty;
                 await (isNew ? ProductService.CreateProductAsync(Product) : ProductService.UpdateProductAsync(Product.Id, Product));
+                // Ảnh cũ bị thay thế/loại bỏ trong lúc sửa chỉ xóa thật khi
+                // đã lưu thành công — tránh gãy ảnh nếu upload lỗi/bỏ lưu.
+                await DeleteObsoleteImagesAsync();
                 Toasts.Show(isNew ? "Đã thêm sản phẩm thành công!" : "Đã lưu sản phẩm thành công!");
                 NavManager.NavigateTo("/products");
             }
@@ -94,6 +97,13 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         private readonly List<HourWindow> _hours = new List<HourWindow>();
 
         private string _imageUrl;
+
+        /// <summary>
+        /// URL ảnh đã bị thay thế/xóa trong lúc chỉnh sửa nhưng chưa lưu —
+        /// chỉ xóa thật trên server SAU KHI lưu sản phẩm thành công, để upload
+        /// lỗi hoặc user bỏ không lưu không làm gãy ảnh đang dùng.
+        /// </summary>
+        private readonly List<string> _obsoleteImageUrls = new List<string>();
 
         private Guid _syncedProductId = Guid.Empty;
 
@@ -133,6 +143,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
             _hours.Clear();
             _imageUrl = null;
             _imageError = null;
+            _obsoleteImageUrls.Clear();
 
             LoadHourWindowsFromJson(Product.AvailableHoursJson);
             LoadImageUrlFromJson(Product.ImageUrlsJson);
@@ -270,13 +281,10 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 return;
             }
 
-            // Xóa ảnh cũ trên server trước khi upload ảnh mới (best-effort: log rồi bỏ qua nếu lỗi)
-            if (!string.IsNullOrEmpty(_imageUrl))
-            {
-                try { await ProductService.DeleteProductImageAsync(_imageUrl); }
-                catch (Exception ex) { Logger.LogDebug(ex, "Không xóa được ảnh cũ {ImageUrl} trước khi upload — bỏ qua.", _imageUrl); }
-            }
-
+            // Ảnh cũ KHÔNG xóa ngay tại đây: nếu upload mới lỗi hoặc user
+            // không bấm Lưu, xóa sớm sẽ làm gãy ảnh sản phẩm đang dùng.
+            // URL cũ được đưa vào _obsoleteImageUrls và chỉ xóa thật sau khi
+            // lưu sản phẩm thành công.
             _uploadingImages = true;
             try
             {
@@ -285,6 +293,13 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                     stream, file.FileName, file.ContentType);
                 if (!string.IsNullOrEmpty(url))
                 {
+                    if (!string.IsNullOrEmpty(_imageUrl)
+                        && !string.Equals(_imageUrl, url, StringComparison.OrdinalIgnoreCase)
+                        && !_obsoleteImageUrls.Contains(_imageUrl))
+                    {
+                        _obsoleteImageUrls.Add(_imageUrl);
+                    }
+
                     _imageUrl = url;
                 }
             }
@@ -302,11 +317,44 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         {
             if (!string.IsNullOrEmpty(_imageUrl))
             {
-                // Xóa ảnh trên server là best-effort: log rồi bỏ qua nếu lỗi.
-                try { await ProductService.DeleteProductImageAsync(_imageUrl); }
-                catch (Exception ex) { Logger.LogDebug(ex, "Không xóa được ảnh {ImageUrl} trên server — bỏ qua.", _imageUrl); }
+                // Không xóa ngay trên server: user có thể đóng trang mà không
+                // bấm Lưu — xóa sớm sẽ làm gãy ảnh dù DB vẫn trỏ URL cũ.
+                // URL được đưa vào _obsoleteImageUrls, xóa thật sau khi lưu.
+                if (!_obsoleteImageUrls.Contains(_imageUrl))
+                {
+                    _obsoleteImageUrls.Add(_imageUrl);
+                }
+
                 _imageUrl = null;
             }
+
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Xóa các ảnh đã bị thay thế/loại bỏ trong lúc chỉnh sửa — chỉ gọi
+        /// sau khi lưu sản phẩm thành công. Best-effort: log rồi bỏ qua nếu lỗi.
+        /// </summary>
+        private async Task DeleteObsoleteImagesAsync()
+        {
+            foreach (var url in _obsoleteImageUrls)
+            {
+                if (string.Equals(url, _imageUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    await ProductService.DeleteProductImageAsync(url);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogDebug(ex, "Không xóa được ảnh cũ {ImageUrl} trên server — bỏ qua.", url);
+                }
+            }
+
+            _obsoleteImageUrls.Clear();
         }
     }
 }
