@@ -118,8 +118,8 @@
         <div class="col-sm-10">
             @if (!string.IsNullOrEmpty(_imageUrl))
             {
-                <div class="mb-2 text-center" style="width: 150px;">
-                    <img src="@AdminCommerceService.ResolveImageUrl(_imageUrl)" alt="Ảnh món" class="img-thumbnail" style="width: 140px; height: 140px; object-fit: cover;"
+                <div class="mb-2 text-center aep-preview">
+                    <img src="@AdminCommerceService.ResolveImageUrl(_imageUrl)" alt="Ảnh món" class="img-thumbnail aep-preview-img"
                          onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQwIiBoZWlnaHQ9IjE0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTQwIiBoZWlnaHQ9IjE0MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjcwIiB5PSI3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIxNCI+Tm8gaW1hZ2U8L3RleHQ+PC9zdmc+';" />
                     <div class="mt-1">
                         <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="RemoveImage">Xóa</button>
@@ -131,7 +131,7 @@
                 <div class="lx-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
                 <div class="lx-dropzone-hint">Ảnh tự nén trước khi tải lên.</div>
             </label>
-            <input type="file" id="product-images-input" accept="image/*" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" @onchange="OnImagesSelected" />
+            <input type="file" id="product-images-input" accept="image/*" class="aep-hidden-file" @onchange="OnImagesSelected" />
             @if (_uploadingImages)
             {
                 <div class="text-muted mt-1">Đang tải ảnh lên...</div>
@@ -175,7 +175,7 @@
         <div class="table-responsive">
             <table class="table table-sm">
                 <thead>
-                    <tr><th>Tên size</th><th class="text-right">Giá (₫)</th><th>Thứ tự</th><th></th><th></th></tr>
+                    <tr><th scope="col">Tên size</th><th scope="col" class="text-right">Giá (₫)</th><th scope="col">Thứ tự</th><th scope="col"></th><th scope="col"></th></tr>
                 </thead>
                 <tbody>
                     @foreach (var size in _sizes)

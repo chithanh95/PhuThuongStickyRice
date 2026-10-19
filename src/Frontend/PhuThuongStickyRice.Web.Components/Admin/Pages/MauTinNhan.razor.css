@@ -17,3 +17,14 @@ code {
 html.dark code {
     color: #b3a8e8; /* was #7a6fbe */
 }
+
+/* uiux-hunt 2026-10-20 run 00:45 agent3-lexa — đồng bộ Lexa: đưa style inline
+   white-space:pre-line của ô xem trước nội dung mẫu (MauTinNhan.razor:61)
+   vào CSS. */
+.mtn-preview-text { white-space: pre-line; }
+
+/* uiux-hunt 2026-10-20 run 03:50 agent3-lexa — Fix 2: chuyển 3 style inline
+   độ rộng cột bảng mẫu tin nhắn trong MauTinNhan.razor sang scoped CSS. */
+.mtn-col-status { width: 140px; }
+.mtn-col-toggle { width: 90px; }
+.mtn-col-actions { width: 110px; }

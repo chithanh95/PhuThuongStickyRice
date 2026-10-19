@@ -2059,3 +2059,34 @@ html.dark .lexa-icon {
 }
 
 /* ===== END UIUX run 00:25 - Agent2 ===== */
+
+/* === UIUX run 2026-10-20 03:50 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (quét property-level toàn bộ .razor.css + <style> trong .razor + inline
+   style, đối chiếu từng selector với mọi rule html.dark hiện có: landing,
+   shop (shop/cart/checkout/track-order/tai-khoan/check-in/dat-so-luong-lon/
+   nhuong-quyen/dang-nhap/quen-mat-khau/hang-cho/cung-gio/dat-cung/dat-tiec),
+   admin (kanban/order-list/customers/bao-cao/lai-gop/nhan-vien/phan-quyen/
+   mau-tin-nhan/lich-tong-hop/shop-settings/dashboard) đều đã phủ kín sau
+   ~20 đợt trước — chỉ còn đúng 1 lỗi MỚI thật bên dưới) */
+
+/* ---------- FIX 1 — Shop: nút chia sẻ (icon) trong quick-view sheet, dark mode ----------
+   Vấn đề: Shop.razor.css:875 (trong @media max-width:767.98px) —
+   `.qv-sheet-share:hover { background: #f3efe9; }` do Agent 4 thêm hôm nay
+   (run 03:10, Shop.razor.css diff) không có rule dark nào phủ (đã grep xác
+   minh toàn bộ css: chỉ có `html.dark .qv-sheet-share` nền #2e2620 dòng 919,
+   không có bản :hover). Ở dark mode, khi chạm/hover nút icon chia sẻ trên
+   mobile, nút chớp sáng màu kem giữa sheet tối #241d17.
+   (Nút chữ `.qv-sheet-share-btn:hover` đã được Agent 4 fix dark ở
+   uiux-agent4-a11y.css:1351 — chỉ còn nút icon này sót; đã quét toàn bộ
+   :hover nền sáng khác trong repo = 0 kết quả.)
+   Fix: hover nền tối #3a3226 (cùng tone fix dark của Agent 4 cho nút chữ).
+   Đặt trong cùng media query để khớp phạm vi rule gốc. Specificity
+   html.dark .qv-sheet-share:hover (0,3,1) thắng rule scoped
+   .qv-sheet-share:hover[b-xxx] (0,3,0). */
+@media (max-width: 767.98px) {
+    html.dark .qv-sheet-share:hover {
+        background: #3a3226; /* was #f3efe9 */
+    }
+}
+
+/* === end Agent 2 run 03:50 === */

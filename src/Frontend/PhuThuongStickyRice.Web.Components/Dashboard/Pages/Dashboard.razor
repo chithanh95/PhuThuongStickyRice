@@ -366,7 +366,7 @@ else
                         <div class="table-responsive mt-3">
                             <table class="table table-hover table-sm mb-0">
                                 <thead>
-                                    <tr><th>Ngày</th><th class="text-right">Đơn</th><th class="text-right">Doanh thu</th></tr>
+                                    <tr><th scope="col">Ngày</th><th scope="col" class="text-right">Đơn</th><th scope="col" class="text-right">Doanh thu</th></tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var day in _stats.RevenueByDay)
@@ -452,7 +452,7 @@ else
                         <div class="table-responsive">
                             <table class="table table-hover table-sm mb-0">
                                 <thead>
-                                    <tr><th>#</th><th>Món</th><th class="text-right">Đã bán</th><th class="text-right">Doanh thu</th></tr>
+                                    <tr><th scope="col">#</th><th scope="col">Món</th><th scope="col" class="text-right">Đã bán</th><th scope="col" class="text-right">Doanh thu</th></tr>
                                 </thead>
                                 <tbody>
                                     @{
@@ -577,12 +577,12 @@ else
                 <table class="table table-hover table-sm mb-0">
                     <thead>
                         <tr>
-                            <th>Mã đơn</th>
-                            <th>Khách hàng</th>
-                            <th>SĐT</th>
-                            <th class="text-right">Tổng tiền</th>
-                            <th>Trạng thái</th>
-                            <th>Ngày đặt</th>
+                            <th scope="col">Mã đơn</th>
+                            <th scope="col">Khách hàng</th>
+                            <th scope="col">SĐT</th>
+                            <th scope="col" class="text-right">Tổng tiền</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col">Ngày đặt</th>
                         </tr>
                     </thead>
                     <tbody>

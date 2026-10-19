@@ -519,7 +519,7 @@ else
 @* Item 141: keyboard-shortcut cheat sheet (toggle with "?"). *@
 @if (_showShortcutHelp)
 {
-    <div class="modal d-block ol-modal-backdrop" tabindex="-1" role="dialog" aria-modal="true" aria-label="Bảng phím tắt xử lý đơn" @onclick="() => _showShortcutHelp = false">
+    <div class="modal d-block ol-modal-backdrop" tabindex="-1" role="dialog" aria-modal="true" aria-label="Bảng phím tắt xử lý đơn" @onclick="() => _showShortcutHelp = false" @onkeydown="ShortcutHelpKeyDown">
         <div class="modal-dialog" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header py-2">
@@ -549,7 +549,7 @@ else
 @* Item 233: modal chọn lý do khi nhân viên hủy đơn. *@
 @if (_cancelTarget != null)
 {
-    <div class="modal d-block ol-modal-backdrop" tabindex="-1" role="dialog" aria-modal="true" aria-label="Chọn lý do hủy đơn">
+    <div class="modal d-block ol-modal-backdrop" tabindex="-1" role="dialog" aria-modal="true" aria-label="Chọn lý do hủy đơn" @onkeydown="CancelModalKeyDown">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header py-2">
@@ -612,6 +612,23 @@ else
         _cancelTarget = null;
         _cancelReason = null;
         _cancelReasonError = null;
+    }
+
+    /// <summary>
+    /// UIUX-1020 Agent4 (a11y): đóng modal bằng phím Escape — @onkeydown đặt trên
+    /// lớp phủ modal, sự kiện bàn phím bubble từ các control bên trong lên đây.
+    /// JS shortcut handler hiện tại không xử lý Escape cho modal (trên radio chỉ
+    /// blur, trên nút thì bỏ qua) nên người dùng bàn phím phải có lối thoát chuẩn.
+    /// </summary>
+    private void ShortcutHelpKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") _showShortcutHelp = false;
+    }
+
+    /// <summary>Đóng modal chọn lý do hủy đơn khi bấm Escape (xem <see cref="ShortcutHelpKeyDown"/>).</summary>
+    private void CancelModalKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") CloseCancelModal();
     }
 
     private async Task ConfirmCancelModal()

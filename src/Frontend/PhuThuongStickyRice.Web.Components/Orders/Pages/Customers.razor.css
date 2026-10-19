@@ -1,0 +1,9 @@
+/* uiux-hunt 2026-10-20 run 03:50 agent3-lexa — Fix 5: chuyển 4 style inline
+   tĩnh trong Customers.razor sang scoped CSS (file mới): ô chọn tháng
+   lọc sinh nhật, ô nhập số tiền tặng sinh nhật, nút × xóa tag trên badge,
+   ô nhập tag mới. Style động background-color theo màu tag giữ nguyên
+   inline vì phụ thuộc dữ liệu. */
+.ctm-month-select { width: 140px; }
+.ctm-gift-amount { width: 110px; }
+.ctm-tag-remove { color: #fff; line-height: 1; }
+.ctm-tag-input { width: 130px; }

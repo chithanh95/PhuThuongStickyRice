@@ -20,3 +20,13 @@ html.dark .lexa-dot-compare { background: #8a87a3; }
    Bỏ !important + attribute selector [style*=...]: background giờ nằm trong class
    .lexa-col-compare nên rule thường (specificity cao hơn) là đủ thắng. */
 html.dark .lexa-col-compare { background: #8a87a3; }
+
+/* uiux-hunt 2026-10-20 run 03:50 agent3-lexa — Fix 1: chuyển 6 style inline
+   tĩnh trong BaoCao.razor sang scoped CSS: cặp cột so sánh kỳ này/kỳ trước
+   (3 chỗ giống nhau -> 1 class), cột "Số đơn"/"Tỉ lệ" bảng lý do hủy,
+   thanh progress tỉ lệ hủy. Style động height:@(...) tính theo dữ liệu
+   giữ nguyên inline. Không dùng selector html/body/:root ở đây. */
+.bc-compare-pair { display: flex; align-items: flex-end; gap: 3px; }
+.bc-col-count { width: 90px; }
+.bc-col-ratio { width: 45%; }
+.bc-cancel-bar { height: 18px; }

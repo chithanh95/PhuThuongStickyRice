@@ -152,21 +152,21 @@
                         }
                         <div class="lexa-chart">
                             <div class="lexa-col-wrap">
-                                <div style="display:flex;align-items:flex-end;gap:3px;">
+                                <div class="bc-compare-pair">
                                     <div class="lexa-col lexa-col-current" style="height:@((cmpMaxRev > 0 ? (double)(_current.TotalRevenue / cmpMaxRev) * 150 : 4).ToString("0"))px;" title="Kỳ này: @FormatPrice(_current.TotalRevenue)"></div>
                                     <div class="lexa-col lexa-col-compare" style="height:@((cmpMaxRev > 0 ? (double)(_previous.TotalRevenue / cmpMaxRev) * 150 : 4).ToString("0"))px;" title="Kỳ trước: @FormatPrice(_previous.TotalRevenue)"></div>
                                 </div>
                                 <small>Doanh thu</small>
                             </div>
                             <div class="lexa-col-wrap">
-                                <div style="display:flex;align-items:flex-end;gap:3px;">
+                                <div class="bc-compare-pair">
                                     <div class="lexa-col lexa-col-current" style="height:@((cmpMaxOrd > 0 ? (double)((decimal)_current.OrderCount / cmpMaxOrd) * 150 : 4).ToString("0"))px;" title="Kỳ này: @_current.OrderCount đơn"></div>
                                     <div class="lexa-col lexa-col-compare" style="height:@((cmpMaxOrd > 0 ? (double)((decimal)_previous.OrderCount / cmpMaxOrd) * 150 : 4).ToString("0"))px;" title="Kỳ trước: @_previous.OrderCount đơn"></div>
                                 </div>
                                 <small>Số đơn</small>
                             </div>
                             <div class="lexa-col-wrap">
-                                <div style="display:flex;align-items:flex-end;gap:3px;">
+                                <div class="bc-compare-pair">
                                     <div class="lexa-col lexa-col-current" style="height:@((cmpMaxAvg > 0 ? (double)(_current.AvgOrderValue / cmpMaxAvg) * 150 : 4).ToString("0"))px;" title="Kỳ này: @FormatPrice(_current.AvgOrderValue)"></div>
                                     <div class="lexa-col lexa-col-compare" style="height:@((cmpMaxAvg > 0 ? (double)(_previous.AvgOrderValue / cmpMaxAvg) * 150 : 4).ToString("0"))px;" title="Kỳ trước: @FormatPrice(_previous.AvgOrderValue)"></div>
                                 </div>
@@ -225,8 +225,8 @@
                     <thead>
                         <tr>
                             <th>Lý do</th>
-                            <th style="width: 90px;" class="text-right">Số đơn</th>
-                            <th style="width: 45%;">Tỉ lệ</th>
+                            <th class="text-right bc-col-count">Số đơn</th>
+                            <th class="bc-col-ratio">Tỉ lệ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -236,7 +236,7 @@
                                 <td>@row.Reason</td>
                                 <td class="text-right font-weight-bold">@row.Count</td>
                                 <td>
-                                    <div class="progress" style="height: 18px;">
+                                    <div class="progress bc-cancel-bar">
                                         <div class="progress-bar bg-warning" role="progressbar"
                                              style="width: @((cancelMax > 0 ? (double)row.Count / cancelMax * 100 : 0).ToString("0"))%;"
                                              aria-valuenow="@row.Count" aria-valuemin="0" aria-valuemax="@cancelMax">

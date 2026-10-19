@@ -21,3 +21,13 @@ html.dark .timeline { border-left-color: #3a3a58; }
 .lx-table-sticky-first tbody td:last-child:not([colspan]) {
     white-space: nowrap;
 }
+
+/* uiux-hunt 2026-10-20 run 03:50 agent3-lexa — Fix 3: chuyển 4 style inline
+   tĩnh trong OrderList.razor sang scoped CSS: cột "Giữ", nền tối 2 modal
+   (phím tắt + lý do hủy -> 1 class), ô phím tắt bảng hướng dẫn, chiều cao
+   tối thiểu nút xác nhận hủy. Style động background-color theo màu tag
+   giữ nguyên inline. */
+.ol-col-keep { width: 34px; }
+.ol-modal-backdrop { background: rgba(0,0,0,.45); }
+.ol-kbd-key { width: 130px; }
+.ol-btn-confirm { min-height: 44px; }

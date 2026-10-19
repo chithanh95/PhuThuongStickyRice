@@ -1,0 +1,75 @@
+/* ============================================================
+   CungGio (đặt xôi cúng giỗ) — mobile (<=767px).
+   UIUX run 03:50 — Agent1 Mobile
+   Trang chưa có CSS mobile riêng: input ~38px và <16px gây iOS
+   auto-zoom khi nhập SĐT/ngày giỗ, radio "Mâm chay / Mâm mặn" xếp
+   ngang vùng bấm chỉ bằng dòng chữ, chữ lỗi validation ~12.8px.
+   ============================================================ */
+@media (max-width: 767.98px) {
+    /* FIX 1 — input/select/textarea: chữ 16px (iOS không auto-zoom khi
+       focus), ô nhập cao 44px cho dễ bấm với người lớn tuổi
+       (họ tên, SĐT, ngày giỗ, số mâm, ghi chú). */
+    .form-control {
+        font-size: 16px;
+    }
+    input.form-control,
+    select.form-control {
+        min-height: 44px;
+    }
+
+    /* FIX 2 — radio "🥬 Mâm chay" / "🍗 Mâm mặn" (.form-check-inline) xếp
+       ngang, vùng bấm chỉ bằng dòng chữ — người lớn tuổi dễ bấm nhầm
+       loại mâm. Xếp dọc full-width, mỗi option một hàng cao 44px, cả
+       hàng bấm được (label block); radio to 20px, căn giữa dọc.
+       (Cùng pattern đã áp ở /dat-cung — DatCung.razor.css run 17:48.) */
+    .form-check-inline {
+        display: flex;
+        align-items: center;
+        flex: 1 1 100%;
+        min-height: 44px;
+        margin: 0 0 6px;
+    }
+    .form-check-inline .form-check-label {
+        display: block;
+        flex: 1;
+        min-height: 44px;
+        padding: 10px 0 10px 4px;
+        font-size: 15px;
+    }
+    .form-check-inline .form-check-input[type="radio"] {
+        width: 20px;
+        height: 20px;
+        margin-top: 0;
+        flex-shrink: 0;
+    }
+
+    /* FIX 3 — chữ lỗi validation (Họ tên/SĐT/Ngày giỗ/Số mâm:
+       small.text-danger ~12.8px): khách BẮT BUỘC đọc được để sửa form,
+       người lớn tuổi khó đọc. Nâng lên 14px trên mobile. */
+    .form-group > small.text-danger {
+        font-size: 14px;
+    }
+
+    /* FIX 4 — nút submit "Gửi yêu cầu đặt cúng giỗ" (btn-lg nhưng không
+       full-width trên mobile): full-width, cao 48px — CTA chính của
+       trang phải to nhất, dễ bấm, đồng bộ /dat-cung /dat-tiec. */
+    .card-body > .btn-success.btn-lg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+    }
+
+    /* FIX 5 — nút "Xem thực đơn" sau khi gửi thành công (btn-primary
+       đứng ngay sau .alert-success — chỉ ~38px): full-width, cao 48px. */
+    .alert-success + .btn-primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+    }
+}

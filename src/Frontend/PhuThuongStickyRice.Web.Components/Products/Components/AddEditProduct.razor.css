@@ -1,1 +1,7 @@
-﻿
+﻿/* uiux-hunt 2026-10-20 run 03:50 agent3-lexa — Fix 4: chuyển 3 style inline
+   tĩnh trong AddEditProduct.razor sang scoped CSS: khung xem trước ảnh món,
+   kích thước ảnh preview, input file ẩn (không dùng display:none để
+   screen reader vẫn thấy). */
+.aep-preview { width: 150px; }
+.aep-preview-img { width: 140px; height: 140px; object-fit: cover; }
+.aep-hidden-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }

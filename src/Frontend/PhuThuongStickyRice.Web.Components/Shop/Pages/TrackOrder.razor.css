@@ -1000,3 +1000,39 @@ html.dark .shop-dropzone:focus-within {
     }
 }
 /* ===== END UIUX run 02:15 - Agent1 FIX 2 ===== */
+
+/* ===== UIUX run 03:50 — Agent1 Mobile =====
+   FIX 1 — 2 nút "Tôi đã chuyển khoản" (.btn-success) + "🔗 Sao chép link
+   thanh toán" (.btn-outline-primary.ml-2) nằm cạnh nhau trong card-body
+   (TrackOrder.razor:681-684): rule cũ chỉ nâng min-height 46px, nhưng
+   tổng bề ngang (~150px + ~200px + ml-2 8px ≈ 360px) vượt quá nội dung
+   card ở màn 320px (~280px) → nút bị ép/tràn ngang, người lớn tuổi khó
+   bấm đúng nút tiền quan trọng.
+   Giải pháp: ≤575px xếp dọc full-width, mỗi nút 48px, bỏ ml-2 thừa
+   (kẻo cộng với width:100% gây tràn 8px). Nút "Thanh toán MoMo (TEST)"
+   (TrackOrder.razor:709, .btn-primary, con trực tiếp duy nhất của
+   card-body nó) cũng được full-width — CTA thanh toán càng to càng tốt.
+   (Verify: .btn-success/.btn-outline-primary/.btn-primary là con trực
+   tiếp của .card-body chỉ ở card thanh toán — nút "Tra cứu" (39) và
+   "Xem lịch sử" (62) nằm trong .col-md-4, không bị chạm; các .btn-sm
+   tự phục vụ đã có rule full-width riêng, loại trừ bằng :not(.btn-sm).)
+   Dải 576–767px giữ nguyên xếp ngang (đủ chỗ), PC không đổi. */
+@media (max-width: 575.98px) {
+    .card-body > .btn.btn-success:not(.btn-sm),
+    .card-body > .btn.btn-outline-primary:not(.btn-sm),
+    .card-body > .btn.btn-primary:not(.btn-sm) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        margin: 8px 0 0 !important; /* đè .ml-2 của nút "Sao chép link" */
+        font-size: 1.05rem;
+    }
+    .card-body > .btn.btn-success:not(.btn-sm):first-of-type,
+    .card-body > .btn.btn-outline-primary:not(.btn-sm):first-of-type,
+    .card-body > .btn.btn-primary:not(.btn-sm):first-of-type {
+        margin-top: 0 !important;
+    }
+}
+/* ===== END UIUX run 03:50 - Agent1 FIX 1 ===== */

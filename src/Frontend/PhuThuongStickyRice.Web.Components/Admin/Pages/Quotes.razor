@@ -19,7 +19,9 @@
 
 @if (!string.IsNullOrEmpty(_error))
 {
-    <div class="alert alert-danger">@_error</div>
+    @* UIUX-1020 Agent4 (a11y): role="alert" để screen reader tự đọc lỗi
+       khi nó xuất hiện sau thao tác bất đồng bộ. *@
+    <div class="alert alert-danger" role="alert">@_error</div>
 }
 @if (!string.IsNullOrEmpty(_success))
 {
@@ -172,7 +174,7 @@ else
     @* UIUX-1019 Agent4 (run 18:35): role="dialog" + aria-modal + aria-labelledby
        để trình đọc màn hình nhận diện đây là hộp thoại và đọc đúng tiêu đề;
        span × thêm aria-hidden để SR không đọc "times". *@
-    <div class="modal fade show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="quotes-deposit-modal-title">
+    <div class="modal fade show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="quotes-deposit-modal-title" @onkeydown="DepositModalKeyDown">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -193,7 +195,7 @@ else
                         </div>
                         @if (!string.IsNullOrEmpty(_depositError))
                         {
-                            <div class="alert alert-danger">@_depositError</div>
+                            <div class="alert alert-danger" role="alert">@_depositError</div>
                         }
                     }
                     else
@@ -332,6 +334,16 @@ else
     private void CloseDepositModal()
     {
         _depositQuote = null;
+    }
+
+    /// <summary>
+    /// UIUX-1020 Agent4 (a11y): đóng modal tiền cọc khi người dùng bấm Escape —
+    /// @onkeydown đặt trên lớp phủ modal, sự kiện bàn phím bubble từ các ô nhập
+    /// bên trong lên đây (người dùng bàn phím không phải tab tới nút Đóng).
+    /// </summary>
+    private void DepositModalKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") CloseDepositModal();
     }
 
     private async Task SaveDepositAsync()

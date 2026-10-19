@@ -78,8 +78,11 @@
 @if (_showForm)
 {
     @* UIUX-1019 Agent4 (run 18:35): role="dialog" + aria-modal + aria-labelledby
-       để trình đọc màn hình nhận diện đây là hộp thoại và đọc đúng tiêu đề. *@
-    <div class="modal show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cn-modal-title">
+       để trình đọc màn hình nhận diện đây là hộp thoại và đọc đúng tiêu đề.
+       UIUX-1020 Agent4: @onkeydown để đóng modal bằng phím Escape — sự kiện
+       bàn phím bubble từ các ô nhập bên trong lên đây, người dùng bàn phím
+       không phải tab tới nút Đóng mới thoát được. *@
+    <div class="modal show d-block lx-modal-veil" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cn-modal-title" @onkeydown="ModalKeyDown">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -89,7 +92,9 @@
                 <div class="modal-body">
                     @if (!string.IsNullOrEmpty(_error))
                     {
-                        <div class="alert alert-danger">@_error</div>
+                        @* UIUX-1020 Agent4 (a11y): role="alert" để screen reader tự đọc lỗi
+                           khi nó xuất hiện sau thao tác lưu bất đồng bộ. *@
+                        <div class="alert alert-danger" role="alert">@_error</div>
                     }
                     <div class="form-group">
                         <label>Tên chi nhánh</label>
@@ -164,6 +169,14 @@
     }
 
     private void HideForm() => _showForm = false;
+
+    /// <summary>
+    /// UIUX-1020 Agent4 (a11y): đóng modal khi người dùng bấm Escape (điều hướng bàn phím).
+    /// </summary>
+    private void ModalKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") HideForm();
+    }
 
     private async Task Save()
     {
