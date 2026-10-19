@@ -82,5 +82,22 @@ namespace PhuThuongStickyRice.Application.Common
             // CA1845: dùng span-based string.Concat thay vì Substring để tránh cấp phát chuỗi trung gian.
             return string.Concat(digits.AsSpan(0, 3), "***", digits.AsSpan(digits.Length - 2));
         }
+
+        /// <summary>
+        /// Khóa chuẩn hóa cho <c>KeyedAsyncLock</c> theo SĐT: chỉ giữ
+        /// <see cref="TailDigitCount"/> số cuối (cùng độ chi tiết
+        /// <see cref="PhonesMatch"/>), để 2 request cùng 1 SĐT nhưng khác
+        /// format ("0912 345 678" vs "+84912345678") vẫn rơi vào cùng 1 khóa.
+        /// Null/trống cho khóa rỗng — caller tự đảm bảo SĐT hợp lệ trước.
+        /// </summary>
+        /// <param name="phone">SĐT đầu vào, có thể null.</param>
+        /// <returns>Chuỗi chữ số (tối đa <see cref="TailDigitCount"/> số cuối).</returns>
+        public static string PhoneTailKey(string? phone)
+        {
+            var digits = DigitsOnly(phone);
+            return digits.Length > TailDigitCount
+                ? digits.Substring(digits.Length - TailDigitCount)
+                : digits;
+        }
     }
 }

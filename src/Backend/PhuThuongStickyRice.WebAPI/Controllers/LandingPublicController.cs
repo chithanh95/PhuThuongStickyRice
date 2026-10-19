@@ -644,20 +644,30 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private async Task<string> ResolveBirthdayGiftCodeAsync(
             string phone, CancellationToken cancellationToken)
         {
-            var giftCode = await _discounts.GetUsableCodeAsync(BirthdayVoucherPrefix, phone);
-            if (giftCode != null)
-            {
-                return giftCode;
-            }
+            // bug-hunt 2026-10-20: race check-then-act — 2 request đồng thời
+            // cho cùng 1 SĐT (2 tab, retry sau timeout) đều qua được
+            // GetUsableCodeAsync → null rồi cùng sinh mã → khách nhận 2 mã SN
+            // 20k còn dùng được. Serialize theo SĐT (9 số cuối, cùng độ chi
+            // tiết PhonesMatch) để request sau nhận đúng mã request trước vừa
+            // sinh, thay vì sinh mã mới.
+            return await KeyedAsyncLock.RunAsync(
+                $"birthday-gift:{PhoneNumber.PhoneTailKey(phone)}", async () =>
+                {
+                    var giftCode = await _discounts.GetUsableCodeAsync(BirthdayVoucherPrefix, phone);
+                    if (giftCode != null)
+                    {
+                        return giftCode;
+                    }
 
-            var voucher = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
-            {
-                Prefix = BirthdayVoucherPrefix,
-                DiscountAmount = BirthdayVoucherAmount,
-                ExpiresAt = DateTime.UtcNow.AddDays(GeneratedVoucherValidityDays),
-                OwnerPhone = phone
-            });
-            return voucher.Code;
+                    var voucher = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
+                    {
+                        Prefix = BirthdayVoucherPrefix,
+                        DiscountAmount = BirthdayVoucherAmount,
+                        ExpiresAt = DateTime.UtcNow.AddDays(GeneratedVoucherValidityDays),
+                        OwnerPhone = phone
+                    });
+                    return voucher.Code;
+                });
         }
 
         private static int DaysUntilBirthday(DateTime birthDate, DateTime today)

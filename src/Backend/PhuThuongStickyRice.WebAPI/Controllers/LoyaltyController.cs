@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Application.Loyalty;
 using PhuThuongStickyRice.Application.Loyalty.DTOs;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Domain.Exceptions;
@@ -139,47 +140,56 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] int daysAhead = 7,
             CancellationToken cancellationToken = default)
         {
-            var birthdays = await _loyaltyAppService.GetUpcomingBirthdaysAsync(daysAhead);
-            var created = new List<object>();
-
-            // perf-hunt 2026-10-19: kiểm tra mã SN còn dùng được cho TẤT CẢ
-            // khách trong 1 query (IN clause) thay vì gọi HasUsableCodeAsync
-            // từng khách (N+1). Điều kiện lọc giữ nguyên nên kết quả tương
-            // đương từng phần tử.
-            var phonesWithCode = await _discountAppService.GetPhonesWithUsableCodeAsync(
-                BirthdayVoucherPrefix, birthdays.Select(b => b.Phone));
-
-            foreach (var b in birthdays)
-            {
-                try
+            // bug-hunt 2026-10-20: race check-then-act — tập phonesWithCode
+            // được load 1 lần trước vòng lặp; admin bấm nút 2 lần (hoặc 2 tab)
+            // thì request sau load tập check trước khi request trước commit
+            // xong → sinh 2 mã SN/khách. Serialize cả batch theo prefix để
+            // request sau thấy đủ mã request trước vừa sinh.
+            return await KeyedAsyncLock.RunAsync<ActionResult>(
+                "birthday-vouchers:SN", async () =>
                 {
-                    // Mỗi khách chỉ 1 mã SN còn dùng được — không có check
-                    // này, admin bấm nút 2 lần sẽ sinh 2 mã/khách.
-                    if (phonesWithCode.Contains(b.Phone))
+                    var birthdays = await _loyaltyAppService.GetUpcomingBirthdaysAsync(daysAhead);
+                    var created = new List<object>();
+
+                    // perf-hunt 2026-10-19: kiểm tra mã SN còn dùng được cho TẤT CẢ
+                    // khách trong 1 query (IN clause) thay vì gọi HasUsableCodeAsync
+                    // từng khách (N+1). Điều kiện lọc giữ nguyên nên kết quả tương
+                    // đương từng phần tử.
+                    var phonesWithCode = await _discountAppService.GetPhonesWithUsableCodeAsync(
+                        BirthdayVoucherPrefix, birthdays.Select(b => b.Phone));
+
+                    foreach (var b in birthdays)
                     {
-                        continue;
-                    }
-                    var voucher = await _discountAppService.CreateGeneratedAsync(
-                        new CreateGeneratedDiscountDto
+                        try
                         {
-                            Prefix = BirthdayVoucherPrefix,
-                            DiscountAmount = BirthdayVoucherAmount,
-                            ExpiresAt = DateTime.UtcNow.AddDays(BirthdayVoucherValidityDays),
-                            OwnerPhone = b.Phone
-                        });
-                    created.Add(new { Phone = b.Phone, Code = voucher.Code });
-                }
-                // Loop sinh voucher cho hàng loạt khách: 1 khách lỗi (trùng mã, lỗi DB...)
-                // không được làm sập cả batch — nhưng không được nuốt im lặng, phải
-                // ghi log kèm SĐT để admin biết khách nào bị bỏ qua và đối chiếu sau.
-                catch (Exception ex)
-                {
-                    // Bỏ qua khách lỗi, tiếp tục khách khác.
-                    _logger.LogWarning(ex, "Tạo voucher sinh nhật thất bại cho SĐT {Phone}.", b.Phone);
-                }
-            }
+                            // Mỗi khách chỉ 1 mã SN còn dùng được — không có check
+                            // này, admin bấm nút 2 lần sẽ sinh 2 mã/khách.
+                            if (phonesWithCode.Contains(b.Phone))
+                            {
+                                continue;
+                            }
+                            var voucher = await _discountAppService.CreateGeneratedAsync(
+                                new CreateGeneratedDiscountDto
+                                {
+                                    Prefix = BirthdayVoucherPrefix,
+                                    DiscountAmount = BirthdayVoucherAmount,
+                                    ExpiresAt = DateTime.UtcNow.AddDays(BirthdayVoucherValidityDays),
+                                    OwnerPhone = b.Phone
+                                });
+                            created.Add(new { Phone = b.Phone, Code = voucher.Code });
+                        }
+                        // Loop sinh voucher cho hàng loạt khách: 1 khách lỗi (trùng mã, lỗi DB...)
+                        // không được làm sập cả batch — nhưng không được nuốt im lặng, phải
+                        // ghi log kèm SĐT để admin biết khách nào bị bỏ qua và đối chiếu sau.
+                        catch (Exception ex)
+                        {
+                            // Bỏ qua khách lỗi, tiếp tục khách khác.
+                            _logger.LogWarning(ex, "Tạo voucher sinh nhật thất bại cho SĐT {Phone}.", b.Phone);
+                        }
+                    }
 
-            return Ok(new { Created = created.Count, Vouchers = created });
+                    return Ok(new { Created = created.Count, Vouchers = created });
+                });
         }
     }
 }
