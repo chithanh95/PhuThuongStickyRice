@@ -12,12 +12,13 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
 {
     /// <summary>
-    /// Wave 2 APIs: loyalty, lucky spin, support tickets, FAQ, subscriptions,
-    /// order reviews and third-party integrations.
+    /// Shop customer-engagement APIs: loyalty, lucky spin, order
+    /// self-service, reviews, support tickets, FAQ, subscriptions
+    /// and third-party integrations.
     /// </summary>
-    public class Wave2Service : HttpService
+    public class ShopEngagementService : HttpService
     {
-        public Wave2Service(HttpClient httpClient, ITokenManager tokenManager)
+        public ShopEngagementService(HttpClient httpClient, ITokenManager tokenManager)
             : base(httpClient, tokenManager)
         {
         }

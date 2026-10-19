@@ -22,7 +22,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     // "unreferenced", but the shop gallery (GalleryKhachHang), track-order
     // photo upload (TrackOrder) and admin photo moderation (DanhGia) all call
     // these endpoints. Route fixed to kebab-case to match the frontend
-    // (Wave5Service calls api/customer-photos/*).
+    // (AdminCommerceService calls api/customer-photos/*).
 
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]

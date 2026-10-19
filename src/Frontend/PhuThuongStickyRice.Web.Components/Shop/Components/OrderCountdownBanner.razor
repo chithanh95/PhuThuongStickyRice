@@ -1,0 +1,123 @@
+@* Item 141: banner đếm ngược giờ chốt đơn theo ca bếp.
+   Chữ to rõ, 1 dòng ngắn — thân thiện với khách lớn tuổi. *@
+@using System
+@using System.Threading
+@using System.Threading.Tasks
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject ShopSettingsService ShopSettingsService
+@implements IDisposable
+
+@if (_visible)
+{
+    <div class="ocb-banner @(_cssState)" role="status" aria-live="polite">
+        <span class="ocb-text">@_text</span>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Settings đã load sẵn ở trang cha (tránh gọi API 2 lần).
+    /// Nếu null, component tự lấy qua <see cref="ShopSettingsService"/> (fail-soft).
+    /// </summary>
+    [Parameter]
+    public ShopSettingModel Settings { get; set; }
+
+    private Timer _timer;
+    private ShopSettingModel _settings;
+    private bool _visible;
+    private string _cssState = string.Empty;
+    private string _text = string.Empty;
+    private bool _disposed;
+    private bool _fetchAttempted;
+
+    protected override void OnInitialized()
+    {
+        // Cập nhật mỗi 30 giây là đủ cho đếm ngược theo phút; nhẹ cho máy yếu.
+        _timer = new Timer(_ =>
+        {
+            if (_disposed)
+            {
+                return;
+            }
+            InvokeAsync(() =>
+            {
+                Refresh();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Trang cha (vd Checkout) có thể load settings SAU lần render đầu —
+        // nên nhận parameter ở đây thay vì OnInitializedAsync.
+        if (Settings != null)
+        {
+            _settings = Settings;
+            Refresh();
+        }
+        else if (_settings == null && !_fetchAttempted)
+        {
+            _fetchAttempted = true;
+            try
+            {
+                _settings = await ShopSettingsService.GetPublicAsync();
+            }
+            catch
+            {
+                _settings = null;
+            }
+            Refresh();
+        }
+    }
+
+    private void Refresh()
+    {
+        if (_settings == null)
+        {
+            _visible = false;
+            return;
+        }
+
+        // Quán đang tạm ngưng (nghỉ lễ / tắt tay): trang đã có cảnh báo riêng,
+        // banner đếm ngược không còn ý nghĩa nên ẩn đi.
+        if (!_settings.AcceptingOrders)
+        {
+            _visible = false;
+            return;
+        }
+
+        var close = ShopHours.ParseClose(_settings.CloseTime);
+        var now = ShopHours.NowInVietnam();
+        var remaining = close - now;
+        var closeText = $"{(int)close.TotalHours}:{close.Minutes:D2}";
+
+        if (remaining <= TimeSpan.Zero)
+        {
+            _visible = true;
+            _cssState = "done";
+            _text = "Đã hết giờ đặt hôm nay — hẹn bạn sáng mai! 🍚";
+            return;
+        }
+
+        var minutes = (int)Math.Ceiling(remaining.TotalMinutes);
+        _visible = true;
+        if (minutes <= 10)
+        {
+            _cssState = "warn";
+            _text = $"⚠️ Sắp hết giờ đặt! Còn {minutes} phút";
+        }
+        else
+        {
+            _cssState = string.Empty;
+            _text = $"⏰ Còn {minutes} phút để đặt — hết giờ lúc {closeText}";
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _timer?.Dispose();
+    }
+}

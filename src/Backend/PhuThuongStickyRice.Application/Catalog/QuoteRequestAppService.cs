@@ -21,6 +21,11 @@ namespace PhuThuongStickyRice.Application.Catalog
 
         Task<QuoteRequestDto> UpdateStatusAsync(Guid id, UpdateQuoteRequestStatusDto dto);
 
+        /// <summary>
+        /// Item 161: admin đặt số tiền cọc + thông tin CK khi duyệt báo giá.
+        /// </summary>
+        Task<QuoteRequestDto> SetDepositAsync(Guid id, SetQuoteDepositDto dto);
+
         /// <summary>Public: subscribes a phone to monthly cung reminders.</summary>
         Task<CungReminderDto> CreateReminderAsync(CreateCungReminderDto dto);
 
@@ -115,6 +120,17 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapToDto(entity);
         }
 
+        [Authorize(Roles = "Admin")]
+        public virtual async Task<QuoteRequestDto> SetDepositAsync(Guid id, SetQuoteDepositDto dto)
+        {
+            var entity = await _quotes.GetAsync(id);
+            entity.DepositAmount = dto.DepositAmount > 0 ? dto.DepositAmount : null;
+            entity.DepositInfo = string.IsNullOrWhiteSpace(dto.DepositInfo) ? null : dto.DepositInfo.Trim();
+            await _quotes.UpdateAsync(entity, autoSave: true);
+
+            return MapToDto(entity);
+        }
+
         [AllowAnonymous]
         public virtual async Task<CungReminderDto> CreateReminderAsync(CreateCungReminderDto dto)
         {
@@ -201,7 +217,9 @@ namespace PhuThuongStickyRice.Application.Catalog
                 Quantity = entity.Quantity,
                 Notes = entity.Notes,
                 Status = entity.Status.ToString(),
-                CreatedAt = entity.CreatedAt
+                CreatedAt = entity.CreatedAt,
+                DepositAmount = entity.DepositAmount,
+                DepositInfo = entity.DepositInfo
             };
         }
     }

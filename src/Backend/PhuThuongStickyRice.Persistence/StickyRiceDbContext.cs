@@ -92,6 +92,12 @@ namespace PhuThuongStickyRice.Persistence
 
         public DbSet<ShoppingCart> ShoppingCarts { get; set; }
 
+        public DbSet<PrepaidCard> PrepaidCards { get; set; }
+
+        public DbSet<WeeklyPlan> WeeklyPlans { get; set; }
+
+        public DbSet<WeeklyPlanOrder> WeeklyPlanOrders { get; set; }
+
         public DbSet<OffPeakPromo> OffPeakPromos { get; set; }
 
         public DbSet<CheckInStreak> CheckInStreaks { get; set; }

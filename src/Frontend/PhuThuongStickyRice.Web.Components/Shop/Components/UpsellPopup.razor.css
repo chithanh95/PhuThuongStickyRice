@@ -1,0 +1,45 @@
+/* UpsellPopup — mobile (<=767px): popup upsell hiện ngay sau khi thêm món vào giỏ.
+   Scoped CSS của Shop.razor không áp dụng vào component con, nên popup cần rule riêng. */
+
+/* Mobile: modal vừa màn hình điện thoại, không bị ép hẹp */
+@media (max-width: 767.98px) {
+    .modal-dialog-centered.modal-sm {
+        margin: 0.75rem auto;
+        max-width: calc(100vw - 1.5rem);
+    }
+
+    /* Nút "+ Thêm" trên mỗi dòng món ăn kèm — touch target >=44px */
+    .modal-body .btn-sm {
+        min-height: 44px;
+        padding-left: 18px;
+        padding-right: 18px;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    /* Footer: "Không, cảm ơn" + "Xem giỏ hàng" đều dễ bấm */
+    .modal-footer {
+        flex-wrap: nowrap;
+    }
+    .modal-footer .btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-footer .btn-primary {
+        flex: 1 1 auto;
+    }
+
+    /* Nút × đóng popup — touch target 44px */
+    .modal-header .close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: -0.5rem -0.5rem -0.5rem auto;
+        padding: 0;
+        font-size: 28px;
+    }
+}

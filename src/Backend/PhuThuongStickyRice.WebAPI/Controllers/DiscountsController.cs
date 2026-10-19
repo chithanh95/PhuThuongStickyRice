@@ -91,5 +91,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        /// <summary>Item 139 (Public): active public discount codes for
+        /// checkout auto-apply.</summary>
+        [AllowAnonymous]
+        [HttpGet("active")]
+        public async Task<ActionResult> GetActivePublic(CancellationToken cancellationToken = default)
+        {
+            return Ok(await _discountAppService.GetActivePublicAsync());
+        }
     }
 }

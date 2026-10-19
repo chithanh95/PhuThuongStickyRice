@@ -20,14 +20,14 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         private const string StorageKey = "phuthuong.cart.v1";
 
         private readonly IJSRuntime _jsRuntime;
-        private readonly Wave5Service _wave5;
+        private readonly AdminCommerceService _commerceService;
         private readonly List<CartItemModel> _items = new List<CartItemModel>();
         private bool _loaded;
 
-        public CartState(IJSRuntime jsRuntime, Wave5Service wave5)
+        public CartState(IJSRuntime jsRuntime, AdminCommerceService commerceService)
         {
             _jsRuntime = jsRuntime;
-            _wave5 = wave5;
+            _commerceService = commerceService;
         }
 
         public event Action OnChange;
@@ -101,7 +101,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             // page showed the "no image" placeholder even when the product
             // has an image in the DB (same ResolveImageUrl pattern as the
             // shop quick-view path).
-            var imageUrl = _wave5.ResolveImageUrl(FirstImageUrl(product?.ImageUrlsJson));
+            var imageUrl = _commerceService.ResolveImageUrl(FirstImageUrl(product?.ImageUrlsJson));
             AddConfigured(
                 product.Id, product.Name, product.Code, product.Price, quantity,
                 sizeOptionId: null, sizeName: null,

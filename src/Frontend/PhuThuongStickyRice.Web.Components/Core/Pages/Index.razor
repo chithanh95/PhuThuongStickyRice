@@ -16,8 +16,8 @@
 @inject PolicyService PolicyService
 @inject CartState CartState
 @inject ToastService Toasts
-@inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave4Service Wave4Service
-@inject Wave2Service Wave2Svc
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminSystemService AdminSystemService
+@inject ShopEngagementService ShopEngagementService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 @inject AppI18n AppI18n
@@ -1165,7 +1165,7 @@ else
 
         try
         {
-            var flags = await Wave4Service.GetFeatureFlagMapAsync();
+            var flags = await AdminSystemService.GetFeatureFlagMapAsync();
             _promoPopupEnabled = flags == null || !flags.TryGetValue("promo-popup", out var on) || on;
         }
         catch (Exception)
@@ -1447,7 +1447,7 @@ else
         { _sub2Msg = "Vui lòng nhập tên, SĐT và chọn món."; return; }
         try
         {
-            await Wave2Svc.CreateSubscriptionAsync(new CreateSubscriptionModel
+            await ShopEngagementService.CreateSubscriptionAsync(new CreateSubscriptionModel
             {
                 CustomerName = _sub2Name.Trim(),
                 Phone = digits,

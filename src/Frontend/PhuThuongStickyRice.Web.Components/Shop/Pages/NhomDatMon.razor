@@ -4,7 +4,7 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
-@inject Wave4Service Wave4Service
+@inject AdminSystemService AdminSystemService
 @inject ShopService ShopService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
@@ -220,7 +220,7 @@ else
         _creating = true;
         try
         {
-            var group = await Wave4Service.CreateGroupOrderAsync(_creatorPhone.Trim());
+            var group = await AdminSystemService.CreateGroupOrderAsync(_creatorPhone.Trim());
             NavigationManager.NavigateTo("/nhom/" + group.Code);
         }
         catch (Exception ex)
@@ -238,7 +238,7 @@ else
         _error = null;
         try
         {
-            _group = await Wave4Service.GetGroupOrderAsync(Code);
+            _group = await AdminSystemService.GetGroupOrderAsync(Code);
         }
         catch (Exception ex)
         {
@@ -257,7 +257,7 @@ else
         _adding = true;
         try
         {
-            _group = await Wave4Service.AddGroupOrderLineAsync(Code, productId, Math.Max(1, _qty), _note, _addedBy);
+            _group = await AdminSystemService.AddGroupOrderLineAsync(Code, productId, Math.Max(1, _qty), _note, _addedBy);
             _note = null;
             _qty = 1;
         }
@@ -283,7 +283,7 @@ else
         _closing = true;
         try
         {
-            _closedResult = await Wave4Service.CloseGroupOrderAsync(Code, _closeName.Trim(), _closePhone.Trim(), _closeAddress.Trim(), null);
+            _closedResult = await AdminSystemService.CloseGroupOrderAsync(Code, _closeName.Trim(), _closePhone.Trim(), _closeAddress.Trim(), null);
         }
         catch (Exception ex)
         {

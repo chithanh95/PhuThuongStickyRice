@@ -27,7 +27,7 @@
                         @foreach (var item in FilteredItems)
                         {
                             <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile">
-                                <span class="oi @item.Icon" aria-hidden="true"></span>
+                                <i class="@item.Icon" aria-hidden="true"></i>
                                 <span class="lx-hnav-text">@item.Label</span>
                             </a>
                         }
@@ -43,7 +43,7 @@
                     {
                         <div class="lx-hnav-group @(IsGroupActive(group) ? "active" : "") @(IsGroupOpen(group.Key) ? "open" : "")">
                             <button type="button" class="lx-hnav-toggle" @onclick="() => ToggleGroup(group.Key)" aria-haspopup="true">
-                                <span class="oi @group.Icon" aria-hidden="true"></span>
+                                <i class="@group.Icon" aria-hidden="true"></i>
                                 <span class="lx-hnav-text">@group.Label</span>
                                 <span class="fa-solid fa-chevron-down lx-hnav-caret" aria-hidden="true"></span>
                             </button>
@@ -51,7 +51,7 @@
                                 @foreach (var item in items)
                                 {
                                     <a class="lx-hnav-link @IsActive(item.Href)" href="@item.Href" @onclick="CloseNavMobile">
-                                        <span class="oi @item.Icon" aria-hidden="true"></span>
+                                        <i class="@item.Icon" aria-hidden="true"></i>
                                         <span class="lx-hnav-text">@item.Label</span>
                                         @if (!string.IsNullOrEmpty(item.Badge))
                                         {
@@ -303,50 +303,51 @@
 
     private List<MenuGroup> MenuGroups = new()
     {
-        new("overview", "Tổng quan", "oi-dashboard", new()
+        new("overview", "Tổng quan", "fa-solid fa-gauge", new()
         {
-            new("/dashboard", "Dashboard", "oi-dashboard", roles: "Admin,Cashier"),
-            new("/orders", "Đơn hàng", "oi-cart", roles: "Admin,Cashier"),
-            new("/admin/kanban-don", "Kanban đơn hàng", "oi-columns", roles: "Admin,Cashier,Kitchen"),
-            new("/admin/quotes", "Đơn đặt tiệc", "oi-calendar"),
-            new("/customers", "Khách hàng", "oi-people"),
+            new("/dashboard", "Dashboard", "fa-solid fa-gauge", roles: "Admin,Cashier"),
+            new("/orders", "Đơn hàng", "fa-solid fa-cart-shopping", roles: "Admin,Cashier"),
+            new("/admin/kanban-don", "Kanban đơn hàng", "fa-solid fa-table-columns", roles: "Admin,Cashier,Kitchen"),
+            new("/admin/quotes", "Đơn đặt tiệc", "fa-solid fa-calendar-days"),
+            new("/customers", "Khách hàng", "fa-solid fa-users"),
         }),
-        new("sales", "Bán hàng", "oi-tag", new()
+        new("sales", "Bán hàng", "fa-solid fa-tag", new()
         {
-            new("/products", "Sản phẩm", "oi-tag"),
-            new("/admin/khuyen-mai", "Khuyến mãi", "oi-badge"),
-            new("/admin/ma-giam-gia", "Mã giảm giá", "oi-tag"),
-            new("/admin/chi-nhanh", "Chi nhánh", "oi-home"),
+            new("/products", "Sản phẩm", "fa-solid fa-tag"),
+            new("/admin/goi-tra-truoc", "Gói trả trước", "fa-solid fa-ticket"),
+            new("/admin/khuyen-mai", "Khuyến mãi", "fa-solid fa-ticket"),
+            new("/admin/ma-giam-gia", "Mã giảm giá", "fa-solid fa-tag"),
+            new("/admin/chi-nhanh", "Chi nhánh", "fa-solid fa-store"),
         }),
-        new("ops", "Vận hành", "oi-cog", new()
+        new("ops", "Vận hành", "fa-solid fa-gear", new()
         {
-            new("/admin/lich-nghi", "Lịch nghỉ lễ/Tết", "oi-calendar"),
-            new("/admin/lich-tong-hop", "Lịch tổng hợp", "oi-calendar"),
-            new("/admin/chat-noi-bo", "Chat nội bộ", "oi-chat", roles: "Admin,Cashier,Kitchen"),
-            new("/admin/mau-tin-nhan", "Mẫu tin nhắn", "oi-chat"),
+            new("/admin/lich-nghi", "Lịch nghỉ lễ/Tết", "fa-solid fa-calendar-days"),
+            new("/admin/lich-tong-hop", "Lịch tổng hợp", "fa-solid fa-calendar-days"),
+            new("/admin/chat-noi-bo", "Chat nội bộ", "fa-solid fa-comments", roles: "Admin,Cashier,Kitchen"),
+            new("/admin/mau-tin-nhan", "Mẫu tin nhắn", "fa-solid fa-comments"),
         }),
-        new("content", "Nội dung", "oi-image", new()
+        new("content", "Nội dung", "fa-solid fa-image", new()
         {
-            new("/admin/landing", "Landing page", "oi-image"),
-            new("/admin/bai-viet", "Bài viết", "oi-copywriting"),
-            new("/admin/danh-gia", "Đánh giá", "oi-star"),
+            new("/admin/landing", "Landing page", "fa-solid fa-image"),
+            new("/admin/bai-viet", "Bài viết", "fa-solid fa-pen-to-square"),
+            new("/admin/danh-gia", "Đánh giá", "fa-solid fa-star"),
         }),
-        new("finance", "Tài chính", "oi-dollar", new()
+        new("finance", "Tài chính", "fa-solid fa-dollar-sign", new()
         {
-            new("/admin/bao-cao", "Báo cáo doanh thu", "oi-graph"),
-            new("/admin/bao-cao-gio", "Báo cáo theo giờ", "oi-clock"),
-            new("/admin/du-bao", "Dự báo doanh thu", "oi-pulse"),
-            new("/admin/lai-gop", "Báo cáo lãi gộp", "oi-bar-chart"),
-            new("/admin/doi-soat-momo", "Đối soát MoMo", "oi-transfer"),
-            new("/admin/doi-soat-ngay", "Đối soát ngày", "oi-data-transfer-download"),
-            new("/admin/funnel", "Phễu khách hàng", "oi-graph"),
+            new("/admin/bao-cao", "Báo cáo doanh thu", "fa-solid fa-chart-line"),
+            new("/admin/bao-cao-gio", "Báo cáo theo giờ", "fa-solid fa-clock"),
+            new("/admin/du-bao", "Dự báo doanh thu", "fa-solid fa-wave-square"),
+            new("/admin/lai-gop", "Báo cáo lãi gộp", "fa-solid fa-chart-column"),
+            new("/admin/doi-soat-momo", "Đối soát MoMo", "fa-solid fa-arrow-right-arrow-left"),
+            new("/admin/doi-soat-ngay", "Đối soát ngày", "fa-solid fa-download"),
+            new("/admin/funnel", "Phễu khách hàng", "fa-solid fa-chart-line"),
         }),
-        new("system", "Hệ thống", "oi-wrench", new()
+        new("system", "Hệ thống", "fa-solid fa-wrench", new()
         {
-            new("/admin/shop-settings", "Cài đặt cửa hàng", "oi-cog"),
-            new("/admin/nhan-vien", "Nhân viên", "oi-people"),
-            new("/admin/phan-quyen", "Phân quyền", "oi-lock-locked"),
-            new("/admin/nhat-ky", "Nhật ký nhân viên", "oi-list"),
+            new("/admin/shop-settings", "Cài đặt cửa hàng", "fa-solid fa-gear"),
+            new("/admin/nhan-vien", "Nhân viên", "fa-solid fa-users"),
+            new("/admin/phan-quyen", "Phân quyền", "fa-solid fa-lock"),
+            new("/admin/nhat-ky", "Nhật ký nhân viên", "fa-solid fa-list"),
         }),
     };
 

@@ -65,6 +65,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public string Status { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        public decimal? DepositAmount { get; set; }
+
+        public string DepositInfo { get; set; }
     }
 
     public class ProductSizeOptionModel

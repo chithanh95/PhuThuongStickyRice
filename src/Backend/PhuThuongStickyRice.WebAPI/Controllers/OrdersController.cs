@@ -207,6 +207,27 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Item 143 (Public): first-order voucher for a new customer.
+        /// Returns { isNewCustomer: false } for returning customers.
+        /// 400 on an invalid phone.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("first-order-voucher")]
+        public async Task<ActionResult> GetFirstOrderVoucher(
+            [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return Ok(await _orderAppService.GetFirstOrderVoucherAsync(phone));
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Public: full order history for a VN phone number (no login).
         /// Strict VN mobile format is validated; 400 on invalid format.
         /// </summary>

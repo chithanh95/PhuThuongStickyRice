@@ -5,9 +5,9 @@
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Services
-@inject Wave2Service Wave2Service
+@inject ShopEngagementService ShopEngagementService
 @inject OrderService OrderService
-@inject Wave5Service Wave5Service
+@inject AdminCommerceService AdminCommerceService
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Đánh giá đơn hàng</h4>
@@ -157,8 +157,8 @@ else
         {
             <div class="col-6 col-md-3 mb-3" @key="p.Id">
                 <div class="card h-100">
-                    <a href="@Wave5Service.ResolveImageUrl(p.ImageUrl)" target="_blank" rel="noopener">
-                        <img src="@Wave5Service.ResolveImageUrl(p.ImageUrl)" class="card-img-top" alt="Ảnh check-in chờ duyệt"
+                    <a href="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" target="_blank" rel="noopener">
+                        <img src="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" class="card-img-top" alt="Ảnh check-in chờ duyệt"
                              style="height: 160px; object-fit: cover;" />
                     </a>
                     <div class="card-body p-2">
@@ -204,7 +204,7 @@ else
     {
         try
         {
-            _reviews = await Wave2Service.GetReviewsAsync() ?? new List<OrderReviewModel>();
+            _reviews = await ShopEngagementService.GetReviewsAsync() ?? new List<OrderReviewModel>();
         }
         catch (Exception)
         {
@@ -218,7 +218,7 @@ else
     {
         try
         {
-            _pendingPhotos = await Wave5Service.GetCustomerPhotosAsync(pendingOnly: true)
+            _pendingPhotos = await AdminCommerceService.GetCustomerPhotosAsync(pendingOnly: true)
                 ?? new List<CustomerPhotoModel>();
         }
         catch (Exception)
@@ -231,7 +231,7 @@ else
     {
         try
         {
-            await Wave5Service.ApproveCustomerPhotoAsync(p.Id);
+            await AdminCommerceService.ApproveCustomerPhotoAsync(p.Id);
             _pendingPhotos.Remove(p);
             _message = "Đã duyệt ảnh check-in.";
         }
@@ -245,7 +245,7 @@ else
     {
         try
         {
-            await Wave5Service.RejectCustomerPhotoAsync(p.Id);
+            await AdminCommerceService.RejectCustomerPhotoAsync(p.Id);
             _pendingPhotos.Remove(p);
             _message = "Đã xóa ảnh check-in.";
         }

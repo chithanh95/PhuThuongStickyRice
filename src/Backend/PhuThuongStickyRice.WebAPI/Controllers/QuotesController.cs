@@ -125,5 +125,23 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        /// <summary>Item 161: admin đặt cọc khi duyệt báo giá.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id:guid}/deposit")]
+        public async Task<ActionResult> SetDeposit(
+            Guid id,
+            [FromBody] SetQuoteDepositDto dto,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return Ok(await _appService.SetDepositAsync(id, dto));
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

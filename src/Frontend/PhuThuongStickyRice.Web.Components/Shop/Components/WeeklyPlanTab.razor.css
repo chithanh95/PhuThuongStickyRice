@@ -1,0 +1,164 @@
+/* Tab "Gói ăn sáng tuần" — ưu tiên người lớn tuổi: chữ to, nút lớn, tương phản cao. */
+.wpt {
+    font-size: 1.15rem;
+    color: var(--shp-ink);
+    max-width: 40rem;
+}
+
+.wpt-title {
+    font-size: 1.55rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--shp-ink);
+}
+
+.wpt-big {
+    font-size: 1.25rem;
+    line-height: 1.6;
+}
+
+.wpt-day {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 1.3rem;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 0.55rem;
+    border: 1px solid var(--shp-line);
+    border-radius: 0.7rem;
+    background: var(--shp-surface);
+}
+
+.wpt-dayname {
+    font-weight: 700;
+    min-width: 4.8rem;
+}
+
+.wpt-price {
+    margin-left: auto;
+    font-weight: 700;
+}
+
+.wpt-total {
+    font-size: 1.4rem;
+}
+
+.wpt-label {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 1rem 0 0.4rem;
+}
+
+.wpt-input {
+    width: 100%;
+    font-size: 1.3rem;
+    min-height: 54px;
+    padding: 0.55rem 0.85rem;
+    border: 2px solid var(--shp-line);
+    border-radius: 0.7rem;
+    background: var(--shp-surface);
+    color: var(--shp-ink);
+}
+
+.wpt-btn {
+    display: inline-block;
+    min-height: 52px;
+    padding: 0.65rem 1.8rem;
+    margin-top: 1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    border-radius: 0.7rem;
+    cursor: pointer;
+}
+
+.wpt-btn-primary {
+    width: 100%;
+    border: none;
+    background: var(--shp-accent);
+    color: #fff;
+}
+
+.wpt-btn-outline {
+    background: transparent;
+    border: 2px solid var(--shp-accent);
+    color: var(--shp-accent);
+}
+
+.wpt-btn-claim {
+    margin-top: 0;
+    margin-left: auto;
+    min-height: 48px;
+    padding: 0.45rem 1.1rem;
+    font-size: 1.1rem;
+    border: none;
+    background: #2e9e5b;
+    color: #fff;
+}
+
+.wpt-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.wpt-error {
+    color: #a5272f;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-top: 0.8rem;
+}
+
+.wpt-success {
+    text-align: left;
+}
+
+.wpt-code {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-align: center;
+    padding: 1rem 0.5rem;
+    margin: 1rem 0;
+    border: 3px dashed var(--shp-accent);
+    border-radius: 0.8rem;
+    background: var(--shp-surface);
+    color: var(--shp-ink);
+}
+
+.wpt-order {
+    margin-top: 1.2rem;
+    padding: 1rem;
+    border: 1px solid var(--shp-line);
+    border-radius: 0.8rem;
+    background: var(--shp-surface);
+}
+
+.wpt-order-code {
+    font-size: 1.4rem;
+}
+
+.wpt-claimed {
+    margin-left: auto;
+    color: #1e7e34;
+    font-weight: 800;
+    font-size: 1.2rem;
+}
+
+.wpt-hr {
+    margin: 2rem 0;
+    border-color: var(--shp-line);
+}
+
+/* Dark mode: giữ tương phản cho chữ báo lỗi / đã nhận. */
+html.dark .wpt-error {
+    color: #f08a93;
+}
+
+html.dark .wpt-claimed {
+    color: #6fdc9c;
+}
+
+html.dark .wpt-btn-claim {
+    background: #2e9e5b;
+}

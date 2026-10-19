@@ -2,7 +2,7 @@
 @attribute [Authorize]
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Services
-@inject Wave3Service Wave3Service
+@inject AdminOperationsService AdminOperationsService
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
 <div class="lx-page-head">
@@ -151,7 +151,7 @@ else
     {
         try
         {
-            _items = await Wave3Service.GetArticlesAsync() ?? new List<ArticleModel>();
+            _items = await AdminOperationsService.GetArticlesAsync() ?? new List<ArticleModel>();
         }
         catch (Exception)
         {
@@ -197,13 +197,13 @@ else
         {
             if (_editing == null)
             {
-                await Wave3Service.CreateArticleAsync(_form);
+                await AdminOperationsService.CreateArticleAsync(_form);
                 _message = "Đã thêm bài viết.";
                 Toasts.Show("Đã thêm bài viết thành công!");
             }
             else
             {
-                await Wave3Service.UpdateArticleAsync(_editing.Id, _form);
+                await AdminOperationsService.UpdateArticleAsync(_editing.Id, _form);
                 _message = "Đã lưu thay đổi.";
                 Toasts.Show("Đã lưu bài viết thành công!");
             }
@@ -226,7 +226,7 @@ else
         _error = null;
         try
         {
-            await Wave3Service.DeleteArticleAsync(a.Id);
+            await AdminOperationsService.DeleteArticleAsync(a.Id);
             await LoadAsync();
         }
         catch (Exception ex)

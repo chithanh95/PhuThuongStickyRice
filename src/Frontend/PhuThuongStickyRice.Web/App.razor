@@ -1,6 +1,6 @@
 @inject NavigationManager NavigationManager
 @inject PhuThuongStickyRice.Web.Components.Shop.Services.CartState CartState
-@inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave4Service Wave4Service
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminSystemService AdminSystemService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @implements IDisposable
 
@@ -144,7 +144,7 @@ else
     {
         try
         {
-            var status = await Wave4Service.GetSystemStatusAsync();
+            var status = await AdminSystemService.GetSystemStatusAsync();
             _maintenanceMode = status.MaintenanceMode;
             _maintenanceMessage = status.MaintenanceMessage;
         }

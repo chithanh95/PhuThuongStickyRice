@@ -165,6 +165,29 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<LastOrderInfoModel>();
         }
 
+        /// <summary>
+        /// Item 143: first-order voucher for a new customer. Returns null
+        /// when the call fails or the phone is invalid (fail-soft).
+        /// </summary>
+        public async Task<FirstOrderVoucherModel> GetFirstOrderVoucherAsync(string phone)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync(
+                    $"api/orders/first-order-voucher?phone={Uri.EscapeDataString(phone ?? string.Empty)}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
+
+                return await response.Content.ReadAs<FirstOrderVoucherModel>();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public async Task<PlacedOrderModel> CreateOrderAsync(CreateOrderModel order)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, "api/orders");

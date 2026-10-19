@@ -12,7 +12,7 @@
 @inject ShopService ShopService
 @inject CartState CartState
 @inject CartSyncService CartSyncService
-@inject Wave2Service Wave2Service
+@inject ShopEngagementService ShopEngagementService
 @inject ITokenManager TokenManager
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
@@ -244,7 +244,7 @@
 
                 @if (_editing)
                 {
-                    <div class="border rounded p-3 mb-3" style="background:#FFFDF7;">
+                    <div class="tk-addr-panel border rounded p-3 mb-3" style="background:#FFFDF7;">
                         <div class="form-row">
                             <div class="form-group col-md-4">
                                 <label>Tên gợi nhớ</label>
@@ -408,7 +408,7 @@
                 // Hạng thành viên + lịch sử đơn hàng (theo SĐT đăng nhập).
                 try
                 {
-                    _loyalty = await Wave2Service.GetLoyaltyByPhoneAsync(_userName);
+                    _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(_userName);
                 }
                 catch (Exception) { }
                 try

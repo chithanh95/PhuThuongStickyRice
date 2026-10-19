@@ -9,7 +9,7 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject DashboardService DashboardService
-@inject Wave5Service Wave5Service
+@inject AdminCommerceService AdminCommerceService
 @inject PhuThuongStickyRice.Web.Components.Shop.Services.ShopService ShopService
 @inject IJSRuntime JSRuntime
 <div class="lx-page-head">
@@ -685,7 +685,7 @@ else
             _lastUpdated = DateTime.Now;
 
             // Wave 5 widgets: daily target, source stats, corporate due, forecast.
-            await LoadWave5WidgetsAsync();
+            await LoadDashboardWidgetsAsync();
 
             // Wave 6d (item 36): today-vs-yesterday card (fail-soft).
             try
@@ -728,11 +728,11 @@ else
         }
     }
 
-    private async Task LoadWave5WidgetsAsync()
+    private async Task LoadDashboardWidgetsAsync()
     {
         try
         {
-            _dailyTarget = await Wave5Service.GetDailyTargetAsync();
+            _dailyTarget = await AdminCommerceService.GetDailyTargetAsync();
         }
         catch (Exception)
         {
@@ -740,7 +740,7 @@ else
 
         try
         {
-            _sourceStats = await Wave5Service.GetSourceStatsAsync(_from, _to);
+            _sourceStats = await AdminCommerceService.GetSourceStatsAsync(_from, _to);
         }
         catch (Exception)
         {

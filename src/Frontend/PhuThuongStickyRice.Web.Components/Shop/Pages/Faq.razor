@@ -7,7 +7,7 @@
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
-@inject Wave2Service Wave2Service
+@inject ShopEngagementService ShopEngagementService
 @inject PolicyService PolicyService
 @inject PhuThuongStickyRice.Web.Components.Shop.Services.ShopSettingsService ShopSettingsService
 @implements IDisposable
@@ -144,7 +144,7 @@ else
         _loading = true;
         try
         {
-            _faqs = await Wave2Service.GetFaqsAsync(term) ?? new List<FaqItemModel>();
+            _faqs = await ShopEngagementService.GetFaqsAsync(term) ?? new List<FaqItemModel>();
         }
         catch (Exception)
         {

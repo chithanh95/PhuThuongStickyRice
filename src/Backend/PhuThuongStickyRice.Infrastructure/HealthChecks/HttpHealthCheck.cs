@@ -8,7 +8,7 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
 {
     public class HttpHealthCheck : IHealthCheck
     {
-        private static HttpClient _httpClient = new HttpClient();
+        private static readonly HttpClient _httpClient = new HttpClient();
         private readonly string _uri;
 
         public HttpHealthCheck(string uri)

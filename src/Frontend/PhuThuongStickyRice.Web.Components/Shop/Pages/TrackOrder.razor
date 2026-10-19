@@ -13,9 +13,9 @@
 @inject ShopSettingsService ShopSettingsService
 @inject CartState CartState
 @inject ToastService Toasts
-@inject Wave2Service Wave2Service
-@inject Wave4Service Wave4Service
-@inject Wave5Service Wave5Service
+@inject ShopEngagementService ShopEngagementService
+@inject AdminSystemService AdminSystemService
+@inject AdminCommerceService AdminCommerceService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject AppI18n AppI18n
@@ -43,7 +43,7 @@
         </div>
         @if (!string.IsNullOrEmpty(_error))
         {
-            <div class="alert alert-danger mt-3 mb-0">@_error</div>
+            <div class="alert alert-danger mt-3 mb-0" role="alert">@_error</div>
         }
     </div>
 </div>
@@ -55,6 +55,7 @@
         <p class="text-muted"><small>@AppI18n.T("shop.history_hint")</small></p>
         <div class="form-row">
             <div class="col-md-4">
+                <label>@AppI18n.T("shop.order_phone")</label>
                 <input class="form-control" @bind="_historyPhone" placeholder="0901234567" inputmode="tel" />
             </div>
             <div class="col-md-4 d-flex align-items-end">
@@ -690,7 +691,7 @@
 {
     <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 16px;"
          @onclick="DismissSurveyAsync">
-        <div style="background: #fff; border-radius: 16px; max-width: 420px; width: 100%; padding: 28px 24px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25);"
+        <div class="to-survey-sheet" style="background: #fff; border-radius: 16px; max-width: 420px; width: 100%; padding: 28px 24px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25);"
              @onclick:stopPropagation="true">
             <div style="font-size: 40px; margin-bottom: 8px;">😋</div>
             <h5 style="font-family: Lora, Georgia, serif; color: #763434; font-weight: 700; margin-bottom: 6px;">
@@ -889,7 +890,7 @@
         _savingContactForm = true;
         try
         {
-            _order = await Wave2Service.UpdateContactByCustomerAsync(
+            _order = await ShopEngagementService.UpdateContactByCustomerAsync(
                 _order.OrderNumber, _order.CustomerPhone, _editRecipientPhone, _editNotes);
             _editingContact = false;
             Toasts.Show("Đã cập nhật SĐT / ghi chú.");
@@ -913,7 +914,7 @@
         _savingAddrForm = true;
         try
         {
-            _order = await Wave2Service.UpdateAddressByCustomerAsync(
+            _order = await ShopEngagementService.UpdateAddressByCustomerAsync(
                 _order.OrderNumber, _order.CustomerPhone, _editAddress, _editDeliverySlot);
             _editingAddress = false;
             Toasts.Show("Đã cập nhật địa chỉ / giờ giao.");
@@ -1204,7 +1205,7 @@
         // Loyalty profile for the order phone (points, tier, birthday).
         try
         {
-            _loyalty = await Wave2Service.GetLoyaltyByPhoneAsync(_order.CustomerPhone);
+            _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(_order.CustomerPhone);
             _birthdayInput = _loyalty?.DateOfBirth;
         }
         catch (Exception)
@@ -1280,7 +1281,7 @@
         _surveySubmitting = true;
         try
         {
-            await Wave2Service.SubmitReviewAsync(
+            await ShopEngagementService.SubmitReviewAsync(
                 _order.OrderNumber, _order.CustomerPhone, _surveyRating, _surveyComment,
                 new System.Collections.Generic.List<object>());
             _reviewSubmitted = true;
@@ -1329,7 +1330,7 @@
     {
         try
         {
-            _addresses = await Wave4Service.GetAddressesAsync(_order?.CustomerPhone);
+            _addresses = await AdminSystemService.GetAddressesAsync(_order?.CustomerPhone);
         }
         catch (Exception)
         {
@@ -1349,7 +1350,7 @@
         _savingAddress = true;
         try
         {
-            await Wave4Service.SaveAddressAsync(_order.CustomerPhone, _newAddressLabel.Trim(), _newAddressText.Trim());
+            await AdminSystemService.SaveAddressAsync(_order.CustomerPhone, _newAddressLabel.Trim(), _newAddressText.Trim());
             _newAddressLabel = null;
             _newAddressText = null;
             await LoadAddressBookAsync();
@@ -1369,7 +1370,7 @@
     {
         try
         {
-            await Wave4Service.DeleteAddressAsync(address.Id, _order.CustomerPhone);
+            await AdminSystemService.DeleteAddressAsync(address.Id, _order.CustomerPhone);
             await LoadAddressBookAsync();
         }
         catch (Exception)
@@ -1389,7 +1390,7 @@
         _savingBirthday = true;
         try
         {
-            _loyalty = await Wave2Service.UpdateBirthdayAsync(_order.CustomerPhone, _birthdayInput);
+            _loyalty = await ShopEngagementService.UpdateBirthdayAsync(_order.CustomerPhone, _birthdayInput);
             _birthdayMessage = "Đã lưu ngày sinh. Bạn sẽ nhận voucher vào đúng ngày sinh nhật!";
         }
         catch (Exception)
@@ -1420,7 +1421,7 @@
         _cancelling = true;
         try
         {
-            _order = await Wave2Service.CancelOrderByCustomerAsync(_order.OrderNumber, _order.CustomerPhone);
+            _order = await ShopEngagementService.CancelOrderByCustomerAsync(_order.OrderNumber, _order.CustomerPhone);
         }
         catch (Exception ex)
         {
@@ -1587,7 +1588,7 @@
                 .Select(kv => new { LineId = kv.Key, Quantity = kv.Value })
                 .Cast<object>()
                 .ToList();
-            _order = await Wave2Service.UpdateOrderLinesAsync(
+            _order = await ShopEngagementService.UpdateOrderLinesAsync(
                 _order.OrderNumber, _order.CustomerPhone, lines);
             _editingLines = false;
         }
@@ -1619,11 +1620,11 @@
             string photoUrl = null;
             if (_reviewPhotoFile != null)
             {
-                Wave2Service.SetReviewPhotoContext(_order.OrderNumber, _order.CustomerPhone);
+                ShopEngagementService.SetReviewPhotoContext(_order.OrderNumber, _order.CustomerPhone);
                 var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
                     "interop.compressImageFromInput", "review-photo-input", 1600, 0.85);
                 using var stream = new System.IO.MemoryStream(Convert.FromBase64String(compressed.Base64));
-                photoUrl = await Wave2Service.UploadReviewPhotoAsync(
+                photoUrl = await ShopEngagementService.UploadReviewPhotoAsync(
                     stream, compressed.FileName, compressed.ContentType);
             }
 
@@ -1632,7 +1633,7 @@
                 .Where(l => _lineRatings.TryGetValue(l.Id, out var r) && r >= 1)
                 .Select(l => (object)new { ProductId = l.ProductId, Rating = _lineRatings[l.Id] })
                 .ToList() ?? new List<object>();
-            var review = await Wave2Service.SubmitReviewAsync(
+            var review = await ShopEngagementService.SubmitReviewAsync(
                 _order.OrderNumber, _order.CustomerPhone, _rating, _reviewComment, dishRatings, photoUrl);
             _reviewRewardCode = review?.RewardCode;
             _reviewSubmitted = true;
@@ -1854,7 +1855,7 @@
         _checkingIn = true;
         try
         {
-            _checkInResult = await Wave5Service.CheckInAsync(_checkInPhone.Trim());
+            _checkInResult = await AdminCommerceService.CheckInAsync(_checkInPhone.Trim());
         }
         catch (Exception ex)
         {
@@ -1925,7 +1926,7 @@
             var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
                 "interop.compressImageFromInput", "share-photo-input", 1600, 0.85);
             using var stream = new System.IO.MemoryStream(Convert.FromBase64String(compressed.Base64));
-            await Wave5Service.UploadCustomerPhotoAsync(
+            await AdminCommerceService.UploadCustomerPhotoAsync(
                 stream, compressed.FileName, compressed.ContentType,
                 _order.CustomerPhone, _photoCaption);
             _photoMessage = "Cảm ơn bạn! Ảnh đang chờ duyệt và sẽ sớm hiện ở gallery.";

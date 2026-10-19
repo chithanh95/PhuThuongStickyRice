@@ -6,6 +6,7 @@
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Shop.Components
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @implements IDisposable
@@ -13,10 +14,10 @@
 @inject ShopSettingsService ShopSettingsService
 @inject ToastService Toasts
 @inject DiscountService DiscountService
-@inject Wave2Service Wave2Service
-@inject Wave3Service Wave3Service
-@inject Wave4Service Wave4Service
-@inject Wave5Service Wave5Service
+@inject ShopEngagementService ShopEngagementService
+@inject AdminOperationsService AdminOperationsService
+@inject AdminSystemService AdminSystemService
+@inject AdminCommerceService AdminCommerceService
 @inject CartState CartState
 @inject NavigationManager Navigation
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
@@ -27,6 +28,9 @@
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
 <h1>@AppI18n.T("common.checkout")</h1>
+
+@* Item 141: banner đếm ngược giờ chốt đơn theo ca bếp. *@
+<OrderCountdownBanner Settings="_shopSettings" />
 
 @* Gợi ý nhẹ cho khách vãng lai — không bắt buộc, checkout vẫn chạy bình thường khi chưa đăng nhập. *@
 <AuthorizeView>
@@ -648,10 +652,10 @@ else
                     <div class="form-group">
                         <label>@AppI18n.T("shop.discount_code")</label>
                         <div class="input-group">
-                            <input class="form-control" @bind="_discountCodeInput" placeholder="Nhập mã (nếu có)"
+                            <input class="form-control" @bind="_discountCodeInput" @bind:after="ClearAutoAppliedNote" placeholder="Nhập mã (nếu có)"
                                    disabled="@_applyingDiscount" />
                             <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" @onclick="ApplyDiscount" disabled="@_applyingDiscount">
+                                <button class="btn btn-outline-secondary" style="min-height: 48px;" @onclick="ApplyDiscount" disabled="@_applyingDiscount">
                                     @(_applyingDiscount ? "Đang kiểm tra..." : "Áp dụng")
                                 </button>
                             </div>
@@ -659,6 +663,11 @@ else
                         @if (!string.IsNullOrEmpty(_discountMessage))
                         {
                             <small class="@(_discountAmount > 0 || _isFreeship ? "text-success" : "text-danger")">@_discountMessage</small>
+                        }
+                        @* Item 139 (UX người già): ghi chú to, rõ, câu đơn giản — không dùng chữ nhỏ/mờ cho thông tin quan trọng. *@
+                        @if (!string.IsNullOrEmpty(_autoAppliedNote))
+                        {
+                            <div class="mt-2 font-weight-bold text-success" style="font-size: 1.05rem;">✨ @_autoAppliedNote</div>
                         }
                     </div>
 
@@ -849,6 +858,9 @@ else
     private string _discountMessage;
     private bool _applyingDiscount;
 
+    // Item 139: note shown when the best public code was auto-applied.
+    private string _autoAppliedNote;
+
     private string _transferMessage;
     private string _transferError;
     private string _momoError;
@@ -926,7 +938,7 @@ else
         // Item 91: happy-hour promotion preview (auto-applied server-side).
         try
         {
-            _activePromotion = await Wave3Service.GetActivePromotionAsync();
+            _activePromotion = await AdminOperationsService.GetActivePromotionAsync();
         }
         catch (Exception)
         {
@@ -937,7 +949,7 @@ else
         // block checkout).
         try
         {
-            var flags = await Wave4Service.GetFeatureFlagMapAsync();
+            var flags = await AdminSystemService.GetFeatureFlagMapAsync();
             _giftWrapEnabled = GetFlag(flags, "gift-wrap", true);
             _referralsEnabled = GetFlag(flags, "referrals", true);
             _luckySpinEnabled = GetFlag(flags, "lucky-spin", true);
@@ -949,7 +961,7 @@ else
         // Item 109: active branches for the branch picker.
         try
         {
-            _branches = await Wave4Service.GetActiveBranchesAsync();
+            _branches = await AdminSystemService.GetActiveBranchesAsync();
         }
         catch (Exception)
         {
@@ -1004,6 +1016,28 @@ else
             {
                 _order.CustomerPhone = carriedPhone.Trim();
                 await DoPhoneLookupAsync();
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        // Item 139: tự động áp mã giảm giá tốt nhất (fail-soft — không
+        // bao giờ chặn checkout).
+        try
+        {
+            var query = ParseQuery(Navigation.Uri);
+            if (query.TryGetValue("code", out var carriedCode)
+                && !string.IsNullOrWhiteSpace(carriedCode)
+                && string.IsNullOrWhiteSpace(_discountCodeInput))
+            {
+                // Item 143: mã giảm giá mang từ banner ở /shop.
+                _discountCodeInput = carriedCode.Trim();
+                await ApplyDiscount();
+            }
+            else if (_subtotal > 0 && string.IsNullOrWhiteSpace(_discountCodeInput))
+            {
+                await AutoApplyBestDiscountAsync();
             }
         }
         catch (Exception)
@@ -1188,7 +1222,7 @@ else
             // Loyalty summary (points, tier, referral code) for the phone.
             try
             {
-                _loyalty = await Wave2Service.GetLoyaltyByPhoneAsync(phone);
+                _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(phone);
                 _redeemPoints = 0;
                 _redeemPointsInput = 0;
                 _redeemMessage = null;
@@ -1201,7 +1235,7 @@ else
             // Item 140: wallet balance for this phone (enables the ví option).
             try
             {
-                var wallet = await Wave5Service.GetWalletBalanceAsync(phone);
+                var wallet = await AdminCommerceService.GetWalletBalanceAsync(phone);
                 _walletBalance = wallet?.Balance ?? 0;
             }
             catch (Exception)
@@ -1278,6 +1312,71 @@ else
             _applyingDiscount = false;
             RefreshMinOrderState();
         }
+    }
+
+    /// <summary>
+    /// Item 139: tự áp mã giảm tiền công khai tốt nhất (không xét freeship
+    /// vì đã có luồng riêng). Fail-soft — không bao giờ chặn checkout.
+    /// </summary>
+    private async Task AutoApplyBestDiscountAsync()
+    {
+        try
+        {
+            var codes = await DiscountService.GetActivePublicAsync();
+            if (codes == null)
+            {
+                return;
+            }
+
+            string bestCode = null;
+            decimal bestAmount = 0;
+            foreach (var c in codes)
+            {
+                // VoucherType 1 = Freeship (đã có luồng riêng) — chỉ xét mã
+                // giảm tiền ở đây.
+                if (c == null || c.VoucherType == 1 || string.IsNullOrWhiteSpace(c.Code))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var result = await DiscountService.ValidateAsync(c.Code, _subtotal, _order.CustomerPhone);
+                    if (result != null && result.Valid && !result.IsFreeship && result.DiscountAmount > bestAmount)
+                    {
+                        bestAmount = result.DiscountAmount;
+                        bestCode = c.Code;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(bestCode)
+                && bestAmount > 0
+                && string.IsNullOrWhiteSpace(_discountCodeInput))
+            {
+                _discountCodeInput = bestCode;
+                await ApplyDiscount();
+                if (!string.IsNullOrWhiteSpace(_appliedCode))
+                {
+                    // UX người già: câu đơn giản, ghi rõ số tiền tiết kiệm.
+                    _autoAppliedNote = $"Đã tự dùng mã {_appliedCode} giúp bạn tiết kiệm {FormatPrice(bestAmount)}";
+                }
+            }
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Item 139: ẩn ghi chú tự áp mã khi khách sửa/xóa mã thủ công.
+    /// </summary>
+    private void ClearAutoAppliedNote()
+    {
+        _autoAppliedNote = null;
     }
 
     private void ApplyRedeem()
@@ -1573,7 +1672,7 @@ else
         _spinning = true;
         try
         {
-            var result = await Wave2Service.SpinAsync(_placedOrder.Id, _placedOrder.CustomerPhone);
+            var result = await ShopEngagementService.SpinAsync(_placedOrder.Id, _placedOrder.CustomerPhone);
             _spinResult = result;
             _placedOrder.LuckySpinUsed = true;
 

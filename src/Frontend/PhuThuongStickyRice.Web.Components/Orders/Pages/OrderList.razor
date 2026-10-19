@@ -5,7 +5,7 @@
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @inject OrderService OrderService
 @inject NavigationManager Navigation
-@inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave3Service Wave3Service
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminOperationsService AdminOperationsService
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.PermissionService PermissionService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
@@ -625,7 +625,7 @@ else
 
         try
         {
-            _shippers = await Wave3Service.GetShippersAsync(false)
+            _shippers = await AdminOperationsService.GetShippersAsync(false)
                 ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.ShipperModel>();
         }
         catch (Exception)

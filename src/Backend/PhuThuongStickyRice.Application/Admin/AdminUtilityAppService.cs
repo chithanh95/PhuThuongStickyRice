@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Customer;
 using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Orders.DTOs;
@@ -23,6 +24,15 @@ namespace PhuThuongStickyRice.Application.Admin
     public class AdminUtilityAppService : ApplicationService, IAdminUtilityAppService
     {
         private const int SearchTake = 5;
+
+        /// <summary>How far back to look for low-star reviews.</summary>
+        private static readonly TimeSpan BadReviewLookback = TimeSpan.FromDays(7);
+
+        /// <summary>Max low-star reviews surfaced per notification batch.</summary>
+        private const int BadReviewTake = 5;
+
+        /// <summary>Max birthday customer names shown in the notification detail.</summary>
+        private const int BirthdayNamesTake = 3;
 
         private readonly IOrderAppService _orders;
         private readonly IProductAppService _products;
@@ -105,59 +115,95 @@ namespace PhuThuongStickyRice.Application.Admin
         public virtual async Task<List<NotificationDto>> GetNotificationsAsync()
         {
             var notifications = new List<NotificationDto>();
-            var nowVn = DateTime.UtcNow.AddHours(7);
+            var nowVn = VietnamTime.ToVietnamTime(DateTime.UtcNow);
 
             // Sequential awaits (same single-DbContext reason as SearchAsync above).
             var stats = await _dashboard.GetStatsAsync();
             var reviewsResult = await _orders.GetReviewsAsync();
             var birthdaysResult = await _customerProfile.GetBirthdaysAsync(nowVn.Month);
 
-            // 1. Stale pending orders — urgent.
-            if (stats.StalePendingOrders > 0)
+            AddStalePendingNotification(notifications, stats);
+            AddPendingOrdersNotification(notifications, stats);
+            AddUpcomingPreOrderNotification(notifications, stats);
+            AddBadReviewNotifications(notifications, reviewsResult, nowVn);
+            AddBirthdayNotification(notifications, birthdaysResult, nowVn);
+
+            return notifications;
+        }
+
+        /// <summary>Stale pending orders — urgent.</summary>
+        private static void AddStalePendingNotification(
+            List<NotificationDto> notifications, DashboardStatsDto stats)
+        {
+            if (stats.StalePendingOrders <= 0)
             {
-                notifications.Add(new NotificationDto
-                {
-                    Id = "stale-pending",
-                    Kind = "urgent",
-                    Title = $"{stats.StalePendingOrders} đơn chờ xác nhận quá {stats.StalePendingMinutes} phút",
-                    Detail = "Cần xử lý ngay để không trễ hẹn khách.",
-                    Link = "/orders?status=Pending"
-                });
+                return;
             }
 
-            // 2. Pending orders — warning.
-            if (stats.PendingOrders > 0)
+            notifications.Add(new NotificationDto
             {
-                notifications.Add(new NotificationDto
-                {
-                    Id = "pending-orders",
-                    Kind = "warning",
-                    Title = $"{stats.PendingOrders} đơn hàng mới chưa xử lý",
-                    Detail = "Nhấn để xem và xác nhận.",
-                    Link = "/orders?status=Pending"
-                });
+                Id = "stale-pending",
+                Kind = "urgent",
+                Title = $"{stats.StalePendingOrders} đơn chờ xác nhận quá {stats.StalePendingMinutes} phút",
+                Detail = "Cần xử lý ngay để không trễ hẹn khách.",
+                Link = "/orders?status=Pending"
+            });
+        }
+
+        /// <summary>Pending orders — warning.</summary>
+        private static void AddPendingOrdersNotification(
+            List<NotificationDto> notifications, DashboardStatsDto stats)
+        {
+            if (stats.PendingOrders <= 0)
+            {
+                return;
             }
 
-            // 3. Upcoming pre-orders — info.
+            notifications.Add(new NotificationDto
+            {
+                Id = "pending-orders",
+                Kind = "warning",
+                Title = $"{stats.PendingOrders} đơn hàng mới chưa xử lý",
+                Detail = "Nhấn để xem và xác nhận.",
+                Link = "/orders?status=Pending"
+            });
+        }
+
+        /// <summary>Upcoming pre-orders — info.</summary>
+        private static void AddUpcomingPreOrderNotification(
+            List<NotificationDto> notifications, DashboardStatsDto stats)
+        {
             var upcoming = stats.UpcomingPreOrders ?? new List<OrderDto>();
-            if (upcoming.Count > 0)
+            if (upcoming.Count == 0)
             {
-                var next = upcoming.MinBy(o => o.ScheduledFor);
-                notifications.Add(new NotificationDto
-                {
-                    Id = "upcoming-preorder",
-                    Kind = "info",
-                    Title = $"{upcoming.Count} đơn đặt trước sắp đến giờ",
-                    Detail = $"Gần nhất: {next.OrderNumber} lúc {next.ScheduledFor?.AddHours(7):dd/MM HH:mm}.",
-                    Link = "/bep"
-                });
+                return;
             }
 
-            // 4. New 1–2 star reviews (last 7 days) — warning.
+            var next = upcoming.MinBy(o => o.ScheduledFor);
+            var scheduledVn = next.ScheduledFor.HasValue
+                ? VietnamTime.ToVietnamTime(next.ScheduledFor.Value).ToString("dd/MM HH:mm")
+                : null;
+            notifications.Add(new NotificationDto
+            {
+                Id = "upcoming-preorder",
+                Kind = "info",
+                Title = $"{upcoming.Count} đơn đặt trước sắp đến giờ",
+                Detail = $"Gần nhất: {next.OrderNumber} lúc {scheduledVn}.",
+                Link = "/bep"
+            });
+        }
+
+        /// <summary>New 1–2 star reviews (last 7 days) — warning.</summary>
+        private static void AddBadReviewNotifications(
+            List<NotificationDto> notifications,
+            List<OrderReviewDto> reviewsResult,
+            DateTime nowVn)
+        {
+            var cutoff = nowVn.Subtract(BadReviewLookback);
             var badReviews = (reviewsResult ?? new List<OrderReviewDto>())
-                .Where(r => r.Rating <= 2 && r.CreatedAt >= nowVn.AddDays(-7))
+                .Where(r => r.Rating <= 2 && r.CreatedAt >= cutoff)
                 .OrderByDescending(r => r.CreatedAt)
-                .Take(5)
+                .Take(BadReviewTake)
                 .ToList();
             foreach (var r in badReviews)
             {
@@ -170,27 +216,33 @@ namespace PhuThuongStickyRice.Application.Admin
                     Link = "/admin/danh-gia"
                 });
             }
+        }
 
-            // 5. Customers with birthday today — info.
+        /// <summary>Customers with birthday today — info.</summary>
+        private static void AddBirthdayNotification(
+            List<NotificationDto> notifications,
+            List<BirthdayMemberDto> birthdaysResult,
+            DateTime nowVn)
+        {
             var todayBirthdays = (birthdaysResult ?? new List<BirthdayMemberDto>())
                 .Where(b => b.DateOfBirth.HasValue
                     && b.DateOfBirth.Value.Day == nowVn.Day
                     && b.DateOfBirth.Value.Month == nowVn.Month)
                 .ToList();
-            if (todayBirthdays.Count > 0)
+            if (todayBirthdays.Count == 0)
             {
-                notifications.Add(new NotificationDto
-                {
-                    Id = "birthdays-today",
-                    Kind = "info",
-                    Title = $"{todayBirthdays.Count} khách sinh nhật hôm nay 🎂",
-                    Detail = string.Join(", ", todayBirthdays.Take(3).Select(b =>
-                        string.IsNullOrWhiteSpace(b.UserName) ? b.Phone : b.UserName)),
-                    Link = "/customers"
-                });
+                return;
             }
 
-            return notifications;
+            notifications.Add(new NotificationDto
+            {
+                Id = "birthdays-today",
+                Kind = "info",
+                Title = $"{todayBirthdays.Count} khách sinh nhật hôm nay 🎂",
+                Detail = string.Join(", ", todayBirthdays.Take(BirthdayNamesTake).Select(b =>
+                    string.IsNullOrWhiteSpace(b.UserName) ? b.Phone : b.UserName)),
+                Link = "/customers"
+            });
         }
     }
 }

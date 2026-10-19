@@ -4,7 +4,7 @@
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject CatalogAdminService CatalogService
-@inject PhuThuongStickyRice.Web.Components.Admin.Services.Wave4Service Wave4Service
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminSystemService AdminSystemService
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
 <EditForm Model="Product" OnSubmit="HandleValidSubmit">
@@ -108,7 +108,7 @@
             @if (!string.IsNullOrEmpty(_imageUrl))
             {
                 <div class="mb-2 text-center" style="width: 150px;">
-                    <img src="@Wave5Service.ResolveImageUrl(_imageUrl)" alt="Ảnh món" class="img-thumbnail" style="width: 140px; height: 140px; object-fit: cover;"
+                    <img src="@AdminCommerceService.ResolveImageUrl(_imageUrl)" alt="Ảnh món" class="img-thumbnail" style="width: 140px; height: 140px; object-fit: cover;"
                          onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQwIiBoZWlnaHQ9IjE0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTQwIiBoZWlnaHQ9IjE0MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjcwIiB5PSI3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIxNCI+Tm8gaW1hZ2U8L3RleHQ+PC9zdmc+';" />
                     <div class="mt-1">
                         <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="RemoveImage">Xóa</button>
@@ -250,7 +250,7 @@
         {
             try
             {
-                _branches = await Wave4Service.GetBranchesAsync();
+                _branches = await AdminSystemService.GetBranchesAsync();
             }
             catch (Exception)
             {

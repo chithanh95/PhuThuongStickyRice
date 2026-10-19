@@ -514,3 +514,51 @@ html.dark .shop-row-meta,
 html.dark .shop-row-price small {
     color: #b8a88f;
 }
+
+/* ============================================================
+   UIUX-2DAYS agent2-dark (2026-10-19) — dark-mode leak fixes.
+   Chỉ override html.dark — không đụng rule light mode hiện có.
+   ============================================================ */
+
+/* 1. Giỏ hàng mobile (<=575px): dòng sản phẩm là card nền trắng chói */
+@media (max-width: 575.98px) {
+    html.dark .cart-lines tbody tr {
+        background: #262640;
+        border-color: #3a3a58;
+    }
+}
+
+/* 2. TrackOrder: popup khảo sát hài lòng (sheet inline background:#fff,
+      tiêu đề inline color:#763434) */
+html.dark .to-survey-sheet {
+    background: #262640 !important;
+    color: #f0eef5;
+}
+html.dark .to-survey-sheet h5 {
+    color: #f2b8b8 !important;
+}
+
+/* 3. Tài khoản: panel thêm/sửa địa chỉ (inline background:#FFFDF7) */
+html.dark .tk-addr-panel {
+    background: #262640 !important;
+    border-color: #3a3a58 !important;
+}
+
+/* 4. Đặt số lượng lớn: hàng sản phẩm nền trắng + chữ tối */
+html.dark .bulk-prod {
+    background: #262640;
+    border-color: #3a3a58;
+}
+html.dark .bulk-prod.selected {
+    background: #3a3048;
+    border-color: #a67c3d;
+}
+html.dark .bulk-prod .nm { color: #f0eef5; }
+html.dark .bulk-prod .pr { color: #b8a88f; }
+
+/* 5. Landing: nút gọi sticky nền trắng chữ đỏ đậm */
+html.dark .sg-sticky-call {
+    background: #262019;
+    color: #f2c9c9;
+    border-color: #a01818;
+}

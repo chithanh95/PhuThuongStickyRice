@@ -78,6 +78,20 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             return await PutAsync<QuoteRequestAdminModel>($"api/quotes/{id}/status", new { Status = status });
         }
 
+        /// <summary>Item 161: admin đặt cọc khi duyệt báo giá.</summary>
+        public async Task<QuoteRequestAdminModel> SetQuoteDepositAsync(Guid id, decimal depositAmount, string depositInfo)
+        {
+            return await PutAsync<QuoteRequestAdminModel>($"api/quotes/{id}/deposit",
+                new { DepositAmount = depositAmount, DepositInfo = depositInfo });
+        }
+
+        /// <summary>Item 161: bank info để tạo QR cọc VietQR.</summary>
+        public async Task<PhuThuongStickyRice.Web.Components.Shop.Models.BankTransferInfoModel> GetBankTransferInfoAsync()
+        {
+            return await GetAsync<PhuThuongStickyRice.Web.Components.Shop.Models.BankTransferInfoModel>(
+                "api/payments/bank-transfer-info");
+        }
+
         /// <summary>Admin: lists cung reminder subscriptions.</summary>
         public async Task<List<CungReminderModel>> GetCungRemindersAsync()
         {

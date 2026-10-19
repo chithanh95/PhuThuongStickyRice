@@ -98,6 +98,19 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         Task<LastOrderInfoDto> GetLastOrderInfoByPhoneAsync(string phone);
 
+        /// <summary>
+        /// Item 143 (Public): true when the phone placed at least one order.
+        /// </summary>
+        Task<bool> HasOrderedBeforeAsync(string phone);
+
+        /// <summary>
+        /// Item 143 (Public): first-order voucher for the phone. Returns
+        /// IsNewCustomer=false when the phone already ordered; otherwise the
+        /// existing unused CHAO- code, or a freshly generated one. Throws
+        /// DomainException on an invalid phone.
+        /// </summary>
+        Task<FirstOrderVoucherDto> GetFirstOrderVoucherAsync(string phone);
+
         /// <summary>Customer self-service: cancel a Pending order (phone must match).</summary>
         Task<OrderDto> CancelByCustomerAsync(CancelOrderByCustomerInput input);
 
@@ -2066,6 +2079,70 @@ namespace PhuThuongStickyRice.Application.Orders
                 CustomerName = match.CustomerName,
                 CustomerAddress = match.CustomerAddress,
                 LastOrderAt = match.CreatedAt
+            };
+        }
+
+        /// <summary>Item 143: true when the phone placed at least one order.</summary>
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public virtual async Task<bool> HasOrderedBeforeAsync(string phone)
+        {
+            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (digits.Length < 9)
+            {
+                return false;
+            }
+
+            var normalized = phone.Trim();
+            var orderQueryable = await _orders.GetQueryableAsync();
+            return await _asyncExecuter.AnyAsync(
+                orderQueryable.Where(x => x.CustomerPhone != null && x.CustomerPhone.Trim() == normalized));
+        }
+
+        /// <summary>
+        /// Item 143: first-order voucher for a new customer. Throws
+        /// DomainException on an invalid phone.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public virtual async Task<FirstOrderVoucherDto> GetFirstOrderVoucherAsync(string phone)
+        {
+            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (digits.Length < 9)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Số điện thoại không đúng định dạng (VD: 0901234567).");
+            }
+
+            var trimmed = phone.Trim();
+            if (await HasOrderedBeforeAsync(trimmed))
+            {
+                return new FirstOrderVoucherDto { IsNewCustomer = false };
+            }
+
+            var existing = await _discounts.GetUsableCodeAsync("CHAO", trimmed);
+            if (!string.IsNullOrWhiteSpace(existing))
+            {
+                return new FirstOrderVoucherDto
+                {
+                    IsNewCustomer = true,
+                    Code = existing,
+                    DiscountPercent = 10
+                };
+            }
+
+            var created = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
+            {
+                Prefix = "CHAO",
+                DiscountPercent = 10,
+                MinOrderAmount = 0,
+                ExpiresAt = DateTime.UtcNow.AddDays(30),
+                OwnerPhone = trimmed
+            });
+
+            return new FirstOrderVoucherDto
+            {
+                IsNewCustomer = true,
+                Code = created.Code,
+                DiscountPercent = 10
             };
         }
 

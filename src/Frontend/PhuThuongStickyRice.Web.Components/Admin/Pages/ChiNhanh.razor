@@ -2,7 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Services
-@inject Wave4Service Wave4Service
+@inject AdminSystemService AdminSystemService
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Chi nhánh</h4>
@@ -18,7 +18,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title mb-0">Danh sách chi nhánh</h4>
-                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="ShowAdd">
+                    <button class="btn btn-primary" @onclick="ShowAdd">
                         <span class="fa-solid fa-plus"></span> Thêm mới
                     </button>
                 </div>
@@ -111,7 +111,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="HideForm">Hủy</button>
-                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="Save" disabled="@_saving">
+                    <button class="btn btn-primary" @onclick="Save" disabled="@_saving">
                         @(_saving ? "Đang lưu..." : "Lưu")
                     </button>
                 </div>
@@ -139,7 +139,7 @@
         _loading = true;
         try
         {
-            _branches = await Wave4Service.GetBranchesAsync() ?? new();
+            _branches = await AdminSystemService.GetBranchesAsync() ?? new();
         }
         catch { _branches = new(); }
         _loading = false;
@@ -175,9 +175,9 @@
         try
         {
             if (_editing == null)
-                await Wave4Service.CreateBranchAsync(_form);
+                await AdminSystemService.CreateBranchAsync(_form);
             else
-                await Wave4Service.UpdateBranchAsync(_editing.Id, _form);
+                await AdminSystemService.UpdateBranchAsync(_editing.Id, _form);
             _showForm = false;
             await Load();
         }
@@ -192,7 +192,7 @@
     {
         try
         {
-            await Wave4Service.DeleteBranchAsync(b.Id);
+            await AdminSystemService.DeleteBranchAsync(b.Id);
             await Load();
         }
         catch { }

@@ -2,7 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Services
-@inject Wave3Service Wave3Service
+@inject AdminOperationsService AdminOperationsService
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Khuyến mãi</h4>
@@ -18,7 +18,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title mb-0">Chương trình khuyến mãi giờ vàng</h4>
-                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="ShowAdd">
+                    <button class="btn btn-primary" @onclick="ShowAdd">
                         <span class="fa-solid fa-plus"></span> Thêm mới
                     </button>
                 </div>
@@ -133,7 +133,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="HideForm">Hủy</button>
-                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="Save" disabled="@_saving">
+                    <button class="btn btn-primary" @onclick="Save" disabled="@_saving">
                         @(_saving ? "Đang lưu..." : "Lưu")
                     </button>
                 </div>
@@ -166,7 +166,7 @@
         _loading = true;
         try
         {
-            _promotions = await Wave3Service.GetPromotionsAsync() ?? new();
+            _promotions = await AdminOperationsService.GetPromotionsAsync() ?? new();
         }
         catch { _promotions = new(); }
         _loading = false;
@@ -220,9 +220,9 @@
         try
         {
             if (_editing == null)
-                await Wave3Service.CreatePromotionAsync(_form);
+                await AdminOperationsService.CreatePromotionAsync(_form);
             else
-                await Wave3Service.UpdatePromotionAsync(_editing.Id, _form);
+                await AdminOperationsService.UpdatePromotionAsync(_editing.Id, _form);
             _showForm = false;
             await Load();
         }
@@ -237,7 +237,7 @@
     {
         try
         {
-            await Wave3Service.DeletePromotionAsync(p.Id);
+            await AdminOperationsService.DeletePromotionAsync(p.Id);
             await Load();
         }
         catch { }

@@ -22,7 +22,7 @@ namespace PhuThuongStickyRice.Application.Orders.Email
         {
             var subject = $"Xác nhận đơn hàng {order.OrderNumber} — Xôi Phú Thượng";
 
-            var orderedAt = ToVietnamTime(order.CreatedAt);
+            var orderedAt = VietnamTime.ToVietnamTime(order.CreatedAt);
             var body = new StringBuilder();
             body.Append("<html><body style=\"font-family: Arial, sans-serif; color: #222;\">");
             body.Append("<h2>Xôi Phú Thượng — Xác nhận đơn hàng</h2>");
@@ -144,31 +144,6 @@ namespace PhuThuongStickyRice.Application.Orders.Email
                 .Replace("<", "&lt;")
                 .Replace(">", "&gt;")
                 .Replace("\"", "&quot;");
-        }
-
-        /// <summary>
-        /// Order.CreatedAt is UTC. Display it in Vietnam time (UTC+7).
-        /// Tries the IANA id (Linux), then the Windows id, then a fixed +07 offset.
-        /// </summary>
-        internal static DateTime ToVietnamTime(DateTime utc)
-        {
-            var utcDateTime = utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc);
-            foreach (var id in new[] { "Asia/Ho_Chi_Minh", "SE Asia Standard Time" })
-            {
-                try
-                {
-                    var tz = TimeZoneInfo.FindSystemTimeZoneById(id);
-                    return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tz);
-                }
-                catch (TimeZoneNotFoundException)
-                {
-                }
-                catch (InvalidTimeZoneException)
-                {
-                }
-            }
-
-            return utcDateTime.AddHours(7);
         }
     }
 }

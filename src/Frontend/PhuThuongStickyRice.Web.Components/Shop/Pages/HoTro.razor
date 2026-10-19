@@ -1,7 +1,7 @@
 @page "/ho-tro"
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
-@inject Wave2Service Wave2Service
+@inject ShopEngagementService ShopEngagementService
 
 <h3>Hỗ trợ khách hàng</h3>
 <p class="text-muted">Gửi yêu cầu hỗ trợ, shop sẽ liên hệ lại với bạn sớm nhất.</p>
@@ -69,7 +69,7 @@ else
         _submitting = true;
         try
         {
-            _ticket = await Wave2Service.CreateTicketAsync(_model);
+            _ticket = await ShopEngagementService.CreateTicketAsync(_model);
             _sent = true;
         }
         catch (Exception)

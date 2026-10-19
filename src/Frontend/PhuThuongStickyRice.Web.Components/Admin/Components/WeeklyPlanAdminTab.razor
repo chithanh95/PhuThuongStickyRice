@@ -1,0 +1,221 @@
+@* Tab "Gói ăn sáng tuần" trong trang /admin/goi-tra-truoc.
+   Không có @page và không có Authorize — trang cha đã có. *@
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Products.Models
+@using PhuThuongStickyRice.Web.Components.Products.Services
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@inject WeeklyPlanAdminService WeeklyPlanService
+@inject ProductService ProductService
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h4 class="card-title">Tạo gói ăn sáng cả tuần</h4>
+        <div class="form-group" style="max-width: 280px;">
+            <label>Ngày thứ 2 đầu tuần *</label>
+            <input type="date" class="form-control" @bind="_weekStart" />
+        </div>
+        @if (_products == null)
+        {
+            <p><em>Đang tải sản phẩm...</em></p>
+        }
+        else
+        {
+            @foreach (var d in _days)
+            {
+                <div class="form-group" style="max-width: 520px;">
+                    <label>Món @d.Label *</label>
+                    <select class="form-control" @bind="_selected[d.Code]">
+                        <option value="">-- Chọn món --</option>
+                        @foreach (var p in _products)
+                        {
+                            <option value="@p.Id">@p.Name (@p.Price.ToString("N0")đ)</option>
+                        }
+                    </select>
+                </div>
+            }
+            <p class="mb-2 text-muted">Tổng mua lẻ: <s>@OriginalTotal.ToString("N0")đ</s></p>
+            <p class="mb-3"><strong>Giá gói (tự tính, giảm 10%): <span class="text-danger">@ComputedPrice.ToString("N0")đ</span></strong></p>
+            <button class="btn btn-primary" @onclick="CreateAsync" disabled="@(_creating || !CanCreate)">
+                <i class="fa-solid fa-plus mr-1"></i>@(_creating ? "Đang tạo..." : "Tạo gói")
+            </button>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h4 class="card-title mb-3">Các gói đã tạo</h4>
+        <div class="table-responsive">
+            @if (_plans == null)
+            {
+                <p><em>Đang tải...</em></p>
+            }
+            else if (!_plans.Any())
+            {
+                <p><em>Chưa có gói nào.</em></p>
+            }
+            else
+            {
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tuần</th>
+                            <th>Thực đơn</th>
+                            <th class="text-right">Giá gói (₫)</th>
+                            <th class="text-center">Người mua</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in _plans)
+                        {
+                            <tr @key="p.Id">
+                                <td>@p.WeekStart.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (p.Days != null)
+                                    {
+                                        @string.Join(" · ", p.Days.Select(d => $"{DayLabel(d.DayOfWeek)}: {d.ProductName}"))
+                                    }
+                                </td>
+                                <td class="text-right">@p.Price.ToString("N0")</td>
+                                <td class="text-center">@p.BuyerCount</td>
+                                <td>
+                                    @if (p.IsActive)
+                                    {
+                                        <span class="badge badge-success">Đang bán</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Đã thay thế</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private class DayDef
+    {
+        public string Code { get; set; }
+        public string Label { get; set; }
+    }
+
+    private readonly List<DayDef> _days = new()
+    {
+        new DayDef { Code = "Mon", Label = "thứ 2" },
+        new DayDef { Code = "Tue", Label = "thứ 3" },
+        new DayDef { Code = "Wed", Label = "thứ 4" },
+        new DayDef { Code = "Thu", Label = "thứ 5" },
+        new DayDef { Code = "Fri", Label = "thứ 6" },
+    };
+
+    private List<ProductModel> _products;
+    private List<WeeklyPlanModel> _plans;
+    private DateTime _weekStart = GetMonday(DateTime.Today);
+    private readonly Dictionary<string, string> _selected = new()
+    {
+        ["Mon"] = "", ["Tue"] = "", ["Wed"] = "", ["Thu"] = "", ["Fri"] = "",
+    };
+    private bool _creating;
+    private string _error;
+    private string _success;
+
+    private decimal OriginalTotal =>
+        _products == null ? 0 : _products
+            .Where(p => _selected.Values.Contains(p.Id.ToString()))
+            .Sum(p => p.Price);
+
+    private decimal ComputedPrice => Math.Round(OriginalTotal * 0.9m, 0);
+
+    private bool CanCreate => _days.All(d => Guid.TryParse(_selected[d.Code], out _));
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _products = (await ProductService.GetProductsAsync())
+                .Where(p => p.Status == "Active")
+                .OrderBy(p => p.Name)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được sản phẩm: " + ex.Message;
+        }
+
+        await LoadPlansAsync();
+    }
+
+    private async Task LoadPlansAsync()
+    {
+        try
+        {
+            _plans = await WeeklyPlanService.GetListAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tải được danh sách gói: " + ex.Message;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        _error = null;
+        _success = null;
+        _creating = true;
+        try
+        {
+            var days = _days.Select(d => new WeeklyPlanDayInput
+            {
+                DayOfWeek = d.Code,
+                ProductId = Guid.Parse(_selected[d.Code]),
+            }).ToList();
+
+            var created = await WeeklyPlanService.CreateAsync(_weekStart, days);
+            _success = $"Đã tạo gói tuần {created.WeekStart:dd/MM/yyyy} — giá {created.Price:N0}đ.";
+            foreach (var d in _days)
+            {
+                _selected[d.Code] = "";
+            }
+            await LoadPlansAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Không tạo được gói: " + ex.Message;
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private static DateTime GetMonday(DateTime date)
+    {
+        var offset = ((int)date.DayOfWeek + 6) % 7;
+        return date.AddDays(-offset);
+    }
+
+    private static string DayLabel(string day) => day switch
+    {
+        "Mon" => "T2",
+        "Tue" => "T3",
+        "Wed" => "T4",
+        "Thu" => "T5",
+        "Fri" => "T6",
+        _ => day,
+    };
+}

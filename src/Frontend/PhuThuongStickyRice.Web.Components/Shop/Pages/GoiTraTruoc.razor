@@ -1,0 +1,40 @@
+@page "/goi-tra-truoc"
+<PageTitle>Gói trả trước — Xôi Phú Thượng</PageTitle>
+@using PhuThuongStickyRice.Web.Components.Shop.Components
+
+<div class="container py-4">
+    <h1 class="mb-1" style="font-size: 1.75rem;">Gói trả trước</h1>
+    <p class="text-muted mb-4" style="font-size: 1.05rem;">Mua trước — mỗi sáng đưa mã cho quán để nhận xôi.</p>
+
+    <ul class="nav nav-pills mb-4" style="gap: 8px;">
+        <li class="nav-item">
+            <button type="button"
+                    class="nav-link @(_tab == "the" ? "active" : "")"
+                    style="min-height: 48px; font-size: 1.05rem; padding: 10px 20px;"
+                    @onclick='() => _tab = "the"'>
+                🎫 Thẻ xôi (20/30 suất)
+            </button>
+        </li>
+        <li class="nav-item">
+            <button type="button"
+                    class="nav-link @(_tab == "tuan" ? "active" : "")"
+                    style="min-height: 48px; font-size: 1.05rem; padding: 10px 20px;"
+                    @onclick='() => _tab = "tuan"'>
+                📅 Gói ăn sáng cả tuần
+            </button>
+        </li>
+    </ul>
+
+    @if (_tab == "the")
+    {
+        <PrepaidCardTab />
+    }
+    else
+    {
+        <WeeklyPlanTab />
+    }
+</div>
+
+@code {
+    private string _tab = "the";
+}

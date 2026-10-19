@@ -1,7 +1,7 @@
 @page "/check-in"
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Services
-@inject Wave5Service Wave5Service
+@inject AdminCommerceService AdminCommerceService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
 <div class="xo-checkin">
@@ -52,7 +52,7 @@
                 @foreach (var p in _photos)
                 {
                     <div class="xo-checkin-card" @key="p.Id">
-                        <img src="@Wave5Service.ResolveImageUrl(p.ImageUrl)" alt="Ảnh check-in của khách hàng"
+                        <img src="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" alt="Ảnh check-in của khách hàng"
                              loading="lazy" />
                         <div class="xo-checkin-meta">
                             @if (!string.IsNullOrWhiteSpace(p.Name))
@@ -83,7 +83,7 @@
     {
         try
         {
-            _photos = await Wave5Service.GetApprovedPhotosAsync() ?? new List<CustomerPhotoModel>();
+            _photos = await AdminCommerceService.GetApprovedPhotosAsync() ?? new List<CustomerPhotoModel>();
         }
         catch (Exception)
         {
@@ -113,7 +113,7 @@
             var compressed = await JSRuntime.InvokeAsync<CompressedImage>(
                 "interop.compressImageFromInput", "checkin-photo-input", 1600, 0.85);
             using var stream = new System.IO.MemoryStream(Convert.FromBase64String(compressed.Base64));
-            await Wave5Service.UploadCustomerPhotoAsync(
+            await AdminCommerceService.UploadCustomerPhotoAsync(
                 stream, compressed.FileName, compressed.ContentType,
                 phone: null, caption: null, name: _name);
             _isError = false;

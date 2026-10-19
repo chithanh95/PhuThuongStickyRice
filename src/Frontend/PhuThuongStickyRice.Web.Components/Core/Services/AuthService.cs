@@ -13,6 +13,12 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
     /// </summary>
     public class AuthService : HttpService
     {
+        // CA1869: reuse one options instance instead of allocating per call.
+        private static readonly JsonSerializerOptions CaseInsensitiveOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
         public AuthService(HttpClient httpClient, ITokenManager tokenManager)
             : base(httpClient, tokenManager)
         {
@@ -36,7 +42,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
             return System.Text.Json.JsonSerializer.Deserialize<CustomerAuthResult>(
                 body,
-                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                CaseInsensitiveOptions);
         }
 
         /// <summary>
@@ -58,7 +64,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
             return System.Text.Json.JsonSerializer.Deserialize<CustomerAuthResult>(
                 body,
-                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                CaseInsensitiveOptions);
         }
 
         /// <summary>
@@ -155,7 +161,8 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
 
             var trimmed = body.Trim();
-            if (trimmed.StartsWith("{", StringComparison.Ordinal))
+            // StartsWith(char) is ordinal by default — identical to Ordinal here.
+            if (trimmed.StartsWith('{'))
             {
                 try
                 {

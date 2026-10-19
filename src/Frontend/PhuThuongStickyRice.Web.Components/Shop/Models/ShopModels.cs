@@ -733,4 +733,14 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         public DateTime LastOrderAt { get; set; }
     }
+
+    /// <summary>Item 143: first-order voucher for a new customer.</summary>
+    public class FirstOrderVoucherModel
+    {
+        public bool IsNewCustomer { get; set; }
+
+        public string Code { get; set; }
+
+        public int DiscountPercent { get; set; }
+    }
 }

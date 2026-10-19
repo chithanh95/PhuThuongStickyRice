@@ -62,8 +62,24 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
+            // Item 185: admin quản lý gói "Ăn sáng cả tuần" (JWT).
+            builder.Services.AddHttpClient<WeeklyPlanAdminService, WeeklyPlanAdminService>(client =>
+            {
+                client.BaseAddress = apiBaseUri;
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Public storefront (anonymous).
             builder.Services.AddHttpClient<ShopService, ShopService>(client =>
+            {
+                client.BaseAddress = apiBaseUri;
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Item 185: gói "Ăn sáng cả tuần" (public).
+            builder.Services.AddHttpClient<WeeklyPlanService, WeeklyPlanService>(client =>
             {
                 client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
@@ -212,35 +228,51 @@ namespace PhuThuongStickyRice.Web
                 client.DefaultRequestHeaders.Clear();
             });
 
-            // Wave 2: loyalty, spin, support, FAQ, subscriptions, reviews, integrations.
-            builder.Services.AddHttpClient<Wave2Service, Wave2Service>(client =>
+            // Shop engagement: loyalty, spin, support, FAQ, subscriptions, reviews, integrations.
+            builder.Services.AddHttpClient<ShopEngagementService, ShopEngagementService>(client =>
             {
                 client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
 
-            // Wave 3: shippers, blacklist, CRM notes, promos, reward rules,
+            // Item 164: prepaid cards (shop buy + lookup).
+            builder.Services.AddHttpClient<PrepaidCardService, PrepaidCardService>(client =>
+            {
+                client.BaseAddress = apiBaseUri;
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Item 164: prepaid cards (admin list + redeem).
+            builder.Services.AddHttpClient<PrepaidCardAdminService, PrepaidCardAdminService>(client =>
+            {
+                client.BaseAddress = apiBaseUri;
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
+            // Admin operations: shippers, blacklist, CRM notes, promos, reward rules,
             // articles, table QRs, profit report, login audit, 2FA.
-            builder.Services.AddHttpClient<Wave3Service, Wave3Service>(client =>
+            builder.Services.AddHttpClient<AdminOperationsService, AdminOperationsService>(client =>
             {
                 client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
 
-            // Wave 4: feature flags, branches, webhooks, short links, app
+            // Admin system: feature flags, branches, webhooks, short links, app
             // logs, disk usage, payment config, group orders, address book.
-            builder.Services.AddHttpClient<Wave4Service, Wave4Service>(client =>
+            builder.Services.AddHttpClient<AdminSystemService, AdminSystemService>(client =>
             {
                 client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
                 client.DefaultRequestHeaders.Clear();
             });
 
-            // Wave 5: check-in, corporate clients, gallery, forecast, shifts,
+            // Admin commerce: check-in, corporate clients, gallery, forecast, shifts,
             // wallet, reconciliation, refunds, templates, campaigns, POS.
-            builder.Services.AddHttpClient<Wave5Service, Wave5Service>(client =>
+            builder.Services.AddHttpClient<AdminCommerceService, AdminCommerceService>(client =>
             {
                 client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);

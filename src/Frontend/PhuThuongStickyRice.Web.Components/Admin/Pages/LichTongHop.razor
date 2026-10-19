@@ -8,7 +8,7 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @inject OrderService OrderService
 @inject HolidayService HolidayService
-@inject Wave3Service Wave3Service
+@inject AdminOperationsService AdminOperationsService
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Lịch tổng hợp</h4>
@@ -25,8 +25,8 @@
     <button class="btn btn-outline-primary btn-sm" @onclick="GoToday">Hôm nay</button>
     <div class="ml-auto d-flex align-items-center text-muted small">
         <span class="cal-dot" style="background:#7a6fbe;"></span> Đơn đặt trước
-        <span class="cal-dot ml-3" style="background:#dc3545;"></span> Nghỉ lễ
-        <span class="cal-dot ml-3" style="background:#28a745;"></span> Khuyến mãi
+        <span class="cal-dot ml-3" style="background:#f46a6a;"></span> Nghỉ lễ
+        <span class="cal-dot ml-3" style="background:#34c38f;"></span> Khuyến mãi
     </div>
 </div>
 
@@ -62,11 +62,11 @@
                                     }
                                     @if (IsHoliday(cell.Date))
                                     {
-                                        <span class="cal-dot" style="background:#dc3545;" title="Nghỉ lễ"></span>
+                                        <span class="cal-dot" style="background:#f46a6a;" title="Nghỉ lễ"></span>
                                     }
                                     @if (HasPromo(cell.Date))
                                     {
-                                        <span class="cal-dot" style="background:#28a745;" title="Có khuyến mãi"></span>
+                                        <span class="cal-dot" style="background:#34c38f;" title="Có khuyến mãi"></span>
                                     }
                                 </div>
                             </div>
@@ -209,7 +209,7 @@
 
             var ordersTask = OrderService.GetOrdersAsync(1, 200, fromDate: first, toDate: last);
             var holidaysTask = HolidayService.GetListAsync();
-            var promosTask = Wave3Service.GetPromotionsAsync();
+            var promosTask = AdminOperationsService.GetPromotionsAsync();
 
             var orders = (await ordersTask)?.Items ?? new List<OrderModel>();
             _scheduledOrders = orders.Where(o => o.ScheduledFor.HasValue).ToList();

@@ -17,7 +17,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     /// Server is the source of truth when logged in; localStorage otherwise.
     /// Simple: on login, if server has a cart, use it. On change, save debounced.
     /// </summary>
-    public class CartSyncService
+    public class CartSyncService : IDisposable
     {
         private readonly HttpClient _httpClient;
         private readonly CartState _cartState;
@@ -147,6 +147,14 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             {
                 // Fail-soft: local cart still works.
             }
+        }
+
+        public void Dispose()
+        {
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+            _cartState.OnChange -= OnCartChanged;
+            GC.SuppressFinalize(this);
         }
     }
 }

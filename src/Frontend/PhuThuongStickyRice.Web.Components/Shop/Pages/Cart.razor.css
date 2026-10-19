@@ -116,6 +116,15 @@
     .cart-actions .cart-checkout-flow {
         display: none;
     }
+
+    /* Nút "Thêm" trong các gợi ý món (giỏ trống + "thường được mua cùng"):
+       chỉ ~31px khi mặc định — nâng lên 44px cho dễ bấm trên mobile */
+    .btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 }
 
 /* Thanh checkout sticky mobile — hiện khi giỏ có món */

@@ -139,6 +139,22 @@
         height: 20px;
         margin-top: 10px;
     }
+
+    /* Sau khi đặt hàng thành công: 3 nút "Về trang chủ / Xem thực đơn /
+       Tra cứu đơn hàng" chỉ ~31px và xếp ngang chật trên màn nhỏ —
+       xếp dọc full-width, mỗi nút >=46px */
+    .alert-success > p > .btn-sm {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 46px;
+        margin: 8px 0 0 !important;
+        font-size: 15px;
+    }
+    .alert-success > p > .btn-sm:first-child {
+        margin-top: 0 !important;
+    }
 }
 
 /* Dark mode: the fixed bar follows the dark card palette */

@@ -101,6 +101,12 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public string Status { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>Item 161: số tiền cọc khi duyệt (VND). Null = chưa yêu cầu cọc.</summary>
+        public decimal? DepositAmount { get; set; }
+
+        /// <summary>Item 161: thông tin chuyển khoản gửi khách.</summary>
+        public string DepositInfo { get; set; }
     }
 
     public class CreateQuoteRequestDto
@@ -165,6 +171,16 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
     {
         [Required]
         public string Status { get; set; }
+    }
+
+    /// <summary>Item 161: admin đặt số tiền cọc khi duyệt báo giá.</summary>
+    public class SetQuoteDepositDto
+    {
+        [Range(0, double.MaxValue)]
+        public decimal DepositAmount { get; set; }
+
+        [StringLength(500)]
+        public string DepositInfo { get; set; }
     }
 
     public class GetQuoteRequestsInput : PagedAndSortedResultRequestDto

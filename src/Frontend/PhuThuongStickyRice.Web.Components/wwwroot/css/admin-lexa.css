@@ -2076,3 +2076,41 @@ html.dark .lx-admin .kanban-col { background: #20203a; }
 html.dark .lx-admin .kanban-col-head { background: #262640; color: #f0eef5; }
 html.dark .lx-admin .kanban-card { background: #262640; color: #f0eef5; }
 html.dark .lx-admin .kanban-code { color: #f0eef5; }
+
+/* ==== UIUX-2DAYS agent3-lexa: FA6 sidebar icons + btn-success Lexa + toast close hover ==== */
+/* Sidebar menu dùng Font Awesome 6 (thay oi-*): giữ kích thước/căn lề giống rule .oi cũ */
+.lx-hnav-link .fa-solid {
+    width: 20px;
+    text-align: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    opacity: .85;
+}
+.lx-hnav-toggle .fa-solid {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.lx-hnav-group.active > .lx-hnav-toggle .fa-solid {
+    color: var(--lx-primary);
+}
+
+/* btn-success về đúng xanh Lexa #34c38f (trước dùng xanh Bootstrap #28a745) */
+.lx-admin .btn-success {
+    background: #34c38f !important;
+    border-color: #34c38f !important;
+    border-radius: 4px !important;
+    font-size: 13px;
+}
+.lx-admin .btn-success:hover,
+.lx-admin .btn-success:focus,
+.lx-admin .btn-success:active {
+    background: #2cab7c !important;
+    border-color: #2cab7c !important;
+}
+
+/* Nút đóng toast: trắng khi hover (nền toast #34c38f) thay vì #333 khó đọc */
+.lx-toast-close:hover {
+    color: #ffffff !important;
+}

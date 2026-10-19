@@ -9,12 +9,13 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Admin.Services
 {
     /// <summary>
-    /// Wave 3 admin APIs: shippers, blacklist, customer notes, promotions,
-    /// reward rules, articles, table QRs, profit report, login audit and 2FA.
+    /// Admin operations APIs: shippers, kitchen display, blacklist,
+    /// customer notes, promotions, reward rules, articles, table QRs,
+    /// profit report, login audit and 2FA.
     /// </summary>
-    public class Wave3Service : HttpService
+    public class AdminOperationsService : HttpService
     {
-        public Wave3Service(HttpClient httpClient, ITokenManager tokenManager)
+        public AdminOperationsService(HttpClient httpClient, ITokenManager tokenManager)
             : base(httpClient, tokenManager)
         {
         }

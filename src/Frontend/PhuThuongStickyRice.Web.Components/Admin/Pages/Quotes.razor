@@ -77,7 +77,8 @@ else
                                 <td class="text-right">@q.Quantity</td>
                                 <td><small>@(string.IsNullOrWhiteSpace(q.EventLocation) ? "—" : q.EventLocation)@(string.IsNullOrWhiteSpace(q.Budget) ? "" : $" · Vốn: {q.Budget}")</small></td>
                                 <td><small>@q.Notes</small></td>
-                                <td>@StatusBadge(q.Status)</td>
+                                <td>@StatusBadge(q.Status)@if (q.Status == "Confirmed" && q.DepositAmount > 0)
+                                    {<br /><span class="badge badge-warning">Cọc @q.DepositAmount.Value.ToString("N0")đ</span>}</td>
                                 <td style="white-space: nowrap;">
                                     <a class="btn btn-sm btn-outline-primary mr-1" href="tel:@q.CustomerPhone">📞 Gọi</a>
                                     @if (q.Status == "New")
@@ -86,7 +87,7 @@ else
                                     }
                                     @if (q.Status == "New" || q.Status == "Contacted")
                                     {
-                                        <button class="btn btn-sm btn-outline-success mr-1" @onclick='() => ChangeStatusAsync(q, "Confirmed")'>Chốt</button>
+                                        <button class="btn btn-sm btn-outline-success mr-1" @onclick='() => OpenDepositModal(q)'>Duyệt &amp; cọc</button>
                                         <button class="btn btn-sm btn-outline-danger" @onclick='() => ChangeStatusAsync(q, "Cancelled")'>Hủy</button>
                                     }
                                 </td>
@@ -158,6 +159,67 @@ else
                         }
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+}
+
+@* Item 161: modal duyệt & gửi link cọc *@
+@if (_depositQuote != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Duyệt &amp; gửi cọc — @_depositQuote.CustomerName</h5>
+                    <button type="button" class="close" @onclick="CloseDepositModal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    @if (!_depositSaved)
+                    {
+                        <div class="form-group">
+                            <label>Số tiền cọc (₫) *</label>
+                            <input type="number" class="form-control" min="0" step="1000" @bind="_depositAmount" />
+                        </div>
+                        <div class="form-group">
+                            <label>Nội dung chuyển khoản gửi khách</label>
+                            <input class="form-control" @bind="_depositInfo" placeholder="VD: Cọc tiệc 20/10 - Anh Tuấn" />
+                            <small class="form-text text-muted">Để trống sẽ tự tạo: "Cọc báo giá [SĐT khách]".</small>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_depositError))
+                        {
+                            <div class="alert alert-danger">@_depositError</div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-success">Đã duyệt và lưu cọc. Gửi thông tin này cho khách:</div>
+                        @if (!string.IsNullOrEmpty(_depositQrUrl))
+                        {
+                            <div class="text-center mb-3">
+                                <img src="@_depositQrUrl" alt="QR cọc VietQR" style="max-width: 240px;" />
+                            </div>
+                        }
+                        <table class="table table-sm">
+                            <tr><td><strong>Số tiền cọc</strong></td><td><strong class="text-danger">@_depositAmount.ToString("N0")đ</strong></td></tr>
+                            <tr><td><strong>Nội dung CK</strong></td><td>@_depositInfo</td></tr>
+                        </table>
+                        <small class="text-muted">Khách tự quét mã chuyển khoản như luồng cọc hiện tại của shop.</small>
+                    }
+                </div>
+                <div class="modal-footer">
+                    @if (!_depositSaved)
+                    {
+                        <button class="btn btn-secondary" @onclick="CloseDepositModal">Đóng</button>
+                        <button class="btn btn-success" @onclick="SaveDepositAsync" disabled="@_savingDeposit">
+                            @(_savingDeposit ? "Đang lưu..." : "Duyệt & lưu cọc")
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary" @onclick="CloseDepositModal">Xong</button>
+                    }
+                </div>
             </div>
         </div>
     </div>
@@ -239,6 +301,80 @@ else
         catch (Exception)
         {
             _error = "Cập nhật trạng thái thất bại. Vui lòng thử lại.";
+        }
+    }
+
+    // Item 161: duyệt & gửi link cọc.
+    private QuoteRequestAdminModel _depositQuote;
+    private decimal _depositAmount;
+    private string _depositInfo;
+    private string _depositError;
+    private bool _savingDeposit;
+    private bool _depositSaved;
+    private string _depositQrUrl;
+
+    private void OpenDepositModal(QuoteRequestAdminModel quote)
+    {
+        _depositQuote = quote;
+        _depositAmount = 0;
+        _depositInfo = null;
+        _depositError = null;
+        _depositSaved = false;
+        _depositQrUrl = null;
+    }
+
+    private void CloseDepositModal()
+    {
+        _depositQuote = null;
+    }
+
+    private async Task SaveDepositAsync()
+    {
+        _depositError = null;
+        if (_depositAmount <= 0)
+        {
+            _depositError = "Vui lòng nhập số tiền cọc lớn hơn 0.";
+            return;
+        }
+
+        _savingDeposit = true;
+        try
+        {
+            var info = string.IsNullOrWhiteSpace(_depositInfo)
+                ? $"Coc bao gia {_depositQuote.CustomerPhone}"
+                : _depositInfo.Trim();
+
+            // 1. Lưu cọc + 2. Chuyển trạng thái sang Confirmed.
+            var updated = await CatalogService.SetQuoteDepositAsync(_depositQuote.Id, _depositAmount, info);
+            await CatalogService.UpdateQuoteStatusAsync(_depositQuote.Id, "Confirmed");
+            _depositQuote.Status = "Confirmed";
+            _depositQuote.DepositAmount = updated.DepositAmount;
+            _depositQuote.DepositInfo = updated.DepositInfo;
+            _depositInfo = info;
+
+            // 3. Tạo QR VietQR để gửi khách.
+            try
+            {
+                var bank = await CatalogService.GetBankTransferInfoAsync();
+                if (bank != null && bank.IsConfigured)
+                {
+                    var template = string.IsNullOrWhiteSpace(bank.QrTemplate) ? "compact2" : bank.QrTemplate;
+                    _depositQrUrl = $"https://img.vietqr.io/image/{bank.BankId}-{bank.AccountNumber}-{template}.png"
+                        + $"?amount={(long)_depositAmount}&addInfo={Uri.EscapeDataString(info)}";
+                }
+            }
+            catch (Exception) { }
+
+            _depositSaved = true;
+            _success = $"Đã duyệt báo giá của {_depositQuote.CustomerName} với cọc {_depositAmount:N0}đ.";
+        }
+        catch (Exception)
+        {
+            _depositError = "Lưu cọc thất bại. Vui lòng thử lại.";
+        }
+        finally
+        {
+            _savingDeposit = false;
         }
     }
 

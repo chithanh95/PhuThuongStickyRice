@@ -1,0 +1,333 @@
+/* Item 164 — tab "Thẻ xôi". UX cho người lớn tuổi: chữ to, nút ≥48px, tương phản cao. */
+
+.pt-cardtab {
+    font-size: 1.125rem;
+    color: #1a1a1a;
+}
+
+.pt-intro {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    margin: 0 0 1.25rem;
+}
+
+.pt-section {
+    background: #fff;
+    border: 2px solid #e5e0f2;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.pt-section-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 0 0 1.25rem;
+    color: #1a1a1a;
+}
+
+.pt-step-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 .75rem;
+}
+
+.pt-packages {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.pt-package {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 120px;
+    justify-content: center;
+    border: 3px solid #d9d4ec;
+    border-radius: 14px;
+    background: #fff;
+    padding: 16px 12px;
+    cursor: pointer;
+}
+
+.pt-package.active {
+    border-color: #5a4fa3;
+    background: #f4f2fd;
+}
+
+.pt-package-name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #1a1a1a;
+}
+
+.pt-package-price {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #5a4fa3;
+}
+
+.pt-package-note {
+    font-size: 1rem;
+    color: #444;
+}
+
+.pt-field {
+    margin-bottom: 1.25rem;
+}
+
+.pt-field label {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: .5rem;
+    color: #1a1a1a;
+}
+
+.pt-input {
+    width: 100%;
+    min-height: 56px;
+    font-size: 1.25rem;
+    padding: 12px 16px;
+    border: 2px solid #b9b3d9;
+    border-radius: 12px;
+    color: #1a1a1a;
+    background: #fff;
+}
+
+.pt-input:focus {
+    outline: 3px solid #5a4fa3;
+    outline-offset: 1px;
+    border-color: #5a4fa3;
+}
+
+/* Nút bấm lớn: tối thiểu 48px, chữ to rõ */
+.pt-bigbtn {
+    display: block;
+    width: 100%;
+    min-height: 60px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #fff;
+    background: #5a4fa3;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 20px;
+    cursor: pointer;
+}
+
+.pt-bigbtn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.pt-bigbtn.pt-outline {
+    background: #fff;
+    color: #5a4fa3;
+    border: 3px solid #5a4fa3;
+}
+
+.pt-hint {
+    font-size: 1.05rem;
+    color: #444;
+    margin: 1rem 0 0;
+    line-height: 1.5;
+}
+
+.pt-alert {
+    font-size: 1.15rem;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 1.25rem;
+}
+
+.pt-alert-error {
+    color: #8f1d1d;
+    background: #fdecec;
+    border: 2px solid #e5a3a3;
+}
+
+/* Kết quả mua thành công */
+.pt-success {
+    text-align: center;
+    padding: .5rem 0;
+}
+
+.pt-success-title {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #1c7c3e;
+    margin: 0 0 .75rem;
+}
+
+.pt-success-label {
+    font-size: 1.3rem;
+    margin: 0 0 .5rem;
+    color: #1a1a1a;
+}
+
+/* Mã thẻ hiện THẬT TO */
+.pt-code {
+    display: inline-block;
+    font-size: 2.75rem;
+    font-weight: 800;
+    letter-spacing: 6px;
+    color: #5a4fa3;
+    border: 3px dashed #5a4fa3;
+    border-radius: 16px;
+    padding: 10px 28px;
+    margin: 0 0 1rem;
+    background: #f8f7ff;
+}
+
+.pt-guide {
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.6;
+    color: #1a1a1a;
+    margin: 0 0 1rem;
+}
+
+.pt-success-info {
+    font-size: 1.15rem;
+    color: #333;
+    margin: 0 0 1.5rem;
+    line-height: 1.7;
+}
+
+/* Danh sách thẻ tra cứu */
+.pt-empty {
+    font-size: 1.15rem;
+    color: #444;
+    margin: 1.25rem 0 0;
+}
+
+.pt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 1.25rem;
+}
+
+.pt-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 2px solid #e5e0f2;
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: #fbfbff;
+}
+
+.pt-item-code {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #5a4fa3;
+    white-space: nowrap;
+}
+
+.pt-item-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.pt-item-remain {
+    font-size: 1.15rem;
+    color: #333;
+}
+
+.pt-item-remain strong {
+    color: #1c7c3e;
+}
+
+/* Dark mode */
+html.dark .pt-cardtab {
+    color: #f0eefc;
+}
+
+html.dark .pt-section {
+    background: #2a2a32;
+    border-color: #4a4560;
+}
+
+html.dark .pt-section-title,
+html.dark .pt-step-label,
+html.dark .pt-field label,
+html.dark .pt-package-name,
+html.dark .pt-success-label,
+html.dark .pt-guide,
+html.dark .pt-item-name {
+    color: #f0eefc;
+}
+
+html.dark .pt-package {
+    background: #2a2a32;
+    border-color: #4a4560;
+}
+
+html.dark .pt-package.active {
+    background: #35324a;
+    border-color: #8f86d6;
+}
+
+html.dark .pt-package-price,
+html.dark .pt-item-code {
+    color: #b3a9ee;
+}
+
+html.dark .pt-package-note,
+html.dark .pt-hint,
+html.dark .pt-empty,
+html.dark .pt-item-remain,
+html.dark .pt-success-info {
+    color: #cfcbe4;
+}
+
+html.dark .pt-input {
+    background: #1e1e26;
+    border-color: #5a5478;
+    color: #f0eefc;
+}
+
+html.dark .pt-code {
+    background: #35324a;
+    border-color: #8f86d6;
+    color: #cfc4ff;
+}
+
+html.dark .pt-item {
+    background: #24242c;
+    border-color: #4a4560;
+}
+
+html.dark .pt-bigbtn.pt-outline {
+    background: transparent;
+    color: #cfc4ff;
+    border-color: #8f86d6;
+}
+
+html.dark .pt-alert-error {
+    color: #ffb4b4;
+    background: #3a2222;
+    border-color: #7a3a3a;
+}
+
+@media (max-width: 576px) {
+    .pt-packages {
+        grid-template-columns: 1fr;
+    }
+
+    .pt-code {
+        font-size: 2.1rem;
+        letter-spacing: 3px;
+    }
+
+    .pt-section {
+        padding: 1.25rem 1rem;
+    }
+}

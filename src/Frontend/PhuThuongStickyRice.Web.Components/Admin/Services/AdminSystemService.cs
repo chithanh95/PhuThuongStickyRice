@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Admin.Services
 {
     /// <summary>
-    /// Wave 4 APIs: feature flags, branches, webhooks, short links, app logs,
-    /// disk usage, payment config, system status, group orders, address book.
+    /// Admin system APIs: feature flags, branches, webhooks, short links,
+    /// app logs, disk usage, system status, group orders, address book.
     /// Admin endpoints attach the JWT; public ones work anonymously.
     /// </summary>
-    public class Wave4Service : HttpService
+    public class AdminSystemService : HttpService
     {
-        public Wave4Service(HttpClient httpClient, ITokenManager tokenManager)
+        public AdminSystemService(HttpClient httpClient, ITokenManager tokenManager)
             : base(httpClient, tokenManager)
         {
         }

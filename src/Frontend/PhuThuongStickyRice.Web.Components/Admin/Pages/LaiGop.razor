@@ -163,7 +163,7 @@ else if (_report != null)
                             <td class="text-right">@FmtVnd(_report.Total.Revenue)</td>
                             <td class="text-right">–</td>
                             <td class="text-right">@FmtVnd(_report.Total.Cost)</td>
-                            <td class="text-right" style="color:#28a745">@FmtVnd(_report.Total.Profit)</td>
+                            <td class="text-right" style="color:#34c38f">@FmtVnd(_report.Total.Profit)</td>
                             <td class="text-right">@FmtPct(_report.Total.MarginPercent)</td>
                         </tr>
                     </tfoot>
@@ -323,9 +323,9 @@ else if (_report != null)
         }
 
         return p.Value >= 50m
-            ? "background:#d4edda;color:#155724;"
+            ? "background:#d3f1e2;color:#1e7a52;"
             : p.Value >= 20m
-                ? "background:#fff3cd;color:#856404;"
-                : "background:#f8d7da;color:#721c24;";
+                ? "background:#fdefd3;color:#a8761a;"
+                : "background:#fbdddd;color:#bd4a4a;";
     }
 }

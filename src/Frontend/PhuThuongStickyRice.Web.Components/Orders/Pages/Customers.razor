@@ -478,7 +478,7 @@ else
         = new PhuThuongStickyRice.Web.Components.Shop.Models.ShopSettingModel();
 
     // Item 89: CRM notes per customer phone.
-    [Inject] private PhuThuongStickyRice.Web.Components.Admin.Services.Wave3Service Wave3Service { get; set; }
+    [Inject] private PhuThuongStickyRice.Web.Components.Admin.Services.AdminOperationsService AdminOperationsService { get; set; }
     [Inject] private PhuThuongStickyRice.Web.Components.Shop.Services.CustomerCareService CareService { get; set; }
     private string _expandedPhone;
     private Dictionary<string, List<CustomerNoteModel>> _notes = new();
@@ -574,7 +574,7 @@ else
             _loadingNotes = true;
             try
             {
-                var list = await Wave3Service.GetCustomerNotesAsync(phone);
+                var list = await AdminOperationsService.GetCustomerNotesAsync(phone);
                 _notes[phone] = list ?? new List<CustomerNoteModel>();
             }
             catch (Exception)
@@ -605,7 +605,7 @@ else
 
         try
         {
-            var created = await Wave3Service.AddCustomerNoteAsync(_expandedPhone, _newNote.Trim());
+            var created = await AdminOperationsService.AddCustomerNoteAsync(_expandedPhone, _newNote.Trim());
 
             var list = _notes[_expandedPhone];
             list.Insert(0, created);
@@ -781,7 +781,7 @@ else
         _noteError = null;
         try
         {
-            await Wave3Service.DeleteCustomerNoteAsync(note.Id);
+            await AdminOperationsService.DeleteCustomerNoteAsync(note.Id);
             if (_notes.TryGetValue(_expandedPhone, out var list))
             {
                 list.RemoveAll(x => x.Id == note.Id);

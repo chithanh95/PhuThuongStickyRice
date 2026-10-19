@@ -41,8 +41,11 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
                 return time;
             }
 
-            TimeSpan.TryParse(fallback, out var fallbackTime);
-            return fallbackTime;
+            // Fallbacks are compile-time constants ("06:00"/"10:30") that always
+            // parse; the explicit check keeps the analyzer (CA1806) honest.
+            return TimeSpan.TryParse(fallback, out var fallbackTime)
+                ? fallbackTime
+                : TimeSpan.Zero;
         }
 
         private static string Format(TimeSpan time)

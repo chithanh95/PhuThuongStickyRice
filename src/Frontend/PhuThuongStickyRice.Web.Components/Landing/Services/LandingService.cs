@@ -255,7 +255,7 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
             }
 
             var baseUrl = _httpClient.BaseAddress?.ToString().TrimEnd('/');
-            var path = url.StartsWith("/") ? url : "/" + url;
+            var path = url.StartsWith('/') ? url : "/" + url;
             return string.IsNullOrEmpty(baseUrl) ? path : baseUrl + path;
         }
     }

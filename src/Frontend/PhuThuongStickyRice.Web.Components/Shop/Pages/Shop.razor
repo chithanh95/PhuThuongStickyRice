@@ -11,8 +11,8 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
-@inject Wave4Service Wave4Service
-@inject Wave5Service Wave5Service
+@inject AdminSystemService AdminSystemService
+@inject AdminCommerceService AdminCommerceService
 @inject CartState CartState
 @inject ShopI18n I18n
 @implements IDisposable
@@ -20,6 +20,10 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject FunnelService Funnel
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+
+@* Item 141: banner đếm ngược giờ chốt đơn theo ca bếp. *@
+<OrderCountdownBanner Settings="_shopSettings" />
 
 <div class="jumbotron jumbotron-fluid bg-warning text-dark rounded p-4 mb-4">
     <div class="container">
@@ -53,6 +57,18 @@
         </div>
     </div>
 </div>
+
+@* Item 143 (UX người già): banner mã giảm giá đơn đầu tiên — chữ to,
+   mã hiện to rõ, nút "Dùng ngay" lớn (≥48px), 1 chạm sang checkout. *@
+@if (_firstOrderVoucher != null)
+{
+    <div class="alert alert-info mb-3" role="alert" style="border-width: 2px;">
+        <div class="font-weight-bold" style="font-size: 1.25rem;">🎉 Chào bạn mới! Quán tặng bạn mã giảm giá cho đơn đầu tiên:</div>
+        <div class="mt-2 mb-2 font-weight-bold text-danger" style="font-size: 2rem; letter-spacing: 2px;">@_firstOrderVoucher.Code</div>
+        <div class="mb-3" style="font-size: 1.1rem;">Được giảm <strong>@_firstOrderVoucher.DiscountPercent%</strong> khi đặt đơn đầu tiên.</div>
+        <button class="btn btn-primary btn-block" style="min-height: 48px; font-size: 1.2rem; font-weight: bold;" @onclick="UseVoucher">Dùng ngay</button>
+    </div>
+}
 
 @* SH3: delivery info strip from shop settings (fail-soft defaults). *@
 <div class="shop-info-strip mb-3">🚚 @DeliveryInfoText()</div>
@@ -239,7 +255,7 @@ else
                             }
                             <div class="d-flex align-items-center shop-add-row">
                                 <input type="number" min="1" max="99" class="form-control mr-2" style="width: 80px;"
-                                       @bind="_quantities[product.Id]" />
+                                       aria-label="Số lượng" @bind="_quantities[product.Id]" />
                                 <button class="btn btn-primary flex-grow-1" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">
                                     @AddButtonLabel(product)
                                 </button>
@@ -477,7 +493,7 @@ else
                     <div class="qv-sheet-note">
                         <span class="qv-sheet-note-icon">📝</span>
                         <input class="qv-sheet-note-input" maxlength="500"
-                               placeholder="Ghi chú cho quán" @bind="_quickViewNote" />
+                               aria-label="Ghi chú cho quán" placeholder="Ghi chú cho quán" @bind="_quickViewNote" />
                     </div>
                 </div>
                 <div class="qv-sheet-footer">
@@ -563,6 +579,9 @@ else
     // Item 95: table QR — ?ban={label} shows a "đang đặt tại bàn" chip.
     private string _tableLabel;
 
+    // Item 143: mã giảm giá cho khách mới (banner đơn đầu tiên).
+    private FirstOrderVoucherModel _firstOrderVoucher;
+
     // Quick-view state.
     private ShopProductModel _quickView;
     private int _quickViewQty = 1;
@@ -646,6 +665,24 @@ else
             _openStatusText = text;
         }
 
+        // Item 143: banner mã giảm giá cho khách mới (fail-soft — shop
+        // vẫn chạy bình thường khi không lấy được).
+        try
+        {
+            var phone = await ResolveCustomerPhoneAsync();
+            if (!string.IsNullOrWhiteSpace(phone))
+            {
+                var voucher = await ShopService.GetFirstOrderVoucherAsync(phone);
+                if (voucher != null && voucher.IsNewCustomer && !string.IsNullOrWhiteSpace(voucher.Code))
+                {
+                    _firstOrderVoucher = voucher;
+                }
+            }
+        }
+        catch (Exception)
+        {
+        }
+
         try
         {
             // Wave 6d (item 38): products are the critical load — their
@@ -661,7 +698,7 @@ else
                 _products = new List<ShopProductModel>();
             }
 
-            var branchesTask = Wave4Service.GetActiveBranchesAsync();
+            var branchesTask = AdminSystemService.GetActiveBranchesAsync();
             var combosTask = ShopService.GetCombosAsync();
             var toppingsTask = ShopService.GetToppingsAsync();
             var todaySoldTask = ShopService.GetTodaySoldAsync();
@@ -1287,7 +1324,7 @@ else
         var first = FirstImageUrl(product?.ImageUrlsJson);
         if (!string.IsNullOrEmpty(first))
         {
-            return Wave5Service.ResolveImageUrl(first);
+            return AdminCommerceService.ResolveImageUrl(first);
         }
 
         // Generic placeholder when admin has not set an image
@@ -1507,6 +1544,60 @@ else
         }
 
         return null;
+    }
+
+    /// <summary>Item 143: 1 chạm sang checkout, mang theo mã giảm giá.</summary>
+    private void UseVoucher()
+    {
+        if (_firstOrderVoucher != null && !string.IsNullOrWhiteSpace(_firstOrderVoucher.Code))
+        {
+            Navigation.NavigateTo($"/checkout?code={Uri.EscapeDataString(_firstOrderVoucher.Code)}");
+        }
+    }
+
+    /// <summary>
+    /// Item 143: SĐT khách — đã đăng nhập thì lấy từ tài khoản, chưa đăng
+    /// nhập thì dùng SĐT đã lưu ở giỏ hàng (khóa "phuthuong.phone.v1" của Cart.razor).
+    /// </summary>
+    private async Task<string> ResolveCustomerPhoneAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var name = authState?.User?.Identity?.Name;
+            if (IsValidVnPhone(name))
+            {
+                return name.Trim();
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        try
+        {
+            var saved = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "phuthuong.phone.v1");
+            if (IsValidVnPhone(saved))
+            {
+                return saved.Trim();
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return null;
+    }
+
+    private static bool IsValidVnPhone(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return false;
+        }
+
+        var digits = new string(phone.Trim().Where(char.IsDigit).ToArray());
+        return digits.Length == 10 && digits[0] == '0' && "35789".Contains(digits[1]);
     }
 
     private void OnLangChanged() => InvokeAsync(StateHasChanged);

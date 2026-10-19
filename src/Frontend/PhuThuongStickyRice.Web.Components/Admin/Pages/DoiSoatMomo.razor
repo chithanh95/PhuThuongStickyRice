@@ -2,7 +2,7 @@
 @attribute [Authorize]
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Services
-@inject Wave5Service Wave5Service
+@inject AdminCommerceService AdminCommerceService
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Đối soát MoMo</h4>
@@ -117,7 +117,7 @@
         _error = null;
         try
         {
-            _orders = await Wave5Service.GetMoMoOrdersAsync(_filter);
+            _orders = await AdminCommerceService.GetMoMoOrdersAsync(_filter);
         }
         catch (Exception ex)
         {
@@ -131,7 +131,7 @@
         _error = null;
         try
         {
-            await Wave5Service.MarkMoMoMatchedAsync(o.Id);
+            await AdminCommerceService.MarkMoMoMatchedAsync(o.Id);
             _success = $"Đã đánh dấu đối soát đơn {o.OrderNumber}.";
             await LoadAsync();
         }

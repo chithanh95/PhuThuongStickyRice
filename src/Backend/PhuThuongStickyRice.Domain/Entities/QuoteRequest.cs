@@ -39,5 +39,16 @@ namespace PhuThuongStickyRice.Domain.Entities
         public QuoteStatus Status { get; set; } = QuoteStatus.New;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Item 161: số tiền cọc khi admin duyệt báo giá (VND).
+        /// Null = chưa yêu cầu cọc.
+        /// </summary>
+        public decimal? DepositAmount { get; set; }
+
+        /// <summary>
+        /// Item 161: nội dung chuyển khoản cho khách (số TK, nội dung CK).
+        /// </summary>
+        public string DepositInfo { get; set; }
     }
 }

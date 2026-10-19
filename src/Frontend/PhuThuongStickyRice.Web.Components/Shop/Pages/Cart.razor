@@ -14,7 +14,7 @@
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
 @inject ToastService Toasts
-@inject Wave5Service Wave5Service
+@inject AdminCommerceService AdminCommerceService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject AppI18n AppI18n
@@ -124,6 +124,7 @@ else
                             <br />
                             <input class="form-control form-control-sm mt-1" style="max-width: 230px;"
                                    maxlength="500" placeholder="@AppI18n.T("shop.item_note_placeholder")"
+                                   aria-label="Ghi chú cho món @item.ProductName"
                                    value="@item.Note"
                                    @onchange="(e) => CartState.UpdateNote(item.LineKey, e.Value?.ToString())" />
                                 </div>
@@ -226,7 +227,7 @@ else
     {
         var first = FirstImageUrl(s?.ImageUrlsJson);
         if (!string.IsNullOrEmpty(first))
-            return Wave5Service.ResolveImageUrl(first);
+            return AdminCommerceService.ResolveImageUrl(first);
         return PlaceholderImage;
     }
 

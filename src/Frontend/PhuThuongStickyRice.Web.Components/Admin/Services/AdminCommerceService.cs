@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Admin.Services
 {
     /// <summary>
-    /// Wave 5 APIs: check-in, corporate clients, customer photos, forecast,
-    /// work shifts, wallet, shift close, refunds, message templates, voucher
-    /// campaigns, POS, MoMo reconciliation, dashboard widgets.
+    /// Admin commerce APIs: check-in, corporate clients, customer photos,
+    /// forecast, work shifts, wallet, shift close, refunds, message templates,
+    /// voucher campaigns, POS, MoMo reconciliation, dashboard widgets.
     /// </summary>
-    public class Wave5Service : HttpService
+    public class AdminCommerceService : HttpService
     {
-        public Wave5Service(HttpClient httpClient, ITokenManager tokenManager)
+        public AdminCommerceService(HttpClient httpClient, ITokenManager tokenManager)
             : base(httpClient, tokenManager)
         {
         }

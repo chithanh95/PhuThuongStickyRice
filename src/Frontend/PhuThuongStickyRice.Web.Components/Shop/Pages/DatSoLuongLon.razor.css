@@ -54,7 +54,7 @@
     color: #fff;
 }
 
-@@media (max-width: 576px) {
+@media (max-width: 576px) {
     .bulk-steps {
         flex-direction: column;
         gap: 6px;

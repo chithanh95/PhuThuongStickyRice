@@ -1,0 +1,37 @@
+@page "/admin/goi-tra-truoc"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Admin.Components
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Gói trả trước</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Xôi Phú Thượng</a></li>
+        <li class="current">Gói trả trước</li>
+    </ol>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <button type="button" class="nav-link @(_tab == "the" ? "active" : "")" @onclick='() => _tab = "the"'>
+            🎫 Thẻ xôi
+        </button>
+    </li>
+    <li class="nav-item">
+        <button type="button" class="nav-link @(_tab == "tuan" ? "active" : "")" @onclick='() => _tab = "tuan"'>
+            📅 Gói tuần
+        </button>
+    </li>
+</ul>
+
+@if (_tab == "the")
+{
+    <PrepaidCardAdminTab />
+}
+else
+{
+    <WeeklyPlanAdminTab />
+}
+
+@code {
+    private string _tab = "the";
+}

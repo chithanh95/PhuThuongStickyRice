@@ -30,11 +30,16 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input);
 
         /// <summary>
+        /// Item 139 (Public): active, unexpired public discount codes that
+        /// still have uses left. Used by checkout to auto-apply the best one.
+        /// </summary>
+        Task<List<DiscountCodeDto>> GetActivePublicAsync();
+
+        /// <summary>
         /// True when the code is a usable freeship voucher (item 120).
         /// Used by order creation to zero the delivery fee.
         /// </summary>
         Task<bool> IsFreeshipAsync(string code, decimal subtotal, string customerPhone);
-
         /// <summary>
         /// Order creation: returns the discount amount and bumps the usage
         /// counter. Throws DomainException when the code cannot be applied.
@@ -75,6 +80,12 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// exists for the phone (prevents duplicate spin/birthday codes).
         /// </summary>
         Task<bool> HasUsableCodeAsync(string codePrefix, string ownerPhone);
+
+        /// <summary>
+        /// Item 143 (Internal): code of the first usable code with the given
+        /// prefix for the phone, or null when none exists.
+        /// </summary>
+        Task<string> GetUsableCodeAsync(string codePrefix, string ownerPhone);
     }
 
     public class DiscountAppService : ApplicationService, IDiscountAppService
@@ -316,6 +327,48 @@ namespace PhuThuongStickyRice.Application.Discounts
                     && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > DateTime.UtcNow)
                     && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value)));
             return existing != null;
+        }
+
+        /// <summary>
+        /// Item 143: code of the first usable code with the given prefix for
+        /// the phone, or null when none exists.
+        /// </summary>
+        public virtual async Task<string> GetUsableCodeAsync(string codePrefix, string ownerPhone)
+        {
+            if (string.IsNullOrWhiteSpace(codePrefix) || string.IsNullOrWhiteSpace(ownerPhone))
+            {
+                return null;
+            }
+
+            var prefix = codePrefix.Trim().ToUpperInvariant();
+            var queryable = await _discounts.GetQueryableAsync();
+            var existing = await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x =>
+                    x.Code.StartsWith(prefix)
+                    && x.OwnerPhone == ownerPhone
+                    && x.IsActive
+                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > DateTime.UtcNow)
+                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value)));
+            return existing?.Code;
+        }
+
+        /// <summary>
+        /// Item 139 (Public): active, unexpired public discount codes that
+        /// still have uses left. No cache — this service does not use
+        /// IProductCatalogCache, and the result is cheap to compute.
+        /// </summary>
+        [AllowAnonymous]
+        public virtual async Task<List<DiscountCodeDto>> GetActivePublicAsync()
+        {
+            var now = DateTime.UtcNow;
+            var queryable = await _discounts.GetQueryableAsync();
+            var entities = await _asyncExecuter.ToListAsync(
+                queryable.Where(x => x.IsActive
+                    && (x.OwnerPhone == null || x.OwnerPhone == "")
+                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
+                    && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
+                    .OrderByDescending(x => x.CreatedDateTime));
+            return entities.Select(MapToDto).ToList();
         }
 
         private static (bool Valid, string Message) CheckUsable(

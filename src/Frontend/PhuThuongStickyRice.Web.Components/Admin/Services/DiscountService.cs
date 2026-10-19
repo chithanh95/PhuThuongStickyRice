@@ -39,5 +39,11 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
             return await PostAsync<ValidateDiscountResultModel>("api/discounts/validate",
                 new { Code = code, Subtotal = subtotal, CustomerPhone = customerPhone });
         }
+
+        /// <summary>Item 139: active public codes for checkout auto-apply.</summary>
+        public async Task<List<DiscountCodeModel>> GetActivePublicAsync()
+        {
+            return await GetAsync<List<DiscountCodeModel>>("api/discounts/active");
+        }
     }
 }

@@ -1,0 +1,209 @@
+@* Item 164: tab "Thẻ xôi" — nhúng trong trang /goi-tra-truoc.
+   UX cho người lớn tuổi: chữ to, nút bấm lớn (≥48px), tiếng Việt đơn giản. *@
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject PrepaidCardService PrepaidCardService
+
+<div class="pt-cardtab">
+    <p class="pt-intro">
+        Mua 1 lần, <strong>mỗi sáng đưa mã thẻ cho quán để nhận 1 suất xôi</strong>.
+        Càng mua gói lớn, giá mỗi suất càng rẻ.
+    </p>
+
+    @* ---------- MUA THẺ ---------- *@
+    <section class="pt-section" aria-label="Mua thẻ xôi">
+        <h2 class="pt-section-title">🎫 Mua thẻ xôi</h2>
+
+        @if (_bought == null)
+        {
+            <p class="pt-step-label">Bước 1: Chọn gói</p>
+            <div class="pt-packages">
+                <button type="button" class="pt-package @(_packageSuits == 20 ? "active" : "")"
+                        @onclick="() => _packageSuits = 20" aria-pressed="@(_packageSuits == 20)">
+                    <span class="pt-package-name">Gói 20 suất xôi</span>
+                    <span class="pt-package-price">450.000đ</span>
+                    <span class="pt-package-note">Giảm 10% · chỉ 22.500đ/suất</span>
+                </button>
+                <button type="button" class="pt-package @(_packageSuits == 30 ? "active" : "")"
+                        @onclick="() => _packageSuits = 30" aria-pressed="@(_packageSuits == 30)">
+                    <span class="pt-package-name">Gói 30 suất xôi</span>
+                    <span class="pt-package-price">637.500đ</span>
+                    <span class="pt-package-note">Giảm 15% · chỉ 21.250đ/suất</span>
+                </button>
+            </div>
+
+            <p class="pt-step-label">Bước 2: Nhập tên và số điện thoại</p>
+            <div class="pt-field">
+                <label for="pt-name">Họ tên của bạn</label>
+                <input id="pt-name" class="pt-input" @bind="_name" maxlength="100"
+                       placeholder="Ví dụ: Bà Lan" autocomplete="name" />
+            </div>
+            <div class="pt-field">
+                <label for="pt-phone">Số điện thoại</label>
+                <input id="pt-phone" class="pt-input" @bind="_phone" maxlength="11"
+                       inputmode="numeric" placeholder="Ví dụ: 0912345678" autocomplete="tel" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(_buyError))
+            {
+                <div class="pt-alert pt-alert-error" role="alert">@_buyError</div>
+            }
+
+            <button type="button" class="pt-bigbtn" @onclick="BuyAsync" disabled="@_buying">
+                @(_buying ? "Đang xử lý..." : "Mua ngay")
+            </button>
+            <p class="pt-hint">Quán sẽ gọi lại số điện thoại này để xác nhận và hướng dẫn thanh toán.</p>
+        }
+        else
+        {
+            <div class="pt-success" role="status">
+                <p class="pt-success-title">✅ Đã mua thành công!</p>
+                <p class="pt-success-label">Mã thẻ của bạn là:</p>
+                <p class="pt-code">@_bought.CardCode</p>
+                <p class="pt-guide">
+                    Mỗi sáng đưa mã này cho quán để nhận 1 suất xôi.
+                </p>
+                <p class="pt-success-info">
+                    Thẻ của <strong>@_bought.CustomerName</strong> (@_bought.CustomerPhone)<br />
+                    Còn <strong>@_bought.RemainingSuits / @_bought.TotalSuits</strong> suất xôi.
+                </p>
+                <button type="button" class="pt-bigbtn pt-outline" @onclick="ResetBuy">
+                    Mua thêm thẻ khác
+                </button>
+            </div>
+        }
+    </section>
+
+    @* ---------- TRA CỨU ---------- *@
+    <section class="pt-section" aria-label="Tra cứu thẻ của tôi">
+        <h2 class="pt-section-title">🔎 Tra cứu thẻ của tôi</h2>
+
+        <div class="pt-field">
+            <label for="pt-lookup-phone">Số điện thoại đã mua thẻ</label>
+            <input id="pt-lookup-phone" class="pt-input" @bind="_lookupPhone" maxlength="11"
+                   inputmode="numeric" placeholder="Ví dụ: 0912345678" />
+        </div>
+
+        @if (!string.IsNullOrEmpty(_lookupError))
+        {
+            <div class="pt-alert pt-alert-error" role="alert">@_lookupError</div>
+        }
+
+        <button type="button" class="pt-bigbtn pt-outline" @onclick="LookupAsync" disabled="@_lookingUp">
+            @(_lookingUp ? "Đang tìm..." : "Tra cứu thẻ")
+        </button>
+
+        @if (_myCards != null)
+        {
+            if (!_myCards.Any())
+            {
+                <p class="pt-empty">Không tìm thấy thẻ nào cho số điện thoại này.</p>
+            }
+            else
+            {
+                <div class="pt-list">
+                    @foreach (var c in _myCards)
+                    {
+                        <div class="pt-item" @key="c.Id">
+                            <div class="pt-item-code">@c.CardCode</div>
+                            <div class="pt-item-body">
+                                <div class="pt-item-name">@c.CustomerName</div>
+                                <div class="pt-item-remain">
+                                    Còn <strong>@c.RemainingSuits / @c.TotalSuits</strong> suất xôi · @c.StatusText
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </section>
+</div>
+
+@code {
+    private int _packageSuits = 20;
+    private string _name = "";
+    private string _phone = "";
+    private bool _buying;
+    private string _buyError;
+    private PrepaidCardModel _bought;
+
+    private string _lookupPhone = "";
+    private bool _lookingUp;
+    private string _lookupError;
+    private List<PrepaidCardModel> _myCards;
+
+    private async Task BuyAsync()
+    {
+        _buyError = null;
+
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _buyError = "Bạn chưa nhập họ tên. Vui lòng nhập tên của bạn.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_phone))
+        {
+            _buyError = "Bạn chưa nhập số điện thoại. Vui lòng nhập số điện thoại.";
+            return;
+        }
+
+        _buying = true;
+        try
+        {
+            _bought = await PrepaidCardService.BuyAsync(new BuyPrepaidCardRequest
+            {
+                CustomerName = _name.Trim(),
+                CustomerPhone = _phone.Trim(),
+                PackageSuits = _packageSuits
+            });
+        }
+        catch (Exception ex)
+        {
+            _buyError = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Chưa mua được thẻ. Vui lòng thử lại."
+                : ex.Message;
+        }
+        finally
+        {
+            _buying = false;
+        }
+    }
+
+    private void ResetBuy()
+    {
+        _bought = null;
+        _name = "";
+        _phone = "";
+        _buyError = null;
+    }
+
+    private async Task LookupAsync()
+    {
+        _lookupError = null;
+        _myCards = null;
+
+        if (string.IsNullOrWhiteSpace(_lookupPhone))
+        {
+            _lookupError = "Bạn chưa nhập số điện thoại. Vui lòng nhập số điện thoại đã mua thẻ.";
+            return;
+        }
+
+        _lookingUp = true;
+        try
+        {
+            _myCards = await PrepaidCardService.GetMyCardsAsync(_lookupPhone.Trim());
+        }
+        catch (Exception ex)
+        {
+            _lookupError = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Chưa tra cứu được. Vui lòng thử lại."
+                : ex.Message;
+        }
+        finally
+        {
+            _lookingUp = false;
+        }
+    }
+}

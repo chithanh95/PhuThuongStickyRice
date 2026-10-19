@@ -55,3 +55,19 @@ html.dark :where(a, button, input, select, textarea, [tabindex], [role="button"]
         scroll-behavior: auto !important;
     }
 }
+
+/* ==== UIUX-2DAYS agent4-a11y: tương phản timeline TrackOrder (trạng thái todo) ==== */
+/* Nhãn bước (.to-tl-label, 11px) và icon chấm (.to-tl-dot) ở trạng thái "chưa tới"
+   đang dùng #9aa0a6 trên nền trắng (~3.3:1, dưới chuẩn WCAG 4.5:1 cho chữ nhỏ)
+   → #6c757d (~4.7:1 trên nền trắng).
+   Selector 3 class (0,3,0) thắng rule scoped .to-tl-label[b-x] (0,2,0) mà không
+   cần !important; trạng thái done/current giữ nguyên màu xanh lá/tím vì rule
+   của chúng hòa specificity và nằm trong bundle load SAU file này. Dark mode
+   không bị ảnh hưởng (rule html.dark cụ thể hơn: 0,3,1). */
+.to-timeline .to-tl-step .to-tl-label {
+    color: #6c757d;
+}
+
+.to-timeline .to-tl-step .to-tl-dot {
+    color: #6c757d;
+}
