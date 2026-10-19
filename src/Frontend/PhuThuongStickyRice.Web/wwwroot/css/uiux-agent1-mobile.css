@@ -1408,3 +1408,95 @@
 }
 
 /* ===== END UIUX run 13:25 - Agent1 Mobile ===== */
+
+/* ===== UIUX run 14:05 - Agent1 Mobile ===== */
+
+/* ------------------------------------------------------------
+   uiux-a1-1405-fix1 — /tai-khoan: cụm nút ★/Sửa/Xóa trong
+   btn-group-sm của danh sách địa chỉ (~31px).
+   Vấn đề: rule run 12:10 (.tk-page .btn-sm → 44px) KHÔNG khớp —
+   các nút này là plain .btn (không có class .btn-sm), bị Bootstrap
+   thu nhỏ qua selector `.btn-group-sm > .btn` (~31px cao).
+   Giải pháp: target đúng `.tk-page .btn-group-sm > .btn` lên 44px
+   (specificity 0,3,0 thắng Bootstrap 0,2,0); TaiKhoan.razor.css
+   không có rule mobile nào xung đột.
+   (Verify: TaiKhoan.razor:315-322 .btn-group.btn-group-sm > .btn;
+   .btn-group-sm chỉ xuất hiện ở cụm địa chỉ trang này)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .tk-page .btn-group-sm > .btn {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   uiux-a1-1405-fix2 — Landing: ô nhập SĐT trong form Zalo
+   (.sg-zalo-form) và form bình chọn/khóa học/đăng ký tin
+   (.sg-loyal-form) — font 15px gây iOS auto-zoom.
+   Vấn đề: Index.razor.css:1531-1536 và 1827-1832 set
+   font-size 15px → iOS Safari tự zoom khi focus, vỡ layout
+   trên iPhone; khách gõ SĐT là luồng chính của 3 form này.
+   Giải pháp: nâng lên 16px chỉ trên mobile (ô đã cao ~48px
+   nên không cần tăng chiều cao). Doubled-class để thắng
+   scoped CSS.
+   (Verify: Core/Pages/Index.razor:590/627/713 dùng
+   .sg-loyal-form input; form Zalo dùng .sg-zalo-form input;
+   2 class này chỉ tồn tại ở landing)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-zalo-form.sg-zalo-form input,
+    .sg-loyal-form.sg-loyal-form input {
+        font-size: 16px;
+    }
+}
+
+/* ------------------------------------------------------------
+   uiux-a1-1405-fix3 — Landing, widget chat đặt xôi: nút × đóng
+   (.sg-chat-head button) vùng bấm chỉ ~28px.
+   Vấn đề: scoped CSS Index.razor.css:1780 set font-size 22px,
+   không padding — vùng bấm ~22×28px, dưới chuẩn 44px; khách
+   lớn tuổi khó đóng khung chat.
+   Giải pháp: vùng chạm 44×44px, icon canh giữa. Doubled-class
+   để thắng scoped CSS.
+   (Verify: Core/Pages/Index.razor:844-846 button aria-label="Đóng"
+   duy nhất trong .sg-chat-head)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-chat-head.sg-chat-head button {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ------------------------------------------------------------
+   uiux-a1-1405-fix4 — Landing, modal xem 360°: nút × đóng
+   (.sg-modal-close) vùng bấm chỉ ~28px.
+   Vấn đề: Index.razor.css:1986-1989 font-size 28px, không padding,
+   absolute top 10px right 14px → vùng bấm ~28×32px, dưới chuẩn
+   44px; đây là nút thoát duy nhất của modal trên mobile.
+   Giải pháp: vùng chạm 44×44px, chỉnh lại top/right để không
+   đè tiêu đề modal. Doubled-class để thắng scoped CSS.
+   (Verify: Index.razor.css:1986 .sg-modal-close chỉ dùng ở modal
+   360° landing)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .sg-modal-close.sg-modal-close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        top: 6px;
+        right: 6px;
+    }
+}
+
+/* ===== END UIUX run 14:05 - Agent1 ===== */
