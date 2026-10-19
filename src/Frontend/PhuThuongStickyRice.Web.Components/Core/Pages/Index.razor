@@ -10,6 +10,7 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @using PhuThuongStickyRice.Web.Components.Core.Services
+@using PhuThuongStickyRice.Web.Components.Core.Helpers
 @inject LandingService LandingService
 @inject ShopService ShopService
 @inject ShopSettingsService ShopSettingsService
@@ -436,7 +437,7 @@ else
                         <div class="sg-dish-body">
                             <h3 class="sg-dish-name">@product.Name</h3>
                             @* bug-hunt 2026-10-19: hiện giá KM (giá thực trả khi bấm Thêm vào giỏ) thay vì giá gốc. *@
-                            <div class="sg-dish-price">@FormatPrice(ShopProductModel.EffectivePrice(product, product.Price))<small>@UnitSuffix(product)</small></div>
+                            <div class="sg-dish-price">@PriceFormatter.FormatPrice(ShopProductModel.EffectivePrice(product, product.Price))<small>@ShopProductModel.UnitSuffix(product)</small></div>
                             <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">
                                 @AddButtonLabel(product)
                             </button>
@@ -465,7 +466,7 @@ else
                             {
                                 <p class="sg-combo-items">@combo.Items.Count món trong combo</p>
                             }
-                            <div class="sg-dish-price">@FormatPrice(combo.Price)</div>
+                            <div class="sg-dish-price">@PriceFormatter.FormatPrice(combo.Price)</div>
                             <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddComboToCart(combo)" disabled="@OrdersPaused">
                                 Thêm combo vào giỏ
                             </button>
@@ -522,7 +523,7 @@ else
                                AddToCart cộng giỏ theo giá KM (EffectivePrice) — khách thấy giá
                                cao hơn số thực tế bị tính. Thêm disabled khi món không CanOrder
                                (Hết suất/ngoài giờ bán) như các section khác của trang. *@
-                            <div class="sg-dish-price">@FormatPrice(ShopProductModel.EffectivePrice(product, product.Price))<small>@UnitSuffix(product)</small></div>
+                            <div class="sg-dish-price">@PriceFormatter.FormatPrice(ShopProductModel.EffectivePrice(product, product.Price))<small>@ShopProductModel.UnitSuffix(product)</small></div>
                             <button class="sg-btn sg-btn-solid sg-btn-block" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))">Thêm vào giỏ</button>
                         </div>
                     </div>
@@ -1498,11 +1499,9 @@ else
         return list;
     }
 
-    private static string FormatPrice(decimal price) => $"{price:N0} ₫";
-
-    /// <summary>"/kg" for weight products, "/suất" otherwise.</summary>
-    private static string UnitSuffix(ShopProductModel product) =>
-        string.Equals(product?.Unit, "kg", StringComparison.OrdinalIgnoreCase) ? "/kg" : "/suất";
+    // NOTE (codequality-team 2026-10-20): FormatPrice trùng PriceFormatter.FormatPrice
+    // và UnitSuffix trùng ShopProductModel.UnitSuffix nên đã xóa bản copy tại
+    // đây — gọi thẳng helper dùng chung, behavior giữ nguyên.
 
     /// <summary>Uploaded image URL if set, otherwise the SVG placeholder.</summary>
     private const string PlaceholderImage =

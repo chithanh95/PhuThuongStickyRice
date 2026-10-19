@@ -266,12 +266,12 @@ else
                                 @if (CardPromoPrice(product) is decimal promo)
                                 {
                                     <s class="text-muted mr-1" style="font-size: 1rem;">@FormatPrice(DisplayPrice(product))</s>
-                                    <strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(promo)<small class="text-muted">@UnitSuffix(product)</small></strong>
+                                    <strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(promo)<small class="text-muted">@ShopProductModel.UnitSuffix(product)</small></strong>
                                     <span class="badge badge-danger ml-1">−@((int)Math.Round((1 - promo / DisplayPrice(product)) * 100))%</span>
                                 }
                                 else
                                 {
-                                    <strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(DisplayPrice(product))<small class="text-muted">@UnitSuffix(product)</small></strong>
+                                    <strong class="text-danger" style="font-size: 1.2rem;">@FormatPrice(DisplayPrice(product))<small class="text-muted">@ShopProductModel.UnitSuffix(product)</small></strong>
                                 }
                             </p>
                             @if (product.Sizes != null && product.Sizes.Count > 0)
@@ -358,7 +358,7 @@ else
                                     {
                                         @FormatPrice(DisplayPrice(product))
                                     }
-                                    <small>@UnitSuffix(product)</small>
+                                    <small>@ShopProductModel.UnitSuffix(product)</small>
                                 </div>
                             </div>
                             <div class="shop-row-action">
@@ -464,7 +464,7 @@ else
                         {
                             <strong class="text-danger" style="font-size: 1.4rem;">@FormatPrice(QuickViewUnitPrice())</strong>
                         }
-                        <small class="text-muted">@UnitSuffix(_quickView)</small>
+                        <small class="text-muted">@ShopProductModel.UnitSuffix(_quickView)</small>
                         @if (IsSoldOut(_quickView))
                         {
                             <span class="badge badge-secondary ml-2">Tạm hết</span>
@@ -1547,7 +1547,7 @@ else
         {
             return await JSRuntime.InvokeAsync<bool>("ptShareDish",
                 _quickView.Name,
-                $"{FormatPrice(DisplayPrice(_quickView))}{UnitSuffix(_quickView)}",
+                $"{FormatPrice(DisplayPrice(_quickView))}{ShopProductModel.UnitSuffix(_quickView)}",
                 DishShareUrl(_quickView));
         }
         catch (Exception)
@@ -1694,7 +1694,9 @@ else
     /// </summary>
     private string ProductImage(ShopProductModel product)
     {
-        var first = FirstImageUrl(product?.ImageUrlsJson);
+        // Dùng helper chung CartState.FirstImageUrl thay vì bản copy private
+        // (codequality-team 2026-10-20) — cùng logic parse JSON ảnh đầu tiên.
+        var first = CartState.FirstImageUrl(product?.ImageUrlsJson);
         if (!string.IsNullOrEmpty(first))
         {
             return AdminCommerceService.ResolveImageUrl(first);
@@ -1702,40 +1704,6 @@ else
 
         // Generic placeholder when admin has not set an image
         return "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjIwMCIgeT0iMTUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjE2Ij5DaMawYSBjw7Mg4bqjbmg8L3RleHQ+PC9zdmc+";
-    }
-
-    private static string FirstImageUrl(string imageUrlsJson)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrlsJson))
-        {
-            return null;
-        }
-
-        try
-        {
-            using var doc = System.Text.Json.JsonDocument.Parse(imageUrlsJson);
-            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
-            {
-                return null;
-            }
-
-            foreach (var el in doc.RootElement.EnumerateArray())
-            {
-                if (el.ValueKind == System.Text.Json.JsonValueKind.String)
-                {
-                    var url = el.GetString()?.Trim();
-                    if (!string.IsNullOrEmpty(url))
-                    {
-                        return url;
-                    }
-                }
-            }
-        }
-        catch (System.Text.Json.JsonException)
-        {
-        }
-
-        return null;
     }
 
     /// <summary>
@@ -1876,9 +1844,9 @@ else
             .Replace('đ', 'd').Replace('Đ', 'D');
     }
 
-    /// <summary>Item 81: "/kg" for weight products, "/suất" otherwise.</summary>
-    private static string UnitSuffix(ShopProductModel product) =>
-        string.Equals(product?.Unit, "kg", StringComparison.OrdinalIgnoreCase) ? "/kg" : "/suất";
+    // NOTE (codequality-team 2026-10-20): UnitSuffix đã gom về
+    // ShopProductModel (static UnitSuffix) — xóa bản copy tại đây, gọi
+    // ShopProductModel.UnitSuffix(...) ở các chỗ dùng.
 
     /// <summary>Item 85: true when the product is sold out (Inactive).</summary>
     private static bool IsSoldOut(ShopProductModel product) =>

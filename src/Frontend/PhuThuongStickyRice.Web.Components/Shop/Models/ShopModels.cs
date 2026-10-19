@@ -57,6 +57,16 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// <summary>Item 81: selling unit — "suất" (per portion) or "kg" (per kilogram).</summary>
         public string Unit { get; set; }
 
+        /// <summary>
+        /// Hậu tố đơn vị hiển thị giá: "/kg" cho món bán theo cân, "/suất" cho
+        /// các món còn lại. Gom về đây từ Index.razor/Shop.razor (trước đây mỗi
+        /// trang copy 1 method giống hệt nhau) — codequality-team 2026-10-20.
+        /// </summary>
+        /// <param name="product">Món hàng (null-safe: null được coi là "/suất").</param>
+        /// <returns>"/kg" hoặc "/suất".</returns>
+        public static string UnitSuffix(ShopProductModel product) =>
+            string.Equals(product?.Unit, "kg", StringComparison.OrdinalIgnoreCase) ? "/kg" : "/suất";
+
         /// <summary>Item 146: manual display order set by drag &amp; drop on /products.</summary>
         public int SortOrder { get; set; }
 
