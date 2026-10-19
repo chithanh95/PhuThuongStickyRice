@@ -67,8 +67,7 @@ namespace PhuThuongStickyRice.Application.Shop
 
             if (existing != null)
             {
-                return await BuildResultAsync(normalized, today,
-                    alreadyCheckedIn: true, pointsAwarded: 0, loyaltyPoints: loyalty.Points);
+                return await BuildAlreadyCheckedInResultAsync(normalized, today, loyalty.Points);
             }
 
             var settings = await _shopSettings.GetAsync();
@@ -90,9 +89,7 @@ namespace PhuThuongStickyRice.Application.Shop
             if (!inserted)
             {
                 var current = await FindLoyaltyAsync(normalized);
-                return await BuildResultAsync(normalized, today,
-                    alreadyCheckedIn: true, pointsAwarded: 0,
-                    loyaltyPoints: current?.Points ?? loyalty.Points);
+                return await BuildAlreadyCheckedInResultAsync(normalized, today, current?.Points ?? loyalty.Points);
             }
 
             // Cộng điểm nguyên tử tại DB (bug-hunt run 16:05): bản cũ đọc
@@ -136,6 +133,16 @@ namespace PhuThuongStickyRice.Application.Shop
                 LoyaltyPoints = loyalty?.Points ?? 0
             };
         }
+
+        /// <summary>
+        /// Dựng kết quả "đã điểm danh hôm nay": không cộng điểm, chỉ trả trạng
+        /// thái + điểm hiện tại. Dùng chung cho cả 2 luồng (đã có bản ghi từ
+        /// trước / thua race khi insert đồng thời) để không lặp khối dựng DTO.
+        /// </summary>
+        private Task<CheckInResultDto> BuildAlreadyCheckedInResultAsync(
+            string phone, DateTime today, int loyaltyPoints)
+            => BuildResultAsync(phone, today,
+                alreadyCheckedIn: true, pointsAwarded: 0, loyaltyPoints: loyaltyPoints);
 
         /// <summary>
         /// Dựng DTO kết quả điểm danh — dùng chung cho cả 2 luồng (đã điểm danh

@@ -151,13 +151,7 @@ namespace PhuThuongStickyRice.Application.Discounts
 
             // Chỉ lọc ký tự chữ/số và viết hoa tiền tố để mã voucher gọn, dễ đọc,
             // tránh SĐT/ký tự đặc biệt lọt vào mã.
-            var prefix = string.IsNullOrWhiteSpace(input.Prefix)
-                ? DefaultCodePrefix
-                : new string(input.Prefix.Trim().ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
-            if (string.IsNullOrEmpty(prefix))
-            {
-                prefix = DefaultCodePrefix;
-            }
+            var prefix = SanitizeCodePrefix(input.Prefix);
 
             var expiresAt = DateTime.UtcNow.AddDays(input.ValidDays);
             // perf-hunt 2026-10-19: generate all unique codes with a single
@@ -167,27 +161,47 @@ namespace PhuThuongStickyRice.Application.Discounts
 
             for (var i = 0; i < phones.Count; i++)
             {
-                await _discountCodes.InsertAsync(new DiscountCode
-                {
-                    Code = codes[i],
-                    // Ưu tiên số tiền cố định khi có; % và số tiền không tồn tại song song
-                    // vì checkout chỉ áp dụng 1 trong 2.
-                    DiscountPercent = input.DiscountAmount > 0 ? (decimal?)null : input.DiscountPercent,
-                    DiscountAmount = input.DiscountAmount > 0 ? input.DiscountAmount : (decimal?)null,
-                    MinOrderAmount = 0,
-                    ExpiresAt = expiresAt,
-                    // Mỗi mã chỉ dùng 1 lần và gắn với đúng SĐT nhận, để không chia sẻ/tái sử dụng.
-                    MaxUses = 1,
-                    UsedCount = 0,
-                    IsActive = true,
-                    VoucherType = VoucherType.Discount,
-                    OwnerPhone = phones[i]
-                });
+                await _discountCodes.InsertAsync(BuildVoucherCode(codes[i], phones[i], input, expiresAt));
                 result.Add(new GeneratedVoucherDto { Phone = phones[i], Code = codes[i] });
             }
 
             // ABP unit of work tự commit toàn bộ batch khi method kết thúc (không cần SaveChanges thủ công).
             return result;
+        }
+
+        /// <summary>
+        /// Làm sạch tiền tố mã voucher: chỉ giữ chữ/số, viết hoa; rỗng thì
+        /// dùng tiền tố mặc định (<see cref="DefaultCodePrefix"/>).
+        /// </summary>
+        private static string SanitizeCodePrefix(string prefix)
+        {
+            var sanitized = string.IsNullOrWhiteSpace(prefix)
+                ? DefaultCodePrefix
+                : new string(prefix.Trim().ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
+            return string.IsNullOrEmpty(sanitized) ? DefaultCodePrefix : sanitized;
+        }
+
+        /// <summary>
+        /// Dựng entity mã voucher cá nhân: dùng 1 lần, gắn đúng SĐT nhận để
+        /// không chia sẻ/tái sử dụng; ưu tiên số tiền cố định, % và số tiền
+        /// không tồn tại song song (checkout chỉ áp dụng 1 trong 2).
+        /// </summary>
+        private static DiscountCode BuildVoucherCode(
+            string code, string phone, CreateVoucherCampaignInput input, DateTime expiresAt)
+        {
+            return new DiscountCode
+            {
+                Code = code,
+                DiscountPercent = input.DiscountAmount > 0 ? (decimal?)null : input.DiscountPercent,
+                DiscountAmount = input.DiscountAmount > 0 ? input.DiscountAmount : (decimal?)null,
+                MinOrderAmount = 0,
+                ExpiresAt = expiresAt,
+                MaxUses = 1,
+                UsedCount = 0,
+                IsActive = true,
+                VoucherType = VoucherType.Discount,
+                OwnerPhone = phone
+            };
         }
 
         /// <summary>

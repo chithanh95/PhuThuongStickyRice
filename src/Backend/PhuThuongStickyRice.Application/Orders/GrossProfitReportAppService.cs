@@ -293,6 +293,19 @@ namespace PhuThuongStickyRice.Application.Orders
                 return suggestions;
             }
 
+            SuggestUnpricedItems(rows, suggestions);
+            SuggestMarginImprovements(rows, suggestions);
+            SuggestTopProfitContributor(rows, suggestions);
+
+            return suggestions;
+        }
+
+        /// <summary>
+        /// Gợi ý nhập giá vốn cho các món chưa có: lãi các món này đang tạm
+        /// tính bằng 100% doanh thu nên số liệu chưa chính xác.
+        /// </summary>
+        private static void SuggestUnpricedItems(List<GrossProfitRowDto> rows, List<string> suggestions)
+        {
             var unpriced = rows.Where(r => r.CostMissing).ToList();
             if (unpriced.Count > 0)
             {
@@ -302,34 +315,49 @@ namespace PhuThuongStickyRice.Application.Orders
                     $"{(unpriced.Count > MaxUnpricedNamesInSuggestion ? ",…" : "")}) — lãi các món này đang tính bằng 100% doanh thu. " +
                     "Nhập giá vốn ở bảng bên dưới để số liệu chính xác.");
             }
+        }
 
+        /// <summary>
+        /// Gợi ý đẩy bán món biên lãi cao nhưng bán ít, và xem lại món biên
+        /// lãi thấp (tăng giá hoặc đổi nguồn nguyên liệu).
+        /// </summary>
+        private static void SuggestMarginImprovements(List<GrossProfitRowDto> rows, List<string> suggestions)
+        {
             var priced = rows.Where(r => !r.CostMissing && r.Revenue > 0).ToList();
-            if (priced.Count > 0)
+            if (priced.Count == 0)
             {
-                var medianQty = Median(priced.Select(r => (double)r.QuantitySold).ToList());
-                var highMarginLowVolume = priced
-                    .Where(r => r.QuantitySold <= medianQty && r.MarginPercent.HasValue)
-                    .MaxBy(r => r.MarginPercent);
-                if (highMarginLowVolume != null)
-                {
-                    suggestions.Add(
-                        $"Món \"{highMarginLowVolume.ProductName}\" có biên lãi cao nhất " +
-                        $"({highMarginLowVolume.MarginPercent:0.#}%) nhưng mới bán {highMarginLowVolume.QuantitySold:N0} suất — " +
-                        "nên đẩy bán (đưa lên đầu trang shop, gợi ý kèm khi khách đặt).");
-                }
-
-                var lowestMargin = priced
-                    .Where(r => r.MarginPercent.HasValue)
-                    .MinBy(r => r.MarginPercent);
-                if (lowestMargin != null && lowestMargin.MarginPercent < LowMarginPercentThreshold
-                    && (highMarginLowVolume == null || lowestMargin.ProductId != highMarginLowVolume.ProductId))
-                {
-                    suggestions.Add(
-                        $"Món \"{lowestMargin.ProductName}\" biên lãi thấp ({lowestMargin.MarginPercent:0.#}%) — " +
-                        "cân nhắc tăng giá bán hoặc tìm nguồn nguyên liệu rẻ hơn.");
-                }
+                return;
             }
 
+            var medianQty = Median(priced.Select(r => (double)r.QuantitySold).ToList());
+            var highMarginLowVolume = priced
+                .Where(r => r.QuantitySold <= medianQty && r.MarginPercent.HasValue)
+                .MaxBy(r => r.MarginPercent);
+            if (highMarginLowVolume != null)
+            {
+                suggestions.Add(
+                    $"Món \"{highMarginLowVolume.ProductName}\" có biên lãi cao nhất " +
+                    $"({highMarginLowVolume.MarginPercent:0.#}%) nhưng mới bán {highMarginLowVolume.QuantitySold:N0} suất — " +
+                    "nên đẩy bán (đưa lên đầu trang shop, gợi ý kèm khi khách đặt).");
+            }
+
+            var lowestMargin = priced
+                .Where(r => r.MarginPercent.HasValue)
+                .MinBy(r => r.MarginPercent);
+            if (lowestMargin != null && lowestMargin.MarginPercent < LowMarginPercentThreshold
+                && (highMarginLowVolume == null || lowestMargin.ProductId != highMarginLowVolume.ProductId))
+            {
+                suggestions.Add(
+                    $"Món \"{lowestMargin.ProductName}\" biên lãi thấp ({lowestMargin.MarginPercent:0.#}%) — " +
+                    "cân nhắc tăng giá bán hoặc tìm nguồn nguyên liệu rẻ hơn.");
+            }
+        }
+
+        /// <summary>
+        /// Gợi ý món đóng góp lãi gộp nhiều nhất trong kỳ.
+        /// </summary>
+        private static void SuggestTopProfitContributor(List<GrossProfitRowDto> rows, List<string> suggestions)
+        {
             var topProfit = rows.FirstOrDefault();
             if (topProfit != null && topProfit.Profit > 0)
             {
@@ -337,8 +365,6 @@ namespace PhuThuongStickyRice.Application.Orders
                     $"Món đóng góp lãi nhiều nhất: \"{topProfit.ProductName}\" " +
                     $"({topProfit.Profit:N0}₫ lãi gộp, {topProfit.QuantitySold:N0} suất).");
             }
-
-            return suggestions;
         }
 
         private static double Median(List<double> values)

@@ -200,6 +200,28 @@ namespace PhuThuongStickyRice.Application.Orders
                 .Select(x => x.Name)
                 .ToList();
 
+            var hours = BuildHourlyRows(buckets, productsOrdered);
+            var topHours = BuildTopHours(buckets, hours);
+            var totalPortions = hours.Sum(r => r.Total);
+
+            return new HourlySalesReportDto
+            {
+                Date = day,
+                Products = productsOrdered,
+                Hours = hours,
+                TopHours = topHours,
+                TotalOrders = buckets.TotalOrders,
+                TotalPortions = totalPortions,
+                Suggestion = BuildSuggestion(day, topHours, totalPortions)
+            };
+        }
+
+        /// <summary>
+        /// Dựng ma trận giờ×món: mỗi hàng là 1 giờ trong khung báo cáo, mỗi
+        /// cột là số lượng bán của 1 món (0 khi giờ đó không bán món ấy).
+        /// </summary>
+        private static List<HourlySalesRowDto> BuildHourlyRows(HourlyBuckets buckets, List<string> productsOrdered)
+        {
             var hours = new List<HourlySalesRowDto>();
             for (var hour = DayStartHour; hour <= DayEndHour; hour++)
             {
@@ -215,7 +237,16 @@ namespace PhuThuongStickyRice.Application.Orders
                 });
             }
 
-            var topHours = hours
+            return hours;
+        }
+
+        /// <summary>
+        /// Chọn các khung giờ bán chạy nhất (có đơn) để admin biết giờ cao
+        /// điểm chuẩn bị hàng.
+        /// </summary>
+        private static List<TopHourDto> BuildTopHours(HourlyBuckets buckets, List<HourlySalesRowDto> hours)
+        {
+            return hours
                 .Where(r => r.Total > 0)
                 .OrderByDescending(r => r.Total)
                 .Take(TopHoursCount)
@@ -226,19 +257,6 @@ namespace PhuThuongStickyRice.Application.Orders
                     Orders = buckets.OrdersPerHour.TryGetValue(r.Hour, out var orderCount) ? orderCount : 0
                 })
                 .ToList();
-
-            var totalPortions = hours.Sum(r => r.Total);
-
-            return new HourlySalesReportDto
-            {
-                Date = day,
-                Products = productsOrdered,
-                Hours = hours,
-                TopHours = topHours,
-                TotalOrders = buckets.TotalOrders,
-                TotalPortions = totalPortions,
-                Suggestion = BuildSuggestion(day, topHours, totalPortions)
-            };
         }
 
         /// <summary>

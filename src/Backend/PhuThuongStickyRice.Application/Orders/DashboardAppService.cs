@@ -255,8 +255,10 @@ namespace PhuThuongStickyRice.Application.Orders
             var target = settings.DailyTargetAmount > 0 ? settings.DailyTargetAmount : DefaultDailyTargetAmount;
 
             var todayVn = VietnamTime.Today();
-            var startUtc = todayVn.AddHours(-VietnamTime.UtcOffsetHours); // VN 00:00 → UTC
-            var endUtc = startUtc.AddDays(1);
+            // Biên ngày VN → UTC: dùng helper chung để mọi chỗ tính giống
+            // hệt nhau (trước đây mỗi method tự cộng/trừ giờ thủ công).
+            var startUtc = VietnamTime.DayStartUtc(todayVn); // VN 00:00 → UTC
+            var endUtc = VietnamTime.DayEndExclusiveUtc(todayVn);
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var revenue = await _asyncExecuter.SumAsync(
@@ -466,9 +468,10 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<TodayVsYesterdayDto> GetTodayVsYesterdayAsync()
         {
             var todayVn = VietnamTime.Today();
-            var startUtc = todayVn.AddHours(-VietnamTime.UtcOffsetHours); // VN 00:00 today → UTC
-            var yesterdayStartUtc = startUtc.AddDays(-1);
-            var endUtc = startUtc.AddDays(1);
+            // Dùng helper chung cho biên ngày VN → UTC (xem GetDailyTargetAsync).
+            var startUtc = VietnamTime.DayStartUtc(todayVn); // VN 00:00 today → UTC
+            var yesterdayStartUtc = VietnamTime.DayStartUtc(todayVn.AddDays(-1));
+            var endUtc = VietnamTime.DayEndExclusiveUtc(todayVn);
 
             var orderQueryable = await _orders.GetQueryableAsync();
 
@@ -543,7 +546,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // The shop runs on Vietnam time (UTC+7); CreatedAt is UTC.
-            var startOfTodayUtc = vnDate.AddHours(-VietnamTime.UtcOffsetHours);
+            var startOfTodayUtc = VietnamTime.DayStartUtc(vnDate);
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var billable = orderQueryable.Where(x =>
