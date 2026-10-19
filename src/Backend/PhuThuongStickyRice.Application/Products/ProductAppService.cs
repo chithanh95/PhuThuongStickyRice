@@ -151,8 +151,17 @@ namespace PhuThuongStickyRice.Application.Products
                 return await QueryListAsync(input);
             }
 
+            // perf-hunt 2026-10-19: KHÔNG cache khi có SearchTerm — cache key
+            // chứa nguyên từ khóa do user nhập (đã trim/lowercase), bot quét
+            // term lạ sẽ phình cache (mỗi term 1 entry tới 200 DTO, TTL 5').
+            // Kết quả tìm kiếm giống hệt vì cùng QueryListAsync, chỉ không qua
+            // cache. Path nóng (shop load ban đầu, không term) vẫn cache 5'.
+            if (!string.IsNullOrWhiteSpace(input.SearchTerm))
+            {
+                return await QueryListAsync(input);
+            }
+
             var cacheKey = "products:active:"
-                + (input.SearchTerm ?? string.Empty).Trim().ToLowerInvariant() + ":"
                 + (input.BranchId?.ToString() ?? "all") + ":"
                 + (input.Status ?? "all") + ":"
                 + (input.IncludeInactive ? "withInactive" : "activeOnly") + ":"

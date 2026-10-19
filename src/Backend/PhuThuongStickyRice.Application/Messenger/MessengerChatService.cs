@@ -424,6 +424,14 @@ namespace PhuThuongStickyRice.Application.Messenger
             var items = await LoadActiveProductsAsync(
                 ParseOrderMaxItems, "Could not load products for Messenger order parsing.");
 
+            // perf-hunt 2026-10-19: chuẩn hóa tên món 1 lần cho cả tin nhắn
+            // thay vì NormalizeForMatching(p.Name) lại cho MỖI món × MỖI đoạn
+            // (Unicode decompose + regex mỗi lần gọi). Kết quả so khớp giống
+            // hệt vì cùng hàm chuẩn hóa, chỉ tính trước.
+            var normalizedItems = items
+                .Select(p => (Product: p, NormName: NormalizeForMatching(p.Name)))
+                .ToList();
+
             var body = OrderPrefixRegex().Replace(text, " ").Trim();
             var parts = body.Split(new[] { ',', ';', '+' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var rawPart in parts)
@@ -434,7 +442,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                     continue;
                 }
 
-                var line = ParseOrderPart(part, items);
+                var line = ParseOrderPart(part, normalizedItems);
                 if (line != null)
                 {
                     result.Add(line);
@@ -470,7 +478,8 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// Parses one order fragment like "xôi gấc x 2" into a pending
         /// line, or null when no product matches.
         /// </summary>
-        private PendingLine ParseOrderPart(string part, List<ProductDto> items)
+        private PendingLine ParseOrderPart(
+            string part, List<(ProductDto Product, string NormName)> items)
         {
             var qty = 1;
             var quantityMatch = QuantityRegex().Match(part);
@@ -492,7 +501,8 @@ namespace PhuThuongStickyRice.Application.Messenger
                 };
         }
 
-        private static ProductDto MatchProduct(string part, List<ProductDto> items)
+        private static ProductDto MatchProduct(
+            string part, List<(ProductDto Product, string NormName)> items)
         {
             var normPart = NormalizeForMatching(part);
             if (normPart.Length < 2)
@@ -502,9 +512,8 @@ namespace PhuThuongStickyRice.Application.Messenger
 
             ProductDto best = null;
             var bestScore = 0;
-            foreach (var p in items)
+            foreach (var (p, normName) in items)
             {
-                var normName = NormalizeForMatching(p.Name);
                 var score = 0;
                 // every word of the query found in the product name scores
                 foreach (var w in normPart.Split(' ', StringSplitOptions.RemoveEmptyEntries))
