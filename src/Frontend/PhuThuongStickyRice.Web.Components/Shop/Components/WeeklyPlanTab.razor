@@ -157,6 +157,9 @@
 
     private async Task BuyAsync()
     {
+        // Chặn double-tap (2 event dispatch trước khi Blazor re-render kịp disable nút)
+        // — mỗi lần bấm chỉ tạo đúng 1 đơn, tránh ghi 2 lần tiền thanh toán.
+        if (_buying) return;
         _error = null;
         if (string.IsNullOrWhiteSpace(_name))
         {

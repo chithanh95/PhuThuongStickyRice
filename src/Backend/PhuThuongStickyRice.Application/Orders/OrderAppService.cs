@@ -2683,11 +2683,16 @@ namespace PhuThuongStickyRice.Application.Orders
             // Perf: only the 4 columns this method actually reads are selected —
             // materializing 50 full Order rows (long text columns like
             // AdminNote/Notes) is pure waste on this checkout hot path.
+            // Pre-filter bằng CustomerPhoneNorm (9 số cuối, có index, set tại Order.cs:378)
+            // để chỉ đọc đơn của đúng SĐT — trước đây Take(50) trên toàn shop nên khách cũ
+            // có đơn cuối cách >50 đơn của shop không bao giờ được prefill tên/địa chỉ.
+            var last9 = NormalizePhoneKey(phone);
             var orderQueryable = await _orders.GetQueryableAsync();
             var recent = await _asyncExecuter.ToListAsync(
                 orderQueryable
                     .Where(x => x.Status != OrderStatus.Cancelled
-                        && !string.IsNullOrWhiteSpace(x.CustomerAddress))
+                        && !string.IsNullOrWhiteSpace(x.CustomerAddress)
+                        && x.CustomerPhoneNorm == last9)
                     .OrderByDescending(x => x.CreatedAt)
                     .Select(x => new
                     {
@@ -2696,7 +2701,7 @@ namespace PhuThuongStickyRice.Application.Orders
                         x.CustomerAddress,
                         x.CreatedAt
                     })
-                    .Take(50));
+                    .Take(100));
 
             var match = recent.FirstOrDefault(x => PhonesMatch(x.CustomerPhone, phone));
             if (match == null)
