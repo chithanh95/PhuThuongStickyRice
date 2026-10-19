@@ -197,7 +197,11 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 signature = request.Signature
             };
 
-            var response = await _httpClient.PostAsync(
+            // [codequality-practices 2026-10-19] HttpResponseMessage phải dispose
+            // để trả connection về pool ngay sau khi đọc xong body (trước đó
+            // response không dispose, giữ socket tới khi GC — cùng lỗi đã fix
+            // ở CustomerCareService/CartSyncService).
+            using var response = await _httpClient.PostAsync(
                 options.Endpoint,
                 new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
             response.EnsureSuccessStatusCode();
