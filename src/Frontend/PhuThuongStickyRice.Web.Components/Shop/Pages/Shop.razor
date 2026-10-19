@@ -1282,6 +1282,22 @@ else
             : null;
     }
 
+    /// <summary>
+    /// Item 256 fix (bug-hunt 2026-10-19): giá bán hiệu dụng đưa vào giỏ.
+    /// Giá KM hiển thị trên card phải là giá khách thực sự trả — trước đây
+    /// giỏ và đơn hàng tính theo giá gốc trong khi card hiện giá KM.
+    /// Cùng luật với Product.ResolveEffectivePrice ở backend.
+    /// </summary>
+    /// <param name="product">Món hàng (có thể mang giá KM từ API).</param>
+    /// <param name="basePrice">Giá đang xét (giá gốc hoặc giá size đã chọn).</param>
+    /// <returns>Giá KM nếu có và rẻ hơn, ngược lại giá gốc.</returns>
+    private static decimal EffectivePrice(ShopProductModel product, decimal basePrice)
+    {
+        return product?.PromoPrice is decimal promo && promo > 0 && promo < basePrice
+            ? promo
+            : basePrice;
+    }
+
     // ---------- Cart ----------
 
     private void AddToCart(ShopProductModel product)
@@ -1308,7 +1324,7 @@ else
 
         CartState.AddConfigured(
             product.Id, product.Name, product.Code,
-            size?.Price ?? product.Price, qty,
+            EffectivePrice(product, size?.Price ?? product.Price), qty,
             size?.Id, size?.Name,
             toppingIds: null, toppingNames: null, toppingsTotal: 0,
             isCombo: false,
@@ -1542,7 +1558,7 @@ else
         var toppingsTotal = (_toppings ?? new List<ToppingModel>())
             .Where(t => _quickViewToppings.Contains(t.Id))
             .Sum(t => t.ExtraPrice);
-        return basePrice + toppingsTotal;
+        return EffectivePrice(_quickView, basePrice) + toppingsTotal;
     }
 
     private void AddQuickViewToCart()
@@ -1576,7 +1592,7 @@ else
         var toppingIds = chosenToppings.Select(t => t.Id).ToList();
         var toppingNames = chosenToppings.Count == 0 ? null : string.Join(", ", chosenToppings.Select(t => t.Name));
         var toppingsTotal = chosenToppings.Sum(t => t.ExtraPrice);
-        var unitPrice = (size?.Price ?? _quickView.Price) + toppingsTotal;
+        var unitPrice = EffectivePrice(_quickView, size?.Price ?? _quickView.Price) + toppingsTotal;
 
         CartState.AddConfigured(
             _quickView.Id, _quickView.Name, _quickView.Code,

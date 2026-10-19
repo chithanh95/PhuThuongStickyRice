@@ -242,6 +242,23 @@ namespace PhuThuongStickyRice.Domain.Entities
         }
 
         /// <summary>
+        /// Item 256 fix (bug-hunt 2026-10-19): giá bán hiệu dụng của món.
+        /// Giá KM chỉ được áp dụng khi có giá trị, dương, và rẻ hơn giá đang
+        /// xét (giá gốc hoặc giá size đã chọn); ngược lại dùng giá gốc.
+        /// Admin đặt nhầm giá KM cao hơn giá gốc thì hệ thống không bao giờ
+        /// tính đắt hơn giá gốc cho khách — khớp đúng điều kiện hiển thị
+        /// trên card (UI chỉ hiện PromoPrice khi rẻ hơn giá đang hiện).
+        /// </summary>
+        /// <param name="basePrice">Giá đang xét (giá gốc hoặc giá size).</param>
+        /// <returns>Giá KM nếu hợp lệ và rẻ hơn, ngược lại giá gốc.</returns>
+        public decimal ResolveEffectivePrice(decimal basePrice)
+        {
+            return PromoPrice.HasValue && PromoPrice.Value > 0 && PromoPrice.Value < basePrice
+                ? PromoPrice.Value
+                : basePrice;
+        }
+
+        /// <summary>
         /// Sets the selling unit: "suất" (per portion) or "kg" (per kilogram).
         /// Null/empty normalizes to "suất".
         /// </summary>

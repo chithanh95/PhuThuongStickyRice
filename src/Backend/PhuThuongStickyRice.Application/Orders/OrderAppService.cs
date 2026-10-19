@@ -1074,6 +1074,17 @@ namespace PhuThuongStickyRice.Application.Orders
                     unitPrice = Money.Of(sizeOption.Price, product.Price.Currency);
                 }
 
+                // Item 256 fix (bug-hunt 2026-10-19): giá KM hiển thị trên card
+                // PHẢI được tính vào đơn — trước đây chỉ hiện mà vẫn tính giá
+                // gốc. Áp trước khi cộng tiền topping (KM chỉ giảm giá món,
+                // không giảm tiền topping). Server tính lại nên đây là "cửa
+                // an ninh" giá cuối, client có sửa request cũng không đổi giá.
+                var effectiveAmount = product.ResolveEffectivePrice(unitPrice.Amount);
+                if (effectiveAmount != unitPrice.Amount)
+                {
+                    unitPrice = Money.Of(effectiveAmount, unitPrice.Currency);
+                }
+
                 // Toppings: extra charge summed on top of the unit price.
                 string toppingNames = null;
                 decimal toppingsExtra = 0;
