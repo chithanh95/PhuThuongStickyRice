@@ -24,10 +24,15 @@ namespace PhuThuongStickyRice.Persistence.Repositories
 
         /// <summary>
         /// Tăng UsedCount nguyên tử bằng ExecuteUpdateAsync (1 câu UPDATE ...
-        /// WHERE Code = ... AND (MaxUses IS NULL OR UsedCount &lt; MaxUses)).
+        /// WHERE Code = ... AND IsActive AND chưa hết hạn AND (MaxUses IS NULL OR
+        /// UsedCount &lt; MaxUses)).
         /// Item 252: cùng câu UPDATE tự tắt mã (IsActive = false) khi lượt
         /// tăng này chạm trần MaxUses — chống "vỡ ngân sách KM" khi mã bị
         /// share lan, admin xem mã tự tạm dừng ở trung tâm thông báo.
+        /// bug-hunt 2026-10-20: WHERE có thêm IsActive và ExpiresAt để tránh
+        /// TOCTOU — admin tắt/hết hạn mã sau bước validate nhưng trước lúc
+        /// tạo đơn: tăng lượt thất bại → IncrementUsageAsync ném lỗi → đơn
+        /// rollback thay vì dùng lậu mã đã tắt.
         /// Chạy trong DbContext/UoW hiện tại nên tham gia cùng transaction với
         /// phần còn lại của nghiệp vụ (đơn hàng).
         /// </summary>
@@ -35,8 +40,11 @@ namespace PhuThuongStickyRice.Persistence.Repositories
             string normalizedCode, CancellationToken cancellationToken = default)
         {
             var dbContext = await GetDbContextAsync();
+            var now = DateTime.UtcNow;
             var affected = await dbContext.Set<DiscountCode>()
                 .Where(x => x.Code == normalizedCode
+                    && x.IsActive
+                    && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
                     && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value))
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.UsedCount, x => x.UsedCount + 1)

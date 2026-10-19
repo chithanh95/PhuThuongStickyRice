@@ -1196,7 +1196,14 @@ namespace PhuThuongStickyRice.Application.Orders
             // insufficient balance aborts before the order row is written.
             if (order.PaymentMethod == PaymentMethod.Wallet)
             {
-                await _wallets.ChargeAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
+                // bug-hunt 2026-10-20: đơn 0đ (mã giảm 100%) không có gì để
+                // trừ — ChargeAsync ném "Số tiền thanh toán không hợp lệ."
+                // với amount <= 0 nên bỏ qua charge nhưng vẫn xác nhận đã
+                // thanh toán, đơn được tạo bình thường.
+                if (order.TotalAmount.Amount > 0)
+                {
+                    await _wallets.ChargeAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
+                }
                 order.ConfirmPayment();
             }
 

@@ -33,7 +33,14 @@ namespace PhuThuongStickyRice.WebAPI.RateLimiterPolicies
                     });
             }
 
-            partitionKey = httpContext.Request.Headers.Host.ToString();
+            // bug-hunt 2026-10-20: partition theo IP thật của client, KHÔNG theo
+            // Host header — Host do client tự gửi nên xoay Host là mỗi giá trị
+            // được 1 bucket 100 req/phút riêng, vô hiệu hóa toàn bộ rate limit
+            // (brute-force login, spam tạo đơn...). RemoteIpAddress là địa chỉ
+            // TCP thật của kết nối; chỉ fallback về Host khi IP không có
+            // (transport không cung cấp).
+            partitionKey = httpContext.Connection.RemoteIpAddress?.ToString()
+                ?? httpContext.Request.Headers.Host.ToString();
             return RateLimitPartition.GetFixedWindowLimiter(partitionKey,
                 partition => new FixedWindowRateLimiterOptions
                 {
