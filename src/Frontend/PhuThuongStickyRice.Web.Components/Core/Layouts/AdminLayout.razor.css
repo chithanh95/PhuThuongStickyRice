@@ -1,0 +1,10 @@
+/* ===== AdminLayout.razor — UIUX run 04:32 (job uiux-team-2days) — Agent 3 (Đồng bộ Lexa)
+   Chuyển style inline font-size của icon chevron (nút "Tạo mới", nút ngôn ngữ)
+   sang scoped CSS (không đổi giá trị). */
+.lx-chev {
+    font-size: 11px;
+}
+
+.lx-chev.lx-chev-sm {
+    font-size: 10px;
+}

@@ -23,3 +23,122 @@ html.dark .cho-zoom-hint {
     color: #b5b5b5;
 }
 /* ===== END UIUX run 19:40 - Agent2 ===== */
+
+/* ===== UIUX run 04:32 (job uiux-team-2days) — Agent 3 (Đồng bộ Lexa)
+   Chuyển toàn bộ block <style> nhúng (18 rule màn hình số thứ tự)
+   sang scoped CSS. CSS tĩnh 100%, không đổi màu/giá trị. */
+    .cho-screen {
+        min-height: 100vh;
+        background: #111;
+        color: #fff;
+        font-family: 'Nunito', Arial, sans-serif;
+        padding: 1.5rem;
+    }
+    .cho-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 3px solid #9C682C;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .cho-brand {
+        font-family: 'Lora', Georgia, serif;
+        font-size: 2.2rem;
+        color: #F5E9D4;
+    }
+    .cho-clock {
+        font-size: 2rem;
+        font-variant-numeric: tabular-nums;
+        color: #FFBA31;
+    }
+    .cho-section-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin: 0 0 1rem;
+    }
+    .cho-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    .cho-ticket {
+        position: relative;
+        border-radius: 16px;
+        padding: 1.2rem 0.6rem;
+        text-align: center;
+        cursor: pointer;
+        border: 3px solid transparent;
+    }
+    .cho-ticket .cho-num {
+        font-size: 4rem;
+        font-weight: 900;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+    .cho-ticket .cho-code {
+        font-size: 1.1rem;
+        opacity: 0.85;
+        margin-top: 0.3rem;
+        letter-spacing: 2px;
+    }
+    .cho-ticket .cho-zoom {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        background: rgba(0,0,0,0.35);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        padding: 2px 8px;
+        cursor: pointer;
+    }
+    .cho-preparing { background: #4a3200; border-color: #FFBA31; }
+    .cho-preparing .cho-num { color: #FFBA31; }
+    /* Màu xanh "sẵn sàng lấy món" dùng xanh success Lexa #34c38f (trước #28e06c xanh neon
+       lệch palette, khách nhìn số thứ tự màu neon loé không ăn nhập tông web). */
+    .cho-ready {
+        background: #0b3d1b;
+        border-color: #34c38f;
+        animation: cho-blink 1.2s ease-in-out infinite;
+    }
+    .cho-ready .cho-num { color: #34c38f; }
+    @keyframes cho-blink {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(52,195,143,0.0); }
+        50% { box-shadow: 0 0 28px 6px rgba(52,195,143,0.55); }
+    }
+    .cho-empty {
+        font-size: 1.6rem;
+        color: #bbb;
+        text-align: center;
+        padding: 3rem 0;
+    }
+    .cho-zoom-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.92);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        cursor: pointer;
+    }
+    .cho-zoom-overlay .cho-big {
+        font-size: 14rem;
+        font-weight: 900;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+    .cho-zoom-overlay .cho-big-label {
+        font-size: 2.2rem;
+        margin-top: 1rem;
+    }
+    .cho-footer {
+        margin-top: 2rem;
+        text-align: center;
+        color: #888;
+        font-size: 1rem;
+    }

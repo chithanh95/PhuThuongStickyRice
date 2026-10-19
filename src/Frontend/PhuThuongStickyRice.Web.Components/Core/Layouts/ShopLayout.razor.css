@@ -660,3 +660,7 @@ html.dark .shp-back:hover {
     }
 }
 /* ===== END UIUX run 20:45 - Agent1 FIX 2+3+4+5 ===== */
+
+/* ===== UIUX run 04:32 (job uiux-team-2days) — Agent 3 (Đồng bộ Lexa)
+   Chuyển style inline của nút "Chữ lớn" (A+) sang scoped CSS. */
+.shp-text-size-icon { font-weight: bold; font-size: 1.1em; }

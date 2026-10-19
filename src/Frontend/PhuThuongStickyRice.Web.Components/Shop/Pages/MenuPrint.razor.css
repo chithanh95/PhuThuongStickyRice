@@ -13,3 +13,10 @@
 .mp-price {
     font-size: 1.1rem;
 }
+
+/* ===== UIUX run 04:32 (job uiux-team-2days) — Agent 3 (Đồng bộ Lexa)
+   Chuyển block <style> nhúng sang scoped CSS (không đổi giá trị). */
+@media print {
+    .no-print { display: none !important; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

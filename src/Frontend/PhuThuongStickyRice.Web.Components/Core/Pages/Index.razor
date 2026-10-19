@@ -591,7 +591,7 @@ else
                     </div>
                 }
             </div>
-            <div class="sg-loyal-form" style="max-width:420px;margin:20px auto 0">
+            <div class="sg-loyal-form">
                 <input @bind="_votePhone" placeholder="SĐT của bạn (để bình chọn)" aria-label="Số điện thoại của bạn để bình chọn" inputmode="tel" maxlength="15" />
             </div>
             @if (!string.IsNullOrEmpty(_voteMsg)) { <p class="sg-center">@_voteMsg</p> }
@@ -628,7 +628,7 @@ else
                     </div>
                 }
             </div>
-            <div class="sg-loyal-form" style="max-width:420px;margin:20px auto 0">
+            <div class="sg-loyal-form">
                 <input @bind="_coursePhone" placeholder="SĐT để đăng ký học" aria-label="Số điện thoại đăng ký lớp học nấu xôi" inputmode="tel" maxlength="15" />
             </div>
         </div>
@@ -687,7 +687,7 @@ else
                 <li>✓ Đóng gói cẩn thận, không lo bể nát</li>
                 <li>✓ Gửi nhanh 1-2 ngày toàn quốc</li>
             </ul>
-            <a href="/shop" class="sg-btn sg-btn-solid" style="margin-top:16px">Đặt xôi gửi tỉnh →</a>
+            <a href="/shop" class="sg-btn sg-btn-solid sg-ship-cta">Đặt xôi gửi tỉnh →</a>
         </div>
         <div class="sg-export-box">
             <h3>📦 Bảng giá gửi tỉnh</h3>
@@ -697,14 +697,14 @@ else
                 <tr><td>Miền Trung</td><td>45k</td><td>2 ngày</td></tr>
                 <tr><td>Miền Nam</td><td>50k</td><td>2 ngày</td></tr>
             </table>
-            <p class="sg-muted" style="font-size:13px;margin-top:10px">Miễn phí ship cho đơn từ 500k.</p>
+            <p class="sg-muted sg-ship-note">Miễn phí ship cho đơn từ 500k.</p>
         </div>
     </div>
 </section>
 
 <!-- ĐĂNG KÝ ZALO (item 15) -->
 <section class="sg-section sg-visit-sec">
-    <div class="sg-container" style="max-width: 600px; margin: 0 auto;">
+    <div class="sg-container sg-container-narrow">
         <div class="sg-zalo-box">
             <h3>🔔 Nhận ưu đãi qua Zalo</h3>
             <p>Để lại SĐT — quán gửi tin khuyến mãi, món mới mỗi tuần. Không spam.</p>
