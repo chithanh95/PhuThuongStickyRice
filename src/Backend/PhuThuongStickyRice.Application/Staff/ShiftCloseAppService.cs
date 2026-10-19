@@ -110,30 +110,40 @@ namespace PhuThuongStickyRice.Application.Staff
             var day = input.Date.Date;
             var expected = await GetExpectedCodAsync(day);
 
-            var queryable = await _closes.GetQueryableAsync();
-            var existing = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Date == day));
-
-            if (existing == null)
+            // bug-hunt 2026-10-20 (run 03:15): chống race check-then-insert —
+            // 2 người bấm chốt cùng ngày đồng thời đều qua được FirstOrDefault
+            // rồi cùng InsertAsync → cột Date có unique index → bên thua dính
+            // DbUpdateException → 500. Serialize theo ngày bằng KeyedAsyncLock
+            // (pattern như birthday-gift ở CustomerProfileAppService) thay vì
+            // catch unique-violation vì cùng ngày cũng không được phép insert
+            // trùng ngay cả ở cấp application.
+            return await KeyedAsyncLock.RunAsync($"shift-close:{day:yyyy-MM-dd}", async () =>
             {
-                existing = new ShiftClose
+                var queryable = await _closes.GetQueryableAsync();
+                var existing = await _asyncExecuter.FirstOrDefaultAsync(
+                    queryable.Where(x => x.Date == day));
+
+                if (existing == null)
                 {
-                    Date = day,
-                    CreatedBy = CurrentUser?.Email ?? CurrentUser?.UserName ?? "system",
-                    CreatedAt = DateTime.UtcNow
-                };
-                await _closes.InsertAsync(existing);
-            }
+                    existing = new ShiftClose
+                    {
+                        Date = day,
+                        CreatedBy = CurrentUser?.Email ?? CurrentUser?.UserName ?? "system",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _closes.InsertAsync(existing);
+                }
 
-            existing.ExpectedCod = expected;
-            // Tiền thực thu không thể âm (nhập tay ở form admin) — ép về 0
-            // để chênh lệch (Actual - Expected) luôn có nghĩa: âm = thiếu,
-            // dương = thừa.
-            existing.ActualCod = Math.Max(0, input.ActualCod);
-            existing.Note = string.IsNullOrWhiteSpace(input.Note) ? null : input.Note.Trim();
-            await _closes.UpdateAsync(existing, autoSave: true);
+                existing.ExpectedCod = expected;
+                // Tiền thực thu không thể âm (nhập tay ở form admin) — ép về 0
+                // để chênh lệch (Actual - Expected) luôn có nghĩa: âm = thiếu,
+                // dương = thừa.
+                existing.ActualCod = Math.Max(0, input.ActualCod);
+                existing.Note = string.IsNullOrWhiteSpace(input.Note) ? null : input.Note.Trim();
+                await _closes.UpdateAsync(existing, autoSave: true);
 
-            return MapToDto(existing);
+                return MapToDto(existing);
+            });
         }
 
         /// <summary>

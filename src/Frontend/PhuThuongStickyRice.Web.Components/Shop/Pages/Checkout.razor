@@ -51,8 +51,8 @@
 @if (_placedOrder == null && CanQuickOrder)
 {
     <div class="alert alert-success mb-3" role="note">
-        <div class="font-weight-bold mb-2" style="font-size: 1.1rem;">👋 Chào @_order.CustomerName!</div>
-        <button type="button" class="btn btn-success btn-block" style="min-height: 52px; font-size: 1.15rem; font-weight: bold;"
+        <div class="font-weight-bold mb-2 co-greet-title">👋 Chào @_order.CustomerName!</div>
+        <button type="button" class="btn btn-success btn-block co-quick-order-btn"
                 @onclick="PlaceOrder" disabled="@_submitting">
             @(_submitting ? "Đang đặt..." : "⚡ Đặt ngay với thông tin đã lưu")
         </button>
@@ -203,7 +203,19 @@
     @if (_placedOrder.PaymentMethod == "Cod")
     {
         <div class="alert alert-info">
-            <strong>Thanh toán khi nhận hàng (COD):</strong> bạn sẽ trả tiền mặt cho shipper khi nhận hàng.
+            <strong>Thanh toán khi nhận hàng (COD):</strong>
+            @* bug-hunt 2026-10-20 (run 03:15): text cũ "trả tiền mặt cho shipper"
+               hiển thị vô điều kiện cho mọi đơn COD, nhưng với hình thức
+               "Tự đến quán lấy" không có shipper nào — khách trả tiền mặt
+               tại quán khi đến lấy. *@
+            @if (_placedOrder.FulfillmentMethod == "Pickup")
+            {
+                <text>bạn sẽ trả tiền mặt tại quán khi đến lấy hàng.</text>
+            }
+            else
+            {
+                <text>bạn sẽ trả tiền mặt cho shipper khi nhận hàng.</text>
+            }
         </div>
     }
     else if (_placedOrder.PaymentMethod == "Wallet")
@@ -232,7 +244,7 @@
                 {
                     <div class="row">
                         <div class="col-md-5 text-center">
-                            <img src="@QrUrl" alt="QR chuyển khoản" style="max-width: 260px; width: 100%;" />
+                            <img src="@QrUrl" alt="QR chuyển khoản" class="co-qr-img" />
                             <p class="text-muted mt-2"><small>Quét mã để chuyển khoản nhanh</small></p>
                         </div>
                         <div class="col-md-7">
@@ -421,10 +433,10 @@ else
                     </div>
                     @* Item 236: "Nhớ tôi" cho khách vãng lai — không cần tài khoản. *@
                     <div class="form-group">
-                        <div class="form-check" style="min-height: 44px; display: flex; align-items: center;">
-                            <input class="form-check-input" type="checkbox" id="co-remember"
-                                   @bind="_rememberMe" style="width: 20px; height: 20px;" />
-                            <label class="form-check-label ml-2 mb-0" for="co-remember" style="font-size: 1.05rem;">
+                        <div class="form-check co-remember-check">
+                            <input class="form-check-input co-remember-checkbox" type="checkbox" id="co-remember"
+                                   @bind="_rememberMe" />
+                            <label class="form-check-label ml-2 mb-0 co-remember-label" for="co-remember">
                                 Nhớ tên &amp; SĐT của tôi cho lần sau <small class="text-muted">(lưu trên máy này)</small>
                             </label>
                         </div>
@@ -700,7 +712,7 @@ else
                             <input id="co-discount" class="form-control" @bind="_discountCodeInput" @bind:after="ClearAutoAppliedNote" placeholder="Nhập mã (nếu có)"
                                    disabled="@_applyingDiscount" />
                             <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" style="min-height: 48px;" @onclick="ApplyDiscount" disabled="@_applyingDiscount">
+                                <button class="btn btn-outline-secondary co-apply-discount-btn" @onclick="ApplyDiscount" disabled="@_applyingDiscount">
                                     @(_applyingDiscount ? "Đang kiểm tra..." : "Áp dụng")
                                 </button>
                             </div>
@@ -712,7 +724,7 @@ else
                         @* Item 139 (UX người già): ghi chú to, rõ, câu đơn giản — không dùng chữ nhỏ/mờ cho thông tin quan trọng. *@
                         @if (!string.IsNullOrEmpty(_autoAppliedNote))
                         {
-                            <div class="mt-2 font-weight-bold text-success" style="font-size: 1.05rem;">✨ @_autoAppliedNote</div>
+                            <div class="mt-2 font-weight-bold text-success co-auto-applied-note">✨ @_autoAppliedNote</div>
                         }
                     </div>
 
