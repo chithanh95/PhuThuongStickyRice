@@ -708,6 +708,22 @@
     color: #212529 !important;
 }
 
+/* Nút outline info: về đúng palette Lexa (mặc định Bootstrap dùng #17a2b8).
+   Đang dùng ở BaoCao ("So sánh"), Quotes ("Đã liên hệ"), OrderList
+   ("Copy mẫu tin nhắn"), Customers. UIUX-1019 A3. */
+.lx-admin .btn-outline-info {
+    color: #50a5f1 !important;
+    border-color: #50a5f1 !important;
+    border-radius: 4px !important;
+}
+.lx-admin .btn-outline-info:hover,
+.lx-admin .btn-outline-info:focus,
+.lx-admin .btn-outline-info:active {
+    background: #50a5f1 !important;
+    border-color: #50a5f1 !important;
+    color: #fff !important;
+}
+
 .lx-admin .btn {
     border-radius: var(--lx-radius);
     font-size: 13px;

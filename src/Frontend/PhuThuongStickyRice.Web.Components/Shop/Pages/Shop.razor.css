@@ -656,6 +656,10 @@ html.dark .shop-filters-sticky {
         background: #fff;
         border-radius: 20px 20px 0 0;
         max-height: 92vh;
+        /* UIUX-Mobile-A1: iOS Safari tính vh theo viewport lớn (gồm cả thanh
+           công cụ) → sheet có thể cao hơn vùng nhìn thấy. dvh theo đúng vùng
+           hiển thị thực tế; giữ 92vh làm fallback cho trình duyệt cũ. */
+        max-height: 92dvh;
         overflow: hidden;
         animation: qvSlideUp .25s ease-out;
     }
@@ -772,7 +776,10 @@ html.dark .shop-filters-sticky {
         flex: 1;
         border: none;
         outline: none;
-        font-size: 15px;
+        /* UIUX-Mobile-A1: 15px → 16px. iOS tự zoom trang khi focus input
+           <16px — trong bottom sheet cố định sẽ làm vỡ layout; 16px giữ
+           nguyên khung hình khi nhập ghi chú. */
+        font-size: 16px;
         padding: 8px 0;
     }
     /* A11y: chữ gợi ý #b8a88f trên nền trắng chỉ đạt ~2.2:1, người lớn tuổi

@@ -386,6 +386,18 @@ html.dark .toast {
     color: #999;
 }
 
+/* A11y (WCAG 2.4.7 Focus Visible): input file bên trong dropzone bị ẩn
+   (1px, opacity 0) nhưng vẫn focus được bằng bàn phím — vẽ vòng focus tím
+   lên label dropzone khi input con được focus, người dùng biết đang ở ô nào.
+   :has() chỉ dùng cho keyboard (:focus-visible), chuột/chạm không ảnh hưởng. */
+.shop-dropzone-wrap:has(input:focus-visible) .shop-dropzone {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .shop-dropzone-wrap:has(input:focus-visible) .shop-dropzone {
+    outline-color: #a49de0;
+}
+
 /* ============================================================
    MOBILE STOREFRONT POLISH (<=767px)
    ============================================================ */

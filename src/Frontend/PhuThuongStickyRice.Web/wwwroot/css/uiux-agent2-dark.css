@@ -437,3 +437,57 @@ html.dark .sg-stat span {
 }
 
 /* === end Agent 2 run 11:20 === */
+
+/* === UIUX run 11:40 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (các đợt trước đã phủ gần như toàn bộ shop/admin/landing — đợt này
+   quét lại toàn bộ file CSS + inline style trong .razor, chỉ còn 3 lỗi
+   MỚI thật sự; các chỗ khác đã có rule dark hoặc là design intentional) */
+
+/* ---------- FIX 1 — Shop: form thêm/sửa địa chỉ (/tai-khoan) ----------
+   Vấn đề: TaiKhoan.razor:247 — .tk-addr-panel dùng inline
+   style="background:#FFFDF7;" (kem sáng), không có rule dark nào phủ
+   (đã grep xác minh toàn bộ css). Ở dark mode cả panel kem chói lóa
+   giữa trang tối; label kế thừa màu body sáng → chữ sáng trên nền kem
+   khó đọc; input đã có nền tối (ShopLayout) nên loang lổ trên nền kem.
+   Fix: attribute selector + !important để thắng inline style; nền/viền
+   theo palette dark của shop; label sáng đọc được trên nền mới. */
+html.dark .tk-addr-panel[style*="FFFDF7"] {
+    background: #262019 !important; /* was #FFFDF7 */
+    border-color: #3a3226 !important;
+}
+html.dark .tk-addr-panel label {
+    color: #e8ded0 !important;
+}
+
+/* ---------- FIX 2 — Shop: popup khảo sát hài lòng (/track-order) ----------
+   Vấn đề: TrackOrder.razor:695 — .to-survey-sheet dùng inline
+   style="background: #fff" (popup hiện sau khi nhận hàng), không rule
+   dark nào phủ (đã grep xác minh: "to-survey-sheet" chỉ xuất hiện trong
+   comment liệt kê của đợt 11:05, không có rule thật). Ở dark mode popup
+   trắng toát chói; h5 inline color:#763434 (dòng 698) sẽ chìm nếu chỉ
+   tối nền. .text-muted đã được ShopLayout phủ; nút sao #ddd và nút
+   #FFBA31 vẫn đọc được nên không đụng.
+   Fix: attribute selector + !important thắng inline style. */
+html.dark .to-survey-sheet[style*="background: #fff"] {
+    background: #262019 !important; /* was #fff */
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+}
+html.dark .to-survey-sheet h5[style*="763434"] {
+    color: #f2b8b8 !important; /* was #763434 */
+}
+
+/* ---------- FIX 3 — Trang báo lỗi (/error) ----------
+   Vấn đề: Core/Pages/Error.razor — h1 inline color:#7a1b2e (đỏ đậm) và
+   p inline color:#4a2b1a (nâu đậm), trang không có file CSS riêng và
+   không rule dark nào phủ (đã grep "sg-error" toàn bộ css = 0 kết quả).
+   Ở dark mode cả tiêu đề lẫn mô tả lỗi chìm hẳn vào nền tối — trang lỗi
+   lại không đọc được lỗi.
+   Fix: attribute selector bám mẫu inline style + !important. */
+html.dark .sg-error-wrap h1[style*="7a1b2e"] {
+    color: #f2b8b8 !important; /* was #7a1b2e */
+}
+html.dark .sg-error-wrap p[style*="4a2b1a"] {
+    color: #d8c8a8 !important; /* was #4a2b1a */
+}
+
+/* === end Agent 2 run 11:40 === */

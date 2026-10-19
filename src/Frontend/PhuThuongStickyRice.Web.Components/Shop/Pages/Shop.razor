@@ -225,7 +225,7 @@ else
                             @* Wave 6b (item 26): "★ 4.8 (12)" — hidden when no reviews. *@
                             @if (RatingText(product) is string cardRating)
                             {
-                                <div class="small text-muted mb-1">@cardRating</div>
+                                <div class="small text-muted mb-1" role="img" aria-label="@RatingAriaLabel(product)"><span aria-hidden="true">@cardRating</span></div>
                             }
                             @* BA shop item 4: social proof — "Đã bán N suất". *@
                             @if (_soldQuantities.TryGetValue(product.Id, out var soldQty) && soldQty > 0)
@@ -323,9 +323,9 @@ else
                                 @if (cartQty > 0)
                                 {
                                     <div class="shop-row-stepper">
-                                        <button type="button" @onclick="() => DecRowQty(product)" aria-label="Giảm">−</button>
+                                        <button type="button" @onclick="() => DecRowQty(product)" aria-label="Giảm số lượng @product.Name">−</button>
                                         <span>@cartQty</span>
-                                        <button type="button" @onclick="() => IncRowQty(product)" aria-label="Tăng">+</button>
+                                        <button type="button" @onclick="() => IncRowQty(product)" aria-label="Tăng số lượng @product.Name">+</button>
                                     </div>
                                 }
                                 else
@@ -368,7 +368,7 @@ else
                     @* Wave 6b (item 26): "★ 4.8 (12)" — hidden when no reviews. *@
                     @if (RatingText(_quickView) is string quickViewRating)
                     {
-                        <p class="mb-2"><span class="text-muted">@quickViewRating</span></p>
+                        <p class="mb-2"><span class="text-muted" role="img" aria-label="@RatingAriaLabel(_quickView)"><span aria-hidden="true">@quickViewRating</span></span></p>
                     }
                     @if (!string.IsNullOrWhiteSpace(_quickView.AllergenInfo))
                     {
@@ -571,6 +571,17 @@ else
         }
 
         return $"★ {r.Avg:0.0} ({r.Count})";
+    }
+
+    // A11y: nhãn tiếng Việt cho screen reader khi hiển thị đánh giá sao.
+    private string RatingAriaLabel(ShopProductModel product)
+    {
+        if (product == null || !_ratings.TryGetValue(product.Id, out var r) || r.Count <= 0)
+        {
+            return null;
+        }
+
+        return $"Đánh giá trung bình {r.Avg:0.0} trên 5, {r.Count} đánh giá";
     }
 
     // Item 109: branch picker.

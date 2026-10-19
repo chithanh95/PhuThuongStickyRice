@@ -376,4 +376,35 @@ html.dark .to-total-row {
         font-size: 16px;
     }
 }
-/* ===== END UIUX-Mobile ===== */
+/* ===== UIUX-Mobile-A1: sao đánh giá inline trong card "Đánh giá đơn hàng" ===== */
+/* Card đánh giá (đơn Completed) KHÔNG nằm trong .to-survey-sheet nên rule
+   44px của sheet không phủ tới: sao từng món (20px) và sao chung (28px) chỉ
+   ~24–32px — người lớn tuổi khó bấm trúng từng sao. Nới hit area lên 44px.
+   (.to-survey-sheet nằm ngoài .card-body nên không bị ảnh hưởng.) */
+@media (max-width: 767.98px) {
+    .card-body .btn.btn-link.p-0 {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2px 4px !important; /* đè .p-0 của Bootstrap */
+    }
+}
+/* ===== END UIUX-Mobile-A1 ===== */
+
+/* ===== UIUX-Mobile-A1: khoảng 576–767px (điện thoại ngang/tablet nhỏ) ===== */
+/* Rule 46px cũ chỉ phủ ≤575px nên ở 576–767px các nút này vẫn ~38px:
+   - "Tra cứu" / "Xem lịch sử" (form tra cứu & lịch sử)
+   - "Tôi đã chuyển khoản" / "Sao chép link thanh toán" / "Thanh toán MoMo"
+   - nút "Chi tiết" / "Đặt lại" trong bảng lịch sử
+   Nới lên 46px cho đủ chuẩn chạm, không đổi layout. */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .to-lookup .btn,
+    .to-history .form-row .btn,
+    .card-body > .btn:not(.btn-sm),
+    .to-history td:last-child .btn {
+        min-height: 46px;
+    }
+}
+/* ===== END UIUX-Mobile-A1 ===== */

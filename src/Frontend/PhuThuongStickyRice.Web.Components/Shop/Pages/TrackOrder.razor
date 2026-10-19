@@ -28,12 +28,12 @@
     <div class="card-body">
         <div class="form-row">
             <div class="col-md-4">
-                <label>@AppI18n.T("shop.order_number")</label>
-                <input class="form-control" @bind="_orderNumber" placeholder="PX-20261014-0001" />
+                <label for="to-order-number">@AppI18n.T("shop.order_number")</label>
+                <input id="to-order-number" class="form-control" @bind="_orderNumber" placeholder="PX-20261014-0001" />
             </div>
             <div class="col-md-4">
-                <label>@AppI18n.T("shop.order_phone")</label>
-                <input class="form-control" @bind="_phone" placeholder="0901234567" />
+                <label for="to-phone">@AppI18n.T("shop.order_phone")</label>
+                <input id="to-phone" class="form-control" @bind="_phone" placeholder="0901234567" />
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button class="btn btn-primary" @onclick="Lookup" disabled="@_loading">
@@ -55,8 +55,8 @@
         <p class="text-muted"><small>@AppI18n.T("shop.history_hint")</small></p>
         <div class="form-row">
             <div class="col-md-4">
-                <label>@AppI18n.T("shop.order_phone")</label>
-                <input class="form-control" @bind="_historyPhone" placeholder="0901234567" inputmode="tel" />
+                <label for="to-history-phone">@AppI18n.T("shop.order_phone")</label>
+                <input id="to-history-phone" class="form-control" @bind="_historyPhone" placeholder="0901234567" inputmode="tel" />
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button class="btn btn-outline-primary" @onclick="LoadHistoryAsync" disabled="@_historyLoading">
@@ -194,8 +194,8 @@
                 </p>
                 <div class="form-row align-items-end mb-2">
                     <div class="col-auto">
-                        <label><small>Ngày sinh <small class="text-muted">(để nhận voucher sinh nhật)</small></small></label>
-                        <input type="date" class="form-control form-control-sm" @bind="_birthdayInput" />
+                        <label for="to-birthday"><small>Ngày sinh <small class="text-muted">(để nhận voucher sinh nhật)</small></small></label>
+                        <input id="to-birthday" type="date" class="form-control form-control-sm" @bind="_birthdayInput" />
                     </div>
                     <div class="col-auto">
                         <button class="btn btn-sm btn-outline-secondary" @onclick="SaveBirthday" disabled="@_savingBirthday">
@@ -238,11 +238,11 @@
                     }
                     <div class="form-row mt-2">
                         <div class="col-4">
-                            <input class="form-control form-control-sm" @bind="_newAddressLabel" placeholder="Nhãn (Nhà/Cty)" />
+                            <input class="form-control form-control-sm" @bind="_newAddressLabel" placeholder="Nhãn (Nhà/Cty)" aria-label="Nhãn địa chỉ, ví dụ Nhà hoặc Công ty" />
                         </div>
                         <div class="col-8">
                             <div class="input-group">
-                                <input class="form-control form-control-sm" @bind="_newAddressText" placeholder="Địa chỉ mới..." />
+                                <input class="form-control form-control-sm" @bind="_newAddressText" placeholder="Địa chỉ mới..." aria-label="Địa chỉ mới" />
                                 <div class="input-group-append">
                                     <button class="btn btn-sm btn-outline-primary" @onclick="AddAddressAsync" disabled="@_savingAddress">Lưu</button>
                                 </div>
@@ -373,13 +373,13 @@
                             <div class="card-header py-2"><strong>📍 Đổi địa chỉ / giờ giao</strong></div>
                             <div class="card-body py-2">
                                 <div class="form-group mb-2">
-                                    <label><small>Địa chỉ nhận hàng</small></label>
-                                    <input class="form-control form-control-sm" @bind="_editAddress"
+                                    <label for="to-edit-address"><small>Địa chỉ nhận hàng</small></label>
+                                    <input id="to-edit-address" class="form-control form-control-sm" @bind="_editAddress"
                                            maxlength="500" placeholder="Số nhà, đường, phường..." />
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><small>Giờ giao mong muốn <span class="text-muted">(tùy chọn)</span></small></label>
-                                    <input class="form-control form-control-sm" @bind="_editDeliverySlot"
+                                    <label for="to-edit-slot"><small>Giờ giao mong muốn <span class="text-muted">(tùy chọn)</span></small></label>
+                                    <input id="to-edit-slot" class="form-control form-control-sm" @bind="_editDeliverySlot"
                                            maxlength="50" placeholder="VD: 6h30–7h00" />
                                 </div>
                                 @if (!string.IsNullOrEmpty(_editAddressError))
@@ -400,13 +400,13 @@
                             <div class="card-header py-2"><strong>📞 Sửa SĐT / ghi chú</strong></div>
                             <div class="card-body py-2">
                                 <div class="form-group mb-2">
-                                    <label><small>SĐT người nhận</small></label>
-                                    <input class="form-control form-control-sm" @bind="_editRecipientPhone"
+                                    <label for="to-edit-phone"><small>SĐT người nhận</small></label>
+                                    <input id="to-edit-phone" class="form-control form-control-sm" @bind="_editRecipientPhone"
                                            maxlength="11" inputmode="tel" placeholder="0901234567" />
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><small>Ghi chú <span class="text-muted">(VD: ít hành, không cay...)</span></small></label>
-                                    <input class="form-control form-control-sm" @bind="_editNotes"
+                                    <label for="to-edit-notes"><small>Ghi chú <span class="text-muted">(VD: ít hành, không cay...)</span></small></label>
+                                    <input id="to-edit-notes" class="form-control form-control-sm" @bind="_editNotes"
                                            maxlength="500" placeholder="Ghi chú cho quán" />
                                 </div>
                                 @if (!string.IsNullOrEmpty(_editContactError))
@@ -432,6 +432,7 @@
                                         <div class="col-4">
                                             <input type="number" class="form-control form-control-sm"
                                                    min="0" max="100" value="@_editQuantities[line.Id]"
+                                                   aria-label="Số lượng @line.ProductName"
                                                    @onchange="(e => _editQuantities[line.Id] = ParseQty(e.Value))" />
                                         </div>
                                     </div>
@@ -513,12 +514,12 @@
                                 }
                             </div>
                             <textarea class="form-control form-control-sm mb-2" rows="2" @bind="_reviewComment"
-                                      placeholder="Chia sẻ cảm nhận của bạn (tùy chọn)..."></textarea>
+                                      placeholder="Chia sẻ cảm nhận của bạn (tùy chọn)..." aria-label="Chia sẻ cảm nhận của bạn về món ăn"></textarea>
                             @* Item 44: review photo — tặng 1 phần xôi cho đơn sau. *@
                             <div class="alert alert-warning py-2 mb-2">
                                 🎁 <strong>Đánh giá kèm ảnh được tặng 1 phần xôi</strong> cho đơn sau!
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-2 shop-dropzone-wrap">
                                 <label for="review-photo-input" class="shop-dropzone">
                                     <div class="shop-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                                     <div class="shop-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
@@ -663,7 +664,7 @@
                 <div class="alert @(_photoError ? "alert-danger" : "alert-success") py-2 mb-2">@_photoMessage</div>
             }
             <div class="form-row align-items-end">
-                <div class="col-md-5 mb-2">
+                <div class="col-md-5 mb-2 shop-dropzone-wrap">
                     <label for="share-photo-input" class="shop-dropzone">
                         <div class="shop-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                         <div class="shop-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
@@ -673,7 +674,7 @@
                 </div>
                 <div class="col-md-5 mb-2">
                     <input class="form-control form-control-sm" @bind="_photoCaption" maxlength="300"
-                           placeholder="Chú thích (tùy chọn) — vd: Xôi gấc dẻo thơm!" />
+                           placeholder="Chú thích (tùy chọn) — vd: Xôi gấc dẻo thơm!" aria-label="Chú thích cho ảnh" />
                 </div>
                 <div class="col-md-2 mb-2">
                     <button class="btn btn-sm btn-primary btn-block" @onclick="UploadPhotoAsync"
