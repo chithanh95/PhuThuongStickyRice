@@ -750,11 +750,14 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             var queryable = await _discounts.GetQueryableAsync();
-            var existing = await _asyncExecuter.FirstOrDefaultAsync(
+            // perf-hunt 2026-10-20: chỉ cần mã (string) nên project trực
+            // tiếp cột Code thay vì materialize cả entity DiscountCode
+            // (tracked) rồi mới đọc .Code — cùng filter, cùng kết quả.
+            return await _asyncExecuter.FirstOrDefaultAsync(
                 queryable
                     .Where(UsableCodeFilter(prefix, DateTime.UtcNow))
-                    .Where(x => x.OwnerPhone == ownerPhone));
-            return existing?.Code;
+                    .Where(x => x.OwnerPhone == ownerPhone)
+                    .Select(x => x.Code));
         }
 
         /// <summary>

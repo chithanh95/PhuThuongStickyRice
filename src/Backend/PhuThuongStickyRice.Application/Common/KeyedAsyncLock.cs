@@ -18,7 +18,26 @@ namespace PhuThuongStickyRice.Application.Common
     /// </summary>
     public static class KeyedAsyncLock
     {
-        private static readonly ConcurrentDictionary<string, SemaphoreSlim> Locks = new();
+        /// <summary>
+        /// Entry trong dictionary: semaphore khóa theo key + bộ đếm số luồng
+        /// đang giữ hoặc đang chờ. Entry chỉ bị xóa khỏi dictionary khi
+        /// <see cref="RefCount"/> về 0 — tức không còn luồng nào giữ hay chờ
+        /// semaphore này.
+        /// </summary>
+        private sealed class LockEntry
+        {
+            public readonly SemaphoreSlim Semaphore = new(1, 1);
+            public int RefCount;
+        }
+
+        private static readonly ConcurrentDictionary<string, LockEntry> Entries = new();
+
+        /// <summary>
+        /// Gate chỉ bảo vệ cặp GetOrAdd/Tăng-RefCount và Giảm-RefCount/Xóa
+        /// (vài chục ns, không giữ qua await) nên không gây nghẽn dù là lock
+        /// toàn cục duy nhất.
+        /// </summary>
+        private static readonly object Gate = new();
 
         /// <summary>
         /// Chạy <paramref name="action"/> dưới khóa độc quyền của
@@ -30,19 +49,38 @@ namespace PhuThuongStickyRice.Application.Common
         /// <returns>Kết quả của <paramref name="action"/>.</returns>
         public static async Task<T> RunAsync<T>(string key, Func<Task<T>> action)
         {
-            var semaphore = Locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
-            await semaphore.WaitAsync();
+            LockEntry entry;
+            lock (Gate)
+            {
+                entry = Entries.GetOrAdd(key, _ => new LockEntry());
+                // Tăng trước khi WaitAsync: luồng mới đến sau khi entry bị
+                // xóa khỏi dictionary sẽ tạo entry mới tinh, không bao giờ
+                // chạm vào semaphore cũ — mutual exclusion không bao giờ gãy.
+                entry.RefCount++;
+            }
+
+            await entry.Semaphore.WaitAsync();
             try
             {
                 return await action();
             }
             finally
             {
-                semaphore.Release();
-                // Dọn semaphore sau khi dùng để dictionary không phình theo
-                // số đơn/SĐT đã qua. An toàn khi có waiter: waiter giữ reference
-                // riêng, release/remove của nó là no-op.
-                Locks.TryRemove(key, out _);
+                entry.Semaphore.Release();
+                lock (Gate)
+                {
+                    entry.RefCount--;
+                    // Chỉ xóa khi không còn ai giữ/chờ: quyết định xóa và
+                    // thao tác xóa là nguyên tử dưới Gate, nên luồng mới đến
+                    // hoặc thấy entry (tăng RefCount → không xóa) hoặc đến
+                    // sau khi xóa (tạo entry mới). Không có cửa sổ "xóa rồi
+                    // tạo mới" để 2 luồng cùng vào critical section như bản
+                    // TryRemove trực tiếp trước đây.
+                    if (entry.RefCount == 0)
+                    {
+                        Entries.TryRemove(key, out _);
+                    }
+                }
             }
         }
 
