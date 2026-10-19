@@ -32,6 +32,13 @@ using PhuThuongStickyRice.Application.Security;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ đơn hàng: tạo đơn (checkout), quản lý vòng đời đơn
+    /// (trạng thái, bếp, thanh toán, shipper), tự phục vụ của khách (hủy, sửa,
+    /// tra cứu đơn theo SĐT), đánh giá/vòng quay may mắn và các tiện ích admin
+    /// (khách hàng, trùng đơn, gộp đơn). Được triển khai bởi
+    /// <see cref="OrderAppService"/>.
+    /// </summary>
     public interface IOrderAppService : IApplicationService
     {
         /// <summary>
@@ -780,27 +787,20 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Dựng từng dòng đơn từ catalog đã nạp: combo thì validate đang bán,
-        /// món thì check trạng thái + khung giờ bán (Item 164), size thay giá
-        /// gốc, topping cộng phụ phí. Logic validate và tính giá giữ nguyên —
-        /// chỉ đổi nguồn tra cứu sang <paramref name="catalog"/> (không query
-        /// trong vòng lặp, tránh N+1).
-        /// </summary>
-        /// <param name="input">DTO checkout chứa danh sách dòng đơn.</param>
-        /// <param name="catalog">Catalog đã nạp bởi <see cref="LoadOrderLineCatalogAsync"/>.</param>
-        /// <returns>Danh sách tuple dòng đơn — giữ nguyên tên element để
-        /// <c>Order.Create</c> và <c>EnsureDailyLimitsAsync</c> nhận đúng dữ liệu.</returns>
-        /// <summary>
         /// Dựng các dòng đơn từ giỏ hàng của khách, quyết định đơn giá cuối của
         /// mỗi dòng: combo dùng giá combo; món thường lấy giá size đã chọn
         /// (thay giá gốc) rồi cộng thêm tiền topping. Món/combo ngừng bán hoặc
-        /// món ngoài khung giờ bán thì chặn ngay — vì checkout client đã validate
-        /// trước, bước này là "cửa an ninh" phía server (khách sửa request vẫn
-        /// không mua được hàng hết/đóng bán).
+        /// món ngoài khung giờ bán (Item 164) thì chặn ngay — vì checkout client
+        /// đã validate trước, bước này là "cửa an ninh" phía server (khách sửa
+        /// request vẫn không mua được hàng hết/đóng bán).
+        /// Logic validate và tính giá giữ nguyên — chỉ đổi nguồn tra cứu sang
+        /// <paramref name="catalog"/> (không query trong vòng lặp, tránh N+1).
         /// </summary>
-        /// <param name="input">Dữ liệu checkout của khách.</param>
-        /// <param name="catalog">Catalog đã load 1 lần (món, combo, size, topping).</param>
-        /// <returns>Các dòng đơn với đơn giá đã chốt.</returns>
+        /// <param name="input">DTO checkout chứa danh sách dòng đơn.</param>
+        /// <param name="catalog">Catalog đã nạp bởi <see cref="LoadOrderLineCatalogAsync"/>.</param>
+        /// <returns>Danh sách tuple dòng đơn với đơn giá đã chốt — giữ nguyên
+        /// tên element để <c>Order.Create</c> và <c>EnsureDailyLimitsAsync</c>
+        /// nhận đúng dữ liệu.</returns>
         private List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
                 string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> BuildOrderLines(
             CreateOrderDto input, OrderLineCatalog catalog)

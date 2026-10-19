@@ -16,8 +16,16 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
+    /// <summary>
+    /// Hợp đồng cấu hình toàn quán (1 dòng cấu hình duy nhất dùng chung mọi
+    /// màn hình): giá/phí ship/đơn tối thiểu, luật loyalty và hạng thành viên,
+    /// giờ mở cửa, giới hạn nhận đơn, thông tin liên hệ và các tích hợp.
+    /// Mọi lần sửa đều xóa cache để có hiệu lực ngay; secret tích hợp bị che ở
+    /// endpoint public và chỉ admin xem đầy đủ qua endpoint riêng.
+    /// </summary>
     public interface IShopSettingAppService : IApplicationService
     {
+        /// <summary>Admin: lấy toàn bộ cấu hình shop (kèm secret tích hợp, yêu cầu quyền Admin).</summary>
         Task<ShopSettingDto> GetAsync();
 
         /// <summary>
@@ -28,6 +36,11 @@ namespace PhuThuongStickyRice.Application.Shop
         /// </summary>
         Task<ShopSettingDto> GetPublicAsync();
 
+        /// <summary>
+        /// Admin: cập nhật cấu hình shop. Xóa cache cài đặt sau khi lưu để mọi
+        /// trang checkout/public áp dụng ngay; secret tích hợp mới được mã hóa
+        /// DataProtection trước khi lưu và validate độ dài URL webhook.
+        /// </summary>
         Task<ShopSettingDto> UpdateAsync(ShopSettingDto dto);
 
         /// <summary>

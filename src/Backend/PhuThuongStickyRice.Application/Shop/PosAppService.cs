@@ -12,6 +12,14 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
+    /// <summary>
+    /// Hợp đồng POS tại quầy (Item 127): tạo đơn mua mang về/thanh toán ngay
+    /// cho khách không đặt online. Đơn POS đi COD, nhận hàng ngay, thanh toán
+    /// tiền mặt và hoàn tất trong 1 lần gọi — bắt buộc đi qua từng trạng thái
+    /// (Confirmed → Preparing → Delivering → Completed) để không mất audit,
+    /// webhook và điểm loyalty. Khách vãng lai không để lại SĐT dùng SĐT
+    /// placeholder "0000000000" (loyalty bỏ qua để điểm không dồn vào 1 pool chung).
+    /// </summary>
     public interface IPosAppService : IApplicationService
     {
         /// <summary>

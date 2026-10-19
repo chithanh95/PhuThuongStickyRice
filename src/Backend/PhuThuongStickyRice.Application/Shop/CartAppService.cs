@@ -7,6 +7,11 @@ using Volo.Abp.Domain.Repositories;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
+    /// <summary>
+    /// Hợp đồng giỏ hàng server (Item 137): giỏ của user đăng nhập được lưu
+    /// vào bảng ShoppingCart thay vì localStorage để khách chuyển thiết bị vẫn
+    /// giữ nguyên giỏ. Mỗi user chỉ có đúng 1 bản ghi giỏ (upsert theo UserId).
+    /// </summary>
     public interface ICartAppService : IApplicationService
     {
         /// <summary>Item 137: lấy giỏ hàng của user đang đăng nhập (null nếu chưa có).</summary>
