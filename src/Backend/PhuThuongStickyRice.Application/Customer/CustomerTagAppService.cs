@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
@@ -184,7 +185,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 ws.Cell(rowIndex, 3).Value = r.OrderCount;
                 ws.Cell(rowIndex, 4).Value = r.TotalSpent;
                 ws.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
-                ws.Cell(rowIndex, 5).Value = r.LastOrderAt.AddHours(7);
+                ws.Cell(rowIndex, 5).Value = r.LastOrderAt.AddHours(VietnamTime.UtcOffsetHours);
                 ws.Cell(rowIndex, 5).Style.NumberFormat.Format = "dd/mm/yyyy hh:mm";
                 ws.Cell(rowIndex, 6).Value = string.Join(", ", r.Tags.Select(t => t.TagName));
                 rowIndex++;

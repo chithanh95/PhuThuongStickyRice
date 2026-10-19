@@ -264,9 +264,9 @@ namespace PhuThuongStickyRice.Application.Catalog
                 var queryable = await _products.GetQueryableAsync();
                 var products = await _asyncExecuter.ToListAsync(
                     queryable.Where(x => productIds.Contains(x.Id)));
-                foreach (var p in products)
+                foreach (var product in products)
                 {
-                    names[p.Id] = (p.Name, p.Price.Amount);
+                    names[product.Id] = (product.Name, product.Price.Amount);
                 }
             }
 

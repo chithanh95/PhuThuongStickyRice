@@ -75,8 +75,13 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 {
                     createdUtc = File.GetCreationTimeUtc(file);
                 }
-                catch
+                // Đọc thời gian tạo file có thể thất bại (file bị khóa, hết quyền
+                // truy cập...) — vẫn phải bỏ qua file và tiếp tục như cũ, nhưng
+                // chỉ nuốt đúng 2 loại exception có thể xảy ra khi đọc metadata,
+                // không nuốt mọi thứ (kể cả lỗi nghiêm trọng như hết bộ nhớ).
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
+                    Logger.LogDebug(ex, "OrphanImageCleanupWorker: bỏ qua file {File} (không đọc được thời gian tạo).", name);
                     continue;
                 }
 

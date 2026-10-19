@@ -25,12 +25,23 @@ namespace PhuThuongStickyRice.Application.Discounts
     /// </summary>
     public interface IPromotionAppService : IApplicationService
     {
+        /// <summary>Admin: liệt kê khuyến mãi giờ vàng (đang bật lên trước, rồi theo tên).</summary>
+        /// <returns>Danh sách khuyến mãi.</returns>
         Task<List<PromotionDto>> GetListAsync();
 
+        /// <summary>Admin: tạo khuyến mãi giờ vàng mới.</summary>
+        /// <param name="input">Tên, % giảm, khung giờ, ngày áp dụng trong tuần, trạng thái bật.</param>
+        /// <returns>Khuyến mãi vừa tạo.</returns>
         Task<PromotionDto> CreateAsync(CreatePromotionDto input);
 
+        /// <summary>Admin: cập nhật khuyến mãi giờ vàng.</summary>
+        /// <param name="id">Id khuyến mãi.</param>
+        /// <param name="input">Thông tin mới của khuyến mãi.</param>
+        /// <returns>Khuyến mãi sau khi cập nhật.</returns>
         Task<PromotionDto> UpdateAsync(Guid id, CreatePromotionDto input);
 
+        /// <summary>Admin: xóa khuyến mãi giờ vàng.</summary>
+        /// <param name="id">Id khuyến mãi cần xóa.</param>
         Task DeleteAsync(Guid id);
 
         /// <summary>

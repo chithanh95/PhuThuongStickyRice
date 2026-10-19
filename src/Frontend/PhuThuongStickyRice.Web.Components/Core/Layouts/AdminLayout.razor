@@ -1,7 +1,7 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
-@inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminUtilityService UtilityService
+@inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminSearchNotificationService SearchNotificationService
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @implements IDisposable
@@ -465,7 +465,7 @@
             token.ThrowIfCancellationRequested();
             _searching = true;
             StateHasChanged();
-            _searchResult = await UtilityService.SearchAsync(_search.Trim());
+            _searchResult = await SearchNotificationService.SearchAsync(_search.Trim());
         }
         catch (OperationCanceledException) { }
         catch { _searchResult = null; }
@@ -501,7 +501,7 @@
     {
         try
         {
-            _notifications = await UtilityService.GetNotificationsAsync() ?? new List<NotificationModel>();
+            _notifications = await SearchNotificationService.GetNotificationsAsync() ?? new List<NotificationModel>();
         }
         catch { _notifications = new List<NotificationModel>(); }
     }

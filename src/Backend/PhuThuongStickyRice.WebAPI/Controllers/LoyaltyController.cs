@@ -7,6 +7,7 @@ using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,13 +24,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly ILoyaltyAppService _loyaltyAppService;
         private readonly IDiscountAppService _discountAppService;
+        private readonly ILogger<LoyaltyController> _logger;
 
         public LoyaltyController(
             ILoyaltyAppService loyaltyAppService,
-            IDiscountAppService discountAppService)
+            IDiscountAppService discountAppService,
+            ILogger<LoyaltyController> logger)
         {
             _loyaltyAppService = loyaltyAppService;
             _discountAppService = discountAppService;
+            _logger = logger;
         }
 
         /// <summary>Public: loyalty summary for a phone number.</summary>
@@ -153,9 +157,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                         });
                     created.Add(new { Phone = b.Phone, Code = voucher.Code });
                 }
-                catch (Exception)
+                // Loop sinh voucher cho hàng loạt khách: 1 khách lỗi (trùng mã, lỗi DB...)
+                // không được làm sập cả batch — nhưng không được nuốt im lặng, phải
+                // ghi log kèm SĐT để admin biết khách nào bị bỏ qua và đối chiếu sau.
+                catch (Exception ex)
                 {
                     // Bỏ qua khách lỗi, tiếp tục khách khác.
+                    _logger.LogWarning(ex, "Tạo voucher sinh nhật thất bại cho SĐT {Phone}.", b.Phone);
                 }
             }
 

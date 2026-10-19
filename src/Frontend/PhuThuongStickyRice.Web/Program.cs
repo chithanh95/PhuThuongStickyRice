@@ -168,7 +168,7 @@ namespace PhuThuongStickyRice.Web
             AddApiHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService>(builder, apiBaseUri);
 
             // Items 157–158: admin global search + notification center.
-            AddApiHttpClient<AdminUtilityService>(builder, apiBaseUri);
+            AddApiHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.AdminSearchNotificationService>(builder, apiBaseUri);
 
             // Item 162: order message templates (mẫu tin nhắn theo trạng thái đơn).
             AddApiHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.MessageTemplateService>(builder, apiBaseUri);

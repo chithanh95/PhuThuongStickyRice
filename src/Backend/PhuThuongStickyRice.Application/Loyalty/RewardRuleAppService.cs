@@ -26,12 +26,23 @@ namespace PhuThuongStickyRice.Application.Loyalty
     /// </summary>
     public interface IRewardRuleAppService : IApplicationService
     {
+        /// <summary>Admin: liệt kê quy tắc thưởng theo ngưỡng tiền đơn tăng dần.</summary>
+        /// <returns>Danh sách quy tắc thưởng.</returns>
         Task<List<OrderRewardRuleDto>> GetListAsync();
 
+        /// <summary>Admin: tạo quy tắc thưởng mới.</summary>
+        /// <param name="input">Tên, ngưỡng tiền đơn, loại thưởng, topping/% giảm.</param>
+        /// <returns>Quy tắc vừa tạo.</returns>
         Task<OrderRewardRuleDto> CreateAsync(CreateOrderRewardRuleDto input);
 
+        /// <summary>Admin: cập nhật quy tắc thưởng.</summary>
+        /// <param name="id">Id quy tắc.</param>
+        /// <param name="input">Thông tin mới của quy tắc.</param>
+        /// <returns>Quy tắc sau khi cập nhật.</returns>
         Task<OrderRewardRuleDto> UpdateAsync(Guid id, CreateOrderRewardRuleDto input);
 
+        /// <summary>Admin: xóa quy tắc thưởng (không ảnh hưởng đơn đã được thưởng trước đó).</summary>
+        /// <param name="id">Id quy tắc cần xóa.</param>
         Task DeleteAsync(Guid id);
 
         /// <summary>Called by the order service right after an order is completed.</summary>
@@ -164,6 +175,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
         }
 
+        /// <summary>Tạo entity quy tắc thưởng mới từ dữ liệu nhập (có validate theo loại thưởng).</summary>
+        /// <param name="input">Dữ liệu tạo quy tắc.</param>
+        /// <returns>Entity quy tắc mới.</returns>
         private static OrderRewardRule Build(CreateOrderRewardRuleDto input)
         {
             var rule = new OrderRewardRule();
@@ -171,6 +185,14 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return rule;
         }
 
+        /// <summary>
+        /// Ghi dữ liệu nhập vào entity quy tắc, validate bắt buộc theo loại thưởng:
+        /// <c>FreeTopping</c> phải có tên topping; <c>DiscountCode</c> phải có % giảm &gt; 0.
+        /// Dùng chung cho cả tạo mới và cập nhật để 2 luồng không lệch nhau.
+        /// </summary>
+        /// <param name="rule">Entity quy tắc cần cập nhật.</param>
+        /// <param name="input">Dữ liệu nhập.</param>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi loại thưởng không hợp lệ hoặc thiếu trường bắt buộc theo loại.</exception>
         private static void Apply(OrderRewardRule rule, CreateOrderRewardRuleDto input)
         {
             if (!Enum.TryParse<OrderRewardType>(input.RewardType, ignoreCase: true, out var type))
@@ -197,6 +219,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
             rule.IsActive = input.IsActive;
         }
 
+        /// <summary>Chuyển entity <c>OrderRewardRule</c> sang DTO.</summary>
+        /// <param name="r">Entity quy tắc thưởng.</param>
+        /// <returns>DTO quy tắc thưởng.</returns>
         private static OrderRewardRuleDto Map(OrderRewardRule r) => new OrderRewardRuleDto
         {
             Id = r.Id,
@@ -208,6 +233,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
             IsActive = r.IsActive
         };
 
+        /// <summary>
+        /// Chuẩn hóa SĐT khách trước khi gắn vào mã thưởng: chỉ giữ chữ số, đổi
+        /// đầu 84 (11 số) về dạng 0xxx — để mã gắn đúng 1 định dạng SĐT duy nhất
+        /// khi kiểm tra chủ sở hữu lúc dùng mã.
+        /// </summary>
+        /// <param name="phone">SĐT thô.</param>
+        /// <returns>SĐT đã chuẩn hóa.</returns>
         private static string NormalizePhone(string phone)
         {
             if (string.IsNullOrWhiteSpace(phone))

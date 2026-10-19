@@ -1,3 +1,8 @@
+// Bật nullable annotation context ở cấp file: project chưa bật <Nullable>enable</Nullable>
+// toàn cục nên compiler sẽ bỏ qua các annotation string?/IFormFile? trong file
+// (CS8632) nếu thiếu dòng này. Convention theo
+// RateLimiterPolicies/DefaultRateLimiterPolicy.cs.
+#nullable enable
 using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Domain.Exceptions;

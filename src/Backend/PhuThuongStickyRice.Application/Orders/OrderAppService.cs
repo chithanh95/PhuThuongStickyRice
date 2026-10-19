@@ -442,119 +442,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 fulfillment = parsedFulfillment;
             }
 
-            var productIds = input.Lines.Where(x => !x.IsCombo).Select(x => x.ProductId).Distinct().ToList();
-            var productQueryable = await _products.GetQueryableAsync();
-            var products = await _asyncExecuter.ToListAsync(
-                productQueryable.Where(x => productIds.Contains(x.Id)));
+            var catalog = await LoadOrderLineCatalogAsync(input);
 
-            var comboIds = input.Lines.Where(x => x.IsCombo).Select(x => x.ProductId).Distinct().ToList();
-            var comboQueryable = await _combos.GetQueryableAsync();
-            var combos = await _asyncExecuter.ToListAsync(
-                comboQueryable.Where(x => comboIds.Contains(x.Id)));
-
-            var sizeOptionIds = input.Lines
-                .Where(x => x.SizeOptionId.HasValue)
-                .Select(x => x.SizeOptionId.Value)
-                .Distinct()
-                .ToList();
-            var sizeQueryable = await _sizeOptions.GetQueryableAsync();
-            var sizeOptions = sizeOptionIds.Count == 0
-                ? new List<ProductSizeOption>()
-                : await _asyncExecuter.ToListAsync(
-                    sizeQueryable.Where(x => sizeOptionIds.Contains(x.Id)));
-
-            var toppingIds = input.Lines
-                .SelectMany(x => x.ToppingIds ?? Enumerable.Empty<Guid>())
-                .Distinct()
-                .ToList();
-            var toppingQueryable = await _toppings.GetQueryableAsync();
-            var toppings = toppingIds.Count == 0
-                ? new List<Topping>()
-                : await _asyncExecuter.ToListAsync(
-                    toppingQueryable.Where(x => toppingIds.Contains(x.Id) && x.IsActive));
-
-            var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>();
-            foreach (var line in input.Lines)
-            {
-                if (line.IsCombo)
-                {
-                    var combo = combos.FirstOrDefault(x => x.Id == line.ProductId);
-                    if (combo == null || !combo.IsActive)
-                    {
-                        throw new Domain.Exceptions.DomainException("Combo không tồn tại hoặc đã ngừng bán.");
-                    }
-
-                    lines.Add((
-                        combo.Id,
-                        combo.Name,
-                        Money.Of(combo.Price, "VND"),
-                        line.Quantity,
-                        null,
-                        null,
-                        0,
-                        true,
-                        string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim()));
-                    continue;
-                }
-
-                var product = products.FirstOrDefault(x => x.Id == line.ProductId);
-                if (product == null)
-                {
-                    throw new ProductNotFoundException(line.ProductId);
-                }
-
-                if (product.Status != ProductStatus.Active)
-                {
-                    throw new Domain.Exceptions.DomainException($"Product '{product.Name}' is not available for ordering.");
-                }
-
-                // Item 164: sale time windows (and seasonal window), evaluated
-                // against the scheduled pickup time for pre-orders, now for
-                // immediate orders.
-                if (!product.IsAvailableNow(GetAvailabilityCheckTime(input)))
-                {
-                    throw new Domain.Exceptions.DomainException(
-                        $"Món '{product.Name}' không bán trong khung giờ này.");
-                }
-
-                // Size option: replaces the base price with the size price.
-                string sizeName = null;
-                var unitPrice = product.Price;
-                if (line.SizeOptionId.HasValue)
-                {
-                    var sizeOption = sizeOptions.FirstOrDefault(x => x.Id == line.SizeOptionId.Value);
-                    if (sizeOption == null || !sizeOption.IsActive || sizeOption.ProductId != product.Id)
-                    {
-                        throw new Domain.Exceptions.DomainException(
-                            $"Size option for '{product.Name}' is not available.");
-                    }
-
-                    sizeName = sizeOption.Name;
-                    unitPrice = Money.Of(sizeOption.Price, product.Price.Currency);
-                }
-
-                // Toppings: extra charge summed on top of the unit price.
-                string toppingNames = null;
-                decimal toppingsExtra = 0;
-                var lineToppings = (line.ToppingIds ?? Enumerable.Empty<Guid>()).Distinct().ToList();
-                if (lineToppings.Count > 0)
-                {
-                    var resolved = toppings.Where(x => lineToppings.Contains(x.Id)).ToList();
-                    if (resolved.Count != lineToppings.Count)
-                    {
-                        throw new Domain.Exceptions.DomainException("Một topping đã chọn không còn khả dụng.");
-                    }
-
-                    toppingNames = string.Join(", ", resolved.Select(x => x.Name));
-                    toppingsExtra = resolved.Sum(x => x.ExtraPrice);
-                    unitPrice = Money.Of(unitPrice.Amount + toppingsExtra, unitPrice.Currency);
-                }
-
-                lines.Add((product.Id, product.Name, unitPrice, line.Quantity,
-                    sizeName, toppingNames, toppingsExtra, false,
-                    string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim()));
-            }
+            var lines = BuildOrderLines(input, catalog);
 
             // Item 165: daily portion limit per product. Counted server-side
             // from today's non-cancelled orders. Best-effort against races
@@ -797,6 +687,179 @@ namespace PhuThuongStickyRice.Application.Orders
                 // Registered customer: link the order to their account.
                 CurrentUser != null && CurrentUser.IsAuthenticated ? CurrentUser.Id : null);
 
+            await FinalizeCreatedOrderAsync(order, appliedCode, branchName);
+
+            return _objectMapper.Map<Order, OrderDto>(order);
+        }
+
+        /// <summary>
+        /// Kết quả load 1 lần toàn bộ catalog cần để dựng dòng đơn: món,
+        /// combo, size, topping. Truy vấn tập trung theo ID phân biệt (không
+        /// query trong vòng lặp) để tránh N+1 khi checkout có nhiều dòng.
+        /// </summary>
+        private sealed record OrderLineCatalog(
+            List<Product> Products,
+            List<Combo> Combos,
+            List<ProductSizeOption> SizeOptions,
+            List<Topping> Toppings);
+
+        /// <summary>
+        /// Nạp 1 lần (4 query gộp) toàn bộ món/combo/size/topping mà các dòng
+        /// đơn tham chiếu, lọc theo ID phân biệt — tránh N+1 khi checkout có
+        /// nhiều dòng. Mỗi query chỉ lấy đúng các ID cần thiết.
+        /// </summary>
+        /// <param name="input">DTO checkout chứa danh sách dòng đơn.</param>
+        /// <returns>Catalog đã nạp đầy đủ cho <see cref="BuildOrderLines"/>.</returns>
+        private async Task<OrderLineCatalog> LoadOrderLineCatalogAsync(CreateOrderDto input)
+        {
+            var productIds = input.Lines.Where(x => !x.IsCombo).Select(x => x.ProductId).Distinct().ToList();
+            var productQueryable = await _products.GetQueryableAsync();
+            var products = await _asyncExecuter.ToListAsync(
+                productQueryable.Where(x => productIds.Contains(x.Id)));
+
+            var comboIds = input.Lines.Where(x => x.IsCombo).Select(x => x.ProductId).Distinct().ToList();
+            var comboQueryable = await _combos.GetQueryableAsync();
+            var combos = await _asyncExecuter.ToListAsync(
+                comboQueryable.Where(x => comboIds.Contains(x.Id)));
+
+            var sizeOptionIds = input.Lines
+                .Where(x => x.SizeOptionId.HasValue)
+                .Select(x => x.SizeOptionId.Value)
+                .Distinct()
+                .ToList();
+            var sizeQueryable = await _sizeOptions.GetQueryableAsync();
+            var sizeOptions = sizeOptionIds.Count == 0
+                ? new List<ProductSizeOption>()
+                : await _asyncExecuter.ToListAsync(
+                    sizeQueryable.Where(x => sizeOptionIds.Contains(x.Id)));
+
+            var toppingIds = input.Lines
+                .SelectMany(x => x.ToppingIds ?? Enumerable.Empty<Guid>())
+                .Distinct()
+                .ToList();
+            var toppingQueryable = await _toppings.GetQueryableAsync();
+            var toppings = toppingIds.Count == 0
+                ? new List<Topping>()
+                : await _asyncExecuter.ToListAsync(
+                    toppingQueryable.Where(x => toppingIds.Contains(x.Id) && x.IsActive));
+            return new OrderLineCatalog(products, combos, sizeOptions, toppings);
+        }
+
+        /// <summary>
+        /// Dựng từng dòng đơn từ catalog đã nạp: combo thì validate đang bán,
+        /// món thì check trạng thái + khung giờ bán (Item 164), size thay giá
+        /// gốc, topping cộng phụ phí. Logic validate và tính giá giữ nguyên —
+        /// chỉ đổi nguồn tra cứu sang <paramref name="catalog"/> (không query
+        /// trong vòng lặp, tránh N+1).
+        /// </summary>
+        /// <param name="input">DTO checkout chứa danh sách dòng đơn.</param>
+        /// <param name="catalog">Catalog đã nạp bởi <see cref="LoadOrderLineCatalogAsync"/>.</param>
+        /// <returns>Danh sách tuple dòng đơn — giữ nguyên tên element để
+        /// <c>Order.Create</c> và <c>EnsureDailyLimitsAsync</c> nhận đúng dữ liệu.</returns>
+        private List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> BuildOrderLines(
+            CreateOrderDto input, OrderLineCatalog catalog)
+        {
+            var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>();
+            foreach (var line in input.Lines)
+            {
+                if (line.IsCombo)
+                {
+                    var combo = catalog.Combos.FirstOrDefault(x => x.Id == line.ProductId);
+                    if (combo == null || !combo.IsActive)
+                    {
+                        throw new Domain.Exceptions.DomainException("Combo không tồn tại hoặc đã ngừng bán.");
+                    }
+
+                    lines.Add((
+                        combo.Id,
+                        combo.Name,
+                        Money.Of(combo.Price, "VND"),
+                        line.Quantity,
+                        null,
+                        null,
+                        0,
+                        true,
+                        string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim()));
+                    continue;
+                }
+
+                var product = catalog.Products.FirstOrDefault(x => x.Id == line.ProductId);
+                if (product == null)
+                {
+                    throw new ProductNotFoundException(line.ProductId);
+                }
+
+                if (product.Status != ProductStatus.Active)
+                {
+                    throw new Domain.Exceptions.DomainException($"Product '{product.Name}' is not available for ordering.");
+                }
+
+                // Item 164: sale time windows (and seasonal window), evaluated
+                // against the scheduled pickup time for pre-orders, now for
+                // immediate orders.
+                if (!product.IsAvailableNow(GetAvailabilityCheckTime(input)))
+                {
+                    throw new Domain.Exceptions.DomainException(
+                        $"Món '{product.Name}' không bán trong khung giờ này.");
+                }
+
+                // Size option: replaces the base price with the size price.
+                string sizeName = null;
+                var unitPrice = product.Price;
+                if (line.SizeOptionId.HasValue)
+                {
+                    var sizeOption = catalog.SizeOptions.FirstOrDefault(x => x.Id == line.SizeOptionId.Value);
+                    if (sizeOption == null || !sizeOption.IsActive || sizeOption.ProductId != product.Id)
+                    {
+                        throw new Domain.Exceptions.DomainException(
+                            $"Size option for '{product.Name}' is not available.");
+                    }
+
+                    sizeName = sizeOption.Name;
+                    unitPrice = Money.Of(sizeOption.Price, product.Price.Currency);
+                }
+
+                // Toppings: extra charge summed on top of the unit price.
+                string toppingNames = null;
+                decimal toppingsExtra = 0;
+                var lineToppings = (line.ToppingIds ?? Enumerable.Empty<Guid>()).Distinct().ToList();
+                if (lineToppings.Count > 0)
+                {
+                    var resolved = catalog.Toppings.Where(x => lineToppings.Contains(x.Id)).ToList();
+                    if (resolved.Count != lineToppings.Count)
+                    {
+                        throw new Domain.Exceptions.DomainException("Một topping đã chọn không còn khả dụng.");
+                    }
+
+                    toppingNames = string.Join(", ", resolved.Select(x => x.Name));
+                    toppingsExtra = resolved.Sum(x => x.ExtraPrice);
+                    unitPrice = Money.Of(unitPrice.Amount + toppingsExtra, unitPrice.Currency);
+                }
+
+                lines.Add((product.Id, product.Name, unitPrice, line.Quantity,
+                    sizeName, toppingNames, toppingsExtra, false,
+                    string.IsNullOrWhiteSpace(line.Note) ? null : line.Note.Trim()));
+            }
+
+            return lines;
+        }
+
+        /// <summary>
+        /// Hoàn tất đơn sau khi đã dựng xong: trừ ví (nếu thanh toán bằng ví)
+        /// → ghi đơn → tăng lượt dùng mã → 2 webhook (OrderCreated + báo đơn
+        /// mới) → Zalo e-receipt → xếp email xác nhận.
+        /// THỨ TỰ BẮT BUỘC GIỮ NGUYÊN: ví trừ TRƯỚC khi ghi đơn để số dư không
+        /// đủ thì abort sớm (đơn không tồn tại, khách không bị trừ oan);
+        /// lượt dùng mã chỉ tăng SAU khi đơn đã lưu để đơn lỗi (thanh toán
+        /// hỏng, khách bỏ giỏ) không đốt lượt mã của khách.
+        /// </summary>
+        /// <param name="order">Entity đơn đã dựng đầy đủ (chưa ghi DB).</param>
+        /// <param name="appliedCode">Mã giảm giá đã áp (nếu có) — tăng lượt dùng sau khi đơn lưu.</param>
+        /// <param name="branchName">Tên chi nhánh, gắn vào payload webhook.</param>
+        private async Task FinalizeCreatedOrderAsync(Order order, string appliedCode, string branchName)
+        {
             // Item 140: wallet payment — charge the prepaid balance up front;
             // insufficient balance aborts before the order row is written.
             if (order.PaymentMethod == PaymentMethod.Wallet)
@@ -854,7 +917,6 @@ namespace PhuThuongStickyRice.Application.Orders
                 await _emailMessages.UnitOfWork.SaveChangesAsync();
             }
 
-            return _objectMapper.Map<Order, OrderDto>(order);
         }
 
         /// <summary>

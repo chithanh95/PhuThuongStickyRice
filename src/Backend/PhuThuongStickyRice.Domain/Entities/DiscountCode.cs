@@ -9,8 +9,10 @@ namespace PhuThuongStickyRice.Domain.Entities
     /// </summary>
     public class DiscountCode : Entity<Guid>, IAggregateRoot
     {
+        /// <summary>Độ dài tối đa của mã giảm giá.</summary>
         public const int CodeMaxLength = 50;
 
+        /// <summary>Mã giảm giá (đã chuẩn hóa in hoa, duy nhất trong hệ thống).</summary>
         public string Code { get; set; }
 
         /// <summary>0-100. Null when the discount is a fixed amount.</summary>
@@ -19,14 +21,22 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Fixed-amount discount in VND. Null when percent-based.</summary>
         public decimal? DiscountAmount { get; set; }
 
+        /// <summary>Giá trị đơn hàng tối thiểu (VND) để được áp mã.</summary>
         public decimal MinOrderAmount { get; set; }
 
+        /// <summary>Thời điểm hết hạn (UTC); null = không giới hạn thời gian.</summary>
         public DateTime? ExpiresAt { get; set; }
 
+        /// <summary>Số lượt dùng tối đa; null = không giới hạn số lần dùng.</summary>
         public int? MaxUses { get; set; }
 
+        /// <summary>
+        /// Số lượt đã dùng. Chỉ tăng sau khi đơn hàng tạo thành công —
+        /// đơn lỗi (thanh toán hỏng, khách bỏ giỏ) không được đốt lượt mã.
+        /// </summary>
         public int UsedCount { get; set; }
 
+        /// <summary>True = mã đang bật, có thể dùng; false = đã bị tắt.</summary>
         public bool IsActive { get; set; }
 
         /// <summary>

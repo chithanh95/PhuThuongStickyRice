@@ -147,9 +147,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 "Món", "Tổng tiền", "Phí ship", "Giảm giá",
                 "Kênh thanh toán", "Trạng thái TT", "Trạng thái đơn", "Ghi chú"
             };
-            for (var c = 0; c < headers.Length; c++)
+            for (var columnIndex = 0; columnIndex < headers.Length; columnIndex++)
             {
-                sheet.Cell(1, c + 1).Value = headers[c];
+                sheet.Cell(1, columnIndex + 1).Value = headers[columnIndex];
             }
 
             var headerRow = sheet.Row(1);
@@ -157,7 +157,7 @@ namespace PhuThuongStickyRice.Application.Orders
             headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#f5c518");
             headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            var row = 2;
+            var rowIndex = 2;
             foreach (var order in items)
             {
                 var itemsText = FormatLines(
@@ -171,25 +171,25 @@ namespace PhuThuongStickyRice.Application.Orders
                     + order.TierDiscount.Amount
                     + order.PromotionDiscountAmount;
 
-                sheet.Cell(row, 1).Value = order.OrderNumber;
+                sheet.Cell(rowIndex, 1).Value = order.OrderNumber;
                 // Giờ VN cho file Excel (CreatedAt lưu UTC).
-                sheet.Cell(row, 2).Value = order.CreatedAt.AddHours(7);
-                sheet.Cell(row, 2).Style.NumberFormat.Format = "dd/MM/yyyy HH:mm";
-                sheet.Cell(row, 3).Value = order.CustomerName;
-                sheet.Cell(row, 4).Value = order.CustomerPhone;
-                sheet.Cell(row, 5).Value = order.CustomerAddress;
-                sheet.Cell(row, 6).Value = itemsText;
-                sheet.Cell(row, 7).Value = order.TotalAmount.Amount;
-                sheet.Cell(row, 8).Value = order.DeliveryFee.Amount;
-                sheet.Cell(row, 9).Value = discountTotal;
-                sheet.Cell(row, 10).Value = OrderLabels.PaymentMethod(order.PaymentMethod);
-                sheet.Cell(row, 11).Value = OrderLabels.PaymentStatus(order.PaymentStatus);
-                sheet.Cell(row, 12).Value = OrderLabels.OrderStatus(order.Status);
-                sheet.Cell(row, 13).Value = string.Join(" | ",
+                sheet.Cell(rowIndex, 2).Value = order.CreatedAt.AddHours(VietnamTime.UtcOffsetHours);
+                sheet.Cell(rowIndex, 2).Style.NumberFormat.Format = "dd/MM/yyyy HH:mm";
+                sheet.Cell(rowIndex, 3).Value = order.CustomerName;
+                sheet.Cell(rowIndex, 4).Value = order.CustomerPhone;
+                sheet.Cell(rowIndex, 5).Value = order.CustomerAddress;
+                sheet.Cell(rowIndex, 6).Value = itemsText;
+                sheet.Cell(rowIndex, 7).Value = order.TotalAmount.Amount;
+                sheet.Cell(rowIndex, 8).Value = order.DeliveryFee.Amount;
+                sheet.Cell(rowIndex, 9).Value = discountTotal;
+                sheet.Cell(rowIndex, 10).Value = OrderLabels.PaymentMethod(order.PaymentMethod);
+                sheet.Cell(rowIndex, 11).Value = OrderLabels.PaymentStatus(order.PaymentStatus);
+                sheet.Cell(rowIndex, 12).Value = OrderLabels.OrderStatus(order.Status);
+                sheet.Cell(rowIndex, 13).Value = string.Join(" | ",
                     new[] { order.Notes, order.AdminNote }
                         .Where(x => !string.IsNullOrWhiteSpace(x))
                         .Select(x => x.Replace("\r\n", " ").Replace("\n", " ")));
-                row++;
+                rowIndex++;
             }
 
             sheet.Columns().AdjustToContents();
@@ -197,6 +197,95 @@ namespace PhuThuongStickyRice.Application.Orders
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
             return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Một dòng tổng hợp doanh thu theo ngày (giờ VN) — record lồng để
+        /// truyền dữ liệu query qua <see cref="WriteRevenueSummarySheet"/>
+        /// thay cho anonymous type.
+        /// </summary>
+        private sealed record DailyRevenueRow(DateTime Date, long OrderCount, decimal Revenue);
+
+        /// <summary>
+        /// Ghi sheet "Tổng hợp" của file Excel doanh thu: 1 dòng/ngày (số đơn,
+        /// doanh thu, giá trị TB/đơn) + dòng TỔNG CỘNG in đậm cuối bảng.
+        /// </summary>
+        /// <param name="workbook">Workbook Excel đang dựng.</param>
+        /// <param name="daily">Doanh thu từng ngày (giờ VN), đã sắp xếp tăng dần.</param>
+        private static void WriteRevenueSummarySheet(XLWorkbook workbook, List<DailyRevenueRow> daily)
+        {
+            var summary = workbook.Worksheets.Add("Tổng hợp");
+            var sumHeaders = new[] { "Ngày", "Số đơn", "Doanh thu (₫)", "Giá trị TB/đơn (₫)" };
+            for (var columnIndex = 0; columnIndex < sumHeaders.Length; columnIndex++)
+                summary.Cell(1, columnIndex + 1).Value = sumHeaders[columnIndex];
+            StyleHeader(summary.Row(1));
+
+            var rowIndex = 2;
+            foreach (var dailyStat in daily)
+            {
+                summary.Cell(rowIndex, 1).Value = dailyStat.Date;
+                summary.Cell(rowIndex, 1).Style.NumberFormat.Format = "dd/MM/yyyy";
+                summary.Cell(rowIndex, 2).Value = dailyStat.OrderCount;
+                summary.Cell(rowIndex, 3).Value = dailyStat.Revenue;
+                summary.Cell(rowIndex, 3).Style.NumberFormat.Format = "#,##0";
+                summary.Cell(rowIndex, 4).Value = dailyStat.OrderCount > 0 ? dailyStat.Revenue / dailyStat.OrderCount : 0m;
+                summary.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
+                rowIndex++;
+            }
+            // Dòng TỔNG CỘNG: cộng dồn toàn kỳ, in đậm để tách khỏi dữ liệu ngày.
+            var totalOrders = daily.Sum(x => x.OrderCount);
+            var totalRevenue = daily.Sum(x => x.Revenue);
+            summary.Cell(rowIndex, 1).Value = "TỔNG CỘNG";
+            summary.Cell(rowIndex, 2).Value = totalOrders;
+            summary.Cell(rowIndex, 3).Value = totalRevenue;
+            summary.Cell(rowIndex, 3).Style.NumberFormat.Format = "#,##0";
+            summary.Cell(rowIndex, 4).Value = totalOrders > 0 ? totalRevenue / totalOrders : 0m;
+            summary.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
+            summary.Row(rowIndex).Style.Font.Bold = true;
+            summary.Columns().AdjustToContents();
+        }
+
+        /// <summary>
+        /// Ghi sheet "Chi tiết đơn" của file Excel doanh thu: từng đơn trong kỳ
+        /// (mã đơn, ngày đặt giờ VN, khách, món, tổng tiền, kênh TT, trạng thái).
+        /// </summary>
+        /// <param name="workbook">Workbook Excel đang dựng.</param>
+        /// <param name="details">Danh sách đơn trong kỳ, mới nhất lên trước.</param>
+        /// <param name="linesByOrder">Dòng món theo Id đơn (load 1 query gộp).</param>
+        private static void WriteRevenueDetailSheet(
+            XLWorkbook workbook, List<Order> details, Dictionary<Guid, List<OrderLine>> linesByOrder)
+        {
+            var sheet = workbook.Worksheets.Add("Chi tiết đơn");
+            var headers = new[]
+            {
+                "Mã đơn", "Ngày đặt", "Khách hàng", "SĐT",
+                "Món", "Tổng tiền", "Kênh thanh toán", "Trạng thái đơn"
+            };
+            for (var columnIndex = 0; columnIndex < headers.Length; columnIndex++)
+                sheet.Cell(1, columnIndex + 1).Value = headers[columnIndex];
+            StyleHeader(sheet.Row(1));
+
+            var rowIndex = 2;
+            foreach (var order in details)
+            {
+                var itemsText = FormatLines(
+                    linesByOrder.TryGetValue(order.Id, out var orderLines)
+                        ? orderLines
+                        : Enumerable.Empty<OrderLine>());
+                sheet.Cell(rowIndex, 1).Value = order.OrderNumber;
+                // Giờ VN cho file Excel (CreatedAt lưu UTC).
+                sheet.Cell(rowIndex, 2).Value = order.CreatedAt.AddHours(VietnamTime.UtcOffsetHours);
+                sheet.Cell(rowIndex, 2).Style.NumberFormat.Format = "dd/MM/yyyy HH:mm";
+                sheet.Cell(rowIndex, 3).Value = order.CustomerName;
+                sheet.Cell(rowIndex, 4).Value = order.CustomerPhone;
+                sheet.Cell(rowIndex, 5).Value = itemsText;
+                sheet.Cell(rowIndex, 6).Value = order.TotalAmount.Amount;
+                sheet.Cell(rowIndex, 6).Style.NumberFormat.Format = "#,##0";
+                sheet.Cell(rowIndex, 7).Value = OrderLabels.PaymentMethod(order.PaymentMethod);
+                sheet.Cell(rowIndex, 8).Value = OrderLabels.OrderStatus(order.Status);
+                rowIndex++;
+            }
+            sheet.Columns().AdjustToContents();
         }
 
         public virtual async Task<byte[]> ExportRevenueAsync(DateTime? from, DateTime? to)
@@ -207,14 +296,14 @@ namespace PhuThuongStickyRice.Application.Orders
             var ranged = queryable.Where(x => x.CreatedAt >= startUtc && x.CreatedAt < endUtc);
             var billable = ranged.Where(x => x.Status != OrderStatus.Cancelled);
 
+            // Tổng hợp theo ngày VN (không tính đơn đã hủy) — dùng record lồng
+            // để truyền qua helper ghi sheet, thay cho anonymous type.
             var daily = await _asyncExecuter.ToListAsync(
-                billable.GroupBy(x => x.CreatedAt.AddHours(7).Date)
-                    .Select(g => new
-                    {
-                        Date = g.Key,
-                        OrderCount = g.LongCount(),
-                        Revenue = g.Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m
-                    })
+                billable.GroupBy(x => x.CreatedAt.AddHours(VietnamTime.UtcOffsetHours).Date)
+                    .Select(g => new DailyRevenueRow(
+                        g.Key,
+                        g.LongCount(),
+                        g.Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m))
                     .OrderBy(x => x.Date));
 
             var details = await _asyncExecuter.ToListAsync(
@@ -222,70 +311,8 @@ namespace PhuThuongStickyRice.Application.Orders
             var linesByOrder = await GetLinesByOrderAsync(details.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
-
-            // ---- Sheet 1: Tổng hợp theo ngày ----
-            var summary = workbook.Worksheets.Add("Tổng hợp");
-            var sumHeaders = new[] { "Ngày", "Số đơn", "Doanh thu (₫)", "Giá trị TB/đơn (₫)" };
-            for (var c = 0; c < sumHeaders.Length; c++)
-                summary.Cell(1, c + 1).Value = sumHeaders[c];
-            StyleHeader(summary.Row(1));
-
-            var r = 2;
-            foreach (var d in daily)
-            {
-                summary.Cell(r, 1).Value = d.Date;
-                summary.Cell(r, 1).Style.NumberFormat.Format = "dd/MM/yyyy";
-                summary.Cell(r, 2).Value = d.OrderCount;
-                summary.Cell(r, 3).Value = d.Revenue;
-                summary.Cell(r, 3).Style.NumberFormat.Format = "#,##0";
-                summary.Cell(r, 4).Value = d.OrderCount > 0 ? d.Revenue / d.OrderCount : 0m;
-                summary.Cell(r, 4).Style.NumberFormat.Format = "#,##0";
-                r++;
-            }
-            // Total row
-            var totalOrders = daily.Sum(x => x.OrderCount);
-            var totalRevenue = daily.Sum(x => x.Revenue);
-            summary.Cell(r, 1).Value = "TỔNG CỘNG";
-            summary.Cell(r, 2).Value = totalOrders;
-            summary.Cell(r, 3).Value = totalRevenue;
-            summary.Cell(r, 3).Style.NumberFormat.Format = "#,##0";
-            summary.Cell(r, 4).Value = totalOrders > 0 ? totalRevenue / totalOrders : 0m;
-            summary.Cell(r, 4).Style.NumberFormat.Format = "#,##0";
-            summary.Row(r).Style.Font.Bold = true;
-            summary.Columns().AdjustToContents();
-
-            // ---- Sheet 2: Chi tiết đơn ----
-            var sheet = workbook.Worksheets.Add("Chi tiết đơn");
-            var headers = new[]
-            {
-                "Mã đơn", "Ngày đặt", "Khách hàng", "SĐT",
-                "Món", "Tổng tiền", "Kênh thanh toán", "Trạng thái đơn"
-            };
-            for (var c = 0; c < headers.Length; c++)
-                sheet.Cell(1, c + 1).Value = headers[c];
-            StyleHeader(sheet.Row(1));
-
-            var row = 2;
-            foreach (var order in details)
-            {
-                var itemsText = FormatLines(
-                    linesByOrder.TryGetValue(order.Id, out var ol)
-                        ? ol
-                        : Enumerable.Empty<OrderLine>());
-                sheet.Cell(row, 1).Value = order.OrderNumber;
-                // Giờ VN cho file Excel (CreatedAt lưu UTC).
-                sheet.Cell(row, 2).Value = order.CreatedAt.AddHours(7);
-                sheet.Cell(row, 2).Style.NumberFormat.Format = "dd/MM/yyyy HH:mm";
-                sheet.Cell(row, 3).Value = order.CustomerName;
-                sheet.Cell(row, 4).Value = order.CustomerPhone;
-                sheet.Cell(row, 5).Value = itemsText;
-                sheet.Cell(row, 6).Value = order.TotalAmount.Amount;
-                sheet.Cell(row, 6).Style.NumberFormat.Format = "#,##0";
-                sheet.Cell(row, 7).Value = OrderLabels.PaymentMethod(order.PaymentMethod);
-                sheet.Cell(row, 8).Value = OrderLabels.OrderStatus(order.Status);
-                row++;
-            }
-            sheet.Columns().AdjustToContents();
+            WriteRevenueSummarySheet(workbook, daily);
+            WriteRevenueDetailSheet(workbook, details, linesByOrder);
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);

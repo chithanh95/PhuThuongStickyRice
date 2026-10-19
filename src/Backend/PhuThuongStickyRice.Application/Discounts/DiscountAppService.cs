@@ -17,14 +17,28 @@ namespace PhuThuongStickyRice.Application.Discounts
 {
     public interface IDiscountAppService : IApplicationService
     {
+        /// <summary>Admin: liệt kê 500 mã giảm giá mới nhất.</summary>
+        /// <returns>Danh sách mã giảm giá dưới dạng DTO.</returns>
         Task<List<DiscountCodeDto>> GetListAsync();
 
+        /// <summary>Admin: chi tiết 1 mã giảm giá theo Id.</summary>
+        /// <param name="id">Id của mã giảm giá.</param>
+        /// <returns>Thông tin mã giảm giá.</returns>
         Task<DiscountCodeDto> GetAsync(Guid id);
 
+        /// <summary>Admin (cần quyền discounts.manage): tạo mã giảm giá mới.</summary>
+        /// <param name="dto">Mã, % hoặc số tiền giảm, đơn tối thiểu, hạn dùng, số lượt dùng...</param>
+        /// <returns>Mã giảm giá vừa tạo.</returns>
         Task<DiscountCodeDto> CreateAsync(CreateDiscountCodeDto dto);
 
+        /// <summary>Admin (cần quyền discounts.manage): cập nhật mã giảm giá.</summary>
+        /// <param name="id">Id mã cần sửa.</param>
+        /// <param name="dto">Thông tin mới của mã.</param>
+        /// <returns>Mã giảm giá sau khi cập nhật.</returns>
         Task<DiscountCodeDto> UpdateAsync(Guid id, CreateDiscountCodeDto dto);
 
+        /// <summary>Admin (cần quyền discounts.manage): xóa mã giảm giá.</summary>
+        /// <param name="id">Id mã cần xóa.</param>
         Task DeleteAsync(Guid id);
 
         /// <summary>Public: checks a code against a cart subtotal.</summary>
@@ -602,6 +616,15 @@ namespace PhuThuongStickyRice.Application.Discounts
             };
         }
 
+        /// <summary>
+        /// Kiểm tra 1 mã có dùng được với tổng tiền giỏ hàng và SĐT cho trước hay không.
+        /// Thứ tự kiểm tra từ rẻ tới đắt: tồn tại → đang bật → còn hạn → còn lượt →
+        /// đúng chủ sở hữu → đạt đơn tối thiểu; message tiếng Việt hiển thị trực tiếp cho khách.
+        /// </summary>
+        /// <param name="entity">Mã giảm giá cần kiểm tra (null = mã không tồn tại).</param>
+        /// <param name="subtotal">Tổng tiền hàng của giỏ.</param>
+        /// <param name="customerPhone">SĐT khách; mã riêng tư chỉ đúng chủ SĐT mới dùng được.</param>
+        /// <returns>Tuple: hợp lệ hay không + message tiếng Việt.</returns>
         private static (bool Valid, string Message) CheckUsable(
             DiscountCode entity, decimal subtotal, string customerPhone = null)
         {
@@ -663,6 +686,12 @@ namespace PhuThuongStickyRice.Application.Discounts
                 StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Sinh mã dùng 1 lần duy nhất theo tiền tố (vd "THUONG-AB12CD") cho
+        /// vòng quay may mắn / quà sinh nhật.
+        /// </summary>
+        /// <param name="prefix">Tiền tố mã (đã chuẩn hóa in hoa).</param>
+        /// <returns>Mã chưa từng tồn tại trong DB.</returns>
         private async Task<string> GenerateUniqueCodeAsync(string prefix)
         {
             // Bộ ký tự bỏ I/O/0/1 (dễ nhầm lẫn khi khách đọc to), 6 ký tự ngẫu nhiên.
@@ -688,6 +717,15 @@ namespace PhuThuongStickyRice.Application.Discounts
             return prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
         }
 
+        /// <summary>
+        /// Tính số tiền được giảm cho 1 mã trên tổng tiền giỏ hàng.
+        /// </summary>
+        /// <param name="entity">Mã giảm giá (đã được kiểm tra hợp lệ).</param>
+        /// <param name="subtotal">Tổng tiền hàng.</param>
+        /// <returns>
+        /// Số tiền giảm (VND). Phần trăm bị kẹp trong 0..100 (admin nhập tay có thể nhầm)
+        /// và làm tròn về đồng chẵn; kết quả bị chặn không vượt subtotal để tổng đơn không bị âm.
+        /// </returns>
         private static decimal ComputeDiscount(DiscountCode entity, decimal subtotal)
         {
             // Freeship vouchers give 0 VND discount — the benefit is the
@@ -715,6 +753,12 @@ namespace PhuThuongStickyRice.Application.Discounts
             return Math.Min(Math.Max(0, amount), subtotal);
         }
 
+        /// <summary>
+        /// Đảm bảo mã có giá trị giảm: phải có % hoặc số tiền giảm.
+        /// Mã freeship được miễn vì lợi ích của nó là miễn phí ship, không phải tiền giảm.
+        /// </summary>
+        /// <param name="dto">Dữ liệu tạo/sửa mã.</param>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi thiếu cả % và số tiền giảm.</exception>
         private static void EnsureValueProvided(CreateDiscountCodeDto dto)
         {
             // Freeship vouchers carry no monetary value — the benefit is the
@@ -731,6 +775,13 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
         }
 
+        /// <summary>
+        /// Chuẩn hóa mã: cắt khoảng trắng hai đầu và chuyển in hoa, để so khớp
+        /// mã không phân biệt hoa/thường khi khách nhập.
+        /// </summary>
+        /// <param name="code">Mã thô người dùng nhập.</param>
+        /// <returns>Mã đã chuẩn hóa.</returns>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi mã trống.</exception>
         private static string NormalizeCode(string code)
         {
             if (string.IsNullOrWhiteSpace(code))
@@ -741,6 +792,13 @@ namespace PhuThuongStickyRice.Application.Discounts
             return code.Trim().ToUpperInvariant();
         }
 
+        /// <summary>
+        /// Đảm bảo mã chưa tồn tại trong DB. Khi sửa mã, loại trừ chính nó
+        /// (excludeId) để đổi các field khác không bị báo trùng oan.
+        /// </summary>
+        /// <param name="code">Mã đã chuẩn hóa.</param>
+        /// <param name="excludeId">Id bỏ qua khi kiểm tra trùng (dùng khi Update).</param>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi mã đã tồn tại.</exception>
         private async Task EnsureCodeUniqueAsync(string code, Guid? excludeId)
         {
             var queryable = await _discounts.GetQueryableAsync();
@@ -752,6 +810,9 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
         }
 
+        /// <summary>Chuyển entity <c>DiscountCode</c> sang DTO trả về cho client.</summary>
+        /// <param name="entity">Entity mã giảm giá.</param>
+        /// <returns>DTO mã giảm giá.</returns>
         private static DiscountCodeDto MapToDto(DiscountCode entity)
         {
             return new DiscountCodeDto

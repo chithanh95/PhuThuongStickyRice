@@ -389,11 +389,11 @@ namespace PhuThuongStickyRice.Application.Messenger
         private PendingLine ParseOrderPart(string part, List<ProductDto> items)
         {
             var qty = 1;
-            var m = QuantityRegex().Match(part);
-            if (m.Success)
+            var quantityMatch = QuantityRegex().Match(part);
+            if (quantityMatch.Success)
             {
-                qty = Math.Max(1, Math.Min(100, int.Parse(m.Groups[1].Value)));
-                part = (part.Substring(0, m.Index) + " " + part.Substring(m.Index + m.Length)).Trim();
+                qty = Math.Max(1, Math.Min(100, int.Parse(quantityMatch.Groups[1].Value)));
+                part = (part.Substring(0, quantityMatch.Index) + " " + part.Substring(quantityMatch.Index + quantityMatch.Length)).Trim();
             }
 
             var product = MatchProduct(part, items);

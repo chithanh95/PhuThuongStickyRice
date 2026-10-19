@@ -147,10 +147,10 @@ namespace PhuThuongStickyRice.Application.Customer
             var queryable = await _addresses.GetQueryableAsync();
             var defaults = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.UserId == userId && x.IsDefault));
-            foreach (var d in defaults)
+            foreach (var defaultAddress in defaults)
             {
-                d.IsDefault = false;
-                await _addresses.UpdateAsync(d);
+                defaultAddress.IsDefault = false;
+                await _addresses.UpdateAsync(defaultAddress);
             }
         }
 

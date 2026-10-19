@@ -9,6 +9,12 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Orders.Services
 {
+    /// <summary>
+    /// Client gọi API đơn hàng phía admin: liệt kê/lọc đơn, đổi trạng thái,
+    /// thu tiền, đối soát, xuất báo cáo Excel, gộp đơn trùng, quản lý đánh giá
+    /// và khách hàng. Server vẫn tự validate mọi nghiệp vụ; service này chỉ
+    /// dựng URL và chuyển tiếp request.
+    /// </summary>
     public class OrderService : HttpService
     {
         public OrderService(HttpClient httpClient, ITokenManager tokenManager)
@@ -16,6 +22,20 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
         {
         }
 
+        /// <summary>
+        /// Liệt kê đơn hàng có phân trang kèm 9 bộ lọc cho trang admin quản lý đơn.
+        /// Chỉ param nào có giá trị mới được gắn vào query string.
+        /// </summary>
+        /// <param name="page">Trang hiện tại (bắt đầu từ 1).</param>
+        /// <param name="pageSize">Số đơn mỗi trang.</param>
+        /// <param name="searchTerm">Tìm theo mã đơn / tên / SĐT khách.</param>
+        /// <param name="status">Lọc theo trạng thái đơn.</param>
+        /// <param name="shipperId">Lọc theo shipper được gán.</param>
+        /// <param name="fromDate">Từ ngày (yyyy-MM-dd).</param>
+        /// <param name="toDate">Đến ngày (yyyy-MM-dd).</param>
+        /// <param name="cashCollected">Lọc đơn đã/chưa thu tiền mặt.</param>
+        /// <param name="vipOnly">True = chỉ đơn của khách VIP.</param>
+        /// <returns>Trang kết quả đơn hàng.</returns>
         public async Task<Orders.Models.PagedResult<OrderModel>> GetOrdersAsync(int page = 1, int pageSize = 20,
             string searchTerm = null, string status = null, Guid? shipperId = null,
             DateTime? fromDate = null, DateTime? toDate = null, bool? cashCollected = null,
@@ -242,6 +262,13 @@ namespace PhuThuongStickyRice.Web.Components.Orders.Services
             return await GetAsync<List<OrderStatusHistoryModel>>($"api/orders/{orderId}/status-history");
         }
 
+        /// <summary>
+        /// Chuyển trạng thái đơn (vd Pending → Confirmed). Server tự validate
+        /// luồng chuyển trạng thái hợp lệ — đổi sai quy trình sẽ bị server từ chối.
+        /// </summary>
+        /// <param name="orderId">Id đơn hàng.</param>
+        /// <param name="status">Trạng thái mới.</param>
+        /// <returns>Đơn hàng sau khi đổi trạng thái.</returns>
         public async Task<OrderModel> UpdateStatusAsync(Guid orderId, string status)
         {
             return await PutAsync<OrderModel>($"api/orders/{orderId}/status",
