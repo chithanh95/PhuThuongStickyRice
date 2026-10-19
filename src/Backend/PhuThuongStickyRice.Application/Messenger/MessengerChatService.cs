@@ -279,7 +279,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                         ProductId = x.ProductId,
                         Quantity = x.Quantity
                     }).ToList()
-                });
+                }, skipRecaptchaCheck: true);
 
                 _sessions.TryRemove(session.Psid ?? string.Empty, out _);
                 var pickupNote = fulfillment == "ShipperPickup"

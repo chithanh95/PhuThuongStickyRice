@@ -310,7 +310,9 @@ namespace PhuThuongStickyRice.Application.Orders
             await EnsurePhoneDailyLimitAsync(shopSetting.MaxOrdersPerPhonePerDay, input.CustomerPhone);
 
             // Item 96: reCAPTCHA v3, verified server-side when configured.
-            if (!await _recaptcha.VerifyAsync(input.RecaptchaToken))
+            // Internal flows (POS, Messenger bot, group-order close) call with
+            // skipRecaptchaCheck: true — they have no browser token.
+            if (!skipRecaptchaCheck && !await _recaptcha.VerifyAsync(input.RecaptchaToken))
             {
                 throw new Domain.Exceptions.DomainException(
                     "Xác thực chống spam không thành công. Vui lòng thử lại.");

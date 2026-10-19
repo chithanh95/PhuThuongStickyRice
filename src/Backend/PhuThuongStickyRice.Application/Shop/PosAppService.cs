@@ -63,7 +63,7 @@ namespace PhuThuongStickyRice.Application.Shop
                         ToppingIds = x.ToppingIds ?? new List<System.Guid>()
                     })
                     .ToList()
-            });
+            }, skipRecaptchaCheck: true);
 
             if (order.Lines == null || order.Lines.Count == 0)
             {

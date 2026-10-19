@@ -176,7 +176,7 @@ namespace PhuThuongStickyRice.Application.Orders
                         ? x.Note
                         : string.IsNullOrWhiteSpace(x.Note) ? $"({x.AddedBy})" : $"{x.Note} ({x.AddedBy})"
                 }).ToList()
-            });
+            }, skipRecaptchaCheck: true);
 
             entity.Status = GroupOrder.StatusClosed;
             entity.ClosedAt = _clock.Now;
