@@ -290,16 +290,27 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             });
             var voucherCode = voucher.Code;
 
-            await RecordSpinAsync(phone, today, prizeLabel, prizeValue, voucherCode, cancellationToken);
+            // 2 request quay đồng thời (2 tab, hoặc bấm lại sau khi request đầu
+            // timeout nhưng server đã xử lý xong) đều qua được bước alreadySpun
+            // rồi cùng insert — unique (Phone, SpinDate) chỉ cho 1 bên qua.
+            // TryRecordSpinAsync trả false cho bên thua -> trả "đã quay rồi"
+            // thay vì 500. Voucher bên thua vừa sinh không ai biết mã (6 ký tự
+            // ngẫu nhiên) nên vô hại, không cần thu hồi.
+            var recorded = await TryRecordSpinAsync(phone, today, prizeLabel, prizeValue, voucherCode, cancellationToken);
+            if (!recorded)
+            {
+                return Ok(new { success = false, message = "Hôm nay bạn đã quay rồi, hẹn mai quay tiếp nhé!" });
+            }
 
             return Ok(new { success = true, prizeLabel, prizeValue, voucherCode });
         }
 
         /// <summary>
-        /// Lưu lượt quay vòng quay may mắn: 1 SĐT chỉ quay 1 lần/ngày VN —
-        /// kiểm tra <c>alreadySpun</c> ở action Spin đã chặn quay lại.
+        /// Lưu lượt quay vòng quay may mắn: 1 SĐT chỉ quay 1 lần/ngày VN.
+        /// Trả false khi lượt quay đã được ghi bởi request đồng thời khác
+        /// (vi phạm unique (Phone, SpinDate)) — bên gọi xử lý như "đã quay".
         /// </summary>
-        private async Task RecordSpinAsync(
+        private async Task<bool> TryRecordSpinAsync(
             string phone, DateTime spinDate, string prizeLabel, int prizeValue,
             string voucherCode, CancellationToken cancellationToken)
         {
@@ -313,7 +324,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 VoucherCode = voucherCode,
                 CreatedAt = DateTime.UtcNow
             });
-            await _db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+                return true;
+            }
+            catch (DbUpdateException)
+            {
+                return false;
+            }
         }
 
         // ============ Landing engagement: referral (item 29) ============
