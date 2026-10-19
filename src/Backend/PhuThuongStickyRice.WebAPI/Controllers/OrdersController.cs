@@ -252,13 +252,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] string phone,
             CancellationToken cancellationToken = default)
         {
-            var info = await _orderAppService.GetLastOrderInfoByPhoneAsync(phone);
-            if (info == null)
+            var lastOrderInfo = await _orderAppService.GetLastOrderInfoByPhoneAsync(phone);
+            if (lastOrderInfo == null)
             {
                 return NoContent();
             }
 
-            return Ok(info);
+            return Ok(lastOrderInfo);
         }
 
         /// <summary>

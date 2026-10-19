@@ -113,10 +113,10 @@ namespace PhuThuongStickyRice.Application.Customer
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Distinct()
                 .ToList();
-            var result = list.ToDictionary(x => x, _ => false);
+            var isVipByPhone = list.ToDictionary(x => x, _ => false);
             if (list.Count == 0)
             {
-                return result;
+                return isVipByPhone;
             }
 
             var queryable = await _tagRepo.GetQueryableAsync();
@@ -126,10 +126,10 @@ namespace PhuThuongStickyRice.Application.Customer
                     .Select(x => x.CustomerPhone));
             foreach (var phone in vipPhones.Distinct())
             {
-                result[phone] = true;
+                isVipByPhone[phone] = true;
             }
 
-            return result;
+            return isVipByPhone;
         }
 
         /// <summary>
@@ -151,9 +151,9 @@ namespace PhuThuongStickyRice.Application.Customer
             var phones = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.TagName == VipTagName)
                     .Select(x => x.CustomerPhone));
-            var result = new HashSet<string>(phones.Distinct());
-            _memoryCache.Set(VipPhonesCacheKey, result, VipPhonesCacheTtl);
-            return result;
+            var vipPhoneSet = new HashSet<string>(phones.Distinct());
+            _memoryCache.Set(VipPhonesCacheKey, vipPhoneSet, VipPhonesCacheTtl);
+            return vipPhoneSet;
         }
 
         /// <summary>

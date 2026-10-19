@@ -23,9 +23,9 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secretKey ?? string.Empty));
             var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(rawString));
             var builder = new StringBuilder(hash.Length * 2);
-            foreach (var b in hash)
+            foreach (var hashByte in hash)
             {
-                builder.Append(b.ToString("x2"));
+                builder.Append(hashByte.ToString("x2"));
             }
 
             return builder.ToString();

@@ -101,10 +101,10 @@ namespace PhuThuongStickyRice.Application.Customer
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Distinct()
                 .ToList();
-            var result = new Dictionary<string, List<CustomerTagDto>>();
+            var tagsByPhone = new Dictionary<string, List<CustomerTagDto>>();
             if (list.Count == 0)
             {
-                return result;
+                return tagsByPhone;
             }
 
             var queryable = await _tags.GetQueryableAsync();
@@ -120,16 +120,16 @@ namespace PhuThuongStickyRice.Application.Customer
             }
             foreach (var row in rows)
             {
-                if (!result.TryGetValue(row.CustomerPhone, out var tags))
+                if (!tagsByPhone.TryGetValue(row.CustomerPhone, out var tags))
                 {
                     tags = new List<CustomerTagDto>();
-                    result[row.CustomerPhone] = tags;
+                    tagsByPhone[row.CustomerPhone] = tags;
                 }
 
                 tags.Add(ToDto(row));
             }
 
-            return result;
+            return tagsByPhone;
         }
 
         /// <summary>
