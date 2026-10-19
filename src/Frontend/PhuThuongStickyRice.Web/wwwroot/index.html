@@ -44,6 +44,23 @@
                 document.documentElement.classList.toggle('dark', dark);
             } catch (e) { }
         };
+        // Đặt theme NHỊ PHÂN Sáng/Tối trực tiếp (không xoay vòng 3 chế độ).
+        // Dùng cho các nút toggle hiển thị nhị phân (☀️/🌙) — ví dụ header admin:
+        // ptToggleTheme xoay vòng sáng→tối→tự động→sáng khiến ban đêm cứ 2 lần
+        // bấm mới thấy đổi 1 lần ("tự động" = tối lúc 18:00–06:00).
+        window.ptSetTheme = function (key, value) {
+            key = key || 'pt-theme';
+            try { localStorage.setItem(key, value === 'dark' ? 'dark' : 'light'); } catch (e) { }
+            window.ptApplyTheme(key);
+        };
+        // Trạng thái tối THỰC TẾ đang hiển thị (kể cả khi đang ở 'auto' theo giờ).
+        window.ptIsDark = function (key) {
+            key = key || 'pt-theme';
+            try {
+                var v = localStorage.getItem(key);
+                return v === 'dark' || (v === 'auto' && window.ptResolveAutoTheme() === 'dark');
+            } catch (e) { return false; }
+        };
         // Chữ lớn cho người lớn tuổi (#196).
         window.ptGetLargeText = function () {
             try { return localStorage.getItem('pt-large-text') === '1'; }

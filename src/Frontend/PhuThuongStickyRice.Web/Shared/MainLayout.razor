@@ -110,10 +110,13 @@
 
     private async Task ToggleTheme()
     {
+        // 2026-10-19: toggle NHỊ PHÂN Sáng↔Tối — 1 lần bấm = đổi giao diện ngay.
+        // (ptToggleTheme xoay vòng 3 chế độ sáng→tối→tự động→sáng, ban đêm "tự động"
+        // = tối nên cứ 2 lần bấm mới thấy đổi 1 lần trong khi nút hiển thị nhị phân.)
         try
         {
-            var theme = await JS.InvokeAsync<string>("ptToggleTheme");
-            _isDark = theme == "dark";
+            _isDark = !_isDark;
+            await JS.InvokeVoidAsync("ptSetTheme", "pt-theme", _isDark ? "dark" : "light");
         }
         // Bỏ qua lỗi JS interop có chủ ý: hàm JS đã tự đổi class CSS nên giao diện luôn đúng;
         // _isDark chỉ dùng để vẽ icon nút bấm — nếu JS chưa sẵn sàng (prerender) thì giữ nguyên, không báo user.
@@ -125,7 +128,8 @@
         // Dark mode: sync toggle icon with saved theme (JS already applied the class pre-paint).
         // Đồng bộ icon theme với lựa chọn đã lưu trong localStorage: khi prerender hoặc JS lỗi,
         // giữ giá trị mặc định là an toàn nên bỏ qua lỗi, không chặn render trang.
-        try { _isDark = await JS.InvokeAsync<string>("ptGetTheme") == "dark"; } catch { }
+        // Dùng ptIsDark để icon đúng cả khi giá trị cũ đang là 'auto' theo giờ.
+        try { _isDark = await JS.InvokeAsync<bool>("ptIsDark", "pt-theme"); } catch { }
 
         string hotline = null;
         string zalo = null;

@@ -274,10 +274,14 @@
 
     private async Task ToggleTheme()
     {
+        // 2026-10-19: toggle NHỊ PHÂN Sáng↔Tối — 1 lần bấm = đổi giao diện ngay.
+        // Trước đây gọi ptToggleTheme xoay vòng 3 chế độ (sáng→tối→tự động→sáng)
+        // trong khi nút hiển thị nhị phân (☀️/🌙): ban đêm "tự động" cũng = tối nên
+        // cứ 2 lần bấm mới thấy đổi 1 lần, user tưởng nút bị liệt.
         try
         {
-            var theme = await JS.InvokeAsync<string>("ptToggleTheme", "pt-theme-admin");
-            _isDark = theme == "dark";
+            _isDark = !_isDark;
+            await JS.InvokeVoidAsync("ptSetTheme", "pt-theme-admin", _isDark ? "dark" : "light");
         }
         catch { }
     }
@@ -387,7 +391,8 @@
         Toasts.OnShow += OnToastShow;
 
         // Dark mode: sync toggle icon with saved theme (JS already applied the class pre-paint).
-        try { _isDark = await JS.InvokeAsync<string>("ptGetTheme", "pt-theme-admin") == "dark"; } catch { }
+        // Dùng ptIsDark để icon đúng cả khi giá trị cũ đang là 'auto' theo giờ.
+        try { _isDark = await JS.InvokeAsync<bool>("ptIsDark", "pt-theme-admin"); } catch { }
         try
         {
             _user = (await AuthStateTask)?.User;
