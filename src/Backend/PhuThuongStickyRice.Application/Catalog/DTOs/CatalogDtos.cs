@@ -5,6 +5,10 @@ using Volo.Abp.Application.Dtos;
 
 namespace PhuThuongStickyRice.Application.Catalog.DTOs
 {
+    /// <summary>
+    /// Topping (món ăn kèm, vd thêm ruốc/hành phi) hiển thị ở shop: tên,
+    /// phụ phí (VNĐ) cộng vào giá món, thứ tự sắp xếp và trạng thái bật/tắt.
+    /// </summary>
     public class ToppingDto : EntityDto<Guid>
     {
         public string Name { get; set; }
@@ -16,6 +20,7 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public bool IsActive { get; set; }
     }
 
+    /// <summary>Input admin tạo/sửa topping: tên (bắt buộc), phụ phí (VNĐ, ≥ 0), thứ tự hiển thị.</summary>
     public class CreateUpdateToppingDto
     {
         [Required]
@@ -30,6 +35,7 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public bool IsActive { get; set; } = true;
     }
 
+    /// <summary>Một món trong combo: sản phẩm, giá tại thời điểm tạo combo (VNĐ) và số lượng trong gói.</summary>
     public class ComboItemDto
     {
         public Guid ProductId { get; set; }
@@ -41,6 +47,10 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public int Quantity { get; set; }
     }
 
+    /// <summary>
+    /// Gói combo (vd combo 5 phần xôi) bán ở shop: giá gói ưu đãi (VNĐ),
+    /// danh sách món trong gói và trạng thái bán.
+    /// </summary>
     public class ComboDto : EntityDto<Guid>
     {
         public string Name { get; set; }
@@ -54,6 +64,7 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public List<ComboItemDto> Items { get; set; } = new List<ComboItemDto>();
     }
 
+    /// <summary>Một món trong input tạo/sửa combo: Id sản phẩm (bắt buộc) và số lượng (≥ 1).</summary>
     public class CreateUpdateComboItemDto
     {
         [Required]
@@ -63,6 +74,7 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public int Quantity { get; set; }
     }
 
+    /// <summary>Input admin tạo/sửa combo: tên (bắt buộc), mô tả, giá gói ưu đãi (VNĐ, ≥ 0) và danh sách món.</summary>
     public class CreateUpdateComboDto
     {
         [Required]
@@ -80,6 +92,11 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public List<CreateUpdateComboItemDto> Items { get; set; } = new List<CreateUpdateComboItemDto>();
     }
 
+    /// <summary>
+    /// Yêu cầu báo giá số lượng lớn (đặt cỗ/cúng): thông tin khách, ngày tổ
+    /// chức, số lượng (mặc định 10), ngân sách, địa điểm và trạng thái xử lý
+    /// (mới/đã duyệt/đã từ chối) để admin theo dõi.
+    /// </summary>
     public class QuoteRequestDto : EntityDto<Guid>
     {
         public string CustomerName { get; set; }
@@ -109,6 +126,7 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public string DepositInfo { get; set; }
     }
 
+    /// <summary>Input khách gửi yêu cầu báo giá số lượng lớn (trang "đặt số lượng lớn").</summary>
     public class CreateQuoteRequestDto
     {
         [Required]
@@ -152,6 +170,7 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public DateTime CreatedAt { get; set; }
     }
 
+    /// <summary>Input đăng ký nhắc cúng xôi Rằm/mùng 1: tên, SĐT và loại nhắc ("Ram"/"Mung1").</summary>
     public class CreateCungReminderDto
     {
         [Required]
@@ -167,6 +186,7 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public string ReminderType { get; set; }
     }
 
+    /// <summary>Input admin đổi trạng thái xử lý của một yêu cầu báo giá.</summary>
     public class UpdateQuoteRequestStatusDto
     {
         [Required]
@@ -183,6 +203,7 @@ namespace PhuThuongStickyRice.Application.Catalog.DTOs
         public string DepositInfo { get; set; }
     }
 
+    /// <summary>Input admin lọc yêu cầu báo giá: tìm kiếm theo tên/SĐT và lọc theo trạng thái.</summary>
     public class GetQuoteRequestsInput : PagedAndSortedResultRequestDto
     {
         public string SearchTerm { get; set; }

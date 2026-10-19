@@ -4,6 +4,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Application.Reports
 {
+        /// <summary>
+        /// Lợi nhuận một ngày: doanh thu, chi phí (nguyên liệu ước tính),
+        /// lợi nhuận (doanh thu − chi phí) và số đơn hàng trong ngày (VNĐ).
+        /// </summary>
         public class ProfitDayDto
         {
             public DateTime Date { get; set; }
@@ -17,6 +21,10 @@ namespace PhuThuongStickyRice.Application.Reports
             public long Orders { get; set; }
         }
 
+        /// <summary>
+        /// Lợi nhuận theo sản phẩm: số lượng đã bán, doanh thu, chi phí
+        /// (nguyên liệu ước tính) và lợi nhuận của món (VNĐ).
+        /// </summary>
         public class ProfitProductDto
         {
             public string ProductName { get; set; }
@@ -30,6 +38,10 @@ namespace PhuThuongStickyRice.Application.Reports
             public decimal Profit { get; set; }
         }
 
+        /// <summary>
+        /// Báo cáo lợi nhuận tổng hợp (màn hình admin): tổng doanh thu, tổng
+        /// chi phí, tổng lợi nhuận (VNĐ), chi tiết theo ngày và theo sản phẩm.
+        /// </summary>
         public class ProfitReportDto
         {
             public decimal TotalRevenue { get; set; }
