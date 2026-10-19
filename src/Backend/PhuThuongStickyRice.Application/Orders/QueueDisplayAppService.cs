@@ -118,7 +118,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     QueueNumber = i + 1,
                     ShortCode = number.Length <= 3
                         ? number.ToUpperInvariant()
-                        : number.Substring(number.Length - 3).ToUpperInvariant(),
+                        : number[^3..].ToUpperInvariant(),
                     Status = order.Status == OrderStatus.Delivering ? "Ready" : "Preparing"
                 });
             }

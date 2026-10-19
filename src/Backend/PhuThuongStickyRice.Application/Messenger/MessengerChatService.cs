@@ -488,7 +488,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             var quantityMatch = QuantityRegex().Match(part);
             if (quantityMatch.Success)
             {
-                qty = Math.Max(1, Math.Min(100, int.Parse(quantityMatch.Groups[1].Value)));
+                qty = Math.Max(1, Math.Min(100, int.Parse(quantityMatch.Groups[1].Value, CultureInfo.InvariantCulture)));
                 // CA1845: dùng span-based Concat thay cho Substring — không cấp phát chuỗi trung gian.
                 part = string.Concat(
                     part.AsSpan(0, quantityMatch.Index),

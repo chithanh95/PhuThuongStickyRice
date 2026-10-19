@@ -175,6 +175,6 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
         private static string TruncateLog(string log) =>
             string.IsNullOrEmpty(log) || log.Length <= MaxLogLength
                 ? log
-                : log.Substring(log.Length - MaxLogLength);
+                : log[^MaxLogLength..];
     }
 }

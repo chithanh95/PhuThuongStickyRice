@@ -180,7 +180,7 @@ namespace PhuThuongStickyRice.Application.Shop
                 Points = 0,
                 TotalEarned = 0,
                 TotalSpent = 0,
-                ReferralCode = "PT-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant(),
+                ReferralCode = "PT-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };

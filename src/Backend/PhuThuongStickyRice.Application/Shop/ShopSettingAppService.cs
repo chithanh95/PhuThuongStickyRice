@@ -549,7 +549,7 @@ namespace PhuThuongStickyRice.Application.Shop
 
             try
             {
-                return _protector.Unprotect(stored.Substring(EncryptedPrefix.Length));
+                return _protector.Unprotect(stored[EncryptedPrefix.Length..]);
             }
             catch
             {
