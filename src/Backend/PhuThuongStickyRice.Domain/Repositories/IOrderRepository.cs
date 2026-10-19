@@ -41,6 +41,20 @@ namespace PhuThuongStickyRice.Domain.Repositories
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Materialize một query đơn hàng đã được lọc/sắp xếp sẵn ở chế độ
+        /// read-only (AsNoTracking): app service tự dựng filter trên
+        /// <see cref="IQueryable{T}"/> từ <c>GetQueryableAsync</c>,
+        /// repository chỉ tắt tracking lúc materialize. Dùng cho các màn
+        /// hình chỉ đọc rồi map sang DTO (danh sách đơn admin, nhóm đơn
+        /// trùng) để không tốn memory/CPU snapshot change-tracker cho tới
+        /// 200 entity mỗi lần tải.
+        /// </summary>
+        /// <param name="query">Query đơn hàng đã lọc/sắp xếp (kể cả Skip/Take).</param>
+        Task<List<Order>> ToListNoTrackingAsync(
+            System.Linq.IQueryable<Order> query,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Đánh dấu lượt quay may mắn của đơn đã dùng một cách nguyên tử:
         /// UPDATE ... WHERE Id = orderId AND LuckySpinUsed = false. Trả về
         /// true nếu đánh dấu thành công, false nếu lượt quay đã được dùng

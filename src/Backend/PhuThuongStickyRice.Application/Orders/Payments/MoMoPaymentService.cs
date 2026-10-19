@@ -295,7 +295,9 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
 
             // Verify the echoed create-signature: recompute it from the same
             // deterministic inputs used at create time.
-            var expectedSignature = await BuildCreateSignatureAsync(order);
+            // perf-hunt 2026-10-20: truyền options đã nạp sẵn thay vì đọc
+            // lại GetMoMoAsync() lần 2 trong BuildCreateSignatureAsync.
+            var expectedSignature = BuildCreateSignature(order, options);
             if (!SignaturesEqual(expectedSignature, callback.SimulatedSignature))
             {
                 throw new DomainException("Invalid simulated MoMo signature.");
@@ -428,9 +430,13 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 Encoding.UTF8.GetBytes(actual));
         }
 
-        private async Task<string> BuildCreateSignatureAsync(Order order)
+        /// <summary>
+        /// Dựng lại chữ ký tạo đơn để verify callback giả lập: thuần tính
+        /// toán đồng bộ (không còn đọc cấu hình — caller truyền options đã
+        /// nạp sẵn, tránh 1 lần GetMoMoAsync() thừa mỗi callback).
+        /// </summary>
+        private static string BuildCreateSignature(Order order, MoMoOptions options)
         {
-            var options = await _paymentConfig.GetMoMoAsync();
             var requestId = order.Id.ToString("N");
             var amount = (long)order.TotalAmount.Amount;
             var orderInfo = $"Thanh toan don hang {order.OrderNumber} - Xoi Phu Thuong";

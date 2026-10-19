@@ -1276,7 +1276,11 @@ namespace PhuThuongStickyRice.Application.Orders
             query = await ApplyOrderListFiltersAsync(query, input);
 
             var totalCount = await _asyncExecuter.LongCountAsync(query);
-            var items = await _asyncExecuter.ToListAsync(query.Skip(input.SkipCount).Take(input.MaxResultCount));
+            // perf-hunt 2026-10-20: màn admin chỉ đọc rồi map sang DTO —
+            // materialize ở chế độ AsNoTracking qua repository để không track
+            // tới 200 entity Order (kèm owned Money) mỗi lần tải danh sách.
+            var items = await _orders.ToListNoTrackingAsync(
+                query.Skip(input.SkipCount).Take(input.MaxResultCount));
 
             var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
             await FillShipperNamesAsync(dtos);
@@ -3009,7 +3013,11 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var cutoff = DateTime.UtcNow.AddMinutes(-DuplicateOrderWindowMinutes);
             var orderQueryable = await _orders.GetQueryableAsync();
-            var candidates = await _asyncExecuter.ToListAsync(
+            // perf-hunt 2026-10-20: panel review chỉ đọc rồi map sang DTO —
+            // AsNoTracking để không track entity; KHÔNG Take(): nhóm trùng
+            // phát hiện bằng cách gom toàn bộ ứng viên theo SĐT, cắt dòng có
+            // thể chẻ đôi 1 nhóm và làm mất cảnh báo trùng.
+            var candidates = await _orders.ToListNoTrackingAsync(
                 orderQueryable
                     .Where(x => (x.Status == OrderStatus.Pending || x.Status == OrderStatus.Confirmed)
                         && x.CreatedAt >= cutoff)

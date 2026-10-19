@@ -111,6 +111,17 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         }
 
         /// <summary>
+        /// Materialize query đơn hàng đã lọc/sắp xếp sẵn ở chế độ read-only
+        /// (AsNoTracking): app service dựng filter, repository chỉ tắt
+        /// tracking lúc materialize. Dùng cho các màn chỉ đọc rồi map DTO.
+        /// </summary>
+        public async Task<List<Order>> ToListNoTrackingAsync(
+            System.Linq.IQueryable<Order> query, CancellationToken cancellationToken = default)
+        {
+            return await AsyncExecuter.ToListAsync(query.AsNoTracking(), cancellationToken);
+        }
+
+        /// <summary>
         /// Đánh dấu lượt quay may mắn nguyên tử bằng ExecuteUpdateAsync
         /// (1 câu UPDATE ... WHERE Id = orderId AND LuckySpinUsed = false).
         /// Chạy trong DbContext/UoW hiện tại nên rollback cùng nghiệp vụ khi
