@@ -16,7 +16,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// daily payment-channel reconciliation and Excel export.
     /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
-    [Authorize(Roles = "Admin")]
+    // Bug-hunt 2026-10-19: class-level mở cho Admin,Cashier để
+    // MarkCashCollected (thu ngân "Đã thu tiền") qua được — ASP.NET Core gộp
+    // nhiều [Authorize] bằng AND nên [Authorize(Roles="Admin")] ở class +
+    // [Authorize(Roles="Admin,Cashier")] ở method vẫn chặn Cashier (403).
+    // 7 báo cáo bên dưới giữ Admin-only bằng attribute riêng từng method.
+    [Authorize(Roles = "Admin,Cashier")]
     [Route("api/admin/orders")]
     [ApiController]
     public class AdminOrdersController : ControllerBase
@@ -42,6 +47,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// Wave 6c (item 31): per-payment-channel reconciliation of one
         /// Vietnam day. Omits <c>date</c> for today.
         /// </summary>
+        [Authorize(Roles = "Admin")]
         [HttpGet("reconciliation")]
         public async Task<ActionResult> GetReconciliation(
             [FromQuery] DateTime? date,
@@ -55,6 +61,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// (search / status / shipper / date range / cash-collected / VIP-only)
         /// as an .xlsx file.
         /// </summary>
+        [Authorize(Roles = "Admin")]
         [HttpGet("export")]
         public async Task<ActionResult> Export(
             [FromQuery] string searchTerm = null,
@@ -92,6 +99,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// Revenue report for a Vietnam date range: sheet 1 = daily summary
         /// (orders, revenue, average order value), sheet 2 = order details.
         /// </summary>
+        [Authorize(Roles = "Admin")]
         [HttpGet("export-revenue")]
         public async Task<ActionResult> ExportRevenue(
             [FromQuery] DateTime? fromDate = null,
@@ -109,6 +117,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// Revenue forecast: per-weekday moving averages over recent
         /// history, next 7 days detail + next 30 days total.
         /// </summary>
+        [Authorize(Roles = "Admin")]
         [HttpGet("revenue-forecast")]
         public async Task<ActionResult> GetRevenueForecast(
             CancellationToken cancellationToken = default)
@@ -120,6 +129,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// Hourly best-sellers report for one Vietnam-local day
         /// (heatmap source: hours 6h–22h × products).
         /// </summary>
+        [Authorize(Roles = "Admin")]
         [HttpGet("hourly-sales")]
         public async Task<ActionResult> GetHourlySales(
             [FromQuery] DateTime? date,
@@ -134,6 +144,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// value, top 5 products. The compare view calls this once per
         /// period.
         /// </summary>
+        [Authorize(Roles = "Admin")]
         [HttpGet("revenue-summary")]
         public async Task<ActionResult> GetRevenueSummary(
             [FromQuery] DateTime? from,
@@ -148,6 +159,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// placed within the last 30 minutes, still Pending/Confirmed)
         /// for the admin review panel. Never merged automatically.
         /// </summary>
+        [Authorize(Roles = "Admin")]
         [HttpGet("duplicates")]
         public async Task<ActionResult> GetDuplicates(
             CancellationToken cancellationToken = default)

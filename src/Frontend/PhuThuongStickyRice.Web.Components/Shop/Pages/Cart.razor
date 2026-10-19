@@ -250,6 +250,9 @@ else
     private const int MaxQuantityPerLine = 99;
     private string _phone;
 
+    // Bug-hunt 2026-10-19: guard cho ReloadSuggestionsAsync fire-and-forget.
+    private bool _disposed;
+
     // Snapshot of the cart's product-id set the suggestions were built from;
     // OnCartChanged only refetches when this changes (quantity changes don't).
     private string _lastSuggestionCartKey = string.Empty;
@@ -317,6 +320,10 @@ else
     private async Task ReloadSuggestionsAsync()
     {
         await LoadSuggestionsAsync();
+        // Bug-hunt 2026-10-19: fire-and-forget — khách rời trang /cart trong
+        // lúc API đang bay thì InvokeAsync sau Dispose sẽ ném exception
+        // (cùng pattern _disposed của Toast.razor / Faq.razor / HangCho.razor).
+        if (_disposed) return;
         await InvokeAsync(StateHasChanged);
     }
 
@@ -422,7 +429,19 @@ else
     /// </summary>
     private async Task MergeSharedCartAsync()
     {
-        var query = ParseQuery(Navigation.Uri);
+        // Bug-hunt 2026-10-19: ParseQuery dùng Uri.UnescapeDataString —
+        // URL chứa % sai định dạng (vd /cart?share=%zz) sẽ ném exception;
+        // bọc try để trang /cart không crash với link hỏng.
+        Dictionary<string, string> query;
+        try
+        {
+            query = ParseQuery(Navigation.Uri);
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
         if (!query.TryGetValue("share", out var share) || string.IsNullOrWhiteSpace(share))
         {
             return;
@@ -544,6 +563,7 @@ else
 
     public void Dispose()
     {
+        _disposed = true;
         CartState.OnChange -= OnCartChanged;
         AppI18n.OnChange -= OnLangChanged;
     }

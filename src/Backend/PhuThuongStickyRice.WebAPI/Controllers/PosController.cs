@@ -22,7 +22,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [Produces("application/json")]
         [Route("api/[controller]")]
         [ApiController]
-        [Authorize(Roles = "Admin")]
+        // Bug-hunt 2026-10-19: PosAppService (Item 127) là "counter POS for
+        // Admin/Cashier" — controller để Admin-only thì thu ngân gọi
+        // POST api/pos/orders bị 403 ngay ở cổng, không bao giờ tới service.
+        [Authorize(Roles = "Admin,Cashier")]
         public class PosController : ControllerBase
         {
             private readonly IPosAppService _pos;
