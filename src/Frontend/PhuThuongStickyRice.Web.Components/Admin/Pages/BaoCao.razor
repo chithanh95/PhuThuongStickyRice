@@ -280,13 +280,11 @@
         SetThisMonth();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await LoadCancelReport();
-        }
-    }
+    // perf-hunt 2026-10-20: bỏ OnAfterRenderAsync(firstRender) gọi
+    // LoadCancelReport() lần 2 — SetThisMonth() ở trên đã load đúng 1 lần
+    // lúc init (các nút "Tháng này"/"7 ngày" cũng gọi lại khi đổi khoảng
+    // ngày). Trước đây mỗi lần mở trang bắn 2 request HTTP giống hệt nhau
+    // tới GetCancelReasonReportAsync cùng khoảng ngày.
 
     /// <summary>
     /// Item 233: tải báo cáo hủy đơn theo khoảng thời gian đang chọn.
