@@ -14,6 +14,7 @@ using PhuThuongStickyRice.Application.Orders;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
+    // codequality-team 2026-10-20 run-0245 Agent4-Docs
     /// <summary>
     /// Hợp đồng dịch vụ hoàn tiền (admin): ghi nhận yêu cầu hoàn tiền,
     /// xác nhận đã chi tiền, và báo cáo các đơn có yêu cầu hoàn hoặc đã
@@ -21,13 +22,13 @@ namespace PhuThuongStickyRice.Application.Orders
     /// </summary>
     public interface IRefundAppService : IApplicationService
     {
-        /// <summary>Admin: orders with a refund request or a completed refund.</summary>
+        /// <summary>Admin: các đơn có yêu cầu hoàn tiền hoặc đã hoàn xong.</summary>
         Task<List<RefundReportRowDto>> GetReportAsync();
 
-        /// <summary>Admin: records a refund request (money movement stays manual).</summary>
+        /// <summary>Admin: ghi nhận yêu cầu hoàn tiền (tiền vẫn chi tay bên ngoài hệ thống).</summary>
         Task RequestRefundAsync(Guid orderId, RequestRefundInput input);
 
-        /// <summary>Admin: marks the refund as paid out.</summary>
+        /// <summary>Admin: xác nhận đã chi tiền hoàn cho khách.</summary>
         Task ConfirmRefundAsync(Guid orderId);
     }
 

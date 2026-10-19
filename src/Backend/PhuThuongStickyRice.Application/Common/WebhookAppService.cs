@@ -17,12 +17,20 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Common
 {
+    // codequality-team 2026-10-20 run-0245 Agent4-Docs
     /// <summary>
-    /// Dispatches outbound webhooks (item 110). Fire-and-log: failures are
-    /// recorded in <see cref="WebhookDelivery"/> and never break the order flow.
+    /// Item 110: gửi webhook ra hệ thống ngoài (Zalo/tele/bot bên thứ 3).
+    /// Fire-and-log: lỗi chỉ ghi vào <see cref="WebhookDelivery"/>, không bao
+    /// giờ làm gãy luồng tạo đơn.
     /// </summary>
     public interface IWebhookDispatcher : ITransientDependency
     {
+        /// <summary>
+        /// Bắn event tới mọi endpoint đang bật có đăng ký <paramref name="eventName"/>.
+        /// Không throw khi endpoint lỗi — kết quả ghi vào lịch sử delivery.
+        /// </summary>
+        /// <param name="eventName">Tên event (ví dụ OrderCreated).</param>
+        /// <param name="payload">Dữ liệu kèm theo, serialize thành JSON trong body.</param>
         Task DispatchAsync(string eventName, object payload);
     }
 

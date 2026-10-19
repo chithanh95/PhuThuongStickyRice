@@ -14,6 +14,12 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Common
 {
+    // codequality-team 2026-10-20 run-0245 Agent4-Docs
+    /// <summary>
+    /// Hợp đồng dịch vụ link rút gọn <c>/s/abc123</c>: admin xem/xóa link,
+    /// nút "Link ngắn" ở màn xem nhanh sản phẩm tạo link cho khách chia sẻ,
+    /// redirect public giải mã thành URL đích. Mỗi URL chỉ có một mã duy nhất.
+    /// </summary>
     public interface IShortLinkAppService : IApplicationService
     {
         /// <summary>
@@ -85,6 +91,12 @@ namespace PhuThuongStickyRice.Application.Common
         /// <summary>Tiền tố key cache cho <see cref="ResolveAsync"/>.</summary>
         private const string ResolveCacheKeyPrefix = "shortlink:resolve:";
 
+        /// <summary>
+        /// Khởi tạo service quản lý link rút gọn.
+        /// </summary>
+        /// <param name="links">Repository lưu trữ link rút gọn.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn LINQ bất đồng bộ.</param>
+        /// <param name="memoryCache">Cache kết quả redirect public (chỉ cache HIT).</param>
         public ShortLinkAppService(
             IRepository<ShortLink, Guid> links,
             IAsyncQueryableExecuter asyncExecuter,
@@ -113,9 +125,9 @@ namespace PhuThuongStickyRice.Application.Common
         }
 
         /// <summary>
-        /// Public (called from the product quick-view "🔗 Link ngắn" button):
-        /// returns an existing short link for the URL when one exists, else
-        /// creates a fresh 6-char code. Rate-limited at the controller.
+        /// Public (gọi từ nút "🔗 Link ngắn" ở màn xem nhanh sản phẩm):
+        /// trả về link ngắn đã có nếu URL từng được rút gọn, nếu chưa thì
+        /// sinh mã 6 ký tự mới. Chống spam bằng rate-limit ở controller.
         /// </summary>
         [AllowAnonymous]
         public virtual async Task<ShortLinkDto> CreateAsync(CreateShortLinkDto dto)

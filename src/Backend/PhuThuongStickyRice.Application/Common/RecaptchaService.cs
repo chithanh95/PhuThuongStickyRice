@@ -8,15 +8,17 @@ using Volo.Abp.DependencyInjection;
 
 namespace PhuThuongStickyRice.Application.Common
 {
+    // codequality-team 2026-10-20 run-0245 Agent4-Docs
     /// <summary>
-    /// Item 96: server-side reCAPTCHA v3 verification.
-    /// Disabled (returns true) when no secret key is configured.
+    /// Item 96: xác minh reCAPTCHA v3 ở phía server (chống bot spam đơn).
+    /// Khi admin chưa cấu hình secret key thì tính năng bị tắt và luôn pass
+    /// (trả true) để đơn hàng vẫn chạy được.
     /// </summary>
     public interface IRecaptchaService : ITransientDependency
     {
         /// <summary>
-        /// True when the token verifies with a score of at least 0.5.
-        /// Returns true when reCAPTCHA is not configured (disabled).
+        /// Xác minh token reCAPTCHA: true khi đạt score tối thiểu 0.5
+        /// (ngưỡng Google khuyến nghị), hoặc khi reCAPTCHA chưa được cấu hình.
         /// </summary>
         Task<bool> VerifyAsync(string token, string remoteIp = null);
     }
