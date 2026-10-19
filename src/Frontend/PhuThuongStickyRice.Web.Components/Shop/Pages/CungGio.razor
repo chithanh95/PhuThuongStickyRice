@@ -34,42 +34,50 @@ else
         <div class="card-body">
             <div class="form-group">
                 <label for="cg-name">Họ tên *</label>
-                <input id="cg-name" class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
+                <input id="cg-name" class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A"
+                       aria-invalid="@(!string.IsNullOrEmpty(_nameError) ? "true" : null)"
+                       aria-describedby="@(!string.IsNullOrEmpty(_nameError) ? "cg-name-error" : null)" />
                 @if (!string.IsNullOrEmpty(_nameError))
                 {
-                    <small class="text-danger">@_nameError</small>
+                    <small class="text-danger" id="cg-name-error" role="alert">@_nameError</small>
                 }
             </div>
             <div class="form-group">
                 <label for="cg-phone">Số điện thoại *</label>
-                <input id="cg-phone" inputmode="tel" class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
+                <input id="cg-phone" inputmode="tel" class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567"
+                       aria-invalid="@(!string.IsNullOrEmpty(_phoneError) ? "true" : null)"
+                       aria-describedby="@(!string.IsNullOrEmpty(_phoneError) ? "cg-phone-error" : null)" />
                 @if (!string.IsNullOrEmpty(_phoneError))
                 {
-                    <small class="text-danger">@_phoneError</small>
+                    <small class="text-danger" id="cg-phone-error" role="alert">@_phoneError</small>
                 }
             </div>
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label for="cg-date">Ngày giỗ *</label>
                     <input id="cg-date" type="date" class="form-control @FieldClass(_dateError)" @bind="_model.EventDate"
-                           min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                           aria-invalid="@(!string.IsNullOrEmpty(_dateError) ? "true" : null)"
+                           aria-describedby="@(!string.IsNullOrEmpty(_dateError) ? "cg-date-error" : null)" />
                     @if (!string.IsNullOrEmpty(_dateError))
                     {
-                        <small class="text-danger">@_dateError</small>
+                        <small class="text-danger" id="cg-date-error" role="alert">@_dateError</small>
                     }
                 </div>
                 <div class="form-group col-md-6">
                     <label for="cg-qty">Số mâm *</label>
-                    <input id="cg-qty" type="number" min="1" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity" />
+                    <input id="cg-qty" type="number" min="1" class="form-control @FieldClass(_qtyError)" @bind="_model.Quantity"
+                       aria-invalid="@(!string.IsNullOrEmpty(_qtyError) ? "true" : null)"
+                       aria-describedby="@(!string.IsNullOrEmpty(_qtyError) ? "cg-qty-error" : null)" />
                     @if (!string.IsNullOrEmpty(_qtyError))
                     {
-                        <small class="text-danger">@_qtyError</small>
+                        <small class="text-danger" id="cg-qty-error" role="alert">@_qtyError</small>
                     }
                 </div>
             </div>
             <div class="form-group">
                 <label id="cg-loaimam">Loại mâm *</label>
-                <div role="group" aria-labelledby="cg-loaimam">
+                <div role="radiogroup" aria-labelledby="cg-loaimam">
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" id="mam-chay" name="loaimam"
                                checked="@(_loaiMam == "Chay")" @onchange="@(() => _loaiMam = "Chay")" />

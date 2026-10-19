@@ -1065,3 +1065,26 @@ html.dark .qv-sheet-close.qv-sheet-close:focus-visible {
 }
 
 /* ===== END ===== */
+
+/* ===== UIUX-1925 A4: vòng focus brand cho accordion Hỏi đáp /nhuong-quyen ===== */
+
+/* Fix — WCAG 2.4.7 (Focus Visible): nút accordion `.nq-faq-q`
+   (NhuongQuyen.razor, 7 câu hỏi đáp nhượng quyền) chỉ có :hover, khi tab
+   bằng bàn phím phải dùng vòng focus xanh dương mặc định của Bootstrap
+   (box-shadow rgba(0,123,255,.25)) — lệch tông nâu đỏ brand (#763434) và
+   gần như chìm trên nền card-header tối #2b2118 ở dark mode, người tab
+   khó biết đang chọn câu hỏi nào. Vẽ vòng outline 2px #763434 khi
+   :focus-visible (light), #f0d9b5 (dark, cùng màu chữ `.nq-faq-q` trong
+   dark mode nên đủ tương phản trên nền tối). Lặp class (0,2,0) để thắng
+   `.btn:focus { outline: 0 }` của Bootstrap. Chuột/chạm không bị ảnh
+   hưởng — hover giữ nguyên. */
+.nq-faq-q.nq-faq-q:focus-visible {
+    outline: 2px solid #763434;
+    outline-offset: 2px;
+    box-shadow: none;
+}
+html.dark .nq-faq-q.nq-faq-q:focus-visible {
+    outline-color: #f0d9b5;
+}
+
+/* ===== END UIUX-1925 A4 ===== */

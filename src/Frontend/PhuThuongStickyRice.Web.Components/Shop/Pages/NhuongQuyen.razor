@@ -120,13 +120,15 @@
                     <div class="card-header p-2">
                         <button class="btn btn-link btn-block text-left p-1 nq-faq-q" type="button"
                                 @onclick="() => _nqOpenIndex = open ? -1 : faq.Key"
-                                aria-expanded="@open">
+                                id="nq-faq-q-@faq.Key"
+                                aria-expanded="@open" aria-controls="nq-faq-a-@faq.Key">
                             <strong>@(open ? "▾" : "▸") @faq.Value.Question</strong>
                         </button>
                     </div>
                     @if (open)
                     {
-                        <div class="card-body nq-faq-a">@faq.Value.Answer</div>
+                        <div class="card-body nq-faq-a" id="nq-faq-a-@faq.Key"
+                             role="region" aria-labelledby="nq-faq-q-@faq.Key">@faq.Value.Answer</div>
                     }
                 </div>
             }
@@ -142,7 +144,7 @@
             <div class="col-md-7">
                 @if (_submitted)
                 {
-                    <div class="alert alert-success">
+                    <div class="alert alert-success" role="status">
                         <h4>Cảm ơn bạn đã quan tâm!</h4>
                         <p class="mb-0">
                             Xôi Phú Thượng đã nhận được đăng ký của bạn và sẽ liên hệ qua số
@@ -154,59 +156,71 @@
                 {
                     @if (!string.IsNullOrEmpty(_error))
                     {
-                        <div class="alert alert-danger">@_error</div>
+                        <div class="alert alert-danger" role="alert">@_error</div>
                     }
                     <div class="card nq-form-card">
                         <div class="card-body">
                             <div class="form-group">
                                 <label for="nq-fullname">Họ tên *</label>
-                                <input id="nq-fullname" class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A" />
-                                @if (!string.IsNullOrEmpty(_nameError)) { <small class="text-danger">@_nameError</small> }
+                                <input id="nq-fullname" class="form-control @FieldClass(_nameError)" @bind="_model.CustomerName" placeholder="Nguyễn Văn A"
+                                           aria-invalid="@(!string.IsNullOrEmpty(_nameError) ? "true" : null)"
+                                           aria-describedby="@(!string.IsNullOrEmpty(_nameError) ? "nq-fullname-error" : null)" />
+                                @if (!string.IsNullOrEmpty(_nameError)) { <small class="text-danger" id="nq-fullname-error" role="alert">@_nameError</small> }
                             </div>
                             <div class="form-group">
                                 <label for="nq-phone">Số điện thoại *</label>
-                                <input id="nq-phone" type="tel" inputmode="tel" class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567" />
-                                @if (!string.IsNullOrEmpty(_phoneError)) { <small class="text-danger">@_phoneError</small> }
+                                <input id="nq-phone" type="tel" inputmode="tel" class="form-control @FieldClass(_phoneError)" @bind="_model.CustomerPhone" placeholder="0901234567"
+                                           aria-invalid="@(!string.IsNullOrEmpty(_phoneError) ? "true" : null)"
+                                           aria-describedby="@(!string.IsNullOrEmpty(_phoneError) ? "nq-phone-error" : null)" />
+                                @if (!string.IsNullOrEmpty(_phoneError)) { <small class="text-danger" id="nq-phone-error" role="alert">@_phoneError</small> }
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-md-6">
                                     <label for="nq-province">Tỉnh / Thành phố dự kiến mở *</label>
-                                    <input id="nq-province" class="form-control @FieldClass(_provinceError)" @bind="_model.EventLocation" placeholder="VD: Hà Nội" />
-                                    @if (!string.IsNullOrEmpty(_provinceError)) { <small class="text-danger">@_provinceError</small> }
+                                    <input id="nq-province" class="form-control @FieldClass(_provinceError)" @bind="_model.EventLocation" placeholder="VD: Hà Nội"
+                                               aria-invalid="@(!string.IsNullOrEmpty(_provinceError) ? "true" : null)"
+                                               aria-describedby="@(!string.IsNullOrEmpty(_provinceError) ? "nq-province-error" : null)" />
+                                    @if (!string.IsNullOrEmpty(_provinceError)) { <small class="text-danger" id="nq-province-error" role="alert">@_provinceError</small> }
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label for="nq-budget">Vốn dự kiến *</label>
-                                    <select id="nq-budget" class="form-control @FieldClass(_budgetError)" @bind="_model.Budget">
+                                    <select id="nq-budget" class="form-control @FieldClass(_budgetError)" @bind="_model.Budget"
+                                            aria-invalid="@(!string.IsNullOrEmpty(_budgetError) ? "true" : null)"
+                                            aria-describedby="@(!string.IsNullOrEmpty(_budgetError) ? "nq-budget-error" : null)">
                                         <option value="">— Chọn mức vốn —</option>
                                         <option>Dưới 100 triệu</option>
                                         <option>100 – 200 triệu</option>
                                         <option>200 – 500 triệu</option>
                                         <option>Trên 500 triệu</option>
                                     </select>
-                                    @if (!string.IsNullOrEmpty(_budgetError)) { <small class="text-danger">@_budgetError</small> }
+                                    @if (!string.IsNullOrEmpty(_budgetError)) { <small class="text-danger" id="nq-budget-error" role="alert">@_budgetError</small> }
                                 </div>
                             </div>
                             @* NQ3: câu hỏi sàng lọc trước khi tư vấn. *@
                             <div class="form-row">
                                 <div class="form-group col-md-6">
                                     <label for="nq-premises">Tình trạng mặt bằng *</label>
-                                    <select id="nq-premises" class="form-control @FieldClass(_premisesError)" @bind="_premises">
+                                    <select id="nq-premises" class="form-control @FieldClass(_premisesError)" @bind="_premises"
+                                                aria-invalid="@(!string.IsNullOrEmpty(_premisesError) ? "true" : null)"
+                                                aria-describedby="@(!string.IsNullOrEmpty(_premisesError) ? "nq-premises-error" : null)">
                                         <option value="">— Chọn tình trạng —</option>
                                         <option>Đã có mặt bằng</option>
                                         <option>Đang tìm mặt bằng</option>
                                         <option>Chưa có mặt bằng</option>
                                     </select>
-                                    @if (!string.IsNullOrEmpty(_premisesError)) { <small class="text-danger">@_premisesError</small> }
+                                    @if (!string.IsNullOrEmpty(_premisesError)) { <small class="text-danger" id="nq-premises-error" role="alert">@_premisesError</small> }
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label for="nq-experience">Kinh nghiệm F&B *</label>
-                                    <select id="nq-experience" class="form-control @FieldClass(_experienceError)" @bind="_experience">
+                                    <select id="nq-experience" class="form-control @FieldClass(_experienceError)" @bind="_experience"
+                                                aria-invalid="@(!string.IsNullOrEmpty(_experienceError) ? "true" : null)"
+                                                aria-describedby="@(!string.IsNullOrEmpty(_experienceError) ? "nq-experience-error" : null)">
                                         <option value="">— Chọn mức kinh nghiệm —</option>
                                         <option>Đang kinh doanh ăn uống</option>
                                         <option>Đã từng kinh doanh ăn uống</option>
                                         <option>Chưa có kinh nghiệm</option>
                                     </select>
-                                    @if (!string.IsNullOrEmpty(_experienceError)) { <small class="text-danger">@_experienceError</small> }
+                                    @if (!string.IsNullOrEmpty(_experienceError)) { <small class="text-danger" id="nq-experience-error" role="alert">@_experienceError</small> }
                                 </div>
                             </div>
                             <div class="form-group">
