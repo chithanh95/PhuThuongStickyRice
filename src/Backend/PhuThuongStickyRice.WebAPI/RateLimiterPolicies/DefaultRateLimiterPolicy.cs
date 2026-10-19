@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿#nullable enable
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Threading;
@@ -18,7 +19,7 @@ namespace PhuThuongStickyRice.WebAPI.RateLimiterPolicies
         public RateLimitPartition<string> GetPartition(HttpContext httpContext)
         {
             // same policy name and same partition key => will use the same rate limiter instance
-            string partitionKey = null;
+            string? partitionKey;
 
             if (httpContext.User.Identity?.IsAuthenticated == true)
             {

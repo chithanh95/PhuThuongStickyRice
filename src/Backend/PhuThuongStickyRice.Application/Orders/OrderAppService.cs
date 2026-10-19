@@ -96,6 +96,9 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Admin: customers aggregated by phone number (paginated).</summary>
         Task<List<CustomerDto>> GetCustomersAsync(string searchTerm, int skip = 0, int take = 50);
 
+        /// <summary>Item 131: khách quá N ngày không có đơn (để winback).</summary>
+        Task<List<CustomerDto>> GetInactiveCustomersAsync(int days, int take = 50);
+
         /// <summary>
         /// Public: last order info for a phone number (name + address only),
         /// used to auto-fill the checkout form.
@@ -1860,8 +1863,28 @@ namespace PhuThuongStickyRice.Application.Orders
             return customers;
         }
 
-        /// <summary>
-        /// Item 142 (Admin): finds groups of possibly-duplicate orders —
+        public virtual async Task<List<CustomerDto>> GetInactiveCustomersAsync(int days, int take = 50)
+        {
+            var cutoff = DateTime.UtcNow.AddDays(-Math.Max(1, days));
+            var orderQueryable = await _orders.GetQueryableAsync();
+
+            var customers = await _asyncExecuter.ToListAsync(
+                orderQueryable.Where(x => x.Status != OrderStatus.Cancelled)
+                    .GroupBy(x => x.CustomerPhone)
+                    .Select(g => new CustomerDto
+                    {
+                        CustomerPhone = g.Key,
+                        CustomerName = g.Max(x => x.CustomerName),
+                        OrderCount = g.LongCount(),
+                        TotalSpent = g.Sum(x => x.TotalAmount.Amount),
+                        LastOrderAt = g.Max(x => x.CreatedAt)
+                    })
+                    .Where(x => x.LastOrderAt < cutoff)
+                    .OrderBy(x => x.LastOrderAt)
+                    .Take(Math.Clamp(take, 1, 200)));
+
+            return customers;
+        }
         /// same phone (tolerant match), placed within the last 30 minutes,
         /// still Pending or Confirmed. The shop never merges automatically;
         /// this list only feeds the admin review panel.

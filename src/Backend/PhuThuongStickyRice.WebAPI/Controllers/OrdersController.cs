@@ -133,6 +133,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(customers);
         }
 
+        /// <summary>
+        /// Item 131: khách quá N ngày không có đơn (để winback).
+        /// </summary>
+        [Authorize(Roles = "Admin,Cashier")]
+        [HttpGet("customers/inactive")]
+        public async Task<ActionResult> GetInactiveCustomers(
+            [FromQuery] int days = 21,
+            [FromQuery] int take = 50,
+            CancellationToken cancellationToken = default)
+        {
+            var customers = await _orderAppService.GetInactiveCustomersAsync(days, take);
+            return Ok(customers);
+        }
+
         [Authorize(Roles = "Admin,Cashier")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult> GetById(Guid id, CancellationToken cancellationToken = default)

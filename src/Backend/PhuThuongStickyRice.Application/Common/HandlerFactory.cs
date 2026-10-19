@@ -54,7 +54,7 @@ namespace PhuThuongStickyRice.Application
             {
                 var parameterType = parameterInfo.ParameterType;
 
-                if (Utils.IsHandlerInterface(parameterType))
+                if (HandlerTypeInspector.IsHandlerInterface(parameterType))
                 {
                     return current;
                 }

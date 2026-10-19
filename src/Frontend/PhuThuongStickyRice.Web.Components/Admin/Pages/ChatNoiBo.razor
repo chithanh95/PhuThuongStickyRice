@@ -135,7 +135,7 @@
     private string _draft;
     private Guid _myId;
     private List<StaffUserModel> _staff = new();
-    private List<StaffChatMsg> _messages = new();
+    private List<StaffChatMessage> _messages = new();
     private ElementReference _chatBox;
     private System.Threading.Timer _timer;
 
@@ -182,7 +182,7 @@
         {
             var list = await AuthService.GetStaffChatAsync();
             var prevCount = _messages.Count;
-            _messages = list ?? new List<StaffChatMsg>();
+            _messages = list ?? new List<StaffChatMessage>();
             if (_messages.Count > prevCount)
                 await ScrollToBottomAsync();
         }

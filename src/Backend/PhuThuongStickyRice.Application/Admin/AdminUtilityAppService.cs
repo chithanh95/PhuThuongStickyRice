@@ -142,7 +142,7 @@ namespace PhuThuongStickyRice.Application.Admin
             var upcoming = stats.UpcomingPreOrders ?? new List<OrderDto>();
             if (upcoming.Count > 0)
             {
-                var next = upcoming.OrderBy(o => o.ScheduledFor).First();
+                var next = upcoming.MinBy(o => o.ScheduledFor);
                 notifications.Add(new NotificationDto
                 {
                     Id = "upcoming-preorder",

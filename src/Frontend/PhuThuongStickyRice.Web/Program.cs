@@ -71,6 +71,14 @@ namespace PhuThuongStickyRice.Web
             });
             builder.Services.AddScoped<CartState>();
 
+            // Item 137: cart sync for logged-in users.
+            builder.Services.AddHttpClient<CartSyncService, CartSyncService>(client =>
+            {
+                client.BaseAddress = apiBaseUri;
+                client.Timeout = new TimeSpan(0, 0, 30);
+                client.DefaultRequestHeaders.Clear();
+            });
+
             // Admin: orders + dashboard (authenticated).
             builder.Services.AddHttpClient<OrderService, OrderService>(client =>
             {

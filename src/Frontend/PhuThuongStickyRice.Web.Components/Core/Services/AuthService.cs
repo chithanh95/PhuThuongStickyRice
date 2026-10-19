@@ -99,11 +99,11 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         }
 
         /// <summary>Staff team chat: recent messages (oldest first).</summary>
-        public async Task<List<StaffChatMsg>> GetStaffChatAsync()
+        public async Task<List<StaffChatMessage>> GetStaffChatAsync()
         {
             await SetBearerToken();
-            return await _httpClient.GetFromJsonAsync<List<StaffChatMsg>>("api/staff-chat")
-                ?? new List<StaffChatMsg>();
+            return await _httpClient.GetFromJsonAsync<List<StaffChatMessage>>("api/staff-chat")
+                ?? new List<StaffChatMessage>();
         }
 
         /// <summary>Staff team chat: send a message.</summary>
@@ -197,7 +197,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         public string PhoneNumber { get; set; }
     }
 
-    public class StaffChatMsg
+    public class StaffChatMessage
     {
         public Guid Id { get; set; }
         public Guid SenderId { get; set; }

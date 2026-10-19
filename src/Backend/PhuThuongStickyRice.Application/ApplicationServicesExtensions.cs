@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
 
                 var handlerInterfaces = type.GetInterfaces()
-                   .Where(Utils.IsHandlerInterface)
+                   .Where(HandlerTypeInspector.IsHandlerInterface)
                    .ToList();
 
                 if (!handlerInterfaces.Any())

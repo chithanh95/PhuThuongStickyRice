@@ -2222,3 +2222,13 @@ html.dark .sg-voice-btn { background: #262019; color: #f0e8d8; }
 
 html.dark .sg-intro-img img { border-color: #262019; }
 html.dark .sg-dish-card { border-color: #3d3325; }
+
+/* uiux-dark-2026-10-19 (Agent 2) — 2 lỗi còn sót:
+   - Badge chất lượng dưới hero (#fff lọt trên nền tối)
+   - Nút × modal: hover về #333 tàng hình trên nền tối */
+html.dark .sg-qbadge {
+    background: #2c231a;
+    border-color: var(--sg-line);
+    color: #d8c8a8;
+}
+html.dark .sg-modal-close:hover { color: #fff; }

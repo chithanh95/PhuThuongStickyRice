@@ -496,3 +496,21 @@ html.dark input[type="time"]::-webkit-calendar-picker-indicator,
 html.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     filter: invert(.75);
 }
+
+/* ============================================================
+   uiux-dark-2026-10-19 (Agent 2) — Shop mobile dark-mode bổ sung:
+   nút "−" stepper trắng trên nền tối + chữ mờ #8a7a63 trên
+   hàng sản phẩm mobile (.shop-row-item đã nền tối #241d17).
+   ============================================================ */
+/* Nút "−" của stepper mobile: nền trắng lọt trên card tối */
+html.dark .shop-row-stepper button {
+    background: #2e2620;
+    border-color: #7a6fbe;
+    color: #b3a8e8;
+}
+/* Mô tả/meta/giá gạch 12px màu #8a7a63 mờ trên nền tối → sáng lên */
+html.dark .shop-row-desc,
+html.dark .shop-row-meta,
+html.dark .shop-row-price small {
+    color: #b8a88f;
+}

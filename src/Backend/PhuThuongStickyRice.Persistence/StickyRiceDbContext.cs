@@ -90,6 +90,8 @@ namespace PhuThuongStickyRice.Persistence
 
         public DbSet<StaffChatMessage> StaffChatMessages { get; set; }
 
+        public DbSet<ShoppingCart> ShoppingCarts { get; set; }
+
         public DbSet<OffPeakPromo> OffPeakPromos { get; set; }
 
         public DbSet<CheckInStreak> CheckInStreaks { get; set; }

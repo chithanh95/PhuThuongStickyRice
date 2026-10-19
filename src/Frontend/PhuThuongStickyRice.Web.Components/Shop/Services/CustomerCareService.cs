@@ -39,6 +39,21 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadFromJsonAsync<BirthdayGiftResultModel>();
         }
 
+        /// <summary>
+        /// Item 132: tạo voucher sinh nhật hàng loạt cho khách có sinh nhật trong 7 ngày tới.
+        /// </summary>
+        public async Task<BirthdayVoucherResultModel> GenerateBirthdayVouchersAsync()
+        {
+            await SetBearerToken();
+            var response = await _httpClient.PostAsync("api/loyalty/birthdays/vouchers?daysAhead=7", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException("Không tạo được voucher. Vui lòng thử lại.");
+            }
+
+            return await response.Content.ReadFromJsonAsync<BirthdayVoucherResultModel>();
+        }
+
         public async Task<CustomerReminderModel> CreateReminderAsync(string phone, string customerName, string message)
         {
             await SetBearerToken();
@@ -91,6 +106,20 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         public decimal DiscountAmount { get; set; }
 
         public DateTime? ExpiresAt { get; set; }
+    }
+
+    public class BirthdayVoucherResultModel
+    {
+        public int Created { get; set; }
+
+        public List<BirthdayVoucherModel> Vouchers { get; set; }
+    }
+
+    public class BirthdayVoucherModel
+    {
+        public string Phone { get; set; }
+
+        public string Code { get; set; }
     }
 
     public class CustomerReminderModel

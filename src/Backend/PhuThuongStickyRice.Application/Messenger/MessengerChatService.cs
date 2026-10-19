@@ -63,6 +63,12 @@ namespace PhuThuongStickyRice.Application.Messenger
         private static readonly Regex VnPhoneRegex =
             new Regex(@"0(3|5|7|8|9)\d{8}", RegexOptions.Compiled);
 
+        // Sending limits & catalog fetch sizes (keep these named, not inline).
+        private const int MenuMaxItems = 20;
+        private const int ParseOrderMaxItems = 100;
+        private const int MessengerMessageChunkSize = 1800; // Messenger caps text ~2000 chars
+        private static readonly TimeSpan BetweenChunksDelay = TimeSpan.FromMilliseconds(300);
+
         private readonly IShopSettingAppService _shopSettings;
         private readonly IProductAppService _products;
         private readonly IOrderAppService _orders;
@@ -131,28 +137,39 @@ namespace PhuThuongStickyRice.Application.Messenger
 
                 foreach (var item in messagings.EnumerateArray())
                 {
-                    try
-                    {
-                        var psid = item.GetProperty("sender").GetProperty("id").GetString();
-                        if (!item.TryGetProperty("message", out var message)
-                            || !message.TryGetProperty("text", out var textProp))
-                        {
-                            continue; // ignore non-text events (postbacks, attachments...)
-                        }
-
-                        var text = textProp.GetString() ?? string.Empty;
-                        Logger.LogInformation("Messenger message from {Psid}: {Text}", psid, text);
-                        var reply = await ProcessMessageAsync(psid, text);
-                        if (reply != null)
-                        {
-                            await SendTextAsync(psid, reply, pageToken);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogWarning(ex, "Failed to process a Messenger webhook item.");
-                    }
+                    await ProcessMessageItemAsync(item, pageToken);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Processes a single Messenger webhook "messaging" item: extracts the
+        /// sender + text, runs the conversation rules, and sends the reply.
+        /// Non-text events (postbacks, attachments) are ignored. Extracted
+        /// from HandleWebhookAsync to keep the nesting shallow.
+        /// </summary>
+        private async Task ProcessMessageItemAsync(JsonElement item, string pageToken)
+        {
+            try
+            {
+                var psid = item.GetProperty("sender").GetProperty("id").GetString();
+                if (!item.TryGetProperty("message", out var message)
+                    || !message.TryGetProperty("text", out var textProp))
+                {
+                    return; // ignore non-text events (postbacks, attachments...)
+                }
+
+                var text = textProp.GetString() ?? string.Empty;
+                Logger.LogInformation("Messenger message from {Psid}: {Text}", psid, text);
+                var reply = await ProcessMessageAsync(psid, text);
+                if (reply != null)
+                {
+                    await SendTextAsync(psid, reply, pageToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to process a Messenger webhook item.");
             }
         }
 
@@ -289,7 +306,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                 var paged = await _products.GetListAsync(new GetProductsInput
                 {
                     Status = "Active",
-                    MaxResultCount = 50
+                    MaxResultCount = MenuMaxItems
                 });
                 items = paged?.Items?.ToList() ?? new List<ProductDto>();
             }
@@ -306,7 +323,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             }
             else
             {
-                foreach (var p in items.Take(20))
+                foreach (var p in items.Take(MenuMaxItems))
                 {
                     sb.AppendLine($"- {p.Name}: {FormatVnd(p.Price)}");
                 }
@@ -324,12 +341,13 @@ namespace PhuThuongStickyRice.Application.Messenger
                 var paged = await _products.GetListAsync(new GetProductsInput
                 {
                     Status = "Active",
-                    MaxResultCount = 100
+                    MaxResultCount = ParseOrderMaxItems
                 });
                 items = paged?.Items?.ToList() ?? new List<ProductDto>();
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.LogWarning(ex, "Could not load products for Messenger order parsing.");
                 return result;
             }
 
@@ -415,7 +433,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                 var client = _httpClientFactory.CreateClient();
                 client.Timeout = TimeSpan.FromSeconds(15);
                 // Messenger caps a single text message around 2000 chars.
-                foreach (var chunk in SplitMessage(text, 1800))
+                foreach (var chunk in SplitMessage(text, MessengerMessageChunkSize))
                 {
                     var url = $"https://graph.facebook.com/{GraphApiVersion}/me/messages"
                               + $"?access_token={Uri.EscapeDataString(pageToken)}";
@@ -435,7 +453,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                             (int)resp.StatusCode, err);
                         break;
                     }
-                    await Task.Delay(300);
+                    await Task.Delay(BetweenChunksDelay);
                 }
             }
             catch (Exception ex)

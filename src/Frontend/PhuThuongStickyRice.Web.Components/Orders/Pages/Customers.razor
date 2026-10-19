@@ -66,12 +66,18 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h4 class="card-title mb-0">🎂 Thành viên sinh nhật tháng @_birthdayMonth</h4>
-                <select class="form-control" style="width: 140px;" @bind="_birthdayMonth" @bind:after="LoadBirthdaysAsync">
-                    @for (var m = 1; m <= 12; m++)
-                    {
-                        <option value="@m">Tháng @m</option>
-                    }
-                </select>
+                <div class="d-flex align-items-center">
+                    @* Item 132: tạo voucher sinh nhật hàng loạt. *@
+                    <button class="btn btn-sm btn-success mr-2" @onclick="GenerateBirthdayVouchers" disabled="@_voucherBusy">
+                        @(_voucherBusy ? "Đang tạo..." : "🎟️ Tạo voucher SN")
+                    </button>
+                    <select class="form-control" style="width: 140px;" @bind="_birthdayMonth" @bind:after="LoadBirthdaysAsync">
+                        @for (var m = 1; m <= 12; m++)
+                        {
+                            <option value="@m">Tháng @m</option>
+                        }
+                    </select>
+                </div>
             </div>
             @if (!string.IsNullOrEmpty(_birthdayMsg))
             {
@@ -80,6 +86,10 @@
             @if (!string.IsNullOrEmpty(_giftResult))
             {
                 <div class="alert alert-success">@_giftResult</div>
+            }
+            @if (!string.IsNullOrEmpty(_voucherResult))
+            {
+                <div class="alert alert-info">@_voucherResult</div>
             }
             @if (_birthdayMembers == null)
             {
@@ -254,6 +264,11 @@ else
                                                 @onclick="() => ToggleRemind(c.CustomerPhone, c.CustomerName)">
                                             🔔 Nhắc
                                         </button>
+                                        @* Item 131: tạo mã giảm giá nhanh cho khách lâu không mua. *@
+                                        <a class="btn btn-sm btn-outline-success mr-1"
+                                           href="/admin/ma-giam-gia" title="Tạo mã giảm giá cho khách này">
+                                            🎟️ Tặng mã
+                                        </a>
                                     }
                                     <button class="btn btn-sm btn-outline-secondary mr-1"
                                             @onclick="() => ToggleNotes(c.CustomerPhone)">
@@ -489,6 +504,10 @@ else
     private decimal _giftAmount = 25000;
     private string _giftResult;
 
+    // Item 132: tạo voucher sinh nhật hàng loạt.
+    private bool _voucherBusy;
+    private string _voucherResult;
+
     // Item 149: customer tags.
     private static readonly string[] TagPresets =
         { "VIP", "Khách sỉ", "Khách quen", "Cần ưu tiên", "Nợ", "Khó tính" };
@@ -679,6 +698,26 @@ else
         finally
         {
             _birthdayBusy = false;
+        }
+    }
+
+    /// <summary>Item 132: tạo voucher sinh nhật hàng loạt.</summary>
+    private async Task GenerateBirthdayVouchers()
+    {
+        _voucherResult = null;
+        _voucherBusy = true;
+        try
+        {
+            var result = await CareService.GenerateBirthdayVouchersAsync();
+            _voucherResult = $"Đã tạo {result.Created} voucher sinh nhật (mỗi mã giảm 20k, HSD 30 ngày).";
+        }
+        catch (Exception ex)
+        {
+            _voucherResult = $"Lỗi: {ex.Message}";
+        }
+        finally
+        {
+            _voucherBusy = false;
         }
     }
 

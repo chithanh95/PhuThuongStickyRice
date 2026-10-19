@@ -211,10 +211,11 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 return;
             }
 
-            // Xóa ảnh cũ trên server trước khi upload ảnh mới
+            // Xóa ảnh cũ trên server trước khi upload ảnh mới (best-effort: log rồi bỏ qua nếu lỗi)
             if (!string.IsNullOrEmpty(_imageUrl))
             {
-                try { await ProductService.DeleteProductImageAsync(_imageUrl); } catch { }
+                try { await ProductService.DeleteProductImageAsync(_imageUrl); }
+                catch (Exception ex) { Logger.LogDebug(ex, "Không xóa được ảnh cũ {ImageUrl} trước khi upload — bỏ qua.", _imageUrl); }
             }
 
             _uploadingImages = true;
@@ -242,7 +243,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         {
             if (!string.IsNullOrEmpty(_imageUrl))
             {
-                try { await ProductService.DeleteProductImageAsync(_imageUrl); } catch { }
+                // Xóa ảnh trên server là best-effort: log rồi bỏ qua nếu lỗi.
+                try { await ProductService.DeleteProductImageAsync(_imageUrl); }
+                catch (Exception ex) { Logger.LogDebug(ex, "Không xóa được ảnh {ImageUrl} trên server — bỏ qua.", _imageUrl); }
                 _imageUrl = null;
             }
         }

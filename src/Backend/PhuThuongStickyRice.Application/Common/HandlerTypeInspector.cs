@@ -2,7 +2,7 @@
 
 namespace PhuThuongStickyRice.Application
 {
-    internal static class Utils
+    internal static class HandlerTypeInspector
     {
         public static bool IsHandlerInterface(Type type)
         {

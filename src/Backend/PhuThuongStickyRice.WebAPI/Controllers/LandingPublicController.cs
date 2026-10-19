@@ -27,6 +27,34 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly StickyRiceDbContext _db;
 
+        // Lucky-wheel prize table: label, value (VND), cumulative probability.
+        // Keep the probabilities sorted ascending; PickPrize returns the
+        // first prize whose cumulative chance exceeds the roll.
+        private static readonly (string Label, int Value, double CumulativeChance)[] SpinPrizes =
+        {
+            ("5k", 5000, 0.40),
+            ("10k", 10000, 0.70),
+            ("15k", 15000, 0.90),
+            ("20k", 20000, 1.00),
+        };
+
+        private const string VoucherCodePrefix = "XOI";
+        private const int VoucherCodeRandomLength = 6;
+        private const int VoucherCodeMaxAttempts = 10;
+
+        private static (string Label, int Value) PickPrize(double roll)
+        {
+            foreach (var prize in SpinPrizes)
+            {
+                if (roll < prize.CumulativeChance)
+                {
+                    return (prize.Label, prize.Value);
+                }
+            }
+
+            return (SpinPrizes[^1].Label, SpinPrizes[^1].Value);
+        }
+
         public LandingPublicController(StickyRiceDbContext db)
         {
             _db = db;
@@ -171,13 +199,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             // Weighted random prize.
             var roll = Random.Shared.NextDouble();
-            var (prizeLabel, prizeValue) = roll switch
-            {
-                < 0.40 => ("5k", 5000),
-                < 0.70 => ("10k", 10000),
-                < 0.90 => ("15k", 15000),
-                _ => ("20k", 20000),
-            };
+            var (prizeLabel, prizeValue) = PickPrize(roll);
 
             var voucherCode = await GenerateUniqueVoucherCodeAsync(cancellationToken);
 
@@ -199,9 +221,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private async Task<string> GenerateUniqueVoucherCodeAsync(CancellationToken cancellationToken)
         {
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            for (var attempt = 0; attempt < 10; attempt++)
+            for (var attempt = 0; attempt < VoucherCodeMaxAttempts; attempt++)
             {
-                var code = "XOI" + new string(Enumerable.Range(0, 6)
+                var code = VoucherCodePrefix + new string(Enumerable.Range(0, VoucherCodeRandomLength)
                     .Select(_ => chars[Random.Shared.Next(chars.Length)]).ToArray());
                 if (!await _db.LuckySpins.AnyAsync(s => s.VoucherCode == code, cancellationToken))
                 {
@@ -210,7 +232,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             // Fallback: virtually impossible, but never loop forever.
-            return "XOI" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+            return VoucherCodePrefix + Guid.NewGuid().ToString("N")[..VoucherCodeRandomLength].ToUpperInvariant();
         }
 
         // ============ Landing engagement: referral (item 29) ============

@@ -17,24 +17,24 @@ namespace PhuThuongStickyRice.Infrastructure.Notification.Email.SmtpClient
 
         public async Task SendAsync(IEmailMessage emailMessage, CancellationToken cancellationToken = default)
         {
-            var mail = new MailMessage();
+            using var mail = new MailMessage();
 
             mail.From = new MailAddress(emailMessage.From);
 
-            emailMessage.Tos?.Split(';')
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .ToList()
-                .ForEach(x => mail.To.Add(x));
+            foreach (var to in (emailMessage.Tos?.Split(';') ?? Enumerable.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)))
+            {
+                mail.To.Add(to);
+            }
 
-            emailMessage.CCs?.Split(';')
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .ToList()
-                .ForEach(x => mail.CC.Add(x));
+            foreach (var cc in (emailMessage.CCs?.Split(';') ?? Enumerable.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)))
+            {
+                mail.CC.Add(cc);
+            }
 
-            emailMessage.BCCs?.Split(';')
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .ToList()
-                .ForEach(x => mail.Bcc.Add(x));
+            foreach (var bcc in (emailMessage.BCCs?.Split(';') ?? Enumerable.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)))
+            {
+                mail.Bcc.Add(bcc);
+            }
 
             mail.Subject = emailMessage.Subject;
 
@@ -42,7 +42,7 @@ namespace PhuThuongStickyRice.Infrastructure.Notification.Email.SmtpClient
 
             mail.IsBodyHtml = true;
 
-            var smtpClient = new System.Net.Mail.SmtpClient(_options.Host);
+            using var smtpClient = new System.Net.Mail.SmtpClient(_options.Host);
 
             if (_options.Port.HasValue)
             {

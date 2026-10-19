@@ -1,9 +1,11 @@
+using PhuThuongStickyRice.Application.AuditLogs;
+using PhuThuongStickyRice.Application.Permissions;
+using PhuThuongStickyRice.Application.Security;
+using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using PhuThuongStickyRice.WebAPI.Services;
-using PhuThuongStickyRice.Application.Permissions;
-using PhuThuongStickyRice.Application.Staff;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -14,15 +16,9 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using PhuThuongStickyRice.Application.Permissions;
-using PhuThuongStickyRice.Application.Security;
-using PhuThuongStickyRice.Application.Staff;
-using PhuThuongStickyRice.Application.Permissions;
-using PhuThuongStickyRice.Application.Security;
-using PhuThuongStickyRice.Application.Staff;
-using PhuThuongStickyRice.Application.AuditLogs;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
@@ -44,6 +40,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
         private readonly PasswordResetOtpService _passwordReset;
+
+        private const string VnPhonePattern = @"^(0)(3|5|7|8|9)\d{8}$";
+        private const int MinPasswordLength = 6;
+        private const int AccountLockedStatusCode = 423;
+        private static readonly string[] StaffRoleNames = { "Admin", "Cashier", "Kitchen" };
+
+        private static bool IsValidVnPhone(string phone) =>
+            !string.IsNullOrWhiteSpace(phone) && Regex.IsMatch(phone.Trim(), VnPhonePattern);
+
+        private static bool IsStaffRole(string roleName) =>
+            StaffRoleNames.Contains(roleName, StringComparer.Ordinal);
 
         public AuthController(
             UserManager<User> userManager,
@@ -92,7 +99,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 await _loginAudits.RecordAsync(user.UserName, ip, false, "Tài khoản tạm khóa.");
                 // Item 100: Vietnamese lockout message.
-                return StatusCode(423, "Tài khoản tạm khóa. Vui lòng thử lại sau.");
+                return StatusCode(AccountLockedStatusCode, "Tài khoản tạm khóa. Vui lòng thử lại sau.");
             }
 
             if (!await _userManager.CheckPasswordAsync(user, model.Password))
@@ -112,7 +119,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var roles = await GetRoleNamesAsync(user.Id);
 
             // Item 156: log staff logins in the staff activity log.
-            if (roles.Any(r => r == "Admin" || r == "Cashier" || r == "Kitchen"))
+            if (roles.Any(IsStaffRole))
             {
                 await _activityLogger.LogForUserAsync(user.Id, user.UserName, StaffActions.Login, "Đăng nhập trang quản trị.");
             }
@@ -159,12 +166,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             var phone = (model.Phone ?? string.Empty).Trim();
-            if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(0)(3|5|7|8|9)\d{8}$"))
+            if (!IsValidVnPhone(phone))
             {
                 return BadRequest("Số điện thoại không đúng định dạng (VD: 0901234567).");
             }
 
-            if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < 6)
+            if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < MinPasswordLength)
             {
                 return BadRequest("Mật khẩu phải có ít nhất 6 ký tự.");
             }
@@ -193,39 +200,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(string.Join("; ", result.Errors.Select(e => e.Description)));
             }
 
-            // Ensure the Customer role exists, then assign it.
-            var dbContext = HttpContext.RequestServices
-                .GetService(typeof(PhuThuongStickyRice.Persistence.StickyRiceDbContext))
-                as PhuThuongStickyRice.Persistence.StickyRiceDbContext;
-            if (dbContext != null)
-            {
-                var roleName = Services.AdminSeedHostedService.CustomerRoleName;
-                var role = await dbContext.Set<Role>()
-                    .FirstOrDefaultAsync(r => r.NormalizedName == roleName.ToUpperInvariant(), cancellationToken);
-                if (role == null)
-                {
-                    role = new Role
-                    {
-                        Name = roleName,
-                        NormalizedName = roleName.ToUpperInvariant(),
-                        ConcurrencyStamp = Guid.NewGuid().ToString()
-                    };
-                    await dbContext.Set<Role>().AddAsync(role, cancellationToken);
-                    await dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                var alreadyInRole = await dbContext.Set<UserRole>()
-                    .AnyAsync(ur => ur.UserId == user.Id && ur.RoleId == role.Id, cancellationToken);
-                if (!alreadyInRole)
-                {
-                    await dbContext.Set<UserRole>().AddAsync(new UserRole
-                    {
-                        UserId = user.Id,
-                        RoleId = role.Id
-                    }, cancellationToken);
-                    await dbContext.SaveChangesAsync(cancellationToken);
-                }
-            }
+            await EnsureCustomerRoleAsync(user.Id, cancellationToken);
 
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
             await _loginAudits.RecordAsync(user.UserName, ip, true, "Đăng ký tài khoản khách hàng.");
@@ -273,7 +248,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             if (await _userManager.IsLockedOutAsync(user))
             {
-                return StatusCode(423, "Tài khoản tạm khóa. Vui lòng thử lại sau.");
+                return StatusCode(AccountLockedStatusCode, "Tài khoản tạm khóa. Vui lòng thử lại sau.");
             }
 
             if (!await _twoFactor.VerifyCodeAsync(user.Id, model.Code))
@@ -291,7 +266,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var roles = await GetRoleNamesAsync(user.Id);
 
             // Item 156: log staff logins (2FA path) in the staff activity log.
-            if (roles.Any(r => r == "Admin" || r == "Cashier" || r == "Kitchen"))
+            if (roles.Any(IsStaffRole))
             {
                 await _activityLogger.LogForUserAsync(user.Id, user.UserName, StaffActions.Login, "Đăng nhập trang quản trị (2FA).");
             }
@@ -310,7 +285,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             });
         }
 
-        /// <summary>Item 98: returns the otpauth:// QR to set up 2FA (Admin).</summary>
         [Authorize(Roles = "Admin")]
         /// <summary>Lấy thông tin tài khoản đang đăng nhập.</summary>
         [HttpGet("profile")]
@@ -354,7 +328,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
             {
                 var phone = model.PhoneNumber.Trim();
-                if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(0)(3|5|7|8|9)\d{8}$"))
+                if (!IsValidVnPhone(phone))
                     return BadRequest("Số điện thoại không đúng định dạng (VD: 0901234567).");
                 var setPhone = await _userManager.SetPhoneNumberAsync(user, phone);
                 if (!setPhone.Succeeded)
@@ -364,6 +338,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { message = "Đã cập nhật." });
         }
 
+        /// <summary>Item 98: returns the otpauth:// QR to set up 2FA (Admin).</summary>
         [HttpGet("2fa/setup")]
         public async Task<ActionResult> GetTwoFactorSetup(CancellationToken cancellationToken = default)
         {
@@ -487,6 +462,48 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             var permissions = await _permissions.GetUserPermissionsAsync();
             return Ok(new { permissions = permissions.OrderBy(p => p).ToList() });
+        }
+
+        /// <summary>
+        /// Ensures the Customer role exists and the new customer account is
+        /// assigned to it (extracted from Register).
+        /// </summary>
+        private async Task EnsureCustomerRoleAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            var dbContext = HttpContext.RequestServices
+                .GetService(typeof(PhuThuongStickyRice.Persistence.StickyRiceDbContext))
+                as PhuThuongStickyRice.Persistence.StickyRiceDbContext;
+            if (dbContext == null)
+            {
+                return;
+            }
+
+            var roleName = Services.AdminSeedHostedService.CustomerRoleName;
+            var role = await dbContext.Set<Role>()
+                .FirstOrDefaultAsync(r => r.NormalizedName == roleName.ToUpperInvariant(), cancellationToken);
+            if (role == null)
+            {
+                role = new Role
+                {
+                    Name = roleName,
+                    NormalizedName = roleName.ToUpperInvariant(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                };
+                await dbContext.Set<Role>().AddAsync(role, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            var alreadyInRole = await dbContext.Set<UserRole>()
+                .AnyAsync(ur => ur.UserId == userId && ur.RoleId == role.Id, cancellationToken);
+            if (!alreadyInRole)
+            {
+                await dbContext.Set<UserRole>().AddAsync(new UserRole
+                {
+                    UserId = userId,
+                    RoleId = role.Id
+                }, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
         }
 
         private async Task<string[]> GetRoleNamesAsync(Guid userId)

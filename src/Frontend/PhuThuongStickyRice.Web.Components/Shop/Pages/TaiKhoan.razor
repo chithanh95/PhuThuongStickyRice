@@ -11,6 +11,7 @@
 @inject CustomerProfileService ProfileService
 @inject ShopService ShopService
 @inject CartState CartState
+@inject CartSyncService CartSyncService
 @inject Wave2Service Wave2Service
 @inject ITokenManager TokenManager
 @inject AuthenticationStateProvider AuthStateProvider
@@ -418,6 +419,13 @@
                 {
                     _orders = new List<TrackedOrderModel>();
                 }
+
+                // Item 137: đồng bộ giỏ hàng từ server (nếu có).
+                try
+                {
+                    await CartSyncService.SyncOnLoginAsync();
+                }
+                catch (Exception) { }
             }
         }
         catch (Exception)
