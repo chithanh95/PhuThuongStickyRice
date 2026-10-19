@@ -213,7 +213,7 @@ else if (_forecast != null)
             var step = Math.Max(1, pointCount / 7);
             for (var i = 0; i < pointCount; i += step)
             {
-                sb.Append($"<text x=\"{F(X(i))}\" y=\"{F(H - 8)}\" text-anchor=\"middle\" font-size=\"11\" fill=\"#6c757d\">{all[i]:dd/MM}</text>");
+                sb.Append($"<text x=\"{F(X(i))}\" y=\"{F(H - 8)}\" text-anchor=\"middle\" font-size=\"11\" fill=\"var(--db-axis,#6c757d)\">{all[i]:dd/MM}</text>");
             }
         }
         sb.Append("</svg>");

@@ -23,3 +23,12 @@
    nhầm khi duyệt đánh giá. Mờ xuống #4a4a66 cho đúng trạng thái "tắt"
    trên nền tối. */
 html.dark .dg-stars .dg-stars-off { color: #4a4a66; }
+
+/* dark mode fix — UIUX run 18:09 Agent2
+   Dòng đánh giá bị ẩn dùng class Bootstrap .table-secondary (nền xám nhạt
+   #d6d8db). Ở dark mode chữ đã chuyển sáng (#f0eef5) nên chữ sáng trên nền
+   xám nhạt = không đọc được. Override nền dòng sang #31314f (tối hơn nền
+   card #262640 một chút để vẫn nhận biết dòng "đã ẩn"). */
+html.dark .table .table-secondary,
+html.dark .table .table-secondary > th,
+html.dark .table .table-secondary > td { background-color: #31314f; }

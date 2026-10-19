@@ -60,3 +60,10 @@ html.dark .kanban-card {
     box-shadow: 0 1px 3px rgba(0,0,0,.35);
 }
 html.dark .kanban-code { color: #c9c7dd; }
+
+/* dark mode fix — UIUX run 18:09 Agent2
+   Tổng tiền (.text-danger #dc3545) và nút "Hủy đơn" trên thẻ kanban nền tối
+   #2c2c4e chỉ đạt ~2.7:1 — mờ, khó đọc số tiền (thông tin quan trọng nhất
+   thẻ). Sáng lên #ff9d9d (~6.7:1); cần !important vì Bootstrap đặt
+   !important cho text-danger. */
+html.dark .kanban-card .text-danger { color: #ff9d9d !important; }

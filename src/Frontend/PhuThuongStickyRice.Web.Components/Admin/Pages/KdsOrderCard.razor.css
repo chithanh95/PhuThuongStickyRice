@@ -1,2 +1,8 @@
 /* UIUX-1019 A3: banner VIP bếp — viền vàng warning đúng chuẩn Lexa (#f1b44c), đưa style inline từ markup vào CSS */
 .kds-vip-banner { border: 2px solid #f1b44c; }
+
+/* dark mode fix — UIUX run 18:09 Agent2
+   Ghi chú món (.text-danger #dc3545, ví dụ "📝 ít đường") trên thẻ KDS nền
+   tối chỉ đạt ~2.7:1 — bếp khó đọc ghi chú quan trọng. Sáng lên #ff9d9d
+   (~6.7:1); cần !important vì Bootstrap đặt !important cho text-danger. */
+html.dark .kds-card .text-danger { color: #ff9d9d !important; }
