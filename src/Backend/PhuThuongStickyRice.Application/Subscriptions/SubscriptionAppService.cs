@@ -64,6 +64,11 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         [AllowAnonymous]
         public virtual async Task<SubscriptionDto> CreateAsync(CreateSubscriptionDto dto)
         {
+            if (dto == null)
+            {
+                throw new ArgumentNullException(nameof(dto));
+            }
+
             var (productName, unitPrice, sizeName, toppingNames) =
                 await ResolveSnapshotAsync(dto.ProductId, dto.SizeOptionId, dto.ToppingIds);
 
@@ -130,6 +135,12 @@ namespace PhuThuongStickyRice.Application.Subscriptions
                     && (x.LastOrderDate == null || x.LastOrderDate < today)));
 
             var created = 0;
+            // perf-hunt 2026-10-19: generate all order numbers with a single
+            // batched existence check (also dedupes within the batch, which
+            // the old per-subscription check missed) instead of one DB
+            // round-trip per subscription.
+            var orderNumbers = await GenerateUniqueOrderNumbersAsync(due.Count);
+            var numberIndex = 0;
             foreach (var sub in due)
             {
                 var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
@@ -146,7 +157,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
                     : 0;
 
                 var order = Order.Create(
-                    await GenerateOrderNumberAsync(),
+                    orderNumbers[numberIndex++],
                     sub.CustomerName,
                     sub.Phone,
                     null,
@@ -215,15 +226,60 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             return (product.Name, unitPrice, sizeName, toppingNames);
         }
 
-        private async Task<string> GenerateOrderNumberAsync()
+        /// <summary>
+        /// Generates <paramref name="count"/> unique order numbers of the
+        /// form PX-yyyyMMdd-NNNN. Numbers are deduped within the batch via a
+        /// HashSet and DB collisions are detected with a single batched query
+        /// per attempt (chunked at 1000 to stay under SQL Server's parameter
+        /// limit); only colliding numbers are regenerated.
+        /// </summary>
+        private async Task<List<string>> GenerateUniqueOrderNumbersAsync(int count)
         {
-            var random = Random.Shared; // perf-hunt 2026-10-19: Random.Shared is thread-safe and avoids same-tick seed collisions across concurrent requests
+            var random = Random.Shared; // thread-safe, avoids same-tick seed collisions across concurrent requests
+            var day = DateTime.UtcNow.ToString("yyyyMMdd");
+            var numbers = new List<string>(count);
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < count; i++)
+            {
+                string number;
+                do
+                {
+                    number = $"PX-{day}-{random.Next(1000, 9999)}";
+                } while (!used.Add(number));
+                numbers.Add(number);
+            }
+
             for (var attempt = 0; attempt < 10; attempt++)
             {
-                var orderNumber = $"PX-{DateTime.UtcNow:yyyyMMdd}-{random.Next(1000, 9999)}";
-                if (!await _orders.ExistsWithOrderNumberAsync(orderNumber))
+                var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var queryable = await _orders.GetQueryableAsync();
+                foreach (var chunk in numbers.Chunk(1000))
                 {
-                    return orderNumber;
+                    var found = await _asyncExecuter.ToListAsync(
+                        queryable.Where(x => chunk.Contains(x.OrderNumber)).Select(x => x.OrderNumber));
+                    foreach (var number in found)
+                    {
+                        existing.Add(number);
+                    }
+                }
+
+                if (existing.Count == 0)
+                {
+                    return numbers;
+                }
+
+                for (var i = 0; i < numbers.Count; i++)
+                {
+                    if (existing.Contains(numbers[i]))
+                    {
+                        used.Remove(numbers[i]);
+                        string replacement;
+                        do
+                        {
+                            replacement = $"PX-{day}-{random.Next(1000, 9999)}";
+                        } while (!used.Add(replacement));
+                        numbers[i] = replacement;
+                    }
                 }
             }
 

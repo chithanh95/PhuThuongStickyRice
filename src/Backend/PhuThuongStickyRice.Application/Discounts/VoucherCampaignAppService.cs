@@ -99,14 +99,16 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             var expiresAt = DateTime.UtcNow.AddDays(input.ValidDays);
+            // perf-hunt 2026-10-19: generate all unique codes with a single
+            // batched existence check instead of one DB round-trip per code.
+            var codes = await GenerateUniqueCodesAsync(prefix, phones.Count);
             var result = new List<GeneratedVoucherDto>();
 
-            foreach (var phone in phones)
+            for (var i = 0; i < phones.Count; i++)
             {
-                var code = await GenerateUniqueCodeAsync(prefix);
                 await _discountCodes.InsertAsync(new DiscountCode
                 {
-                    Code = code,
+                    Code = codes[i],
                     DiscountPercent = input.DiscountAmount > 0 ? (decimal?)null : input.DiscountPercent,
                     DiscountAmount = input.DiscountAmount > 0 ? input.DiscountAmount : (decimal?)null,
                     MinOrderAmount = 0,
@@ -115,9 +117,9 @@ namespace PhuThuongStickyRice.Application.Discounts
                     UsedCount = 0,
                     IsActive = true,
                     VoucherType = VoucherType.Discount,
-                    OwnerPhone = phone
+                    OwnerPhone = phones[i]
                 });
-                result.Add(new GeneratedVoucherDto { Phone = phone, Code = code });
+                result.Add(new GeneratedVoucherDto { Phone = phones[i], Code = codes[i] });
             }
 
             // The ambient ABP unit of work commits the batch on completion.
@@ -164,16 +166,58 @@ namespace PhuThuongStickyRice.Application.Discounts
             return await _asyncExecuter.ToListAsync(queryable.Select(x => x.Phone));
         }
 
-        private async Task<string> GenerateUniqueCodeAsync(string prefix)
+        /// <summary>
+        /// Generates <paramref name="count"/> unique voucher codes.
+        /// In-batch duplicates are excluded via a HashSet; DB collisions are
+        /// detected with a single batched query per attempt (chunked at 1000
+        /// to stay under SQL Server's parameter limit) and only colliding
+        /// codes are regenerated. Semantics match the old per-code check.
+        /// </summary>
+        private async Task<List<string>> GenerateUniqueCodesAsync(string prefix, int count)
         {
+            var codes = new List<string>(count);
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < count; i++)
+            {
+                string code;
+                do
+                {
+                    code = prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
+                } while (!used.Add(code));
+                codes.Add(code);
+            }
+
             for (var attempt = 0; attempt < 20; attempt++)
             {
-                var code = prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
+                var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var queryable = await _discountCodes.GetQueryableAsync();
-                var exists = await _asyncExecuter.AnyAsync(queryable.Where(x => x.Code == code));
-                if (!exists)
+                foreach (var chunk in codes.Chunk(1000))
                 {
-                    return code;
+                    var found = await _asyncExecuter.ToListAsync(
+                        queryable.Where(x => chunk.Contains(x.Code)).Select(x => x.Code));
+                    foreach (var code in found)
+                    {
+                        existing.Add(code);
+                    }
+                }
+
+                if (existing.Count == 0)
+                {
+                    return codes;
+                }
+
+                for (var i = 0; i < codes.Count; i++)
+                {
+                    if (existing.Contains(codes[i]))
+                    {
+                        used.Remove(codes[i]);
+                        string replacement;
+                        do
+                        {
+                            replacement = prefix + "-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
+                        } while (!used.Add(replacement));
+                        codes[i] = replacement;
+                    }
                 }
             }
 

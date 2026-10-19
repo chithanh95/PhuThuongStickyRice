@@ -461,13 +461,16 @@ namespace PhuThuongStickyRice.Application.Products
 
         /// <summary>
         /// Item 148: change history of a product, newest first.
+        /// perf-hunt 2026-10-19: Take(200) server-side — log grows one row
+        /// per changed field per edit, never materialize the whole table.
         /// </summary>
         public virtual async Task<List<ProductChangeLogDto>> GetChangeLogAsync(Guid productId)
         {
             var queryable = await _changeLogs.GetQueryableAsync();
             var logs = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => x.ProductId == productId)
-                    .OrderByDescending(x => x.ChangedAt));
+                    .OrderByDescending(x => x.ChangedAt)
+                    .Take(200));
 
             return _objectMapper.Map<List<ProductChangeLog>, List<ProductChangeLogDto>>(logs);
         }
