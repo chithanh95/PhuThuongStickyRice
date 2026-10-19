@@ -12,30 +12,41 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Customer
 {
+    /// <summary>
+    /// Địa chỉ giao hàng đã lưu của khách (sổ địa chỉ ở trang tài khoản):
+    /// mỗi user chỉ thấy/sửa/xóa địa chỉ của chính mình, mỗi user tối đa 1
+    /// địa chỉ mặc định. SĐT người nhận phải đúng đầu số di động VN.
+    /// </summary>
     public interface ICustomerAddressAppService : IApplicationService
     {
-        /// <summary>Authenticated: list my saved addresses.</summary>
+        /// <summary>Đã đăng nhập: lấy địa chỉ đã lưu của tôi (mặc định lên trước).</summary>
         Task<List<CustomerAddressDto>> GetMyAsync();
 
-        /// <summary>Authenticated: add a saved address.</summary>
+        /// <summary>Đã đăng nhập: thêm địa chỉ mới vào sổ địa chỉ của tôi.</summary>
         Task<CustomerAddressDto> CreateAsync(CreateCustomerAddressDto dto);
 
-        /// <summary>Authenticated: update one of my addresses.</summary>
+        /// <summary>Đã đăng nhập: sửa 1 địa chỉ của tôi.</summary>
         Task<CustomerAddressDto> UpdateAsync(Guid id, UpdateCustomerAddressDto dto);
 
-        /// <summary>Authenticated: delete one of my addresses.</summary>
+        /// <summary>Đã đăng nhập: xóa 1 địa chỉ của tôi.</summary>
         Task DeleteAsync(Guid id);
 
-        /// <summary>Authenticated: mark one of my addresses as default.</summary>
+        /// <summary>Đã đăng nhập: đặt 1 địa chỉ của tôi làm mặc định (địa chỉ mặc định cũ tự bỏ).</summary>
         Task SetDefaultAsync(Guid id);
     }
 
+    /// <summary>
+    /// Quản lý sổ địa chỉ giao hàng của khách đã đăng nhập: lấy/thêm/sửa/xóa/
+    /// đặt mặc định. Mọi thao tác đều kiểm tra địa chỉ thuộc về user đang
+    /// đăng nhập (GetOwnedAsync) — không ai chạm được địa chỉ của người khác.
+    /// </summary>
     public partial class CustomerAddressAppService : ApplicationService, ICustomerAddressAppService
     {
         // Best practice .NET 7+/C# 13: [GeneratedRegex] biên dịch regex ngay
         // lúc build (không tốn Regex.Compile/cache động ở runtime) — cùng
         // convention với MessengerChatService/MoMoPaymentService trong cùng
         // codebase. Ngữ nghĩa kiểm tra SĐT giống hệt bản Regex.IsMatch cũ.
+        // SĐT di động VN 10 số: bắt đầu bằng 0, đầu số 03/05/07/08/09.
         [GeneratedRegex(@"^(0)(3|5|7|8|9)\d{8}$")]
         private static partial Regex ReceiverPhoneRegex();
 
@@ -60,6 +71,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return CurrentUser.Id.Value;
         }
 
+        /// <summary>Lấy sổ địa chỉ của tôi: mặc định lên trước, rồi mới nhất.</summary>
         public virtual async Task<List<CustomerAddressDto>> GetMyAsync()
         {
             var userId = RequireUserId();
@@ -71,6 +83,11 @@ namespace PhuThuongStickyRice.Application.Customer
             return entities.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Thêm địa chỉ mới: validate SĐT, chuẩn hóa khoảng trắng. Nếu đánh dấu
+        /// mặc định thì bỏ cờ mặc định của các địa chỉ cũ trước (ClearDefaultAsync).
+        /// </summary>
+        /// <param name="dto">Thông tin địa chỉ mới.</param>
         public virtual async Task<CustomerAddressDto> CreateAsync(CreateCustomerAddressDto dto)
         {
             var userId = RequireUserId();
@@ -96,6 +113,13 @@ namespace PhuThuongStickyRice.Application.Customer
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Sửa địa chỉ của tôi: chỉ khi địa chỉ thuộc về user đang đăng nhập.
+        /// Đổi sang mặc định → bỏ cờ các địa chỉ cũ; bỏ cờ mặc định thì địa
+        /// chỉ này không còn là mặc định (không ép phải có mặc định).
+        /// </summary>
+        /// <param name="id">Id địa chỉ cần sửa.</param>
+        /// <param name="dto">Thông tin mới.</param>
         public virtual async Task<CustomerAddressDto> UpdateAsync(Guid id, UpdateCustomerAddressDto dto)
         {
             var userId = RequireUserId();
@@ -122,6 +146,8 @@ namespace PhuThuongStickyRice.Application.Customer
             return MapToDto(entity);
         }
 
+        /// <summary>Xóa địa chỉ của tôi (chỉ khi địa chỉ thuộc về user đang đăng nhập).</summary>
+        /// <param name="id">Id địa chỉ cần xóa.</param>
         public virtual async Task DeleteAsync(Guid id)
         {
             var userId = RequireUserId();
@@ -129,6 +155,8 @@ namespace PhuThuongStickyRice.Application.Customer
             await _addresses.DeleteAsync(entity);
         }
 
+        /// <summary>Đặt 1 địa chỉ làm mặc định: bỏ cờ mặc định của các địa chỉ cũ rồi gán cho địa chỉ này.</summary>
+        /// <param name="id">Id địa chỉ cần đặt mặc định.</param>
         public virtual async Task SetDefaultAsync(Guid id)
         {
             var userId = RequireUserId();
@@ -138,6 +166,10 @@ namespace PhuThuongStickyRice.Application.Customer
             await _addresses.UpdateAsync(entity);
         }
 
+        /// <summary>
+        /// Lấy địa chỉ theo id và kiểm tra sở hữu: địa chỉ không thuộc user
+        /// đang đăng nhập → 403 (chống dò/xem địa chỉ của người khác).
+        /// </summary>
         private async Task<CustomerAddress> GetOwnedAsync(Guid id, Guid userId)
         {
             var entity = await _addresses.GetAsync(id);
@@ -149,6 +181,7 @@ namespace PhuThuongStickyRice.Application.Customer
             return entity;
         }
 
+        /// <summary>Bỏ cờ mặc định của mọi địa chỉ khác của user — đảm bảo tối đa 1 địa chỉ mặc định.</summary>
         private async Task ClearDefaultAsync(Guid userId)
         {
             var queryable = await _addresses.GetQueryableAsync();

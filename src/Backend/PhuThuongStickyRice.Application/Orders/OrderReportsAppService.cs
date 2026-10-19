@@ -77,6 +77,11 @@ namespace PhuThuongStickyRice.Application.Orders
         private sealed record ReconciliationChannelRow(
             PaymentMethod Method, long OrderCount, decimal Revenue, decimal PaidAmount, decimal UnpaidAmount);
 
+        /// <summary>
+        /// Đối soát doanh thu 1 ngày Việt Nam theo kênh thanh toán: số đơn, doanh thu,
+        /// đã/chưa thanh toán từng kênh. Đơn đã hủy chỉ tính vào số đơn, không tính
+        /// vào doanh thu. <paramref name="date"/> null = hôm nay.
+        /// </summary>
         public virtual async Task<DailyReconciliationDto> GetDailyReconciliationAsync(DateTime? date)
         {
             var day = (date ?? VietnamTime.Today()).Date;
@@ -148,6 +153,14 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
+        /// <summary>
+        /// Xuất Excel danh sách đơn hàng theo bộ lọc đang xem (tìm kiếm / trạng thái /
+        /// shipper / khoảng ngày / thu tiền / chỉ VIP — đồng bộ với danh sách ở
+        /// OrderAppService.GetListAsync để file khớp màn hình). 1 sheet "Đơn hàng",
+        /// tối đa <see cref="MaxExportRows"/> dòng, mới nhất lên trước.
+        /// </summary>
+        /// <param name="input">Bộ lọc danh sách đơn (null = không lọc).</param>
+        /// <returns>Mảng byte file .xlsx.</returns>
         public virtual async Task<byte[]> ExportOrdersAsync(GetOrdersInput input)
         {
             var query = await _orders.GetQueryableAsync();
@@ -332,6 +345,15 @@ namespace PhuThuongStickyRice.Application.Orders
             sheet.Columns().AdjustToContents();
         }
 
+        /// <summary>
+        /// Xuất Excel doanh thu kỳ Việt Nam: sheet "Tổng hợp" (1 dòng/ngày: số đơn,
+        /// doanh thu, giá trị TB/đơn + dòng TỔNG CỘNG) và sheet "Chi tiết đơn"
+        /// (mới nhất lên trước, tối đa <see cref="MaxExportRows"/> dòng).
+        /// Đơn đã hủy không tính doanh thu nhưng vẫn xuất trong chi tiết.
+        /// </summary>
+        /// <param name="from">Ngày bắt đầu kỳ (null = từ đầu).</param>
+        /// <param name="to">Ngày kết thúc kỳ (null = tới hiện tại).</param>
+        /// <returns>Mảng byte file .xlsx.</returns>
         public virtual async Task<byte[]> ExportRevenueAsync(DateTime? from, DateTime? to)
         {
             var queryable = await _orders.GetQueryableAsync();
@@ -527,10 +549,12 @@ namespace PhuThuongStickyRice.Application.Orders
     }
 
     /// <summary>
-    /// Vietnamese labels for order enums (export, reconciliation).
+    /// Nhãn tiếng Việt cho enum đơn hàng dùng trong file Excel/báo cáo —
+    /// internal vì chỉ phục vụ xuất báo cáo, không expose qua API.
     /// </summary>
     internal static class OrderLabels
     {
+        /// <summary>Nhãn tiếng Việt của kênh thanh toán (COD / Chuyển khoản / MoMo / Ví).</summary>
         public static string PaymentMethod(PaymentMethod method) => method switch
         {
             Domain.Entities.PaymentMethod.Cod => "COD",
@@ -540,6 +564,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _ => method.ToString()
         };
 
+        /// <summary>Nhãn tiếng Việt của trạng thái thanh toán (Chưa thanh toán / Chờ xác nhận / Đã thanh toán / Thất bại).</summary>
         public static string PaymentStatus(PaymentStatus status) => status switch
         {
             Domain.Entities.PaymentStatus.Unpaid => "Chưa thanh toán",
@@ -549,6 +574,7 @@ namespace PhuThuongStickyRice.Application.Orders
             _ => status.ToString()
         };
 
+        /// <summary>Nhãn tiếng Việt của trạng thái đơn (Chờ xác nhận / Đã xác nhận / Đang chuẩn bị / Đang giao / Hoàn thành / Đã hủy).</summary>
         public static string OrderStatus(OrderStatus status) => status switch
         {
             Domain.Entities.OrderStatus.Pending => "Chờ xác nhận",

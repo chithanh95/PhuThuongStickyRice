@@ -31,6 +31,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     // Item 107: versioned prefix — both routes stay live.
     [Route("api/v1/[controller]")]
     [ApiController]
+    /// <summary>
+    /// API sản phẩm (catalog xôi): danh sách/chi tiết public cho shop
+    /// (GET mở, có giới hạn pageSize), còn tạo/sửa/xóa/upload ảnh chỉ role
+    /// Admin và theo policy chi tiết. Định dạng ảnh: jpg/jpeg/png/webp/gif,
+    /// tối đa 5 MB, kiểm tra magic bytes khi upload.
+    /// </summary>
     public class ProductsController : ControllerBase
     {
         private readonly IProductAppService _productAppService;
@@ -67,6 +73,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _environment = environment;
         }
 
+        /// <summary>
+        /// Lấy danh sách sản phẩm phân trang (public — shop dùng). pageSize bị
+        /// kẹp trong 1..100 để request ngoài internet không buộc đọc cả bảng.
+        /// </summary>
+        /// <param name="page">Trang (bắt đầu từ 1).</param>
+        /// <param name="pageSize">Số món/trang, tối đa 100.</param>
+        /// <param name="searchTerm">Tìm theo tên/mã.</param>
+        /// <param name="status">Lọc trạng thái (Active/Inactive).</param>
+        /// <param name="branch">Lọc theo chi nhánh.</param>
+        /// <param name="includeInactive">Bao gồm món đã ngưng bán.</param>
         [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
@@ -93,6 +109,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(paged);
         }
 
+        /// <summary>Lấy chi tiết 1 sản phẩm theo id (public). Không tìm thấy → 404.</summary>
+        /// <param name="id">Id sản phẩm.</param>
         [AllowAnonymous]
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -110,6 +128,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Tạo sản phẩm mới (Admin, quyền AddProductPolicy). Trạng thái do
+        /// service đặt mặc định (khác Put cho phép sửa Status). Trả 201 + DTO
+        /// đã tạo; lỗi nghiệp vụ/trùng mã → 400.
+        /// </summary>
+        /// <param name="model">Thông tin sản phẩm từ form admin.</param>
         [Authorize(AuthorizationPolicyNames.AddProductPolicy)]
         [HttpPost]
         [Consumes("application/json")]
@@ -132,6 +156,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Cập nhật sản phẩm (Admin, quyền UpdateProductPolicy). Cho phép đổi
+        /// Status (khác Post). Không tìm thấy → 404, lỗi nghiệp vụ → 400.
+        /// </summary>
+        /// <param name="id">Id sản phẩm cần sửa.</param>
+        /// <param name="model">Thông tin sản phẩm mới từ form admin.</param>
         [Authorize(AuthorizationPolicyNames.UpdateProductPolicy)]
         [HttpPut("{id}")]
         [Consumes("application/json")]
@@ -215,6 +245,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _productAppService.GetChangeLogAsync(id));
         }
 
+        /// <summary>Xóa sản phẩm (Admin, quyền DeleteProductPolicy). Không tìm thấy → 404.</summary>
+        /// <param name="id">Id sản phẩm cần xóa.</param>
         [Authorize(AuthorizationPolicyNames.DeleteProductPolicy)]
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -365,6 +397,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { message = "Đã xóa ảnh." });
         }
 
+        /// <summary>Xuất toàn bộ danh sách sản phẩm ra file PDF (tối đa 1000 món).</summary>
         [HttpGet("exportaspdf")]
         public async Task<IActionResult> ExportAsPdf(CancellationToken cancellationToken = default)
         {
@@ -377,6 +410,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return File(pdf, MediaTypeNames.Application.Octet, "Products.pdf");
         }
 
+        /// <summary>Xuất toàn bộ danh sách sản phẩm ra file CSV (tối đa 1000 món).</summary>
         [HttpGet("exportascsv")]
         public async Task<IActionResult> ExportAsCsv(CancellationToken cancellationToken = default)
         {
@@ -386,6 +420,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return File(stream.ToArray(), MediaTypeNames.Application.Octet, "Products.csv");
         }
 
+        /// <summary>
+        /// Đọc file CSV sản phẩm và trả về danh sách parse được — hiện chỉ
+        /// preview, CHƯA ghi vào DB (TODO bên dưới).
+        /// </summary>
+        /// <param name="model">File CSV upload từ form.</param>
         [HttpPost("importcsv")]
         public IActionResult ImportCsv([FromForm] UploadFileModel model)
         {

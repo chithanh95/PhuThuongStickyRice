@@ -26,6 +26,11 @@ namespace PhuThuongStickyRice.Application.Common
         Task DispatchAsync(string eventName, object payload);
     }
 
+    /// <summary>
+    /// Gửi webhook ra hệ thống ngoài (Zalo/tele/bot bên thứ 3): tìm endpoint
+    /// đang bật có đăng ký event, POST song song, ghi lịch sử gửi/lỗi vào DB.
+    /// Lỗi không bao giờ làm gãy luồng tạo đơn (fire-and-log).
+    /// </summary>
     public class WebhookDispatcher : IWebhookDispatcher
     {
         private readonly IRepository<WebhookEndpoint, Guid> _endpoints;
@@ -55,6 +60,13 @@ namespace PhuThuongStickyRice.Application.Common
             _clock = clock;
         }
 
+        /// <summary>
+        /// Bắn event tới mọi endpoint đang bật có đăng ký <paramref name="eventName"/>:
+        /// match event trước (rẻ), POST song song qua HttpClient, ghi 1 dòng lịch sử
+        /// gửi cho mỗi endpoint (thành công/thất bại). Không throw khi endpoint lỗi.
+        /// </summary>
+        /// <param name="eventName">Tên event (ví dụ OrderCreated).</param>
+        /// <param name="payload">Dữ liệu kèm theo, serialize thành JSON trong body.</param>
         public virtual async Task DispatchAsync(string eventName, object payload)
         {
             var queryable = await _endpoints.GetQueryableAsync();
@@ -231,17 +243,39 @@ namespace PhuThuongStickyRice.Application.Common
         }
     }
 
+    /// <summary>
+    /// Quản trị webhook outbound (Admin): CRUD endpoint nhận sự kiện
+    /// (đơn tạo / đổi trạng thái), gửi thử, xem lịch sử gửi. Secret của endpoint
+    /// không bao giờ trả về client — chỉ trả cờ HasSecret.
+    /// </summary>
     public interface IWebhookAppService : IApplicationService
     {
+        /// <summary>Danh sách endpoint webhook, sắp xếp theo tên.</summary>
         Task<List<WebhookEndpointDto>> GetListAsync();
+        /// <summary>Chi tiết 1 endpoint webhook theo id.</summary>
         Task<WebhookEndpointDto> GetAsync(Guid id);
+        /// <summary>Thêm endpoint webhook mới (secret trống = không ký HMAC).</summary>
         Task<WebhookEndpointDto> CreateAsync(CreateUpdateWebhookEndpointDto dto);
+        /// <summary>
+        /// Sửa endpoint webhook. Secret bỏ trống = giữ nguyên secret cũ
+        /// (không cho xóa secret bằng cách gửi rỗng).
+        /// </summary>
         Task<WebhookEndpointDto> UpdateAsync(Guid id, CreateUpdateWebhookEndpointDto dto);
+        /// <summary>Xóa endpoint webhook.</summary>
         Task DeleteAsync(Guid id);
+        /// <summary>Gửi thử event "Ping" tới endpoint để admin kiểm tra kết nối.</summary>
         Task<WebhookDeliveryDto> SendTestAsync(Guid id);
+        /// <summary>
+        /// Lịch sử gửi webhook, mới nhất lên trước. <paramref name="endpointId"/>
+        /// null = tất cả endpoint; <paramref name="maxCount"/> bị kẹp trong 1..200.
+        /// </summary>
         Task<List<WebhookDeliveryDto>> GetDeliveriesAsync(Guid? endpointId, int maxCount);
     }
 
+    /// <summary>
+    /// Quản trị webhook outbound cho Admin: CRUD endpoint, gửi thử, xem lịch sử.
+    /// Toàn bộ method yêu cầu role Admin.
+    /// </summary>
     public class WebhookAppService : ApplicationService, IWebhookAppService
     {
         private readonly IRepository<WebhookEndpoint, Guid> _endpoints;
@@ -264,6 +298,7 @@ namespace PhuThuongStickyRice.Application.Common
             _dispatcher = dispatcher;
         }
 
+        /// <summary>Lấy danh sách endpoint webhook (Admin), sắp xếp theo tên.</summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<WebhookEndpointDto>> GetListAsync()
         {
@@ -273,12 +308,16 @@ namespace PhuThuongStickyRice.Application.Common
             return entities.Select(MapToDto).ToList();
         }
 
+        /// <summary>Lấy chi tiết 1 endpoint webhook (Admin).</summary>
+        /// <param name="id">Id endpoint.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task<WebhookEndpointDto> GetAsync(Guid id)
         {
             return MapToDto(await _endpoints.GetAsync(id));
         }
 
+        /// <summary>Thêm endpoint webhook mới (Admin). Danh sách event chuẩn hóa về các event hệ thống hỗ trợ.</summary>
+        /// <param name="dto">Tên, URL, secret (tùy chọn), danh sách event, trạng thái bật.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task<WebhookEndpointDto> CreateAsync(CreateUpdateWebhookEndpointDto dto)
         {
@@ -294,6 +333,9 @@ namespace PhuThuongStickyRice.Application.Common
             return MapToDto(entity);
         }
 
+        /// <summary>Sửa endpoint webhook (Admin). Secret bỏ trống thì giữ nguyên secret cũ.</summary>
+        /// <param name="id">Id endpoint.</param>
+        /// <param name="dto">Thông tin mới.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task<WebhookEndpointDto> UpdateAsync(Guid id, CreateUpdateWebhookEndpointDto dto)
         {
@@ -311,18 +353,25 @@ namespace PhuThuongStickyRice.Application.Common
             return MapToDto(entity);
         }
 
+        /// <summary>Xóa endpoint webhook (Admin).</summary>
+        /// <param name="id">Id endpoint cần xóa.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task DeleteAsync(Guid id)
         {
             await _endpoints.DeleteAsync(id, autoSave: true);
         }
 
+        /// <summary>Gửi thử event "Ping" tới endpoint (Admin) — nút "Gửi thử" trên màn hình webhook.</summary>
+        /// <param name="id">Id endpoint cần thử.</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task<WebhookDeliveryDto> SendTestAsync(Guid id)
         {
             return await _dispatcher.SendTestAsync(id);
         }
 
+        /// <summary>Lịch sử gửi webhook (Admin), mới nhất lên trước, tối đa 200 dòng.</summary>
+        /// <param name="endpointId">Lọc theo endpoint; null = tất cả.</param>
+        /// <param name="maxCount">Số dòng tối đa (kẹp 1..200, mặc định 50).</param>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<WebhookDeliveryDto>> GetDeliveriesAsync(Guid? endpointId, int maxCount)
         {

@@ -47,6 +47,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Off-peak promos ============
 
+        /// <summary>Lấy danh sách khuyến mãi khung giờ vắng khách (Admin, sắp xếp theo giờ bắt đầu).</summary>
         [HttpGet("offpeak")]
         public async Task<ActionResult> GetOffPeakPromos(CancellationToken cancellationToken = default)
         {
@@ -73,6 +74,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             public bool IsActive { get; set; } = true;
         }
 
+        /// <summary>
+        /// Tạo khuyến mãi khung giờ vắng khách (Admin). Giờ phải trong 0–23,
+        /// giờ bắt đầu khác giờ kết thúc, mức giảm không âm. Sau khi lưu phải
+        /// xóa cache để landing public cập nhật ngay.
+        /// </summary>
+        /// <param name="dto">Khung giờ (StartHour/EndHour), mức giảm (đồng), trạng thái bật.</param>
         [HttpPost("offpeak")]
         public async Task<ActionResult> CreateOffPeakPromo(
             [FromBody] OffPeakPromoDto dto,
@@ -100,6 +107,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { success = true, id = promo.Id });
         }
 
+        /// <summary>
+        /// Sửa khuyến mãi khung giờ vắng khách (Admin). Validate cùng luật
+        /// như tạo mới; không tìm thấy → 404. Xóa cache sau khi lưu.
+        /// </summary>
+        /// <param name="id">Id khuyến mãi.</param>
+        /// <param name="dto">Khung giờ/mức giảm/trạng thái mới.</param>
         [HttpPut("offpeak/{id:guid}")]
         public async Task<ActionResult> UpdateOffPeakPromo(
             Guid id,
@@ -125,6 +138,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { success = true });
         }
 
+        /// <summary>Xóa khuyến mãi khung giờ vắng khách (Admin), kèm xóa cache. Không tìm thấy → 404.</summary>
+        /// <param name="id">Id khuyến mãi cần xóa.</param>
         [HttpDelete("offpeak/{id:guid}")]
         public async Task<ActionResult> DeleteOffPeakPromo(Guid id, CancellationToken cancellationToken = default)
         {
@@ -140,6 +155,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Dish polls ============
 
+        /// <summary>Lấy danh sách bình chọn món ăn (Admin, mới nhất lên trước).</summary>
         [HttpGet("polls")]
         public async Task<ActionResult> GetPolls(CancellationToken cancellationToken = default)
         {
@@ -167,6 +183,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             public bool IsActive { get; set; } = true;
         }
 
+        /// <summary>
+        /// Tạo bình chọn món ăn (Admin). Tên món bắt buộc; lượt vote bắt đầu
+        /// từ 0 (khách vote sau). Xóa cache polls của landing public.
+        /// </summary>
+        /// <param name="dto">Tên món, mô tả, ảnh, trạng thái bật.</param>
         [HttpPost("polls")]
         public async Task<ActionResult> CreatePoll(
             [FromBody] DishPollDto dto,
@@ -194,6 +215,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { success = true, id = poll.Id });
         }
 
+        /// <summary>
+        /// Sửa bình chọn món ăn (Admin). Không đổi lượt vote đã có; chỉ sửa
+        /// nội dung/trạng thái. Không tìm thấy → 404.
+        /// </summary>
+        /// <param name="id">Id bình chọn.</param>
+        /// <param name="dto">Tên món, mô tả, ảnh, trạng thái mới.</param>
         [HttpPut("polls/{id:guid}")]
         public async Task<ActionResult> UpdatePoll(
             Guid id,
@@ -218,12 +245,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { success = true });
         }
 
+        /// <summary>
+        /// Xóa bình chọn món ăn (Admin): xóa cả poll lẫn các lượt vote của nó
+        /// rồi xóa cache polls trên landing public. Không tìm thấy → 404.
+        /// </summary>
+        /// <param name="id">Id bình chọn cần xóa.</param>
         [HttpDelete("polls/{id:guid}")]
         public async Task<ActionResult> DeletePoll(Guid id, CancellationToken cancellationToken = default)
         {
             var poll = await _db.DishPolls.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
             if (poll == null) return NotFound();
 
+            // Xóa luôn các lượt vote của poll — không để vote mồ côi trỏ vào poll đã xóa.
             var votes = _db.DishVotes.Where(v => v.PollId == id);
             _db.DishVotes.RemoveRange(votes);
             _db.DishPolls.Remove(poll);
