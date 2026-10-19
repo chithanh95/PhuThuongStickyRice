@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Core.Components
@@ -37,6 +38,19 @@ namespace PhuThuongStickyRice.Web.Components.Core.Components
         {
             ShowDialog = false;
             StateHasChanged();
+        }
+
+        /// <summary>
+        /// UIUX-1019 Agent4 (a11y): cho phép đóng dialog bằng phím Escape.
+        /// Người dùng bàn phím cần cách thoát chuẩn khỏi hộp thoại mà không
+        /// phải tab tới nút × hoặc nút Hủy.
+        /// </summary>
+        protected void HandleKeyDown(KeyboardEventArgs e)
+        {
+            if (e?.Key == "Escape")
+            {
+                Close();
+            }
         }
 
         protected async Task HandleValidSubmit()

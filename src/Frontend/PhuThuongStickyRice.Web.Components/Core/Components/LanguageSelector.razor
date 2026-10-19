@@ -4,8 +4,11 @@
 @inject AppI18n AppI18n
 
 <div class="lang-selector @(Compact ? "lang-compact" : "")">
+    @* UIUX-1019 Agent4 (a11y): ảnh cờ chỉ mang tính trang trí — nút đã có
+       aria-label, menu item đã có text tên ngôn ngữ, nên alt="" để trình đọc
+       màn hình không đọc trùng ("Language / Ngôn ngữ, vi"). *@
     <button type="button" class="lang-btn" @onclick="ToggleOpen" aria-label="Language / Ngôn ngữ" aria-haspopup="true" aria-expanded="@_open">
-        <img src="@FlagUrl(AppI18n.CurrentLanguage)" alt="@AppI18n.CurrentLanguage" class="lang-flag" />
+        <img src="@FlagUrl(AppI18n.CurrentLanguage)" alt="" class="lang-flag" aria-hidden="true" />
         <span class="lang-caret">▾</span>
     </button>
     @if (_open)
@@ -16,7 +19,7 @@
                 <button type="button" class="lang-item @(AppI18n.CurrentLanguage == lang.Code ? "active" : "")"
                         @onclick="() => SelectLang(lang.Code)" role="menuitem"
                         aria-current="@(AppI18n.CurrentLanguage == lang.Code ? "true" : null)">
-                    <img src="@FlagUrl(lang.Code)" alt="@lang.Name" class="lang-flag" />
+                    <img src="@FlagUrl(lang.Code)" alt="" class="lang-flag" aria-hidden="true" />
                     <span class="lang-name">@lang.Name</span>
                 </button>
             }

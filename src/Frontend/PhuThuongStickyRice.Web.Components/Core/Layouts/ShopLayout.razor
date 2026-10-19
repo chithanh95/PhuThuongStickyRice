@@ -60,8 +60,11 @@
                 <button type="button" class="shp-theme-toggle" @onclick="ToggleLargeText" title="Chữ lớn" aria-label="Chế độ chữ lớn" aria-pressed="@_isLargeText">
                     <span style="font-weight:bold;font-size:1.1em;">A+</span>
                 </button>
-                @* #197: Dark mode 3 chế độ Sáng/Tối/Tự động — đồng bộ với landing. *@
-                <button type="button" class="shp-theme-toggle" @onclick="ToggleTheme" title="@_themeTitle" aria-label="Chế độ sáng/tối/tự động">
+                @* #197: Dark mode 3 chế độ Sáng/Tối/Tự động — đồng bộ với landing.
+                   UIUX-1019 Agent4 (a11y): aria-label động theo _themeTitle để trình đọc
+                   màn hình biết trạng thái HIỆN TẠI và hành động KẾ TIẾP (trước đây label
+                   tĩnh "Chế độ sáng/tối/tự động", người khiếm thị không biết đang ở chế độ nào). *@
+                <button type="button" class="shp-theme-toggle" @onclick="ToggleTheme" title="@_themeTitle" aria-label="@_themeTitle">
                     @_themeIcon
                 </button>
                 <a class="shp-order-btn" href="/cart">@AppI18n.T("shop.order_now")</a>

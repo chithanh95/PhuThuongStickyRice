@@ -13,7 +13,9 @@
                 <p class="sg-footer-about">@(string.IsNullOrWhiteSpace(_content?.FooterAboutText) ? "Gói xôi nóng hổi mỗi sáng từ làng nghề Phú Thượng — dẻo thơm, đúng vị Hà Nội." : _content.FooterAboutText)</p>
                 @if (!string.IsNullOrWhiteSpace(_content?.ContactAddress))
                 {
-                    <p class="sg-footer-line">📍 @_content.ContactAddress</p>
+                    @* UIUX-1019 Agent4 (a11y): emoji bọc aria-hidden để trình đọc màn hình
+                       không đọc tên emoji ("pushpin", "telephone"...). *@
+                    <p class="sg-footer-line"><span aria-hidden="true">📍</span> @_content.ContactAddress</p>
                 }
             </div>
             <div class="sg-footer-col">
@@ -29,11 +31,12 @@
                 <h4 class="sg-footer-h">@AppI18n.T("footer.contact_us")</h4>
                 @if (!string.IsNullOrWhiteSpace(_content?.ContactPhone))
                 {
-                    <a class="sg-footer-hotline" href="tel:@_content.ContactPhone">📞 @_content.ContactPhone</a>
+                    <a class="sg-footer-hotline" href="tel:@_content.ContactPhone"><span aria-hidden="true">📞</span> @_content.ContactPhone</a>
                 }
                 @if (!string.IsNullOrWhiteSpace(_content?.ContactEmail))
                 {
-                    <p class="sg-footer-line">✉️ @_content.ContactEmail</p>
+                    @* UIUX-1019 Agent4 (polish): email thành link mailto để bấm được trên mobile. *@
+                    <p class="sg-footer-line"><span aria-hidden="true">✉️</span> <a href="mailto:@_content.ContactEmail">@_content.ContactEmail</a></p>
                 }
             </div>
         </div>

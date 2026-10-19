@@ -248,17 +248,19 @@
         </div>
     </div>
 
-    @* Toast notifications (top-right, auto-dismiss) *@
-    <div class="lx-toast-container">
+    @* Toast notifications (top-right, auto-dismiss)
+       UIUX-1019 Agent4 (a11y): aria-live="polite" để trình đọc màn hình thông báo
+       khi toast xuất hiện (trước đây div trần, người khiếm thị không biết có thông báo). *@
+    <div class="lx-toast-container" aria-live="polite">
         @foreach (var toast in _toasts)
         {
-            <div class="lx-toast show" @key="toast.Id">
+            <div class="lx-toast show" @key="toast.Id" role="status">
                 <div class="lx-toast-body">
                     <i class="fa-solid fa-circle-check me-3"></i>
                     <span>@toast.Message</span>
                 </div>
                 <button type="button" class="lx-toast-close" @onclick="() => DismissToast(toast.Id)" aria-label="Đóng">
-                    <i class="fa-solid fa-xmark"></i>
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 </button>
             </div>
         }

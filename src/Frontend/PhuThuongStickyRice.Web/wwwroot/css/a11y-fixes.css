@@ -1,0 +1,46 @@
+/* ============================================================
+   a11y-fixes.css — Accessibility & polish layer (UIUX-1019, Agent 4)
+   - Fix a11y TOÀN CỤC cho Components: focus-visible + contrast.
+   - Coordinator wire vào wwwroot/index.html SAU css/a11y.css và
+     css/uiux-agent4-a11y.css (file này load sau cùng trong nhóm a11y).
+   - Chỉ chứa fix CHƯA có trong các layer hiện tại (không lặp rule).
+   - Không đổi layout/typography/màu nền hiện tại, không thêm thư viện.
+   ============================================================ */
+
+/* Fix 1 — WCAG 1.4.3 (Contrast AA): dấu ▾ của LanguageSelector dùng
+   #8a7a63 trên nền trắng chỉ đạt ~4.2:1 (dưới 4.5:1 cho chữ nhỏ 10px).
+   #6f6152 → ~6.0:1. Dark mode dùng màu nhạt #c9bda9 (~9:1 trên nền tối)
+   vì màu đậm sẽ chìm trên nền tối. */
+.lang-caret {
+    color: #6f6152;
+}
+html.dark .lang-caret {
+    color: #c9bda9;
+}
+
+/* Fix 2 — WCAG 2.5.8 (Target Size): nút × đóng toast admin (.lx-toast-close)
+   chỉ có padding 4px (~20px hit area), khó bấm với người lớn tuổi trên
+   điện thoại. Nâng lên 44px CHỈ trên thiết bị cảm ứng (pointer: coarse)
+   nên không đổi bố cục PC. (Cùng pattern với fix toast shop ở
+   Toast.razor.css của Agent 1.) */
+@media (pointer: coarse) {
+    .lx-toast-close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Fix 3 — WCAG 2.4.7 (Focus Visible): dự phòng vòng focus rõ ràng cho nút
+   đóng toast admin. admin-lexa.css đã có rule :focus-visible chung, rule này
+   (specificity cao hơn, load sau) đảm bảo không bị theme nào ghi đè mất,
+   và outline-offset 3px để vòng không dính sát icon × trắng trên nền toast. */
+.lx-toast-close:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 3px;
+}
+html.dark .lx-toast-close:focus-visible {
+    outline-color: #a49de0;
+}
