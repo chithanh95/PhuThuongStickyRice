@@ -285,44 +285,10 @@ namespace PhuThuongStickyRice.WebAPI
             // Serves wwwroot, including /uploads/landing/* for landing page images.
             app.UseStaticFiles();
 
-            // One-click LAN: serve Blazor WASM static files (publish-lan/web/wwwroot)
-            // Cấu hình qua appsettings "BlazorWwwRoot" (đường dẫn tương đối từ folder API).
+            // One-click LAN: serve Blazor WASM static files từ thư mục cấu hình
+            // qua appsettings "BlazorWwwRoot" (xem ConfigureBlazorStaticFiles).
             // Không ảnh hưởng API routes (/api/*) hay Swagger.
-            var blazorWwwRoot = Configuration["BlazorWwwRoot"];
-            PhysicalFileProvider blazorFileProvider = null;
-            if (!string.IsNullOrWhiteSpace(blazorWwwRoot))
-            {
-                var fullPath = System.IO.Path.IsPathRooted(blazorWwwRoot)
-                    ? blazorWwwRoot
-                    : System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, blazorWwwRoot));
-                if (System.IO.Directory.Exists(fullPath))
-                {
-                    blazorFileProvider = new PhysicalFileProvider(fullPath);
-                    // Blazor WASM cần serve mọi file trong wwwroot (gồm .dat, .wasm, .dll...)
-                    // mà StaticFiles mặc định chặn file không rõ MIME type.
-                    var contentTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
-                    contentTypeProvider.Mappings[".dat"] = "application/octet-stream";
-                    contentTypeProvider.Mappings[".wasm"] = "application/wasm";
-                    contentTypeProvider.Mappings[".dll"] = "application/octet-stream";
-                    contentTypeProvider.Mappings[".blat"] = "application/octet-stream";
-                    app.UseStaticFiles(new StaticFileOptions
-                    {
-                        FileProvider = blazorFileProvider,
-                        RequestPath = "",
-                        ContentTypeProvider = contentTypeProvider,
-                        ServeUnknownFileTypes = true
-                    });
-                    System.Console.WriteLine($"[LAN] Serving Blazor WASM from: {fullPath}");
-                }
-                else
-                {
-                    System.Console.WriteLine($"[LAN] BlazorWwwRoot NOT FOUND: {fullPath}");
-                }
-            }
-            else
-            {
-                System.Console.WriteLine("[LAN] BlazorWwwRoot not configured - API only mode");
-            }
+            var blazorFileProvider = ConfigureBlazorStaticFiles(app);
 
             app.UseAccessTokenFromFormMiddleware();
 
@@ -343,22 +309,7 @@ namespace PhuThuongStickyRice.WebAPI
 
             app.UseSwagger();
 
-            app.UseSwaggerUI(setupAction =>
-            {
-                setupAction.SwaggerEndpoint(
-                    "/swagger/PhuThuongStickyRice/swagger.json",
-                    "PhuThuongStickyRice API");
-
-                // One-click LAN: Blazor chiếm route "/" nên Swagger dời sang "/swagger".
-                // Bình thường (không serve Blazor) Swagger vẫn ở root như cũ.
-                setupAction.RoutePrefix = blazorFileProvider != null ? "swagger" : string.Empty;
-
-                setupAction.DefaultModelExpandDepth(2);
-                setupAction.DefaultModelRendering(ModelRendering.Model);
-                setupAction.DocExpansion(DocExpansion.None);
-                setupAction.EnableDeepLinking();
-                setupAction.DisplayOperationId();
-            });
+            ConfigureSwaggerUI(app, blazorFileProvider);
 
             app.UseAuthentication();
             app.UseAuthorization();
@@ -367,12 +318,83 @@ namespace PhuThuongStickyRice.WebAPI
 
             app.UseMonitoringServices(AppSettings.Monitoring);
 
+            MapBlazorSpaFallback(app, blazorFileProvider);
+        }
+
+        /// <summary>
+        /// One-click LAN: serve file tĩnh của Blazor WASM (publish-lan/web/wwwroot).
+        /// Đường dẫn cấu hình qua appsettings "BlazorWwwRoot" (tương đối từ folder API).
+        /// Trả về null khi không cấu hình hoặc thư mục không tồn tại (chế độ "API only").
+        /// </summary>
+        private PhysicalFileProvider ConfigureBlazorStaticFiles(IApplicationBuilder app)
+        {
+            var blazorWwwRoot = Configuration["BlazorWwwRoot"];
+            if (string.IsNullOrWhiteSpace(blazorWwwRoot))
+            {
+                System.Console.WriteLine("[LAN] BlazorWwwRoot not configured - API only mode");
+                return null;
+            }
+
+            var fullPath = System.IO.Path.IsPathRooted(blazorWwwRoot)
+                ? blazorWwwRoot
+                : System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, blazorWwwRoot));
+            if (!System.IO.Directory.Exists(fullPath))
+            {
+                System.Console.WriteLine($"[LAN] BlazorWwwRoot NOT FOUND: {fullPath}");
+                return null;
+            }
+
+            var blazorFileProvider = new PhysicalFileProvider(fullPath);
+            // Blazor WASM cần serve mọi file trong wwwroot (gồm .dat, .wasm, .dll...)
+            // mà StaticFiles mặc định chặn file không rõ MIME type.
+            var contentTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+            contentTypeProvider.Mappings[".dat"] = "application/octet-stream";
+            contentTypeProvider.Mappings[".wasm"] = "application/wasm";
+            contentTypeProvider.Mappings[".dll"] = "application/octet-stream";
+            contentTypeProvider.Mappings[".blat"] = "application/octet-stream";
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = blazorFileProvider,
+                RequestPath = "",
+                ContentTypeProvider = contentTypeProvider,
+                ServeUnknownFileTypes = true
+            });
+            System.Console.WriteLine($"[LAN] Serving Blazor WASM from: {fullPath}");
+            return blazorFileProvider;
+        }
+
+        /// <summary>
+        /// Cấu hình Swagger UI. One-click LAN: Blazor chiếm route "/" nên Swagger
+        /// dời sang "/swagger"; bình thường (không serve Blazor) Swagger vẫn ở root.
+        /// </summary>
+        private void ConfigureSwaggerUI(IApplicationBuilder app, PhysicalFileProvider blazorFileProvider)
+        {
+            app.UseSwaggerUI(setupAction =>
+            {
+                setupAction.SwaggerEndpoint(
+                    "/swagger/PhuThuongStickyRice/swagger.json",
+                    "PhuThuongStickyRice API");
+
+                setupAction.RoutePrefix = blazorFileProvider != null ? "swagger" : string.Empty;
+
+                setupAction.DefaultModelExpandDepth(2);
+                setupAction.DefaultModelRendering(ModelRendering.Model);
+                setupAction.DocExpansion(DocExpansion.None);
+                setupAction.EnableDeepLinking();
+                setupAction.DisplayOperationId();
+            });
+        }
+
+        /// <summary>
+        /// Map controllers + SPA fallback: mọi route không phải /api/* và không phải
+        /// file tĩnh thì trả về index.html của Blazor (để client-side routing hoạt động).
+        /// </summary>
+        private void MapBlazorSpaFallback(IApplicationBuilder app, PhysicalFileProvider blazorFileProvider)
+        {
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
 
-                // SPA fallback: mọi route không phải /api/* và không phải file tĩnh
-                // thì trả về index.html của Blazor (để client-side routing hoạt động).
                 if (blazorFileProvider != null)
                 {
                     endpoints.MapFallback(async context =>

@@ -483,6 +483,65 @@ namespace PhuThuongStickyRice.Domain.Entities
             DateTime? scheduledFor = null,
             Guid? customerUserId = null)
         {
+            ValidateCreateInput(orderNumber, customerName, customerPhone, customerEmail,
+                customerAddress, notes, fulfillmentMethod, deliverySlot);
+
+            var orderLines = BuildOrderLines(lines);
+
+            return new Order(
+                orderNumber.Trim(),
+                customerName.Trim(),
+                customerPhone.Trim(),
+                string.IsNullOrWhiteSpace(customerEmail) ? null : customerEmail.Trim(),
+                string.IsNullOrWhiteSpace(customerAddress) ? null : customerAddress.Trim(),
+                notes?.Trim(),
+                paymentMethod,
+                orderLines,
+                deliveryFee,
+                discountCode,
+                discountAmount,
+                fulfillmentMethod,
+                giftFee,
+                taxCode,
+                companyName,
+                recipientName,
+                recipientPhone,
+                isGift,
+                giftMessage,
+                requiresDeposit,
+                loyaltyDiscount,
+                loyaltyPointsRedeemed,
+                tierDiscount,
+                referralCodeUsed,
+                idempotencyKey,
+                promotionName,
+                promotionDiscountAmount,
+                branchId,
+                branchName,
+                source,
+                deliverySlot,
+                pickupShipperName,
+                pickupShipperPhone,
+                scheduledFor,
+                customerUserId);
+        }
+
+        /// <summary>
+        /// Validate toàn bộ đầu vào của <see cref="Create"/>: trường bắt buộc,
+        /// độ dài tối đa, định dạng email, và địa chỉ bắt buộc khi giao hàng
+        /// (không bắt buộc khi khách tự đến lấy). Ném
+        /// <see cref="DomainException"/> khi đầu vào thiếu hoặc sai.
+        /// </summary>
+        private static void ValidateCreateInput(
+            string orderNumber,
+            string customerName,
+            string customerPhone,
+            string customerEmail,
+            string customerAddress,
+            string notes,
+            FulfillmentMethod fulfillmentMethod,
+            string deliverySlot)
+        {
             if (string.IsNullOrWhiteSpace(orderNumber))
             {
                 throw new DomainException("Order number is required.");
@@ -544,7 +603,16 @@ namespace PhuThuongStickyRice.Domain.Entities
             {
                 throw new DomainException($"Delivery slot must not exceed {DeliverySlotMaxLength} characters.");
             }
+        }
 
+        /// <summary>
+        /// Dựng danh sách <see cref="OrderLine"/> từ tuple đầu vào, đồng thời
+        /// đảm bảo đơn có ít nhất một dòng và mọi dòng dùng chung một loại tiền tệ.
+        /// </summary>
+        private static List<OrderLine> BuildOrderLines(
+            IEnumerable<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> lines)
+        {
             var orderLines = (lines ?? Enumerable.Empty<(Guid, string, Money, int, string, string, decimal, bool, string)>())
                 .Select(x => OrderLine.Create(
                     x.Item1, x.Item2, x.Item3, x.Item4, x.Item5, x.Item6, x.Item7, x.Item8, x.Item9))
@@ -561,42 +629,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("All order lines must use the same currency.");
             }
 
-            return new Order(
-                orderNumber.Trim(),
-                customerName.Trim(),
-                customerPhone.Trim(),
-                string.IsNullOrWhiteSpace(customerEmail) ? null : customerEmail.Trim(),
-                string.IsNullOrWhiteSpace(customerAddress) ? null : customerAddress.Trim(),
-                notes?.Trim(),
-                paymentMethod,
-                orderLines,
-                deliveryFee,
-                discountCode,
-                discountAmount,
-                fulfillmentMethod,
-                giftFee,
-                taxCode,
-                companyName,
-                recipientName,
-                recipientPhone,
-                isGift,
-                giftMessage,
-                requiresDeposit,
-                loyaltyDiscount,
-                loyaltyPointsRedeemed,
-                tierDiscount,
-                referralCodeUsed,
-                idempotencyKey,
-                promotionName,
-                promotionDiscountAmount,
-                branchId,
-                branchName,
-                source,
-                deliverySlot,
-                pickupShipperName,
-                pickupShipperPhone,
-                scheduledFor,
-                customerUserId);
+            return orderLines;
         }
 
         /// <summary>

@@ -44,6 +44,9 @@ namespace PhuThuongStickyRice.Application.Reports
     {
         private const string EncryptedPrefix = "DPv1:";
 
+        /// <summary>Số ngày trong một tuần — dùng khi tính khoảng tuần trước/sau.</summary>
+        private const int DaysPerWeek = 7;
+
         private readonly IRepository<Order, Guid> _orders;
         private readonly IRepository<ShopSetting, Guid> _settings;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -77,9 +80,9 @@ namespace PhuThuongStickyRice.Application.Reports
         public static (DateTime Start, DateTime End) LastFullWeek(DateTime vnToday)
         {
             var today = vnToday.Date;
-            var daysSinceMonday = ((int)today.DayOfWeek + 6) % 7;
-            var start = today.AddDays(-daysSinceMonday - 7);
-            return (start, start.AddDays(6));
+            var daysSinceMonday = ((int)today.DayOfWeek + (DaysPerWeek - 1)) % DaysPerWeek;
+            var start = today.AddDays(-daysSinceMonday - DaysPerWeek);
+            return (start, start.AddDays(DaysPerWeek - 1));
         }
 
         /// <summary>Idempotency marker stored on ShopSetting.</summary>
@@ -90,7 +93,7 @@ namespace PhuThuongStickyRice.Application.Reports
         {
             var (start, end) = LastFullWeek(VietnamTime.Today());
             var current = await AggregateWeekAsync(start, end);
-            var (prevStart, prevEnd) = (start.AddDays(-7), end.AddDays(-7));
+            var (prevStart, prevEnd) = (start.AddDays(-DaysPerWeek), end.AddDays(-DaysPerWeek));
             var previous = await AggregateWeekAsync(prevStart, prevEnd);
 
             var weekNo = ISOWeek.GetWeekOfYear(start);
