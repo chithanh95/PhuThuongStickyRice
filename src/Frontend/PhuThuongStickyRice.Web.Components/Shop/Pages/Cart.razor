@@ -64,29 +64,12 @@
 }
 else
 {
-    @* GH1: freeship progress bar — hidden when the shop hasn't configured a threshold. *@
-    @if (_freeShipThreshold > 0)
-    {
-        var ghRemaining = _freeShipThreshold - CartState.TotalAmount;
-        var ghPct = ghRemaining <= 0 ? 100 : Math.Min(100, (int)Math.Round(CartState.TotalAmount / _freeShipThreshold * 100));
-        <div class="gh-freeship mb-3">
-            @if (ghRemaining <= 0)
-            {
-                <div class="alert alert-success mb-0 py-2">🎉 Đơn của bạn được <strong>miễn phí giao hàng</strong>!</div>
-            }
-            else
-            {
-                <div class="d-flex justify-content-between align-items-baseline mb-1">
-                    <small>Còn <strong class="text-danger">@FormatPrice(ghRemaining)</strong> nữa được miễn phí giao hàng</small>
-                    <small class="text-muted">@ghPct%</small>
-                </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-success progress-bar-striped" role="progressbar"
-                         style="width: @ghPct%" aria-valuenow="@ghPct" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-            }
-        </div>
-    }
+    @* bug-hunt 2026-10-20: bỏ thanh "miễn phí giao hàng" — quán KHÔNG giao
+       hàng (khách tự đến lấy hoặc tự book shipper, phí ship luôn 0 theo
+       ComputeDeliveryFee), hiển thị "được miễn phí giao hàng" gây hiểu nhầm
+       quán có dịch vụ giao hàng. Cùng treatment với checkout (bỏ dòng
+       "−DeliveryFee" ảo). Ngưỡng FreeShipThreshold chỉ còn ý nghĩa với
+       legacy Delivery, không áp cho đơn Pickup/ShipperPickup hiện tại. *@
 
     <div class="table-responsive">
         <table class="table cart-lines">
@@ -243,9 +226,6 @@ else
         return PlaceholderImage;
     }
 
-    // GH1: freeship progress bar (0 = not configured → hidden).
-    private decimal _freeShipThreshold;
-
     // GH2: optional phone carried over to checkout.
     private const string PhoneStorageKey = "phuthuong.phone.v1";
     // Số lượng tối đa cho 1 dòng khi gộp giỏ được chia sẻ (tránh giỏ phình quá lớn).
@@ -260,8 +240,9 @@ else
     private string _lastSuggestionCartKey = string.Empty;
 
     /// <summary>
-    /// Tải danh sách giỏ, gộp món từ link chia sẻ, gợi ý mua cùng, ngưỡng freeship
+    /// Tải danh sách giỏ, gộp món từ link chia sẻ, gợi ý mua cùng
     /// và prefill SĐT từ lần ghé trước (fail-soft — không chặn giỏ khi lỗi).
+    /// (Ngưỡng freeship đã bỏ khỏi giỏ — quán không giao hàng.)
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
@@ -271,28 +252,15 @@ else
         CartState.OnChange += OnCartChanged;
         await MergeSharedCartAsync();
 
-        // perf-hunt 2026-10-19 (run 22:35): 3 loader độc lập chạy song song
+        // perf-hunt 2026-10-19 (run 22:35): 2 loader độc lập chạy song song
         // (cắt ~1-2 round-trip khi mở trang /cart). Gợi ý phụ thuộc giỏ SAU
-        // khi merge nên vẫn đứng sau MergeSharedCartAsync; ngưỡng freeship và
-        // SĐT lưu local đều fail-soft riêng, ghi field riêng nên không race.
+        // khi merge nên vẫn đứng sau MergeSharedCartAsync; SĐT lưu local
+        // fail-soft riêng nên không race.
+        // (bug-hunt 2026-10-20: bỏ LoadSettingsAsync — ngưỡng freeship không
+        // còn dùng ở giỏ vì quán không giao hàng.)
         var suggestionsTask = LoadSuggestionsAsync();
-        var settingsTask = LoadSettingsAsync();
         var phoneTask = LoadPhoneAsync();
-        await Task.WhenAll(suggestionsTask, settingsTask, phoneTask);
-    }
-
-    /// <summary>GH1: ngưỡng freeship (fail-soft — thanh ẩn khi không có).</summary>
-    private async Task LoadSettingsAsync()
-    {
-        try
-        {
-            var settings = await ShopSettingsService.GetPublicAsync();
-            _freeShipThreshold = settings?.FreeShipThreshold ?? 0;
-        }
-        catch (Exception)
-        {
-            _freeShipThreshold = 0;
-        }
+        await Task.WhenAll(suggestionsTask, phoneTask);
     }
 
     /// <summary>GH2: điền sẵn SĐT từ lần ghé trước (fail-soft).</summary>
