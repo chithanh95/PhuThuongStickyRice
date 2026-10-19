@@ -148,3 +148,18 @@ html.dark .xo-sec-div em { color: #e8a013; /* was #9C682C — ~2.9:1 → ~7:1 */
     }
 }
 /* ===== END UIUX run 17:15 - Agent1 FIX 5 ===== */
+
+/* ===== UIUX run 04:47 (job uiux-team-2days) — Agent1 Mobile =====
+   FIX 2 — Ghi chú giới hạn ảnh "Ảnh tự nén trước khi tải lên (tối đa 5MB)."
+   (CheckIn.razor:27, small.form-text.text-muted ~12.8px): thông tin quan
+   trọng — ảnh quá 5MB sẽ tải lên thất bại, khách lớn tuổi cần đọc TRƯỚC khi
+   chọn ảnh. Nâng lên 14px trên mobile, PC giữ nguyên.
+   (Verify: small.form-text.text-muted chỉ xuất hiện ở đúng chỗ này trên
+   trang — scoped CSS nên không ảnh hưởng trang khác.) */
+@media (max-width: 767.98px) {
+    .xo-checkin-form .form-group > small.form-text.text-muted {
+        font-size: 14px;
+        line-height: 1.55;
+    }
+}
+/* ===== END UIUX run 04:47 - Agent1 FIX 2 ===== */

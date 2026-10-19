@@ -117,3 +117,21 @@ html.dark .auth-card .btn:focus-visible {
     /* a11y (WCAG 1.4.3): #7a6fbe trên nền card tối #262640 chỉ ~3:1 → #a49de0 (~5.6:1) */
     html.dark .auth-card .auth-link { color: #a49de0; }
     html.dark .auth-brand-name { color: #f0eef5; }
+
+/* ===== UIUX run 04:47 (job uiux-team-2days) — Agent1 Mobile =====
+   FIX 1 — Tab "Đăng ký": ghi chú "Dùng số điện thoại để đăng nhập những lần
+   sau." (small.text-muted ~12.8px, con trực tiếp của .form-group) và gợi ý
+   "(ít nhất 6 ký tự)" trong label Mật khẩu (small ~12.8px): người lớn tuổi
+   cần đọc để biết SĐT chính là tài khoản đăng nhập lần sau + yêu cầu mật
+   khẩu, nhưng chữ quá nhỏ trên mobile. Nâng lên 14px/13px, PC giữ nguyên.
+   (Verify: DangNhap.razor:78 small là con trực tiếp duy nhất của .form-group;
+   :81 small nằm trong .auth-label — không chạm nhau.) */
+@media (max-width: 767.98px) {
+    .auth-card .form-group > small.text-muted {
+        font-size: 14px;
+    }
+    .auth-card .auth-label > small.text-muted {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX run 04:47 - Agent1 FIX 1 ===== */

@@ -367,3 +367,24 @@ html.dark .nq-form-card label {
     }
 }
 /* ===== END UIUX run 16:48 - Agent1 FIX 3 ===== */
+
+/* ===== UIUX run 04:47 (job uiux-team-2days) — Agent1 Mobile =====
+   FIX 3 — Form đăng ký nhượng quyền (.nq-form-card): input/select chưa có
+   rule mobile riêng — chữ <16px làm iOS auto-zoom khi focus (giật layout),
+   ô nhập ~38px dưới chuẩn chạm 44px; chữ lỗi validation
+   (small.text-danger ~12.8px: Họ tên/SĐT/Tỉnh/Vốn/Mặt bằng/Kinh nghiệm)
+   khách BẮT BUỘC đọc được để sửa form nhưng mờ với người lớn tuổi.
+   Mobile: input/select/textarea chữ 16px + cao 44px, lỗi validation 14px;
+   PC giữ nguyên. (Nút "Gửi đăng ký" .nq-submit đã ~54px nên không cần.)
+   (Verify: NhuongQuyen.razor:164-229 — .nq-form-card .form-control phủ đúng
+   6 ô form; small.text-danger chỉ ở 6 dòng lỗi, con trực tiếp .form-group.) */
+@media (max-width: 767.98px) {
+    .nq-form-card .form-control {
+        font-size: 16px; /* iOS không auto-zoom khi focus input >=16px */
+        min-height: 44px;
+    }
+    .nq-form-card .form-group > small.text-danger {
+        font-size: 14px;
+    }
+}
+/* ===== END UIUX run 04:47 - Agent1 FIX 3 ===== */

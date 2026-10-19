@@ -40,7 +40,9 @@
         <h4 class="card-title">Bộ lọc đơn hàng</h4>
         <div class="form-row">
             <div class="col-md-4">
+                @* A11y: input chỉ có placeholder — thêm aria-label để screen reader đọc được tên trường. *@
                 <input id="orderSearchInput" class="form-control" placeholder="Tìm mã đơn / tên / SĐT... (phím /)"
+                       aria-label="Tìm đơn hàng theo mã đơn, tên khách hoặc số điện thoại"
                        @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchChanged" />
             </div>
             <div class="col-md-3">
@@ -67,7 +69,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <select class="form-control" @bind="_cashFilter" @bind:after="() => LoadOrders(1)" title="Lọc theo trạng thái thu tiền">
+                <select class="form-control" @bind="_cashFilter" @bind:after="() => LoadOrders(1)" title="Lọc theo trạng thái thu tiền" aria-label="Lọc theo trạng thái thu tiền">
                     <option value="">Thu tiền: tất cả</option>
                     <option value="uncollected">💵 Chưa thu tiền</option>
                     <option value="collected">✅ Đã thu tiền</option>

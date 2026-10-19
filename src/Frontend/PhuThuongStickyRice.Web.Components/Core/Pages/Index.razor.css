@@ -10,7 +10,10 @@
     --sg-surface: #ffffff;
     --sg-cream: #f7f1e5;
     --sg-ink: #2e2620;
-    --sg-muted: #7d6c58;
+    /* A11y-1020 Agent4 (contrast WCAG 1.4.3): #7d6c58 trên nền kem #f5efe6/#fdfbf7
+       chỉ đạt ~4.4:1 — dưới ngưỡng 4.5:1 cho chữ thường. Sẫm xuống #6e5e49
+       (~5.5:1 trên nền kem), vẫn giữ tông nâu ấm của landing. */
+    --sg-muted: #6e5e49;
     --sg-line: #e9dfcb;
     --sg-accent: #a67c3d;
     --sg-accent-dark: #86652f;
@@ -1140,7 +1143,9 @@ body.sg-at-top .sg-fixed-btns {
     .sg-logo-sub { display: none; }
     .sg-lang-select { padding: 6px 4px; font-size: 16px; max-width: 52px; text-align: center; }
     .sg-theme-toggle { width: 34px; height: 34px; font-size: 15px; }
-    .sg-hamburger { padding: 6px; }
+    /* A11y-1020 Agent4 (target size): vùng chạm của nút menu mobile chỉ ~36x28px.
+       Giữ nguyên hình 3 gạch, mở rộng hit area lên 44x44 cho người lớn tuổi dễ bấm. */
+    .sg-hamburger { padding: 6px; min-width: 44px; min-height: 44px; justify-content: center; align-items: center; }
 
     /* Hero title: tighter letter-spacing so it wraps gracefully */
     .sg-hero-title { letter-spacing: 2px; font-size: clamp(34px, 12vw, 44px); }
@@ -2028,6 +2033,10 @@ html.pt-reveal .sg-reveal.in {
     position: absolute; top: 10px; right: 14px;
     background: none; border: none;
     font-size: 28px; cursor: pointer; color: #666;
+    /* A11y-1020 Agent4 (target size): nút × chỉ ~28px trên mobile — mở rộng
+       hit area lên 44x44, chữ × giữ căn giữa, vị trí absolute không đổi. */
+    min-width: 44px; min-height: 44px;
+    display: flex; align-items: center; justify-content: center;
 }
 .sg-modal-close:hover { color: #333; }
 .sg-360-stage {
