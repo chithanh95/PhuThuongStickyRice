@@ -2139,20 +2139,6 @@ html.dark .sg-chat-hint { color: #b3a48a; }
 .sg-hero-quicklinks a:hover { opacity: 1; }
 .sg-hero-quicklinks span { color: rgba(255,255,255,.6); }
 
-/* LD4: pill đếm ngược chốt đơn */
-.sg-cutoff-pill {
-    display: inline-block;
-    margin-top: 16px;
-    background: rgba(0,0,0,.45);
-    color: #ffe9c4;
-    border: 1px solid rgba(255,255,255,.25);
-    border-radius: 999px;
-    padding: 8px 18px;
-    font-size: 14px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-}
-
 /* LD3: 3 đánh giá thật gọn ngay dưới hero */
 .sg-trust-reviews {
     display: grid;

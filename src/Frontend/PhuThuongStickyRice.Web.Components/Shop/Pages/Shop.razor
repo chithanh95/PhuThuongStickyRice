@@ -23,12 +23,6 @@
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
 @* Item 238: chế độ "Gọn" — ẩn banner KM/ticker/gợi ý, chỉ còn menu + nút đặt. *@
-@if (!_compactMode)
-{
-    @* Item 141: banner đếm ngược giờ chốt đơn theo ca bếp. *@
-    <OrderCountdownBanner Settings="_shopSettings" />
-}
-
 @* #199: Banner trạng thái quán đang mở/nghỉ — luôn hiện (thông tin quan trọng). *@
 <ShopStatusBanner />
 

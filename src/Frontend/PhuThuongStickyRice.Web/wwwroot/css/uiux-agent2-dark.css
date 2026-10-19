@@ -478,7 +478,7 @@ html.dark .tk-addr-panel label {
    to-info-label, shp-logout hover, chat-hint — đợt này chỉ lỗi MỚI;
    quét toàn bộ file <style> trong .razor: OrderLabels/MenuPrint là trang
    in (cố tình nền sáng), HangCho đã tối sẵn, ChatNoiBo/LichTongHop/Login/
-   DangNhap/QuenMatKhau/PrepaidCardTab/OrderCountdownBanner đã có rule dark) */
+   DangNhap/QuenMatKhau/PrepaidCardTab đã có rule dark) */
 
 /* ---------- FIX 1 — Trang bảo trì (App.razor) ----------
    Vấn đề: App.razor (item 111/176) render trang bảo trì bằng <style> riêng:
@@ -1408,7 +1408,7 @@ html.dark .lang-caret {
 /* ===== uiux-team run 2026-10-19 18:55 - Agent2 Dark =====
    Run nay quet ~50 luot: Bootstrap chuan (modal/dropdown/toast/badge/card/
    table/nav-tabs/pagination/close/alert) + app.css + admin-lexa.css +
-   scoped CSS cac trang/component moi (ShopStatusBanner, OrderCountdownBanner,
+   scoped CSS cac trang/component moi (ShopStatusBanner,
    PrepaidCardTab, WeeklyPlanTab, TaiKhoan, UpsellPopup, Toast, KDS/Kanban,
    DatSoLuongLon, landing Index) deu da co rule dark. Trang demo /admin/lexa/*
    va trang in OrderPrint giu trang chu y (khong dung). Chi con dung 2 loi

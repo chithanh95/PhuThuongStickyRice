@@ -222,7 +222,7 @@
     // Bug-hunt 2026-10-19: async-void timer callback có thể chạy sau khi
     // component đã dispose (vd: rời trang đúng lúc tick 15s) → StateHasChanged
     // trên renderer đã hủy ném exception, unhandled → crash trắng app.
-    // Guard theo mẫu OrderCountdownBanner.
+    // Guard chống StateHasChanged sau dispose (mẫu chuẩn cho timer/debounce).
     private bool _disposed;
 
     /// <summary>Item 178: chu kỳ tự làm mới số thứ tự hàng chờ.</summary>

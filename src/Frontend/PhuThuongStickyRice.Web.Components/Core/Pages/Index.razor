@@ -152,11 +152,6 @@ else
             <a href="/shop" class="sg-btn sg-btn-solid sg-btn-lg">@T("Đặt xôi ngay", "Order now")</a>
             <a href="#thuc-don" class="sg-btn sg-btn-ghost sg-btn-lg">@T("Xem thực đơn", "View menu")</a>
         </div>
-        @* LD4: đếm ngược chốt đơn (fail-soft — ẩn khi không tính được) *@
-        @if (!string.IsNullOrEmpty(_cutoffText))
-        {
-            <p class="sg-cutoff-pill">⏰ @_cutoffText</p>
-        }
         @* LD2: lối tắt đặt theo nhu cầu *@
         <div class="sg-hero-quicklinks">
             <a href="/dat-tiec">@T("Đặt tiệc", "Party catering")</a>
@@ -1150,13 +1145,6 @@ else
                 var (isOpen, text) = ShopHours.StatusText(settings.OpenTime, settings.CloseTime);
                 _openNow = isOpen;
                 _openStatusText = text;
-                // LD4: đếm ngược chốt đơn — cập nhật mỗi phút.
-                UpdateCutoffText();
-                _cutoffTimer?.Dispose();
-                _cutoffTimer = new System.Threading.Timer(_ =>
-                {
-                    try { InvokeAsync(() => { UpdateCutoffText(); StateHasChanged(); }); } catch { }
-                }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
                 // Landing item 18: tracking.
                 try { await JSRuntime.InvokeVoidAsync("ptInitTracking", settings.FacebookPixelId, settings.GoogleAnalyticsId); } catch { }
             }
@@ -1560,56 +1548,6 @@ else
     // LD1: giỏ hàng thay đổi (thêm/xóa từ tab khác) → cập nhật nút giỏ nổi.
     private void OnCartChanged() => InvokeAsync(StateHasChanged);
 
-    // LD4: đếm ngược chốt đơn, tính từ giờ mở/đóng trong shop settings.
-    // - Quán đang mở: đếm tới giờ đóng (kịp giao sáng nay).
-    // - Quán đã nghỉ: đếm tới giờ giao sáng mai (giờ mở + 30 phút).
-    // Fail-soft: không tính được thì ẩn.
-    private string _cutoffText;
-    private System.Threading.Timer _cutoffTimer;
-
-    private void UpdateCutoffText()
-    {
-        _cutoffText = null;
-        try
-        {
-            if (_shopSettings == null || !_shopSettings.AcceptingOrders) return;
-            var now = ShopHours.NowInVietnam();
-            var open = ShopHours.ParseOpen(_shopSettings.OpenTime);
-            var close = ShopHours.ParseClose(_shopSettings.CloseTime);
-            var isOpen = ShopHours.IsOpen(_shopSettings.OpenTime, _shopSettings.CloseTime, now);
-            if (isOpen)
-            {
-                var remain = close - now;
-                if (remain <= TimeSpan.Zero) return;
-                _cutoffText = T(
-                    $"Đặt trong {(int)remain.TotalHours} giờ {remain.Minutes:D2} phút để kịp giao sáng nay",
-                    $"Order within {(int)remain.TotalHours}h {remain.Minutes:D2}m for delivery this morning");
-            }
-            else
-            {
-                // Giao sáng: giờ mở + 30 phút (mặc định 6:30).
-                var delivery = open.Add(TimeSpan.FromMinutes(30));
-                var nowVn = DateTimeOffset.UtcNow.AddHours(7).DateTime;
-                var target = nowVn.Date.Add(delivery);
-                var isTomorrow = false;
-                if (target <= nowVn)
-                {
-                    target = target.AddDays(1);
-                    isTomorrow = true;
-                }
-                var remain = target - nowVn;
-                if (remain <= TimeSpan.Zero || remain.TotalHours > 24) return;
-                var deliveryLabel = $"{(int)delivery.TotalHours}h{delivery.Minutes:D2}";
-                _cutoffText = T(
-                    $"Đặt trong {(int)remain.TotalHours} giờ {remain.Minutes:D2} phút để kịp giao {deliveryLabel} {(isTomorrow ? "sáng mai" : "sáng nay")}",
-                    $"Order within {(int)remain.TotalHours}h {remain.Minutes:D2}m for {deliveryLabel} delivery {(isTomorrow ? "tomorrow morning" : "this morning")}");
-            }
-        }
-        catch { _cutoffText = null; }
-    }
-
-
-
     private async Task SubmitSubscribe()
     {
         _subMsg = null;
@@ -1690,6 +1628,5 @@ else
     {
         AppI18n.OnChange -= OnLangChanged;
         CartState.OnChange -= OnCartChanged;
-        try { _cutoffTimer?.Dispose(); } catch { }
     }
 }

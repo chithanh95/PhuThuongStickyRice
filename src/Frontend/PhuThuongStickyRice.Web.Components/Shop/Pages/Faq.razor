@@ -93,7 +93,7 @@ else
     // Bug-hunt 2026-10-19: async-void debounce callback có thể chạy sau khi
     // component đã dispose (gõ tìm kiếm rồi rời trang trong 400ms) →
     // StateHasChanged sau dispose, unhandled → crash trắng app.
-    // Guard theo mẫu OrderCountdownBanner.
+    // Guard chống StateHasChanged sau dispose (mẫu chuẩn cho timer/debounce).
     private bool _disposed;
     private Guid _expandedId;
 
