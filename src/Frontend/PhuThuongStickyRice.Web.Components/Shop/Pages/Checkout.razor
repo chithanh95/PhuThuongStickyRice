@@ -1192,7 +1192,7 @@ else
         try
         {
             var result = await DiscountService.ValidateAsync(_appliedCode, _subtotalForDiscount, _order.CustomerPhone);
-            if (result.Valid)
+            if (result.IsValid)
             {
                 _discountAmount = result.DiscountAmount;
                 _isFreeship = result.IsFreeship;
@@ -1413,7 +1413,7 @@ else
         try
         {
             var result = await DiscountService.ValidateAsync(code, _subtotalForDiscount, _order.CustomerPhone);
-            if (result.Valid)
+            if (result.IsValid)
             {
                 _discountAmount = result.DiscountAmount;
                 _appliedCode = code.ToUpperInvariant();

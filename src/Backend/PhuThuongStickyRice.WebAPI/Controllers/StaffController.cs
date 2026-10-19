@@ -57,7 +57,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 userName = u.UserName,
                 email = u.Email,
                 phoneNumber = u.PhoneNumber,
-                locked = u.LockoutEnd.HasValue && u.LockoutEnd.Value > DateTimeOffset.UtcNow,
+                isLocked = u.LockoutEnd.HasValue && u.LockoutEnd.Value > DateTimeOffset.UtcNow,
                 roles = userRoles
                     .Where(ur => ur.UserId == u.Id)
                     .Join(roles, ur => ur.RoleId, r => r.Id, (_, r) => r.Name)

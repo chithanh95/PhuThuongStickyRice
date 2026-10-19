@@ -23,18 +23,18 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         public ProductModel Product { get; set; }
 
-        public bool NotFound { get; set; }
+        public bool IsNotFound { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
             try
             {
                 Product = await ProductService.GetProductByIdAsync(ProductId);
-                NotFound = Product == null;
+                IsNotFound = Product == null;
             }
             catch
             {
-                NotFound = true;
+                IsNotFound = true;
             }
         }
 

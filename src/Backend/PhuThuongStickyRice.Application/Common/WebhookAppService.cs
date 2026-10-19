@@ -1,4 +1,4 @@
-
+﻿
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -94,7 +94,7 @@ namespace PhuThuongStickyRice.Application.Common
                     EndpointId = result.Endpoint.Id,
                     EndpointName = result.Endpoint.Name,
                     Event = eventName,
-                    Success = result.Success,
+                    Success = result.IsSuccess,
                     StatusCode = result.StatusCode,
                     Error = result.Error
                 }, autoSave: false);
@@ -117,7 +117,7 @@ namespace PhuThuongStickyRice.Application.Common
                 EndpointId = endpoint.Id,
                 EndpointName = endpoint.Name,
                 Event = "Ping",
-                Success = result.Success,
+                Success = result.IsSuccess,
                 StatusCode = result.StatusCode,
                 Error = result.Error
             };
@@ -130,7 +130,7 @@ namespace PhuThuongStickyRice.Application.Common
                 EndpointId = delivery.EndpointId,
                 EndpointName = delivery.EndpointName,
                 Event = delivery.Event,
-                Success = delivery.Success,
+                IsSuccess = delivery.Success,
                 StatusCode = delivery.StatusCode,
                 Error = delivery.Error
             };
@@ -141,7 +141,7 @@ namespace PhuThuongStickyRice.Application.Common
         {
             public WebhookEndpoint Endpoint { get; set; }
             public DateTime At { get; set; }
-            public bool Success { get; set; }
+            public bool IsSuccess { get; set; }
             public int? StatusCode { get; set; }
             public string Error { get; set; }
         }
@@ -189,7 +189,7 @@ namespace PhuThuongStickyRice.Application.Common
             {
                 Endpoint = endpoint,
                 At = sentAt,
-                Success = success,
+                IsSuccess = success,
                 StatusCode = statusCode,
                 Error = error
             };
@@ -340,7 +340,7 @@ namespace PhuThuongStickyRice.Application.Common
                 EndpointId = x.EndpointId,
                 EndpointName = x.EndpointName,
                 Event = x.Event,
-                Success = x.Success,
+                IsSuccess = x.Success,
                 StatusCode = x.StatusCode,
                 Error = x.Error
             }).ToList();

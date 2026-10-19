@@ -139,7 +139,7 @@ namespace PhuThuongStickyRice.Application.Discounts.DTOs
     public class ValidateDiscountResultDto
     {
         /// <summary>True khi mã dùng được với giỏ hàng hiện tại.</summary>
-        public bool Valid { get; set; }
+        public bool IsValid { get; set; }
 
         /// <summary>Message tiếng Việt hiển thị trực tiếp cho khách (thành công hoặc lý do không dùng được).</summary>
         public string Message { get; set; }

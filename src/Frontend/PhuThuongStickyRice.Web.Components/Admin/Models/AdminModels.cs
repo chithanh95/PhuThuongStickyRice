@@ -34,7 +34,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
 
     public class ValidateDiscountResultModel
     {
-        public bool Valid { get; set; }
+        public bool IsValid { get; set; }
 
         public string Message { get; set; }
 

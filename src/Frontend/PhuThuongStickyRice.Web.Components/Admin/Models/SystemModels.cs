@@ -69,7 +69,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public Guid EndpointId { get; set; }
         public string EndpointName { get; set; }
         public string Event { get; set; }
-        public bool Success { get; set; }
+        public bool IsSuccess { get; set; }
         public int? StatusCode { get; set; }
         public string Error { get; set; }
     }
