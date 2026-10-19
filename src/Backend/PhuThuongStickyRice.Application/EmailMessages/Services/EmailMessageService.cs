@@ -97,7 +97,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
                     .OrderBy(x => x.NextAttemptDateTime)
                     .Take(BatchSize));
 
-            if (messages.Any())
+            if (messages.Count > 0)
             {
                 try
                 {

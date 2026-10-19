@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
@@ -326,7 +327,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             var (valid, message) = CheckUsable(entity, input.Subtotal, customerPhone);
             return new ValidateDiscountResultDto
             {
-                Valid = valid,
+                IsValid = valid,
                 Message = valid && entity.VoucherType == VoucherType.Freeship
                     ? "Áp dụng miễn phí ship thành công."
                     : message,
@@ -659,7 +660,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="subtotal">Tổng tiền hàng của giỏ.</param>
         /// <param name="customerPhone">SĐT khách; mã riêng tư chỉ đúng chủ SĐT mới dùng được.</param>
         /// <returns>Tuple: hợp lệ hay không + message tiếng Việt.</returns>
-        private static (bool Valid, string Message) CheckUsable(
+        private static (bool IsValid, string Message) CheckUsable(
             DiscountCode? entity, decimal subtotal, string? customerPhone = null)
         {
             // Thứ tự kiểm tra từ rẻ tới "đắt": tồn tại → đang bật → còn hạn →
@@ -730,12 +731,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         {
             // Bộ ký tự bỏ I/O/0/1 (dễ nhầm lẫn khi khách đọc to).
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            var random = Random.Shared; // perf-hunt 2026-10-19: Random.Shared is thread-safe and avoids same-tick seed collisions across concurrent requests
+            // CA5394: mã giảm giá quy ra tiền nên phải dùng RNG mật mã —
+            // Random.Shared đoán được (deterministic PRNG), kẻ xấu có thể dò mã.
 
             for (var attempt = 0; attempt < GeneratedCodeMaxAttempts; attempt++)
             {
                 var code = prefix + "-" + new string(
-                    Enumerable.Range(0, GeneratedCodeRandomPartLength).Select(_ => chars[random.Next(chars.Length)]).ToArray());
+                    Enumerable.Range(0, GeneratedCodeRandomPartLength).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
 
                 var queryable = await _discounts.GetQueryableAsync();
                 var exists = await _asyncExecuter.FirstOrDefaultAsync(

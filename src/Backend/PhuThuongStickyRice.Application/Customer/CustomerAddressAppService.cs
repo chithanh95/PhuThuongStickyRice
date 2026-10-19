@@ -156,10 +156,7 @@ namespace PhuThuongStickyRice.Application.Customer
 
         private static void Validate(CreateCustomerAddressDto dto)
         {
-            if (dto == null)
-            {
-                throw new ArgumentNullException(nameof(dto));
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             if (!Regex.IsMatch((dto.ReceiverPhone ?? string.Empty).Trim(), @"^(0)(3|5|7|8|9)\d{8}$"))
             {

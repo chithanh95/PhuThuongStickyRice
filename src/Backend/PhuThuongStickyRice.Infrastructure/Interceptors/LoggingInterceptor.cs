@@ -11,6 +11,15 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
 {
     public class LoggingInterceptor : IInterceptor
     {
+        // CA1869: JsonSerializerOptions đắt khi khởi tạo — dùng 1 instance static
+        // dùng chung, thread-safe sau khi cấu hình xong.
+        private static readonly JsonSerializerOptions LogArgumentsOptions = new()
+        {
+            WriteIndented = false,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+        };
+
         private readonly ILogger _logger;
 
         public LoggingInterceptor(ILogger<LoggingInterceptor> logger)
@@ -24,12 +33,7 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
             var className = method.DeclaringType.Name;
             var methodName = method.Name;
 
-            var arguments = JsonSerializer.Serialize(invocation.Arguments.Where(x => x.GetType() != typeof(CancellationToken)), new JsonSerializerOptions()
-            {
-                WriteIndented = false,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                ReferenceHandler = ReferenceHandler.IgnoreCycles,
-            });
+            var arguments = JsonSerializer.Serialize(invocation.Arguments.Where(x => x.GetType() != typeof(CancellationToken)), LogArgumentsOptions);
 
             _logger.LogDebug($"Start calling method: {className}.{methodName} with ({arguments}).");
 

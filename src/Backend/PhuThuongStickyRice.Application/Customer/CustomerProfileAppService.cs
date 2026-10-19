@@ -332,10 +332,7 @@ namespace PhuThuongStickyRice.Application.Customer
         [Authorize(Roles = "Admin,Cashier")]
         public virtual async Task<CustomerReminderDto> CreateReminderAsync(CreateReminderDto dto)
         {
-            if (dto == null)
-            {
-                throw new ArgumentNullException(nameof(dto));
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             var phone = (dto.Phone ?? string.Empty).Trim();
             if (!IsValidVnPhone(phone))

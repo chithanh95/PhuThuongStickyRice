@@ -7,6 +7,13 @@ namespace PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods
 {
     public static class HttpContentExtensions
     {
+        // CA1869: JsonSerializerOptions đắt khi khởi tạo — dùng 1 instance static
+        // dùng chung, thread-safe sau khi cấu hình xong.
+        private static readonly JsonSerializerOptions CaseInsensitiveOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
         public static async Task<T> ReadAs<T>(this HttpContent httpContent)
         {
             var json = await httpContent.ReadAsStringAsync();
@@ -16,10 +23,7 @@ namespace PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods
                 return default;
             }
 
-            return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-            });
+            return JsonSerializer.Deserialize<T>(json, CaseInsensitiveOptions);
         }
 
         public static StringContent AsStringContent(this object obj, string contentType)

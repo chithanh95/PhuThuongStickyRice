@@ -11,6 +11,15 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
 {
     public class ErrorCatchingInterceptor : IInterceptor
     {
+        // CA1869: JsonSerializerOptions đắt khi khởi tạo (build metadata cache mỗi lần
+        // new) — dùng 1 instance static dùng chung, thread-safe sau khi cấu hình xong.
+        private static readonly JsonSerializerOptions LogArgumentsOptions = new()
+        {
+            WriteIndented = false,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+        };
+
         private readonly ILogger _logger;
 
         public ErrorCatchingInterceptor(ILogger<ErrorCatchingInterceptor> logger)
@@ -79,12 +88,7 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
             var methodName = method.Name;
 
             // TODO: Ignore serialize large argument object.
-            var arguments = JsonSerializer.Serialize(invocation.Arguments.Where(x => x.GetType() != typeof(CancellationToken)), new JsonSerializerOptions()
-            {
-                WriteIndented = false,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                ReferenceHandler = ReferenceHandler.IgnoreCycles,
-            });
+            var arguments = JsonSerializer.Serialize(invocation.Arguments.Where(x => x.GetType() != typeof(CancellationToken)), LogArgumentsOptions);
 
             _logger.LogError($"An unhandled exception has occurred while executing the method: {className}.{methodName} with ({arguments}). {Environment.NewLine}{ex}");
         }

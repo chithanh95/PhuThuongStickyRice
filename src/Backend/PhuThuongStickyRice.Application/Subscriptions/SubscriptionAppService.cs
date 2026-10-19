@@ -81,10 +81,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         [AllowAnonymous]
         public virtual async Task<SubscriptionDto> CreateAsync(CreateSubscriptionDto dto)
         {
-            if (dto == null)
-            {
-                throw new ArgumentNullException(nameof(dto));
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             var (productName, unitPrice, sizeName, toppingNames) =
                 await ResolveSnapshotAsync(dto.ProductId, dto.SizeOptionId, dto.ToppingIds);

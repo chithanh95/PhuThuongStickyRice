@@ -71,10 +71,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         [AllowAnonymous]
         public virtual async Task<QuoteRequestDto> CreateAsync(CreateQuoteRequestDto dto)
         {
-            if (dto == null)
-            {
-                throw new ArgumentNullException(nameof(dto));
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             if (!IsValidPhone(dto.CustomerPhone))
             {
@@ -190,10 +187,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         [AllowAnonymous]
         public virtual async Task<CungReminderDto> CreateReminderAsync(CreateCungReminderDto dto)
         {
-            if (dto == null)
-            {
-                throw new ArgumentNullException(nameof(dto));
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             if (!IsValidPhone(dto.CustomerPhone))
             {

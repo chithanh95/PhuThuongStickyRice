@@ -221,7 +221,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var overallAvg = result.AvgDailyRevenue30d;
             var weekdayStats = new Dictionary<DayOfWeek, (decimal revenue, double orders, double portions, int days)>();
-            foreach (DayOfWeek dow in Enum.GetValues(typeof(DayOfWeek)))
+            foreach (var dow in Enum.GetValues<DayOfWeek>())
             {
                 weekdayStats[dow] = (0m, 0, 0, 0);
             }

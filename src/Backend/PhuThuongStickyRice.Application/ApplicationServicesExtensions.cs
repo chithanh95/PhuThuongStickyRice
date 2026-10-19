@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.DependencyInjection
                    .Where(HandlerTypeInspector.IsHandlerInterface)
                    .ToList();
 
-                if (!handlerInterfaces.Any())
+                if (handlerInterfaces.Count == 0)
                 {
                     continue;
                 }
