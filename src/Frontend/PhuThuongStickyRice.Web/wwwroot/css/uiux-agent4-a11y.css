@@ -1222,3 +1222,56 @@ html.dark .shop-row-stepper button:hover:not(:disabled) {
     background: #33291d;
 }
 /* ===== END UIUX run 19:45 - Agent4 ===== */
+
+/* ===== UIUX run 20:10 - Agent4 A11y & Polish (3 CSS + 1 markup, khong trung cac run truoc) ===== */
+
+/* Fix 1 — Polish hover + WCAG 2.4.7 (Focus Visible): hàng chọn món
+   `.bulk-prod` (DatSoLuongLon.razor, <style> thường trong body, KHÔNG
+   scoped) là <label> bấm được (cursor:pointer) nhưng KHÔNG có :hover —
+   desktop di chuột qua không biết hàng bấm được. Hover: viền đồng nhạt +
+   nền kem rất nhạt — NHẸ HƠN trạng thái .selected (viền #a67c3d + nền
+   #fdf8ef) để không nhầm đã chọn.
+   :focus-within: tab bằng bàn phím chỉ focus vào checkbox 20px — vẽ vòng
+   tím quanh CẢ HÀNG để người cao tuổi thấy đang đứng ở món nào.
+   Dark mode: nền/viền theo uiux-agent2-dark.css (#1f1b16/#3a3226),
+   hover nền #262019, vòng focus #a49de0. */
+.bulk-prod:hover {
+    border-color: #c9a86a;
+    background: #fbf8f1;
+}
+.bulk-prod:focus-within {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .bulk-prod:hover {
+    background: #262019;
+    border-color: #4a3d28;
+}
+html.dark .bulk-prod:focus-within {
+    outline-color: #a49de0;
+}
+
+/* Fix 2 — Polish hover: 2 nút tab "Thẻ xôi"/"Gói ăn sáng cả tuần"
+   `.lx-tabbtn` (GoiTraTruoc.razor, nav-pills; rule gốc admin-lexa.css:2206)
+   KHÔNG có :hover — Bootstrap .nav-pills không vẽ nền hover cho <button>,
+   desktop di chuột qua tab chưa chọn không nhận được phản hồi. Hover: nền
+   tím rất nhạt (light) / trắng mờ 6% (dark). :not(.active) để không đè
+   trạng thái tab đang chọn (nền tím #7a6fbe). */
+.lx-tabbtn:not(.active):hover {
+    background: #f4f2fd;
+}
+html.dark .lx-tabbtn:not(.active):hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* Fix 3 — WCAG 1.4.3 (Contrast): caret "▾" `.lang-caret`
+   (LanguageSelector.razor.css, 10px) màu #8a7a63 trên nền nút trắng chỉ
+   ~4.16:1 — dưới chuẩn AA, mà đây là dấu hiệu DUY NHẤT cho biết nút cờ là
+   dropdown (bản mobile gọn chỉ hiện cờ + caret, không tên). Đậm lên #6f5f4c
+   (~6:1), cùng remedy run 19:45 đã áp cho #8a7a63 ở 7 chỗ khác trên shop.
+   Lặp class (0,2,0) để thắng rule scoped [b-xxx] theo thứ tự cascade
+   (file này load sau cùng). */
+.lang-caret.lang-caret {
+    color: #6f5f4c;
+}
+/* ===== END UIUX run 20:10 - Agent4 ===== */

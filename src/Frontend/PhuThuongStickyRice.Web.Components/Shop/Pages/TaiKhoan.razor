@@ -142,6 +142,7 @@
                         var currentTag = tag;
                         <button type="button"
                                 class="btn btn-sm mr-2 mb-2 @(_selectedTags.Contains(currentTag) ? "btn-warning" : "btn-outline-secondary")"
+                                aria-pressed="@_selectedTags.Contains(currentTag)"
                                 @onclick="() => ToggleTag(currentTag)">@currentTag</button>
                     }
                 </div>
