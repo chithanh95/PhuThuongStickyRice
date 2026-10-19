@@ -1,0 +1,11 @@
+/* A11y (uiux-team-2days run 13:55, Agent 4): viền focus tím #7a6fbe hiện rõ khi
+   dùng bàn phím (chuột/chạm không ảnh hưởng nhờ :focus-visible). */
+.auth-tab:focus-visible,
+.auth-card .btn:focus-visible {
+    outline: 3px solid #7a6fbe;
+    outline-offset: 2px;
+}
+html.dark .auth-tab:focus-visible,
+html.dark .auth-card .btn:focus-visible {
+    outline-color: #a49de0;
+}

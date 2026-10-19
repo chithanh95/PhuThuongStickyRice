@@ -81,9 +81,9 @@
                 @(_tab == "login" ? "Đăng nhập để đặt xôi nhanh hơn." : "Đăng ký để đặt xôi nhanh hơn.")
             </p>
 
-            <div class="auth-tabs">
-                <button type="button" class="auth-tab @(_tab == "login" ? "active" : "")" @onclick='() => _tab = "login"'>Đăng nhập</button>
-                <button type="button" class="auth-tab @(_tab == "register" ? "active" : "")" @onclick='() => _tab = "register"'>Đăng ký</button>
+            <div class="auth-tabs" role="tablist" aria-label="Chọn chức năng tài khoản">
+                <button type="button" role="tab" aria-selected="@(_tab == "login")" class="auth-tab @(_tab == "login" ? "active" : "")" @onclick='() => _tab = "login"'>Đăng nhập</button>
+                <button type="button" role="tab" aria-selected="@(_tab == "register")" class="auth-tab @(_tab == "register" ? "active" : "")" @onclick='() => _tab = "register"'>Đăng ký</button>
             </div>
 
             @if (!string.IsNullOrEmpty(_error))
