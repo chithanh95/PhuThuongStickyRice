@@ -95,8 +95,8 @@
             @if (_step == 1)
             {
                 <div class="form-group">
-                    <label class="auth-label">Số điện thoại *</label>
-                    <input class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
+                    <label class="auth-label" for="qmk-phone">Số điện thoại *</label>
+                    <input id="qmk-phone" class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
                     <small class="text-muted">Mã OTP sẽ được gửi qua SMS đến số này.</small>
                 </div>
                 <button class="btn btn-primary btn-block auth-btn"
@@ -107,18 +107,18 @@
             else if (_step == 2)
             {
                 <div class="form-group">
-                    <label class="auth-label">Mã OTP *</label>
-                    <input class="form-control text-center auth-otp-input" @bind="_otp" inputmode="numeric" placeholder="Nhập mã 6 số"
+                    <label class="auth-label" for="qmk-otp">Mã OTP *</label>
+                    <input id="qmk-otp" class="form-control text-center auth-otp-input" @bind="_otp" inputmode="numeric" placeholder="Nhập mã 6 số"
                            maxlength="6" />
                     <small class="text-muted">Mã có hiệu lực 5 phút. Không nhận được? <a href="javascript:void(0)" class="auth-link" @onclick="RequestOtpAsync">Gửi lại</a></small>
                 </div>
                 <div class="form-group">
-                    <label class="auth-label">Mật khẩu mới * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
-                    <input type="password" class="form-control" @bind="_newPassword" placeholder="Nhập mật khẩu mới" />
+                    <label class="auth-label" for="qmk-pass">Mật khẩu mới * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
+                    <input id="qmk-pass" type="password" class="form-control" @bind="_newPassword" placeholder="Nhập mật khẩu mới" />
                 </div>
                 <div class="form-group">
-                    <label class="auth-label">Nhập lại mật khẩu mới *</label>
-                    <input type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu mới" />
+                    <label class="auth-label" for="qmk-pass2">Nhập lại mật khẩu mới *</label>
+                    <input id="qmk-pass2" type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu mới" />
                 </div>
                 <button class="btn btn-primary btn-block auth-btn"
                         @onclick="ResetPasswordAsync" disabled="@_busy">

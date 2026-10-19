@@ -1,0 +1,29 @@
+/* ===== TaiKhoan.razor — UIUX run 11:55 (job uiux-team-2days) — Agent 3 (Đồng bộ Lexa)
+   Chuyển style inline trong TaiKhoan.razor sang scoped CSS.
+   Màu sắc giữ nguyên (title #763434 + badge Lexa là palette đã duyệt),
+   chỉ dọn inline -> class để dễ bảo trì + dark mode về sau. */
+
+.tk-page { max-width: 720px; }
+
+.tk-title {
+    font-family: 'Lora', Georgia, serif;
+    color: #763434;
+}
+
+.tk-tier-badge { font-size: 1rem; padding: 8px 16px; }
+
+.tk-form-narrow { max-width: 420px; }
+
+.tk-addr-panel { background: #FFFDF7; }
+
+/* ---------- DARK MODE (html.dark) — trang tài khoản ---------- */
+/* Vấn đề: .tk-title màu #763434 (nâu đỏ đậm) chìm gần như tàng hình trên
+   nền tối #1c1712; .tk-addr-panel #FFFDF7 lọt mảng sáng giữa trang dark. */
+html.dark .tk-title {
+    color: #f0d9b5;
+}
+
+html.dark .tk-addr-panel {
+    background: #262019;
+    border-color: #3d3325;
+}

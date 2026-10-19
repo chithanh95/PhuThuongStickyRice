@@ -13,37 +13,15 @@
 @using Microsoft.AspNetCore.Components.Web
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.PermissionService PermissionService
 
-<style>
-    .login-fullscreen {
-        min-height: 100vh; width: 100%;
-        background: #f8f8fb;
-        display: flex; align-items: center; justify-content: center;
-        padding: 40px 20px; margin: 0; box-sizing: border-box;
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;
-    }
-    html.dark .login-fullscreen { background: #1a1a2e; }
-    .login-card-box {
-        background: #fff; border-radius: 8px;
-        box-shadow: 0 2px 20px rgba(0,0,0,.08); padding: 40px 35px;
-    }
-    html.dark .login-card-box { background: #262640; box-shadow: 0 2px 20px rgba(0,0,0,.4); }
-    html.dark .login-card-box label { color: #f0eef5 !important; }
-    html.dark .login-card-box h4 { color: #f0eef5 !important; }
-    html.dark .login-card-box p { color: #a5a2bd !important; }
-    html.dark .login-card-box .form-control {
-        background: #1e1e36; border-color: #4a4a6e; color: #f0eef5;
-    }
-    html.dark .login-card-box .text-muted { color: #a5a2bd !important; }
-</style>
 <div class="login-fullscreen">
-    <div style="width:100%;max-width:420px;">
+    <div class="login-box">
         <div class="login-card-box">
-            <div style="text-align:center;margin-bottom:25px;">
-                <span style="font-size:36px;">🍚</span>
-                <span style="font-size:28px;font-weight:600;color:#2b3a4a;margin-left:8px;vertical-align:middle;">Xôi Phú Thượng</span>
+            <div class="login-brand">
+                <span class="login-emoji">🍚</span>
+                <span class="login-brand-name">Xôi Phú Thượng</span>
             </div>
-            <h4 style="text-align:center;color:#1a1a2e;font-weight:600;font-size:22px;margin-bottom:5px;">Chào mừng trở lại !</h4>
-            <p style="text-align:center;color:#5a6c7d;font-size:14px;margin-bottom:25px;">Đăng nhập để tiếp tục vào Xôi Phú Thượng.</p>
+            <h4 class="login-title">Chào mừng trở lại !</h4>
+            <p class="login-sub">Đăng nhập để tiếp tục vào Xôi Phú Thượng.</p>
 
             @if (!string.IsNullOrEmpty(_error))
             {
@@ -51,12 +29,12 @@
             }
 
             <div class="form-group">
-                <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Tên đăng nhập</label>
+                <label class="login-label">Tên đăng nhập</label>
                 <input class="form-control" @bind="_username" placeholder="Nhập tên đăng nhập"
                        disabled="@_awaitingTwoFactor" @onkeyup="HandleEnter" />
             </div>
             <div class="form-group">
-                <label style="color:#1a1a2e;font-weight:600;font-size:14px;">Mật khẩu</label>
+                <label class="login-label">Mật khẩu</label>
                 <input type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu"
                        disabled="@_awaitingTwoFactor" @onkeyup="HandleEnter" />
             </div>
@@ -79,7 +57,7 @@
                     </div>
                 </div>
                 <div class="col-6 text-right">
-                    <button class="btn btn-primary" style="background:#7a6fbe;border-color:#7a6fbe;padding:8px 30px;border-radius:4px;" @onclick="LoginAsync" disabled="@_loggingIn">
+                    <button class="btn btn-primary login-btn" @onclick="LoginAsync" disabled="@_loggingIn">
                         @(_loggingIn ? "Đang đăng nhập..." : _awaitingTwoFactor ? "Xác nhận" : "Đăng nhập")
                     </button>
                 </div>
@@ -101,7 +79,7 @@
                 </div>
             }
         </div>
-        <div style="text-align:center;margin-top:25px;color:#9ca8b3;font-size:13px;">
+        <div class="login-footer">
             <p>© 2026 Xôi Phú Thượng</p>
         </div>
     </div>

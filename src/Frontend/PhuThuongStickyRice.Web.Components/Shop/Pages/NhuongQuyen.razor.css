@@ -293,3 +293,59 @@ html.dark .nq-faq-q {
 html.dark .nq-faq-a {
     color: #e8dcc3;
 }
+
+/* ---------- DARK MODE (html.dark) — trang nhượng quyền ---------- */
+/* Vấn đề: section kem + card/bảng/steps nền trắng (#fff/#FFF1D4/#F5E9D4),
+   tiêu đề nâu đỏ đậm #763434, chữ #444/#666 — ở dark mode bị lọt mảng
+   trắng chói, chữ nâu đỏ chìm trên nền tối. Hero giữ nguyên (brand). */
+html.dark .nq-cream {
+    background: #211a13;
+}
+
+html.dark .xo-sec-title {
+    color: #f0d9b5;
+}
+
+html.dark .nq-card {
+    background: #262019;
+    border-color: rgba(198, 154, 85, .45);
+}
+
+html.dark .nq-card h4 {
+    color: #f0d9b5;
+}
+
+html.dark .nq-card p {
+    color: #d8cbb6;
+}
+
+html.dark .nq-table {
+    background: #262019;
+    color: #e8dcc3;
+}
+
+html.dark .nq-table td {
+    border-color: #3d3325;
+}
+
+html.dark .nq-total td {
+    background: #3a2c14;
+    color: #f5c86e;
+}
+
+html.dark .nq-step {
+    background: #262019;
+    border-color: #6b5320;
+}
+
+html.dark .nq-step h5 {
+    color: #f0d9b5;
+}
+
+html.dark .nq-step p {
+    color: #d8cbb6;
+}
+
+html.dark .nq-form-card label {
+    color: #f0d9b5;
+}

@@ -371,15 +371,15 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label>@AppI18n.T("common.name") *</label>
-                        <input class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
+                        <label for="co-name">@AppI18n.T("common.name") *</label>
+                        <input id="co-name" class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A" />
                         @if (!string.IsNullOrEmpty(_nameError))
                         {
                             <small class="text-danger">@_nameError</small>
                         }                    </div>
                     <div class="form-group">
-                        <label>@AppI18n.T("common.phone") *</label>
-                        <input class="form-control @FieldClass(_phoneError)" value="@_order.CustomerPhone"
+                        <label for="co-phone">@AppI18n.T("common.phone") *</label>
+                        <input id="co-phone" class="form-control @FieldClass(_phoneError)" value="@_order.CustomerPhone"
                                @oninput="OnPhoneInputAsync" @onblur="LookupLastOrderAsync"
                                placeholder="0901234567" inputmode="tel" maxlength="11" />
                         @if (_lookingUpPhone)
@@ -392,8 +392,8 @@ else
                         }
                     </div>
                     <div class="form-group">
-                        <label>Email (tùy chọn — để nhận mail xác nhận đơn)</label>
-                        <input class="form-control @FieldClass(_emailError)" @bind="_order.CustomerEmail" placeholder="ban@example.com" />
+                        <label for="co-email">Email (tùy chọn — để nhận mail xác nhận đơn)</label>
+                        <input id="co-email" class="form-control @FieldClass(_emailError)" @bind="_order.CustomerEmail" placeholder="ban@example.com" />
                         @if (!string.IsNullOrEmpty(_emailError))
                         {
                             <small class="text-danger">@_emailError</small>
@@ -412,8 +412,8 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label>@AppI18n.T("shop.note")</label>
-                        <textarea class="form-control" @bind="_order.Notes" rows="2"
+                        <label for="co-note">@AppI18n.T("shop.note")</label>
+                        <textarea id="co-note" class="form-control" @bind="_order.Notes" rows="2"
                                   placeholder="Ví dụ: giao giờ hành chính..."></textarea>
                     </div>
                     <div class="form-check mb-2">
@@ -658,9 +658,9 @@ else
                     </table>
 
                     <div class="form-group">
-                        <label>@AppI18n.T("shop.discount_code")</label>
+                        <label for="co-discount">@AppI18n.T("shop.discount_code")</label>
                         <div class="input-group">
-                            <input class="form-control" @bind="_discountCodeInput" @bind:after="ClearAutoAppliedNote" placeholder="Nhập mã (nếu có)"
+                            <input id="co-discount" class="form-control" @bind="_discountCodeInput" @bind:after="ClearAutoAppliedNote" placeholder="Nhập mã (nếu có)"
                                    disabled="@_applyingDiscount" />
                             <div class="input-group-append">
                                 <button class="btn btn-outline-secondary" style="min-height: 48px;" @onclick="ApplyDiscount" disabled="@_applyingDiscount">
@@ -717,8 +717,8 @@ else
                     @if (_referralsEnabled)
                     {
                         <div class="form-group">
-                            <label>Mã giới thiệu <small class="text-muted">(nếu có)</small></label>
-                            <input class="form-control" @bind="_order.ReferralCode" placeholder="VD: PT-AB12CD" />
+                            <label for="co-referral">Mã giới thiệu <small class="text-muted">(nếu có)</small></label>
+                            <input id="co-referral" class="form-control" @bind="_order.ReferralCode" placeholder="VD: PT-AB12CD" />
                         </div>
                     }
 

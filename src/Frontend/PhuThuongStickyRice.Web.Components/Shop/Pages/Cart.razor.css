@@ -1,8 +1,8 @@
 /* ============================================================
-   Cart page — mobile (<=575px): cart lines become stacked cards
-   instead of a squeezed 5-column table. Desktop untouched.
+   Cart page — mobile (<=767px): cart lines become stacked cards
+   instead of a squeezed multi-column table. Desktop untouched.
    ============================================================ */
-@media (max-width: 575.98px) {
+@media (max-width: 767.98px) {
     .cart-lines thead {
         display: none;
     }
@@ -133,7 +133,7 @@
     display: none;
 }
 
-@media (max-width: 575.98px) {
+@media (max-width: 767.98px) {
     .cart-sticky-checkout {
         display: flex;
         align-items: center;
@@ -148,6 +148,15 @@
         padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
         box-shadow: 0 -2px 12px rgba(0, 0, 0, .12);
         border-top: 1px solid #e9ecef;
+    }
+
+    /* UIUX-Mobile-A1: tổng tiền lớn làm chữ dài, đẩy nút "Thanh toán" tràn
+       khỏi màn 320px — cho chữ co lại (ellipsis), nút giữ nguyên. */
+    .cart-sticky-total {
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .cart-sticky-total small {
@@ -167,6 +176,7 @@
         border-radius: 12px;
         background: #34c38f;
         border-color: #34c38f;
+        flex-shrink: 0;
     }
 
     .cart-sticky-spacer {

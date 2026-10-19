@@ -1,0 +1,16 @@
+/* ===== HangCho.razor — UIUX run 11:55 (job uiux-team-2days) — Agent 3 (Đồng bộ Lexa)
+   Chuyển style inline (màu trạng thái) trong HangCho.razor sang scoped CSS.
+   Màu đã đúng palette Lexa (xanh success #34c38f cho "Mời lấy món",
+   vàng warning #f1b44c -> #FFBA31 cho "Đang chuẩn bị"), chỉ dọn
+   inline -> class để dễ bảo trì. */
+
+/* Tiêu đề section theo trạng thái */
+.cho-section-title.cho-ready { color: #34c38f; } /* xanh success Lexa (trước #28e06c lệch chuẩn) */
+.cho-section-title.cho-preparing { color: #FFBA31; }
+
+/* Số thứ tự phóng to theo trạng thái */
+.cho-big.cho-ready { color: #34c38f; }
+.cho-big.cho-preparing { color: #FFBA31; }
+
+/* Gợi ý "Chạm vào màn hình để thu nhỏ" */
+.cho-zoom-hint { color: #888; }

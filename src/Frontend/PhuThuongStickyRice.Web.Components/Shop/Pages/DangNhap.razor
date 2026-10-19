@@ -33,6 +33,7 @@
     html.dark .auth-card .form-control::placeholder { color: #8a87a3; }
     .auth-tab {
         flex: 1; text-align: center; padding: 10px;
+        min-height: 48px; /* a11y (người cao tuổi): mục tiêu chạm ≥48px */
         font-weight: 600; font-size: 15px; color: #6c757d;
         background: transparent; border: none; border-bottom: 2px solid #e9ecef;
         cursor: pointer;
@@ -58,6 +59,8 @@
     .auth-label { color: #1a1a2e; font-weight: 600; font-size: 14px; }
     .auth-btn { background: #7a6fbe; border-color: #7a6fbe; padding: 10px; }
     .auth-link { color: #7a6fbe; }
+    /* a11y (WCAG 1.4.3): #7a6fbe trên nền card tối #262640 chỉ ~3:1 → #a49de0 (~5.6:1) */
+    html.dark .auth-card .auth-link { color: #a49de0; }
     html.dark .auth-brand-name { color: #f0eef5; }
 </style>
 
@@ -95,12 +98,12 @@
             @if (_tab == "login")
             {
                 <div class="form-group">
-                    <label class="auth-label">Số điện thoại</label>
-                    <input class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
+                    <label class="auth-label" for="dn-login-phone">Số điện thoại</label>
+                    <input id="dn-login-phone" class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
                 </div>
                 <div class="form-group">
-                    <label class="auth-label">Mật khẩu</label>
-                    <input type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu"
+                    <label class="auth-label" for="dn-login-pass">Mật khẩu</label>
+                    <input id="dn-login-pass" type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu"
                            @onkeyup="OnLoginKeyUp" />
                 </div>
                 <button class="btn btn-primary btn-block auth-btn"
@@ -114,21 +117,21 @@
             else
             {
                 <div class="form-group">
-                    <label class="auth-label">Họ tên</label>
-                    <input class="form-control" @bind="_fullName" placeholder="Nhập họ tên" />
+                    <label class="auth-label" for="dn-reg-name">Họ tên</label>
+                    <input id="dn-reg-name" class="form-control" @bind="_fullName" placeholder="Nhập họ tên" />
                 </div>
                 <div class="form-group">
-                    <label class="auth-label">Số điện thoại *</label>
-                    <input class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
+                    <label class="auth-label" for="dn-reg-phone">Số điện thoại *</label>
+                    <input id="dn-reg-phone" class="form-control" @bind="_phone" inputmode="tel" placeholder="Nhập số điện thoại (VD: 0901234567)" />
                     <small class="text-muted">Dùng số điện thoại để đăng nhập những lần sau.</small>
                 </div>
                 <div class="form-group">
-                    <label class="auth-label">Mật khẩu * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
-                    <input type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu" />
+                    <label class="auth-label" for="dn-reg-pass">Mật khẩu * <small class="text-muted">(ít nhất 6 ký tự)</small></label>
+                    <input id="dn-reg-pass" type="password" class="form-control" @bind="_password" placeholder="Nhập mật khẩu" />
                 </div>
                 <div class="form-group">
-                    <label class="auth-label">Nhập lại mật khẩu *</label>
-                    <input type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu" />
+                    <label class="auth-label" for="dn-reg-pass2">Nhập lại mật khẩu *</label>
+                    <input id="dn-reg-pass2" type="password" class="form-control" @bind="_confirmPassword" placeholder="Nhập lại mật khẩu" />
                 </div>
                 <button class="btn btn-primary btn-block auth-btn"
                         @onclick="RegisterAsync" disabled="@_busy">

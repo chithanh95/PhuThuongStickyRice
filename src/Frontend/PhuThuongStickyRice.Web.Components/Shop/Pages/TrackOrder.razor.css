@@ -408,3 +408,58 @@ html.dark .to-total-row {
     }
 }
 /* ===== END UIUX-Mobile-A1 ===== */
+
+/* ===== UIUX run 11:55 (job uiux-team-2days) — Agent 3 (Đồng bộ Lexa) =====
+   Chuyển style inline của popup khảo sát sau mua sang scoped CSS.
+   Màu giữ nguyên (cam brand #FFBA31, vàng sao #f6c453, nâu #763434
+   là palette shop đã duyệt), chỉ dọn inline -> class. */
+.to-survey-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 2000;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.to-survey-sheet {
+    background: #fff; border-radius: 16px; max-width: 420px; width: 100%;
+    padding: 28px 24px; text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.to-survey-emoji { font-size: 40px; margin-bottom: 8px; }
+.to-survey-title {
+    font-family: Lora, Georgia, serif; color: #763434;
+    font-weight: 700; margin-bottom: 6px;
+}
+/* Nút sao: specificity (0,3,0) để thắng rule global
+   .shp-page .btn-link { color: #7a6fbe } (uiux-agent3-lexa.css, load sau
+   bundle scoped) — sao phải giữ màu vàng/xám đánh giá, không tím. */
+.to-survey-sheet .to-survey-star {
+    font-size: 36px; color: #ddd; text-decoration: none;
+}
+.to-survey-sheet .to-survey-star.on { color: #f6c453; }
+.to-survey-actions { gap: 10px; }
+.to-survey-submit {
+    background: #FFBA31; color: #5a1f1a; font-weight: 700; border-radius: 10px;
+}
+.to-survey-submit:hover { background: #f5ae1f; color: #5a1f1a; }
+.to-survey-cancel { border-radius: 10px; }
+/* ===== END UIUX run 11:55 Agent 3 ===== */
+
+/* ===== DARK MODE (html.dark) — popup khảo sát sau giao hàng ===== */
+/* Vấn đề: .to-survey-sheet dùng inline style="background: #fff" + h5 inline
+   color:#763434 → popup trắng chói giữa trang dark. !important + [style*=]
+   để thắng inline style (scoped selector không thắng được inline). */
+html.dark .to-survey-sheet[style*="background: #fff"] {
+    background: #262019 !important;
+}
+
+html.dark .to-survey-sheet h5 {
+    color: #f0d9b5 !important;
+}
+
+html.dark .to-survey-sheet .btn-outline-secondary {
+    color: #c9c7dd;
+    border-color: #5a5a8a;
+}
+
+html.dark .to-survey-sheet .btn-outline-secondary:hover {
+    background: #34345a;
+    color: #fff;
+}

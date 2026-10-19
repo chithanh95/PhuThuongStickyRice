@@ -17,8 +17,8 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 
-<div class="container py-4" style="max-width: 720px;">
-    <h3 style="font-family: 'Lora', Georgia, serif; color: #763434;">Tài khoản của tôi</h3>
+<div class="container py-4 tk-page">
+    <h3 class="tk-title">Tài khoản của tôi</h3>
 
     @if (!_checked)
     {
@@ -55,7 +55,7 @@
                 else
                 {
                     <div class="d-flex align-items-center mb-2">
-                        <span class="badge @TierBadgeClass(_loyalty.Tier)" style="font-size: 1rem; padding: 8px 16px;">
+                        <span class="badge tk-tier-badge @TierBadgeClass(_loyalty.Tier)">
                             @_loyalty.Tier
                         </span>
                         @if (_loyalty.TierDiscountPercent > 0)
@@ -145,13 +145,13 @@
                                 @onclick="() => ToggleTag(t)">@t</button>
                     }
                 </div>
-                <div class="input-group mb-2" style="max-width: 420px;">
+                <div class="input-group mb-2 tk-form-narrow">
                     <input class="form-control" placeholder="Thêm khẩu vị khác..." @bind="_customTag" />
                     <div class="input-group-append">
                         <button class="btn btn-outline-primary" @onclick="AddCustomTag">Thêm</button>
                     </div>
                 </div>
-                <div class="form-group" style="max-width: 420px;">
+                <div class="form-group tk-form-narrow">
                     <label>Ghi chú thêm</label>
                     <input class="form-control" @bind="_profile.TasteNote" placeholder="VD: xôi dẻo một chút" />
                 </div>
@@ -244,7 +244,7 @@
 
                 @if (_editing)
                 {
-                    <div class="tk-addr-panel border rounded p-3 mb-3" style="background:#FFFDF7;">
+                    <div class="tk-addr-panel border rounded p-3 mb-3">
                         <div class="form-row">
                             <div class="form-group col-md-4">
                                 <label>Tên gợi nhớ</label>

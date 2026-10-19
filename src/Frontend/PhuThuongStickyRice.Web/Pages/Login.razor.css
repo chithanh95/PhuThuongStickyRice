@@ -1,0 +1,78 @@
+/* ===== Login.razor — UIUX run 11:55 (job uiux-team-2days) — Agent 3 (Đồng bộ Lexa)
+   Fix 1: chuyển toàn bộ <style> block + style inline trong Login.razor
+   sang scoped CSS. Trang /login dùng EmptyLayout (ngoài .lx-admin /
+   .shp-page) nên các control dưới vẫn dùng màu mặc định Bootstrap.
+   Fix 2: đồng bộ Lexa còn thiếu trên trang login:
+   - checkbox "Ghi nhớ tôi" checked: xanh Bootstrap #007bff -> tím Lexa
+   - ô nhập focus: viền xanh Bootstrap -> viền tím Lexa (khớp .lx-admin)
+   - btn-link ("← Back to password"): xanh #0366d6 (app.css) -> tím Lexa
+   Dark mode giữ nguyên từ block <style> cũ. */
+
+.login-fullscreen {
+    min-height: 100vh; width: 100%;
+    background: #f8f8fb;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 20px; margin: 0; box-sizing: border-box;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;
+}
+html.dark .login-fullscreen { background: #1a1a2e; }
+
+.login-box { width: 100%; max-width: 420px; }
+
+.login-card-box {
+    background: #fff; border-radius: 8px;
+    box-shadow: 0 2px 20px rgba(0,0,0,.08); padding: 40px 35px;
+}
+html.dark .login-card-box { background: #262640; box-shadow: 0 2px 20px rgba(0,0,0,.4); }
+html.dark .login-card-box label { color: #f0eef5 !important; }
+html.dark .login-card-box h4 { color: #f0eef5 !important; }
+html.dark .login-card-box p { color: #a5a2bd !important; }
+html.dark .login-card-box .form-control {
+    background: #1e1e36; border-color: #4a4a6e; color: #f0eef5;
+}
+html.dark .login-card-box .text-muted { color: #a5a2bd !important; }
+
+.login-brand { text-align: center; margin-bottom: 25px; }
+.login-emoji { font-size: 36px; }
+.login-brand-name {
+    font-size: 28px; font-weight: 600; color: #2b3a4a;
+    margin-left: 8px; vertical-align: middle;
+}
+html.dark .login-brand-name { color: #f0eef5; }
+
+.login-title {
+    text-align: center; color: #1a1a2e; font-weight: 600;
+    font-size: 22px; margin-bottom: 5px;
+}
+.login-sub {
+    text-align: center; color: #5a6c7d; font-size: 14px; margin-bottom: 25px;
+}
+.login-label { color: #1a1a2e; font-weight: 600; font-size: 14px; }
+
+.login-btn {
+    background: #7a6fbe; border-color: #7a6fbe;
+    padding: 8px 30px; border-radius: 4px;
+}
+.login-btn:hover, .login-btn:focus { background: #625998; border-color: #625998; }
+
+.login-footer { text-align: center; margin-top: 25px; color: #9ca8b3; font-size: 13px; }
+
+/* Checkbox "Ghi nhớ tôi": checked xanh Bootstrap #007bff -> tím Lexa #7a6fbe */
+.login-card-box .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #7a6fbe;
+    border-color: #7a6fbe;
+}
+.login-card-box .custom-control-input:focus ~ .custom-control-label::before {
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25);
+    border-color: #7a6fbe;
+}
+
+/* Ô nhập trên trang login: focus viền xanh Bootstrap -> viền tím Lexa */
+.login-card-box .form-control:focus {
+    border-color: #7a6fbe;
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25);
+}
+
+/* btn-link trên trang login: xanh #0366d6 (app.css) -> tím Lexa */
+.login-card-box .btn-link { color: #7a6fbe; }
+.login-card-box .btn-link:hover { color: #625998; }

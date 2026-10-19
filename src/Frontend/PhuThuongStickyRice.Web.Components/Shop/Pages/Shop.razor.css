@@ -65,6 +65,12 @@ html.dark .shop-info-strip {
     font-weight: 600;
     font-size: 1rem;
     color: #fff !important;
+    /* UIUX-Mobile-A1: giỏ nhiều món/số tiền lớn làm chữ dài, đẩy nút "Xem giỏ"
+       tràn khỏi màn 320px — cho chữ co lại (ellipsis), nút giữ nguyên. */
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .shop-sticky-cart-cta {
@@ -74,6 +80,12 @@ html.dark .shop-info-strip {
     border-radius: 999px;
     padding: 8px 16px;
     white-space: nowrap;
+    flex-shrink: 0;
+    /* UIUX-Mobile-A1: padding 8px 16px chỉ cho chiều cao ~40px (<44px chuẩn
+       chạm) — nâng lên 44px, chữ căn giữa dọc. */
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
 }
 
 /* In-flow spacer so the fixed bar never covers page content */
@@ -515,7 +527,9 @@ html.dark .shop-filters-sticky {
     }
     .shop-row-name {
         font-weight: 700;
-        font-size: 15px;
+        /* UIUX-Mobile-A1: 15px → 16px, khách lớn tuổi đọc rõ tên món hơn
+           (vẫn vừa khung 96px: 16+13+13+17px ≈ 92px tổng chiều cao chữ). */
+        font-size: 16px;
         color: #212529;
         text-decoration: none;
         display: block;
@@ -524,7 +538,8 @@ html.dark .shop-filters-sticky {
         text-overflow: ellipsis;
     }
     .shop-row-desc {
-        font-size: 12px;
+        /* UIUX-Mobile-A1: 12px → 13px, dễ đọc hơn với người lớn tuổi. */
+        font-size: 13px;
         color: #8a7a63;
         white-space: nowrap;
         overflow: hidden;
@@ -532,7 +547,8 @@ html.dark .shop-filters-sticky {
         margin-top: 2px;
     }
     .shop-row-meta {
-        font-size: 12px;
+        /* UIUX-Mobile-A1: 12px → 13px, dễ đọc hơn với người lớn tuổi. */
+        font-size: 13px;
         color: #8a7a63;
         margin-top: 4px;
     }
@@ -755,6 +771,17 @@ html.dark .shop-filters-sticky {
         font-size: 15px;
         cursor: pointer;
         margin: 0;
+    }
+    /* UIUX-Mobile-A1: tên size/topping dài không có min-width:0/ellipsis →
+       đẩy radio/checkbox lệch hoặc tràn ngang sheet. Cho chữ co lại,
+       radio/checkbox giữ nguyên vị trí. */
+    .qv-sheet-opt > span {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 12px;
     }
     .qv-sheet-opt-price {
         color: #8a7a63;
