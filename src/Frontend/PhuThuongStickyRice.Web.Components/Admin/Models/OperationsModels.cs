@@ -203,7 +203,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
 
     // ---- New vs returning (item 90) ----
 
-    public class NewReturningCustomersModel
+    /// <summary>
+    /// Số liệu so sánh khách hàng mới và khách hàng quay lại, hiển thị trên dashboard.
+    /// </summary>
+    public class NewAndReturningCustomersModel
     {
         public long NewCustomers { get; set; }
 

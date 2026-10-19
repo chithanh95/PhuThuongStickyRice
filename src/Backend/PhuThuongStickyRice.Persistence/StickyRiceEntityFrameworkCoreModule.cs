@@ -70,7 +70,7 @@ namespace PhuThuongStickyRice.Persistence
             context.Services.AddScoped(typeof(IRoleRepository), typeof(RoleRepository));
 
             context.Services.AddScoped<IDistributedLockProvider, SqlServerDistributedLockProvider>();
-            context.Services.AddScoped<ICircuitBreakerManager, CircuitBreakerManager>();
+            context.Services.AddScoped<ICircuitBreakerStore, CircuitBreakerStore>();
             context.Services.AddScoped(typeof(IDistributedLock), _ => new SqlDistributedLock(connectionString));
         }
 

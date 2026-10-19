@@ -26,7 +26,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Item 90: new customers (first order inside the range) vs
         /// returning customers, over the selected date range.
         /// </summary>
-        Task<NewReturningCustomersDto> GetNewReturningCustomersAsync(DateTime? from = null, DateTime? to = null);
+        Task<NewAndReturningCustomersDto> GetNewReturningCustomersAsync(DateTime? from = null, DateTime? to = null);
 
         /// <summary>
         /// Public: total quantity of items sold today (Vietnam time),
@@ -302,7 +302,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Khách mới (có đơn đầu tiên trong khoảng ngày) so với khách cũ
         /// (đã có đơn trước đó), tính trên khoảng ngày đã chọn (Item 90).
         /// </summary>
-        public virtual async Task<NewReturningCustomersDto> GetNewReturningCustomersAsync(
+        public virtual async Task<NewAndReturningCustomersDto> GetNewReturningCustomersAsync(
             DateTime? from = null, DateTime? to = null)
         {
             var (fromDate, toDate) = NormalizeRange(from, to);
@@ -324,7 +324,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 .Select(x => x.Phone)
                 .ToList();
 
-            var result = new NewReturningCustomersDto();
+            var result = new NewAndReturningCustomersDto();
             if (inRangePhones.Count == 0)
             {
                 return result;

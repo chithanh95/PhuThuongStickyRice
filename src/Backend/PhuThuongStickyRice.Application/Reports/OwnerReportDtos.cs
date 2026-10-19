@@ -4,7 +4,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PhuThuongStickyRice.Application.Reports
 {
-        public class NewReturningCustomersDto
+        /// <summary>
+        /// Số liệu so sánh khách hàng mới và khách hàng quay lại trong một khoảng thời gian.
+        /// Dùng cho báo cáo chủ quán và dashboard (biểu đồ khách mới/quay lại).
+        /// </summary>
+        public class NewAndReturningCustomersDto
         {
             public long NewCustomers { get; set; }
 

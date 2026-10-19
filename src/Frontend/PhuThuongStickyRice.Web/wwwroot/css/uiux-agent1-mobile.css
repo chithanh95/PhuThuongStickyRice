@@ -1603,3 +1603,120 @@
 }
 
 /* ===== END UIUX run 14:45 - Agent1 ===== */
+
+/* ===== UIUX run 15:15 - Agent1: khe hở tablet 768-991px + chữ nhỏ mobile ===== */
+
+/* ------------------------------------------------------------
+   FIX 1 — /cart (tablet 768–991px): nút "Tiếp tục mua".
+   Vấn đề: rule 44px của Cart.razor.css chỉ nằm trong
+   @media (max-width: 767.98px), run 10:55 (FIX 5) mới mở lên
+   576–767px — ở 768–991px (iPad dọc, điện thoại xoay ngang lớn)
+   nút "Tiếp tục mua" rớt về ~38px mặc định Bootstrap.
+   (Nút "Thanh toán" là btn-lg vốn đã ≥48px; nút "Xóa" đã được
+   nâng 44px ở run 13:25 FIX 5 — không ảnh hưởng.)
+   Giải pháp: nâng lên 44px, chỉ khoảng tablet — PC (≥992px)
+   và mobile giữ nguyên.
+   (Verify: Cart.razor:163 .cart-actions > a.btn-secondary duy
+   nhất; Cart.razor.css:109 rule 44px chỉ trong media ≤767.98px)
+   ------------------------------------------------------------ */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .cart-actions .btn-secondary {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /track-order (tablet 768–991px): 4 nút tự phục vụ đơn
+   ("✏️ Sửa đơn", "📍 Đổi địa chỉ / giờ giao", "📞 Sửa SĐT /
+   ghi chú", "Hủy đơn").
+   Vấn đề: rule xếp dọc 46px của TrackOrder.razor.css
+   (.to-selfservice .btn-sm) chỉ phủ ≤767.98px — ở 768–991px
+   4 nút vẫn là btn-sm ~31px, trong đó có nút "Hủy đơn" nguy
+   hiểm nằm sát các nút khác, khách dùng tablet dễ bấm nhầm.
+   Giải pháp: nâng lên 44px, chữ canh giữa; giữ xếp ngang vì
+   768px đủ chỗ 1 hàng (~540px) — không đổi layout.
+   (Verify: TrackOrder.razor:348-351 .to-selfservice .btn-sm;
+   TrackOrder.razor.css:303 rule .to-selfservice .btn-sm chỉ
+   trong media ≤767.98px)
+   ------------------------------------------------------------ */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .to-selfservice .btn-sm {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /track-order (tablet 768–991px): nút "Tra cứu" chính
+   và nút "Xem lịch sử đơn".
+   Vấn đề: rule 46px ở TrackOrder.razor.css (576–767px) không phủ
+   tới 768–991px — cả hai nút đều là hành động chính của trang
+   nhưng chỉ ~38px, khó bấm với người lớn tuổi dùng tablet.
+   Giải pháp: nâng lên 46px, mirror đúng selector của rule cũ.
+   (Verify: TrackOrder.razor:27-40 .to-lookup .btn-primary;
+   :52-70 .to-history .form-row .btn-outline-primary;
+   TrackOrder.razor.css:415 rule 46px chỉ tới 767.98px)
+   ------------------------------------------------------------ */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .to-lookup .btn,
+    .to-history .form-row .btn {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /track-order (tablet 768–991px): nút "Chi tiết" /
+   "Đặt lại" trong bảng lịch sử đơn.
+   Vấn đề: rule `.to-history table .btn-sm` 44px của run 08:35
+   (trong file này) chỉ bọc @media (max-width: 767.98px) — ở
+   768–991px cả hai nút rớt về ~31px, khó bấm đúng trên tablet.
+   Giải pháp: mở rộng lên 991.98px, giữ nguyên 44px.
+   (Verify: TrackOrder.razor:93-94 .to-history table .btn-sm;
+   rule cũ trong file này chỉ tới 767.98px; td.text-nowrap nên
+   2 nút vẫn nằm 1 hàng, không vỡ bảng)
+   ------------------------------------------------------------ */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .to-history table .btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /cart + /checkout (mobile): chữ nhỏ ~12px khó đọc với
+   người lớn tuổi.
+   Vấn đề: dòng "Còn X nữa được miễn phí giao hàng" (.gh-freeship
+   small) và thông báo "🚚 Phí giao hàng: Miễn phí · ⏱ chuẩn bị
+   trong ~X phút" (.tt-shipinfo small) đều chỉ ~12px, xám nhạt —
+   đây là thông tin tiền/khuyến mãi quan trọng mà khách hay bỏ qua.
+   Giải pháp: chữ lên 14px, màu đậm hơn, dễ đọc.
+   (Verify: Cart.razor:68-71 .gh-freeship small;
+   Checkout.razor:335 .tt-shipinfo small — 2 class chỉ tồn tại
+   đúng 2 vị trí này toàn app)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .gh-freeship small,
+    .tt-shipinfo small {
+        font-size: 14px;
+        color: #343a40;
+    }
+    .gh-freeship small strong,
+    .tt-shipinfo small strong {
+        color: inherit;
+    }
+}
+
+/* ===== END UIUX run 15:15 - Agent1 ===== */

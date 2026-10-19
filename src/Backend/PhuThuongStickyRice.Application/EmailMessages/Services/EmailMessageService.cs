@@ -48,7 +48,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
         private readonly IEmailMessageRepository _repository;
         private readonly IEmailNotification _emailNotification;
         private readonly IDateTimeProvider _dateTimeProvider;
-        private readonly ICircuitBreakerManager _circuitBreakerManager;
+        private readonly ICircuitBreakerStore _circuitBreakerStore;
         private readonly IDistributedLock _distributedLock;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
@@ -56,7 +56,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
             IEmailMessageRepository repository,
             IEmailNotification emailNotification,
             IDateTimeProvider dateTimeProvider,
-            ICircuitBreakerManager circuitBreakerManager,
+            ICircuitBreakerStore circuitBreakerStore,
             IDistributedLock distributedLock,
             IAsyncQueryableExecuter asyncExecuter)
         {
@@ -64,7 +64,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
             _repository = repository;
             _emailNotification = emailNotification;
             _dateTimeProvider = dateTimeProvider;
-            _circuitBreakerManager = circuitBreakerManager;
+            _circuitBreakerStore = circuitBreakerStore;
             _distributedLock = distributedLock;
             _asyncExecuter = asyncExecuter;
         }
@@ -83,7 +83,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
         public async Task<int> SendEmailMessagesAsync()
         {
             const int BatchSize = 100;
-            var circuit = _circuitBreakerManager.GetCircuitBreaker(EmailCircuitBreakerName, CircuitOpenDuration);
+            var circuit = _circuitBreakerStore.GetCircuitBreaker(EmailCircuitBreakerName, CircuitOpenDuration);
             circuit.EnsureOkStatus();
 
             var dateTime = _dateTimeProvider.OffsetNow;
@@ -138,7 +138,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
                 email.SentDateTime = _dateTimeProvider.OffsetNow;
                 email.Log += log + "Succeed.";
 
-                _circuitBreakerManager.LogSuccess(circuit);
+                _circuitBreakerStore.LogSuccess(circuit);
             }
             catch (Exception ex)
             {
@@ -153,7 +153,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
                 email.NextAttemptDateTime = _dateTimeProvider.OffsetNow
                     + RetryDelays[Math.Min(email.AttemptCount, RetryDelays.Length - 1)];
 
-                _circuitBreakerManager.LogFailure(circuit, CircuitFailureThreshold, TimeSpan.FromMinutes(5));
+                _circuitBreakerStore.LogFailure(circuit, CircuitFailureThreshold, TimeSpan.FromMinutes(5));
             }
 
             email.AttemptCount += 1;

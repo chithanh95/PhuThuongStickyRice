@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection
             });
 
             services.AddScoped<IDistributedLockProvider, SqlServerDistributedLockProvider>();
-            services.AddScoped<ICircuitBreakerManager, CircuitBreakerManager>();
+            services.AddScoped<ICircuitBreakerStore, CircuitBreakerStore>();
 
             return services;
         }

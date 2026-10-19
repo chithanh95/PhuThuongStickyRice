@@ -245,12 +245,12 @@
         try
         {
             var client = HttpClientFactory.CreateClient();
-            var baseAddr2 = Navigation.BaseUri;
-            var isLocal2 = baseAddr2.Contains("localhost", StringComparison.OrdinalIgnoreCase)
-                || baseAddr2.Contains("127.0.0.1");
-            client.BaseAddress = new Uri(isLocal2
+            var baseAddress = Navigation.BaseUri;
+            var isLocalhost = baseAddress.Contains("localhost", StringComparison.OrdinalIgnoreCase)
+                || baseAddress.Contains("127.0.0.1");
+            client.BaseAddress = new Uri(isLocalhost
                 ? AppSettings.ResourceServer.Endpoint.TrimEnd('/') + "/"
-                : baseAddr2);
+                : baseAddress);
             var response = await client.PostAsJsonAsync("api/auth/2fa/verify", new
             {
                 TwoFactorToken = _twoFactorToken,

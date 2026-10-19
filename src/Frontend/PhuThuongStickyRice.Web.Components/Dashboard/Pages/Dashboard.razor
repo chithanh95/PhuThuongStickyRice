@@ -611,7 +611,7 @@ else
     private DailyTargetModel _dailyTarget;
     private List<SourceStatModel> _sourceStats;
     private List<TopProductModel> _topProducts;
-    private NewReturningCustomersModel _newReturning;
+    private NewAndReturningCustomersModel _newReturning;
 
     // Wave 6d (item 36): today-vs-yesterday comparison card.
     private TodayVsYesterdayModel _todayVsYesterday;
@@ -667,7 +667,7 @@ else
         {
             var stats = await DashboardService.GetStatsAsync(_from, _to);
             var top = await DashboardService.GetTopProductsAsync(_from, _to);
-            NewReturningCustomersModel newReturning = null;
+            NewAndReturningCustomersModel newReturning = null;
             try
             {
                 newReturning = await DashboardService.GetNewReturningCustomersAsync(_from, _to);

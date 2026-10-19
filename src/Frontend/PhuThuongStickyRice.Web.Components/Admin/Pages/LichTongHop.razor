@@ -53,7 +53,9 @@
                         @foreach (var cell in _cells)
                         {
                             <div class="cal-day @(cell.InMonth ? "" : "cal-out") @(cell.Date == DateTime.Today ? "cal-today" : "") @(_selected == cell.Date ? "cal-selected" : "")"
-                                 @onclick="() => SelectDay(cell.Date)">
+                                 role="button" tabindex="0" aria-label="@cell.Date.ToString("dd/MM/yyyy")"
+                                 @onclick="() => SelectDay(cell.Date)"
+                                 @onkeydown="(e) => OnDayKey(e, cell.Date)">
                                 <div class="cal-num">@cell.Date.Day</div>
                                 <div class="cal-marks">
                                     @if (HasScheduled(cell.Date))
@@ -261,6 +263,13 @@
     }
 
     private void SelectDay(DateTime d) => _selected = d.Date;
+
+    /// <summary>Bàn phím: Enter/Space trên ô ngày tương đương click chọn ngày.</summary>
+    private void OnDayKey(KeyboardEventArgs e, DateTime d)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+            SelectDay(d);
+    }
 
     private static DateTime ToLocal(DateTime dt) => dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
 

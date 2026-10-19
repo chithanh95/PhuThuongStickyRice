@@ -46,9 +46,9 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
         }
 
         /// <summary>Item 90: new vs returning customers over the date range.</summary>
-        public async Task<NewReturningCustomersModel> GetNewReturningCustomersAsync(DateTime? from = null, DateTime? to = null)
+        public async Task<NewAndReturningCustomersModel> GetNewReturningCustomersAsync(DateTime? from = null, DateTime? to = null)
         {
-            return await GetAsync<NewReturningCustomersModel>(
+            return await GetAsync<NewAndReturningCustomersModel>(
                 BuildUrl("api/dashboard/customers/new-vs-returning", from, to));
         }
 

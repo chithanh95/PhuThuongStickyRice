@@ -1035,3 +1035,76 @@ html.dark .lx-content svg text[fill="#6c757d"] {
 }
 
 /* === end Agent 2 run 14:55 === */
+
+/* ===== UIUX run 15:15 - Agent2: Dark mode (3 fix mới) =====
+   Phương pháp: quét property-level toàn bộ .razor.css + <style> trong .razor
+   + wwwroot/css, đối chiếu từng selector màu sáng/chữ tối với 412 selector
+   đã có rule html.dark. Các đợt trước đã phủ rất kỹ (1037 dòng); đợt này còn
+   đúng 3 lỗi MỚI thật, đều đã grep xác minh markup + tính contrast thực tế.
+   Các chỗ "sáng/tối" còn lại là intentional: badge-warning/btn-warning
+   (chữ #212529 trên nền vàng ~9.5:1), .bulk-qr giữ nền trắng để quét QR,
+   trang in OrderPrint, demo /admin/lexa, .cho-* (trang /cho dark-by-design
+   #111 ở cả 2 mode), .sg-tl-dot (chấm đỏ viền trắng chủ ý), hover
+   btn-outline-* (fill màu + chữ trắng đọc tốt). */
+
+/* ---------- FIX 1 — /dat-so-luong-lon (mobile): chữ gợi ý xác nhận cọc tàng hình ----------
+   Vấn đề: uiux-agent1-mobile.css:425 (media <=767.98px, run 09:10) —
+   `.card-body > .btn-success:not(.btn-sm) + p.text-muted small { color:#495057 }`
+   (specificity 0,4,2) áp TRỰC TIẾP lên thẻ <small> nên thắng giá trị kế thừa
+   từ `html.dark .text-muted` (#a5a2bd !important đặt trên thẻ p cha — CSS
+   inheritance luôn thua rule trực tiếp, kể cả khi rule cha có !important).
+   Markup: DatSoLuongLon.razor:105-110 — nút "Tôi đã chuyển khoản" (con trực
+   tiếp của .card-body dòng 85) + p.text-muted kề ngay sau (hiện khi
+   _depositConfirmed=true). Đã verify: rule agent1 KHỚP markup này
+   (đã loại trừ Checkout.razor:246 — nút nằm trong .col-md-7 không phải con
+   trực tiếp; TrackOrder.razor:622 — sau nút là button khác, không phải p).
+   Ở dark mode mobile: #495057 trên card tối chỉ ~2.0:1 — chữ "Shop sẽ kiểm
+   tra và xác nhận cọc qua số điện thoại của bạn." gần như tàng hình.
+   Fix: #a5a2bd — đúng màu muted dark toàn cục (app.css:283), ~7.2:1.
+   Specificity (0,5,3) thắng rule agent1 (0,4,2), không cần !important.
+   Đặt trong cùng media query vì rule gốc chỉ tồn tại ở mobile. */
+@media (max-width: 767.98px) {
+    html.dark .card-body > .btn-success:not(.btn-sm) + p.text-muted small {
+        color: #a5a2bd; /* was #495057 */
+    }
+}
+
+/* ---------- FIX 2 — Shop: nút .btn-outline-secondary chữ xám mờ ở dark ----------
+   Vấn đề: uiux-agent3-lexa.css:184 —
+   `.shp-page .btn-outline-secondary { color:#6c757d !important;
+   border-color:#6c757d !important }`, KHÔNG có rule dark nào cho context
+   .shp-page (đã grep toàn bộ CSS: chỉ có .lx-admin (admin-lexa.css:2122) và
+   .to-survey-sheet (TrackOrder.razor.css:474)). Dùng tại các nút khách bấm:
+   Checkout.razor:136 ("Về trang chủ"), 565/569, 672 ("Áp dụng" mã giảm giá),
+   Faq.razor:21 ("Tìm"), DatSoLuongLon.razor:199/203 ("In/Lưu báo giá",
+   "Quay lại") — mọi trang đều trong ShopLayout (.shp-page, _Imports.razor).
+   Contrast thực đo: #6c757d trên nền tối #241d17/#262640 chỉ ~3.1-3.8:1.
+   Fix: theo đúng convention dark của admin (admin-lexa.css:2122) —
+   chữ #a5a2bd (~6.7:1), viền #6b6b8c. !important để thắng rule Lexa của
+   Agent 3 (cả hai !important → specificity (0,3,1) > (0,2,0) thắng).
+   Không đụng .to-survey-sheet: rule scoped của nó thêm [b-xxx] → (0,5,1),
+   vẫn thắng ở popup khảo sát. Hover giữ nguyên (nền #6c757d + chữ trắng
+   ~4.6:1, đọc tốt ở dark). */
+html.dark .shp-page .btn-outline-secondary {
+    color: #a5a2bd !important; /* was #6c757d */
+    border-color: #6b6b8c !important; /* was #6c757d */
+}
+
+/* ---------- FIX 3 — Shop: nút .btn-outline-primary tím Lexa hơi tối ở dark ----------
+   Vấn đề: uiux-agent3-lexa.css:302 (run 14:45) —
+   `.shp-page .btn-outline-primary { color:#7a6fbe !important;
+   border-color:#7a6fbe !important }`, KHÔNG có rule dark nào cho .shp-page
+   (đã grep: chỉ có .lx-admin, uiux-agent2-dark.css:829). Dùng ở:
+   DatTiec.razor:86-88 (preset "30/50/100 khách"), TaiKhoan.razor:115/151/
+   237/319, Checkout.razor:134, TrackOrder.razor:62. Contrast thực đo:
+   #7a6fbe trên nền tối #241d17/#262640 chỉ ~3.4-3.8:1 — dưới chuẩn 4.5:1.
+   Fix: #b3a8e8 — ĐÚNG màu tiền lệ admin đã duyệt cho cùng nút này ở dark
+   (uiux-agent2-dark.css:824-830, lý do y hệt: "#7a6fbe trên nền tối chỉ ~3:1").
+   !important để thắng rule Lexa của Agent 3. Hover giữ nguyên (fill #7a6fbe
+   + chữ trắng, đọc tốt). */
+html.dark .shp-page .btn-outline-primary {
+    color: #b3a8e8 !important; /* was #7a6fbe */
+    border-color: #b3a8e8 !important; /* was #7a6fbe */
+}
+
+/* ===== END UIUX run 15:15 - Agent2 ===== */

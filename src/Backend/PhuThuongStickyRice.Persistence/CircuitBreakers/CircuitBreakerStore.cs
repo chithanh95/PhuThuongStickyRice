@@ -6,12 +6,17 @@ using System.Linq;
 
 namespace PhuThuongStickyRice.Persistence.CircuitBreakers
 {
-    public class CircuitBreakerManager : ICircuitBreakerManager, IDisposable
+    /// <summary>
+    /// Triển khai <see cref="ICircuitBreakerStore"/> lưu trạng thái circuit breaker
+    /// trong database: tự tạo bản ghi khi gặp tên mạch mới, chuyển mạch sang
+    /// trạng thái "mở một nửa" khi hết thời gian chờ để thử gọi lại.
+    /// </summary>
+    public class CircuitBreakerStore : ICircuitBreakerStore, IDisposable
     {
         private readonly StickyRiceDbContext _dbContext;
         private readonly IDateTimeProvider _dateTimeProvider;
 
-        public CircuitBreakerManager(IDbContextFactory<StickyRiceDbContext> dbContextFactory, IDateTimeProvider dateTimeProvider)
+        public CircuitBreakerStore(IDbContextFactory<StickyRiceDbContext> dbContextFactory, IDateTimeProvider dateTimeProvider)
         {
             _dbContext = dbContextFactory.CreateDbContext();
             _dateTimeProvider = dateTimeProvider;

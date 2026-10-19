@@ -652,3 +652,93 @@ html.dark .cho-ticket:focus-visible {
     outline-offset: 2px;
 }
 /* ===== END UIUX run 14:58 - Agent4 ===== */
+
+/* ===== UIUX run 15:15 - Agent4: A11y & Polish (5 fix moi, khong trung cac run truoc) ===== */
+
+/* Fix 1 — Polish hover + WCAG 2.5.8 (touch target): nut tron chuyen doi
+   sang/toi `.auth-theme-btn` (DangNhap.razor:50-55, QuenMatKhau.razor:42-48)
+   chi 40px va HOAN TOAN khong co :hover — desktop di chuot qua khong biet
+   nut "song". Them hover (vien tim + nen thay doi nhe, dark mode nen toi
+   hon). Tren thiet bi cam ung nang len 44px theo chuan (khach lon tuoi).
+   Style goc nam trong <style> inline o body nen lap class (0,2,0)/(0,3,0)
+   de thang rule (0,1,0)/(0,2,0) theo document order. */
+.auth-theme-btn.auth-theme-btn:hover {
+    background: #f0f0f5;
+    border-color: #7a6fbe;
+}
+html.dark .auth-theme-btn.auth-theme-btn:hover {
+    background: #33335a;
+    border-color: #7a6fbe;
+}
+@media (pointer: coarse) {
+    .auth-theme-btn.auth-theme-btn {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* Fix 2 — Polish hover: 2 tab "Dang nhap"/"Dang ky" `.auth-tab`
+   (DangNhap.razor:34-43, role=tab) khong co bat ky :hover nao — desktop
+   khong nhan duoc phan hoi khi di chuot qua tab chua chon. Them hover nhe
+   (chu dam + vien duoi tim nhat), khong nham voi trang thai .active
+   (vien tim dam #7a6fbe). Lap class de thang <style> inline trong body. */
+.auth-tab.auth-tab:hover {
+    color: #495057;
+    border-bottom-color: #b9b3d9;
+}
+html.dark .auth-tab.auth-tab:hover {
+    color: #fff;
+    border-bottom-color: #7a6fbe;
+}
+
+/* Fix 3 — Polish hover: ve hang cho `.cho-ticket` (HangCho.razor:49-56,
+   role="button" mo overlay phong to) co cursor:pointer nhung KHONG co
+   :hover — desktop khong biet ve bam duoc. Hover sang nhe (filter
+   brightness, an toan cho ca 2 nen .cho-ready #0b3d1b va .cho-preparing
+   #4a3200). Nut kinh lup `.cho-zoom` tren ve cung khong co hover — them
+   nen dam hon khi hover. */
+.cho-ticket.cho-ticket:hover {
+    filter: brightness(1.12);
+}
+.cho-zoom.cho-zoom:hover {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+/* Fix 4 — Polish hover + WCAG 2.5.8: nut × dong popup khuyen mai
+   `.sg-popup-close` (Index.razor:889, Index.razor.css:1020-1028) khong co
+   :hover va vung bam chi ~28-34px (font-size 28px, khong set kich thuoc).
+   Them hover (chu dam hon; dark mode chu trang) + nang vung bam len 44px
+   tren thiet bi cam ung, can giua ky tu ×. Lap class (0,2,0) de thang rule
+   scoped [b-xxx] (0,2,0) theo thu tu cascade (file nay load sau cung). */
+.sg-popup-close.sg-popup-close:hover {
+    color: #4a3f30;
+}
+html.dark .sg-popup-close.sg-popup-close:hover {
+    color: #fff;
+}
+@media (pointer: coarse) {
+    .sg-popup-close.sg-popup-close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Fix 5 — WCAG 1.4.3 (Contrast, AA 4.5:1 cho chu 12px): 2 badge tren the
+   mon landing khong dat chuan tuong phan:
+   - `.sg-badge-out` ("Tam het"): chu trang #fff tren nen xam #8a8a8a chi
+     ~3.45:1 → nen dam len #6c757d (~4.69:1), van giu nghia "xam = het mon".
+   - `.sg-badge-morning` ("Xoi sang"): chu trang tren nen vang #e8a013 chi
+     ~2.2:1 → doi chu sang nau dam #4a2c00 (~5.75:1), GIU NGUYEN nen vang
+     brand (theo pattern .nq-cta o run 14:35: giu nen, sua chu).
+   Nguoi lon tuoi doc duoc trang thai mon. Lap class thang rule scoped. */
+.sg-badge-out.sg-badge-out {
+    background: #6c757d;
+}
+.sg-badge-morning.sg-badge-morning {
+    color: #4a2c00;
+}
+
+/* ===== END UIUX run 15:15 - Agent4 ===== */
