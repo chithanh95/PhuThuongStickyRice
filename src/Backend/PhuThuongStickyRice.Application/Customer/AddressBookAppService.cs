@@ -1,6 +1,7 @@
 
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,27 +47,44 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             private readonly IRepository<AddressBook, Guid> _addresses;
             private readonly IAsyncQueryableExecuter _asyncExecuter;
+            private readonly IMemoryCache _memoryCache;
 
             /// <summary>Số địa chỉ đã lưu tối đa trả về cho 1 SĐT (endpoint public).</summary>
             private const int MaxAddressesPerPhone = 50;
+
+            /// <summary>
+            /// TTL cache cho <see cref="GetByPhoneAsync"/> (public, checkout gọi
+            /// mỗi lần nhập SĐT — giống các public path khác: 5 phút).
+            /// </summary>
+            private static readonly TimeSpan PhoneCacheTtl = TimeSpan.FromMinutes(5);
+
+            /// <summary>Tiền tố key cache cho <see cref="GetByPhoneAsync"/>.</summary>
+            private const string PhoneCacheKeyPrefix = "addressbook:by-phone:";
 
             /// <summary>
             /// Khởi tạo service sổ địa chỉ.
             /// </summary>
             /// <param name="addresses">Repository địa chỉ đã lưu.</param>
             /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
+            /// <param name="memoryCache">Cache in-memory (giống ShortLinkAppService).</param>
             public AddressBookAppService(
                 IRepository<AddressBook, Guid> addresses,
-                IAsyncQueryableExecuter asyncExecuter)
+                IAsyncQueryableExecuter asyncExecuter,
+                IMemoryCache memoryCache)
             {
                 _addresses = addresses;
                 _asyncExecuter = asyncExecuter;
+                _memoryCache = memoryCache;
             }
 
             /// <summary>
             /// Public: lấy địa chỉ đã lưu của 1 SĐT cho checkout (tối đa 50,
             /// mới nhất trước). SĐT không hợp lệ trả về danh sách rỗng thay vì
             /// lỗi — form checkout chỉ ẩn dropdown địa chỉ đã lưu.
+            /// Kết quả được cache 5 phút theo SĐT chuẩn hóa vì checkout gọi
+            /// mỗi lần nhập SĐT; <see cref="SaveAsync"/>/<see cref="DeleteAsync"/>
+            /// là 2 writer duy nhất nên invalidate đúng key là đủ nhất quán
+            /// (không dùng Invalidate() toàn cục để không bust cache nóng khác).
             /// </summary>
             /// <param name="phone">SĐT khách hàng (được chuẩn hóa về dạng chữ số).</param>
             /// <returns>Danh sách địa chỉ đã lưu, mới nhất trước.</returns>
@@ -79,6 +97,14 @@ namespace PhuThuongStickyRice.Application.Customer
                     return new List<AddressBookDto>();
                 }
 
+                var cacheKey = PhoneCacheKeyPrefix + normalized;
+                if (_memoryCache.TryGetValue(cacheKey, out List<AddressBookDto> cached))
+                {
+                    // Trả bản sao: mỗi request trước đây đều nhận list mới,
+                    // không để caller mutate chung list trong cache.
+                    return new List<AddressBookDto>(cached);
+                }
+
                 var queryable = await _addresses.GetQueryableAsync();
                 // perf-hunt 2026-10-19: Take(50) server-side — endpoint public
                 // (checkout), trước đây materialize toàn bộ địa chỉ đã lưu của SĐT.
@@ -86,7 +112,9 @@ namespace PhuThuongStickyRice.Application.Customer
                     queryable.Where(x => x.Phone == normalized)
                         .OrderByDescending(x => x.CreatedDateTime)
                         .Take(MaxAddressesPerPhone));
-                return entities.Select(MapToDto).ToList();
+                var dtos = entities.Select(MapToDto).ToList();
+                _memoryCache.Set(cacheKey, dtos, PhoneCacheTtl);
+                return new List<AddressBookDto>(dtos);
             }
 
             /// <summary>
@@ -116,6 +144,9 @@ namespace PhuThuongStickyRice.Application.Customer
                 {
                     existing.Address = address;
                     await _addresses.UpdateAsync(existing, autoSave: true);
+                    // perf-hunt 2026-10-19: gỡ cache ngay để checkout thấy
+                    // địa chỉ vừa sửa mà không chờ hết TTL.
+                    _memoryCache.Remove(PhoneCacheKeyPrefix + phone);
                     return MapToDto(existing);
                 }
 
@@ -126,6 +157,9 @@ namespace PhuThuongStickyRice.Application.Customer
                     Address = address
                 };
                 await _addresses.InsertAsync(entity, autoSave: true);
+                // perf-hunt 2026-10-19: gỡ cache ngay để checkout thấy
+                // địa chỉ vừa lưu mà không chờ hết TTL.
+                _memoryCache.Remove(PhoneCacheKeyPrefix + phone);
                 return MapToDto(entity);
             }
 
@@ -147,6 +181,10 @@ namespace PhuThuongStickyRice.Application.Customer
                 }
 
                 await _addresses.DeleteAsync(entity, autoSave: true);
+                // perf-hunt 2026-10-19: gỡ cache ngay để địa chỉ vừa xóa
+                // biến mất khỏi dropdown checkout ngay lập tức.
+                _memoryCache.Remove(PhoneCacheKeyPrefix + entity.Phone);
+                _memoryCache.Remove(PhoneCacheKeyPrefix + normalized);
             }
 
             /// <summary>

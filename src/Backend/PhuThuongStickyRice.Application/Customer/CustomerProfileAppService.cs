@@ -78,6 +78,8 @@ namespace PhuThuongStickyRice.Application.Customer
 
         /// <summary>Số bản ghi nhắc chăm sóc tối đa trả về cho 1 SĐT (tránh nạp toàn bộ lịch sử).</summary>
         private const int MaxReminderHistoryRows = 200;
+        /// <summary>Số thành viên sinh nhật tối đa materialize cho 1 tháng (admin).</summary>
+        private const int MaxBirthdayRows = 500;
 
         private readonly IRepository<User, Guid> _users;
         private readonly IRepository<UserRole, Guid> _userRoles;
@@ -224,9 +226,13 @@ namespace PhuThuongStickyRice.Application.Customer
         /// Admin xem danh sách khách (role Customer) có sinh nhật trong tháng
         /// cho trước, sắp xếp theo ngày sinh tăng dần. Mỗi dòng kèm trạng thái
         /// đã tặng quà năm nay chưa.
+        /// Giới hạn server-side tối đa 500 dòng (perf-hunt 2026-10-19:
+        /// trước đây materialize toàn bộ khách có sinh nhật trong tháng,
+        /// không giới hạn); UI admin hiện toàn bộ danh sách trả về nên
+        /// ngưỡng này không bao giờ chạm tới với quy mô doanh nghiệp nhỏ.
         /// </summary>
         /// <param name="month">Tháng (1–12).</param>
-        /// <returns>Danh sách khách sinh nhật trong tháng.</returns>
+        /// <returns>Danh sách khách sinh nhật trong tháng (tối đa 500).</returns>
         /// <exception cref="UserFriendlyException">Ném khi tháng ngoài 1–12.</exception>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<BirthdayMemberDto>> GetBirthdaysAsync(int month)
@@ -261,7 +267,7 @@ namespace PhuThuongStickyRice.Application.Customer
                             u.BirthdayGiftCode
                         };
 
-            var rows = await _asyncExecuter.ToListAsync(query);
+            var rows = await _asyncExecuter.ToListAsync(query.Take(MaxBirthdayRows));
             return rows.Select(u => new BirthdayMemberDto
             {
                 UserId = u.Id,

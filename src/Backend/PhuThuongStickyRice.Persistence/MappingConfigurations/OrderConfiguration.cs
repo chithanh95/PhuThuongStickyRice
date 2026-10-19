@@ -28,6 +28,12 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .HasMaxLength(Order.CustomerPhoneNormMaxLength)
                 .IsRequired();
             builder.HasIndex(x => x.CustomerPhoneNorm);
+            // perf-hunt 2026-10-19: LoyaltyAppService.HasNoPriorCompletedOrderAsync
+            // (chạy mỗi khi đơn dùng mã giới thiệu hoàn thành) lọc bằng cả 2
+            // điều kiện bằng: CustomerPhoneNorm == 9 số cuối AND Status == Completed.
+            // Composite index cho full seek 2 điều kiện; index đơn CustomerPhoneNorm
+            // còn lại phục vụ các truy vấn chỉ lọc theo SĐT (không đổi).
+            builder.HasIndex(x => new { x.CustomerPhoneNorm, x.Status });
             builder.Property(x => x.CustomerEmail).HasMaxLength(Order.CustomerEmailMaxLength);
             builder.Property(x => x.CustomerAddress).HasMaxLength(Order.CustomerAddressMaxLength);
             builder.Property(x => x.Notes).HasMaxLength(Order.NotesMaxLength);
