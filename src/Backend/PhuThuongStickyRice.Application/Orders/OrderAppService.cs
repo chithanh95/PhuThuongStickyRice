@@ -2471,7 +2471,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var groups = candidates
                 .Where(x => !string.IsNullOrWhiteSpace(x.CustomerPhone))
                 .GroupBy(x => NormalizePhoneKey(x.CustomerPhone))
-                .Where(g => g.Key != null && g.Count() > 1)
+                .Where(g => g.Key != null && g.Skip(1).Any()) // Skip(1).Any(): dừng ngay khi thấy phần tử thứ 2, không đếm hết group
                 .Select(g =>
                 {
                     var dtos = g.Select(o => _objectMapper.Map<Order, OrderDto>(o)).ToList();
@@ -2630,7 +2630,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private static string NormalizePhoneKey(string phone)
         {
             var digits = DigitsOnly(phone);
-            return digits.Length >= 9 ? digits.Substring(digits.Length - 9) : null;
+            return digits.Length >= 9 ? digits[^9..] : null;
         }
 
         /// <summary>

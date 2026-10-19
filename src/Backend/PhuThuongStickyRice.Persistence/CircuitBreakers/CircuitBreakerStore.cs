@@ -82,8 +82,8 @@ namespace PhuThuongStickyRice.Persistence.CircuitBreakers
             if (circuitBreaker.Status == CircuitStatus.Closed)
             {
                 var sinceLastTime = _dateTimeProvider.OffsetNow - period;
-                var numberOfFailures = _dbContext.Set<CircuitBreakerLog>().Where(x => x.CircuitBreakerId == ((CircuitBreaker)circuitBreaker).Id
-                && x.Succeeded == false && x.CreatedDateTime >= sinceLastTime).Count();
+                var numberOfFailures = _dbContext.Set<CircuitBreakerLog>().Count(x => x.CircuitBreakerId == ((CircuitBreaker)circuitBreaker).Id
+                    && !x.Succeeded && x.CreatedDateTime >= sinceLastTime);
 
                 UpdateCircuitBreakerStatus(circuitBreaker, numberOfFailures >= maximumNumberOfFailures, CircuitStatus.Open);
 

@@ -181,7 +181,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         private static Expression<Func<DiscountCode, bool>> PublicActiveCodeFilter(
             DateTime now) =>
             x => x.IsActive
-                && (x.OwnerPhone == null || x.OwnerPhone == "")
+                && string.IsNullOrEmpty(x.OwnerPhone)
                 && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
                 && (!x.MaxUses.HasValue || x.UsedCount < x.MaxUses.Value);
 
