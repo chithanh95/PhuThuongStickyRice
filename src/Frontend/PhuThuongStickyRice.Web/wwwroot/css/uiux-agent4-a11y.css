@@ -1995,3 +1995,15 @@ html:not(.dark) .bulk-step.bulk-step.active span {
 html:not(.dark) .bulk-step.bulk-step.done span {
     color: #0b3d2e;
 }
+
+/* Fix 5 — WCAG 1.4.3: cột "Sao" trang /admin/danh-gia (DanhGia.razor:120 /
+   DanhGia.razor.css:2-5) — ký tự ★ 16px màu vàng #f1b44c trên nền trắng chỉ
+   ~1.85:1, mà đây là nơi DUY NHẤT thể hiện điểm đánh giá (không có số đi
+   kèm) → nhân viên khó phân biệt 3★ với 5★. Đậm sang #a36500 (~4.74:1, giữ
+   sắc vàng hổ phách, đồng bộ convention #b36f00 của sao đánh giá món run
+   16:30). Sao "tắt" (.dg-stars-off) giữ nguyên #ddd nhờ selector riêng.
+   Chỉ light mode: dark mode giữ #f1b44c gốc (trên nền tối đạt ~7.95:1). */
+html:not(.dark) .dg-stars.dg-stars {
+    color: #a36500;
+}
+/* ===== END UIUX run 2026-10-20 00:25 - Agent4 ===== */
