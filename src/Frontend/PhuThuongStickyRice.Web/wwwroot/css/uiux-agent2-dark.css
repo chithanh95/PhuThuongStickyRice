@@ -1913,3 +1913,34 @@ html.dark .spin-wheel {
 }
 
 /* ===== END UIUX 23:25 A2 ===== */
+
+/* ===== UIUX 23:48 A2 =====
+   Phương pháp: quét property-level toàn bộ 47 file .razor.css + <style>
+   trong .razor + inline style, đối chiếu với ~1900 dòng rule html.dark
+   hiện có (22 đợt Agent 2 trước + app.css + admin-lexa + agent3/4), verify
+   DOM + đo contrast + specificity từng ứng viên. Bề mặt đã bão hòa —
+   2 họ bug từng "được fix" hóa ra là CSS CHẾT (không có markup):
+   `.sg-dot` (agent4 run 23:25 đổi màu streak landing — không file .razor
+   nào dùng, đã grep toàn frontend) và `.sg-stars-small` — KHÔNG thêm rule
+   cho selector chết (không cải thiện gì thật). Còn đúng 3 lỗi MỚI thật
+   (2 ở file riêng trang admin + 1 ở file này), đều đã grep xác minh. */
+
+/* ---------- UIUX 23:48 A2 FIX 3 — Landing: placeholder form đăng ký nhận tin Zalo mờ ở dark ----------
+   Vấn đề: uiux-agent4-a11y.css —
+   `.sg-zalo-form.sg-zalo-form input::placeholder { color:#6c757d }`
+   (0,2,2, áp dụng CẢ 2 mode). Ở dark mode ô input render nền tối (nhờ
+   `html.dark { color-scheme: dark }`, run 12:25) nhưng placeholder vẫn
+   #6c757d → chỉ ~2.5–3.3:1, chữ gợi ý "Số điện thoại" mờ.
+   (Comment của agent4 ghi "input nền trắng nên không cần rule dark" —
+   SAI ở dark mode.) Form họ hàng `.sg-loyal-form` đã được fix placeholder
+   #b8a88f ở run 14:05, chỉ sót `.sg-zalo-form` (Index.razor:711, form đăng
+   ký nhận tin khuyến mãi chân landing — đã grep xác minh không rule dark
+   nào phủ selector này).
+   Fix: #b8a88f — đúng convention 4 fix placeholder landing trước
+   (sg-search, sg-chat-phone, sg-loyal-form, sg-spin-form) → ~5.5–7:1.
+   Specificity (0,2,3) thắng rule agent4 (0,2,2); không đụng light mode. */
+html.dark .sg-zalo-form input::placeholder {
+    color: #b8a88f; /* was #6c757d */
+}
+
+/* ===== END UIUX 23:48 A2 ===== */

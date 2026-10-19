@@ -14,3 +14,13 @@
 code {
     color: #7a6fbe;
 }
+
+/* uiux-hunt 2026-10-19 run 23:48 agent2-dark — Fix 2: thẻ <code> #7a6fbe
+   trên nền tối admin chỉ ~3.4:1 (< AA 4.5:1) — hướng dẫn webhook
+   (ShopSettings.razor:107/339: Callback URL, JSON {maDon...}) mờ ở dark.
+   Scope riêng trang này để không chạm demo /admin/lexa/* (pixel-exact),
+   cùng lý do với fix agent3-lexa run 22:25 phía trên.
+   Fix: #b3a8e8 (~6.8:1) — đúng convention #7a6fbe trên nền tối. */
+html.dark code {
+    color: #b3a8e8; /* was #7a6fbe */
+}

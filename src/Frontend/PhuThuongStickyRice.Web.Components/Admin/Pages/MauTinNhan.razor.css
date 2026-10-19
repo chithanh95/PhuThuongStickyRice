@@ -5,3 +5,15 @@
 code {
     color: #7a6fbe;
 }
+
+/* uiux-hunt 2026-10-19 run 23:48 agent2-dark — Fix 1: thẻ <code> #7a6fbe
+   trên card admin tối #262640 chỉ ~3.4:1 (< AA 4.5:1 cho chữ nhỏ) —
+   placeholder {MaDon}, {TenKhach}... (MauTinNhan.razor:34-35) mờ ở dark.
+   (Run 22:45 đã ghi nhận cần rule scoped riêng: rule global
+   `html.dark .lx-admin code` sẽ vấy sang demo /admin/lexa/* pixel-exact.)
+   Fix: #b3a8e8 (~6.8:1) — đúng convention #7a6fbe trên nền tối đã duyệt
+   (run 15:15 .btn-outline-primary, run 19:55 nút /error).
+   Specificity html.dark code[b-xxx] (0,2,2) thắng code[b-xxx] (0,1,1). */
+html.dark code {
+    color: #b3a8e8; /* was #7a6fbe */
+}
