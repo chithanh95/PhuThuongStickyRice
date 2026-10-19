@@ -37,7 +37,7 @@
     <div class="alert alert-danger">@_error</div>
 }
 
-@if (_data == null)
+@if (_reconciliation == null)
 {
     @if (!_loading)
     {
@@ -48,7 +48,7 @@ else
 {
     <div class="card">
         <div class="card-body">
-            <h4 class="card-title">Đối soát ngày @_data.Date.ToString("dd/MM/yyyy")</h4>
+            <h4 class="card-title">Đối soát ngày @_reconciliation.Date.ToString("dd/MM/yyyy")</h4>
             <div class="table-responsive">
                 <table class="table table-striped mb-0">
                     <thead>
@@ -61,31 +61,31 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var c in _data.Channels)
+                        @foreach (var channel in _reconciliation.Channels)
                         {
-                            <tr @key="c.PaymentMethod">
-                                <td><strong>@c.Label</strong></td>
-                                <td class="text-right">@c.OrderCount</td>
-                                <td class="text-right"><strong>@FormatPrice(c.Revenue)</strong></td>
-                                <td class="text-right text-success">@FormatPrice(c.PaidAmount)</td>
-                                <td class="text-right @(c.UnpaidAmount > 0 ? "text-danger" : "")">@FormatPrice(c.UnpaidAmount)</td>
+                            <tr @key="channel.PaymentMethod">
+                                <td><strong>@channel.Label</strong></td>
+                                <td class="text-right">@channel.OrderCount</td>
+                                <td class="text-right"><strong>@FormatPrice(channel.Revenue)</strong></td>
+                                <td class="text-right text-success">@FormatPrice(channel.PaidAmount)</td>
+                                <td class="text-right @(channel.UnpaidAmount > 0 ? "text-danger" : "")">@FormatPrice(channel.UnpaidAmount)</td>
                             </tr>
                         }
                     </tbody>
                     <tfoot>
                         <tr class="lx-total-row">
                             <th scope="row">Tổng cộng</th>
-                            <th class="text-right">@_data.TotalOrderCount</th>
-                            <th class="text-right">@FormatPrice(_data.TotalRevenue)</th>
-                            <th class="text-right">@FormatPrice(_data.TotalPaidAmount)</th>
-                            <th class="text-right">@FormatPrice(_data.TotalUnpaidAmount)</th>
+                            <th class="text-right">@_reconciliation.TotalOrderCount</th>
+                            <th class="text-right">@FormatPrice(_reconciliation.TotalRevenue)</th>
+                            <th class="text-right">@FormatPrice(_reconciliation.TotalPaidAmount)</th>
+                            <th class="text-right">@FormatPrice(_reconciliation.TotalUnpaidAmount)</th>
                         </tr>
                     </tfoot>
                 </table>
             </div>
         </div>
     </div>
-    @if (_data.TotalOrderCount == 0)
+    @if (_reconciliation.TotalOrderCount == 0)
     {
         <div class="alert alert-info mt-3">Không có đơn nào trong ngày đã chọn.</div>
     }
@@ -99,7 +99,7 @@ else
 @code {
     // Wave 6c (item 31): daily payment-channel reconciliation.
     private DateTime _date = DateTime.Now.Date;
-    private DailyReconciliationModel _data;
+    private DailyReconciliationModel _reconciliation;
     private bool _loading;
     private string _error;
 
@@ -114,7 +114,7 @@ else
         _error = null;
         try
         {
-            _data = await OrderService.GetReconciliationAsync(_date);
+            _reconciliation = await OrderService.GetReconciliationAsync(_date);
         }
         catch (Exception ex)
         {

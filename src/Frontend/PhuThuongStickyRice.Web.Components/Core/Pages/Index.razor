@@ -1196,7 +1196,7 @@ else
         try { _polls = await LandingService.GetPollsAsync() ?? new List<DishPollModel>(); } catch { }
         try { _courses = await LandingService.GetCoursesAsync() ?? new List<CourseModel>(); } catch { }
         try { _marketLinks = await LandingService.GetMarketplaceLinksAsync(); } catch { }
-        try { var s = await ShopSettingsService.GetPublicAsync(); _mapsUrl = s?.GoogleMapsUrl; } catch { }
+        try { var settings = await ShopSettingsService.GetPublicAsync(); _mapsUrl = settings?.GoogleMapsUrl; } catch { }
         try
         {
             var holidays = await LandingService.GetUpcomingHolidaysAsync();
@@ -1378,10 +1378,10 @@ else
         {
             using var doc = System.Text.Json.JsonDocument.Parse(imageUrlsJson);
             if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array) return list;
-            foreach (var el in doc.RootElement.EnumerateArray())
+            foreach (var imageElement in doc.RootElement.EnumerateArray())
             {
-                var s = el.GetString();
-                if (!string.IsNullOrWhiteSpace(s)) list.Add(s);
+                var imageUrl = imageElement.GetString();
+                if (!string.IsNullOrWhiteSpace(imageUrl)) list.Add(imageUrl);
             }
         }
         // Parse JSON danh sách ảnh: dữ liệu hỏng hoặc không phải mảng thì trả list rỗng
@@ -1711,8 +1711,8 @@ else
         try
         {
             var url = Navigation.BaseUri.TrimEnd('/') + "/shop?ref=landing";
-            var res = await JSRuntime.InvokeAsync<string>("ptShare", p.Name, $"Xôi Phú Thượng - {p.Name} {p.Price:N0}đ", url);
-            if (res == "copied") Toasts.Show("Đã copy link món ăn!");
+            var shareResult = await JSRuntime.InvokeAsync<string>("ptShare", p.Name, $"Xôi Phú Thượng - {p.Name} {p.Price:N0}đ", url);
+            if (shareResult == "copied") Toasts.Show("Đã copy link món ăn!");
         }
         catch { }
     }

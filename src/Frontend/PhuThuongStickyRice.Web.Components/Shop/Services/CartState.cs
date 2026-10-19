@@ -227,11 +227,11 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 using var doc = JsonDocument.Parse(imageUrlsJson);
                 if (doc.RootElement.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (var el in doc.RootElement.EnumerateArray())
+                    foreach (var imageElement in doc.RootElement.EnumerateArray())
                     {
-                        if (el.ValueKind == JsonValueKind.String)
+                        if (imageElement.ValueKind == JsonValueKind.String)
                         {
-                            var url = el.GetString()?.Trim();
+                            var url = imageElement.GetString()?.Trim();
                             if (!string.IsNullOrEmpty(url))
                             {
                                 return url;

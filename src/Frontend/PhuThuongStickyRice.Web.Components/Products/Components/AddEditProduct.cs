@@ -165,18 +165,18 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 using var doc = JsonDocument.Parse(hoursJson);
                 if (doc.RootElement.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (var el in doc.RootElement.EnumerateArray())
+                    foreach (var hourElement in doc.RootElement.EnumerateArray())
                     {
                         if (_hours.Count >= MaxHourWindows)
                         {
                             break;
                         }
 
-                        var from = el.TryGetProperty("from", out var fromEl) ? fromEl.GetString() : null;
-                        var to = el.TryGetProperty("to", out var toEl) ? toEl.GetString() : null;
-                        if (TimeOnly.TryParse(from, out var fromT) && TimeOnly.TryParse(to, out var toT))
+                        var from = hourElement.TryGetProperty("from", out var fromEl) ? fromEl.GetString() : null;
+                        var to = hourElement.TryGetProperty("to", out var toEl) ? toEl.GetString() : null;
+                        if (TimeOnly.TryParse(from, out var fromTime) && TimeOnly.TryParse(to, out var toTime))
                         {
-                            _hours.Add(new HourWindow { From = fromT, To = toT });
+                            _hours.Add(new HourWindow { From = fromTime, To = toTime });
                         }
                     }
                 }
@@ -205,11 +205,11 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 using var doc = JsonDocument.Parse(imageUrlsJson);
                 if (doc.RootElement.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (var el in doc.RootElement.EnumerateArray())
+                    foreach (var imageElement in doc.RootElement.EnumerateArray())
                     {
-                        if (el.ValueKind == JsonValueKind.String)
+                        if (imageElement.ValueKind == JsonValueKind.String)
                         {
-                            var url = el.GetString()?.Trim();
+                            var url = imageElement.GetString()?.Trim();
                             if (!string.IsNullOrEmpty(url))
                             {
                                 _imageUrl = url;
