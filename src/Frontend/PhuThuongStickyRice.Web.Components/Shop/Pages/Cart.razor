@@ -268,9 +268,20 @@ else
         Funnel.Track(FunnelService.Events.CartView, new Uri(Navigation.Uri).AbsolutePath);
         CartState.OnChange += OnCartChanged;
         await MergeSharedCartAsync();
-        await LoadSuggestionsAsync();
 
-        // GH1: freeship threshold (fail-soft — the bar hides when unset).
+        // perf-hunt 2026-10-19 (run 22:35): 3 loader độc lập chạy song song
+        // (cắt ~1-2 round-trip khi mở trang /cart). Gợi ý phụ thuộc giỏ SAU
+        // khi merge nên vẫn đứng sau MergeSharedCartAsync; ngưỡng freeship và
+        // SĐT lưu local đều fail-soft riêng, ghi field riêng nên không race.
+        var suggestionsTask = LoadSuggestionsAsync();
+        var settingsTask = LoadSettingsAsync();
+        var phoneTask = LoadPhoneAsync();
+        await Task.WhenAll(suggestionsTask, settingsTask, phoneTask);
+    }
+
+    /// <summary>GH1: ngưỡng freeship (fail-soft — thanh ẩn khi không có).</summary>
+    private async Task LoadSettingsAsync()
+    {
         try
         {
             var settings = await ShopSettingsService.GetPublicAsync();
@@ -280,8 +291,11 @@ else
         {
             _freeShipThreshold = 0;
         }
+    }
 
-        // GH2: prefill the phone from the last visit (fail-soft).
+    /// <summary>GH2: điền sẵn SĐT từ lần ghé trước (fail-soft).</summary>
+    private async Task LoadPhoneAsync()
+    {
         try
         {
             _phone = await JSRuntime.InvokeAsync<string>("localStorage.getItem", PhoneStorageKey);
@@ -369,18 +383,36 @@ else
     /// </summary>
     private async Task LoadSuggestionsAsync()
     {
+        // perf-hunt 2026-10-19 (run 22:35): 2 API độc lập chạy song song —
+        // danh sách món và thứ hạng bán chạy không phụ thuộc nhau, map theo
+        // id sau khi cả hai về. Semantics giữ nguyên bản cũ: products lỗi →
+        // gợi ý rỗng; bestIds lỗi → backfill món kèm.
+        var productsTask = ShopService.GetProductsAsync();
+        var bestIdsTask = ShopService.GetBestSellerIdsAsync();
+
+        var inCart = new HashSet<Guid>(CartState.Items.Select(x => x.ProductId));
+        List<ShopProductModel> available;
         try
         {
-            var inCart = new HashSet<Guid>(CartState.Items.Select(x => x.ProductId));
-            var paged = await ShopService.GetProductsAsync();
-            var available = (paged.Items ?? new List<ShopProductModel>())
+            var paged = await productsTask;
+            available = (paged.Items ?? new List<ShopProductModel>())
                 .Where(p => !inCart.Contains(p.Id))
                 .ToList();
+        }
+        catch (Exception)
+        {
+            // Quan sát nốt bestIdsTask để không trôi exception không ai await.
+            try { await bestIdsTask; } catch (Exception) { }
+            _suggestions = new List<ShopProductModel>();
+            return;
+        }
 
+        try
+        {
             var picks = new List<ShopProductModel>();
             try
             {
-                var bestIds = await ShopService.GetBestSellerIdsAsync() ?? new List<Guid>();
+                var bestIds = await bestIdsTask ?? new List<Guid>();
                 var byId = available.ToDictionary(p => p.Id);
                 foreach (var id in bestIds)
                 {

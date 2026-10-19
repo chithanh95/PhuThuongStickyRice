@@ -725,18 +725,6 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        // Item 155: fine-grained permissions gate the sensitive buttons.
-        // Failure to load = no permissions (buttons hidden, APIs re-check).
-        try
-        {
-            _permissions = await PermissionService.GetMyPermissionsAsync();
-        }
-        catch
-        {
-            _permissions = new System.Collections.Generic.HashSet<string>(
-                System.StringComparer.OrdinalIgnoreCase);
-        }
-
         // Support deep links like /orders?status=Pending or /orders?searchTerm=090...
         var query = ParseQuery(Navigation.Uri);
         if (query.TryGetValue("status", out var status) && !string.IsNullOrWhiteSpace(status))
@@ -760,6 +748,39 @@ else
             _toDate = td.Date;
         }
 
+        // perf-hunt 2026-10-19 (run 22:35): 3 loader độc lập chạy song song
+        // (cắt ~2 round-trip khi mở trang /orders). Mỗi loader fail-soft riêng
+        // như cũ, ghi field riêng nên không race; LoadOrders không dùng
+        // _permissions/_shippers nên không phụ thuộc thứ tự.
+        var permissionsTask = LoadPermissionsAsync();
+        var shippersTask = LoadShippersAsync();
+        var ordersTask = LoadOrders(1);
+        await Task.WhenAll(permissionsTask, shippersTask, ordersTask);
+
+        // Item 142: load duplicate-phone groups (best effort — never blocks the page).
+        _ = LoadDuplicateGroupsAsync();
+    }
+
+    /// <summary>
+    /// Item 155: fine-grained permissions gate the sensitive buttons.
+    /// Failure to load = no permissions (buttons hidden, APIs re-check).
+    /// </summary>
+    private async Task LoadPermissionsAsync()
+    {
+        try
+        {
+            _permissions = await PermissionService.GetMyPermissionsAsync();
+        }
+        catch
+        {
+            _permissions = new System.Collections.Generic.HashSet<string>(
+                System.StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>Tải danh sách shipper cho bộ lọc/gán đơn (fail-soft).</summary>
+    private async Task LoadShippersAsync()
+    {
         try
         {
             _shippers = await AdminOperationsService.GetShippersAsync(false)
@@ -769,11 +790,6 @@ else
         {
             _shippers = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ShipperModel>();
         }
-
-        await LoadOrders(1);
-
-        // Item 142: load duplicate-phone groups (best effort — never blocks the page).
-        _ = LoadDuplicateGroupsAsync();
     }
 
     /// <summary>

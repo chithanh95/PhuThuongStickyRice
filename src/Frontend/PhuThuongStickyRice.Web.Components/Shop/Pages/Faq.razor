@@ -104,9 +104,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAsync(null);
+        // perf-hunt 2026-10-19 (run 22:35): 3 loader độc lập chạy song song
+        // (cắt ~2 round-trip khi mở trang /hoi-dap). Mỗi loader fail-soft
+        // riêng như cũ, ghi field riêng nên không race.
+        var faqsTask = LoadAsync(null);
+        var policiesTask = LoadPoliciesAsync();
+        var contactTask = LoadContactAsync();
+        await Task.WhenAll(faqsTask, policiesTask, contactTask);
+    }
 
-        // Wave 6b (item 28): cross-link to the policy pages (fail-soft).
+    /// <summary>Wave 6b (item 28): cross-link tới trang chính sách (fail-soft).</summary>
+    private async Task LoadPoliciesAsync()
+    {
         try
         {
             _policies = await PolicyService.GetPublicListAsync()
@@ -116,8 +125,11 @@ else
         {
             _policies = new List<PolicyPageSummaryModel>();
         }
+    }
 
-        // FQ3: load hotline / Zalo (fail-soft — block ẩn khi không có).
+    /// <summary>FQ3: hotline / Zalo từ shop settings (fail-soft — block ẩn khi không có).</summary>
+    private async Task LoadContactAsync()
+    {
         try
         {
             var settings = await ShopSettingsService.GetPublicAsync();
