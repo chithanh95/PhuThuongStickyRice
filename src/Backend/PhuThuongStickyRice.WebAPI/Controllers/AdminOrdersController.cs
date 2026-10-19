@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -111,8 +112,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             var bytes = await _reports.ExportRevenueAsync(fromDate, toDate);
-            var from = (fromDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd");
-            var to = (toDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd");
+            var from = (fromDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var to = (toDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             return File(bytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"bao-cao-doanh-thu-{from}_{to}.xlsx");

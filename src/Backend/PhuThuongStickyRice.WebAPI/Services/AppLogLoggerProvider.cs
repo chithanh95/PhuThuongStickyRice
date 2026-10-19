@@ -33,6 +33,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
         public void Dispose()
         {
             _loggers.Clear();
+            GC.SuppressFinalize(this);
         }
 
         private sealed class AppLogLogger : ILogger

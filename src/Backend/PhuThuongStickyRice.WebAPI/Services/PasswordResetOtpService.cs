@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using PhuThuongStickyRice.Domain.Entities;
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -82,7 +83,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 return;
             }
 
-            var otp = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
+            var otp = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6", CultureInfo.InvariantCulture);
             var entry = new OtpEntry
             {
                 Code = otp,

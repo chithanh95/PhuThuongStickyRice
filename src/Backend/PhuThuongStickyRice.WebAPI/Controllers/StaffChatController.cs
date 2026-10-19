@@ -75,7 +75,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 ?? User.FindFirstValue("sub");
-            Guid.TryParse(userIdStr, out var senderId);
+            // Claim không phải GUID hợp lệ: giữ SenderId rỗng như hành vi cũ.
+            if (!Guid.TryParse(userIdStr, out var senderId))
+            {
+                senderId = Guid.Empty;
+            }
             var senderName = User.FindFirstValue(ClaimTypes.Name)
                 ?? User.Identity?.Name
                 ?? "Nhân viên";

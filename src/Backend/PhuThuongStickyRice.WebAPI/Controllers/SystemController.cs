@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -193,7 +194,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     return null;
                 }
 
-                return (long)(Convert.ToDouble(result) * 1024 * 1024);
+                return (long)(Convert.ToDouble(result, CultureInfo.InvariantCulture) * 1024 * 1024);
             }
             catch (OperationCanceledException)
             {
