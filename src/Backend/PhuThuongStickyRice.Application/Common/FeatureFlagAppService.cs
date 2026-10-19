@@ -27,6 +27,12 @@ namespace PhuThuongStickyRice.Application.Common
         Task<bool> IsEnabledAsync(string key);
     }
 
+    /// <summary>
+    /// Cờ tính năng (feature flags) của shop: admin bật/tắt các tính năng tùy
+    /// chọn (vòng quay may mắn, gói quà, giới thiệu bạn bè, popup khuyến mãi)
+    /// tại /admin/tinh-nang mà không cần deploy code. Bản đồ cờ public được
+    /// cache 5 phút để trang shop không query DB mỗi lần tải.
+    /// </summary>
     public class FeatureFlagAppService : ApplicationService, IFeatureFlagAppService
     {
         private readonly IRepository<FeatureFlag, Guid> _flags;
@@ -41,6 +47,10 @@ namespace PhuThuongStickyRice.Application.Common
             (FeatureFlag.PromoPopup, "Popup khuyến mãi", "Hiện popup khuyến mãi trên trang chủ (1 lần/phiên).")
         };
 
+        /// <summary>Khởi tạo service quản lý cờ tính năng.</summary>
+        /// <param name="flags">Repository bảng FeatureFlag.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
+        /// <param name="catalogCache">Cache public (bản đồ cờ), invalidate khi admin đổi cờ.</param>
         public FeatureFlagAppService(
             IRepository<FeatureFlag, Guid> flags,
             IAsyncQueryableExecuter asyncExecuter,
@@ -51,6 +61,10 @@ namespace PhuThuongStickyRice.Application.Common
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Admin: danh sách toàn bộ cờ kèm metadata (xem doc ở interface).
+        /// Tự seed các cờ mặc định (đang BẬT) nếu bảng còn trống.
+        /// </summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<FeatureFlagDto>> GetListAsync()
         {
@@ -60,6 +74,13 @@ namespace PhuThuongStickyRice.Application.Common
             return entities.Select(MapToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin: bật/tắt một cờ (xem doc ở interface). Xóa cache bản đồ cờ
+        /// public ngay để thay đổi có hiệu lực tức thì trên shop.
+        /// </summary>
+        /// <param name="key">Key cờ (vd "lucky-spin").</param>
+        /// <param name="enabled">Bật hay tắt.</param>
+        /// <returns>Cờ sau khi cập nhật.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<FeatureFlagDto> SetEnabledAsync(string key, bool enabled)
         {
@@ -72,6 +93,11 @@ namespace PhuThuongStickyRice.Application.Common
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Public: bản đồ key → trạng thái bật/tắt để UI gating (xem doc ở
+        /// interface). Cache 5 phút; bị invalidate bởi <see cref="SetEnabledAsync"/>.
+        /// </summary>
+        /// <returns>Dictionary key cờ → true nếu đang bật.</returns>
         [AllowAnonymous]
         public virtual async Task<Dictionary<string, bool>> GetEnabledMapAsync()
         {
@@ -86,6 +112,13 @@ namespace PhuThuongStickyRice.Application.Common
             });
         }
 
+        /// <summary>
+        /// Nội bộ: cờ có đang bật không (xem doc ở interface). Cờ chưa seed
+        /// thì mặc định BẬT để thiếu dữ liệu seed không bao giờ làm gãy tính
+        /// năng đang chạy.
+        /// </summary>
+        /// <param name="key">Key cờ cần kiểm tra.</param>
+        /// <returns>true khi cờ tồn tại và đang bật, hoặc cờ chưa tồn tại.</returns>
         public virtual async Task<bool> IsEnabledAsync(string key)
         {
             // Perf: serve from the cached map instead of a per-call DB query.

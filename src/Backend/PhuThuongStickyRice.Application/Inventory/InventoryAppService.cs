@@ -43,6 +43,12 @@ namespace PhuThuongStickyRice.Application.Inventory
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Lưu số liệu kiểm kê cuối ngày (xem doc ở interface): ghi đè toàn
+        /// bộ dòng của ngày — kiểm kê lại chỉ cần lưu lại, không cần xóa tay.
+        /// Không nhận ngày trong tương lai.
+        /// </summary>
+        /// <param name="input">Ngày kiểm kê và danh sách số lượng còn lại theo món.</param>
         public virtual async Task SaveAsync(SaveDailyInventoryInput input)
         {
             var date = ValidateAndGetDate(input);
@@ -128,6 +134,14 @@ namespace PhuThuongStickyRice.Application.Inventory
             }
         }
 
+        /// <summary>
+        /// Lịch sử kiểm kê N ngày gần nhất, mới nhất trước (xem doc ở
+        /// interface). Mỗi dòng kèm PreviousRemainingQty so với lần kiểm kê
+        /// trước của cùng món — tính bằng ngày VN (không phải giờ server) để
+        /// biên ngày đúng khi server chạy UTC (Docker/K8s).
+        /// </summary>
+        /// <param name="days">Số ngày lấy, 1–90 (mặc định 30).</param>
+        /// <returns>Danh sách ngày kiểm kê kèm chênh lệch so với lần trước.</returns>
         public virtual async Task<List<DailyInventoryDayDto>> GetHistoryAsync(int days = 30)
         {
             if (days < 1) days = 1;

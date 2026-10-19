@@ -34,12 +34,20 @@ namespace PhuThuongStickyRice.Application.Permissions
         Task UpdateRolePermissionsAsync(UpdateRolePermissionsDto input);
     }
 
+    /// <summary>
+    /// Phân quyền chi tiết cho nhân viên (vd "orders.refund"): mỗi user được
+    /// gộp quyền từ tất cả role của mình; role Admin luôn có toàn bộ quyền.
+    /// </summary>
     public class PermissionService : ApplicationService, IPermissionService
     {
         private readonly IRepository<RolePermission, Guid> _rolePermissions;
         private readonly IRepository<UserRole, Guid> _userRoles;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Khởi tạo service phân quyền nhân viên.</summary>
+        /// <param name="rolePermissions">Repository quyền của role.</param>
+        /// <param name="userRoles">Repository gán role cho user.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
         public PermissionService(
             IRepository<RolePermission, Guid> rolePermissions,
             IRepository<UserRole, Guid> userRoles,
@@ -50,6 +58,12 @@ namespace PhuThuongStickyRice.Application.Permissions
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Tập quyền của user đang đăng nhập: gộp từ mọi role của user.
+        /// Role Admin luôn có toàn bộ quyền (không cần gán từng key) để không
+        /// bao giờ bị khóa khỏi tính năng khi admin thêm key quyền mới.
+        /// </summary>
+        /// <returns>Tập key quyền (so sánh không phân biệt hoa thường).</returns>
         public async Task<HashSet<string>> GetUserPermissionsAsync()
         {
             var roles = await GetCurrentRoleNamesAsync();
@@ -72,6 +86,11 @@ namespace PhuThuongStickyRice.Application.Permissions
             return keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Kiểm tra user đang đăng nhập có một quyền cụ thể không.
+        /// </summary>
+        /// <param name="permissionKey">Key quyền (vd "orders.refund"); rỗng thì coi như không có.</param>
+        /// <returns>true khi user được cấp quyền.</returns>
         public async Task<bool> HasPermissionAsync(string permissionKey)
         {
             if (string.IsNullOrWhiteSpace(permissionKey))
@@ -83,6 +102,12 @@ namespace PhuThuongStickyRice.Application.Permissions
             return granted.Contains(permissionKey);
         }
 
+        /// <summary>
+        /// Bắt buộc quyền: ném lỗi phân quyền khi user không có quyền.
+        /// Dùng đầu mỗi action nhạy cảm (hoàn tiền, xóa...) thay vì check tay.
+        /// </summary>
+        /// <param name="permissionKey">Key quyền yêu cầu.</param>
+        /// <exception cref="Volo.Abp.Authorization.AbpAuthorizationException">Ném khi user thiếu quyền.</exception>
         public async Task RequirePermissionAsync(string permissionKey)
         {
             if (!await HasPermissionAsync(permissionKey))

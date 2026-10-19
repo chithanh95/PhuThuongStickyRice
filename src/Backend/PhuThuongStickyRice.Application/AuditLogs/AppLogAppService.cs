@@ -76,14 +76,25 @@ namespace PhuThuongStickyRice.Application.AuditLogs
             Task WriteAsync(string level, string source, string message);
         }
 
+    /// <summary>
+    /// Ghi log ứng dụng vào bảng AppLogs: chỉ giữ 2000 dòng mới nhất
+    /// (tự cắt dòng cũ mỗi lần ghi) để bảng log không phình vô hạn.
+    /// Không bao giờ ghi log của chính writer và của webhook — nếu không sẽ
+    /// đệ quy vô hạn (ghi log → gọi writer → ghi log...).
+    /// </summary>
     public class AppLogWriter : IAppLogWriter
     {
+        /// <summary>Số dòng log tối đa giữ lại trong bảng AppLogs.</summary>
         public const int MaxRows = 2000;
 
         private readonly IRepository<AppLog, Guid> _logs;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Volo.Abp.Timing.IClock _clock;
 
+        /// <summary>Khởi tạo writer ghi log vào bảng AppLogs.</summary>
+        /// <param name="logs">Repository bảng AppLog.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
+        /// <param name="clock">Đồng hồ lấy thời gian hiện tại.</param>
         public AppLogWriter(
             IRepository<AppLog, Guid> logs,
             IAsyncQueryableExecuter asyncExecuter,
@@ -94,6 +105,14 @@ namespace PhuThuongStickyRice.Application.AuditLogs
             _clock = clock;
         }
 
+        /// <summary>
+        /// Ghi một dòng log (xem doc ở interface). Bỏ qua log của chính
+        /// writer/webhook để tránh đệ quy; cắt Source/Message theo độ dài
+        /// tối đa của cột trước khi lưu.
+        /// </summary>
+        /// <param name="level">Mức log (vd Warning, Error).</param>
+        /// <param name="source">Nguồn phát log (tên class/component).</param>
+        /// <param name="message">Nội dung log.</param>
         public virtual async Task WriteAsync(string level, string source, string message)
         {
             // Never log the writer itself — that would recurse forever.

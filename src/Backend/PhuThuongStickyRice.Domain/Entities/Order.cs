@@ -436,6 +436,15 @@ namespace PhuThuongStickyRice.Domain.Entities
             TotalAmount = Money.Of(subtotal - promo - discount - loyalty - tier + fee + gift, currency);
         }
 
+        /// <summary>
+        /// Factory tạo đơn hàng mới ở trạng thái Pending: validate toàn bộ
+        /// đầu vào (trường bắt buộc, độ dài, định dạng email, địa chỉ khi giao
+        /// hàng), rồi tính tổng tiền theo công thức duy nhất tại đây:
+        /// Tổng = subtotal − promotion − discountCode − loyalty − tier + phí
+        /// giao hàng + phí gói quà.
+        /// </summary>
+        /// <returns>Đơn hàng mới ở trạng thái Pending, tổng tiền đã chốt.</returns>
+        /// <exception cref="DomainException">Ném khi thiếu/sai đầu vào (tên, SĐT, địa chỉ, email...).</exception>
         public static Order Create(
             string orderNumber,
             string customerName,
@@ -869,30 +878,55 @@ namespace PhuThuongStickyRice.Domain.Entities
                 : digits;
         }
 
+        /// <summary>
+        /// Chuyển đơn sang Đã xác nhận. Chỉ hợp lệ từ Chờ xác nhận — phải đi
+        /// từng bước (không nhảy cóc) vì mỗi bước chuyển ở tầng application
+        /// đều ghi audit lịch sử, log nhân viên và webhook, và chỉ bước Hoàn
+        /// tất mới cộng điểm loyalty.
+        /// </summary>
+        /// <exception cref="DomainException">Ném khi đơn không ở trạng thái Chờ xác nhận.</exception>
         public void Confirm()
         {
             EnsureTransition(OrderStatus.Pending, nameof(Confirm));
             Status = OrderStatus.Confirmed;
         }
 
+        /// <summary>
+        /// Chuyển đơn sang Đang chuẩn bị. Chỉ hợp lệ từ Đã xác nhận.
+        /// </summary>
+        /// <exception cref="DomainException">Ném khi đơn không ở trạng thái Đã xác nhận.</exception>
         public void StartPreparing()
         {
             EnsureTransition(OrderStatus.Confirmed, nameof(StartPreparing));
             Status = OrderStatus.Preparing;
         }
 
+        /// <summary>
+        /// Chuyển đơn sang Đang giao. Chỉ hợp lệ từ Đang chuẩn bị.
+        /// </summary>
+        /// <exception cref="DomainException">Ném khi đơn không ở trạng thái Đang chuẩn bị.</exception>
         public void StartDelivering()
         {
             EnsureTransition(OrderStatus.Preparing, nameof(StartDelivering));
             Status = OrderStatus.Delivering;
         }
 
+        /// <summary>
+        /// Hoàn tất đơn. Chỉ hợp lệ từ Đang giao — đây là bước duy nhất cộng
+        /// điểm loyalty và chạy quy tắc thưởng ở tầng application.
+        /// </summary>
+        /// <exception cref="DomainException">Ném khi đơn không ở trạng thái Đang giao.</exception>
         public void Complete()
         {
             EnsureTransition(OrderStatus.Delivering, nameof(Complete));
             Status = OrderStatus.Completed;
         }
 
+        /// <summary>
+        /// Hủy đơn. Không được hủy đơn đã hoàn tất; hủy đơn đã hủy thì báo lỗi
+        /// (idempotent-unsafe để phát hiện gọi trùng bất thường).
+        /// </summary>
+        /// <exception cref="DomainException">Ném khi đơn đã hoàn tất hoặc đã hủy.</exception>
         public void Cancel()
         {
             if (Status == OrderStatus.Completed)
