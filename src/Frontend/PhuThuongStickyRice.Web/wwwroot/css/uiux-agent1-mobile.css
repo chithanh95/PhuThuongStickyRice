@@ -2452,3 +2452,66 @@
     }
 }
 /* ===== END UIUX 22:45 A1 ===== */
+
+/* ===== UIUX 23:05 A1 (run 23:05) — 4 fix mobile mới ===== */
+/* ------------------------------------------------------------
+   UIUX 23:05 A1: /track-order — "📅 Dự kiến giao" + khối điểm loyalty quá nhỏ.
+   Vấn đề: TrackOrder.razor:159 `p.text-muted.mb-2 > small` ("Dự kiến giao:
+   ...") và :191-192 `p > small` ("⭐ Bạn có X điểm / Hạng Y / Mã giới
+   thiệu") đều ~12.8px — đây là thông tin giờ nhận hàng và tiền/điểm,
+   người lớn tuổi liếc nhanh khó đọc. Các fix chữ nhỏ trước đây
+   (19:45, 21:23, 22:25) chưa chạm 2 dòng này.
+   Giải pháp: mobile 14px. Selector `.card-body:has(.to-info-row) > p > small`
+   chỉ khớp đúng 2 dòng này (con trực tiếp của card-body chi tiết đơn;
+   các p lồng trong card con không bị ảnh hưởng).
+   (Verify: TrackOrder.razor:159, 191)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .card-body.card-body:has(.to-info-row) > p > small {
+        font-size: 14px;
+    }
+}
+
+/* ------------------------------------------------------------
+   UIUX 23:05 A1: /track-order + /checkout — cảnh báo đặt cọc quá nhỏ.
+   Vấn đề: `div.alert.alert-warning.py-2 > small` ~12.8px — cảnh báo
+   "💰 Đơn này cần đặt cọc trước" (TrackOrder.razor:219) và xem trước
+   tiền cọc (Checkout.razor:764) là thông tin tiền quan trọng, khách
+   lớn tuổi dễ bỏ qua. (Match thứ 3 ở Shop.razor:406 nằm trong modal
+   quick-view desktop, bị ẩn trên mobile — rule không gây hại.)
+   Giải pháp: mobile 14px.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert-warning.alert-warning.py-2 > small {
+        font-size: 14px;
+    }
+}
+
+/* ------------------------------------------------------------
+   UIUX 23:05 A1: /track-order — "Lý do hủy" + mô tả popup khảo sát quá nhỏ.
+   Vấn đề: `p.text-muted.small.mb-3` ~12.8px ở 2 chỗ: "Lý do hủy: ..."
+   (TrackOrder.razor:126, hiện khi đơn bị hủy) và dòng mô tả trong popup
+   khảo sát hài lòng (TrackOrder.razor:756). Grep toàn app: chỉ 2 match.
+   Giải pháp: mobile 13px.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    p.text-muted.text-muted.small.mb-3 {
+        font-size: 13px;
+    }
+}
+
+/* ------------------------------------------------------------
+   UIUX 23:05 A1: /checkout — dòng Size/Ăn kèm/ghi chú trong bảng tóm tắt đơn.
+   Vấn đề: `.co-summary table` đã bị ép font 14px trên mobile
+   (Checkout.razor.css) nên các `<small>` "Size: ...", "Ăn kèm: ...",
+   "📝 ghi chú" (Checkout.razor:~607-615) chỉ còn ~11.2px — đây là chi
+   tiết món khách đã chọn, cần đọc để kiểm tra đơn. Fix 19:45/21:23
+   chỉ phủ /cart, /checkout bị sót.
+   Giải pháp: mobile 13px. (`.co-summary` chỉ tồn tại ở Checkout.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .co-summary.co-summary table small {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX 23:05 A1 ===== */
