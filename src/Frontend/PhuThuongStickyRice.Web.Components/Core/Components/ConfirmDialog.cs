@@ -16,6 +16,11 @@ namespace PhuThuongStickyRice.Web.Components.Core.Components
 
         public bool ShowDialog { get; set; }
 
+        // Chống double-submit: bấm nút "Có/Xóa" 2 lần liên tiếp (click đúp)
+        // sẽ gọi ConfirmEventCallback 2 lần — lần 2 thường throw (vd xóa 1
+        // mã giảm giá đã bị xóa) khiến user thấy lỗi dù thao tác đã thành công.
+        private bool _submitting;
+
         [Parameter]
         public EventCallback<bool> ConfirmEventCallback { get; set; }
 
@@ -36,8 +41,22 @@ namespace PhuThuongStickyRice.Web.Components.Core.Components
 
         protected async Task HandleValidSubmit()
         {
-            await ConfirmEventCallback.InvokeAsync(true);
+            if (_submitting)
+            {
+                return;
+            }
+
+            _submitting = true;
             StateHasChanged();
+            try
+            {
+                await ConfirmEventCallback.InvokeAsync(true);
+            }
+            finally
+            {
+                _submitting = false;
+                StateHasChanged();
+            }
         }
     }
 }

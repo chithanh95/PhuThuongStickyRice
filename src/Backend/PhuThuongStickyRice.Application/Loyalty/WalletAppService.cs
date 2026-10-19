@@ -1,6 +1,7 @@
 
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
+using PhuThuongStickyRice.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
@@ -51,14 +52,14 @@ namespace PhuThuongStickyRice.Application.Loyalty
     /// </summary>
     public class WalletAppService : ApplicationService, IWalletAppService
     {
-        private readonly IRepository<WalletAccount, Guid> _wallets;
-        private readonly IRepository<WalletTransaction, Guid> _transactions;
+        private readonly IWalletAccountRepository _wallets;
+        private readonly Volo.Abp.Domain.Repositories.IRepository<WalletTransaction, Guid> _transactions;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
         /// <summary>Khởi tạo service ví tiền với repository tài khoản và lịch sử giao dịch.</summary>
         public WalletAppService(
-            IRepository<WalletAccount, Guid> wallets,
-            IRepository<WalletTransaction, Guid> transactions,
+            IWalletAccountRepository wallets,
+            Volo.Abp.Domain.Repositories.IRepository<WalletTransaction, Guid> transactions,
             IAsyncQueryableExecuter asyncExecuter)
         {
             _wallets = wallets;
@@ -194,11 +195,21 @@ namespace PhuThuongStickyRice.Application.Loyalty
                     $"Số dư ví không đủ. Cần {amount:N0} ₫, hiện có {account.Balance:N0} ₫.");
             }
 
-            account.Balance -= amount;
-            account.UpdatedAt = DateTime.UtcNow;
-            await _wallets.UpdateAsync(account, autoSave: true);
+            // Bug fix: race check-then-set — 2 checkout ví đồng thời cùng SĐT
+            // đều đọc số dư cũ, cùng qua bước check rồi trừ → số dư âm, vi phạm
+            // invariant "ví không bao giờ âm". TryDecrementBalanceAsync thực hiện
+            // UPDATE ... WHERE Balance >= amount nguyên tử trong Persistence:
+            // chỉ request đầu trừ được, request sau nhận false và báo hết số dư.
+            // Giữ bước check sớm để message lỗi hiện số dư hiện tại cho trường
+            // hợp thông thường.
+            var decremented = await _wallets.TryDecrementBalanceAsync(account.Id, amount);
+            if (!decremented)
+            {
+                throw new DomainException(
+                    $"Số dư ví không đủ. Cần {amount:N0} ₫, hiện có {account.Balance:N0} ₫.");
+            }
 
-            await LogAsync(normalized, -amount, account.Balance,
+            await LogAsync(normalized, -amount, account.Balance - amount,
                 $"Thanh toán đơn {orderNumber}", "system");
         }
 

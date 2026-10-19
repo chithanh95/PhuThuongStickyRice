@@ -57,6 +57,7 @@ namespace PhuThuongStickyRice.Persistence
             // ABP repositories for the ordering aggregates
             context.Services.AddScoped<IProductRepository, ProductRepository>();
             context.Services.AddScoped<IOrderRepository, OrderRepository>();
+            context.Services.AddScoped<IWalletAccountRepository, WalletAccountRepository>();
 
             // Template repositories + template IUnitOfWork for the legacy
             // Dispatcher/CrudService paths.

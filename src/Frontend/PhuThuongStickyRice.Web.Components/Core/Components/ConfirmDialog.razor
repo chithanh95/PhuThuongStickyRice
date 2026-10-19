@@ -14,7 +14,7 @@
                     <div class="form-group">
                         @Message
                     </div>
-                    <button type="submit" @onclick="@HandleValidSubmit" class="btn btn-primary">@YesText</button>
+                    <button type="submit" @onclick="@HandleValidSubmit" class="btn btn-primary" disabled="@_submitting">@YesText</button>
                     <a class="btn btn-outline-primary" @onclick="@Close">@NoText</a>
 
                 </div>

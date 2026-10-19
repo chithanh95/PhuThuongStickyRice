@@ -73,6 +73,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 RedeemPoints = model.RedeemPoints,
                 ReferralCode = model.ReferralCode,
                 DateOfBirth = model.DateOfBirth,
+                // Bug fix: BranchId khách chọn ở checkout bị nuốt im lặng —
+                // CreateOrderDto có BranchId nhưng request model thiếu property
+                // này nên đơn tạo ra luôn BranchId = null dù backend (item 109)
+                // đã xử lý đầy đủ (validate chi nhánh, lưu tên lên đơn).
+                BranchId = model.BranchId,
                 IdempotencyKey = model.IdempotencyKey,
                 RecaptchaToken = model.RecaptchaToken,
                 Source = model.Source,

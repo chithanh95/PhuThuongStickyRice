@@ -79,6 +79,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public DateTime? DateOfBirth { get; set; }
 
         /// <summary>
+        /// Chi nhánh khách chọn ở checkout (item 109). Backend chỉ chấp nhận
+        /// chi nhánh đang hoạt động và lưu tên chi nhánh lên đơn.
+        /// </summary>
+        public Guid? BranchId { get; set; }
+
+        /// <summary>
         /// Idempotency key for the checkout attempt. Retrying with the same
         /// key within 24h returns the existing order.
         /// </summary>
