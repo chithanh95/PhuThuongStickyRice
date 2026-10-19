@@ -1390,6 +1390,8 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);
 
+            var oldTotal = order.TotalAmount.Amount;
+
             order.UpdateLineQuantities(
                 input.Lines.Select(x => (x.LineId, x.Quantity)));
 
@@ -1400,6 +1402,23 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 throw new Domain.Exceptions.DomainException(
                     $"Đơn hàng tối thiểu {shopSetting.MinOrderAmount:N0} ₫. Vui lòng thêm món vào giỏ.");
+            }
+
+            // Wallet-paid orders: reconcile the wallet with the new total.
+            // Without this the wallet stays charged at the old amount while the
+            // order total changes (customer could underpay by adding items).
+            if (order.PaymentMethod == PaymentMethod.Wallet
+                && order.PaymentStatus == PaymentStatus.Paid)
+            {
+                var delta = order.TotalAmount.Amount - oldTotal;
+                if (delta > 0)
+                {
+                    await _wallets.ChargeAsync(order.CustomerPhone, delta, order.OrderNumber);
+                }
+                else if (delta < 0)
+                {
+                    await _wallets.RefundAsync(order.CustomerPhone, -delta, order.OrderNumber);
+                }
             }
 
             await _orders.UpdateAsync(order);
@@ -2121,7 +2140,9 @@ namespace PhuThuongStickyRice.Application.Orders
             };
         }
 
-        /// <summary>Item 143: true when the phone placed at least one order.</summary>
+        /// <summary>Item 143: true when the phone placed at least one order.
+        /// Compares normalized phones (digits, last-9 tolerant) so customers
+        /// cannot dodge the check by reformatting their own number.</summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<bool> HasOrderedBeforeAsync(string phone)
         {
@@ -2131,10 +2152,13 @@ namespace PhuThuongStickyRice.Application.Orders
                 return false;
             }
 
-            var normalized = phone.Trim();
+            var suffix = digits.Substring(digits.Length - 9);
             var orderQueryable = await _orders.GetQueryableAsync();
-            return await _asyncExecuter.AnyAsync(
-                orderQueryable.Where(x => x.CustomerPhone != null && x.CustomerPhone.Trim() == normalized));
+            // SQL pre-filter on the phone suffix (LIKE, provider-agnostic), then the
+            // exact tolerant match in memory — same pattern as GetLastOrderInfoByPhoneAsync.
+            var candidates = await _asyncExecuter.ToListAsync(
+                orderQueryable.Where(x => x.CustomerPhone != null && x.CustomerPhone.Contains(suffix)));
+            return candidates.Any(x => PhonesMatch(x.CustomerPhone, phone));
         }
 
         /// <summary>
@@ -2151,13 +2175,15 @@ namespace PhuThuongStickyRice.Application.Orders
                     "Số điện thoại không đúng định dạng (VD: 0901234567).");
             }
 
-            var trimmed = phone.Trim();
-            if (await HasOrderedBeforeAsync(trimmed))
+            // Normalize once (digits-only): the history check, the existing-code
+            // lookup and the generated code's OwnerPhone must all use the same
+            // form, otherwise reformatting the same number farms unlimited vouchers.
+            if (await HasOrderedBeforeAsync(digits))
             {
                 return new FirstOrderVoucherDto { IsNewCustomer = false };
             }
 
-            var existing = await _discounts.GetUsableCodeAsync("CHAO", trimmed);
+            var existing = await _discounts.GetUsableCodeAsync("CHAO", digits);
             if (!string.IsNullOrWhiteSpace(existing))
             {
                 return new FirstOrderVoucherDto
@@ -2174,7 +2200,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 DiscountPercent = 10,
                 MinOrderAmount = 0,
                 ExpiresAt = DateTime.UtcNow.AddDays(30),
-                OwnerPhone = trimmed
+                OwnerPhone = digits
             });
 
             return new FirstOrderVoucherDto
