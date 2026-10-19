@@ -1,5 +1,6 @@
 ﻿using Castle.DynamicProxy;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
@@ -22,6 +23,21 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
 
         private readonly ILogger _logger;
 
+        // CA1848: interceptor chạy trên MỌI method call được intercept — dùng
+        // LoggerMessage delegate thay LogDebug nội suy chuỗi để không cấp phát
+        // chuỗi log khi level Debug đang tắt. Nội dung log giữ nguyên.
+        private static readonly Action<ILogger, string, string, string, Exception?> LogMethodStart =
+            LoggerMessage.Define<string, string, string>(
+                LogLevel.Debug,
+                new EventId(1, "MethodStart"),
+                "Start calling method: {ClassName}.{MethodName} with ({Arguments}).");
+
+        private static readonly Action<ILogger, string, string, long, Exception?> LogMethodFinished =
+            LoggerMessage.Define<string, string, long>(
+                LogLevel.Debug,
+                new EventId(2, "MethodFinished"),
+                "Finished calling method: {ClassName}.{MethodName}. Took: {ElapsedMs} milliseconds");
+
         public LoggingInterceptor(ILogger<LoggingInterceptor> logger)
         {
             _logger = logger;
@@ -35,7 +51,7 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
 
             var arguments = JsonSerializer.Serialize(invocation.Arguments.Where(x => x.GetType() != typeof(CancellationToken)), LogArgumentsOptions);
 
-            _logger.LogDebug($"Start calling method: {className}.{methodName} with ({arguments}).");
+            LogMethodStart(_logger, className, methodName, arguments, null);
 
             var watch = new Stopwatch();
             watch.Start();
@@ -62,7 +78,7 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
         {
             watch.Stop();
 
-            _logger.LogDebug($"Finished calling method: {className}.{methodName}. Took: {watch.ElapsedMilliseconds} milliseconds");
+            LogMethodFinished(_logger, className, methodName, watch.ElapsedMilliseconds, null);
         }
 
         private async Task InterceptResultAsync(Task task, Stopwatch watch, string className, string methodName)
@@ -71,7 +87,7 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
 
             watch.Stop();
 
-            _logger.LogDebug($"Finished calling method: {className}.{methodName}. Took: {watch.ElapsedMilliseconds} milliseconds");
+            LogMethodFinished(_logger, className, methodName, watch.ElapsedMilliseconds, null);
         }
 
         private async Task<T> InterceptResultAsync<T>(Task<T> task, Stopwatch watch, string className, string methodName)
@@ -80,7 +96,7 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
 
             watch.Stop();
 
-            _logger.LogDebug($"Finished calling method: {className}.{methodName}. Took: {watch.ElapsedMilliseconds} milliseconds");
+            LogMethodFinished(_logger, className, methodName, watch.ElapsedMilliseconds, null);
 
             return result;
         }
