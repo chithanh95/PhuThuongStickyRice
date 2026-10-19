@@ -1778,3 +1778,70 @@ html.dark .co-mobile-bar .co-mobile-bar .btn:focus-visible {
 }
 
 /* ===== END UIUX 23:25 A4 ===== */
+
+/* ===== UIUX 23:48 A4 — run 23:48 ===== */
+
+/* UIUX 23:48 A4 — Fix 1: câu chào trong khung chat AI landing quá mờ (light mode) */
+/* WCAG 1.4.3 (Contrast, AA 4.5:1): `.sg-chat-hint` (Index.razor.css:1782 —
+   "Chào bạn! Hỏi quán về món, giá, giờ giao nhé.", 14px) màu #8a7a68 trên
+   nền trắng của .sg-chat-box (var(--sg-surface) = #fff ở light mode) chỉ
+   đạt ~4.15:1. Run 11:20 từng đặt rule `.sg-chat-hint { color: #6f5f4c }`
+   trong file này nhưng specificity (0,1,0) THUA rule scoped
+   `.sg-chat-hint[b-xxx]` (0,2,0) nên chưa bao giờ có tác dụng — grep xác
+   minh màu render thực tế vẫn #8a7a68. Fix lại đúng: scope
+   `html:not(.dark)` (pattern run 19:45) → (0,2,1) thắng scoped, chỉ tác
+   động light mode; dark mode giữ nguyên fix #b8a88f của Agent 2
+   (uiux-agent2-dark.css:428). #6f5f4c ≈ 6.06:1 trên nền trắng, giữ tông
+   nâu ấm brand. */
+html:not(.dark) .sg-chat-hint {
+    color: #6f5f4c; /* was #8a7a68 (light mode) */
+}
+
+/* UIUX 23:48 A4 — Fix 2: tên người đánh giá ở khối "khách nói gì" quá mờ */
+/* WCAG 1.4.3 (Contrast, AA 4.5:1): `.sg-trust-review-name`
+   (Index.razor.css:2169, 12px, vd "Chị Lan – Cầu Giấy") màu #8a7a68 trên
+   card trắng (var(--sg-surface) = #fff) chỉ ~4.15:1 — chữ 12px đã nhỏ,
+   người lớn tuổi khó đọc tên người review. Cùng câu chuyện dead-fix 11:20
+   (rule (0,1,0) thua scoped (0,2,0)). Đậm lên #6f5f4c (≈6.06:1), giữ tông
+   nâu ấm. Scope html:not(.dark); dark giữ rule riêng var(--sg-muted)
+   trong Index.razor.css:2170. */
+html:not(.dark) .sg-trust-review-name {
+    color: #6f5f4c; /* was #8a7a68 (light mode) */
+}
+
+/* UIUX 23:48 A4 — Fix 3: tên người đánh giá ở carousel review quá mờ */
+/* WCAG 1.4.3 (Contrast, AA 4.5:1): `.sg-review-name` (Index.razor.css:1405,
+   13px, font-weight 700) màu #8a7a68 trên .sg-review-card nền trắng chỉ
+   ~4.15:1 — chưa từng được fix ở light mode (dark có #a08c78 riêng ở
+   Index.razor.css:2218). Đậm lên #6f5f4c (≈6.06:1). Scope
+   html:not(.dark) để không động tới dark. */
+html:not(.dark) .sg-review-name {
+    color: #6f5f4c; /* was #8a7a68 (light mode) */
+}
+
+/* UIUX 23:48 A4 — Fix 4: nhãn "Tổng cộng" trên thanh sticky checkout quá nhạt */
+/* WCAG 1.4.3 — polish vượt chuẩn cho người lớn tuổi:
+   `.co-mobile-bar .co-total small` (Checkout.razor.css:86-89) — nhãn 12px
+   ngay phía trên SỐ TIỀN ở thanh thanh toán cố định dưới cùng trang
+   checkout mobile — màu #6c757d trên nền trắng chỉ ~4.69:1, vừa đủ chuẩn
+   nhưng chữ 12px xám vẫn khó liếc nhanh với người lớn tuổi. Đậm lên
+   #495057 (≈7.05:1). (0,3,1) hòa rule scoped [b-xxx] (0,3,1), file này
+   load sau cùng nên thắng; dark mode giữ nguyên #a5a2bd
+   (Checkout.razor.css:229-231, (0,4,1) thắng ở dark). */
+html:not(.dark) .co-mobile-bar .co-total small {
+    color: #495057; /* was #6c757d (light mode) */
+}
+
+/* UIUX 23:48 A4 — Fix 5: gợi ý "chạm để thu nhỏ" ở màn hình chờ (light mode) */
+/* Polish + đồng nhất theme: `.cho-zoom-hint` (HangCho.razor.css:16 —
+   "Chạm vào màn hình hoặc bấm nút × để thu nhỏ") màu #888. Trang HangCho
+   LUÔN nền #111 (inline style trong HangCho.razor:15, bất kể theme sáng/
+   tối) nên ở light mode chữ #888 chỉ ~5.3:1; Agent 2 (run 19:40) mới chỉ
+   fix `html.dark` lên #b5b5b5 (~7:1). Nâng rule gốc lên #b5b5b5 cho đồng
+   nhất 2 theme, dễ đọc hơn với người lớn tuổi. Scope html:not(.dark);
+   rule dark của Agent 2 (0,3,0) vẫn thắng ở dark mode. */
+html:not(.dark) .cho-zoom-hint {
+    color: #b5b5b5; /* was #888 (light mode; bg luôn #111) */
+}
+
+/* ===== END UIUX 23:48 A4 ===== */
