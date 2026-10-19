@@ -126,7 +126,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 .Take(20)
                 .Select(r => new
                 {
-                    displayName = MaskPhone(r.CustomerPhone),
+                    displayName = PhoneHelper.MaskForPublicDisplay(r.CustomerPhone),
                     rating = r.Rating,
                     comment = r.Comment,
                     photoUrl = r.PhotoUrl,
@@ -1163,24 +1163,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     .ToList();
 
             return Ok(new { items });
-        }
-
-        /// Masks a phone number for public display: "0912345678" -&gt; "091***78".
-        /// </summary>
-        private static string MaskPhone(string phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-            {
-                return "Khách hàng";
-            }
-
-            var digits = new string(phone.Trim().Where(char.IsDigit).ToArray());
-            if (digits.Length < 5)
-            {
-                return "Khách hàng";
-            }
-
-            return digits.Substring(0, 3) + "***" + digits.Substring(digits.Length - 2);
         }
     }
 }

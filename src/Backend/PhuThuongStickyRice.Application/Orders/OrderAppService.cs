@@ -1596,7 +1596,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             return new PublicOrderReviewDto
             {
-                MaskedCustomerPhone = MaskPhoneForDisplay(review.CustomerPhone),
+                MaskedCustomerPhone = PhoneHelper.MaskForPublicDisplay(review.CustomerPhone),
                 Rating = review.Rating,
                 Comment = review.Comment,
                 PhotoUrl = review.PhotoUrl,
@@ -1621,16 +1621,6 @@ namespace PhuThuongStickyRice.Application.Orders
                 ProductName = x.ProductName,
                 Rating = x.Rating
             }).ToList() ?? new List<OrderReviewLineDto>();
-        }
-
-        /// <summary>Server-side phone masking (mirrors landing MaskPhone): "0901234567" → "090***67".</summary>
-        private static string MaskPhoneForDisplay(string phone)
-        {
-            var digits = DigitsOnly(phone);
-            if (digits.Length < 5) return "Khách hàng";
-
-            // CA1845: dùng span-based string.Concat thay vì Substring để tránh cấp phát chuỗi trung gian.
-            return string.Concat(digits.AsSpan(0, 3), "***", digits.AsSpan(digits.Length - 2));
         }
 
         /// <summary>
@@ -2029,7 +2019,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private async Task<Order> GetSpinEligibleOrderAsync(SpinInput input)
         {
             var order = await _orders.FindAsync(input.OrderId);
-            if (order == null || !PhonesMatch(order.CustomerPhone, input.CustomerPhone))
+            if (order == null || !PhoneHelper.PhonesMatch(order.CustomerPhone, input.CustomerPhone))
             {
                 throw new OrderNotFoundException("Order not found. Please check the order number and phone.");
             }
@@ -2221,7 +2211,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         private async Task<Order> FindByNumberAndPhoneAsync(string orderNumber, string customerPhone)        {
             var order = await _orders.GetByOrderNumberAsync(orderNumber?.Trim());
-            if (order == null || !PhonesMatch(order.CustomerPhone, customerPhone))
+            if (order == null || !PhoneHelper.PhonesMatch(order.CustomerPhone, customerPhone))
             {
                 throw new OrderNotFoundException("Order not found. Please check the order number and phone.");
             }
@@ -2297,7 +2287,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var order = await FindOrThrowAsync(id);
 
-            if (!PhonesMatch(order.CustomerPhone, input.CustomerPhone))
+            if (!PhoneHelper.PhonesMatch(order.CustomerPhone, input.CustomerPhone))
             {
                 throw new Domain.Exceptions.DomainException("Số điện thoại không khớp với đơn hàng.");
             }
@@ -2363,7 +2353,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<OrderDto> TrackOrderAsync(TrackOrderInput input)
         {
             var order = await _orders.GetByOrderNumberAsync(input.OrderNumber?.Trim());
-            if (order == null || !PhonesMatch(order.CustomerPhone, input.CustomerPhone))
+            if (order == null || !PhoneHelper.PhonesMatch(order.CustomerPhone, input.CustomerPhone))
             {
                 // Same error for "not found" and "phone mismatch" so the
                 // endpoint cannot be used to probe order numbers.
@@ -2638,16 +2628,9 @@ namespace PhuThuongStickyRice.Application.Orders
 
         private static string NormalizePhoneKey(string phone)
         {
-            var digits = DigitsOnly(phone);
+            var digits = PhoneHelper.DigitsOnly(phone);
             return digits.Length >= 9 ? digits[^9..] : null;
         }
-
-        /// <summary>
-        /// Lấy chuỗi chữ số từ SĐT (bỏ dấu cách, gạch ngang, dấu chấm, +84...).
-        /// Null-safe: null hoặc trống trả về chuỗi rỗng.
-        /// </summary>
-        private static string DigitsOnly(string phone) =>
-            new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
 
         private static string AppendNote(string existing, string addition)
         {
@@ -2672,7 +2655,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return null;
             }
 
-            var normalized = DigitsOnly(phone);
+            var normalized = PhoneHelper.DigitsOnly(phone);
             if (normalized.Length < 9)
             {
                 return null;
@@ -2703,7 +2686,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     })
                     .Take(100));
 
-            var match = recent.FirstOrDefault(x => PhonesMatch(x.CustomerPhone, phone));
+            var match = recent.FirstOrDefault(x => PhoneHelper.PhonesMatch(x.CustomerPhone, phone));
             if (match == null)
             {
                 return null;
@@ -2723,7 +2706,7 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<bool> HasOrderedBeforeAsync(string phone)
         {
-            var digits = DigitsOnly(phone);
+            var digits = PhoneHelper.DigitsOnly(phone);
             if (digits.Length < 9)
             {
                 return false;
@@ -2739,7 +2722,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var phones = await _asyncExecuter.ToListAsync(
                 orderQueryable.Where(x => x.CustomerPhoneNorm == suffix)
                               .Select(x => x.CustomerPhone));
-            return phones.Any(x => PhonesMatch(x, phone));
+            return phones.Any(x => PhoneHelper.PhonesMatch(x, phone));
         }
 
         /// <summary>
@@ -2761,7 +2744,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </returns>
         public virtual async Task<FirstOrderVoucherDto> GetFirstOrderVoucherAsync(string phone)
         {
-            var digits = DigitsOnly(phone);
+            var digits = PhoneHelper.DigitsOnly(phone);
             if (digits.Length < 9)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -2813,7 +2796,7 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<List<OrderDto>> GetOrdersByPhoneAsync(string phone)
         {
-            var digits = DigitsOnly(phone);
+            var digits = PhoneHelper.DigitsOnly(phone);
             if (!System.Text.RegularExpressions.Regex.IsMatch(digits, @"^(0)(3|5|7|8|9)\d{8}$"))
             {
                 throw new CrossCuttingConcerns.Exceptions.ValidationException(
@@ -2823,7 +2806,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var last9 = digits.Substring(digits.Length - 9);
             var candidates = await LoadOrderCandidatesAsync(last9);
 
-            var matched = candidates.Where(x => PhonesMatch(x.CustomerPhone, digits)).ToList();
+            var matched = candidates.Where(x => PhoneHelper.PhonesMatch(x.CustomerPhone, digits)).ToList();
             if (matched.Count == 0)
             {
                 return new List<OrderDto>();
@@ -2925,12 +2908,12 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>
         /// Item 50: counts completed orders for a phone with the same digit
-        /// tolerance as <see cref="PhonesMatch"/> — order phones are stored raw
+        /// tolerance as <see cref="PhoneHelper.PhonesMatch"/> — order phones are stored raw
         /// as typed, so the last 9 digits identify the customer.
         /// </summary>
         private async Task<int> CountCompletedOrdersByPhoneAsync(string customerPhone)
         {
-            var digits = DigitsOnly(customerPhone);
+            var digits = PhoneHelper.DigitsOnly(customerPhone);
             var orderQueryable = await _orders.GetQueryableAsync();
             var completedQuery = orderQueryable.Where(o => o.Status == OrderStatus.Completed);
 
@@ -2952,7 +2935,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     .Select(o => o.CustomerPhone));
             }
 
-            return candidatePhones.Count(p => PhonesMatch(p, customerPhone));
+            return candidatePhones.Count(p => PhoneHelper.PhonesMatch(p, customerPhone));
         }
 
         /// <summary>
@@ -2993,7 +2976,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // Same digit-tolerance as PhonesMatch: compare the last 9 digits
             // (or the exact digit string when shorter than 9 digits) via the
             // normalized column — index seek instead of a REPLACE() table scan.
-            var digits = DigitsOnly(customerPhone);
+            var digits = PhoneHelper.DigitsOnly(customerPhone);
             int count;
             if (digits.Length >= 9)
             {
@@ -3119,31 +3102,6 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             return DateTime.UtcNow;
-        }
-
-        /// <summary>
-        /// So khớp SĐT theo kiểu "khoan dung": chỉ giữ lại chữ số rồi so 9 số cuối
-        /// (khách có thể nhập kèm mã vùng +84, dấu cách, dấu chấm...). Dùng để xác thực
-        /// khách nhận gói tuần / tra cứu đơn mà không bắt nhập đúng từng ký tự.
-        /// </summary>
-        internal static bool PhonesMatch(string orderPhone, string givenPhone)        {
-            if (string.IsNullOrWhiteSpace(orderPhone) || string.IsNullOrWhiteSpace(givenPhone))
-            {
-                return false;
-            }
-
-            var orderPhoneDigits = DigitsOnly(orderPhone);
-            var givenPhoneDigits = DigitsOnly(givenPhone);
-
-            if (orderPhoneDigits.Length < 9 || givenPhoneDigits.Length < 9)
-            {
-                return string.Equals(orderPhoneDigits, givenPhoneDigits, StringComparison.Ordinal);
-            }
-
-            return string.Equals(
-                orderPhoneDigits.Substring(orderPhoneDigits.Length - 9),
-                givenPhoneDigits.Substring(givenPhoneDigits.Length - 9),
-                StringComparison.Ordinal);
         }
 
         private static void ApplyStatus(Order order, OrderStatus status)

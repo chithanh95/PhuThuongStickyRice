@@ -900,7 +900,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>
         /// Tính <see cref="CustomerPhoneNorm"/>: chỉ giữ chữ số, lấy 9 số
         /// cuối; SĐT ít hơn 9 số thì giữ nguyên chuỗi số. Dùng chung chuẩn
-        /// khoan dung với OrderAppService.PhonesMatch — cùng 1 số dù khách
+        /// khoan dung với PhoneHelper.PhonesMatch — cùng 1 số dù khách
         /// gõ "0912 345 678", "+84912345678" hay "0912345678".
         /// </summary>
         private static string ComputePhoneNorm(string customerPhone)

@@ -726,13 +726,13 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// </summary>
         public bool IsPlaceholderPhone(string phone)
         {
-            var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+            var digits = PhoneHelper.DigitsOnly(phone);
             return digits.Length > 0 && digits.All(c => c == digits[0]);
         }
 
         /// <summary>
         /// So sánh 2 SĐT theo 9 số cuối (cùng chuẩn với
-        /// OrderAppService.PhonesMatch): "0912 345 678", "+84912345678" và
+        /// PhoneHelper.PhonesMatch): "0912 345 678", "+84912345678" và
         /// "0912345678" là cùng 1 số — chống farm bằng cách đổi format.
         /// </summary>
         private static bool PhonesEqualTolerant(string phone1, string phone2)
