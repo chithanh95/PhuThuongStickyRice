@@ -5,15 +5,18 @@
 .lexa-dot-primary { background: #7a6fbe; } /* UIUX-1019 A3: legend kỳ hiện tại — màu primary Lexa */
 .lexa-dot-compare { background: #c9c7dd; } /* UIUX-1019 A3: legend kỳ so sánh — màu primary nhạt Lexa */
 
+/* uiux-2026-10-20 A3: cột kỳ hiện tại — tím primary Lexa (chuyển từ inline style) */
+.lexa-col-current { background: #7a6fbe; }
+/* uiux-2026-10-20 A3: cột kỳ so sánh — lavender nhạt Lexa (chuyển từ inline style) */
+.lexa-col-compare { background: #c9c7dd; }
+
 /* UIUX run 17:36 — Agent2 Dark mode
    FIX — Legend "Kỳ so sánh" (#c9c7dd) là xám-lavender sáng, trên nền tối
    trông chói và khó phân biệt ý nghĩa với cột kỳ hiện tại (#7a6fbe).
    Dùng màu muted #8a87a3 đúng palette dark của admin-lexa.css. */
 html.dark .lexa-dot-compare { background: #8a87a3; }
 
-/* dark mode fix — UIUX run 18:09 Agent2
-   Cột "kỳ so sánh" dùng inline background #c9c7dd — trên nền tối trông chói
-   và khó phân biệt với cột "kỳ hiện tại" #7a6fbe (cùng lý do legend dot đã
-   fix ở trên). Override sang #8a87a3 cho đồng bộ; cần !important để thắng
-   style inline. */
-html.dark .lexa-col[style*="#c9c7dd"] { background: #8a87a3 !important; }
+/* uiux-2026-10-20 A3: cột "kỳ so sánh" trên nền tối — #8a87a3 muted palette dark.
+   Bỏ !important + attribute selector [style*=...]: background giờ nằm trong class
+   .lexa-col-compare nên rule thường (specificity cao hơn) là đủ thắng. */
+html.dark .lexa-col-compare { background: #8a87a3; }
