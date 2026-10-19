@@ -897,3 +897,31 @@ html.dark .lx-total-row th { background-color: #7a6fbe; border-color: #7a6fbe; }
 html.dark .lx-total-row th { background-color: #7a6fbe !important; border-color: #7a6fbe !important; }
 
 /* ===== END UIUX 22:45 A3 ===== */
+
+/* ===== UIUX 23:05 A3 =====
+   Quét đợt này (không dùng git): toàn bộ hex trong *.razor/*.razor.css/*.css
+   frontend (loại obj/, bootstrap.min.css, /admin/lexa demo pixel-exact),
+   inline style="..." có màu, class "oi oi-*" (không còn — chỉ còn từ tiếng
+   Việt doi-/mat-khau...), svg fill, rgb()/rgba(), tên màu. Kết luận: sau
+   15+ đợt đồng bộ, codebase gần sạch — mọi hex Bootstrap lạ còn lại đều nằm
+   trong comment hoặc đã được override ở các đợt trước (text-*/bg-*/border-*/
+   /badge-*/btn-*/alert-*/table-*, pagination, validation, focus glow,
+   spinner, toast); màu brand nâu ấm (shop/landing) và palette demo lexa
+   là chủ ý — KHÔNG đụng. Chỉ còn 1 lệch chuẩn thật sự bên dưới. */
+
+/* ---------- Fix 1: hover nút chọn ngôn ngữ ở dark mode #2b2f36 -> #2e2620 ----------
+   Verify: Core/Components/LanguageSelector.razor.css:19-21
+     `html.dark .lang-btn:hover { background: #2b2f36; }`
+   trong khi CHÍNH component này dùng #2e2620 cho mọi trạng thái hover/active
+   dark khác: `html.dark .lang-item:hover` và `html.dark .lang-item.active`
+   (dòng 55-64), menu nền #241d17. #2b2f36 là xám trung tính "mồ côi" — không
+   thuộc họ Lexa dark (#1a1a2e/#262640/#2c2c4e/#3a3a58) lẫn brand nâu ấm của
+   component (#241d17/#2e2620/#3a3226); rê chuột vào nút cờ cho tông xám khác
+   với khi rê vào item trong cùng 1 dropdown. Đồng nhất về #2e2620.
+   Scope an toàn: class .lang-btn chỉ dùng bởi component LanguageSelector
+   (landing Index.razor + ShopLayout; AdminLayout dùng .lx-lang-btn riêng).
+   Specificity bằng rule gốc (0,3,1), file này load sau bundle nên thắng;
+   thêm !important cho chắc. Không đổi layout/chức năng. */
+html.dark .lang-btn:hover { background-color: #2e2620 !important; }
+
+/* ===== END UIUX 23:05 A3 ===== */
