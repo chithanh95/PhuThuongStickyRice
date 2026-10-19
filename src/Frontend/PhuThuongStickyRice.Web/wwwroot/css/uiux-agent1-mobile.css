@@ -2068,4 +2068,25 @@
         flex: 1 1 0;
     }
 }
+/* ===== UIUX-1925 A1 (run 19:25 2026-10-19) ===== */
+/* ------------------------------------------------------------
+   FIX 1 — /track-order: nhãn bước timeline ở khe 576–767px
+   (điện thoại xoay ngang / tablet nhỏ).
+   Vấn đề: layout ngang chỉ chuyển sang dọc ở ≤575.98px
+   (TrackOrder.razor.css:125-150), nên ở khe 576–767px 5 bước
+   timeline vẫn nằm ngang với nhãn bước .to-tl-label chỉ 11px —
+   là chữ nhỏ nhất trang, khách lớn tuổi khó đọc tên trạng thái
+   ("Đang chuẩn bị", "Hoàn thành"...). Ở ≤575px đã được 13px
+   theo layout dọc — khe này là sót duy nhất.
+   Giải pháp: nhãn bước lên 13px trong đúng khe 576–767px;
+   PC (≥768px, màn rộng) giữ nguyên 11px gọn.
+   (Verify: TrackOrder.razor:870-876 StatusSteps 5 bước;
+   TrackOrder.razor.css:47 .to-tl-label font-size:11px; grep file
+   này trước đó không có rule .to-tl-* nào)
+   ------------------------------------------------------------ */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .to-timeline .to-tl-label {
+        font-size: 13px;
+    }
+}
 /* ===== END ===== */
