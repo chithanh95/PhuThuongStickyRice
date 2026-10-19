@@ -35,10 +35,10 @@ else
                 <div class="alert alert-danger">@_error</div>
             }
             <div class="d-flex flex-wrap">
-                <button class="btn btn-success mr-2 mb-2" @onclick="() => Submit(true)" disabled="@_submitting">
+                <button class="btn btn-success mr-2 mb-2" @onclick="() => SubmitMoMoCallbackAsync(true)" disabled="@_submitting">
                     @(_submitting ? "Đang xử lý..." : "Thanh toán thành công (TEST)")
                 </button>
-                <button class="btn btn-outline-danger mb-2" @onclick="() => Submit(false)" disabled="@_submitting">
+                <button class="btn btn-outline-danger mb-2" @onclick="() => SubmitMoMoCallbackAsync(false)" disabled="@_submitting">
                     Thanh toán thất bại (TEST)
                 </button>
             </div>
@@ -70,7 +70,7 @@ else
         }
     }
 
-    private async Task Submit(bool success)
+    private async Task SubmitMoMoCallbackAsync(bool success)
     {
         _error = null;
         _submitting = true;

@@ -169,10 +169,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Load();
+        await LoadPromotionsAsync();
     }
 
-    private async Task Load()
+    private async Task LoadPromotionsAsync()
     {
         _loading = true;
         try
@@ -235,7 +235,7 @@
             else
                 await AdminOperationsService.UpdatePromotionAsync(_editing.Id, _form);
             _showForm = false;
-            await Load();
+            await LoadPromotionsAsync();
         }
         catch (Exception ex)
         {
@@ -268,7 +268,7 @@
             await AdminOperationsService.DeletePromotionAsync(_deleting.Id);
             DeleteDialog.Close();
             _deleting = null;
-            await Load();
+            await LoadPromotionsAsync();
         }
         catch (Exception ex)
         {

@@ -110,8 +110,8 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             HandleNotFound(response);
             response.EnsureSuccessStatusCode();
 
-            var data = await response.Content.ReadAs<T>();
-            return data;
+            var dto = await response.Content.ReadAs<T>();
+            return dto;
         }
 
         /// <summary>

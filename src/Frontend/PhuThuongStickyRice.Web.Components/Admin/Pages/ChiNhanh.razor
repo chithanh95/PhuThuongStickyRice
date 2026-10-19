@@ -133,10 +133,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Load();
+        await LoadBranchesAsync();
     }
 
-    private async Task Load()
+    private async Task LoadBranchesAsync()
     {
         _loading = true;
         try
@@ -181,7 +181,7 @@
             else
                 await AdminSystemService.UpdateBranchAsync(_editing.Id, _form);
             _showForm = false;
-            await Load();
+            await LoadBranchesAsync();
         }
         catch (Exception ex)
         {
@@ -195,7 +195,7 @@
         try
         {
             await AdminSystemService.DeleteBranchAsync(b.Id);
-            await Load();
+            await LoadBranchesAsync();
         }
         catch { }
     }

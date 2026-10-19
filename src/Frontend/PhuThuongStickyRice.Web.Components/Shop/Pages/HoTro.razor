@@ -41,7 +41,7 @@ else
                 <textarea id="ht-message" class="form-control" rows="5" @bind="_model.Message"
                           placeholder="Mô tả vấn đề bạn gặp phải..." aria-required="true"></textarea>
             </div>
-            <button class="btn btn-primary ht-submit" @onclick="Submit" disabled="@_submitting">
+            <button class="btn btn-primary ht-submit" @onclick="SubmitSupportTicketAsync" disabled="@_submitting">
                 @(_submitting ? "Đang gửi..." : "Gửi yêu cầu")
             </button>
         </div>
@@ -55,7 +55,7 @@ else
     private bool _submitting;
     private string _error;
 
-    private async Task Submit()
+    private async Task SubmitSupportTicketAsync()
     {
         // Bug-hunt 2026-10-19 (17:55): chặn bấm đúp tạo 2 ticket hỗ trợ trùng.
         // disabled="@_submitting" chỉ có hiệu lực sau lần re-render đầu tiên.
