@@ -145,7 +145,10 @@
         <div class="card mb-3">
             <div class="card-header">🎡 Quay may mắn — nhận voucher cho đơn tiếp theo</div>
             <div class="card-body text-center">
-                <div class="spin-wheel-wrap">
+                <div class="spin-wheel-wrap" aria-hidden="true">
+                    @* A11y-1705: vòng quay + nhãn các ô + mũi tên ▼ là hình trang trí thuần túy —
+                       screen reader đọc sẽ thành chuỗi rời rạc ("10K", "▼"...). Ẩn khỏi cây
+                       accessibility; nút "Quay ngay" và alert role="status" báo kết quả đã đủ. *@
                     <div class="spin-pointer">▼</div>
                     <div class="spin-wheel" style="@_wheelStyle">
                         @for (var i = 0; i < _spinSegments.Length; i++)

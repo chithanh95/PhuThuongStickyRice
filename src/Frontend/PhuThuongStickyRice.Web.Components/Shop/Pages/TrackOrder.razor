@@ -504,7 +504,10 @@
                                                 var s = star;
                                                 <button type="button" class="btn btn-link p-0"
                                                         aria-label="Đánh giá món @l.ProductName: @s sao"
-                                                        style="font-size: 20px; color: @(s <= LineRating(l.Id) ? "#f1b44c" : "#ccc"); text-decoration: none;"
+                                                        style="font-size: 20px; color: @(s <= LineRating(l.Id) ? "#f1b44c" : "#8f8f8f"); text-decoration: none;"
+                                                        @* A11y-1705: sao chưa chọn #ccc trên nền trắng chỉ ~1.6:1
+                                                           (< 3:1 WCAG 1.4.11 cho icon có ý nghĩa). Đổi #8f8f8f
+                                                           (~3.23:1), vẫn xám phân biệt với sao vàng đã chọn. *@
                                                         @onclick="() => SetLineRating(l.Id, s)">★</button>
                                             }
                                         </span>

@@ -836,3 +836,51 @@ html.dark .shp-page .form-check:hover {
 }
 
 /* ===== END UIUX run 16:50 - Agent4 ===== */
+
+/* ===== Run 17:05 2026-10-19 — Agent 4 A11y & Polish ===== */
+
+/* Fix 1 — WCAG 1.4.11 (Non-text Contrast, cần 3:1 cho icon có ý nghĩa): 5 nút
+   sao ★ popup khảo sát sau giao hàng `.to-survey-star` (TrackOrder.razor:717)
+   khi CHƯA chọn có màu #ddd trên nền sheet trắng — chỉ ~1.36:1. Người lớn
+   tuổi/thị lực kém không nhìn thấy 5 vị trí sao để bấm (đã đo bằng công thức
+   WCAG). Đậm lên #8f8f8f (~3.23:1, vẫn xám rõ là "chưa chọn"). Chỉ light mode;
+   dark mode giữ #ddd gốc (trên nền sheet #262019 đạt ~11.9:1, đã qua chuẩn).
+   Specificity (0,3,0) để thắng rule scoped `.to-survey-sheet .to-survey-star`
+   trong TrackOrder.razor.css (compile thêm [b-xxx] thành (0,3,0)); file này
+   load sau bundle nên thắng khi ngang specificity. */
+.to-survey-sheet .to-survey-star.to-survey-star {
+    color: #8f8f8f;
+    transition: transform .15s ease, color .15s ease;
+}
+html.dark .to-survey-sheet .to-survey-star.to-survey-star {
+    color: #ddd;
+}
+
+/* Fix 2 — Polish hover + sửa bug màu: 5 nút sao trên là `btn btn-link` nên
+   rule global `.shp-page .btn-link:hover` (uiux-agent3-lexa.css, (0,3,0),
+   load trước file này) thắng → di chuột qua sao, sao chuyển TÍM #625998
+   thay vì vàng preview — sai ngữ nghĩa widget đánh giá, người dùng tưởng lỗi.
+   Override (0,4,0): sao chưa chọn hover → vàng #f6c453 (giống trạng thái "on")
+   + phóng nhẹ 1.12 để thấy "đang trỏ vào sao này"; chuột/chạm không ảnh hưởng
+   màu khi không hover. Sao đã chọn giữ vàng, hover chỉ phóng nhẹ. */
+.to-survey-sheet .to-survey-star.to-survey-star:hover {
+    color: #f6c453;
+    transform: scale(1.12);
+    text-decoration: none;
+}
+.to-survey-sheet .to-survey-star.to-survey-star.on:hover {
+    color: #f6c453;
+    transform: scale(1.12);
+}
+
+/* Fix 3 — WCAG 1.4.3 (Contrast, AA 4.5:1 cho chữ thường): dòng giờ giao
+   `.kanban-sched` (KanbanDon.razor.css:45) chữ 12px màu tím Lexa #7a6fbe trên
+   nền card trắng chỉ đạt ~4.33:1 — nhân viên bếp/quán đọc lịch giao cả ngày
+   sẽ mỏi mắt. Đậm lên #6558a8 (~5.97:1, vẫn giữ sắc tím Lexa). Scope
+   `.lx-admin` để không đụng màu brand ở shop/landing; chỉ light mode (dark
+   admin đã có override riêng). */
+.lx-admin .kanban-sched {
+    color: #6558a8;
+}
+
+/* ===== END UIUX run 17:05 - Agent4 ===== */

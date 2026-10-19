@@ -1219,3 +1219,39 @@ html.dark .btn-outline-secondary {
 }
 
 /* ===== END UIUX run 2026-10-19 16:10 - Agent2 ===== */
+
+/* ===== Run 17:05 2026-10-19 — Agent 2 Dark mode ===== */
+
+/* ---------- FIX 1 — /check-in: tiêu đề nâu đỏ #763434 tàng hình trên nền tối ----------
+   Vấn đề: CheckIn.razor.css — .xo-sec-title, .xo-checkin-wall-title,
+   .xo-checkin-form-title đều màu #763434 (nâu đỏ đậm). Ở dark mode section
+   nền #1c1c22 và card nền #2a2a32 (đã có rule dark) → tương phản chỉ ~1.6:1,
+   chữ gần như tàng hình. Đã verify trong bundle build: không có rule dark
+   nào phủ 3 selector này (rule .xo-sec-title duy nhất trong bundle thuộc
+   scope của NhuongQuyen, không áp dụng sang trang CheckIn).
+   Thêm: .xo-sec-div em (chữ "✦" ngăn cách, màu #9C682C) chỉ ~2.9:1 trên
+   nền tối → sáng lên cho dễ đọc.
+   Cách sửa: override html.dark, giữ tông nâu kem của brand (#f0d9b5 —
+   cùng tông đã dùng ở NhuongQuyen/TaiKhoan). Specificity html.dark .x
+   (0-2-1) thắng rule scoped .x[b-xxx] (0-2-0) nên không cần !important. */
+html.dark .xo-sec-title,
+html.dark .xo-checkin-wall-title,
+html.dark .xo-checkin-form-title {
+    color: #f0d9b5; /* was #763434 — ~1.6:1 → ~12:1 trên nền tối */
+}
+html.dark .xo-sec-div em {
+    color: #c99a4b; /* was #9C682C — ~2.9:1 → ~5.2:1 trên #1c1c22 */
+}
+
+/* ---------- FIX 2 — /admin/danh-gia: sao "tắt" #ddd trông như đang sáng ----------
+   Vấn đề: DanhGia.razor.css — .dg-stars .dg-stars-off { color: #ddd; }.
+   Trên card admin tối #262640, sao xám sáng #ddd trông gần như sao đã
+   chọn (vàng #f1b44c) → nhân viên đọc nhầm mức đánh giá của khách.
+   Đã verify bundle: chưa có rule dark nào cho .dg-stars-off.
+   Cách sửa: tối xuống #5a5a6e — vẫn thấy hình sao nhưng rõ ràng là "tắt",
+   không lẫn với sao vàng đã chọn. */
+html.dark .dg-stars .dg-stars-off {
+    color: #5a5a6e; /* was #ddd — sao "tắt" không còn loé sáng trên nền tối */
+}
+
+/* ===== END Run 17:05 2026-10-19 — Agent 2 ===== */

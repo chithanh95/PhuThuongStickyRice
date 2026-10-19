@@ -1774,3 +1774,104 @@
     }
 }
 /* ===== END UIUX-1648 A1 ===== */
+
+/* ===== Run 17:05 2026-10-19 — Agent 1 Mobile UX ===== */
+
+/* ------------------------------------------------------------
+   FIX 1 — /dat-cung: checkbox "🔔 Nhắc tôi mỗi tháng" quá nhỏ.
+   Vấn đề: input#remind-monthly (DatCung.razor:112) là checkbox mặc
+   định ~12.5px — khách lớn tuổi bấm trượt. Run 16:48 đã phóng to
+   radio name="dipcung"/"loaimam" (20px) nhưng quên checkbox này
+   trong cùng form.
+   Giải pháp: checkbox 20px + nới padding label, đồng bộ chuẩn radio
+   /dat-cung. (Verify: id="remind-monthly" chỉ tồn tại ở DatCung.razor:112;
+   :has() an toàn, không chạm radio đã fix)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .form-check:has(> input#remind-monthly) {
+        padding: 10px 0;
+    }
+    .form-check:has(> input#remind-monthly) .form-check-input {
+        width: 20px;
+        height: 20px;
+        margin-top: 0;
+        flex-shrink: 0;
+    }
+    .form-check:has(> input#remind-monthly) .form-check-label {
+        padding: 8px 4px 8px 8px;
+        font-size: 1rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /checkout: checkbox "🎁 Gói quà" quá nhỏ.
+   Vấn đề: input#gift-toggle (Checkout.razor:503) là checkbox mặc
+   định ~12.5px — nằm ngay trên bước chốt đơn, bấm trượt dễ bỏ lỡ
+   tùy chọn gói quà. Cùng họ vấn đề với FIX 1.
+   Giải pháp: checkbox 20px + nới padding label, đồng bộ /dat-cung.
+   (Verify: id="gift-toggle" chỉ tồn tại ở Checkout.razor:503)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .form-check:has(> input#gift-toggle) {
+        padding: 10px 0;
+    }
+    .form-check:has(> input#gift-toggle) .form-check-input {
+        width: 20px;
+        height: 20px;
+        margin-top: 0;
+        flex-shrink: 0;
+    }
+    .form-check:has(> input#gift-toggle) .form-check-label {
+        padding: 8px 4px 8px 8px;
+        font-size: 1rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /dang-nhap + /quen-mat-khau: card auth padding quá lớn
+   trên mobile, ăn mất chiều rộng nội dung.
+   Vấn đề: .auth-card { padding: 40px 35px; } (inline <style> cả 2 trang)
+   — trên màn 360px nội dung chỉ còn ~250px rộng, ô nhập SĐT/mật khẩu
+   bị bóp hẹp. class .auth-card chỉ 2 trang auth dùng (DangNhap.razor:72,
+   QuenMatKhau.razor:75) nên rule an toàn.
+   Giải pháp: mobile — padding 28px 20px. Selector .auth-page .auth-card
+   (0,2,0) thắng inline <style> .auth-card (0,1,0) bất kể thứ tự render.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .auth-page .auth-card {
+        padding: 28px 20px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /dang-nhap + /quen-mat-khau: ô nhập SĐT/mật khẩu chỉ
+   ~38px cao, khó bấm với khách lớn tuổi.
+   Vấn đề: .auth-card .form-control là input Bootstrap mặc định
+   (~38px) — luồng đăng nhập là bước bắt buộc trước khi đặt hàng.
+   Giải pháp: mobile — min-height 48px theo chuẩn chạm; giữ
+   font-size 16px (tránh iOS auto-zoom khi focus).
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .auth-page .auth-card .form-control {
+        min-height: 48px;
+        font-size: 16px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 5 — /check-in: ảnh "Tường ảnh khách hàng" quá cao trên mobile.
+   Vấn đề: .xo-checkin-grid 2 cột trên mobile, mỗi card rộng ~156px
+   nhưng img height: 200px (CheckIn.razor.css:58) — ảnh dài ngoằng,
+   phải cuộn nhiều mới thấy hết tường ảnh.
+   Giải pháp: mobile — img 130px (tỉ lệ ~5:6 hợp lý cho grid 2 cột),
+   tường ảnh gọn, thấy nhiều ảnh hơn mỗi màn hình.
+   (Verify: CheckIn.razor.css:58 .xo-checkin-card img; specificity
+   0,1,1 bằng scoped CSS nhưng uiux-agent1-mobile.css load sau nên thắng)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .xo-checkin-card img {
+        height: 130px;
+    }
+}
+
+/* ===== END Run 17:05 2026-10-19 — Agent 1 Mobile UX ===== */
