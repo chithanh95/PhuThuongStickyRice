@@ -976,20 +976,30 @@ else
         }
 
         var hour = DateTime.Now.Hour;
-        if (hour >= 5 && hour < 10)
+        if (hour >= SuggestMorningStartHour && hour < SuggestMorningEndHour)
         {
             _suggestionTitle = "☀️ Gợi ý buổi sáng";
             _suggestions = _products
                 .Where(p => (p.Tags ?? string.Empty).Contains("man"))
-                .Take(3)
+                .Take(SuggestMaxItems)
                 .ToList();
         }
-        else if (hour >= 17 && hour < 23)
+        else if (hour >= SuggestEveningStartHour && hour < SuggestEveningEndHour)
         {
             _suggestionTitle = "🌙 Gợi ý buổi tối";
-            _suggestions = _products.Take(3).ToList();
+            _suggestions = _products.Take(SuggestMaxItems).ToList();
         }
     }
+
+    /// <summary>
+    /// Item 118: khung giờ gợi ý theo giờ địa phương — sáng: món mặn
+    /// (tag "man"); tối: món bán chạy. Tách thành hằng số để dễ đổi khung giờ.
+    /// </summary>
+    private const int SuggestMorningStartHour = 5;
+    private const int SuggestMorningEndHour = 10;
+    private const int SuggestEveningStartHour = 17;
+    private const int SuggestEveningEndHour = 23;
+    private const int SuggestMaxItems = 3;
 
     // ---------- Branch filter (item 109) ----------
 
