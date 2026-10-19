@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             var genericHandlerTypes = new[]
             {
-                typeof(GetEntititesQueryHandler<>),
+                typeof(GetEntitiesQueryHandler<>),
                 typeof(GetEntityByIdQueryHandler<>),
                 typeof(AddOrUpdateEntityCommandHandler<>),
                 typeof(DeleteEntityCommandHandler<>),

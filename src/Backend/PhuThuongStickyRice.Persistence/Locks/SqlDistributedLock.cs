@@ -42,7 +42,8 @@ namespace PhuThuongStickyRice.Persistence.Locks
         public IDistributedLockScope Acquire(string lockName)
         {
             SqlParameter returnValue;
-            var acquireCommand = CreateAcquireCommand(0, lockName, -1, out returnValue);
+            // SqlCommand giữ handle phía server — dispose ngay sau khi dùng xong.
+            using var acquireCommand = CreateAcquireCommand(0, lockName, -1, out returnValue);
 
             acquireCommand.ExecuteNonQuery();
 
@@ -59,7 +60,8 @@ namespace PhuThuongStickyRice.Persistence.Locks
         public IDistributedLockScope TryAcquire(string lockName)
         {
             SqlParameter returnValue;
-            var acquireCommand = CreateAcquireCommand(30, lockName, 0, out returnValue);
+            // SqlCommand giữ handle phía server — dispose ngay sau khi dùng xong.
+            using var acquireCommand = CreateAcquireCommand(30, lockName, 0, out returnValue);
 
             acquireCommand.ExecuteNonQuery();
 

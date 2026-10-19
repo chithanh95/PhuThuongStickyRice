@@ -1,5 +1,3 @@
-using PhuThuongStickyRice.Application.Shop;
-
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -32,6 +30,15 @@ namespace PhuThuongStickyRice.Application.Inventory
     [Authorize(Roles = "Admin")]
     public class IngredientForecastAppService : ApplicationService, IIngredientForecastAppService
     {
+        // Số tuần lịch sử dùng để tính trung bình cùng ngày trong tuần.
+        private const int LookbackWeeks = 4;
+
+        // Gram nếp/suất dùng khi shop chưa cài đặt (giá trị ước lượng hợp lý).
+        private const int FallbackNepPerPortionGrams = 150;
+
+        // Làm tròn lượng nếp lên bước 0.5 kg.
+        private const double RoundingStepKg = 0.5;
+
         private readonly IRepository<Order, Guid> _orders;
         private readonly IShopSettingAppService _shopSettings;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -49,11 +56,12 @@ namespace PhuThuongStickyRice.Application.Inventory
         public virtual async Task<IngredientForecastDto> GetForecastAsync()
         {
             var settings = await _shopSettings.GetAsync();
-            var gramsPerPortion = settings.NepPerPortionGrams > 0 ? settings.NepPerPortionGrams : 150;
+            var gramsPerPortion = settings.NepPerPortionGrams > 0 ? settings.NepPerPortionGrams : FallbackNepPerPortionGrams;
 
             var tomorrow = VietnamTime.Today().AddDays(1);
             var weekday = (int)tomorrow.DayOfWeek;
-            var fourWeeksAgo = tomorrow.AddDays(-28);
+            var lookbackDays = LookbackWeeks * 7;
+            var fourWeeksAgo = tomorrow.AddDays(-lookbackDays);
 
             var queryable = await _orders.GetQueryableAsync();
 
@@ -66,12 +74,12 @@ namespace PhuThuongStickyRice.Application.Inventory
                         && x.Status != OrderStatus.Cancelled)
                     .Select(x => new { x.CreatedAt, Portions = x.Lines.Sum(l => l.Quantity) }));
 
-            var weeks = new int[4];
-            var seen = new int[4];
+            var weeks = new int[LookbackWeeks];
+            var seen = new int[LookbackWeeks];
             foreach (var order in candidates)
             {
                 var local = VietnamTime.ToVietnamTime(order.CreatedAt).Date;
-                if (local < tomorrow.AddDays(-28) || local >= tomorrow)
+                if (local < tomorrow.AddDays(-lookbackDays) || local >= tomorrow)
                 {
                     continue;
                 }
@@ -82,7 +90,7 @@ namespace PhuThuongStickyRice.Application.Inventory
                 }
 
                 var weekIndex = (int)((tomorrow - local).TotalDays / 7);
-                if (weekIndex < 0 || weekIndex > 3)
+                if (weekIndex < 0 || weekIndex >= LookbackWeeks)
                 {
                     continue;
                 }
@@ -97,7 +105,7 @@ namespace PhuThuongStickyRice.Application.Inventory
                 ? (double)totalPortions / weeksWithData
                 : 0;
 
-            var nepKg = Math.Ceiling(averagePortions * gramsPerPortion / 1000.0 * 2) / 2;
+            var nepKg = Math.Ceiling(averagePortions * gramsPerPortion / 1000.0 / RoundingStepKg) * RoundingStepKg;
 
             return new IngredientForecastDto
             {
@@ -107,7 +115,7 @@ namespace PhuThuongStickyRice.Application.Inventory
                 NepKg = nepKg,
                 NepPerPortionGrams = gramsPerPortion,
                 Heuristic = $"Trung bình {Math.Round(averagePortions, 1)} suất vào {CultureInfo.GetCultureInfo("vi-VN").DateTimeFormat.DayNames[weekday].ToLowerInvariant()} " +
-                    $"trong {weeksWithData}/4 tuần qua × {gramsPerPortion}g/suất, làm tròn lên 0.5kg. " +
+                    $"trong {weeksWithData}/{LookbackWeeks} tuần qua × {gramsPerPortion}g/suất, làm tròn lên 0.5kg. " +
                     "Chỉ là ước tính — ngày lễ/tiệc lớn cần cộng thêm dự phòng."
             };
         }

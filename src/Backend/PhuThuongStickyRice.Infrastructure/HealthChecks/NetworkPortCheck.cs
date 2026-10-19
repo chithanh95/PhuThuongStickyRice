@@ -8,7 +8,16 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
     {
         public static bool IsReady(string address)
         {
+            // Fail-fast với message rõ ràng thay vì IndexOutOfRangeException khó hiểu
+            // khi config sai định dạng (dùng duy nhất ở Migrator startup gate).
             var parts = address.Split(':');
+            if (parts.Length != 2)
+            {
+                throw new ArgumentException(
+                    $"Địa chỉ kiểm tra port không hợp lệ: '{address}'. Định dạng đúng là 'host:port'.",
+                    nameof(address));
+            }
+
             string host = parts[0];
             int port = int.Parse(parts[1]);
 

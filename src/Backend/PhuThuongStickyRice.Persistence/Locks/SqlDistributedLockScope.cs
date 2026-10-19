@@ -34,7 +34,8 @@ namespace PhuThuongStickyRice.Persistence.Locks
             }
 
             SqlParameter returnValue;
-            var releaseCommand = CreateReleaseCommand(_lockName, false, out returnValue);
+            // SqlCommand giữ handle phía server — dispose ngay sau khi dùng xong.
+            using var releaseCommand = CreateReleaseCommand(_lockName, false, out returnValue);
             releaseCommand.ExecuteNonQuery();
 
             if (ParseReturnCode((int)returnValue.Value))
@@ -44,7 +45,8 @@ namespace PhuThuongStickyRice.Persistence.Locks
 
         public bool StillHoldingLock()
         {
-            var command = _connection.CreateCommand();
+            // SqlCommand giữ handle phía server — dispose ngay sau khi dùng xong.
+            using var command = _connection.CreateCommand();
             command.Transaction = _transaction;
 
             command.CommandText = @"SELECT APPLOCK_MODE('public', @Resource, @LockOwner)";

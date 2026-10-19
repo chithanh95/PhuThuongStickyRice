@@ -22,6 +22,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
     /// single-use voucher owned by the customer's phone and records it on the
     /// order notes so the admin can tell the customer.
     /// </summary>
+    /// <summary>
+    /// Hợp đồng quy tắc thưởng tự động: admin CRUD các quy tắc; order service
+    /// gọi <c>ApplyOnOrderCompletedAsync</c> ngay sau khi đơn hoàn tất.
+    /// </summary>
     public interface IRewardRuleAppService : IApplicationService
     {
         Task<List<OrderRewardRuleDto>> GetListAsync();
@@ -36,6 +40,16 @@ namespace PhuThuongStickyRice.Application.Loyalty
         Task ApplyOnOrderCompletedAsync(Order order);
     }
 
+    /// <summary>
+    /// Item 92: thưởng tự động khi đơn hoàn tất. Hai loại thưởng:
+    /// <list type="bullet">
+    /// <item><c>FreeTopping</c>: chỉ ghi chú lên đơn để bếp/quán biết tặng kèm topping.</item>
+    /// <item><c>DiscountCode</c>: sinh 1 mã giảm giá dùng 1 lần, gắn đúng SĐT khách
+    /// (<c>OwnerPhone</c>) cho lần mua sau, và ghi chú lên đơn để admin thông báo.</item>
+    /// </list>
+    /// Admin quản lý quy tắc; logic chạy qua <c>ApplyOnOrderCompletedAsync</c>
+    /// từ phía order service (AllowAnonymous nội bộ).
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class RewardRuleAppService : ApplicationService, IRewardRuleAppService
     {
@@ -53,6 +67,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
             _discounts = discounts;
         }
 
+        /// <summary>
+        /// Liệt kê quy tắc thưởng đang có, sắp xếp theo ngưỡng tiền đơn tăng dần.
+        /// </summary>
+        /// <returns>Danh sách quy tắc thưởng dưới dạng DTO.</returns>
         public virtual async Task<List<OrderRewardRuleDto>> GetListAsync()
         {
             var queryable = await _rules.GetQueryableAsync();
@@ -61,6 +79,11 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return items.Select(Map).ToList();
         }
 
+        /// <summary>
+        /// Tạo quy tắc thưởng mới (kiểm tra loại thưởng và trường bắt buộc theo loại).
+        /// </summary>
+        /// <param name="input">Thông tin quy tắc: tên, ngưỡng tiền đơn, loại thưởng, topping/% giảm.</param>
+        /// <returns>Quy tắc vừa tạo.</returns>
         public virtual async Task<OrderRewardRuleDto> CreateAsync(CreateOrderRewardRuleDto input)
         {
             var rule = Build(input);
@@ -68,6 +91,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return Map(rule);
         }
 
+        /// <summary>
+        /// Cập nhật quy tắc thưởng (validate lại toàn bộ điều kiện như lúc tạo).
+        /// </summary>
+        /// <param name="id">Id quy tắc.</param>
+        /// <param name="input">Thông tin mới của quy tắc.</param>
+        /// <returns>Quy tắc sau khi cập nhật.</returns>
         public virtual async Task<OrderRewardRuleDto> UpdateAsync(Guid id, CreateOrderRewardRuleDto input)
         {
             var rule = await _rules.GetAsync(id);
@@ -76,12 +105,23 @@ namespace PhuThuongStickyRice.Application.Loyalty
             return Map(rule);
         }
 
+        /// <summary>
+        /// Xóa quy tắc thưởng. Không ảnh hưởng các đơn đã được áp thưởng trước đó
+        /// (ghi chú quà đã nằm trong đơn).
+        /// </summary>
+        /// <param name="id">Id quy tắc cần xóa.</param>
         public virtual async Task DeleteAsync(Guid id)
         {
             await _rules.DeleteAsync(id, autoSave: true);
         }
 
-        /// <summary>Internal: runs outside the Admin policy via the order service.</summary>
+        /// <summary>
+        /// Áp toàn bộ quy tắc thưởng đủ điều kiện cho 1 đơn vừa hoàn tất.
+        /// Chạy nội bộ từ order service (AllowAnonymous vì caller không phải request admin
+        /// trực tiếp), không gọi từ bên ngoài.
+        /// </summary>
+        /// <param name="order">Đơn hàng vừa hoàn tất; null thì bỏ qua.</param>
+        /// <returns>Task hoàn tất khi mọi quy tắc đã được xét.</returns>
         [AllowAnonymous]
         public virtual async Task ApplyOnOrderCompletedAsync(Order order)
         {
@@ -100,6 +140,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 switch (rule.RewardType)
                 {
                     case OrderRewardType.FreeTopping:
+                        // Tặng topping chỉ là ghi chú trên đơn để nhân viên/bếp thực hiện,
+                        // không trừ tiền hay tạo mã gì thêm.
                         var topping = string.IsNullOrWhiteSpace(rule.ToppingName)
                             ? "topping miễn phí"
                             : rule.ToppingName.Trim();
@@ -107,6 +149,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
                         break;
 
                     case OrderRewardType.DiscountCode:
+                        // Mặc định 5% nếu rule không đặt — mã dùng 1 lần, gắn đúng SĐT khách
+                        // và có hạn 30 ngày, để khách quay lại mua lần sau.
                         var percent = rule.DiscountPercent ?? 5;
                         var code = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
                         {

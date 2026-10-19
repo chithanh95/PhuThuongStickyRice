@@ -16,13 +16,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [Authorize(Roles = "Admin,Cashier")]
     [Route("api/admin")]
     [ApiController]
-    public class AdminUtilityController : ControllerBase
+    public class AdminSearchNotificationController : ControllerBase
     {
-        private readonly IAdminUtilityAppService _utility;
+        private readonly IAdminSearchNotificationAppService _searchNotification;
 
-        public AdminUtilityController(IAdminUtilityAppService utility)
+        public AdminSearchNotificationController(IAdminSearchNotificationAppService searchNotification)
         {
-            _utility = utility;
+            _searchNotification = searchNotification;
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] string q,
             CancellationToken cancellationToken = default)
         {
-            return Ok(await _utility.SearchAsync(q));
+            return Ok(await _searchNotification.SearchAsync(q));
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult<List<NotificationDto>>> GetNotifications(
             CancellationToken cancellationToken = default)
         {
-            return Ok(await _utility.GetNotificationsAsync());
+            return Ok(await _searchNotification.GetNotificationsAsync());
         }
     }
 }

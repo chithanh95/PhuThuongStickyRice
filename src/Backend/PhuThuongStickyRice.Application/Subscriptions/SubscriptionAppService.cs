@@ -1,4 +1,5 @@
 using PhuThuongStickyRice.Application.Shop;
+using PhuThuongStickyRice.Application.Shop.DTOs;
 using PhuThuongStickyRice.Application.Subscriptions.DTOs;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
@@ -143,29 +144,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             var numberIndex = 0;
             foreach (var sub in due)
             {
-                var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                    string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>
-                {
-                    (sub.ProductId, sub.ProductName, Money.Of(sub.UnitPrice, "VND"),
-                        sub.Quantity, sub.SizeName, sub.ToppingNames, 0, false, null)
-                };
-
-                var subtotal = sub.UnitPrice * sub.Quantity;
-                var fee = settings.DeliveryFee > 0
-                    && !(settings.FreeShipThreshold > 0 && subtotal >= settings.FreeShipThreshold)
-                    ? settings.DeliveryFee
-                    : 0;
-
-                var order = Order.Create(
-                    orderNumbers[numberIndex++],
-                    sub.CustomerName,
-                    sub.Phone,
-                    null,
-                    sub.DeliveryAddress,
-                    "Đơn định kỳ tự động" + (string.IsNullOrWhiteSpace(sub.Notes) ? "" : " — " + sub.Notes),
-                    PaymentMethod.Cod,
-                    lines,
-                    Money.Of(fee, "VND"));
+                var order = BuildDueOrder(sub, orderNumbers[numberIndex++], settings);
 
                 await _orders.InsertAsync(order);
                 sub.LastOrderDate = today;
@@ -174,6 +153,38 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             }
 
             return created;
+        }
+
+        /// <summary>
+        /// Dựng một đơn COD định kỳ từ gói đăng ký (snapshot giá/tên tại
+        /// thời điểm tạo; phí ship theo cài đặt hiện tại). Tách ra để
+        /// CreateDueOrdersAsync ngắn gọn hơn (logic giữ nguyên).
+        /// </summary>
+        private static Order BuildDueOrder(Subscription sub, string orderNumber, ShopSettingDto settings)
+        {
+            var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>
+            {
+                (sub.ProductId, sub.ProductName, Money.Of(sub.UnitPrice, "VND"),
+                    sub.Quantity, sub.SizeName, sub.ToppingNames, 0, false, null)
+            };
+
+            var subtotal = sub.UnitPrice * sub.Quantity;
+            var fee = settings.DeliveryFee > 0
+                && !(settings.FreeShipThreshold > 0 && subtotal >= settings.FreeShipThreshold)
+                ? settings.DeliveryFee
+                : 0;
+
+            return Order.Create(
+                orderNumber,
+                sub.CustomerName,
+                sub.Phone,
+                null,
+                sub.DeliveryAddress,
+                "Đơn định kỳ tự động" + (string.IsNullOrWhiteSpace(sub.Notes) ? "" : " — " + sub.Notes),
+                PaymentMethod.Cod,
+                lines,
+                Money.Of(fee, "VND"));
         }
 
         /// <summary>

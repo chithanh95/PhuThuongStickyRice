@@ -17,6 +17,11 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Customer
 {
+    /// <summary>
+    /// Hợp đồng hồ sơ khách hàng: khách xem/cập nhật khẩu vị + ngày sinh của
+    /// chính mình; admin xem danh sách sinh nhật theo tháng, tặng quà sinh
+    /// nhật, và chăm sóc khách (nhắc Zalo OA).
+    /// </summary>
     public interface ICustomerProfileAppService : IApplicationService
     {
         /// <summary>Authenticated customer: my taste preferences + birthday.</summary>
@@ -38,6 +43,15 @@ namespace PhuThuongStickyRice.Application.Customer
         Task<List<CustomerReminderDto>> GetRemindersAsync(string phone);
     }
 
+    /// <summary>
+    /// Hồ sơ khách hàng. Hai nghiệp vụ chính:
+    /// <list type="bullet">
+    /// <item>Khách tự quản lý khẩu vị + ngày sinh (ngày sinh chỉ đổi 1 lần/năm
+    /// để chống gian lận quà sinh nhật).</item>
+    /// <item>Admin tặng quà sinh nhật: mỗi năm mỗi khách 1 mã giảm giá dùng 1 lần,
+    /// hiệu lực 30 ngày (ghi log hoạt động nhân viên, item 156).</item>
+    /// </list>
+    /// </summary>
     public class CustomerProfileAppService : ApplicationService, ICustomerProfileAppService
     {
         public const string CustomerRoleName = "Customer";
@@ -85,6 +99,11 @@ namespace PhuThuongStickyRice.Application.Customer
             _activityLogger = activityLogger;
         }
 
+        /// <summary>
+        /// Khách xem hồ sơ của chính mình: khẩu vị, ngày sinh (+ có được đổi
+        /// không), và mã quà sinh nhật năm nay nếu đã được tặng.
+        /// </summary>
+        /// <returns>Hồ sơ khách hàng dưới dạng DTO.</returns>
         public virtual async Task<CustomerProfileDto> GetMyAsync()
         {
             var user = await GetCurrentUserAsync();
@@ -95,6 +114,8 @@ namespace PhuThuongStickyRice.Application.Customer
             dto.DateOfBirthChangeHint = hint;
 
             var thisYear = DateTime.UtcNow.Year;
+            // Chỉ hiện mã quà khi năm lưu trên user trùng năm hiện tại —
+            // quà năm cũ hết hiệu lực thì không hiện lại cho khách.
             if (user.BirthdayGiftYear == thisYear && !string.IsNullOrWhiteSpace(user.BirthdayGiftCode))
             {
                 dto.BirthdayGiftCode = user.BirthdayGiftCode;
@@ -109,6 +130,15 @@ namespace PhuThuongStickyRice.Application.Customer
             return dto;
         }
 
+        /// <summary>
+        /// Khách cập nhật khẩu vị (tối đa 10 tag, mỗi tag 50 ký tự, ghi chú 500 ký tự)
+        /// và/hoặc ngày sinh. Ngày sinh chỉ được đổi 1 lần mỗi năm kể từ lần đổi
+        /// gần nhất (chống gian lận nhận quà sinh nhật); quá giới hạn thì báo lỗi
+        /// kèm ngày được đổi lại.
+        /// </summary>
+        /// <param name="dto">Danh sách tag khẩu vị, ghi chú khẩu vị, ngày sinh mới.</param>
+        /// <returns>Hồ sơ sau khi cập nhật.</returns>
+        /// <exception cref="UserFriendlyException">Ném khi ngày sinh không hợp lệ hoặc chưa được phép đổi.</exception>
         public virtual async Task<CustomerProfileDto> UpdateAsync(UpdateCustomerProfileDto dto)
         {
             var user = await GetCurrentUserAsync();
@@ -181,6 +211,14 @@ namespace PhuThuongStickyRice.Application.Customer
             return dob;
         }
 
+        /// <summary>
+        /// Admin xem danh sách khách (role Customer) có sinh nhật trong tháng
+        /// cho trước, sắp xếp theo ngày sinh tăng dần. Mỗi dòng kèm trạng thái
+        /// đã tặng quà năm nay chưa.
+        /// </summary>
+        /// <param name="month">Tháng (1–12).</param>
+        /// <returns>Danh sách khách sinh nhật trong tháng.</returns>
+        /// <exception cref="UserFriendlyException">Ném khi tháng ngoài 1–12.</exception>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<BirthdayMemberDto>> GetBirthdaysAsync(int month)
         {
@@ -215,6 +253,16 @@ namespace PhuThuongStickyRice.Application.Customer
             }).ToList();
         }
 
+        /// <summary>
+        /// Admin tặng quà sinh nhật cho 1 khách: sinh mã giảm giá dùng 1 lần,
+        /// tiền tố "SN", mệnh giá 5.000₫–1.000.000₫ (mặc định 25.000₫), hiệu lực
+        /// 30 ngày, gắn đúng SĐT khách. Mỗi khách chỉ nhận 1 lần mỗi năm —
+        /// tặng trùng năm thì báo lỗi kèm mã đã tặng. Ghi log hoạt động nhân viên.
+        /// </summary>
+        /// <param name="userId">Id tài khoản khách (phải có SĐT hợp lệ).</param>
+        /// <param name="dto">Mệnh giá quà (để trống thì dùng mặc định 25.000₫).</param>
+        /// <returns>Mã quà, mệnh giá và ngày hết hạn.</returns>
+        /// <exception cref="UserFriendlyException">Ném khi SĐT không hợp lệ, đã tặng năm nay, hoặc mệnh giá ngoài giới hạn.</exception>
         [Authorize(Roles = "Admin")]
         public virtual async Task<BirthdayGiftResultDto> GrantBirthdayGiftAsync(Guid userId, GrantBirthdayGiftDto dto)
         {
@@ -259,6 +307,14 @@ namespace PhuThuongStickyRice.Application.Customer
             };
         }
 
+        /// <summary>
+        /// Admin/Cashier tạo nhắc chăm sóc khách (vd gọi lại khách lâu không mua).
+        /// Lưu lịch sử vào DB và gửi tin nhắn qua Zalo OA (hiện là stub, chỉ ghi
+        /// log khi chưa cấu hình credentials — dòng DB là lịch sử chính xác).
+        /// </summary>
+        /// <param name="dto">SĐT, tên khách, nội dung tin nhắn.</param>
+        /// <returns>Nhắc đã tạo.</returns>
+        /// <exception cref="UserFriendlyException">Ném khi SĐT sai định dạng hoặc tin nhắn rỗng/quá dài.</exception>
         [Authorize(Roles = "Admin,Cashier")]
         public virtual async Task<CustomerReminderDto> CreateReminderAsync(CreateReminderDto dto)
         {
@@ -296,6 +352,11 @@ namespace PhuThuongStickyRice.Application.Customer
             return MapReminder(entity);
         }
 
+        /// <summary>
+        /// Admin/Cashier xem lịch sử nhắc chăm sóc của 1 SĐT, mới nhất lên trước.
+        /// </summary>
+        /// <param name="phone">Số điện thoại cần xem lịch sử.</param>
+        /// <returns>Danh sách nhắc đã tạo cho SĐT.</returns>
         [Authorize(Roles = "Admin,Cashier")]
         public virtual async Task<List<CustomerReminderDto>> GetRemindersAsync(string phone)
         {
@@ -317,6 +378,10 @@ namespace PhuThuongStickyRice.Application.Customer
             return await _users.GetAsync(CurrentUser.Id.Value);
         }
 
+        /// <summary>
+        /// Ngày sinh chỉ được đổi 1 lần mỗi năm kể từ lần đổi gần nhất —
+        /// chống việc khách đổi ngày sinh liên tục để nhận nhiều quà sinh nhật.
+        /// </summary>
         private static bool CanChangeDob(User user, out string hint)
         {
             hint = null;
@@ -379,6 +444,8 @@ namespace PhuThuongStickyRice.Application.Customer
 
         private async Task<string> GenerateUniqueCodeAsync()
         {
+            // Bảng chữ cái cố ý bỏ I/O (dễ nhầm 1), số 0/1 (dễ nhầm O/l) để
+            // mã quà đọc qua điện thoại cho khách không bị nhầm.
             const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
             for (var attempt = 0; attempt < GiftCodeMaxAttempts; attempt++)
             {

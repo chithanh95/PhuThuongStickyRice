@@ -79,7 +79,9 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         {
             await SetBearerToken();
 
-            var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            // Dispose response/request: giải phóng connection về pool ngay,
+            // đặc biệt với ResponseHeadersRead (content chưa được buffer).
+            using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);
             HandleNotFound(response);
             response.EnsureSuccessStatusCode();
@@ -92,7 +94,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         {
             await SetBearerToken();
 
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             if (data != null)
@@ -100,7 +102,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
                 request.Content = data.AsJsonContent();
             }
 
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);
             HandleNotFound(response);
             response.EnsureSuccessStatusCode();
@@ -112,12 +114,12 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         {
             await SetBearerToken();
 
-            var request = new HttpRequestMessage(HttpMethod.Put, url);
+            using var request = new HttpRequestMessage(HttpMethod.Put, url);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             request.Content = data.AsJsonContent();
 
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);
             HandleNotFound(response);
             response.EnsureSuccessStatusCode();
@@ -129,10 +131,10 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         {
             await SetBearerToken();
 
-            var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            using var request = new HttpRequestMessage(HttpMethod.Delete, url);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);
             HandleNotFound(response);
             response.EnsureSuccessStatusCode();

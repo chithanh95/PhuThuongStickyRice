@@ -12,6 +12,11 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Catalog
 {
+    /// <summary>
+    /// Hợp đồng tiếp nhận báo giá số lượng lớn/sự kiện: khách gửi yêu cầu
+    /// (không thanh toán), admin duyệt + đặt cọc; kèm nhắc cúng hàng tháng
+    /// (nhắc rằm/mùng 1) theo SĐT đăng ký.
+    /// </summary>
     public interface IQuoteRequestAppService : IApplicationService
     {
         /// <summary>Public: customer submits a bulk/event quote request. No payment.</summary>
@@ -36,6 +41,11 @@ namespace PhuThuongStickyRice.Application.Catalog
         Task<CungReminderDto> ToggleReminderAsync(Guid id);
     }
 
+    /// <summary>
+    /// Tiếp nhận yêu cầu báo giá đặt số lượng lớn/sự kiện từ trang
+    /// "Đặt số lượng lớn". Không tạo đơn, không thanh toán — trạng thái ban
+    /// đầu là <c>QuoteStatus.New</c> để admin xử lý thủ công.
+    /// </summary>
     public class QuoteRequestAppService : ApplicationService, IQuoteRequestAppService
     {
         private readonly IRepository<QuoteRequest, Guid> _quotes;
@@ -52,6 +62,12 @@ namespace PhuThuongStickyRice.Application.Catalog
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Khách gửi yêu cầu báo giá (không cần đăng nhập). Kiểm tra định dạng
+        /// SĐT Việt Nam; số lượng tối thiểu là 1.
+        /// </summary>
+        /// <param name="dto">Tên, SĐT, ngày/địa điểm sự kiện, ngân sách, số lượng, ghi chú.</param>
+        /// <returns>Yêu cầu báo giá vừa tạo (trạng thái New).</returns>
         [AllowAnonymous]
         public virtual async Task<QuoteRequestDto> CreateAsync(CreateQuoteRequestDto dto)
         {
@@ -73,6 +89,7 @@ namespace PhuThuongStickyRice.Application.Catalog
                 EventLocation = string.IsNullOrWhiteSpace(dto.EventLocation) ? null : dto.EventLocation.Trim(),
                 Budget = string.IsNullOrWhiteSpace(dto.Budget) ? null : dto.Budget.Trim(),
                 QuoteType = string.IsNullOrWhiteSpace(dto.QuoteType) ? null : dto.QuoteType.Trim(),
+                // Số lượng tối thiểu 1 — không cho đơn báo giá 0 suất.
                 Quantity = Math.Max(1, dto.Quantity),
                 Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim(),
                 Status = QuoteStatus.New,
@@ -83,6 +100,12 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin xem danh sách yêu cầu báo giá (mới nhất trước), hỗ trợ tìm
+        /// theo tên/SĐT và lọc theo trạng thái, có phân trang.
+        /// </summary>
+        /// <param name="input">Từ khóa tìm kiếm, trạng thái lọc, SkipCount/MaxResultCount phân trang.</param>
+        /// <returns>Kết quả phân trang kèm tổng số bản ghi.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<PagedResultDto<QuoteRequestDto>> GetListAsync(GetQuoteRequestsInput input)
         {
@@ -110,6 +133,13 @@ namespace PhuThuongStickyRice.Application.Catalog
                 items.Select(MapToDto).ToList());
         }
 
+        /// <summary>
+        /// Admin đổi trạng thái xử lý của yêu cầu báo giá (vd New → Quoted → Done).
+        /// </summary>
+        /// <param name="id">Id yêu cầu báo giá.</param>
+        /// <param name="dto">Trạng thái mới (chuỗi enum, không phân biệt hoa thường).</param>
+        /// <returns>Yêu cầu sau khi đổi trạng thái.</returns>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi trạng thái không hợp lệ.</exception>
         [Authorize(Roles = "Admin")]
         public virtual async Task<QuoteRequestDto> UpdateStatusAsync(Guid id, UpdateQuoteRequestStatusDto dto)
         {
@@ -125,10 +155,19 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Item 161: admin đặt số tiền cọc + thông tin chuyển khoản khi duyệt
+        /// báo giá. Truyền 0 để xóa yêu cầu cọc (lưu null).
+        /// </summary>
+        /// <param name="id">Id yêu cầu báo giá.</param>
+        /// <param name="dto">Số tiền cọc và thông tin chuyển khoản.</param>
+        /// <returns>Yêu cầu sau khi cập nhật thông tin cọc.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<QuoteRequestDto> SetDepositAsync(Guid id, SetQuoteDepositDto dto)
         {
             var entity = await _quotes.GetAsync(id);
+            // Truyền 0 nghĩa là "không yêu cầu cọc" → lưu null thay vì 0
+            // để UI phân biệt được "chưa đặt cọc" và "cọc 0đ".
             entity.DepositAmount = dto.DepositAmount > 0 ? dto.DepositAmount : null;
             entity.DepositInfo = string.IsNullOrWhiteSpace(dto.DepositInfo) ? null : dto.DepositInfo.Trim();
             await _quotes.UpdateAsync(entity, autoSave: true);
@@ -136,6 +175,14 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Khách đăng ký nhắc cúng hàng tháng (chỉ 2 loại: "Ram" = rằm,
+        /// "Mung1" = mùng 1). Một SĐT đang bật chỉ đăng ký 1 lần — đăng ký
+        /// lại thì trả về bản ghi cũ thay vì tạo trùng.
+        /// </summary>
+        /// <param name="dto">Tên, SĐT, loại nhắc (Ram/Mung1).</param>
+        /// <returns>Đăng ký nhắc cúng (mới hoặc đã tồn tại).</returns>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi SĐT hoặc loại nhắc không hợp lệ.</exception>
         [AllowAnonymous]
         public virtual async Task<CungReminderDto> CreateReminderAsync(CreateCungReminderDto dto)
         {
@@ -162,7 +209,8 @@ namespace PhuThuongStickyRice.Application.Catalog
                 queryable.Where(x => x.CustomerPhone == phone && x.IsActive));
             if (existing != null)
             {
-                // Already subscribed — just return the existing one.
+                // SĐT đã đăng ký nhắc và đang bật: trả về bản ghi cũ (idempotent),
+                // tránh spam nhiều đăng ký trùng cho cùng 1 SĐT.
                 return MapReminderToDto(existing);
             }
 
@@ -178,6 +226,10 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapReminderToDto(entity);
         }
 
+        /// <summary>
+        /// Admin xem toàn bộ đăng ký nhắc cúng, mới nhất lên trước.
+        /// </summary>
+        /// <returns>Danh sách đăng ký nhắc cúng.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<CungReminderDto>> GetRemindersAsync()
         {
@@ -187,6 +239,11 @@ namespace PhuThuongStickyRice.Application.Catalog
             return items.Select(MapReminderToDto).ToList();
         }
 
+        /// <summary>
+        /// Admin bật/tắt 1 đăng ký nhắc cúng (toggle trạng thái IsActive).
+        /// </summary>
+        /// <param name="id">Id đăng ký nhắc cúng.</param>
+        /// <returns>Đăng ký sau khi đổi trạng thái.</returns>
         [Authorize(Roles = "Admin")]
         public virtual async Task<CungReminderDto> ToggleReminderAsync(Guid id)
         {

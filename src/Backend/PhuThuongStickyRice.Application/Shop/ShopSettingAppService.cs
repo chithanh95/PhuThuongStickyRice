@@ -402,7 +402,8 @@ namespace PhuThuongStickyRice.Application.Shop
                 Content = new System.Net.Http.StringContent(body, System.Text.Encoding.UTF8, "application/json")
             };
 
-            var response = await client.SendAsync(request);
+            // Dispose: response chỉ dùng để đọc IsSuccessStatusCode, không giữ lại.
+            using var response = await client.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
 

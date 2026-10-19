@@ -17,6 +17,11 @@ namespace PhuThuongStickyRice.Application.Discounts
     /// Item 91: "Khuyến mãi giờ vàng" time-window promotions.
     /// The best active promotion is auto-applied at checkout (Vietnam time).
     /// </summary>
+    /// <summary>
+    /// Hợp đồng khuyến mãi "giờ vàng": admin CRUD; checkout gọi
+    /// <c>GetBestActiveAsync</c> (không cần login) để lấy khuyến mãi tốt nhất
+    /// đang diễn ra cho đơn hàng.
+    /// </summary>
     public interface IPromotionAppService : IApplicationService
     {
         Task<List<PromotionDto>> GetListAsync();
@@ -34,6 +39,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         Task<PromotionDto> GetBestActiveAsync(DateTime? vnNow = null);
     }
 
+    /// <summary>
+    /// Item 91: khuyến mãi "giờ vàng" theo khung giờ + ngày trong tuần
+    /// (ví dụ 10:00–14:00 các ngày T2–T6). Khuyến mãi có % giảm cao nhất
+    /// đang diễn ra được checkout tự áp theo giờ Việt Nam.
+    /// Danh sách KM đang bật được cache 5 phút; khung giờ vẫn lọc theo từng
+    /// request để giờ bắt đầu/kết thúc luôn chính xác.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class PromotionAppService : ApplicationService, IPromotionAppService
     {
@@ -51,6 +63,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             _catalogCache = catalogCache;
         }
 
+        /// <summary>
+        /// Liệt kê khuyến mãi (đang bật lên trước, rồi theo tên) cho trang admin.
+        /// </summary>
+        /// <returns>Danh sách khuyến mãi.</returns>
         public virtual async Task<List<PromotionDto>> GetListAsync()
         {
             var queryable = await _promotions.GetQueryableAsync();
@@ -59,6 +75,13 @@ namespace PhuThuongStickyRice.Application.Discounts
             return items.Select(Map).ToList();
         }
 
+        /// <summary>
+        /// Tạo khuyến mãi mới. Giờ bắt đầu/kết thúc nhập dạng "HH:mm";
+        /// sai định dạng thì báo lỗi thân thiện. Cache catalog được xóa
+        /// để trang shop thấy KM mới ngay.
+        /// </summary>
+        /// <param name="input">Tên, % giảm, khung giờ, ngày áp dụng trong tuần, trạng thái bật.</param>
+        /// <returns>Khuyến mãi vừa tạo.</returns>
         public virtual async Task<PromotionDto> CreateAsync(CreatePromotionDto input)
         {
             var promotion = new Promotion
@@ -75,6 +98,13 @@ namespace PhuThuongStickyRice.Application.Discounts
             return Map(promotion);
         }
 
+        /// <summary>
+        /// Cập nhật khuyến mãi (ghi đè toàn bộ khung giờ, ngày áp dụng, trạng thái).
+        /// Cache catalog được xóa để trang shop thấy thay đổi ngay.
+        /// </summary>
+        /// <param name="id">Id khuyến mãi.</param>
+        /// <param name="input">Thông tin mới của khuyến mãi.</param>
+        /// <returns>Khuyến mãi sau khi cập nhật.</returns>
         public virtual async Task<PromotionDto> UpdateAsync(Guid id, CreatePromotionDto input)
         {
             var promotion = await _promotions.GetAsync(id);
@@ -89,6 +119,10 @@ namespace PhuThuongStickyRice.Application.Discounts
             return Map(promotion);
         }
 
+        /// <summary>
+        /// Xóa khuyến mãi và xóa cache catalog để trang shop hết hiển thị KM này.
+        /// </summary>
+        /// <param name="id">Id khuyến mãi cần xóa.</param>
         public virtual async Task DeleteAsync(Guid id)
         {
             await _promotions.DeleteAsync(id, autoSave: true);
@@ -139,6 +173,14 @@ namespace PhuThuongStickyRice.Application.Discounts
             public PromotionDto Dto { get; init; }
         }
 
+        /// <summary>
+        /// Kiểm tra 1 khuyến mãi có đang "trong khung giờ" tại thời điểm
+        /// <paramref name="vnNow"/> (giờ Việt Nam) hay không. Ngày trong tuần
+        /// kiểm tra bằng bit flags <c>PromotionDay</c>.
+        /// </summary>
+        /// <param name="p">Khuyến mãi (đã chắc chắn IsActive) cần kiểm tra.</param>
+        /// <param name="vnNow">Thời điểm hiện tại theo giờ Việt Nam.</param>
+        /// <returns>True nếu hôm nay được áp dụng và giờ nằm trong [StartTime, EndTime).</returns>
         // Same logic as Promotion.IsActiveAt (entity is IsActive already).
         private static bool MatchesWindow(CachedActivePromotion p, DateTime vnNow)
         {
@@ -161,10 +203,12 @@ namespace PhuThuongStickyRice.Application.Discounts
             var time = vnNow.TimeOfDay;
             if (p.EndTime >= p.StartTime)
             {
+                // Khung giờ trong ngày (vd 10:00–14:00): giờ phải nằm giữa 2 mốc.
                 return time >= p.StartTime && time < p.EndTime;
             }
 
-            // Overnight window, e.g. 22:00–02:00.
+            // Khung giờ qua đêm (vd 22:00–02:00): giờ nằm sau mốc bắt đầu
+            // HOẶC trước mốc kết thúc (tức là rạng sáng hôm sau).
             return time >= p.StartTime || time < p.EndTime;
         }
 
@@ -179,6 +223,13 @@ namespace PhuThuongStickyRice.Application.Discounts
             IsActive = p.IsActive
         };
 
+        /// <summary>
+        /// Chuyển giờ dạng chuỗi "HH:mm" (vd "10:00") thành <c>TimeSpan</c>.
+        /// Chấp nhận cả "h:mm" và định dạng mặc định; sai thì báo lỗi thân thiện.
+        /// </summary>
+        /// <param name="value">Chuỗi giờ nhập từ form admin.</param>
+        /// <returns>TimeSpan tương ứng trong ngày.</returns>
+        /// <exception cref="Domain.Exceptions.DomainException">Ném khi giờ không hợp lệ.</exception>
         private static TimeSpan ParseTime(string value)
         {
             if (TimeSpan.TryParseExact(value?.Trim(), @"h\:mm", CultureInfo.InvariantCulture, out var t)

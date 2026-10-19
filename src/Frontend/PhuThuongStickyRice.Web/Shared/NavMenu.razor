@@ -1,7 +1,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using PhuThuongStickyRice.Web.Services
 @using PhuThuongStickyRice.Web.Components.Shop.Services
-@inject JwtTokenStore TokenManager
+@inject JwtTokenStore JwtStore
 @inject JwtAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject CartState CartState
@@ -244,7 +244,7 @@
 
     private async Task SignOut()
     {
-        await TokenManager.ClearTokenAsync();
+        await JwtStore.ClearTokenAsync();
         AuthStateProvider.NotifyUserLogout();
         Navigation.NavigateTo("/login");
     }

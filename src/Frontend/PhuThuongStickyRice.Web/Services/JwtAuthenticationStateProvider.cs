@@ -15,16 +15,16 @@ namespace PhuThuongStickyRice.Web.Services
     /// </summary>
     public class JwtAuthenticationStateProvider : AuthenticationStateProvider
     {
-        private readonly JwtTokenStore _tokenManager;
+        private readonly JwtTokenStore _tokenStore;
 
-        public JwtAuthenticationStateProvider(JwtTokenStore tokenManager)
+        public JwtAuthenticationStateProvider(JwtTokenStore tokenStore)
         {
-            _tokenManager = tokenManager;
+            _tokenStore = tokenStore;
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var token = await _tokenManager.GetToken();
+            var token = await _tokenStore.GetToken();
             if (token == null || string.IsNullOrWhiteSpace(token.AccessToken))
             {
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));

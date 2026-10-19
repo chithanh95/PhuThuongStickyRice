@@ -19,6 +19,22 @@ namespace PhuThuongStickyRice.Web
 {
     public class Program
     {
+        /// <summary>
+        /// Đăng ký typed HttpClient trỏ về API backend cho một service.
+        /// Config chung cho mọi service: BaseAddress = API backend,
+        /// timeout 30 giây, header mặc định đã clear.
+        /// </summary>
+        private static void AddApiHttpClient<TService>(WebAssemblyHostBuilder builder, Uri apiBaseUri)
+            where TService : class
+        {
+            builder.Services.AddHttpClient<TService, TService>(client =>
+            {
+                client.BaseAddress = apiBaseUri;
+                client.Timeout = TimeSpan.FromSeconds(30);
+                client.DefaultRequestHeaders.Clear();
+            });
+        }
+
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -55,229 +71,89 @@ namespace PhuThuongStickyRice.Web
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
             // Admin services attach the JWT via HttpService + ITokenManager.
-            builder.Services.AddHttpClient<ProductService, ProductService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<ProductService>(builder, apiBaseUri);
 
             // Item 185: admin quản lý gói "Ăn sáng cả tuần" (JWT).
-            builder.Services.AddHttpClient<WeeklyPlanAdminService, WeeklyPlanAdminService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<WeeklyPlanAdminService>(builder, apiBaseUri);
 
             // Public storefront (anonymous).
-            builder.Services.AddHttpClient<ShopService, ShopService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<ShopService>(builder, apiBaseUri);
 
             // Item 185: gói "Ăn sáng cả tuần" (public).
-            builder.Services.AddHttpClient<WeeklyPlanService, WeeklyPlanService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<WeeklyPlanService>(builder, apiBaseUri);
             builder.Services.AddScoped<CartState>();
 
             // Item 137: cart sync for logged-in users.
-            builder.Services.AddHttpClient<CartSyncService, CartSyncService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<CartSyncService>(builder, apiBaseUri);
 
             // Admin: orders + dashboard (authenticated).
-            builder.Services.AddHttpClient<OrderService, OrderService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<OrderService>(builder, apiBaseUri);
 
             // Item 130 (đúng): VIP marking + priority.
-            builder.Services.AddHttpClient<VipCustomerService, VipCustomerService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<VipCustomerService>(builder, apiBaseUri);
 
-            builder.Services.AddHttpClient<DashboardService, DashboardService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<DashboardService>(builder, apiBaseUri);
 
             // Landing page content (public GET, admin PUT via JWT).
-            builder.Services.AddHttpClient<LandingService, LandingService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<LandingService>(builder, apiBaseUri);
 
             // Wave 6d (item 37): change-password (any authenticated user).
-            builder.Services.AddHttpClient<AuthService, AuthService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<AuthService>(builder, apiBaseUri);
 
             // Customer account: saved addresses (authenticated).
-            builder.Services.AddHttpClient<CustomerAddressService, CustomerAddressService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<CustomerAddressService>(builder, apiBaseUri);
 
             // Item 90+92: customer profile (taste preferences, birthday).
-            builder.Services.AddHttpClient<CustomerProfileService, CustomerProfileService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<CustomerProfileService>(builder, apiBaseUri);
 
             // Item 91+92: admin customer care (reminders, birthday gifts).
-            builder.Services.AddHttpClient<CustomerCareService, CustomerCareService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<CustomerCareService>(builder, apiBaseUri);
 
             // Wave 6b (item 28): policy pages (public GET, admin PUT via JWT).
-            builder.Services.AddHttpClient<PolicyService, PolicyService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<PolicyService>(builder, apiBaseUri);
 
             // Shop commerce settings (public GET, admin PUT via JWT).
-            builder.Services.AddHttpClient<ShopSettingsService, ShopSettingsService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<ShopSettingsService>(builder, apiBaseUri);
 
             // Item 117: holiday schedule (public upcoming + admin CRUD).
-            builder.Services.AddHttpClient<HolidayService, HolidayService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<HolidayService>(builder, apiBaseUri);
 
             // Item 178: public queue-number display (/cho, no login).
-            builder.Services.AddHttpClient<QueueTicketService, QueueTicketService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<QueueTicketService>(builder, apiBaseUri);
 
             // Admin: discount codes (authenticated).
-            builder.Services.AddHttpClient<DiscountService, DiscountService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<DiscountService>(builder, apiBaseUri);
 
             // Admin: staff accounts & roles (authenticated, Admin only).
-            builder.Services.AddHttpClient<StaffService, StaffService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<StaffService>(builder, apiBaseUri);
 
             // Items 155/156: fine-grained permissions + staff activity log.
-            builder.Services.AddHttpClient<PermissionService, PermissionService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
-            builder.Services.AddHttpClient<StaffActivityLogService, StaffActivityLogService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<PermissionService>(builder, apiBaseUri);
+            AddApiHttpClient<StaffActivityLogService>(builder, apiBaseUri);
 
             // Admin: catalog features (toppings, combos, quotes, dish votes, size options).
-            builder.Services.AddHttpClient<CatalogAdminService, CatalogAdminService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<CatalogAdminService>(builder, apiBaseUri);
 
             // Shop engagement: loyalty, spin, support, FAQ, subscriptions, reviews, integrations.
-            builder.Services.AddHttpClient<ShopEngagementService, ShopEngagementService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<ShopEngagementService>(builder, apiBaseUri);
 
             // Item 164: prepaid cards (shop buy + lookup).
-            builder.Services.AddHttpClient<PrepaidCardService, PrepaidCardService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<PrepaidCardService>(builder, apiBaseUri);
 
             // Item 164: prepaid cards (admin list + redeem).
-            builder.Services.AddHttpClient<PrepaidCardAdminService, PrepaidCardAdminService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<PrepaidCardAdminService>(builder, apiBaseUri);
 
             // Admin operations: shippers, blacklist, CRM notes, promos, reward rules,
             // articles, table QRs, profit report, login audit, 2FA.
-            builder.Services.AddHttpClient<AdminOperationsService, AdminOperationsService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<AdminOperationsService>(builder, apiBaseUri);
 
             // Admin system: feature flags, branches, webhooks, short links, app
             // logs, disk usage, payment config, group orders, address book.
-            builder.Services.AddHttpClient<AdminSystemService, AdminSystemService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<AdminSystemService>(builder, apiBaseUri);
 
             // Admin commerce: check-in, corporate clients, gallery, forecast, shifts,
             // wallet, reconciliation, refunds, templates, campaigns, POS.
-            builder.Services.AddHttpClient<AdminCommerceService, AdminCommerceService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<AdminCommerceService>(builder, apiBaseUri);
 
             // Item 134: VI/EN dictionary for the shop pages' chrome.
             builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Shop.Services.ShopI18n>();
@@ -286,36 +162,16 @@ namespace PhuThuongStickyRice.Web
             builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Core.Services.AppI18n>();
 
             // GL1: anonymous funnel measurement.
-            builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Shop.Services.FunnelService, PhuThuongStickyRice.Web.Components.Shop.Services.FunnelService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<PhuThuongStickyRice.Web.Components.Shop.Services.FunnelService>(builder, apiBaseUri);
 
             // Item 87: end-of-day inventory counts (kiểm kê cuối ngày).
-            builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService, PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.InventoryService>(builder, apiBaseUri);
 
             // Items 157–158: admin global search + notification center.
-            builder.Services.AddHttpClient<AdminUtilityService, AdminUtilityService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<AdminUtilityService>(builder, apiBaseUri);
 
             // Item 162: order message templates (mẫu tin nhắn theo trạng thái đơn).
-            builder.Services.AddHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.MessageTemplateService, PhuThuongStickyRice.Web.Components.Admin.Services.MessageTemplateService>(client =>
-            {
-                client.BaseAddress = apiBaseUri;
-                client.Timeout = new TimeSpan(0, 0, 30);
-                client.DefaultRequestHeaders.Clear();
-            });
+            AddApiHttpClient<PhuThuongStickyRice.Web.Components.Admin.Services.MessageTemplateService>(builder, apiBaseUri);
 
             // Toast notifications.
             builder.Services.AddScoped<ToastService>();

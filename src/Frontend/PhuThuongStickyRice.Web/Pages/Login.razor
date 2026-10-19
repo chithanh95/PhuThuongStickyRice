@@ -6,7 +6,7 @@
 @using PhuThuongStickyRice.Web.Services
 @inject IHttpClientFactory HttpClientFactory
 @inject AppSettings AppSettings
-@inject JwtTokenStore TokenManager
+@inject JwtTokenStore JwtStore
 @inject JwtAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
@@ -305,7 +305,7 @@
     /// <summary>Stores the JWT and hands any new-IP warning to the dashboard.</summary>
     private async Task FinishLoginAsync(LoginResponse login)
     {
-        await TokenManager.StoreTokenAsync(login.AccessToken, login.ExpiresAt);
+        await JwtStore.StoreTokenAsync(login.AccessToken, login.ExpiresAt);
         AuthStateProvider.NotifyUserAuthentication();
         // Item 155: drop any cached permissions from a previous session.
         PermissionService.ClearCache();

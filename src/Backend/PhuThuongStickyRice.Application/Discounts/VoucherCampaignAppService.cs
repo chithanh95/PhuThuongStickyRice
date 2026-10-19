@@ -1,5 +1,3 @@
-using PhuThuongStickyRice.Application.Shop;
-
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +14,10 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Discounts
 {
+    /// <summary>
+    /// Hợp đồng chiến dịch voucher: xem quy mô từng nhóm đối tượng và
+    /// phát hành hàng loạt mã giảm giá cá nhân cho khách.
+    /// </summary>
     public interface IVoucherCampaignAppService : IApplicationService
     {
         /// <summary>Admin: audience sizes for the campaign picker.</summary>
@@ -26,13 +28,22 @@ namespace PhuThuongStickyRice.Application.Discounts
     }
 
     /// <summary>
-    /// Item 132: voucher campaign. Bulk sending is deferred — sending needs
-    /// the Zalo OA / SMS channel; the result list is meant to be copied or
-    /// pasted into the shop's existing broadcast tool.
+    /// Item 132: chiến dịch phát voucher hàng loạt. Mỗi SĐT nhận đúng 1 mã
+    /// riêng (OwnerPhone = SĐT đó) để khách không dùng mã của nhau.
+    /// Gửi hàng loạt đang để deferred — cần kênh Zalo OA / SMS; danh sách kết
+    /// quả sinh ra để admin copy sang công cụ broadcast sẵn có của quán.
     /// </summary>
     [Authorize(Roles = "Admin")]
     public class VoucherCampaignAppService : ApplicationService, IVoucherCampaignAppService
     {
+        // Audience keys (dùng chung cho GetAudiencesAsync và GenerateAsync).
+        private const string AudienceInactive30 = "inactive30";
+        private const string AudienceTier = "tier";
+        private const string AudienceAll = "all";
+
+        // Prefix mặc định cho mã voucher sinh tự động.
+        private const string DefaultCodePrefix = "VC";
+
         private readonly IRepository<LoyaltyAccount, Guid> _loyaltyAccounts;
         private readonly IRepository<Order, Guid> _orders;
         private readonly IRepository<DiscountCode, Guid> _discountCodes;
@@ -53,6 +64,12 @@ namespace PhuThuongStickyRice.Application.Discounts
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Liệt kê 3 nhóm đối tượng chiến dịch cùng số lượng người nhận ước
+        /// tính, để admin chọn đối tượng trước khi phát hành.
+        /// </summary>
+        /// <param name="tier">Tên hạng ("Bạc"/"Vàng") dùng cho nhóm theo hạng; để trống thì mặc định hạng Vàng.</param>
+        /// <returns>Danh sách 3 nhóm: khách không mua 30+ ngày, khách theo hạng, tất cả khách.</returns>
         public virtual async Task<List<VoucherCampaignAudienceDto>> GetAudiencesAsync(string tier)
         {
             var inactive = await GetInactivePhonesAsync();
@@ -61,41 +78,55 @@ namespace PhuThuongStickyRice.Application.Discounts
 
             return new List<VoucherCampaignAudienceDto>
             {
-                new VoucherCampaignAudienceDto { Key = "inactive30", Name = "Không mua 30+ ngày", RecipientCount = inactive.Count },
-                new VoucherCampaignAudienceDto { Key = "tier", Name = $"Hạng {tier ?? "Vàng"}", RecipientCount = tierPhones.Count },
-                new VoucherCampaignAudienceDto { Key = "all", Name = "Tất cả khách", RecipientCount = allCount }
+                new VoucherCampaignAudienceDto { Key = AudienceInactive30, Name = "Không mua 30+ ngày", RecipientCount = inactive.Count },
+                new VoucherCampaignAudienceDto { Key = AudienceTier, Name = $"Hạng {tier ?? "Vàng"}", RecipientCount = tierPhones.Count },
+                new VoucherCampaignAudienceDto { Key = AudienceAll, Name = "Tất cả khách", RecipientCount = allCount }
             };
         }
 
-        public virtual async Task<List<GeneratedVoucherDto>> GenerateAsync(CreateVoucherCampaignInput input)
+        /// <summary>
+        /// Giải quyết đối tượng chiến dịch thành danh sách SĐT nhận voucher.
+        /// Tách ra để GenerateAsync ngắn gọn hơn (logic giữ nguyên).
+        /// </summary>
+        private async Task<List<string>> ResolveAudiencePhonesAsync(string audience, string tier)
         {
-            List<string> phones;
-            switch ((input.Audience ?? string.Empty).Trim().ToLowerInvariant())
+            switch ((audience ?? string.Empty).Trim().ToLowerInvariant())
             {
-                case "inactive30":
-                    phones = await GetInactivePhonesAsync();
-                    break;
-                case "tier":
-                    phones = await GetTierPhonesAsync(input.Tier);
-                    break;
-                case "all":
-                    phones = await GetAllPhonesAsync();
-                    break;
+                case AudienceInactive30:
+                    return await GetInactivePhonesAsync();
+                case AudienceTier:
+                    return await GetTierPhonesAsync(tier);
+                case AudienceAll:
+                    return await GetAllPhonesAsync();
                 default:
                     throw new DomainException("Đối tượng chiến dịch không hợp lệ.");
             }
+        }
+
+        /// <summary>
+        /// Phát hành 1 mã giảm giá cá nhân cho mỗi SĐT trong đối tượng đã chọn
+        /// (dùng 1 lần, có hiệu lực <paramref name="input"/> <c>ValidDays</c> ngày).
+        /// </summary>
+        /// <param name="input">Đối tượng (inactive30/tier/all), mức giảm (% hoặc số tiền cố định), tiền tố mã, hạn dùng.</param>
+        /// <returns>Danh sách cặp SĐT → mã voucher đã tạo, để admin copy đi gửi.</returns>
+        /// <exception cref="DomainException">Ném khi đối tượng rỗng hoặc không sinh được mã duy nhất.</exception>
+        public virtual async Task<List<GeneratedVoucherDto>> GenerateAsync(CreateVoucherCampaignInput input)
+        {
+            var phones = await ResolveAudiencePhonesAsync(input.Audience, input.Tier);
 
             if (phones.Count == 0)
             {
                 throw new DomainException("Không có khách hàng nào trong đối tượng đã chọn.");
             }
 
+            // Chỉ lọc ký tự chữ/số và viết hoa tiền tố để mã voucher gọn, dễ đọc,
+            // tránh SĐT/ký tự đặc biệt lọt vào mã.
             var prefix = string.IsNullOrWhiteSpace(input.Prefix)
-                ? "VC"
+                ? DefaultCodePrefix
                 : new string(input.Prefix.Trim().ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
             if (string.IsNullOrEmpty(prefix))
             {
-                prefix = "VC";
+                prefix = DefaultCodePrefix;
             }
 
             var expiresAt = DateTime.UtcNow.AddDays(input.ValidDays);
@@ -109,10 +140,13 @@ namespace PhuThuongStickyRice.Application.Discounts
                 await _discountCodes.InsertAsync(new DiscountCode
                 {
                     Code = codes[i],
+                    // Ưu tiên số tiền cố định khi có; % và số tiền không tồn tại song song
+                    // vì checkout chỉ áp dụng 1 trong 2.
                     DiscountPercent = input.DiscountAmount > 0 ? (decimal?)null : input.DiscountPercent,
                     DiscountAmount = input.DiscountAmount > 0 ? input.DiscountAmount : (decimal?)null,
                     MinOrderAmount = 0,
                     ExpiresAt = expiresAt,
+                    // Mỗi mã chỉ dùng 1 lần và gắn với đúng SĐT nhận, để không chia sẻ/tái sử dụng.
                     MaxUses = 1,
                     UsedCount = 0,
                     IsActive = true,
@@ -128,6 +162,8 @@ namespace PhuThuongStickyRice.Application.Discounts
 
         private async Task<List<string>> GetInactivePhonesAsync()
         {
+            // Khách "không mua 30+ ngày": có tài khoản loyalty nhưng không có
+            // đơn nào (trừ đơn đã hủy) trong 30 ngày gần nhất.
             var since = DateTime.UtcNow.AddDays(-30);
             var orderQuery = await _orders.GetQueryableAsync();
             var activePhones = await _asyncExecuter.ToListAsync(

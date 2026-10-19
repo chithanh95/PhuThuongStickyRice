@@ -36,8 +36,9 @@ namespace PhuThuongStickyRice.Application.Common.ImageBackup
     /// <summary>
     /// Default provider: does nothing (local disk is the only copy). Chosen
     /// when <c>ImageBackupProvider</c> is "None" (default) or unknown.
+    /// Null-object implementation of <see cref="IImageBackupProvider"/>.
     /// </summary>
-    public class NoneImageBackupProvider : IImageBackupProvider
+    public class NullImageBackupProvider : IImageBackupProvider
     {
         public string Name => "None";
 

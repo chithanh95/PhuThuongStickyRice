@@ -12,7 +12,7 @@ using Volo.Abp.Application.Services;
 
 namespace PhuThuongStickyRice.Application.Admin
 {
-    public interface IAdminUtilityAppService : IApplicationService
+    public interface IAdminSearchNotificationAppService : IApplicationService
     {
         /// <summary>Item 157: global admin search across orders, products, customers.</summary>
         Task<GlobalSearchResultDto> SearchAsync(string q);
@@ -21,7 +21,7 @@ namespace PhuThuongStickyRice.Application.Admin
         Task<List<NotificationDto>> GetNotificationsAsync();
     }
 
-    public class AdminUtilityAppService : ApplicationService, IAdminUtilityAppService
+    public class AdminSearchNotificationAppService : ApplicationService, IAdminSearchNotificationAppService
     {
         private const int SearchTake = 5;
 
@@ -39,7 +39,7 @@ namespace PhuThuongStickyRice.Application.Admin
         private readonly IDashboardAppService _dashboard;
         private readonly ICustomerProfileAppService _customerProfile;
 
-        public AdminUtilityAppService(
+        public AdminSearchNotificationAppService(
             IOrderAppService orders,
             IProductAppService products,
             IDashboardAppService dashboard,
