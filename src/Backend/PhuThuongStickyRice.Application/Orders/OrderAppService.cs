@@ -1505,11 +1505,15 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
                 else if (delta < 0)
                 {
-                    // Hoàn từng phần (bớt món) phải dùng lý do riêng — không được
-                    // dùng lý do "Hoàn tiền hủy đơn", nếu không lần hoàn này sẽ
-                    // chặn nhầm lần hoàn tiền khi khách hủy đơn sau đó.
+                    // Hoàn từng phần (bớt món) phải dùng lý do RIÊNG CHO MỖI LẦN hoàn.
+                    // WalletAppService.RefundAsync chống hoàn trùng theo cặp (Phone, Reason):
+                    // nếu dùng lý do tĩnh theo mã đơn, lần bớt món thứ 2 trở đi trên cùng
+                    // đơn sẽ bị bỏ qua và khách mất tiền thật. Thêm timestamp UTC để mỗi
+                    // lần bớt món là một sự kiện hoàn tiền riêng biệt.
+                    // (Gửi lại cùng một lần bớt món vẫn an toàn: dòng đã ở số lượng mới
+                    // nên delta tính lại = 0, không gọi RefundAsync.)
                     await _wallets.RefundAsync(order.CustomerPhone, -delta, order.OrderNumber,
-                        $"Hoàn tiền bớt món đơn {order.OrderNumber}");
+                        $"Hoàn tiền bớt món đơn {order.OrderNumber} {DateTime.UtcNow:yyyyMMddHHmmssfff}");
                 }
             }
             else if (order.PaymentMethod != PaymentMethod.Wallet

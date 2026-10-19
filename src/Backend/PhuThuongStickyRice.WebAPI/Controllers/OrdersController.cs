@@ -76,7 +76,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 IdempotencyKey = model.IdempotencyKey,
                 RecaptchaToken = model.RecaptchaToken,
                 Source = model.Source,
-                Lines = model.Lines
+                // "lines": null trong body sẽ ghi đè initializer thành null —
+                // không guard sẽ NRE 500 tại .Select; để service trả 400 chuẩn
+                // (CreateAsync ném DomainException "Order must contain at least one line.").
+                Lines = (model.Lines ?? new System.Collections.Generic.List<CreateOrderLineRequestModel>())
                     .Select(x => new CreateOrderLineDto
                     {
                         ProductId = x.ProductId,
