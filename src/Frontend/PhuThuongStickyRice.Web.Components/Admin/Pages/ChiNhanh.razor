@@ -12,6 +12,15 @@
     </ol>
 </div>
 
+@* Hiển thị lỗi xóa chi nhánh (nằm ngoài modal thêm/sửa để luôn thấy được). *@
+@if (!string.IsNullOrEmpty(_error) && !_showForm)
+{
+    <div class="alert alert-danger" role="alert">
+        @_error
+        <button type="button" class="close" @onclick="() => _error = null" aria-label="Đóng"><span aria-hidden="true">&times;</span></button>
+    </div>
+}
+
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -62,7 +71,7 @@
                                         </td>
                                         <td>
                                             <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEdit(b)">Sửa</button>
-                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(b)">Xóa</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(b)">Xóa</button>
                                         </td>
                                     </tr>
                                 }
@@ -127,6 +136,12 @@
     </div>
 }
 
+<ConfirmDialog @ref="DeleteDialog" Title="Xóa chi nhánh" YesText="Xóa" NoText="Hủy" ConfirmEventCallback="ConfirmedDelete">
+    <Message>
+        Bạn có chắc muốn xóa chi nhánh <strong>@_deleting?.Name</strong>? Thao tác này không thể hoàn tác.
+    </Message>
+</ConfirmDialog>
+
 @code {
     private bool _loading = true;
     private bool _showForm;
@@ -135,6 +150,8 @@
     private List<BranchModel> _branches = new();
     private BranchModel _editing;
     private BranchModel _form = new();
+    private BranchModel _deleting;
+    private ConfirmDialog DeleteDialog;
 
     protected override async Task OnInitializedAsync()
     {
@@ -203,13 +220,34 @@
         _saving = false;
     }
 
-    private async Task Delete(BranchModel b)
+    /// <summary>
+    /// Hỏi xác nhận trước khi xóa chi nhánh (tránh bấm nhầm), hiện lỗi nếu xóa thất bại
+    /// thay vì nuốt im lặng như trước.
+    /// </summary>
+    private void AskDelete(BranchModel b)
     {
+        _deleting = b;
+        _error = null;
+        DeleteDialog.Show();
+    }
+
+    private async Task ConfirmedDelete()
+    {
+        if (_deleting == null)
+        {
+            return;
+        }
+
         try
         {
-            await AdminSystemService.DeleteBranchAsync(b.Id);
+            await AdminSystemService.DeleteBranchAsync(_deleting.Id);
+            DeleteDialog.Close();
+            _deleting = null;
             await LoadBranchesAsync();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
     }
 }
