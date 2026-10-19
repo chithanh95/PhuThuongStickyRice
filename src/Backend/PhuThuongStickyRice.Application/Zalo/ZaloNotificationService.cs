@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application.Zalo
@@ -33,6 +34,21 @@ namespace PhuThuongStickyRice.Application.Zalo
     {
         private readonly ZaloOaOptions _options;
         private readonly ILogger<ZaloNotificationService> _logger;
+
+        // CA1848: dùng LoggerMessage delegate thay LoggerExtensions.LogInformation/
+        // LogWarning — delegate biên dịch sẵn template, không box params và không
+        // parse template mỗi lần gọi. Nội dung log giữ nguyên.
+        private static readonly Action<ILogger, string, string, string, Exception?> LogZaloStub =
+            LoggerMessage.Define<string, string, string>(
+                LogLevel.Information,
+                new EventId(1, "ZaloStub"),
+                "[Zalo OA stub] would send Zalo message to {Phone} via OA {OaId}: {Message}");
+
+        private static readonly Action<ILogger, string, string, Exception?> LogZaloNotImplemented =
+            LoggerMessage.Define<string, string>(
+                LogLevel.Warning,
+                new EventId(2, "ZaloNotImplemented"),
+                "[Zalo OA] configured but the real send is not implemented yet. Would send to {Phone}: {Message}");
 
         /// <summary>
         /// Khởi tạo service gửi tin Zalo OA với cấu hình OA và logger ghi stub.
@@ -71,22 +87,14 @@ namespace PhuThuongStickyRice.Application.Zalo
         {
             if (!_options.IsConfigured)
             {
-                _logger.LogInformation(
-                    "[Zalo OA stub] would send Zalo message to {Phone} via OA {OaId}: {Message}",
-                    phone,
-                    _options.OaId,
-                    message);
+                LogZaloStub(_logger, phone, _options.OaId, message, null);
                 return Task.CompletedTask;
             }
 
             // TODO (go-live): POST to https://openapi.zalo.me/v3.0/oa/message/cs
             // with the access token, mapping the phone to the OA user id first
             // (Zalo identifies recipients by userId, not phone).
-            _logger.LogWarning(
-                "[Zalo OA] configured but the real send is not implemented yet. " +
-                "Would send to {Phone}: {Message}",
-                phone,
-                message);
+            LogZaloNotImplemented(_logger, phone, message, null);
             return Task.CompletedTask;
         }
     }

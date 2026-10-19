@@ -8,6 +8,7 @@ using PhuThuongStickyRice.Application.Products;
 using PhuThuongStickyRice.Application.Products.DTOs;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
@@ -279,7 +280,9 @@ namespace PhuThuongStickyRice.Application.Admin
 
             var next = upcoming.MinBy(o => o.ScheduledFor);
             var scheduledVn = next.ScheduledFor.HasValue
-                ? VietnamTime.ToVietnamTime(next.ScheduledFor.Value).ToString("dd/MM HH:mm")
+                // CA1305: chỉ rõ CultureInfo.CurrentCulture (đúng hành vi cũ dùng
+                // ngầm culture hiện tại) thay vì để analyzer cảnh báo locale.
+                ? VietnamTime.ToVietnamTime(next.ScheduledFor.Value).ToString("dd/MM HH:mm", CultureInfo.CurrentCulture)
                 : null;
             notifications.Add(new NotificationDto
             {

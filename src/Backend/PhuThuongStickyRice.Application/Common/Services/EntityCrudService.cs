@@ -20,7 +20,9 @@ namespace PhuThuongStickyRice.Application
         where T : Entity<Guid>, IAggregateRoot
     {
         private readonly IUnitOfWork _unitOfWork;
-        protected readonly IRepository<T, Guid> _repository;
+        // CA1051: không để instance field visible (protected) khi không có
+        // subclass nào dùng — chuyển về private. Giữ nguyên behavior.
+        private readonly IRepository<T, Guid> _repository;
         private readonly IDomainEvents _domainEvents;
 
         /// <summary>

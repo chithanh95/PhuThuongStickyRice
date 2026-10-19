@@ -52,6 +52,14 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
         private readonly IDistributedLock _distributedLock;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        // CA1848: dùng LoggerMessage delegate thay LoggerExtensions.LogInformation —
+        // template được biên dịch sẵn, không parse lại mỗi lần gọi.
+        private static readonly Action<ILogger, Exception?> LogNoEmailToSend =
+            LoggerMessage.Define(
+                LogLevel.Information,
+                new EventId(1, "NoEmailToSend"),
+                "No email to send.");
+
         public EmailMessageService(ILogger<EmailMessageService> logger,
             IEmailMessageRepository repository,
             IEmailNotification emailNotification,
@@ -118,7 +126,7 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
             }
             else
             {
-                _logger.LogInformation("No email to send.");
+                LogNoEmailToSend(_logger, null);
             }
 
             return messages.Count;

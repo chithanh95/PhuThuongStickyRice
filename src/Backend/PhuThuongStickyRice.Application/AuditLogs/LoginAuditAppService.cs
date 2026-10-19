@@ -37,6 +37,15 @@ namespace PhuThuongStickyRice.Application.AuditLogs
         private readonly IRepository<LoginAudit, Guid> _audits;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        // CA1848: dùng LoggerMessage delegate thay LoggerExtensions.LogWarning —
+        // template được biên dịch sẵn, không parse lại mỗi lần gọi. Nội dung
+        // log và exception kèm theo giữ nguyên.
+        private static readonly Action<ILogger, string, Exception?> LogAuditRecordFailed =
+            LoggerMessage.Define<string>(
+                LogLevel.Warning,
+                new EventId(1, "LoginAuditRecordFailed"),
+                "Failed to record login audit for {UserName}.");
+
         public LoginAuditAppService(
             IRepository<LoginAudit, Guid> audits,
             IAsyncQueryableExecuter asyncExecuter)
@@ -83,7 +92,7 @@ namespace PhuThuongStickyRice.Application.AuditLogs
             catch (Exception ex)
             {
                 // Login auditing must never break the login flow.
-                Logger.LogWarning(ex, "Failed to record login audit for {UserName}.", userName);
+                LogAuditRecordFailed(Logger, userName, ex);
             }
         }
 
