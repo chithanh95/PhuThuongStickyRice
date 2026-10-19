@@ -125,49 +125,52 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Tổng hợp doanh thu/số đơn/số suất theo từng ngày (giờ VN) trong
         /// [patternStart, today). Ngày không có đơn tính là 0 (quán mở cửa hàng ngày).
         /// </summary>
+        /// <remarks>
+        /// perf-hunt 2026-10-19 (run 15:25): gộp theo ngày VN ngay trên SQL
+        /// (GROUP BY ngày của DATEADD(hour, 7, CreatedAt) — VN không DST nên
+        /// dịch được sang SQL, cùng pattern với OrderHourlyReport) thay vì nạp
+        /// toàn bộ đơn trong 57 ngày vào memory rồi gộp bằng C#. Tập ngày VN
+        /// và bộ ba (doanh thu, số đơn, số suất) của mỗi ngày giống hệt bản cũ:
+        /// bản cũ cũng chỉ giữ các đơn có ngày VN trong [patternStart, today)
+        /// (cửa sổ fetch UTC rộng hơn chỉ để trừ hao múi giờ, các đơn thừa bị
+        /// lọc bỏ ở C#). Số ngày có đơn (DaysWithOrders) không đổi vì GROUP BY
+        /// chỉ sinh dòng cho ngày có đơn.
+        /// </remarks>
         private async Task<Dictionary<DateTime, DayAggregate>> LoadDailyAggregatesAsync(
             DateTime today, DateTime patternStart)
         {
-            var fetchFromUtc = patternStart.AddDays(-1); // margin cho múi giờ
+            // Biên UTC bao phủ đúng các đơn có ngày VN trong [patternStart, today):
+            // ngày VN d tương ứng UTC [d-7h, d+1-7h).
+            var utcFrom = patternStart.AddHours(-VietnamTime.UtcOffsetHours);
+            var utcTo = today.AddHours(-VietnamTime.UtcOffsetHours);
 
             var queryable = await _orders.GetQueryableAsync();
-            var raw = await _asyncExecuter.ToListAsync(
-                queryable
-                    .Where(x => x.CreatedAt >= fetchFromUtc
-                        && x.CreatedAt < today // loại hôm nay vì chưa bán xong
-                        && x.Status != OrderStatus.Cancelled)
-                    .Select(x => new
+            var perOrder = queryable
+                .Where(x => x.CreatedAt >= utcFrom
+                    && x.CreatedAt < utcTo
+                    && x.Status != OrderStatus.Cancelled)
+                .Select(x => new
+                {
+                    Day = x.CreatedAt.AddHours(VietnamTime.UtcOffsetHours).Date,
+                    Revenue = x.TotalAmount.Amount,
+                    Portions = x.Lines.Sum(l => (long)l.Quantity)
+                });
+
+            var rows = await _asyncExecuter.ToListAsync(
+                perOrder
+                    .Where(x => x.Day >= patternStart && x.Day < today)
+                    .GroupBy(x => x.Day)
+                    .Select(g => new
                     {
-                        x.CreatedAt,
-                        Revenue = x.TotalAmount.Amount,
-                        Portions = x.Lines.Sum(l => (long)l.Quantity)
+                        Day = g.Key,
+                        Revenue = g.Sum(x => x.Revenue),
+                        Orders = g.LongCount(),
+                        Portions = g.Sum(x => x.Portions)
                     }));
 
-            var perDay = new Dictionary<DateTime, DayAggregate>();
-            foreach (var order in raw)
-            {
-                var local = VietnamTime.ToVietnamTime(order.CreatedAt).Date;
-                if (local < patternStart || local >= today)
-                {
-                    continue;
-                }
-
-                if (perDay.TryGetValue(local, out var cur))
-                {
-                    perDay[local] = cur with
-                    {
-                        Revenue = cur.Revenue + order.Revenue,
-                        Orders = cur.Orders + 1,
-                        Portions = cur.Portions + order.Portions
-                    };
-                }
-                else
-                {
-                    perDay[local] = new DayAggregate(order.Revenue, 1, order.Portions);
-                }
-            }
-
-            return perDay;
+            return rows.ToDictionary(
+                x => x.Day,
+                x => new DayAggregate(x.Revenue, x.Orders, x.Portions));
         }
 
         /// <summary>Tổng doanh thu trong [from, toExclusive); ngày thiếu tính là 0.</summary>

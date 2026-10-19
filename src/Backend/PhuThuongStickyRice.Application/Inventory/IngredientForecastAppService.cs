@@ -74,48 +74,59 @@ namespace PhuThuongStickyRice.Application.Inventory
         /// Gom tổng số suất bán được của cùng thứ trong tuần qua các tuần
         /// lịch sử. CreatedAt lưu UTC nên convert sang giờ VN khi lọc.
         /// </summary>
+        /// <remarks>
+        /// perf-hunt 2026-10-19 (run 15:25): gộp số suất theo ngày VN ngay trên
+        /// SQL (GROUP BY ngày của DATEADD(hour, 7, CreatedAt) — VN không DST nên
+        /// dịch được sang SQL) thay vì nạp toàn bộ đơn trong cửa sổ lịch sử vào
+        /// memory rồi gộp bằng C#. Về memory chỉ còn tối đa ~lookbackDays dòng
+        /// (1 dòng/ngày có đơn); vòng lọc thứ-trong-tuần và chia chỉ số tuần
+        /// giữ nguyên ở C# nên tổng suất và số tuần có dữ liệu giống hệt bản cũ.
+        /// </remarks>
         private async Task<(int TotalPortions, int WeeksWithData)> LoadPortionsByWeekAsync(DateTime tomorrow, int weekday)
         {
             var lookbackDays = LookbackWeeks * 7;
-            var fourWeeksAgo = tomorrow.AddDays(-lookbackDays);
+            var vnFrom = tomorrow.AddDays(-lookbackDays);
 
             var queryable = await _orders.GetQueryableAsync();
 
-            // Orders are stored with CreatedAt in UTC — convert to Vietnam
-            // time client-side (the history window is small enough).
-            var candidates = await _asyncExecuter.ToListAsync(
-                queryable
-                    .Where(x => x.CreatedAt >= fourWeeksAgo.AddDays(-1)
-                        && x.CreatedAt < tomorrow.AddDays(1)
-                        && x.Status != OrderStatus.Cancelled)
-                    .Select(x => new { x.CreatedAt, Portions = x.Lines.Sum(l => l.Quantity) }));
+            // Biên UTC bao phủ đúng các đơn có ngày VN trong [vnFrom, tomorrow):
+            // ngày VN d tương ứng UTC [d-7h, d+1-7h).
+            var perOrder = queryable
+                .Where(x => x.CreatedAt >= vnFrom.AddHours(-VietnamTime.UtcOffsetHours)
+                    && x.CreatedAt < tomorrow.AddHours(-VietnamTime.UtcOffsetHours)
+                    && x.Status != OrderStatus.Cancelled)
+                .Select(x => new
+                {
+                    Day = x.CreatedAt.AddHours(VietnamTime.UtcOffsetHours).Date,
+                    Portions = x.Lines.Sum(l => (long)l.Quantity)
+                });
 
-            var weeks = new int[LookbackWeeks];
-            var seen = new int[LookbackWeeks];
-            foreach (var order in candidates)
+            var dayRows = await _asyncExecuter.ToListAsync(
+                perOrder
+                    .Where(x => x.Day >= vnFrom && x.Day < tomorrow)
+                    .GroupBy(x => x.Day)
+                    .Select(g => new { Day = g.Key, Portions = g.Sum(x => x.Portions) }));
+
+            var weeks = new long[LookbackWeeks];
+            var seen = new bool[LookbackWeeks];
+            foreach (var row in dayRows)
             {
-                var local = VietnamTime.ToVietnamTime(order.CreatedAt).Date;
-                if (local < tomorrow.AddDays(-lookbackDays) || local >= tomorrow)
+                if ((int)row.Day.DayOfWeek != weekday)
                 {
                     continue;
                 }
 
-                if ((int)local.DayOfWeek != weekday)
-                {
-                    continue;
-                }
-
-                var weekIndex = (int)((tomorrow - local).TotalDays / 7);
+                var weekIndex = (int)((tomorrow - row.Day).TotalDays / 7);
                 if (weekIndex < 0 || weekIndex >= LookbackWeeks)
                 {
                     continue;
                 }
 
-                weeks[weekIndex] += order.Portions;
-                seen[weekIndex]++;
+                weeks[weekIndex] += row.Portions;
+                seen[weekIndex] = true;
             }
 
-            return (weeks.Sum(), seen.Count(x => x > 0));
+            return ((int)weeks.Sum(), seen.Count(x => x));
         }
 
         /// <summary>
