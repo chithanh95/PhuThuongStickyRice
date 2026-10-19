@@ -45,7 +45,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Item 90: new customers (first order inside the range) vs
         /// returning customers, over the selected date range.
         /// </summary>
-        Task<NewAndReturningCustomersDto> GetNewReturningCustomersAsync(DateTime? from = null, DateTime? to = null);
+        Task<NewAndReturningCustomersDto> GetNewAndReturningCustomersAsync(DateTime? from = null, DateTime? to = null);
 
         /// <summary>
         /// Public: total quantity of items sold today (Vietnam time),
@@ -323,7 +323,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Khách mới (có đơn đầu tiên trong khoảng ngày) so với khách cũ
         /// (đã có đơn trước đó), tính trên khoảng ngày đã chọn (Item 90).
         /// </summary>
-        public virtual async Task<NewAndReturningCustomersDto> GetNewReturningCustomersAsync(
+        public virtual async Task<NewAndReturningCustomersDto> GetNewAndReturningCustomersAsync(
             DateTime? from = null, DateTime? to = null)
         {
             var (fromDate, toDate) = DateRangeNormalizer.NormalizeRange(from, to);
@@ -378,7 +378,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             // perf-hunt 2026-10-19: gộp ceil(N/1000) lần quét toàn bộ lịch sử
             // thành 1 query duy nhất. So sánh sau khi Trim cả 2 vế cho nhất
-            // quán với GroupBy ở GetNewReturningCustomersAsync (bản cũ so
+            // quán với GroupBy ở GetNewAndReturningCustomersAsync (bản cũ so
             // sánh SĐT thô của lịch sử với SĐT đã trim trong khoảng ngày nên
             // có thể bỏ sót khách cũ khi SĐT dính khoảng trắng thừa).
             var inRangePhones = orderQueryable

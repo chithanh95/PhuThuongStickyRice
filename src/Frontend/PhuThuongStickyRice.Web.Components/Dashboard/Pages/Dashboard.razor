@@ -703,7 +703,7 @@ else
     {
         try
         {
-            _newReturning = await DashboardService.GetNewReturningCustomersAsync(_from, _to);
+            _newReturning = await DashboardService.GetNewAndReturningCustomersAsync(_from, _to);
         }
         catch (Exception)
         {

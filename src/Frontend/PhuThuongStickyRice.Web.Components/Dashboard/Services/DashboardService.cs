@@ -53,7 +53,7 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
         /// <param name="from">Từ ngày (tùy chọn).</param>
         /// <param name="to">Đến ngày (tùy chọn).</param>
         /// <returns>Số lượng khách mới/cũ.</returns>
-        public async Task<NewAndReturningCustomersModel> GetNewReturningCustomersAsync(DateTime? from = null, DateTime? to = null)
+        public async Task<NewAndReturningCustomersModel> GetNewAndReturningCustomersAsync(DateTime? from = null, DateTime? to = null)
         {
             return await GetAsync<NewAndReturningCustomersModel>(
                 BuildUrl("api/dashboard/customers/new-vs-returning", from, to));

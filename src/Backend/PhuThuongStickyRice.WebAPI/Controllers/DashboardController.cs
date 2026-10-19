@@ -94,7 +94,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] DateTime? to = null,
             CancellationToken cancellationToken = default)
         {
-            return Ok(await _dashboardAppService.GetNewReturningCustomersAsync(from, to));
+            return Ok(await _dashboardAppService.GetNewAndReturningCustomersAsync(from, to));
         }
 
         /// <summary>
