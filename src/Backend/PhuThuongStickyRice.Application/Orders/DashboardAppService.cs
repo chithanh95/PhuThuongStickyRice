@@ -445,6 +445,21 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
+        /// Kết quả tổng hợp doanh thu/số đơn hôm nay + hôm qua trong 1 câu SQL
+        /// (SUM/COUNT có điều kiện), thay vì 4 round-trip quét cùng khoảng ngày.
+        /// </summary>
+        private sealed class TodayVsYesterdayAggregate
+        {
+            public decimal? TodayRevenue { get; set; }
+
+            public decimal? YesterdayRevenue { get; set; }
+
+            public long TodayOrders { get; set; }
+
+            public long YesterdayOrders { get; set; }
+        }
+
+        /// <summary>
         /// Wave 6d (item 36): today's vs yesterday's revenue + order count
         /// using Vietnam day boundaries (CreatedAt is UTC).
         /// </summary>
@@ -456,15 +471,33 @@ namespace PhuThuongStickyRice.Application.Orders
             var endUtc = startUtc.AddDays(1);
 
             var orderQueryable = await _orders.GetQueryableAsync();
-            var billable = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled);
 
-            var todayQ = billable.Where(x => x.CreatedAt >= startUtc && x.CreatedAt < endUtc);
-            var yesterdayQ = billable.Where(x => x.CreatedAt >= yesterdayStartUtc && x.CreatedAt < startUtc);
+            // perf-hunt 2026-10-19: 4 aggregate query quét cùng khoảng 2 ngày
+            // (dashboard admin poll mỗi 30s) gộp thành 1 câu SQL duy nhất bằng
+            // SUM/COUNT có điều kiện — cùng bộ lọc (loại đơn hủy, biên ngày VN)
+            // nên kết quả giống hệt bản cũ. SUM có điều kiện trả NULL khi nhóm
+            // rỗng nên project decimal? rồi ?? 0; không có dòng nào trong khoảng
+            // → GroupBy không sinh nhóm → FirstOrDefaultAsync trả null → 0 hết.
+            var agg = await _asyncExecuter.FirstOrDefaultAsync(
+                orderQueryable
+                    .Where(x => x.Status != OrderStatus.Cancelled
+                        && x.CreatedAt >= yesterdayStartUtc
+                        && x.CreatedAt < endUtc)
+                    .GroupBy(x => 1)
+                    .Select(g => new TodayVsYesterdayAggregate
+                    {
+                        TodayRevenue = g.Where(x => x.CreatedAt >= startUtc)
+                            .Sum(x => (decimal?)x.TotalAmount.Amount),
+                        YesterdayRevenue = g.Where(x => x.CreatedAt < startUtc)
+                            .Sum(x => (decimal?)x.TotalAmount.Amount),
+                        TodayOrders = g.LongCount(x => x.CreatedAt >= startUtc),
+                        YesterdayOrders = g.LongCount(x => x.CreatedAt < startUtc)
+                    }));
 
-            var todayRevenue = await _asyncExecuter.SumAsync(todayQ.Select(x => x.TotalAmount.Amount));
-            var yesterdayRevenue = await _asyncExecuter.SumAsync(yesterdayQ.Select(x => x.TotalAmount.Amount));
-            var todayOrders = await _asyncExecuter.LongCountAsync(todayQ);
-            var yesterdayOrders = await _asyncExecuter.LongCountAsync(yesterdayQ);
+            var todayRevenue = agg?.TodayRevenue ?? 0m;
+            var yesterdayRevenue = agg?.YesterdayRevenue ?? 0m;
+            var todayOrders = agg?.TodayOrders ?? 0;
+            var yesterdayOrders = agg?.YesterdayOrders ?? 0;
 
             return new TodayVsYesterdayDto
             {
