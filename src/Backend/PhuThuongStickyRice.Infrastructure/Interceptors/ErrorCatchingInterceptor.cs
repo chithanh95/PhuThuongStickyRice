@@ -22,6 +22,15 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
 
         private readonly ILogger _logger;
 
+        // CA1848: dùng LoggerMessage delegate thay LoggerExtensions.LogError —
+        // template biên dịch sẵn, không parse lại mỗi lần log. Nội dung và
+        // exception kèm theo giữ nguyên.
+        private static readonly Action<ILogger, string, string, string, Exception> LogMethodError =
+            LoggerMessage.Define<string, string, string>(
+                LogLevel.Error,
+                new EventId(1, "MethodError"),
+                "An unhandled exception has occurred while executing the method: {ClassName}.{MethodName} with ({Arguments}).");
+
         public ErrorCatchingInterceptor(ILogger<ErrorCatchingInterceptor> logger)
         {
             _logger = logger;
@@ -96,9 +105,7 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
 
             // FIX: dùng message template thay vì string interpolation — tránh cấp phát
             // chuỗi khi log level tắt, và truyền ex đúng cách để giữ stack trace có cấu trúc.
-            _logger.LogError(ex,
-                "An unhandled exception has occurred while executing the method: {ClassName}.{MethodName} with ({Arguments}).",
-                className, methodName, arguments);
+            LogMethodError(_logger, className, methodName, arguments, ex);
         }
     }
 }
