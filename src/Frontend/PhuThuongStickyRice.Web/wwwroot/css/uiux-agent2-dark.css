@@ -2090,3 +2090,47 @@ html.dark .lexa-icon {
 }
 
 /* === end Agent 2 run 03:50 === */
+
+/* ===== UIUX run 2026-10-20 05:35 — Agent 2 Dark mode =====
+   Phương pháp: quét độc lập toàn bộ shop + admin + landing — inline style
+   có màu hex (razor + C# code-behind), .razor.css không có rule dark,
+   các trang mới/WIP (LaiGop/NhanVien/PhanQuyen/LichNghi/TrackOrder),
+   :hover nền sáng, table-light/thead-light, modal, badge, progress,
+   đối chiếu từng ứng viên với ~300 selector html.dark hiện có
+   (uiux-agent2-dark ~2092 dòng + app.css + admin-lexa + agent3/4).
+   Kết quả: chỉ còn 1 lỗi THẬT mới — các ứng viên còn lại đã có rule dark
+   hoặc tự thích ứng (lx-pill-secondary đổi qua --lx-tertiary/--lx-muted
+   đã redefine trong html.dark .lx-admin; thead-light/table-light đã fix;
+   modal Bootstrap có rule app.css; upsell/toast giữ trắng chủ ý). */
+
+/* ---------- FIX 1 — /admin/lai-gop: badge "biên lãi" nền pastel sáng chói ở dark ----------
+   Vấn đề: LaiGop.razor — MarginStyle() trả inline style nền pastel cho badge
+   biên lãi: #d3f1e2 (xanh, ≥50%) / #fdefd3 (vàng, 20–50%) / #fbdddd (đỏ, <20%)
+   / #eee (xám, chưa có giá vốn). Đã grep toàn bộ css: 0 rule html.dark nào
+   phủ 4 mã màu này. Ở dark mode, 4 badge pastel sáng chói trên card admin
+   tối #262640, lạc hẳn palette (trang mới, các đợt quét trước chưa thấy).
+   Fix: attribute selector theo mã nền (đã grep — mỗi mã chỉ xuất hiện đúng
+   1 lần, tại MarginStyle() này; rule .alert-* của agent3-lexa.css dùng cùng
+   mã màu nhưng là rule CSS thường, không phải inline style nên không bị match)
+   + !important để thắng inline style. Nền tint bán trong suốt giữ đúng
+   semantic màu (xanh/vàng/đỏ/xám vẫn phân biệt được ý nghĩa), chữ sáng cùng
+   tone — đồng bộ convention badge dark của admin-lexa.css
+   (success #7dd3a8, warning #f5c86e, danger #ff8a8a). */
+html.dark .badge[style*="d3f1e2"] {
+    background-color: rgba(52, 195, 143, .16) !important; /* was #d3f1e2 */
+    color: #7dd3a8 !important; /* was #1e7a52 */
+}
+html.dark .badge[style*="fdefd3"] {
+    background-color: rgba(241, 180, 76, .16) !important; /* was #fdefd3 */
+    color: #f5c86e !important; /* was #a8761a */
+}
+html.dark .badge[style*="fbdddd"] {
+    background-color: rgba(244, 106, 106, .16) !important; /* was #fbdddd */
+    color: #ff8a8a !important; /* was #bd4a4a */
+}
+html.dark .badge[style*="background:#eee"] {
+    background-color: #3a3a4a !important; /* was #eee */
+    color: #a5a2bd !important; /* was #666 */
+}
+
+/* === end Agent 2 run 2026-10-20 05:35 (1 fix) === */

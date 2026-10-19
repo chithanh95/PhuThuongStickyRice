@@ -27,10 +27,12 @@
                 @(_tab == "login" ? "Đăng nhập để đặt xôi nhanh hơn." : "Đăng ký để đặt xôi nhanh hơn.")
             </p>
 
-            <div class="auth-tabs" role="tablist" aria-label="Chọn chức năng tài khoản">
+            <div class="auth-tabs" role="tablist" aria-label="Chọn chức năng tài khoản" @onkeydown="OnTablistKeyDown">
                 @* A11y-1019: tab gắn với panel qua aria-controls — trước đây tablist
                    không có tabpanel, trình đọc màn hình không liên kết được nội dung
                    form với tab đã chọn. *@
+                @* A11y-20261020: phím ←/→ chuyển tab theo ARIA tabs pattern — người
+                   dùng bàn phím không cần Tab ra vào từng nút. *@
                 <button type="button" role="tab" id="dn-tab-login" aria-controls="dn-panel-login" aria-selected="@(_tab == "login")" class="auth-tab @(_tab == "login" ? "active" : "")" @onclick='() => _tab = "login"'>Đăng nhập</button>
                 <button type="button" role="tab" id="dn-tab-register" aria-controls="dn-panel-register" aria-selected="@(_tab == "register")" class="auth-tab @(_tab == "register" ? "active" : "")" @onclick='() => _tab = "register"'>Đăng ký</button>
             </div>
@@ -101,6 +103,16 @@
 
 @code {
     private string _tab = "login";
+
+    /// <summary>
+    /// A11y: điều hướng tab "Đăng nhập/Đăng ký" bằng phím ←/→ theo ARIA tabs
+    /// pattern. Keydown đặt trên tablist, bubble từ nút đang focus.
+    /// </summary>
+    private void OnTablistKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "ArrowRight" || e.Key == "ArrowLeft")
+            _tab = _tab == "login" ? "register" : "login";
+    }
     private string _phone;
     private string _password;
     private string _confirmPassword;

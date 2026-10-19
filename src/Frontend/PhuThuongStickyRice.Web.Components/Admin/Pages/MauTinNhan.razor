@@ -53,6 +53,7 @@ else
                                     @if (_editingId == template.Id)
                                     {
                                         <textarea class="form-control" rows="4" maxlength="2000"
+                                                  aria-label="Nội dung mẫu tin nhắn đang sửa"
                                                   @bind="_editText"></textarea>
                                         <small class="text-muted">@_editText?.Length/2000 ký tự</small>
                                     }

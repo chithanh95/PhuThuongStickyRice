@@ -42,23 +42,23 @@ else
                     <h4 class="card-title">Phí giao hàng &amp; đơn hàng</h4>
                     <p class="card-title-desc">Phí giao hàng và đơn tối thiểu áp dụng cho mọi đơn đặt qua web.</p>
                     <div class="form-group">
-                        <label>Phí giao hàng (₫)</label>
-                        <input type="number" min="0" step="1000" class="form-control" @bind="_model.DeliveryFee" />
+                        <label for="ss-delivery-fee">Phí giao hàng (₫)</label>
+                        <input id="ss-delivery-fee" type="number" min="0" step="1000" class="form-control" @bind="_model.DeliveryFee" />
                         <small class="form-text text-muted">Đặt 0 để luôn miễn phí giao hàng.</small>
                     </div>
                     <div class="form-group">
-                        <label>Miễn phí ship cho đơn từ (₫)</label>
-                        <input type="number" min="0" step="1000" class="form-control" @bind="_model.FreeShipThreshold" />
+                        <label for="ss-freeship-threshold">Miễn phí ship cho đơn từ (₫)</label>
+                        <input id="ss-freeship-threshold" type="number" min="0" step="1000" class="form-control" @bind="_model.FreeShipThreshold" />
                         <small class="form-text text-muted">Đơn có (tạm tính − giảm giá) từ mức này trở lên được miễn phí ship. Đặt 0 để tắt miễn phí ship.</small>
                     </div>
                     <div class="form-group">
-                        <label>Giá trị đơn tối thiểu (₫)</label>
-                        <input type="number" min="0" step="1000" class="form-control" @bind="_model.MinOrderAmount" />
+                        <label for="ss-min-order">Giá trị đơn tối thiểu (₫)</label>
+                        <input id="ss-min-order" type="number" min="0" step="1000" class="form-control" @bind="_model.MinOrderAmount" />
                         <small class="form-text text-muted">Đặt 0 để không giới hạn. Khách không thể đặt đơn dưới mức này.</small>
                     </div>
                     <div class="form-group mb-0">
-                        <label>Thời gian giao hàng dự kiến (phút)</label>
-                        <input type="number" min="0" max="600" step="5" class="form-control" @bind="_model.EstimatedDeliveryMinutes" />
+                        <label for="ss-eta-minutes">Thời gian giao hàng dự kiến (phút)</label>
+                        <input id="ss-eta-minutes" type="number" min="0" max="600" step="5" class="form-control" @bind="_model.EstimatedDeliveryMinutes" />
                         <small class="form-text text-muted">Hiển thị ở trang đặt hàng, VD: 45 → “Dự kiến giao trong 30–45 phút”. Đặt 0 để ẩn.</small>
                     </div>
                 </div>

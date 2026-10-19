@@ -2770,3 +2770,77 @@
     }
 }
 /* ===== END UIUX run 02:05 A1 ===== */
+
+/* ===== UIUX run 05:35 A1 (Agent1 Mobile) — 4 fix mobile mới ===== */
+
+/* ------------------------------------------------------------
+   FIX 1 — /shop: chữ "— tiết kiệm hơn gọi lẻ" trong tiêu đề
+   "🎉 Combo gia đình" chỉ ~12.8px.
+   Vấn đề: <h4 class="mb-3">🎉 Combo gia đình <small class="text-muted">
+   — tiết kiệm hơn gọi lẻ</small></h4> (Shop.razor:142) — đây là thông
+   điệp khuyến mãi chính của cụm combo, nhưng small.text-muted chỉ
+   ~12.8px, người lớn tuổi khó đọc trên mobile.
+   Giải pháp: mobile 14px, giữ màu muted (vẫn phân biệt với tiêu đề).
+   (Verify: h4.mb-3 > small.text-muted chỉ khớp đúng chỗ này —
+   h4 "Gợi ý theo giờ" (Shop.razor:185) không chứa small.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    h4.mb-3 > small.text-muted {
+        font-size: 14px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /cart (giỏ trống): link "Xem thực đơn" trong alert.
+   Vấn đề: Cart.razor:31 — link inline trong .alert-info, vùng bấm
+   chỉ cao theo dòng chữ (~24px), dưới chuẩn chạm 44px; đây là CTA
+   duy nhất để khách thoát khỏi giỏ trống quay lại đặt món.
+   Giải pháp: vùng bấm 44px, chữ canh giữa dọc, gạch chân giữ
+   nguyên để vẫn nhận ra là link.
+   (Verify: .alert-info > a[href="/shop"] chỉ khớp đúng link này —
+   không có .alert-info nào khác trong trang cart chứa link /shop.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert-info > a[href="/shop"] {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        font-weight: 700;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /checkout: link "Đăng nhập" trong alert gợi ý tích điểm.
+   Vấn đề: Checkout.razor:43 — "💡 <a href="/dang-nhap">Đăng nhập</a>
+   để tích điểm thưởng..." là link inline trong .alert-light, vùng
+   bấm ~24px; khách lớn tuổi muốn đăng nhập để tích điểm khó bấm
+   trúng trên điện thoại.
+   Giải pháp: vùng bấm 44px, chữ canh giữa dọc, đậm hơn.
+   (Verify: .alert-light a[href="/dang-nhap"] chỉ khớp đúng link này —
+   link /dang-nhap ở QuenMatKhau.razor không nằm trong .alert-light.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .alert-light a[href="/dang-nhap"] {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        font-weight: 700;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /shop: ô "Ghi chú cho quán" trong quick-view bottom sheet.
+   Vấn đề: .qv-sheet-note-input font 16px + padding 8px 0 → cao chỉ
+   ~40px, dưới chuẩn chạm 44px; đây là ô nhập khách gõ mỗi lần thêm
+   món, người lớn tuổi bấm trượt dễ chạm nhầm sang size/topping.
+   Giải pháp: padding 10px 0 → cao ~44px, ô dễ bấm hơn.
+   (Verify: Shop.razor.css set padding 8px 0 cho .qv-sheet-note-input —
+   doubled-class để thắng specificity của scoped CSS, file này load
+   sau cùng nên hòa specificity vẫn thắng theo cascade.)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .qv-sheet-note-input.qv-sheet-note-input {
+        padding: 10px 0;
+    }
+}
+/* ===== END UIUX run 05:35 A1 ===== */

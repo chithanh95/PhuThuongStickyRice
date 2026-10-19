@@ -402,6 +402,100 @@ a:hover, a:focus { color: #625998; }
 .shp-page .btn-danger.focus, .lx-admin .btn-danger.focus {
     box-shadow: 0 0 0 .2rem rgba(244,106,106,.5);
 }
+
+/* === end Agent 3 run 11:20 === */
+
+/* === UIUX run 05:35 (job uiux-team-2days) — Agent 3 Lexa sync, đợt 7 ===
+   4 fix MỚI (đã verify bằng grep, không trùng 6 đợt trước).
+   Ghi chú: checkbox/radio shop (.form-check-input) khi :checked vẫn hiển
+   xanh dương #007bff của trình duyệt/Bootstrap trong khi admin đã tím Lexa
+   (.lx-admin .form-check-input:checked, admin-lexa.css:1431); nút solid
+   btn-warning ở shop vẫn vàng #ffc107; btn-warning/btn-info solid ở các
+   trang demo Lexa vẫn #ffc107/#17a2b8 (Lexa thật dùng #f1b44c/#50a5f1).
+   Fix dùng file này (load sau cùng) nên thắng Bootstrap mà không cần
+   !important, trừ :checked dùng !important cho đồng nhất với rule admin
+   tương ứng. */
+
+/* ---------- Fix 1: checkbox/radio đã tick trên shop -> tím Lexa ----------
+   Verify: 19 chỗ dùng .form-check-input trên 6 trang shop (Checkout 8,
+   DatCung 5, Shop 2, CungGio 2, TaiKhoan 1, TrackOrder 1) — trạng thái
+   :checked (nền #007bff + tick trắng, xem ghi chú DatCung.razor.css:109)
+   và glow focus xanh Bootstrap. Khớp pattern .lx-admin của admin-lexa.css.
+   #7a6fbe đọc tốt trên nền tối nên không phá fix dark của Agent 2
+   (rule dark chỉ set trạng thái chưa tick). */
+.shp-page .form-check-input:checked {
+    background-color: #7a6fbe !important;
+    border-color: #7a6fbe !important;
+    accent-color: #7a6fbe;
+}
+.shp-page .form-check-input:focus {
+    border-color: #7a6fbe;
+    box-shadow: 0 0 0 .2rem rgba(122,111,190,.25);
+}
+
+/* ---------- Fix 2: nút solid btn-warning trên shop -> vàng Lexa ----------
+   Verify: Checkout.razor:174 (nút "Quay" vòng quay may mắn) dùng
+   "btn btn-warning" — đang render vàng #ffc107 của Bootstrap.
+   Hover/active: filter brightness(.93) tối cùng tông, giống pattern
+   btn-danger đợt 11:20; glow focus vàng Lexa. */
+.shp-page .btn-warning {
+    background-color: #f1b44c;
+    border-color: #f1b44c;
+}
+.shp-page .btn-warning:hover,
+.shp-page .btn-warning:not(:disabled):not(.disabled):active,
+.shp-page .btn-warning:not(:disabled):not(.disabled).active {
+    background-color: #f1b44c;
+    border-color: #f1b44c;
+    filter: brightness(.93);
+}
+.shp-page .btn-warning:focus, .shp-page .btn-warning.focus {
+    box-shadow: 0 0 0 .2rem rgba(241,180,76,.5);
+}
+
+/* ---------- Fix 3: nút solid btn-warning trên admin -> vàng Lexa ----------
+   Verify: chỉ dùng ở các trang demo template Lexa (UiModals.razor:22,33,
+   UiButtons.razor:23,66, Icons.razor:77) — không có trang admin thật nào
+   dùng btn-warning solid nên không ảnh hưởng nghiệp vụ. Template Lexa
+   gốc dùng #f1b44c (không phải #ffc107 của Bootstrap). */
+.lx-admin .btn-warning {
+    background-color: #f1b44c;
+    border-color: #f1b44c;
+    color: #212529;
+}
+.lx-admin .btn-warning:hover,
+.lx-admin .btn-warning:not(:disabled):not(.disabled):active,
+.lx-admin .btn-warning:not(:disabled):not(.disabled).active {
+    background-color: #f1b44c;
+    border-color: #f1b44c;
+    color: #212529;
+    filter: brightness(.93);
+}
+.lx-admin .btn-warning:focus, .lx-admin .btn-warning.focus {
+    box-shadow: 0 0 0 .2rem rgba(241,180,76,.5);
+}
+
+/* ---------- Fix 4: nút solid btn-info trên admin -> xanh info Lexa ----------
+   Verify: chỉ dùng ở các trang demo template Lexa (UiModals.razor:21,34,
+   UiButtons.razor:24,67, Icons.razor:78) — không có trang admin thật nào
+   dùng btn-info solid nên không ảnh hưởng nghiệp vụ. Template Lexa gốc
+   dùng #50a5f1 (không phải #17a2b8 của Bootstrap). */
+.lx-admin .btn-info {
+    background-color: #50a5f1;
+    border-color: #50a5f1;
+}
+.lx-admin .btn-info:hover,
+.lx-admin .btn-info:not(:disabled):not(.disabled):active,
+.lx-admin .btn-info:not(:disabled):not(.disabled).active {
+    background-color: #50a5f1;
+    border-color: #50a5f1;
+    filter: brightness(.93);
+}
+.lx-admin .btn-info:focus, .lx-admin .btn-info.focus {
+    box-shadow: 0 0 0 .2rem rgba(80,165,241,.5);
+}
+
+/* === end Agent 3 run 05:35 === */
 .shp-page .btn-danger.disabled, .shp-page .btn-danger:disabled,
 .lx-admin .btn-danger.disabled, .lx-admin .btn-danger:disabled {
     background-color: #f46a6a;

@@ -1631,7 +1631,9 @@ html.dark .lx-toast {
     margin-left: 8px;
 }
 .lx-toast-close:hover {
-    color: #333;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 4px;
 }
 @keyframes lx-toast-in {
     from { transform: translateX(100%); opacity: 0; }

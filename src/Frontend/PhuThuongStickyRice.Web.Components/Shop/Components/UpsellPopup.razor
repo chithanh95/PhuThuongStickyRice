@@ -7,7 +7,7 @@
     @* A11y-20261020: @onkeydown để đóng popup bằng phím Escape —
        người dùng bàn phím cần cách thoát chuẩn (đồng bộ pattern
        ConfirmDialog.razor). Keydown từ nút đang focus sẽ bubble lên div. *@
-    <div class="modal fade show d-block upsell-popup" tabindex="-1" role="dialog" aria-modal="true" @onclick="Close" @onkeydown="HandleKeyDown">
+    <div class="modal fade show d-block upsell-popup" tabindex="-1" role="dialog" aria-modal="true" @ref="_modalRef" @onclick="Close" @onkeydown="HandleKeyDown">
         <div class="modal-dialog modal-dialog-centered modal-sm" role="document" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header py-2">
@@ -58,6 +58,28 @@
     [Parameter] public EventCallback OnClose { get; set; }
 
     private bool _adding;
+
+    // A11y: đưa focus vào popup khi mở — screen reader đọc ngay role="dialog" +
+    // tiêu đề, người dùng bàn phím tab từ trong popup đi ra thay vì kẹt ở nút
+    // phía sau (đồng bộ pattern modal tiền cọc ở Quotes.razor).
+    private ElementReference _modalRef;
+    private bool _wasVisible;
+    private bool _focusOnOpen;
+
+    protected override void OnParametersSet()
+    {
+        if (Visible && !_wasVisible) _focusOnOpen = true;
+        _wasVisible = Visible;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusOnOpen && Visible)
+        {
+            _focusOnOpen = false;
+            await _modalRef.FocusAsync();
+        }
+    }
 
     private async Task Add(ShopProductModel product)
     {
