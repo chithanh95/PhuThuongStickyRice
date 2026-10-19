@@ -352,7 +352,7 @@
 
             @if (_order.Status == "Pending")
             {
-                <div class="mb-3">
+                <div class="mb-3 to-selfservice">
                     @if (!_editingLines && !_editingAddress && !_editingContact)
                     {
                         <button class="btn btn-outline-secondary btn-sm" @onclick="StartEditLines">✏️ Sửa đơn (số lượng)</button>

@@ -257,3 +257,77 @@ html.dark .qv-sheet-section {
 }
 
 /* === end Agent 2 run 10:20 === */
+
+/* === UIUX run 10:42 (job uiux-team-2days) — Agent 2 Dark mode ===
+   (các đợt trước đã phủ: kanban, nhuong-quyen, check-in, the-xoi,
+   cart/checkout sticky bar, track-order, svg DuBao, shop size price,
+   price-filter + card text landing, survey-sheet, nq-form label,
+   to-info-label, shp-logout hover, qv-sheet-section, lang-caret,
+   qv-sheet close/meta/opt-price — đợt này chỉ lỗi MỚI) */
+
+/* ---------- FIX 1 — Shop: nút "−" của stepper trên mobile (/shop) ----------
+   Vấn đề: Shop.razor.css (trong @media max-width:768px) —
+   .shop-row-stepper button (nút "−") có background:#fff hardcode, không
+   rule dark nào phủ (đã grep xác minh). Trên card món đã tối #241d17
+   (rule dark dòng 589), nút "−" trắng toát chói hẳn, lạc khỏi cả hàng.
+   Nút "+" (background:#7a6fbe, chữ trắng) vẫn ổn nên không đụng.
+   Fix: nền tối theo palette shop; giữ viền + chữ tím Lexa #7a6fbe vì
+   vẫn đủ contrast trên nền tối. Giữ trong media query để không đụng
+   desktop. !important để thắng rule scoped (.shop-row-stepper[b-xxx]). */
+@media (max-width: 768px) {
+    html.dark .shop-row-stepper button {
+        background: #2e2620 !important; /* was #fff */
+    }
+}
+
+/* ---------- FIX 2 — Admin: 4 trang demo auth Lexa (/admin/lexa/auth-*) ----------
+   Vấn đề: AuthLogin/AuthRegister/AuthRecover/AuthLock.razor dùng inline
+   style: wrapper min-height:100vh + background:#f8f8fb, card
+   background:#fff, chữ "Lexa" color:#2b3a4a — không class riêng, không
+   rule dark nào phủ (đã grep xác minh 4 file đều cùng mẫu). Ở dark mode
+   cả trang trắng chói; nếu chỉ tối nền thì chữ #2b3a4a chìm.
+   Fix: attribute selector bám đúng mẫu inline style của 4 trang này
+   (wrapper min-height:100vh + f8f8fb chỉ 4 trang auth dùng) + !important
+   để thắng inline style. Chữ trong card (h5, label, p.text-muted) kế thừa
+   màu body dark #f0eef5 (app.css) nên tự đọc được. */
+html.dark div[style*="min-height:100vh"][style*="f8f8fb"] {
+    background: #1c1c22 !important; /* was #f8f8fb */
+}
+html.dark div[style*="min-height:100vh"][style*="f8f8fb"] div[style*="background:#fff"] {
+    background: #262640 !important; /* was #fff */
+    box-shadow: 0 2px 20px rgba(0, 0, 0, .35);
+}
+html.dark div[style*="min-height:100vh"][style*="f8f8fb"] span[style*="color:#2b3a4a"] {
+    color: #f0eef5 !important; /* was #2b3a4a */
+}
+
+/* ---------- FIX 3 — Landing: số lượt bình chọn món (bình chọn món mới) ----------
+   Vấn đề: Index.razor.css — .sg-poll-votes color:#6F0707 (đỏ đậm) trên
+   card nền var(--sg-surface) (= #262019 ở dark) → tương phản chỉ ~2.3:1,
+   số lượt vote chìm hẳn, không rule dark nào phủ (đã grep xác minh).
+   Fix: đỏ sáng #f0a08a cùng tone các fix #6F0707/#b5462a trước. */
+html.dark .sg-poll-votes {
+    color: #f0a08a !important; /* was #6F0707 */
+}
+
+/* ---------- FIX 4 — Landing: mã trúng thưởng vòng quay may mắn ----------
+   Vấn đề: .sg-spin-win code (mã giảm giá khách trúng) color:#6F0707.
+   Đã có rule dark đổi background → #1a1410 (dòng 2203) nhưng QUÊN đổi
+   color → chữ đỏ đậm trên nền nâu đen, tương phản ~2:1, mã trúng thưởng
+   (thông tin quan trọng nhất của game) không đọc được.
+   Fix: chữ đỏ sáng, cùng tone fix 3. */
+html.dark .sg-spin-win code {
+    color: #f0a08a !important; /* was #6F0707 */
+}
+
+/* ---------- FIX 5 — Landing: nút chia sẻ món ăn (.sg-share-btn) ----------
+   Vấn đề: nút tròn chia sẻ có background:var(--sg-surface) (= #262019
+   ở dark) + color:#6F0707 (đỏ đậm) → icon chìm trên nền tối (~2.3:1),
+   không rule dark nào phủ (đã grep xác minh). Hover (nền #6F0707 chữ
+   trắng) vẫn ổn nên không đụng.
+   Fix: icon đỏ sáng cùng tone các fix #6F0707 trước. */
+html.dark .sg-share-btn {
+    color: #f0a08a !important; /* was #6F0707 */
+}
+
+/* === end Agent 2 run 10:42 === */

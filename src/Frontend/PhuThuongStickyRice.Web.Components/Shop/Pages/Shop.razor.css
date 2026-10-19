@@ -410,7 +410,9 @@ html.dark .shp-page .form-control {
     color: #f0e8dc;
 }
 html.dark .shp-page .form-control::placeholder {
-    color: #8a7a63;
+    /* A11y: #8a7a63 trên nền tối chỉ ~3.4:1, chữ gợi ý bị mờ trong dark
+       mode. Nâng lên #a89880 để dễ đọc hơn mà vẫn phân biệt với chữ nhập. */
+    color: #a89880;
 }
 html.dark .shop-filters-sticky {
     background: #241d17;
@@ -436,7 +438,10 @@ html.dark .shop-filters-sticky {
     /* Sidebar danh mục */
     .shop-cat-sidebar {
         position: sticky;
-        top: 120px;
+        /* Header sticky cao ~60px trên mobile — dính sidebar sát bên dưới
+           (khe hở ~16px) thay vì top:120px để lại khoảng trống ~60px,
+           nhìn sidebar như bị "treo lơ lửng" khi cuộn danh sách món. */
+        top: 76px;
         flex: 0 0 88px;
         display: flex;
         flex-direction: column;
@@ -463,6 +468,13 @@ html.dark .shop-filters-sticky {
         background: #fff;
         color: #7a6fbe;
         border-left-color: #7a6fbe;
+    }
+    /* A11y: nút danh mục sidebar (ShopeeFood mobile) là button nên tab
+       được bằng bàn phím, nhưng chưa có chỉ báo focus. :focus-visible
+       vẽ viền tím rõ ràng, chỉ hiện khi dùng bàn phím. */
+    .shop-cat-item:focus-visible {
+        outline: 2px solid #7a6fbe;
+        outline-offset: -2px;
     }
     /* Danh sách món */
     .shop-mobile-items {
@@ -761,7 +773,10 @@ html.dark .shop-filters-sticky {
         font-size: 15px;
         padding: 8px 0;
     }
-    .qv-sheet-note-input::placeholder { color: #b8a88f; }
+    /* A11y: chữ gợi ý #b8a88f trên nền trắng chỉ đạt ~2.2:1, người lớn tuổi
+       khó đọc. Đổi sang #8a7558 (~4.5:1 trên nền sáng, vẫn ổn trên nền
+       tối của dark mode) để gợi ý dễ đọc hơn. */
+    .qv-sheet-note-input::placeholder { color: #8a7558; }
     /* Keyboard focus: rule gốc đặt outline: none mà không có chỉ báo thay
        thế → bàn phím/external keyboard trên mobile không thấy ô đang focus.
        :focus-visible chỉ hiện khi dùng bàn phím, chuột/chạm không ảnh hưởng. */
@@ -806,4 +821,19 @@ html.dark .shop-filters-sticky {
     .btn-sm { min-height: 44px; }
     /* Nút "Thêm combo vào giỏ" ~38px — nâng lên 44px */
     .card .btn-warning { min-height: 44px; }
+
+    /* Tab "🍚 Tất cả món / 📊 Xôi nào hợp bạn?" (~40px theo padding Bootstrap)
+       — nới lên 44px để ngón tay người lớn tuổi bấm trúng, chữ vẫn căn giữa. */
+    .nav-tabs .nav-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* Nút "📄 Tải menu (PDF)" trong hero chỉ ~38px — nâng lên 44px, giữ 1 hàng. */
+    .jumbotron .btn-dark {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
 }

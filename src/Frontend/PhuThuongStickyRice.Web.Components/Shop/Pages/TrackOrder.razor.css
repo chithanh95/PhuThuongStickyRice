@@ -283,6 +283,23 @@ html.dark .to-total-row {
 @media (max-width: 767.98px) {
     .to-copy-btn { min-width: 44px; min-height: 44px; }
 
+    /* 4 nút tự phục vụ đơn ("✏️ Sửa đơn / 📍 Đổi địa chỉ / 📞 Sửa SĐT / Hủy đơn")
+       xếp ngang chật trên màn nhỏ — nút "Hủy đơn" (xóa đơn, nguy hiểm) nằm sát
+       các nút khác, người lớn tuổi dễ bấm nhầm. Xếp dọc full-width, mỗi nút
+       46px, có khoảng cách rõ ràng giữa các nút. */
+    .to-selfservice .btn-sm {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 46px;
+        margin: 8px 0 0 !important;
+        font-size: 15px;
+    }
+    .to-selfservice .btn-sm:first-child {
+        margin-top: 0 !important;
+    }
+
     /* Input tra cứu/lịch sử: chữ 16px (iOS không auto-zoom), cao bằng nút tra cứu 46px */
     .to-lookup .form-control,
     .to-history .form-control {

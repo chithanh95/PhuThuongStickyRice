@@ -80,15 +80,17 @@
     }
     .cho-preparing { background: #4a3200; border-color: #FFBA31; }
     .cho-preparing .cho-num { color: #FFBA31; }
+    /* Màu xanh "sẵn sàng lấy món" dùng xanh success Lexa #34c38f (trước #28e06c xanh neon
+       lệch palette, khách nhìn số thứ tự màu neon loé không ăn nhập tông web). */
     .cho-ready {
         background: #0b3d1b;
-        border-color: #28e06c;
+        border-color: #34c38f;
         animation: cho-blink 1.2s ease-in-out infinite;
     }
-    .cho-ready .cho-num { color: #28e06c; }
+    .cho-ready .cho-num { color: #34c38f; }
     @@keyframes cho-blink {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(40,224,108,0.0); }
-        50% { box-shadow: 0 0 28px 6px rgba(40,224,108,0.55); }
+        0%, 100% { box-shadow: 0 0 0 0 rgba(52,195,143,0.0); }
+        50% { box-shadow: 0 0 28px 6px rgba(52,195,143,0.55); }
     }
     .cho-empty {
         font-size: 1.6rem;
@@ -147,7 +149,7 @@
 
         @if (ready.Count > 0)
         {
-            <h2 class="cho-section-title" style="color:#28e06c;">🔔 MỜI LẤY MÓN</h2>
+            <h2 class="cho-section-title" style="color:#34c38f;">🔔 MỜI LẤY MÓN</h2><!-- xanh success Lexa (trước #28e06c lệch chuẩn) -->
             <div class="cho-grid mb-4">
                 @foreach (var t in ready)
                 {
@@ -199,7 +201,7 @@
 @if (_zoomed != null)
 {
     <div class="cho-zoom-overlay" @onclick="() => _zoomed = null">
-        <div class="cho-big" style="color:@(_zoomed.IsReady ? "#28e06c" : "#FFBA31")">@_zoomed.QueueNumber</div>
+        <div class="cho-big" style="color:@(_zoomed.IsReady ? "#34c38f" : "#FFBA31")"><!-- #34c38f: xanh success Lexa cho trạng thái sẵn sàng (trước #28e06c) -->@_zoomed.QueueNumber</div>
         <div class="cho-big-label">@(_zoomed.IsReady ? "🔔 Mời lấy món!" : "🍳 Đang chuẩn bị...")</div>
         <div class="mt-3" style="color:#888;">Chạm vào màn hình để thu nhỏ</div>
     </div>

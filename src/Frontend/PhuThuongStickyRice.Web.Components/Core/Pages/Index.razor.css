@@ -1676,6 +1676,14 @@ html.pt-reveal .sg-reveal.in {
     border-color: #6F0707;
 }
 
+/* A11y: rule gốc tắt outline chỉ đổi màu viền nên người dùng bàn phím
+   khó nhận biết ô đang focus. :focus-visible chỉ hiện khi tab bằng bàn
+   phím, chạm/chuột trên mobile không bị ảnh hưởng. */
+.sg-lang-select:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+
 /* Items 28, 29, 36, 37 */
 .sg-spin-sec { background: linear-gradient(135deg, #fff8f0, #fdf0e0); }
 .sg-spin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }

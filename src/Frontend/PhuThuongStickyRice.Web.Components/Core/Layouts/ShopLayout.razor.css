@@ -420,7 +420,9 @@ html.dark .shp-page .form-select {
     color: #f0e9db;
 }
 html.dark .shp-page .form-control::placeholder {
-    color: #7d6c58;
+    /* A11y: #7d6c58 trên nền tối chỉ ~3:1, chữ gợi ý bị mờ trong dark
+       mode. Nâng lên #a89880 để dễ đọc hơn mà vẫn phân biệt với chữ nhập. */
+    color: #a89880;
 }
 html.dark .shp-page .btn-primary {
     background: #7a6fbe;
@@ -443,6 +445,14 @@ html.dark .shp-page .btn-primary {
 .shp-lang-select:focus {
     outline: none;
     border-color: #6F0707;
+}
+
+/* A11y: rule gốc tắt outline chỉ đổi màu viền nên người dùng bàn phím
+   khó nhận biết ô đang focus. :focus-visible chỉ hiện khi tab bằng bàn
+   phím, chạm/chuột trên mobile không bị ảnh hưởng. */
+.shp-lang-select:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
 }
 
 @media (max-width: 768px) {

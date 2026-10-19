@@ -150,10 +150,12 @@
         padding: 8px 4px !important; /* đè .p-0 của Bootstrap */
     }
 
-    /* Sau khi đặt hàng thành công: 3 nút "Về trang chủ / Xem thực đơn /
-       Tra cứu đơn hàng" chỉ ~31px và xếp ngang chật trên màn nhỏ —
-       xếp dọc full-width, mỗi nút >=46px */
-    .alert-success > p > .btn-sm {
+    /* FIX selector cũ (.alert-success > p > .btn-sm): selector này KHÔNG BAO GIỜ
+       khớp markup — 3 nút "Về trang chủ / Xem thực đơn / Tra cứu đơn hàng" sau
+       khi đặt hàng thành công nằm trong .card-body > p.co-success-nav (không
+       phải .alert-success), nên nút vẫn nhỏ ~31px xếp ngang chật trên màn nhỏ.
+       Xếp dọc full-width, mỗi nút >=46px để người lớn tuổi dễ bấm. */
+    .co-success-nav > .btn-sm {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -162,7 +164,7 @@
         margin: 8px 0 0 !important;
         font-size: 15px;
     }
-    .alert-success > p > .btn-sm:first-child {
+    .co-success-nav > .btn-sm:first-child {
         margin-top: 0 !important;
     }
 }
