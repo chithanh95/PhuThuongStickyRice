@@ -47,6 +47,9 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
 
         private const string PhonePattern = @"^(0)(3|5|7|8|9)\d{8}$";
 
+        /// <summary>Gói tuần giảm 10% so với mua lẻ từng món.</summary>
+        private const decimal WeeklyPlanDiscountFactor = 0.9m;
+
         private readonly IRepository<WeeklyPlan, Guid> _plans;
         private readonly IRepository<WeeklyPlanOrder, Guid> _orders;
         private readonly IRepository<Product, Guid> _products;
@@ -91,81 +94,26 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
         [Authorize(Roles = "Admin")]
         public virtual async Task<WeeklyPlanDto> CreateAsync(CreateWeeklyPlanDto dto)
         {
-            if (dto == null || dto.Days == null || dto.Days.Count != 5)
-            {
-                throw new DomainException("Gói tuần cần đủ 5 ngày từ thứ 2 đến thứ 6.");
-            }
-
             var orderedDays = ValidDays.ToList();
-            var days = dto.Days.ToList();
-            foreach (var d in days)
-            {
-                if (string.IsNullOrWhiteSpace(d.DayOfWeek) ||
-                    !orderedDays.Contains(d.DayOfWeek.Trim(), StringComparer.OrdinalIgnoreCase))
-                {
-                    throw new DomainException("Ngày trong gói phải là Mon..Fri.");
-                }
-
-                if (d.ProductId == Guid.Empty)
-                {
-                    throw new DomainException("Chưa chọn món cho đầy đủ các ngày.");
-                }
-            }
-
-            var distinct = days.Select(d => d.DayOfWeek.Trim().ToLowerInvariant()).Distinct().Count();
-            if (distinct != 5)
-            {
-                throw new DomainException("Mỗi ngày từ thứ 2 đến thứ 6 chỉ được chọn 1 lần.");
-            }
+            var days = ValidateCreateInput(dto, orderedDays);
 
             // Snap về ngày thứ 2 của tuần đó.
             var weekStart = GetMonday(dto.WeekStart.Date);
 
-            var dayDtos = new List<WeeklyPlanDayDto>();
             // Perf: 1 query duy nhất thay vì 5 lần GetAsync trong loop (N+1).
-            var productIds = days.Select(d => d.ProductId).Distinct().ToList();
-            var productQueryable = await _products.GetQueryableAsync();
-            var productsById = (await _asyncExecuter.ToListAsync(
-                    productQueryable.Where(p => productIds.Contains(p.Id))))
-                .ToDictionary(p => p.Id);
-
-            foreach (var dayCode in orderedDays)
-            {
-                var input = days.First(d =>
-                    d.DayOfWeek.Trim().Equals(dayCode, StringComparison.OrdinalIgnoreCase));
-                if (!productsById.TryGetValue(input.ProductId, out var product))
-                {
-                    throw new DomainException($"Không tìm thấy sản phẩm cho {dayCode}.");
-                }
-
-                dayDtos.Add(new WeeklyPlanDayDto
-                {
-                    DayOfWeek = dayCode,
-                    ProductId = product.Id,
-                    ProductName = product.Name,
-                    Price = product.Price?.Amount ?? 0,
-                });
-            }
+            var dayDtos = await BuildDayMenusAsync(days, orderedDays);
 
             var total = dayDtos.Sum(d => d.Price);
             var plan = new WeeklyPlan
             {
                 WeekStart = weekStart,
                 DayMenusJson = JsonSerializer.Serialize(dayDtos),
-                Price = Math.Round(total * 0.9m, 0),
+                Price = Math.Round(total * WeeklyPlanDiscountFactor, 0),
                 IsActive = true,
             };
             await _plans.InsertAsync(plan);
 
-            // Gói mới thay thế gói cũ cùng tuần.
-            var queryable = await _plans.GetQueryableAsync();
-            var oldPlans = await _asyncExecuter.ToListAsync(
-                queryable.Where(p => p.Id != plan.Id && p.WeekStart == weekStart && p.IsActive));
-            foreach (var old in oldPlans)
-            {
-                old.IsActive = false;
-                await _plans.UpdateAsync(old);
-            }
+            await DeactivateOldPlansAsync(plan.Id, weekStart);
 
             // Perf: bust the cached public active plan.
             _catalogCache.Invalidate();
@@ -292,6 +240,90 @@ namespace PhuThuongStickyRice.Application.WeeklyPlans
         }
 
         // ---- helpers ----
+
+        /// <summary>
+        /// Validate input tạo gói tuần: đủ 5 ngày Mon..Fri, mỗi ngày 1 lần,
+        /// đã chọn món cho từng ngày. Trả về danh sách ngày đã chuẩn hóa.
+        /// </summary>
+        private static List<WeeklyPlanDayInput> ValidateCreateInput(
+            CreateWeeklyPlanDto dto, List<string> orderedDays)
+        {
+            if (dto == null || dto.Days == null || dto.Days.Count != 5)
+            {
+                throw new DomainException("Gói tuần cần đủ 5 ngày từ thứ 2 đến thứ 6.");
+            }
+
+            var days = dto.Days.ToList();
+            foreach (var d in days)
+            {
+                if (string.IsNullOrWhiteSpace(d.DayOfWeek) ||
+                    !orderedDays.Contains(d.DayOfWeek.Trim(), StringComparer.OrdinalIgnoreCase))
+                {
+                    throw new DomainException("Ngày trong gói phải là Mon..Fri.");
+                }
+
+                if (d.ProductId == Guid.Empty)
+                {
+                    throw new DomainException("Chưa chọn món cho đầy đủ các ngày.");
+                }
+            }
+
+            var distinct = days.Select(d => d.DayOfWeek.Trim().ToLowerInvariant()).Distinct().Count();
+            if (distinct != 5)
+            {
+                throw new DomainException("Mỗi ngày từ thứ 2 đến thứ 6 chỉ được chọn 1 lần.");
+            }
+
+            return days;
+        }
+
+        /// <summary>
+        /// Build thực đơn từng ngày từ sản phẩm trong DB (1 query duy nhất),
+        /// sắp xếp theo thứ tự Mon..Fri.
+        /// </summary>
+        private async Task<List<WeeklyPlanDayDto>> BuildDayMenusAsync(
+            List<WeeklyPlanDayInput> days, List<string> orderedDays)
+        {
+            var productIds = days.Select(d => d.ProductId).Distinct().ToList();
+            var productQueryable = await _products.GetQueryableAsync();
+            var productsById = (await _asyncExecuter.ToListAsync(
+                    productQueryable.Where(p => productIds.Contains(p.Id))))
+                .ToDictionary(p => p.Id);
+
+            var dayDtos = new List<WeeklyPlanDayDto>();
+            foreach (var dayCode in orderedDays)
+            {
+                var input = days.First(d =>
+                    d.DayOfWeek.Trim().Equals(dayCode, StringComparison.OrdinalIgnoreCase));
+                if (!productsById.TryGetValue(input.ProductId, out var product))
+                {
+                    throw new DomainException($"Không tìm thấy sản phẩm cho {dayCode}.");
+                }
+
+                dayDtos.Add(new WeeklyPlanDayDto
+                {
+                    DayOfWeek = dayCode,
+                    ProductId = product.Id,
+                    ProductName = product.Name,
+                    Price = product.Price?.Amount ?? 0,
+                });
+            }
+
+            return dayDtos;
+        }
+
+        /// <summary>Gói mới thay thế gói cũ cùng tuần: tắt IsActive các gói cũ.</summary>
+        private async Task DeactivateOldPlansAsync(Guid newPlanId, DateTime weekStart)
+        {
+            var queryable = await _plans.GetQueryableAsync();
+            var oldPlans = await _asyncExecuter.ToListAsync(
+                queryable.Where(p => p.Id != newPlanId && p.WeekStart == weekStart && p.IsActive));
+            foreach (var old in oldPlans)
+            {
+                old.IsActive = false;
+                await _plans.UpdateAsync(old);
+            }
+        }
 
         /// <summary>
         /// Chuẩn hóa SĐT về 9 số cuối để so sánh sở hữu tolerant format

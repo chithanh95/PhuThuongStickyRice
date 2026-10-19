@@ -4,7 +4,7 @@
 @using System.Threading
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
-@inject QueueService QueueService
+@inject QueueTicketService QueueTicketService
 
 @* Item 178: màn hình số thứ tự cho khách chờ — treo TV ở quán. Chữ lớn,
    tương phản cao, tự làm mới 15s, không cần đăng nhập. *@
@@ -235,7 +235,7 @@
         _loading = true;
         try
         {
-            _tickets = await QueueService.GetNowServingAsync();
+            _tickets = await QueueTicketService.GetNowServingAsync();
             _updated = DateTime.Now;
             _error = null;
         }

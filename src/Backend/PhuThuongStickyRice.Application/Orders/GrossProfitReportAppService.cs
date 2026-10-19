@@ -86,9 +86,6 @@ namespace PhuThuongStickyRice.Application.Orders
                         }).ToList()
                     }));
 
-            decimal CostOf(Guid productId, int quantity) =>
-                quantity * (costMap.TryGetValue(productId, out var c) ? c : 0m);
-
             var rows = orders
                 .SelectMany(x => x.Lines)
                 .GroupBy(l => l.ProductId)

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Products.Pages
 {
-    public partial class Edit
+    public partial class EditProductPage
     {
         [CascadingParameter]
         Task<AuthenticationState> AuthenticationStateTask { get; set; }
@@ -21,7 +21,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         public NavigationManager NavManager { get; set; }
 
         [Inject]
-        public ILogger<Edit> Logger { get; set; }
+        public ILogger<EditProductPage> Logger { get; set; }
 
         [Parameter]
         public Guid ProductId { get; set; }

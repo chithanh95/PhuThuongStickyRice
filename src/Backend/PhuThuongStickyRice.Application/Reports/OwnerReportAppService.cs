@@ -9,10 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
-using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Reports;
-using PhuThuongStickyRice.Application.Shop;
 
 namespace PhuThuongStickyRice.Application.Reports
 {

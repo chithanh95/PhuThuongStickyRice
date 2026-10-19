@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
-using PhuThuongStickyRice.Application.Orders;
-using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Common;
 

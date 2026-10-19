@@ -39,8 +39,31 @@ namespace PhuThuongStickyRice.Application.Orders
     [Authorize(Roles = "Admin")]
     public class OrderForecastAppService : ApplicationService, IOrderForecastAppService
     {
-        private const int PatternDays = 56; // 8 weeks
+        private const int PatternDays = 56; // 8 tuần
         private const int MinWeekdayOccurrences = 2;
+
+        /// <summary>Số ngày lịch sử vẽ biểu đồ.</summary>
+        private const int HistoryDays = 30;
+
+        /// <summary>Chân trời dự báo ngắn (ngày).</summary>
+        private const int Forecast7d = 7;
+
+        /// <summary>Chân trời dự báo dài (ngày).</summary>
+        private const int Forecast30d = 30;
+
+        /// <summary>Giá trị đơn trung bình giả định khi chưa có dữ liệu lịch sử.</summary>
+        private const decimal FallbackAvgOrderValueVnd = 30000m;
+
+        /// <summary>Số suất trung bình mỗi đơn giả định khi chưa có dữ liệu.</summary>
+        private const double FallbackPortionsPerOrder = 1.5;
+
+        /// <summary>Thứ tự T2..CN cho UI tiếng Việt.</summary>
+        private static readonly DayOfWeek[] OrderedWeekdays =
+        {
+            DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday,
+            DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday,
+            DayOfWeek.Sunday
+        };
 
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -56,41 +79,8 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<RevenueForecastDto> GetRevenueForecastAsync()
         {
             var today = VietnamTime.Today();
-            var patternStart = today.AddDays(-PatternDays); // inclusive
-            var fetchFromUtc = patternStart.AddDays(-1); // margin for tz
-
-            var queryable = await _orders.GetQueryableAsync();
-            var raw = await _asyncExecuter.ToListAsync(
-                queryable
-                    .Where(x => x.CreatedAt >= fetchFromUtc
-                        && x.CreatedAt < today // exclude partial today
-                        && x.Status != OrderStatus.Cancelled)
-                    .Select(x => new
-                    {
-                        x.CreatedAt,
-                        Revenue = x.TotalAmount.Amount,
-                        Portions = x.Lines.Sum(l => (long)l.Quantity)
-                    }));
-
-            // Aggregate per Vietnam-local day.
-            var perDay = new Dictionary<DateTime, (decimal revenue, long orders, long portions)>();
-            foreach (var o in raw)
-            {
-                var local = o.CreatedAt.AddHours(7).Date;
-                if (local < patternStart || local >= today)
-                {
-                    continue;
-                }
-
-                if (perDay.TryGetValue(local, out var cur))
-                {
-                    perDay[local] = (cur.revenue + o.Revenue, cur.orders + 1, cur.portions + o.Portions);
-                }
-                else
-                {
-                    perDay[local] = (o.Revenue, 1, o.Portions);
-                }
-            }
+            var patternStart = today.AddDays(-PatternDays);
+            var perDay = await LoadDailyAggregatesAsync(today, patternStart);
 
             var vi = CultureInfo.GetCultureInfo("vi-VN");
             var result = new RevenueForecastDto
@@ -100,38 +90,132 @@ namespace PhuThuongStickyRice.Application.Orders
                 DaysWithOrders = perDay.Count
             };
 
-            // ---- Moving averages over completed days ----
-            decimal SumRevenue(DateTime from, DateTime toExclusive)
-            {
-                decimal sum = 0m;
-                for (var d = from; d < toExclusive; d = d.AddDays(1))
-                {
-                    if (perDay.TryGetValue(d, out var v))
+            // Trung bình trượt trên các ngày đã hoàn tất (hôm nay chưa bán xong nên loại).
+            result.AvgDailyRevenue7d = SumRevenue(perDay, today.AddDays(-7), today) / 7m;
+            result.AvgDailyRevenue30d = SumRevenue(perDay, today.AddDays(-30), today) / 30m;
+
+            BuildHistorySeries(result, perDay, today);
+            BuildWeekdayPattern(result, perDay, patternStart, today, vi);
+
+            // Số suất trung bình mỗi đơn — dùng cho đường fallback khi thiếu dữ liệu thứ.
+            var totalPortions = perDay.Values.Sum(x => (double)x.Portions);
+            var totalOrders = perDay.Values.Sum(x => (double)x.Orders);
+            var portionsPerOrder = totalOrders > 0 ? totalPortions / totalOrders : FallbackPortionsPerOrder;
+            BuildForecasts(result, perDay, today, vi, totalOrders, portionsPerOrder);
+
+            result.MethodNote =
+                $"Trung bình trượt trên {PatternDays} ngày đã qua (đơn đã hủy bị loại, " +
+                $"ngày không có đơn tính là 0). Dự báo mỗi ngày = trung bình của đúng " +
+                $"thứ đó trong lịch sử (cần ≥ {MinWeekdayOccurrences} lần xuất hiện), " +
+                $"nếu thiếu dữ liệu thì dùng trung bình ngày 30 ngày gần nhất " +
+                $"({Math.Round(result.AvgDailyRevenue30d, 0):N0}₫/ngày). Số suất gợi ý làm tròn lên.";
+
+            result.Disclaimer =
+                "Dự báo dựa trên trung bình lịch sử, không chính xác tuyệt đối. " +
+                "Ngày lễ, tiệc lớn, thời tiết xấu hoặc món mới có thể làm thực tế " +
+                "lệch nhiều — hãy cộng thêm dự phòng theo kinh nghiệm của quán.";
+
+            return result;
+        }
+
+        /// <summary>Tổng hợp theo từng ngày (giờ VN).</summary>
+        private sealed record DayAggregate(decimal Revenue, long Orders, long Portions);
+
+        /// <summary>
+        /// Tổng hợp doanh thu/số đơn/số suất theo từng ngày (giờ VN) trong
+        /// [patternStart, today). Ngày không có đơn tính là 0 (quán mở cửa hàng ngày).
+        /// </summary>
+        private async Task<Dictionary<DateTime, DayAggregate>> LoadDailyAggregatesAsync(
+            DateTime today, DateTime patternStart)
+        {
+            var fetchFromUtc = patternStart.AddDays(-1); // margin cho múi giờ
+
+            var queryable = await _orders.GetQueryableAsync();
+            var raw = await _asyncExecuter.ToListAsync(
+                queryable
+                    .Where(x => x.CreatedAt >= fetchFromUtc
+                        && x.CreatedAt < today // loại hôm nay vì chưa bán xong
+                        && x.Status != OrderStatus.Cancelled)
+                    .Select(x => new
                     {
-                        sum += v.revenue;
-                    }
+                        x.CreatedAt,
+                        Revenue = x.TotalAmount.Amount,
+                        Portions = x.Lines.Sum(l => (long)l.Quantity)
+                    }));
+
+            var perDay = new Dictionary<DateTime, DayAggregate>();
+            foreach (var o in raw)
+            {
+                var local = VietnamTime.ToVietnamTime(o.CreatedAt).Date;
+                if (local < patternStart || local >= today)
+                {
+                    continue;
                 }
 
-                return sum;
+                if (perDay.TryGetValue(local, out var cur))
+                {
+                    perDay[local] = cur with
+                    {
+                        Revenue = cur.Revenue + o.Revenue,
+                        Orders = cur.Orders + 1,
+                        Portions = cur.Portions + o.Portions
+                    };
+                }
+                else
+                {
+                    perDay[local] = new DayAggregate(o.Revenue, 1, o.Portions);
+                }
             }
 
-            result.AvgDailyRevenue7d = SumRevenue(today.AddDays(-7), today) / 7m;
-            result.AvgDailyRevenue30d = SumRevenue(today.AddDays(-30), today) / 30m;
+            return perDay;
+        }
 
-            // ---- History series: last 30 completed days, zeros included ----
-            for (var d = today.AddDays(-30); d < today; d = d.AddDays(1))
+        /// <summary>Tổng doanh thu trong [from, toExclusive); ngày thiếu tính là 0.</summary>
+        private static decimal SumRevenue(
+            Dictionary<DateTime, DayAggregate> perDay, DateTime from, DateTime toExclusive)
+        {
+            decimal sum = 0m;
+            for (var d = from; d < toExclusive; d = d.AddDays(1))
+            {
+                if (perDay.TryGetValue(d, out var v))
+                {
+                    sum += v.Revenue;
+                }
+            }
+
+            return sum;
+        }
+
+        /// <summary>Chuỗi lịch sử 30 ngày gần nhất (ngày không có đơn tính là 0).</summary>
+        private static void BuildHistorySeries(
+            RevenueForecastDto result,
+            Dictionary<DateTime, DayAggregate> perDay,
+            DateTime today)
+        {
+            for (var d = today.AddDays(-HistoryDays); d < today; d = d.AddDays(1))
             {
                 perDay.TryGetValue(d, out var v);
                 result.History.Add(new ForecastHistoryPointDto
                 {
                     Date = d,
-                    Revenue = v.revenue,
-                    OrderCount = v.orders,
-                    Portions = v.portions
+                    Revenue = v?.Revenue ?? 0m,
+                    OrderCount = v?.Orders ?? 0L,
+                    Portions = v?.Portions ?? 0L
                 });
             }
+        }
 
-            // ---- Per-weekday pattern over the 56-day window ----
+        /// <summary>
+        /// Pattern theo thứ trong 56 ngày: trung bình doanh thu/đơn/suất của
+        /// từng thứ (T2..CN, thứ 2 trước cho UI tiếng Việt).
+        /// </summary>
+        private static void BuildWeekdayPattern(
+            RevenueForecastDto result,
+            Dictionary<DateTime, DayAggregate> perDay,
+            DateTime patternStart,
+            DateTime today,
+            CultureInfo vi)
+        {
             var overallAvg = result.AvgDailyRevenue30d;
             var weekdayStats = new Dictionary<DayOfWeek, (decimal rev, double ord, double por, int n)>();
             foreach (DayOfWeek dow in Enum.GetValues(typeof(DayOfWeek)))
@@ -144,24 +228,17 @@ namespace PhuThuongStickyRice.Application.Orders
                 var s = weekdayStats[d.DayOfWeek];
                 if (perDay.TryGetValue(d, out var v))
                 {
-                    s = (s.rev + v.revenue, s.ord + v.orders, s.por + v.portions, s.n + 1);
+                    s = (s.rev + v.Revenue, s.ord + v.Orders, s.por + v.Portions, s.n + 1);
                 }
                 else
                 {
-                    s = (s.rev, s.ord, s.por, s.n + 1); // open day, zero revenue
+                    s = (s.rev, s.ord, s.por, s.n + 1); // ngày mở cửa nhưng không có đơn
                 }
 
                 weekdayStats[d.DayOfWeek] = s;
             }
 
-            // Monday-first ordering for the Vietnamese UI.
-            var orderedDays = new[]
-            {
-                DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday,
-                DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday,
-                DayOfWeek.Sunday
-            };
-            foreach (var dow in orderedDays)
+            foreach (var dow in OrderedWeekdays)
             {
                 var s = weekdayStats[dow];
                 var avgRev = s.n > 0 ? s.rev / s.n : 0m;
@@ -178,44 +255,25 @@ namespace PhuThuongStickyRice.Application.Orders
                         : 0
                 });
             }
+        }
 
-            // Overall portions per order, for the fallback path.
-            var totalPortions = perDay.Values.Sum(x => (double)x.portions);
-            var totalOrders = perDay.Values.Sum(x => (double)x.orders);
-            var portionsPerOrder = totalOrders > 0 ? totalPortions / totalOrders : 1.5;
-
-            ForecastDayDto ForecastOne(DateTime date)
+        /// <summary>
+        /// Dự báo 7 và 30 ngày tới: mỗi ngày = trung bình của đúng thứ đó trong
+        /// lịch sử (cần ≥ MinWeekdayOccurrences lần xuất hiện), thiếu dữ liệu
+        /// thì dùng trung bình ngày 30 ngày gần nhất.
+        /// </summary>
+        private static void BuildForecasts(
+            RevenueForecastDto result,
+            Dictionary<DateTime, DayAggregate> perDay,
+            DateTime today,
+            CultureInfo vi,
+            double totalOrders,
+            double portionsPerOrder)
+        {
+            for (var i = 1; i <= Forecast7d; i++)
             {
-                var pattern = result.WeekdayPattern.First(x => x.DayOfWeek == date.DayOfWeek);
-                var usePattern = pattern.Occurrences >= MinWeekdayOccurrences;
-                var rev = usePattern ? pattern.AvgRevenue : Math.Round(overallAvg, 0);
-                var ord = usePattern ? pattern.AvgOrders : Math.Round((double)(overallAvg / AvgOrderValue()), 1);
-                var portions = usePattern
-                    ? (long)Math.Ceiling(pattern.AvgPortions)
-                    : (long)Math.Ceiling(ord * portionsPerOrder);
-
-                return new ForecastDayDto
-                {
-                    Date = date,
-                    WeekdayName = vi.DateTimeFormat.DayNames[(int)date.DayOfWeek],
-                    ForecastRevenue = rev,
-                    ForecastOrders = ord,
-                    SuggestedPortions = Math.Max(portions, 0),
-                    BasedOnWeekdayPattern = usePattern
-                };
-            }
-
-            decimal AvgOrderValue()
-            {
-                return totalOrders > 0
-                    ? perDay.Values.Sum(x => x.revenue) / (decimal)totalOrders
-                    : 30000m;
-            }
-
-            // ---- Next 7 days ----
-            for (var i = 1; i <= 7; i++)
-            {
-                result.Next7Days.Add(ForecastOne(today.AddDays(i)));
+                result.Next7Days.Add(ForecastOneDay(
+                    today.AddDays(i), result, perDay, vi, totalOrders, portionsPerOrder));
             }
 
             result.Next7DaysTotal = new ForecastTotalDto
@@ -225,11 +283,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 SuggestedPortions = result.Next7Days.Sum(x => x.SuggestedPortions)
             };
 
-            // ---- Next 30 days ----
             var total30 = new ForecastTotalDto();
-            for (var i = 1; i <= 30; i++)
+            for (var i = 1; i <= Forecast30d; i++)
             {
-                var f = ForecastOne(today.AddDays(i));
+                var f = ForecastOneDay(
+                    today.AddDays(i), result, perDay, vi, totalOrders, portionsPerOrder);
                 total30.ForecastRevenue += f.ForecastRevenue;
                 total30.ForecastOrders += f.ForecastOrders;
                 total30.SuggestedPortions += f.SuggestedPortions;
@@ -237,20 +295,48 @@ namespace PhuThuongStickyRice.Application.Orders
 
             total30.ForecastOrders = Math.Round(total30.ForecastOrders, 1);
             result.Next30DaysTotal = total30;
+        }
 
-            result.MethodNote =
-                $"Trung bình trượt trên {PatternDays} ngày đã qua (đơn đã hủy bị loại, " +
-                $"ngày không có đơn tính là 0). Dự báo mỗi ngày = trung bình của đúng " +
-                $"thứ đó trong lịch sử (cần ≥ {MinWeekdayOccurrences} lần xuất hiện), " +
-                $"nếu thiếu dữ liệu thì dùng trung bình ngày 30 ngày gần nhất " +
-                $"({Math.Round(overallAvg, 0):N0}₫/ngày). Số suất gợi ý làm tròn lên.";
+        /// <summary>Dự báo 1 ngày từ pattern của đúng thứ đó (hoặc fallback).</summary>
+        private static ForecastDayDto ForecastOneDay(
+            DateTime date,
+            RevenueForecastDto result,
+            Dictionary<DateTime, DayAggregate> perDay,
+            CultureInfo vi,
+            double totalOrders,
+            double portionsPerOrder)
+        {
+            var pattern = result.WeekdayPattern.First(x => x.DayOfWeek == date.DayOfWeek);
+            var usePattern = pattern.Occurrences >= MinWeekdayOccurrences;
+            var rev = usePattern ? pattern.AvgRevenue : Math.Round(result.AvgDailyRevenue30d, 0);
+            var ord = usePattern
+                ? pattern.AvgOrders
+                : Math.Round((double)(result.AvgDailyRevenue30d / AvgOrderValue(perDay, totalOrders)), 1);
+            var portions = usePattern
+                ? (long)Math.Ceiling(pattern.AvgPortions)
+                : (long)Math.Ceiling(ord * portionsPerOrder);
 
-            result.Disclaimer =
-                "Dự báo dựa trên trung bình lịch sử, không chính xác tuyệt đối. " +
-                "Ngày lễ, tiệc lớn, thời tiết xấu hoặc món mới có thể làm thực tế " +
-                "lệch nhiều — hãy cộng thêm dự phòng theo kinh nghiệm của quán.";
+            return new ForecastDayDto
+            {
+                Date = date,
+                WeekdayName = vi.DateTimeFormat.DayNames[(int)date.DayOfWeek],
+                ForecastRevenue = rev,
+                ForecastOrders = ord,
+                SuggestedPortions = Math.Max(portions, 0),
+                BasedOnWeekdayPattern = usePattern
+            };
+        }
 
-            return result;
+        /// <summary>
+        /// Giá trị đơn trung bình — để ước số đơn khi thiếu dữ liệu thứ.
+        /// Chưa có dữ liệu thì giả định <see cref="FallbackAvgOrderValueVnd"/>.
+        /// </summary>
+        private static decimal AvgOrderValue(
+            Dictionary<DateTime, DayAggregate> perDay, double totalOrders)
+        {
+            return totalOrders > 0
+                ? perDay.Values.Sum(x => x.Revenue) / (decimal)totalOrders
+                : FallbackAvgOrderValueVnd;
         }
     }
 }

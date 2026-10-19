@@ -34,7 +34,7 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
         {
             try
             {
-                using var response = await _httpClient.GetAsync(_uri);
+                using var response = await _httpClient.GetAsync(_uri, cancellationToken);
                 if (response.IsSuccessStatusCode)
                 {
                     return HealthCheckResult.Healthy($"Uri: '{_uri}', StatusCode: '{response.StatusCode}'");

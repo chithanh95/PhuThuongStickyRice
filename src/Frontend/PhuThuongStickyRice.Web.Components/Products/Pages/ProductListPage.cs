@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Products.Pages
 {
-    public partial class List
+    public partial class ProductListPage
     {
         [CascadingParameter]
         Task<AuthenticationState> AuthenticationStateTask { get; set; }
@@ -28,7 +28,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         public IJSRuntime JSRuntime { get; set; }
 
         [Inject]
-        public ILogger<List> Logger { get; set; }
+        public ILogger<ProductListPage> Logger { get; set; }
 
         [Inject]
         public PermissionService PermissionService { get; set; }

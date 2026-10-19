@@ -74,6 +74,30 @@ namespace PhuThuongStickyRice.Application.Orders
 
         public static ParseOrderResult Parse(string text, IEnumerable<Product> products)
         {
+            var candidates = (products ?? Enumerable.Empty<Product>())
+                .Where(p => p != null)
+                .Select(p => new ParseProductCandidate
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    PriceAmount = p.Price.Amount
+                });
+            return Parse(text, candidates);
+        }
+
+        /// <summary>
+        /// Slim projection for chatbot parse: only Id/Name/Price are needed,
+        /// so callers can SELECT 3 narrow columns instead of full Product rows.
+        /// </summary>
+        public class ParseProductCandidate
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; }
+            public decimal PriceAmount { get; set; }
+        }
+
+        public static ParseOrderResult Parse(string text, IEnumerable<ParseProductCandidate> products)
+        {
             var result = new ParseOrderResult();
 
             if (string.IsNullOrWhiteSpace(text))
@@ -85,7 +109,7 @@ namespace PhuThuongStickyRice.Application.Orders
             result.IsOrderIntent = OrderKeywords.Any(k =>
                 Regex.IsMatch(normalized, @"\b" + Regex.Escape(k) + @"\b"));
 
-            var candidates = (products ?? Enumerable.Empty<Product>())
+            var candidates = (products ?? Enumerable.Empty<ParseProductCandidate>())
                 .Where(p => p != null && !string.IsNullOrWhiteSpace(p.Name))
                 .Select(p => new { Product = p, Key = Normalize(p.Name) })
                 .Where(x => !string.IsNullOrWhiteSpace(x.Key))
@@ -123,7 +147,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     ProductId = c.Product.Id,
                     ProductName = c.Product.Name,
                     Quantity = Math.Max(1, Math.Min(99, qty)),
-                    Price = c.Product.Price.Amount
+                    Price = c.Product.PriceAmount
                 });
 
                 // Blank out the matched span so shorter names can't re-match it.

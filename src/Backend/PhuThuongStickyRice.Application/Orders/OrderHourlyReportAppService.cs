@@ -31,6 +31,9 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int DayStartHour = 6;
         private const int DayEndHour = 22;
 
+        /// <summary>Số khung giờ cao điểm hiển thị trong báo cáo.</summary>
+        private const int TopHoursCount = 3;
+
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
@@ -48,6 +51,26 @@ namespace PhuThuongStickyRice.Application.Orders
             var fromUtc = VietnamTime.DayStartUtc(day);
             var toUtc = VietnamTime.DayEndExclusiveUtc(day);
 
+            var buckets = await AggregatePerHourAsync(fromUtc, toUtc);
+
+            return BuildReport(day, buckets);
+        }
+
+        /// <summary>
+        /// Gom đơn của ngày theo (giờ VN, tên món): tổng số lượng từng món
+        /// trong từng giờ, số đơn từng giờ và tổng số đơn trong ngày.
+        /// </summary>
+        private sealed class HourlyBuckets
+        {
+            public Dictionary<int, Dictionary<string, long>> QuantitiesPerHour { get; } = new();
+
+            public Dictionary<int, long> OrdersPerHour { get; } = new();
+
+            public long TotalOrders { get; set; }
+        }
+
+        private async Task<HourlyBuckets> AggregatePerHourAsync(DateTime fromUtc, DateTime toUtc)
+        {
             var queryable = await _orders.GetQueryableAsync();
             var raw = await _asyncExecuter.ToListAsync(
                 queryable
@@ -64,27 +87,24 @@ namespace PhuThuongStickyRice.Application.Orders
                         }).ToList()
                     }));
 
-            // Aggregate per Vietnam-local hour and product.
-            var perHour = new Dictionary<int, Dictionary<string, long>>();
-            var perHourOrders = new Dictionary<int, long>();
-            long totalOrders = 0;
+            var buckets = new HourlyBuckets();
             foreach (var o in raw)
             {
-                var hour = o.CreatedAt.AddHours(7).Hour;
+                var hour = VietnamTime.ToVietnamTime(o.CreatedAt).Hour;
                 if (hour < DayStartHour || hour > DayEndHour)
                 {
                     continue;
                 }
 
-                totalOrders++;
-                if (!perHour.TryGetValue(hour, out var products))
+                buckets.TotalOrders++;
+                if (!buckets.QuantitiesPerHour.TryGetValue(hour, out var products))
                 {
                     products = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-                    perHour[hour] = products;
-                    perHourOrders[hour] = 0;
+                    buckets.QuantitiesPerHour[hour] = products;
+                    buckets.OrdersPerHour[hour] = 0;
                 }
 
-                perHourOrders[hour]++;
+                buckets.OrdersPerHour[hour]++;
                 foreach (var l in o.Lines)
                 {
                     var name = string.IsNullOrWhiteSpace(l.ProductName) ? "(không tên)" : l.ProductName.Trim();
@@ -93,7 +113,16 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
             }
 
-            var productsOrdered = perHour.Values
+            return buckets;
+        }
+
+        /// <summary>
+        /// Dựng DTO báo cáo từ dữ liệu đã gom: danh sách món (sắp xếp theo
+        /// tổng số lượng), ma trận giờ×món, top khung giờ và gợi ý chuẩn bị.
+        /// </summary>
+        private static HourlySalesReportDto BuildReport(DateTime day, HourlyBuckets buckets)
+        {
+            var productsOrdered = buckets.QuantitiesPerHour.Values
                 .SelectMany(d => d)
                 .GroupBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(g => new { Name = g.Key, Qty = g.Sum(kv => kv.Value) })
@@ -105,7 +134,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var hours = new List<HourlySalesRowDto>();
             for (var h = DayStartHour; h <= DayEndHour; h++)
             {
-                perHour.TryGetValue(h, out var products);
+                buckets.QuantitiesPerHour.TryGetValue(h, out var products);
                 var quantities = productsOrdered
                     .Select(p => products != null && products.TryGetValue(p, out var q) ? q : 0L)
                     .ToList();
@@ -120,12 +149,12 @@ namespace PhuThuongStickyRice.Application.Orders
             var topHours = hours
                 .Where(r => r.Total > 0)
                 .OrderByDescending(r => r.Total)
-                .Take(3)
+                .Take(TopHoursCount)
                 .Select(r => new TopHourDto
                 {
                     Hour = r.Hour,
                     Portions = r.Total,
-                    Orders = perHourOrders.TryGetValue(r.Hour, out var c) ? c : 0
+                    Orders = buckets.OrdersPerHour.TryGetValue(r.Hour, out var c) ? c : 0
                 })
                 .ToList();
 
@@ -137,7 +166,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 Products = productsOrdered,
                 Hours = hours,
                 TopHours = topHours,
-                TotalOrders = totalOrders,
+                TotalOrders = buckets.TotalOrders,
                 TotalPortions = totalPortions,
                 Suggestion = BuildSuggestion(day, topHours, totalPortions)
             };

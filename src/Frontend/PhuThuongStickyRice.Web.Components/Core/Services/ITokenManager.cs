@@ -1,8 +1,12 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Core.Services
 {
+    /// <summary>
+    /// Hợp đồng lưu trữ/truy xuất JWT ở phía Blazor WASM.
+    /// Cài đặt cụ thể: <c>JwtTokenStore</c> (project PhuThuongStickyRice.Web).
+    /// </summary>
     public interface ITokenManager
     {
         bool AttachTokenAutomatically { get; }
@@ -16,22 +20,5 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
         /// <summary>Clears the stored token (logout).</summary>
         Task ClearTokenAsync();
-    }
-
-    public class AuthToken
-    {
-        public string AccessToken { get; set; }
-
-        public string RefreshToken { get; set; }
-
-        public DateTimeOffset ExpiresAt { get; set; }
-
-        public bool TokenExpired
-        {
-            get
-            {
-                return ExpiresAt.ToUniversalTime() <= DateTime.UtcNow.AddSeconds(60);
-            }
-        }
     }
 }

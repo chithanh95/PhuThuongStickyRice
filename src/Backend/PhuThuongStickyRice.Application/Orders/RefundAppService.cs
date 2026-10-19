@@ -11,8 +11,6 @@ using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using PhuThuongStickyRice.Application.Orders;
-using PhuThuongStickyRice.Application.Permissions;
-using PhuThuongStickyRice.Application.Staff;
 
 namespace PhuThuongStickyRice.Application.Orders
 {
@@ -41,7 +39,11 @@ namespace PhuThuongStickyRice.Application.Orders
         public DateTime CreatedAt { get; set; }
     }
 
-    /// <summary>Item 130: refund tracking (recording only; money moves manually).</summary>
+    /// <summary>
+    /// Item 130: theo dõi hoàn tiền cho đơn hàng (chỉ ghi nhận trên hệ thống).
+    /// Tiền thực tế chuyển khoản tay cho khách — service này chỉ lưu trạng thái
+    /// yêu cầu/xác nhận để kế toán đối soát, không tự động chuyển tiền.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class RefundAppService : ApplicationService, IRefundAppService
     {
@@ -50,6 +52,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
 
+        /// <summary>Khởi tạo service hoàn tiền.</summary>
         public RefundAppService(
             IRepository<Order, Guid> orders,
             IAsyncQueryableExecuter asyncExecuter,
@@ -62,6 +65,10 @@ namespace PhuThuongStickyRice.Application.Orders
             _activityLogger = activityLogger;
         }
 
+        /// <summary>
+        /// Admin: báo cáo các đơn có yêu cầu hoàn tiền hoặc đã hoàn tiền xong,
+        /// sắp xếp đơn mới nhất trước.
+        /// </summary>
         public virtual async Task<List<RefundReportRowDto>> GetReportAsync()
         {
             var queryable = await _orders.GetQueryableAsync();
@@ -83,6 +90,13 @@ namespace PhuThuongStickyRice.Application.Orders
             }).ToList();
         }
 
+        /// <summary>
+        /// Admin: ghi nhận yêu cầu hoàn tiền cho một đơn (kèm số tiền và lý do).
+        /// Yêu cầu quyền riêng "orders.refund" (Item 155) và ghi log hoạt động nhân viên
+        /// (Item 156) để truy vết ai yêu cầu hoàn tiền đơn nào.
+        /// </summary>
+        /// <param name="orderId">Id đơn hàng cần hoàn tiền.</param>
+        /// <param name="input">Số tiền và lý do hoàn tiền.</param>
         public virtual async Task RequestRefundAsync(Guid orderId, RequestRefundInput input)
         {
             // Item 155: refunds need orders.refund.
@@ -97,6 +111,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 $"Yêu cầu hoàn tiền đơn {order.OrderNumber}.");
         }
 
+        /// <summary>
+        /// Admin: xác nhận đã chuyển tiền hoàn cho khách (sau khi chuyển khoản tay).
+        /// Yêu cầu quyền "orders.refund" và ghi log hoạt động nhân viên như khi yêu cầu.
+        /// </summary>
+        /// <param name="orderId">Id đơn hàng đã hoàn tiền.</param>
         public virtual async Task ConfirmRefundAsync(Guid orderId)
         {
             // Item 155: refunds need orders.refund.

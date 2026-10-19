@@ -5,7 +5,7 @@
 @using PhuThuongStickyRice.Web.Components.Orders.Services
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @inject OrderService OrderService
-@inject VipService VipService
+@inject VipCustomerService VipCustomerService
 @inject NavigationManager Navigation
 @inject PhuThuongStickyRice.Web.Components.Shop.Services.ShopSettingsService ShopSettingsService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
@@ -851,14 +851,14 @@ else
         {
             if (customer.IsVip)
             {
-                await VipService.UnmarkVipAsync(customer.CustomerPhone);
+                await VipCustomerService.UnmarkVipAsync(customer.CustomerPhone);
                 customer.IsVip = false;
                 customer.Tags?.RemoveAll(t =>
                     string.Equals(t.TagName, "VIP", StringComparison.OrdinalIgnoreCase));
             }
             else
             {
-                var created = await VipService.MarkVipAsync(customer.CustomerPhone);
+                var created = await VipCustomerService.MarkVipAsync(customer.CustomerPhone);
                 customer.IsVip = true;
                 customer.Tags ??= new List<Admin.Models.CustomerTagModel>();
                 customer.Tags.RemoveAll(t =>

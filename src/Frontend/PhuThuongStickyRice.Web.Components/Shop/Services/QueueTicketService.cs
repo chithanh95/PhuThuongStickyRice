@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
 {
     /// <summary>Item 178: public queue-number display (/cho).</summary>
-    public class QueueService : HttpService
+    public class QueueTicketService : HttpService
     {
-        public QueueService(HttpClient httpClient, ITokenManager tokenManager)
+        public QueueTicketService(HttpClient httpClient, ITokenManager tokenManager)
             : base(httpClient, tokenManager)
         {
         }

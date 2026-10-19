@@ -3,6 +3,7 @@ using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
@@ -33,6 +34,12 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly ICustomerTagAppService _customerTags;
 
+        /// <summary>Số đơn gần nhất hiển thị ở trang chi tiết khách hàng.</summary>
+        private const int RecentOrdersLimit = 10;
+
+        /// <summary>Số sản phẩm top hiển thị ở trang chi tiết khách hàng.</summary>
+        private const int TopProductsLimit = 3;
+
         public CustomerDetailAppService(
             IRepository<Order, Guid> orders,
             IRepository<OrderLine, Guid> orderLines,
@@ -56,14 +63,51 @@ namespace PhuThuongStickyRice.Application.Orders
             var queryable = await _orders.GetQueryableAsync();
             var byPhone = queryable.Where(x => x.CustomerPhone == normalized);
 
-            // perf-hunt 2026-10-19: mọi thống kê tính trong SQL (GROUP BY),
-            // không load toàn bộ đơn của khách vào memory. Trước đây
-            // TopProducts luôn rỗng vì Lines không được Include (không có
-            // lazy loading) — giờ truy vấn trực tiếp bảng OrderLines.
-            var stats = await _asyncExecuter.FirstOrDefaultAsync(
+            var stats = await LoadStatsAsync(byPhone);
+            var customerName = await LoadCustomerNameAsync(byPhone);
+            var recentOrders = await LoadRecentOrdersAsync(byPhone);
+            var topProducts = await LoadTopProductsAsync(byPhone);
+            var tags = await LoadTagsAsync(normalized);
+
+            return new CustomerDetailDto
+            {
+                CustomerPhone = normalized,
+                CustomerName = customerName,
+                TotalOrders = stats?.BillableCount ?? 0,
+                CancelledOrders = (stats?.TotalCount ?? 0) - (stats?.BillableCount ?? 0),
+                TotalSpent = stats?.TotalSpent ?? 0m,
+                FirstOrderAt = stats?.FirstOrderAt,
+                LastOrderAt = stats?.LastOrderAt,
+                RecentOrders = recentOrders,
+                TopProducts = topProducts,
+                Tags = tags
+            };
+        }
+
+        /// <summary>
+        /// Thống kê tổng hợp của khách: tổng đơn, đơn tính tiền (loại đơn hủy),
+        /// tổng chi tiêu, đơn đầu/cuối. Mọi thống kê tính trong SQL (GROUP BY),
+        /// không load toàn bộ đơn của khách vào memory.
+        /// </summary>
+        private sealed class CustomerOrderStats
+        {
+            public long TotalCount { get; set; }
+
+            public long BillableCount { get; set; }
+
+            public decimal TotalSpent { get; set; }
+
+            public DateTime? FirstOrderAt { get; set; }
+
+            public DateTime? LastOrderAt { get; set; }
+        }
+
+        private async Task<CustomerOrderStats> LoadStatsAsync(IQueryable<Order> byPhone)
+        {
+            return await _asyncExecuter.FirstOrDefaultAsync(
                 byPhone
                     .GroupBy(x => x.CustomerPhone)
-                    .Select(g => new
+                    .Select(g => new CustomerOrderStats
                     {
                         TotalCount = g.LongCount(),
                         BillableCount = g.LongCount(x => x.Status != OrderStatus.Cancelled),
@@ -73,17 +117,25 @@ namespace PhuThuongStickyRice.Application.Orders
                         FirstOrderAt = g.Min(x => x.CreatedAt),
                         LastOrderAt = g.Max(x => x.CreatedAt)
                     }));
+        }
 
-            var customerName = await _asyncExecuter.FirstOrDefaultAsync(
+        /// <summary>Tên khách: lấy tên mới nhất từng nhập (theo đơn mới nhất).</summary>
+        private async Task<string> LoadCustomerNameAsync(IQueryable<Order> byPhone)
+        {
+            return await _asyncExecuter.FirstOrDefaultAsync(
                 byPhone
                     .Where(x => x.CustomerName != null && x.CustomerName.Trim() != "")
                     .OrderByDescending(x => x.CreatedAt)
                     .Select(x => x.CustomerName));
+        }
 
+        /// <summary>N đơn gần nhất của khách, kèm nhãn trạng thái/thanh toán.</summary>
+        private async Task<List<CustomerRecentOrderDto>> LoadRecentOrdersAsync(IQueryable<Order> byPhone)
+        {
             var recentRows = await _asyncExecuter.ToListAsync(
                 byPhone
                     .OrderByDescending(x => x.CreatedAt)
-                    .Take(10)
+                    .Take(RecentOrdersLimit)
                     .Select(x => new
                     {
                         x.OrderNumber,
@@ -93,31 +145,29 @@ namespace PhuThuongStickyRice.Application.Orders
                         x.PaymentMethod
                     }));
 
-            var dto = new CustomerDetailDto
+            return recentRows.Select(x => new CustomerRecentOrderDto
             {
-                CustomerPhone = normalized,
-                CustomerName = customerName,
-                TotalOrders = stats?.BillableCount ?? 0,
-                CancelledOrders = (stats?.TotalCount ?? 0) - (stats?.BillableCount ?? 0),
-                TotalSpent = stats?.TotalSpent ?? 0m,
-                FirstOrderAt = stats?.FirstOrderAt,
-                LastOrderAt = stats?.LastOrderAt,
-                RecentOrders = recentRows.Select(x => new CustomerRecentOrderDto
-                {
-                    OrderNumber = x.OrderNumber,
-                    CreatedAt = x.CreatedAt,
-                    TotalAmount = x.Total,
-                    Status = x.Status.ToString(),
-                    StatusLabel = StatusLabel(x.Status),
-                    PaymentMethodLabel = PaymentLabel(x.PaymentMethod)
-                }).ToList()
-            };
+                OrderNumber = x.OrderNumber,
+                CreatedAt = x.CreatedAt,
+                TotalAmount = x.Total,
+                Status = x.Status.ToString(),
+                StatusLabel = StatusLabel(x.Status),
+                PaymentMethodLabel = PaymentLabel(x.PaymentMethod)
+            }).ToList();
+        }
 
+        /// <summary>
+        /// Top sản phẩm khách mua nhiều nhất. Truy vấn trực tiếp bảng OrderLines
+        /// (trước đây TopProducts luôn rỗng vì Lines không được Include —
+        /// không có lazy loading).
+        /// </summary>
+        private async Task<List<CustomerTopProductDto>> LoadTopProductsAsync(IQueryable<Order> byPhone)
+        {
             var linesQueryable = await _orderLines.GetQueryableAsync();
             var billableIds = byPhone
                 .Where(x => x.Status != OrderStatus.Cancelled)
                 .Select(x => x.Id);
-            dto.TopProducts = await _asyncExecuter.ToListAsync(
+            return await _asyncExecuter.ToListAsync(
                 linesQueryable
                     .Where(l => billableIds.Contains(l.OrderId))
                     .GroupBy(l => l.ProductName)
@@ -127,16 +177,17 @@ namespace PhuThuongStickyRice.Application.Orders
                         Quantity = g.Sum(l => (long)l.Quantity)
                     })
                     .OrderByDescending(x => x.Quantity)
-                    .Take(3));
+                    .Take(TopProductsLimit));
+        }
 
+        /// <summary>Tag CRM gắn với SĐT; rỗng khi khách chưa có tag.</summary>
+        private async Task<List<CustomerTagDto>> LoadTagsAsync(string normalizedPhone)
+        {
             var tagsByPhone = await _customerTags.GetTagsByPhonesAsync(
-                new[] { normalized });
-            if (tagsByPhone.TryGetValue(normalized, out var tags))
-            {
-                dto.Tags = tags;
-            }
-
-            return dto;
+                new[] { normalizedPhone });
+            return tagsByPhone.TryGetValue(normalizedPhone, out var tags)
+                ? tags
+                : new List<CustomerTagDto>();
         }
 
         private static string StatusLabel(OrderStatus status) => status switch

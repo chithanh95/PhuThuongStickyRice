@@ -1,14 +1,17 @@
 ﻿using PhuThuongStickyRice.Web.Components.Products.Models;
 using PhuThuongStickyRice.Web.Components.Products.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Products.Pages
 {
-    public partial class Detail
+    public partial class AddProductPage
     {
+        [CascadingParameter]
+        Task<AuthenticationState> AuthenticationStateTask { get; set; }
+
         [Inject]
         public ProductService ProductService { get; set; }
 
@@ -16,27 +19,13 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         public NavigationManager NavManager { get; set; }
 
         [Inject]
-        public ILogger<Detail> Logger { get; set; }
-
-        [Parameter]
-        public Guid ProductId { get; set; }
+        public ILogger<AddProductPage> Logger { get; set; }
 
         public ProductModel Product { get; set; }
 
-        public bool NotFound { get; set; }
-
-        protected override async Task OnInitializedAsync()
+        protected override void OnInitialized()
         {
-            try
-            {
-                Product = await ProductService.GetProductByIdAsync(ProductId);
-                NotFound = Product == null;
-            }
-            catch
-            {
-                NotFound = true;
-            }
+            Product = new ProductModel { };
         }
-
     }
 }

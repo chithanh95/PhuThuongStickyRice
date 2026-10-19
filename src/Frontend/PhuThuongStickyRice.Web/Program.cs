@@ -104,7 +104,7 @@ namespace PhuThuongStickyRice.Web
             });
 
             // Item 130 (đúng): VIP marking + priority.
-            builder.Services.AddHttpClient<VipService, VipService>(client =>
+            builder.Services.AddHttpClient<VipCustomerService, VipCustomerService>(client =>
             {
                 client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
@@ -183,7 +183,7 @@ namespace PhuThuongStickyRice.Web
             });
 
             // Item 178: public queue-number display (/cho, no login).
-            builder.Services.AddHttpClient<QueueService, QueueService>(client =>
+            builder.Services.AddHttpClient<QueueTicketService, QueueTicketService>(client =>
             {
                 client.BaseAddress = apiBaseUri;
                 client.Timeout = new TimeSpan(0, 0, 30);
