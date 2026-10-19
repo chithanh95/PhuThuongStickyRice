@@ -1,3 +1,5 @@
+using PhuThuongStickyRice.Application.Discounts;
+using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.CrossCuttingConcerns.OS;
 using PhuThuongStickyRice.Domain.Entities;
@@ -30,6 +32,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly StickyRiceDbContext _db;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IMemoryCache _memoryCache;
+        private readonly IDiscountAppService _discounts;
 
         // Lucky-wheel prize table: label, value (VND), cumulative probability.
         // Keep the probabilities sorted ascending; PickPrize returns the
@@ -41,10 +44,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             ("15k", 15000, 0.90),
             ("20k", 20000, 1.00),
         };
-
-        private const string VoucherCodePrefix = "XOI";
-        private const int VoucherCodeRandomLength = 6;
-        private const int VoucherCodeMaxAttempts = 10;
 
         private const string InvalidPhoneMessage = "Số điện thoại không hợp lệ.";
 
@@ -82,11 +81,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public LandingPublicController(
             StickyRiceDbContext db,
             IDateTimeProvider dateTimeProvider,
-            IMemoryCache memoryCache)
+            IMemoryCache memoryCache,
+            IDiscountAppService discounts)
         {
             _db = db;
             _dateTimeProvider = dateTimeProvider;
             _memoryCache = memoryCache;
+            _discounts = discounts;
         }
 
         /// <summary>Public: latest visible customer reviews (max 20).</summary>
@@ -256,7 +257,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var roll = Random.Shared.NextDouble();
             var (prizeLabel, prizeValue) = PickPrize(roll);
 
-            var voucherCode = await GenerateUniqueVoucherCodeAsync(cancellationToken);
+            // Voucher phải là mã THẬT lưu trong DiscountCodes để checkout chấp
+            // nhận — trước đây chỉ sinh chuỗi "XOI-..." ghi vào LuckySpins nên
+            // khách nhập mã luôn bị từ chối "Mã giảm giá không tồn tại."
+            var voucher = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
+            {
+                Prefix = "XOI",
+                DiscountAmount = prizeValue,
+                ExpiresAt = DateTime.UtcNow.AddDays(30),
+                OwnerPhone = phone
+            });
+            var voucherCode = voucher.Code;
 
             _db.LuckySpins.Add(new LuckySpin
             {
@@ -271,23 +282,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             await _db.SaveChangesAsync(cancellationToken);
 
             return Ok(new { success = true, prizeLabel, prizeValue, voucherCode });
-        }
-
-        private async Task<string> GenerateUniqueVoucherCodeAsync(CancellationToken cancellationToken)
-        {
-            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            for (var attempt = 0; attempt < VoucherCodeMaxAttempts; attempt++)
-            {
-                var code = VoucherCodePrefix + new string(Enumerable.Range(0, VoucherCodeRandomLength)
-                    .Select(_ => chars[Random.Shared.Next(chars.Length)]).ToArray());
-                if (!await _db.LuckySpins.AnyAsync(s => s.VoucherCode == code, cancellationToken))
-                {
-                    return code;
-                }
-            }
-
-            // Fallback: virtually impossible, but never loop forever.
-            return VoucherCodePrefix + Guid.NewGuid().ToString("N")[..VoucherCodeRandomLength].ToUpperInvariant();
         }
 
         // ============ Landing engagement: referral (item 29) ============
@@ -512,7 +506,22 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var daysUntil = DaysUntilBirthday(birthDate.Value, DateTime.Today);
             if (daysUntil <= 7)
             {
-                var giftCode = "SN-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+                // Mỗi khách 1 mã SN còn dùng được (cùng quy ước với endpoint admin
+                // birthdays/vouchers và BirthdayVoucherWorker): trả mã có sẵn thay
+                // vì sinh trùng. Mã phải lưu THẬT trong DiscountCodes — trước đây
+                // chỉ trả chuỗi "SN-..." ngẫu nhiên nên không bao giờ dùng được.
+                var giftCode = await _discounts.GetUsableCodeAsync("SN", phone);
+                if (giftCode == null)
+                {
+                    var voucher = await _discounts.CreateGeneratedAsync(new CreateGeneratedDiscountDto
+                    {
+                        Prefix = "SN",
+                        DiscountAmount = 20000,
+                        ExpiresAt = DateTime.UtcNow.AddDays(30),
+                        OwnerPhone = phone
+                    });
+                    giftCode = voucher.Code;
+                }
                 return Ok(new
                 {
                     success = true,

@@ -1435,7 +1435,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
                 else if (delta < 0)
                 {
-                    await _wallets.RefundAsync(order.CustomerPhone, -delta, order.OrderNumber);
+                    // Hoàn từng phần (bớt món) phải dùng lý do riêng — không được
+                    // dùng lý do "Hoàn tiền hủy đơn", nếu không lần hoàn này sẽ
+                    // chặn nhầm lần hoàn tiền khi khách hủy đơn sau đó.
+                    await _wallets.RefundAsync(order.CustomerPhone, -delta, order.OrderNumber,
+                        $"Hoàn tiền bớt món đơn {order.OrderNumber}");
                 }
             }
             else if (order.PaymentMethod != PaymentMethod.Wallet
@@ -1906,6 +1910,14 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<MoMoCreatePaymentResultDto> CreateMoMoPaymentAsync(Guid id)
         {
             var order = await FindOrThrowAsync(id);
+            // Đơn đã hủy không được tạo link thu tiền mới — khách có thể trả
+            // tiền thật cho đơn không còn hiệu lực (hoàn tiền xử lý tay).
+            // (Đơn đã Paid thì MoMoPaymentService đã chặn ở dưới.)
+            if (order.Status == OrderStatus.Cancelled)
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Đơn hàng đã bị hủy, không thể tạo link thanh toán.");
+            }
             return await _momo.CreatePaymentAsync(order);
         }
 

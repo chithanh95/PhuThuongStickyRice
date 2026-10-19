@@ -32,7 +32,14 @@ namespace PhuThuongStickyRice.Application.Loyalty
         Task ChargeAsync(string phone, decimal amount, string orderNumber);
 
         /// <summary>Internal: credit the wallet back (order cancelled).</summary>
-        Task RefundAsync(string phone, decimal amount, string orderNumber);
+        /// <summary>
+        /// Internal: cộng lại tiền vào ví. Idempotent theo cặp (SĐT, lý do):
+        /// hủy đơn và bớt món phải dùng lý do khác nhau — nếu dùng chung,
+        /// lần hoàn từng phần (bớt món) sẽ chặn nhầm lần hoàn tiền khi hủy
+        /// đơn (khách mất số tiền còn lại). Webhook hủy gọi lặp vẫn an toàn
+        /// vì cùng lý do hủy đơn cho cùng mã đơn chỉ hoàn đúng 1 lần.
+        /// </summary>
+        Task RefundAsync(string phone, decimal amount, string orderNumber, string refundReason = null);
     }
 
     /// <summary>
@@ -201,7 +208,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <param name="phone">SĐT chủ ví.</param>
         /// <param name="amount">Số tiền hoàn lại.</param>
         /// <param name="orderNumber">Mã đơn bị hủy, ghi vào lịch sử giao dịch.</param>
-        public virtual async Task RefundAsync(string phone, decimal amount, string orderNumber)
+        public virtual async Task RefundAsync(string phone, decimal amount, string orderNumber, string refundReason = null)
         {
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized) || amount <= 0)
@@ -209,13 +216,16 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return;
             }
 
-            // Idempotent: cùng mã đơn chỉ hoàn đúng 1 lần. Luồng hủy đơn có thể
-            // được gọi lặp (webhook gọi lại, customer + staff cùng hủy) — kiểm tra
-            // lịch sử giao dịch trước khi cộng tiền để tránh hoàn trùng.
-            var refundReason = $"Hoàn tiền hủy đơn {orderNumber}";
+            // Idempotent: cùng mã đơn chỉ hoàn đúng 1 lần cho cùng một lý do.
+            // Luồng hủy đơn có thể được gọi lặp (webhook gọi lại, customer +
+            // staff cùng hủy) — kiểm tra lịch sử giao dịch trước khi cộng tiền
+            // để tránh hoàn trùng. Lý do phân biệt loại hoàn tiền: hoàn từng
+            // phần khi bớt món không được dùng lý do "hủy đơn", nếu không lần
+            // hoàn đó sẽ chặn nhầm lần hoàn tiền thật khi đơn bị hủy sau đó.
+            var reason = refundReason ?? $"Hoàn tiền hủy đơn {orderNumber}";
             var txQueryable = await _transactions.GetQueryableAsync();
             var alreadyRefunded = await _asyncExecuter.AnyAsync(
-                txQueryable.Where(x => x.Phone == normalized && x.Reason == refundReason));
+                txQueryable.Where(x => x.Phone == normalized && x.Reason == reason));
             if (alreadyRefunded)
             {
                 return;
@@ -226,7 +236,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             account.UpdatedAt = DateTime.UtcNow;
             await _wallets.UpdateAsync(account, autoSave: true);
 
-            await LogAsync(normalized, amount, account.Balance, refundReason, "system");
+            await LogAsync(normalized, amount, account.Balance, reason, "system");
         }
 
         private async Task<WalletAccount> FindAsync(string phone)
