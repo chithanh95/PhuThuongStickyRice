@@ -16,6 +16,8 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                 .IsRequired();
             builder.HasIndex(x => x.Code).IsUnique();
 
+            builder.HasIndex(x => new { x.IsActive, x.CreatedDateTime })        .HasDatabaseName("IX_DiscountCodes_IsActive_CreatedDateTime");
+
             builder.Property(x => x.DiscountPercent).HasPrecision(5, 2);
             builder.Property(x => x.DiscountAmount).HasPrecision(18, 2);
             builder.Property(x => x.MinOrderAmount).HasPrecision(18, 2).IsRequired();

@@ -260,12 +260,21 @@ namespace PhuThuongStickyRice.Application.Products
         /// </summary>
         /// <param name="id">Id món.</param>
         /// <returns>Chi tiết món.</returns>
+        /// <remarks>
+        /// perf-hunt 2026-10-19: cache theo id (TTL 5 phút, key versioned nên
+        /// mọi write path gọi <c>Invalidate()</c> đều bust cache này) vì trang
+        /// chi tiết món public gọi mỗi lượt xem.
+        /// </remarks>
         public virtual async Task<ProductDto> GetAsync(Guid id)
         {
-            var product = await FindOrThrowAsync(id);
-            var dto = _objectMapper.Map<Product, ProductDto>(product);
-            await AttachSizesAsync(new[] { dto });
-            return dto;
+            var cacheKey = $"product:by-id:{id}";
+            return await _catalogCache.GetOrAddAsync(cacheKey, async () =>
+            {
+                var product = await FindOrThrowAsync(id);
+                var dto = _objectMapper.Map<Product, ProductDto>(product);
+                await AttachSizesAsync(new[] { dto });
+                return dto;
+            });
         }
 
         /// <summary>
