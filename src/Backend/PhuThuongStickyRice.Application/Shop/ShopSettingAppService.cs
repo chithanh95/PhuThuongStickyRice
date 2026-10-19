@@ -377,7 +377,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>Cấu hình sao lưu ảnh sản phẩm sang nhà cung cấp ngoài.</summary>
-        private void ApplyImageBackupSettings(ShopSetting entity, ShopSettingDto dto)
+        private static void ApplyImageBackupSettings(ShopSetting entity, ShopSettingDto dto)
         {
             entity.ImageBackupProvider = string.IsNullOrWhiteSpace(dto.ImageBackupProvider)
                 ? DefaultImageBackupProvider
@@ -602,7 +602,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>Nhóm cài đặt đơn hàng/phí ship/giờ mở cửa — kiểm soát việc nhận đơn.</summary>
-        private void MapOrderAndFeeSettings(ShopSettingDto dto, ShopSetting entity)
+        private static void MapOrderAndFeeSettings(ShopSettingDto dto, ShopSetting entity)
         {
             dto.DeliveryFee = entity.DeliveryFee;
             dto.FreeShipThreshold = entity.FreeShipThreshold;
@@ -619,7 +619,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>Nhóm cài đặt tích điểm/khuyến mãi/hạng thành viên — dùng ở checkout và ví.</summary>
-        private void MapLoyaltyAndTierSettings(ShopSettingDto dto, ShopSetting entity)
+        private static void MapLoyaltyAndTierSettings(ShopSettingDto dto, ShopSetting entity)
         {
             dto.PointsPerVnd = FallbackWhenNonPositive(entity.PointsPerVnd, DefaultPointsPerVnd);
             dto.PointsRedeemUnit = FallbackWhenNonPositive(entity.PointsRedeemUnit, DefaultPointsRedeemUnit);
@@ -664,7 +664,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>Nhóm ngân hàng và hiển thị storefront công khai (liên hệ, link food-app).</summary>
-        private void MapBankAndStorefrontSettings(ShopSettingDto dto, ShopSetting entity)
+        private static void MapBankAndStorefrontSettings(ShopSettingDto dto, ShopSetting entity)
         {
             dto.BankName = entity.BankName;
             dto.BankId = entity.BankId;

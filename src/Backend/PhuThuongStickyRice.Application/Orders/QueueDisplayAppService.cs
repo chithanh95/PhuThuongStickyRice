@@ -131,8 +131,12 @@ namespace PhuThuongStickyRice.Application.Orders
         /// thái ở memory để không đánh số lại, xem NOTE ở
         /// <see cref="QueryNowServingAsync"/>).
         /// </summary>
+
+        // CA1859: method private, caller duy nhất truyền List — khai báo
+        // List cụ thể để indexer/Count không qua interface dispatch.
+        // Giữ string? như cũ vì OrderNumber có thể null (xử lý ?? ở dưới).
         private static List<QueueTicketDto> MapQueueTickets(
-            IReadOnlyList<(OrderStatus Status, string? OrderNumber)> today,
+            List<(OrderStatus Status, string? OrderNumber)> today,
             OrderStatus[] visibleStatuses)
         {
             var result = new List<QueueTicketDto>();

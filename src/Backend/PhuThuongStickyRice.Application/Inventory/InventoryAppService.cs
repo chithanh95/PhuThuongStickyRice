@@ -97,7 +97,9 @@ namespace PhuThuongStickyRice.Application.Inventory
                     throw new Domain.Exceptions.DomainException("Số lượng còn lại không được âm.");
                 }
 
-                if (!productNamesById.ContainsKey(line.ProductId))
+                // CA1854: TryGetValue 1 lần thay vì ContainsKey + indexer
+                // (tránh lookup dictionary 2 lần cho cùng 1 key).
+                if (!productNamesById.TryGetValue(line.ProductId, out var productName))
                 {
                     throw new Domain.Exceptions.DomainException("Sản phẩm không tồn tại.");
                 }
@@ -107,7 +109,7 @@ namespace PhuThuongStickyRice.Application.Inventory
                 if (!seen.Add(line.ProductId))
                 {
                     throw new Domain.Exceptions.DomainException(
-                        $"Sản phẩm '{productNamesById[line.ProductId]}' bị nhập trùng 2 dòng. Mỗi món chỉ nhập 1 dòng.");
+                        $"Sản phẩm '{productName}' bị nhập trùng 2 dòng. Mỗi món chỉ nhập 1 dòng.");
                 }
             }
         }

@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
@@ -340,12 +341,13 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         /// <summary>Sinh 1 mã PX-yyyyMMdd-NNNN chưa có trong <paramref name="used"/>.</summary>
         private static string NewUniqueOrderNumber(string day, HashSet<string> used)
         {
-            // Random.Shared là thread-safe — tránh trùng seed khi nhiều
-            // request đồng thời sinh mã.
+            // CA5394: Random là RNG không an toàn mật mã — mã phiếu xuất là
+            // chứng từ nên dùng RandomNumberGenerator (CSPRNG, thread-safe).
+            // Vòng do/while bên dưới vẫn đảm bảo duy nhất như cũ.
             string number;
             do
             {
-                number = $"PX-{day}-{Random.Shared.Next(1000, 9999)}";
+                number = $"PX-{day}-{RandomNumberGenerator.GetInt32(1000, 9999)}";
             } while (!used.Add(number));
 
             return number;

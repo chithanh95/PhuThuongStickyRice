@@ -528,7 +528,10 @@ namespace PhuThuongStickyRice.Application.Messenger
             }
             catch (Exception ex)
             {
-                Logger.LogWarning(ex, warnMessage);
+                // CA2254: không truyền chuỗi động làm message template (chuỗi
+                // chứa dấu { } sẽ bị hiểu nhầm thành placeholder) — truyền
+                // qua argument {WarnMessage} thì nội dung log ra y hệt.
+                Logger.LogWarning(ex, "{WarnMessage}", warnMessage);
                 return new List<ProductDto>();
             }
         }
