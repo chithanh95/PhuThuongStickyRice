@@ -6,10 +6,17 @@ using System.Reflection;
 
 namespace PhuThuongStickyRice.Application
 {
+    /// <summary>
+    /// Tạo instance handler qua reflection cho DI đăng ký factory thủ công:
+    /// tự inject các dependency từ provider, còn tham số handler lồng nhau
+    /// (cho decorator chain) được truyền thẳng vào.
+    /// </summary>
     internal class HandlerFactory
     {
         private readonly List<Func<object, Type, IServiceProvider, object>> _handlerFactoriesPipeline = new List<Func<object, Type, IServiceProvider, object>>();
 
+        /// <summary>Khởi tạo factory cho 1 loại handler cụ thể.</summary>
+        /// <param name="type">Type của handler (có thể là generic mở).</param>
         public HandlerFactory(Type type)
         {
             AddHandlerFactory(type);

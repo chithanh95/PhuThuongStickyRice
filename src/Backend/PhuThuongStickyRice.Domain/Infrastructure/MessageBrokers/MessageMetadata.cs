@@ -2,7 +2,7 @@
 
 namespace PhuThuongStickyRice.Domain.Infrastructure.MessageBrokers
 {
-    public class MetaData
+    public class MessageMetadata
     {
         public string MessageId { get; set; }
 

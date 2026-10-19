@@ -49,6 +49,10 @@ namespace PhuThuongStickyRice.Application.Staff
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Khởi tạo service chốt ca (Admin/Cashier): đối chiếu đơn của ca với
+        /// tiền thực thu để đóng ca.
+        /// </summary>
         public ShiftCloseAppService(
             IRepository<ShiftClose, Guid> closes,
             IRepository<Order, Guid> orders,

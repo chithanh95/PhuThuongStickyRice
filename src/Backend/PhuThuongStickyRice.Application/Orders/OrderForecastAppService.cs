@@ -178,9 +178,9 @@ namespace PhuThuongStickyRice.Application.Orders
             Dictionary<DateTime, DayAggregate> perDay, DateTime from, DateTime toExclusive)
         {
             decimal sum = 0m;
-            for (var d = from; d < toExclusive; d = d.AddDays(1))
+            for (var day = from; day < toExclusive; day = day.AddDays(1))
             {
-                if (perDay.TryGetValue(d, out var v))
+                if (perDay.TryGetValue(day, out var v))
                 {
                     sum += v.Revenue;
                 }
@@ -195,12 +195,12 @@ namespace PhuThuongStickyRice.Application.Orders
             Dictionary<DateTime, DayAggregate> perDay,
             DateTime today)
         {
-            for (var d = today.AddDays(-HistoryDays); d < today; d = d.AddDays(1))
+            for (var day = today.AddDays(-HistoryDays); day < today; day = day.AddDays(1))
             {
-                perDay.TryGetValue(d, out var v);
+                perDay.TryGetValue(day, out var v);
                 result.History.Add(new ForecastHistoryPointDto
                 {
-                    Date = d,
+                    Date = day,
                     Revenue = v?.Revenue ?? 0m,
                     OrderCount = v?.Orders ?? 0L,
                     Portions = v?.Portions ?? 0L
@@ -226,10 +226,10 @@ namespace PhuThuongStickyRice.Application.Orders
                 weekdayStats[dow] = (0m, 0, 0, 0);
             }
 
-            for (var d = patternStart; d < today; d = d.AddDays(1))
+            for (var day = patternStart; day < today; day = day.AddDays(1))
             {
-                var stats = weekdayStats[d.DayOfWeek];
-                if (perDay.TryGetValue(d, out var v))
+                var stats = weekdayStats[day.DayOfWeek];
+                if (perDay.TryGetValue(day, out var v))
                 {
                     stats = (stats.revenue + v.Revenue, stats.orders + v.Orders, stats.portions + v.Portions, stats.days + 1);
                 }
@@ -238,7 +238,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     stats = (stats.revenue, stats.orders, stats.portions, stats.days + 1); // ngày mở cửa nhưng không có đơn
                 }
 
-                weekdayStats[d.DayOfWeek] = stats;
+                weekdayStats[day.DayOfWeek] = stats;
             }
 
             foreach (var dow in OrderedWeekdays)

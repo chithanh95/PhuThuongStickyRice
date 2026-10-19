@@ -88,9 +88,17 @@ namespace PhuThuongStickyRice.Infrastructure.Interceptors
             var methodName = method.Name;
 
             // TODO: Ignore serialize large argument object.
-            var arguments = JsonSerializer.Serialize(invocation.Arguments.Where(x => x.GetType() != typeof(CancellationToken)), LogArgumentsOptions);
+            // FIX: x.GetType() ném NullReferenceException khi argument là null —
+            // đúng lúc đang log exception thì interceptor tự crash và che mất lỗi gốc.
+            // Pattern "is not" null-safe (null không phải CancellationToken nên vẫn được serialize).
+            var arguments = JsonSerializer.Serialize(
+                invocation.Arguments.Where(x => x is not CancellationToken), LogArgumentsOptions);
 
-            _logger.LogError($"An unhandled exception has occurred while executing the method: {className}.{methodName} with ({arguments}). {Environment.NewLine}{ex}");
+            // FIX: dùng message template thay vì string interpolation — tránh cấp phát
+            // chuỗi khi log level tắt, và truyền ex đúng cách để giữ stack trace có cấu trúc.
+            _logger.LogError(ex,
+                "An unhandled exception has occurred while executing the method: {ClassName}.{MethodName} with ({Arguments}).",
+                className, methodName, arguments);
         }
     }
 }

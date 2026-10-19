@@ -47,6 +47,9 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Customer-booked pickup shipper phone (optional).</summary>
         public const int PickupShipperPhoneMaxLength = 30;
 
+        /// <summary>Item 233: độ dài tối đa của lý do hủy đơn.</summary>
+        public const int CancelReasonMaxLength = 100;
+
         /// <summary>Mã đơn hiển thị cho khách, vd "PX-20261019-4821" (duy nhất).</summary>
         public string OrderNumber { get; private set; }
 
@@ -923,7 +926,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>
         /// Tính <see cref="CustomerPhoneNorm"/>: chỉ giữ chữ số, lấy 9 số
         /// cuối; SĐT ít hơn 9 số thì giữ nguyên chuỗi số. Dùng chung chuẩn
-        /// khoan dung với PhoneHelper.PhonesMatch — cùng 1 số dù khách
+        /// khoan dung với PhoneNumber.PhonesMatch — cùng 1 số dù khách
         /// gõ "0912 345 678", "+84912345678" hay "0912345678".
         /// </summary>
         private static string ComputePhoneNorm(string customerPhone)
@@ -996,6 +999,23 @@ namespace PhuThuongStickyRice.Domain.Entities
             }
 
             Status = OrderStatus.Cancelled;
+        }
+
+        /// <summary>
+        /// Item 233: lý do hủy đơn (khách chọn hoặc nhân viên chọn khi hủy).
+        /// Null với đơn chưa hủy hoặc đơn hủy bởi hệ thống không ghi lý do.
+        /// </summary>
+        public string CancelReason { get; private set; }
+
+        /// <summary>
+        /// Item 233: ghi lý do hủy (chuẩn hóa trim, cắt tối đa
+        /// <see cref="CancelReasonMaxLength"/> ký tự).
+        /// </summary>
+        public void SetCancelReason(string reason)
+        {
+            CancelReason = string.IsNullOrWhiteSpace(reason)
+                ? null
+                : reason.Trim()[..Math.Min(reason.Trim().Length, CancelReasonMaxLength)];
         }
 
         /// <summary>

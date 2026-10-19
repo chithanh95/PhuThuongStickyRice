@@ -10,6 +10,11 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ApplicationServicesExtensions
     {
+        /// <summary>
+        /// Đăng ký service tầng application: domain event handlers, CrudService
+        /// generic và EmailMessageService. Tham số interceptor (tùy chọn) bọc
+        /// CrudService của từng aggregate root (dùng cho audit/UoW interceptor).
+        /// </summary>
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, Action<Type, Type, ServiceLifetime> configureInterceptor = null)
         {
             DomainEvents.RegisterHandlers(Assembly.GetExecutingAssembly(), services);
@@ -31,6 +36,10 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
+        /// <summary>
+        /// Đăng ký hệ CQRS thủ công: dispatcher + toàn bộ command/query handler
+        /// (handler cụ thể và handler generic cho mọi aggregate root).
+        /// </summary>
         public static IServiceCollection AddMessageHandlers(this IServiceCollection services)
         {
             services.AddScoped<Dispatcher>();

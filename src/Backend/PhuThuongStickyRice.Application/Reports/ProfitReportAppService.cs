@@ -1,4 +1,5 @@
 
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -45,6 +46,10 @@ namespace PhuThuongStickyRice.Application.Reports
         private readonly IProductRepository _products;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Khởi tạo service báo cáo lợi nhuận (Admin): đối chiếu đơn hàng với
+        /// giá vốn sản phẩm để tính lãi gộp.
+        /// </summary>
         public ProfitReportAppService(
             IOrderRepository orders,
             IProductRepository products,
@@ -64,7 +69,7 @@ namespace PhuThuongStickyRice.Application.Reports
         /// <returns>Doanh thu/giá vốn/lãi theo ngày, theo món và tổng cộng.</returns>
         public virtual async Task<ProfitReportDto> GetReportAsync(DateTime? from = null, DateTime? to = null)
         {
-            var (fromDate, toDate) = NormalizeRange(from, to);
+            var (fromDate, toDate) = DateRangeHelper.NormalizeRange(from, to);
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var rangeOrders = orderQueryable.Where(x => x.Status != OrderStatus.Cancelled
@@ -196,25 +201,6 @@ namespace PhuThuongStickyRice.Application.Reports
                 })
                 .OrderByDescending(x => x.Revenue)
                 .ToList();
-        }
-
-        /// <summary>
-        /// Chuẩn hóa khoảng ngày về biên "nửa mở" [From, To): To = ngày kết
-        /// thúc + 1 ngày (mốc độc quyền) để query CreatedAt &lt; To bao trọn
-        /// cả ngày kết thúc; mặc định lấy 7 ngày gần nhất. Nếu from &gt; to thì
-        /// lùi from về to − 7 ngày thay vì trả lỗi, để UI date-picker lỡ chọn
-        /// ngược vẫn ra báo cáo.
-        /// </summary>
-        private static (DateTime From, DateTime To) NormalizeRange(DateTime? from, DateTime? to)
-        {
-            var toDate = (to?.Date ?? DateTime.UtcNow.Date).AddDays(1);
-            var fromDate = from?.Date ?? toDate.AddDays(-7);
-            if (fromDate > toDate)
-            {
-                fromDate = toDate.AddDays(-7);
-            }
-
-            return (fromDate, toDate);
         }
     }
 }

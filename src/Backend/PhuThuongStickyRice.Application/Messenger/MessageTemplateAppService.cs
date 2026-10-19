@@ -15,19 +15,30 @@ namespace PhuThuongStickyRice.Application.Messenger
 {
     public interface IMessageTemplateAppService : IApplicationService
     {
+        /// <summary>Admin: danh sách mẫu tin theo kênh (SMS/Zalo), null = tất cả.</summary>
         Task<List<MessageTemplateDto>> GetListAsync(string channel);
+
+        /// <summary>Admin: tạo mẫu tin mới với {placeholder} trong nội dung.</summary>
         Task<MessageTemplateDto> CreateAsync(CreateUpdateMessageTemplateDto input);
+
+        /// <summary>Admin: cập nhật mẫu tin theo Id.</summary>
         Task<MessageTemplateDto> UpdateAsync(Guid id, CreateUpdateMessageTemplateDto input);
+
+        /// <summary>Admin: xóa mẫu tin theo Id.</summary>
         Task DeleteAsync(Guid id);
     }
 
-    /// <summary>Item 131: SMS / Zalo message templates with {placeholders}.</summary>
+    /// <summary>
+    /// Item 131: mẫu tin nhắn SMS/Zalo có {placeholder} để hệ thống ghép
+    /// dữ liệu đơn/khách lúc gửi. Chỉ Admin quản trị.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class MessageTemplateAppService : ApplicationService, IMessageTemplateAppService
     {
         private readonly IRepository<MessageTemplate, Guid> _templates;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>Khởi tạo service quản trị mẫu tin nhắn.</summary>
         public MessageTemplateAppService(
             IRepository<MessageTemplate, Guid> templates,
             IAsyncQueryableExecuter asyncExecuter)
@@ -78,6 +89,10 @@ namespace PhuThuongStickyRice.Application.Messenger
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: xóa mẫu tin theo Id. Xóa hẳn khỏi DB (không soft-delete vì
+        /// mẫu tin không liên quan lịch sử đơn hàng).
+        /// </summary>
         public virtual async Task DeleteAsync(Guid id)
         {
             await _templates.DeleteAsync(id, autoSave: true);

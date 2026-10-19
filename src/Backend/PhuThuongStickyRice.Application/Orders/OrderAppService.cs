@@ -175,6 +175,17 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Admin: order reviews, newest first.</summary>
         Task<List<OrderReviewDto>> GetReviewsAsync();
 
+        /// <summary>
+        /// Item 233 (Admin): báo cáo số đơn hủy theo lý do trong khoảng thời gian.
+        /// </summary>
+        Task<List<CancelReasonReportDto>> GetCancelReasonReportAsync(DateTime from, DateTime to);
+
+        /// <summary>
+        /// Item 234 (Admin): món có ≥3 đánh giá 1–2 sao trong 30 ngày qua,
+        /// kèm bình luận chê mẫu để xem lại chất lượng.
+        /// </summary>
+        Task<List<PoorlyRatedDishDto>> GetPoorlyRatedDishesAsync();
+
         /// <summary>Public: post-checkout lucky spin — one spin per order, generates a real voucher.</summary>
         Task<SpinResultDto> SpinAsync(SpinInput input);
 
@@ -1216,48 +1227,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private async Task<System.Linq.IQueryable<Order>> ApplyOrderListFiltersAsync(
             System.Linq.IQueryable<Order> query, GetOrdersInput input)
         {
-            if (!string.IsNullOrWhiteSpace(input.SearchTerm))
-            {
-                var term = input.SearchTerm.Trim();
-                query = query.Where(x =>
-                    x.OrderNumber.Contains(term)
-                    || x.CustomerName.Contains(term)
-                    || x.CustomerPhone.Contains(term));
-            }
-
-            if (!string.IsNullOrWhiteSpace(input.Status)
-                && Enum.TryParse<OrderStatus>(input.Status, ignoreCase: true, out var status))
-            {
-                query = query.Where(x => x.Status == status);
-            }
-
-            // Item 82: filter orders by assigned shipper.
-            if (input.ShipperId.HasValue && input.ShipperId.Value != Guid.Empty)
-            {
-                var shipperId = input.ShipperId.Value;
-                query = query.Where(x => x.ShipperId == shipperId);
-            }
-
-            // Wave 6c (item 35): date-only range on the order creation day
-            // (Vietnam timezone day boundaries).
-            if (input.FromDate.HasValue)
-            {
-                var fromUtc = VietnamTime.DayStartUtc(input.FromDate.Value);
-                query = query.Where(x => x.CreatedAt >= fromUtc);
-            }
-
-            if (input.ToDate.HasValue)
-            {
-                var toUtc = VietnamTime.DayEndExclusiveUtc(input.ToDate.Value);
-                query = query.Where(x => x.CreatedAt < toUtc);
-            }
-
-            // Item 163: filter by cash-collection state.
-            if (input.CashCollected.HasValue)
-            {
-                var collected = input.CashCollected.Value;
-                query = query.Where(x => x.CashCollected == collected);
-            }
+            query = OrderListFilters.Apply(query, input);
 
             // Item 130 (đúng): only orders whose customer is marked VIP.
             if (input.VipOnly)
@@ -1375,6 +1345,13 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var fromStatus = order.Status;
             ApplyStatus(order, status);
+
+            // Item 233: nhân viên hủy tay — ghi lý do nếu có chọn.
+            if (status == OrderStatus.Cancelled && !string.IsNullOrWhiteSpace(input.CancelReason))
+            {
+                order.SetCancelReason(input.CancelReason);
+            }
+
             await _orders.UpdateAsync(order);
 
             // Wave 6c (item 34): audit the transition.
@@ -1795,7 +1772,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             return new PublicOrderReviewDto
             {
-                MaskedCustomerPhone = PhoneHelper.MaskForPublicDisplay(review.CustomerPhone),
+                MaskedCustomerPhone = PhoneNumber.MaskForPublicDisplay(review.CustomerPhone),
                 Rating = review.Rating,
                 Comment = review.Comment,
                 PhotoUrl = review.PhotoUrl,
@@ -1839,7 +1816,15 @@ namespace PhuThuongStickyRice.Application.Orders
                     "Chỉ đơn hàng đang chờ xác nhận mới có thể hủy.");
             }
 
+            // Item 233: lý do hủy bắt buộc — validate trước khi đổi trạng thái.
+            if (string.IsNullOrWhiteSpace(input.CancelReason))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    "Vui lòng chọn lý do hủy đơn.");
+            }
+
             order.Cancel();
+            order.SetCancelReason(input.CancelReason);
             await _orders.UpdateAsync(order);
             await _loyalty.RefundRedeemedPointsAsync(order);
 
@@ -2172,6 +2157,86 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
+        /// Item 233 (Admin): báo cáo số đơn hủy theo lý do. Đơn hủy không ghi
+        /// lý do gộp vào "Không rõ lý do". Sắp xếp theo số lượng giảm dần.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public virtual async Task<List<CancelReasonReportDto>> GetCancelReasonReportAsync(
+            DateTime from, DateTime to)
+        {
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var groups = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => x.Status == OrderStatus.Cancelled
+                        && x.CreatedAt >= from && x.CreatedAt < to)
+                    .GroupBy(x => x.CancelReason)
+                    .Select(g => new { Reason = g.Key, Count = g.Count() }));
+
+            return groups
+                .Select(g => new CancelReasonReportDto
+                {
+                    Reason = string.IsNullOrWhiteSpace(g.Reason) ? "Không rõ lý do" : g.Reason,
+                    Count = g.Count
+                })
+                .OrderByDescending(x => x.Count)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Item 234 (Admin): món có ≥3 lượt đánh giá 1–2 sao trong 30 ngày qua.
+        /// Dùng rating theo món (<see cref="OrderReviewLine"/>), kèm bình luận
+        /// chê gần nhất để chủ quán xem lại chất lượng kịp thời.
+        /// </summary>
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public virtual async Task<List<PoorlyRatedDishDto>> GetPoorlyRatedDishesAsync()
+        {
+            var cutoff = DateTime.UtcNow.AddDays(-30);
+
+            // WithDetailsAsync load Lines (rating theo món) — GetQueryableAsync
+            // không include navigation nên Lines sẽ rỗng.
+            var reviewQueryable = await _reviews.WithDetailsAsync(x => x.Lines);
+
+            // Lấy đánh giá thấp (≤2 sao, không bị ẩn) trong 30 ngày cùng
+            // rating theo món — Take(2000) chặn trước khi group trong memory.
+            var badReviews = await _asyncExecuter.ToListAsync(
+                reviewQueryable
+                    .Where(x => !x.IsHidden && x.CreatedAt >= cutoff && x.Rating <= 2)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(2000));
+
+            var result = new List<PoorlyRatedDishDto>();
+            foreach (var group in badReviews
+                .SelectMany(r => (r.Lines ?? new List<OrderReviewLine>())
+                    .Where(l => l.Rating <= 2)
+                    .Select(l => new { Review = r, Line = l }))
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.Line.ProductName)
+                    ? "(không rõ món)" : x.Line.ProductName.Trim()))
+            {
+                var items = group.ToList();
+                if (items.Count < 3)
+                {
+                    continue;
+                }
+
+                result.Add(new PoorlyRatedDishDto
+                {
+                    ProductName = group.Key,
+                    BadCount = items.Count,
+                    AvgRating = Math.Round(items.Average(x => x.Line.Rating), 1),
+                    SampleComments = items
+                        .Where(x => !string.IsNullOrWhiteSpace(x.Review.Comment))
+                        .Select(x => x.Review.Comment.Trim())
+                        .Distinct()
+                        .Take(3)
+                        .ToList(),
+                    LastBadAt = items.Max(x => x.Review.CreatedAt)
+                });
+            }
+
+            return result.OrderByDescending(x => x.BadCount).ToList();
+        }
+
+        /// <summary>
         /// Vòng quay may mắn sau checkout (không cần đăng nhập). Server quay
         /// chọn segment theo trọng số và sinh voucher dùng 1 lần gắn SĐT —
         /// frontend chỉ chạy hiệu ứng quay tới segment server trả về.
@@ -2218,7 +2283,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private async Task<Order> GetSpinEligibleOrderAsync(SpinInput input)
         {
             var order = await _orders.FindAsync(input.OrderId);
-            if (order == null || !PhoneHelper.PhonesMatch(order.CustomerPhone, input.CustomerPhone))
+            if (order == null || !PhoneNumber.PhonesMatch(order.CustomerPhone, input.CustomerPhone))
             {
                 throw new OrderNotFoundException("Order not found. Please check the order number and phone.");
             }
@@ -2331,6 +2396,8 @@ namespace PhuThuongStickyRice.Application.Orders
             foreach (var order in expired)
             {
                 order.Cancel();
+                // Item 233: đơn hệ thống tự hủy cũng ghi lý do để báo cáo đầy đủ.
+                order.SetCancelReason(OrderCancelReasons.SystemExpiredPayment);
                 await _orders.UpdateAsync(order);
                 // Perf: gom lịch sử trạng thái vào 1 commit cuối UoW thay vì
                 // SaveChanges riêng cho mỗi đơn.
@@ -2410,7 +2477,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         private async Task<Order> FindByNumberAndPhoneAsync(string orderNumber, string customerPhone)        {
             var order = await _orders.GetByOrderNumberAsync(orderNumber?.Trim());
-            if (order == null || !PhoneHelper.PhonesMatch(order.CustomerPhone, customerPhone))
+            if (order == null || !PhoneNumber.PhonesMatch(order.CustomerPhone, customerPhone))
             {
                 throw new OrderNotFoundException("Order not found. Please check the order number and phone.");
             }
@@ -2486,7 +2553,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var order = await FindOrThrowAsync(id);
 
-            if (!PhoneHelper.PhonesMatch(order.CustomerPhone, input.CustomerPhone))
+            if (!PhoneNumber.PhonesMatch(order.CustomerPhone, input.CustomerPhone))
             {
                 throw new Domain.Exceptions.DomainException("Số điện thoại không khớp với đơn hàng.");
             }
@@ -2552,7 +2619,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<OrderDto> TrackOrderAsync(TrackOrderInput input)
         {
             var order = await _orders.GetByOrderNumberAsync(input.OrderNumber?.Trim());
-            if (order == null || !PhoneHelper.PhonesMatch(order.CustomerPhone, input.CustomerPhone))
+            if (order == null || !PhoneNumber.PhonesMatch(order.CustomerPhone, input.CustomerPhone))
             {
                 // Same error for "not found" and "phone mismatch" so the
                 // endpoint cannot be used to probe order numbers.
@@ -2814,6 +2881,8 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var fromStatus = other.Status;
             other.Cancel();
+            // Item 233: đơn bị gộp ghi rõ lý do để báo cáo hủy không bị lệch.
+            other.SetCancelReason($"Gộp vào đơn {primary.OrderNumber}");
             await _orders.UpdateAsync(other);
             await RecordStatusChangeAsync(other.Id, fromStatus, OrderStatus.Cancelled);
 
@@ -2838,7 +2907,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
         private static string NormalizePhoneKey(string phone)
         {
-            var digits = PhoneHelper.DigitsOnly(phone);
+            var digits = PhoneNumber.DigitsOnly(phone);
             return digits.Length >= 9 ? digits[^9..] : null;
         }
 
@@ -2865,7 +2934,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return null;
             }
 
-            var normalized = PhoneHelper.DigitsOnly(phone);
+            var normalized = PhoneNumber.DigitsOnly(phone);
             if (normalized.Length < 9)
             {
                 return null;
@@ -2896,7 +2965,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     })
                     .Take(100));
 
-            var match = recent.FirstOrDefault(x => PhoneHelper.PhonesMatch(x.CustomerPhone, phone));
+            var match = recent.FirstOrDefault(x => PhoneNumber.PhonesMatch(x.CustomerPhone, phone));
             if (match == null)
             {
                 return null;
@@ -2916,7 +2985,7 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<bool> HasOrderedBeforeAsync(string phone)
         {
-            var digits = PhoneHelper.DigitsOnly(phone);
+            var digits = PhoneNumber.DigitsOnly(phone);
             if (digits.Length < 9)
             {
                 return false;
@@ -2932,7 +3001,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var phones = await _asyncExecuter.ToListAsync(
                 orderQueryable.Where(x => x.CustomerPhoneNorm == suffix)
                               .Select(x => x.CustomerPhone));
-            return phones.Any(x => PhoneHelper.PhonesMatch(x, phone));
+            return phones.Any(x => PhoneNumber.PhonesMatch(x, phone));
         }
 
         /// <summary>
@@ -2954,7 +3023,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </returns>
         public virtual async Task<FirstOrderVoucherDto> GetFirstOrderVoucherAsync(string phone)
         {
-            var digits = PhoneHelper.DigitsOnly(phone);
+            var digits = PhoneNumber.DigitsOnly(phone);
             if (digits.Length < 9)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -3006,7 +3075,7 @@ namespace PhuThuongStickyRice.Application.Orders
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public virtual async Task<List<OrderDto>> GetOrdersByPhoneAsync(string phone)
         {
-            var digits = PhoneHelper.DigitsOnly(phone);
+            var digits = PhoneNumber.DigitsOnly(phone);
             if (!System.Text.RegularExpressions.Regex.IsMatch(digits, @"^(0)(3|5|7|8|9)\d{8}$"))
             {
                 throw new CrossCuttingConcerns.Exceptions.ValidationException(
@@ -3016,7 +3085,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var last9 = digits.Substring(digits.Length - 9);
             var candidates = await LoadOrderCandidatesAsync(last9);
 
-            var matched = candidates.Where(x => PhoneHelper.PhonesMatch(x.CustomerPhone, digits)).ToList();
+            var matched = candidates.Where(x => PhoneNumber.PhonesMatch(x.CustomerPhone, digits)).ToList();
             if (matched.Count == 0)
             {
                 return new List<OrderDto>();
@@ -3118,12 +3187,12 @@ namespace PhuThuongStickyRice.Application.Orders
 
         /// <summary>
         /// Item 50: counts completed orders for a phone with the same digit
-        /// tolerance as <see cref="PhoneHelper.PhonesMatch"/> — order phones are stored raw
+        /// tolerance as <see cref="PhoneNumber.PhonesMatch"/> — order phones are stored raw
         /// as typed, so the last 9 digits identify the customer.
         /// </summary>
         private async Task<int> CountCompletedOrdersByPhoneAsync(string customerPhone)
         {
-            var digits = PhoneHelper.DigitsOnly(customerPhone);
+            var digits = PhoneNumber.DigitsOnly(customerPhone);
             var orderQueryable = await _orders.GetQueryableAsync();
             var completedQuery = orderQueryable.Where(o => o.Status == OrderStatus.Completed);
 
@@ -3145,7 +3214,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     .Select(o => o.CustomerPhone));
             }
 
-            return candidatePhones.Count(p => PhoneHelper.PhonesMatch(p, customerPhone));
+            return candidatePhones.Count(p => PhoneNumber.PhonesMatch(p, customerPhone));
         }
 
         /// <summary>
@@ -3186,7 +3255,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // Same digit-tolerance as PhonesMatch: compare the last 9 digits
             // (or the exact digit string when shorter than 9 digits) via the
             // normalized column — index seek instead of a REPLACE() table scan.
-            var digits = PhoneHelper.DigitsOnly(customerPhone);
+            var digits = PhoneNumber.DigitsOnly(customerPhone);
             int count;
             if (digits.Length >= 9)
             {

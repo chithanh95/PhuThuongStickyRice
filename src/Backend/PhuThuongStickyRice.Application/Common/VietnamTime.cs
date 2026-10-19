@@ -53,11 +53,20 @@ namespace PhuThuongStickyRice.Application.Common
             return null;
         }
 
+        /// <summary>
+        /// Ngày hôm nay theo giờ Việt Nam (chỉ phần ngày, không kèm giờ).
+        /// </summary>
         public static DateTime Today()
         {
             return ToVietnamTime(DateTime.UtcNow).Date;
         }
 
+        /// <summary>
+        /// Đổi thời điểm UTC sang giờ Việt Nam. Input không phải Kind=Utc vẫn
+        /// được coi như UTC (quán không có khái niệm múi giờ khác).
+        /// </summary>
+        /// <param name="utc">Thời điểm UTC cần đổi.</param>
+        /// <returns>Thời điểm theo giờ Việt Nam.</returns>
         public static DateTime ToVietnamTime(DateTime utc)
         {
             var utcDateTime = utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc);

@@ -5,6 +5,6 @@ namespace PhuThuongStickyRice.Domain.Infrastructure.MessageBrokers
 {
     public interface IMessageSender<T>
     {
-        Task SendAsync(T message, MetaData metaData = null, CancellationToken cancellationToken = default);
+        Task SendAsync(T message, MessageMetadata metadata = null, CancellationToken cancellationToken = default);
     }
 }

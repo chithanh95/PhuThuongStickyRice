@@ -18,6 +18,13 @@ namespace PhuThuongStickyRice.Application.Staff
     /// </summary>
     public interface IStaffActivityLogger : IApplicationService
     {
+        /// <summary>
+        /// Ghi log hành động của nhân viên đang đăng nhập. Best-effort: mọi
+        /// lỗi ghi log đều được nuốt sau khi log, không bao giờ làm gãy luồng
+        /// nghiệp vụ. Hành động của khách không phải nhân viên bị bỏ qua.
+        /// </summary>
+        /// <param name="action">Tên hành động (vd "Tạo đơn", "Sửa giá").</param>
+        /// <param name="detail">Chi tiết bổ sung.</param>
         Task LogAsync(string action, string detail = null);
 
         /// <summary>
@@ -36,6 +43,10 @@ namespace PhuThuongStickyRice.Application.Staff
         private readonly ILogger<StaffActivityLogger> _logger;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Khởi tạo logger hoạt động nhân viên: ghi <see cref="StaffActivityLog"/>
+        /// cho các role nhân viên, lỗi ghi log không làm gãy luồng chính.
+        /// </summary>
         public StaffActivityLogger(
             IRepository<StaffActivityLog, Guid> logs,
             IRepository<UserRole, Guid> userRoles,
@@ -48,6 +59,11 @@ namespace PhuThuongStickyRice.Application.Staff
             _asyncExecuter = asyncExecuter;
         }
 
+        /// <summary>
+        /// Ghi log cho nhân viên đang đăng nhập: bỏ qua khi chưa login hoặc
+        /// không phải role nhân viên (Admin/Cashier/Kitchen). Dùng
+        /// autoSave vì nơi gọi gồm cả controller không có ambient UOW.
+        /// </summary>
         public async Task LogAsync(string action, string detail = null)
         {
             try
@@ -81,6 +97,10 @@ namespace PhuThuongStickyRice.Application.Staff
             }
         }
 
+        /// <summary>
+        /// Ghi log cho 1 user chỉ định (vd ngay sau login, lúc chưa có
+        /// CurrentUser xác thực). Cũng best-effort như <see cref="LogAsync"/>.
+        /// </summary>
         public async Task LogForUserAsync(Guid userId, string userName, string action, string detail = null)
         {
             try

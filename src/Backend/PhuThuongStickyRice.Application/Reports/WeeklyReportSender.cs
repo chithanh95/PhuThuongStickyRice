@@ -54,6 +54,10 @@ namespace PhuThuongStickyRice.Application.Reports
         private readonly IDataProtector _protector;
         private readonly ILogger<WeeklyReportSender> _logger;
 
+        /// <summary>
+        /// Khởi tạo bộ dựng báo cáo tuần: truy vấn đơn hàng, đọc token Zalo mã
+        /// hóa trong ShopSetting, gửi qua Zalo OA và ghi log.
+        /// </summary>
         public WeeklyReportSender(
             IRepository<Order, Guid> orders,
             IRepository<ShopSetting, Guid> settings,
@@ -119,6 +123,11 @@ namespace PhuThuongStickyRice.Application.Reports
             return dto;
         }
 
+        /// <summary>
+        /// Vẽ báo cáo thành văn bản thuần để gửi Zalo OA hoặc chủ quán copy:
+        /// doanh thu, số đơn, đơn hủy, TB/đơn kèm % thay đổi so với tuần trước
+        /// và top món bán chạy. Xem <see cref="BuildReportAsync"/> để biết nguồn số liệu.
+        /// </summary>
         public string BuildMessageText(WeeklyReportDto report)
         {
             var sb = new StringBuilder();

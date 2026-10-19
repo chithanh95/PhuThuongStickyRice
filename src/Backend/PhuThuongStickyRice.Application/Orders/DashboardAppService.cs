@@ -138,7 +138,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 return cachedStats;
             }
 
-            var (fromDate, toDate) = NormalizeRange(from, to);
+            var (fromDate, toDate) = DateRangeHelper.NormalizeRange(from, to);
             var stats = await BuildDashboardStatsAsync(fromDate, toDate);
 
             _memoryCache.Set(cacheKey, stats, TimeSpan.FromSeconds(DashboardStatsCacheSeconds));
@@ -281,7 +281,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         public virtual async Task<List<SourceStatDto>> GetSourceStatsAsync(DateTime? from = null, DateTime? to = null)
         {
-            var (fromDate, toDate) = NormalizeRange(from, to);
+            var (fromDate, toDate) = DateRangeHelper.NormalizeRange(from, to);
             var orderQueryable = await _orders.GetQueryableAsync();
 
             var rows = await _asyncExecuter.ToListAsync(
@@ -307,7 +307,7 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<NewAndReturningCustomersDto> GetNewReturningCustomersAsync(
             DateTime? from = null, DateTime? to = null)
         {
-            var (fromDate, toDate) = NormalizeRange(from, to);
+            var (fromDate, toDate) = DateRangeHelper.NormalizeRange(from, to);
             var orderQueryable = await _orders.GetQueryableAsync();
 
             // perf-hunt 2026-10-19: gộp theo SĐT ngay trên SQL (1 dòng/SĐT kèm
@@ -380,7 +380,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         public virtual async Task<List<TopProductDto>> GetTopProductsAsync(DateTime? from = null, DateTime? to = null, int top = 5)
         {
-            var (fromDate, toDate) = NormalizeRange(from, to);
+            var (fromDate, toDate) = DateRangeHelper.NormalizeRange(from, to);
 
             var orderQueryable = await _orders.GetQueryableAsync();
             var billable = orderQueryable.Where(x =>
@@ -518,22 +518,6 @@ namespace PhuThuongStickyRice.Application.Orders
 
             _memoryCache.Set(cacheKey, result, TimeSpan.FromSeconds(TodaySoldCacheSeconds));
             return result;
-        }
-
-        /// <summary>
-        /// Default range = last 7 days (old behavior). The end is exclusive
-        /// and pushed to the end of the "to" day so the whole day is included.
-        /// </summary>
-        private static (DateTime From, DateTime To) NormalizeRange(DateTime? from, DateTime? to)
-        {
-            var toDate = (to?.Date ?? DateTime.UtcNow.Date).AddDays(1);
-            var fromDate = from?.Date ?? toDate.AddDays(-7);
-            if (fromDate > toDate)
-            {
-                fromDate = toDate.AddDays(-7);
-            }
-
-            return (fromDate, toDate);
         }
     }
 }

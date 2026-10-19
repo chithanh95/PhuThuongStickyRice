@@ -23,6 +23,12 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
             _options = options;
         }
 
+        /// <summary>
+        /// Thực thi pipeline request và chuyển mọi exception chưa được xử lý
+        /// thành response JSON với status code phù hợp (400 validation, 404 not found,
+        /// 500 lỗi hệ thống). Không bao giờ để exception thoát ra ngoài làm crash request.
+        /// </summary>
+        /// <param name="context">HttpContext của request hiện tại.</param>
         public async Task InvokeAsync(HttpContext context)
         {
             try
@@ -43,7 +49,10 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
                         response.StatusCode = (int)HttpStatusCode.NotFound;
                         break;
                     default:
-                        _logger.LogError(ex, $"[{DateTime.UtcNow.Ticks}-{Environment.CurrentManagedThreadId}]");
+                        // FIX: dùng message template thay vì string interpolation — tránh cấp phát
+                        // chuỗi khi log level tắt, và giữ Ticks/ThreadId thành field có cấu trúc
+                        // để lọc log dễ dàng.
+                        _logger.LogError(ex, "[{Ticks}-{ThreadId}]", DateTime.UtcNow.Ticks, Environment.CurrentManagedThreadId);
                         response.StatusCode = (int)HttpStatusCode.InternalServerError;
                         break;
                 }

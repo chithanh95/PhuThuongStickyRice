@@ -4,13 +4,14 @@ using System.Linq;
 namespace PhuThuongStickyRice.Application.Common
 {
     /// <summary>
-    /// Helper dùng chung cho chuẩn hóa, so khớp và che số điện thoại (SĐT).
+    /// Tiện ích tĩnh thao tác trên số điện thoại (SĐT): chuẩn hóa, so khớp
+    /// và che SĐT để hiển thị công khai.
     /// Gom các phiên bản copy-paste trước đây nằm rải rác ở OrderAppService
     /// (PhonesMatch/DigitsOnly/MaskPhoneForDisplay), LoyaltyAppService
     /// (IsPlaceholderPhone) và LandingPublicController (MaskPhone) về 1 chỗ
     /// để sửa 1 lần là áp dụng khắp nơi, tránh các bản sao lệch nhau dần.
     /// </summary>
-    public static class PhoneHelper
+    public static class PhoneNumber
     {
         /// <summary>
         /// Lấy chuỗi chỉ gồm chữ số từ SĐT: bỏ dấu cách, gạch ngang, dấu chấm,

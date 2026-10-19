@@ -8,6 +8,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application
 {
+    /// <summary>
+    /// Query lấy toàn bộ danh sách entity — xử lý bởi
+    /// <c>GetEntitiesQueryHandler&lt;T&gt;</c>.
+    /// </summary>
+    /// <typeparam name="TEntity">Aggregate root cần lấy danh sách.</typeparam>
     public class GetEntitiesQuery<TEntity> : IQuery<List<TEntity>>
          where TEntity : Entity<Guid>, IAggregateRoot
     {

@@ -40,6 +40,10 @@ namespace PhuThuongStickyRice.Application.Reports
         private readonly IDashboardAppService _dashboard;
         private readonly IEmailMessageRepository _emailMessages;
 
+        /// <summary>
+        /// Khởi tạo service báo cáo cho chủ quán (Admin): tổng hợp dashboard,
+        /// cài đặt shop và tin nhắn email thành báo cáo tổng quan.
+        /// </summary>
         public OwnerReportAppService(
             IShopSettingAppService shopSettings,
             IDashboardAppService dashboard,

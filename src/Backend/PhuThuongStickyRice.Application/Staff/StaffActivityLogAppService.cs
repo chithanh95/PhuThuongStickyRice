@@ -38,6 +38,9 @@ namespace PhuThuongStickyRice.Application.Staff
         private readonly IRepository<StaffActivityLog, Guid> _logs;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Khởi tạo service tra cứu nhật ký hoạt động nhân viên (Admin).
+        /// </summary>
         public StaffActivityLogAppService(
             IRepository<StaffActivityLog, Guid> logs,
             IAsyncQueryableExecuter asyncExecuter)

@@ -22,9 +22,12 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
         {
             try
             {
-                using SqlConnection connection = new SqlConnection(_connectionString);
+                // FIX: SqlConnection/SqlCommand implement IAsyncDisposable — trong method
+                // async dùng "await using" để DisposeAsync giải phóng connection bất đồng bộ,
+                // tránh block thread pool khi server còn giữ handle.
+                await using SqlConnection connection = new SqlConnection(_connectionString);
                 await connection.OpenAsync(cancellationToken);
-                using (SqlCommand command = connection.CreateCommand())
+                await using (SqlCommand command = connection.CreateCommand())
                 {
                     command.CommandText = _sql;
                     await command.ExecuteScalarAsync(cancellationToken);

@@ -107,6 +107,23 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private const int DefaultPointsRedeemUnit = 100;
         private const int DefaultPointsRedeemValue = 10000;
 
+        /// <summary>
+        /// Lấy bước đổi (số điểm) và mệnh giá (số tiền) của 1 bước từ setting:
+        /// setting chưa cấu hình (&lt;= 0) thì dùng default để đổi điểm vẫn
+        /// hoạt động thay vì trả về 0.
+        /// </summary>
+        /// <param name="settings">Cấu hình shop.</param>
+        /// <returns>(Unit: số điểm 1 bước, Value: số tiền 1 bước đổi được).</returns>
+        private static (int Unit, decimal Value) ResolveRedeemStep(ShopSettingDto settings) =>
+            (settings.PointsRedeemUnit > 0 ? settings.PointsRedeemUnit : DefaultPointsRedeemUnit,
+             settings.PointsRedeemValue > 0 ? settings.PointsRedeemValue : DefaultPointsRedeemValue);
+
+        /// <summary>
+        /// Giới hạn số dòng khi admin liệt kê tài khoản điểm — bảng lớn dần
+        /// theo đơn nên không trả toàn bộ.
+        /// </summary>
+        private const int MaxAdminListRows = 200;
+
         private readonly Domain.Repositories.ILoyaltyAccountRepository _accounts;
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -189,7 +206,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 query = query.Where(x => x.Phone.Contains(term));
             }
 
-            var items = await _asyncExecuter.ToListAsync(query.Take(200));
+            var items = await _asyncExecuter.ToListAsync(query.Take(MaxAdminListRows));
             var settings = await _shopSettings.GetAsync();
             return items.Select(x => MapToDto(x, settings)).ToList();
         }
@@ -513,12 +530,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
                         && x.Status == OrderStatus.Completed
                         && x.CustomerPhoneNorm == buyerKey)
                     .Select(x => x.CustomerPhone));
-            return !candidatePhones.Any(p => PhoneHelper.PhonesMatch(p, buyer.Phone));
+            return !candidatePhones.Any(p => PhoneNumber.PhonesMatch(p, buyer.Phone));
         }
 
         /// <summary>
         /// Lấy 9 ký tự cuối của chuỗi SĐT đã chuẩn hóa digits — cùng chuẩn so
-        /// sánh tolerant với <see cref="PhoneHelper.PhonesMatch"/>; chuỗi ngắn hơn
+        /// sánh tolerant với <see cref="PhoneNumber.PhonesMatch"/>; chuỗi ngắn hơn
         /// 9 ký tự trả nguyên để không vứt mất số nhập thiếu.
         /// </summary>
         private static string LastNineDigits(string normalizedPhone) =>
@@ -543,8 +560,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return 0;
             }
 
-            var unit = settings.PointsRedeemUnit > 0 ? settings.PointsRedeemUnit : DefaultPointsRedeemUnit;
-            var value = settings.PointsRedeemValue > 0 ? settings.PointsRedeemValue : DefaultPointsRedeemValue;
+            var (unit, value) = ResolveRedeemStep(settings);
             if (unit <= 0 || value <= 0)
             {
                 return 0;
@@ -581,8 +597,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 return (0, 0);
             }
 
-            var unit = settings.PointsRedeemUnit > 0 ? settings.PointsRedeemUnit : DefaultPointsRedeemUnit;
-            var value = settings.PointsRedeemValue > 0 ? settings.PointsRedeemValue : DefaultPointsRedeemValue;
+            var (unit, value) = ResolveRedeemStep(settings);
 
             // Làm tròn xuống bước đổi chẵn (vd 100 điểm = 10.000₫): điểm lẻ dưới
             // 1 bước không đổi được vì không có mệnh giá lẻ.
@@ -726,7 +741,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// </summary>
         public bool IsPlaceholderPhone(string phone)
         {
-            var digits = PhoneHelper.DigitsOnly(phone);
+            var digits = PhoneNumber.DigitsOnly(phone);
             return digits.Length > 0 && digits.All(c => c == digits[0]);
         }
 

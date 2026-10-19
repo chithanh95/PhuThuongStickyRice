@@ -7,6 +7,7 @@ using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Persistence;
 using PhuThuongStickyRice.Application.Permissions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -106,11 +107,17 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
             // Item 126: seed the Kitchen and Cashier roles too (no users
             // assigned — the admin assigns them on the user admin page).
-            foreach (var extraRole in new[] { KitchenRoleName, CashierRoleName, CustomerRoleName })
+            // FIX N+1: gộp 3 lần AnyAsync thành 1 query IN duy nhất.
+            var extraRoles = new[] { KitchenRoleName, CashierRoleName, CustomerRoleName };
+            // Tính trước ở client để EF dịch Contains thành mệnh đề IN trong SQL.
+            var wantedNormalized = extraRoles.Select(n => n.ToUpperInvariant()).ToList();
+            var existingRoleNames = await dbContext.Set<Role>()
+                .Where(r => wantedNormalized.Contains(r.NormalizedName))
+                .Select(r => r.NormalizedName)
+                .ToListAsync(cancellationToken);
+            foreach (var extraRole in extraRoles)
             {
-                var exists = await dbContext.Set<Role>()
-                    .AnyAsync(r => r.NormalizedName == extraRole.ToUpperInvariant(), cancellationToken);
-                if (!exists)
+                if (!existingRoleNames.Contains(extraRole.ToUpperInvariant()))
                 {
                     await dbContext.Set<Role>().AddAsync(new Role
                     {
@@ -169,19 +176,33 @@ namespace PhuThuongStickyRice.WebAPI.Services
             await SeedDefaultPermissionsAsync(dbContext, cancellationToken);
         }
 
+        /// <summary>
+        /// Seed quyền mặc định cho các role (idempotent — chỉ thêm cặp còn thiếu,
+        /// không bao giờ ghi đè quyền admin đã sửa ở /admin/phan-quyen).
+        /// </summary>
+        /// <param name="dbContext">DbContext đang dùng.</param>
+        /// <param name="cancellationToken">Token hủy.</param>
         private async Task SeedDefaultPermissionsAsync(
             StickyRiceDbContext dbContext, CancellationToken cancellationToken)
         {
             var set = dbContext.Set<RolePermission>();
             var added = 0;
 
+            // FIX N+1: bản cũ gọi AnyAsync từng cặp (role, key) trong vòng lặp lồng nhau
+            // → hàng chục query lẻ mỗi lần khởi động. Tải toàn bộ cặp đã có về 1 lần
+            // vào HashSet rồi chỉ Add những cặp còn thiếu — vẫn idempotent, chỉ còn 1 SELECT.
+            var existingKeys = new HashSet<(string Role, string Key)>(
+                (await set
+                    .Select(x => new { x.Role, x.PermissionKey })
+                    .ToListAsync(cancellationToken))
+                .Select(x => (x.Role, x.PermissionKey)));
+
             foreach (var pair in PermissionKeys.DefaultGrants)
             {
                 foreach (var key in pair.Value)
                 {
-                    var exists = await set.AnyAsync(
-                        x => x.Role == pair.Key && x.PermissionKey == key, cancellationToken);
-                    if (!exists)
+                    // HashSet.Add trả về false nếu cặp đã tồn tại → chỉ Add entity khi thật sự thiếu.
+                    if (existingKeys.Add((pair.Key, key)))
                     {
                         await set.AddAsync(new RolePermission
                         {

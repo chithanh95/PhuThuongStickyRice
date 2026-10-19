@@ -501,79 +501,21 @@ namespace PhuThuongStickyRice.Application.Orders
                     $"{x.Quantity}× {x.ProductName}" +
                     (string.IsNullOrWhiteSpace(x.SizeName) ? "" : $" ({x.SizeName})")));
         /// <summary>
-        /// Lọc đơn xuất Excel theo ô tìm kiếm (mã đơn/tên khách/SĐT), trạng
-        /// thái, shipper và khoảng ngày VN. Trạng thái nhập sai chính tả thì
-        /// bỏ qua bộ lọc (không lỗi trang).
-        /// </summary>
-        /// <summary>
         /// Lọc đơn theo filter danh sách: tìm kiếm / trạng thái / shipper /
         /// khoảng ngày / thu tiền / chỉ VIP — phải đồng nhất với GetListAsync
         /// ở OrderAppService để file Excel xuất ra khớp danh sách đang xem.
         /// </summary>
         private async Task<IQueryable<Order>> ApplyFiltersAsync(IQueryable<Order> query, GetOrdersInput input)
         {
-            if (!string.IsNullOrWhiteSpace(input.SearchTerm))
-            {
-                var term = input.SearchTerm.Trim();
-                query = query.Where(x =>
-                    x.OrderNumber.Contains(term)
-                    || x.CustomerName.Contains(term)
-                    || x.CustomerPhone.Contains(term));
-            }
-
-            if (!string.IsNullOrWhiteSpace(input.Status)
-                && Enum.TryParse<OrderStatus>(input.Status, ignoreCase: true, out var status))
-            {
-                query = query.Where(x => x.Status == status);
-            }
-
-            if (input.ShipperId.HasValue && input.ShipperId.Value != Guid.Empty)
-            {
-                var shipperId = input.ShipperId.Value;
-                query = query.Where(x => x.ShipperId == shipperId);
-            }
-
-            if (input.FromDate.HasValue || input.ToDate.HasValue)
-            {
-                query = ApplyDateRangeFilter(query, input);
-            }
-
-            // SH5 (bug-hunt): export bỏ sót 2 filter này nên file Excel lệch
-            // âm thầm so với danh sách — bổ sung cho khớp GetListAsync.
-            // Item 163: filter by cash-collection state.
-            if (input.CashCollected.HasValue)
-            {
-                var collected = input.CashCollected.Value;
-                query = query.Where(x => x.CashCollected == collected);
-            }
+            // CashCollected đã nằm trong OrderListFilters.Apply (SH5/bug-hunt:
+            // export từng bỏ sót filter này khiến file Excel lệch so với danh sách).
+            query = OrderListFilters.Apply(query, input);
 
             // Item 130 (đúng): only orders whose customer is marked VIP.
             if (input.VipOnly)
             {
                 var vipPhones = await _vipPriority.GetVipPhonesAsync();
                 query = query.Where(x => vipPhones.Contains(x.CustomerPhone));
-            }
-
-            return query;
-        }
-
-        /// <summary>
-        /// Lọc đơn theo khoảng ngày Việt Nam: đầu ngày FromDate (00:00, biên
-        /// bao) đến hết ngày ToDate (biên độc quyền) — cùng cách đổi múi giờ
-        /// với GetListAsync ở OrderAppService để Excel khớp danh sách đang xem.
-        /// </summary>
-        private static IQueryable<Order> ApplyDateRangeFilter(IQueryable<Order> query, GetOrdersInput input)
-        {
-            if (input.FromDate.HasValue)
-            {
-                var fromUtc = VietnamTime.DayStartUtc(input.FromDate.Value);
-                query = query.Where(x => x.CreatedAt >= fromUtc);
-            }
-
-            if (input.ToDate.HasValue)
-            {
-                var toUtc = VietnamTime.DayEndExclusiveUtc(input.ToDate.Value);
-                query = query.Where(x => x.CreatedAt < toUtc);
             }
 
             return query;

@@ -2,7 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @using PhuThuongStickyRice.Web.Components.Orders.Models
-@inject MessageTemplateService MessageTemplateService
+@inject OrderMessageTemplateService OrderMessageTemplateService
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
 <div class="lx-page-head">
@@ -124,7 +124,7 @@ else
     {
         try
         {
-            _templates = await MessageTemplateService.GetListAsync();
+            _templates = await OrderMessageTemplateService.GetListAsync();
         }
         catch (Exception ex)
         {
@@ -154,7 +154,7 @@ else
         _message = null;
         try
         {
-            var updated = await MessageTemplateService.UpdateAsync(t.Id, _editText, _editActive);
+            var updated = await OrderMessageTemplateService.UpdateAsync(t.Id, _editText, _editActive);
             t.Template = updated.Template;
             t.IsActive = updated.IsActive;
             _editingId = null;

@@ -8,10 +8,21 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application
 {
+    /// <summary>
+    /// Query lấy 1 entity theo Id — xử lý bởi
+    /// <c>GetEntityByIdQueryHandler&lt;T&gt;</c>.
+    /// </summary>
+    /// <typeparam name="TEntity">Aggregate root cần lấy.</typeparam>
     public class GetEntityByIdQuery<TEntity> : IQuery<TEntity>
         where TEntity : Entity<Guid>, IAggregateRoot
     {
+        /// <summary>Id của entity cần lấy.</summary>
         public Guid Id { get; set; }
+
+        /// <summary>
+        /// true thì ném <see cref="NotFoundException"/> khi không tìm thấy,
+        /// false thì trả null.
+        /// </summary>
         public bool ThrowNotFoundIfNull { get; set; }
     }
 

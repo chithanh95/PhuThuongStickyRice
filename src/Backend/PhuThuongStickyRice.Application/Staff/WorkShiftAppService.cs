@@ -60,6 +60,9 @@ namespace PhuThuongStickyRice.Application.Staff
         private readonly IRepository<WorkShift, Guid> _shifts;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Khởi tạo service quản lý ca làm việc nhân viên (Admin).
+        /// </summary>
         public WorkShiftAppService(
             IRepository<WorkShift, Guid> shifts,
             IAsyncQueryableExecuter asyncExecuter)
@@ -116,6 +119,10 @@ namespace PhuThuongStickyRice.Application.Staff
             return MapToDto(entity);
         }
 
+        /// <summary>
+        /// Admin: xóa 1 ca làm việc theo Id. Xóa hẳn (ca làm việc chỉ là lịch
+        /// phân công, không dính lịch sử đơn hàng nên không cần soft-delete).
+        /// </summary>
         public virtual async Task DeleteAsync(Guid id)
         {
             await _shifts.DeleteAsync(id, autoSave: true);

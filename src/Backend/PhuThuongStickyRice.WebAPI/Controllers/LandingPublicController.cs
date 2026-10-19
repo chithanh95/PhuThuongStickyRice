@@ -126,7 +126,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 .Take(20)
                 .Select(r => new
                 {
-                    displayName = PhoneHelper.MaskForPublicDisplay(r.CustomerPhone),
+                    displayName = PhoneNumber.MaskForPublicDisplay(r.CustomerPhone),
                     rating = r.Rating,
                     comment = r.Comment,
                     photoUrl = r.PhotoUrl,

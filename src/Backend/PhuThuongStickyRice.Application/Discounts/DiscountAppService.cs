@@ -329,10 +329,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         [AllowAnonymous]
         public virtual async Task<ValidateDiscountResultDto> ValidateAsync(ValidateDiscountInput input, string? customerPhone)
         {
-            var code = NormalizeCode(input.Code);
-            var queryable = await _discounts.GetQueryableAsync();
-            var entity = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Code == code));
+            var entity = await FindByCodeAsync(input.Code);
 
             var (valid, message) = CheckUsable(entity, input.Subtotal, customerPhone);
             return new ValidateDiscountResultDto
@@ -352,10 +349,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         public virtual async Task<bool> IsFreeshipAsync(string code, decimal subtotal, string? customerPhone)
         {
-            var normalized = NormalizeCode(code);
-            var queryable = await _discounts.GetQueryableAsync();
-            var entity = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Code == normalized));
+            var entity = await FindByCodeAsync(code);
 
             if (entity == null || entity.VoucherType != VoucherType.Freeship)
             {
@@ -407,10 +401,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         public virtual async Task<decimal> ValidateAndComputeAsync(string code, decimal subtotal, string? customerPhone)
         {
-            var normalized = NormalizeCode(code);
-            var queryable = await _discounts.GetQueryableAsync();
-            var entity = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Code == normalized));
+            var entity = await FindByCodeAsync(code);
 
             var (valid, message) = CheckUsable(entity, subtotal, customerPhone);
             if (!valid)
@@ -431,10 +422,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         public virtual async Task<(decimal DiscountValue, bool IsFreeship)> ValidateAndComputeWithFreeshipAsync(
             string code, decimal subtotal, string? customerPhone)
         {
-            var normalized = NormalizeCode(code);
-            var queryable = await _discounts.GetQueryableAsync();
-            var entity = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Code == normalized));
+            var entity = await FindByCodeAsync(code);
 
             var (valid, message) = CheckUsable(entity, subtotal, customerPhone);
             if (!valid)
@@ -451,10 +439,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         public virtual async Task IncrementUsageAsync(string code)
         {
-            var normalized = NormalizeCode(code);
-            var queryable = await _discounts.GetQueryableAsync();
-            var entity = await _asyncExecuter.FirstOrDefaultAsync(
-                queryable.Where(x => x.Code == normalized));
+            var entity = await FindByCodeAsync(code);
             if (entity == null)
             {
                 return;
@@ -464,7 +449,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             // UPDATE: 2 checkout đồng thời cùng mã 1 lần dùng đều đã qua
             // validate thì chỉ bên UPDATE trước thành công; bên còn lại ném
             // lỗi để đơn (chung UoW) rollback thay vì dùng lậu lượt thứ 2.
-            var incremented = await _discounts.TryIncrementUsageAsync(normalized);
+            var incremented = await _discounts.TryIncrementUsageAsync(NormalizeCode(code));
             if (!incremented)
             {
                 throw new Domain.Exceptions.DomainException(
@@ -713,7 +698,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             if (!string.IsNullOrWhiteSpace(entity.OwnerPhone)
-                && !PhoneHelper.PhonesMatch(entity.OwnerPhone, customerPhone))
+                && !PhoneNumber.PhonesMatch(entity.OwnerPhone, customerPhone))
             {
                 return (false, "Mã giảm giá này không dành cho số điện thoại của bạn.");
             }
@@ -744,10 +729,7 @@ namespace PhuThuongStickyRice.Application.Discounts
                 var code = prefix + "-" + new string(
                     Enumerable.Range(0, GeneratedCodeRandomPartLength).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
 
-                var queryable = await _discounts.GetQueryableAsync();
-                var exists = await _asyncExecuter.FirstOrDefaultAsync(
-                    queryable.Where(x => x.Code == code));
-                if (exists == null)
+                if (await FindByCodeAsync(code) == null)
                 {
                     return code;
                 }
@@ -829,6 +811,22 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             return code.Trim().ToUpperInvariant();
+        }
+
+        /// <summary>
+        /// Tìm mã giảm giá theo mã (đã chuẩn hóa trong hàm): 1 query duy nhất
+        /// so khớp chính xác trên cột Code. Trả null khi mã không tồn tại —
+        /// nơi gọi tự quyết định: validate thì ném lỗi, còn tăng lượt dùng
+        /// thì bỏ qua vì đơn đã được validate trước khi tạo.
+        /// </summary>
+        /// <param name="code">Mã giảm giá thô (sẽ chuẩn hóa trước khi tìm).</param>
+        /// <returns>Entity mã giảm giá, hoặc null khi không tồn tại.</returns>
+        private async Task<DiscountCode?> FindByCodeAsync(string code)
+        {
+            var normalized = NormalizeCode(code);
+            var queryable = await _discounts.GetQueryableAsync();
+            return await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(x => x.Code == normalized));
         }
 
         /// <summary>

@@ -5,7 +5,7 @@ namespace PhuThuongStickyRice.Domain.Infrastructure.MessageBrokers
 {
     public class Message<T>
     {
-        public MetaData MetaData { get; set; }
+        public MessageMetadata Metadata { get; set; }
 
         public T Data { get; set; }
 

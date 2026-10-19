@@ -5,6 +5,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application
 {
+    /// <summary>
+    /// Command xóa 1 entity — xử lý bởi
+    /// <c>DeleteEntityCommandHandler&lt;T&gt;</c> qua <see cref="ICrudService{T}"/>.
+    /// </summary>
+    /// <typeparam name="TEntity">Aggregate root cần xóa.</typeparam>
     public class DeleteEntityCommand<TEntity> : ICommand
          where TEntity : Entity<Guid>, IAggregateRoot
     {

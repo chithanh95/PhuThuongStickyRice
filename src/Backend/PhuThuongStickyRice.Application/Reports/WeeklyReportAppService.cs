@@ -26,6 +26,10 @@ namespace PhuThuongStickyRice.Application.Reports
     {
         private readonly IWeeklyReportSender _sender;
 
+        /// <summary>
+        /// Khởi tạo HTTP surface (Admin-only) cho báo cáo tuần; logic nặng nằm
+        /// ở <see cref="IWeeklyReportSender"/> để worker BackgroundServer dùng chung.
+        /// </summary>
         public WeeklyReportAppService(IWeeklyReportSender sender)
         {
             _sender = sender;

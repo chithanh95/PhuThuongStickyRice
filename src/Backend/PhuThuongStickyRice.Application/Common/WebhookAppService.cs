@@ -46,6 +46,10 @@ namespace PhuThuongStickyRice.Application.Common
         /// <summary>Giới hạn độ dài error lưu DB — message của exception có thể rất dài.</summary>
         private const int MaxErrorLength = 2000;
 
+        /// <summary>
+        /// Khởi tạo bộ gửi webhook: lưu log delivery, POST song song tới các
+        /// endpoint đã đăng ký ký sự kiện, có timeout riêng từng lần gửi.
+        /// </summary>
         public WebhookDispatcher(
             IRepository<WebhookEndpoint, Guid> endpoints,
             IRepository<WebhookDelivery, Guid> deliveries,
@@ -286,6 +290,10 @@ namespace PhuThuongStickyRice.Application.Common
         // CA1861: mảng separator dùng lại thay vì cấp phát new[] mỗi lần gọi NormalizeEvents.
         private static readonly char[] EventSeparators = { ',', ';' };
 
+        /// <summary>
+        /// Khởi tạo AppService quản trị webhook (Admin): CRUD endpoint, xem
+        /// lịch sử gửi và kích hoạt dispatch sự kiện.
+        /// </summary>
         public WebhookAppService(
             IRepository<WebhookEndpoint, Guid> endpoints,
             IRepository<WebhookDelivery, Guid> deliveries,

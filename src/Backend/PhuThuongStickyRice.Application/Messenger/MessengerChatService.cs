@@ -104,6 +104,10 @@ namespace PhuThuongStickyRice.Application.Messenger
         private static readonly ConcurrentDictionary<string, ChatSession> _sessions =
             new ConcurrentDictionary<string, ChatSession>();
 
+        /// <summary>
+        /// Khởi tạo chatbot Messenger với cài đặt shop (token/secret), catalog
+        /// sản phẩm, đơn hàng và HTTP client để gửi tin nhắn qua Graph API.
+        /// </summary>
         public MessengerChatService(
             IShopSettingAppService shopSettings,
             IProductAppService products,
@@ -182,6 +186,13 @@ namespace PhuThuongStickyRice.Application.Messenger
             return true;
         }
 
+        /// <summary>
+        /// Xử lý webhook POST từ Facebook: duyệt mảng "entry" → "messaging",
+        /// xử lý từng tin nhắn riêng (bỏ qua event không phải text như
+        /// postback/attachment). Chưa cấu hình Page Access Token thì chỉ log,
+        /// không crash. Lỗi 1 tin không làm gãy các tin khác.
+        /// </summary>
+        /// <param name="payload">Payload JSON từ Facebook.</param>
         public async Task HandleWebhookAsync(JsonDocument payload)
         {
             string pageToken = null;

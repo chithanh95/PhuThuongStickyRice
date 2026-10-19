@@ -8,11 +8,12 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Admin.Services
 {
     /// <summary>
-    /// Item 162: message templates per order status (mẫu tin nhắn).
+    /// Client gọi API mẫu tin nhắn theo trạng thái đơn hàng (item 162):
+    /// lấy danh sách và cập nhật nội dung/kích hoạt từng mẫu.
     /// </summary>
-    public class MessageTemplateService : ApiClientBase
+    public class OrderMessageTemplateService : ApiClientBase
     {
-        public MessageTemplateService(HttpClient httpClient, ITokenStore tokenStore)
+        public OrderMessageTemplateService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)
         {
         }

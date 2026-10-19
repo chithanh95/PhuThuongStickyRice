@@ -5,9 +5,16 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Application
 {
+    /// <summary>
+    /// Command sửa 1 entity đã có — xử lý bởi
+    /// <c>UpdateEntityCommandHandler&lt;T&gt;</c> qua <see cref="ICrudService{T}"/>.
+    /// </summary>
+    /// <typeparam name="TEntity">Aggregate root cần sửa.</typeparam>
     public class UpdateEntityCommand<TEntity> : ICommand
         where TEntity : Entity<Guid>, IAggregateRoot
     {
+        /// <summary>Khởi tạo command sửa entity.</summary>
+        /// <param name="entity">Entity với dữ liệu mới.</param>
         public UpdateEntityCommand(TEntity entity)
         {
             Entity = entity;

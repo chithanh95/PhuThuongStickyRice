@@ -3,8 +3,17 @@ using PhuThuongStickyRice.Domain.Entities;
 
 namespace PhuThuongStickyRice.Application
 {
+    /// <summary>
+    /// Profile AutoMapper tầng application: bóc value-object (Code, Money...)
+    /// và enum của entity ra DTO dạng primitive cho API trả về.
+    /// </summary>
     public class StickyRiceApplicationAutoMapperProfile : Profile
     {
+        /// <summary>
+        /// Định nghĩa các map entity → DTO. Lưu ý: DB chỉ lưu tổng đã tính
+        /// (TotalAmount) nên subtotal được suy ngược = tổng + các khoản đã
+        /// giảm (mã giảm/loyalty/hạng/khuyến mãi) − phí giao hàng/quà tặng.
+        /// </summary>
         public StickyRiceApplicationAutoMapperProfile()
         {
             CreateMap<Product, Products.DTOs.ProductDto>()

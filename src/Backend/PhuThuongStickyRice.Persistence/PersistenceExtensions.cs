@@ -70,9 +70,18 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
+        /// <summary>
+        /// Áp dụng migrations còn thiếu cho database khi app khởi động (idempotent —
+        /// chạy nhiều lần an toàn), kèm bước đổi tên các migration wave cũ trong
+        /// bảng lịch sử để EF không apply lại.
+        /// </summary>
+        /// <param name="app">Application builder.</param>
         public static void MigrateStickyRiceDb(this IApplicationBuilder app)
         {
-            using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            // FIX: GetRequiredService thay vì GetService — IServiceScopeFactory bắt buộc
+            // phải có; thiếu thì fail-fast với message rõ ràng thay vì NullReferenceException
+            // khó chẩn đoán ở dòng CreateScope() phía dưới.
+            using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
             {
                 var context = serviceScope.ServiceProvider.GetRequiredService<StickyRiceDbContext>();
 
