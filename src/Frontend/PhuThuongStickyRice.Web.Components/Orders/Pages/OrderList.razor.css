@@ -31,3 +31,15 @@ html.dark .timeline { border-left-color: #3a3a58; }
 .ol-modal-backdrop { background: rgba(0,0,0,.45); }
 .ol-kbd-key { width: 130px; }
 .ol-btn-confirm { min-height: 44px; }
+
+/* bug-hunt 2026-10-20 — hang chi tiet mo rong (OrderList.razor:275)
+   td[colspan] dung utility Bootstrap .bg-light (#f8f9fa): o che do toi
+   hang nay trang boc giua bang toi. Ghi de trong dark mode theo dung mau
+   da dung o Customers.razor.css (commit b12c8c1). !important de thang
+   utility !important cua Bootstrap. Scoped CSS duoc vi td nam cung
+   component voi file CSS nay. */
+html.dark .bg-light {
+    background-color: #262640 !important;
+    border-color: #3a3a58 !important;
+    color: #f0eef5;
+}

@@ -1561,7 +1561,9 @@ html.pt-reveal .sg-reveal.in {
     border: none;
     border-radius: 10px;
     padding: 12px 16px;
-    font-size: 15px;
+    /* iOS Safari tu dong zoom khi focus input < 16px -> giu 16px de trang
+       khong bi phong to dot ngot (khach lon tuoi kho thao tac). */
+    font-size: 16px;
 }
 .sg-zalo-form .sg-btn { white-space: nowrap; }
 @media (max-width: 768px) {
@@ -1833,7 +1835,7 @@ html.pt-reveal .sg-reveal.in {
 .sg-chat-msg.mine { align-self: flex-end; background: #6F0707; color: #fff; }
 .sg-chat-msg.theirs { align-self: flex-start; background: #f0ebe3; color: #333; }
 .sg-chat-input { display: flex; border-top: 1px solid var(--sg-line); }
-.sg-chat-input input { flex: 1; border: none; padding: 14px 16px; font-size: 14px; background: transparent; color: inherit; }
+.sg-chat-input input { flex: 1; border: none; padding: 14px 16px; font-size: 16px; background: transparent; color: inherit; }
 .sg-chat-input button {
     border: none;
     background: #6F0707;
@@ -1872,7 +1874,9 @@ html.pt-reveal .sg-reveal.in {
     border: 1px solid var(--sg-line);
     border-radius: 10px;
     padding: 12px 16px;
-    font-size: 15px;
+    /* iOS Safari tu dong zoom khi focus input < 16px -> giu 16px de trang
+       khong bi phong to dot ngot (khach lon tuoi kho thao tac). */
+    font-size: 16px;
 }
 .sg-loyal-progress { margin-top: 20px; }
 .sg-loyal-bar {
@@ -2009,7 +2013,9 @@ html.pt-reveal .sg-reveal.in {
     padding: 8px 10px;
     border: 1px solid var(--sg-line);
     border-radius: 8px;
-    font-size: 14px;
+    /* iOS Safari tu dong zoom khi focus input < 16px -> giu 16px de trang
+       khong bi phong to dot ngot (khach lon tuoi kho thao tac). */
+    font-size: 16px;
 }
 .sg-chat-order-btns { display: flex; gap: 8px; }
 .sg-chat-order-btns .sg-btn { flex: 1; padding: 8px; font-size: 13px; }
