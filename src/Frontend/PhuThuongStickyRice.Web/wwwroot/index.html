@@ -5,13 +5,11 @@
     <meta charset="utf-8" />
     <script>
         // Theme (dark mode): apply saved choice before first paint to avoid flash.
-        (function () {
-            try {
-                if (localStorage.getItem('pt-theme') === 'dark') {
-                    document.documentElement.classList.add('dark');
-                }
-            } catch (e) { }
-        })();
+        // bug-hunt 2026-10-20: IIFE cũ đọc key 'pt-theme' đã chết — key này chỉ
+        // còn vài trang lẻ dùng MainLayout; shop (ShopLayout + landing) dùng
+        // 'pt-theme-shop', admin (AdminLayout) dùng 'pt-theme-admin' nên user để
+        // dark vẫn bị flash màn sáng mỗi lần F5. Chọn key theo path và dùng
+        // ptApplyTheme (đã xử lý 'auto' theo giờ) — đặt SAU khi hàm được định nghĩa.
         window.ptGetTheme = function (key) {
             key = key || 'pt-theme';
             try {
@@ -44,6 +42,17 @@
                 document.documentElement.classList.toggle('dark', dark);
             } catch (e) { }
         };
+        // Pre-paint: chạy sau khi ptApplyTheme đã định nghĩa (script ở <head>
+        // nên vẫn trước first paint). Mọi route /admin* dùng AdminLayout
+        // ('pt-theme-admin'), còn lại dùng ShopLayout/EmptyLayout ('pt-theme-shop').
+        (function () {
+            try {
+                var key = location.pathname.indexOf('/admin') === 0
+                    ? 'pt-theme-admin'
+                    : 'pt-theme-shop';
+                window.ptApplyTheme(key);
+            } catch (e) { }
+        })();
         // Đặt theme NHỊ PHÂN Sáng/Tối trực tiếp (không xoay vòng 3 chế độ).
         // Dùng cho các nút toggle hiển thị nhị phân (☀️/🌙) — ví dụ header admin:
         // ptToggleTheme xoay vòng sáng→tối→tự động→sáng khiến ban đêm cứ 2 lần

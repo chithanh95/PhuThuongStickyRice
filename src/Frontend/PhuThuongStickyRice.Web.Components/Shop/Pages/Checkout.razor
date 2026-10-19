@@ -1271,6 +1271,24 @@ else
                 _order.CustomerPhone = carriedPhone.Trim();
                 await LookupCustomerLoyaltyAsync();
             }
+
+            // bug-hunt 2026-10-20: fallback đọc SĐT từ popup chat-order ở landing
+            // (Index.razor ConfirmChatOrder lưu key "pt-checkout-phone" rồi
+            // NavigateTo("/checkout") KHÔNG kèm ?phone= — trước đây key này ghi
+            // mà không chỗ nào đọc nên khách phải nhập lại SĐT ở checkout).
+            // Key one-shot: đọc xong xóa để lần checkout sau không prefill nhầm.
+            if (string.IsNullOrWhiteSpace(_order.CustomerPhone))
+            {
+                var chatPhone = await JSRuntime.InvokeAsync<string>(
+                    "localStorage.getItem", "pt-checkout-phone");
+                await JSRuntime.InvokeVoidAsync(
+                    "localStorage.removeItem", "pt-checkout-phone");
+                if (IsValidPhone(chatPhone))
+                {
+                    _order.CustomerPhone = chatPhone.Trim();
+                    await LookupCustomerLoyaltyAsync();
+                }
+            }
         }
         catch (Exception)
         {

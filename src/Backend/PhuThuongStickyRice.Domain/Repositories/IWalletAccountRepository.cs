@@ -12,14 +12,17 @@ namespace PhuThuongStickyRice.Domain.Repositories
     {
         /// <summary>
         /// Trừ số dư ví một cách nguyên tử: UPDATE ... WHERE Balance &gt;= amount.
-        /// Trả về true nếu trừ thành công, false nếu số dư không đủ tại thời điểm
-        /// UPDATE (2 request đồng thời không thể cùng qua bước check rồi trừ —
-        /// chống race check-then-set gây số dư âm).
+        /// Trả về số dư MỚI sau khi trừ (đọc lại sau UPDATE), hoặc null nếu số dư
+        /// không đủ tại thời điểm UPDATE (2 request đồng thời không thể cùng qua
+        /// bước check rồi trừ — chống race check-then-set gây số dư âm).
+        /// Dùng giá trị trả về để ghi đúng BalanceAfter vào lịch sử: bản cũ trả
+        /// bool nên caller phải tự tính balanceCũ - amount, sai khi 2 trừ tiền
+        /// đồng thời cùng ví (bug-hunt 2026-10-20).
         /// </summary>
         /// <param name="accountId">Id tài khoản ví.</param>
         /// <param name="amount">Số tiền cần trừ (phải &gt; 0).</param>
         /// <param name="cancellationToken">Token hủy.</param>
-        Task<bool> TryDecrementBalanceAsync(
+        Task<decimal?> TryDecrementBalanceAsync(
             Guid accountId, decimal amount, CancellationToken cancellationToken = default);
 
         /// <summary>

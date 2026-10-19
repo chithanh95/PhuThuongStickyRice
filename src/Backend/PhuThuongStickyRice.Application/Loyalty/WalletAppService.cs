@@ -175,12 +175,15 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 }
 
                 var decremented = await _wallets.TryDecrementBalanceAsync(account.Id, amount);
-                if (!decremented)
+                if (decremented == null)
                 {
                     throw new DomainException("Số dư ví không đủ để trừ.");
                 }
 
-                newBalance = account.Balance - amount;
+                // bug-hunt 2026-10-20: dùng số dư mới do repo trả về (đọc lại
+                // sau UPDATE nguyên tử) thay vì account.Balance - amount —
+                // số dư đọc trước đó đã cũ nếu có thao tác đồng thời cùng ví.
+                newBalance = decremented.Value;
             }
 
             // KHÔNG gán lại account.Balance trên entity đang track:
@@ -287,13 +290,16 @@ namespace PhuThuongStickyRice.Application.Loyalty
             // Giữ bước check sớm để message lỗi hiện số dư hiện tại cho trường
             // hợp thông thường.
             var decremented = await _wallets.TryDecrementBalanceAsync(account.Id, amount);
-            if (!decremented)
+            if (decremented == null)
             {
                 throw new DomainException(
                     $"Số dư ví không đủ. Cần {amount:N0} ₫, hiện có {account.Balance:N0} ₫.");
             }
 
-            await LogAsync(normalized, -amount, account.Balance - amount,
+            // bug-hunt 2026-10-20: ghi BalanceAfter bằng số dư mới do repo trả về
+            // (đọc lại sau UPDATE nguyên tử) thay vì account.Balance - amount —
+            // 2 checkout ví đồng thời cùng SĐT trước đây ghi lịch sử sai.
+            await LogAsync(normalized, -amount, decremented.Value,
                 $"Thanh toán đơn {orderNumber}", "system");
         }
 
