@@ -3,6 +3,7 @@ using PhuThuongStickyRice.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -222,7 +223,7 @@ namespace PhuThuongStickyRice.Application.Shop
                 // Mã thẻ nạp được tiền thật nên dùng RNG an toàn mật mã:
                 // Random.Shared có thể bị đoán mã tiếp theo từ các mã đã lộ.
                 // GetInt32(min, max) giữ nguyên ngữ nghĩa max-exclusive như Random.Next.
-                var code = "TX" + RandomNumberGenerator.GetInt32(0, 999999).ToString("D6");
+                var code = "TX" + RandomNumberGenerator.GetInt32(0, 999999).ToString("D6", CultureInfo.InvariantCulture);
                 var exists = await _cards.FirstOrDefaultAsync(c => c.CardCode == code);
                 if (exists == null)
                 {

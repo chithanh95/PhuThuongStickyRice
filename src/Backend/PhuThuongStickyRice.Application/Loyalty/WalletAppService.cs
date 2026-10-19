@@ -307,8 +307,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// </summary>
         private static string BuildRefundIdempotencyKey(string normalizedPhone, string reason)
         {
-            using var sha256 = SHA256.Create();
-            var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(reason ?? string.Empty));
+            // CA1850: dùng SHA256.HashData tĩnh — không tạo/dispose instance, cùng kết quả.
+            var hash = SHA256.HashData(Encoding.UTF8.GetBytes(reason ?? string.Empty));
             return $"refund|{normalizedPhone}|{Convert.ToHexString(hash, 0, 8)}";
         }
 

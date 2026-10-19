@@ -1,3 +1,4 @@
+#nullable enable annotations
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging;
 using PhuThuongStickyRice.Application.Orders;

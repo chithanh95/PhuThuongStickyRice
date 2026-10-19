@@ -8,6 +8,7 @@ using PhuThuongStickyRice.Domain.ValueObjects;
 using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
@@ -295,7 +296,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         /// </summary>
         private async Task<List<string>> GenerateUniqueOrderNumbersAsync(int count)
         {
-            var day = DateTime.UtcNow.ToString("yyyyMMdd");
+            var day = DateTime.UtcNow.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
             var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var numbers = BuildCandidateNumbers(count, day, used);
 

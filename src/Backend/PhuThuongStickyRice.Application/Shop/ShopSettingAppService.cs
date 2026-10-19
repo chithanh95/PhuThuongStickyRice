@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
@@ -138,7 +139,7 @@ namespace PhuThuongStickyRice.Application.Shop
             // "shop-settings" cache used by the admin and internal callers.
             // The date in the key also stops a holiday auto-pause from
             // leaking into the next day via a stale cached flag.
-            var today = DateTime.UtcNow.AddHours(VietnamTime.UtcOffsetHours).ToString("yyyyMMdd");
+            var today = DateTime.UtcNow.AddHours(VietnamTime.UtcOffsetHours).ToString("yyyyMMdd", CultureInfo.InvariantCulture);
             var dto = await _catalogCache.GetOrAddAsync($"shop-settings:public:{today}", async () =>
             {
                 var entity = await GetSingleAsync();
