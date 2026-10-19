@@ -20,7 +20,7 @@ else if (_done)
     <div class="alert @(_success ? "alert-success" : "alert-danger")">
         @(_success ? "Thanh toán MoMo thành công (TEST)!" : "Thanh toán MoMo thất bại (TEST).")
     </div>
-    <a class="btn btn-primary" href="/track-order?orderNumber=@Uri.EscapeDataString(_orderNumber)">Xem đơn hàng</a>
+    <a class="btn btn-primary" href="/track-order?orderNumber=@Uri.EscapeDataString(_orderNumber ?? "")">Xem đơn hàng</a>
 }
 else
 {

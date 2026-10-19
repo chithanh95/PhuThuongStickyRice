@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Loyalty.DTOs;
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Shop.DTOs;
@@ -239,7 +240,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         {
             daysAhead = ClampDaysAhead(daysAhead);
 
-            var today = DateTime.UtcNow.Date;
+            var today = VietnamTime.Today();
             var upcoming = await LoadUpcomingBirthdayRowsAsync(today, daysAhead);
 
             var settings = await _shopSettings.GetAsync();

@@ -1837,12 +1837,15 @@
 
     private static string FormatOrderTime(DateTime createdAt)
     {
+        // Giờ đơn lưu UTC: đổi sang giờ máy (giờ VN) trước khi so sánh,
+        // nếu không khung 00:00–06:59 sẽ lệch 7h -> "Hôm nay/Hôm qua" sai.
+        var local = createdAt.ToLocalTime();
         var today = DateTime.Today;
-        var date = createdAt.Date;
-        var time = createdAt.ToString("HH:mm");
+        var date = local.Date;
+        var time = local.ToString("HH:mm");
         if (date == today) return $"Hôm nay {time}";
         if (date == today.AddDays(-1)) return $"Hôm qua {time}";
-        return createdAt.ToString("dd/MM/yyyy HH:mm");
+        return local.ToString("dd/MM/yyyy HH:mm");
     }
 
     private async Task CopyOrderNumber()
