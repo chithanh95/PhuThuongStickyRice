@@ -23,6 +23,13 @@ namespace PhuThuongStickyRice.Domain.Repositories
         Task<List<Order>> GetListWithLinesAsync(IEnumerable<Guid> orderIds, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Nạp các đơn theo Id ở chế độ read-only (không track entity, không
+        /// nạp Lines) — dùng cho các endpoint public chỉ map sang DTO như
+        /// tra cứu đơn theo SĐT, tránh tốn memory/CPU snapshot change-tracker.
+        /// </summary>
+        Task<List<Order>> GetOrdersByIdsNoTrackingAsync(IEnumerable<Guid> orderIds, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Đánh dấu lượt quay may mắn của đơn đã dùng một cách nguyên tử:
         /// UPDATE ... WHERE Id = orderId AND LuckySpinUsed = false. Trả về
         /// true nếu đánh dấu thành công, false nếu lượt quay đã được dùng

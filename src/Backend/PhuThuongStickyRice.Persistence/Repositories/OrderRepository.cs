@@ -51,6 +51,26 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         }
 
         /// <summary>
+        /// Nạp đơn theo Id ở chế độ read-only (AsNoTracking, không Include
+        /// Lines): dùng cho endpoint public tra cứu đơn theo SĐT — chỉ map
+        /// sang DTO rồi null AdminNote, không sửa entity, nên tracking tới
+        /// 100 đơn (cột text dài Notes/AdminNote) là tốn memory/CPU vô ích.
+        /// </summary>
+        public async Task<List<Order>> GetOrdersByIdsNoTrackingAsync(IEnumerable<System.Guid> orderIds, CancellationToken cancellationToken = default)
+        {
+            var ids = orderIds.Distinct().ToList();
+            if (ids.Count == 0)
+            {
+                return new List<Order>();
+            }
+
+            var queryable = await GetQueryableAsync();
+            return await AsyncExecuter.ToListAsync(
+                queryable.AsNoTracking().Where(x => ids.Contains(x.Id)),
+                cancellationToken);
+        }
+
+        /// <summary>
         /// Đánh dấu lượt quay may mắn nguyên tử bằng ExecuteUpdateAsync
         /// (1 câu UPDATE ... WHERE Id = orderId AND LuckySpinUsed = false).
         /// Chạy trong DbContext/UoW hiện tại nên rollback cùng nghiệp vụ khi

@@ -3344,9 +3344,12 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             var matchedIds = matched.Select(x => x.Id).ToList();
-            var orderQueryable = await _orders.GetQueryableAsync();
-            var orders = await _asyncExecuter.ToListAsync(
-                orderQueryable.Where(x => matchedIds.Contains(x.Id)));
+            // perf-hunt 2026-10-19 (run 21:55): phase 2 read-only — chỉ map
+            // sang DTO rồi null AdminNote, không sửa entity → nạp qua repo
+            // ở chế độ AsNoTracking để không track tới 100 đơn (cột text dài
+            // Notes/AdminNote) trên endpoint public tra cứu đơn rất nóng
+            // (sau checkout, khách quay lại xem trạng thái).
+            var orders = await _orders.GetOrdersByIdsNoTrackingAsync(matchedIds);
             var byId = orders.ToDictionary(x => x.Id);
 
             var result = new List<OrderDto>(matched.Count);
