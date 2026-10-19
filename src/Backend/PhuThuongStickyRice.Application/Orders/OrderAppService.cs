@@ -961,6 +961,18 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <returns>Trang đơn hàng hiện tại.</returns>
         public virtual async Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInput input)
         {
+            // perf-hunt 2026-10-19: chặn SkipCount/MaxResultCount do client
+            // truyền ngay entry point (input không có [Range]) — giống fix ở
+            // ProductAppService.GetListAsync (run 15:15). Không chặn thì 1
+            // request MaxResultCount=int.MaxValue có thể materialize toàn bộ
+            // bảng Orders + Lines thành entity nặng. Admin UI dùng ≤50/trang;
+            // AdminSearchNotificationAppService gọi với MaxResultCount=5 nên
+            // clamp 1..200 không đổi hành vi. Export dùng ExportOrdersAsync
+            // (Take(MaxExportRows) riêng) nên không bị ảnh hưởng.
+            input ??= new GetOrdersInput();
+            input.SkipCount = Math.Max(0, input.SkipCount);
+            input.MaxResultCount = Math.Clamp(input.MaxResultCount, 1, 200);
+
             var queryable = await _orders.GetQueryableAsync();
             System.Linq.IQueryable<Order> query = queryable.OrderByDescending(x => x.CreatedAt);
 
