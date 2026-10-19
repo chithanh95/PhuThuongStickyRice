@@ -2349,3 +2349,106 @@
     }
 }
 /* ===== END UIUX 22:05 A1 ===== */
+/* ===== UIUX 22:45 A1 (run 22:45 2026-10-19) — 4 fix mobile mới =====
+   Quét kỹ các trang shop còn sót sau ~18 đợt: Faq / TaiKhoan / HoTro /
+   DatTiec / DatCung / DatSoLuongLon / DangNhap / QuenMatKhau / CheckIn /
+   HangCho / Cart / Shop / upsell / quick-view bottom sheet đều đã được
+   phủ kín (không bịa thêm). Còn đúng 4 điểm dưới đây, mỗi điểm verify
+   bằng mã nguồn + grep file này đảm bảo chưa có rule nào phủ.
+   Scope <=767.98px = điện thoại; PC (>768px) giữ nguyên tuyệt đối.
+   Selector nhân đôi class (vd .a.a) theo quy ước file này để thắng
+   scoped CSS Blazor.
+   ------------------------------------------------------------
+   FIX 1 — /chinh-sach/{slug}: tràn ngang do URL/chuỗi dài.
+   Vấn đề: .policy-body p không có rule CSS nào (grep toàn bộ
+   Components + file này = 0) — đoạn văn chính sách chứa URL hoặc
+   chuỗi dài không dấu cách sẽ tràn ngang, ép cả trang phải cuộn
+   ngang trên điện thoại.
+   Giải pháp: ngắt từ dài tự động, không đổi layout PC.
+   (Verify: PolicyPage.razor:22 <div class="policy-body">)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .policy-body.policy-body p {
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 2 — /check-in: nút "Chọn ảnh" của trình duyệt quá nhỏ.
+   Vấn đề: input file native (CheckIn.razor:25 #checkin-photo-input)
+   chỉ hiện nút "Chọn tệp" ~30px của trình duyệt — người lớn tuổi
+   dùng ngoài quán khó bấm trúng để đăng ảnh. Scoped CSS
+   (CheckIn.razor.css) đã fix ô tên + nút "Đăng ảnh", còn sót đúng
+   ô chọn file này.
+   Giải pháp: biến label "Chọn ảnh" (for=checkin-photo-input) thành
+   nút dashed 52px full-width rõ ràng; ẩn input native kiểu sr-only
+   (label vẫn mở picker qua for; JS interop.compressImageFromInput
+   đọc input bằng id nên upload không ảnh hưởng). Không set màu nền/
+   chữ cứng → không tạo nợ dark mode (phần Agent 2).
+   (Verify: CheckIn.razor:24-26)
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .xo-checkin-form.xo-checkin-form label[for="checkin-photo-input"] {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 52px;
+        padding: 12px 16px;
+        border: 2px dashed #9c682c;
+        border-radius: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        margin-bottom: 8px;
+    }
+    .xo-checkin-form.xo-checkin-form label[for="checkin-photo-input"]::before {
+        content: "📷";
+        font-size: 20px;
+    }
+    #checkin-photo-input#checkin-photo-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 3 — /shop: chip chọn size (S/M/L) vùng bấm chỉ ~32px.
+   Vấn đề: .shop-size-chip (Shop.razor.css:194-204) padding 6px 12px,
+   font 13px/line-height 1.3 → cao ~32px (<44px); đây là nút bấm thật
+   để chọn size trên card món (Shop.razor:266-274), khách chạm trượt
+   dễ bấm nhầm size. Grep file này: chưa có rule .shop-size-chip nào.
+   Giải pháp: mobile — min-height 44px, padding dọc nới ra; chip vẫn
+   wrap bình thường trong .shop-size-chips, không vỡ card.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .shop-size-chip.shop-size-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 10px 14px;
+    }
+}
+
+/* ------------------------------------------------------------
+   FIX 4 — /anh-khach-hang: caption ảnh 12.8px khó đọc.
+   Vấn đề: .card-text.small = 80% font body ≤12.8px (<13px, dưới ngưỡng
+   đọc thoải mái cho người lớn tuổi) — caption là nội dung chữ duy
+   nhất của trang gallery (GalleryKhachHang.razor:31). Fix đợt trước
+   chỉ chỉnh ảnh 130px, chưa chạm caption.
+   Giải pháp: mobile — caption lên 13px.
+   ------------------------------------------------------------ */
+@media (max-width: 767.98px) {
+    .xo-gallery.xo-gallery .card-text.small {
+        font-size: 13px;
+    }
+}
+/* ===== END UIUX 22:45 A1 ===== */
