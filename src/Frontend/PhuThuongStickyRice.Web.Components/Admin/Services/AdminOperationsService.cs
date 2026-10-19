@@ -264,7 +264,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         /// </summary>
         /// <param name="id">Id mã QR.</param>
         /// <returns>URL tuyệt đối tới file PNG.</returns>
-        public string TableQrPngUrl(Guid id)
+        public string GetTableQrPngUrl(Guid id)
         {
             var baseUri = _httpClient.BaseAddress?.ToString().TrimEnd('/') ?? string.Empty;
             return $"{baseUri}/api/tableqrs/{id:D}/png";
