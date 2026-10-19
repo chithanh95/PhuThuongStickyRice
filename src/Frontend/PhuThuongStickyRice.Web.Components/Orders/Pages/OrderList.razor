@@ -942,53 +942,43 @@ else
     [JSInvokable]
     public async Task OnShortcutKey(string action)
     {
-        var items = _paged?.Items;
         switch (action)
         {
             case "next":
-                if (items != null && items.Count > 0)
-                {
-                    _selectedIndex = System.Math.Min(_selectedIndex + 1, items.Count - 1);
-                    StateHasChanged();
-                }
+                MoveSelection(1);
                 break;
             case "prev":
-                if (items != null && items.Count > 0)
-                {
-                    _selectedIndex = _selectedIndex <= 0 ? 0 : _selectedIndex - 1;
-                    StateHasChanged();
-                }
+                MoveSelection(-1);
                 break;
             case "open":
-                if (items != null && _selectedIndex >= 0 && _selectedIndex < items.Count)
+                var opened = GetSelectedOrder();
+                if (opened != null)
                 {
-                    await ToggleDetail(items[_selectedIndex]);
+                    await ToggleDetail(opened);
                     StateHasChanged();
                 }
                 break;
             case "confirm":
-                if (items != null && _selectedIndex >= 0 && _selectedIndex < items.Count
-                    && items[_selectedIndex].Status == "Pending")
+                var pending = GetSelectedOrder();
+                if (pending != null && pending.Status == "Pending")
                 {
-                    await ChangeStatus(items[_selectedIndex], "Confirmed");
+                    await ChangeStatus(pending, "Confirmed");
                 }
                 break;
             case "prepare":
-                if (items != null && _selectedIndex >= 0 && _selectedIndex < items.Count
-                    && items[_selectedIndex].Status == "Confirmed")
+                var confirmed = GetSelectedOrder();
+                if (confirmed != null && confirmed.Status == "Confirmed")
                 {
-                    await ChangeStatus(items[_selectedIndex], "Preparing");
+                    await ChangeStatus(confirmed, "Preparing");
                 }
                 break;
             case "cancel":
-                if (items != null && _selectedIndex >= 0 && _selectedIndex < items.Count)
+                var cancellable = GetSelectedOrder();
+                if (cancellable != null
+                    && (cancellable.Status == "Pending" || cancellable.Status == "Confirmed"))
                 {
-                    var order = items[_selectedIndex];
-                    if (order.Status == "Pending" || order.Status == "Confirmed")
-                    {
-                        // Item 233: mở modal chọn lý do thay vì confirm trình duyệt.
-                        OpenCancelModal(order);
-                    }
+                    // Item 233: mở modal chọn lý do thay vì confirm trình duyệt.
+                    OpenCancelModal(cancellable);
                 }
                 break;
             case "search":
@@ -999,6 +989,35 @@ else
                 StateHasChanged();
                 break;
         }
+    }
+
+    /// <summary>
+    /// Đơn đang được chọn bằng phím tắt (j/k); null khi chưa có đơn nào
+    /// trong trang hoặc con trỏ ngoài phạm vi. Gom chung điều kiện lặp lại
+    /// trong mọi nhánh của <see cref="OnShortcutKey"/>.
+    /// </summary>
+    private OrderModel GetSelectedOrder()
+    {
+        var items = _paged?.Items;
+        if (items != null && _selectedIndex >= 0 && _selectedIndex < items.Count)
+        {
+            return items[_selectedIndex];
+        }
+
+        return null;
+    }
+
+    /// <summary>Di chuyển con trỏ phím tắt theo delta, kẹp trong phạm vi trang.</summary>
+    private void MoveSelection(int delta)
+    {
+        var items = _paged?.Items;
+        if (items == null || items.Count == 0)
+        {
+            return;
+        }
+
+        _selectedIndex = System.Math.Clamp(_selectedIndex + delta, 0, items.Count - 1);
+        StateHasChanged();
     }
 
     /// <summary>Item 142: loads duplicate-phone groups in the background.</summary>
