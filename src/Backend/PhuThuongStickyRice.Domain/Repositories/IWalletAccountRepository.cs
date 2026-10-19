@@ -39,5 +39,17 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// <param name="cancellationToken">Token hủy.</param>
         Task<decimal> IncrementBalanceAsync(
             Guid accountId, decimal amount, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Tạo ví mới một cách nguyên tử: trả về ví vừa tạo, hoặc null nếu SĐT
+        /// đã có ví (bên khác thắng race). Chống race check-then-insert —
+        /// 2 request đồng thời cho SĐT chưa từng có ví đều qua bước kiểm tra
+        /// rồi cùng insert: unique (Phone) chỉ cho 1 bên thắng, bên thua cũ
+        /// nhận DbUpdateException -&gt; 500. Pattern theo sẵn LoyaltyAccountRepository.
+        /// </summary>
+        /// <param name="account">Ví cần tạo (Phone đã chuẩn hóa).</param>
+        /// <param name="cancellationToken">Token hủy.</param>
+        Task<WalletAccount> TryInsertAsync(
+            WalletAccount account, CancellationToken cancellationToken = default);
     }
 }

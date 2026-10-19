@@ -71,5 +71,51 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                 .Select(x => x.Balance)
                 .FirstAsync(cancellationToken);
         }
+
+        /// <summary>
+        /// Tạo ví mới nguyên tử (xem <see cref="IWalletAccountRepository.TryInsertAsync"/>).
+        /// Check-then-insert có race: 2 request cùng tạo ví 1 SĐT cùng lúc đều
+        /// qua được kiểm tra <c>AnyAsync</c>, request thua sẽ vi phạm unique
+        /// constraint ở <c>SaveChangesAsync</c> — catch bên dưới phân biệt: nếu
+        /// ví đã tồn tại thật (request kia thắng) thì trả về null như chưa bao
+        /// giờ tạo, chỉ ném lại khi nguyên nhân là lỗi khác.
+        /// </summary>
+        public async Task<WalletAccount> TryInsertAsync(
+            WalletAccount account, CancellationToken cancellationToken = default)
+        {
+            var dbContext = await GetDbContextAsync();
+            if (account.Id == Guid.Empty)
+            {
+                account.Id = Guid.NewGuid();
+            }
+
+            var exists = await dbContext.Set<WalletAccount>()
+                .AnyAsync(x => x.Phone == account.Phone, cancellationToken);
+            if (exists)
+            {
+                return null;
+            }
+
+            try
+            {
+                await dbContext.Set<WalletAccount>().AddAsync(account, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+                return account;
+            }
+            catch (DbUpdateException)
+            {
+                // Race ở trên: request khác đã insert cùng SĐT trước — detach
+                // entity thất bại khỏi tracker (không dùng nữa) rồi xác nhận
+                // lại; chỉ ném tiếp khi lỗi không phải do trùng ví.
+                dbContext.Entry(account).State = EntityState.Detached;
+                var winnerExists = await dbContext.Set<WalletAccount>()
+                    .AnyAsync(x => x.Phone == account.Phone, cancellationToken);
+                if (winnerExists)
+                {
+                    return null;
+                }
+                throw;
+            }
+        }
     }
 }

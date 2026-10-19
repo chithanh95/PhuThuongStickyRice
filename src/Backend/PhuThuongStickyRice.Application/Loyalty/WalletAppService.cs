@@ -405,8 +405,19 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-            await _wallets.InsertAsync(account, autoSave: true);
-            return account;
+            // Tạo ví nguyên tử (bug-hunt 2026-10-20): 2 request đồng thời cho
+            // SĐT mới đều thấy chưa có ví rồi cùng insert — unique (Phone)
+            // chỉ cho 1 bên insert, bên thua cũ nhận DbUpdateException -> 500.
+            // TryInsertAsync trả null cho bên thua -> đọc lại ví bên thắng vừa tạo.
+            var inserted = await _wallets.TryInsertAsync(account);
+            if (inserted != null)
+            {
+                return inserted;
+            }
+
+            return await FindAsync(phone)
+                ?? throw new DomainException(
+                    "Không tạo được ví, vui lòng thử lại.");
         }
 
         /// <summary>Ghi 1 dòng lịch sử biến động ví (mọi cộng/trừ số dư đều phải qua đây để đối soát).</summary>
