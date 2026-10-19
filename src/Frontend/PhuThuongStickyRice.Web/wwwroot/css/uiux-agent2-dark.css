@@ -792,3 +792,29 @@ html.dark .lx-admin .lx-dropzone-hint {
    Cả 4 đều đã grep xác minh markup không còn inline style tương ứng. */
 
 /* === end Agent 2 run 13:25 === */
+
+/* === UIUX Agent 2 — run 13:55 (redo sau reset) === */
+
+/* 1. Admin .table-bordered — Bootstrap viền #dee2e6 cả 4 cạnh td/th, rule dark
+   cũ chỉ đổi border-top nên viền sáng lọt trên nền tối. Áp dụng: NhanVien,
+   BaoCaoGio, PhanQuyen. */
+html.dark .table-bordered td, html.dark .table-bordered th { border-color: #3a3a58; }
+
+/* 2. Admin .thead-light — nền #e9ecef + chữ #a5a2bd → tương phản chỉ ~1.6:1,
+   tiêu đề cột gần như không đọc được ở dark mode. Áp dụng: NhanVien,
+   BaoCaoGio, PhanQuyen, LaiGop. */
+html.dark .thead-light th, html.dark thead.thead-light th, html.dark tfoot.thead-light td { background-color: #2e2e4e; border-color: #3a3a58; }
+
+/* 3. Landing .sg-search::placeholder — #6c757d trên nền tối #262019 (~3.3:1),
+   chữ gợi ý tìm kiếm mờ. Nâng lên #b8a88f cho đọc được. */
+html.dark .sg-search::placeholder { color: #b8a88f; }
+
+/* 4. Landing .sg-form-ok — #3d7a3d trên hộp gradient xanh dương, chỉ light OK;
+   ở dark mode cần #8fe3a0 cho đủ contrast. Chỉ đổi dark, không đụng light. */
+html.dark .sg-form-ok { color: #8fe3a0; }
+
+/* 5. Shop .qv-sheet-note-input::placeholder — #8a7558 trên sheet tối #241d17
+   (~3.5:1), chữ gợi ý ghi chú trong quick-view sheet mờ. Nâng lên #b8a88f. */
+html.dark .qv-sheet-note-input::placeholder { color: #b8a88f; }
+
+/* === end Agent 2 run 13:55 === */
