@@ -13,6 +13,10 @@ namespace PhuThuongStickyRice.Application.Common
     // tên cũ "Helper" chung chung, tên mới mô tả đúng chức năng duy nhất của class.
     public static class DateRangeNormalizer
     {
+        // [codequality-smell 2026-10-20] Hằng số có tên thay magic number "7"
+        // (dùng ở 2 nhánh): mặc định báo cáo lấy 7 ngày gần nhất.
+        private const int DefaultRangeDays = 7;
+
         /// <summary>
         /// Chuẩn hóa khoảng ngày: from/to null thì dùng mặc định (7 ngày gần
         /// nhất, kết thúc hôm nay); ToDate được cộng 1 ngày để bao trọn ngày
@@ -25,10 +29,10 @@ namespace PhuThuongStickyRice.Application.Common
         public static (DateTime From, DateTime To) NormalizeRange(DateTime? from, DateTime? to)
         {
             var toDate = (to?.Date ?? DateTime.UtcNow.Date).AddDays(1);
-            var fromDate = from?.Date ?? toDate.AddDays(-7);
+            var fromDate = from?.Date ?? toDate.AddDays(-DefaultRangeDays);
             if (fromDate > toDate)
             {
-                fromDate = toDate.AddDays(-7);
+                fromDate = toDate.AddDays(-DefaultRangeDays);
             }
 
             return (fromDate, toDate);

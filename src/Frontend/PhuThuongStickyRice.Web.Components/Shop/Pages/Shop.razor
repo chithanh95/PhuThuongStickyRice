@@ -15,7 +15,7 @@
 @inject AdminSystemService AdminSystemService
 @inject AdminCommerceService AdminCommerceService
 @inject CartState CartState
-@inject ShopI18n I18n
+@inject ShopI18n ShopI18n
 @implements IDisposable
 @inject ToastService Toasts
 @inject NavigationManager Navigation
@@ -37,11 +37,11 @@
                 <p class="lead mb-1">Xôi dẻo thơm chuẩn vị làng nghề — đặt hàng online, nhận ngay.</p>
                 @if (!string.IsNullOrWhiteSpace(_tableLabel))
                 {
-                    <p class="mb-1"><span class="badge badge-info" style="font-size: 1rem;">🍽 @I18n.Translate("table_order") @_tableLabel</span></p>
+                    <p class="mb-1"><span class="badge badge-info" style="font-size: 1rem;">🍽 @ShopI18n.Translate("table_order") @_tableLabel</span></p>
                 }
                 @if (_todaySold > 0)
                 {
-                    <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 @I18n.Translate("sold_today"): @_todaySold</span></p>
+                    <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 @ShopI18n.Translate("sold_today"): @_todaySold</span></p>
                 }
                 @* Wave 6a (item 22): open-hours display (VN time). *@
                 @if (!string.IsNullOrEmpty(_openStatusText))
@@ -526,7 +526,7 @@ else
                         <a class="btn btn-outline-success" href="@ZaloChatUrl(_quickView.Name)" target="_blank" rel="noopener">💬 Hỏi qua Zalo</a>
                     }
                     <button type="button" class="btn btn-primary" @onclick="AddQuickViewToCart" disabled="@(!CanOrder(_quickView))">
-                        @(CanOrder(_quickView) ? $"{I18n.Translate("add_to_cart")} — {FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))}" : AddButtonLabel(_quickView))
+                        @(CanOrder(_quickView) ? $"{ShopI18n.Translate("add_to_cart")} — {FormatPrice(QuickViewUnitPrice() * (_quickViewQty > 0 ? _quickViewQty : 1))}" : AddButtonLabel(_quickView))
                     </button>
                 </div>
             </div>
@@ -748,10 +748,10 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        I18n.OnChange += OnLangChanged;
+        ShopI18n.OnChange += OnLangChanged;
         // SH1: re-render the sticky cart bar when items are added/removed.
         CartState.OnChange += OnCartChanged;
-        await I18n.InitializeAsync();
+        await ShopI18n.InitializeAsync();
         Funnel.Track(FunnelService.Events.ShopView, new Uri(Navigation.Uri).AbsolutePath);
         _tableLabel = GetQueryValue(Navigation.Uri, "ban");
 
@@ -1852,7 +1852,7 @@ else
             return "Hết suất hôm nay";
         }
 
-        return defaultLabel ?? I18n.Translate("add_to_cart");
+        return defaultLabel ?? ShopI18n.Translate("add_to_cart");
     }
 
     /// <summary>Bỏ dấu tiếng Việt để tìm kiếm không dấu vẫn ra.</summary>
@@ -1987,7 +1987,7 @@ else
 
     public void Dispose()
     {
-        I18n.OnChange -= OnLangChanged;
+        ShopI18n.OnChange -= OnLangChanged;
         CartState.OnChange -= OnCartChanged;
     }
 }

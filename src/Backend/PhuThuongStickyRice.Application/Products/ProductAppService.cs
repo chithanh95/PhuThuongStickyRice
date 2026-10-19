@@ -543,17 +543,12 @@ namespace PhuThuongStickyRice.Application.Products
             var fromUtc = VietnamTime.DayStartUtc(today);
             var toUtc = VietnamTime.DayEndExclusiveUtc(today);
 
+            // [codequality-smell 2026-10-20] Dùng query dùng chung
+            // OrderStatisticsQuery (trước đây copy-paste đoạn Where/GroupBy
+            // này y hệt ở OrderAppService.LoadTodaySoldByProductAsync).
             var orderQueryable = await _orders.GetQueryableAsync();
-            var soldRows = await _asyncExecuter.ToListAsync(
-                orderQueryable
-                    .Where(x => x.Status != OrderStatus.Cancelled
-                        && x.CreatedAt >= fromUtc
-                        && x.CreatedAt < toUtc)
-                    .SelectMany(x => x.Lines)
-                    .GroupBy(l => l.ProductId)
-                    .Select(g => new { ProductId = g.Key, Sold = g.Sum(l => l.Quantity) }));
-
-            var soldMap = soldRows.ToDictionary(x => x.ProductId, x => (int)x.Sold);
+            var soldMap = await OrderStatisticsQuery.SoldByProductAsync(
+                orderQueryable, _asyncExecuter, fromUtc, toUtc);
 
             return limited
                 .Select(x =>

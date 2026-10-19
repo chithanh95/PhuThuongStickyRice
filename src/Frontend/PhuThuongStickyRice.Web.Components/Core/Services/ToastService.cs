@@ -2,11 +2,20 @@ using System;
 
 namespace PhuThuongStickyRice.Web.Components.Core.Services
 {
-    /// <summary>Lightweight toast notifications (e.g. "added to cart").</summary>
+    /// <summary>
+    /// Toast thông báo nhẹ (vd "đã thêm vào giỏ"). Component hiển thị đăng ký
+    /// sự kiện OnShow để nhận và render toast; gọi <see cref="Show"/> để bắn toast.
+    /// </summary>
     public class ToastService
     {
+        /// <summary>Sự kiện bắn ra mỗi khi có toast mới cần hiển thị.</summary>
         public event Action<ToastMessage> OnShow;
 
+        /// <summary>Bắn một toast thông báo.</summary>
+        /// <param name="message">Nội dung hiển thị.</param>
+        /// <param name="linkText">Chữ của link đính kèm (null = không có link).</param>
+        /// <param name="linkUrl">URL của link đính kèm.</param>
+        /// <param name="kind">Loại toast (mặc định Success — xác nhận xanh).</param>
         public void Show(string message, string linkText = null, string linkUrl = null, ToastKind kind = ToastKind.Success)
         {
             OnShow?.Invoke(new ToastMessage
@@ -30,6 +39,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         Info
     }
 
+    /// <summary>Một toast đơn lẻ: nội dung + link tùy chọn + loại hiển thị.</summary>
     public class ToastMessage
     {
         public Guid Id { get; set; }

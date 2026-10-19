@@ -12,7 +12,15 @@ namespace PhuThuongStickyRice.Infrastructure.Monitoring.AzureApplicationInsights
             {
                 services.AddApplicationInsightsTelemetry(opt =>
                 {
-                    opt.InstrumentationKey = azureApplicationInsightsOptions.InstrumentationKey;
+                    // InstrumentationKey đã deprecated — SDK khuyên dùng
+                    // ConnectionString. Dựng "InstrumentationKey=<key>" giữ
+                    // nguyên endpoint mặc định, tương đương hành vi gán key
+                    // cũ; bỏ qua khi key trống (như trước đây gán null).
+                    if (!string.IsNullOrEmpty(azureApplicationInsightsOptions.InstrumentationKey))
+                    {
+                        opt.ConnectionString =
+                            $"InstrumentationKey={azureApplicationInsightsOptions.InstrumentationKey}";
+                    }
                 });
 
                 services.ConfigureTelemetryModule<DependencyTrackingTelemetryModule>((module, o) =>

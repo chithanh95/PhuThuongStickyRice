@@ -8,8 +8,8 @@
 @using PhuThuongStickyRice.Web.Components.Shop.Services
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @inject AuthService AuthService
-@inject CustomerAddressService AddressService
-@inject CustomerProfileService ProfileService
+@inject CustomerAddressService CustomerAddressService
+@inject CustomerProfileService CustomerProfileService
 @inject ShopService ShopService
 @inject CartState CartState
 @inject CartSyncService CartSyncService
@@ -400,7 +400,7 @@
                 // perf-hunt 2026-10-19: 4 read độc lập chạy song song (mỗi loader
                 // fail-soft riêng như cũ, ghi field riêng). Riêng _addresses
                 // giữ nguyên ngữ cảnh: lỗi ở đây vẫn rớt về catch ngoài như cũ.
-                var addressesTask = AddressService.GetMineAsync();
+                var addressesTask = CustomerAddressService.GetMineAsync();
                 var profileTask = LoadProfileAsync();
                 var loyaltyTask = LoadLoyaltyAsync();
                 var ordersTask = LoadOrdersAsync();
@@ -437,7 +437,7 @@
         // Item 90+92: load taste preferences + birthday.
         try
         {
-            _profile = await ProfileService.GetMyAsync() ?? new CustomerProfileModel();
+            _profile = await CustomerProfileService.GetMyAsync() ?? new CustomerProfileModel();
             _selectedTags = new HashSet<string>(_profile.TasteTags ?? new List<string>());
             _dobValue = _profile.DateOfBirth;
         }
@@ -556,15 +556,15 @@
         {
             if (_editingId == Guid.Empty)
             {
-                await AddressService.CreateAsync(_form);
+                await CustomerAddressService.CreateAsync(_form);
             }
             else
             {
-                await AddressService.UpdateAsync(_editingId, _form);
+                await CustomerAddressService.UpdateAsync(_editingId, _form);
             }
 
             _editing = false;
-            _addresses = await AddressService.GetMineAsync();
+            _addresses = await CustomerAddressService.GetMineAsync();
         }
         catch (Exception)
         {
@@ -580,8 +580,8 @@
     {
         try
         {
-            await AddressService.SetDefaultAsync(id);
-            _addresses = await AddressService.GetMineAsync();
+            await CustomerAddressService.SetDefaultAsync(id);
+            _addresses = await CustomerAddressService.GetMineAsync();
         }
         catch (Exception) { }
     }
@@ -590,8 +590,8 @@
     {
         try
         {
-            await AddressService.DeleteAsync(id);
-            _addresses = await AddressService.GetMineAsync();
+            await CustomerAddressService.DeleteAsync(id);
+            _addresses = await CustomerAddressService.GetMineAsync();
         }
         catch (Exception) { }
     }
@@ -686,7 +686,7 @@
         try
         {
             _profile.TasteTags = _selectedTags.ToList();
-            _profile = await ProfileService.UpdateAsync(_profile);
+            _profile = await CustomerProfileService.UpdateAsync(_profile);
             _selectedTags = new HashSet<string>(_profile.TasteTags ?? new List<string>());
             _tasteMsg = "Đã lưu khẩu vị. Quán sẽ tự điền vào ghi chú mỗi lần bạn đặt hàng.";
             _tasteOk = true;
@@ -751,7 +751,7 @@
         try
         {
             _profile.DateOfBirth = _dobValue.Value.Date;
-            _profile = await ProfileService.UpdateAsync(_profile);
+            _profile = await CustomerProfileService.UpdateAsync(_profile);
             _dobValue = _profile.DateOfBirth;
             _dobMsg = "Đã lưu ngày sinh. Chúc bạn luôn ngon miệng!";
             _dobOk = true;

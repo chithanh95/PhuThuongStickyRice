@@ -197,9 +197,9 @@ else if (_forecast != null)
     private void AppendGridlines(System.Text.StringBuilder sb, decimal maxV,
         Func<decimal, double> Y, Func<double, string> F)
     {
-        for (var g = 0; g <= 4; g++)
+        for (var gridIndex = 0; gridIndex <= 4; gridIndex++)
         {
-            var gridValue = maxV * g / 4;
+            var gridValue = maxV * gridIndex / 4;
             var y = Y((decimal)gridValue);
             sb.Append($"<line x1=\"{F(PadL)}\" y1=\"{F(y)}\" x2=\"{F(W - PadR)}\" y2=\"{F(y)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
             sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(y + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)gridValue)}</text>");

@@ -189,23 +189,18 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// Dựng entity mã voucher cá nhân: dùng 1 lần, gắn đúng SĐT nhận để
         /// không chia sẻ/tái sử dụng; ưu tiên số tiền cố định, % và số tiền
         /// không tồn tại song song (checkout chỉ áp dụng 1 trong 2).
+        /// Ủy thác cho <see cref="DiscountCodeFactory.CreatePersonalVoucher"/>
+        /// dùng chung với quà sinh nhật của CustomerProfileAppService.
         /// </summary>
         private static DiscountCode BuildVoucherCode(
             string code, string phone, CreateVoucherCampaignInput input, DateTime expiresAt)
         {
-            return new DiscountCode
-            {
-                Code = code,
-                DiscountPercent = input.DiscountAmount > 0 ? (decimal?)null : input.DiscountPercent,
-                DiscountAmount = input.DiscountAmount > 0 ? input.DiscountAmount : (decimal?)null,
-                MinOrderAmount = 0,
-                ExpiresAt = expiresAt,
-                MaxUses = 1,
-                UsedCount = 0,
-                IsActive = true,
-                VoucherType = VoucherType.Discount,
-                OwnerPhone = phone
-            };
+            return DiscountCodeFactory.CreatePersonalVoucher(
+                code,
+                phone,
+                discountAmount: input.DiscountAmount > 0 ? input.DiscountAmount : (decimal?)null,
+                discountPercent: input.DiscountAmount > 0 ? (decimal?)null : input.DiscountPercent,
+                expiresAt: expiresAt);
         }
 
         /// <summary>
@@ -214,8 +209,6 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         private async Task<List<string>> GetInactivePhonesAsync()
         {
-            // Khách "không mua 30+ ngày": có tài khoản loyalty nhưng không có
-            // đơn nào (trừ đơn đã hủy) trong 30 ngày gần nhất.
             // perf-hunt 2026-10-19: anti-join ngay trên SQL (NOT EXISTS) thay vì
             // nạp toàn bộ SĐT bảng LoyaltyAccount (tăng vô hạn theo thời gian)
             // về memory rồi trừ bằng HashSet — mỗi lần admin mở màn hình chọn

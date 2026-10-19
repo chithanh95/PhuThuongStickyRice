@@ -74,9 +74,9 @@
                         @(_voucherBusy ? "Đang tạo..." : "🎟️ Tạo voucher SN")
                     </button>
                     <select class="form-control ctm-month-select" @bind="_birthdayMonth" @bind:after="LoadBirthdaysAsync" aria-label="Chọn tháng để xem sinh nhật">
-                        @for (var m = 1; m <= 12; m++)
+                        @for (var month = 1; month <= 12; month++)
                         {
-                            <option value="@m">Tháng @m</option>
+                            <option value="@month">Tháng @month</option>
                         }
                     </select>
                 </div>
@@ -504,7 +504,6 @@ else
     private bool _showBirthdays;
     private int _birthdayMonth = DateTime.Now.Month;
     private List<PhuThuongStickyRice.Web.Components.Shop.Services.BirthdayMemberModel> _birthdayMembers;
-    private bool _birthdayBusy;
     private string _birthdayMsg;
     private Guid? _giftingUserId;
     /// <summary>
@@ -725,7 +724,6 @@ else
     private async Task LoadBirthdaysAsync()
     {
         _birthdayMsg = null;
-        _birthdayBusy = true;
         try
         {
             _birthdayMembers = await CareService.GetBirthdaysAsync(_birthdayMonth);
@@ -734,10 +732,6 @@ else
         {
             _birthdayMsg = ex.Message;
             _birthdayMembers = new List<PhuThuongStickyRice.Web.Components.Shop.Services.BirthdayMemberModel>();
-        }
-        finally
-        {
-            _birthdayBusy = false;
         }
     }
 

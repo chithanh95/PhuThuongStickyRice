@@ -49,15 +49,8 @@ namespace PhuThuongStickyRice.Application.Products.EventHandlers
                 Log = domainEvent.Entity.AsJsonString(),
             }, cancellationToken);
 
-            await _outboxEventRepository.AddOrUpdateAsync(new OutboxEvent
-            {
-                EventType = "PRODUCT_UPDATED",
-                TriggeredById = _currentUser.UserId,
-                CreatedDateTime = domainEvent.EventDateTime,
-                ObjectId = domainEvent.Entity.Id.ToString(),
-                Message = domainEvent.Entity.AsJsonString(),
-                Published = false,
-            }, cancellationToken);
+            await _outboxEventRepository.AddOrUpdateAsync(ProductOutboxFactory.Create(
+                "PRODUCT_UPDATED", _currentUser, domainEvent.Entity, domainEvent.EventDateTime), cancellationToken);
 
             await _outboxEventRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
         }

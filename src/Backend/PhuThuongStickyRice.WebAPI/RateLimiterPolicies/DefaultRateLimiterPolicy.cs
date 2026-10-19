@@ -8,6 +8,12 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.WebAPI.RateLimiterPolicies
 {
+    /// <summary>
+    /// Chính sách rate limit mặc định của WebAPI: user đã đăng nhập giới hạn
+    /// theo tên tài khoản (200 req/phút), khách ẩn danh theo IP thật của kết
+    /// nối TCP (100 req/phút). Phân vùng theo IP thật (không theo Host header
+    /// do client tự gửi) để không thể xoay Host mà bypass rate limit.
+    /// </summary>
     public class DefaultRateLimiterPolicy : IRateLimiterPolicy<string>
     {
         public Func<OnRejectedContext, CancellationToken, ValueTask>? OnRejected { get; } = (context, cancellationToken) =>
@@ -16,6 +22,13 @@ namespace PhuThuongStickyRice.WebAPI.RateLimiterPolicies
             return default;
         };
 
+        /// <summary>
+        /// Chọn bucket rate limit cho request: tài khoản đã đăng nhập dùng tên
+        /// user; khách ẩn danh dùng <c>Connection.RemoteIpAddress</c> (IP thật
+        /// của kết nối TCP), chỉ fallback về Host header khi IP không có.
+        /// </summary>
+        /// <param name="httpContext">HttpContext của request hiện tại.</param>
+        /// <returns>Partition fixed-window: 200 req/phút (đã login), 100 req/phút (ẩn danh).</returns>
         public RateLimitPartition<string> GetPartition(HttpContext httpContext)
         {
             // same policy name and same partition key => will use the same rate limiter instance

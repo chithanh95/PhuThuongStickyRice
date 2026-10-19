@@ -120,7 +120,13 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
                         // BufferBaseFilename = Path.Combine(contentRootPath, "logs", "buffer"),
                         InlineFields = true,
                         EmitEventFailure = EmitEventFailureHandling.WriteToFailureSink,
-                        FailureSink = new FileSink(Path.Combine(logsPath, ElasticsearchFailureLogFileName), new JsonFormatter(), null),
+                        // FileSink ctor đã obsolete: dựng sink qua WriteTo.File()
+                        // (cùng JsonFormatter, cùng 1 file không giới hạn dung
+                        // lượng như trước) — Logger implements ILogEventSink.
+                        FailureSink = new LoggerConfiguration()
+                            .WriteTo.File(new JsonFormatter(),
+                                Path.Combine(logsPath, ElasticsearchFailureLogFileName))
+                            .CreateLogger(),
                     });
             }
         }

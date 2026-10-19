@@ -1,4 +1,5 @@
 using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Zalo;
 using PhuThuongStickyRice.Application.Staff;
 using PhuThuongStickyRice.Domain.Entities;
@@ -473,23 +474,15 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>
         /// Tách từ GrantBirthdayGiftAsync: tạo hàng mã giảm giá dùng 1 lần
         /// cho quà sinh nhật. Tách ra để GrantBirthdayGiftAsync gọn dưới
-        /// 50 dòng, dễ đọc hơn.
+        /// 50 dòng, dễ đọc hơn. Dùng <see cref="DiscountCodeFactory.CreatePersonalVoucher"/>
+        /// chung với mã chiến dịch của VoucherCampaignAppService.
         /// </summary>
         private async Task InsertBirthdayDiscountCodeAsync(string code, decimal amount, DateTime expiresAt, string phone)
         {
-            await _discounts.InsertAsync(new DiscountCode
-            {
-                Code = code,
-                DiscountAmount = amount,
-                DiscountPercent = null,
-                MinOrderAmount = 0,
-                ExpiresAt = expiresAt,
-                MaxUses = 1,
-                UsedCount = 0,
-                IsActive = true,
-                VoucherType = VoucherType.Discount,
-                OwnerPhone = phone
-            }, autoSave: true);
+            await _discounts.InsertAsync(
+                DiscountCodeFactory.CreatePersonalVoucher(
+                    code, phone, discountAmount: amount, discountPercent: null, expiresAt: expiresAt),
+                autoSave: true);
         }
 
         private async Task<string> GenerateUniqueCodeAsync()

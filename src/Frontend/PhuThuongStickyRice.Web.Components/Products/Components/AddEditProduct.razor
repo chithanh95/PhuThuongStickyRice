@@ -3,7 +3,7 @@
 @using System.Linq
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Admin.Services
-@inject CatalogAdminService CatalogService
+@inject CatalogAdminService CatalogAdminService
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminSystemService AdminSystemService
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
@@ -280,7 +280,7 @@
     {
         try
         {
-            _sizes = await CatalogService.GetSizeOptionsAsync(Product.Id);
+            _sizes = await CatalogAdminService.GetSizeOptionsAsync(Product.Id);
             // Chỉ nhớ Id khi tải thành công — tải lỗi thì lần re-render sau
             // vẫn thử lại như hành vi cũ (fail-soft).
             _lastSizesProductId = Product.Id;
@@ -338,11 +338,11 @@
             _sizeForm.ProductId = Product.Id;
             if (_editingSizeId == null)
             {
-                await CatalogService.CreateSizeOptionAsync(_sizeForm);
+                await CatalogAdminService.CreateSizeOptionAsync(_sizeForm);
             }
             else
             {
-                await CatalogService.UpdateSizeOptionAsync(_editingSizeId.Value, _sizeForm);
+                await CatalogAdminService.UpdateSizeOptionAsync(_editingSizeId.Value, _sizeForm);
             }
 
             CancelEditSize();
@@ -362,7 +362,7 @@
     {
         try
         {
-            await CatalogService.DeleteSizeOptionAsync(size.Id);
+            await CatalogAdminService.DeleteSizeOptionAsync(size.Id);
             await LoadSizesAsync();
         }
         catch (Exception)

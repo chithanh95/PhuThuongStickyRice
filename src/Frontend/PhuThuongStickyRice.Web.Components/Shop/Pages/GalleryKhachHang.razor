@@ -3,15 +3,15 @@
 @using PhuThuongStickyRice.Web.Components.Admin.Models
 @using PhuThuongStickyRice.Web.Components.Admin.Services
 @inject AdminCommerceService AdminCommerceService
-@inject ShopI18n I18n
+@inject ShopI18n ShopI18n
 @implements IDisposable
 
-<h3>@I18n.Translate("gallery")</h3>
+<h3>@ShopI18n.Translate("gallery")</h3>
 <p class="text-muted">Những món xôi do chính khách hàng của chúng tôi chụp 📸</p>
 
 @if (_photos == null)
 {
-    <p><em>@I18n.Translate("loading")</em></p>
+    <p><em>@ShopI18n.Translate("loading")</em></p>
 }
 else if (_photos.Count == 0)
 {
@@ -42,8 +42,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        I18n.OnChange += OnLangChanged;
-        await I18n.InitializeAsync();
+        ShopI18n.OnChange += OnLangChanged;
+        await ShopI18n.InitializeAsync();
         try
         {
             // Bug-hunt 2026-10-19 (17:55): GetApprovedPhotosAsync trả null khi
@@ -61,6 +61,6 @@ else
 
     public void Dispose()
     {
-        I18n.OnChange -= OnLangChanged;
+        ShopI18n.OnChange -= OnLangChanged;
     }
 }
