@@ -11,7 +11,7 @@
             <p class="text-center text-muted small mb-4">Get your free Lexa account now.</p>
             <div class="form-group">
                 <label>Username</label>
-                <input class="form-control" @bind="_user" placeholder="Enter username" />
+                <input class="form-control" @bind="_username" placeholder="Enter username" />
             </div>
             <div class="form-group">
                 <label>Email</label>
@@ -19,12 +19,12 @@
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" class="form-control" @bind="_pass" placeholder="Enter password" />
+                <input type="password" class="form-control" @bind="_password" placeholder="Enter password" />
             </div>
             <button class="btn btn-primary btn-block" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="Register">Register</button>
-            @if (_msg != null)
+            @if (_message != null)
             {
-                <div class="alert alert-success mt-3 py-2 mb-0">@_msg</div>
+                <div class="alert alert-success mt-3 py-2 mb-0">@_message</div>
             }
         </div>
         <p class="text-center text-muted small mt-4">Already have an account? <a href="/admin/lexa/auth-login" style="color:#7a6fbe;">Login</a></p>
@@ -32,6 +32,6 @@
 </div>
 
 @code {
-    private string _user, _email, _pass, _msg;
-    private void Register() => _msg = "Đây là trang demo.";
+    private string _username, _email, _password, _message;
+    private void Register() => _message = "Đây là trang demo.";
 }

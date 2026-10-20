@@ -29,7 +29,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Components
         [Parameter]
         public EventCallback<int> PageChanged { get; set; }
 
-        protected async Task HandleClick(int page)
+        protected async Task HandlePageClick(int page)
         {
             // Chặn click vào nút disabled: nút "Previous" khi đang ở trang 1 vẫn fire PageChanged(0),
             // nút "Next" ở trang cuối fire PageChanged(TotalPages+1) → state phân trang bị sai và

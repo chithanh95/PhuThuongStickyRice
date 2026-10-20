@@ -14,9 +14,9 @@
                 <input type="email" class="form-control" @bind="_email" placeholder="Enter email" />
             </div>
             <button class="btn btn-primary btn-block" style="background:#7a6fbe;border-color:#7a6fbe;" @onclick="Send">Send Reset Link</button>
-            @if (_msg != null)
+            @if (_message != null)
             {
-                <div class="alert alert-info mt-3 py-2 mb-0">@_msg</div>
+                <div class="alert alert-info mt-3 py-2 mb-0">@_message</div>
             }
             <div class="text-center mt-3">
                 <a href="/admin/lexa/auth-login" class="text-muted small">← Back to login</a>
@@ -26,6 +26,6 @@
 </div>
 
 @code {
-    private string _email, _msg;
-    private void Send() => _msg = "Đây là trang demo.";
+    private string _email, _message;
+    private void Send() => _message = "Đây là trang demo.";
 }

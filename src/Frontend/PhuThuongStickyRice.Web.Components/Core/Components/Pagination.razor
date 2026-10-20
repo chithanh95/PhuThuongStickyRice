@@ -1,13 +1,13 @@
 ﻿<nav aria-label="Phân trang">
     <ul class="pagination">
-        <li class="page-item @(CurrentPage==1?"disabled":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang đầu" aria-disabled="@(CurrentPage==1 ? "true" : null)" tabindex="@(CurrentPage==1 ? "-1" : null)" @onclick="() => HandleClick(1)">Đầu</a></li>
-        <li class="page-item @(CurrentPage==1?"disabled":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang trước" aria-disabled="@(CurrentPage==1 ? "true" : null)" tabindex="@(CurrentPage==1 ? "-1" : null)" @onclick="() => HandleClick(CurrentPage - 1)">Trước</a></li>
+        <li class="page-item @(CurrentPage==1?"disabled":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang đầu" aria-disabled="@(CurrentPage==1 ? "true" : null)" tabindex="@(CurrentPage==1 ? "-1" : null)" @onclick="() => HandlePageClick(1)">Đầu</a></li>
+        <li class="page-item @(CurrentPage==1?"disabled":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang trước" aria-disabled="@(CurrentPage==1 ? "true" : null)" tabindex="@(CurrentPage==1 ? "-1" : null)" @onclick="() => HandlePageClick(CurrentPage - 1)">Trước</a></li>
         @foreach (var pageNumber in PageNumbers)
         {
-            <li class="page-item @(CurrentPage==pageNumber?"active":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang @pageNumber" aria-current="@(CurrentPage==pageNumber ? "page" : null)" @onclick="() => HandleClick(pageNumber)">@pageNumber</a></li>
+            <li class="page-item @(CurrentPage==pageNumber?"active":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang @pageNumber" aria-current="@(CurrentPage==pageNumber ? "page" : null)" @onclick="() => HandlePageClick(pageNumber)">@pageNumber</a></li>
         }
-        <li class="page-item @(CurrentPage==TotalPages?"disabled":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang kế" aria-disabled="@(CurrentPage==TotalPages ? "true" : null)" tabindex="@(CurrentPage==TotalPages ? "-1" : null)" @onclick="() => HandleClick(CurrentPage + 1)">Tiếp</a></li>
-        <li class="page-item @(CurrentPage==TotalPages?"disabled":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang cuối" aria-disabled="@(CurrentPage==TotalPages ? "true" : null)" tabindex="@(CurrentPage==TotalPages ? "-1" : null)" @onclick="() => HandleClick(TotalPages)">Cuối</a></li>
+        <li class="page-item @(CurrentPage==TotalPages?"disabled":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang kế" aria-disabled="@(CurrentPage==TotalPages ? "true" : null)" tabindex="@(CurrentPage==TotalPages ? "-1" : null)" @onclick="() => HandlePageClick(CurrentPage + 1)">Tiếp</a></li>
+        <li class="page-item @(CurrentPage==TotalPages?"disabled":"")"><a class="page-link" href="javascript:void(0)" aria-label="Trang cuối" aria-disabled="@(CurrentPage==TotalPages ? "true" : null)" tabindex="@(CurrentPage==TotalPages ? "-1" : null)" @onclick="() => HandlePageClick(TotalPages)">Cuối</a></li>
     </ul>
 </nav>
 

@@ -15,11 +15,11 @@
             }
             <div class="form-group">
                 <label>Username</label>
-                <input class="form-control" @bind="_user" placeholder="Enter username" />
+                <input class="form-control" @bind="_username" placeholder="Enter username" />
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" class="form-control" @bind="_pass" placeholder="Enter password" />
+                <input type="password" class="form-control" @bind="_password" placeholder="Enter password" />
             </div>
             <div class="form-group row align-items-center">
                 <div class="col-6">
@@ -42,11 +42,11 @@
 </div>
 
 @code {
-    private string _user, _pass, _error;
+    private string _username, _password, _error;
     private bool _remember;
     private void Login()
     {
-        if (string.IsNullOrWhiteSpace(_user) || string.IsNullOrWhiteSpace(_pass))
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
             _error = "Vui lòng nhập đầy đủ thông tin.";
         else
             _error = "Đây là trang demo, không đăng nhập thật.";
