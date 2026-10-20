@@ -764,7 +764,7 @@
 
     private async Task SaveTasteAsync() => await RunProfileSaveAsync(
         setBusy: b => _tasteBusy = b,
-        setMessage: (msg, ok) => { _tasteMsg = msg; _tasteOk = ok; },
+        setMessage: (message, isSuccess) => { _tasteMsg = message; _tasteOk = isSuccess; },
         work: async () =>
         {
             _profile.TasteTags = _selectedTags.ToList();
@@ -826,7 +826,7 @@
 
         await RunProfileSaveAsync(
             setBusy: b => _dobBusy = b,
-            setMessage: (msg, ok) => { _dobMsg = msg; _dobOk = ok; },
+            setMessage: (message, isSuccess) => { _dobMsg = message; _dobOk = isSuccess; },
             work: async () =>
             {
                 _profile.DateOfBirth = _dobValue.Value.Date;

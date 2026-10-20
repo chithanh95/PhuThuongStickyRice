@@ -199,18 +199,18 @@ else if (_forecast != null)
 
             // Ánh xạ chỉ số ngày → tọa độ px (trừ padding 2 biên); Math.Max
             // tránh chia 0 khi chỉ có 1 điểm dữ liệu.
-            double X(int i) => PadL + i * (W - PadL - PadR) / Math.Max(pointCount - 1, 1);
+            double MapIndexToX(int dayIndex) => PadL + dayIndex * (W - PadL - PadR) / Math.Max(pointCount - 1, 1);
             // Ánh xạ doanh thu → tọa độ px: trục Y của SVG đi xuống dưới nên
             // phải đảo (1 − v/maxValue) để giá trị lớn nằm trên cao.
-            double Y(decimal v) => PadT + (H - PadT - PadB) * (1 - (double)v / (double)maxValue);
+            double MapRevenueToY(decimal value) => PadT + (H - PadT - PadB) * (1 - (double)value / (double)maxValue);
             // Định dạng số cho attribute SVG: bắt buộc InvariantCulture vì SVG
             // yêu cầu dấu chấm thập phân, bất kể locale vi-VN của trình duyệt.
-            string F(double d) => d.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            string FormatSvgNumber(double value) => value.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
-            AppendGridlines(sb, maxValue, Y, F);
-            AppendHistoryArea(sb, history, X, Y, F);
-            AppendForecastLine(sb, history, forecast, X, Y, F);
-            AppendXAxisLabels(sb, history, forecast, pointCount, X, F);
+            AppendGridlines(sb, maxValue, MapRevenueToY, FormatSvgNumber);
+            AppendHistoryArea(sb, history, MapIndexToX, MapRevenueToY, FormatSvgNumber);
+            AppendForecastLine(sb, history, forecast, MapIndexToX, MapRevenueToY, FormatSvgNumber);
+            AppendXAxisLabels(sb, history, forecast, pointCount, MapIndexToX, FormatSvgNumber);
         }
         sb.Append("</svg>");
         _svgMarkup = sb.ToString();
@@ -218,25 +218,25 @@ else if (_forecast != null)
 
     /// <summary>Vẽ 5 đường lưới ngang và nhãn tiền rút gọn bên trái.</summary>
     private void AppendGridlines(System.Text.StringBuilder sb, decimal maxValue,
-        Func<decimal, double> Y, Func<double, string> F)
+        Func<decimal, double> MapRevenueToY, Func<double, string> FormatSvgNumber)
     {
         for (var gridIndex = 0; gridIndex <= 4; gridIndex++)
         {
             var gridValue = maxValue * gridIndex / 4;
-            var pixelY = Y((decimal)gridValue);
-            sb.Append($"<line x1=\"{F(PadL)}\" y1=\"{F(pixelY)}\" x2=\"{F(W - PadR)}\" y2=\"{F(pixelY)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
-            sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(pixelY + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)gridValue)}</text>");
+            var pixelY = MapRevenueToY((decimal)gridValue);
+            sb.Append($"<line x1=\"{FormatSvgNumber(PadL)}\" y1=\"{FormatSvgNumber(pixelY)}\" x2=\"{FormatSvgNumber(W - PadR)}\" y2=\"{FormatSvgNumber(pixelY)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
+            sb.Append($"<text x=\"{FormatSvgNumber(PadL - 8)}\" y=\"{FormatSvgNumber(pixelY + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)gridValue)}</text>");
         }
     }
 
     /// <summary>Vẽ vùng tô dưới đường doanh thu thực tế + đường kẻ liền.</summary>
     private void AppendHistoryArea(System.Text.StringBuilder sb,
         List<(DateTime Date, decimal Revenue)> history,
-        Func<int, double> X, Func<decimal, double> Y, Func<double, string> F)
+        Func<int, double> MapIndexToX, Func<decimal, double> MapRevenueToY, Func<double, string> FormatSvgNumber)
     {
-        var historyPoints = string.Join(" ", history.Select((p, i) => $"{F(X(i))},{F(Y(p.Revenue))}"));
+        var historyPoints = string.Join(" ", history.Select((p, i) => $"{FormatSvgNumber(MapIndexToX(i))},{FormatSvgNumber(MapRevenueToY(p.Revenue))}"));
         var lastHistoryIndex = history.Count - 1;
-        sb.Append($"<polygon points=\"{historyPoints} {F(X(lastHistoryIndex))},{F(H - PadB)} {F(X(0))},{F(H - PadB)}\" fill=\"rgba(122,111,190,0.12)\"/>");
+        sb.Append($"<polygon points=\"{historyPoints} {FormatSvgNumber(MapIndexToX(lastHistoryIndex))},{FormatSvgNumber(H - PadB)} {FormatSvgNumber(MapIndexToX(0))},{FormatSvgNumber(H - PadB)}\" fill=\"rgba(122,111,190,0.12)\"/>");
         sb.Append($"<polyline points=\"{historyPoints}\" fill=\"none\" stroke=\"#7a6fbe\" stroke-width=\"2.5\"/>");
     }
 
@@ -244,20 +244,20 @@ else if (_forecast != null)
     private void AppendForecastLine(System.Text.StringBuilder sb,
         List<(DateTime Date, decimal Revenue)> history,
         List<(DateTime Date, decimal ForecastRevenue)> forecast,
-        Func<int, double> X, Func<decimal, double> Y, Func<double, string> F)
+        Func<int, double> MapIndexToX, Func<decimal, double> MapRevenueToY, Func<double, string> FormatSvgNumber)
     {
         var lastHistoryIndex = history.Count - 1;
         // Nối chuỗi trong vòng lặp nên dùng StringBuilder (tránh tạo string mới mỗi vòng).
         // Đường dự báo bắt đầu từ ĐIỂM THỰC TẾ CUỐI CÙNG để 2 đoạn nối liền
         // nhau, không bị khoảng trống giữa quá khứ và tương lai.
-        var forecastPoints = new System.Text.StringBuilder($"{F(X(lastHistoryIndex))},{F(Y(history[lastHistoryIndex].Revenue))}");
+        var forecastPoints = new System.Text.StringBuilder($"{FormatSvgNumber(MapIndexToX(lastHistoryIndex))},{FormatSvgNumber(MapRevenueToY(history[lastHistoryIndex].Revenue))}");
         var dots = new System.Text.StringBuilder();
         for (var i = 0; i < forecast.Count; i++)
         {
-            var pixelX = X(history.Count + i);
-            var pixelY = Y(forecast[i].ForecastRevenue);
-            forecastPoints.Append($" {F(pixelX)},{F(pixelY)}");
-            dots.Append($"<circle cx=\"{F(pixelX)}\" cy=\"{F(pixelY)}\" r=\"4\" fill=\"#f1b44c\" stroke=\"#fff\" stroke-width=\"1.5\"/>");
+            var pixelX = MapIndexToX(history.Count + i);
+            var pixelY = MapRevenueToY(forecast[i].ForecastRevenue);
+            forecastPoints.Append($" {FormatSvgNumber(pixelX)},{FormatSvgNumber(pixelY)}");
+            dots.Append($"<circle cx=\"{FormatSvgNumber(pixelX)}\" cy=\"{FormatSvgNumber(pixelY)}\" r=\"4\" fill=\"#f1b44c\" stroke=\"#fff\" stroke-width=\"1.5\"/>");
         }
         sb.Append($"<polyline points=\"{forecastPoints}\" fill=\"none\" stroke=\"#f1b44c\" stroke-width=\"2.5\" stroke-dasharray=\"7 4\"/>");
         sb.Append(dots);
@@ -267,7 +267,7 @@ else if (_forecast != null)
     private void AppendXAxisLabels(System.Text.StringBuilder sb,
         List<(DateTime Date, decimal Revenue)> history,
         List<(DateTime Date, decimal ForecastRevenue)> forecast,
-        int pointCount, Func<int, double> X, Func<double, string> F)
+        int pointCount, Func<int, double> MapIndexToX, Func<double, string> FormatSvgNumber)
     {
         var all = history.Select(x => x.Date).Concat(forecast.Select(x => x.Date)).ToList();
         // Chỉ hiện khoảng 7 nhãn ngày (dd/MM) trên trục X để nhãn không đè
@@ -275,7 +275,7 @@ else if (_forecast != null)
         var step = Math.Max(1, pointCount / 7);
         for (var i = 0; i < pointCount; i += step)
         {
-            sb.Append($"<text x=\"{F(X(i))}\" y=\"{F(H - 8)}\" text-anchor=\"middle\" font-size=\"11\" style=\"fill:var(--db-axis,#6c757d)\">{all[i]:dd/MM}</text>");
+            sb.Append($"<text x=\"{FormatSvgNumber(MapIndexToX(i))}\" y=\"{FormatSvgNumber(H - 8)}\" text-anchor=\"middle\" font-size=\"11\" style=\"fill:var(--db-axis,#6c757d)\">{all[i]:dd/MM}</text>");
         }
     }
 

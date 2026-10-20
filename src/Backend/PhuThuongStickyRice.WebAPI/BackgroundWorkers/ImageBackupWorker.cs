@@ -182,7 +182,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 }
 
                 var backedUpFiles = JsonSerializer.Deserialize<List<string>>(File.ReadAllText(path));
-                return new HashSet<string>(backedUpFiles ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
+                return new HashSet<string>(backedUpFiles ?? [], StringComparer.OrdinalIgnoreCase);
             }
             catch
             {

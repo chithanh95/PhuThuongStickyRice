@@ -132,13 +132,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 // "lines": null trong body sẽ ghi đè initializer thành null —
                 // không guard sẽ NRE 500 tại .Select; để service trả 400 chuẩn
                 // (CreateAsync ném DomainException "Order must contain at least one line.").
-                Lines = (model.Lines ?? new List<CreateOrderLineRequestModel>())
+                Lines = (model.Lines ?? [])
                     .Select(x => new CreateOrderLineDto
                     {
                         ProductId = x.ProductId,
                         Quantity = x.Quantity,
                         SizeOptionId = x.SizeOptionId,
-                        ToppingIds = x.ToppingIds ?? new List<Guid>(),
+                        ToppingIds = x.ToppingIds ?? [],
                         IsCombo = x.IsCombo,
                         Note = x.Note
                     })
@@ -447,7 +447,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                             LineId = x.LineId,
                             Quantity = x.Quantity
                         })
-                        .ToList() ?? new List<UpdateOrderLineQtyDto>()
+                        // ToList() không bao giờ trả null → bỏ nhánh ?? chết.
+                        .ToList()
                 });
                 return Ok(order);
             }

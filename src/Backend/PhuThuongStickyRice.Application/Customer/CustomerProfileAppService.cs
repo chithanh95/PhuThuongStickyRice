@@ -351,7 +351,12 @@ namespace PhuThuongStickyRice.Application.Customer
             var amount = dto?.DiscountAmount ?? DefaultBirthdayGiftAmount;
             if (amount < MinBirthdayGiftAmount || amount > MaxBirthdayGiftAmount)
             {
-                throw new UserFriendlyException("Mệnh giá quà từ 5.000₫ đến 1.000.000₫.");
+                // [codequality-smell 2026-10-20] Ghép message từ const thay vì
+                // hardcode "5.000₫"/"1.000.000₫" — đổi giới hạn chỉ cần sửa
+                // const, message hiển thị không bao giờ lệch với logic check.
+                throw new UserFriendlyException(
+                    $"Mệnh giá quà từ {MinBirthdayGiftAmount.ToString("N0", VietnameseCulture.Value)}₫ " +
+                    $"đến {MaxBirthdayGiftAmount.ToString("N0", VietnameseCulture.Value)}₫.");
             }
 
             return (phone, amount);

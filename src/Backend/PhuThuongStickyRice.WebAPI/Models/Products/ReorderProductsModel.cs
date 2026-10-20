@@ -9,6 +9,6 @@ namespace PhuThuongStickyRice.WebAPI.Models.Products
     /// </summary>
     public class ReorderProductsModel
     {
-        public List<Guid> Ids { get; set; } = new List<Guid>();
+        public List<Guid> Ids { get; set; } = [];
     }
 }

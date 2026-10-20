@@ -1405,6 +1405,29 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
+        /// Wave 6c (item 33): map đơn sang DTO công khai — ghi chú nội bộ
+        /// (AdminNote) không bao giờ được trả ra qua API công khai. Dùng
+        /// helper này thay cho cặp dòng map + gán null lặp lại ở mọi luồng
+        /// public (tra cứu đơn, khách tự hủy, chuyển đơn...).
+        /// </summary>
+        /// <param name="order">Entity đơn hàng cần map.</param>
+        /// <returns>DTO đơn hàng đã xóa ghi chú nội bộ.</returns>
+        private OrderDto MapPublicOrderDto(Order order)
+            => StripAdminNote(_objectMapper.Map<Order, OrderDto>(order));
+
+        /// <summary>
+        /// Wave 6c (item 33): xóa ghi chú nội bộ khỏi DTO trước khi trả về
+        /// cho luồng công khai — ghi chú nội bộ chỉ hiện trong màn hình admin.
+        /// </summary>
+        /// <param name="dto">DTO cần xóa ghi chú nội bộ.</param>
+        /// <returns>Chính DTO đó, đã xóa <see cref="OrderDto.AdminNote"/>.</returns>
+        private static OrderDto StripAdminNote(OrderDto dto)
+        {
+            dto.AdminNote = null;
+            return dto;
+        }
+
+        /// <summary>
         /// Item 82: fills <see cref="OrderDto.ShipperName"/> for orders with an
         /// assigned shipper (single lookup, no N+1).
         /// </summary>
@@ -1704,7 +1727,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 kitchenStatuses, KitchenDisplayMaxOrders);
             var dtos = _objectMapper.Map<List<Order>, List<OrderDto>>(items);
             // Wave 6c (item 33): internal note stays in the admin UI.
-            dtos.ForEach(x => x.AdminNote = null);
+            dtos.ForEach(x => StripAdminNote(x));
             await FillShipperNamesAsync(dtos);
             await FillCustomerTagsAsync(dtos);
             return dtos;
@@ -1760,8 +1783,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             var dto = await MapOrderDtoWithShipperNamesAsync(order);
             // Wave 6c (item 33): internal note stays in the admin UI.
-            dto.AdminNote = null;
-            return dto;
+            return StripAdminNote(dto);
         }
 
         /// <summary>
@@ -2053,9 +2075,7 @@ namespace PhuThuongStickyRice.Application.Orders
             await RefundWalletIfPaidAsync(order);
 
             // Wave 6c (item 33): internal note never leaves on public DTOs.
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
-            dto.AdminNote = null;
-            return dto;
+            return MapPublicOrderDto(order);
         }
 
         /// <summary>
@@ -2148,8 +2168,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             await _orders.UpdateAsync(order);
             // Wave 6c (item 33): internal note is never serialized publicly.
-            var linesDto = _objectMapper.Map<Order, OrderDto>(order);
-            linesDto.AdminNote = null;
+            var linesDto = MapPublicOrderDto(order);
             return linesDto;
         }
 
@@ -2309,9 +2328,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             await _orders.UpdateAsync(order);
             // Wave 6c (item 33): internal note is never serialized publicly.
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
-            dto.AdminNote = null;
-            return dto;
+            return MapPublicOrderDto(order);
         }
 
         /// <summary>
@@ -2335,9 +2352,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             await _orders.UpdateAsync(order);
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
-            dto.AdminNote = null;
-            return dto;
+            return MapPublicOrderDto(order);
         }
 
         /// <summary>
@@ -3098,8 +3113,7 @@ namespace PhuThuongStickyRice.Application.Orders
             await _orders.UpdateAsync(order);
 
             // Wave 6c (item 33): internal note is never serialized publicly.
-            var transferredDto = _objectMapper.Map<Order, OrderDto>(order);
-            transferredDto.AdminNote = null;
+            var transferredDto = MapPublicOrderDto(order);
             return transferredDto;
         }
 
@@ -3163,9 +3177,7 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // Wave 6c (item 33): internal note is never serialized publicly.
-            var dto = _objectMapper.Map<Order, OrderDto>(order);
-            dto.AdminNote = null;
-            return dto;
+            return MapPublicOrderDto(order);
         }
 
         /// <summary>
@@ -3703,9 +3715,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     continue;
                 }
 
-                var dto = _objectMapper.Map<Order, OrderDto>(order);
-                dto.AdminNote = null;
-                result.Add(dto);
+                result.Add(MapPublicOrderDto(order));
             }
 
             return result;

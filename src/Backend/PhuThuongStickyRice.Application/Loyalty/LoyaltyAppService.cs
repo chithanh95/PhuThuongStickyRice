@@ -141,6 +141,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// </summary>
         private const int MaxReferralCodeAttempts = 10;
 
+        /// <summary>
+        /// Ngày dự phòng khi khách sinh 29/2 vào năm không nhuận: coi như
+        /// sinh 28/2 để DateTime không ném ArgumentOutOfRangeException.
+        /// </summary>
+        private const int NonLeapFebruaryFallbackDay = 28;
+
         private readonly Domain.Repositories.ILoyaltyAccountRepository _accounts;
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -898,7 +904,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
         {
             if (month == 2 && day == 29 && !DateTime.IsLeapYear(year))
             {
-                day = 28;
+                day = NonLeapFebruaryFallbackDay;
             }
 
             return new DateTime(year, month, day);
