@@ -16,6 +16,12 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.EmailMessages.Services
 {
+    /// <summary>
+    /// Worker gửi email hàng đợi (SendEmailWorker gọi mỗi 10 giây):
+    /// gửi từng đợt tối đa 100 mail (ưu tiên mail đến hạn trước), retry theo
+    /// lịch Fibonacci khi lỗi, và ngắt mạch (circuit breaker) khi SMTP lỗi
+    /// liên tục để không spam server mail.
+    /// </summary>
     public class EmailMessageService
     {
         // Tên circuit breaker bảo vệ SMTP (tránh spam server mail khi lỗi liên tục).
@@ -66,6 +72,10 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
                 new EventId(1, "NoEmailToSend"),
                 "No email to send.");
 
+        /// <summary>
+        /// Khởi tạo worker gửi email với logger, repository hàng đợi, sender
+        /// SMTP, đồng hồ, kho circuit breaker và bộ thực thi query async.
+        /// </summary>
         public EmailMessageService(ILogger<EmailMessageService> logger,
             IEmailMessageRepository repository,
             IEmailNotification emailNotification,

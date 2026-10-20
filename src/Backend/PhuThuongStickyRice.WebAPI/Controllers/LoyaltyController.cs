@@ -26,7 +26,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [Produces("application/json")]
     [Route("api/[controller]")]
     [ApiController]
-    public class LoyaltyController : ControllerBase
+    public partial class LoyaltyController : ControllerBase
     {
         private readonly ILoyaltyAppService _loyaltyAppService;
         private readonly IDiscountAppService _discountAppService;
@@ -201,8 +201,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Tạo voucher sinh nhật thất bại cho SĐT {Phone}.", birthday.Phone);
+                LogBirthdayVoucherFailed(_logger, ex, birthday.Phone);
             }
         }
+
+        // CA1848: logging hiệu năng cao bằng LoggerMessage source-generated
+        // (tránh cấp phát params array + boxing mỗi lần log).
+
+        /// <summary>Log khi tạo voucher quà sinh nhật hàng loạt bị lỗi cho 1 SĐT.</summary>
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Tạo voucher sinh nhật thất bại cho SĐT {Phone}.")]
+        private static partial void LogBirthdayVoucherFailed(ILogger logger, Exception ex, string phone);
     }
 }

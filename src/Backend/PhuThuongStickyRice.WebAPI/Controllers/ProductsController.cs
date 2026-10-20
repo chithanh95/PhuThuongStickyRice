@@ -37,7 +37,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// Admin và theo policy chi tiết. Định dạng ảnh: jpg/jpeg/png/webp/gif,
     /// tối đa 5 MB, kiểm tra magic bytes khi upload.
     /// </summary>
-    public class ProductsController : ControllerBase
+    public partial class ProductsController : ControllerBase
     {
         private readonly IProductAppService _productAppService;
         private readonly ILogger _logger;
@@ -91,7 +91,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] bool includeInactive = false,
             CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Getting products");
+            LogGettingProducts(_logger);
             // Perf: pageSize comes from the public internet — clamp it so a huge
             // value can't force a full-table materialization + poison the
             // 5-minute public cache with a giant list. Internal callers
@@ -496,5 +496,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 CostPrice = x.CostPrice
             }).ToList();
         }
+
+        // CA1848: logging hiệu năng cao bằng LoggerMessage source-generated
+        // (tránh cấp phát params array + boxing mỗi lần log).
+
+        /// <summary>Log khi bắt đầu lấy danh sách sản phẩm (endpoint public).</summary>
+        [LoggerMessage(Level = LogLevel.Information, Message = "Getting products.")]
+        private static partial void LogGettingProducts(ILogger logger);
     }
 }

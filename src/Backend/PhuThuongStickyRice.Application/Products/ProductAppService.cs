@@ -20,10 +20,28 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Products
 {
+    /// <summary>
+    /// Hợp đồng dịch vụ catalog sản phẩm: danh sách phân trang (có đường
+    /// public che giá vốn), CRUD món cho admin, bật/tắt trạng thái bán,
+    /// thứ tự hiển thị thủ công, nhật ký thay đổi, suất còn trong ngày và
+    /// tổng hợp đánh giá món cho shop.
+    /// </summary>
     public interface IProductAppService : IApplicationService
     {
+        /// <summary>
+        /// Danh sách món có phân trang. Đường public (status=Active) đọc từ
+        /// cache 5 phút; đường admin (không lọc status) luôn đọc DB để thấy
+        /// dữ liệu mới nhất ngay sau khi sửa.
+        /// </summary>
+        /// <param name="input">Điều kiện tìm kiếm, lọc chi nhánh/trạng thái, phân trang.</param>
+        /// <returns>Trang sản phẩm hiện tại.</returns>
         Task<PagedResultDto<ProductDto>> GetListAsync(GetProductsInput input);
 
+        /// <summary>
+        /// Chi tiết 1 món theo Id (đường admin — có cả giá vốn).
+        /// </summary>
+        /// <param name="id">Id của món.</param>
+        /// <returns>Thông tin món.</returns>
         Task<ProductDto> GetAsync(Guid id);
 
         /// <summary>

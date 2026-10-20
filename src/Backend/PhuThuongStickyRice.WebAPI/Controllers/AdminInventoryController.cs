@@ -21,7 +21,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [Produces("application/json")]
     [Route("api/admin/inventory")]
     [ApiController]
-    public class AdminInventoryController : ControllerBase
+    public partial class AdminInventoryController : ControllerBase
     {
         private readonly IInventoryAppService _inventoryAppService;
         private readonly ILogger<AdminInventoryController> _logger;
@@ -50,7 +50,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to save daily inventory");
+                LogSaveDailyInventoryFailed(_logger, ex);
                 return StatusCode(500, "Lưu kiểm kê thất bại. Vui lòng thử lại.");
             }
         }
@@ -64,5 +64,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var history = await _inventoryAppService.GetHistoryAsync(days);
             return Ok(history);
         }
+
+        // CA1848: logging hiệu năng cao bằng LoggerMessage source-generated
+        // (tránh cấp phát params array + boxing mỗi lần log).
+
+        /// <summary>Log khi lưu kiểm kê hằng ngày thất bại.</summary>
+        [LoggerMessage(Level = LogLevel.Error, Message = "Failed to save daily inventory.")]
+        private static partial void LogSaveDailyInventoryFailed(ILogger logger, Exception ex);
     }
 }

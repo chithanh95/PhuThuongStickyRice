@@ -186,10 +186,10 @@ else
         @if (_reviews != null && _reviews.Count > 0)
         {
             <div class="sg-trust-reviews">
-                @foreach (var review in _reviews.Take(3))
+                @foreach (var review in _reviews.Take(MaxTrustReviews))
                 {
                     <div class="sg-trust-review">
-                        <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, review.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, review.Rating))))</div>
+                        <div class="sg-review-stars">@Stars(review.Rating)</div>
                         <p class="sg-trust-review-text">"@review.Comment"</p>
                         <p class="sg-trust-review-name">— @(string.IsNullOrWhiteSpace(review.MaskedCustomerPhone) ? MaskPhone(review.CustomerPhone) : review.MaskedCustomerPhone)</p>
                     </div>
@@ -313,10 +313,10 @@ else
             <p class="sg-eyebrow">Khách nói gì</p>
             <h2 class="sg-h2">Đánh giá thật từ khách hàng</h2>
             <div class="sg-review-track" id="sg-reviews">
-                @foreach (var review in _reviews.Take(12))
+                @foreach (var review in _reviews.Take(MaxReviewTrackItems))
                 {
                     <div class="sg-review-card sg-reveal">
-                        <div class="sg-review-stars">@(new string('★', Math.Max(1, Math.Min(5, review.Rating))))@(new string('☆', 5 - Math.Max(1, Math.Min(5, review.Rating))))</div>
+                        <div class="sg-review-stars">@Stars(review.Rating)</div>
                         <p class="sg-review-text">"@review.Comment"</p>
                         <p class="sg-review-name">— @(string.IsNullOrWhiteSpace(review.MaskedCustomerPhone) ? MaskPhone(review.CustomerPhone) : review.MaskedCustomerPhone)</p>
                         @if (!string.IsNullOrWhiteSpace(review.AdminReply))
@@ -354,7 +354,7 @@ else
             <p class="sg-eyebrow">Check-in</p>
             <h2 class="sg-h2">Khách hàng của quán</h2>
             <div class="sg-gallery-grid">
-                @foreach (var photo in _gallery.Take(8))
+                @foreach (var photo in _gallery.Take(MaxGalleryPhotos))
                 {
                     <figure class="sg-g-item sg-reveal">
                         <img loading="lazy" decoding="async" src="@photo.ImageUrl" alt="@photo.Caption" />
@@ -511,7 +511,7 @@ else
             <p class="sg-eyebrow">Dành cho bạn</p>
             <h2 class="sg-h2">Món bạn vừa xem</h2>
             <div class="sg-dish-grid">
-                @foreach (var product in _recentlyViewed.Take(4))
+                @foreach (var product in _recentlyViewed.Take(MaxRecentlyViewed))
                 {
                     <div class="sg-dish-card sg-reveal in" @key="product.Id">
                         <div class="sg-dish-imgwrap">
@@ -547,7 +547,7 @@ else
             <p class="sg-eyebrow">Đọc & học</p>
             <h2 class="sg-h2">Góc ẩm thực</h2>
             <div class="sg-blog-grid">
-                @foreach (var article in _articles.Take(6))
+                @foreach (var article in _articles.Take(MaxArticles))
                 {
                     <div class="sg-blog-card sg-reveal">
                         @if (!string.IsNullOrWhiteSpace(article.ImageUrl))
@@ -902,10 +902,10 @@ else
     private HashSet<Guid> _bestSellerIds = new HashSet<Guid>();
 
     private static bool IsXoi(ShopProductModel p) =>
-        (p?.Code ?? "").StartsWith("XOI", StringComparison.OrdinalIgnoreCase);
+        (p?.Code ?? "").StartsWith(XoiCodePrefix, StringComparison.OrdinalIgnoreCase);
 
     private static bool IsSoldOut(ShopProductModel p) =>
-        !string.Equals(p?.Status, "Active", StringComparison.OrdinalIgnoreCase);
+        !string.Equals(p?.Status, ProductStatusActive, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// bug-hunt 2026-10-19: port từ Shop.razor (item 164) — true khi giờ hiện
@@ -995,26 +995,59 @@ else
     /// </summary>
     private const int MinPhoneDigits = 9;
 
+    // Giới hạn số lượng hiển thị của từng khối trên landing (đồng bộ với CSS
+    // grid của khối đó — đổi số lượng mà không đổi CSS sẽ vỡ bố cục).
+    /// <summary>Số đánh giá hiện ở khối "tin cậy" ngay dưới hero.</summary>
+    private const int MaxTrustReviews = 3;
+    /// <summary>Số đánh giá tối đa trong dải carousel "Khách nói gì".</summary>
+    private const int MaxReviewTrackItems = 12;
+    /// <summary>Số ảnh tối đa trong lưới "Khách hàng của quán".</summary>
+    private const int MaxGalleryPhotos = 8;
+    /// <summary>Số món tối đa trong khối "Món bạn vừa xem".</summary>
+    private const int MaxRecentlyViewed = 4;
+    /// <summary>Số bài viết tối đa trong khối tin tức.</summary>
+    private const int MaxArticles = 6;
+    /// <summary>Số món tối đa trong khối "Món nổi bật" (signature).</summary>
+    private const int MaxSignatureDishes = 6;
+    /// <summary>Số gợi ý upsell tối đa sau khi thêm xôi vào giỏ.</summary>
+    private const int MaxUpsellSuggestions = 4;
+
+    /// <summary>Trạng thái sản phẩm "đang bán" trong DB (so sánh không phân biệt hoa thường).</summary>
+    private const string ProductStatusActive = "Active";
+    /// <summary>Tiền tố mã sản phẩm của nhóm xôi.</summary>
+    private const string XoiCodePrefix = "XOI";
+    /// <summary>Mã món ưu tiên gợi ý upsell khi khách thêm xôi vào giỏ.</summary>
+    private const string UpsellCodeChaCom = "CHA-COM";
+    /// <summary>Mã món ưu tiên thứ hai trong gợi ý upsell.</summary>
+    private const string UpsellCodeChaGio = "CHA-GIO";
+
     /// <summary>Chuẩn hóa SĐT: chỉ giữ lại chữ số, dùng trước khi validate hoặc gửi server.</summary>
     /// <param name="phone">SĐT thô do khách nhập.</param>
     /// <returns>Chuỗi chỉ gồm chữ số.</returns>
     private static string NormalizePhoneDigits(string phone) =>
         new string((phone ?? "").Where(char.IsDigit).ToArray());
 
-    /// <summary>Signature dishes: best sellers / signature first, max 6.</summary>
+    /// <summary>Vẽ chuỗi sao ★/☆ từ điểm đánh giá, kẹp rating trong khoảng 1–5.</summary>
+    private static string Stars(int rating)
+    {
+        var r = Math.Max(1, Math.Min(5, rating));
+        return new string('★', r) + new string('☆', 5 - r);
+    }
+
+    /// <summary>Món nổi bật: best sellers / signature trước, tối đa <see cref="MaxSignatureDishes"/> món.</summary>
     private List<ShopProductModel> SignatureProducts =>
         _allProducts
-            .Where(p => string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            .Where(p => string.Equals(p.Status, ProductStatusActive, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(p => _bestSellerIds.Contains(p.Id) || p.IsSignature)
             .ThenBy(p => p.SortOrder)
             .ThenBy(p => p.Name)
-            .Take(6)
+            .Take(MaxSignatureDishes)
             .ToList();
 
     /// <summary>All active xôi products for the "Xôi truyền thống" tab.</summary>
     private List<ShopProductModel> XoiProducts =>
         _allProducts
-            .Where(p => IsXoi(p) && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            .Where(p => IsXoi(p) && string.Equals(p.Status, ProductStatusActive, StringComparison.OrdinalIgnoreCase))
             .OrderBy(p => p.SortOrder)
             .ThenBy(p => p.Name)
             .ToList();
@@ -1420,9 +1453,9 @@ else
             // "Hết suất hôm nay" hoặc ngoài giờ bán.
             var upsells = _allProducts
                 .Where(p => !IsXoi(p) && CanOrder(p))
-                .OrderBy(p => p.Code == "CHA-COM" ? 0 : p.Code == "CHA-GIO" ? 1 : 2)
+                .OrderBy(p => p.Code == UpsellCodeChaCom ? 0 : p.Code == UpsellCodeChaGio ? 1 : 2)
                 .ThenBy(p => p.Price)
-                .Take(4)
+                .Take(MaxUpsellSuggestions)
                 .ToList();
             if (upsells.Count > 0)
             {

@@ -16,10 +16,10 @@ using PhuThuongStickyRice.Application.Loyalty;
 namespace PhuThuongStickyRice.Application.Loyalty
 {
     /// <summary>
-    /// Item 92: automatic rewards evaluated when an order is completed.
-    /// FreeTopping appends a note on the order; DiscountCode generates a real
-    /// single-use voucher owned by the customer's phone and records it on the
-    /// order notes so the admin can tell the customer.
+    /// Item 92: thưởng tự động khi đơn hoàn tất.
+    /// <c>FreeTopping</c> chỉ ghi chú lên đơn để bếp/quán biết tặng kèm;
+    /// <c>DiscountCode</c> sinh 1 mã giảm giá dùng 1 lần gắn đúng SĐT khách
+    /// và ghi chú lên đơn để admin thông báo cho khách.
     /// <para>
     /// Hợp đồng quy tắc thưởng tự động: admin CRUD các quy tắc; order service
     /// gọi <c>ApplyOnOrderCompletedAsync</c> ngay sau khi đơn hoàn tất.
@@ -46,7 +46,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <param name="id">Id quy tắc cần xóa.</param>
         Task DeleteAsync(Guid id);
 
-        /// <summary>Called by the order service right after an order is completed.</summary>
+        /// <summary>
+        /// Nội bộ: order service gọi ngay sau khi đơn hoàn tất — xét toàn bộ
+        /// quy tắc thưởng đủ điều kiện và áp cho đơn (ghi chú tặng topping,
+        /// sinh mã giảm giá 1 lần cho lần mua sau).
+        /// </summary>
+        /// <param name="order">Đơn hàng vừa hoàn tất; null thì bỏ qua.</param>
         Task ApplyOnOrderCompletedAsync(Order order);
     }
 

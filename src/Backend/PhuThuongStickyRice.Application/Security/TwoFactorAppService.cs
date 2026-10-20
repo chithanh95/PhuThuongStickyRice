@@ -15,9 +15,9 @@ using PhuThuongStickyRice.Application.Shop;
 namespace PhuThuongStickyRice.Application.Security
 {
     /// <summary>
-    /// Item 98: admin TOTP 2FA. Setup shows an otpauth:// QR (QRCoder) and the
-    /// admin verifies a 6-digit code to enable. The login flow calls
-    /// <see cref="VerifyCodeAsync"/> through the auth controller.
+    /// Item 98: xác thực 2 lớp TOTP cho admin. Lúc cài đặt hiện QR otpauth://
+    /// (QRCoder) và admin nhập mã 6 số để bật; luồng đăng nhập gọi
+    /// <see cref="VerifyCodeAsync"/> qua auth controller để kiểm tra mã.
     /// </summary>
     public interface ITwoFactorAppService : IApplicationService
     {
@@ -48,10 +48,23 @@ namespace PhuThuongStickyRice.Application.Security
         /// <param name="input">Mã xác thực 6 số từ app.</param>
         Task DisableAsync(VerifyTwoFactorDto input);
 
-        /// <summary>Internal: validates a TOTP code for the user (login flow).</summary>
+        /// <summary>
+        /// Nội bộ: kiểm tra mã TOTP 6 số của user trong luồng đăng nhập
+        /// (auth controller gọi).
+        /// </summary>
+        /// <param name="userId">Id user cần kiểm tra.</param>
+        /// <param name="code">Mã 6 số từ app xác thực.</param>
+        /// <returns>true nếu mã hợp lệ.</returns>
         Task<bool> VerifyCodeAsync(Guid userId, string code);
     }
 
+    /// <summary>
+    /// Item 98: xác thực 2 lớp TOTP cho admin (chỉ role Admin).
+    /// Admin quét QR để thêm tài khoản vào app xác thực, bật/tắt 2FA bằng mã
+    /// 6 số; luồng đăng nhập kiểm tra mã qua <c>VerifyCodeAsync</c> (nội bộ).
+    /// Secret chờ xác thực hết hạn sau 10 phút và không bao giờ rời server
+    /// sau khi đã lưu.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class TwoFactorAppService : ApplicationService, ITwoFactorAppService
     {

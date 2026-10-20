@@ -14,16 +14,34 @@ namespace PhuThuongStickyRice.Application.Common
 {
     public interface IFeatureFlagAppService : IApplicationService
     {
-        /// <summary>Admin: all flags with metadata.</summary>
+        /// <summary>
+        /// Admin: toàn bộ cờ tính năng kèm metadata. Lần đầu gọi sẽ tự tạo
+        /// các cờ mặc định còn thiếu.
+        /// </summary>
+        /// <returns>Danh sách cờ tính năng.</returns>
         Task<List<FeatureFlagDto>> GetListAsync();
 
-        /// <summary>Admin: flip a flag.</summary>
+        /// <summary>
+        /// Admin: bật/tắt 1 cờ tính năng (đồng thời xóa cache bản đồ public
+        /// để shop thấy ngay).
+        /// </summary>
+        /// <param name="key">Key của cờ tính năng.</param>
+        /// <param name="enabled">true: bật, false: tắt.</param>
+        /// <returns>Cờ tính năng sau khi cập nhật.</returns>
         Task<FeatureFlagDto> SetEnabledAsync(string key, bool enabled);
 
-        /// <summary>Public: map of key → enabled for UI gating.</summary>
+        /// <summary>
+        /// Public: bản đồ key → trạng thái bật/tắt để UI ẩn/hiện tính năng.
+        /// Cache 5 phút; không cần đăng nhập vì trang shop gọi lúc tải trang.
+        /// </summary>
+        /// <returns>Dictionary key cờ → true nếu đang bật.</returns>
         Task<Dictionary<string, bool>> GetEnabledMapAsync();
 
-        /// <summary>Internal: true when the flag exists and is enabled.</summary>
+        /// <summary>
+        /// Nội bộ: true khi cờ tồn tại và đang bật.
+        /// </summary>
+        /// <param name="key">Key của cờ tính năng.</param>
+        /// <returns>true nếu cờ tồn tại và đang bật.</returns>
         Task<bool> IsEnabledAsync(string key);
     }
 

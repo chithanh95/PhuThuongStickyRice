@@ -59,6 +59,15 @@ namespace PhuThuongStickyRice.Domain.Events
                 if (canHandleEvent)
                 {
                     dynamic handler = _serviceProvider.GetService(handlerType);
+                    // GetService có thể trả null nếu handler chưa được đăng ký
+                    // trong DI (ví dụ RegisterHandlers chạy trên service
+                    // collection khác). Ném lỗi rõ nghĩa thay vì để dynamic
+                    // dispatch nổ RuntimeBinderException khó đọc.
+                    if (handler is null)
+                        throw new InvalidOperationException(
+                            $"Domain event handler '{handlerType.FullName}' chưa được đăng ký trong DI. " +
+                            "Kiểm tra RegisterHandlers đã chạy với đúng IServiceCollection.");
+
                     await handler.HandleAsync((dynamic)domainEvent, cancellationToken);
                 }
             }

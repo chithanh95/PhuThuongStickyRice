@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -23,7 +24,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// </summary>
     [Route("api/webhooks/messenger")]
     [ApiController]
-    public class MessengerController : ControllerBase
+    public partial class MessengerController : ControllerBase
     {
         private readonly IMessengerChatService _chat;
         private readonly ILogger<MessengerController> _logger;
@@ -72,7 +73,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex, "Invalid JSON on Messenger webhook.");
+                LogInvalidWebhookJson(_logger, ex);
                 return BadRequest();
             }
 
@@ -94,5 +95,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // Always 200 so Facebook does not retry endlessly.
             return Ok();
         }
+
+        // CA1848: logging hiệu năng cao bằng LoggerMessage source-generated
+        // (tránh cấp phát params array + boxing mỗi lần log).
+
+        /// <summary>Log khi webhook Messenger nhận payload JSON không hợp lệ.</summary>
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Invalid JSON on Messenger webhook.")]
+        private static partial void LogInvalidWebhookJson(ILogger logger, Exception ex);
     }
 }
