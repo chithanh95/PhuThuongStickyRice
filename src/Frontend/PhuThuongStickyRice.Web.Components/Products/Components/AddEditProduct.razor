@@ -7,7 +7,13 @@
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminSystemService AdminSystemService
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 
-<EditForm Model="Product" OnValidSubmit="HandleValidSubmit">
+@* Cảnh báo rời trang khi form đã sửa mà chưa lưu: NavigationLock chặn
+   điều hướng nội bộ (handler ở code-behind mở hộp xác nhận ConfirmDialog)
+   và bật hộp thoại mặc định của trình duyệt khi đóng tab/F5. Cờ _isDirty
+   bật qua OnFieldChanged của EditForm và khi đổi ảnh. *@
+<NavigationLock ConfirmExternalNavigation="_isDirty" OnBeforeInternalNavigation="ConfirmLeaveIfDirty" />
+
+<EditForm Model="Product" OnValidSubmit="HandleValidSubmit" OnFieldChanged="HandleFieldChanged">
     <DataAnnotationsValidator />
     <ValidationSummary class="alert alert-danger py-2" />
 
@@ -102,12 +108,15 @@
     <div class="form-group row">
         <label class="col-sm-2 col-form-label">Huy hiệu: </label>
         <div class="col-sm-10">
+            @* InputCheckbox (thay input thường + @bind) để thay đổi huy hiệu
+               cũng đi qua EditContext — OnFieldChanged bắt được và bật cờ
+               chưa lưu giống các field Input* còn lại. *@
             <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" id="badge-new" @bind="Product.IsNew" />
+                <InputCheckbox id="badge-new" class="form-check-input" @bind-Value="Product.IsNew" />
                 <label class="form-check-label" for="badge-new">Món mới</label>
             </div>
             <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" id="badge-signature" @bind="Product.IsSignature" />
+                <InputCheckbox id="badge-signature" class="form-check-input" @bind-Value="Product.IsSignature" />
                 <label class="form-check-label" for="badge-signature">Signature</label>
             </div>
         </div>
@@ -154,6 +163,12 @@
         </div>
     </div>
 </EditForm>
+
+<ConfirmDialog @ref="LeaveDialog" Title="Chưa lưu thay đổi" YesText="Rời trang" NoText="Ở lại" ConfirmEventCallback="ConfirmedLeavePage">
+    <Message>
+        Bạn đã sửa thông tin sản phẩm nhưng chưa bấm Lưu. Rời trang bây giờ sẽ mất các thay đổi này. Bạn có chắc muốn rời trang?
+    </Message>
+</ConfirmDialog>
 
 @if (Product.Id != Guid.Empty)
 {

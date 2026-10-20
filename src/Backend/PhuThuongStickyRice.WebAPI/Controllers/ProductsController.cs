@@ -439,18 +439,76 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Đọc file CSV sản phẩm và trả về danh sách parse được — hiện chỉ
-        /// preview, CHƯA ghi vào DB (TODO bên dưới).
+        /// Import sản phẩm từ file CSV vào DB: mỗi dòng được ánh xạ sang
+        /// <see cref="CreateUpdateProductDto"/> (dùng chung
+        /// <see cref="ToCreateUpdateDto"/>) rồi tạo qua
+        /// <see cref="IProductAppService.CreateAsync"/>. Dòng trùng mã với
+        /// sản phẩm đã có — kể cả trùng trong cùng file — thì BỎ QUA (đếm
+        /// skipped, không ghi đè); dòng lỗi validate/tạo thì ghi vào danh
+        /// sách lỗi kèm số dòng + lý do, không làm sập cả batch. Trả về
+        /// tổng hợp <see cref="ProductImportResultModel"/>.
         /// </summary>
         /// <param name="model">File CSV upload từ form.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [HttpPost("importcsv")]
-        public IActionResult ImportCsv([FromForm] UploadFileModel model)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ImportCsv([FromForm] UploadFileModel model, CancellationToken cancellationToken = default)
         {
-            using var stream = model.FormFile.OpenReadStream();
-            var products = _productCsvReader.Read(stream);
+            if (model?.FormFile == null || model.FormFile.Length == 0)
+            {
+                return BadRequest(new { message = "Vui lòng chọn file CSV để import." });
+            }
 
-            // TODO: import to database
-            return Ok(products);
+            List<ProductModel> rows;
+            try
+            {
+                using var stream = model.FormFile.OpenReadStream();
+                rows = _productCsvReader.Read(stream).ToList();
+            }
+            catch (Exception ex)
+            {
+                // File hỏng/không đúng định dạng CSV: báo lỗi ở mức file
+                // thay vì 500. Lúc này chưa dòng nào được ghi vào DB nên
+                // không có trạng thái dở dang.
+                return BadRequest(new { message = $"Không đọc được file CSV: {ex.Message}" });
+            }
+
+            var result = new ProductImportResultModel();
+
+            // Số dòng trong file: dòng 1 là header, dữ liệu từ dòng 2.
+            var rowNumber = 1;
+            foreach (var row in rows)
+            {
+                rowNumber++;
+                try
+                {
+                    await _productAppService.CreateAsync(ToCreateUpdateDto(row));
+                    result.Created++;
+                }
+                catch (DuplicateProductCodeException)
+                {
+                    // Trùng mã: bỏ qua theo quy tắc import — không ghi đè
+                    // món đang bán. CreateAsync tự kiểm tra mã trong DB
+                    // nên mã trùng trong cùng file (dòng trước đã tạo
+                    // thành công) cũng rơi vào nhánh này.
+                    result.Skipped++;
+                }
+                catch (Exception ex)
+                {
+                    // Lỗi 1 dòng (mã/giá không hợp lệ, lỗi nghiệp vụ...)
+                    // chỉ ghi lại rồi đi tiếp — không để 1 dòng xấu làm
+                    // hỏng cả batch import.
+                    result.Errors.Add(new ProductImportErrorModel
+                    {
+                        Row = rowNumber,
+                        Code = row.Code,
+                        Message = ex.Message
+                    });
+                }
+            }
+
+            return Ok(result);
         }
 
         private const string DefaultCurrency = "VND";

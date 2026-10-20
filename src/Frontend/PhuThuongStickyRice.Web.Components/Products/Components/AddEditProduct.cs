@@ -1,7 +1,10 @@
-﻿using PhuThuongStickyRice.Web.Components.Products.Models;
+﻿using PhuThuongStickyRice.Web.Components.Core.Components;
+using PhuThuongStickyRice.Web.Components.Products.Models;
 using PhuThuongStickyRice.Web.Components.Products.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using System;
@@ -72,6 +75,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 // đã lưu thành công — tránh gãy ảnh nếu upload lỗi/bỏ lưu.
                 await DeleteObsoleteImagesAsync();
                 Toasts.Show(isNew ? "Đã thêm sản phẩm thành công!" : "Đã lưu sản phẩm thành công!");
+                // Đã lưu xong: tắt cờ bẩn để NavigationLock không chặn cú
+                // điều hướng về danh sách ngay sau đây.
+                _isDirty = false;
                 Navigation.NavigateTo("/products");
             }
             catch (Exception ex)
@@ -89,6 +95,67 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         private bool _saving;
 
         private string _saveError;
+
+        // ---- Cảnh báo chưa lưu (NavigationLock ở .razor) ----
+
+        /// <summary>Hộp xác nhận hiện khi user định rời trang mà form còn thay đổi chưa lưu.</summary>
+        protected ConfirmDialog LeaveDialog { get; set; }
+
+        /// <summary>True khi user đã sửa ít nhất 1 field (hoặc đổi ảnh) mà chưa bấm Lưu.</summary>
+        private bool _isDirty;
+
+        /// <summary>Đích điều hướng nội bộ đang bị NavigationLock chặn, chờ user xác nhận rời trang.</summary>
+        private string _pendingNavigationTarget;
+
+        /// <summary>
+        /// EditForm gọi mỗi lần 1 field thay đổi — mọi Input* (kể cả 2
+        /// InputCheckbox huy hiệu) đều báo qua EditContext nên chỉ cần bắt
+        /// sự kiện này là phủ hết field của form chính.
+        /// </summary>
+        /// <param name="args">Field vừa thay đổi (không cần đọc — chỉ cần biết form đã bẩn).</param>
+        protected void HandleFieldChanged(FieldChangedEventArgs args)
+        {
+            _isDirty = true;
+        }
+
+        /// <summary>
+        /// NavigationLock gọi trước mỗi điều hướng nội bộ: form sạch thì
+        /// cho đi ngay; form bẩn thì chặn lại, mở hộp xác nhận và nhớ
+        /// đích đến để đi tiếp nếu user chọn "Rời trang".
+        /// </summary>
+        /// <param name="context">Ngữ cảnh điều hướng (đích đến + khả năng chặn).</param>
+        private Task ConfirmLeaveIfDirty(LocationChangingContext context)
+        {
+            if (!_isDirty)
+            {
+                return Task.CompletedTask;
+            }
+
+            context.PreventNavigation();
+            _pendingNavigationTarget = context.TargetLocation;
+            LeaveDialog.Show();
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// User bấm "Rời trang" ở hộp xác nhận: đóng hộp, tắt cờ bẩn
+        /// (tránh NavigationLock chặn lại chính cú điều hướng này) rồi đi
+        /// tới đích đã bị chặn trước đó. Nút "Ở lại" của ConfirmDialog tự
+        /// đóng hộp nên user ở lại form, cờ bẩn giữ nguyên.
+        /// </summary>
+        protected Task ConfirmedLeavePage()
+        {
+            LeaveDialog.Close();
+            var target = _pendingNavigationTarget;
+            _pendingNavigationTarget = null;
+            _isDirty = false;
+            if (!string.IsNullOrEmpty(target))
+            {
+                Navigation.NavigateTo(target);
+            }
+
+            return Task.CompletedTask;
+        }
 
         // ---- Items 164/166: sale time windows + photo gallery editors ----
 
@@ -323,6 +390,10 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                     }
 
                     _imageUrl = url;
+
+                    // Đổi ảnh là thay đổi chưa lưu (URL chỉ ghi vào sản
+                    // phẩm khi bấm Lưu) — bật cờ bẩn như các field khác.
+                    _isDirty = true;
                 }
                 return url;
             }
@@ -350,6 +421,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 }
 
                 _imageUrl = null;
+
+                // Xóa ảnh cũng là thay đổi chưa lưu — bật cờ bẩn.
+                _isDirty = true;
             }
         }
 

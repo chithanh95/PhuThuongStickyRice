@@ -147,6 +147,53 @@ namespace PhuThuongStickyRice.Web.Components.Products.Services
             response.EnsureSuccessStatusCode();
         }
 
+        /// <summary>
+        /// Import sản phẩm từ file CSV (multipart, field "FormFile" khớp
+        /// UploadFileModel phía API). API tạo từng dòng vào DB và trả về
+        /// tổng hợp { created, skipped, errors } — xem
+        /// <see cref="ProductImportResultModel"/>.
+        /// </summary>
+        public async Task<ProductImportResultModel> ImportProductsAsync(
+            System.IO.Stream content, string fileName, string contentType)
+        {
+            await SetBearerToken();
+
+            using var form = new MultipartFormDataContent();
+            var fileContent = new StreamContent(content);
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            form.Add(fileContent, "FormFile", fileName);
+
+            using var response = await _httpClient.PostAsync("api/products/importcsv", form);
+            var body = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                // API trả lỗi mức file (chưa chọn file, CSV không đọc
+                // được...) dạng { message } — lấy ra hiện cho admin.
+                var message = "Nhập CSV thất bại.";
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    if (doc.RootElement.TryGetProperty("message", out var messageElement))
+                    {
+                        message = messageElement.GetString() ?? message;
+                    }
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    // Best-effort: error body không phải JSON — giữ message mặc định.
+                }
+
+                throw new System.InvalidOperationException(message);
+            }
+
+            var result = System.Text.Json.JsonSerializer.Deserialize<ProductImportResultModel>(
+                body,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            return result ?? new ProductImportResultModel();
+        }
+
         /// <summary>URL tải danh sách sản phẩm dạng PDF (mở trang export của API trong tab mới).</summary>
         public string GetExportPdfUrl()
         {

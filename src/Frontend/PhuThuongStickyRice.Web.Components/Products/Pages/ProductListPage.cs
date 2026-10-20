@@ -4,6 +4,7 @@ using PhuThuongStickyRice.Web.Components.Products.Services;
 using PhuThuongStickyRice.Web.Components.Admin.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using System;
@@ -82,6 +83,15 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         /// <summary>Lỗi tải danh sách lần đầu (API/DB lỗi) — hiện alert đỏ kèm message thật.</summary>
         public string ProductsLoadError { get; private set; }
+
+        /// <summary>Kết quả import CSV gần nhất — razor hiện alert tổng kết (thêm/bỏ qua/lỗi).</summary>
+        public ProductImportResultModel ImportResult { get; private set; }
+
+        /// <summary>Lỗi import CSV ở mức file (đọc file/upload thất bại) — hiện alert đỏ.</summary>
+        public string ImportError { get; private set; }
+
+        /// <summary>Đang chạy import CSV — khóa ô chọn file để tránh import trùng 2 lần.</summary>
+        public bool IsImporting { get; private set; }
 
         /// <summary>True khi đã tải xong nhưng không có dòng nào để hiện (danh sách rỗng hoặc lọc không khớp).</summary>
         protected bool ShowEmptyRow => Products != null && !PagedProducts.Any();
@@ -225,6 +235,44 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
             await JSRuntime.InvokeVoidAsync("interop.downloadFile", ProductService.GetExportCsvUrl(), token, "Products.csv");
         }
 
+        /// <summary>
+        /// Chọn file CSV là import ngay: gửi file lên API (API tạo từng
+        /// dòng vào DB, trùng mã thì bỏ qua), nhận tổng hợp về hiện alert;
+        /// có món mới thì tải lại danh sách để thấy ngay. Lỗi mức file thì
+        /// hiện <see cref="ImportError"/>.
+        /// </summary>
+        protected async Task OnImportFileSelected(InputFileChangeEventArgs e)
+        {
+            ImportError = null;
+            ImportResult = null;
+            if (e.File == null)
+            {
+                return;
+            }
+
+            IsImporting = true;
+            try
+            {
+                // Trần 10 MB: CSV danh sách món bình thường chỉ vài trăm
+                // KB — chặn file lạ quá lớn ngay ở client.
+                using var stream = e.File.OpenReadStream(10 * 1024 * 1024);
+                ImportResult = await ProductService.ImportProductsAsync(stream, e.File.Name, "text/csv");
+                if (ImportResult.Created > 0)
+                {
+                    await LoadProductsAsync();
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Log.ImportProductsFailed(Logger, ex);
+                ImportError = $"Nhập CSV thất bại. ({ex.Message})";
+            }
+            finally
+            {
+                IsImporting = false;
+            }
+        }
+
         // CA1848: dùng LoggerMessage source-generated thay vì Logger.LogError(...) trực tiếp
         // để tránh boxing/format string khi log level bị tắt.
         private static partial class Log
@@ -234,6 +282,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
             [LoggerMessage(Level = LogLevel.Error, Message = "Tải danh sách sản phẩm thất bại.")]
             public static partial void LoadProductsFailed(ILogger logger, Exception ex);
+
+            [LoggerMessage(Level = LogLevel.Error, Message = "Nhập CSV sản phẩm thất bại.")]
+            public static partial void ImportProductsFailed(ILogger logger, Exception ex);
         }
     }
 }

@@ -5,6 +5,7 @@
 @page "/products"
 @attribute [Authorize]
 @using System
+@using System.Linq
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Sản phẩm</h4>
@@ -23,6 +24,16 @@
                 <button type="button" class="btn btn-secondary mr-2" @onclick="ExportAsCsv">
                     Xuất CSV
                 </button>
+                @* Nhập CSV: label đóng vai nút cho InputFile ẩn bên dưới
+                   (pattern của trang FormUploads) — chọn file là import
+                   luôn, kết quả hiện ở alert tổng kết phía dưới bảng. *@
+                @if (HasPermission("products.edit"))
+                {
+                    <label class="btn btn-secondary mr-2 mb-0" for="product-import-file">
+                        <i class="fa-solid fa-file-import mr-1" aria-hidden="true"></i>@(IsImporting ? "Đang nhập..." : "Nhập CSV")
+                    </label>
+                    <InputFile id="product-import-file" class="d-none" accept=".csv" OnChange="OnImportFileSelected" disabled="@IsImporting" />
+                }
                 @if (HasPermission("products.edit"))
                 {
                     <button class="btn btn-primary" @onclick="QuickAddProduct">
@@ -51,6 +62,29 @@
         @if (!string.IsNullOrEmpty(ProductsLoadError) || !string.IsNullOrEmpty(AvailabilityToggleError) || !string.IsNullOrEmpty(DeleteProductError))
         {
             <div class="alert alert-danger">@(ProductsLoadError ?? AvailabilityToggleError ?? DeleteProductError)</div>
+        }
+        @if (!string.IsNullOrEmpty(ImportError))
+        {
+            <div class="alert alert-danger">@ImportError</div>
+        }
+        @if (ImportResult != null)
+        {
+            <div class="alert @(ImportResult.Errors.Count > 0 ? "alert-warning" : "alert-success")">
+                Nhập CSV xong: đã thêm <strong>@ImportResult.Created</strong> sản phẩm mới, bỏ qua <strong>@ImportResult.Skipped</strong> dòng trùng mã, <strong>@ImportResult.Errors.Count</strong> dòng lỗi.
+                @if (ImportResult.Errors.Count > 0)
+                {
+                    <ul class="mb-0 mt-2">
+                        @foreach (var importError in ImportResult.Errors.Take(10))
+                        {
+                            <li>Dòng @importError.Row@(string.IsNullOrWhiteSpace(importError.Code) ? string.Empty : $" (mã {importError.Code})"): @importError.Message</li>
+                        }
+                        @if (ImportResult.Errors.Count > 10)
+                        {
+                            <li>… và @(ImportResult.Errors.Count - 10) lỗi khác.</li>
+                        }
+                    </ul>
+                }
+            </div>
         }
         <div class="table-responsive">
 
