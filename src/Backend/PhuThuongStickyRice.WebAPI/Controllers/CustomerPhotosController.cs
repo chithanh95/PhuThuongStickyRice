@@ -149,6 +149,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return (fileName, filePath);
         }
 
+        /// <summary>
+        /// Admin: liệt kê ảnh khách đăng để kiểm duyệt. Mặc định chỉ hiện ảnh
+        /// chờ duyệt (pendingOnly = true) — đó là luồng làm việc chính của
+        /// nhân viên ở trang đánh giá ảnh.
+        /// </summary>
+        /// <param name="pendingOnly">true: chỉ ảnh chưa duyệt; false: tất cả.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpGet("admin")]
         public async Task<ActionResult<List<CustomerPhotoDto>>> GetList(
@@ -158,6 +165,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _photos.GetListAsync(pendingOnly));
         }
 
+        /// <summary>
+        /// Admin: duyệt một ảnh khách đăng — ảnh sẽ hiện lên thư viện công khai
+        /// của shop (GetApproved).
+        /// </summary>
+        /// <param name="id">Id ảnh cần duyệt.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpPut("{id:guid}/approve")]
         public async Task<ActionResult> Approve(Guid id,
@@ -167,13 +180,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { message = "Đã duyệt ảnh." });
         }
 
+        /// <summary>
+        /// Admin: từ chối một ảnh khách đăng — xóa bản ghi DB và xóa luôn file
+        /// ảnh trên đĩa để không tồn tại file mồ côi trong thư mục upload.
+        /// </summary>
+        /// <param name="id">Id ảnh cần từ chối.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Reject(Guid id,
             CancellationToken cancellationToken = default)
         {
             var photo = await _photos.RejectAsync(id);
-            // Remove the file too.
+            // Xóa cả file trên đĩa (không chỉ bản ghi DB) để tránh file mồ côi
+            // chiếm dung lượng trong thư mục upload.
             var fileName = Path.GetFileName(photo.ImageUrl ?? string.Empty);
             if (!string.IsNullOrEmpty(fileName))
             {

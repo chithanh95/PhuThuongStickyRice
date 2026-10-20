@@ -16,10 +16,19 @@ namespace PhuThuongStickyRice.Application.AuditLogs
 {
         public interface IAppLogAppService : IApplicationService
         {
-            /// <summary>Admin: paged log viewer with level filter + search.</summary>
+            /// <summary>
+            /// Admin: xem log ứng dụng theo trang, lọc theo mức độ (level) và
+            /// tìm kiếm trong nội dung/nguồn log.
+            /// </summary>
+            /// <param name="input">Bộ lọc + phân trang (level, từ khóa, skip/take).</param>
+            /// <returns>Kết quả phân trang các dòng log.</returns>
             Task<PagedResultDto<AppLogDto>> GetListAsync(GetAppLogsInput input);
         }
 
+        /// <summary>
+        /// Admin: xem log ứng dụng (bảng AppLogs) theo trang, lọc theo mức độ
+        /// và tìm kiếm trong nội dung — dùng để tra cứu lỗi/sự kiện hệ thống.
+        /// </summary>
         public class AppLogAppService : ApplicationService, IAppLogAppService
         {
             private readonly IRepository<AppLog, Guid> _logs;
@@ -38,6 +47,14 @@ namespace PhuThuongStickyRice.Application.AuditLogs
                 _asyncExecuter = asyncExecuter;
             }
 
+            /// <summary>
+            /// Admin: lấy trang log mới nhất trước, lọc theo level và từ khóa
+            /// (tìm trong nội dung hoặc nguồn log). Kích thước trang bị kẹp
+            /// trong [DefaultPageSize..MaxPageSize] để 1 request không quét
+            /// quá nhiều dòng.
+            /// </summary>
+            /// <param name="input">Bộ lọc + phân trang.</param>
+            /// <returns>Kết quả phân trang các dòng log.</returns>
             [Authorize(Roles = "Admin")]
             public virtual async Task<PagedResultDto<AppLogDto>> GetListAsync(GetAppLogsInput input)
             {
@@ -57,6 +74,9 @@ namespace PhuThuongStickyRice.Application.AuditLogs
                 }
 
                 var total = await _asyncExecuter.LongCountAsync(query);
+                // Kẹp kích thước trang: client gửi MaxResultCount <= 0 thì dùng
+                // mặc định, gửi quá lớn thì cắt ở mức tối đa — chặn request
+                // "lấy hết" làm nặng DB; Skip âm thì coi như 0.
                 var items = await _asyncExecuter.ToListAsync(
                     query.Skip(Math.Max(0, input.SkipCount)).Take(
                         input.MaxResultCount < 1 ? DefaultPageSize : Math.Min(input.MaxResultCount, MaxPageSize)));

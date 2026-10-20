@@ -173,6 +173,12 @@ namespace PhuThuongStickyRice.Application.Content
             _catalogCache.Invalidate();
         }
 
+        /// <summary>
+        /// Public: lấy các bài viết đã xuất bản (mới nhất trước) để hiển thị
+        /// ở trang landing. Kết quả cache theo key "articles:published" — admin
+        /// tạo/sửa/xóa bài sẽ xóa cache này nên landing luôn thấy bài mới.
+        /// </summary>
+        /// <returns>Danh sách bài viết đã xuất bản (tối đa 6 bài mới nhất).</returns>
         [AllowAnonymous]
         public virtual async Task<List<ArticleDto>> GetPublishedAsync()
         {
@@ -181,6 +187,9 @@ namespace PhuThuongStickyRice.Application.Content
                 var queryable = await _articles.GetQueryableAsync();
                 // Perf: the only consumer (landing Index.razor) renders Take(6);
                 // don't materialize/map full Body of every published article.
+                // (Tối ưu hiệu năng: landing chỉ hiển thị tối đa 6 bài nên chỉ
+                // lấy 6 bài mới nhất, không nạp toàn bộ nội dung Body của mọi
+                // bài đã xuất bản.)
                 var items = await _asyncExecuter.ToListAsync(
                     queryable.Where(x => x.IsPublished)
                         .OrderByDescending(x => x.PublishedAt)
