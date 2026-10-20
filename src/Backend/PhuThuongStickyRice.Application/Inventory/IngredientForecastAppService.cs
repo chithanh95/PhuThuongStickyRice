@@ -157,7 +157,7 @@ namespace PhuThuongStickyRice.Application.Inventory
             double averagePortions, int weeksWithData)
         {
             var nepKg = Math.Ceiling(averagePortions * gramsPerPortion / GramsPerKilogram / RoundingStepKg) * RoundingStepKg;
-            var weekdayName = CultureInfo.GetCultureInfo("vi-VN").DateTimeFormat.DayNames[weekday];
+            var weekdayName = VietnameseCulture.Value.DateTimeFormat.DayNames[weekday];
 
             return new IngredientForecastDto
             {

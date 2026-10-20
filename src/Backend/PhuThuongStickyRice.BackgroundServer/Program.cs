@@ -54,7 +54,7 @@ namespace PhuThuongStickyRice.BackgroundServer
                 var appSettings = new AppSettings();
                 configuration.Bind(appSettings);
 
-                var validationResult = appSettings.Validate();
+                var validationResult = AppSettings.Validate();
                 if (validationResult.Failed)
                 {
                     // CA2201: config sai lúc khởi động là lỗi vận hành — ném

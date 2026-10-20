@@ -1118,14 +1118,11 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="prefix">Tiền tố mã (đã chuẩn hóa in hoa).</param>
         /// <returns>Mã ứng viên dạng "PREFIX-XXXXXX".</returns>
         private static string BuildGeneratedCodeCandidate(string prefix)
-        {
-            // Bộ ký tự bỏ I/O/0/1 (dễ nhầm lẫn khi khách đọc to).
-            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            // CA5394: mã giảm giá quy ra tiền nên phải dùng RNG mật mã —
-            // Random.Shared đoán được (deterministic PRNG), kẻ xấu có thể dò mã.
-            return prefix + "-" + new string(
-                Enumerable.Range(0, GeneratedCodeRandomPartLength).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
-        }
+            // [codequality-smell 2026-10-20] Dùng helper dùng chung
+            // Common.ReadableCode (bảng chữ cái + RNG mật mã) — trước đây
+            // dòng LINQ sinh chuỗi ngẫu nhiên bị viết lại ở cả đây và
+            // LoyaltyAppService.GenerateReferralCodeAsync.
+            => prefix + "-" + ReadableCode.GenerateSuffix(GeneratedCodeRandomPartLength);
 
         /// <summary>
         /// Fallback khi hết số lần thử sinh ngẫu nhiên (xác suất cực thấp):

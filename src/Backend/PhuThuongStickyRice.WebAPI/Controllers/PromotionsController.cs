@@ -12,7 +12,7 @@ using PhuThuongStickyRice.Application.Discounts;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
-    /// <summary>Item 91: "giờ vàng" promotions (Admin CRUD, public active preview).</summary>
+    /// <summary>Khuyến mãi "giờ vàng" (Admin CRUD, public xem trước khung đang chạy).</summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Authorize(Roles = "Admin")]
     [Produces("application/json")]
@@ -22,6 +22,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly IPromotionAppService _promotions;
 
+        /// <summary>
+        /// Khởi tạo controller khuyến mãi "giờ vàng".
+        /// </summary>
+        /// <param name="promotions">AppService quản lý khung giờ khuyến mãi theo giờ Việt Nam.</param>
         public PromotionsController(IPromotionAppService promotions)
         {
             _promotions = promotions;
@@ -79,7 +83,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return NoContent();
         }
 
-        /// <summary>Public: the best currently-active promotion (Vietnam time).</summary>
+        /// <summary>
+        /// Public: khuyến mãi tốt nhất đang chạy theo giờ Việt Nam
+        /// (trả 204 khi không có khung nào active — shop hiển thị giá thường).
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("active")]
         public async Task<ActionResult> GetActive(CancellationToken cancellationToken = default)

@@ -19,12 +19,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly ISubscriptionAppService _subscriptionAppService;
 
+        /// <summary>
+        /// Khởi tạo controller đăng ký xôi định kỳ.
+        /// </summary>
+        /// <param name="subscriptionAppService">AppService quản lý gói đăng ký xôi hàng ngày (/dat-dinh-ky).</param>
         public SubscriptionsController(ISubscriptionAppService subscriptionAppService)
         {
             _subscriptionAppService = subscriptionAppService;
         }
 
-        /// <summary>Public: customer creates a daily subscription (/dat-dinh-ky).</summary>
+        /// <summary>Public: khách đăng ký xôi định kỳ (/dat-dinh-ky); lỗi nghiệp vụ trả 400.</summary>
         [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult> Create(

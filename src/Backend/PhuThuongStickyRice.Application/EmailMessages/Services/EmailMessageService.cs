@@ -1,5 +1,4 @@
 ﻿using PhuThuongStickyRice.CrossCuttingConcerns.CircuitBreakers;
-using PhuThuongStickyRice.CrossCuttingConcerns.Locks;
 using PhuThuongStickyRice.CrossCuttingConcerns.OS;
 using PhuThuongStickyRice.Domain.Notification;
 using PhuThuongStickyRice.Domain.Entities;
@@ -57,7 +56,6 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
         private readonly IEmailNotification _emailNotification;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly ICircuitBreakerStore _circuitBreakerStore;
-        private readonly IDistributedLock _distributedLock;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
         // CA1848: dùng LoggerMessage delegate thay LoggerExtensions.LogInformation —
@@ -73,7 +71,6 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
             IEmailNotification emailNotification,
             IDateTimeProvider dateTimeProvider,
             ICircuitBreakerStore circuitBreakerStore,
-            IDistributedLock distributedLock,
             IAsyncQueryableExecuter asyncExecuter)
         {
             _logger = logger;
@@ -81,7 +78,6 @@ namespace PhuThuongStickyRice.Application.EmailMessages.Services
             _emailNotification = emailNotification;
             _dateTimeProvider = dateTimeProvider;
             _circuitBreakerStore = circuitBreakerStore;
-            _distributedLock = distributedLock;
             _asyncExecuter = asyncExecuter;
         }
 

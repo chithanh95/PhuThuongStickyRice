@@ -63,13 +63,6 @@ namespace PhuThuongStickyRice.Application.Shop
     /// </summary>
     public partial class ShopSettingAppService : ApplicationService, IShopSettingAppService
     {
-        /// <summary>
-        /// Item 136: marker prefix for DataProtection-encrypted values at
-        /// rest. Rows written before encryption (plain text) are read as-is
-        /// and re-encrypted on the next save.
-        /// </summary>
-        private const string EncryptedPrefix = "DPv1:";
-
         // Fallback defaults applied when a setting is missing or invalid —
         // the same values are used on write (UpdateAsync) and on read
         // (MapToDto, for rows written before a column existed).
@@ -118,7 +111,7 @@ namespace PhuThuongStickyRice.Application.Shop
             _settings = settings;
             _holidays = holidays;
             _asyncExecuter = asyncExecuter;
-            _protector = dataProtectionProvider.CreateProtector("PhuThuongStickyRice.ShopSettings");
+            _protector = dataProtectionProvider.CreateProtector(ProtectedSecrets.Purpose);
             _httpClientFactory = httpClientFactory;
             _logger = logger;
             _permissions = permissions;
@@ -539,47 +532,24 @@ namespace PhuThuongStickyRice.Application.Shop
             return fallback;
         }
 
+        // [codequality-smell 2026-10-20] Logic mã hóa/giải mã gom về
+        // Common.ProtectedSecrets dùng chung với WeeklyReportSender —
+        // trước đây 2 service copy nguyên khối try/catch + tiền tố DPv1:.
+        // Giữ wrapper mỏng để log lỗi đúng logger của service này.
         /// <summary>
         /// Item 136: encrypts a secret for storage. Null/empty stays null.
         /// </summary>
         private string ProtectSecret(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return null;
-            }
-
-            return EncryptedPrefix + _protector.Protect(value.Trim());
-        }
+            => ProtectedSecrets.Protect(_protector, value);
 
         /// <summary>
         /// Item 136: decrypts a stored secret. Values without the prefix are
         /// legacy plaintext and are returned as-is.
         /// </summary>
         private string UnprotectSecret(string stored)
-        {
-            if (string.IsNullOrWhiteSpace(stored))
-            {
-                return null;
-            }
-
-            if (!stored.StartsWith(EncryptedPrefix, StringComparison.Ordinal))
-            {
-                return stored;
-            }
-
-            try
-            {
-                return _protector.Unprotect(stored[EncryptedPrefix.Length..]);
-            }
-            catch
-            {
-                // Key ring unavailable (e.g. fresh deploy without the shared
-                // key store) — never crash reads; the admin can re-save.
-                LogSecretDecryptFailed(Logger);
-                return null;
-            }
-        }
+            // Key ring unavailable (e.g. fresh deploy without the shared
+            // key store) — never crash reads; the admin can re-save.
+            => ProtectedSecrets.Unprotect(_protector, stored, _ => LogSecretDecryptFailed(Logger));
 
         /// <summary>
         /// Lấy bản ghi setting duy nhất của shop. Thiết kế 1 row/table nên

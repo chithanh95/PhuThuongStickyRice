@@ -13,8 +13,9 @@ using PhuThuongStickyRice.Application.Orders;
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     /// <summary>
-    /// Payment endpoints: public bank-transfer info + MoMo callback.
-    /// (MoMo create lives on OrdersController: POST /api/orders/{id}/momo/create.)
+    /// API thanh toán: thông tin chuyển khoản (public) + callback MoMo.
+    /// (Khởi tạo thanh toán MoMo nằm ở OrdersController:
+    /// POST /api/orders/{id}/momo/create.)
     /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
@@ -25,6 +26,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IPaymentConfigProvider _paymentConfig;
         private readonly IMoMoPaymentService _momo;
 
+        /// <summary>Khởi tạo controller thanh toán.</summary>
+        /// <param name="paymentConfig">Nguồn cấu hình chuyển khoản (ShopSetting trước, appsettings sau).</param>
+        /// <param name="momo">Service xử lý thanh toán MoMo (tạo thanh toán + nhận callback).</param>
     public PaymentsController(
             IPaymentConfigProvider paymentConfig,
             IMoMoPaymentService momo)

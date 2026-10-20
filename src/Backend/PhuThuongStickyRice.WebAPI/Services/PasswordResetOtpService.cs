@@ -72,7 +72,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
             var count = _cache.TryGetValue<int>(rateKey, out var cachedCount) ? cachedCount : 0;
             if (count >= MaxOtpRequestsPerHour)
             {
-                _logger.LogWarning("Quên mật khẩu: SĐT {Phone} vượt quá giới hạn yêu cầu OTP.", phone);
+                LogOtpRateLimited(_logger, phone);
                 return;
             }
             _cache.Set(rateKey, count + 1, RateLimitWindow);
@@ -155,8 +155,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
             var addResult = await _userManager.AddPasswordAsync(user, newPassword);
             if (!addResult.Succeeded)
             {
-                _logger.LogWarning("Đặt lại mật khẩu thất bại cho SĐT {Phone}: {Errors}",
-                    phone, string.Join("; ", addResult.Errors.Select(e => e.Description)));
+                LogResetFailed(_logger, phone, string.Join("; ", addResult.Errors.Select(e => e.Description)));
                 return PasswordResetResult.Fail("Đặt lại mật khẩu thất bại. Vui lòng thử lại.");
             }
 
@@ -170,7 +169,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
             // OTP chỉ dùng 1 lần: xóa ngay sau khi dùng xong để chặn nhập lại.
             _cache.Remove(key);
 
-            _logger.LogInformation("Đặt lại mật khẩu thành công cho SĐT {Phone}.", phone);
+            LogResetSucceeded(_logger, phone);
             return PasswordResetResult.Ok();
         }
 
@@ -209,6 +208,22 @@ namespace PhuThuongStickyRice.WebAPI.Services
             /// <summary>Hạn dùng gốc của OTP — giữ nguyên qua các lần nhập sai.</summary>
             public DateTimeOffset ExpiresAt { get; set; }
         }
+
+        // CA1848: logging hiệu năng cao bằng LoggerMessage source-generated
+        // (tránh parse message template và boxing mỗi lần gọi) — cùng pattern
+        // với StaffActivityLogger, hành vi log giữ nguyên.
+
+        /// <summary>Log khi SĐT vượt quá giới hạn yêu cầu OTP (3 lần/giờ).</summary>
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Quên mật khẩu: SĐT {Phone} vượt quá giới hạn yêu cầu OTP.")]
+        private static partial void LogOtpRateLimited(ILogger logger, string phone);
+
+        /// <summary>Log khi UserManager.AddPasswordAsync thất bại khi đặt lại mật khẩu.</summary>
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Đặt lại mật khẩu thất bại cho SĐT {Phone}: {Errors}")]
+        private static partial void LogResetFailed(ILogger logger, string phone, string errors);
+
+        /// <summary>Log khi đặt lại mật khẩu qua OTP thành công.</summary>
+        [LoggerMessage(Level = LogLevel.Information, Message = "Đặt lại mật khẩu thành công cho SĐT {Phone}.")]
+        private static partial void LogResetSucceeded(ILogger logger, string phone);
     }
 
     /// <summary>Kết quả đặt lại mật khẩu: thành công hoặc thất bại kèm thông báo lỗi tiếng Việt.</summary>

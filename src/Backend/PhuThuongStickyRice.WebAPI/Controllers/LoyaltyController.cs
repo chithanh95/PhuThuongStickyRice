@@ -39,6 +39,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private const decimal BirthdayVoucherAmount = 20000;
         private const int BirthdayVoucherValidityDays = 30;
 
+        /// <summary>
+        /// Khởi tạo controller điểm thành viên. <paramref name="loyaltyAppService"/>
+        /// xử lý điểm/hạng/ngày sinh; <paramref name="discountAppService"/>
+        /// dùng để sinh voucher quà sinh nhật hàng loạt.
+        /// </summary>
         public LoyaltyController(
             ILoyaltyAppService loyaltyAppService,
             IDiscountAppService discountAppService,
@@ -49,7 +54,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _logger = logger;
         }
 
-        /// <summary>Public: loyalty summary for a phone number.</summary>
+        /// <summary>Public: tóm tắt điểm/hạng theo SĐT (trả 204 khi SĐT chưa có tài khoản).</summary>
         [AllowAnonymous]
         [HttpGet("by-phone")]
         public async Task<ActionResult> GetByPhone(
@@ -65,7 +70,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(account);
         }
 
-        /// <summary>Public: customer sets their own birthday.</summary>
+        /// <summary>Public: khách tự cập nhật ngày sinh theo SĐT; lỗi nghiệp vụ trả 400.</summary>
         [AllowAnonymous]
         [HttpPut("by-phone/birthday")]
         public async Task<ActionResult> UpdateBirthday(

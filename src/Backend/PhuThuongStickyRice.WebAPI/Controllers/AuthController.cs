@@ -499,7 +499,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// <see cref="LoginResponseModel"/>. Dùng chung cho Login thường và
         /// VerifyTwoFactor (sau khi 2FA đã xác thực xong).
         /// </summary>
-        private ActionResult BuildLoginResponse(User user, string[] roles, string? ip, bool newIpWarning)
+        // CA1859: phương thức private này chỉ trả về Ok(...) nên dùng kiểu cụ thể
+        // OkObjectResult thay vì ActionResult (tránh chuyển đổi kiểu lúc chạy).
+        private OkObjectResult BuildLoginResponse(User user, string[] roles, string? ip, bool newIpWarning)
         {
             var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
 

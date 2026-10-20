@@ -16,7 +16,8 @@ namespace PhuThuongStickyRice.BackgroundServer.ConfigurationOptions
 
         public NotificationOptions Notification { get; set; }
 
-        public ValidateOptionsResult Validate()
+        // CA1822: không đọc dữ liệu instance → static (gọi qua AppSettings.Validate()).
+        public static ValidateOptionsResult Validate()
         {
             return ValidateOptionsResult.Success;
         }
@@ -26,7 +27,7 @@ namespace PhuThuongStickyRice.BackgroundServer.ConfigurationOptions
     {
         public ValidateOptionsResult Validate(string name, AppSettings options)
         {
-            return options.Validate();
+            return AppSettings.Validate();
         }
     }
 }

@@ -91,7 +91,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var patternStart = today.AddDays(-PatternDays);
             var perDay = await LoadDailyAggregatesAsync(today, patternStart);
 
-            var vi = CultureInfo.GetCultureInfo("vi-VN");
+            var vi = VietnameseCulture.Value;
             var result = new RevenueForecastDto
             {
                 GeneratedAt = DateTime.UtcNow,

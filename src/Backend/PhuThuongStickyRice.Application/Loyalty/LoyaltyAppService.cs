@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
@@ -842,16 +841,15 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <returns>Mã giới thiệu chưa từng tồn tại trong DB.</returns>
         private async Task<string> GenerateReferralCodeAsync()
         {
-            // [codequality-smell 2026-10-19] Dùng bảng chữ cái dùng chung
-            // (Domain.ReadableCodeAlphabet) thay vì hardcode.
-            var chars = Domain.ReadableCodeAlphabet.Value;
+            // [codequality-smell 2026-10-20] Dùng helper dùng chung
+            // Common.ReadableCode — trước đây dòng LINQ sinh chuỗi ngẫu
+            // nhiên bị viết lại ở cả đây và DiscountAppService.
             // Mã giới thiệu gắn với điểm thưởng nên dùng RNG an toàn mật mã
             // thay vì Random.Shared (có thể bị đoán mã tiếp theo từ mã đã lộ).
 
             for (var attempt = 0; attempt < MaxReferralCodeAttempts; attempt++)
             {
-                var code = ReferralCodes.Prefix + new string(
-                    Enumerable.Range(0, ReferralCodes.SuffixLength).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
+                var code = ReferralCodes.Prefix + ReadableCode.GenerateSuffix(ReferralCodes.SuffixLength);
 
                 var queryable = await _accounts.GetQueryableAsync();
                 // [codequality-practices 2026-10-19] Chỉ cần biết mã đã tồn tại

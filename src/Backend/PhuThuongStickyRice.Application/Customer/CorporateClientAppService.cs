@@ -194,7 +194,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 Weekday = x.Weekday,
                 // Tên thứ hiển thị bằng tiếng Việt (Thứ hai…Chủ nhật) để admin
                 // đọc lịch giao món của công ty cho dễ, thay vì DayOfWeek tiếng Anh.
-                WeekdayName = CultureInfo.GetCultureInfo("vi-VN").DateTimeFormat.DayNames[x.Weekday],
+                WeekdayName = VietnameseCulture.Value.DateTimeFormat.DayNames[x.Weekday],
                 ItemsJson = x.ItemsJson,
                 IsActive = x.IsActive
             };

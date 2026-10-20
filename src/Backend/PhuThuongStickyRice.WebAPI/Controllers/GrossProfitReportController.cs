@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     /// <summary>
-    /// Item 154: gross profit per product (Admin-only). Shares the
-    /// "api/admin/reports" prefix with AdminReportsController — action
-    /// routes do not collide.
+    /// Báo cáo lợi nhuận gộp từng món (Admin): dùng chung prefix
+    /// "api/admin/reports" với AdminReportsController nhưng route action
+    /// không trùng nhau nên không xung đột.
     /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Authorize(Roles = "Admin")]
@@ -22,14 +22,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly IGrossProfitReportAppService _grossProfit;
 
+        /// <summary>Khởi tạo controller báo cáo lợi nhuận gộp.</summary>
+        /// <param name="grossProfit">AppService tính lợi nhuận gộp theo giá vốn hiện tại của từng món.</param>
         public GrossProfitReportController(IGrossProfitReportAppService grossProfit)
         {
             _grossProfit = grossProfit;
         }
 
         /// <summary>
-        /// Gross profit per product for a Vietnam date range (defaults: last
-        /// 7 days). Cost is valued at each product's current CostPrice.
+        /// Lợi nhuận gộp từng món theo khoảng ngày Việt Nam (mặc định 7 ngày
+        /// gần nhất). Giá vốn tính theo CostPrice hiện tại của món.
         /// </summary>
         [HttpGet("gross-profit")]
         public async Task<ActionResult> GetGrossProfit(
@@ -40,7 +42,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _grossProfit.GetGrossProfitReportAsync(from, to));
         }
 
-        /// <summary>All products with their current cost price (cost editor).</summary>
+        /// <summary>Tất cả món kèm giá vốn hiện tại — dùng cho màn sửa giá vốn.</summary>
         [HttpGet("gross-profit/products")]
         public async Task<ActionResult> GetProductCosts(
             CancellationToken cancellationToken = default)
@@ -53,7 +55,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             public decimal CostPrice { get; set; }
         }
 
-        /// <summary>Sets one product's cost price (giá vốn).</summary>
+        /// <summary>Đặt giá vốn (CostPrice) của 1 món.</summary>
         [HttpPut("gross-profit/products/{id}/cost-price")]
         public async Task<ActionResult> UpdateCostPrice(
             Guid id,

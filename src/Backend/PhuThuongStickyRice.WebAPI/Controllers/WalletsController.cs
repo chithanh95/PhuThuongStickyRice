@@ -17,6 +17,10 @@ using PhuThuongStickyRice.Application.Loyalty;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+        /// <summary>
+        /// API ví khách hàng: khách xem số dư theo SĐT để checkout trừ vào ví;
+        /// admin liệt kê ví, xem lịch sử giao dịch và cộng/trừ số dư thủ công.
+        /// </summary>
         [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
         [Produces("application/json")]
         [Route("api/[controller]")]
@@ -26,12 +30,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             private readonly IWalletAppService _wallets;
 
+            /// <summary>Khởi tạo controller ví khách hàng.</summary>
+            /// <param name="wallets">AppService quản lý số dư và giao dịch ví.</param>
             public WalletsController(IWalletAppService wallets)
             {
                 _wallets = wallets;
             }
 
-            /// <summary>Public: balance for a phone (checkout shows the ví option when ≥ total).</summary>
+            /// <summary>
+            /// Public: số dư ví theo SĐT — checkout hiện tùy chọn "trả bằng ví"
+            /// khi số dư ≥ tổng tiền đơn.
+            /// </summary>
             [AllowAnonymous]
             [HttpGet("balance")]
             public async Task<ActionResult<WalletAccountDto>> GetBalance(

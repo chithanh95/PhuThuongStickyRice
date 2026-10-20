@@ -51,8 +51,6 @@ namespace PhuThuongStickyRice.Application.Reports
     /// </summary>
     public partial class WeeklyReportSender : IWeeklyReportSender
     {
-        private const string EncryptedPrefix = "DPv1:";
-
         /// <summary>Số ngày trong một tuần — dùng khi tính khoảng tuần trước/sau.</summary>
         private const int DaysPerWeek = 7;
 
@@ -80,8 +78,8 @@ namespace PhuThuongStickyRice.Application.Reports
             _asyncExecuter = asyncExecuter;
             _zalo = zalo;
             // Same purpose string as ShopSettingAppService so tokens saved
-            // there can be decrypted here.
-            _protector = dataProtectionProvider.CreateProtector("PhuThuongStickyRice.ShopSettings");
+            // there can be decrypted here (xem Common.ProtectedSecrets).
+            _protector = dataProtectionProvider.CreateProtector(ProtectedSecrets.Purpose);
             _logger = logger;
         }
 
@@ -348,7 +346,7 @@ namespace PhuThuongStickyRice.Application.Reports
 
         /// <summary>Định dạng số tiền VNĐ (phân cách hàng nghìn, ký hiệu ₫).</summary>
         private static string FormatVnd(decimal amount) =>
-            $"{amount.ToString("N0", new CultureInfo("vi-VN"))}₫";
+            $"{amount.ToString("N0", VietnameseCulture.Value)}₫";
 
         /// <summary>Đọc bản ghi ShopSetting duy nhất (chứa token Zalo, SĐT chủ quán).</summary>
         private async Task<ShopSetting?> GetSingleSettingAsync()
@@ -372,6 +370,9 @@ namespace PhuThuongStickyRice.Application.Reports
             await _settings.UpdateAsync(settings, autoSave: true);
         }
 
+        // [codequality-smell 2026-10-20] Logic giải mã gom về
+        // Common.ProtectedSecrets dùng chung với ShopSettingAppService —
+        // trước đây 2 service copy nguyên khối try/catch + tiền tố DPv1:.
         /// <summary>
         /// Giải mã token Zalo đã lưu ở ShopSetting (DataProtection, tiền tố
         /// "DPv1:"). Giá trị cũ lưu plaintext (không tiền tố) trả về nguyên —
@@ -380,28 +381,8 @@ namespace PhuThuongStickyRice.Application.Reports
         /// </summary>
         /// <param name="stored">Chuỗi token đã lưu (mã hóa hoặc plaintext).</param>
         /// <returns>Token thật để gọi Zalo API, hoặc null khi không giải được.</returns>
-        private string Unprotect(string stored)
-        {
-            if (string.IsNullOrWhiteSpace(stored))
-            {
-                return null;
-            }
-
-            if (!stored.StartsWith(EncryptedPrefix, StringComparison.Ordinal))
-            {
-                return stored;
-            }
-
-            try
-            {
-                return _protector.Unprotect(stored.Substring(EncryptedPrefix.Length));
-            }
-            catch (Exception ex)
-            {
-                LogZaloTokenDecryptFailed(_logger, ex);
-                return null;
-            }
-        }
+        private string? Unprotect(string? stored)
+            => ProtectedSecrets.Unprotect(_protector, stored, ex => LogZaloTokenDecryptFailed(_logger, ex));
 
         private sealed class WeekAggregate
         {
