@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders;
 
 namespace PhuThuongStickyRice.Application.Orders
@@ -89,7 +90,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var shipper = new Shipper
             {
                 Name = input.Name.Trim(),
-                Phone = string.IsNullOrWhiteSpace(input.Phone) ? null : input.Phone.Trim(),
+                Phone = StringHelpers.TrimToNull(input.Phone),
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -107,7 +108,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var shipper = await _shippers.GetAsync(id);
             shipper.Name = input.Name.Trim();
-            shipper.Phone = string.IsNullOrWhiteSpace(input.Phone) ? null : input.Phone.Trim();
+            shipper.Phone = StringHelpers.TrimToNull(input.Phone);
             shipper.IsActive = input.IsActive;
             await _shippers.UpdateAsync(shipper, autoSave: true);
             return Map(shipper);

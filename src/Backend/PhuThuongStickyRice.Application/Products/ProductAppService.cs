@@ -78,12 +78,12 @@ namespace PhuThuongStickyRice.Application.Products
         Task<List<ProductRatingDto>> GetProductRatingsAsync();
     }
 
-        /// <summary>
-        /// AppService quản lý catalog sản phẩm: danh sách phân trang, CRUD món,
-        /// bật/tắt trạng thái bán. Đường public (shop) dùng cache 5 phút, đường admin
-        /// luôn đọc DB. Mọi thao tác thêm/sửa/xóa cần quyền products.edit/products.delete
-        /// và được ghi vào nhật ký hoạt động nhân viên.
-        /// </summary>
+    /// <summary>
+    /// AppService quản lý catalog sản phẩm: danh sách phân trang, CRUD món,
+    /// bật/tắt trạng thái bán. Đường public (shop) dùng cache 5 phút, đường admin
+    /// luôn đọc DB. Mọi thao tác thêm/sửa/xóa cần quyền products.edit/products.delete
+    /// và được ghi vào nhật ký hoạt động nhân viên.
+    /// </summary>
     public class ProductAppService : ApplicationService, IProductAppService
     {
         private const string DailyRemainingCacheKey = "daily-remaining";

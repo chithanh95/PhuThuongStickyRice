@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Catalog
 {
@@ -138,7 +139,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             var entity = new Combo
             {
                 Name = dto.Name.Trim(),
-                Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
+                Description = StringHelpers.TrimToNull(dto.Description),
                 Price = Math.Max(0, dto.Price),
                 IsActive = dto.IsActive
             };
@@ -172,7 +173,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             var entity = await _combos.GetAsync(id);
 
             entity.Name = dto.Name.Trim();
-            entity.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
+            entity.Description = StringHelpers.TrimToNull(dto.Description);
             entity.Price = Math.Max(0, dto.Price);
             entity.IsActive = dto.IsActive;
 

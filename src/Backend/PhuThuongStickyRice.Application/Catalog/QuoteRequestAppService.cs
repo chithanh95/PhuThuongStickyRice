@@ -271,14 +271,6 @@ namespace PhuThuongStickyRice.Application.Catalog
         }
 
         /// <summary>
-        /// Chuẩn hóa chuỗi nullable: trim, rỗng/trắng thì trả null (để DB lưu
-        /// null thay vì chuỗi trắng — các field optional như địa điểm sự kiện,
-        /// ngân sách, ghi chú đều dùng pattern này).
-        /// </summary>
-        private static string TrimToNull(string value) =>
-            string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-        /// <summary>
         /// Chặn sớm SĐT Việt Nam không hợp lệ ở cả 2 luồng public (gửi báo
         /// giá, đăng ký nhắc cúng): gom 1 chỗ để thông điệp lỗi và quy tắc
         /// validate không lệch nhau khi sửa sau này.

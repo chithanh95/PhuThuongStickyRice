@@ -55,12 +55,25 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>Tổng tiền hàng của giỏ (chưa trừ khuyến mãi/mã giảm giá — các khoản giảm tính ở checkout).</summary>
         public decimal TotalAmount => _items.Sum(x => x.LineTotal);
 
+        /// <summary>Nguồn đơn mặc định: khách vào từ web.</summary>
+        public const string SourceWeb = "Web";
+
+        /// <summary>Nguồn đơn: khách quét QR tại bàn (?ban=).</summary>
+        public const string SourceTableQr = "QR bàn";
+
+        /// <summary>Nguồn đơn: khách vào từ link chia sẻ (?share=).</summary>
+        public const string SourceSharedLink = "Link chia sẻ";
+
+        /// <summary>Nguồn đơn: khách vào từ link nhóm (?nhom=).</summary>
+        public const string SourceGroup = "Nhóm";
+
         /// <summary>
         /// Order source (item 133): set from the shop entry query params
-        /// (?ban= → "QR bàn", ?share= → "Link chia sẻ", ?nhom= → "Nhóm",
-        /// else "Web"). Sent with the checkout request.
+        /// (?ban= → <see cref="SourceTableQr"/>, ?share= → <see cref="SourceSharedLink"/>,
+        /// ?nhom= → <see cref="SourceGroup"/>, else <see cref="SourceWeb"/>).
+        /// Sent with the checkout request.
         /// </summary>
-        public string Source { get; set; } = "Web";
+        public string Source { get; set; } = SourceWeb;
 
         /// <summary>
         /// Loads persisted items from localStorage. Call once at app startup

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Support
 {
@@ -60,7 +61,7 @@ namespace PhuThuongStickyRice.Application.Support
             {
                 Name = dto.Name.Trim(),
                 Phone = dto.Phone.Trim(),
-                OrderNumber = string.IsNullOrWhiteSpace(dto.OrderNumber) ? null : dto.OrderNumber.Trim(),
+                OrderNumber = StringHelpers.TrimToNull(dto.OrderNumber),
                 Message = dto.Message.Trim(),
                 Status = SupportTicketStatus.New,
                 CreatedAt = DateTime.UtcNow

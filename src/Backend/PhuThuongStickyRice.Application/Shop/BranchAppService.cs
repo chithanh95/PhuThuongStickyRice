@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Shop;
 
 namespace PhuThuongStickyRice.Application.Shop
@@ -113,8 +114,8 @@ namespace PhuThuongStickyRice.Application.Shop
             var entity = new Branch
             {
                 Name = dto.Name.Trim(),
-                Address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim(),
-                Phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim(),
+                Address = StringHelpers.TrimToNull(dto.Address),
+                Phone = StringHelpers.TrimToNull(dto.Phone),
                 IsActive = dto.IsActive
             };
             await _branches.InsertAsync(entity, autoSave: true);
@@ -134,8 +135,8 @@ namespace PhuThuongStickyRice.Application.Shop
         {
             var entity = await _branches.GetAsync(id);
             entity.Name = dto.Name.Trim();
-            entity.Address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim();
-            entity.Phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim();
+            entity.Address = StringHelpers.TrimToNull(dto.Address);
+            entity.Phone = StringHelpers.TrimToNull(dto.Phone);
             entity.IsActive = dto.IsActive;
             await _branches.UpdateAsync(entity, autoSave: true);
             _catalogCache.Invalidate();

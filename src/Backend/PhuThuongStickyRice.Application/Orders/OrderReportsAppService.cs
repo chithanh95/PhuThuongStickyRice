@@ -219,10 +219,9 @@ namespace PhuThuongStickyRice.Application.Orders
             };
             WriteHeaders(sheet, headers);
 
-            var headerRow = sheet.Row(1);
-            headerRow.Style.Font.Bold = true;
-            headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#f5c518");
-            headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            // Header vàng (#f5c518) riêng của sheet xuất đơn hàng: chữ đen
+            // (nền sáng) thay vì chữ trắng như header tím các sheet khác.
+            ExcelExportHelper.StyleHeader(sheet.Row(1), "#f5c518", whiteFont: false);
 
             var rowIndex = 2;
             foreach (var order in items)
@@ -235,23 +234,6 @@ namespace PhuThuongStickyRice.Application.Orders
             // (ClosedXML đo font từng cell — O(dòng × cột), export 5000 dòng
             // tốn vài giây chỉ để căn cột).
             SetFixedColumnWidths(sheet, 14, 18, 24, 14, 30, 32, 14, 12, 12, 16, 16, 16, 40);
-        }
-
-        /// <summary>
-        /// Đặt độ rộng cột cố định cho sheet export (thay AdjustToContents()):
-        /// ClosedXML đo font từng cell khi auto-fit — O(dòng × cột), export
-        /// 5000 dòng tốn vài giây chỉ để căn cột. Độ rộng cố định render ngay
-        /// lập tức, không đổi dữ liệu trong cell (chữ dài vẫn đầy đủ, chỉ
-        /// không tự giãn cột).
-        /// </summary>
-        /// <param name="sheet">Sheet cần đặt độ rộng.</param>
-        /// <param name="widths">Độ rộng từng cột, theo thứ tự cột 1..N.</param>
-        private static void SetFixedColumnWidths(IXLWorksheet sheet, params double[] widths)
-        {
-            for (var i = 0; i < widths.Length; i++)
-            {
-                sheet.Column(i + 1).Width = widths[i];
-            }
         }
 
         /// <summary>
@@ -321,7 +303,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var summary = workbook.Worksheets.Add("Tổng hợp");
             var sumHeaders = new[] { "Ngày", "Số đơn", "Doanh thu (₫)", "Giá trị TB/đơn (₫)" };
             WriteHeaders(summary, sumHeaders);
-            StyleHeader(summary.Row(1));
+            ExcelExportHelper.StyleHeader(summary.Row(1));
 
             var rowIndex = 2;
             foreach (var dailyStat in daily)
@@ -376,7 +358,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 "Món", "Tổng tiền", "Kênh thanh toán", "Trạng thái đơn"
             };
             WriteHeaders(sheet, headers);
-            StyleHeader(sheet.Row(1));
+            ExcelExportHelper.StyleHeader(sheet.Row(1));
 
             var rowIndex = 2;
             foreach (var order in details)
@@ -520,18 +502,6 @@ namespace PhuThuongStickyRice.Application.Orders
                     })
                     .OrderByDescending(x => x.Quantity)
                     .Take(TopProductsCount));
-        }
-
-        /// <summary>
-        /// Style hàng tiêu đề file Excel: chữ đậm trắng, nền tím thương hiệu
-        /// (#7a6fbe), căn giữa — dùng chung cho mọi sheet xuất ra.
-        /// </summary>
-        private static void StyleHeader(IXLRow headerRow)
-        {
-            headerRow.Style.Font.Bold = true;
-            headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#7a6fbe");
-            headerRow.Style.Font.FontColor = XLColor.White;
-            headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         }
 
         /// <summary>

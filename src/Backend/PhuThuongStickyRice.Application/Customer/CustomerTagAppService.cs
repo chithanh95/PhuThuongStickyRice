@@ -211,10 +211,11 @@ namespace PhuThuongStickyRice.Application.Customer
                 worksheet.Cell(1, i + 1).Value = headers[i];
             }
 
-            var headerRow = worksheet.Row(1);
-            headerRow.Style.Font.Bold = true;
-            headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#7a6fbe");
-            headerRow.Style.Font.FontColor = XLColor.White;
+            // Header tím thương hiệu (#7a6fbe), chữ trắng, chữ đậm — giống
+            // các sheet báo cáo (xem ExcelExportHelper.StyleHeader và hằng
+            // BrandHeaderBackground);
+            // riêng sheet này KHÔNG căn giữa cột vì cột ghi chú dài (40 ký tự).
+            ExcelExportHelper.StyleHeader(worksheet.Row(1), center: false);
 
             var rowIndex = 2;
             foreach (var row in rows)
@@ -239,19 +240,6 @@ namespace PhuThuongStickyRice.Application.Customer
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
             return stream.ToArray();
-        }
-
-        /// <summary>
-        /// Đặt độ rộng cột cố định cho sheet export (thay AdjustToContents()).
-        /// </summary>
-        /// <param name="sheet">Sheet cần đặt độ rộng.</param>
-        /// <param name="widths">Độ rộng từng cột, theo thứ tự cột 1..N.</param>
-        private static void SetFixedColumnWidths(IXLWorksheet sheet, params double[] widths)
-        {
-            for (var i = 0; i < widths.Length; i++)
-            {
-                sheet.Column(i + 1).Width = widths[i];
-            }
         }
 
         /// <summary>

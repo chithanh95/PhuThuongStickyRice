@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Loyalty;
 
 namespace PhuThuongStickyRice.Application.Loyalty
@@ -311,7 +312,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             rule.Name = input.Name.Trim();
             rule.MinAmount = Math.Max(0, input.MinAmount);
             rule.RewardType = type;
-            rule.ToppingName = string.IsNullOrWhiteSpace(input.ToppingName) ? null : input.ToppingName.Trim();
+            rule.ToppingName = StringHelpers.TrimToNull(input.ToppingName);
             rule.DiscountPercent = input.DiscountPercent;
             rule.IsActive = input.IsActive;
         }
@@ -345,10 +346,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             var digits = new string(phone.Where(char.IsDigit).ToArray());
-            // So sánh lập trình trên chuỗi chữ số: Ordinal đúng + nhanh hơn
-            // overload mặc định (culture-sensitive). Giữ nguyên behavior ASCII.
-
-            // CA1845: span-based Concat thay cho Substring — không cấp phát chuỗi trung gian.
+            // Chuỗi toàn chữ số nên so sánh bằng Ordinal: đúng + nhanh, không
+            // phụ thuộc culture (so sánh mặc định là culture-sensitive).
+            // CA1845: Concat trên Span thay cho Substring — không cấp phát chuỗi trung gian.
             return digits.StartsWith("84", StringComparison.Ordinal) && digits.Length == 11 ? string.Concat("0".AsSpan(), digits.AsSpan(2)) : digits;
         }
     }
