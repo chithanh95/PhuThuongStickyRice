@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Volo.Abp;
@@ -487,21 +486,14 @@ namespace PhuThuongStickyRice.Application.Customer
 
         private async Task<string> GenerateUniqueCodeAsync()
         {
-            // [codequality-smell 2026-10-19] Dùng bảng chữ cái dùng chung
-            // (Domain.ReadableCodeAlphabet) thay vì hardcode: cố ý bỏ I/O
-            // (dễ nhầm 1), số 0/1 (dễ nhầm O/l) để mã quà đọc qua điện thoại
-            // cho khách không bị nhầm.
-            var alphabet = Domain.ReadableCodeAlphabet.Value;
+            // [codequality-smell 2026-10-20] Dùng helper dùng chung
+            // Common.ReadableCodeGenerator (bảng chữ cái Domain.ReadableCodeAlphabet
+            // đã bỏ ký tự dễ nhầm I/O/0/1 + RNG mật mã không lệch modulo) — trước
+            // đây vòng lặp sinh hậu tố ngẫu nhiên bị viết lại thủ công ở đây,
+            // trùng logic với DiscountAppService và LoyaltyAppService.
             for (var attempt = 0; attempt < GiftCodeMaxAttempts; attempt++)
             {
-                var chars = new char[GiftCodeRandomPartLength];
-                var bytes = RandomNumberGenerator.GetBytes(GiftCodeRandomPartLength);
-                for (var i = 0; i < GiftCodeRandomPartLength; i++)
-                {
-                    chars[i] = alphabet[bytes[i] % alphabet.Length];
-                }
-
-                var code = GiftCodePrefix + new string(chars);
+                var code = GiftCodePrefix + ReadableCodeGenerator.GenerateSuffix(GiftCodeRandomPartLength);
                 if (await FindDiscountCodeAsync(code) == null)
                 {
                     return code;

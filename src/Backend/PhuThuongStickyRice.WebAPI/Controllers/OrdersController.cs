@@ -34,7 +34,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// và các endpoint vận hành (Admin/Cashier/Kitchen) như đổi trạng thái,
     /// gán shipper, đánh giá, vòng quay may mắn. Rate-limit theo chính sách chung.
     /// </summary>
-    public class OrdersController : ControllerBase
+    // [LoggerMessage] source generator sinh thêm partial declaration cho
+    // class này nên khai báo phải có modifier partial (CS0260).
+    public partial class OrdersController : ControllerBase
     {
         private readonly IOrderAppService _orderAppService;
         private readonly ILogger _logger;
@@ -74,7 +76,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> Create([FromBody] CreateOrderRequestModel model,
             CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Creating order for {CustomerPhone}", model.CustomerPhone);
+            LogCreatingOrder(_logger, model.CustomerPhone);
 
             // Best practice: [ApiController] đã trả 400 khi body null, nhưng guard
             // tường minh giúp compiler biết model non-null ở dưới (tránh CS8602)
@@ -911,6 +913,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             return Ok(await _orderAppService.GetPublicReviewsAsync());
         }
+
+        // CA1848/CA1873: logging hiệu năng cao bằng LoggerMessage
+        // source-generated (tránh cấp phát params array + boxing mỗi lần log
+        // và không đánh giá argument khi level bị tắt) — convention chung
+        // của các controller trong WebAPI (Messenger/System/Loyalty...).
+
+        /// <summary>Log khi nhận request tạo đơn mới.</summary>
+        [LoggerMessage(Level = LogLevel.Information, Message = "Creating order for {CustomerPhone}.")]
+        private static partial void LogCreatingOrder(ILogger logger, string customerPhone);
     }
 
     /// <summary>

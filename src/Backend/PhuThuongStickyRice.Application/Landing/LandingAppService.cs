@@ -12,6 +12,10 @@ using Volo.Abp.Linq;
 
 namespace PhuThuongStickyRice.Application.Landing
 {
+    /// <summary>
+    /// Contract quản lý nội dung trang landing: public đọc nội dung trang chủ,
+    /// admin lưu nội dung từ màn hình /admin/landing.
+    /// </summary>
     public interface ILandingAppService : IApplicationService
     {
         /// <summary>Trang landing/shop đọc nội dung trang chủ (cho phép ẩn danh).</summary>

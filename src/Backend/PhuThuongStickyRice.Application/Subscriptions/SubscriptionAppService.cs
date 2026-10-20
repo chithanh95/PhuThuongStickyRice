@@ -58,6 +58,12 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IShopSettingAppService _shopSettings;
 
+        /// <summary>
+        /// Số dòng tối đa khi admin xem danh sách gói — không materialize
+        /// toàn bộ lịch sử gói đăng ký về memory.
+        /// </summary>
+        private const int MaxAdminListRows = 200;
+
         /// <summary>Khởi tạo dịch vụ gói đăng ký với các repository và service liên quan.</summary>
         public SubscriptionAppService(
             ISubscriptionRepository subscriptions,
@@ -124,8 +130,9 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         }
 
         /// <summary>
-        /// Admin: danh sách gói đăng ký, mới nhất trước (tối đa 200 dòng cho
-        /// màn hình admin; không materialize toàn bộ lịch sử).
+        /// Admin: danh sách gói đăng ký, mới nhất trước (tối đa
+        /// <see cref="MaxAdminListRows"/> dòng cho màn hình admin; không
+        /// materialize toàn bộ lịch sử).
         /// </summary>
         /// <param name="activeOnly">true: chỉ gói đang hoạt động; false: chỉ gói đã tắt; null: tất cả.</param>
         /// <returns>Danh sách gói đăng ký.</returns>
@@ -140,7 +147,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
                 query = query.Where(x => x.Active == activeOnly.Value);
             }
 
-            var items = await _asyncExecuter.ToListAsync(query.Take(200));
+            var items = await _asyncExecuter.ToListAsync(query.Take(MaxAdminListRows));
             return items.Select(MapToDto).ToList();
         }
 

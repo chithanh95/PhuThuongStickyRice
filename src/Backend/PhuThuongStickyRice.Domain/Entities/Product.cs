@@ -655,8 +655,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             return string.Join(", ", parts);
         }
 
-        private static string FormatHour(TimeSpan t) =>
-            t.Minutes == 0 ? $"{t.Hours}h" : $"{t.Hours}:{t.Minutes:D2}";
+        private static string FormatHour(TimeSpan time) =>
+            time.Minutes == 0 ? $"{time.Hours}h" : $"{time.Hours}:{time.Minutes:D2}";
 
         private static readonly char[] TagSeparators = [',', ';'];
 

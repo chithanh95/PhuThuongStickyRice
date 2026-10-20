@@ -559,7 +559,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 .Select(m => m.Id)
                 .ToList();
 
-            if (unreadIds.Any())
+            // CA1860: unreadIds đã là List<Guid> (materialize ở trên) nên so
+            // sánh trực tiếp thuộc tính Count O(1) thay vì Any() — Any()
+            // phải cấp phát enumerator.
+            if (unreadIds.Count > 0)
             {
                 await _db.ChatMessages
                     .Where(m => unreadIds.Contains(m.Id))
@@ -921,15 +924,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 .Where(c => c.Phone == phone && c.CheckInDate <= today)
                 .Select(c => c.CheckInDate)
                 .Distinct()
-                .OrderByDescending(d => d)
+                .OrderByDescending(date => date)
                 .Take(30)
                 .ToListAsync(cancellationToken);
 
             var streak = 0;
             var cursor = today;
-            foreach (var d in dates)
+            foreach (var checkInDate in dates)
             {
-                if (d == cursor) { streak++; cursor = cursor.AddDays(-1); }
+                if (checkInDate == cursor) { streak++; cursor = cursor.AddDays(-1); }
                 else break;
             }
 

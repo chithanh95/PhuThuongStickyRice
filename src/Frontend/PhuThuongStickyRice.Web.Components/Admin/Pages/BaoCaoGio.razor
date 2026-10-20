@@ -46,14 +46,14 @@ else if (_report != null)
                 <span class="lx-mini-icon"><span class="fa-solid fa-cart-shopping" aria-hidden="true"></span></span>
             </div>
         </div>
-        @foreach (var t in _report.TopHours)
+        @foreach (var hourStat in _report.TopHours)
         {
-            var rank = _report.TopHours.IndexOf(t) + 1;
+            var rank = _report.TopHours.IndexOf(hourStat) + 1;
             <div class="col-md-4 mb-3">
                 <div class="lx-mini-stat">
                     <p class="lx-mini-label">Top @rank khung giờ đông khách</p>
-                    <h2 class="lx-mini-value">@t.Hour h – @(t.Hour + 1) h</h2>
-                    <span class="lx-mini-foot">@t.Portions.ToString("N0") suất · @t.Orders.ToString("N0") đơn</span>
+                    <h2 class="lx-mini-value">@hourStat.Hour h – @(hourStat.Hour + 1) h</h2>
+                    <span class="lx-mini-foot">@hourStat.Portions.ToString("N0") suất · @hourStat.Orders.ToString("N0") đơn</span>
                     <span class="lx-mini-icon"><span class="fa-solid fa-clock" aria-hidden="true"></span></span>
                 </div>
             </div>

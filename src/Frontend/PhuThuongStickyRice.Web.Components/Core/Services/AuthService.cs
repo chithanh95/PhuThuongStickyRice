@@ -213,19 +213,35 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         public string[] Roles { get; set; }
     }
 
+    /// <summary>Hồ sơ tài khoản đang đăng nhập (GET api/auth/profile).</summary>
     public class UserProfile
     {
+        /// <summary>Tên đăng nhập.</summary>
         public string UserName { get; set; }
+
+        /// <summary>Email của tài khoản.</summary>
         public string Email { get; set; }
+
+        /// <summary>Số điện thoại của tài khoản.</summary>
         public string PhoneNumber { get; set; }
     }
 
+    /// <summary>Tin nhắn chat nội bộ của team staff (GET/POST api/staff-chat), sắp từ cũ đến mới.</summary>
     public class StaffChatMessage
     {
+        /// <summary>Id tin nhắn.</summary>
         public Guid Id { get; set; }
+
+        /// <summary>Id người gửi.</summary>
         public Guid SenderId { get; set; }
+
+        /// <summary>Tên hiển thị của người gửi.</summary>
         public string SenderName { get; set; }
+
+        /// <summary>Nội dung tin nhắn.</summary>
         public string Message { get; set; }
+
+        /// <summary>Thời điểm gửi.</summary>
         public DateTime SentAt { get; set; }
     }
 }

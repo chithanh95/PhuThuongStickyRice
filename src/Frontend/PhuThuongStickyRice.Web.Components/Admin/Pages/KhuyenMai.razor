@@ -122,13 +122,13 @@
                     <div class="form-group">
                         <label>Ngày áp dụng</label>
                         <div>
-                            @foreach (var d in _days)
+                            @foreach (var day in _days)
                             {
                                 <div class="custom-control custom-checkbox custom-control-inline">
-                                    <input type="checkbox" class="custom-control-input" id="day_@d.Value"
-                                           checked="@((_form.DaysOfWeekFlags & d.Value) != 0)"
-                                           @onchange="(e) => ToggleDay(d.Value, (bool)e.Value)" />
-                                    <label class="custom-control-label" for="day_@d.Value">@d.Name</label>
+                                    <input type="checkbox" class="custom-control-input" id="day_@day.Value"
+                                           checked="@((_form.DaysOfWeekFlags & day.Value) != 0)"
+                                           @onchange="(e) => ToggleDay(day.Value, (bool)e.Value)" />
+                                    <label class="custom-control-label" for="day_@day.Value">@day.Name</label>
                                 </div>
                             }
                         </div>

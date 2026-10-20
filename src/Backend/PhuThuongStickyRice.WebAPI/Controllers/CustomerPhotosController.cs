@@ -106,7 +106,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// file (magic bytes) khớp định dạng ảnh thật, và không quá dung lượng
         /// tối đa. Trả về thông báo lỗi tiếng Việt khi không đạt, null khi đạt.
         /// </summary>
-        private async Task<string> ValidateUploadedImageAsync(IFormFile file, CancellationToken cancellationToken)
+        // CA1822: method không dùng bất kỳ thành viên instance nào (chỉ dùng
+        // const/static) nên đánh dấu static.
+        private static async Task<string> ValidateUploadedImageAsync(IFormFile file, CancellationToken cancellationToken)
         {
             if (file == null || file.Length == 0)
             {

@@ -113,16 +113,10 @@ namespace PhuThuongStickyRice.Application.Common
                 // Trước đây mỗi row 1 SaveChanges = 1 round-trip. Kết quả
                 // giống hệt khi dispatch thành công; nếu luồng gọi (tạo đơn)
                 // rollback thì delivery row cũng rollback theo — nhất quán hơn.
-                await _deliveries.InsertAsync(new WebhookDelivery
-                {
-                    At = result.At,
-                    EndpointId = result.Endpoint.Id,
-                    EndpointName = result.Endpoint.Name,
-                    Event = eventName,
-                    Success = result.IsSuccess,
-                    StatusCode = result.StatusCode,
-                    Error = result.Error
-                }, autoSave: false);
+                // [codequality-smell 2026-10-20] Dùng BuildDelivery — trước đây
+                // khối dựng WebhookDelivery 7 dòng bị copy y hệt ở SendTestAsync.
+                await _deliveries.InsertAsync(
+                    BuildDelivery(result.Endpoint, result, eventName), autoSave: false);
             }
         }
 
@@ -136,16 +130,7 @@ namespace PhuThuongStickyRice.Application.Common
                 at = _clock.Now
             });
 
-            var delivery = new WebhookDelivery
-            {
-                At = result.At,
-                EndpointId = endpoint.Id,
-                EndpointName = endpoint.Name,
-                Event = "Ping",
-                Success = result.IsSuccess,
-                StatusCode = result.StatusCode,
-                Error = result.Error
-            };
+            var delivery = BuildDelivery(endpoint, result, "Ping");
             await _deliveries.InsertAsync(delivery, autoSave: true);
 
             return new WebhookDeliveryDto
@@ -170,6 +155,24 @@ namespace PhuThuongStickyRice.Application.Common
             public int? StatusCode { get; set; }
             public string Error { get; set; }
         }
+
+        /// <summary>
+        /// Dựng dòng lịch sử gửi webhook từ kết quả POST. Gom về 1 chỗ vì
+        /// <see cref="DispatchAsync"/> và <see cref="SendTestAsync"/> trước đây
+        /// copy y hệt 7 dòng gán property — ánh xạ giữ nguyên từng trường.
+        /// </summary>
+        private static WebhookDelivery BuildDelivery(
+            WebhookEndpoint endpoint, PostResult result, string eventName) =>
+            new WebhookDelivery
+            {
+                At = result.At,
+                EndpointId = endpoint.Id,
+                EndpointName = endpoint.Name,
+                Event = eventName,
+                Success = result.IsSuccess,
+                StatusCode = result.StatusCode,
+                Error = result.Error
+            };
 
         /// <summary>
         /// POSTs the event payload to one endpoint. Pure HTTP — safe to run

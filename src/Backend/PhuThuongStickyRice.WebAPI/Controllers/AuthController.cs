@@ -532,8 +532,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             var roleName = Services.AdminSeedHostedService.CustomerRoleName;
+            // CA1862: chuẩn hóa chuỗi so sánh TRƯỚC khi đưa vào biểu thức
+            // LINQ-to-EF. Gợi ý string.Equals(..., StringComparison) của
+            // analyzer không dịch được sang SQL (sẽ nổ runtime), còn giữ
+            // ToUpperInvariant() trong lambda vẫn bị báo — tính trước ra
+            // biến, EF nhận đúng 1 tham số, hành vi truy vấn giữ nguyên.
+            var normalizedRoleName = roleName.ToUpperInvariant();
             var role = await dbContext.Set<Role>()
-                .FirstOrDefaultAsync(r => r.NormalizedName == roleName.ToUpperInvariant(), cancellationToken);
+                .FirstOrDefaultAsync(r => r.NormalizedName == normalizedRoleName, cancellationToken);
             if (role == null)
             {
                 role = new Role

@@ -430,10 +430,11 @@ namespace PhuThuongStickyRice.Application.Discounts
             string candidate;
             do
             {
-                // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
-                // operator thay Substring(0, N) — ToString("N") dài 32 ký tự ≥ CodeSuffixLength.
-                candidate = prefix + "-" + Guid.NewGuid().ToString("N")
-                    [..CodeSuffixLength].ToUpperInvariant();
+                // [codequality-smell 2026-10-20] Dùng helper dùng chung
+                // ReadableCodeGenerator.GenerateGuidSuffix — trước đây biểu thức
+                // này copy y hệt ở DiscountAppService.BuildGeneratedCodeFallback.
+                // ToString("N") dài 32 ký tự ≥ CodeSuffixLength.
+                candidate = prefix + "-" + ReadableCodeGenerator.GenerateGuidSuffix(CodeSuffixLength);
             } while (!used.Add(candidate));
             return candidate;
         }

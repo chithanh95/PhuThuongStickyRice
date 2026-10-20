@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -33,4 +34,18 @@ public static class ReadableCodeGenerator
                 .Select(_ => alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)])
                 .ToArray());
     }
+
+    /// <summary>
+    /// Sinh hậu tố từ GUID (<c>ToString("N")</c> cắt còn <paramref name="length"/>
+    /// ký tự, viết hoa). Dùng làm fallback khi vòng sinh ngẫu nhiên chính hết
+    /// lần thử (xác suất cực thấp) — giữ nguyên hành vi cũ của
+    /// DiscountAppService.BuildGeneratedCodeFallback và
+    /// VoucherCampaignAppService.GenerateCandidate (trước đây 2 nơi copy y hệt
+    /// biểu thức này). Không dùng cho mã chính vì GUID vẫn chứa ký tự dễ nhầm
+    /// (0/1) và không phải RNG mật mã.
+    /// </summary>
+    /// <param name="length">Số ký tự cần lấy (≤ 32).</param>
+    /// <returns>Hậu tố hex viết hoa từ GUID mới.</returns>
+    public static string GenerateGuidSuffix(int length) =>
+        Guid.NewGuid().ToString("N")[..length].ToUpperInvariant();
 }

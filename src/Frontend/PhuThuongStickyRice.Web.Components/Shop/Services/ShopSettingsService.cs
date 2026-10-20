@@ -114,9 +114,16 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 "api/shop-settings/test-order-webhook", new { Url = url });
         }
 
+        /// <summary>
+        /// Kết quả test webhook đơn hàng mẫu (nút "Gửi thử" ở trang cài đặt):
+        /// server gửi 1 payload mẫu tới URL admin nhập và báo lại kết quả.
+        /// </summary>
         public class TestOrderWebhookResult
         {
+            /// <summary>True khi server gửi payload mẫu tới webhook thành công.</summary>
             public bool IsSuccess { get; set; }
+
+            /// <summary>Thông điệp giải thích kết quả, hiển thị cho admin.</summary>
             public string Message { get; set; }
         }
     }

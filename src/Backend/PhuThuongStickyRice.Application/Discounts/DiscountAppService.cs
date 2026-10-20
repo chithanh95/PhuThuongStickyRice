@@ -1130,9 +1130,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="prefix">Tiền tố mã (đã chuẩn hóa in hoa).</param>
         /// <returns>Mã dạng "PREFIX-XXXXXX" từ GUID.</returns>
         private static string BuildGeneratedCodeFallback(string prefix)
+            // [codequality-smell 2026-10-20] Dùng helper dùng chung
+            // ReadableCodeGenerator.GenerateGuidSuffix — trước đây biểu thức
+            // Guid.NewGuid().ToString("N")[..N].ToUpperInvariant() bị viết lại
+            // y hệt ở VoucherCampaignAppService.GenerateCandidate.
             // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: range
             // operator thay Substring(0, N) — ToString("N") dài 32 ký tự ≥ 6.
-            => prefix + "-" + Guid.NewGuid().ToString("N")[..GeneratedCodeRandomPartLength].ToUpperInvariant();
+            => prefix + "-" + ReadableCodeGenerator.GenerateGuidSuffix(GeneratedCodeRandomPartLength);
 
         /// <summary>
         /// Sinh 1 mã duy nhất theo tiền tố: thử tối đa <see cref="GeneratedCodeMaxAttempts"/>

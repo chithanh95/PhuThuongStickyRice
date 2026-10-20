@@ -204,8 +204,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 && string.Equals(selfId, id.ToString(), StringComparison.OrdinalIgnoreCase))
                 return BadRequest(new { message = "Không thể tự gỡ quyền Admin của chính mình." });
 
+            // CA1862: tính chuỗi chuẩn hóa trước khi đưa vào biểu thức EF —
+            // string.Equals(..., StringComparison) không dịch được sang SQL.
+            var normalizedRole = role.ToUpperInvariant();
             var roleEntity = await _db.Set<Role>()
-                .FirstOrDefaultAsync(r => r.NormalizedName == role.ToUpperInvariant(), cancellationToken);
+                .FirstOrDefaultAsync(r => r.NormalizedName == normalizedRole, cancellationToken);
             if (roleEntity == null) return NotFound();
 
             var link = await _db.Set<UserRole>()
@@ -225,8 +228,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         private async Task AssignRoleAsync(Guid userId, string roleName, CancellationToken cancellationToken)
         {
+            // CA1862: tính chuỗi chuẩn hóa trước khi đưa vào biểu thức EF —
+            // string.Equals(..., StringComparison) không dịch được sang SQL.
+            var normalizedRoleName = roleName.ToUpperInvariant();
             var roleEntity = await _db.Set<Role>()
-                .FirstOrDefaultAsync(r => r.NormalizedName == roleName.ToUpperInvariant(), cancellationToken);
+                .FirstOrDefaultAsync(r => r.NormalizedName == normalizedRoleName, cancellationToken);
             if (roleEntity == null) throw new InvalidOperationException($"Role '{roleName}' chưa được seed.");
 
             var exists = await _db.Set<UserRole>()
