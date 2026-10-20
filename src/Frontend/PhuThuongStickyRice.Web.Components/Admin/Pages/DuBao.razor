@@ -175,8 +175,8 @@ else if (_forecast != null)
 
     // Ngưỡng tô màu cột "So với TB chung": ≥1,5× là ngày đông bất thường
     // (xanh lá), 1,0–1,5× là trên TB (xanh dương), dưới TB (vàng cảnh báo).
-    private static string RatioClass(double r) =>
-        r >= 1.5 ? "lx-pill-success" : r >= 1.0 ? "lx-pill-info" : "lx-pill-warning";
+    private static string RatioClass(double ratio) =>
+        ratio >= 1.5 ? "lx-pill-success" : ratio >= 1.0 ? "lx-pill-info" : "lx-pill-warning";
 
     /// <summary>
     /// Builds the whole chart as raw SVG. A raw string is used because

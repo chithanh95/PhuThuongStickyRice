@@ -154,29 +154,29 @@
                             // Chuẩn hóa chiều cao cột theo giá trị lớn nhất của từng chỉ số
                             // (2 kỳ nhìn tương đối với nhau, không theo giá trị tuyệt đối).
                             // Cột có giá trị 0 vẫn vẽ 4px để không "biến mất" khỏi biểu đồ.
-                            var cmpMaxRev = Math.Max(_current.TotalRevenue, _previous.TotalRevenue);
-                            var cmpMaxOrd = Math.Max((decimal)_current.OrderCount, (decimal)_previous.OrderCount);
-                            var cmpMaxAvg = Math.Max(_current.AvgOrderValue, _previous.AvgOrderValue);
+                            var maxRevenueForCompare = Math.Max(_current.TotalRevenue, _previous.TotalRevenue);
+                            var maxOrderCountForCompare = Math.Max((decimal)_current.OrderCount, (decimal)_previous.OrderCount);
+                            var maxAvgOrderValueForCompare = Math.Max(_current.AvgOrderValue, _previous.AvgOrderValue);
                         }
                         <div class="lexa-chart">
                             <div class="lexa-col-wrap">
                                 <div class="bc-compare-pair">
-                                    <div class="lexa-col lexa-col-current" style="height:@((cmpMaxRev > 0 ? (double)(_current.TotalRevenue / cmpMaxRev) * 150 : 4).ToString("0"))px;" title="Kỳ này: @FormatPrice(_current.TotalRevenue)"></div>
-                                    <div class="lexa-col lexa-col-compare" style="height:@((cmpMaxRev > 0 ? (double)(_previous.TotalRevenue / cmpMaxRev) * 150 : 4).ToString("0"))px;" title="Kỳ trước: @FormatPrice(_previous.TotalRevenue)"></div>
+                                    <div class="lexa-col lexa-col-current" style="height:@((maxRevenueForCompare > 0 ? (double)(_current.TotalRevenue / maxRevenueForCompare) * 150 : 4).ToString("0"))px;" title="Kỳ này: @FormatPrice(_current.TotalRevenue)"></div>
+                                    <div class="lexa-col lexa-col-compare" style="height:@((maxRevenueForCompare > 0 ? (double)(_previous.TotalRevenue / maxRevenueForCompare) * 150 : 4).ToString("0"))px;" title="Kỳ trước: @FormatPrice(_previous.TotalRevenue)"></div>
                                 </div>
                                 <small>Doanh thu</small>
                             </div>
                             <div class="lexa-col-wrap">
                                 <div class="bc-compare-pair">
-                                    <div class="lexa-col lexa-col-current" style="height:@((cmpMaxOrd > 0 ? (double)((decimal)_current.OrderCount / cmpMaxOrd) * 150 : 4).ToString("0"))px;" title="Kỳ này: @_current.OrderCount đơn"></div>
-                                    <div class="lexa-col lexa-col-compare" style="height:@((cmpMaxOrd > 0 ? (double)((decimal)_previous.OrderCount / cmpMaxOrd) * 150 : 4).ToString("0"))px;" title="Kỳ trước: @_previous.OrderCount đơn"></div>
+                                    <div class="lexa-col lexa-col-current" style="height:@((maxOrderCountForCompare > 0 ? (double)((decimal)_current.OrderCount / maxOrderCountForCompare) * 150 : 4).ToString("0"))px;" title="Kỳ này: @_current.OrderCount đơn"></div>
+                                    <div class="lexa-col lexa-col-compare" style="height:@((maxOrderCountForCompare > 0 ? (double)((decimal)_previous.OrderCount / maxOrderCountForCompare) * 150 : 4).ToString("0"))px;" title="Kỳ trước: @_previous.OrderCount đơn"></div>
                                 </div>
                                 <small>Số đơn</small>
                             </div>
                             <div class="lexa-col-wrap">
                                 <div class="bc-compare-pair">
-                                    <div class="lexa-col lexa-col-current" style="height:@((cmpMaxAvg > 0 ? (double)(_current.AvgOrderValue / cmpMaxAvg) * 150 : 4).ToString("0"))px;" title="Kỳ này: @FormatPrice(_current.AvgOrderValue)"></div>
-                                    <div class="lexa-col lexa-col-compare" style="height:@((cmpMaxAvg > 0 ? (double)(_previous.AvgOrderValue / cmpMaxAvg) * 150 : 4).ToString("0"))px;" title="Kỳ trước: @FormatPrice(_previous.AvgOrderValue)"></div>
+                                    <div class="lexa-col lexa-col-current" style="height:@((maxAvgOrderValueForCompare > 0 ? (double)(_current.AvgOrderValue / maxAvgOrderValueForCompare) * 150 : 4).ToString("0"))px;" title="Kỳ này: @FormatPrice(_current.AvgOrderValue)"></div>
+                                    <div class="lexa-col lexa-col-compare" style="height:@((maxAvgOrderValueForCompare > 0 ? (double)(_previous.AvgOrderValue / maxAvgOrderValueForCompare) * 150 : 4).ToString("0"))px;" title="Kỳ trước: @FormatPrice(_previous.AvgOrderValue)"></div>
                                 </div>
                                 <small>TB/đơn</small>
                             </div>

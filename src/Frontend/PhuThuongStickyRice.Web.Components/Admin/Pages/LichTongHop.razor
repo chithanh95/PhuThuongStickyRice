@@ -216,35 +216,35 @@
         await LoadAsync();
     }
 
-    private void SelectDay(DateTime d) => _selected = d.Date;
+    private void SelectDay(DateTime day) => _selected = day.Date;
 
     /// <summary>Bàn phím: Enter/Space trên ô ngày tương đương click chọn ngày.</summary>
-    private void OnDayKey(KeyboardEventArgs e, DateTime d)
+    private void OnDayKey(KeyboardEventArgs e, DateTime day)
     {
         if (e.Key == "Enter" || e.Key == " ")
-            SelectDay(d);
+            SelectDay(day);
     }
 
     private static DateTime ToLocal(DateTime dt) => dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
 
-    private bool HasScheduled(DateTime d) =>
-        _scheduledOrders.Any(o => ToLocal(o.ScheduledFor.Value).Date == d.Date);
+    private bool HasScheduled(DateTime day) =>
+        _scheduledOrders.Any(o => ToLocal(o.ScheduledFor.Value).Date == day.Date);
 
-    private bool IsHoliday(DateTime d) =>
-        _holidays.Any(h => h.HolidayDate.Date == d.Date);
+    private bool IsHoliday(DateTime day) =>
+        _holidays.Any(h => h.HolidayDate.Date == day.Date);
 
-    private bool HasPromo(DateTime d) =>
-        _promotions.Any(p => DayMatches(p.DaysOfWeekFlags, d.DayOfWeek));
+    private bool HasPromo(DateTime day) =>
+        _promotions.Any(p => DayMatches(p.DaysOfWeekFlags, day.DayOfWeek));
 
-    private List<OrderModel> ScheduledOn(DateTime d) =>
-        _scheduledOrders.Where(o => ToLocal(o.ScheduledFor.Value).Date == d.Date)
+    private List<OrderModel> ScheduledOn(DateTime day) =>
+        _scheduledOrders.Where(o => ToLocal(o.ScheduledFor.Value).Date == day.Date)
             .OrderBy(o => o.ScheduledFor).ToList();
 
-    private List<HolidayModel> HolidaysOn(DateTime d) =>
-        _holidays.Where(h => h.HolidayDate.Date == d.Date).ToList();
+    private List<HolidayModel> HolidaysOn(DateTime day) =>
+        _holidays.Where(h => h.HolidayDate.Date == day.Date).ToList();
 
-    private List<PromotionModel> PromosOn(DateTime d) =>
-        _promotions.Where(p => DayMatches(p.DaysOfWeekFlags, d.DayOfWeek)).ToList();
+    private List<PromotionModel> PromosOn(DateTime day) =>
+        _promotions.Where(p => DayMatches(p.DaysOfWeekFlags, day.DayOfWeek)).ToList();
 
     // Bit flags: 1=Mon .. 64=Sun
     private static bool DayMatches(int flags, DayOfWeek dow)

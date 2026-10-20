@@ -198,7 +198,10 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
                 level = matches.Max();
             }
 
-            return (Serilog.Events.LogEventLevel)Enum.Parse(typeof(Serilog.Events.LogEventLevel), options.LogLevel[level], true);
+            // Best practice: Enum.Parse<T> generic thay cho Enum.Parse(typeof(...))
+            // + cast — kiểm tra type tại compile time, không boxing/unboxing,
+            // cùng ngữ nghĩa ignoreCase: true.
+            return Enum.Parse<Serilog.Events.LogEventLevel>(options.LogLevel[level], ignoreCase: true);
         }
 
         public static IWebHostBuilder UsePhuThuongStickyRiceLogger(this IWebHostBuilder builder, Func<IConfiguration, LoggingOptions> logOptions)

@@ -229,13 +229,13 @@
     private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
     private IEnumerable<Dish> _paged => Filtered.Skip((_page - 1) * _pageSize).Take(_pageSize);
 
-    private void SortBy(string col)
+    private void SortBy(string columnKey)
     {
-        if (_sortCol == col) _sortAsc = !_sortAsc;
-        else { _sortCol = col; _sortAsc = true; }
+        if (_sortCol == columnKey) _sortAsc = !_sortAsc;
+        else { _sortCol = columnKey; _sortAsc = true; }
         _page = 1;
     }
-    private string SortIcon(string col) => _sortCol != col ? "" : (_sortAsc ? "▲" : "▼");
+    private string SortIcon(string columnKey) => _sortCol != columnKey ? "" : (_sortAsc ? "▲" : "▼");
     private void PrevPage() { if (_page > 1) _page--; }
     private void NextPage() { if (_page < TotalPages) _page++; }
 

@@ -971,15 +971,30 @@ namespace PhuThuongStickyRice.Application.Discounts
         {
             return await _catalogCache.GetOrAddAsync("discounts:active-public", async () =>
             {
-                var now = DateTime.UtcNow;
-                var queryable = await _discounts.GetQueryableAsync();
-                var entities = await _asyncExecuter.ToListAsync(
-                    queryable
-                        .Where(PublicActiveCodeFilter(now))
-                        .OrderByDescending(x => x.CreatedDateTime)
-                        .Take(MaxPublicCodes));
+                var entities = await LoadActivePublicCodesAsync(DateTime.UtcNow);
                 return entities.Select(MapToDto).ToList();
             });
+        }
+
+        /// <summary>
+        /// Query DB lấy các mã công khai đang kích hoạt (mới nhất trước, tối
+        /// đa <see cref="MaxPublicCodes"/>). Gom khối query từng viết lặp y
+        /// hệt ở <see cref="GetActivePublicAsync"/> và
+        /// <see cref="EvaluateBestDiscountAsync"/> về một chỗ để sửa điều kiện
+        /// lọc chỉ cần sửa 1 nơi. Caller tự quyết định có dùng cache 5 phút
+        /// hay không — <see cref="EvaluateBestDiscountAsync"/> cố ý chạy query
+        /// tươi (không qua cache) vì đó là đường nóng của checkout.
+        /// </summary>
+        /// <param name="now">Thời điểm đánh giá mã còn hạn.</param>
+        /// <returns>Entity các mã công khai đang kích hoạt.</returns>
+        private async Task<List<DiscountCode>> LoadActivePublicCodesAsync(DateTime now)
+        {
+            var queryable = await _discounts.GetQueryableAsync();
+            return await _asyncExecuter.ToListAsync(
+                queryable
+                    .Where(PublicActiveCodeFilter(now))
+                    .OrderByDescending(x => x.CreatedDateTime)
+                    .Take(MaxPublicCodes));
         }
 
         /// <summary>
@@ -997,13 +1012,9 @@ namespace PhuThuongStickyRice.Application.Discounts
             var subtotal = input?.Subtotal ?? 0;
             var customerPhone = input?.CustomerPhone;
 
-            var now = DateTime.UtcNow;
-            var queryable = await _discounts.GetQueryableAsync();
-            var entities = await _asyncExecuter.ToListAsync(
-                queryable
-                    .Where(PublicActiveCodeFilter(now))
-                    .OrderByDescending(x => x.CreatedDateTime)
-                    .Take(MaxPublicCodes));
+            // Query tươi (không qua cache 5 phút) — dùng chung
+            // LoadActivePublicCodesAsync với GetActivePublicAsync.
+            var entities = await LoadActivePublicCodesAsync(DateTime.UtcNow);
 
             var (bestCode, bestAmount) = PickBestDiscountCode(entities, subtotal, customerPhone);
 
