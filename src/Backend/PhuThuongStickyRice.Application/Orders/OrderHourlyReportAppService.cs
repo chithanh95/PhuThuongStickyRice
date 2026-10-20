@@ -89,6 +89,15 @@ namespace PhuThuongStickyRice.Application.Orders
             public long TotalOrders { get; set; }
         }
 
+        /// <summary>
+        /// Gom dữ liệu 1 ngày bằng 2 câu truy vấn SQL: (1) số lượng từng món
+        /// theo (giờ VN, tên món), (2) số đơn theo giờ VN. Tách 2 câu vì 2 cấp
+        /// nhóm dùng aggregate khác nhau; đơn đã hủy bị loại ngay trong SQL
+        /// để ngày đông đơn không nạp cả đơn + lines vào memory.
+        /// </summary>
+        /// <param name="fromUtc">Đầu ngày VN (đã quy về UTC).</param>
+        /// <param name="toUtc">Cuối ngày VN (exclusive, đã quy về UTC).</param>
+        /// <returns>Buckets dữ liệu thô để <see cref="BuildReport"/> dựng DTO.</returns>
         private async Task<HourlyBuckets> AggregatePerHourAsync(DateTime fromUtc, DateTime toUtc)
         {
             var queryable = await _orders.GetQueryableAsync();

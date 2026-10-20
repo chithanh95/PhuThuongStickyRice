@@ -94,6 +94,14 @@ namespace PhuThuongStickyRice.Application.Orders
             return result;
         }
 
+        /// <summary>
+        /// Truy vấn đơn của ngày hôm nay (giờ VN, loại đơn đã hủy) rồi dựng
+        /// danh sách vé chờ: QueueNumber = vị trí đơn trong chuỗi đơn cả ngày
+        /// (kể cả đơn bị ẩn), đơn "Mời lấy món" xếp trước để khách ra lấy ngay.
+        /// Lọc trạng thái ở memory thay vì SQL để số thứ tự trên màn hình TV
+        /// không bị đánh lại mỗi lần có đơn đổi trạng thái.
+        /// </summary>
+        /// <returns>Danh sách vé chờ đã sắp xếp (mời lấy món trước).</returns>
         private async Task<List<QueueTicketDto>> QueryNowServingAsync()
         {
             // Biên ngày theo giờ Việt Nam (không có DST, offset lấy từ VietnamTime). CreatedAt lưu dạng UTC.

@@ -2042,6 +2042,17 @@ namespace PhuThuongStickyRice.Application.Orders
                 () => UpdateLinesByCustomerCoreAsync(input));
         }
 
+        /// <summary>
+        /// Phần thực thi của sửa đơn phía khách (chạy bên trong khóa serialize
+        /// theo đơn + SĐT): snapshot tổng cũ và số lượng cũ theo món, đổi số
+        /// lượng dòng, hoàn/trừ ví theo delta, gỡ mã giảm giá khi subtotal
+        /// mới tụt dưới đơn tối thiểu, kiểm tra lại giới hạn suất/ngày trên
+        /// phần tăng thêm, hòa giải thanh toán, rồi chỉ lưu khi đơn vẫn còn
+        /// Pending tại DB (chống "hồi sinh" đơn staff đã hủy giữa lúc khách
+        /// sửa và hoàn tiền vào ví rồi).
+        /// </summary>
+        /// <param name="input">Mã đơn, SĐT khách và số lượng dòng mới.</param>
+        /// <returns>Đơn hàng sau khi đã cập nhật (không có AdminNote).</returns>
         private async Task<OrderDto> UpdateLinesByCustomerCoreAsync(UpdateOrderLinesInput input)
         {
             var order = await FindByNumberAndPhoneAsync(input.OrderNumber, input.CustomerPhone);

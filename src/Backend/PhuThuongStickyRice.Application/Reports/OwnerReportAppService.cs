@@ -126,6 +126,16 @@ namespace PhuThuongStickyRice.Application.Reports
                 $"tuần {weekFromVn:dd/MM} – {weekToVn.AddDays(-1):dd/MM/yyyy}", "weekly");
         }
 
+        /// <summary>
+        /// Dựng nội dung email báo cáo cho chủ quán: tiêu đề kỳ, tổng quan
+        /// doanh thu (đã loại đơn hủy), trạng thái đơn và top món bán chạy.
+        /// Số lượng top món dùng chung hằng <c>TopProductsCount</c> với câu
+        /// query ở <c>SendAsync</c> để báo cáo không lệch dữ liệu lấy về.
+        /// </summary>
+        /// <param name="periodLabel">Nhãn kỳ báo cáo (vd "tháng 09/2026").</param>
+        /// <param name="stats">Thống kê dashboard của kỳ.</param>
+        /// <param name="topProducts">Top món bán chạy đã query sẵn trong kỳ.</param>
+        /// <returns>Nội dung email dạng văn bản thuần.</returns>
         private static string ComposeBody(
             string periodLabel,
             Orders.DTOs.DashboardStatsDto stats,

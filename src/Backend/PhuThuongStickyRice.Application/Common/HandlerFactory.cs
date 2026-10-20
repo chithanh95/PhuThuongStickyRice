@@ -41,6 +41,14 @@ namespace PhuThuongStickyRice.Application
             return currentHandler;
         }
 
+        /// <summary>
+        /// Đăng ký factory cho 1 handler: khi <see cref="Create"/> chạy, mỗi
+        /// factory bọc handler của bước trước (decorator chain) bằng cách
+        /// truyền nó vào tham số constructor là interface handler; các tham
+        /// số còn lại resolve từ DI provider qua <see cref="GetParameters"/>.
+        /// </summary>
+        /// <param name="handlerType">Type của handler (có thể là generic mở).</param>
+        /// <param name="attribute">Attribute trang trí handler (nếu có), truyền thẳng vào constructor.</param>
         private void AddHandlerFactory(Type handlerType, object attribute = null)
         {
             _handlerFactoriesPipeline.Add(CreateHandler);
@@ -61,6 +69,13 @@ namespace PhuThuongStickyRice.Application
             }
         }
 
+        /// <summary>
+        /// Resolve tham số constructor cho handler: tham số là interface
+        /// handler thì nhận handler của bước trước (để bọc decorator), tham
+        /// số đúng type attribute thì nhận thẳng attribute, còn lại resolve
+        /// từ DI provider. Ném <see cref="ArgumentException"/> khi provider
+        /// không có service tương ứng.
+        /// </summary>
         private static object[] GetParameters(IEnumerable<ParameterInfo> parameterInfos, object current, object attribute, IServiceProvider provider)
         {
             return parameterInfos.Select(GetParameter).ToArray();
