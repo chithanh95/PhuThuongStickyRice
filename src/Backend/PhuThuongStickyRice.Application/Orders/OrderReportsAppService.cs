@@ -73,6 +73,12 @@ namespace PhuThuongStickyRice.Application.Orders
         private const string ExcelDateTimeFormat = "dd/MM/yyyy HH:mm";
         private const string ExcelMoneyFormat = "#,##0";
 
+        /// <summary>
+        /// Dòng đầu tiên ghi dữ liệu trong các sheet Excel xuất báo cáo
+        /// (dòng 1 là header).
+        /// </summary>
+        private const int DataStartRowIndex = 2;
+
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly IVipPriorityAppService _vipPriority;
@@ -223,7 +229,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // (nền sáng) thay vì chữ trắng như header tím các sheet khác.
             ExcelWorksheetStyling.StyleHeader(sheet.Row(1), "#f5c518", whiteFont: false);
 
-            var rowIndex = 2;
+            var rowIndex = DataStartRowIndex;
             foreach (var order in items)
             {
                 WriteOrderRow(sheet, rowIndex, order, linesByOrder);
@@ -305,7 +311,7 @@ namespace PhuThuongStickyRice.Application.Orders
             WriteHeaders(summary, sumHeaders);
             ExcelWorksheetStyling.StyleHeader(summary.Row(1));
 
-            var rowIndex = 2;
+            var rowIndex = DataStartRowIndex;
             foreach (var dailyStat in daily)
             {
                 summary.Cell(rowIndex, 1).Value = dailyStat.Date;
@@ -360,7 +366,7 @@ namespace PhuThuongStickyRice.Application.Orders
             WriteHeaders(sheet, headers);
             ExcelWorksheetStyling.StyleHeader(sheet.Row(1));
 
-            var rowIndex = 2;
+            var rowIndex = DataStartRowIndex;
             foreach (var order in details)
             {
                 var itemsText = FormatLines(

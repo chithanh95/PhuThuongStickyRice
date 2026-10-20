@@ -58,6 +58,12 @@ namespace PhuThuongStickyRice.Application.Customer
         /// </summary>
         private const int InClauseBatchSize = 1000;
 
+        /// <summary>
+        /// Dòng đầu tiên ghi dữ liệu trong sheet Excel xuất khách hàng
+        /// (dòng 1 là header).
+        /// </summary>
+        private const int DataStartRowIndex = 2;
+
         private readonly Volo.Abp.Domain.Repositories.IRepository<CustomerTag, Guid> _tags;
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -224,7 +230,7 @@ namespace PhuThuongStickyRice.Application.Customer
             // riêng sheet này KHÔNG căn giữa cột vì cột ghi chú dài (40 ký tự).
             ExcelWorksheetStyling.StyleHeader(worksheet.Row(1), center: false);
 
-            var rowIndex = 2;
+            var rowIndex = DataStartRowIndex;
             foreach (var row in rows)
             {
                 worksheet.Cell(rowIndex, 1).Value = row.CustomerName;

@@ -1550,11 +1550,9 @@ namespace PhuThuongStickyRice.Application.Orders
             // mã chưa dùng thật (RevokeSpinPrizeAsync tự bỏ qua UsedCount>0).
             await _discounts.RevokeSpinPrizeAsync(order.SpinPrizeCode);
 
-            if (order.PaymentMethod == PaymentMethod.Wallet
-                && order.PaymentStatus == PaymentStatus.Paid)
-            {
-                await _wallets.RefundAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
-            }
+            // Item 140: đơn thanh toán ví đã trừ tiền thì hoàn lại khi hủy
+            // (điều kiện tập trung ở helper dùng chung với luồng khách tự hủy).
+            await RefundWalletIfPaidAsync(order);
         }
 
         /// <summary>
@@ -2011,16 +2009,27 @@ namespace PhuThuongStickyRice.Application.Orders
             await RecordStatusChangeAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled);
 
             // Item 140: wallet-paid orders are credited back on cancel.
-            if (order.PaymentMethod == PaymentMethod.Wallet
-                && order.PaymentStatus == PaymentStatus.Paid)
-            {
-                await _wallets.RefundAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
-            }
+            await RefundWalletIfPaidAsync(order);
 
             // Wave 6c (item 33): internal note never leaves on public DTOs.
             var dto = _objectMapper.Map<Order, OrderDto>(order);
             dto.AdminNote = null;
             return dto;
+        }
+
+        /// <summary>
+        /// Item 140: hoàn tiền về ví khi đơn bị khách hủy mà đơn đã thanh
+        /// toán bằng ví (<c>Wallet</c> + <c>Paid</c>). Đơn chưa trừ ví thì
+        /// không làm gì — điều kiện kiểm tra tập trung 1 chỗ để 2 luồng hủy
+        /// (khách tự hủy, admin hủy) dùng chung.
+        /// </summary>
+        private async Task RefundWalletIfPaidAsync(Order order)
+        {
+            if (order.PaymentMethod == PaymentMethod.Wallet
+                && order.PaymentStatus == PaymentStatus.Paid)
+            {
+                await _wallets.RefundAsync(order.CustomerPhone, order.TotalAmount.Amount, order.OrderNumber);
+            }
         }
 
         /// <summary>

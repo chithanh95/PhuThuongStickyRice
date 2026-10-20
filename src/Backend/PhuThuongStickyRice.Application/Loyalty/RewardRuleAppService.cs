@@ -343,18 +343,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// </summary>
         /// <param name="phone">SĐT thô.</param>
         /// <returns>SĐT đã chuẩn hóa.</returns>
-        private static string NormalizePhone(string phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-            {
-                return phone;
-            }
-
-            var digits = new string(phone.Where(char.IsDigit).ToArray());
-            // Chuỗi toàn chữ số nên so sánh bằng Ordinal: đúng + nhanh, không
-            // phụ thuộc culture (so sánh mặc định là culture-sensitive).
-            // CA1845: Concat trên Span thay cho Substring — không cấp phát chuỗi trung gian.
-            return digits.StartsWith("84", StringComparison.Ordinal) && digits.Length == 11 ? string.Concat("0".AsSpan(), digits.AsSpan(2)) : digits;
-        }
+        // codequality-team 2026-10-20 Agent2-CleanCode: gom logic về
+        // <see cref="PhoneNumber.NormalizeToLocalDigits"/> — giữ nguyên ngữ
+        // nghĩa cũ (input null/trống trả nguyên input cho caller kiểm tra).
+        private static string NormalizePhone(string phone) =>
+            string.IsNullOrWhiteSpace(phone) ? phone : PhoneNumber.NormalizeToLocalDigits(phone);
     }
 }

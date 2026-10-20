@@ -23,6 +23,17 @@ namespace PhuThuongStickyRice.Application.Common
         public const int TailDigitCount = 9;
 
         /// <summary>
+        /// Mã quốc gia Việt Nam trong SĐT dạng quốc tế ("+84...").
+        /// </summary>
+        public const string VietnamCountryCode = "84";
+
+        /// <summary>
+        /// Tổng số chữ số của SĐT di động VN dạng quốc tế: mã quốc gia
+        /// "84" + 9 số thuê bao.
+        /// </summary>
+        public const int InternationalMobileDigitCount = 11;
+
+        /// <summary>
         /// Lấy chuỗi chỉ gồm chữ số từ SĐT: bỏ dấu cách, gạch ngang, dấu chấm,
         /// dấu "+" (mã vùng +84...) — null hoặc rỗng trả về chuỗi rỗng.
         /// </summary>
@@ -30,6 +41,35 @@ namespace PhuThuongStickyRice.Application.Common
         /// <returns>Chuỗi chữ số, rỗng nếu đầu vào null/trống.</returns>
         public static string DigitsOnly(string? phone) =>
             new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+
+        /// <summary>
+        /// Chuẩn hóa SĐT về dạng nội địa 10 số để lưu/khớp với dữ liệu nội bộ:
+        /// tách chữ số, rồi chuyển "84"+9 số thuê bao → "0"+9 số
+        /// ("+84912345678" → "0912345678"). Input null/trống → chuỗi rỗng.
+        /// Gom 2 bản copy-paste trước đây ở BlacklistAppService và
+        /// RewardRuleAppService về 1 chỗ để sửa 1 lần là áp dụng khắp nơi.
+        /// </summary>
+        /// <param name="phone">SĐT đầu vào, có thể null.</param>
+        /// <returns>SĐT nội địa chỉ gồm chữ số; rỗng nếu đầu vào null/trống.</returns>
+        public static string NormalizeToLocalDigits(string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                return string.Empty;
+            }
+
+            var digits = new string(phone.Where(char.IsDigit).ToArray());
+            // Chuỗi toàn chữ số nên so sánh bằng Ordinal: đúng + nhanh, không
+            // phụ thuộc culture (so sánh mặc định là culture-sensitive).
+            // CA1845: span-based Concat thay cho Substring — không cấp phát chuỗi trung gian.
+            if (digits.StartsWith(VietnamCountryCode, StringComparison.Ordinal)
+                && digits.Length == InternationalMobileDigitCount)
+            {
+                digits = string.Concat("0".AsSpan(), digits.AsSpan(VietnamCountryCode.Length));
+            }
+
+            return digits;
+        }
 
         /// <summary>
         /// So khớp 2 SĐT theo kiểu "khoan dung": chỉ giữ lại chữ số rồi so

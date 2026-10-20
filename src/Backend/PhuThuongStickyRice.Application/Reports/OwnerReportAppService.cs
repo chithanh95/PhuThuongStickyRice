@@ -60,6 +60,8 @@ namespace PhuThuongStickyRice.Application.Reports
         private const int TopProductsCount = 5;
         // Địa chỉ gửi của báo cáo qua pipeline EmailMessage.
         private const string ReportSenderAddress = "no-reply@phuthuong.vn";
+        // Độ dài đường kẻ "=" phân cách tiêu đề báo cáo text gửi chủ quán.
+        private const int SeparatorLength = 50;
 
         /// <summary>
         /// Background worker gọi để gửi báo cáo cho chủ quán. Nếu chưa cấu
@@ -143,7 +145,7 @@ namespace PhuThuongStickyRice.Application.Reports
         {
             var sb = new StringBuilder();
             sb.AppendLine(VietnameseCulture.Value, $"BÁO CÁO DOANH THU {periodLabel.ToUpperInvariant()} — XÔI PHÚ THƯỢNG");
-            sb.AppendLine(new string('=', 50));
+            sb.AppendLine(new string('=', SeparatorLength));
             sb.AppendLine(VietnameseCulture.Value, $"Tổng đơn hàng: {stats.TotalOrders}");
             sb.AppendLine(VietnameseCulture.Value, $"Doanh thu: {stats.TotalRevenue:N0} ₫ (không tính đơn đã hủy)");
             sb.AppendLine(VietnameseCulture.Value, $"Món đã bán: {stats.TotalProductsSold}");

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Security;
 
 namespace PhuThuongStickyRice.Application.Security
@@ -155,26 +156,10 @@ namespace PhuThuongStickyRice.Application.Security
         /// <returns>Chuỗi chữ số chuẩn hóa; rỗng nếu không có số nào.</returns>
         // [codequality-practices 2026-10-20] string?: input từ user/API có thể
         // null — IsNullOrWhiteSpace ở dưới đã xử lý, trả string.Empty.
-        public static string NormalizePhone(string? phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-            {
-                return string.Empty;
-            }
-
-            var digits = new string(phone.Where(char.IsDigit).ToArray());
-            // So sánh lập trình trên chuỗi chữ số: dùng Ordinal (nhanh hơn,
-            // không phụ thuộc culture) thay vì overload mặc định culture-sensitive.
-            // "84" là mã quốc gia Việt Nam; 11 chữ số = 84 + 9 số thuê bao
-            // → đổi về đầu số 0 để khớp định dạng SĐT nội địa.
-            if (digits.StartsWith("84", StringComparison.Ordinal) && digits.Length == 11)
-            {
-
-                // CA1845: span-based Concat thay cho Substring — không cấp phát chuỗi trung gian.
-                digits = string.Concat("0".AsSpan(), digits.AsSpan(2));
-            }
-
-            return digits;
-        }
+        // codequality-team 2026-10-20 Agent2-CleanCode: ủy thác cho
+        // <see cref="PhoneNumber.NormalizeToLocalDigits"/> — trước đây là
+        // bản copy-paste trùng với RewardRuleAppService.
+        public static string NormalizePhone(string? phone) =>
+            PhoneNumber.NormalizeToLocalDigits(phone);
     }
 }
