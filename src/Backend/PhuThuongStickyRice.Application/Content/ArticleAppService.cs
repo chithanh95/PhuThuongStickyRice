@@ -58,6 +58,10 @@ namespace PhuThuongStickyRice.Application.Content
         /// </summary>
         private const int BodyExcerptLength = 220;
 
+        // [codequality-smell] Magic number: số bài viết tối đa 1 lần lấy —
+        // đặt hằng số có tên để thay đổi 1 chỗ.
+        private const int MaxListRows = 200;
+
         /// <summary>
         /// Khởi tạo service quản lý bài viết.
         /// </summary>
@@ -88,7 +92,7 @@ namespace PhuThuongStickyRice.Application.Content
             // hiển thị (Truncate 220). Form sửa lấy full Body qua GetByIdAsync.
             var queryable = await _articles.GetQueryableAsync();
             var items = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.PublishedAt).Take(200)
+                queryable.OrderByDescending(x => x.PublishedAt).Take(MaxListRows)
                     .Select(x => new ArticleDto
                     {
                         Id = x.Id,

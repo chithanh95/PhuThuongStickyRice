@@ -86,6 +86,10 @@ namespace PhuThuongStickyRice.Application.Catalog
             return await _catalogCache.GetOrAddAsync("toppings:active", QueryActiveAsync);
         }
 
+        /// <summary>
+        /// Truy vấn DB lấy topping đang bán (bản chưa qua cache) —
+        /// shop dùng danh sách này để khách chọn thêm topping vào món.
+        /// </summary>
         private async Task<List<ToppingDto>> QueryActiveAsync()
         {
             var queryable = await _toppings.GetQueryableAsync();
@@ -183,6 +187,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             _catalogCache.Invalidate();
         }
 
+        /// <summary>Chuyển entity <c>Topping</c> sang DTO trả về cho client.</summary>
         private static ToppingDto MapToDto(Topping entity)
         {
             return new ToppingDto

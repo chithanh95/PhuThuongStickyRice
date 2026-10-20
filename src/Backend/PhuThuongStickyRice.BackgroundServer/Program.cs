@@ -44,8 +44,12 @@ namespace PhuThuongStickyRice.BackgroundServer
             })
             .ConfigureServices((hostContext, services) =>
             {
-                var serviceProvider = services.BuildServiceProvider();
-                var configuration = serviceProvider.GetService<IConfiguration>();
+                // ASP0000: không gọi services.BuildServiceProvider() trong
+                // ConfigureServices — tạo thêm 1 bản copy singleton (IConfiguration,
+                // options...) ngoài container chính của host. Dùng trực tiếp
+                // hostContext.Configuration (cùng instance IConfiguration mà
+                // host đăng ký), hành vi đọc config giữ nguyên.
+                var configuration = hostContext.Configuration;
 
                 var appSettings = new AppSettings();
                 configuration.Bind(appSettings);

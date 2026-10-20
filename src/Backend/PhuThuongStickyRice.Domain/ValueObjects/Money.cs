@@ -20,6 +20,11 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
         {
         }
 
+        /// <summary>
+        /// Dựng Money trực tiếp (không validate) — dùng nội bộ khi dữ liệu
+        /// đã qua kiểm tra ở <see cref="Of"/>. Code mới nên dùng
+        /// <see cref="Of"/> để được validate.
+        /// </summary>
         public Money(decimal amount, string currency)
         {
             Amount = amount;
@@ -65,6 +70,7 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
             yield return Currency;
         }
 
+        /// <summary>Hiển thị dạng "50000 VND" — dùng ở log và nhật ký thay đổi.</summary>
         public override string ToString()
         {
             return $"{Amount} {Currency}";

@@ -40,40 +40,53 @@ namespace PhuThuongStickyRice.Application.Products
         /// </summary>
         Task<ProductDto> GetPublicAsync(Guid id);
 
+        /// <summary>
+        /// Admin: tạo món mới (tên, mã, giá bán, giá vốn, ảnh, danh mục...).
+        /// Cần quyền products.edit; ghi nhật ký hoạt động admin.
+        /// </summary>
         Task<ProductDto> CreateAsync(CreateUpdateProductDto input);
 
+        /// <summary>
+        /// Admin: cập nhật món (giá bán/giá KM, trạng thái, khung giờ bán,
+        /// ảnh, chi nhánh...). Mỗi field thay đổi được ghi vào nhật ký
+        /// thay đổi (item 148). Cần quyền products.edit.
+        /// </summary>
         Task<ProductDto> UpdateAsync(Guid id, CreateUpdateProductDto input);
 
+        /// <summary>
+        /// Admin: xóa món khỏi catalog. Cần quyền products.delete; ghi nhật
+        /// ký hoạt động admin.
+        /// </summary>
         Task DeleteAsync(Guid id);
 
         /// <summary>
-        /// One-click sold-out toggle: Active -> Inactive -> Active.
-        /// Discontinued products cannot be toggled.
+        /// Bật/tắt nhanh trạng thái hết hàng: Đang bán -> Hết hàng -> Đang bán.
+        /// Món đã "Ngừng bán" không được bật/tắt. Cần quyền products.edit.
         /// </summary>
         Task<ProductDto> ToggleAvailabilityAsync(Guid id);
 
         /// <summary>
-        /// Item 146: saves the manual display order (drag &amp; drop on
-        /// /products). The ids are in display order; each product gets
-        /// SortOrder = its index.
+        /// Item 146: lưu thứ tự hiển thị thủ công (kéo-thả ở trang /products).
+        /// Danh sách Id đã theo đúng thứ tự hiển thị; mỗi món nhận
+        /// SortOrder = vị trí (index) của nó trong danh sách. Cần quyền products.edit.
         /// </summary>
         Task SaveDisplayOrderAsync(List<Guid> productIds);
 
         /// <summary>
-        /// Item 148: change history of a product ("ai sửa gì, khi nào"),
-        /// newest first. Admin-only.
+        /// Item 148: lịch sử thay đổi của món ("ai sửa gì, khi nào"),
+        /// mới nhất lên trước. Chỉ admin.
         /// </summary>
         Task<List<ProductChangeLogDto>> GetChangeLogAsync(Guid productId);
 
         /// <summary>
-        /// Item 165: daily-limit status of limited products for the public
-        /// shop ("Còn N suất"). Public, no auth.
+        /// Item 165: trạng thái giới hạn suất/ngày của món cho shop public
+        /// ("Còn N suất"). Public, không cần đăng nhập.
         /// </summary>
         Task<List<ProductDailyRemainingDto>> GetDailyRemainingAsync();
 
         /// <summary>
-        /// Wave 6b (item 26): public per-product rating aggregates from
-        /// non-hidden order reviews. Products without reviews are omitted.
+        /// Wave 6b (item 26): tổng hợp đánh giá từng món cho kênh public từ
+        /// review đơn hàng không bị ẩn. Món chưa có review bị bỏ qua.
         /// </summary>
         Task<List<ProductRatingDto>> GetProductRatingsAsync();
     }
@@ -121,6 +134,11 @@ namespace PhuThuongStickyRice.Application.Products
         private readonly IStaffActivityLogger _activityLogger;
         private readonly IMemoryCache _memoryCache;
 
+        /// <summary>
+        /// Khởi tạo service sản phẩm: repository món, domain event, cache
+        /// catalog (danh sách món/đánh giá/KM), cache memory (suất còn lại),
+        /// kiểm tra quyền và ghi nhật ký hoạt động admin.
+        /// </summary>
         public ProductAppService(
             IProductRepository products,
             IDomainEvents domainEvents,
@@ -197,6 +215,12 @@ namespace PhuThuongStickyRice.Application.Products
             return await _catalogCache.GetOrAddAsync(cacheKey, () => QueryListAsync(input));
         }
 
+        /// <summary>
+        /// Truy vấn danh sách món có phân trang từ DB (bản chưa qua cache):
+        /// sắp xếp theo thứ tự hiển thị thủ công rồi tên, áp bộ lọc
+        /// tìm kiếm/trạng thái/chi nhánh, đếm tổng và lấy đúng 1 trang,
+        /// gắn size option cho từng món.
+        /// </summary>
         private async Task<PagedResultDto<ProductDto>> QueryListAsync(GetProductsInput input)
         {
             var queryable = await _products.GetQueryableAsync();
@@ -522,9 +546,10 @@ namespace PhuThuongStickyRice.Application.Products
         }
 
         /// <summary>
-        /// Item 165: daily-limit status of limited products for the public
-        /// shop ("Còn N suất"). One grouped query over today's
-        /// non-cancelled orders; products without a DailyLimit are skipped.
+        /// Item 165: trạng thái giới hạn suất/ngày của món đang bán cho shop
+        /// public ("Còn N suất"). Dùng 1 query gom theo ngày hôm nay (giờ Việt
+        /// Nam) trên các đơn chưa hủy; món không có DailyLimit bị bỏ qua.
+        /// Kết quả cache 60 giây qua <see cref="GetDailyRemainingAsync"/>.
         /// </summary>
         public virtual async Task<List<ProductDailyRemainingDto>> GetDailyRemainingAsync()
         {
@@ -540,6 +565,12 @@ namespace PhuThuongStickyRice.Application.Products
             return result;
         }
 
+        /// <summary>
+        /// Tính "Còn N suất" hôm nay (bản chưa qua cache): lấy các món có
+        /// giới hạn suất/ngày đang bán, gom số đã bán hôm nay (đơn chưa hủy,
+        /// theo giờ Việt Nam) từ bảng đơn hàng; còn lại = giới hạn − đã bán
+        /// (không về âm).
+        /// </summary>
         private async Task<List<ProductDailyRemainingDto>> QueryDailyRemainingAsync()
         {
             var productQueryable = await _products.GetQueryableAsync();
@@ -655,6 +686,10 @@ namespace PhuThuongStickyRice.Application.Products
             }
         }
 
+        /// <summary>
+        /// Cắt chuỗi về độ dài tối đa (dùng cho snapshot nhật ký thay đổi —
+        /// mô tả món dài không cần lưu hết).
+        /// </summary>
         private static string Truncate(string value, int maxLength)
         {
             if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
@@ -667,16 +702,28 @@ namespace PhuThuongStickyRice.Application.Products
             return value[..maxLength];
         }
 
+        /// <summary>
+        /// Định dạng tiền VND cho nhật ký thay đổi (vd "50.000₫") —
+        /// thống nhất cách hiển thị giá trước/sau khi sửa.
+        /// </summary>
         private static string FormatMoney(decimal amount)
         {
             return amount.ToString("N0") + "₫";
         }
 
+        /// <summary>
+        /// Định dạng ngày dd/MM/yyyy cho nhật ký thay đổi — định dạng quen
+        /// thuộc với người Việt (khác định dạng mặc định en-US của máy chủ).
+        /// </summary>
         private static string FormatDate(DateTime? date)
         {
             return date?.ToString("dd/MM/yyyy");
         }
 
+        /// <summary>
+        /// Nhãn tiếng Việt của trạng thái món dùng trong nhật ký thay đổi
+        /// ("Đang bán"/"Hết hàng"/"Ngừng bán") — đọc lịch sử dễ hơn enum tiếng Anh.
+        /// </summary>
         private static string StatusLabel(ProductStatus status)
         {
             return status switch
@@ -688,6 +735,11 @@ namespace PhuThuongStickyRice.Application.Products
             };
         }
 
+        /// <summary>
+        /// Áp trạng thái mới lên entity món qua các hành vi domain
+        /// (Activate/Deactivate/Discontinue) thay vì gán trực tiếp — giữ
+        /// nguyên các quy tắc nội bộ của entity khi đổi trạng thái.
+        /// </summary>
         private static void ApplyStatus(Product product, ProductStatus status)
         {
             switch (status)
@@ -785,6 +837,11 @@ namespace PhuThuongStickyRice.Application.Products
         /// cached for 5 minutes like the public catalog.
         /// </summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        /// <summary>
+        /// Wave 6b (item 26): tổng hợp đánh giá từng món từ review đơn hàng
+        /// (chỉ review không bị ẩn) — điểm trung bình + số lượt đánh giá mỗi
+        /// món. Kết quả cache 5 phút để trang shop không query lại mỗi lần tải.
+        /// </summary>
         public virtual async Task<List<ProductRatingDto>> GetProductRatingsAsync()
         {
             return await _catalogCache.GetOrAddAsync(
@@ -792,6 +849,11 @@ namespace PhuThuongStickyRice.Application.Products
                 QueryProductRatingsAsync);
         }
 
+        /// <summary>
+        /// Truy vấn DB tính rating từng món (bản chưa qua cache): gom các
+        /// dòng review không bị ẩn theo ProductId, tính điểm trung bình và
+        /// số lượt đánh giá ngay trên SQL.
+        /// </summary>
         private async Task<List<ProductRatingDto>> QueryProductRatingsAsync()
         {
             var reviewQueryable = await _reviews.GetQueryableAsync();
@@ -808,6 +870,11 @@ namespace PhuThuongStickyRice.Application.Products
             return await _asyncExecuter.ToListAsync(query);
         }
 
+        /// <summary>
+        /// Tìm món theo Id; ném <see cref="ProductNotFoundException"/> khi
+        /// không tồn tại — gom 1 chỗ để các method sửa/xóa/bật-tắt báo lỗi
+        /// nhất quán (404 thân thiện) thay vì mỗi nơi 1 cách.
+        /// </summary>
         private async Task<Product> FindOrThrowAsync(Guid id)
         {
             var product = await _products.FindAsync(id);

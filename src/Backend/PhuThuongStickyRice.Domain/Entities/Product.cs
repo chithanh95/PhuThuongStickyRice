@@ -29,10 +29,13 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public ProductCode Code { get; private set; }
 
+        /// <summary>Tên món hiển thị cho khách (vd "Xôi gấc").</summary>
         public string Name { get; private set; }
 
+        /// <summary>Mô tả ngắn về món (nguyên liệu đặc trưng, khẩu vị) hiện ở card shop.</summary>
         public string Description { get; private set; }
 
+        /// <summary>Giá bán niêm yết của món (VND). Khi có PromoPrice thấp hơn thì card hiện giá KM.</summary>
         public Money Price { get; private set; }
 
         /// <summary>
@@ -91,6 +94,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         // shop tải chậm và JSON dài hơn cột cho phép (ImageUrlsJsonMaxLength).
         public const int MaxImageUrlsPerProduct = 10;
 
+        /// <summary>Trạng thái bán của món (Đang bán / Hết hàng / Ngừng bán) — shop chỉ hiện món Đang bán.</summary>
         public ProductStatus Status { get; private set; }
 
         /// <summary>

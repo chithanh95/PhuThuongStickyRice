@@ -164,7 +164,13 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
 
         private static Serilog.Events.LogEventLevel GetLogLevel(string context, LoggingOptions options)
         {
-            context = context.Replace("\"", string.Empty);
+            // context có thể null khi log event không mang property
+            // "SourceContext" (call site truyền null ở nhánh TryGetValue false) —
+            // dereference trực tiếp sẽ ném NullReferenceException ngay trong
+            // pipeline của Serilog. Coalesce về chuỗi rỗng: không key nào khớp
+            // (StartsWith trên chuỗi rỗng luôn false với key khác rỗng) nên
+            // rơi về level "Default" như thiết kế.
+            context = (context ?? string.Empty).Replace("\"", string.Empty);
             string level = "Default";
             var matches = options.LogLevel.Keys.Where(k => context.StartsWith(k, StringComparison.OrdinalIgnoreCase));
 

@@ -156,6 +156,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             }
         }
 
+        /// <summary>Chuyển entity <c>ProductSizeOption</c> sang DTO trả về cho client.</summary>
         private static ProductSizeOptionDto MapToDto(ProductSizeOption entity)
         {
             return new ProductSizeOptionDto

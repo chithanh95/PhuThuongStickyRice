@@ -64,6 +64,13 @@ namespace PhuThuongStickyRice.Application.Security
         /// </summary>
         private static readonly TimeSpan PendingSecretTtl = TimeSpan.FromMinutes(10);
 
+        // [codequality-smell] Magic number: tham số TOTP theo chuẩn otpauth://
+        // (digits=6, period=30s) và độ dài khóa bí mật — đặt hằng số có tên
+        // để thay đổi 1 chỗ, tránh URI QR và VerifyTotp lệch nhau.
+        private const int TotpDigits = 6;
+        private const int TotpPeriodSeconds = 30;
+        private const int TotpSecretKeyBytes = 20;
+
         private readonly IRepository<User, Guid> _users;
         private readonly IDistributedCache<TwoFactorPendingSecretCacheItem> _pendingSecrets;
 
@@ -94,7 +101,7 @@ namespace PhuThuongStickyRice.Application.Security
                 return new TwoFactorSetupDto { IsEnabled = true };
             }
 
-            var secret = Base32Encoding.ToString(KeyGeneration.GenerateRandomKey(20));
+            var secret = Base32Encoding.ToString(KeyGeneration.GenerateRandomKey(TotpSecretKeyBytes));
             await _pendingSecrets.SetAsync(
                 PendingKey(user.Id),
                 new TwoFactorPendingSecretCacheItem { Secret = secret },
@@ -206,7 +213,7 @@ namespace PhuThuongStickyRice.Application.Security
         private static string BuildOtpAuthUri(string accountName, string base32Secret)
         {
             var label = Uri.EscapeDataString($"{Issuer}:{accountName}");
-            return $"otpauth://totp/{label}?secret={base32Secret}&issuer={Uri.EscapeDataString(Issuer)}&digits=6&period=30";
+            return $"otpauth://totp/{label}?secret={base32Secret}&issuer={Uri.EscapeDataString(Issuer)}&digits={TotpDigits}&period={TotpPeriodSeconds}";
         }
 
         /// <summary>Lấy user admin đang đăng nhập; ném lỗi nếu chưa xác định được.</summary>

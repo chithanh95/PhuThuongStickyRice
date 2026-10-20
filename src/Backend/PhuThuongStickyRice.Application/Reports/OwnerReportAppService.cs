@@ -146,7 +146,9 @@ namespace PhuThuongStickyRice.Application.Reports
             }
 
             sb.AppendLine();
-            sb.AppendLine("Top 5 món bán chạy:");
+            // [codequality-smell] Không hardcode số 5 — dùng chung hằng
+            // TopProductsCount với câu query ở SendAsync.
+            sb.AppendLine($"Top {TopProductsCount} món bán chạy:");
             var rank = 0;
             foreach (var product in topProducts ?? Enumerable.Empty<Orders.DTOs.TopProductDto>())
             {

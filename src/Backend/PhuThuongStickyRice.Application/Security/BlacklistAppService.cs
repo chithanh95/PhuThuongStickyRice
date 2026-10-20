@@ -39,6 +39,10 @@ namespace PhuThuongStickyRice.Application.Security
         /// <summary>Thực thi query async trên IQueryable (ABP).</summary>
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        // [codequality-smell] Magic number: số dòng danh sách chặn tối đa
+        // trả về 1 lần — đặt hằng số có tên để thay đổi 1 chỗ.
+        private const int MaxListRows = 500;
+
         /// <summary>Khởi tạo service quản lý danh sách chặn SĐT.</summary>
         /// <param name="blacklist">Repository bảng BlacklistedPhone.</param>
         /// <param name="asyncExecuter">Executor chạy query LINQ async.</param>
@@ -57,10 +61,10 @@ namespace PhuThuongStickyRice.Application.Security
         public virtual async Task<List<BlacklistedPhoneDto>> GetListAsync()
         {
             var queryable = await _blacklist.GetQueryableAsync();
-            // perf-hunt 2026-10-19: Take(500) server-side — danh sách chặn
+            // perf-hunt 2026-10-19: Take(MaxListRows) server-side — danh sách chặn
             // tăng dần theo thời gian, không bao giờ materialize toàn bộ bảng.
             var items = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.CreatedAt).Take(500));
+                queryable.OrderByDescending(x => x.CreatedAt).Take(MaxListRows));
             return items.Select(x => new BlacklistedPhoneDto
             {
                 Id = x.Id,

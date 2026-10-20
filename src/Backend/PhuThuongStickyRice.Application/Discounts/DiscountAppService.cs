@@ -488,19 +488,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         }
 
         /// <summary>
-        /// Lúc tạo đơn: validate mã, tính số tiền được giảm và tăng bộ đếm
-        /// lượt dùng. Ném <see cref="Domain.Exceptions.DomainException"/> khi
-        /// mã không áp được.
-        /// </summary>
-        /// <param name="code">Mã giảm giá (khách tự nhập, không gắn SĐT).</param>
-        /// <param name="subtotal">Tổng tiền hàng trước khi giảm.</param>
-        /// <returns>Số tiền được giảm.</returns>
-        /// <summary>
-        /// Áp mã giảm giá vào tổng tiền (bản rút gọn không SĐT) — chuyển tiếp
-        /// sang bản đầy đủ với customerPhone = null. Dùng cho khách vãng lai;
+        /// Áp mã giảm giá vào tổng tiền (bản rút gọn không SĐT): validate mã,
+        /// tính số tiền được giảm và tăng bộ đếm lượt dùng. Chuyển tiếp sang
+        /// bản đầy đủ với customerPhone = null — dùng cho khách vãng lai;
         /// mã spin/voucher gắn 1 SĐT sẽ bị từ chối ở bước validate.
+        /// Ném <see cref="Domain.Exceptions.DomainException"/> khi mã không áp được.
         /// </summary>
-        /// <param name="code">Mã giảm giá đã chuẩn hóa.</param>
+        /// <param name="code">Mã giảm giá đã chuẩn hóa (khách tự nhập, không gắn SĐT).</param>
         /// <param name="subtotal">Tổng tiền hàng trước khi giảm.</param>
         /// <returns>Số tiền được giảm.</returns>
         public virtual async Task<decimal> ApplyAsync(string code, decimal subtotal)
@@ -1144,6 +1138,14 @@ namespace PhuThuongStickyRice.Application.Discounts
             // operator thay Substring(0, N) — ToString("N") dài 32 ký tự ≥ 6.
             => prefix + "-" + Guid.NewGuid().ToString("N")[..GeneratedCodeRandomPartLength].ToUpperInvariant();
 
+        /// <summary>
+        /// Sinh 1 mã duy nhất theo tiền tố: thử tối đa <see cref="GeneratedCodeMaxAttempts"/>
+        /// lần sinh ngẫu nhiên + kiểm tra trùng DB; hết lần thử thì fallback
+        /// sang hậu tố GUID. Bản đơn (1 mã/lần gọi); bản batch dùng
+        /// <see cref="GenerateUniqueCodesAsync"/> để gom bước kiểm tra trùng.
+        /// </summary>
+        /// <param name="prefix">Tiền tố mã (đã chuẩn hóa in hoa).</param>
+        /// <returns>Mã giảm giá chưa từng tồn tại trong DB.</returns>
         private async Task<string> GenerateUniqueCodeAsync(string prefix)
         {
             var queryable = await _discounts.GetQueryableAsync();

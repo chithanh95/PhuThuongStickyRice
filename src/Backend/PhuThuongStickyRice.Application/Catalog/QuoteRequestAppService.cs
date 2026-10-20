@@ -257,6 +257,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             return MapReminderToDto(entity);
         }
 
+        /// <summary>Chuyển entity <c>CungReminder</c> (lịch nhắc cung giờ) sang DTO.</summary>
         private static CungReminderDto MapReminderToDto(CungReminder entity)
         {
             return new CungReminderDto
@@ -289,6 +290,7 @@ namespace PhuThuongStickyRice.Application.Catalog
         // không bao giờ materialize toàn bảng, chỉ lấy N mới nhất.
         private const int MaxReminderRows = 200;
 
+        /// <summary>Chuyển entity <c>QuoteRequest</c> (yêu cầu báo giá) sang DTO.</summary>
         private static QuoteRequestDto MapToDto(QuoteRequest entity)
         {
             return new QuoteRequestDto

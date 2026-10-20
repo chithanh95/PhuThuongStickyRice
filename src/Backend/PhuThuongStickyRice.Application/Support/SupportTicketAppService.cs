@@ -38,6 +38,10 @@ namespace PhuThuongStickyRice.Application.Support
         private readonly IRepository<SupportTicket, Guid> _tickets;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        // [codequality-smell] Magic number: số ticket tối đa trả về 1 lần —
+        // đặt hằng số có tên để thay đổi 1 chỗ.
+        private const int MaxListRows = 200;
+
         /// <summary>Khởi tạo service quản lý ticket hỗ trợ.</summary>
         public SupportTicketAppService(
             IRepository<SupportTicket, Guid> tickets,
@@ -91,7 +95,7 @@ namespace PhuThuongStickyRice.Application.Support
                 query = query.Where(x => x.Status == parsed);
             }
 
-            var items = await _asyncExecuter.ToListAsync(query.Take(200));
+            var items = await _asyncExecuter.ToListAsync(query.Take(MaxListRows));
             return items.Select(MapToDto).ToList();
         }
 

@@ -28,6 +28,7 @@ namespace PhuThuongStickyRice.Domain.Entities
     {
         public const int NameMaxLength = 200;
 
+        /// <summary>Tên khuyến mãi hiển thị ở trang admin và banner shop.</summary>
         public string Name { get; set; }
 
         /// <summary>Phần trăm giảm trên tổng tiền hàng, vd 10 = giảm 10%.</summary>
@@ -42,6 +43,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Bit flags của <see cref="PromotionDay"/> — những ngày được áp dụng.</summary>
         public int DaysOfWeekFlags { get; set; } = (int)PromotionDay.All;
 
+        /// <summary>Bật/tắt khuyến mãi — tắt thì checkout không còn áp KM này.</summary>
         public bool IsActive { get; set; } = true;
 
         /// <summary>

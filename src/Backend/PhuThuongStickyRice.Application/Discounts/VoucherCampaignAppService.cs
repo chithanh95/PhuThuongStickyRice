@@ -158,8 +158,8 @@ namespace PhuThuongStickyRice.Application.Discounts
             var prefix = SanitizeCodePrefix(input.Prefix);
 
             var expiresAt = DateTime.UtcNow.AddDays(input.ValidDays);
-            // perf-hunt 2026-10-19: generate all unique codes with a single
-            // batched existence check instead of one DB round-trip per code.
+            // perf-hunt 2026-10-19: sinh toàn bộ mã duy nhất với 1 lần kiểm
+            // tra trùng gộp (batched) thay vì 1 round-trip DB cho mỗi mã.
             var codes = await GenerateUniqueCodesAsync(prefix, phones.Count);
             var result = new List<GeneratedVoucherDto>();
 
