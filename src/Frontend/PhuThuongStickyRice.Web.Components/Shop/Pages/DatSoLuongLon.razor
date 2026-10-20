@@ -421,12 +421,6 @@ else
     }
 
     /// <summary>
-    /// Gửi yêu cầu báo giá số lượng lớn: validate tên + SĐT, ghép tên món và loại
-    /// sự kiện vào ghi chú, gọi API CreateQuoteAsync. Khi thành công: tính cọc 30%
-    /// trên tổng đã chiết khấu, sinh mã cọc "COC" + SĐT (dễ tra soát), tải thông
-    /// tin chuyển khoản và hiện QR VietQR.
-    /// </summary>
-    /// <summary>
     /// Kiểm tra hợp lệ họ tên + SĐT đơn số lượng lớn, gán _bulkError nếu có lỗi.
     /// </summary>
     /// <returns>true khi hợp lệ.</returns>

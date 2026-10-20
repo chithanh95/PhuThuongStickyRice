@@ -217,17 +217,17 @@ namespace PhuThuongStickyRice.Application.Customer
             headerRow.Style.Font.FontColor = XLColor.White;
 
             var rowIndex = 2;
-            foreach (var r in rows)
+            foreach (var row in rows)
             {
-                worksheet.Cell(rowIndex, 1).Value = r.CustomerName;
-                worksheet.Cell(rowIndex, 2).Value = r.CustomerPhone;
-                worksheet.Cell(rowIndex, 3).Value = r.OrderCount;
-                worksheet.Cell(rowIndex, 4).Value = r.TotalSpent;
+                worksheet.Cell(rowIndex, 1).Value = row.CustomerName;
+                worksheet.Cell(rowIndex, 2).Value = row.CustomerPhone;
+                worksheet.Cell(rowIndex, 3).Value = row.OrderCount;
+                worksheet.Cell(rowIndex, 4).Value = row.TotalSpent;
                 worksheet.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
                 // Lần mua cuối lưu ở DB là UTC — cộng offset giờ VN để hiển thị đúng giờ địa phương trong Excel.
-                worksheet.Cell(rowIndex, 5).Value = r.LastOrderAt.AddHours(VietnamTime.UtcOffsetHours);
+                worksheet.Cell(rowIndex, 5).Value = row.LastOrderAt.AddHours(VietnamTime.UtcOffsetHours);
                 worksheet.Cell(rowIndex, 5).Style.NumberFormat.Format = "dd/mm/yyyy hh:mm";
-                worksheet.Cell(rowIndex, 6).Value = string.Join(", ", r.Tags.Select(t => t.TagName));
+                worksheet.Cell(rowIndex, 6).Value = string.Join(", ", row.Tags.Select(t => t.TagName));
                 rowIndex++;
             }
 

@@ -4,8 +4,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 {
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>FeatureFlags</c> — cờ bật/tắt tính năng
+    /// (feature toggle), cho phép admin bật/tắt chức năng mà không cần
+    /// deploy lại code. Unique index Key: mỗi cờ chỉ tồn tại 1 bản ghi.
+    /// </summary>
     public class FeatureFlagConfiguration : IEntityTypeConfiguration<FeatureFlag>
     {
+        /// <summary>Khai báo tên bảng, độ dài cột và index tra cứu cờ theo Key.</summary>
         public void Configure(EntityTypeBuilder<FeatureFlag> builder)
         {
             builder.ToTable("FeatureFlags");
@@ -20,8 +26,13 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>Branches</c> — danh sách chi nhánh/cơ sở bán
+    /// hàng của quán (địa chỉ, SĐT, trạng thái hoạt động).
+    /// </summary>
     public class BranchConfiguration : IEntityTypeConfiguration<Branch>
     {
+        /// <summary>Khai báo tên bảng và độ dài các cột thông tin chi nhánh.</summary>
         public void Configure(EntityTypeBuilder<Branch> builder)
         {
             builder.ToTable("Branches");
@@ -34,8 +45,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>WebhookEndpoints</c> — các URL đối tác đăng ký
+    /// nhận sự kiện (đơn mới, thanh toán...). Cột Secret dùng để ký chữ ký
+    /// xác thực payload, tránh endpoint giả mạo nhận sự kiện.
+    /// </summary>
     public class WebhookEndpointConfiguration : IEntityTypeConfiguration<WebhookEndpoint>
     {
+        /// <summary>Khai báo tên bảng và độ dài các cột cấu hình endpoint webhook.</summary>
         public void Configure(EntityTypeBuilder<WebhookEndpoint> builder)
         {
             builder.ToTable("WebhookEndpoints");
@@ -49,8 +66,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>WebhookDeliveries</c> — nhật ký từng lần đẩy
+    /// sự kiện tới endpoint (thành công/thất bại + thông báo lỗi). Index At:
+    /// tra cứu lịch sử gửi theo thời gian khi đối soát với đối tác.
+    /// </summary>
     public class WebhookDeliveryConfiguration : IEntityTypeConfiguration<WebhookDelivery>
     {
+        /// <summary>Khai báo tên bảng, độ dài cột và index tra cứu log theo thời gian.</summary>
         public void Configure(EntityTypeBuilder<WebhookDelivery> builder)
         {
             builder.ToTable("WebhookDeliveries");
@@ -66,8 +89,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>ShortLinks</c> — link rút gọn (mã ngắn ánh xạ
+    /// tới URL đích, dùng cho SMS/Zalo giới hạn ký tự). Unique index Code:
+    /// mã rút gọn không được trùng để điều hướng đúng đích.
+    /// </summary>
     public class ShortLinkConfiguration : IEntityTypeConfiguration<ShortLink>
     {
+        /// <summary>Khai báo tên bảng, độ dài cột và index tra cứu mã rút gọn.</summary>
         public void Configure(EntityTypeBuilder<ShortLink> builder)
         {
             builder.ToTable("ShortLinks");
@@ -80,8 +109,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>AddressBook</c> — sổ địa chỉ đã lưu của khách
+    /// (nhãn Nhà/Công ty...). Index Phone: lấy nhanh danh sách địa chỉ theo
+    /// SĐT khi khách đặt hàng, không phải nhập lại.
+    /// </summary>
     public class AddressBookConfiguration : IEntityTypeConfiguration<AddressBook>
     {
+        /// <summary>Khai báo tên bảng, độ dài cột và index tra cứu địa chỉ theo SĐT.</summary>
         public void Configure(EntityTypeBuilder<AddressBook> builder)
         {
             builder.ToTable("AddressBook");
@@ -94,8 +129,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>AppLogs</c> — nhật ký log ứng dụng lưu trong
+    /// DB (mức độ, nguồn, nội dung). Index At/Level: lọc log theo thời gian
+    /// và mức độ khi tra cứu sự cố.
+    /// </summary>
     public class AppLogConfiguration : IEntityTypeConfiguration<AppLog>
     {
+        /// <summary>Khai báo tên bảng, độ dài cột và index lọc log theo thời gian/mức độ.</summary>
         public void Configure(EntityTypeBuilder<AppLog> builder)
         {
             builder.ToTable("AppLogs");

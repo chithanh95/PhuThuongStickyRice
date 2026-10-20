@@ -867,10 +867,6 @@ namespace PhuThuongStickyRice.Application.Discounts
             => string.IsNullOrWhiteSpace(codePrefix) ? null : codePrefix.Trim().ToUpperInvariant();
 
         /// <summary>
-        /// True khi SĐT đã có mã còn dùng được với tiền tố cho trước — chống
-        /// cấp trùng mã quay/sinh nhật cho cùng 1 khách.
-        /// </summary>
-        /// <summary>
         /// Internal: true khi SĐT còn ít nhất 1 mã dùng được với tiền tố cho
         /// trước (đang bật, còn hạn, còn lượt dùng). Chỉ SELECT 1 (AnyAsync)
         /// thay vì tải entity — dùng kiểm tra nhanh trước khi sinh mã mới.
@@ -1120,12 +1116,6 @@ namespace PhuThuongStickyRice.Application.Discounts
             return (true, "Áp dụng mã giảm giá thành công.");
         }
 
-        /// <summary>
-        /// Sinh mã dùng 1 lần duy nhất theo tiền tố (vd "THUONG-AB12CD") cho
-        /// vòng quay may mắn / quà sinh nhật.
-        /// </summary>
-        /// <param name="prefix">Tiền tố mã (đã chuẩn hóa in hoa).</param>
-        /// <returns>Mã chưa từng tồn tại trong DB.</returns>
         /// <summary>
         /// Sinh 1 mã ứng viên theo tiền tố (chưa kiểm tra trùng): tiền tố +
         /// phần ngẫu nhiên mật mã (<see cref="RandomNumberGenerator"/>),

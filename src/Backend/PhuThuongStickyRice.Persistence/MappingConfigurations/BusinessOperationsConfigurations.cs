@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 {
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>CheckIns</c> — lịch sử điểm danh nhận điểm
+    /// thưởng hàng ngày của khách. Unique index (Phone, Date): mỗi SĐT chỉ
+    /// điểm danh được 1 lần/ngày, chống ghi trùng khi khách bấm nhanh hoặc
+    /// API bị gọi lặp.
+    /// </summary>
     public class CheckInConfiguration : IEntityTypeConfiguration<CheckIn>
     {
+        /// <summary>Khai báo tên bảng, độ dài cột và index chống điểm danh trùng ngày.</summary>
         public void Configure(EntityTypeBuilder<CheckIn> builder)
         {
             builder.ToTable("CheckIns");
@@ -19,8 +26,15 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>CorporateClients</c> — khách hàng doanh nghiệp
+    /// đặt xôi theo lịch cố định (đặt cung giờ, giao vào ngày trong tuần).
+    /// Index Weekday: lọc nhanh danh sách khách cần giao theo thứ khi lập
+    /// lịch giao hàng.
+    /// </summary>
     public class CorporateClientConfiguration : IEntityTypeConfiguration<CorporateClient>
     {
+        /// <summary>Khai báo tên bảng, độ dài cột và index tra cứu theo ngày trong tuần.</summary>
         public void Configure(EntityTypeBuilder<CorporateClient> builder)
         {
             builder.ToTable("CorporateClients");
@@ -39,8 +53,15 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>CustomerPhotos</c> — ảnh do khách tải lên
+    /// (UGC) cho gallery cộng đồng. Chỉ ảnh có IsApproved = true mới hiện ở
+    /// gallery công khai; composite index bên dưới phục vụ đúng truy vấn này
+    /// (xem comment perf-hunt trong thân method).
+    /// </summary>
     public class CustomerPhotoConfiguration : IEntityTypeConfiguration<CustomerPhoto>
     {
+        /// <summary>Khai báo tên bảng, độ dài cột và composite index cho gallery đã duyệt.</summary>
         public void Configure(EntityTypeBuilder<CustomerPhoto> builder)
         {
             builder.ToTable("CustomerPhotos");
@@ -61,8 +82,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>WorkShifts</c> — ca làm việc của nhân viên
+    /// (giờ bắt đầu/kết thúc theo từng ngày). Index Date: tra cứu nhanh các
+    /// ca trong một ngày khi chấm công/lập lịch.
+    /// </summary>
     public class WorkShiftConfiguration : IEntityTypeConfiguration<WorkShift>
     {
+        /// <summary>Khai báo tên bảng, độ dài cột và index tra cứu theo ngày.</summary>
         public void Configure(EntityTypeBuilder<WorkShift> builder)
         {
             builder.ToTable("WorkShifts");
@@ -78,8 +105,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>MessageTemplates</c> — mẫu nội dung tin nhắn
+    /// gửi cho khách qua các kênh (Zalo/Telegram/Email/SMS), admin soạn sẵn
+    /// một lần rồi tái sử dụng khi gửi hàng loạt.
+    /// </summary>
     public class MessageTemplateConfiguration : IEntityTypeConfiguration<MessageTemplate>
     {
+        /// <summary>Khai báo tên bảng và độ dài các cột nội dung mẫu tin nhắn.</summary>
         public void Configure(EntityTypeBuilder<MessageTemplate> builder)
         {
             builder.ToTable("MessageTemplates");
@@ -93,8 +126,14 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>WalletAccounts</c> — tài khoản ví tiền của
+    /// khách (nạp tiền, trừ khi mua hàng, hoàn tiền). Unique index Phone:
+    /// mỗi SĐT chỉ có đúng 1 ví, tránh tạo trùng ví khi nạp tiền đồng thời.
+    /// </summary>
     public class WalletAccountConfiguration : IEntityTypeConfiguration<WalletAccount>
     {
+        /// <summary>Khai báo tên bảng, kiểu decimal cho số dư và các index tra cứu ví.</summary>
         public void Configure(EntityTypeBuilder<WalletAccount> builder)
         {
             builder.ToTable("WalletAccounts");
@@ -114,8 +153,15 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>WalletTransactions</c> — lịch sử biến động ví
+    /// (nạp, trừ khi mua, hoàn tiền...). Composite index (Phone, CreatedAt)
+    /// phục vụ tra cứu lịch sử theo SĐT (xem comment perf-hunt); unique index
+    /// IdempotencyKey là khóa chống hoàn tiền trùng (xem comment bug-hunt).
+    /// </summary>
     public class WalletTransactionConfiguration : IEntityTypeConfiguration<WalletTransaction>
     {
+        /// <summary>Khai báo tên bảng, kiểu decimal cho số tiền và các index chống trùng/tra cứu.</summary>
         public void Configure(EntityTypeBuilder<WalletTransaction> builder)
         {
             builder.ToTable("WalletTransactions");
@@ -145,8 +191,15 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
     }
 
+    /// <summary>
+    /// Cấu hình ánh xạ bảng <c>ShiftCloses</c> — biên bản chốt ca: đối soát
+    /// tiền COD thực tế thu được với số dự kiến cuối ngày/ca. Unique index
+    /// Date: mỗi ngày chỉ được chốt 1 lần, tránh chốt trùng làm lệch số
+    /// liệu đối soát.
+    /// </summary>
     public class ShiftCloseConfiguration : IEntityTypeConfiguration<ShiftClose>
     {
+        /// <summary>Khai báo tên bảng, kiểu decimal cho tiền COD và index chống chốt trùng ngày.</summary>
         public void Configure(EntityTypeBuilder<ShiftClose> builder)
         {
             builder.ToTable("ShiftCloses");

@@ -166,9 +166,9 @@ namespace PhuThuongStickyRice.Application.Reports
                 sb.AppendLine("🏆 Món bán chạy:");
                 // Thứ hạng món bán chạy (1 = bán chạy nhất tuần).
                 var rank = 1;
-                foreach (var p in report.TopProducts)
+                foreach (var topProduct in report.TopProducts)
                 {
-                    sb.AppendLine($"{rank}. {p.ProductName} — {p.Quantity:N0} suất");
+                    sb.AppendLine($"{rank}. {topProduct.ProductName} — {topProduct.Quantity:N0} suất");
                     rank++;
                 }
             }

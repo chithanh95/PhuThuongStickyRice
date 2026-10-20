@@ -151,15 +151,15 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                     c.FooterBackgroundUrl,
                     c.PopupImageUrl
                 }));
-            foreach (var c in contents)
+            foreach (var content in contents)
             {
-                AddUrl(referenced, c.HeroImageUrl);
-                AddUrl(referenced, c.BannerImageUrl);
-                AddUrl(referenced, c.MenuImage1Url);
-                AddUrl(referenced, c.MenuImage2Url);
-                AddUrl(referenced, c.MenuImage3Url);
-                AddUrl(referenced, c.FooterBackgroundUrl);
-                AddUrl(referenced, c.PopupImageUrl);
+                AddUrl(referenced, content.HeroImageUrl);
+                AddUrl(referenced, content.BannerImageUrl);
+                AddUrl(referenced, content.MenuImage1Url);
+                AddUrl(referenced, content.MenuImage2Url);
+                AddUrl(referenced, content.MenuImage3Url);
+                AddUrl(referenced, content.FooterBackgroundUrl);
+                AddUrl(referenced, content.PopupImageUrl);
             }
 
             var articleRepo = provider.GetRequiredService<IRepository<Article, Guid>>();

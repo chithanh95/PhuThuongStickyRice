@@ -308,14 +308,14 @@ namespace PhuThuongStickyRice.Application.Admin
             List<NotificationDto> notifications,
             List<OrderReviewDto> badReviews)
         {
-            foreach (var r in badReviews ?? new List<OrderReviewDto>())
+            foreach (var review in badReviews ?? new List<OrderReviewDto>())
             {
                 notifications.Add(new NotificationDto
                 {
-                    Id = $"review-{r.Id}",
+                    Id = $"review-{review.Id}",
                     Kind = "warning",
-                    Title = $"Đánh giá {r.Rating} sao từ {r.CustomerPhone}",
-                    Detail = string.IsNullOrWhiteSpace(r.Comment) ? r.OrderNumber : r.Comment,
+                    Title = $"Đánh giá {review.Rating} sao từ {review.CustomerPhone}",
+                    Detail = string.IsNullOrWhiteSpace(review.Comment) ? review.OrderNumber : review.Comment,
                     Link = "/admin/danh-gia"
                 });
             }

@@ -727,33 +727,52 @@
     /// server trả về (đã chuẩn hóa) để hiển thị, tránh lệch giữa client/server.
     /// Quán sẽ tự điền khẩu vị này vào ghi chú mỗi lần khách đặt hàng.
     /// </summary>
-    private async Task SaveTasteAsync()
+    /// <summary>
+    /// Mẫu chung lưu 1 trường hồ sơ (khẩu vị / ngày sinh): bật cờ busy, chạy
+    /// thao tác lưu, rồi gán thông báo thành công/thất bại. Lỗi nghiệp vụ
+    /// (InvalidOperationException) giữ nguyên message của backend để khách
+    /// hiểu (vd hết lượt đổi ngày sinh); lỗi khác báo câu thân thiện.
+    /// Cờ busy luôn được tắt trong finally nên nút không kẹt.
+    /// </summary>
+    private static async Task RunProfileSaveAsync(
+        Action<bool> setBusy,
+        Action<string, bool> setMessage,
+        Func<Task> work,
+        string successMessage,
+        string errorMessage)
     {
-        _tasteMsg = null;
-        _tasteBusy = true;
+        setMessage(null, false);
+        setBusy(true);
         try
+        {
+            await work();
+            setMessage(successMessage, true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            setMessage(ex.Message, false);
+        }
+        catch (Exception)
+        {
+            setMessage(errorMessage, false);
+        }
+        finally
+        {
+            setBusy(false);
+        }
+    }
+
+    private async Task SaveTasteAsync() => await RunProfileSaveAsync(
+        setBusy: b => _tasteBusy = b,
+        setMessage: (msg, ok) => { _tasteMsg = msg; _tasteOk = ok; },
+        work: async () =>
         {
             _profile.TasteTags = _selectedTags.ToList();
             _profile = await CustomerProfileService.UpdateAsync(_profile);
             _selectedTags = new HashSet<string>(_profile.TasteTags ?? new List<string>());
-            _tasteMsg = "Đã lưu khẩu vị. Quán sẽ tự điền vào ghi chú mỗi lần bạn đặt hàng.";
-            _tasteOk = true;
-        }
-        catch (InvalidOperationException ex)
-        {
-            _tasteMsg = ex.Message;
-            _tasteOk = false;
-        }
-        catch (Exception)
-        {
-            _tasteMsg = "Lưu khẩu vị thất bại. Vui lòng thử lại.";
-            _tasteOk = false;
-        }
-        finally
-        {
-            _tasteBusy = false;
-        }
-    }
+        },
+        successMessage: "Đã lưu khẩu vị. Quán sẽ tự điền vào ghi chú mỗi lần bạn đặt hàng.",
+        errorMessage: "Lưu khẩu vị thất bại. Vui lòng thử lại.");
 
     // Item 92: birthday.
 
@@ -798,7 +817,6 @@
     /// </summary>
     private async Task SaveDobAsync()
     {
-        _dobMsg = null;
         if (!_dobValue.HasValue)
         {
             _dobMsg = "Vui lòng chọn ngày sinh.";
@@ -806,28 +824,16 @@
             return;
         }
 
-        _dobBusy = true;
-        try
-        {
-            _profile.DateOfBirth = _dobValue.Value.Date;
-            _profile = await CustomerProfileService.UpdateAsync(_profile);
-            _dobValue = _profile.DateOfBirth;
-            _dobMsg = "Đã lưu ngày sinh. Chúc bạn luôn ngon miệng!";
-            _dobOk = true;
-        }
-        catch (InvalidOperationException ex)
-        {
-            _dobMsg = ex.Message;
-            _dobOk = false;
-        }
-        catch (Exception)
-        {
-            _dobMsg = "Lưu ngày sinh thất bại. Vui lòng thử lại.";
-            _dobOk = false;
-        }
-        finally
-        {
-            _dobBusy = false;
-        }
+        await RunProfileSaveAsync(
+            setBusy: b => _dobBusy = b,
+            setMessage: (msg, ok) => { _dobMsg = msg; _dobOk = ok; },
+            work: async () =>
+            {
+                _profile.DateOfBirth = _dobValue.Value.Date;
+                _profile = await CustomerProfileService.UpdateAsync(_profile);
+                _dobValue = _profile.DateOfBirth;
+            },
+            successMessage: "Đã lưu ngày sinh. Chúc bạn luôn ngon miệng!",
+            errorMessage: "Lưu ngày sinh thất bại. Vui lòng thử lại.");
     }
 }

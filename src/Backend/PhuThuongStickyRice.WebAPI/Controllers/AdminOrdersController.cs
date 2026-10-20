@@ -13,10 +13,6 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     /// <summary>
-    /// Wave 6c (items 31–32): admin-only order reports —
-    /// daily payment-channel reconciliation and Excel export.
-    /// </summary>
-    /// <summary>
     /// API quản trị đơn hàng: đối soát, xuất báo cáo Excel, dự báo doanh thu,
     /// doanh số theo giờ và thu ngân xác nhận "Đã thu tiền" (Cashier).
     /// </summary>

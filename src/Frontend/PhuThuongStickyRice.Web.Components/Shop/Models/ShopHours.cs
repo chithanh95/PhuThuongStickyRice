@@ -110,11 +110,6 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         }
 
         /// <summary>
-        /// 30-minute delivery slots for today ("6:00–6:30", ...), from the
-        /// open hour to the close hour. Slots that already started are
-        /// skipped; empty when the shop is already closed today.
-        /// </summary>
-        /// <summary>
         /// Dựng danh sách khung giờ nhận đơn hôm nay theo giờ Việt Nam hiện tại:
         /// các slot đã bắt đầu bị bỏ qua, quán đã đóng thì trả danh sách rỗng.
         /// </summary>
