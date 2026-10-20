@@ -49,7 +49,7 @@ namespace PhuThuongStickyRice.Application.Reports
     /// Zalo đọc từ ShopSetting dưới dạng mã hóa (DataProtection), giải mã
     /// trước khi gửi.
     /// </summary>
-    public class WeeklyReportSender : IWeeklyReportSender
+    public partial class WeeklyReportSender : IWeeklyReportSender
     {
         private const string EncryptedPrefix = "DPv1:";
 
@@ -158,8 +158,10 @@ namespace PhuThuongStickyRice.Application.Reports
             sb.AppendLine(ChangeSuffix(report.RevenueChangePercent, "doanh thu"));
             sb.Append("🧾 Số đơn: ").Append(report.OrderCount.ToString("N0", CultureInfo.InvariantCulture));
             sb.AppendLine(ChangeSuffix(report.OrderChangePercent, "số đơn"));
-            sb.AppendLine($"❌ Đơn hủy: {report.CancelledCount:N0}");
-            sb.AppendLine($"🧮 Giá trị TB/đơn: {FormatVnd(report.AverageOrderValue)}");
+            // CA1305: chỉ rõ culture tường minh (giữ CurrentCulture = đúng
+            // behavior cũ, tránh phụ thuộc locale máy chủ một cách ngầm định).
+            sb.AppendLine(CultureInfo.CurrentCulture, $"❌ Đơn hủy: {report.CancelledCount:N0}");
+            sb.AppendLine(CultureInfo.CurrentCulture, $"🧮 Giá trị TB/đơn: {FormatVnd(report.AverageOrderValue)}");
             sb.AppendLine();
             if (report.TopProducts.Count > 0)
             {
@@ -168,7 +170,7 @@ namespace PhuThuongStickyRice.Application.Reports
                 var rank = 1;
                 foreach (var topProduct in report.TopProducts)
                 {
-                    sb.AppendLine($"{rank}. {topProduct.ProductName} — {topProduct.Quantity:N0} suất");
+                    sb.AppendLine(CultureInfo.CurrentCulture, $"{rank}. {topProduct.ProductName} — {topProduct.Quantity:N0} suất");
                     rank++;
                 }
             }
@@ -206,9 +208,7 @@ namespace PhuThuongStickyRice.Application.Reports
                 // Vẫn đánh dấu tuần đã xử lý để worker Thứ Hai không retry
                 // mỗi 10 phút suốt buổi sáng chỉ vì thiếu cấu hình.
                 await MarkSentAsync(settings, marker);
-                _logger.LogInformation(
-                    "Weekly report {Week}: Zalo OA not configured — returning text for manual copy.",
-                    marker);
+                LogZaloNotConfigured(_logger, marker);
                 return new WeeklyReportSendResultDto
                 {
                     IsSent = false,
@@ -221,9 +221,7 @@ namespace PhuThuongStickyRice.Application.Reports
 
             await _zalo.SendTextMessageAsync(recipient, message);
             await MarkSentAsync(settings, marker);
-            _logger.LogInformation(
-                "Weekly report {Week} handed to the Zalo OA service for {Recipient}.",
-                marker, recipient);
+            LogReportHandedToZalo(_logger, marker, recipient);
 
             return new WeeklyReportSendResultDto
             {
@@ -400,7 +398,7 @@ namespace PhuThuongStickyRice.Application.Reports
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Could not decrypt the stored Zalo OA token.");
+                LogZaloTokenDecryptFailed(_logger, ex);
                 return null;
             }
         }
@@ -412,5 +410,20 @@ namespace PhuThuongStickyRice.Application.Reports
             public long CancelledCount { get; set; }
             public List<WeeklyTopProductDto> TopProducts { get; set; } = new List<WeeklyTopProductDto>();
         }
+
+        // CA1848/CA1873: logging hiệu năng cao bằng LoggerMessage
+        // source-generated (không cấp phát params array khi log tắt).
+
+        /// <summary>Log khi Zalo OA chưa cấu hình — trả text để admin gửi tay.</summary>
+        [LoggerMessage(Level = LogLevel.Information, Message = "Weekly report {Week}: Zalo OA not configured — returning text for manual copy.")]
+        private static partial void LogZaloNotConfigured(ILogger logger, string week);
+
+        /// <summary>Log khi báo cáo đã chuyển cho dịch vụ Zalo OA.</summary>
+        [LoggerMessage(Level = LogLevel.Information, Message = "Weekly report {Week} handed to the Zalo OA service for {Recipient}.")]
+        private static partial void LogReportHandedToZalo(ILogger logger, string week, string recipient);
+
+        /// <summary>Log khi không giải mã được token Zalo OA đã lưu.</summary>
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Could not decrypt the stored Zalo OA token.")]
+        private static partial void LogZaloTokenDecryptFailed(ILogger logger, Exception ex);
     }
 }

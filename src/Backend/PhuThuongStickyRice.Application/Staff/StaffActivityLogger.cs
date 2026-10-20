@@ -34,7 +34,7 @@ namespace PhuThuongStickyRice.Application.Staff
         Task LogForUserAsync(Guid userId, string userName, string action, string detail = null);
     }
 
-    public class StaffActivityLogger : ApplicationService, IStaffActivityLogger
+    public partial class StaffActivityLogger : ApplicationService, IStaffActivityLogger
     {
         private static readonly string[] StaffRoles = { "Admin", "Cashier", "Kitchen" };
 
@@ -93,7 +93,7 @@ namespace PhuThuongStickyRice.Application.Staff
             catch (Exception ex)
             {
                 // Activity logging is best-effort: never break the flow.
-                _logger.LogWarning(ex, "StaffActivityLogger failed for action {Action}.", action);
+                LogActivityFailed(_logger, action, ex);
             }
         }
 
@@ -117,7 +117,7 @@ namespace PhuThuongStickyRice.Application.Staff
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "StaffActivityLogger failed for action {Action}.", action);
+                LogActivityFailed(_logger, action, ex);
             }
         }
 
@@ -136,5 +136,11 @@ namespace PhuThuongStickyRice.Application.Staff
                     .Select(ur => ur.Role.Name)
                     .Where(n => StaffRoles.Contains(n)));
         }
+
+        // CA1848: logging hiệu năng cao bằng LoggerMessage source-generated.
+
+        /// <summary>Log khi ghi activity thất bại (best-effort, không ném lỗi).</summary>
+        [LoggerMessage(Level = LogLevel.Warning, Message = "StaffActivityLogger failed for action {Action}.")]
+        private static partial void LogActivityFailed(ILogger logger, string action, Exception ex);
     }
 }

@@ -1176,7 +1176,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         /// <param name="prefixes">Tiền tố (đã chuẩn hóa) của từng mã, giữ đúng thứ tự.</param>
         /// <returns>Danh sách mã duy nhất, thứ tự khớp <paramref name="prefixes"/>.</returns>
-        private async Task<List<string>> GenerateUniqueCodesAsync(IReadOnlyList<string> prefixes)
+        private async Task<List<string>> GenerateUniqueCodesAsync(List<string> prefixes)
         {
             var codes = prefixes.Select(BuildGeneratedCodeCandidate).ToList();
             var used = DeduplicateBatchCodes(prefixes, codes);
@@ -1213,7 +1213,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="prefixes">Tiền tố của từng mã, giữ đúng thứ tự.</param>
         /// <param name="codes">Danh sách mã ứng viên (sửa tại chỗ khi trùng).</param>
         /// <returns>Tập mã đã dùng (so sánh không phân biệt hoa thường).</returns>
-        private static HashSet<string> DeduplicateBatchCodes(IReadOnlyList<string> prefixes, List<string> codes)
+        private static HashSet<string> DeduplicateBatchCodes(List<string> prefixes, List<string> codes)
         {
             var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < codes.Count; i++)
@@ -1263,7 +1263,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <param name="used">Tập mã đã dùng trong batch.</param>
         /// <param name="collided">Index các mã bị đụng cần sinh lại.</param>
         private static void RegenerateCollidedCodes(
-            IReadOnlyList<string> prefixes, List<string> codes, HashSet<string> used, List<int> collided)
+            List<string> prefixes, List<string> codes, HashSet<string> used, List<int> collided)
         {
             // Sinh lại mã bị đụng, vẫn giữ tính duy nhất trong batch.
             foreach (var collidedIndex in collided)

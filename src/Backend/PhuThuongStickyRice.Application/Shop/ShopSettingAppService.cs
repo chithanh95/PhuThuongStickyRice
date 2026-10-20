@@ -61,7 +61,7 @@ namespace PhuThuongStickyRice.Application.Shop
     /// hóa DPv1: và bị che (redact) ở endpoint public — admin xem đầy đủ qua
     /// endpoint riêng yêu cầu quyền Admin.
     /// </summary>
-    public class ShopSettingAppService : ApplicationService, IShopSettingAppService
+    public partial class ShopSettingAppService : ApplicationService, IShopSettingAppService
     {
         /// <summary>
         /// Item 136: marker prefix for DataProtection-encrypted values at
@@ -258,7 +258,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>Giá cả, phí ship, đơn tối thiểu, thời gian giao dự kiến.</summary>
-        private void ApplyPricingSettings(ShopSetting entity, ShopSettingDto dto)
+        private static void ApplyPricingSettings(ShopSetting entity, ShopSettingDto dto)
         {
             entity.DeliveryFee = Math.Max(0, dto.DeliveryFee);
             entity.FreeShipThreshold = Math.Max(0, dto.FreeShipThreshold);
@@ -272,7 +272,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>Điểm thưởng, hạng thành viên (Đồng/Bạc/Vàng).</summary>
-        private void ApplyLoyaltySettings(ShopSetting entity, ShopSettingDto dto)
+        private static void ApplyLoyaltySettings(ShopSetting entity, ShopSettingDto dto)
         {
             entity.PointsPerVnd = dto.PointsPerVnd <= 0 ? DefaultPointsPerVnd : dto.PointsPerVnd;
             entity.PointsRedeemUnit = dto.PointsRedeemUnit < 1 ? DefaultPointsRedeemUnit : dto.PointsRedeemUnit;
@@ -284,7 +284,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>Giờ mở cửa, nhận đơn, giới hạn đơn theo SĐT/ngày.</summary>
-        private void ApplyOrderingSettings(ShopSetting entity, ShopSettingDto dto)
+        private static void ApplyOrderingSettings(ShopSetting entity, ShopSettingDto dto)
         {
             entity.CheckInPoints = dto.CheckInPoints < 0 ? ShopSetting.DefaultCheckInPoints : dto.CheckInPoints;
             entity.NepPerPortionGrams = dto.NepPerPortionGrams < 1 ? DefaultNepPerPortionGrams : dto.NepPerPortionGrams;
@@ -301,7 +301,7 @@ namespace PhuThuongStickyRice.Application.Shop
         }
 
         /// <summary>Hotline, Zalo, bản đồ, email/SĐT nhận báo cáo.</summary>
-        private void ApplyContactSettings(ShopSetting entity, ShopSettingDto dto)
+        private static void ApplyContactSettings(ShopSetting entity, ShopSettingDto dto)
         {
             entity.OwnerReportEmail = string.IsNullOrWhiteSpace(dto.OwnerReportEmail)
                 ? null
@@ -345,7 +345,7 @@ namespace PhuThuongStickyRice.Application.Shop
         /// Cài đặt giám sát vận hành: nhắc đơn chưa xác nhận, cảnh báo sức khỏe
         /// hệ thống (tỷ lệ lỗi, dung lượng upload). Giá trị &lt; 1 rơi về mặc định.
         /// </summary>
-        private void ApplyMonitoringSettings(ShopSetting entity, ShopSettingDto dto)
+        private static void ApplyMonitoringSettings(ShopSetting entity, ShopSettingDto dto)
         {
             entity.UnconfirmedAlertMinutes = dto.UnconfirmedAlertMinutes < 1 ? DefaultUnconfirmedAlertMinutes : dto.UnconfirmedAlertMinutes;
             entity.HealthAlertsEnabled = dto.HealthAlertsEnabled;
@@ -356,7 +356,7 @@ namespace PhuThuongStickyRice.Application.Shop
         /// <summary>
         /// Thông tin chuyển khoản ngân hàng (hiển thị QR cho khách) và MoMo.
         /// </summary>
-        private void ApplyBankTransferSettings(ShopSetting entity, ShopSettingDto dto)
+        private static void ApplyBankTransferSettings(ShopSetting entity, ShopSettingDto dto)
         {
             entity.BankName = TrimOrNull(dto.BankName);
             entity.BankId = TrimOrNull(dto.BankId);
@@ -466,7 +466,7 @@ namespace PhuThuongStickyRice.Application.Shop
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Item 180: test webhook POST failed for {Url}.", target);
+                LogTestWebhookFailed(_logger, target, ex);
                 return (false, $"Gửi thử thất bại: {ex.GetType().Name} — {ex.Message}");
             }
         }
@@ -576,7 +576,7 @@ namespace PhuThuongStickyRice.Application.Shop
             {
                 // Key ring unavailable (e.g. fresh deploy without the shared
                 // key store) — never crash reads; the admin can re-save.
-                Logger.LogWarning("Could not decrypt a stored shop secret; returning null.");
+                LogSecretDecryptFailed(Logger);
                 return null;
             }
         }
@@ -695,5 +695,16 @@ namespace PhuThuongStickyRice.Application.Shop
             dto.ShopeeFoodUrl = entity.ShopeeFoodUrl;
             dto.GrabFoodUrl = entity.GrabFoodUrl;
         }
+
+        // CA1848: logging hiệu năng cao bằng LoggerMessage source-generated
+        // (tránh cấp phát params array + boxing mỗi lần log).
+
+        /// <summary>Log khi test webhook POST thất bại.</summary>
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Item 180: test webhook POST failed for {Url}.")]
+        private static partial void LogTestWebhookFailed(ILogger logger, string url, Exception ex);
+
+        /// <summary>Log khi không giải mã được secret đã lưu trong DB.</summary>
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Could not decrypt a stored shop secret; returning null.")]
+        private static partial void LogSecretDecryptFailed(ILogger logger);
     }
 }

@@ -25,10 +25,17 @@ namespace PhuThuongStickyRice.Application.Common
         /// <see cref="RefCount"/> về 0 — tức không còn luồng nào giữ hay chờ
         /// semaphore này.
         /// </summary>
-        private sealed class LockEntry
+        private sealed class LockEntry : IDisposable
         {
             public readonly SemaphoreSlim Semaphore = new(1, 1);
             public int RefCount;
+
+            /// <summary>
+            /// Giải phóng semaphore khi entry bị loại khỏi dictionary
+            /// (CA1001: type sở hữu field IDisposable phải disposable; lúc
+            /// dispose RefCount == 0 nên không còn luồng nào giữ hay chờ).
+            /// </summary>
+            public void Dispose() => Semaphore.Dispose();
         }
 
         private static readonly ConcurrentDictionary<string, LockEntry> Entries = new();
@@ -77,9 +84,11 @@ namespace PhuThuongStickyRice.Application.Common
                     // sau khi xóa (tạo entry mới). Không có cửa sổ "xóa rồi
                     // tạo mới" để 2 luồng cùng vào critical section như bản
                     // TryRemove trực tiếp trước đây.
-                    if (entry.RefCount == 0)
+                    if (entry.RefCount == 0 && Entries.TryRemove(key, out _))
                     {
-                        Entries.TryRemove(key, out _);
+                        // Không còn luồng nào giữ/chờ semaphore này — giải
+                        // phóng handle OS ngay thay vì chờ GC (CA1001).
+                        entry.Dispose();
                     }
                 }
             }
