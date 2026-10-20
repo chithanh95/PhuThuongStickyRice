@@ -81,6 +81,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
         // tự động khi thưởng đơn hoàn tất — đặt hằng số có tên để thay đổi 1 chỗ.
         private const string RewardVoucherPrefix = "THUONG";
 
+        /// <summary>
+        /// Khởi tạo service quản lý quy tắc thưởng đơn (CRUD admin + áp thưởng khi đơn hoàn tất).
+        /// </summary>
+        /// <param name="rules">Repository đọc/ghi quy tắc thưởng.</param>
+        /// <param name="asyncExecuter">Executor cho truy vấn bất đồng bộ.</param>
+        /// <param name="discounts">Service mã giảm giá — dùng để sinh voucher thưởng tự động.</param>
         public RewardRuleAppService(
             IRepository<OrderRewardRule, Guid> rules,
             IAsyncQueryableExecuter asyncExecuter,

@@ -218,8 +218,8 @@ else
                         @{ var rowIndex = 0; }
                         @foreach (var order in _paged.Items)
                         {
-                            var idx = rowIndex++;
-                            <tr @key="order.Id" class="@(_selectedIndex == idx ? "table-primary" : null)">
+                            var currentRowIndex = rowIndex++;
+                            <tr @key="order.Id" class="@(_selectedIndex == currentRowIndex ? "table-primary" : null)">
                                 <td>
                                     <a href="javascript:void(0)" @onclick="() => ToggleDetail(order)">
                                         <strong>@order.OrderNumber</strong>

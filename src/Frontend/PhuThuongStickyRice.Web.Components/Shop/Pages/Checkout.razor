@@ -841,17 +841,17 @@ else
             return;
         }
 
-        var addr = _savedAddresses.FirstOrDefault(a => a.Id == id);
-        if (addr == null)
+        var selectedAddress = _savedAddresses.FirstOrDefault(a => a.Id == id);
+        if (selectedAddress == null)
         {
             return;
         }
 
-        _order.CustomerName = addr.ReceiverName;
-        _order.CustomerPhone = addr.ReceiverPhone;
-        if (!string.IsNullOrWhiteSpace(addr.AddressDetail))
+        _order.CustomerName = selectedAddress.ReceiverName;
+        _order.CustomerPhone = selectedAddress.ReceiverPhone;
+        if (!string.IsNullOrWhiteSpace(selectedAddress.AddressDetail))
         {
-            _order.CustomerAddress = addr.AddressDetail;
+            _order.CustomerAddress = selectedAddress.AddressDetail;
         }
     }
 

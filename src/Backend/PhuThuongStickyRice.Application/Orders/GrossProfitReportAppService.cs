@@ -69,8 +69,7 @@ namespace PhuThuongStickyRice.Application.Orders
         private const decimal LowMarginPercentThreshold = 30m;
         // Số tên món tối đa liệt kê trong gợi ý "chưa nhập giá vốn".
         private const int MaxUnpricedNamesInSuggestion = 3;
-        // Nhãn hiển thị cho món không có tên (dòng legacy/combo thiếu tên món).
-        private const string UnnamedProductLabel = "(không tên)";
+        // Nhãn hiển thị cho món không có tên dùng chung: ReportLabels.UnnamedProductLabel.
         // Số dòng tối đa của bảng nhập giá vốn — giới hạn server-side, không
         // bao giờ materialize toàn bộ bảng sản phẩm (pattern như PromotionAppService).
         private const int MaxProductCostRows = 500;
@@ -184,7 +183,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     {
                         ProductId = g.ProductId,
                         ProductName = string.IsNullOrWhiteSpace(g.ProductName)
-                            ? UnnamedProductLabel : g.ProductName.Trim(),
+                            ? ReportLabels.UnnamedProductLabel : g.ProductName.Trim(),
                         QuantitySold = g.QuantitySold,
                         Revenue = g.Revenue,
                         Cost = cost,

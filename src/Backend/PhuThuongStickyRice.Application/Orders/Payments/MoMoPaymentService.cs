@@ -7,6 +7,7 @@ using PhuThuongStickyRice.Domain.Repositories;
 using System;
 using System.Globalization;
 using System.Net.Http;
+using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -238,7 +239,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             // StringContent là IDisposable (giữ buffer đã serialize): dispose
             // ngay sau khi request xong thay vì chờ GC — nhất quán với
             // response đã dispose bên dưới.
-            using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, MediaTypeNames.Application.Json);
             using var response = await _httpClient.PostAsync(
                 options.Endpoint,
                 content);

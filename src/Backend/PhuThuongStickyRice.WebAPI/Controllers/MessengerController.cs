@@ -82,13 +82,21 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             // thật, bỏ qua reCAPTCHA). Không có secret cấu hình -> service
             // từ chối (fail-closed, 401) thay vì cho qua như trước.
             var signature = Request.Headers["X-Hub-Signature-256"].ToString();
-            if (!await _chat.VerifyWebhookSignatureAsync(bodyBytes, signature))
-            {
-                return Unauthorized();
-            }
 
+            // [codequality-practices 2026-10-20] JsonDocument thuê bộ nhớ từ
+            // shared pool nên PHẢI dispose trên mọi đường đi: trước đây dùng
+            // `using (payload)` đặt SAU bước verify chữ ký → request bị từ
+            // chối (Unauthorized) return sớm, pool không được trả bộ nhớ.
+            // Gom cả verify + xử lý vào trong using để mọi nhánh return
+            // (BadRequest/Unauthorized/Ok) đều giải phóng — hành vi xử lý
+            // webhook giữ nguyên.
             using (payload)
             {
+                if (!await _chat.VerifyWebhookSignatureAsync(bodyBytes, signature))
+                {
+                    return Unauthorized();
+                }
+
                 await _chat.HandleWebhookAsync(payload);
             }
 

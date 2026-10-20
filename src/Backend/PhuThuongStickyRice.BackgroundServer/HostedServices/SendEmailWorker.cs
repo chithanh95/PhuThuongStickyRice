@@ -68,7 +68,10 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
                 }
                 catch (CircuitBreakerOpenException)
                 {
-                    await Task.Delay(IdlePollDelay, stoppingToken);
+                    if (await WaitBeforeNextPollAsync(stoppingToken))
+                    {
+                        break;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -76,11 +79,35 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
                     // lại ở vòng sau — không để 1 lần lỗi giết chết worker vĩnh
                     // viễn (cùng pattern với WeeklyReportWorker).
                     _logger.LogError(ex, "SendEmailWorker failed; will retry on the next poll.");
-                    await Task.Delay(IdlePollDelay, stoppingToken);
+                    if (await WaitBeforeNextPollAsync(stoppingToken))
+                    {
+                        break;
+                    }
                 }
             }
 
             _logger.LogDebug("SendEmail background task is stopping.");
+        }
+
+        // [codequality-practices 2026-10-20] Nghỉ giữa 2 vòng quét an toàn khi
+        // host dừng: Task.Delay(..., stoppingToken) ném OperationCanceledException
+        // nếu host dừng đúng lúc đang chờ. Exception ném BÊN TRONG một catch
+        // handler không bị bắt lại bởi các handler khác của cùng khối try —
+        // trước đây nó thoát luôn ExecuteAsync khiến worker fault (ghi nhận
+        // lỗi) thay vì dừng êm như shutdown bình thường. Helper này nuốt đúng
+        // tín hiệu hủy và trả true để vòng lặp break; hành vi "lỗi thì nghỉ
+        // rồi quét lại" giữ nguyên.
+        private static async Task<bool> WaitBeforeNextPollAsync(CancellationToken stoppingToken)
+        {
+            try
+            {
+                await Task.Delay(IdlePollDelay, stoppingToken);
+                return false;
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return true;
+            }
         }
     }
 }

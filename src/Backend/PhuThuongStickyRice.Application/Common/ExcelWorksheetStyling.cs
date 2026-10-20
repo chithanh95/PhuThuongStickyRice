@@ -13,6 +13,21 @@ namespace PhuThuongStickyRice.Application.Common
     internal static class ExcelWorksheetStyling
     {
         /// <summary>
+        /// Số dòng tối đa của mọi file Excel xuất ra (.xlsx): giới hạn để
+        /// file không quá nặng khi mở, và query không quét full bảng.
+        /// Gom 2 bản copy-paste trước đây ở OrderReportsAppService và
+        /// CustomerTagAppService về 1 chỗ để đổi 1 lần là áp dụng khắp nơi.
+        /// </summary>
+        public const int MaxExportRows = 5000;
+
+        /// <summary>
+        /// Chỉ số dòng Excel bắt đầu ghi dữ liệu (dòng 1 là header).
+        /// Gom 2 bản copy-paste trước đây ở OrderReportsAppService và
+        /// CustomerTagAppService về 1 chỗ.
+        /// </summary>
+        public const int DataStartRowIndex = 2;
+
+        /// <summary>
         /// Màu nền tím thương hiệu (#7a6fbe) của hàng tiêu đề file Excel.
         /// </summary>
         public const string BrandHeaderBackground = "#7a6fbe";

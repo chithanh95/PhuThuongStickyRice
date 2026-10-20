@@ -56,8 +56,7 @@ namespace PhuThuongStickyRice.Application.Reports
 
         // Báo cáo tuần lấy 7 ngày (thứ 2 tuần trước 00:00 → thứ 2 tuần này 00:00).
         private const int WeeklyReportDays = 7;
-        // Số món bán chạy nhất đưa vào báo cáo.
-        private const int TopProductsCount = 5;
+        // Số món bán chạy nhất đưa vào báo cáo dùng chung: ReportLabels.TopProductsCount.
         // Địa chỉ gửi của báo cáo qua pipeline EmailMessage.
         private const string ReportSenderAddress = "no-reply@phuthuong.vn";
         // Độ dài đường kẻ "=" phân cách tiêu đề báo cáo text gửi chủ quán.
@@ -90,7 +89,7 @@ namespace PhuThuongStickyRice.Application.Reports
             var toUtc = toVn.AddHours(-VietnamTime.UtcOffsetHours);
 
             var stats = await _dashboard.GetStatsAsync(fromUtc, toUtc);
-            var topProducts = await _dashboard.GetTopProductsAsync(fromUtc, toUtc, TopProductsCount);
+            var topProducts = await _dashboard.GetTopProductsAsync(fromUtc, toUtc, ReportLabels.TopProductsCount);
 
             var body = ComposeBody(periodLabel, stats, topProducts);
             await _emailMessages.AddAsync(new EmailMessage
@@ -160,7 +159,7 @@ namespace PhuThuongStickyRice.Application.Reports
             sb.AppendLine();
             // [codequality-smell] Không hardcode số 5 — dùng chung hằng
             // TopProductsCount với câu query ở SendAsync.
-            sb.AppendLine(VietnameseCulture.Value, $"Top {TopProductsCount} món bán chạy:");
+            sb.AppendLine(VietnameseCulture.Value, $"Top {ReportLabels.TopProductsCount} món bán chạy:");
             var rank = 0;
             foreach (var product in topProducts ?? Enumerable.Empty<Orders.DTOs.TopProductDto>())
             {

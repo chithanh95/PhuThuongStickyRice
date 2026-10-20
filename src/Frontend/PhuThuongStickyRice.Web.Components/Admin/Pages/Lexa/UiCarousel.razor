@@ -26,8 +26,8 @@
                     <div class="lexa-car-dots">
                         @for (int i = 0; i < _slides.Count; i++)
                         {
-                            var idx = i;
-                            <span class="lexa-car-dot @(_slideIdx == idx ? "active" : "")" @onclick="() => _slideIdx = idx"></span>
+                            var slideIndex = i;
+                            <span class="lexa-car-dot @(_slideIdx == slideIndex ? "active" : "")" @onclick="() => _slideIdx = slideIndex"></span>
                         }
                     </div>
                 </div>

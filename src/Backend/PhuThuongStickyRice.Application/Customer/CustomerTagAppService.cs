@@ -46,8 +46,8 @@ namespace PhuThuongStickyRice.Application.Customer
     /// </summary>
     public class CustomerTagAppService : ApplicationService, ICustomerTagAppService
     {
-        /// <summary>Số dòng tối đa của file Excel xuất khách hàng — giới hạn để không sinh file quá nặng.</summary>
-        private const int MaxExportRows = 5000;
+        // Số dòng tối đa file Excel và dòng bắt đầu ghi dữ liệu dùng chung:
+        // xem ExcelWorksheetStyling.MaxExportRows / DataStartRowIndex.
 
         /// <summary>Số ngày không mua thì coi là khách ngủ đông (inactive).</summary>
         private const int InactiveCutoffDays = 30;
@@ -57,12 +57,6 @@ namespace PhuThuongStickyRice.Application.Customer
         /// hạn ~2100 tham số/truy vấn, để 1000 an toàn và hiệu quả.
         /// </summary>
         private const int InClauseBatchSize = 1000;
-
-        /// <summary>
-        /// Dòng đầu tiên ghi dữ liệu trong sheet Excel xuất khách hàng
-        /// (dòng 1 là header).
-        /// </summary>
-        private const int DataStartRowIndex = 2;
 
         private readonly Volo.Abp.Domain.Repositories.IRepository<CustomerTag, Guid> _tags;
         private readonly IOrderRepository _orders;
@@ -205,7 +199,7 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>
         /// Xuất danh sách khách hàng ra file .xlsx: mỗi SĐT một dòng gồm tên, tổng đơn,
         /// tổng chi tiêu, lần mua cuối (hiển thị giờ VN) và các tag. Dùng cùng bộ lọc
-        /// với trang khách hàng admin; giới hạn ở <see cref="MaxExportRows"/> dòng.
+        /// với trang khách hàng admin; giới hạn ở <see cref="ExcelWorksheetStyling.MaxExportRows"/> dòng.
         /// </summary>
         /// <param name="searchTerm">Tìm theo SĐT hoặc tên.</param>
         /// <param name="tag">Chỉ khách có tag này.</param>
@@ -213,7 +207,7 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <returns>Nội dung file .xlsx.</returns>
         public virtual async Task<byte[]> ExportCustomersAsync(string searchTerm, string tag, bool inactiveOnly)
         {
-            var rows = await GetCustomerRowsAsync(searchTerm, tag, inactiveOnly, MaxExportRows);
+            var rows = await GetCustomerRowsAsync(searchTerm, tag, inactiveOnly, ExcelWorksheetStyling.MaxExportRows);
 
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Khách hàng");
@@ -230,7 +224,7 @@ namespace PhuThuongStickyRice.Application.Customer
             // riêng sheet này KHÔNG căn giữa cột vì cột ghi chú dài (40 ký tự).
             ExcelWorksheetStyling.StyleHeader(worksheet.Row(1), center: false);
 
-            var rowIndex = DataStartRowIndex;
+            var rowIndex = ExcelWorksheetStyling.DataStartRowIndex;
             foreach (var row in rows)
             {
                 worksheet.Cell(rowIndex, 1).Value = row.CustomerName;

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Net.Mime;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
@@ -479,7 +480,7 @@ namespace PhuThuongStickyRice.Application.Shop
             using var request = new System.Net.Http.HttpRequestMessage(
                 System.Net.Http.HttpMethod.Post, url)
             {
-                Content = new System.Net.Http.StringContent(body, System.Text.Encoding.UTF8, "application/json")
+                Content = new System.Net.Http.StringContent(body, System.Text.Encoding.UTF8, MediaTypeNames.Application.Json)
             };
 
             // Dispose: response chỉ dùng để đọc IsSuccessStatusCode, không giữ lại.

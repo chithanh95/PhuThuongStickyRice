@@ -239,9 +239,9 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             {
                 // JsonDocument giữ buffer bên dưới: dispose ngay sau khi đọc.
                 using var doc = System.Text.Json.JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("message", out var msg))
+                if (doc.RootElement.TryGetProperty("message", out var messageElement))
                 {
-                    return msg.GetString();
+                    return messageElement.GetString();
                 }
             }
             catch (System.Text.Json.JsonException)

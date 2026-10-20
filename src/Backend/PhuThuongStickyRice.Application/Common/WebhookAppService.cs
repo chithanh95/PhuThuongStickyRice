@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -227,7 +228,7 @@ namespace PhuThuongStickyRice.Application.Common
         {
             var request = new HttpRequestMessage(HttpMethod.Post, endpoint.Url)
             {
-                Content = new StringContent(body, Encoding.UTF8, "application/json")
+                Content = new StringContent(body, Encoding.UTF8, MediaTypeNames.Application.Json)
             };
 
             if (!string.IsNullOrWhiteSpace(endpoint.Secret))

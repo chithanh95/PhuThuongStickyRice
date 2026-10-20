@@ -44,8 +44,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Số khung giờ cao điểm hiển thị trong báo cáo.</summary>
         private const int TopHoursCount = 3;
 
-        /// <summary>Nhãn hiển thị cho món không có tên (giữ đồng bộ với các báo cáo khác).</summary>
-        private const string UnnamedProductLabel = "(không tên)";
+        // Nhãn hiển thị cho món không có tên dùng chung: ReportLabels.UnnamedProductLabel.
 
         private readonly IRepository<Order, Guid> _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -109,7 +108,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // perf-hunt 2026-10-19: gom ngay trong SQL theo (giờ VN, tên món)
             // thay vì nạp toàn bộ đơn + lines của cả ngày vào memory rồi gom
             // bằng C#. VN không có DST nên AddHours(offset) dịch được sang SQL.
-            // Tên món vẫn chuẩn hóa ở C# (trim/UnnamedProductLabel) nên semantics giữ nguyên.
+            // Tên món vẫn chuẩn hóa ở C# (trim/ReportLabels.UnnamedProductLabel) nên semantics giữ nguyên.
             // CS8143: tuple literal không dùng được trong expression tree —
             // project anonymous type trong SQL, map sang tuple ở memory.
             var quantityRows = (await _asyncExecuter.ToListAsync(
@@ -172,7 +171,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
 
                 // Chuẩn hóa tên y hệt bản cũ (để SQL gom theo raw name không ảnh hưởng kết quả).
-                var name = string.IsNullOrWhiteSpace(row.ProductName) ? UnnamedProductLabel : row.ProductName.Trim();
+                var name = string.IsNullOrWhiteSpace(row.ProductName) ? ReportLabels.UnnamedProductLabel : row.ProductName.Trim();
                 products.TryGetValue(name, out var qty);
                 products[name] = qty + row.Quantity;
             }

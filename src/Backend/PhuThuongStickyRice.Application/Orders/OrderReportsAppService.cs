@@ -57,13 +57,10 @@ namespace PhuThuongStickyRice.Application.Orders
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
     public class OrderReportsAppService : ApplicationService, IOrderReportsAppService
     {
-        private const int MaxExportRows = 5000;
+        // Số dòng tối đa file Excel và dòng bắt đầu ghi dữ liệu dùng chung:
+        // xem ExcelWorksheetStyling.MaxExportRows / DataStartRowIndex.
 
-        /// <summary>
-        /// Số món bán chạy nhất trong <see cref="GetRevenueSummaryAsync"/> —
-        /// phần "top sản phẩm" của bản đồ doanh thu.
-        /// </summary>
-        private const int TopProductsCount = 5;
+        // Số món bán chạy nhất của báo cáo dùng chung: ReportLabels.TopProductsCount.
 
         /// <summary>
         /// Định dạng ngày/ngày-giờ và số tiền cho các cell trong file Excel
@@ -72,12 +69,6 @@ namespace PhuThuongStickyRice.Application.Orders
         private const string ExcelDateFormat = "dd/MM/yyyy";
         private const string ExcelDateTimeFormat = "dd/MM/yyyy HH:mm";
         private const string ExcelMoneyFormat = "#,##0";
-
-        /// <summary>
-        /// Dòng đầu tiên ghi dữ liệu trong các sheet Excel xuất báo cáo
-        /// (dòng 1 là header).
-        /// </summary>
-        private const int DataStartRowIndex = 2;
 
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -181,7 +172,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Xuất Excel danh sách đơn hàng theo bộ lọc đang xem (tìm kiếm / trạng thái /
         /// shipper / khoảng ngày / thu tiền / chỉ VIP — đồng bộ với danh sách ở
         /// OrderAppService.GetListAsync để file khớp màn hình). 1 sheet "Đơn hàng",
-        /// tối đa <see cref="MaxExportRows"/> dòng, mới nhất lên trước.
+        /// tối đa <see cref="ExcelWorksheetStyling.MaxExportRows"/> dòng, mới nhất lên trước.
         /// </summary>
         /// <param name="input">Bộ lọc danh sách đơn (null = không lọc).</param>
         /// <returns>Mảng byte file .xlsx.</returns>
@@ -196,7 +187,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // projection để SQL làm 1 lần, kết quả Excel không đổi.
             var items = await _asyncExecuter.ToListAsync(
                 ProjectToExportRows(
-                    filtered.OrderByDescending(x => x.CreatedAt).Take(MaxExportRows)));
+                    filtered.OrderByDescending(x => x.CreatedAt).Take(ExcelWorksheetStyling.MaxExportRows)));
             var linesByOrder = await GetLinesByOrderAsync(items.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
@@ -229,7 +220,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // (nền sáng) thay vì chữ trắng như header tím các sheet khác.
             ExcelWorksheetStyling.StyleHeader(sheet.Row(1), "#f5c518", whiteFont: false);
 
-            var rowIndex = DataStartRowIndex;
+            var rowIndex = ExcelWorksheetStyling.DataStartRowIndex;
             foreach (var order in items)
             {
                 WriteOrderRow(sheet, rowIndex, order, linesByOrder);
@@ -311,7 +302,7 @@ namespace PhuThuongStickyRice.Application.Orders
             WriteHeaders(summary, sumHeaders);
             ExcelWorksheetStyling.StyleHeader(summary.Row(1));
 
-            var rowIndex = DataStartRowIndex;
+            var rowIndex = ExcelWorksheetStyling.DataStartRowIndex;
             foreach (var dailyStat in daily)
             {
                 summary.Cell(rowIndex, 1).Value = dailyStat.Date;
@@ -366,7 +357,7 @@ namespace PhuThuongStickyRice.Application.Orders
             WriteHeaders(sheet, headers);
             ExcelWorksheetStyling.StyleHeader(sheet.Row(1));
 
-            var rowIndex = DataStartRowIndex;
+            var rowIndex = ExcelWorksheetStyling.DataStartRowIndex;
             foreach (var order in details)
             {
                 var itemsText = FormatLines(
@@ -393,7 +384,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>
         /// Xuất Excel doanh thu kỳ Việt Nam: sheet "Tổng hợp" (1 dòng/ngày: số đơn,
         /// doanh thu, giá trị TB/đơn + dòng TỔNG CỘNG) và sheet "Chi tiết đơn"
-        /// (mới nhất lên trước, tối đa <see cref="MaxExportRows"/> dòng).
+        /// (mới nhất lên trước, tối đa <see cref="ExcelWorksheetStyling.MaxExportRows"/> dòng).
         /// Đơn đã hủy không tính doanh thu nhưng vẫn xuất trong chi tiết.
         /// </summary>
         /// <param name="from">Ngày bắt đầu kỳ (null = từ đầu).</param>
@@ -421,7 +412,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // ProjectToExportRows (không materialize full entity Order tracked).
             var details = await _asyncExecuter.ToListAsync(
                 ProjectToExportRows(
-                    ranged.OrderByDescending(x => x.CreatedAt).Take(MaxExportRows)));
+                    ranged.OrderByDescending(x => x.CreatedAt).Take(ExcelWorksheetStyling.MaxExportRows)));
             var linesByOrder = await GetLinesByOrderAsync(details.Select(x => x.Id));
 
             using var workbook = new XLWorkbook();
@@ -493,7 +484,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// tên món ngay trong SQL, không tải dòng đơn về memory.
         /// </summary>
         /// <param name="billable">Query đơn đã lọc khoảng ngày, trừ đơn hủy.</param>
-        /// <returns>Danh sách top món, doanh thu tính theo đơn giá thực tế.</returns>
+        /// <returns>Danh sách top món (xem <see cref="ReportLabels.TopProductsCount"/>), doanh thu tính theo đơn giá thực tế.</returns>
         private async Task<List<RevenueSummaryTopProductDto>> LoadTopProductsAsync(
             IQueryable<Order> billable)
         {
@@ -507,7 +498,7 @@ namespace PhuThuongStickyRice.Application.Orders
                         Revenue = g.Sum(l => l.LineTotal.Amount)
                     })
                     .OrderByDescending(x => x.Quantity)
-                    .Take(TopProductsCount));
+                    .Take(ReportLabels.TopProductsCount));
         }
 
         /// <summary>

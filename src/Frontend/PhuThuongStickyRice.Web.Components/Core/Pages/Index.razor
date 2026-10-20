@@ -1589,13 +1589,13 @@ else
     private async Task SendChat()
     {
         if (string.IsNullOrWhiteSpace(_chatInput)) return;
-        var msg = _chatInput.Trim();
+        var userMessage = _chatInput.Trim();
         _chatInput = "";
-        _chatMessages.Add(new ChatMessageModel { Sender = "customer", Message = msg, CreatedAt = DateTime.Now });
+        _chatMessages.Add(new ChatMessageModel { Sender = "customer", Message = userMessage, CreatedAt = DateTime.Now });
         // 61: thử parse ý định đặt hàng
         try
         {
-            var parsed = await LandingService.ParseOrderAsync(msg);
+            var parsed = await LandingService.ParseOrderAsync(userMessage);
             if (parsed != null && parsed.IsOrderIntent && parsed.Items?.Count > 0)
             {
                 _chatOrder = parsed;
@@ -1605,7 +1605,7 @@ else
             }
         }
         catch { }
-        try { await LandingService.SendChatAsync(_chatSession, msg); } catch { }
+        try { await LandingService.SendChatAsync(_chatSession, userMessage); } catch { }
     }
 
 

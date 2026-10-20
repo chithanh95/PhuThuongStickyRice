@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -691,7 +692,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                         message = new { text = chunk }
                     };
                     var json = JsonSerializer.Serialize(body);
-                    using var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    using var content = new StringContent(json, Encoding.UTF8, MediaTypeNames.Application.Json);
                     using var response = await client.PostAsync(url, content);
                     if (!response.IsSuccessStatusCode)
                     {

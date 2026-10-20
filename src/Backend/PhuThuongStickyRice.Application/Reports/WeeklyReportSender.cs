@@ -232,15 +232,8 @@ namespace PhuThuongStickyRice.Application.Reports
             };
         }
 
-        /// <summary>
-        /// Tên hiển thị khi dòng đơn không có tên sản phẩm (dữ liệu cũ bị thiếu).
-        /// </summary>
-        private const string UnnamedProductLabel = "(không tên)";
-
-        /// <summary>
-        /// Số sản phẩm bán chạy nhất hiển thị trong báo cáo tuần gửi chủ quán.
-        /// </summary>
-        private const int TopProductsCount = 5;
+        // Nhãn hiển thị cho món không có tên và số món top của báo cáo dùng chung:
+        // xem ReportLabels.UnnamedProductLabel / ReportLabels.TopProductsCount.
 
         /// <summary>
         /// Dòng đơn rút gọn cho báo cáo tuần: chỉ trạng thái, tổng tiền và các
@@ -288,7 +281,7 @@ namespace PhuThuongStickyRice.Application.Reports
                 TopProducts = productQuantities
                     .OrderByDescending(kv => kv.Value)
                     .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
-                    .Take(TopProductsCount)
+                    .Take(ReportLabels.TopProductsCount)
                     .Select(kv => new WeeklyTopProductDto
                     {
                         ProductName = kv.Key,
@@ -309,7 +302,7 @@ namespace PhuThuongStickyRice.Application.Reports
                 foreach (var line in orderRow.Lines)
                 {
                     var name = string.IsNullOrWhiteSpace(line.ProductName)
-                        ? UnnamedProductLabel
+                        ? ReportLabels.UnnamedProductLabel
                         : line.ProductName.Trim();
                     productQuantities.TryGetValue(name, out var existingQuantity);
                     productQuantities[name] = existingQuantity + line.Quantity;
