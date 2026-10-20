@@ -151,7 +151,7 @@ namespace PhuThuongStickyRice.Application.Customer
             var name = dto?.TagName?.Trim();
             if (string.IsNullOrEmpty(phone))
             {
-                throw new UserFriendlyException("Vui lòng nhập số điện thoại.");
+                throw new UserFriendlyException(PhoneNumber.PhoneRequiredMessage);
             }
 
             if (string.IsNullOrEmpty(name))
@@ -378,7 +378,12 @@ namespace PhuThuongStickyRice.Application.Customer
                 .ToList();
         }
 
-        private static CustomerTagDto ToDto(CustomerTag x) => new CustomerTagDto
+        /// <summary>
+        /// Ánh xạ <see cref="CustomerTag"/> sang DTO. Để internal để
+        /// <c>VipPriorityAppService</c> dùng chung, tránh copy-paste khối
+        /// gán 6 property ở 2 nơi rồi lệch nhau dần.
+        /// </summary>
+        internal static CustomerTagDto ToDto(CustomerTag x) => new CustomerTagDto
         {
             Id = x.Id,
             CustomerPhone = x.CustomerPhone,

@@ -78,7 +78,7 @@ namespace PhuThuongStickyRice.Application.Shop
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
             {
-                throw new DomainException("Số điện thoại không hợp lệ.");
+                throw new DomainException(PhoneNumber.InvalidPhoneMessage);
             }
 
             var today = VietnamTime.Today();

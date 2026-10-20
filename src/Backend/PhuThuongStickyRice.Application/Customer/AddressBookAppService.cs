@@ -131,7 +131,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 var phone = NormalizePhone(dto.Phone);
                 if (phone == null)
                 {
-                    throw new Domain.Exceptions.DomainException("Số điện thoại không hợp lệ.");
+                    throw new Domain.Exceptions.DomainException(PhoneNumber.InvalidPhoneMessage);
                 }
 
                 var label = dto.Label.Trim();

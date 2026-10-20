@@ -315,8 +315,8 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int DuplicateOrderWindowMinutes = 30;
         /// <summary>Số dòng tối đa một lần lấy danh sách khách hàng.</summary>
         private const int CustomerListMaxTake = 200;
-        /// <summary>Tên tag đánh dấu khách VIP (dùng cho cờ ưu tiên hiển thị/sắp xếp).</summary>
-        private const string VipTagName = "VIP";
+        // Tên tag VIP dùng chung: xem VipPriorityAppService.VipTagName
+        // (không định nghĩa lại ở đây để 2 nơi không lệch nhau).
         /// <summary>Cửa sổ (giờ) idempotency key của checkout còn hiệu lực.</summary>
         private const int IdempotencyKeyWindowHours = 24;
         /// <summary>Số lần thử sinh mã đơn tối đa trước khi bỏ cuộc (mã dạng PX-yyyyMMdd-NNNN).</summary>
@@ -1386,7 +1386,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     dto.CustomerTags = tags;
                     // Item 130 (đúng): VIP flag for priority display/sorting.
                     dto.IsVip = tags.Any(t =>
-                        string.Equals(t.TagName, VipTagName, StringComparison.OrdinalIgnoreCase));
+                        string.Equals(t.TagName, VipPriorityAppService.VipTagName, StringComparison.OrdinalIgnoreCase));
                 }
             }
         }
@@ -3209,7 +3209,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     c.Tags = tags;
                     // Item 130 (đúng): VIP flag drives the one-tap VIP toggle.
                     c.IsVip = tags.Any(t =>
-                        string.Equals(t.TagName, VipTagName, StringComparison.OrdinalIgnoreCase));
+                        string.Equals(t.TagName, VipPriorityAppService.VipTagName, StringComparison.OrdinalIgnoreCase));
                 }
             }
 

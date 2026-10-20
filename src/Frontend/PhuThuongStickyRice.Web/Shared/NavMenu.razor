@@ -225,11 +225,13 @@
         StateHasChanged();
     });
 
+    /// <summary>Nút hiển thị NGÔN NGỮ ĐÍCH: đang xem tiếng Việt thì nút hiện "EN".</summary>
     private void UpdateLangLabel()
     {
         _langLabel = ShopLocalizationService.IsEnglish ? "VI" : "EN";
     }
 
+    /// <summary>Đảo ngôn ngữ shop VI↔EN (binary toggle).</summary>
     private async Task ToggleLang()
     {
         await ShopLocalizationService.SetLanguageAsync(ShopLocalizationService.IsEnglish ? "vi" : "en");
@@ -237,11 +239,16 @@
 
     private void OnCartChanged() => InvokeAsync(StateHasChanged);
 
+    /// <summary>Menu thu gọn trên mobile; menu sidebar trên desktop luôn hiện.</summary>
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
     }
 
+    /// <summary>
+    /// Đăng xuất: xóa JWT khỏi localStorage, báo Blazor về trạng thái
+    /// anonymous để toàn bộ UI cập nhật ngay, rồi đưa về trang login.
+    /// </summary>
     private async Task SignOut()
     {
         await JwtStore.ClearTokenAsync();
@@ -249,6 +256,10 @@
         Navigation.NavigateTo("/login");
     }
 
+    /// <summary>
+    /// Hủy đăng ký sự kiện giỏ hàng/ngôn ngữ khi component bị hủy —
+    /// giữ đăng ký sẽ rò rỉ memory vì service sống lâu hơn component.
+    /// </summary>
     public void Dispose()
     {
         CartState.OnChange -= OnCartChanged;

@@ -34,6 +34,19 @@ namespace PhuThuongStickyRice.Application.Common
         public const int InternationalMobileDigitCount = 11;
 
         /// <summary>
+        /// Thông báo lỗi khi SĐT nhập vào không chuẩn hóa được (sai định
+        /// dạng). Dùng chung cho mọi service validate SĐT để message nhất
+        /// quán, sửa 1 chỗ là đổi khắp nơi.
+        /// </summary>
+        public const string InvalidPhoneMessage = "Số điện thoại không hợp lệ.";
+
+        /// <summary>
+        /// Thông báo lỗi khi thiếu SĐT bắt buộc. Dùng chung cho các service
+        /// yêu cầu SĐT để message nhất quán.
+        /// </summary>
+        public const string PhoneRequiredMessage = "Vui lòng nhập số điện thoại.";
+
+        /// <summary>
         /// Lấy chuỗi chỉ gồm chữ số từ SĐT: bỏ dấu cách, gạch ngang, dấu chấm,
         /// dấu "+" (mã vùng +84...) — null hoặc rỗng trả về chuỗi rỗng.
         /// </summary>

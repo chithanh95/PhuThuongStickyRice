@@ -2,6 +2,7 @@ using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 
@@ -468,8 +469,11 @@ namespace PhuThuongStickyRice.Domain.Entities
 
                     var fromText = fromElement.GetString();
                     var toText = toElement.GetString();
-                    if (!TimeSpan.TryParse(fromText, out var from)
-                        || !TimeSpan.TryParse(toText, out var to)
+                    // CA1305: giờ bán do admin cấu hình ("HH:mm") phải parse
+                    // quyết định (InvariantCulture), không phụ thuộc culture
+                    // của server — tránh khác biệt khi đổi regional settings.
+                    if (!TimeSpan.TryParse(fromText, CultureInfo.InvariantCulture, out var from)
+                        || !TimeSpan.TryParse(toText, CultureInfo.InvariantCulture, out var to)
                         || from >= to)
                     {
                         return new List<(TimeSpan From, TimeSpan To)>();

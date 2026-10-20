@@ -219,7 +219,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             var normalized = VietnamTime.NormalizePhone(input.Phone);
             if (string.IsNullOrEmpty(normalized))
             {
-                throw new DomainException("Số điện thoại không hợp lệ.");
+                throw new DomainException(PhoneNumber.InvalidPhoneMessage);
             }
 
             if (input.Amount == 0)
@@ -269,7 +269,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             var normalized = VietnamTime.NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
             {
-                throw new DomainException("Số điện thoại không hợp lệ.");
+                throw new DomainException(PhoneNumber.InvalidPhoneMessage);
             }
 
             if (amount <= 0)

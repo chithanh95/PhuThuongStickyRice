@@ -17,6 +17,13 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web
 {
+    /// <summary>
+    /// Điểm vào của web host Blazor WebAssembly (shell chứa shop + trang quản
+    /// trị). Đăng ký tất cả typed HttpClient của các service (shop, admin,
+    /// landing...), đăng nhập JWT tự cấp (không dùng OIDC/IdentityServer ngoài),
+    /// và xác định API endpoint: localhost thì dùng config, LAN/deploy thì dùng
+    /// same-origin (API và Web chung origin).
+    /// </summary>
     public class Program
     {
         /// <summary>
@@ -35,6 +42,13 @@ namespace PhuThuongStickyRice.Web
             });
         }
 
+        /// <summary>
+        /// Dựng Blazor WebAssembly host, đăng ký DI (auth, HttpClient của mọi
+        /// service) rồi chạy app. Đăng nhập JWT được lưu ở localStorage
+        /// (<see cref="JwtTokenStore"/>) và token gắn vào request thủ công bởi
+        /// <c>ApiClientBase</c> — không qua DelegatingHandler tự động.
+        /// </summary>
+        /// <param name="args">Tham số dòng lệnh.</param>
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -55,6 +69,8 @@ namespace PhuThuongStickyRice.Web
                 : baseAddress.TrimEnd('/');
             if (string.IsNullOrWhiteSpace(apiEndpoint) || !System.Uri.TryCreate(apiEndpoint, System.UriKind.Absolute, out _))
             {
+                // Config endpoint thiếu/sai định dạng: fail-soft về same-origin
+                // để app vẫn gọi được API thay vì crash lúc tạo Uri bên dưới.
                 apiEndpoint = baseAddress.TrimEnd('/');
             }
             var apiBaseUri = new System.Uri(apiEndpoint);

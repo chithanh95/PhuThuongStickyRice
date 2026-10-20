@@ -45,9 +45,9 @@
                 </div>
             </div>
         </div>
-        @if (!string.IsNullOrEmpty(ToggleError))
+        @if (!string.IsNullOrEmpty(AvailabilityToggleError) || !string.IsNullOrEmpty(DeleteProductError))
         {
-            <div class="alert alert-danger">@ToggleError</div>
+            <div class="alert alert-danger">@(AvailabilityToggleError ?? DeleteProductError)</div>
         }
         <div class="table-responsive">
 

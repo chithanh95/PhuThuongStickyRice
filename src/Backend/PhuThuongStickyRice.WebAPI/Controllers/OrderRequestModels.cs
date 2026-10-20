@@ -15,7 +15,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         public Guid? SizeOptionId { get; set; }
 
-        public List<Guid> ToppingIds { get; set; } = new List<Guid>();
+        public List<Guid> ToppingIds { get; set; } = [];
 
         public bool IsCombo { get; set; }
 
@@ -108,7 +108,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// </summary>
         public string Source { get; set; }
 
-        public List<CreateOrderLineRequestModel> Lines { get; set; } = new List<CreateOrderLineRequestModel>();
+        public List<CreateOrderLineRequestModel> Lines { get; set; } = [];
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         public string CustomerPhone { get; set; }
 
-        public List<UpdateOrderLineRequestModel> Lines { get; set; } = new List<UpdateOrderLineRequestModel>();
+        public List<UpdateOrderLineRequestModel> Lines { get; set; } = [];
     }
 
     /// <summary>
@@ -200,7 +200,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string PhotoUrl { get; set; }
 
         /// <summary>Wave 6b (item 26): optional per-dish star ratings.</summary>
-        public List<ReviewLineRequestModel> Lines { get; set; } = new List<ReviewLineRequestModel>();
+        public List<ReviewLineRequestModel> Lines { get; set; } = [];
     }
 
     /// <summary>

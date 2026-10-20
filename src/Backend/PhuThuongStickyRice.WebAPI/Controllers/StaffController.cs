@@ -85,7 +85,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 isLocked = u.LockoutEnd.HasValue && u.LockoutEnd.Value > DateTimeOffset.UtcNow,
                 roles = rolesByUser.TryGetValue(u.Id, out var names)
                     ? names
-                    : new List<string>()
+                    : []
             });
 
             return Ok(result);

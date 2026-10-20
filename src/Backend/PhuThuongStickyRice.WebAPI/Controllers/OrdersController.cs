@@ -544,7 +544,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                             ProductId = x.ProductId,
                             Rating = x.Rating
                         })
-                        .ToList() ?? new List<SubmitReviewLineInput>()
+                        .ToList() ?? []
                 });
                 return Ok(review);
             }

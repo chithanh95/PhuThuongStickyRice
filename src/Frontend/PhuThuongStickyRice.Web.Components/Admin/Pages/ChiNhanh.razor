@@ -127,7 +127,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="HideForm">Hủy</button>
-                    <button class="btn btn-primary" @onclick="Save" disabled="@_saving">
+                    <button class="btn btn-primary" @onclick="SaveBranchAsync" disabled="@_saving">
                         @(_saving ? "Đang lưu..." : "Lưu")
                     </button>
                 </div>
@@ -215,7 +215,7 @@
         if (e.Key == "Escape") HideForm();
     }
 
-    private async Task Save()
+    private async Task SaveBranchAsync()
     {
         _error = null;
         if (string.IsNullOrWhiteSpace(_form.Name))

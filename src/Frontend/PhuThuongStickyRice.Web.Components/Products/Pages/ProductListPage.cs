@@ -76,12 +76,14 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         public ProductModel DeletingProduct { get; private set; }
 
-        public string ToggleError { get; private set; }
+        public string AvailabilityToggleError { get; private set; }
+
+        public string DeleteProductError { get; private set; }
 
         /// <summary>One-click sold-out toggle (Active &lt;-&gt; Inactive).</summary>
         protected async Task ToggleAvailability(ProductModel product)
         {
-            ToggleError = null;
+            AvailabilityToggleError = null;
             try
             {
                 var updated = await ProductService.ToggleAvailabilityAsync(product.Id);
@@ -89,7 +91,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
             }
             catch (System.Exception)
             {
-                ToggleError = $"Không đổi được trạng thái của '{product.Name}'. Vui lòng thử lại.";
+                AvailabilityToggleError = $"Không đổi được trạng thái của '{product.Name}'. Vui lòng thử lại.";
             }
         }
 
@@ -176,7 +178,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
             {
                 Log.DeleteProductFailed(Logger, ex);
                 DeleteDialog.Close();
-                ToggleError = $"Không xóa được '{DeletingProduct?.Name}'. Vui lòng thử lại.";
+                DeleteProductError = $"Không xóa được '{DeletingProduct?.Name}'. Vui lòng thử lại.";
                 StateHasChanged();
             }
         }

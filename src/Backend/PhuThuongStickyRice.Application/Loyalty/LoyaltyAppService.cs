@@ -393,7 +393,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             var normalized = NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
             {
-                throw new Domain.Exceptions.DomainException("Số điện thoại không hợp lệ.");
+                throw new Domain.Exceptions.DomainException(PhoneNumber.InvalidPhoneMessage);
             }
 
             var account = await FindByPhoneAsync(normalized);

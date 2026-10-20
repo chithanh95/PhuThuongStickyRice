@@ -1,3 +1,4 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.Extensions.Caching.Memory;
 using System;
@@ -169,15 +170,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 queryable.Where(x => x.TagName == VipTagName)
                     .OrderByDescending(x => x.CreatedAt)
                     .Take(MaxVipListRows));
-            return rows.Select(x => new CustomerTagDto
-            {
-                Id = x.Id,
-                CustomerPhone = x.CustomerPhone,
-                TagName = x.TagName,
-                Color = x.Color,
-                CreatedBy = x.CreatedBy,
-                CreatedAt = x.CreatedAt,
-            }).ToList();
+            return rows.Select(CustomerTagAppService.ToDto).ToList();
         }
 
         /// <summary>
@@ -191,7 +184,7 @@ namespace PhuThuongStickyRice.Application.Customer
             phone = CustomerPhoneNormalizer.NormalizePhone(phone);
             if (string.IsNullOrEmpty(phone))
             {
-                throw new UserFriendlyException("Vui lòng nhập số điện thoại.");
+                throw new UserFriendlyException(PhoneNumber.PhoneRequiredMessage);
             }
 
             var vip = await FindExistingVipTagAsync(phone);

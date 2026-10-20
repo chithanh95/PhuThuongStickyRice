@@ -43,7 +43,7 @@
                     <div class="text-success mt-1">@_success</div>
                 }
             </div>
-            <button class="btn btn-primary" @onclick="Save" disabled="@_saving">
+            <button class="btn btn-primary" @onclick="SaveProfileAsync" disabled="@_saving">
                 @(_saving ? "Đang lưu..." : "Lưu")
             </button>
         }
@@ -75,7 +75,7 @@
         _loading = false;
     }
 
-    private async Task Save()
+    private async Task SaveProfileAsync()
     {
         _error = null; _success = null; _saving = true;
         try

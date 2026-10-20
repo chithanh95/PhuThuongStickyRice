@@ -134,7 +134,7 @@ namespace PhuThuongStickyRice.Application.Customer
             var phone = VietnamTime.NormalizePhone(input?.Phone);
             if (!string.IsNullOrEmpty(input?.Phone) && string.IsNullOrEmpty(phone))
             {
-                throw new DomainException("Số điện thoại không hợp lệ.");
+                throw new DomainException(PhoneNumber.InvalidPhoneMessage);
             }
 
             var photo = new CustomerPhoto
