@@ -231,7 +231,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 worksheet.Cell(rowIndex, 2).Value = row.CustomerPhone;
                 worksheet.Cell(rowIndex, 3).Value = row.OrderCount;
                 worksheet.Cell(rowIndex, 4).Value = row.TotalSpent;
-                worksheet.Cell(rowIndex, 4).Style.NumberFormat.Format = "#,##0";
+                worksheet.Cell(rowIndex, 4).Style.NumberFormat.Format = ExcelWorksheetStyling.MoneyFormat;
                 // Lần mua cuối lưu ở DB là UTC — cộng offset giờ VN để hiển thị đúng giờ địa phương trong Excel.
                 worksheet.Cell(rowIndex, 5).Value = row.LastOrderAt.AddHours(VietnamTime.UtcOffsetHours);
                 worksheet.Cell(rowIndex, 5).Style.NumberFormat.Format = "dd/mm/yyyy hh:mm";

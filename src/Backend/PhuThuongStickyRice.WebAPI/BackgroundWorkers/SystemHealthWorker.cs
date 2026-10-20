@@ -138,8 +138,8 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
         {
             try
             {
-                var db = provider.GetRequiredService<StickyRiceDbContext>();
-                return await db.Database.CanConnectAsync();
+                var dbContext = provider.GetRequiredService<StickyRiceDbContext>();
+                return await dbContext.Database.CanConnectAsync();
             }
             catch (Exception ex)
             {

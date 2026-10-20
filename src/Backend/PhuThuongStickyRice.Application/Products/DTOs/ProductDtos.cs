@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using PhuThuongStickyRice.Domain.ValueObjects;
 using Volo.Abp.Application.Dtos;
 
 namespace PhuThuongStickyRice.Application.Products.DTOs
@@ -119,7 +120,7 @@ namespace PhuThuongStickyRice.Application.Products.DTOs
         [Range(0, double.MaxValue)]
         public decimal Price { get; set; }
 
-        public string Currency { get; set; } = "VND";
+        public string Currency { get; set; } = Money.DefaultCurrency;
 
         /// <summary>Cost price (giá vốn) in VND, for the profit report.</summary>
         [Range(0, double.MaxValue)]

@@ -98,7 +98,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest("Username/email and password are required.");
             }
 
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
             var login = model.UsernameOrEmail.Trim();
             var user = await _userManager.FindByNameAsync(login)
                 ?? (login.Contains('@') ? await _userManager.FindByEmailAsync(login) : null);
@@ -106,13 +106,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (user == null)
             {
                 // Item 99: every login attempt is audited.
-                await _loginAudits.RecordAsync(login, ip, false, "Không tìm thấy tài khoản.");
+                await _loginAudits.RecordAsync(login, clientIp, false, "Không tìm thấy tài khoản.");
                 return Unauthorized("Invalid username/email or password.");
             }
 
             if (await _userManager.IsLockedOutAsync(user))
             {
-                await _loginAudits.RecordAsync(user.UserName, ip, false, "Tài khoản tạm khóa.");
+                await _loginAudits.RecordAsync(user.UserName, clientIp, false, "Tài khoản tạm khóa.");
                 // Item 100: Vietnamese lockout message.
                 return StatusCode(AccountLockedStatusCode, "Tài khoản tạm khóa. Vui lòng thử lại sau.");
             }
@@ -120,14 +120,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (!await _userManager.CheckPasswordAsync(user, model.Password))
             {
                 await _userManager.AccessFailedAsync(user);
-                await _loginAudits.RecordAsync(user.UserName, ip, false, "Sai mật khẩu.");
+                await _loginAudits.RecordAsync(user.UserName, clientIp, false, "Sai mật khẩu.");
                 return Unauthorized("Invalid username/email or password.");
             }
 
             await _userManager.ResetAccessFailedCountAsync(user);
 
             var (roles, newIpWarning) = await AuditSuccessfulLoginAsync(
-                user, ip, "Đăng nhập trang quản trị.");
+                user, clientIp, "Đăng nhập trang quản trị.");
 
             // Item 98: 2FA — password OK, now require the 6-digit TOTP code.
             if (user.TwoFactorEnabled)
@@ -141,7 +141,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 });
             }
 
-            return BuildLoginResponse(user, roles, ip, newIpWarning);
+            return BuildLoginResponse(user, roles, clientIp, newIpWarning);
         }
 
         /// <summary>
@@ -188,8 +188,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             await EnsureCustomerRoleAsync(user.Id, cancellationToken);
 
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
-            await _loginAudits.RecordAsync(user.UserName, ip, true, "Đăng ký tài khoản khách hàng.");
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+            await _loginAudits.RecordAsync(user.UserName, clientIp, true, "Đăng ký tài khoản khách hàng.");
 
             var roles = await GetRoleNamesAsync(user.Id);
             var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
@@ -244,7 +244,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Unauthorized("Mã đăng nhập 2 bước đã hết hạn. Vui lòng đăng nhập lại.");
             }
 
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
             var user = await _userManager.FindByIdAsync(userId.Value.ToString());
             if (user == null)
             {
@@ -259,16 +259,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (!await _twoFactor.VerifyCodeAsync(user.Id, model.Code))
             {
                 await _userManager.AccessFailedAsync(user);
-                await _loginAudits.RecordAsync(user.UserName, ip, false, "Sai mã 2FA.");
+                await _loginAudits.RecordAsync(user.UserName, clientIp, false, "Sai mã 2FA.");
                 return Unauthorized("Mã xác thực 2FA không đúng.");
             }
 
             await _userManager.ResetAccessFailedCountAsync(user);
 
             var (roles, newIpWarning) = await AuditSuccessfulLoginAsync(
-                user, ip, "Đăng nhập trang quản trị (2FA).");
+                user, clientIp, "Đăng nhập trang quản trị (2FA).");
 
-            return BuildLoginResponse(user, roles, ip, newIpWarning);
+            return BuildLoginResponse(user, roles, clientIp, newIpWarning);
         }
 
         [Authorize(Roles = "Admin")]
@@ -477,11 +477,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// Dùng chung cho Login thường và VerifyTwoFactor.
         /// </summary>
         private async Task<(string[] Roles, bool NewIpWarning)> AuditSuccessfulLoginAsync(
-            User user, string ip, string staffLoginNote)
+            User user, string clientIp, string staffLoginNote)
         {
             // Item 99: cảnh báo khi đăng nhập thành công từ IP chưa từng thấy của user.
-            var newIpWarning = await _loginAudits.IsNewIpForUserAsync(user.UserName, ip);
-            await _loginAudits.RecordAsync(user.UserName, ip, true);
+            var newIpWarning = await _loginAudits.IsNewIpForUserAsync(user.UserName, clientIp);
+            await _loginAudits.RecordAsync(user.UserName, clientIp, true);
 
             var roles = await GetRoleNamesAsync(user.Id);
 
@@ -501,7 +501,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// </summary>
         // CA1859: phương thức private này chỉ trả về Ok(...) nên dùng kiểu cụ thể
         // OkObjectResult thay vì ActionResult (tránh chuyển đổi kiểu lúc chạy).
-        private OkObjectResult BuildLoginResponse(User user, string[] roles, string? ip, bool newIpWarning)
+        private OkObjectResult BuildLoginResponse(User user, string[] roles, string? clientIp, bool newIpWarning)
         {
             var (token, expiresAt) = _jwtTokenService.CreateToken(user, roles);
 
@@ -513,7 +513,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 Email = user.Email,
                 Roles = roles,
                 NewIpWarning = newIpWarning,
-                NewIpAddress = newIpWarning ? ip : null
+                NewIpAddress = newIpWarning ? clientIp : null
             });
         }
 

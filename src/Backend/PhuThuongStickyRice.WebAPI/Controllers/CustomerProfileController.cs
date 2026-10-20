@@ -26,6 +26,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _profiles = profiles;
         }
 
+        /// <summary>Lấy hồ sơ của khách hàng đang đăng nhập (thông tin cá nhân, hạng thành viên, điểm thưởng).</summary>
         [HttpGet]
         public async Task<ActionResult<CustomerProfileDto>> GetMine(
             CancellationToken cancellationToken = default)
@@ -33,6 +34,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _profiles.GetMyAsync());
         }
 
+        /// <summary>Cập nhật hồ sơ của khách hàng đang đăng nhập (tên, ngày sinh, sở thích...).</summary>
+        /// <param name="dto">Dữ liệu hồ sơ mới.</param>
         [HttpPut]
         public async Task<ActionResult<CustomerProfileDto>> Update(
             [FromBody] UpdateCustomerProfileDto dto,

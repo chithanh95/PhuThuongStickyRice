@@ -28,6 +28,15 @@ namespace PhuThuongStickyRice.Application.Common
         public const int DataStartRowIndex = 2;
 
         /// <summary>
+        /// Định dạng số tiền trong cell Excel (không có ký hiệu tiền tệ):
+        /// phân cách hàng nghìn, không chữ số thập phân (vd 1.234.567).
+        /// Gom 2 bản copy-paste trước đây ở OrderReportsAppService (const
+        /// riêng) và CustomerTagAppService (chuỗi hardcode "#,##0") về 1
+        /// chỗ để đổi định dạng tiền là đổi đồng loạt mọi file export.
+        /// </summary>
+        public const string MoneyFormat = "#,##0";
+
+        /// <summary>
         /// Màu nền tím thương hiệu (#7a6fbe) của hàng tiêu đề file Excel.
         /// </summary>
         public const string BrandHeaderBackground = "#7a6fbe";

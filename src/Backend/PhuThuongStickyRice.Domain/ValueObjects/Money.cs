@@ -10,6 +10,14 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
     /// </summary>
     public class Money : ValueObject
     {
+        /// <summary>
+        /// Mã tiền tệ mặc định của toàn bộ hệ thống (ISO 4217): quán chỉ bán
+        /// bằng VNĐ. Dùng thay cho chuỗi "VND" hardcode rải rác ở các
+        /// AppService để đổi tiền tệ mặc định (nếu có ngày mở rộng) chỉ sửa
+        /// 1 chỗ.
+        /// </summary>
+        public const string DefaultCurrency = "VND";
+
         /// <summary>Số tiền (không âm).</summary>
         public decimal Amount { get; private set; }
 

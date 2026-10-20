@@ -429,7 +429,7 @@ namespace PhuThuongStickyRice.Application.Products
                 throw new DuplicateProductCodeException(code.Value);
             }
 
-            var product = Product.Create(code, input.Name, Money.Of(input.Price, input.Currency ?? "VND"), input.Description);
+            var product = Product.Create(code, input.Name, Money.Of(input.Price, input.Currency ?? Money.DefaultCurrency), input.Description);
             ApplyEditableFields(product, input);
 
             product.CreatedAt = DateTime.UtcNow;
@@ -469,7 +469,7 @@ namespace PhuThuongStickyRice.Application.Products
             var before = SnapshotFields(product);
 
             product.UpdateDetails(input.Name, input.Description);
-            product.ChangePrice(Money.Of(input.Price, input.Currency ?? "VND"));
+            product.ChangePrice(Money.Of(input.Price, input.Currency ?? Money.DefaultCurrency));
             ApplyEditableFields(product, input);
 
             if (!string.IsNullOrWhiteSpace(input.Status)

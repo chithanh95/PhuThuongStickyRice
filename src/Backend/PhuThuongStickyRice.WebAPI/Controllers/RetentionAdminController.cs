@@ -66,6 +66,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(promos);
         }
 
+        /// <summary>DTO khuyến mãi khung giờ vắng khách: khung giờ áp dụng (StartHour–EndHour), mức giảm (VNĐ) và trạng thái kích hoạt.</summary>
         public class OffPeakPromoDto
         {
             public int StartHour { get; set; }
@@ -176,6 +177,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(polls);
         }
 
+        /// <summary>DTO cuộc bình chọn món ăn: tên món, mô tả, ảnh minh họa và trạng thái đang mở bình chọn.</summary>
         public class DishPollDto
         {
             public string DishName { get; set; }

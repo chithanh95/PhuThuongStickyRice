@@ -1077,100 +1077,131 @@ namespace PhuThuongStickyRice.Application.Orders
                 string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>();
             foreach (var line in input.Lines)
             {
-                if (line.IsCombo)
-                {
-                    var combo = catalog.Combos.FirstOrDefault(x => x.Id == line.ProductId);
-                    if (combo == null || !combo.IsActive)
-                    {
-                        throw new Domain.Exceptions.DomainException("Combo không tồn tại hoặc đã ngừng bán.");
-                    }
-
-                    lines.Add((
-                        combo.Id,
-                        combo.Name,
-                        Money.Of(combo.Price, "VND"),
-                        line.Quantity,
-                        null,
-                        null,
-                        0,
-                        true,
-                        TrimToNull(line.Note)));
-                    continue;
-                }
-
-                var product = catalog.Products.FirstOrDefault(x => x.Id == line.ProductId);
-                if (product == null)
-                {
-                    throw new ProductNotFoundException(line.ProductId);
-                }
-
-                if (product.Status != ProductStatus.Active)
-                {
-                    throw new Domain.Exceptions.DomainException($"Product '{product.Name}' is not available for ordering.");
-                }
-
-                // Item 164: sale time windows (and seasonal window), evaluated
-                // against the scheduled pickup time for pre-orders, now for
-                // immediate orders.
-                if (!product.IsAvailableNow(GetAvailabilityCheckTime(input)))
-                {
-                    throw new Domain.Exceptions.DomainException(
-                        $"Món '{product.Name}' không bán trong khung giờ này.");
-                }
-
-                // Size option: replaces the base price with the size price.
-                string sizeName = null;
-                var unitPrice = product.Price;
-                if (line.SizeOptionId.HasValue)
-                {
-                    var sizeOption = catalog.SizeOptions.FirstOrDefault(x => x.Id == line.SizeOptionId.Value);
-                    if (sizeOption == null || !sizeOption.IsActive || sizeOption.ProductId != product.Id)
-                    {
-                        throw new Domain.Exceptions.DomainException(
-                            $"Size option for '{product.Name}' is not available.");
-                    }
-
-                    sizeName = sizeOption.Name;
-                    unitPrice = Money.Of(sizeOption.Price, product.Price.Currency);
-                }
-
-                // Item 256 fix (bug-hunt 2026-10-19): giá KM hiển thị trên card
-                // PHẢI được tính vào đơn — trước đây chỉ hiện mà vẫn tính giá
-                // gốc. Áp trước khi cộng tiền topping (KM chỉ giảm giá món,
-                // không giảm tiền topping). Server tính lại nên đây là "cửa
-                // an ninh" giá cuối, client có sửa request cũng không đổi giá.
-                var effectiveAmount = product.ResolveEffectivePrice(unitPrice.Amount);
-                if (effectiveAmount != unitPrice.Amount)
-                {
-                    unitPrice = Money.Of(effectiveAmount, unitPrice.Currency);
-                }
-
-                // Toppings: extra charge summed on top of the unit price.
-                string toppingNames = null;
-                decimal toppingsExtra = 0;
-                // HashSet: tra cứu O(1) trong Where() bên dưới thay vì
-                // List.Contains O(n) cho mỗi topping của catalog; ctor
-                // HashSet đã khử trùng nên thay luôn Distinct().ToList().
-                var lineToppings = new HashSet<Guid>(line.ToppingIds ?? Enumerable.Empty<Guid>());
-                if (lineToppings.Count > 0)
-                {
-                    var resolved = catalog.Toppings.Where(x => lineToppings.Contains(x.Id)).ToList();
-                    if (resolved.Count != lineToppings.Count)
-                    {
-                        throw new Domain.Exceptions.DomainException("Một topping đã chọn không còn khả dụng.");
-                    }
-
-                    toppingNames = string.Join(", ", resolved.Select(x => x.Name));
-                    toppingsExtra = resolved.Sum(x => x.ExtraPrice);
-                    unitPrice = Money.Of(unitPrice.Amount + toppingsExtra, unitPrice.Currency);
-                }
-
-                lines.Add((product.Id, product.Name, unitPrice, line.Quantity,
-                    sizeName, toppingNames, toppingsExtra, false,
-                    TrimToNull(line.Note)));
+                lines.Add(line.IsCombo
+                    ? BuildComboOrderLine(line, catalog)
+                    : BuildProductOrderLine(line, input, catalog));
             }
 
             return lines;
+        }
+
+        /// <summary>
+        /// Dựng 1 dòng combo trong đơn: validate combo còn bán rồi chốt giá
+        /// combo (giá combo cố định, không áp size/topping/KM như món lẻ).
+        /// </summary>
+        private (Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
+            string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)
+            BuildComboOrderLine(CreateOrderLineDto line, OrderLineCatalog catalog)
+        {
+            var combo = catalog.Combos.FirstOrDefault(x => x.Id == line.ProductId);
+            if (combo == null || !combo.IsActive)
+            {
+                throw new Domain.Exceptions.DomainException("Combo không tồn tại hoặc đã ngừng bán.");
+            }
+
+            return (
+                combo.Id,
+                combo.Name,
+                Money.Of(combo.Price, Money.DefaultCurrency),
+                line.Quantity,
+                null,
+                null,
+                0,
+                true,
+                TrimToNull(line.Note));
+        }
+
+        /// <summary>
+        /// Dựng 1 dòng món lẻ trong đơn: validate món còn bán + khung giờ bán,
+        /// áp giá size đã chọn, giá KM (nếu có), rồi cộng tiền topping.
+        /// </summary>
+        private (Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
+            string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)
+            BuildProductOrderLine(CreateOrderLineDto line, CreateOrderDto input, OrderLineCatalog catalog)
+        {
+            var product = catalog.Products.FirstOrDefault(x => x.Id == line.ProductId);
+            if (product == null)
+            {
+                throw new ProductNotFoundException(line.ProductId);
+            }
+
+            if (product.Status != ProductStatus.Active)
+            {
+                throw new Domain.Exceptions.DomainException($"Product '{product.Name}' is not available for ordering.");
+            }
+
+            // Item 164: sale time windows (and seasonal window), evaluated
+            // against the scheduled pickup time for pre-orders, now for
+            // immediate orders.
+            if (!product.IsAvailableNow(GetAvailabilityCheckTime(input)))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    $"Món '{product.Name}' không bán trong khung giờ này.");
+            }
+
+            // Size option: replaces the base price with the size price.
+            string sizeName = null;
+            var unitPrice = product.Price;
+            if (line.SizeOptionId.HasValue)
+            {
+                var sizeOption = catalog.SizeOptions.FirstOrDefault(x => x.Id == line.SizeOptionId.Value);
+                if (sizeOption == null || !sizeOption.IsActive || sizeOption.ProductId != product.Id)
+                {
+                    throw new Domain.Exceptions.DomainException(
+                        $"Size option for '{product.Name}' is not available.");
+                }
+
+                sizeName = sizeOption.Name;
+                unitPrice = Money.Of(sizeOption.Price, product.Price.Currency);
+            }
+
+            // Item 256 fix (bug-hunt 2026-10-19): giá KM hiển thị trên card
+            // PHẢI được tính vào đơn — trước đây chỉ hiện mà vẫn tính giá
+            // gốc. Áp trước khi cộng tiền topping (KM chỉ giảm giá món,
+            // không giảm tiền topping). Server tính lại nên đây là "cửa
+            // an ninh" giá cuối, client có sửa request cũng không đổi giá.
+            var effectiveAmount = product.ResolveEffectivePrice(unitPrice.Amount);
+            if (effectiveAmount != unitPrice.Amount)
+            {
+                unitPrice = Money.Of(effectiveAmount, unitPrice.Currency);
+            }
+
+            // Toppings: extra charge summed on top of the unit price.
+            var (toppingNames, toppingsExtra) = ResolveLineToppings(line, catalog);
+            if (toppingNames != null)
+            {
+                unitPrice = Money.Of(unitPrice.Amount + toppingsExtra, unitPrice.Currency);
+            }
+
+            return (product.Id, product.Name, unitPrice, line.Quantity,
+                sizeName, toppingNames, toppingsExtra, false,
+                TrimToNull(line.Note));
+        }
+
+        /// <summary>
+        /// Tra cứu các topping đã chọn của 1 dòng món từ catalog đã nạp sẵn
+        /// (không query trong vòng lặp để tránh N+1). Trả về tên gộp và tổng
+        /// tiền topping thêm; <c>null</c>/0 khi dòng món không chọn topping.
+        /// </summary>
+        private static (string ToppingNames, decimal ToppingsExtra) ResolveLineToppings(
+            CreateOrderLineDto line, OrderLineCatalog catalog)
+        {
+            // HashSet: tra cứu O(1) trong Where() bên dưới thay vì
+            // List.Contains O(n) cho mỗi topping của catalog; ctor
+            // HashSet đã khử trùng nên thay luôn Distinct().ToList().
+            var lineToppings = new HashSet<Guid>(line.ToppingIds ?? Enumerable.Empty<Guid>());
+            if (lineToppings.Count == 0)
+            {
+                return (null, 0);
+            }
+
+            var resolved = catalog.Toppings.Where(x => lineToppings.Contains(x.Id)).ToList();
+            if (resolved.Count != lineToppings.Count)
+            {
+                throw new Domain.Exceptions.DomainException("Một topping đã chọn không còn khả dụng.");
+            }
+
+            return (string.Join(", ", resolved.Select(x => x.Name)), resolved.Sum(x => x.ExtraPrice));
         }
 
         /// <summary>

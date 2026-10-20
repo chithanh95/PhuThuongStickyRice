@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -50,6 +49,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         };
 
         private const string InvalidPhoneMessage = "Số điện thoại không hợp lệ.";
+        // Thông báo khi session chat AI tư vấn không hợp lệ — dùng chung cho
+        // nhánh validate ở 2 endpoint chat (gửi tin mới và lấy lịch sử).
+        private const string InvalidChatSessionMessage = "Phiên chat không hợp lệ.";
         // Thông báo khi khách đã quay vòng quay may mắn trong ngày (giờ VN) —
         // dùng chung cho nhánh kiểm tra và nhánh thua race 2 request đồng thời.
         private const string AlreadySpunMessage = "Hôm nay bạn đã quay rồi, hẹn mai quay tiếp nhé!";
@@ -107,12 +109,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// <remarks>
         /// perf-hunt 2026-10-20: chống cache stampede (thundering herd). Trước
         /// đây khi TTL hết, N request đồng thời đều chạy loader() (queries DB)
-        /// — giờ 1 request duy nhất chạy loader nhờ SemaphoreSlim per-key +
+        /// — giờ 1 request duy nhất chạy loader nhờ khóa per-key +
         /// double-check sau khi lấy khóa (cùng pattern với
         /// ProductCatalogCache.GetOrAddAsync).
+        /// codequality-team 2026-10-20 run-1655 Agent3-BestPractices:
+        /// KeyedAsyncLock thay ConcurrentDictionary&lt;string, SemaphoreSlim&gt;
+        /// + TryRemove trực tiếp: bản cũ có cửa sổ race "xóa entry rồi tạo mới"
+        /// khiến 2 request cùng key có thể cầm 2 semaphore khác nhau và chạy
+        /// loader song song (thundering herd trong cửa sổ race) — bản này
+        /// refcount entry nên không bao giờ xóa khi còn luồng giữ/chờ,
+        /// mutual exclusion theo key không bao giờ gãy.
         /// </remarks>
-        private static readonly ConcurrentDictionary<string, SemaphoreSlim> CacheLocks = new();
-
         private async Task<ActionResult> GetOrCacheJsonAsync(
             string cacheKey, TimeSpan ttl, Func<Task<object>> loader)
         {
@@ -121,9 +128,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Ok(cached);
             }
 
-            var semaphore = CacheLocks.GetOrAdd(cacheKey, _ => new SemaphoreSlim(1, 1));
-            await semaphore.WaitAsync();
-            try
+            return await KeyedAsyncLock.RunAsync<ActionResult>(cacheKey, async () =>
             {
                 // Double-check: request khác có thể đã nạp cache trong lúc mình chờ khóa.
                 if (_memoryCache.TryGetValue(cacheKey, out object cachedAfterLock))
@@ -134,12 +139,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 var value = await loader();
                 _memoryCache.Set(cacheKey, value, ttl);
                 return Ok(value);
-            }
-            finally
-            {
-                semaphore.Release();
-                CacheLocks.TryRemove(cacheKey, out _);
-            }
+            });
         }
 
         public LandingPublicController(
@@ -239,6 +239,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     .ToListAsync(cancellationToken));
         }
 
+        /// <summary>Body đăng ký nhận tin khuyến mãi: SĐT Việt Nam muốn nhận thông báo ưu đãi.</summary>
         public class SubscribeRequest
         {
             public string Phone { get; set; }
@@ -293,6 +294,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Landing engagement: lucky spin (item 28) ============
 
+        /// <summary>Body lượt quay vòng quay may mắn: SĐT (mỗi SĐT quay 1 lần/ngày; giải 5k/10k/15k/20k).</summary>
         public class SpinRequest
         {
             public string Phone { get; set; }
@@ -391,6 +393,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Landing engagement: referral (item 29) ============
 
+        /// <summary>Body ghi nhận giới thiệu bạn bè: SĐT người giới thiệu + SĐT người được giới thiệu.</summary>
         public class ReferralRequest
         {
             public string ReferrerPhone { get; set; }
@@ -437,6 +440,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Landing engagement: quick rating (item 36) ============
 
+        /// <summary>Body đánh giá nhanh 1 chạm (không cần đăng nhập): điểm số + món được đánh giá (tùy chọn).</summary>
         public class QuickRatingRequest
         {
             public int Rating { get; set; }
@@ -469,6 +473,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Landing engagement: live chat (item 37) ============
 
+        /// <summary>Body gửi tin nhắn chat trực tiếp trên landing: mã phiên chat + nội dung tin nhắn.</summary>
         public class ChatSendRequest
         {
             public string SessionId { get; set; }
@@ -487,7 +492,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             if (string.IsNullOrWhiteSpace(sessionId) || sessionId.Length > ChatMessage.SessionIdMaxLength)
             {
-                return BadRequest(new { success = false, message = "Phiên chat không hợp lệ." });
+                return BadRequest(new { success = false, message = InvalidChatSessionMessage });
             }
 
             if (string.IsNullOrWhiteSpace(message))
@@ -527,7 +532,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             sessionId = (sessionId ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(sessionId))
             {
-                return BadRequest(new { success = false, message = "Phiên chat không hợp lệ." });
+                return BadRequest(new { success = false, message = InvalidChatSessionMessage });
             }
 
             // perf-hunt 2026-10-19: projection hẹp (chỉ 5 cột cần) thay vì nạp
@@ -573,6 +578,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Sinh nhật tặng quà (item 43) ============
 
+        /// <summary>Body đăng ký sinh nhật nhận quà: SĐT + ngày sinh (tặng mã quà nếu sinh nhật trong 7 ngày tới).</summary>
         public class BirthdayGiftRequest
         {
             public string Phone { get; set; }
@@ -791,6 +797,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     .ToListAsync(cancellationToken));
         }
 
+        /// <summary>Body đăng ký khóa học nấu xôi bằng SĐT.</summary>
         public class CourseEnrollRequest
         {
             public string Phone { get; set; }
@@ -869,6 +876,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Retention: 7-day check-in challenge (item 53) ============
 
+        /// <summary>Body điểm danh hằng ngày (thử thách 7 ngày): SĐT — dùng để tính chuỗi ngày điểm danh liên tiếp.</summary>
         public class CheckInRequest
         {
             public string Phone { get; set; }
@@ -956,6 +964,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                     .ToListAsync(cancellationToken));
         }
 
+        /// <summary>Body bình chọn món ăn: SĐT (mỗi SĐT chỉ được 1 phiếu cho mỗi cuộc bình chọn).</summary>
         public class VoteRequest
         {
             public string Phone { get; set; }
@@ -1006,6 +1015,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Parse ý định đặt hàng từ text/chatbot/voice (items 61, 80) ============
 
+        /// <summary>Body phân tích ý định đặt hàng từ văn bản (chatbot/voice): nội dung cần phân tích + SĐT khách.</summary>
         public class ParseOrderRequest
         {
             public string Text { get; set; }
@@ -1065,6 +1075,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         // ============ Món yêu thích (item 63) ============
 
+        /// <summary>Body thêm món yêu thích của khách: SĐT + mã món (idempotent — thêm lại không trùng).</summary>
         public class FavoriteRequest
         {
             public string Phone { get; set; }

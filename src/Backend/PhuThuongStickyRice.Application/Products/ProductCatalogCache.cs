@@ -47,7 +47,7 @@ namespace PhuThuongStickyRice.Application.Products
     public class ProductCatalogCache : IProductCatalogCache
     {
         private const string VersionKey = "product-catalog:version";
-        private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan CacheEntryTtl = TimeSpan.FromMinutes(5);
 
         private readonly IMemoryCache _cache;
 
@@ -95,7 +95,7 @@ namespace PhuThuongStickyRice.Application.Products
                 }
 
                 var value = await factory();
-                _cache.Set(versionedKey, value, Ttl);
+                _cache.Set(versionedKey, value, CacheEntryTtl);
                 return value;
             });
         }

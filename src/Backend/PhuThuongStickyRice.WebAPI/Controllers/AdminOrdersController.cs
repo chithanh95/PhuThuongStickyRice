@@ -108,11 +108,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             var bytes = await _reports.ExportRevenueAsync(fromDate, toDate);
-            var from = (fromDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            var to = (toDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var fromText = (fromDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var toText = (toDate?.Date ?? VietnamTime.Today()).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             return File(bytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"bao-cao-doanh-thu-{from}_{to}.xlsx");
+                $"bao-cao-doanh-thu-{fromText}_{toText}.xlsx");
         }
         /// <summary>
         /// Revenue forecast: per-weekday moving averages over recent

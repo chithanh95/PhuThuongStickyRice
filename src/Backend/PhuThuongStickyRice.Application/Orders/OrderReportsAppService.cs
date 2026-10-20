@@ -68,7 +68,6 @@ namespace PhuThuongStickyRice.Application.Orders
         /// </summary>
         private const string ExcelDateFormat = "dd/MM/yyyy";
         private const string ExcelDateTimeFormat = "dd/MM/yyyy HH:mm";
-        private const string ExcelMoneyFormat = "#,##0";
 
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -333,9 +332,9 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             summary.Cell(rowIndex, 2).Value = orderCount;
             summary.Cell(rowIndex, 3).Value = revenue;
-            summary.Cell(rowIndex, 3).Style.NumberFormat.Format = ExcelMoneyFormat;
+            summary.Cell(rowIndex, 3).Style.NumberFormat.Format = ExcelWorksheetStyling.MoneyFormat;
             summary.Cell(rowIndex, 4).Value = orderCount > 0 ? revenue / orderCount : 0m;
-            summary.Cell(rowIndex, 4).Style.NumberFormat.Format = ExcelMoneyFormat;
+            summary.Cell(rowIndex, 4).Style.NumberFormat.Format = ExcelWorksheetStyling.MoneyFormat;
         }
 
         /// <summary>
@@ -372,7 +371,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 sheet.Cell(rowIndex, 4).Value = order.CustomerPhone;
                 sheet.Cell(rowIndex, 5).Value = itemsText;
                 sheet.Cell(rowIndex, 6).Value = order.TotalAmount;
-                sheet.Cell(rowIndex, 6).Style.NumberFormat.Format = ExcelMoneyFormat;
+                sheet.Cell(rowIndex, 6).Style.NumberFormat.Format = ExcelWorksheetStyling.MoneyFormat;
                 sheet.Cell(rowIndex, 7).Value = OrderLabels.PaymentMethod(order.PaymentMethod);
                 sheet.Cell(rowIndex, 8).Value = OrderLabels.OrderStatus(order.Status);
                 rowIndex++;

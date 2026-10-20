@@ -62,9 +62,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         [HttpPost]
         public async Task<ActionResult> Receive()
         {
-            using var ms = new MemoryStream();
-            await Request.Body.CopyToAsync(ms);
-            var bodyBytes = ms.ToArray();
+            using var bodyStream = new MemoryStream();
+            await Request.Body.CopyToAsync(bodyStream);
+            var bodyBytes = bodyStream.ToArray();
 
             JsonDocument payload;
             try

@@ -29,6 +29,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _templates = templates;
         }
 
+        /// <summary>Admin: lấy toàn bộ mẫu tin nhắn theo trạng thái đơn (để sửa ở màn hình quản trị).</summary>
         [HttpGet]
         public async Task<ActionResult<List<OrderMessageTemplateDto>>> GetList(
             CancellationToken cancellationToken = default)
@@ -36,6 +37,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _templates.GetListAsync());
         }
 
+        /// <summary>Admin: cập nhật nội dung mẫu tin nhắn của 1 trạng thái đơn (thay đổi áp dụng ngay cho lần xem trước tiếp theo).</summary>
+        /// <param name="id">Mã mẫu tin nhắn cần sửa.</param>
+        /// <param name="dto">Nội dung mẫu mới.</param>
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<OrderMessageTemplateDto>> Update(
             Guid id,

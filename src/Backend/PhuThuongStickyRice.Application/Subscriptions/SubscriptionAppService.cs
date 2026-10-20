@@ -220,7 +220,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
             var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
                 string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>
             {
-                (sub.ProductId, sub.ProductName, Money.Of(sub.UnitPrice, "VND"),
+                (sub.ProductId, sub.ProductName, Money.Of(sub.UnitPrice, Money.DefaultCurrency),
                     sub.Quantity, sub.SizeName, sub.ToppingNames, 0, false, null)
             };
 
@@ -242,7 +242,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
                 "Đơn định kỳ tự động" + (string.IsNullOrWhiteSpace(sub.Notes) ? "" : " — " + sub.Notes),
                 PaymentMethod.Cod,
                 lines,
-                Money.Of(fee, "VND"));
+                Money.Of(fee, Money.DefaultCurrency));
         }
 
         /// <summary>

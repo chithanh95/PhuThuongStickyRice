@@ -50,6 +50,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _grossProfit.GetProductCostsAsync());
         }
 
+        /// <summary>Body cập nhật giá vốn của 1 món (VNĐ): giá vốn mới dùng để tính lãi gộp trong báo cáo.</summary>
         public class UpdateCostPriceRequest
         {
             public decimal CostPrice { get; set; }
