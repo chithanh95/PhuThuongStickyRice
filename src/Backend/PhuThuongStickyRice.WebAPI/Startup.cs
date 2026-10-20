@@ -35,8 +35,19 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.WebAPI
 {
+    /// <summary>
+    /// Điểm khởi động của WebAPI: bind <c>AppSettings</c> từ appsettings.json và
+    /// dựng HTTP request pipeline (nén response, static files, CORS, JWT auth,
+    /// rate limiter, Swagger, Blazor SPA fallback cho one-click LAN).
+    /// THỨ TỰ middleware trong <see cref="Configure"/> là cố ý — dời vị trí có
+    /// thể làm vỡ nén response, CORS hoặc fallback về index.html của Blazor.
+    /// </summary>
     public class Startup
     {
+        /// <summary>
+        /// Khởi tạo và bind toàn bộ appsettings vào <see cref="AppSettings"/>
+        /// để các method cấu hình bên dưới dùng ngay, không đọc lẻ từng key.
+        /// </summary>
         public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
@@ -45,10 +56,18 @@ namespace PhuThuongStickyRice.WebAPI
             Configuration.Bind(AppSettings);
         }
 
+        /// <summary>Cấu hình gốc của ứng dụng (appsettings.json, biến môi trường...).</summary>
         public IConfiguration Configuration { get; }
+        /// <summary>
+        /// AppSettings đã bind xong — dùng nội bộ để cấu hình middleware và options.
+        /// </summary>
         private AppSettings AppSettings { get; set; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
+        /// <summary>
+        /// Đăng ký DI container: hạ tầng web, ABP module, auth JWT, thanh toán,
+        /// Zalo OA, OTP SMS và các hosted service (seed admin, worker nền).
+        /// </summary>
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<AppSettings>(Configuration);
@@ -272,6 +291,11 @@ namespace PhuThuongStickyRice.WebAPI
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// <summary>
+        /// Dựng HTTP request pipeline. THỨ TỰ QUAN TRỌNG: nén response phải chạy
+        /// trước static files/routing; CORS sau routing; auth trước endpoints;
+        /// middleware log status-code sau auth để ghi được UserId khi 401/403.
+        /// </summary>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.InitializeApplication();
