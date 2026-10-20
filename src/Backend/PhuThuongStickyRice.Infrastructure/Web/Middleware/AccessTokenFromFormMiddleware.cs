@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
 {
-    internal class AccessTokenFromFormMiddleware
+    // CA1852: class internal, không có subtype — sealed để runtime
+    // tối ưu devirtualization và báo rõ ý định không cho kế thừa.
+    internal sealed class AccessTokenFromFormMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<AccessTokenFromFormMiddleware> _logger;

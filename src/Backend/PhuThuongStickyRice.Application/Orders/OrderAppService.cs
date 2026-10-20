@@ -323,6 +323,18 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int GenerateOrderNumberMaxAttempts = 10;
         /// <summary>Message lỗi dùng chung khi SĐT khách nhập không đúng định dạng VN.</summary>
         private const string InvalidPhoneFormatMessage = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+        /// <summary>Message khi lượt quay may mắn đã được dùng (kiểm tra trong memory và khóa nguyên tử tại DB).</summary>
+        private const string SpinAlreadyUsedMessage = "Lượt quay may mắn đã được sử dụng.";
+        /// <summary>
+        /// Message khi chuyển trạng thái nguyên tử thất bại ở luồng admin
+        /// (TryTransitionStatusAsync thua race — đơn vừa bị thao tác khác xử lý).
+        /// </summary>
+        private const string OrderHandledByOtherStaffMessage = "Đơn hàng vừa được xử lý bởi thao tác khác. Vui lòng tải lại trang.";
+        /// <summary>
+        /// Message khi chuyển trạng thái nguyên tử thất bại ở luồng khách
+        /// (TryTransitionStatusAsync thua race — đơn vừa bị xử lý).
+        /// </summary>
+        private const string OrderHandledByOtherCustomerMessage = "Đơn hàng vừa được xử lý. Vui lòng kiểm tra lại trạng thái đơn.";
 
         private readonly IOrderRepository _orders;
         private readonly IProductRepository _products;
@@ -700,14 +712,12 @@ namespace PhuThuongStickyRice.Application.Orders
             }
         }
 
-        // [codequality-smell 2026-10-19] Gom pattern lặp lại
-        // "TrimToNull(x)" (12 chỗ) thành một
-        // helper: chuỗi rỗng/khoảng trắng → null, còn lại trim. Giữ nguyên
-        // ngữ nghĩa: DB lưu null thay vì chuỗi trắng.
-        private static string TrimToNull(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        }
+        // [codequality-smell 2026-10-20] Body trùng hệt với
+        // Domain.TextValidation.TrimToNull (chuỗi rỗng/khoảng trắng → null,
+        // còn lại trim) nên dùng chung helper của domain thay vì viết lại.
+        // Giữ nguyên signature cũ (string → string) vì mọi nơi gọi đều truyền
+        // non-null — ngữ nghĩa tại runtime không đổi.
+        private static string TrimToNull(string value) => Domain.TextValidation.TrimToNull(value)!;
 
         /// <summary>
         /// Validate mã giảm giá và tính số tiền được giảm trên phần subtotal
@@ -1486,7 +1496,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (!await _orders.TryTransitionStatusAsync(order.Id, fromStatus, status))
             {
                 throw new Domain.Exceptions.DomainException(
-                    "Đơn hàng vừa được xử lý bởi thao tác khác. Vui lòng tải lại trang.");
+                    OrderHandledByOtherStaffMessage);
             }
 
             await _orders.UpdateAsync(order);
@@ -1735,7 +1745,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (!await _orders.TryTransitionStatusAsync(order.Id, fromStatus, order.Status))
             {
                 throw new Domain.Exceptions.DomainException(
-                    "Đơn hàng vừa được xử lý bởi thao tác khác. Vui lòng tải lại trang.");
+                    OrderHandledByOtherStaffMessage);
             }
 
             await _orders.UpdateAsync(order);
@@ -1828,7 +1838,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 && !await _orders.TryTransitionStatusAsync(order.Id, fromStatus, order.Status))
             {
                 throw new Domain.Exceptions.DomainException(
-                    "Đơn hàng vừa được xử lý bởi thao tác khác. Vui lòng tải lại trang.");
+                    OrderHandledByOtherStaffMessage);
             }
 
             if (fromStatus != order.Status)
@@ -2022,7 +2032,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Cancelled))
             {
                 throw new Domain.Exceptions.DomainException(
-                    "Đơn hàng vừa được xử lý. Vui lòng kiểm tra lại trạng thái đơn.");
+                    OrderHandledByOtherCustomerMessage);
             }
 
             await _orders.UpdateAsync(order);
@@ -2133,7 +2143,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Pending))
             {
                 throw new Domain.Exceptions.DomainException(
-                    "Đơn hàng vừa được xử lý. Vui lòng kiểm tra lại trạng thái đơn.");
+                    OrderHandledByOtherCustomerMessage);
             }
 
             await _orders.UpdateAsync(order);
@@ -2294,7 +2304,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Pending))
             {
                 throw new Domain.Exceptions.DomainException(
-                    "Đơn hàng vừa được xử lý. Vui lòng kiểm tra lại trạng thái đơn.");
+                    OrderHandledByOtherCustomerMessage);
             }
 
             await _orders.UpdateAsync(order);
@@ -2321,7 +2331,7 @@ namespace PhuThuongStickyRice.Application.Orders
             if (!await _orders.TryTransitionStatusAsync(order.Id, OrderStatus.Pending, OrderStatus.Pending))
             {
                 throw new Domain.Exceptions.DomainException(
-                    "Đơn hàng vừa được xử lý. Vui lòng kiểm tra lại trạng thái đơn.");
+                    OrderHandledByOtherCustomerMessage);
             }
 
             await _orders.UpdateAsync(order);
@@ -2725,7 +2735,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             if (order.LuckySpinUsed)
             {
-                throw new Domain.Exceptions.DomainException("Lượt quay may mắn đã được sử dụng.");
+                throw new Domain.Exceptions.DomainException(SpinAlreadyUsedMessage);
             }
 
             // Đơn đã hủy không được quay thưởng — nếu không, hủy đơn rồi quay vẫn nhận voucher thật.
@@ -2736,7 +2746,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             if (!await _orders.TryMarkSpinUsedAsync(order.Id))
             {
-                throw new Domain.Exceptions.DomainException("Lượt quay may mắn đã được sử dụng.");
+                throw new Domain.Exceptions.DomainException(SpinAlreadyUsedMessage);
             }
             order.MarkLuckySpinUsed(); // đồng bộ entity đang track; UoW flush cùng giá trị
 

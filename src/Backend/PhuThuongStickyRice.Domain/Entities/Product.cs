@@ -466,10 +466,10 @@ namespace PhuThuongStickyRice.Domain.Entities
                         return new List<(TimeSpan From, TimeSpan To)>();
                     }
 
-                    var fromStr = fromElement.GetString();
-                    var toStr = toElement.GetString();
-                    if (!TimeSpan.TryParse(fromStr, out var from)
-                        || !TimeSpan.TryParse(toStr, out var to)
+                    var fromText = fromElement.GetString();
+                    var toText = toElement.GetString();
+                    if (!TimeSpan.TryParse(fromText, out var from)
+                        || !TimeSpan.TryParse(toText, out var to)
                         || from >= to)
                     {
                         return new List<(TimeSpan From, TimeSpan To)>();
@@ -484,6 +484,27 @@ namespace PhuThuongStickyRice.Domain.Entities
             }
 
             return windows;
+        }
+
+        /// <summary>
+        /// Kiểm tra một thời điểm trong ngày có rơi vào khung giờ bán nào
+        /// không (biên trái bao gồm, biên phải loại trừ — khớp logic cũ trong
+        /// <see cref="IsAvailableNow"/>).
+        /// </summary>
+        /// <param name="timeOfDay">Thời điểm trong ngày (giờ VN).</param>
+        /// <param name="windows">Danh sách khung giờ bán đã parse.</param>
+        /// <returns>True khi thời điểm nằm trong ít nhất một khung giờ.</returns>
+        private static bool IsWithinSaleWindows(TimeSpan timeOfDay, List<(TimeSpan From, TimeSpan To)> windows)
+        {
+            foreach (var window in windows)
+            {
+                if (timeOfDay >= window.From && timeOfDay < window.To)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -602,23 +623,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             if (!string.IsNullOrWhiteSpace(AvailableHoursJson))
             {
                 var windows = ParseHourWindows(AvailableHoursJson.Trim());
-                if (windows.Count > 0)
+                if (windows.Count > 0
+                    && !IsWithinSaleWindows(utcNow.AddHours(VietnamUtcOffsetHours).TimeOfDay, windows))
                 {
-                    var vnNow = utcNow.AddHours(VietnamUtcOffsetHours).TimeOfDay;
-                    var inWindow = false;
-                    foreach (var window in windows)
-                    {
-                        if (vnNow >= window.From && vnNow < window.To)
-                        {
-                            inWindow = true;
-                            break;
-                        }
-                    }
-
-                    if (!inWindow)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
                 // Invalid JSON fails open (write-time validation prevents it).
             }

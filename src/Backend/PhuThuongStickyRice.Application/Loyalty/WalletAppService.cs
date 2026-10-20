@@ -204,7 +204,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <param name="input">Dữ liệu điều chỉnh ví từ admin.</param>
         /// <returns>SĐT đã chuẩn hóa, dùng để tra cứu ví.</returns>
         /// <exception cref="DomainException">Ném khi input null, SĐT rỗng hoặc số tiền ngoài ngưỡng.</exception>
-        private string ValidateAdjustInput(AdjustWalletInput input)
+        // CA1822: không đọc instance state — đánh dấu static để tránh cấp phát
+        // this không cần thiết và báo rõ ý định cho người gọi.
+        private static string ValidateAdjustInput(AdjustWalletInput input)
         {
             // Boundary null-check: input null (caller gọi trực tiếp) phải báo
             // lỗi nghiệp vụ rõ ràng, không để NullReferenceException khi đọc

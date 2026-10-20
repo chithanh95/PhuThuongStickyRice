@@ -73,10 +73,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 message = message[..StaffChatMessage.MessageMaxLength];
             }
 
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 ?? User.FindFirstValue("sub");
             // Claim không phải GUID hợp lệ: giữ SenderId rỗng như hành vi cũ.
-            if (!Guid.TryParse(userIdStr, out var senderId))
+            if (!Guid.TryParse(userIdClaim, out var senderId))
             {
                 senderId = Guid.Empty;
             }

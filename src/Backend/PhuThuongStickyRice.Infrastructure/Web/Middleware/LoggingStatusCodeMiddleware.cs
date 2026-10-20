@@ -5,8 +5,16 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
 {
-    public class LoggingStatusCodeMiddleware
+    public partial class LoggingStatusCodeMiddleware
     {
+        // CA1848: logging hiệu năng cao bằng LoggerMessage source-generated —
+        // tránh boxing params + cấp phát mảng object[] của LoggerExtensions.
+        // (Project chưa bật nullable annotations nên signature dùng kiểu
+        // không dấu "?" như code gốc — hành vi null của userId/remoteIp giữ nguyên.)
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "StatusCode: {StatusCode}, UserId: {UserId}, Path: {Path}, Method: {Method}, IP: {RemoteIp}")]
+        private static partial void LogForbiddenStatus(ILogger logger, int statusCode, string userId, PathString path, string method, object remoteIp);
+
         private readonly RequestDelegate _next;
         private readonly ILogger<LoggingStatusCodeMiddleware> _logger;
 
@@ -38,9 +46,7 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
                 var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? context.User.FindFirst("sub")?.Value;
                 var remoteIp = context.Connection.RemoteIpAddress;
 
-                _logger.LogWarning(
-                    "StatusCode: {StatusCode}, UserId: {UserId}, Path: {Path}, Method: {Method}, IP: {RemoteIp}",
-                    statusCode, userId, path, method, remoteIp);
+                LogForbiddenStatus(_logger, statusCode, userId, path, method, remoteIp);
             }
         }
     }

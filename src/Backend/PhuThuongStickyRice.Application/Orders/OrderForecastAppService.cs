@@ -91,7 +91,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var patternStart = today.AddDays(-PatternDays);
             var perDay = await LoadDailyAggregatesAsync(today, patternStart);
 
-            var vi = VietnameseCulture.Value;
+            var vietnameseCulture = VietnameseCulture.Value;
             var result = new RevenueForecastDto
             {
                 GeneratedAt = DateTime.UtcNow,
@@ -106,13 +106,13 @@ namespace PhuThuongStickyRice.Application.Orders
             result.AvgDailyRevenue30d = SumRevenue(perDay, today.AddDays(-Forecast30d), today) / Forecast30d;
 
             BuildHistorySeries(result, perDay, today);
-            BuildWeekdayPattern(result, perDay, patternStart, today, vi);
+            BuildWeekdayPattern(result, perDay, patternStart, today, vietnameseCulture);
 
             // Số suất trung bình mỗi đơn — dùng cho đường fallback khi thiếu dữ liệu thứ.
             var totalPortions = perDay.Values.Sum(x => (double)x.Portions);
             var totalOrders = perDay.Values.Sum(x => (double)x.Orders);
             var portionsPerOrder = totalOrders > 0 ? totalPortions / totalOrders : FallbackPortionsPerOrder;
-            BuildForecasts(result, perDay, today, vi, totalOrders, portionsPerOrder);
+            BuildForecasts(result, perDay, today, vietnameseCulture, totalOrders, portionsPerOrder);
 
             result.MethodNote =
                 $"Trung bình trượt trên {PatternDays} ngày đã qua (đơn đã hủy bị loại, " +
@@ -279,7 +279,7 @@ namespace PhuThuongStickyRice.Application.Orders
             Dictionary<DateTime, DayAggregate> perDay,
             DateTime patternStart,
             DateTime today,
-            CultureInfo vi)
+            CultureInfo vietnameseCulture)
         {
             var overallAvg = result.AvgDailyRevenue30d;
             var weekdayStats = new Dictionary<DayOfWeek, (decimal revenue, double orders, double portions, int days)>();
@@ -310,7 +310,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 result.WeekdayPattern.Add(new WeekdayPatternDto
                 {
                     DayOfWeek = dow,
-                    WeekdayName = vi.DateTimeFormat.DayNames[(int)dow],
+                    WeekdayName = vietnameseCulture.DateTimeFormat.DayNames[(int)dow],
                     Occurrences = stats.days,
                     AvgRevenue = Math.Round(avgRev, 0),
                     AvgOrders = Math.Round(stats.orders / Math.Max(stats.days, 1), 1),
@@ -331,14 +331,14 @@ namespace PhuThuongStickyRice.Application.Orders
             RevenueForecastDto result,
             Dictionary<DateTime, DayAggregate> perDay,
             DateTime today,
-            CultureInfo vi,
+            CultureInfo vietnameseCulture,
             double totalOrders,
             double portionsPerOrder)
         {
             for (var i = 1; i <= Forecast7d; i++)
             {
                 result.Next7Days.Add(ForecastOneDay(
-                    today.AddDays(i), result, perDay, vi, totalOrders, portionsPerOrder));
+                    today.AddDays(i), result, perDay, vietnameseCulture, totalOrders, portionsPerOrder));
             }
 
             result.Next7DaysTotal = new ForecastTotalDto
@@ -352,7 +352,7 @@ namespace PhuThuongStickyRice.Application.Orders
             for (var i = 1; i <= Forecast30d; i++)
             {
                 var dayForecast = ForecastOneDay(
-                    today.AddDays(i), result, perDay, vi, totalOrders, portionsPerOrder);
+                    today.AddDays(i), result, perDay, vietnameseCulture, totalOrders, portionsPerOrder);
                 next30DaysTotal.ForecastRevenue += dayForecast.ForecastRevenue;
                 next30DaysTotal.ForecastOrders += dayForecast.ForecastOrders;
                 next30DaysTotal.SuggestedPortions += dayForecast.SuggestedPortions;
@@ -367,7 +367,7 @@ namespace PhuThuongStickyRice.Application.Orders
             DateTime date,
             RevenueForecastDto result,
             Dictionary<DateTime, DayAggregate> perDay,
-            CultureInfo vi,
+            CultureInfo vietnameseCulture,
             double totalOrders,
             double portionsPerOrder)
         {
@@ -384,7 +384,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return new ForecastDayDto
             {
                 Date = date,
-                WeekdayName = vi.DateTimeFormat.DayNames[(int)date.DayOfWeek],
+                WeekdayName = vietnameseCulture.DateTimeFormat.DayNames[(int)date.DayOfWeek],
                 ForecastRevenue = rev,
                 ForecastOrders = ord,
                 SuggestedPortions = Math.Max(portions, 0),

@@ -20,8 +20,17 @@ namespace PhuThuongStickyRice.Application.Permissions
         public const string SettingsEdit = "settings.edit";
         public const string StaffManage = "staff.manage";
 
+        /// <summary>
+        /// Định nghĩa 1 quyền chi tiết dùng trên ma trận phân quyền
+        /// (/admin/phan-quyen): key dùng để kiểm tra ở endpoint/nút, label +
+        /// group hiển thị cho admin khi gán quyền cho vai trò.
+        /// </summary>
         public sealed class PermissionDefinition
         {
+            /// <summary>Khởi tạo định nghĩa quyền.</summary>
+            /// <param name="key">Mã quyền (vd "orders.confirm") dùng để kiểm tra.</param>
+            /// <param name="label">Tên hiển thị trên ma trận phân quyền.</param>
+            /// <param name="group">Nhóm quyền (Đơn hàng, Sản phẩm...) để gộp hiển thị.</param>
             public PermissionDefinition(string key, string label, string group)
             {
                 Key = key;
@@ -29,8 +38,11 @@ namespace PhuThuongStickyRice.Application.Permissions
                 Group = group;
             }
 
+            /// <summary>Mã quyền duy nhất, khớp với const trong <see cref="PermissionKeys"/>.</summary>
             public string Key { get; }
+            /// <summary>Tên hiển thị của quyền trên giao diện phân quyền.</summary>
             public string Label { get; }
+            /// <summary>Nhóm gom quyền khi render ma trận phân quyền.</summary>
             public string Group { get; }
         }
 

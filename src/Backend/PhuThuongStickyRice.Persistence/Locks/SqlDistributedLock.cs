@@ -16,6 +16,23 @@ namespace PhuThuongStickyRice.Persistence.Locks
     {
         public const int AlreadyHeldReturnCode = 103;
 
+        // Câu lệnh acquire lock ở dạng chuỗi const (CA2100): không nội suy
+        // bất kỳ giá trị động nào vào SQL — tên lock và mã AlreadyHeldReturnCode
+        // đều đi qua SqlParameter (@Resource, @AlreadyHeldCode). Hai biến thể:
+        // có transaction thì kiểm tra thêm session-lock (kịch bản nesting),
+        // không transaction thì chỉ kiểm tra lock của chính owner.
+        private const string AcquireLockSql =
+            @"IF APPLOCK_MODE('public', @Resource, @LockOwner) != 'NoLock'
+                SET @Result = @AlreadyHeldCode
+              ELSE
+                EXEC @Result = dbo.sp_getapplock @Resource = @Resource, @LockMode = @LockMode, @LockOwner = @LockOwner, @LockTimeout = @LockTimeout, @DbPrincipal = 'public'";
+
+        private const string AcquireLockSqlWithTransaction =
+            @"IF APPLOCK_MODE('public', @Resource, @LockOwner) != 'NoLock' OR APPLOCK_MODE('public', @Resource, 'Session') != 'NoLock'
+                SET @Result = @AlreadyHeldCode
+              ELSE
+                EXEC @Result = dbo.sp_getapplock @Resource = @Resource, @LockMode = @LockMode, @LockOwner = @LockOwner, @LockTimeout = @LockTimeout, @DbPrincipal = 'public'";
+
         private readonly SqlConnection _connection;
         private readonly SqlTransaction _transaction;
         private readonly string _connectionString;
@@ -101,12 +118,18 @@ namespace PhuThuongStickyRice.Persistence.Locks
             command.Transaction = _transaction;
 
             returnValue = command.Parameters.Add(new SqlParameter { ParameterName = "Result", DbType = DbType.Int32, Direction = ParameterDirection.Output });
-            command.CommandText =
-                $@"IF APPLOCK_MODE('public', @Resource, @LockOwner) != 'NoLock' {(HasTransaction ? " OR APPLOCK_MODE('public', @Resource, 'Session') != 'NoLock'" : string.Empty)}
-                            SET @Result = {AlreadyHeldReturnCode}
-                        ELSE
-                            EXEC @Result = dbo.sp_getapplock @Resource = @Resource, @LockMode = @LockMode, @LockOwner = @LockOwner, @LockTimeout = @LockTimeout, @DbPrincipal = 'public'"
-                      ;
+
+            // CA2100: câu SQL phải là chuỗi const — mọi giá trị động (tên lock,
+            // mã AlreadyHeldReturnCode) đều truyền qua SqlParameter, không nội suy
+            // vào câu lệnh, nên không có bề mặt SQL injection.
+            if (HasTransaction)
+            {
+                command.CommandText = AcquireLockSqlWithTransaction;
+            }
+            else
+            {
+                command.CommandText = AcquireLockSql;
+            }
 
             command.CommandTimeout = commandTimeout;
 
@@ -114,6 +137,7 @@ namespace PhuThuongStickyRice.Persistence.Locks
             command.Parameters.Add(new SqlParameter("LockMode", "Exclusive"));
             command.Parameters.Add(new SqlParameter("LockOwner", HasTransaction ? "Transaction" : "Session"));
             command.Parameters.Add(new SqlParameter("LockTimeout", lockTimeout));
+            command.Parameters.Add(new SqlParameter("AlreadyHeldCode", AlreadyHeldReturnCode));
 
             return command;
         }

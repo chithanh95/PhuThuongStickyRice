@@ -726,7 +726,9 @@ namespace PhuThuongStickyRice.Application.Products
         /// </summary>
         private static string FormatMoney(decimal amount)
         {
-            return amount.ToString("N0") + "₫";
+            // CA1305: chỉ rõ culture vi-VN thay vì phụ thuộc CurrentCulture của
+            // máy chủ (mặc định en-US sẽ ra "50,000₫" sai định dạng tiền Việt).
+            return amount.ToString("N0", VietnameseCulture.Value) + "₫";
         }
 
         /// <summary>
@@ -735,7 +737,9 @@ namespace PhuThuongStickyRice.Application.Products
         /// </summary>
         private static string FormatDate(DateTime? date)
         {
-            return date?.ToString("dd/MM/yyyy");
+            // CA1305: chỉ rõ culture vi-VN (dấu "/" đúng định dạng tài liệu),
+            // không phụ thuộc CurrentCulture của máy chủ.
+            return date?.ToString("dd/MM/yyyy", VietnameseCulture.Value);
         }
 
         /// <summary>

@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     /// <summary>
-    /// Third-party integration status + test endpoints (Zalo OA, ...).
-    /// All admin-only.
+    /// API quản trị tích hợp bên thứ ba (Zalo OA...): xem trạng thái cấu hình
+    /// và gửi tin nhắn kiểm tra. Toàn bộ endpoint chỉ dành cho Admin.
     /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Authorize(Roles = "Admin")]
@@ -23,6 +23,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly ZaloOaOptions _zaloOptions;
         private readonly IZaloNotificationService _zalo;
 
+        /// <summary>Khởi tạo controller kiểm tra tích hợp (Zalo OA).</summary>
         public IntegrationsController(
             ZaloOaOptions zaloOptions,
             IZaloNotificationService zalo)
@@ -31,7 +32,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _zalo = zalo;
         }
 
-        /// <summary>Zalo OA configuration status (token is masked).</summary>
+        /// <summary>Trạng thái cấu hình Zalo OA (token đã được che).</summary>
         [HttpGet("zalo")]
         public ActionResult GetZaloStatus(CancellationToken cancellationToken = default)
         {
@@ -44,16 +45,22 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             });
         }
 
+        /// <summary>
+        /// Body request gửi tin nhắn Zalo OA kiểm tra về SĐT của admin.
+        /// </summary>
         public sealed class ZaloTestRequestModel
         {
+            /// <summary>Số điện thoại Zalo của người nhận tin test.</summary>
             public string Phone { get; set; }
 
+            /// <summary>Nội dung tin test; để trống thì dùng mẫu mặc định.</summary>
             public string Message { get; set; }
         }
 
         /// <summary>
-        /// Sends a test message through the Zalo service. With the default
-        /// "xxx" placeholders this only writes a "would send" log line.
+        /// Gửi tin nhắn test qua service Zalo. Khi chưa cấu hình (giá trị
+        /// placeholder "xxx") service chỉ ghi log "would send" thay vì gọi
+        /// API thật — để admin kiểm tra mà không gửi tin nhắn nhầm ra ngoài.
         /// </summary>
         [HttpPost("zalo/test")]
         public async Task<ActionResult> TestZalo(
@@ -67,6 +74,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(new { sent = _zaloOptions.IsConfigured, stubbed = !_zaloOptions.IsConfigured });
         }
 
+        /// <summary>
+        /// Che secret/token khi trả về màn hình trạng thái: giữ 4 ký tự cuối
+        /// để admin nhận biết, phần còn lại thay bằng '*' — token thật không bao
+        /// giờ rời server qua API này.
+        /// </summary>
+        /// <param name="value">Giá trị cần che (access token, OA id).</param>
+        /// <returns>Chuỗi đã che hoặc "xxx (chưa cấu hình)" khi chưa có giá trị.</returns>
         private static string Mask(string value)
         {
             if (string.IsNullOrWhiteSpace(value) || value == "xxx")

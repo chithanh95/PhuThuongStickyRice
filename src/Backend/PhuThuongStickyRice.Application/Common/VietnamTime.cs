@@ -70,10 +70,10 @@ namespace PhuThuongStickyRice.Application.Common
         public static DateTime ToVietnamTime(DateTime utc)
         {
             var utcDateTime = utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc);
-            var tz = CachedVietnamTimeZone.Value;
+            var vietnamTimeZone = CachedVietnamTimeZone.Value;
             // Không resolve được timezone nào (OS lạ) thì cộng tay +7 như cũ.
-            return tz != null
-                ? TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tz)
+            return vietnamTimeZone != null
+                ? TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, vietnamTimeZone)
                 : utcDateTime.AddHours(UtcOffsetHours);
         }
 

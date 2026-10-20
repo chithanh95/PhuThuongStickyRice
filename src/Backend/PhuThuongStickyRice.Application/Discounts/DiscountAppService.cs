@@ -607,8 +607,8 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         public virtual async Task RefundUsageAsync(string? code)
         {
-            var normalized = code?.Trim().ToUpperInvariant();
-            if (string.IsNullOrEmpty(normalized))
+            var normalized = NormalizeCodeOrNull(code);
+            if (normalized == null)
             {
                 return;
             }
@@ -632,8 +632,8 @@ namespace PhuThuongStickyRice.Application.Discounts
             var decrements = new Dictionary<string, int>();
             foreach (var code in codes)
             {
-                var normalized = code?.Trim().ToUpperInvariant();
-                if (string.IsNullOrEmpty(normalized))
+                var normalized = NormalizeCodeOrNull(code);
+                if (normalized == null)
                 {
                     continue;
                 }
@@ -654,8 +654,8 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         public virtual async Task RevokeSpinPrizeAsync(string? spinPrizeCode)
         {
-            var normalized = spinPrizeCode?.Trim().ToUpperInvariant();
-            if (string.IsNullOrEmpty(normalized))
+            var normalized = NormalizeCodeOrNull(spinPrizeCode);
+            if (normalized == null)
             {
                 return;
             }
@@ -689,11 +689,10 @@ namespace PhuThuongStickyRice.Application.Discounts
                 return;
             }
 
-            // Chuẩn hóa giống hệt RevokeSpinPrizeAsync (không dùng
-            // NormalizeCode vì nó ném khi mã trống — ở đây chỉ bỏ qua).
+            // Chuẩn hóa bằng NormalizeCodeOrNull (bản không ném: mã trống chỉ bỏ qua).
             var codes = spinPrizeCodes
-                .Select(c => c?.Trim().ToUpperInvariant())
-                .Where(c => !string.IsNullOrEmpty(c))
+                .Select(NormalizeCodeOrNull)
+                .OfType<string>()
                 .Distinct()
                 .ToList();
 
@@ -1349,6 +1348,20 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             return code.Trim().ToUpperInvariant();
+        }
+
+        /// <summary>
+        /// Chuẩn hóa mã phiên bản không ném lỗi: cắt khoảng trắng hai đầu và
+        /// chuyển in hoa, trả null khi mã trống/null. Dùng cho các luồng "bỏ
+        /// qua mã trống" (hoàn lượt dùng, thu hồi voucher) — khác
+        /// <see cref="NormalizeCode"/> vốn ném DomainException khi mã trống.
+        /// </summary>
+        /// <param name="code">Mã thô (có thể null/trống).</param>
+        /// <returns>Mã đã chuẩn hóa, hoặc null khi mã trống.</returns>
+        private static string? NormalizeCodeOrNull(string? code)
+        {
+            var normalized = code?.Trim().ToUpperInvariant();
+            return string.IsNullOrEmpty(normalized) ? null : normalized;
         }
 
         /// <summary>

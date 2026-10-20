@@ -581,6 +581,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
     }
 
+    /// <summary>
+    /// Body request đăng nhập: chấp nhận username hoặc email cùng mật khẩu.
+    /// </summary>
     public sealed class LoginRequestModel
     {
         [Required]
@@ -590,6 +593,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public required string Password { get; set; }
     }
 
+    /// <summary>
+    /// Body request đăng ký tài khoản khách hàng bằng số điện thoại.
+    /// </summary>
     public sealed class CustomerRegisterRequestModel
     {
         [Required]
@@ -603,6 +609,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public string? Email { get; set; }
     }
 
+    /// <summary>
+    /// Body request đổi mật khẩu (yêu cầu mật khẩu hiện tại).
+    /// </summary>
     public sealed class ChangePasswordRequestModel
     {
         [Required]
@@ -612,12 +621,18 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public required string NewPassword { get; set; }
     }
 
+    /// <summary>
+    /// Body request bước 1 quên mật khẩu: gửi mã OTP 6 số về SĐT.
+    /// </summary>
     public sealed class ForgotPasswordRequestModel
     {
         [Required]
         public required string Phone { get; set; }
     }
 
+    /// <summary>
+    /// Body request bước 2 quên mật khẩu: xác thực OTP và đặt mật khẩu mới.
+    /// </summary>
     public sealed class ForgotPasswordResetModel
     {
         [Required]
@@ -630,6 +645,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public required string NewPassword { get; set; }
     }
 
+    /// <summary>
+    /// Body request xác thực mã 2FA (TOTP) khi đăng nhập.
+    /// </summary>
     public sealed class VerifyTwoFactorRequestModel
     {
         [Required]
@@ -639,6 +657,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public required string Code { get; set; }
     }
 
+    /// <summary>
+    /// Body request bật xác thực 2 yếu tố (admin).
+    /// </summary>
     public sealed class EnableTwoFactorRequestModel
     {
         // Bug-hunt 2026-10-19: bỏ trường Secret — secret cài đặt do server sinh
@@ -647,6 +668,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public required string Code { get; set; }
     }
 
+    /// <summary>
+    /// Body request tắt xác thực 2 yếu tố (admin, cần mã xác nhận).
+    /// </summary>
     public sealed class DisableTwoFactorRequestModel
     {
         [Required]
