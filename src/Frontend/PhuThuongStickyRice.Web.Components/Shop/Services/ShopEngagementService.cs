@@ -289,15 +289,6 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
-        /// Lấy toàn bộ FAQ kể cả mục đang ẩn (dùng ở màn admin).
-        /// </summary>
-        /// <returns>Danh sách FAQ đầy đủ.</returns>
-        public async Task<List<FaqItemModel>> GetAllFaqsAsync()
-        {
-            return await GetAsync<List<FaqItemModel>>("api/faqs/all");
-        }
-
-        /// <summary>
         /// Lưu 1 mục FAQ (tạo mới khi Id rỗng, cập nhật khi đã có Id).
         /// </summary>
         public async Task<FaqItemModel> SaveFaqItemAsync(FaqItemModel faqItem)
