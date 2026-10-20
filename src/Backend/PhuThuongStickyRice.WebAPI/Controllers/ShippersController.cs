@@ -12,7 +12,11 @@ using PhuThuongStickyRice.Application.Orders;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
-    /// <summary>Item 82: delivery shippers (Admin).</summary>
+    /// <summary>
+    /// Item 82: quản lý shipper giao hàng (Admin/Cashier). Lỗi nghiệp vụ
+    /// (DomainException) được dịch thành BadRequest với message tiếng Việt
+    /// để màn hình admin hiển thị trực tiếp, không phải try/catch ở client.
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Authorize(Roles = "Admin,Cashier")]
     [Produces("application/json")]
@@ -27,6 +31,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _shippers = shippers;
         }
 
+        /// <summary>
+        /// Admin/Cashier: danh sách shipper. Lọc chỉ shipper đang hoạt động
+        /// khi gán shipper cho đơn hàng.
+        /// </summary>
+        /// <param name="activeOnly">true: chỉ shipper đang hoạt động.</param>
         [HttpGet]
         public async Task<ActionResult> GetList(
             [FromQuery] bool activeOnly = false,
@@ -35,6 +44,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _shippers.GetListAsync(activeOnly));
         }
 
+        /// <summary>
+        /// Admin/Cashier: thêm shipper mới. SĐT trùng thì trả 400 (DomainException).
+        /// </summary>
+        /// <param name="dto">Tên, SĐT shipper.</param>
         [HttpPost]
         public async Task<ActionResult> Create(
             [FromBody] CreateShipperDto dto,
@@ -50,6 +63,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin/Cashier: cập nhật thông tin shipper.
+        /// </summary>
         [HttpPut("{id:guid}")]
         public async Task<ActionResult> Update(
             Guid id,
@@ -66,6 +82,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin/Cashier: xóa shipper (trả 204 khi thành công).
+        /// </summary>
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
         {

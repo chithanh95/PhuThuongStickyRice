@@ -46,10 +46,22 @@ namespace PhuThuongStickyRice.Application.Orders
     /// Logic tĩnh thuần túy — caller cung cấp catalog sản phẩm; không tạo đơn ở đây,
     /// frontend xác nhận với khách trước khi gọi API tạo đơn thật.
     /// </summary>
-    public static class OrderIntentParser
+    public static partial class OrderIntentParser
     {
-        /// <summary>Normalized (no diacritics) order keywords.</summary>
-        private static readonly string[] OrderKeywords = { "dat", "mua", "lay", "cho", "order", "ship", "giao" };
+        // codequality-team 2026-10-20 run-1135 Agent3-BestPractices:
+        // [GeneratedRegex] biên dịch regex ngay lúc build (source generator),
+        // không tốn Regex.Compile ở runtime và không phụ thuộc cache động
+        // 15-entry của Regex.IsMatch/Regex.Match static — cùng convention với
+        // MoMoPaymentService, MessengerChatService, PhoneNumber.
+        // Từ khóa toàn chữ cái thường (không có ký tự regex đặc biệt, đã bỏ
+        // dấu) nên gộp 7 pattern "\b<kw>\b" thành 1 alternation là tương đương
+        // ngữ nghĩa với vòng Any() cũ (dat, mua, lay, cho, order, ship, giao).
+        [GeneratedRegex(@"\b(dat|mua|lay|cho|order|ship|giao)\b")]
+        private static partial Regex OrderKeywordRegex();
+
+        // Thu gọn khoảng trắng thừa trong phần text không khớp món nào.
+        [GeneratedRegex(@"\s+")]
+        private static partial Regex WhitespaceRegex();
 
         /// <summary>
         /// Vietnamese textual numbers, normalized (no diacritics).
@@ -59,6 +71,12 @@ namespace PhuThuongStickyRice.Application.Orders
             { "mot", 1 }, { "hai", 2 }, { "ba", 3 }, { "bon", 4 }, { "nam", 5 },
             { "sau", 6 }, { "bay", 7 }, { "tam", 8 }, { "chin", 9 }, { "muoi", 10 }
         };
+
+        // codequality-team 2026-10-20 run-1135 Agent3-BestPractices:
+        // Chuỗi alternation "mot|hai|...|muoi" dựng 1 lần ở static init thay vì
+        // string.Join lại cho mỗi ứng viên trong mỗi lần parse (vòng lặp
+        // foreach candidate trong Parse). Giá trị giống hệt vì cùng 1 nguồn.
+        private static readonly string TextNumberAlternation = string.Join("|", TextNumbers.Keys);
 
         /// <summary>
         /// Chuẩn hóa text: viết thường + bỏ dấu tiếng Việt để "xôi gấc" khớp với "xoi gac".
@@ -146,8 +164,9 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             var normalized = Normalize(text);
-            result.IsOrderIntent = OrderKeywords.Any(k =>
-                Regex.IsMatch(normalized, @"\b" + Regex.Escape(k) + @"\b"));
+            // 1 lần match duy nhất thay cho 7 lần Regex.IsMatch (mỗi lần 1
+            // pattern build động) — regex đã biên dịch sẵn lúc build.
+            result.IsOrderIntent = OrderKeywordRegex().IsMatch(normalized);
 
             var candidates = BuildCandidates(products);
             var consumed = new StringBuilder(normalized);
@@ -161,7 +180,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
             }
 
-            result.UnmatchedText = Regex.Replace(consumed.ToString(), @"\s+", " ").Trim();
+            result.UnmatchedText = WhitespaceRegex().Replace(consumed.ToString(), " ").Trim();
             return result;
         }
 
@@ -192,7 +211,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             item = null;
 
-            var pattern = $@"(?<qty>\d+|{string.Join("|", TextNumbers.Keys)})\s*{Regex.Escape(candidate.Key)}|\b{Regex.Escape(candidate.Key)}\b";
+            var pattern = $@"(?<qty>\d+|{TextNumberAlternation})\s*{Regex.Escape(candidate.Key)}|\b{Regex.Escape(candidate.Key)}\b";
             var match = Regex.Match(consumed.ToString(), pattern);
             if (!match.Success)
             {

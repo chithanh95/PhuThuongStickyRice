@@ -1030,8 +1030,9 @@ else
     /// <summary>Vẽ chuỗi sao ★/☆ từ điểm đánh giá, kẹp rating trong khoảng 1–5.</summary>
     private static string Stars(int rating)
     {
-        var r = Math.Max(1, Math.Min(5, rating));
-        return new string('★', r) + new string('☆', 5 - r);
+        // Kẹp rating vào [1,5] trước khi vẽ sao để chuỗi luôn đủ 5 ký tự.
+        var clampedRating = Math.Max(1, Math.Min(5, rating));
+        return new string('★', clampedRating) + new string('☆', 5 - clampedRating);
     }
 
     /// <summary>Món nổi bật: best sellers / signature trước, tối đa <see cref="MaxSignatureDishes"/> món.</summary>

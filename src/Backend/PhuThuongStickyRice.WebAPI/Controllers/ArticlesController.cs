@@ -12,7 +12,12 @@ using PhuThuongStickyRice.Application.Content;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
-    /// <summary>Item 93: news CMS for the landing page (Admin CRUD, public published).</summary>
+    /// <summary>
+    /// Item 93: CMS bài viết tin tức cho trang landing. Admin CRUD toàn quyền;
+    /// public chỉ đọc bài đã xuất bản (<c>api/Articles/published</c>). List trả
+    /// excerpt (đoạn trích) nên form sửa phải gọi riêng GetById để lấy đủ Body.
+    /// Lỗi nghiệp vụ (DomainException) được dịch thành BadRequest.
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Authorize(Roles = "Admin")]
     [Produces("application/json")]
@@ -27,6 +32,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _articles = articles;
         }
 
+        /// <summary>
+        /// Admin: danh sách bài viết (chỉ excerpt, không kèm nội dung đầy đủ).
+        /// </summary>
         [HttpGet]
         public async Task<ActionResult> GetList(CancellationToken cancellationToken = default)
         {
@@ -43,6 +51,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _articles.GetByIdAsync(id));
         }
 
+        /// <summary>
+        /// Admin: tạo bài viết mới (tiêu đề, nội dung, trạng thái xuất bản).
+        /// </summary>
         [HttpPost]
         public async Task<ActionResult> Create(
             [FromBody] CreateArticleDto dto,
@@ -58,6 +69,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin: cập nhật bài viết (nội dung, trạng thái xuất bản).
+        /// </summary>
         [HttpPut("{id:guid}")]
         public async Task<ActionResult> Update(
             Guid id,
@@ -74,6 +88,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin: xóa bài viết (trả 204 khi thành công).
+        /// </summary>
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
         {
@@ -81,7 +98,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return NoContent();
         }
 
-        /// <summary>Public: published articles for the landing page.</summary>
+        /// <summary>Public: các bài viết đã xuất bản cho trang landing.</summary>
         [AllowAnonymous]
         [HttpGet("published")]
         public async Task<ActionResult> GetPublished(CancellationToken cancellationToken = default)

@@ -100,8 +100,10 @@ namespace PhuThuongStickyRice.Application.Orders
             };
 
             // Trung bình trượt trên các ngày đã hoàn tất (hôm nay chưa bán xong nên loại).
-            result.AvgDailyRevenue7d = SumRevenue(perDay, today.AddDays(-7), today) / 7m;
-            result.AvgDailyRevenue30d = SumRevenue(perDay, today.AddDays(-30), today) / 30m;
+            // codequality-team 2026-10-20 Agent2-CleanCode: dùng hằng Forecast7d/Forecast30d
+            // thay magic number 7/30 — 1 chỗ đổi chân trời dự báo là đồng bộ cả 3 chỗ dùng.
+            result.AvgDailyRevenue7d = SumRevenue(perDay, today.AddDays(-Forecast7d), today) / Forecast7d;
+            result.AvgDailyRevenue30d = SumRevenue(perDay, today.AddDays(-Forecast30d), today) / Forecast30d;
 
             BuildHistorySeries(result, perDay, today);
             BuildWeekdayPattern(result, perDay, patternStart, today, vi);

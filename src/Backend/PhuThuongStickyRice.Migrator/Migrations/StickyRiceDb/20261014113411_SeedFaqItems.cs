@@ -101,7 +101,9 @@ WHERE BankTransferExpiryMinutes = 0");
             migrationBuilder.Sql(sb.ToString());
         }
 
-        private static string ToSqlStringLiteral(string s) => "N'" + s.Replace("'", "''") + "'";
+        /// <summary>Escape chuỗi thô thành literal SQL N'...' (nhân đôi dấu nháy đơn).</summary>
+        /// <param name="rawValue">Chuỗi thô cần escape.</param>
+        private static string ToSqlStringLiteral(string rawValue) => "N'" + rawValue.Replace("'", "''") + "'";
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)

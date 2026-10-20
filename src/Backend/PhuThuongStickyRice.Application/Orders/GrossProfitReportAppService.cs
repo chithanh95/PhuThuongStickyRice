@@ -71,6 +71,9 @@ namespace PhuThuongStickyRice.Application.Orders
         private const int MaxUnpricedNamesInSuggestion = 3;
         // Nhãn hiển thị cho món không có tên (dòng legacy/combo thiếu tên món).
         private const string UnnamedProductLabel = "(không tên)";
+        // Số dòng tối đa của bảng nhập giá vốn — giới hạn server-side, không
+        // bao giờ materialize toàn bộ bảng sản phẩm (pattern như PromotionAppService).
+        private const int MaxProductCostRows = 500;
 
         /// <summary>
         /// Admin: báo cáo lãi gộp theo món trong khoảng ngày (giờ VN,
@@ -240,7 +243,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     // Giới hạn server-side: bảng sản phẩm admin quản lý thủ
                     // công, không bao giờ chạm ngưỡng nhưng tránh materialize
                     // toàn bảng (pattern như PromotionAppService).
-                    .Take(500)
+                    .Take(MaxProductCostRows)
                     .Select(x => new ProductCostDto
                     {
                         Id = x.Id,

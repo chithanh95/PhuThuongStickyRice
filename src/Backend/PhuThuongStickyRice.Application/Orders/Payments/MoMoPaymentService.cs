@@ -103,15 +103,23 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             ValidateMoMoConfiguration(_options);
             var payUrl = await SendCreatePaymentRequestAsync(_options, request);
 
-            return new MoMoCreatePaymentResultDto
+            return BuildResult(order, payUrl, testMode: false);
+        }
+
+        /// <summary>
+        /// Dựng DTO kết quả tạo thanh toán: 3 trường lấy từ đơn hàng nên gom
+        /// 1 helper để cả nhánh TestMode và nhánh gọi API thật không lặp lại
+        /// cùng block khởi tạo object.
+        /// </summary>
+        private static MoMoCreatePaymentResultDto BuildResult(Order order, string payUrl, bool testMode)
+            => new()
             {
                 OrderId = order.Id,
                 OrderNumber = order.OrderNumber,
                 Amount = order.TotalAmount.Amount,
                 PayUrl = payUrl,
-                TestMode = false
+                TestMode = testMode
             };
-        }
 
         /// <summary>Kiểm tra đơn hàng đủ điều kiện tạo thanh toán MoMo (đúng phương thức, chưa thanh toán).</summary>
         private static void ValidateMoMoOrder(Order order)
@@ -179,14 +187,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             var payUrl = $"{options.StorefrontBaseUrl.TrimEnd('/')}{MoMoSimulatorPath}"
                 + $"?orderId={order.Id}&orderNumber={Uri.EscapeDataString(order.OrderNumber)}"
                 + $"&amount={request.Amount}&requestId={request.RequestId}&signature={Uri.EscapeDataString(request.Signature)}";
-            return new MoMoCreatePaymentResultDto
-            {
-                OrderId = order.Id,
-                OrderNumber = order.OrderNumber,
-                Amount = order.TotalAmount.Amount,
-                PayUrl = payUrl,
-                TestMode = true
-            };
+            return BuildResult(order, payUrl, testMode: true);
         }
 
         /// <summary>Kiểm tra cấu hình MoMo thật đã đủ dùng (không trống, không còn giá trị placeholder).</summary>
@@ -436,21 +437,15 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
         }
 
         /// <summary>
-        /// Dựng lại chữ ký tạo đơn để verify callback giả lập: thuần tính
-        /// toán đồng bộ (không còn đọc cấu hình — caller truyền options đã
-        /// nạp sẵn, tránh 1 lần GetMoMoAsync() thừa mỗi callback).
+        /// Dựng lại chữ ký tạo đơn để verify callback giả lập: tái dùng
+        /// <see cref="BuildSignedCreateRequest"/> để các đầu vào chữ ký
+        /// (orderInfo, redirectUrl, ipnUrl...) chỉ định nghĩa một nơi — trước
+        /// đây method này tự dựng URL riêng và còn hardcode "/track-order"
+        /// thay vì dùng hằng <see cref="TrackOrderPath"/>, dễ lệch chữ ký
+        /// khi sửa path. Caller truyền options đã nạp sẵn (tránh đọc
+        /// GetMoMoAsync() thừa mỗi callback).
         /// </summary>
         private static string BuildCreateSignature(Order order, MoMoOptions options)
-        {
-            var requestId = order.Id.ToString("N");
-            var amount = (long)order.TotalAmount.Amount;
-            var orderInfo = $"Thanh toan don hang {order.OrderNumber} - Xoi Phu Thuong";
-            var redirectUrl = $"{options.StorefrontBaseUrl.TrimEnd('/')}/track-order?orderNumber={Uri.EscapeDataString(order.OrderNumber)}";
-            var ipnUrl = $"{options.ApiBaseUrl.TrimEnd('/')}/api/payments/momo/callback";
-            var rawString = MoMoSigner.BuildCreateRawString(
-                options.PartnerCode, options.AccessKey, requestId, amount,
-                order.OrderNumber, orderInfo, redirectUrl, ipnUrl, RequestType);
-            return MoMoSigner.Sign(rawString, options.SecretKey);
-        }
+            => BuildSignedCreateRequest(order, options).Signature;
     }
 }
