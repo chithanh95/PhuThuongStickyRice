@@ -255,9 +255,12 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                     text,
                     parse_mode = "Markdown"
                 });
+                // StringContent là IDisposable: dispose sau khi gửi xong thay
+                // vì để GC dọn — giữ nguyên hành vi gửi cảnh báo Telegram.
+                using var content = new StringContent(payload, Encoding.UTF8, "application/json");
                 using var response = await client.PostAsync(
                     $"https://api.telegram.org/bot{botToken}/sendMessage",
-                    new StringContent(payload, Encoding.UTF8, "application/json"));
+                    content);
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)

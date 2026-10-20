@@ -68,11 +68,13 @@ namespace Microsoft.Extensions.DependencyInjection
                     continue;
                 }
 
+                // best practice: Any() short-circuit thay vì Where().ToList()
+                // rồi Count == 0 — scan assembly có hàng trăm type, phần lớn
+                // không phải handler: tránh cấp phát List cho mỗi type chỉ để
+                // đếm, vẫn giữ nguyên thứ tự đăng ký các interface handler.
                 var handlerInterfaces = type.GetInterfaces()
-                   .Where(HandlerTypeInspector.IsHandlerInterface)
-                   .ToList();
-
-                if (handlerInterfaces.Count == 0)
+                    .Where(HandlerTypeInspector.IsHandlerInterface);
+                if (!handlerInterfaces.Any())
                 {
                     continue;
                 }

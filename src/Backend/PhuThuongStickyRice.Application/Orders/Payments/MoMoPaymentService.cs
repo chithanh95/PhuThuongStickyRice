@@ -226,9 +226,13 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             // để trả connection về pool ngay sau khi đọc xong body (trước đó
             // response không dispose, giữ socket tới khi GC — cùng lỗi đã fix
             // ở CustomerCareService/CartSyncService).
+            // StringContent là IDisposable (giữ buffer đã serialize): dispose
+            // ngay sau khi request xong thay vì chờ GC — nhất quán với
+            // response đã dispose bên dưới.
+            using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
             using var response = await _httpClient.PostAsync(
                 options.Endpoint,
-                new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
+                content);
             response.EnsureSuccessStatusCode();
 
             // Parse thẳng từ stream (async) thay vì buffer toàn bộ body thành
