@@ -1,6 +1,5 @@
-# Docker
-# Build and push an image to Azure Container Registry
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+# PhuThuongStickyRice — CI: restore, build Release and run tests for the whole solution.
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
 trigger:
   branches:
@@ -9,219 +8,49 @@ trigger:
   paths:
     include:
     - src
+    - tests
 
 resources:
 - repo: self
 
 variables:
-  # Container registry service connection established during pipeline creation
-  dockerRegistryEndpoint: 'PhuThuongStickyRice'
-  dockerComposeFile: 'src/docker-compose.yml'
-  tag: '$(Build.BuildId)'
-  
+  solution: 'src/PhuThuongStickyRice.sln'
+  buildConfiguration: 'Release'
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
 stages:
-- stage: SonarCloud
-  displayName: SonarCloud
-  jobs:  
-  - job: SonarCloud
-    displayName: SonarCloud
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: SonarCloudPrepare@1
-      inputs:
-        SonarCloud: 'SonarCloud'
-        organization: 'phongnguyend'
-        scannerMode: 'MSBuild'
-        projectKey: 'Practical.CleanArchitecture'
-        projectName: 'Practical.CleanArchitecture'
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'build'
-        projects: 'src/PhuThuongStickyRice.sln'
-    - task: SonarCloudAnalyze@1
-    - task: SonarCloudPublish@1
-      inputs:
-        pollingTimeoutSec: '300'
-
-- stage: WhiteSourceBolt
-  displayName: Build and Run WhiteSource Bolt
-  jobs:  
-  - job: WhiteSourceBolt
-    displayName: Build and Run WhiteSource Bolt
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'build'
-        projects: 'src/PhuThuongStickyRice.sln'
-    - task: WhiteSource Bolt@20
-      inputs:
-        cwd: 'src/'
-
 - stage: DotNetBuild
-  displayName: .Net Build
+  displayName: .NET Build & Test
   jobs:
   - job: Build
-    displayName: Build
+    displayName: Build and Test
     pool:
       vmImage: $(vmImageName)
     steps:
-      - task: UseDotNet@2
-        displayName: Use .Net 6.0.x
-        inputs:
-          packageType: 'sdk'
-          version: '10.0.x'
-      - task: DotNetCoreCLI@2
-        displayName: dotnet restore
-        inputs:
-          command: 'restore'
-          projects: 'src/PhuThuongStickyRice.sln'
-          feedsToUse: 'select'
-      - task: DotNetCoreCLI@2
-        displayName: dotnet list package --vulnerable
-        inputs:
-          command: 'custom'
-          custom: 'list'
-          arguments: 'package --vulnerable'
-          workingDirectory: 'src'
-      - task: DotNetCoreCLI@2
-        displayName: Build
-        inputs:
-          command: 'build'
-          arguments: '--configuration Release'
-          workingDirectory: 'src'
-      - task: DotNetCoreCLI@2
-        displayName: Test
-        inputs:
-          command: 'test'
-          projects: |
-            tests/PhuThuongStickyRice.ArchTests/*.csproj
-            tests/PhuThuongStickyRice.ContractTests/*.csproj
-            tests/PhuThuongStickyRice.UnitTests/*.csproj
-          arguments: '/p:CollectCoverage=true /p:CoverletOutputFormat=cobertura'
-      - task: reportgenerator@4
-        displayName: Generate Test Report
-        inputs:
-          reports: '$(Build.SourcesDirectory)/**/*.cobertura.xml'
-          targetdir: '$(Build.SourcesDirectory)/CoverageResults'
-          assemblyfilters: '+PhuThuongStickyRice.Application;+PhuThuongStickyRice.Domain'
-      - task: PublishCodeCoverageResults@1
-        displayName: 'Publish Code Coverage'
-        inputs:
-          codeCoverageTool: Cobertura
-          summaryFileLocation: '$(Build.SourcesDirectory)/CoverageResults/Cobertura.xml'
-      - task: DotNetCoreCLI@2
-        displayName: Publish
-        inputs:
-          command: 'publish'
-          publishWebProjects: false
-          projects: |
-            src/Backend/PhuThuongStickyRice.BackgroundServer/*.csproj
-            src/Backend/PhuThuongStickyRice.GraphQL/*.csproj
-            src/Backend/PhuThuongStickyRice.Migrator/*.csproj
-            src/Backend/PhuThuongStickyRice.WebAPI/*.csproj
-            src/PhuThuongStickyRice.IdentityServer/*.csproj
-            src/Frontend/PhuThuongStickyRice.WebMVC/*.csproj
-            src/Frontend/PhuThuongStickyRice.BlazorServerSide/*.csproj
-            src/PhuThuongStickyRice.Web/*.csproj
-          arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)'
-      - task: PublishBuildArtifacts@1
-        inputs:
-          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-          ArtifactName: 'Monolith'
-          publishLocation: 'Container'
-
-- stage: DockerBuild
-  displayName: Build and Push Docker Images
-  jobs:  
-  - job: Build
-    displayName: Build and Push
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: DockerCompose@0
-      displayName: Build services
+    - task: UseDotNet@2
+      displayName: Use .NET 10 SDK
       inputs:
-        containerregistrytype: 'Container Registry'
-        dockerRegistryEndpoint: $(dockerRegistryEndpoint)
-        dockerComposeFile: $(dockerComposeFile)
-        action: 'Build services'
-        projectName: $(Build.Repository.Name)
-        qualifyImageNames: true
-        additionalImageTags: $(Build.BuildId)
-    - task: DockerCompose@0
-      displayName: Push services
-      inputs:
-        containerregistrytype: 'Container Registry'
-        dockerRegistryEndpoint: $(dockerRegistryEndpoint)
-        dockerComposeFile: $(dockerComposeFile)
-        action: 'Push services'
-        projectName: $(Build.Repository.Name)
-        qualifyImageNames: true
-        additionalImageTags: $(Build.BuildId)
-
-- stage: Octopus
-  displayName: 'Octopus: Pack and Push Nuget Packages'
-  jobs:  
-  - job: Build
-    displayName: Build and Push
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: CmdLine@2
-      displayName: dotnet tool install Octopus.DotNet.Cli --global
-      inputs:
-        script: 'dotnet tool install Octopus.DotNet.Cli --global'
+        packageType: 'sdk'
+        version: '10.0.x'
     - task: DotNetCoreCLI@2
       displayName: dotnet restore
       inputs:
         command: 'restore'
-        projects: 'src/PhuThuongStickyRice.sln'
-        feedsToUse: 'select'
+        projects: '$(solution)'
     - task: DotNetCoreCLI@2
       displayName: dotnet build
       inputs:
         command: 'build'
-        arguments: '--configuration Release'
-        workingDirectory: 'src'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
     - task: DotNetCoreCLI@2
-      displayName: dotnet publish
+      displayName: dotnet test
       inputs:
-        command: 'publish'
-        publishWebProjects: false
+        command: 'test'
         projects: |
-          src/Backend/PhuThuongStickyRice.BackgroundServer/*.csproj
-          src/Backend/PhuThuongStickyRice.GraphQL/*.csproj
-          src/Backend/PhuThuongStickyRice.Migrator/*.csproj
-          src/Backend/PhuThuongStickyRice.WebAPI/*.csproj
-          src/PhuThuongStickyRice.IdentityServer/*.csproj
-          src/Frontend/PhuThuongStickyRice.WebMVC/*.csproj
-          src/Frontend/PhuThuongStickyRice.BlazorServerSide/*.csproj
-          src/PhuThuongStickyRice.Web/*.csproj
-        arguments: '--configuration Release -p:Version=1.0.0-$(Build.BuildNumber) --output $(Build.ArtifactStagingDirectory)'
-        zipAfterPublish: false
-
-    - task: CmdLine@2
-      displayName: dotnet octo pack
-      inputs:
-        script: |
-          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.BackgroundServer --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.BackgroundServer
-          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.GraphQL --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.GraphQL
-          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.Migrator --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.Migrator
-          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.WebAPI --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.WebAPI
-          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.BlazorServerSide --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.BlazorServerSide
-          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.Web --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.Web
-          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.IdentityServer --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.IdentityServer
-          dotnet octo pack --version=1.0.0-$(Build.BuildNumber) --outFolder=$(Build.ArtifactStagingDirectory) --overwrite --id=PhuThuongStickyRice.WebMVC --basePath=$(Build.ArtifactStagingDirectory)/PhuThuongStickyRice.WebMVC
-    - task: DotNetCoreCLI@2
-      displayName: dotnet nuget push
-      inputs:
-        command: 'push'
-        packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-        nuGetFeedType: 'internal'
-        publishVstsFeed: '649b11e9-9f40-41ae-bf73-6d93e3161e2c/24cbed38-cd60-4d56-bad6-7c5d18f75a60'
+          tests/PhuThuongStickyRice.ArchTests/*.csproj
+          tests/PhuThuongStickyRice.ContractTests/*.csproj
+          tests/PhuThuongStickyRice.IntegrationTests/*.csproj
+          tests/PhuThuongStickyRice.UnitTests/*.csproj
+        arguments: '--configuration $(buildConfiguration) --no-build'
