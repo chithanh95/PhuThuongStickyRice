@@ -1,3 +1,4 @@
+@page "/admin/dat-tiec"
 @page "/admin/quotes"
 @attribute [Authorize]
 @using System
@@ -241,9 +242,15 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // 2 loader độc lập (danh sách báo giá, nhắc cúng) -> chạy song song cắt 1 round-trip nối tiếp;
-        // mỗi loader giữ try/catch fail-soft riêng, ghi field khác nhau nên không race.
-        await Task.WhenAll(LoadAsync(), LoadRemindersAsync());
+        // Chạy TUẦN TỰ, không Task.WhenAll: 2 loader dùng chung 1
+        // CatalogAdminService/HttpClient và cùng đi qua SetBearerToken —
+        // khi access token vừa hết hạn, 2 call song song cùng refresh
+        // token sẽ race nhau (refresh token chỉ dùng 1 lần, call đến sau
+        // bị server từ chối) làm 1 trong 2 danh sách rỗng/lỗi ngay khi mở
+        // màn. Project đã dính đúng lớp lỗi Task.WhenAll này trước đây.
+        // Mỗi loader vẫn giữ try/catch fail-soft riêng.
+        await LoadAsync();
+        await LoadRemindersAsync();
     }
 
     private async Task LoadRemindersAsync()
@@ -289,10 +296,13 @@ else
             _quotes = await CatalogAdminService.GetQuotesAsync(_statusFilter)
                 ?? new List<QuoteRequestAdminModel>();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             _quotes = new List<QuoteRequestAdminModel>();
-            _error = "Không tải được danh sách yêu cầu báo giá.";
+            // Kèm message lỗi THẬT (mã HTTP/exception) để chẩn đoán được
+            // nguyên nhân gốc — trước đây chỉ hiện câu chung chung nên
+            // không biết server lỗi gì (user phản ánh 2026-10-20).
+            _error = $"Không tải được danh sách yêu cầu báo giá. ({ex.Message})";
         }
     }
 
