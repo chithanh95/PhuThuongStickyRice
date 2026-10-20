@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Web.Components.Admin.Models
 {
+    /// <summary>
+    /// Topping/món ăn kèm cho phép khách thêm vào xôi: tên, phụ thu và thứ tự hiển thị.
+    /// </summary>
     public class ToppingModel
     {
         public Guid Id { get; set; }
@@ -16,6 +19,9 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public bool IsActive { get; set; } = true;
     }
 
+    /// <summary>
+    /// Một món trong combo: sản phẩm, giá tại thời điểm thêm combo và số lượng.
+    /// </summary>
     public class ComboItemModel
     {
         public Guid ProductId { get; set; }
@@ -27,6 +33,9 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public int Quantity { get; set; } = 1;
     }
 
+    /// <summary>
+    /// Combo gồm nhiều món bán với giá trọn gói, rẻ hơn mua lẻ từng món.
+    /// </summary>
     public class ComboModel
     {
         public Guid Id { get; set; }
@@ -42,6 +51,11 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public List<ComboItemModel> Items { get; set; } = new List<ComboItemModel>();
     }
 
+    /// <summary>
+    /// Yêu cầu báo giá của khách (đặt tiệc, đặt số lượng lớn) hiển thị trên trang admin:
+    /// thông tin khách, ngày sự kiện, số lượng, loại báo giá, trạng thái xử lý
+    /// và tiền đặt cọc (nếu có).
+    /// </summary>
     public class QuoteRequestAdminModel
     {
         public Guid Id { get; set; }
@@ -71,6 +85,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Models
         public string DepositInfo { get; set; }
     }
 
+    /// <summary>
+    /// Tùy chọn size/kích cỡ của một sản phẩm (ví dụ: bát nhỏ/bát lớn):
+    /// tên, giá bán của size đó và thứ tự hiển thị.
+    /// </summary>
     public class ProductSizeOptionModel
     {
         public Guid Id { get; set; }
