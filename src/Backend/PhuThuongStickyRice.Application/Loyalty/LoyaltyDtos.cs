@@ -58,4 +58,27 @@ namespace PhuThuongStickyRice.Application.Loyalty.DTOs
         /// <summary>Ngày sinh mới; null để xóa ngày sinh đã lưu.</summary>
         public DateTime? DateOfBirth { get; set; }
     }
+
+    /// <summary>
+    /// Tóm tắt loyalty TỐI THIỂU trả cho caller ẩn danh theo SĐT: chỉ hạng
+    /// thành viên và tên khách. Điểm, tổng chi tiêu, ngày sinh, mã giới
+    /// thiệu KHÔNG nằm ở đây — bản đầy đủ (<see cref="LoyaltyAccountDto"/>)
+    /// chỉ trả cho chủ tài khoản đã đăng nhập đúng SĐT của mình (audit bảo
+    /// mật 2026-10-20: trước đây chỉ cần biết SĐT người khác là đọc được
+    /// toàn bộ hồ sơ điểm của họ).
+    /// </summary>
+    public class PublicLoyaltySummaryDto
+    {
+        /// <summary>SĐT đã chuẩn hóa (khóa chính của tài khoản loyalty).</summary>
+        public string Phone { get; set; }
+
+        /// <summary>
+        /// Tên khách lấy từ đơn hàng gần nhất của SĐT này (tài khoản loyalty
+        /// không lưu tên); null khi khách chưa từng đặt đơn.
+        /// </summary>
+        public string CustomerName { get; set; }
+
+        /// <summary>Hạng thành viên: Đồng / Bạc / Vàng, tính từ tổng chi tiêu.</summary>
+        public string Tier { get; set; }
+    }
 }

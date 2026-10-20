@@ -731,14 +731,24 @@ else
                     {
                         <div class="alert alert-light border py-2">
                             <small>
-                                ⭐ Bạn có <strong>@_loyalty.Points điểm</strong>
-                                <span class="badge badge-info ml-1">Hạng @_loyalty.Tier</span>
-                                @if (!string.IsNullOrWhiteSpace(_loyalty.ReferralCode))
+                                @if (_loyalty.IsSummaryOnly)
                                 {
-                                    <span class="d-block mt-1">
-                                        Mã giới thiệu của bạn: <strong>@_loyalty.ReferralCode</strong>
-                                        <small class="text-muted">(bạn bè dùng mã này, cả hai cùng được +@_shopSettings.ReferralBonusPoints điểm)</small>
-                                    </span>
+                                    @* Bản tối thiểu công khai theo SĐT: chỉ hiện hạng — điểm/đổi điểm cần đăng nhập đúng SĐT (hoặc OTP ở bước sau). *@
+                                    <span>⭐ Hạng thành viên của SĐT này:</span>
+                                    <span class="badge badge-info ml-1">Hạng @_loyalty.Tier</span>
+                                    <span class="d-block mt-1 text-muted">Đăng nhập bằng SĐT này để xem điểm tích lũy và đổi điểm khi thanh toán.</span>
+                                }
+                                else
+                                {
+                                    <span>⭐ Bạn có <strong>@_loyalty.Points điểm</strong></span>
+                                    <span class="badge badge-info ml-1">Hạng @_loyalty.Tier</span>
+                                    @if (!string.IsNullOrWhiteSpace(_loyalty.ReferralCode))
+                                    {
+                                        <span class="d-block mt-1">
+                                            Mã giới thiệu của bạn: <strong>@_loyalty.ReferralCode</strong>
+                                            <small class="text-muted">(bạn bè dùng mã này, cả hai cùng được +@_shopSettings.ReferralBonusPoints điểm)</small>
+                                        </span>
+                                    }
                                 }
                             </small>
                             @if (_loyalty.Points >= _shopSettings.PointsRedeemUnit && _shopSettings.PointsRedeemUnit > 0)

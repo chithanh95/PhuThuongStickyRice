@@ -43,6 +43,29 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
     }
 
     /// <summary>
+    /// Tóm tắt đơn TỐI THIỂU cho tra cứu công khai theo SĐT: chỉ mã đơn,
+    /// trạng thái, tổng tiền và ngày tạo. Địa chỉ, dòng hàng, thông tin
+    /// thanh toán nằm ở bản đầy đủ (<see cref="OrderDto"/>) — chỉ trả khi
+    /// khách đã xác thực OTP về chính SĐT đặt đơn (audit bảo mật
+    /// 2026-10-20: trước đây chỉ cần SĐT là tải được toàn bộ lịch sử đơn
+    /// kèm địa chỉ của người khác).
+    /// </summary>
+    public class PublicOrderSummaryDto
+    {
+        /// <summary>Mã đơn hàng (hiển thị cho khách, vd "DH000123").</summary>
+        public string OrderNumber { get; set; }
+
+        /// <summary>Trạng thái đơn (tên enum OrderStatus, vd "Pending").</summary>
+        public string Status { get; set; }
+
+        /// <summary>Tổng tiền đơn (VNĐ).</summary>
+        public decimal TotalAmount { get; set; }
+
+        /// <summary>Thời điểm tạo đơn (UTC).</summary>
+        public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>
     /// DTO đơn hàng đầy đủ: thông tin khách, các dòng hàng, tổng tiền,
     /// trạng thái đơn/thanh toán, mã giảm giá, điểm đã đổi và lịch sử trạng thái.
     /// </summary>

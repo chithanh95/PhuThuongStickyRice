@@ -39,6 +39,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     public partial class OrdersController : ControllerBase
     {
         private readonly IOrderAppService _orderAppService;
+        private readonly PhoneOtpService _phoneOtpService;
         private readonly ILogger _logger;
         private readonly IWebHostEnvironment _environment;
 
@@ -60,10 +61,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         public OrdersController(
             IOrderAppService orderAppService,
+            PhoneOtpService phoneOtpService,
             ILogger<OrdersController> logger,
             IWebHostEnvironment environment)
         {
             _orderAppService = orderAppService;
+            _phoneOtpService = phoneOtpService;
             _logger = logger;
             _environment = environment;
         }
@@ -298,17 +301,37 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Public: full order history for a VN phone number (no login).
+        /// Public: lịch sử đơn theo SĐT (không cần đăng nhập). Mặc định
+        /// chỉ trả bản TỐI THIỂU (mã đơn, trạng thái, tổng tiền, ngày tạo)
+        /// — audit bảo mật 2026-10-20: trước đây chỉ cần SĐT là tải được
+        /// toàn bộ lịch sử đơn kèm địa chỉ/dòng hàng của người khác. Muốn
+        /// bản ĐẦY ĐỦ phải kèm otpCode đã xác thực về chính SĐT đó
+        /// (purpose order-history, xin mã qua POST api/phone-otp/send);
+        /// mã sai/thiếu hiệu lực trả 400 kèm thông báo tiếng Việt.
         /// Strict VN mobile format is validated; 400 on invalid format.
         /// </summary>
         [AllowAnonymous]
         [HttpGet("by-phone")]
         public async Task<ActionResult> GetByPhone(
             [FromQuery] string phone,
+            [FromQuery] string otpCode,
             CancellationToken cancellationToken = default)
         {
-            var orders = await _orderAppService.GetOrdersByPhoneAsync(phone);
-            return Ok(orders);
+            if (!string.IsNullOrWhiteSpace(otpCode))
+            {
+                var verify = await _phoneOtpService.VerifyAsync(
+                    phone, PhoneOtpService.Purposes.OrderHistory, otpCode);
+                if (!verify.Succeeded)
+                {
+                    return BadRequest(new { message = verify.ErrorMessage });
+                }
+
+                var orders = await _orderAppService.GetOrdersByPhoneAsync(phone);
+                return Ok(orders);
+            }
+
+            var summaries = await _orderAppService.GetOrderSummariesByPhoneAsync(phone);
+            return Ok(summaries);
         }
 
         /// <summary>

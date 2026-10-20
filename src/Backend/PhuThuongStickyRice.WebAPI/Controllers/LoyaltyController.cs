@@ -5,6 +5,7 @@ using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Discounts.DTOs;
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
+using PhuThuongStickyRice.WebAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -30,6 +31,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly ILoyaltyAppService _loyaltyAppService;
         private readonly IDiscountAppService _discountAppService;
+        private readonly PhoneOtpService _phoneOtpService;
         private readonly ILogger<LoyaltyController> _logger;
 
         // Quà sinh nhật: prefix mã + mệnh giá (VND) + thời hạn dùng của
@@ -42,19 +44,30 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// <summary>
         /// Khởi tạo controller điểm thành viên. <paramref name="loyaltyAppService"/>
         /// xử lý điểm/hạng/ngày sinh; <paramref name="discountAppService"/>
-        /// dùng để sinh voucher quà sinh nhật hàng loạt.
+        /// dùng để sinh voucher quà sinh nhật hàng loạt;
+        /// <paramref name="phoneOtpService"/> xác thực OTP cho thao tác nhạy
+        /// cảm theo SĐT (đổi ngày sinh).
         /// </summary>
         public LoyaltyController(
             ILoyaltyAppService loyaltyAppService,
             IDiscountAppService discountAppService,
+            PhoneOtpService phoneOtpService,
             ILogger<LoyaltyController> logger)
         {
             _loyaltyAppService = loyaltyAppService;
             _discountAppService = discountAppService;
+            _phoneOtpService = phoneOtpService;
             _logger = logger;
         }
 
-        /// <summary>Public: tóm tắt điểm/hạng theo SĐT (trả 204 khi SĐT chưa có tài khoản).</summary>
+        /// <summary>
+        /// Public: tóm tắt loyalty theo SĐT (trả 204 khi SĐT chưa có tài
+        /// khoản). Bảo mật (audit 2026-10-20): caller ẨN DANH chỉ nhận bản
+        /// TỐI THIỂU (hạng + tên khách) — trước đây chỉ cần biết SĐT người
+        /// khác là đọc được điểm, tổng chi tiêu, ngày sinh, mã giới thiệu
+        /// của họ. Bản đầy đủ chỉ trả khi người gọi đã đăng nhập bằng đúng
+        /// SĐT đang tra (JWT username của khách chính là SĐT).
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("by-phone")]
         public async Task<ActionResult> GetByPhone(
@@ -67,17 +80,58 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return NoContent();
             }
 
-            return Ok(account);
+            if (IsOwnerRequest(phone))
+            {
+                return Ok(account);
+            }
+
+            var summary = await _loyaltyAppService.GetPublicSummaryByPhoneAsync(phone);
+            return Ok(summary);
         }
 
-        /// <summary>Public: khách tự cập nhật ngày sinh theo SĐT; lỗi nghiệp vụ trả 400.</summary>
+        /// <summary>
+        /// Kiểm tra request hiện tại có phải của CHÍNH chủ SĐT đang tra
+        /// không: đã đăng nhập và JWT username (SĐT của khách) khớp SĐT
+        /// truyền vào (so khớp khoan dung định dạng qua
+        /// <see cref="PhoneNumber.PhonesMatch"/>). Nhân viên đăng nhập bằng
+        /// email nên không bao giờ khớp — họ dùng các endpoint admin.
+        /// </summary>
+        /// <param name="phone">SĐT đang được tra cứu.</param>
+        /// <returns>true khi người gọi là chủ của SĐT đó.</returns>
+        private bool IsOwnerRequest(string phone)
+        {
+            if (User?.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(phone))
+            {
+                return false;
+            }
+
+            var identityDigits = PhoneNumber.DigitsOnly(User.Identity.Name);
+            return identityDigits.Length > 0
+                && PhoneNumber.PhonesMatch(identityDigits, phone);
+        }
+
+        /// <summary>
+        /// Public: khách tự cập nhật ngày sinh theo SĐT. Bắt buộc OTP gửi
+        /// về chính SĐT đó (purpose birthday-change, xin mã qua
+        /// POST api/phone-otp/send) — trước đây chỉ cần biết SĐT là đổi
+        /// được ngày sinh người khác (phá quà/voucher sinh nhật của họ).
+        /// Thiếu/sai mã trả 400 kèm thông báo tiếng Việt.
+        /// </summary>
         [AllowAnonymous]
         [HttpPut("by-phone/birthday")]
         public async Task<ActionResult> UpdateBirthday(
             [FromQuery] string phone,
+            [FromQuery] string otpCode,
             [FromBody] UpdateBirthdayInput input,
             CancellationToken cancellationToken = default)
         {
+            var verify = await _phoneOtpService.VerifyAsync(
+                phone, PhoneOtpService.Purposes.BirthdayChange, otpCode);
+            if (!verify.Succeeded)
+            {
+                return BadRequest(new { message = verify.ErrorMessage });
+            }
+
             try
             {
                 return Ok(await _loyaltyAppService.UpdateBirthdayAsync(phone, input));

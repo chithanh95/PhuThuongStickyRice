@@ -332,14 +332,67 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             return await response.Content.ReadAs<TrackedOrderModel>();
         }
 
-        /// <summary>Public: lịch sử đơn đầy đủ theo SĐT VN (không cần đăng nhập).</summary>
-        public async Task<List<TrackedOrderModel>> GetOrdersByPhoneAsync(string phone)
+        /// <summary>
+        /// Public: lịch sử đơn theo SĐT VN (không cần đăng nhập). Không kèm
+        /// <paramref name="otpCode"/>: server chỉ trả bản TỐI THIỂU (mã đơn,
+        /// ngày tạo, tổng tiền, trạng thái — các field còn lại của model để
+        /// trống). Kèm mã OTP hợp lệ (purpose "order-history"): trả bản
+        /// ĐẦY ĐỦ kèm dòng hàng/địa chỉ. Mã sai/hết hạn: ném
+        /// <see cref="InvalidOperationException"/> với thông báo tiếng Việt
+        /// của server để trang hiển thị cho khách.
+        /// </summary>
+        /// <param name="phone">SĐT đã đặt đơn.</param>
+        /// <param name="otpCode">Mã OTP 6 số (tùy chọn) để mở bản đầy đủ.</param>
+        /// <returns>Danh sách đơn (bản tối thiểu hoặc đầy đủ tùy OTP).</returns>
+        public async Task<List<TrackedOrderModel>> GetOrdersByPhoneAsync(string phone, string otpCode = null)
         {
             var url = $"api/orders/by-phone?phone={Uri.EscapeDataString(phone ?? string.Empty)}";
+            if (!string.IsNullOrWhiteSpace(otpCode))
+            {
+                url += $"&otpCode={Uri.EscapeDataString(otpCode)}";
+            }
+
             // Dispose response để trả kết nối HTTP về pool (CA2000).
             using var response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(otpCode))
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(
+                    ParseServerMessage(body) ?? "Mã OTP không đúng hoặc đã hết hạn. Vui lòng yêu cầu mã mới.");
+            }
+
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<List<TrackedOrderModel>>();
+        }
+
+        /// <summary>
+        /// Trích property "message" từ body lỗi JSON của server (dạng
+        /// { "message": "..." }); null khi body không đúng dạng — caller
+        /// dùng thông báo mặc định.
+        /// </summary>
+        /// <param name="body">Body text của response lỗi.</param>
+        /// <returns>Thông báo lỗi tiếng Việt của server, hoặc null.</returns>
+        private static string ParseServerMessage(string body)
+        {
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return null;
+            }
+
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("message", out var messageElement))
+                {
+                    return messageElement.GetString();
+                }
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // Body không phải JSON: giữ thông báo mặc định ở caller.
+            }
+
+            return null;
         }
     }
 }

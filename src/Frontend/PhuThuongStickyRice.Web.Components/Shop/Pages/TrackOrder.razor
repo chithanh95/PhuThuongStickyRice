@@ -98,6 +98,29 @@
                         </tbody>
                     </table>
                 </div>
+                @if (!_historyUnlocked)
+                {
+                    <div class="border rounded mt-3 p-2">
+                        <small>🔒 <strong>Bảo vệ bằng mã OTP:</strong> danh sách trên chỉ hiện mã đơn, ngày đặt và tổng tiền. Nhập mã OTP gửi về SĐT này để xem chi tiết đơn (món, địa chỉ) và đặt lại.</small>
+                        <div class="form-row align-items-end mt-2">
+                            <div class="col-auto">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="SendHistoryOtpAsync" disabled="@_historyOtpBusy">
+                                    @(_historyOtpSent ? "Gửi lại mã OTP" : "Gửi mã OTP")
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <input class="form-control form-control-sm" @bind="_historyOtpCode" placeholder="Mã OTP 6 số" inputmode="numeric" maxlength="6" aria-label="Mã OTP xem chi tiết lịch sử đơn" />
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-sm btn-primary" @onclick="UnlockHistoryAsync" disabled="@_historyOtpBusy">Mở chi tiết</button>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_historyOtpMessage))
+                        {
+                            <small class="@(_historyOtpIsError ? "text-danger" : "text-success")">@_historyOtpMessage</small>
+                        }
+                    </div>
+                }
             }
         }
     </div>
@@ -190,11 +213,20 @@
             {
                 <p>
                     <small>
-                        ⭐ Bạn có <strong>@_loyalty.Points điểm</strong>
-                        <span class="badge badge-info">Hạng @_loyalty.Tier</span>
-                        @if (!string.IsNullOrWhiteSpace(_loyalty.ReferralCode))
+                        @if (_loyalty.IsSummaryOnly)
                         {
-                            <span class="ml-1">Mã giới thiệu: <strong>@_loyalty.ReferralCode</strong></span>
+                            @* Bản tối thiểu công khai theo SĐT: chỉ hiện hạng + tên khách, không hiện điểm/tổng chi tiêu. *@
+                            <span>⭐ @(_loyalty.CustomerName ?? "Khách hàng") — </span>
+                            <span class="badge badge-info">Hạng @_loyalty.Tier</span>
+                        }
+                        else
+                        {
+                            <span>⭐ Bạn có <strong>@_loyalty.Points điểm</strong></span>
+                            <span class="badge badge-info">Hạng @_loyalty.Tier</span>
+                            @if (!string.IsNullOrWhiteSpace(_loyalty.ReferralCode))
+                            {
+                                <span class="ml-1">Mã giới thiệu: <strong>@_loyalty.ReferralCode</strong></span>
+                            }
                         }
                     </small>
                 </p>
@@ -202,6 +234,15 @@
                     <div class="col-auto">
                         <label for="to-birthday"><small>Ngày sinh <small class="text-muted">(để nhận voucher sinh nhật)</small></small></label>
                         <input id="to-birthday" type="date" class="form-control form-control-sm" @bind="_birthdayInput" />
+                    </div>
+                    <div class="col-auto">
+                        <label for="to-birthday-otp"><small>Mã OTP <small class="text-muted">(gửi về SĐT của đơn)</small></small></label>
+                        <div class="input-group input-group-sm">
+                            <input id="to-birthday-otp" class="form-control" @bind="_birthdayOtpCode" placeholder="6 số" inputmode="numeric" maxlength="6" />
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-primary" @onclick="SendBirthdayOtpAsync" disabled="@_birthdayOtpBusy">Gửi mã</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-auto">
                         <button class="btn btn-sm btn-outline-secondary" @onclick="SaveBirthday" disabled="@_savingBirthday">
@@ -238,9 +279,27 @@
                         {
                             <div class="d-flex justify-content-between align-items-center border-bottom py-1">
                                 <small><strong>@a.Label:</strong> @a.Address</small>
-                                <button class="btn btn-sm btn-link text-danger" @onclick="() => DeleteAddressAsync(a)">Xóa</button>
+                                <button class="btn btn-sm btn-link text-danger" @onclick="() => ArmDeleteAddress(a)">Xóa</button>
                             </div>
                         }
+                    }
+                    @if (_deleteAddressTarget != null)
+                    {
+                        <div class="form-row align-items-end mt-2">
+                            <div class="col-auto">
+                                <label><small>Mã OTP xóa địa chỉ "@_deleteAddressTarget.Label" <small class="text-muted">(gửi về SĐT của đơn)</small></small></label>
+                                <div class="input-group input-group-sm">
+                                    <input class="form-control" @bind="_deleteAddressOtpCode" placeholder="6 số" inputmode="numeric" maxlength="6" />
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-primary" @onclick="SendDeleteAddressOtpAsync" disabled="@_deleteAddressOtpBusy">Gửi mã</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-sm btn-danger" @onclick="ConfirmDeleteAddressAsync" disabled="@_deleteAddressOtpBusy">Xác nhận xóa</button>
+                                <button class="btn btn-sm btn-link" @onclick="CancelDeleteAddress">Hủy</button>
+                            </div>
+                        </div>
                     }
                     <div class="form-row mt-2">
                         <div class="col-4">
@@ -257,7 +316,7 @@
                     </div>
                     @if (!string.IsNullOrEmpty(_addressBookMessage))
                     {
-                        <small class="text-success">@_addressBookMessage</small>
+                        <small class="@(_addressBookIsError ? "text-danger" : "text-success")">@_addressBookMessage</small>
                     }
                 </div>
             </div>
@@ -808,6 +867,10 @@
     private bool _savingBirthday;
     private string _birthdayMessage;
     private bool _birthdayIsError;
+    // OTP đổi ngày sinh (purpose birthday-change): server bắt buộc mã gửi
+    // về SĐT của đơn mới cho đổi.
+    private string _birthdayOtpCode;
+    private bool _birthdayOtpBusy;
 
     // Item 119: address book.
     private System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel> _addresses;
@@ -815,12 +878,29 @@
     private string _newAddressText;
     private bool _savingAddress;
     private string _addressBookMessage;
+    private bool _addressBookIsError;
+    // OTP xóa địa chỉ (purpose address-delete): bấm Xóa chỉ "gài" địa chỉ
+    // vào _deleteAddressTarget; xóa thật khi khách nhập đúng mã OTP.
+    private PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel _deleteAddressTarget;
+    private string _deleteAddressOtpCode;
+    private bool _deleteAddressOtpBusy;
 
     // Lịch sử đơn hàng theo SĐT (không cần đăng nhập).
     private string _historyPhone;
     private System.Collections.Generic.List<TrackedOrderModel> _history;
     private bool _historyLoading;
     private string _historyError;
+    // OTP mở khóa chi tiết lịch sử (purpose order-history): danh sách mặc
+    // định chỉ là bản tối thiểu (không dòng hàng/địa chỉ); nhập đúng mã
+    // mới tải bản đầy đủ để xem chi tiết/đặt lại.
+    private bool _historyUnlocked;
+    private string _historyOtpCode;
+    private bool _historyOtpSent;
+    private bool _historyOtpBusy;
+    private string _historyOtpMessage;
+    private bool _historyOtpIsError;
+    private string _pendingHistoryOrderNumber;
+    private bool _pendingHistoryReorder;
 
     // Customer self-service: cancel.
     private bool _cancelling;
@@ -1216,10 +1296,14 @@
         _loyalty = null;
         _birthdayInput = null;
         _birthdayMessage = null;
+        _birthdayOtpCode = null;
         _order = null;
         _bankInfo = null;
         _addresses = null;
         _addressBookMessage = null;
+        _addressBookIsError = false;
+        _deleteAddressTarget = null;
+        _deleteAddressOtpCode = null;
         StopPolling();
 
         if (string.IsNullOrWhiteSpace(_orderNumber) || string.IsNullOrWhiteSpace(_phone))
@@ -1246,12 +1330,19 @@
     }
 
     /// <summary>
-    /// Loads the full order history for a VN phone number (no login).
+    /// Loads the order history for a VN phone number (no login). The
+    /// server returns the MINIMAL list (number/date/total/status) by
+    /// default — full detail requires OTP (see UnlockHistoryAsync).
     /// </summary>
     private async Task LoadHistoryAsync()
     {
         _historyError = null;
         _history = null;
+        _historyUnlocked = false;
+        _historyOtpSent = false;
+        _historyOtpCode = null;
+        _historyOtpMessage = null;
+        _pendingHistoryOrderNumber = null;
 
         if (string.IsNullOrWhiteSpace(_historyPhone))
         {
@@ -1275,10 +1366,117 @@
     }
 
     /// <summary>
+    /// true khi dòng lịch sử là bản TỐI THIỂU từ server (chưa có dòng
+    /// hàng — đơn thật luôn có ít nhất 1 dòng). Bản tối thiểu không xem
+    /// chi tiết/đặt lại được, phải mở khóa bằng OTP trước.
+    /// </summary>
+    private static bool IsHistorySummary(TrackedOrderModel order)
+        => order == null || order.Lines == null || order.Lines.Count == 0;
+
+    /// <summary>
+    /// Ghi nhận thao tác đang chờ mở khóa OTP (xem chi tiết hoặc đặt lại
+    /// 1 đơn trong lịch sử) và nhắc khách nhập mã ở dải OTP dưới bảng
+    /// lịch sử. Mở khóa xong, UnlockHistoryAsync tự thực thi tiếp.
+    /// </summary>
+    private void RequestHistoryUnlock(string orderNumber, bool reorder)
+    {
+        _pendingHistoryOrderNumber = orderNumber;
+        _pendingHistoryReorder = reorder;
+        _historyOtpMessage = _historyOtpSent
+            ? "Nhập mã OTP đã gửi về SĐT rồi bấm \"Mở chi tiết\"."
+            : "Thao tác này cần mã OTP: bấm \"Gửi mã OTP\" rồi nhập mã để tiếp tục.";
+        _historyOtpIsError = false;
+    }
+
+    /// <summary>Gửi mã OTP (purpose order-history) về SĐT đang tra lịch sử.</summary>
+    private async Task SendHistoryOtpAsync()
+    {
+        _historyOtpMessage = null;
+        _historyOtpBusy = true;
+        try
+        {
+            await ShopEngagementService.SendPhoneOtpAsync(_historyPhone.Trim(), "order-history");
+            _historyOtpSent = true;
+            _historyOtpMessage = "Đã gửi mã OTP về SĐT của bạn. Mã có hiệu lực 5 phút.";
+            _historyOtpIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _historyOtpMessage = ex.Message;
+            _historyOtpIsError = true;
+        }
+        finally
+        {
+            _historyOtpBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Xác thực mã OTP và tải lại lịch sử ở bản ĐẦY ĐỦ (có dòng hàng/địa
+    /// chỉ), rồi tự thực thi thao tác đang chờ (xem chi tiết/đặt lại) nếu
+    /// có. Mã OTP sai/hết hạn: server trả 400 — ShopService ném
+    /// InvalidOperationException kèm thông báo tiếng Việt.
+    /// </summary>
+    private async Task UnlockHistoryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_historyOtpCode))
+        {
+            _historyOtpMessage = "Vui lòng nhập mã OTP đã gửi về SĐT.";
+            _historyOtpIsError = true;
+            return;
+        }
+
+        _historyOtpBusy = true;
+        try
+        {
+            _history = await ShopService.GetOrdersByPhoneAsync(_historyPhone.Trim(), _historyOtpCode.Trim());
+            _historyUnlocked = true;
+            _historyOtpSent = false;
+            _historyOtpCode = null;
+            _historyOtpMessage = null;
+
+            if (!string.IsNullOrEmpty(_pendingHistoryOrderNumber))
+            {
+                var full = _history.FirstOrDefault(h => h.OrderNumber == _pendingHistoryOrderNumber);
+                var reorder = _pendingHistoryReorder;
+                _pendingHistoryOrderNumber = null;
+                if (full != null)
+                {
+                    if (reorder)
+                    {
+                        await ReorderAsync(full);
+                    }
+                    else
+                    {
+                        await ViewHistoryDetail(full);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _historyOtpMessage = ex.Message;
+            _historyOtpIsError = true;
+        }
+        finally
+        {
+            _historyOtpBusy = false;
+        }
+    }
+
+    /// <summary>
     /// Shows a history order in the detail panel below.
     /// </summary>
     private async Task ViewHistoryDetail(TrackedOrderModel order)
     {
+        if (IsHistorySummary(order))
+        {
+            // Bản tối thiểu chưa có dòng hàng/địa chỉ — yêu cầu mở khóa
+            // OTP trước; mở khóa xong sẽ tự mở chi tiết đơn này.
+            RequestHistoryUnlock(order.OrderNumber, reorder: false);
+            return;
+        }
+
         ResetEditStates(); // form sửa của đơn cũ không được kéo sang đơn mới
         // Reset trạng thái đánh giá của đơn cũ — Lookup() reset đầy đủ nhóm này
         // nhưng ViewHistoryDetail() sót: nếu không reset, panel đơn B hiện lời cảm ơn
@@ -1301,6 +1499,9 @@
         _copyMessage = null;
         _cancelError = null;
         _editError = null;
+        _deleteAddressTarget = null;
+        _deleteAddressOtpCode = null;
+        _birthdayOtpCode = null;
         StopPolling(); // dừng poll đơn A trước khi nạp đơn B
         _order = order;
         _reorderMessage = null;
@@ -1483,9 +1684,11 @@
     private async Task AddAddressAsync()
     {
         _addressBookMessage = null;
+        _addressBookIsError = false;
         if (string.IsNullOrWhiteSpace(_newAddressLabel) || string.IsNullOrWhiteSpace(_newAddressText))
         {
             _addressBookMessage = "Vui lòng nhập nhãn và địa chỉ.";
+            _addressBookIsError = true;
             return;
         }
 
@@ -1501,6 +1704,7 @@
         catch (Exception ex)
         {
             _addressBookMessage = "Không lưu được: " + ex.Message;
+            _addressBookIsError = true;
         }
         finally
         {
@@ -1508,16 +1712,107 @@
         }
     }
 
-    private async Task DeleteAddressAsync(PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel address)
+    /// <summary>
+    /// Bấm "Xóa" 1 địa chỉ: chỉ gài địa chỉ đó chờ xác thực OTP (chưa xóa
+    /// thật) — server bắt buộc mã OTP gửi về SĐT của đơn mới cho xóa.
+    /// </summary>
+    private void ArmDeleteAddress(PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel address)
     {
+        _deleteAddressTarget = address;
+        _deleteAddressOtpCode = null;
+        _addressBookMessage = "Vui lòng bấm \"Gửi mã\" để nhận mã OTP, nhập mã rồi bấm \"Xác nhận xóa\".";
+        _addressBookIsError = false;
+    }
+
+    /// <summary>Hủy thao tác xóa địa chỉ đang chờ OTP.</summary>
+    private void CancelDeleteAddress()
+    {
+        _deleteAddressTarget = null;
+        _deleteAddressOtpCode = null;
+        _addressBookMessage = null;
+    }
+
+    /// <summary>Gửi mã OTP (purpose address-delete) về SĐT của đơn.</summary>
+    private async Task SendDeleteAddressOtpAsync()
+    {
+        _deleteAddressOtpBusy = true;
         try
         {
-            await AdminSystemService.DeleteAddressAsync(address.Id, _order.CustomerPhone);
+            await ShopEngagementService.SendPhoneOtpAsync(_order.CustomerPhone, "address-delete");
+            _addressBookMessage = "Đã gửi mã OTP về SĐT của bạn. Mã có hiệu lực 5 phút.";
+            _addressBookIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _addressBookMessage = ex.Message;
+            _addressBookIsError = true;
+        }
+        finally
+        {
+            _deleteAddressOtpBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Xác nhận xóa địa chỉ kèm mã OTP. Server kiểm tra mã (400 + thông
+    /// báo tiếng Việt khi sai/hết hạn) — AdminSystemService ném
+    /// InvalidOperationException mang message đó để hiện cho khách.
+    /// </summary>
+    private async Task ConfirmDeleteAddressAsync()
+    {
+        if (_deleteAddressTarget == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_deleteAddressOtpCode))
+        {
+            _addressBookMessage = "Vui lòng nhập mã OTP đã gửi về SĐT.";
+            _addressBookIsError = true;
+            return;
+        }
+
+        _deleteAddressOtpBusy = true;
+        try
+        {
+            await AdminSystemService.DeleteAddressAsync(
+                _deleteAddressTarget.Id, _order.CustomerPhone, _deleteAddressOtpCode.Trim());
+            _deleteAddressTarget = null;
+            _deleteAddressOtpCode = null;
+            _addressBookMessage = "Đã xóa địa chỉ.";
+            _addressBookIsError = false;
             await LoadAddressBookAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _addressBookMessage = "Không xóa được địa chỉ.";
+            _addressBookMessage = ex.Message;
+            _addressBookIsError = true;
+        }
+        finally
+        {
+            _deleteAddressOtpBusy = false;
+        }
+    }
+
+    /// <summary>Gửi mã OTP (purpose birthday-change) về SĐT của đơn để đổi ngày sinh.</summary>
+    private async Task SendBirthdayOtpAsync()
+    {
+        _birthdayMessage = null;
+        _birthdayOtpBusy = true;
+        try
+        {
+            await ShopEngagementService.SendPhoneOtpAsync(_order.CustomerPhone, "birthday-change");
+            _birthdayMessage = "Đã gửi mã OTP về SĐT của bạn. Nhập mã rồi bấm \"Lưu ngày sinh\".";
+            _birthdayIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _birthdayMessage = ex.Message;
+            _birthdayIsError = true;
+        }
+        finally
+        {
+            _birthdayOtpBusy = false;
         }
     }
 
@@ -1530,11 +1825,29 @@
             return;
         }
 
+        // Server bắt buộc OTP (purpose birthday-change) — chưa nhập mã thì
+        // nhắc khách xin mã trước thay vì gọi API chắc chắn bị 400.
+        if (string.IsNullOrWhiteSpace(_birthdayOtpCode))
+        {
+            _birthdayMessage = "Vui lòng bấm \"Gửi mã\" để nhận mã OTP về SĐT, nhập mã rồi bấm \"Lưu ngày sinh\".";
+            _birthdayIsError = true;
+            return;
+        }
+
         _savingBirthday = true;
         try
         {
-            _loyalty = await ShopEngagementService.UpdateBirthdayAsync(_order.CustomerPhone, _birthdayInput);
+            _loyalty = await ShopEngagementService.UpdateBirthdayAsync(
+                _order.CustomerPhone, _birthdayInput, _birthdayOtpCode.Trim());
+            _birthdayOtpCode = null;
             _birthdayMessage = "Đã lưu ngày sinh. Bạn sẽ nhận voucher vào đúng ngày sinh nhật!";
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Lỗi từ server kèm thông báo tiếng Việt (OTP sai/hết hạn...)
+            // — hiện nguyên văn để khách biết phải làm gì tiếp.
+            _birthdayMessage = ex.Message;
+            _birthdayIsError = true;
         }
         catch (Exception)
         {
@@ -1637,6 +1950,14 @@
         _reorderMessage = null;
         if (order == null || _reordering)
         {
+            return;
+        }
+
+        if (IsHistorySummary(order))
+        {
+            // Bản tối thiểu của lịch sử không có dòng hàng để khôi phục
+            // giỏ — yêu cầu mở khóa OTP trước; mở khóa xong sẽ tự đặt lại.
+            RequestHistoryUnlock(order.OrderNumber, reorder: true);
             return;
         }
 

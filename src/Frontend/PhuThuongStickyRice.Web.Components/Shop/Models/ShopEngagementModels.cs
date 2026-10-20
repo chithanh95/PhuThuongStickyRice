@@ -8,6 +8,21 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
     {
         public string Phone { get; set; }
 
+        /// <summary>
+        /// Tên khách — chỉ có ở bản tóm tắt công khai theo SĐT (lấy từ đơn
+        /// gần nhất); bản đầy đủ không trả field này.
+        /// </summary>
+        public string CustomerName { get; set; }
+
+        /// <summary>
+        /// true khi dữ liệu là bản TÓM TẮT công khai (server chỉ trả hạng +
+        /// tên cho caller ẩn danh): Points/TotalSpent/DateOfBirth... là
+        /// giá trị mặc định, KHÔNG phải số thật của khách — UI không được
+        /// hiển thị chúng. Frontend tự set khi nhận response tối thiểu;
+        /// server không gửi field này.
+        /// </summary>
+        public bool IsSummaryOnly { get; set; }
+
         public int Points { get; set; }
 
         public long TotalEarned { get; set; }

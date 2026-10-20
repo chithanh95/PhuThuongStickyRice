@@ -26,6 +26,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// <summary>Public: tóm tắt loyalty (điểm, hạng, tổng chi tiêu) theo SĐT.</summary>
         Task<LoyaltyAccountDto?> GetByPhoneAsync(string phone);
 
+        /// <summary>
+        /// Public: tóm tắt loyalty TỐI THIỂU (chỉ hạng + tên khách) cho
+        /// caller ẩn danh theo SĐT — bản đầy đủ chỉ dành cho chủ tài khoản.
+        /// </summary>
+        Task<PublicLoyaltySummaryDto?> GetPublicSummaryByPhoneAsync(string phone);
+
         /// <summary>Public: khách tự cập nhật ngày sinh của mình (trang tra cứu đơn "hồ sơ").</summary>
         Task<LoyaltyAccountDto> UpdateBirthdayAsync(string phone, UpdateBirthdayInput input);
 
@@ -188,6 +194,54 @@ namespace PhuThuongStickyRice.Application.Loyalty
             }
 
             return await MapToDtoAsync(account);
+        }
+
+        /// <summary>
+        /// Tóm tắt loyalty TỐI THIỂU cho caller ẩn danh theo SĐT: chỉ hạng
+        /// thành viên + tên khách. Điểm/tổng chi tiêu/ngày sinh/mã giới
+        /// thiệu không rời server ở luồng này (audit bảo mật 2026-10-20).
+        /// Tên khách không lưu ở tài khoản loyalty nên lấy từ đơn hàng gần
+        /// nhất của SĐT (khớp theo 9 số cuối chuẩn hóa như tra cứu đơn).
+        /// </summary>
+        /// <param name="phone">SĐT khách hàng.</param>
+        /// <returns>Tóm tắt tối thiểu; null nếu SĐT không hợp lệ hoặc chưa có tài khoản.</returns>
+        [AllowAnonymous]
+        public virtual async Task<PublicLoyaltySummaryDto?> GetPublicSummaryByPhoneAsync(string phone)
+        {
+            var normalized = NormalizePhone(phone);
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return null;
+            }
+
+            var account = await FindByPhoneAsync(normalized);
+            if (account == null)
+            {
+                return null;
+            }
+
+            var settings = await _shopSettings.GetAsync();
+            var full = MapToDto(account, settings);
+
+            string customerName = null;
+            if (normalized.Length >= PhoneNumber.TailDigitCount)
+            {
+                var tail = normalized[^PhoneNumber.TailDigitCount..];
+                var orderQueryable = await _orders.GetQueryableAsync();
+                var latest = await _asyncExecuter.ToListAsync(
+                    orderQueryable
+                        .Where(x => x.CustomerPhoneNorm == tail)
+                        .OrderByDescending(x => x.CreatedAt)
+                        .Take(1));
+                customerName = latest.Count > 0 ? latest[0].CustomerName : null;
+            }
+
+            return new PublicLoyaltySummaryDto
+            {
+                Phone = account.Phone,
+                CustomerName = customerName,
+                Tier = full.Tier
+            };
         }
 
         /// <summary>

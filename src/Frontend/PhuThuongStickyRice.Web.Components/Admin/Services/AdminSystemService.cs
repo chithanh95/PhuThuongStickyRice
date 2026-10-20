@@ -276,12 +276,30 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
                 new { Phone = phone, Label = label, Address = address });
         }
 
-        /// <summary>Xóa địa chỉ khỏi sổ địa chỉ của khách.</summary>
+        /// <summary>
+        /// Xóa địa chỉ khỏi sổ địa chỉ của khách. Bắt buộc kèm mã OTP đã
+        /// gửi về SĐT chủ sở hữu (purpose "address-delete") — server từ
+        /// chối (400) khi thiếu/sai mã; thông báo tiếng Việt của server
+        /// được ném ra trong <see cref="InvalidOperationException"/> để
+        /// trang hiển thị cho khách.
+        /// </summary>
         /// <param name="id">Id địa chỉ.</param>
         /// <param name="phone">SĐT chủ sở hữu (để xác thực quyền xóa).</param>
-        public async Task DeleteAddressAsync(Guid id, string phone)
+        /// <param name="otpCode">Mã OTP 6 số khách nhập.</param>
+        public async Task DeleteAddressAsync(Guid id, string phone, string otpCode)
         {
-            await DeleteAsync($"api/addressbooks/{id}?phone={Uri.EscapeDataString(phone ?? string.Empty)}");
+            var url = $"api/addressbooks/{id}?phone={Uri.EscapeDataString(phone ?? string.Empty)}"
+                + $"&otpCode={Uri.EscapeDataString(otpCode ?? string.Empty)}";
+
+            await SetBearerToken();
+            using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            using var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(
+                    ParseServerErrorMessage(body) ?? "Không xóa được địa chỉ. Vui lòng thử lại.");
+            }
         }
     }
 }

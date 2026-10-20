@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
@@ -23,37 +25,137 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         {
         }
 
+        // ---- Phone OTP ----
+
+        /// <summary>
+        /// Xin mã OTP 6 số gửi về SĐT cho 1 thao tác nhạy cảm (purpose:
+        /// "address-delete" / "birthday-change" / "order-history"). Mã có
+        /// hiệu lực 5 phút, dùng 1 lần. Ném
+        /// <see cref="InvalidOperationException"/> kèm thông báo tiếng Việt
+        /// của server khi xin mã thất bại (SĐT sai định dạng, quá 3
+        /// lần/giờ...).
+        /// </summary>
+        /// <param name="phone">SĐT nhận mã OTP.</param>
+        /// <param name="purpose">Mục đích xác thực (khớp với thao tác sẽ thực hiện).</param>
+        public async Task SendPhoneOtpAsync(string phone, string purpose)
+        {
+            using var response = await _httpClient.PostAsJsonAsync(
+                "api/phone-otp/send", new { Phone = phone, Purpose = purpose });
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(
+                    ParseServerErrorMessage(body) ?? "Không gửi được mã OTP. Vui lòng thử lại.");
+            }
+        }
+
         // ---- Loyalty ----
 
         /// <summary>
         /// Lấy tài khoản tích điểm của khách theo SĐT; trả về null khi khách chưa có tài khoản (API trả 204).
+        /// Bảo mật: caller ẩn danh chỉ nhận bản TỐI THIỂU (hạng + tên) —
+        /// model trả về có IsSummaryOnly = true và các field điểm/tổng
+        /// chi tiêu là mặc định. Bản đầy đủ chỉ về khi đang đăng nhập bằng
+        /// đúng SĐT đó (JWT được đính kèm tự động khi có phiên đăng nhập).
         /// </summary>
         /// <param name="phone">Số điện thoại khách hàng.</param>
-        /// <returns>Tài khoản tích điểm hoặc null.</returns>
+        /// <returns>Tài khoản tích điểm (đầy đủ hoặc bản tối thiểu) hoặc null.</returns>
         public async Task<LoyaltyAccountModel> GetLoyaltyByPhoneAsync(string phone)
         {
-            using var response = await _httpClient.GetAsync(
+            using var request = new HttpRequestMessage(HttpMethod.Get,
                 $"api/loyalty/by-phone?phone={Uri.EscapeDataString(phone ?? string.Empty)}");
+
+            // Đính kèm JWT khi có phiên đăng nhập: server dựa vào đây để
+            // quyết định trả bản đầy đủ cho chính chủ SĐT.
+            var accessToken = await GetAccessToken();
+            if (accessToken != null)
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            }
+
+            using var response = await _httpClient.SendAsync(request);
             if (response.StatusCode == HttpStatusCode.NoContent)
             {
                 return null;
             }
 
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAs<LoyaltyAccountModel>();
+            var json = await response.Content.ReadAsStringAsync();
+            var account = JsonSerializer.Deserialize<LoyaltyAccountModel>(
+                json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (account != null)
+            {
+                // Bản đầy đủ có field "points"; bản tối thiểu công khai thì
+                // không — đánh dấu để UI không hiển thị điểm/tổng chi tiêu
+                // mặc định như số thật của khách.
+                account.IsSummaryOnly = !HasJsonProperty(json, "points");
+            }
+
+            return account;
         }
 
         /// <summary>
-        /// Cập nhật ngày sinh của tài khoản tích điểm theo SĐT.
+        /// Kiểm tra JSON có property tên <paramref name="name"/> không
+        /// (không phân biệt hoa/thường) — dùng để phân biệt response loyalty
+        /// đầy đủ với bản tối thiểu công khai.
+        /// </summary>
+        /// <param name="json">Chuỗi JSON cần kiểm tra.</param>
+        /// <param name="name">Tên property cần tìm.</param>
+        /// <returns>true khi JSON có property đó ở cấp ngoài cùng.</returns>
+        private static bool HasJsonProperty(string json, string name)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return false;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                foreach (var property in doc.RootElement.EnumerateObject())
+                {
+                    if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // JSON hỏng: coi như bản tối thiểu cho an toàn hiển thị.
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Cập nhật ngày sinh của tài khoản tích điểm theo SĐT. Bắt buộc
+        /// kèm mã OTP đã gửi về chính SĐT đó (purpose "birthday-change",
+        /// xin mã qua <see cref="SendPhoneOtpAsync"/>) — server từ chối
+        /// (400) khi thiếu/sai mã; thông báo lỗi tiếng Việt của server
+        /// được ném ra trong <see cref="InvalidOperationException"/> để
+        /// trang hiển thị cho khách.
         /// </summary>
         /// <param name="phone">Số điện thoại khách hàng.</param>
         /// <param name="dateOfBirth">Ngày sinh mới.</param>
+        /// <param name="otpCode">Mã OTP 6 số khách nhập.</param>
         /// <returns>Tài khoản tích điểm sau khi cập nhật.</returns>
-        public async Task<LoyaltyAccountModel> UpdateBirthdayAsync(string phone, DateTime? dateOfBirth)
+        public async Task<LoyaltyAccountModel> UpdateBirthdayAsync(string phone, DateTime? dateOfBirth, string otpCode)
         {
-            return await PutAsync<LoyaltyAccountModel>(
-                $"api/loyalty/by-phone/birthday?phone={Uri.EscapeDataString(phone ?? string.Empty)}",
-                new { DateOfBirth = dateOfBirth });
+            var url = $"api/loyalty/by-phone/birthday?phone={Uri.EscapeDataString(phone ?? string.Empty)}"
+                + $"&otpCode={Uri.EscapeDataString(otpCode ?? string.Empty)}";
+            using var request = new HttpRequestMessage(HttpMethod.Put, url);
+            request.Content = new { DateOfBirth = dateOfBirth }.AsJsonContent();
+
+            using var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(
+                    ParseServerErrorMessage(body) ?? "Không lưu được ngày sinh. Vui lòng thử lại.");
+            }
+
+            return await response.Content.ReadAs<LoyaltyAccountModel>();
         }
 
         /// <summary>

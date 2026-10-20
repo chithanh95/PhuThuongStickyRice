@@ -100,6 +100,14 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Public: order history lookup by phone number.</summary>
         Task<List<OrderDto>> GetOrdersByPhoneAsync(string phone);
 
+        /// <summary>
+        /// Public: bản TỐI THIỂU của lịch sử đơn theo SĐT (mã đơn, trạng
+        /// thái, tổng tiền, ngày tạo) cho caller ẩn danh — bản đầy đủ
+        /// (<see cref="GetOrdersByPhoneAsync"/>) chỉ trả sau khi khách
+        /// xác thực OTP về chính SĐT đó.
+        /// </summary>
+        Task<List<PublicOrderSummaryDto>> GetOrderSummariesByPhoneAsync(string phone);
+
         /// <summary>Admin confirms a payment (bank transfer).</summary>
         Task<OrderDto> ConfirmPaymentAsync(Guid id);
 
@@ -3713,6 +3721,71 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
 
                 result.Add(MapPublicOrderDto(order));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Public: bản TỐI THIỂU của lịch sử đơn theo SĐT cho caller ẩn
+        /// danh — chỉ mã đơn, trạng thái, tổng tiền, ngày tạo. Dùng chung
+        /// pipeline validate + khớp SĐT với
+        /// <see cref="GetOrdersByPhoneAsync"/> nhưng phase 2 chỉ chiếu các
+        /// cột nhẹ thay vì nạp full đơn: địa chỉ và dòng hàng chỉ có ở bản
+        /// đầy đủ, trả sau khi khách xác thực OTP (audit bảo mật
+        /// 2026-10-20).
+        /// </summary>
+        /// <param name="phone">SĐT khách (kiểm tra định dạng VN nghiêm ngặt như bản đầy đủ).</param>
+        /// <returns>Danh sách tóm tắt đơn, mới nhất lên trước; rỗng khi SĐT chưa có đơn.</returns>
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public virtual async Task<List<PublicOrderSummaryDto>> GetOrderSummariesByPhoneAsync(string phone)
+        {
+            var digits = PhoneNumber.DigitsOnly(phone);
+            if (!System.Text.RegularExpressions.Regex.IsMatch(digits, @"^(0)(3|5|7|8|9)\d{8}$"))
+            {
+                throw new CrossCuttingConcerns.Exceptions.ValidationException(
+                    InvalidPhoneFormatMessage);
+            }
+
+            var phoneSuffix = digits[^PhoneNumber.TailDigitCount..];
+            var candidates = await LoadOrderCandidatesAsync(phoneSuffix);
+
+            var matched = candidates.Where(x => PhoneNumber.PhonesMatch(x.CustomerPhone, digits)).ToList();
+            if (matched.Count == 0)
+            {
+                return new List<PublicOrderSummaryDto>();
+            }
+
+            var matchedIds = matched.Select(x => x.Id).ToList();
+            var orderQueryable = await _orders.GetQueryableAsync();
+            var rows = await _asyncExecuter.ToListAsync(
+                orderQueryable
+                    .Where(x => matchedIds.Contains(x.Id))
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.OrderNumber,
+                        x.Status,
+                        Total = x.TotalAmount.Amount,
+                        x.CreatedAt
+                    }));
+
+            var byId = rows.ToDictionary(x => x.Id);
+            var result = new List<PublicOrderSummaryDto>(matched.Count);
+            foreach (var candidate in matched)
+            {
+                if (!byId.TryGetValue(candidate.Id, out var row))
+                {
+                    continue;
+                }
+
+                result.Add(new PublicOrderSummaryDto
+                {
+                    OrderNumber = row.OrderNumber,
+                    Status = row.Status.ToString(),
+                    TotalAmount = row.Total,
+                    CreatedAt = row.CreatedAt
+                });
             }
 
             return result;

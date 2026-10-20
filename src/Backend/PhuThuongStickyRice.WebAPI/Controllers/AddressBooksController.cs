@@ -1,6 +1,7 @@
 
 
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
+using PhuThuongStickyRice.WebAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -21,10 +22,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public class AddressBooksController : ControllerBase
         {
             private readonly IAddressBookAppService _addresses;
+            private readonly PhoneOtpService _phoneOtpService;
 
-            public AddressBooksController(IAddressBookAppService addresses)
+            public AddressBooksController(IAddressBookAppService addresses, PhoneOtpService phoneOtpService)
             {
                 _addresses = addresses;
+                _phoneOtpService = phoneOtpService;
             }
 
             /// <summary>
@@ -58,17 +61,30 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             /// <summary>
-            /// Public: xóa một địa chỉ trong sổ địa chỉ. Yêu cầu kèm SĐT chủ
-            /// sở hữu để không xóa nhầm địa chỉ của khách khác.
+            /// Public: xóa một địa chỉ trong sổ địa chỉ. Ngoài SĐT chủ sở
+            /// hữu, bắt buộc kèm mã OTP đã gửi về chính SĐT đó (purpose
+            /// address-delete, xin mã qua POST api/phone-otp/send) — audit
+            /// bảo mật 2026-10-20: trước đây chỉ cần biết SĐT + id là xóa
+            /// được địa chỉ của người khác. Thiếu/sai mã trả 400 kèm thông
+            /// báo tiếng Việt.
             /// </summary>
             /// <param name="id">Id địa chỉ cần xóa.</param>
             /// <param name="phone">SĐT chủ sở hữu địa chỉ (xác thực quyền xóa).</param>
+            /// <param name="otpCode">Mã OTP 6 số đã gửi về SĐT chủ sở hữu.</param>
             /// <param name="cancellationToken">Token hủy request.</param>
             [AllowAnonymous]
             [HttpDelete("{id}")]
             public async Task<ActionResult> Delete(Guid id, [FromQuery] string phone,
+                [FromQuery] string otpCode,
                 CancellationToken cancellationToken = default)
             {
+                var verify = await _phoneOtpService.VerifyAsync(
+                    phone, PhoneOtpService.Purposes.AddressDelete, otpCode);
+                if (!verify.Succeeded)
+                {
+                    return BadRequest(new { message = verify.ErrorMessage });
+                }
+
                 await _addresses.DeleteAsync(id, phone);
                 return Ok();
             }

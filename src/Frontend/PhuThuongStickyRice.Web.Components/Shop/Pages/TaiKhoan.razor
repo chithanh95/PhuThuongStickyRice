@@ -72,20 +72,28 @@
                             <span class="text-success ml-2">Giảm @_loyalty.TierDiscountPercent.ToString("N0")% mỗi đơn</span>
                         }
                     </div>
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <div class="h5 mb-0 text-primary">@_loyalty.Points.ToString("N0")</div>
-                            <small class="text-muted">Điểm tích lũy</small>
+                    @if (_loyalty.IsSummaryOnly)
+                    {
+                        @* Trường hợp dự phòng: server chỉ trả bản tối thiểu (phiên đăng nhập không khớp SĐT) — không hiện các số điểm/tổng tiền mặc định như số thật. *@
+                        <small class="text-muted d-block">Đăng nhập bằng đúng SĐT tài khoản để xem điểm tích lũy và tổng đã mua.</small>
+                    }
+                    else
+                    {
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="h5 mb-0 text-primary">@_loyalty.Points.ToString("N0")</div>
+                                <small class="text-muted">Điểm tích lũy</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="h5 mb-0">@_loyalty.TotalSpent.ToString("N0") ₫</div>
+                                <small class="text-muted">Tổng đã mua</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="h5 mb-0">@_loyalty.TotalEarned.ToString("N0")</div>
+                                <small class="text-muted">Tổng điểm đã kiếm</small>
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <div class="h5 mb-0">@_loyalty.TotalSpent.ToString("N0") ₫</div>
-                            <small class="text-muted">Tổng đã mua</small>
-                        </div>
-                        <div class="col-4">
-                            <div class="h5 mb-0">@_loyalty.TotalEarned.ToString("N0")</div>
-                            <small class="text-muted">Tổng điểm đã kiếm</small>
-                        </div>
-                    </div>
+                    }
                     <small class="text-muted d-block mt-2">
                         Hạng Bạc: từ 1.000.000₫ (giảm 2%) • Hạng Vàng: từ 5.000.000₫ (giảm 5%)
                     </small>
