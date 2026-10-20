@@ -1,4 +1,8 @@
 
+// CS8632: file dùng annotation nullable (?); bật ngữ cảnh annotations để
+// compiler hiểu đúng ý nghĩa, không bật phân tích luồng (dự án chưa bật nullable toàn cục).
+#nullable enable annotations
+
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
@@ -34,7 +38,9 @@ namespace PhuThuongStickyRice.Application.Staff
         /// Lấy bản chốt ca của 1 ngày (null nếu ngày đó chưa chốt).
         /// </summary>
         /// <param name="date">Ngày kinh doanh (giờ VN, chỉ lấy phần ngày).</param>
-        Task<ShiftCloseDto> GetByDateAsync(DateTime date);
+        // [codequality-practices 2026-10-20] Task<ShiftCloseDto?>: doc ghi rõ
+        // "null nếu ngày đó chưa chốt" — annotation đúng hợp đồng.
+        Task<ShiftCloseDto?> GetByDateAsync(DateTime date);
 
         /// <summary>
         /// Chốt ca: ghi số tiền mặt thực thu, hệ thống tự tính số tiền lẽ ra
@@ -102,7 +108,7 @@ namespace PhuThuongStickyRice.Application.Staff
         /// <summary>
         /// Lấy bản chốt ca của 1 ngày (xem doc ở interface).
         /// </summary>
-        public virtual async Task<ShiftCloseDto> GetByDateAsync(DateTime date)
+        public virtual async Task<ShiftCloseDto?> GetByDateAsync(DateTime date)
         {
             var day = date.Date;
             var queryable = await _closes.GetQueryableAsync();

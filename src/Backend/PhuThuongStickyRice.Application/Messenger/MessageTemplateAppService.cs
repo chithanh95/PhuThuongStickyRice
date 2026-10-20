@@ -1,4 +1,8 @@
 
+// CS8632: file dùng annotation nullable (?); bật ngữ cảnh annotations để
+// compiler hiểu đúng ý nghĩa, không bật phân tích luồng (dự án chưa bật nullable toàn cục).
+#nullable enable annotations
+
 using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +20,9 @@ namespace PhuThuongStickyRice.Application.Messenger
     public interface IMessageTemplateAppService : IApplicationService
     {
         /// <summary>Admin: danh sách mẫu tin theo kênh (SMS/Zalo), null = tất cả.</summary>
-        Task<List<MessageTemplateDto>> GetListAsync(string channel);
+        // [codequality-practices 2026-10-20] string?: doc ghi rõ "null = tất
+        // cả" — impl đã null-safe bằng IsNullOrWhiteSpace.
+        Task<List<MessageTemplateDto>> GetListAsync(string? channel);
 
         /// <summary>Admin: tạo mẫu tin mới với {placeholder} trong nội dung.</summary>
         Task<MessageTemplateDto> CreateAsync(CreateUpdateMessageTemplateDto input);
@@ -60,7 +66,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// </summary>
         /// <param name="channel">Kênh lọc: "SMS", "Zalo", hoặc rỗng để lấy tất cả.</param>
         /// <returns>Danh sách mẫu tin nhắn.</returns>
-        public virtual async Task<List<MessageTemplateDto>> GetListAsync(string channel)
+        public virtual async Task<List<MessageTemplateDto>> GetListAsync(string? channel)
         {
             var queryable = await _templates.GetQueryableAsync();
             IQueryable<MessageTemplate> query = queryable.OrderBy(x => x.Name);

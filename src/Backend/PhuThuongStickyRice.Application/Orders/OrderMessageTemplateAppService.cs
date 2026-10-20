@@ -105,6 +105,14 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Thực thi query async trên IQueryable (ABP).</summary>
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Số mẫu tin nhắn tối đa lấy ở server cho danh sách admin —
+        /// bảng mẫu tin nhắn tăng dần theo cấu hình, không bao giờ
+        /// materialize toàn bộ; đặt tên hằng số thay vì hardcode 500
+        /// trong truy vấn (đồng bộ với MessageTemplateAppService).
+        /// </summary>
+        private const int MaxListRows = 500;
+
         /// <summary>Khởi tạo service mẫu tin nhắn theo trạng thái đơn.</summary>
         /// <param name="templates">Repository bảng OrderMessageTemplate.</param>
         /// <param name="orders">Repository bảng Order.</param>
@@ -141,9 +149,11 @@ namespace PhuThuongStickyRice.Application.Orders
         public virtual async Task<List<OrderMessageTemplateDto>> GetListAsync()
         {
             var queryable = await _templates.GetQueryableAsync();
-            // perf-hunt 2026-10-19 (run 15:45): Take(500) server-side — bảng
-            // mẫu tin nhắn tăng dần theo cấu hình, không bao giờ nạp toàn bộ.
-            var list = await _asyncExecuter.ToListAsync(queryable.OrderBy(x => x.Status).Take(500));
+            // perf-hunt 2026-10-19 (run 15:45): Take(MaxListRows) server-side
+            // — bảng mẫu tin nhắn tăng dần theo cấu hình, không bao giờ nạp
+            // toàn bộ. [codequality-practices 2026-10-20] magic number 500 →
+            // hằng số có tên MaxListRows (đồng bộ các service template khác).
+            var list = await _asyncExecuter.ToListAsync(queryable.OrderBy(x => x.Status).Take(MaxListRows));
             return list.Select(MapToDto).ToList();
         }
 

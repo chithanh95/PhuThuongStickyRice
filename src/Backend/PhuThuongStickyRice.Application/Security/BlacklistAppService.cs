@@ -1,4 +1,8 @@
 
+// CS8632: file dùng annotation nullable (?); bật ngữ cảnh annotations để
+// compiler hiểu đúng ý nghĩa, không bật phân tích luồng (dự án chưa bật nullable toàn cục).
+#nullable enable annotations
+
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -22,7 +26,8 @@ namespace PhuThuongStickyRice.Application.Security
         Task DeleteAsync(Guid id);
 
         /// <summary>True when the phone is blacklisted (public checkout path uses this).</summary>
-        Task<bool> IsBlacklistedAsync(string phone);
+        // [codequality-practices 2026-10-20] string?: xem ghi chú ở implementation.
+        Task<bool> IsBlacklistedAsync(string? phone);
     }
 
     [Authorize(Roles = "Admin")]
@@ -126,8 +131,10 @@ namespace PhuThuongStickyRice.Application.Security
         /// <returns>true nếu SĐT bị chặn.</returns>
         // AllowAnonymous: luồng checkout public (khách chưa đăng nhập) cần
         // gọi được hàm này để từ chối SĐT bị chặn ngay trước khi tạo đơn.
+        // [codequality-practices 2026-10-20] string?: SĐT từ input user có thể
+        // null — impl đã null-safe (NormalizePhone → rỗng → trả false).
         [AllowAnonymous]
-        public virtual async Task<bool> IsBlacklistedAsync(string phone)
+        public virtual async Task<bool> IsBlacklistedAsync(string? phone)
         {
             var normalized = NormalizePhone(phone);
             if (string.IsNullOrEmpty(normalized))
@@ -146,7 +153,9 @@ namespace PhuThuongStickyRice.Application.Security
         /// </summary>
         /// <param name="phone">SĐT ở mọi định dạng.</param>
         /// <returns>Chuỗi chữ số chuẩn hóa; rỗng nếu không có số nào.</returns>
-        public static string NormalizePhone(string phone)
+        // [codequality-practices 2026-10-20] string?: input từ user/API có thể
+        // null — IsNullOrWhiteSpace ở dưới đã xử lý, trả string.Empty.
+        public static string NormalizePhone(string? phone)
         {
             if (string.IsNullOrWhiteSpace(phone))
             {

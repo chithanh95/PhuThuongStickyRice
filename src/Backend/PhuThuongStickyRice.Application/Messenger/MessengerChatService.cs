@@ -1,3 +1,7 @@
+// CS8632: file dùng annotation nullable (?); bật ngữ cảnh annotations để
+// compiler hiểu đúng ý nghĩa, không bật phân tích luồng (dự án chưa bật nullable toàn cục).
+#nullable enable annotations
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -37,7 +41,10 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// <param name="verifyToken">Token Facebook gửi sang để đối chiếu.</param>
         /// <param name="challenge">Chuỗi challenge cần echo lại khi khớp.</param>
         /// <returns>Challenge khi xác minh thành công, null khi thất bại.</returns>
-        Task<string> VerifyWebhookAsync(string mode, string verifyToken, string challenge);
+        // [codequality-practices 2026-10-20] Task<string?>: doc ghi rõ "trả
+        // null khi thất bại" — annotation phản ánh đúng hợp đồng để caller
+        // (MessengerController) biết phải null-check.
+        Task<string?> VerifyWebhookAsync(string? mode, string? verifyToken, string? challenge);
 
         /// <summary>
         /// Xử lý payload webhook Messenger gửi tới (POST): duyệt từng tin nhắn
@@ -59,7 +66,10 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// <returns>True khi chữ ký hợp lệ; false khi chưa cấu hình secret
         /// hoặc chữ ký sai (fail-closed: thiếu secret thì từ chối, không
         /// cho qua — bot có thể tạo đơn thật qua skipRecaptchaCheck).</returns>
-        Task<bool> VerifyWebhookSignatureAsync(byte[] body, string signatureHeader);
+        // [codequality-practices 2026-10-20] string?: header có thể vắng mặt
+        // (controller truyền Request.Headers[...] FirstOrDefault) — impl đã
+        // null-safe bằng IsNullOrWhiteSpace.
+        Task<bool> VerifyWebhookSignatureAsync(byte[] body, string? signatureHeader);
     }
 
     /// <summary>
@@ -170,7 +180,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// <param name="verifyToken">Token Facebook gửi sang để đối chiếu.</param>
         /// <param name="challenge">Chuỗi challenge cần echo lại khi khớp.</param>
         /// <returns>Challenge khi xác minh thành công, null khi thất bại.</returns>
-        public virtual async Task<string> VerifyWebhookAsync(string mode, string verifyToken, string challenge)
+        public virtual async Task<string?> VerifyWebhookAsync(string? mode, string? verifyToken, string? challenge)
         {
             if (!string.Equals(mode, "subscribe", StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(challenge))
@@ -200,7 +210,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// <param name="body">Body thô của request.</param>
         /// <param name="signatureHeader">Giá trị header X-Hub-Signature-256.</param>
         /// <returns>True khi chữ ký hợp lệ (hoặc chưa cấu hình secret).</returns>
-        public virtual async Task<bool> VerifyWebhookSignatureAsync(byte[] body, string signatureHeader)
+        public virtual async Task<bool> VerifyWebhookSignatureAsync(byte[] body, string? signatureHeader)
         {
             var settings = await _shopSettings.GetAsync();
             var appSecret = settings?.FacebookAppSecret;
@@ -259,7 +269,9 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// <param name="payload">Payload JSON từ Facebook.</param>
         public virtual async Task HandleWebhookAsync(JsonDocument payload)
         {
-            string pageToken = null;
+            // [codequality-practices 2026-10-20] string?: settings chưa cấu
+            // hình token thì ở chế độ "chờ cấu hình" (chỉ log) — null là hợp lệ.
+            string? pageToken = null;
             try
             {
                 var settings = await _shopSettings.GetAsync();
@@ -297,11 +309,21 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// </summary>
         /// <param name="messaging">Phần tử "messaging" trong webhook Facebook — một sự kiện hội thoại.</param>
         /// <param name="pageToken">Token trang dùng để gửi phản hồi.</param>
-        private async Task ProcessMessageItemAsync(JsonElement messaging, string pageToken)
+        private async Task ProcessMessageItemAsync(JsonElement messaging, string? pageToken)
         {
             try
             {
                 var psid = messaging.GetProperty("sender").GetProperty("id").GetString();
+                // [codequality-practices 2026-10-20] null-check tường minh:
+                // GetString() có thể trả null (JSON null) — bản cũ để
+                // ConcurrentDictionary.GetOrAdd ném ArgumentNullException rồi
+                // mới bị catch chung ở dưới. Bỏ qua sớm với log rõ ràng,
+                // hành vi "bỏ qua event lỗi" không đổi.
+                if (string.IsNullOrEmpty(psid))
+                {
+                    Logger.LogWarning("Bỏ qua Messenger messaging element: thiếu sender id.");
+                    return;
+                }
                 if (!messaging.TryGetProperty("message", out var message)
                     || !message.TryGetProperty("text", out var textProp))
                 {
@@ -405,8 +427,11 @@ namespace PhuThuongStickyRice.Application.Messenger
         {
             // Tách SĐT + tên khách từ tin nhắn: SĐT là cụm số khớp regex VN,
             // phần chữ còn lại là tên (xóa dấu câu, gom khoảng trắng thừa).
+            // [codequality-practices 2026-10-20] (string? Phone, string? Name):
+            // tuple có thể là (null, null) khi SĐT sai định dạng — caller đã
+            // null-check Phone trước khi dùng.
             var (phone, name) = ExtractCustomerInfo(text);
-            if (phone == null)
+            if (phone == null || name == null)
             {
                 return "SĐT chưa đúng định dạng (VD: 0912345678). Bạn gửi lại giúp mình nhé!";
             }
@@ -440,7 +465,7 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// phần chữ còn lại là tên (xóa dấu câu, gom khoảng trắng thừa).
         /// Trả (null, null) khi SĐT sai định dạng.
         /// </summary>
-        private (string Phone, string Name) ExtractCustomerInfo(string text)
+        private (string? Phone, string? Name) ExtractCustomerInfo(string text)
         {
             var phoneMatch = VnPhoneRegex().Match(text.Replace(" ", string.Empty));
             if (!phoneMatch.Success)
@@ -574,7 +599,9 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// Parses one order fragment like "xôi gấc x 2" into a pending
         /// line, or null when no product matches.
         /// </summary>
-        private PendingLine ParseOrderPart(
+        // [codequality-practices 2026-10-20] PendingLine?: doc ghi rõ "or
+        // null when no product matches" — annotation đúng hợp đồng.
+        private PendingLine? ParseOrderPart(
             string part, List<(ProductDto Product, string NormName)> items)
         {
             var qty = 1;
@@ -601,7 +628,9 @@ namespace PhuThuongStickyRice.Application.Messenger
                 };
         }
 
-        private static ProductDto MatchProduct(
+        // [codequality-practices 2026-10-20] ProductDto?: trả null khi không
+        // khớp món nào (normPart ngắn / điểm khớp < 3) — caller đã null-check.
+        private static ProductDto? MatchProduct(
             string part, List<(ProductDto Product, string NormName)> items)
         {
             var normPart = NormalizeForMatching(part);
@@ -610,7 +639,7 @@ namespace PhuThuongStickyRice.Application.Messenger
                 return null;
             }
 
-            ProductDto best = null;
+            ProductDto? best = null;
             var bestScore = 0;
             foreach (var (product, normName) in items)
             {
@@ -635,7 +664,7 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         // ---------------- sending ----------------
 
-        private async Task SendTextAsync(string psid, string text, string pageToken)
+        private async Task SendTextAsync(string psid, string text, string? pageToken)
         {
             if (string.IsNullOrWhiteSpace(pageToken))
             {

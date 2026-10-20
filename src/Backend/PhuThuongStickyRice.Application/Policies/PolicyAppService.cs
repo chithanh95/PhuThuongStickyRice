@@ -1,3 +1,7 @@
+// CS8632: file dùng annotation nullable (?); bật ngữ cảnh annotations để
+// compiler hiểu đúng ý nghĩa, không bật phân tích luồng (dự án chưa bật nullable toàn cục).
+#nullable enable annotations
+
 using PhuThuongStickyRice.Application.Policies.DTOs;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -21,7 +25,9 @@ namespace PhuThuongStickyRice.Application.Policies
         Task<List<PolicyPageSummaryDto>> GetPublicListAsync();
 
         /// <summary>Public: one page by slug. Null when the slug is unknown.</summary>
-        Task<PolicyPageDto> GetPublicAsync(string slug);
+        // [codequality-practices 2026-10-20] Task<PolicyPageDto?>: doc ghi rõ
+        // "Null when the slug is unknown" — caller (PoliciesController) đã null-check.
+        Task<PolicyPageDto?> GetPublicAsync(string? slug);
 
         /// <summary>Admin: all pages with bodies.</summary>
         Task<List<PolicyPageDto>> GetListAsync();
@@ -90,7 +96,7 @@ namespace PhuThuongStickyRice.Application.Policies
         /// <param name="slug">Slug trang (không phân biệt hoa/thường).</param>
         /// <returns>Trang chính sách; null nếu slug không tồn tại.</returns>
         [AllowAnonymous]
-        public virtual async Task<PolicyPageDto> GetPublicAsync(string slug)
+        public virtual async Task<PolicyPageDto?> GetPublicAsync(string? slug)
         {
             var normalized = slug?.Trim().ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(normalized))
