@@ -841,8 +841,8 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
         /// <summary>
         /// Sinh mã giới thiệu duy nhất dạng "PT-XXXXXX" (bỏ ký tự dễ nhầm
-        /// I/O/0/1). Thử tối đa 10 lần rồi fallback sang GUID để không treo
-        /// request khi DB gần đầy mã.
+        /// I/O/0/1). Thử tối đa 10 lần rồi fallback sang mã ngẫu nhiên (không
+        /// kiểm tra trùng DB) để không treo request khi DB gần đầy mã.
         /// </summary>
         /// <returns>Mã giới thiệu chưa từng tồn tại trong DB.</returns>
         private async Task<string> GenerateReferralCodeAsync()
@@ -867,7 +867,12 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 }
             }
 
-            return ReferralCodes.Prefix + Guid.NewGuid().ToString("N")[..ReferralCodes.SuffixLength].ToUpperInvariant();
+            // [codequality-smell 2026-10-20] Fallback dùng cùng helper
+            // ReadableCodeGenerator như nhánh chính (RNG mật mã, bỏ ký tự
+            // dễ nhầm) thay vì cắt GUID — trước đây hậu tố GUID vừa dùng
+            // RNG yếu hơn vừa lẫn ký tự I/O/0/1, trái với comment CA5394 ở
+            // trên và lặp y hệt biểu thức ở CheckInAppService.
+            return ReferralCodes.Prefix + ReadableCodeGenerator.GenerateSuffix(ReferralCodes.SuffixLength);
         }
 
         /// <summary>

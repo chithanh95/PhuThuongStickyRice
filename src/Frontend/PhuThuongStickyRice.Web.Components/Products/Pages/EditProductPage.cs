@@ -18,7 +18,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         public ProductService ProductService { get; set; }
 
         [Inject]
-        public NavigationManager NavManager { get; set; }
+        public NavigationManager Navigation { get; set; }
 
         [Inject]
         public ILogger<EditProductPage> Logger { get; set; }

@@ -68,7 +68,7 @@ else
             <i class="fa-solid fa-chevron-left"></i> Quay lại
         </NavLink>
         &nbsp;
-        <button @onclick="@(()=> NavManager.NavigateTo($"/products/edit/{ProductId}"))" class="btn btn-primary" title="Sửa">Sửa</button>
+        <button @onclick="@(()=> Navigation.NavigateTo($"/products/edit/{ProductId}"))" class="btn btn-primary" title="Sửa">Sửa</button>
     </div>
 </div>
 }

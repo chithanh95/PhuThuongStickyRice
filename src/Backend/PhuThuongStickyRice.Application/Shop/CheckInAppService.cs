@@ -242,9 +242,11 @@ namespace PhuThuongStickyRice.Application.Shop
                 Points = 0,
                 TotalEarned = 0,
                 TotalSpent = 0,
-                // Mã giới thiệu: tiền tố + hậu tố ngẫu nhiên in hoa (độ dài
-                // ReferralCodes.SuffixLength) để khách chia sẻ cho người mới.
-                ReferralCode = ReferralCodes.Prefix + Guid.NewGuid().ToString("N")[..ReferralCodes.SuffixLength].ToUpperInvariant(),
+                // Mã giới thiệu: tiền tố + hậu tố ngẫu nhiên (RNG mật mã, bỏ
+                // ký tự dễ nhầm I/O/0/1) — dùng cùng helper ReadableCodeGenerator
+                // với LoyaltyAppService.GenerateReferralCodeAsync thay vì cắt
+                // GUID lặp lại (trước đây 2 nơi viết y hệt biểu thức này).
+                ReferralCode = ReferralCodes.Prefix + ReadableCodeGenerator.GenerateSuffix(ReferralCodes.SuffixLength),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };

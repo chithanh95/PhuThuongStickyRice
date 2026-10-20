@@ -9,7 +9,10 @@ namespace PhuThuongStickyRice.Infrastructure.Identity
     {
         public Task<IdentityResult> ValidateAsync(UserManager<User> manager, User user, string password)
         {
-            if (password.Contains("testweakpassword"))
+            // Marker test cố định bằng ASCII — dùng Ordinal để so sánh
+            // byte-chính-xác, tránh phụ thuộc culture hiện hành của server
+            // (Contains(string) mặc định là so sánh linguistic).
+            if (password.Contains("testweakpassword", StringComparison.Ordinal))
             {
                 return Task.FromResult(IdentityResult.Failed(new IdentityError
                 {

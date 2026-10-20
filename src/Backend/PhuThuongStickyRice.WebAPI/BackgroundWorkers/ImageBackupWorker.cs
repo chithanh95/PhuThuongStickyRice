@@ -198,7 +198,10 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                     Path.Combine(uploadsDirectory, StateFileName),
                     JsonSerializer.Serialize(state.ToList()));
             }
-            catch (Exception)
+            // catch trần (không capture biến Exception): biến không dùng tới,
+            // tránh allocation/capture vô ích — ý nghĩa "best effort, bỏ qua"
+            // giữ nguyên.
+            catch
             {
                 // Best effort — the next run simply retries the files.
             }

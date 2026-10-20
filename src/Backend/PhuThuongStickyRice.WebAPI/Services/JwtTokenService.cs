@@ -131,7 +131,11 @@ namespace PhuThuongStickyRice.WebAPI.Services
                     ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 return Guid.TryParse(sub, out var userId) ? userId : (Guid?)null;
             }
-            catch (Exception)
+            // Không capture biến exception (catch trần): ValidateToken có thể
+            // ném nhiều loại exception khác nhau (hết hạn, sai chữ ký, sai
+            // định dạng...) nhưng caller chỉ cần biết token không hợp lệ —
+            // mọi lỗi đều quy về null như nhau.
+            catch
             {
                 return null;
             }

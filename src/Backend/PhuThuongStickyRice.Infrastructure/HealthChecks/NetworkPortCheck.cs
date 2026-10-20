@@ -43,7 +43,10 @@ namespace PhuThuongStickyRice.Infrastructure.HealthChecks
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to connect to {address}: {ex.Message}");
+                // Log đầy đủ exception (type + stack trace), không chỉ Message —
+                // khi port check thất bại ở Migrator startup gate, stack trace
+                // giúp phân biệt lỗi DNS/config với lỗi mạng thật.
+                Console.WriteLine($"Failed to connect to {address}: {ex}");
                 return false;
             }
         }

@@ -22,7 +22,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         public ProductService ProductService { get; set; }
 
         [Inject]
-        public NavigationManager NavManager { get; set; }
+        public NavigationManager Navigation { get; set; }
 
         [Inject]
         public IJSRuntime JSRuntime { get; set; }
@@ -144,13 +144,13 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         protected void QuickAddProduct()
         {
-            NavManager.NavigateTo("/products/add");
+            Navigation.NavigateTo("/products/add");
         }
 
         protected async Task EditProduct(ProductModel product)
         {
             var authenticationState = await AuthenticationStateTask;
-            NavManager.NavigateTo($"/products/edit/{product.Id}");
+            Navigation.NavigateTo($"/products/edit/{product.Id}");
         }
 
         protected void DeleteProduct(ProductModel product)

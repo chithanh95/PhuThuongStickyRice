@@ -26,7 +26,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
         public ProductService ProductService { get; set; }
 
         [Inject]
-        public NavigationManager NavManager { get; set; }
+        public NavigationManager Navigation { get; set; }
 
         [Inject]
         public ILogger<AddEditProduct> Logger { get; set; }
@@ -71,7 +71,7 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 // đã lưu thành công — tránh gãy ảnh nếu upload lỗi/bỏ lưu.
                 await DeleteObsoleteImagesAsync();
                 Toasts.Show(isNew ? "Đã thêm sản phẩm thành công!" : "Đã lưu sản phẩm thành công!");
-                NavManager.NavigateTo("/products");
+                Navigation.NavigateTo("/products");
             }
             catch (Exception ex)
             {

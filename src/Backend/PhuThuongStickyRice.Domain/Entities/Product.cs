@@ -71,6 +71,12 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public const int AvailableHoursJsonMaxLength = 1000;
 
+        // [codequality-smell 2026-10-20] Magic number 3 trong
+        // ChangeAvailableHoursJson → hằng số có tên, đồng bộ với
+        // MaxImageUrlsPerProduct ở dưới (trước đây 1 chỗ dùng const, 1 chỗ
+        // hardcode 3 — đổi giới hạn mà quên sửa 1 chỗ sẽ lệch message).
+        public const int MaxSaleWindowsPerDay = 3;
+
         /// <summary>
         /// Độ lệch giờ Việt Nam so với UTC (+7, không có giờ mùa hè).
         /// Khung giờ bán trong ngày (AvailableHoursJson) luôn tính theo giờ VN.
@@ -319,7 +325,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>
         /// Item 164: sets the daily sale time windows. Null/empty = sold all
         /// day. Otherwise a JSON array of {"from":"HH:mm","to":"HH:mm"}
-        /// windows (max 3), each with from &lt; to.
+        /// windows (tối đa <see cref="MaxSaleWindowsPerDay"/>), each with from &lt; to.
         /// </summary>
         public void ChangeAvailableHoursJson(string json)
         {
@@ -341,9 +347,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("Khung giờ bán không hợp lệ.");
             }
 
-            if (windows.Count > 3)
+            if (windows.Count > MaxSaleWindowsPerDay)
             {
-                throw new DomainException("Tối đa 3 khung giờ bán mỗi ngày.");
+                throw new DomainException($"Tối đa {MaxSaleWindowsPerDay} khung giờ bán mỗi ngày.");
             }
 
             AvailableHoursJson = trimmed;

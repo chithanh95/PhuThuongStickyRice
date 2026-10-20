@@ -106,9 +106,9 @@ namespace PhuThuongStickyRice.Application.AuditLogs
                 {
                     UserName = (userName ?? "?").Trim(),
                     At = DateTime.UtcNow,
-                    IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? null : ipAddress.Trim(),
+                    IpAddress = Common.StringNormalizer.TrimToNull(ipAddress),
                     Success = success,
-                    FailureReason = string.IsNullOrWhiteSpace(failureReason) ? null : failureReason.Trim()
+                    FailureReason = Common.StringNormalizer.TrimToNull(failureReason)
                 }, autoSave: true);
             }
             catch (Exception ex)

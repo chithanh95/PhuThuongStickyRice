@@ -45,6 +45,12 @@ namespace PhuThuongStickyRice.Application.Admin
         /// <summary>Số kết quả tối đa mỗi nguồn (đơn/sản phẩm/khách) trong dropdown tìm kiếm — giữ dropdown topbar gọn, không tràn.</summary>
         private const int SearchTake = 5;
 
+        // [codequality-smell 2026-10-20] Magic number 2 trong SearchAsync →
+        // hằng số có tên (đồng nhất với các const SearchTake/BadReviewTake
+        // xung quanh).
+        /// <summary>Độ dài tối thiểu của từ khóa tìm kiếm (sau trim) — ngắn hơn thì trả rỗng, tránh quét cả bảng.</summary>
+        private const int MinSearchQueryLength = 2;
+
         /// <summary>How far back to look for low-star reviews.</summary>
         private static readonly TimeSpan BadReviewLookback = TimeSpan.FromDays(7);
 
@@ -100,12 +106,13 @@ namespace PhuThuongStickyRice.Application.Admin
             var result = new GlobalSearchResultDto();
             // Từ khóa quá ngắn (1 ký tự) sẽ match gần như toàn bảng — chặn sớm
             // để vừa nhẹ DB vừa tránh trả về hàng nghìn kết quả vô nghĩa.
-            if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 2)
+            // Trim 1 lần rồi dùng lại cho cả bước kiểm tra độ dài lẫn query
+            // (trước đây query.Trim() chạy 2 lần cho cùng 1 chuỗi).
+            var term = query?.Trim();
+            if (string.IsNullOrEmpty(term) || term.Length < MinSearchQueryLength)
             {
                 return result;
             }
-
-            var term = query.Trim();
 
             // Sequential awaits: all repositories in one UoW share a single DbContext,
             // so concurrent EF operations throw "A second operation was started
