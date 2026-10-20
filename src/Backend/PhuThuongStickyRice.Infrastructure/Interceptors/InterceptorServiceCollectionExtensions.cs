@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class ServiceCollectionServiceExtensions
+    public static class InterceptorServiceCollectionExtensions
     {
         public static IServiceCollection ConfigureInterceptors(this IServiceCollection services)
         {

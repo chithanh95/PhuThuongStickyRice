@@ -13,9 +13,9 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddFakeEmailNotification(this IServiceCollection services)
+        public static IServiceCollection AddNoOpEmailNotification(this IServiceCollection services)
         {
-            services.AddSingleton<IEmailNotification>(new FakeEmailNotification());
+            services.AddSingleton<IEmailNotification>(new NoOpEmailNotification());
             return services;
         }
 
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (options.UsedFake())
             {
-                services.AddFakeEmailNotification();
+                services.AddNoOpEmailNotification();
             }
             else if (options.UsedSmtpClient())
             {

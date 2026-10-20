@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Infrastructure.Notification.Email.SmtpClient
 {
-    public class FakeEmailNotification : IEmailNotification
+    public class NoOpEmailNotification : IEmailNotification
     {
         public Task SendAsync(IEmailMessage emailMessage, CancellationToken cancellationToken = default)
         {

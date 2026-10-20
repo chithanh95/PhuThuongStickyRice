@@ -84,6 +84,13 @@ namespace PhuThuongStickyRice.Application.Content
         private const int MaxListRows = 200;
 
         /// <summary>
+        /// Số bài viết đã xuất bản tối đa trả về cho trang landing
+        /// (landing chỉ render tối đa 6 bài) — đặt tên hằng số thay vì
+        /// hardcode 6 trong truy vấn.
+        /// </summary>
+        private const int MaxPublishedArticles = 6;
+
+        /// <summary>
         /// Khởi tạo service quản lý bài viết.
         /// </summary>
         /// <param name="articles">Repository bài viết.</param>
@@ -218,7 +225,7 @@ namespace PhuThuongStickyRice.Application.Content
                 var items = await _asyncExecuter.ToListAsync(
                     queryable.Where(x => x.IsPublished)
                         .OrderByDescending(x => x.PublishedAt)
-                        .Take(6));
+                        .Take(MaxPublishedArticles));
                 return items.Select(Map).ToList();
             });
         }

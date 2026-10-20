@@ -49,6 +49,13 @@ namespace PhuThuongStickyRice.Application.Orders
         private readonly IRepository<Shipper, Guid> _shippers;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Số shipper tối đa lấy ở server cho danh sách admin — quán nhỏ chỉ
+        /// có vài shipper, không bao giờ materialize toàn bảng; đặt tên hằng
+        /// số thay vì hardcode 500 trong truy vấn.
+        /// </summary>
+        private const int MaxListRows = 500;
+
         /// <summary>Khởi tạo service quản lý shipper.</summary>
         public ShipperAppService(
             IRepository<Shipper, Guid> shippers,
@@ -73,9 +80,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 query = query.Where(x => x.IsActive);
             }
 
-            // perf-hunt 2026-10-19 (run 15:45): Take(500) server-side — quán
-            // nhỏ chỉ có vài shipper, không bao giờ materialize toàn bảng.
-            var items = await _asyncExecuter.ToListAsync(query.Take(500));
+            // perf-hunt 2026-10-19 (run 15:45): Take(MaxListRows) server-side —
+            // quán nhỏ chỉ có vài shipper, không bao giờ materialize toàn bảng.
+            var items = await _asyncExecuter.ToListAsync(query.Take(MaxListRows));
             return items.Select(Map).ToList();
         }
 

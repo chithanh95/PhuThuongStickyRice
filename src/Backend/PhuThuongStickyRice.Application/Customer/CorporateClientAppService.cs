@@ -76,6 +76,13 @@ namespace PhuThuongStickyRice.Application.Customer
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
         /// <summary>
+        /// Số dòng tối đa lấy ở server cho danh sách công ty — bảng tăng theo
+        /// thời gian nên không materialize toàn bộ; đặt tên hằng số thay vì
+        /// hardcode 200 trong truy vấn.
+        /// </summary>
+        private const int MaxListRows = 200;
+
+        /// <summary>
         /// Khởi tạo service quản lý khách hàng doanh nghiệp với repository
         /// công ty và bộ thực thi truy vấn bất đồng bộ.
         /// </summary>
@@ -97,11 +104,12 @@ namespace PhuThuongStickyRice.Application.Customer
         public virtual async Task<List<CorporateClientDto>> GetListAsync()
         {
             var queryable = await _clients.GetQueryableAsync();
-            // perf-hunt 2026-10-19 (run 14:15): chặn số dòng ở server (Take 200)
-            // như các admin list khác — bảng khách hàng doanh nghiệp tăng
-            // theo thời gian, không nên materialize toàn bộ mỗi lần mở trang.
+            // perf-hunt 2026-10-19 (run 14:15): chặn số dòng ở server
+            // (Take MaxListRows) như các admin list khác — bảng khách hàng
+            // doanh nghiệp tăng theo thời gian, không nên materialize toàn bộ
+            // mỗi lần mở trang.
             var list = await _asyncExecuter.ToListAsync(
-                queryable.OrderBy(x => x.CompanyName).Take(200));
+                queryable.OrderBy(x => x.CompanyName).Take(MaxListRows));
             return list.Select(MapToDto).ToList();
         }
 

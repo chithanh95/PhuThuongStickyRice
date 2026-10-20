@@ -53,6 +53,13 @@ namespace PhuThuongStickyRice.Application.Customer
         private readonly IRepository<CustomerAddress, Guid> _addresses;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Số địa chỉ tối đa lấy ở SQL cho sổ địa chỉ của 1 người — giới hạn
+        /// payload/RAM luôn có trần (thực tế 1 người hiếm khi quá vài chục
+        /// địa chỉ); đặt tên hằng số thay vì hardcode 100 trong truy vấn.
+        /// </summary>
+        private const int MaxAddressRows = 100;
+
         public CustomerAddressAppService(
             IRepository<CustomerAddress, Guid> addresses,
             IAsyncQueryableExecuter asyncExecuter)
@@ -72,8 +79,8 @@ namespace PhuThuongStickyRice.Application.Customer
         }
 
         /// <summary>Lấy sổ địa chỉ của tôi: mặc định lên trước, rồi mới nhất.
-        /// Giới hạn 100 bản ghi ở SQL để payload/ram luôn có trần (thực tế
-        /// 1 người hiếm khi quá vài chục địa chỉ).</summary>
+        /// Giới hạn <see cref="MaxAddressRows"/> bản ghi ở SQL để payload/ram
+        /// luôn có trần (thực tế 1 người hiếm khi quá vài chục địa chỉ).</summary>
         public virtual async Task<List<CustomerAddressDto>> GetMyAsync()
         {
             var userId = RequireUserId();
@@ -82,7 +89,7 @@ namespace PhuThuongStickyRice.Application.Customer
                 queryable.Where(x => x.UserId == userId)
                     .OrderByDescending(x => x.IsDefault)
                     .ThenByDescending(x => x.CreatedAt)
-                    .Take(100));
+                    .Take(MaxAddressRows));
             return entities.Select(MapToDto).ToList();
         }
 

@@ -20,16 +20,22 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public decimal UnitPrice { get; set; }
 
+        /// <summary>Số lượng món; LineTotal = đơn giá (gồm size/topping) × số lượng.</summary>
         public int Quantity { get; set; }
 
+        /// <summary>Thành tiền dòng hàng (VNĐ), chốt tại thời điểm đặt — không đổi khi giá catalog đổi sau.</summary>
         public decimal LineTotal { get; set; }
 
+        /// <summary>Tên size đã chọn (vd: Nhỏ/Vừa/Lớn); null khi món không có size.</summary>
         public string SizeName { get; set; }
 
+        /// <summary>Tên các topping đã chọn, cách nhau dấu phẩy; null khi không có topping.</summary>
         public string ToppingNames { get; set; }
 
+        /// <summary>Phụ thu topping của dòng hàng (VNĐ), đã cộng vào LineTotal.</summary>
         public decimal ToppingsExtra { get; set; }
 
+        /// <summary>True khi dòng hàng là combo — áp giá combo thay vì cộng giá lẻ các món.</summary>
         public bool IsCombo { get; set; }
 
         /// <summary>Per-item note from the customer.</summary>
@@ -50,6 +56,7 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public string CustomerEmail { get; set; }
 
+        /// <summary>Địa chỉ giao hàng; null với đơn khách tự lấy tại quán (Pickup).</summary>
         public string CustomerAddress { get; set; }
 
         /// <summary>
@@ -160,6 +167,7 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public decimal GiftFee { get; set; }
 
+        /// <summary>True khi đơn đã dùng lượt quay số may mắn — mỗi đơn chỉ được quay 1 lần.</summary>
         public bool LuckySpinUsed { get; set; }
 
         /// <summary>Assigned shipper id (nullable).</summary>
@@ -435,9 +443,11 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         [Required]
         public string CustomerPhone { get; set; }
 
+        /// <summary>Điểm đánh giá tổng đơn, thang 1–5 sao.</summary>
         [Range(1, 5)]
         public int Rating { get; set; }
 
+        /// <summary>Nhận xét của khách về đơn hàng (tối đa 1000 ký tự).</summary>
         [StringLength(1000)]
         public string Comment { get; set; }
 
@@ -458,6 +468,7 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
     {
         public Guid ProductId { get; set; }
 
+        /// <summary>Điểm sao cho món này, thang 1–5.</summary>
         [Range(1, 5)]
         public int Rating { get; set; }
     }
@@ -488,8 +499,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
 
         public string CustomerPhone { get; set; }
 
+        /// <summary>Điểm đánh giá tổng đơn, thang 1–5 sao (admin xem đầy đủ thông tin đơn).</summary>
         public int Rating { get; set; }
 
+        /// <summary>Nhận xét của khách về đơn hàng.</summary>
         public string Comment { get; set; }
 
         /// <summary>Optional photo attached to the review.</summary>
@@ -504,6 +517,7 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Admin reply, shown publicly under the review.</summary>
         public string AdminReply { get; set; }
 
+        /// <summary>Thời điểm khách gửi đánh giá.</summary>
         public DateTime CreatedAt { get; set; }
 
         /// <summary>Wave 6b (item 26): per-dish star ratings.</summary>
@@ -544,16 +558,22 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Masked phone, e.g. "090***67" — safe to display publicly.</summary>
         public string MaskedCustomerPhone { get; set; }
 
+        /// <summary>Điểm đánh giá tổng đơn, thang 1–5 sao (hiển thị công khai trên landing).</summary>
         public int Rating { get; set; }
 
+        /// <summary>Nhận xét của khách, hiển thị công khai trên landing.</summary>
         public string Comment { get; set; }
 
+        /// <summary>Ảnh khách đính kèm đánh giá (đã upload qua server).</summary>
         public string PhotoUrl { get; set; }
 
+        /// <summary>Phản hồi của admin, hiển thị công khai dưới đánh giá.</summary>
         public string AdminReply { get; set; }
 
+        /// <summary>Thời điểm khách gửi đánh giá.</summary>
         public DateTime CreatedAt { get; set; }
 
+        /// <summary>Điểm sao chi tiết từng món trong đánh giá (hiển thị công khai).</summary>
         public List<OrderReviewLineDto> Lines { get; set; } = new List<OrderReviewLineDto>();
     }
 
@@ -777,24 +797,32 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
     /// <summary>Public bank-transfer details shown at checkout (account info + VietQR).</summary>
     public class BankTransferInfoDto
     {
+        /// <summary>Tên ngân hàng nhận chuyển khoản (vd: Vietcombank).</summary>
         public string BankName { get; set; }
 
+        /// <summary>Mã ngân hàng dùng cho VietQR.</summary>
         public string BankId { get; set; }
 
+        /// <summary>Số tài khoản nhận tiền của quán.</summary>
         public string AccountNumber { get; set; }
 
+        /// <summary>Tên chủ tài khoản nhận tiền.</summary>
         public string AccountName { get; set; }
 
+        /// <summary>Mẫu VietQR để render QR chuyển khoản.</summary>
         public string QrTemplate { get; set; }
     }
 
     /// <summary>Response of POST /api/orders/{id}/momo/create.</summary>
     public class MoMoCreatePaymentResultDto
     {
+        /// <summary>Id đơn hệ thống gắn với phiên thanh toán MoMo.</summary>
         public Guid OrderId { get; set; }
 
+        /// <summary>Mã đơn hiển thị của khách (vd: PX-20261019-4821).</summary>
         public string OrderNumber { get; set; }
 
+        /// <summary>Số tiền cần thanh toán qua MoMo (VNĐ).</summary>
         public decimal Amount { get; set; }
 
         /// <summary>
@@ -803,6 +831,7 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// </summary>
         public string PayUrl { get; set; }
 
+        /// <summary>True khi dùng trang giả lập MoMo nội bộ — không trừ tiền thật.</summary>
         public bool TestMode { get; set; }
     }
 
@@ -813,31 +842,43 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
     /// </summary>
     public class MoMoCallbackDto
     {
+        /// <summary>Mã đơn MoMo gửi lại (orderId lúc tạo thanh toán) — dùng đối soát với đơn hệ thống.</summary>
         public string OrderId { get; set; }
 
+        /// <summary>Mã request của phiên thanh toán — dùng kiểm tra trùng lặp khi nhận IPN.</summary>
         public string RequestId { get; set; }
 
+        /// <summary>Số tiền MoMo báo đã thu (VNĐ) — đối chiếu với tổng đơn trước khi xác nhận thanh toán.</summary>
         public long Amount { get; set; }
 
+        /// <summary>Nội dung đơn MoMo gửi lại; IPN tự động khớp đơn qua OrderInfo (item 128).</summary>
         public string OrderInfo { get; set; }
 
+        /// <summary>Mã kết quả MoMo: 0 = thanh toán thành công, khác 0 = thất bại/hủy.</summary>
         public int ResultCode { get; set; }
 
+        /// <summary>Thông điệp kết quả từ MoMo.</summary>
         public string Message { get; set; }
 
+        /// <summary>Mã giao dịch phía MoMo — lưu để đối soát hoặc khiếu nại.</summary>
         public string TransId { get; set; }
 
+        /// <summary>Kênh thanh toán MoMo đã dùng (vd: qr, app-in-app).</summary>
         public string PayType { get; set; }
 
+        /// <summary>Thời điểm MoMo xử lý giao dịch (epoch milliseconds).</summary>
         public long ResponseTime { get; set; }
 
+        /// <summary>Dữ liệu bổ sung gửi kèm lúc tạo thanh toán, MoMo trả nguyên lại trong IPN.</summary>
         public string ExtraData { get; set; }
 
+        /// <summary>Chữ ký MoMo của payload — PHẢI verify bằng secret key trước khi tin và xử lý IPN.</summary>
         public string Signature { get; set; }
 
         /// <summary>Echoed create-signature, only used by the TEST simulator.</summary>
         public string SimulatedSignature { get; set; }
 
+        /// <summary>True khi IPN đến từ trang giả lập test nội bộ, không phải MoMo thật.</summary>
         public bool Simulated { get; set; }
     }
 
@@ -847,8 +888,10 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
     /// </summary>
     public class DashboardStatsDto
     {
+        /// <summary>Tổng số đơn trong kỳ báo cáo.</summary>
         public long TotalOrders { get; set; }
 
+        /// <summary>Số đơn đang chờ xác nhận/xử lý.</summary>
         public long PendingOrders { get; set; }
 
         /// <summary>
@@ -860,16 +903,22 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Configured threshold in minutes for <see cref="StalePendingOrders"/>.</summary>
         public int StalePendingMinutes { get; set; }
 
+        /// <summary>Tổng doanh thu (VNĐ) trong kỳ báo cáo.</summary>
         public decimal TotalRevenue { get; set; }
 
+        /// <summary>Tổng số suất/món đã bán trong kỳ.</summary>
         public long TotalProductsSold { get; set; }
 
+        /// <summary>Tổng số món trong catalog sản phẩm.</summary>
         public long TotalProducts { get; set; }
 
+        /// <summary>Phân bổ số đơn theo từng trạng thái, để vẽ biểu đồ trạng thái đơn.</summary>
         public List<OrdersByStatusDto> OrdersByStatus { get; set; } = new List<OrdersByStatusDto>();
 
+        /// <summary>Doanh thu từng ngày trong kỳ, để vẽ biểu đồ đường doanh thu.</summary>
         public List<RevenueByDayDto> RevenueByDay { get; set; } = new List<RevenueByDayDto>();
 
+        /// <summary>Các đơn mới nhất trong kỳ, hiển thị trên dashboard.</summary>
         public List<OrderDto> RecentOrders { get; set; } = new List<OrderDto>();
 
         /// <summary>

@@ -188,12 +188,24 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Chuẩn bị danh sách ứng viên: chuẩn hóa tên món, tên dài khớp trước
         /// để "xôi ngũ sắc" thắng "xôi".
         /// </summary>
-        private static List<(ParseProductCandidate Product, string Key)> BuildCandidates(
+        private static List<(ParseProductCandidate Product, string Key, Regex Matcher)> BuildCandidates(
             IEnumerable<ParseProductCandidate> products)
         {
+            // codequality-team 2026-10-20 run-1400 Agent3-BestPractices:
+            // Regex.Match(string, pattern) static chỉ cache tối đa 15 pattern —
+            // catalog >15 món làm cache thrash, mỗi lần parse lại re-parse
+            // pattern từ đầu cho từng ứng viên. Biên dịch 1 lần mỗi ứng viên
+            // ở đây (RegexOptions.Compiled, culture không ảnh hưởng vì pattern
+            // không dùng IgnoreCase) rồi tái dùng trong TryParseCandidate —
+            // semantics match giữ nguyên.
             return (products ?? Enumerable.Empty<ParseProductCandidate>())
                 .Where(p => p != null && !string.IsNullOrWhiteSpace(p.Name))
-                .Select(p => (Product: p, Key: Normalize(p.Name)))
+                .Select(p =>
+                {
+                    var key = Normalize(p.Name);
+                    var pattern = $@"(?<qty>\d+|{TextNumberAlternation})\s*{Regex.Escape(key)}|\b{Regex.Escape(key)}\b";
+                    return (Product: p, Key: key, Matcher: new Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
+                })
                 .Where(x => !string.IsNullOrWhiteSpace(x.Key))
                 // Tên dài khớp trước để "xôi ngũ sắc" thắng "xôi".
                 .OrderByDescending(x => x.Key.Length)
@@ -205,14 +217,14 @@ namespace PhuThuongStickyRice.Application.Orders
         /// vùng đã khớp khỏi text để tên ngắn hơn không khớp lại nó.
         /// </summary>
         private static bool TryParseCandidate(
-            (ParseProductCandidate Product, string Key) candidate,
+            (ParseProductCandidate Product, string Key, Regex Matcher) candidate,
             StringBuilder consumed,
             out ParsedOrderItem item)
         {
             item = null;
 
-            var pattern = $@"(?<qty>\d+|{TextNumberAlternation})\s*{Regex.Escape(candidate.Key)}|\b{Regex.Escape(candidate.Key)}\b";
-            var match = Regex.Match(consumed.ToString(), pattern);
+            // Regex của ứng viên đã biên dịch sẵn 1 lần ở BuildCandidates.
+            var match = candidate.Matcher.Match(consumed.ToString());
             if (!match.Success)
             {
                 return false;

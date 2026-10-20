@@ -68,10 +68,13 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
     /// </summary>
     public class ForecastTotalDto
     {
+        /// <summary>Tổng doanh thu dự kiến (VNĐ) cho cả khoảng — chỉ là ước tính, không đảm bảo.</summary>
         public decimal ForecastRevenue { get; set; }
 
+        /// <summary>Số đơn dự kiến cho cả khoảng (có thể lẻ vì là trung bình cộng).</summary>
         public double ForecastOrders { get; set; }
 
+        /// <summary>Số suất xôi quán nên chuẩn bị thêm cho cả khoảng.</summary>
         public long SuggestedPortions { get; set; }
     }
 
@@ -83,6 +86,7 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
     /// </summary>
     public class RevenueForecastDto
     {
+        /// <summary>Thời điểm tính dự báo (UTC) — dùng để biết số liệu còn mới hay đã cũ.</summary>
         public DateTime GeneratedAt { get; set; }
 
         /// <summary>Lookback window in days used for the pattern.</summary>
@@ -91,22 +95,31 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>How many of those days actually had orders.</summary>
         public int DaysWithOrders { get; set; }
 
+        /// <summary>Doanh thu trung bình/ngày trong 7 ngày gần nhất (VNĐ).</summary>
         public decimal AvgDailyRevenue7d { get; set; }
 
+        /// <summary>Doanh thu trung bình/ngày trong 30 ngày gần nhất (VNĐ) — fallback khi mẫu theo thứ trong tuần quá ít.</summary>
         public decimal AvgDailyRevenue30d { get; set; }
 
+        /// <summary>Doanh thu thực tế từng ngày trong cửa sổ nhìn lại, để admin đối chiếu.</summary>
         public List<ForecastHistoryPointDto> History { get; set; } = new List<ForecastHistoryPointDto>();
 
+        /// <summary>Mẫu doanh thu trung bình theo từng thứ trong tuần (vd: Thứ 7 bán tốt hơn).</summary>
         public List<WeekdayPatternDto> WeekdayPattern { get; set; } = new List<WeekdayPatternDto>();
 
+        /// <summary>Dự báo chi tiết từng ngày trong 7 ngày tới.</summary>
         public List<ForecastDayDto> Next7Days { get; set; } = new List<ForecastDayDto>();
 
+        /// <summary>Tổng dự báo 7 ngày tới (tiền, số đơn, suất xôi nên chuẩn bị).</summary>
         public ForecastTotalDto Next7DaysTotal { get; set; } = new ForecastTotalDto();
 
+        /// <summary>Tổng dự báo 30 ngày tới (tiền, số đơn, suất xôi nên chuẩn bị).</summary>
         public ForecastTotalDto Next30DaysTotal { get; set; } = new ForecastTotalDto();
 
+        /// <summary>Ghi chú phương pháp đang dùng (mẫu theo thứ trong tuần hay trung bình chung 30 ngày) — để admin hiểu con số đến từ đâu.</summary>
         public string MethodNote { get; set; }
 
+        /// <summary>Câu cảnh báo đây chỉ là ước tính heuristic đơn giản, không phải cam kết doanh thu.</summary>
         public string Disclaimer { get; set; }
     }
 }

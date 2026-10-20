@@ -38,6 +38,13 @@ namespace PhuThuongStickyRice.Application.Messenger
         private readonly IRepository<MessageTemplate, Guid> _templates;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Số mẫu tin nhắn tối đa lấy ở server cho danh sách admin — template
+        /// do admin tạo, bảng tăng không giới hạn, không bao giờ materialize
+        /// toàn bộ; đặt tên hằng số thay vì hardcode 500 trong truy vấn.
+        /// </summary>
+        private const int MaxListRows = 500;
+
         /// <summary>Khởi tạo service quản trị mẫu tin nhắn.</summary>
         public MessageTemplateAppService(
             IRepository<MessageTemplate, Guid> templates,
@@ -63,9 +70,10 @@ namespace PhuThuongStickyRice.Application.Messenger
                 query = query.Where(x => x.Channel == trimmedChannel);
             }
 
-            // perf-hunt 2026-10-19: Take(500) server-side — template do admin
-            // tạo, bảng tăng không giới hạn, không bao giờ materialize toàn bộ.
-            var list = await _asyncExecuter.ToListAsync(query.Take(500));
+            // perf-hunt 2026-10-19: Take(MaxListRows) server-side — template do
+            // admin tạo, bảng tăng không giới hạn, không bao giờ materialize
+            // toàn bộ.
+            var list = await _asyncExecuter.ToListAsync(query.Take(MaxListRows));
             return list.Select(MapToDto).ToList();
         }
 
