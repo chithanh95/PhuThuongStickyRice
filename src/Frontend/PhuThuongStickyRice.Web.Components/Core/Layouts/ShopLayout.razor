@@ -61,10 +61,14 @@
                 <button type="button" class="shp-theme-toggle" @onclick="ToggleLargeText" title="Chữ lớn" aria-label="Chế độ chữ lớn" aria-pressed="@_isLargeText">
                     <span class="shp-text-size-icon">A+</span>
                 </button>
-                @* #197: Dark mode 3 chế độ Sáng/Tối/Tự động — đồng bộ với landing.
+                @* Dark mode NHỊ PHÂN Sáng↔Tối giống hệt landing (ShopTheme):
+                   1 lần bấm = đổi giao diện ngay. Trước đây ShopLayout xoay vòng
+                   3 chế độ Sáng→Tối→Tự động (thiết kế #197) trong khi landing là
+                   nhị phân — user báo 2026-10-20 shop/cart/checkout "lỗi sáng tối
+                   không giống landing": ban đêm bấm từ Tối sang Tự động chỉ đổi
+                   icon mà màn vẫn đen. Bỏ hẳn chế độ Tự động ở khu shop.
                    UIUX-1019 Agent4 (a11y): aria-label động theo _themeTitle để trình đọc
-                   màn hình biết trạng thái HIỆN TẠI và hành động KẾ TIẾP (trước đây label
-                   tĩnh "Chế độ sáng/tối/tự động", người khiếm thị không biết đang ở chế độ nào). *@
+                   màn hình biết trạng thái HIỆN TẠI và hành động KẾ TIẾP. *@
                 <button type="button" class="shp-theme-toggle" @onclick="ToggleTheme" title="@_themeTitle" aria-label="@_themeTitle">
                     @_themeIcon
                 </button>
@@ -141,34 +145,27 @@
     private string _hotline;
     private string _address;
     private string _email;
-    private string _theme = "light"; // light | dark | auto
+    // Trạng thái tối THỰC TẾ đang hiển thị — dùng chung ShopTheme với
+    // landing (Index) và các trang auth: nhị phân Sáng↔Tối, không còn
+    // trạng thái "auto" riêng của ShopLayout như trước.
+    private bool _isDark;
     private bool _isLargeText;
 
     // 2026-10-19: icon = TRẠNG THÁI HIỆN TẠI (user yêu cầu): đang tối hiện 🌙,
     // đang sáng hiện ☀️ — trước đây icon chỉ "hành động kế tiếp" (tối hiện ☀️)
     // khiến user thấy sai ("mặt trời nhưng lại là màu tối").
-    private string _themeIcon => _theme switch
-    {
-        "dark" => "🌙",
-        "auto" => "🌓",
-        _ => "☀️",
-    };
+    private string _themeIcon => _isDark ? "🌙" : "☀️";
 
-    private string _themeTitle => _theme switch
-    {
-        "dark" => "Đang: Tối — bấm để chuyển Tự động",
-        "auto" => "Đang: Tự động theo giờ — bấm để chuyển Sáng",
-        _ => "Đang: Sáng — bấm để chuyển Tối",
-    };
+    private string _themeTitle => _isDark
+        ? "Đang: Tối — bấm để chuyển Sáng"
+        : "Đang: Sáng — bấm để chuyển Tối";
 
+    // Giống hệt landing: lật cờ rồi áp ngay qua ShopTheme (ptSetTheme) —
+    // 1 lần bấm là giao diện đổi ngay, không qua trạng thái trung gian.
     private async Task ToggleTheme()
     {
-        try
-        {
-            _theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme", ThemeStorageKeys.Shop);
-            StateHasChanged();
-        }
-        catch { }
+        _isDark = !_isDark;
+        await ShopTheme.ApplyAsync(JSRuntime, _isDark);
     }
 
     private async Task ToggleLargeText()
@@ -198,7 +195,9 @@
             {
                 await JSRuntime.InvokeVoidAsync("ptApplyTheme", ThemeStorageKeys.Shop);
                 await JSRuntime.InvokeVoidAsync("ptApplyLargeText");
-                _theme = await JSRuntime.InvokeAsync<string>("ptGetTheme", ThemeStorageKeys.Shop) ?? "light";
+                // Đọc trạng thái tối THỰC TẾ (ptIsDark xử lý cả giá trị 'auto'
+                // còn lưu từ trước: tự quy về sáng/tối theo giờ như landing).
+                _isDark = await ShopTheme.ReadIsDarkAsync(JSRuntime);
                 _isLargeText = await JSRuntime.InvokeAsync<bool>("ptGetLargeText");
                 StateHasChanged();
             }
