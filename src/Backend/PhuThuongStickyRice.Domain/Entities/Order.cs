@@ -523,7 +523,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             string notes,
             PaymentMethod paymentMethod,
             IEnumerable<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> lines,
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note,
+                Guid? SizeOptionId, List<Guid> ToppingIds)> lines,
             Money deliveryFee = null,
             string discountCode = null,
             Money discountAmount = null,
@@ -646,12 +647,14 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         private static List<OrderLine> BuildOrderLines(
             IEnumerable<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> lines)
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note,
+                Guid? SizeOptionId, List<Guid> ToppingIds)> lines)
         {
-            var orderLines = (lines ?? Enumerable.Empty<(Guid, string, Money, int, string, string, decimal, bool, string)>())
+            var orderLines = (lines ?? Enumerable.Empty<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)>())
                 .Select(x => OrderLine.Create(
                     x.ProductId, x.ProductName, x.UnitPrice, x.Quantity, x.SizeName,
-                    x.ToppingNames, x.ToppingsExtra, x.IsCombo, x.Note))
+                    x.ToppingNames, x.ToppingsExtra, x.IsCombo, x.Note,
+                    x.SizeOptionId, x.ToppingIds))
                 .ToList();
 
             if (orderLines.Count == 0)
@@ -771,6 +774,8 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             foreach (var line in source.Lines)
             {
+                // Mang theo cả id size/topping: dòng copy sang đơn chính mà
+                // mất id thì "đặt lại" từ đơn đã gộp lại phải đoán theo tên.
                 _lines.Add(OrderLine.Create(
                     line.ProductId,
                     line.ProductName,
@@ -780,7 +785,9 @@ namespace PhuThuongStickyRice.Domain.Entities
                     line.ToppingNames,
                     line.ToppingsExtra,
                     line.IsCombo,
-                    line.Note));
+                    line.Note,
+                    line.SizeOptionId,
+                    line.GetToppingIds()));
             }
 
             RecalculateTotals();

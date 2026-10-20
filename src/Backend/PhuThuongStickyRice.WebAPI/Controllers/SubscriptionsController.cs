@@ -33,7 +33,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _subscriptionAppService = subscriptionAppService;
         }
 
-        /// <summary>Public: khách đăng ký xôi định kỳ (/dat-dinh-ky); lỗi nghiệp vụ trả 400.</summary>
+        /// <summary>
+        /// Public: khách đăng ký xôi định kỳ (/dat-dinh-ky); lỗi nghiệp vụ trả 400.
+        /// Gói mới vào trạng thái chờ duyệt (chưa sinh đơn) — admin kích hoạt
+        /// ở PUT {id}/active thì hệ thống mới tự sinh đơn COD hàng ngày.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult> Create(

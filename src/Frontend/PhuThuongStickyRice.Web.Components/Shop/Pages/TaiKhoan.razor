@@ -666,16 +666,18 @@
             foreach (var line in order.Lines.Where(l => l != null && l.Quantity > 0))
             {
                 // Đơn giá đã bao gồm size/topping ở thời điểm đặt đơn.
-                // SizeOptionId/ToppingIds không có trong lịch sử → dùng tên để hiển thị.
+                // S25: đơn tạo sau migration AddOrderLineSizeAndToppingIds
+                // có sẵn SizeOptionId/ToppingIds — khôi phục đúng lựa chọn
+                // theo id; đơn cũ chưa có id thì để trống, chỉ dùng tên hiển thị.
                 CartState.AddConfigured(
                     line.ProductId,
                     line.ProductName,
                     productCode: null,
                     line.UnitPrice,
                     line.Quantity,
-                    sizeOptionId: null,
+                    sizeOptionId: line.SizeOptionId,
                     line.SizeName,
-                    toppingIds: new List<Guid>(),
+                    toppingIds: line.ToppingIds ?? new List<Guid>(),
                     line.ToppingNames,
                     line.ToppingsExtra,
                     line.IsCombo,

@@ -1,0 +1,184 @@
+@page "/admin/goi-dinh-ky"
+@attribute [Authorize(Roles = "Admin")]
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@inject ShopEngagementService ShopEngagementService
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">Gói định kỳ</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Xôi Phú Thượng</a></li>
+        <li>Bán hàng</li>
+        <li class="current">Gói định kỳ</li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Đăng ký xôi định kỳ</h4>
+                <p class="card-title-desc">
+                    Gói khách đăng ký ở trang công khai vào trạng thái <strong>chờ duyệt</strong> —
+                    bấm <strong>Kích hoạt</strong> sau khi đã xác nhận với khách thì hệ thống mới tự
+                    sinh đơn COD hằng ngày. Tạm dừng gói chỉ dừng sinh đơn mới, lịch sử đơn cũ giữ nguyên.
+                </p>
+
+                @if (!string.IsNullOrEmpty(_notice))
+                {
+                    <div class="alert @(_noticeIsError ? "alert-danger" : "alert-success")">@_notice</div>
+                }
+
+                @if (_loading)
+                {
+                    <p><em>Đang tải...</em></p>
+                }
+                else if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="alert alert-danger">@_error</div>
+                }
+                else if (_rows == null || _rows.Count == 0)
+                {
+                    <div class="alert alert-info">Chưa có gói đăng ký nào.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Khách hàng</th>
+                                    <th scope="col">Món</th>
+                                    <th scope="col" class="text-right">SL × Đơn giá</th>
+                                    <th scope="col">Địa chỉ</th>
+                                    <th scope="col">Bắt đầu</th>
+                                    <th scope="col">Trạng thái</th>
+                                    <th scope="col" class="text-right">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in _rows)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@row.CustomerName</strong><br />
+                                            <small class="text-muted">@row.Phone</small>
+                                        </td>
+                                        <td>
+                                            @row.ProductName
+                                            @if (!string.IsNullOrWhiteSpace(row.SizeName))
+                                            {
+                                                <br /><small class="text-muted">Size: @row.SizeName</small>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(row.ToppingNames))
+                                            {
+                                                <br /><small class="text-muted">Topping: @row.ToppingNames</small>
+                                            }
+                                        </td>
+                                        <td class="text-right">@row.Quantity × @FormatPrice(row.UnitPrice)</td>
+                                        <td><small>@row.DeliveryAddress</small></td>
+                                        <td>
+                                            @row.StartDate.ToString("dd/MM/yyyy")
+                                            @if (row.LastOrderDate.HasValue)
+                                            {
+                                                <br /><small class="text-muted">Đơn cuối: @row.LastOrderDate.Value.ToString("dd/MM/yyyy")</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (row.Active)
+                                            {
+                                                <span class="badge badge-success">Đang hoạt động</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-warning">Chờ duyệt / Đã dừng</span>
+                                            }
+                                        </td>
+                                        <td class="text-right">
+                                            <button class="btn btn-sm @(row.Active ? "btn-outline-danger" : "btn-success")"
+                                                    @onclick="() => ToggleActiveAsync(row)"
+                                                    disabled="@(_busyId == row.Id)">
+                                                @(_busyId == row.Id ? "Đang xử lý..." : row.Active ? "Tạm dừng" : "Kích hoạt")
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<SubscriptionModel> _rows;
+    private bool _loading = true;
+    private string _error;
+    private string _notice;
+    private bool _noticeIsError;
+    private Guid? _busyId;
+
+    /// <summary>
+    /// Tải danh sách gói đăng ký fail-soft: API lỗi thì hiện alert kèm
+    /// message thật của server (theo chuẩn các trang list admin), không
+    /// để trang chết im lặng.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _rows = await ShopEngagementService.GetSubscriptionsAsync(null)
+                ?? new List<SubscriptionModel>();
+        }
+        catch (Exception ex)
+        {
+            _rows = new List<SubscriptionModel>();
+            _error = $"Không tải được danh sách gói đăng ký. ({ex.Message})";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    /// <summary>
+    /// Kích hoạt (duyệt) hoặc tạm dừng 1 gói qua PUT api/subscriptions/{id}/active
+    /// sẵn có. Chỉ cập nhật lại đúng dòng từ kết quả server trả về.
+    /// </summary>
+    private async Task ToggleActiveAsync(SubscriptionModel row)
+    {
+        if (_busyId != null)
+        {
+            return;
+        }
+
+        _notice = null;
+        _busyId = row.Id;
+        try
+        {
+            var updated = await ShopEngagementService.SetSubscriptionActiveAsync(row.Id, !row.Active);
+            if (updated != null)
+            {
+                row.Active = updated.Active;
+            }
+
+            _notice = row.Active
+                ? $"Đã kích hoạt gói của {row.CustomerName} — hệ thống sẽ tự sinh đơn từ ngày bắt đầu."
+                : $"Đã tạm dừng gói của {row.CustomerName}.";
+            _noticeIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _notice = $"Không đổi được trạng thái gói. ({ex.Message})";
+            _noticeIsError = true;
+        }
+        finally
+        {
+            _busyId = null;
+        }
+    }
+
+    private static string FormatPrice(decimal amount) => amount.ToString("N0") + " ₫";
+}

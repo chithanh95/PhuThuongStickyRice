@@ -28,9 +28,12 @@ namespace PhuThuongStickyRice.Domain.Repositories
         /// Giảm <see cref="DiscountCode.UsedCount"/> đi 1 một cách nguyên tử,
         /// không bao giờ cho về âm: UPDATE ... WHERE Code = ... AND UsedCount
         /// &gt; 0. Dùng khi đơn hàng bị hủy — hoàn lại lượt dùng mã đã đốt lúc
-        /// tạo đơn. Không tự bật lại IsActive: mã có thể bị admin tắt tay sau
-        /// khi tự tạm dừng ở trần MaxUses (item 252), admin xem ở trung tâm
-        /// thông báo và tự quyết định bật lại.
+        /// tạo đơn. Nếu mã đang tắt CHỈ VÌ đã chạm trần MaxUses (tự tắt ở
+        /// TryIncrementUsageAsync, item 252) và chưa hết hạn thì hoàn lượt
+        /// cũng bật lại IsActive trong cùng câu UPDATE — trước đây mã dùng
+        /// 1 lần (kể cả mã sinh nhật) chết vĩnh viễn sau 1 lần hủy đơn dù
+        /// lượt đã được hoàn. Mã admin tắt tay khi chưa chạm trần và mã đã
+        /// hết hạn không bị bật lại.
         /// </summary>
         /// <param name="normalizedCode">Mã đã chuẩn hóa (in hoa, trim).</param>
         /// <param name="cancellationToken">Token hủy.</param>

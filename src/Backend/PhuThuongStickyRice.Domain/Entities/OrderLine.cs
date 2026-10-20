@@ -1,6 +1,8 @@
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.ValueObjects;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PhuThuongStickyRice.Domain.Entities
 {
@@ -16,6 +18,8 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const int ToppingNamesMaxLength = 500;
         /// <summary>Độ dài tối đa cột ghi chú khách trong DB.</summary>
         public const int NoteMaxLength = 500;
+        /// <summary>Độ dài tối đa cột danh sách id topping (CSV các Guid) trong DB.</summary>
+        public const int ToppingIdsMaxLength = 1000;
 
         /// <summary>Id đơn hàng chứa dòng này.</summary>
         public Guid OrderId { get; private set; }
@@ -42,8 +46,22 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>Chosen size option name (Nhỏ / Vừa / Lớn), if any.</summary>
         public string SizeName { get; private set; }
 
+        /// <summary>
+        /// Id của size đã chọn — lưu kèm tên để luồng "đặt lại" khôi phục
+        /// đúng size theo id thay vì đoán theo tên (tên size có thể bị sửa
+        /// sau này). Null khi món không chọn size hoặc đơn cũ chưa có cột này.
+        /// </summary>
+        public Guid? SizeOptionId { get; private set; }
+
         /// <summary>Chosen topping names, comma-separated, if any.</summary>
         public string ToppingNames { get; private set; }
+
+        /// <summary>
+        /// Id các topping đã chọn, dạng CSV Guid ("guid,guid,...") — lưu kèm
+        /// tên để luồng "đặt lại" khôi phục đúng topping theo id. Null khi
+        /// không chọn topping hoặc đơn cũ chưa có cột này.
+        /// </summary>
+        public string ToppingIds { get; private set; }
 
         /// <summary>Total topping surcharge for one unit, in the line currency.</summary>
         public decimal ToppingsExtra { get; private set; }
@@ -71,7 +89,9 @@ namespace PhuThuongStickyRice.Domain.Entities
             string toppingNames,
             decimal toppingsExtra,
             bool isCombo,
-            string note = null)
+            string note = null,
+            Guid? sizeOptionId = null,
+            string toppingIds = null)
         {
             ProductId = productId;
             ProductName = productName;
@@ -83,6 +103,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             ToppingsExtra = toppingsExtra;
             IsCombo = isCombo;
             Note = TextValidation.TrimToNull(note);
+            SizeOptionId = sizeOptionId;
+            ToppingIds = TextValidation.TrimToNull(toppingIds);
         }
 
         /// <summary>
@@ -100,7 +122,9 @@ namespace PhuThuongStickyRice.Domain.Entities
             string toppingNames = null,
             decimal toppingsExtra = 0,
             bool isCombo = false,
-            string note = null)
+            string note = null,
+            Guid? sizeOptionId = null,
+            IEnumerable<Guid> toppingIds = null)
         {
             if (productId == Guid.Empty)
             {
@@ -134,6 +158,17 @@ namespace PhuThuongStickyRice.Domain.Entities
             TextValidation.MaxLength(toppingNames, ToppingNamesMaxLength, "Topping names", trimBeforeCheck: false);
             TextValidation.MaxLength(note, NoteMaxLength, "Order line note", trimBeforeCheck: false);
 
+            // Id topping -> CSV để lưu 1 cột: bỏ Guid.Empty và trùng lặp,
+            // rỗng thì lưu null như các cột snapshot khác.
+            var toppingIdsCsv = toppingIds == null
+                ? null
+                : string.Join(",", toppingIds.Where(x => x != Guid.Empty).Distinct());
+            if (string.IsNullOrEmpty(toppingIdsCsv))
+            {
+                toppingIdsCsv = null;
+            }
+            TextValidation.MaxLength(toppingIdsCsv, ToppingIdsMaxLength, "Topping ids", trimBeforeCheck: false);
+
             return new OrderLine(
                 productId,
                 productName.Trim(),
@@ -143,7 +178,29 @@ namespace PhuThuongStickyRice.Domain.Entities
                 TextValidation.TrimToNull(toppingNames),
                 toppingsExtra,
                 isCombo,
-                note);
+                note,
+                sizeOptionId,
+                toppingIdsCsv);
+        }
+
+        /// <summary>
+        /// Phân tích <see cref="ToppingIds"/> (CSV Guid) về danh sách id —
+        /// dùng khi đặt lại đơn cũ để khôi phục đúng topping đã chọn, và khi
+        /// gộp đơn (dòng được copy sang đơn chính phải mang theo id).
+        /// </summary>
+        /// <returns>Danh sách id topping; rỗng khi dòng không có topping.</returns>
+        public List<Guid> GetToppingIds()
+        {
+            if (string.IsNullOrWhiteSpace(ToppingIds))
+            {
+                return new List<Guid>();
+            }
+
+            return ToppingIds
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => Guid.TryParse(x.Trim(), out var id) ? id : Guid.Empty)
+                .Where(x => x != Guid.Empty)
+                .ToList();
         }
 
         /// <summary>

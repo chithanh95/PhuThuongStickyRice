@@ -19,10 +19,10 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
                 "123 Lang Phu Thuong, Ha Noi",
                 null,
                 PaymentMethod.Cod,
-                new List<(Guid, string, Money, int, string, string, decimal, bool, string)>
+                new List<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)>
                 {
-                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 2, null, null, 0, false, null),
-                    (Guid.NewGuid(), "Xoi xeo", Money.Of(25000, "VND"), 1, null, null, 0, false, null)
+                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 2, null, null, 0, false, null, null, null),
+                    (Guid.NewGuid(), "Xoi xeo", Money.Of(25000, "VND"), 1, null, null, 0, false, null, null, null)
                 });
         }
 
@@ -44,7 +44,7 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         {
             Assert.Throws<DomainException>(() =>
                 Order.Create("PX-1", "A", "090", null, "Addr", null, PaymentMethod.Cod,
-                    new List<(Guid, string, Money, int, string, string, decimal, bool, string)>()));
+                    new List<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)>()));
         }
 
         [Fact]
@@ -52,10 +52,10 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         {
             Assert.Throws<DomainException>(() =>
                 Order.Create("PX-1", "A", "090", null, "Addr", null, PaymentMethod.Cod,
-                    new List<(Guid, string, Money, int, string, string, decimal, bool, string)>
+                    new List<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)>
                     {
-                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null),
-                        (Guid.NewGuid(), "Xoi xeo", Money.Of(2, "USD"), 1, null, null, 0, false, null)
+                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null, null, null),
+                        (Guid.NewGuid(), "Xoi xeo", Money.Of(2, "USD"), 1, null, null, 0, false, null, null, null)
                     }));
         }
 
@@ -118,9 +118,9 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
                 "123 Lang Phu Thuong, Ha Noi",
                 null,
                 PaymentMethod.BankTransfer,
-                new List<(Guid, string, Money, int, string, string, decimal, bool, string)>
+                new List<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)>
                 {
-                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null)
+                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null, null, null)
                 });
 
             Assert.Equal("b@example.com", order.CustomerEmail);
@@ -133,9 +133,9 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         {
             Assert.Throws<DomainException>(() =>
                 Order.Create("PX-1", "A", "090", "not-an-email", "Addr", null, PaymentMethod.Cod,
-                    new List<(Guid, string, Money, int, string, string, decimal, bool, string)>
+                    new List<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)>
                     {
-                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null)
+                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null, null, null)
                     }));
         }
 
@@ -144,9 +144,9 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
         {
             Assert.Throws<DomainException>(() =>
                 Order.Create("PX-1", "A", " ", null, "Addr", null, PaymentMethod.Cod,
-                    new List<(Guid, string, Money, int, string, string, decimal, bool, string)>
+                    new List<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)>
                     {
-                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null)
+                        (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null, null, null)
                     }));
         }
 
@@ -161,9 +161,9 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
                 "123 Lang Phu Thuong, Ha Noi",
                 null,
                 PaymentMethod.BankTransfer,
-                new List<(Guid, string, Money, int, string, string, decimal, bool, string)>
+                new List<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)>
                 {
-                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null)
+                    (Guid.NewGuid(), "Xoi gac", Money.Of(35000, "VND"), 1, null, null, 0, false, null, null, null)
                 });
 
             order.MarkTransferred();

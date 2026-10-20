@@ -89,6 +89,28 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest("Thiếu thông tin đơn hàng trong request body.");
             }
 
+            // Bảo mật (audit by-phone): khách CHƯA đăng nhập mà trả bằng ví
+            // hoặc đổi điểm loyalty là đang tiêu tiền/điểm của SĐT khai ở
+            // checkout — chỉ cần biết SĐT là tiêu hộ người khác được. Bắt
+            // buộc OTP gửi về chính SĐT đó (purpose "checkout-spend", mã
+            // dùng 1 lần) để chứng minh người đặt đang cầm điện thoại của
+            // SĐT. Khách đã đăng nhập (JWT đã xác thực chủ tài khoản) hoặc
+            // không dùng ví/điểm thì miễn bước này.
+            var usesWallet = string.Equals(
+                model.PaymentMethod, "Wallet", StringComparison.OrdinalIgnoreCase);
+            if (User.Identity?.IsAuthenticated != true
+                && (usesWallet || model.RedeemPoints > 0))
+            {
+                var otpResult = await _phoneOtpService.VerifyAsync(
+                    model.CustomerPhone,
+                    PhoneOtpService.Purposes.CheckoutSpend,
+                    model.OtpCode);
+                if (!otpResult.Succeeded)
+                {
+                    return BadRequest(otpResult.ErrorMessage);
+                }
+            }
+
             var order = await _orderAppService.CreateAsync(MapToCreateOrderDto(model));
 
             return Ok(order);

@@ -47,7 +47,10 @@ namespace PhuThuongStickyRice.Application
 
             CreateMap<OrderLine, Orders.DTOs.OrderLineDto>()
                 .ForMember(d => d.UnitPrice, o => o.MapFrom(s => s.UnitPrice.Amount))
-                .ForMember(d => d.LineTotal, o => o.MapFrom(s => s.LineTotal.Amount));
+                .ForMember(d => d.LineTotal, o => o.MapFrom(s => s.LineTotal.Amount))
+                // Entity lưu id topping dạng CSV — DTO trả List<Guid> để
+                // frontend "đặt lại" dùng thẳng, không tự parse ở client.
+                .ForMember(d => d.ToppingIds, o => o.MapFrom(s => s.GetToppingIds()));
         }
     }
 }

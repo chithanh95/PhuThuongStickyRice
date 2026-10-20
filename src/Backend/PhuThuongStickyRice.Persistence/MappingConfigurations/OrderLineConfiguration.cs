@@ -17,6 +17,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 
             builder.Property(x => x.SizeName).HasMaxLength(OrderLine.SizeNameMaxLength);
             builder.Property(x => x.ToppingNames).HasMaxLength(OrderLine.ToppingNamesMaxLength);
+            // Id size/topping đã chọn (S25): phục vụ "đặt lại" khôi phục
+            // đúng lựa chọn theo id. SizeOptionId là uniqueidentifier
+            // nullable, không FK (cùng quy ước ProductId của dòng combo).
+            builder.Property(x => x.ToppingIds).HasMaxLength(OrderLine.ToppingIdsMaxLength);
             builder.Property(x => x.ToppingsExtra).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.IsCombo).IsRequired();
             builder.Property(x => x.Note).HasMaxLength(OrderLine.NoteMaxLength);

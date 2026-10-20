@@ -2049,18 +2049,37 @@
             return false;
         }
 
-        // Best-effort size match by name.
+        // S25: ưu tiên khôi phục size theo ID đã lưu lúc đặt (tên size có
+        // thể bị đổi sau này); đơn cũ chưa có id thì đoán theo tên như trước.
         ProductSizeOptionModel size = null;
-        if (!string.IsNullOrWhiteSpace(line.SizeName))
+        if (line.SizeOptionId.HasValue)
+        {
+            size = product.Sizes?.FirstOrDefault(s => s.Id == line.SizeOptionId.Value);
+        }
+
+        if (size == null && !string.IsNullOrWhiteSpace(line.SizeName))
         {
             size = product.Sizes?.FirstOrDefault(s =>
                 string.Equals(s.Name?.Trim(), line.SizeName.Trim(),
                     StringComparison.OrdinalIgnoreCase));
         }
 
-        // Best-effort topping match by name (comma-separated).
+        // S25: ưu tiên khôi phục topping theo ID đã lưu lúc đặt; đơn cũ
+        // chưa có id (hoặc topping đã ngừng bán) thì đoán theo tên như trước.
         var chosen = new System.Collections.Generic.List<ToppingModel>();
-        if (!string.IsNullOrWhiteSpace(line.ToppingNames))
+        if (line.ToppingIds != null && line.ToppingIds.Count > 0)
+        {
+            foreach (var toppingId in line.ToppingIds)
+            {
+                var topping = toppings.FirstOrDefault(t => t.Id == toppingId && t.IsActive);
+                if (topping != null && !chosen.Contains(topping))
+                {
+                    chosen.Add(topping);
+                }
+            }
+        }
+
+        if (chosen.Count == 0 && !string.IsNullOrWhiteSpace(line.ToppingNames))
         {
             foreach (var name in line.ToppingNames.Split(
                 new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))

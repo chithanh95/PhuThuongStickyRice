@@ -41,6 +41,11 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// <summary>First delivery date (date only, UTC).</summary>
         public DateTime StartDate { get; set; }
 
+        /// <summary>
+        /// true = gói đang hoạt động, worker sinh đơn COD tự động mỗi ngày.
+        /// Gói đăng ký từ kênh công khai luôn tạo với false (chờ admin duyệt
+        /// và kích hoạt) để tránh đăng ký hộ SĐT người khác rồi tự sinh đơn.
+        /// </summary>
         public bool Active { get; set; }
 
         public string Notes { get; set; }

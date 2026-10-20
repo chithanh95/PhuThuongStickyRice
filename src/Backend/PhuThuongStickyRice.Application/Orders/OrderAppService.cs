@@ -1086,11 +1086,13 @@ namespace PhuThuongStickyRice.Application.Orders
         /// tên element để <c>Order.Create</c> và <c>EnsureDailyLimitsAsync</c>
         /// nhận đúng dữ liệu.</returns>
         private List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> BuildOrderLines(
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note,
+                Guid? SizeOptionId, List<Guid> ToppingIds)> BuildOrderLines(
             CreateOrderDto input, OrderLineCatalog catalog)
         {
             var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>();
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note,
+                Guid? SizeOptionId, List<Guid> ToppingIds)>();
             foreach (var line in input.Lines)
             {
                 lines.Add(line.IsCombo
@@ -1106,7 +1108,8 @@ namespace PhuThuongStickyRice.Application.Orders
         /// combo (giá combo cố định, không áp size/topping/KM như món lẻ).
         /// </summary>
         private (Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-            string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)
+            string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note,
+            Guid? SizeOptionId, List<Guid> ToppingIds)
             BuildComboOrderLine(CreateOrderLineDto line, OrderLineCatalog catalog)
         {
             var combo = catalog.Combos.FirstOrDefault(x => x.Id == line.ProductId);
@@ -1124,7 +1127,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 null,
                 0,
                 true,
-                TrimToNull(line.Note));
+                // Combo không có size/topping tùy chọn -> id để trống.
+                TrimToNull(line.Note), null, null);
         }
 
         /// <summary>
@@ -1132,7 +1136,8 @@ namespace PhuThuongStickyRice.Application.Orders
         /// áp giá size đã chọn, giá KM (nếu có), rồi cộng tiền topping.
         /// </summary>
         private (Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-            string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)
+            string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note,
+            Guid? SizeOptionId, List<Guid> ToppingIds)
             BuildProductOrderLine(CreateOrderLineDto line, CreateOrderDto input, OrderLineCatalog catalog)
         {
             var product = catalog.Products.FirstOrDefault(x => x.Id == line.ProductId);
@@ -1183,23 +1188,26 @@ namespace PhuThuongStickyRice.Application.Orders
             }
 
             // Toppings: extra charge summed on top of the unit price.
-            var (toppingNames, toppingsExtra) = ResolveLineToppings(line, catalog);
+            var (toppingNames, toppingsExtra, toppingIds) = ResolveLineToppings(line, catalog);
             if (toppingNames != null)
             {
                 unitPrice = Money.Of(unitPrice.Amount + toppingsExtra, unitPrice.Currency);
             }
 
+            // Mang theo id size/topping đã validate vào tuple để OrderLine
+            // lưu lại — trước đây chỉ lưu tên nên "đặt lại" mất lựa chọn gốc.
             return (product.Id, product.Name, unitPrice, line.Quantity,
                 sizeName, toppingNames, toppingsExtra, false,
-                TrimToNull(line.Note));
+                TrimToNull(line.Note), line.SizeOptionId, toppingIds);
         }
 
         /// <summary>
         /// Tra cứu các topping đã chọn của 1 dòng món từ catalog đã nạp sẵn
-        /// (không query trong vòng lặp để tránh N+1). Trả về tên gộp và tổng
-        /// tiền topping thêm; <c>null</c>/0 khi dòng món không chọn topping.
+        /// (không query trong vòng lặp để tránh N+1). Trả về tên gộp, tổng
+        /// tiền topping thêm và danh sách id đã validate; <c>null</c>/0/rỗng
+        /// khi dòng món không chọn topping.
         /// </summary>
-        private static (string ToppingNames, decimal ToppingsExtra) ResolveLineToppings(
+        private static (string ToppingNames, decimal ToppingsExtra, List<Guid> ToppingIds) ResolveLineToppings(
             CreateOrderLineDto line, OrderLineCatalog catalog)
         {
             // HashSet: tra cứu O(1) trong Where() bên dưới thay vì
@@ -1208,7 +1216,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var lineToppings = new HashSet<Guid>(line.ToppingIds ?? Enumerable.Empty<Guid>());
             if (lineToppings.Count == 0)
             {
-                return (null, 0);
+                return (null, 0, new List<Guid>());
             }
 
             var resolved = catalog.Toppings.Where(x => lineToppings.Contains(x.Id)).ToList();
@@ -1217,7 +1225,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException("Một topping đã chọn không còn khả dụng.");
             }
 
-            return (string.Join(", ", resolved.Select(x => x.Name)), resolved.Sum(x => x.ExtraPrice));
+            return (string.Join(", ", resolved.Select(x => x.Name)),
+                resolved.Sum(x => x.ExtraPrice),
+                resolved.Select(x => x.Id).ToList());
         }
 
         /// <summary>
@@ -3339,6 +3349,30 @@ namespace PhuThuongStickyRice.Application.Orders
                 throw new Domain.Exceptions.DomainException("Chưa chọn đơn nào để gộp.");
             }
 
+            // Race (S25): 2 thao tác gộp chạy đồng thời (2 nhân viên cùng
+            // gộp, hoặc double-click/retry) cùng đọc trạng thái cũ của đơn
+            // chính/đơn phụ rồi cùng hoàn ví + hoàn điểm + chuyển dòng —
+            // lost-update: tiền/điểm bị hoàn 2 lần hoặc dòng hàng nhân đôi.
+            // Serialize theo (mã đơn chính + 9 số cuối SĐT) bằng
+            // KeyedAsyncLock như các luồng sửa đơn/đánh giá; phần thân thật
+            // (MergeOrdersCoreAsync) nạp lại đơn chính BÊN TRONG khóa nên
+            // luôn thấy trạng thái mới nhất sau khi lần gộp trước commit.
+            var primaryForKey = await FindOrThrowAsync(input.PrimaryOrderId);
+            return await KeyedAsyncLock.RunAsync(
+                OrderPhoneLockKey("merge-orders", primaryForKey.OrderNumber, primaryForKey.CustomerPhone),
+                () => MergeOrdersCoreAsync(input));
+        }
+
+        /// <summary>
+        /// Phần thực thi của gộp đơn (chạy bên trong khóa serialize theo
+        /// đơn chính + SĐT khách): nạp lại đơn chính và các đơn phụ, chuyển
+        /// toàn bộ dòng hàng sang đơn chính, hoàn điểm/ví của các đơn phụ,
+        /// đối soát ví đơn chính theo chênh lệch tổng rồi lưu và trả DTO.
+        /// </summary>
+        /// <param name="input">Id đơn chính và danh sách Id đơn cần gộp (đã validate ở wrapper).</param>
+        /// <returns>Đơn chính sau khi gộp.</returns>
+        private async Task<OrderDto> MergeOrdersCoreAsync(MergeOrdersInput input)
+        {
             var primary = await FindOrThrowAsync(input.PrimaryOrderId);
             EnsureMergeable(primary);
             // Tổng đơn chính TRƯỚC khi gộp — dùng để tính chênh lệch thu/hoàn ví sau gộp.
@@ -3982,7 +4016,8 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <exception cref="Domain.Exceptions.DomainException">Ném khi món nào đó vượt giới hạn suất còn lại hôm nay.</exception>
         private async Task EnsureDailyLimitsAsync(
             List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)> lines)
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note,
+                Guid? SizeOptionId, List<Guid> ToppingIds)> lines)
         {
             var wanted = lines
                 .Where(x => !x.IsCombo)

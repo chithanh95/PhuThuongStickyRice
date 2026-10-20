@@ -29,8 +29,20 @@ namespace PhuThuongStickyRice.Application.Orders.DTOs
         /// <summary>Tên size đã chọn (vd: Nhỏ/Vừa/Lớn); null khi món không có size.</summary>
         public string SizeName { get; set; }
 
+        /// <summary>
+        /// Id size đã chọn lúc đặt — luồng "đặt lại" khôi phục đúng size theo
+        /// id thay vì đoán theo tên. Null với đơn tạo trước khi có cột này.
+        /// </summary>
+        public Guid? SizeOptionId { get; set; }
+
         /// <summary>Tên các topping đã chọn, cách nhau dấu phẩy; null khi không có topping.</summary>
         public string ToppingNames { get; set; }
+
+        /// <summary>
+        /// Id các topping đã chọn lúc đặt — luồng "đặt lại" khôi phục đúng
+        /// topping theo id. Rỗng với đơn tạo trước khi có cột này.
+        /// </summary>
+        public List<Guid> ToppingIds { get; set; } = new List<Guid>();
 
         /// <summary>Phụ thu topping của dòng hàng (VNĐ), đã cộng vào LineTotal.</summary>
         public decimal ToppingsExtra { get; set; }

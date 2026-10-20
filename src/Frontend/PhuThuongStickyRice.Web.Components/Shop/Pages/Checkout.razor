@@ -791,6 +791,30 @@ else
                         </div>
                     }
 
+                    @* S25: khách chưa đăng nhập mà dùng ví/điểm của SĐT thì phải xác thực OTP của chính SĐT đó (server cũng chặn ở POST api/orders). *@
+                    @if (NeedsSpendOtp)
+                    {
+                        <div class="alert alert-warning py-2">
+                            <small>
+                                🔐 Bạn đang dùng <strong>ví/điểm</strong> của số <strong>@_order.CustomerPhone</strong> nhưng chưa đăng nhập.
+                                Để chắc chắn là chính bạn, shop cần mã OTP gửi về số này:
+                            </small>
+                            <div class="input-group input-group-sm mt-2">
+                                <input class="form-control text-center" @bind="_spendOtp" inputmode="numeric" maxlength="6"
+                                       placeholder="Nhập mã OTP 6 số" aria-label="Mã OTP xác thực dùng ví/điểm" />
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-primary" @onclick="SendSpendOtpAsync" disabled="@_sendingSpendOtp">
+                                        @(_sendingSpendOtp ? "Đang gửi..." : "Gửi mã OTP")
+                                    </button>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(_spendOtpMessage))
+                            {
+                                <small class="d-block mt-1 @(_spendOtpIsError ? "text-danger" : "text-success")">@_spendOtpMessage</small>
+                            }
+                        </div>
+                    }
+
                     <button class="btn btn-success btn-block btn-lg co-flow-submit" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
                         @(_submitting ? AppLocalizationService.Translate("shop.processing") : AppLocalizationService.Translate("shop.order_now"))
                     </button>
@@ -929,6 +953,23 @@ else
     private int _redeemPointsInput;
     private int _redeemPoints;
     private string _redeemMessage;
+
+    // S25: xác thực OTP khi khách chưa đăng nhập dùng ví/điểm của SĐT.
+    private bool _isLoggedIn;
+    private string _spendOtp;
+    private string _spendOtpMessage;
+    private bool _spendOtpIsError;
+    private bool _sendingSpendOtp;
+
+    /// <summary>
+    /// Cần OTP "checkout-spend" khi: chưa đăng nhập VÀ (trả bằng ví HOẶC
+    /// đổi điểm loyalty) — tức đang tiêu tiền/điểm của SĐT khai ở checkout.
+    /// Đã đăng nhập hoặc trả COD/chuyển khoản/MoMo không dùng điểm thì đặt
+    /// hàng như cũ, không thêm bước. Server (POST api/orders) cũng chặn
+    /// cùng điều kiện này — đây là lớp UX để khách biết trước.
+    /// </summary>
+    private bool NeedsSpendOtp =>
+        !_isLoggedIn && (_order.PaymentMethod == "Wallet" || _redeemPoints > 0);
 
     // Lucky spin: 6 ô trên vòng quay (mỗi ô 60°). _spinSegmentKeys là mã segment
     // server trả về (SpinResultModel.Segment) — thứ tự 2 mảng phải khớp nhau
@@ -1140,6 +1181,7 @@ else
         try
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            _isLoggedIn = authState.User.Identity?.IsAuthenticated == true;
             if (authState.User.Identity?.IsAuthenticated == true)
             {
                 _savedAddresses = await CustomerAddressService.GetMineAsync();
@@ -1860,6 +1902,48 @@ else
     /// xóa giỏ, chuyển sang trang tra cứu đơn (COD/ví) hoặc hiện QR (chuyển
     /// khoản) / thanh toán (MoMo). Lỗi server hiện nguyên văn message tiếng Việt.
     /// </summary>
+    /// <summary>
+    /// S25: gửi mã OTP "checkout-spend" về SĐT ở checkout (nút "Gửi mã
+    /// OTP" trong khối xác thực ví/điểm). Guard chống bấm trùng bằng
+    /// _sendingSpendOtp; lỗi server (quá 3 lần/giờ, SĐT sai định dạng)
+    /// hiện nguyên message tiếng Việt.
+    /// </summary>
+    private async Task SendSpendOtpAsync()
+    {
+        if (_sendingSpendOtp)
+        {
+            return;
+        }
+
+        _spendOtpMessage = null;
+        var phone = _order.CustomerPhone?.Trim();
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            _spendOtpMessage = "Vui lòng nhập số điện thoại ở thông tin khách hàng trước khi gửi mã OTP.";
+            _spendOtpIsError = true;
+            return;
+        }
+
+        _sendingSpendOtp = true;
+        try
+        {
+            await ShopEngagementService.SendPhoneOtpAsync(phone, "checkout-spend");
+            _spendOtpMessage = "Đã gửi mã OTP qua SMS về số của bạn. Mã có hiệu lực 5 phút.";
+            _spendOtpIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _spendOtpMessage = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Không gửi được mã OTP. Vui lòng thử lại."
+                : ex.Message;
+            _spendOtpIsError = true;
+        }
+        finally
+        {
+            _sendingSpendOtp = false;
+        }
+    }
+
     private async Task PlaceOrder()
     {
         _checkoutError = null;
@@ -1883,10 +1967,20 @@ else
             return;
         }
 
+        // S25: chưa đăng nhập + dùng ví/điểm -> bắt buộc OTP của SĐT trước
+        // khi gửi đơn (server cũng verify lại, mã dùng 1 lần).
+        if (NeedsSpendOtp
+            && (string.IsNullOrWhiteSpace(_spendOtp) || _spendOtp.Trim().Length != 6))
+        {
+            _checkoutError = "Vui lòng nhập mã OTP 6 số đã gửi về số điện thoại của bạn (bấm \"Gửi mã OTP\" ở mục xác thực).";
+            return;
+        }
+
         _submitting = true;
         try
         {
             BuildOrderPayload();
+            _order.OtpCode = NeedsSpendOtp ? _spendOtp?.Trim() : null;
             await FetchRecaptchaTokenAsync();
 
             _placedOrder = await ShopService.CreateOrderAsync(_order);

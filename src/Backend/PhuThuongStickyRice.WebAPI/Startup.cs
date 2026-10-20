@@ -192,8 +192,9 @@ namespace PhuThuongStickyRice.WebAPI
             services.AddSingleton<ISmsSender, LoggingSmsSender>();
             services.AddScoped<PasswordResetOtpService>();
             // OTP theo SĐT cho các thao tác nhạy cảm phía khách (xóa địa
-            // chỉ, đổi ngày sinh, xem chi tiết lịch sử đơn) — dùng chung
-            // IMemoryCache + ISmsSender ở trên, không cần migration.
+            // chỉ, đổi ngày sinh, xem chi tiết lịch sử đơn, dùng ví/điểm
+            // khi checkout) — dùng chung IMemoryCache + ISmsSender ở trên,
+            // không cần migration.
             services.AddScoped<PhoneOtpService>();
             services.AddScoped<JwtTokenService>();
             services.AddHttpClient<IMoMoPaymentService, MoMoPaymentService>();

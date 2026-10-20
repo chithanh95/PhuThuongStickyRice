@@ -20,15 +20,15 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
     {
         private const string Vnd = "VND";
 
-        private static List<(Guid, string, Money, int, string, string, decimal, bool, string)> Lines()
+        private static List<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)> Lines()
         {
             // 1 xôi gấc (size lớn 45k) x 2 + 1 xôi xéo 25k x 1 = 115.000 ₫.
             // Toppings are baked into the unit price at the application
             // layer; the domain line total is unitPrice * quantity.
-            return new List<(Guid, string, Money, int, string, string, decimal, bool, string)>
+            return new List<(Guid, string, Money, int, string, string, decimal, bool, string, Guid?, List<Guid>)>
             {
-                (Guid.NewGuid(), "Xoi gac", Money.Of(45000, Vnd), 2, "Size lớn", "Ruốc, Hành phi", 10000, false, null),
-                (Guid.NewGuid(), "Xoi xeo", Money.Of(25000, Vnd), 1, null, null, 0, false, null),
+                (Guid.NewGuid(), "Xoi gac", Money.Of(45000, Vnd), 2, "Size lớn", "Ruốc, Hành phi", 10000, false, null, null, null),
+                (Guid.NewGuid(), "Xoi xeo", Money.Of(25000, Vnd), 1, null, null, 0, false, null, null, null),
             };
         }
 

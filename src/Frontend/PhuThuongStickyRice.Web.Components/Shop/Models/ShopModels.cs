@@ -309,6 +309,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         /// <summary>Loyalty points the customer wants to redeem.</summary>
         public int RedeemPoints { get; set; }
 
+        /// <summary>
+        /// Mã OTP xác thực SĐT — chỉ gửi khi khách chưa đăng nhập mà dùng
+        /// ví (PaymentMethod=Wallet) hoặc đổi điểm; server kiểm tra với
+        /// purpose "checkout-spend" và từ chối tạo đơn nếu thiếu/sai mã.
+        /// </summary>
+        public string OtpCode { get; set; }
+
         /// <summary>Referrer's referral code, if any.</summary>
         public string ReferralCode { get; set; }
 
@@ -492,7 +499,19 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         public string SizeName { get; set; }
 
+        /// <summary>
+        /// Id size đã chọn lúc đặt — "đặt lại" khôi phục đúng size theo id
+        /// thay vì đoán theo tên. Null với đơn cũ chưa lưu id.
+        /// </summary>
+        public Guid? SizeOptionId { get; set; }
+
         public string ToppingNames { get; set; }
+
+        /// <summary>
+        /// Id các topping đã chọn lúc đặt — "đặt lại" khôi phục đúng topping
+        /// theo id. Rỗng với đơn cũ chưa lưu id.
+        /// </summary>
+        public List<Guid> ToppingIds { get; set; } = new List<Guid>();
 
         public decimal ToppingsExtra { get; set; }
 

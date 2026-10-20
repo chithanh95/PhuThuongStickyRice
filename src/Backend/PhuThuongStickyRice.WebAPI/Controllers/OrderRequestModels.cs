@@ -81,6 +81,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// <summary>Loyalty points the customer wants to redeem.</summary>
         public int RedeemPoints { get; set; }
 
+        /// <summary>
+        /// Mã OTP xác thực SĐT (6 số, gửi qua POST api/phone-otp/send với
+        /// purpose "checkout-spend"). Bắt buộc khi khách CHƯA đăng nhập mà
+        /// trả bằng ví hoặc đổi điểm loyalty — tức đang tiêu tiền/điểm của
+        /// SĐT khai ở checkout; khách đã đăng nhập hoặc không dùng ví/điểm
+        /// thì bỏ qua.
+        /// </summary>
+        public string OtpCode { get; set; }
+
         /// <summary>Referrer's referral code, if any.</summary>
         public string ReferralCode { get; set; }
 

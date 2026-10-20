@@ -88,6 +88,11 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         /// từ catalog hiện tại (size thay giá gốc, topping cộng thêm tiền) —
         /// vì gói cố định giá lúc đăng ký, các đơn sau này dùng giá này chứ
         /// không cập nhật theo giá catalog mới.
+        /// Bảo mật: gói tạo từ kênh công khai vào trạng thái CHỜ DUYỆT
+        /// (<c>Active = false</c>) — trước đây Active=true ngay khiến bất kỳ
+        /// ai biết SĐT người khác cũng đăng ký hộ được và hệ thống tự sinh
+        /// đơn COD giao tới địa chỉ lạ mỗi ngày. Admin kiểm tra rồi kích
+        /// hoạt (SetActiveAsync) thì worker mới sinh đơn.
         /// </summary>
         /// <param name="dto">Thông tin gói: SĐT, món, size, topping, ngày bắt đầu...</param>
         /// <returns>Gói đăng ký vừa tạo.</returns>
@@ -121,7 +126,9 @@ namespace PhuThuongStickyRice.Application.Subscriptions
                 Quantity = dto.Quantity,
                 DeliveryAddress = dto.DeliveryAddress.Trim(),
                 StartDate = start,
-                Active = true,
+                // Chờ duyệt: gói công khai KHÔNG tự kích hoạt (xem doc của
+                // method) — admin kích hoạt mới bắt đầu sinh đơn tự động.
+                Active = false,
                 Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim(),
                 CreatedAt = DateTime.UtcNow
             };
@@ -225,10 +232,13 @@ namespace PhuThuongStickyRice.Application.Subscriptions
         private static Order BuildDueOrder(Subscription sub, string orderNumber, ShopSettingDto settings)
         {
             var lines = new List<(Guid ProductId, string ProductName, Money UnitPrice, int Quantity,
-                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note)>
+                string SizeName, string ToppingNames, decimal ToppingsExtra, bool IsCombo, string Note,
+                Guid? SizeOptionId, List<Guid> ToppingIds)>
             {
+                // Gói đăng ký chỉ snapshot TÊN size/topping (entity
+                // Subscription không lưu id) nên 2 id để trống như đơn cũ.
                 (sub.ProductId, sub.ProductName, Money.Of(sub.UnitPrice, Money.DefaultCurrency),
-                    sub.Quantity, sub.SizeName, sub.ToppingNames, 0, false, null)
+                    sub.Quantity, sub.SizeName, sub.ToppingNames, 0, false, null, null, null)
             };
 
             var subtotal = sub.UnitPrice * sub.Quantity;

@@ -61,16 +61,29 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         /// UPDATE ... SET UsedCount = UsedCount - 1 WHERE Code = ... AND
         /// UsedCount &gt; 0) — không bao giờ về âm. Chạy trong DbContext/UoW
         /// hiện tại nên tham gia cùng transaction với nghiệp vụ hủy đơn.
-        /// Không tự bật lại IsActive (xem interface).
+        /// Cùng câu UPDATE tự bật lại IsActive khi mã đang tắt CHỈ VÌ đã
+        /// chạm trần <c>MaxUses</c>: điều kiện xét trên giá trị TRƯỚC khi
+        /// giảm (UsedCount &gt;= MaxUses — chính trạng thái mà
+        /// TryIncrementUsageAsync tự tắt ở item 252) và mã chưa hết hạn.
+        /// Mã admin tắt tay khi chưa chạm trần, hoặc mã đã hết hạn, không
+        /// bị bật lại.
         /// </summary>
         public async Task<bool> TryDecrementUsageAsync(
             string normalizedCode, CancellationToken cancellationToken = default)
         {
             var dbContext = await GetDbContextAsync();
+            var now = DateTime.UtcNow;
             var affected = await dbContext.Set<DiscountCode>()
                 .Where(x => x.Code == normalizedCode && x.UsedCount > 0)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(x => x.UsedCount, x => x.UsedCount - 1),
+                    .SetProperty(x => x.UsedCount, x => x.UsedCount - 1)
+                    .SetProperty(x => x.IsActive, x =>
+                        !x.IsActive
+                        && x.MaxUses.HasValue
+                        && x.UsedCount >= x.MaxUses.Value
+                        && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
+                            ? true
+                            : x.IsActive),
                     cancellationToken);
             return affected > 0;
         }
@@ -83,6 +96,9 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         /// chỉ tốn 1 round-trip cho mỗi mã khác nhau. Math.Max dịch thành
         /// CASE WHEN trên SQL Server. Chạy trong DbContext/UoW hiện tại nên
         /// tham gia cùng transaction với nghiệp vụ hủy đơn.
+        /// Giống bản đơn lẻ: mã đang tắt chỉ vì chạm trần MaxUses và chưa
+        /// hết hạn được bật lại IsActive khi lượt hoàn này kéo UsedCount
+        /// xuống dưới trần.
         /// </summary>
         public async Task TryDecrementUsageBatchAsync(
             IReadOnlyDictionary<string, int> decrements,
@@ -94,6 +110,7 @@ namespace PhuThuongStickyRice.Persistence.Repositories
             }
 
             var dbContext = await GetDbContextAsync();
+            var now = DateTime.UtcNow;
             foreach (var (code, count) in decrements)
             {
                 if (count <= 0)
@@ -104,7 +121,15 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                 await dbContext.Set<DiscountCode>()
                     .Where(x => x.Code == code)
                     .ExecuteUpdateAsync(s => s
-                        .SetProperty(x => x.UsedCount, x => Math.Max(0, x.UsedCount - count)),
+                        .SetProperty(x => x.UsedCount, x => Math.Max(0, x.UsedCount - count))
+                        .SetProperty(x => x.IsActive, x =>
+                            !x.IsActive
+                            && x.MaxUses.HasValue
+                            && x.UsedCount >= x.MaxUses.Value
+                            && Math.Max(0, x.UsedCount - count) < x.MaxUses.Value
+                            && (!x.ExpiresAt.HasValue || x.ExpiresAt.Value > now)
+                                ? true
+                                : x.IsActive),
                         cancellationToken);
             }
         }
