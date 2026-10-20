@@ -24,10 +24,15 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
             // Cột Code là complex-type member (EF Core không hỗ trợ HasIndex
             // trên complex-type member) nên dùng raw SQL.
             //
-            // (2) IX_AuditLogEntries_UserId / IX_AuditLogEntries_ObjectId —
-            // bảng audit ghi 1 dòng mỗi lần tạo/sửa/xóa nên phình theo thời
-            // gian; màn admin lọc nhật ký theo user hoặc object bị full scan
-            // (trước đây chỉ có index trên CreatedDateTime).
+            // (2) IX_AuditLogEntries_UserId — bảng audit ghi 1 dòng mỗi lần
+            // tạo/sửa/xóa nên phình theo thời gian; màn admin lọc nhật ký
+            // theo user bị full scan (trước đây chỉ có index trên
+            // CreatedDateTime). LƯU Ý: cột ObjectId là string không giới
+            // hạn độ dài → SQL Server tạo cột nvarchar(max), KHÔNG được
+            // dùng làm cột khóa của index (SqlException "invalid for use
+            // as a key column in an index" — đã gặp thật 2026-10-20) nên
+            // không tạo index trên ObjectId; lọc theo ObjectId vẫn chạy,
+            // chỉ scan thay vì seek.
             //
             // (3) IX_Subscriptions_Active_StartDate — worker sinh đơn gói tuần
             // (SubscriptionOrderWorker, 6h/lần) lọc Active + StartDate; bảng
@@ -45,10 +50,6 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'[AuditLog
     CREATE NONCLUSTERED INDEX [IX_AuditLogEntries_UserId]
         ON [AuditLogEntries] ([UserId] ASC);
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'[AuditLogEntries]') AND name = N'IX_AuditLogEntries_ObjectId')
-    CREATE NONCLUSTERED INDEX [IX_AuditLogEntries_ObjectId]
-        ON [AuditLogEntries] ([ObjectId] ASC);
-
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'[Subscriptions]') AND name = N'IX_Subscriptions_Active_StartDate')
     CREATE NONCLUSTERED INDEX [IX_Subscriptions_Active_StartDate]
         ON [Subscriptions] ([Active] ASC, [StartDate] ASC);");
@@ -60,9 +61,6 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'[Subscrip
             migrationBuilder.Sql(@"
 IF EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'[Subscriptions]') AND name = N'IX_Subscriptions_Active_StartDate')
     DROP INDEX [IX_Subscriptions_Active_StartDate] ON [Subscriptions];
-
-IF EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'[AuditLogEntries]') AND name = N'IX_AuditLogEntries_ObjectId')
-    DROP INDEX [IX_AuditLogEntries_ObjectId] ON [AuditLogEntries];
 
 IF EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'[AuditLogEntries]') AND name = N'IX_AuditLogEntries_UserId')
     DROP INDEX [IX_AuditLogEntries_UserId] ON [AuditLogEntries];
