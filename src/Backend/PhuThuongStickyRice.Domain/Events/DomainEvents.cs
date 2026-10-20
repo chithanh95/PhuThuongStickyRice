@@ -15,13 +15,19 @@ namespace PhuThuongStickyRice.Domain.Events
     /// </summary>
     public class DomainEvents : IDomainEvents
     {
-        private static readonly List<Type> _handlers = new List<Type>();
+        // Ánh xạ kiểu sự kiện -> các handler xử lý nó, dựng sẵn 1 lần lúc
+        // đăng ký để DispatchAsync chỉ tra dictionary O(1) thay vì chạy
+        // reflection GetInterfaces() trên mọi handler cho mỗi lần phát sự
+        // kiện (trước đây tốn reflection + cấp phát enumerator mỗi dispatch).
+        private static readonly Dictionary<Type, List<Type>> _handlersByEvent = new Dictionary<Type, List<Type>>();
         private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
         /// Quét assembly tìm mọi class implement <see cref="IDomainEventHandler{T}"/>
-        /// và đăng ký transient vào DI. Danh sách handler lưu static để
-        /// <see cref="DispatchAsync"/> biết gọi ai.
+        /// và đăng ký transient vào DI. Đồng thời dựng sẵn ánh xạ kiểu sự kiện
+        /// -> handler để <see cref="DispatchAsync"/> biết gọi ai mà không cần
+        /// reflection lúc dispatch. Gọi được nhiều lần (nhiều assembly): handler
+        /// trùng không bị ghi 2 lần.
         /// </summary>
         public static void RegisterHandlers(Assembly assembly, IServiceCollection services)
         {
@@ -34,7 +40,28 @@ namespace PhuThuongStickyRice.Domain.Events
                 services.AddTransient(type);
             }
 
-            _handlers.AddRange(types);
+            // 1 handler có thể xử lý nhiều loại sự kiện: gom theo từng kiểu sự kiện.
+            foreach (var type in types)
+            {
+                var eventTypes = type.GetInterfaces()
+                    .Where(iface => iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>))
+                    .Select(iface => iface.GenericTypeArguments[0])
+                    .Distinct();
+
+                foreach (var eventType in eventTypes)
+                {
+                    if (!_handlersByEvent.TryGetValue(eventType, out var handlers))
+                    {
+                        handlers = new List<Type>();
+                        _handlersByEvent[eventType] = handlers;
+                    }
+
+                    if (!handlers.Contains(type))
+                    {
+                        handlers.Add(type);
+                    }
+                }
+            }
         }
 
         public DomainEvents(IServiceProvider serviceProvider)
@@ -49,27 +76,27 @@ namespace PhuThuongStickyRice.Domain.Events
         /// </summary>
         public async Task DispatchAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default)
         {
-            foreach (Type handlerType in _handlers)
+            // Tra ánh xạ dựng sẵn ở RegisterHandlers: không reflection lúc
+            // dispatch, khớp đúng kiểu sự kiện như logic cũ (so sánh == trên
+            // GenericTypeArguments).
+            if (!_handlersByEvent.TryGetValue(domainEvent.GetType(), out var handlerTypes))
             {
-                bool canHandleEvent = handlerType.GetInterfaces()
-                    .Any(iface => iface.IsGenericType
-                        && iface.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>)
-                        && iface.GenericTypeArguments[0] == domainEvent.GetType());
+                return;
+            }
 
-                if (canHandleEvent)
-                {
-                    dynamic handler = _serviceProvider.GetService(handlerType);
-                    // GetService có thể trả null nếu handler chưa được đăng ký
-                    // trong DI (ví dụ RegisterHandlers chạy trên service
-                    // collection khác). Ném lỗi rõ nghĩa thay vì để dynamic
-                    // dispatch nổ RuntimeBinderException khó đọc.
-                    if (handler is null)
-                        throw new InvalidOperationException(
-                            $"Domain event handler '{handlerType.FullName}' chưa được đăng ký trong DI. " +
-                            "Kiểm tra RegisterHandlers đã chạy với đúng IServiceCollection.");
+            foreach (Type handlerType in handlerTypes)
+            {
+                dynamic handler = _serviceProvider.GetService(handlerType);
+                // GetService có thể trả null nếu handler chưa được đăng ký
+                // trong DI (ví dụ RegisterHandlers chạy trên service
+                // collection khác). Ném lỗi rõ nghĩa thay vì để dynamic
+                // dispatch nổ RuntimeBinderException khó đọc.
+                if (handler is null)
+                    throw new InvalidOperationException(
+                        $"Domain event handler '{handlerType.FullName}' chưa được đăng ký trong DI. " +
+                        "Kiểm tra RegisterHandlers đã chạy với đúng IServiceCollection.");
 
-                    await handler.HandleAsync((dynamic)domainEvent, cancellationToken);
-                }
+                await handler.HandleAsync((dynamic)domainEvent, cancellationToken);
             }
         }
     }

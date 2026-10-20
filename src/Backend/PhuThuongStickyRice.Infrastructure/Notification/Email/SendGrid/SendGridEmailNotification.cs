@@ -12,14 +12,19 @@ namespace PhuThuongStickyRice.Infrastructure.Notification.Email.SendGrid
     {
         private readonly SendGridOptions _options;
 
+        // SendGridClient bọc HttpClient — giữ 1 instance dùng chung cho mọi
+        // lần gửi (thread-safe theo thiết kế SDK, khuyến nghị tái sử dụng)
+        // thay vì new mỗi email gây socket exhaustion khi worker gửi liên tục.
+        private readonly SendGridClient _client;
+
         public SendGridEmailNotification(SendGridOptions options)
         {
             _options = options;
+            _client = new SendGridClient(_options.ApiKey);
         }
 
         public async Task SendAsync(IEmailMessage emailMessage, CancellationToken cancellationToken = default)
         {
-            var client = new SendGridClient(_options.ApiKey);
             var from = new EmailAddress(!string.IsNullOrWhiteSpace(_options.OverrideFrom) ? _options.OverrideFrom : emailMessage.From);
 
             var tos = (!string.IsNullOrWhiteSpace(_options.OverrideTos) ? _options.OverrideTos : emailMessage.Tos)?.Split(';')
@@ -35,7 +40,7 @@ namespace PhuThuongStickyRice.Infrastructure.Notification.Email.SendGrid
             }
 
             var mail = MailHelper.CreateSingleEmailToMultipleRecipients(from, tos, emailMessage.Subject, string.Empty, emailMessage.Body, showAllRecipients: true);
-            await client.SendEmailAsync(mail, cancellationToken);
+            await _client.SendEmailAsync(mail, cancellationToken);
         }
     }
 }
