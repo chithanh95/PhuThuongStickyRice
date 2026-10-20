@@ -269,7 +269,7 @@ namespace PhuThuongStickyRice.WebAPI
                                 Type = ReferenceType.SecurityScheme,
                                 Id = "Bearer",
                             },
-                        }, new List<string>()
+                        }, []
                     },
                 });
             });

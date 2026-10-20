@@ -122,7 +122,8 @@ namespace PhuThuongStickyRice.WebAPI.Services
         {
             var role = await EnsureRoleExistsAsync(dbContext, AdminRoleName, cancellationToken);
 
-            var extraRoles = new[] { KitchenRoleName, CashierRoleName, CustomerRoleName };
+            // C# 12 collection expression thay cho new[] — kiểu phần tử rõ ràng.
+            string[] extraRoles = [KitchenRoleName, CashierRoleName, CustomerRoleName];
             // Tính trước ở client để EF dịch Contains thành mệnh đề IN trong SQL.
             var wantedNormalized = extraRoles.Select(n => n.ToUpperInvariant()).ToList();
             var existingRoleNames = await dbContext.Set<Role>()

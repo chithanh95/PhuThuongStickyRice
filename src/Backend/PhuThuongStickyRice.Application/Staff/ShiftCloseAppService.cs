@@ -15,6 +15,7 @@ using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Staff;
+using PhuThuongStickyRice.Application.Permissions;
 
 namespace PhuThuongStickyRice.Application.Staff
 {
@@ -66,7 +67,7 @@ namespace PhuThuongStickyRice.Application.Staff
     }
 
     /// <summary>Item 129: COD end-of-shift reconciliation.</summary>
-    [Authorize(Roles = "Admin,Cashier")]
+    [Authorize(Roles = RoleGroups.AdminCashier)]
     public class ShiftCloseAppService : ApplicationService, IShiftCloseAppService
     {
         private readonly IRepository<ShiftClose, Guid> _closes;

@@ -253,9 +253,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>Tiền tố mã voucher tặng khách đặt đơn đầu tiên.</summary>
         private const string FirstOrderVoucherPrefix = "CHAO";
 
-        // Nhóm role dùng trong [Authorize] của class này — gom thành const để
-        // sửa 1 chỗ khi thay đổi phân quyền, tránh gõ sai chuỗi ở từng attribute.
-        private const string RolesAdminCashier = "Admin,Cashier";
+        // "Admin,Cashier" dùng chung qua Permissions.RoleGroups.AdminCashier.
         private const string RolesAdminKitchen = "Admin,Kitchen";
         /// <summary>Key của segment "trượt" (không trúng giải) trong vòng quay may mắn.</summary>
         private const string MissSegmentKey = "Miss";
@@ -1252,14 +1250,8 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Item 110: fire the OrderCreated webhook (fire-and-log — a
             // failing endpoint never breaks the order flow).
-            await FireWebhookSafelyAsync(WebhookEndpoint.EventOrderCreated, new
-            {
-                order.OrderNumber,
-                status = order.Status.ToString(),
-                total = order.TotalAmount.Amount,
-                phone = order.CustomerPhone,
-                branchName
-            });
+            await FireWebhookSafelyAsync(
+                WebhookEndpoint.EventOrderCreated, BuildOrderWebhookPayload(order, branchName));
 
             // Item 180: simple "new order" webhook (báo đơn mới) — 1 URL in
             // shop settings. Fire-and-log with 5s timeout; a failing
@@ -1508,24 +1500,8 @@ namespace PhuThuongStickyRice.Application.Orders
                 order.SetCancelReason(input.CancelReason);
             }
 
-            // bug-hunt 2026-10-19: chuyển trạng thái nguyên tử tại DB TRƯỚC
-            // khi lưu entity — 2 staff bấm "Hoàn thành"/"Hủy" đồng thời cùng
-            // đơn chỉ 1 thắng được UPDATE ... WHERE Status = fromStatus (guard
-            // in-memory Order.Complete()/Cancel() không chặn được vì mỗi
-            // request đọc 1 bản entity riêng). Người thua nhận lỗi rõ ràng
-            // thay vì chạy side-effect 2 lần: cộng điểm loyalty + TotalSpent
-            // + thưởng giới thiệu 2 lần (hoàn thành), hoặc hoàn điểm đã đổi
-            // + hoàn tiền ví 2 lần (hủy).
-            if (!await _orders.TryTransitionStatusAsync(order.Id, fromStatus, status))
-            {
-                throw new Domain.Exceptions.DomainException(
-                    OrderHandledByOtherStaffMessage);
-            }
-
-            await _orders.UpdateAsync(order);
-
-            // Wave 6c (item 34): audit the transition.
-            await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
+            // Guard nguyên tử + lưu entity + ghi audit lịch sử trạng thái.
+            await PersistStatusTransitionAsync(order, fromStatus, status);
 
             // Item 156: staff activity log.
             var statusAction = GetStatusChangeAction(status);
@@ -1540,14 +1516,8 @@ namespace PhuThuongStickyRice.Application.Orders
             var updatedDto = await MapOrderDtoWithShipperNamesAsync(order);
 
             // Item 110: fire the OrderStatusChanged webhook (fire-and-log).
-            await FireWebhookSafelyAsync(WebhookEndpoint.EventOrderStatusChanged, new
-            {
-                order.OrderNumber,
-                status = order.Status.ToString(),
-                total = order.TotalAmount.Amount,
-                phone = order.CustomerPhone,
-                branchName = order.BranchName
-            });
+            await FireWebhookSafelyAsync(
+                WebhookEndpoint.EventOrderStatusChanged, BuildOrderWebhookPayload(order, order.BranchName));
 
             return updatedDto;
         }
@@ -1670,6 +1640,20 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
+        /// Dựng payload webhook chung cho các sự kiện đơn hàng (mã đơn, trạng
+        /// thái, tổng tiền, SĐT, chi nhánh) — dùng chung cho OrderCreated và
+        /// OrderStatusChanged để 2 nơi không lệch nhau.
+        /// </summary>
+        private static object BuildOrderWebhookPayload(Order order, string branchName) => new
+        {
+            order.OrderNumber,
+            status = order.Status.ToString(),
+            total = order.TotalAmount.Amount,
+            phone = order.CustomerPhone,
+            branchName
+        };
+
+        /// <summary>
         /// Webhook dispatch must never break the order flow: log and continue.
         /// </summary>
         private async Task FireWebhookSafelyAsync(string eventName, object payload)
@@ -1685,7 +1669,7 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>Item 82: admin assigns (or unassigns) a delivery shipper.</summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RoleGroups.AdminCashier)]
         public virtual async Task<OrderDto> AssignShipperAsync(Guid id, AssignShipperDto input)
         {
             var order = await FindOrThrowAsync(id);
@@ -1759,22 +1743,8 @@ namespace PhuThuongStickyRice.Application.Orders
                         $"Đơn hàng ở trạng thái '{order.Status}' không thể chuyển tiếp từ màn hình bếp.");
             }
 
-            // bug-hunt 2026-10-19: guard nguyên tử giống UpdateStatusAsync —
-            // bếp bấm KDS đúng lúc staff hủy/xử lý đơn: chỉ 1 request thắng
-            // UPDATE ... WHERE Status = fromStatus; người thua nhận lỗi rõ
-            // ràng thay vì save entity cũ đè lên đơn vừa bị hủy (đơn "hồi sinh",
-            // tiền/điểm/mã giảm giá đã hoàn không thu lại). Order không có
-            // concurrency token nên guard DB là lớp bảo vệ duy nhất.
-            if (!await _orders.TryTransitionStatusAsync(order.Id, fromStatus, order.Status))
-            {
-                throw new Domain.Exceptions.DomainException(
-                    OrderHandledByOtherStaffMessage);
-            }
-
-            await _orders.UpdateAsync(order);
-
-            // Wave 6c (item 34): audit the KDS tap.
-            await RecordStatusChangeAsync(order.Id, fromStatus, order.Status);
+            // Guard nguyên tử + lưu entity + ghi audit lịch sử trạng thái (giống UpdateStatusAsync).
+            await PersistStatusTransitionAsync(order, fromStatus, order.Status);
 
             // Item 156: staff activity log (kitchen advances are role-gated,
             // no extra permission needed).
@@ -1784,6 +1754,33 @@ namespace PhuThuongStickyRice.Application.Orders
             var dto = await MapOrderDtoWithShipperNamesAsync(order);
             // Wave 6c (item 33): internal note stays in the admin UI.
             return StripAdminNote(dto);
+        }
+
+        /// <summary>
+        /// Ghi chuyển trạng thái xuống DB một cách nguyên tử: UPDATE ... WHERE
+        /// Status = trạng thái cũ, để 2 thao tác đồng thời (2 staff bấm cùng
+        /// lúc, hoặc bếp bấm KDS đúng lúc đơn bị hủy) không đè lẫn nhau —
+        /// request thua nhận lỗi <see cref="OrderHandledByOtherStaffMessage"/>
+        /// thay vì chạy side effect 2 lần (cộng/hoàn điểm, tiền ví) hoặc làm
+        /// đơn "hồi sinh". Order không có concurrency token nên guard DB là
+        /// lớp bảo vệ duy nhất. Sau khi chuyển thành công thì lưu entity và
+        /// ghi audit lịch sử trạng thái.
+        /// </summary>
+        /// <param name="order">Đơn đã đổi trạng thái trên entity.</param>
+        /// <param name="fromStatus">Trạng thái trước khi đổi.</param>
+        /// <param name="toStatus">Trạng thái đích.</param>
+        private async Task PersistStatusTransitionAsync(Order order, OrderStatus fromStatus, OrderStatus toStatus)
+        {
+            if (!await _orders.TryTransitionStatusAsync(order.Id, fromStatus, toStatus))
+            {
+                throw new Domain.Exceptions.DomainException(
+                    OrderHandledByOtherStaffMessage);
+            }
+
+            await _orders.UpdateAsync(order);
+
+            // Wave 6c (item 34): audit the transition.
+            await RecordStatusChangeAsync(order.Id, fromStatus, toStatus);
         }
 
         /// <summary>
@@ -1811,7 +1808,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>
         /// Wave 6c (item 33): admin sets or clears the internal note.
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RoleGroups.AdminCashier)]
         public virtual async Task<OrderDto> UpdateAdminNoteAsync(Guid id, UpdateAdminNoteDto input)
         {
             var order = await FindOrThrowAsync(id);
@@ -1828,7 +1825,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// shipper info. When the order is being prepared, it advances to
         /// Delivering (the shipper is now transporting it).
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RoleGroups.AdminCashier)]
         public virtual async Task<OrderDto> MarkPickedUpAsync(Guid id, MarkPickedUpDto input)
         {
             // Item 155: confirming a pickup needs orders.confirm.
@@ -1883,7 +1880,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// Typically used on COD orders; the server only requires "not
         /// cancelled, not yet collected".
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RoleGroups.AdminCashier)]
         public virtual async Task<OrderDto> MarkCashCollectedAsync(Guid id)
         {
             // Item 155: cash handling needs orders.confirm-payment.
@@ -3314,7 +3311,7 @@ namespace PhuThuongStickyRice.Application.Orders
         /// ("gộp vào đơn ..."). Totals are recalculated server-side.
         /// Always explicit — the shop must press the button.
         /// </summary>
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RolesAdminCashier)]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = RoleGroups.AdminCashier)]
         /// <summary>
         /// Admin gộp nhiều đơn của cùng khách thành 1 đơn chính: chuyển toàn bộ
         /// dòng hàng sang đơn chính rồi hủy các đơn phụ. An toàn tiền ở 2 đầu:

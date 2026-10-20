@@ -22,6 +22,13 @@ namespace PhuThuongStickyRice.WebAPI.Services
         // ngắn: 5 phút đủ để khách nhập mã, hết hạn thì đăng nhập lại từ đầu.
         private const int TwoFactorTokenExpiryMinutes = 5;
 
+        // [codequality-practices 2026-10-20] JwtSecurityTokenHandler là
+        // thread-safe theo tài liệu Microsoft.IdentityModel nên dùng chung
+        // 1 instance tĩnh: trước đây mỗi lần cấp/validate token đều new 1
+        // handler (build lại crypto config, cấp phát vô ích) trong khi mọi
+        // callsite đều gọi trên cùng 1 luồng xử lý rồi trả về ngay.
+        private static readonly JwtSecurityTokenHandler TokenHandler = new();
+
         private readonly JwtOptions _options;
 
         public JwtTokenService(IOptions<JwtOptions> options)
@@ -32,14 +39,16 @@ namespace PhuThuongStickyRice.WebAPI.Services
         public (string Token, DateTimeOffset ExpiresAt) CreateToken(User user, IEnumerable<string> roles)
         {
             var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_options.ExpiryMinutes);
-            var claims = new List<Claim>
-            {
+            // C# 12 collection expression: List<Claim> claims = [...] rõ ràng
+            // hơn new List<Claim> {...}, hành vi Add() ở dưới giữ nguyên.
+            List<Claim> claims =
+            [
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.UserName ?? user.Email ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty)
-            };
+            ];
 
             var isAdmin = false;
             foreach (var role in roles)
@@ -71,7 +80,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 expires: expiresAt.UtcDateTime,
                 signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
-            return (new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
+            return (TokenHandler.WriteToken(token), expiresAt);
         }
 
         /// <summary>
@@ -81,12 +90,12 @@ namespace PhuThuongStickyRice.WebAPI.Services
         public (string Token, DateTimeOffset ExpiresAt) CreateTwoFactorToken(User user)
         {
             var expiresAt = DateTimeOffset.UtcNow.AddMinutes(TwoFactorTokenExpiryMinutes);
-            var claims = new List<Claim>
-            {
+            List<Claim> claims =
+            [
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
                 new Claim("purpose", "2fa-pending")
-            };
+            ];
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
             var token = new JwtSecurityToken(
@@ -96,7 +105,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 expires: expiresAt.UtcDateTime,
                 signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
-            return (new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
+            return (TokenHandler.WriteToken(token), expiresAt);
         }
 
         /// <summary>
@@ -107,9 +116,8 @@ namespace PhuThuongStickyRice.WebAPI.Services
         {
             try
             {
-                var handler = new JwtSecurityTokenHandler();
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
-                var principal = handler.ValidateToken(token, new TokenValidationParameters
+                var principal = TokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = key,

@@ -677,23 +677,23 @@ else
 
     private string RatingText(ShopProductModel product)
     {
-        if (product == null || !_ratings.TryGetValue(product.Id, out var r) || r.Count <= 0)
+        if (product == null || !_ratings.TryGetValue(product.Id, out var ratingSummary) || ratingSummary.Count <= 0)
         {
             return null;
         }
 
-        return $"★ {r.Avg:0.0} ({r.Count})";
+        return $"★ {ratingSummary.Avg:0.0} ({ratingSummary.Count})";
     }
 
     // A11y: nhãn tiếng Việt cho screen reader khi hiển thị đánh giá sao.
     private string RatingAriaLabel(ShopProductModel product)
     {
-        if (product == null || !_ratings.TryGetValue(product.Id, out var r) || r.Count <= 0)
+        if (product == null || !_ratings.TryGetValue(product.Id, out var ratingSummary) || ratingSummary.Count <= 0)
         {
             return null;
         }
 
-        return $"Đánh giá trung bình {r.Avg:0.0} trên 5, {r.Count} đánh giá";
+        return $"Đánh giá trung bình {ratingSummary.Avg:0.0} trên 5, {ratingSummary.Count} đánh giá";
     }
 
     // Item 109: branch picker.
@@ -989,9 +989,9 @@ else
                 .ToDictionary(r => r.ProductId);
             foreach (var p in _products)
             {
-                if (byId.TryGetValue(p.Id, out var r))
+                if (byId.TryGetValue(p.Id, out var dailyRemaining))
                 {
-                    p.RemainingToday = r.RemainingToday;
+                    p.RemainingToday = dailyRemaining.RemainingToday;
                 }
             }
         }

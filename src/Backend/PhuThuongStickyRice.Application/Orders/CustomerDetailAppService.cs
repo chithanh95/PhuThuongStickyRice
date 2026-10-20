@@ -1,5 +1,6 @@
 using PhuThuongStickyRice.Application.Customer;
 using PhuThuongStickyRice.Application.Orders.DTOs;
+using PhuThuongStickyRice.Application.Permissions;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -31,7 +32,7 @@ namespace PhuThuongStickyRice.Application.Orders
     /// Item 168: customer detail. Aggregates orders by exact phone match;
     /// cancelled orders are counted separately and excluded from revenue.
     /// </summary>
-    [Authorize(Roles = "Admin,Cashier")]
+    [Authorize(Roles = RoleGroups.AdminCashier)]
     public class CustomerDetailAppService : ApplicationService, ICustomerDetailAppService
     {
         private readonly IRepository<Order, Guid> _orders;

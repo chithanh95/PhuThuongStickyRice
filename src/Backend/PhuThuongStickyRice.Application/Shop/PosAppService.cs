@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using PhuThuongStickyRice.Application.Shop;
 using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.Application.Permissions;
 
 namespace PhuThuongStickyRice.Application.Shop
 {
@@ -30,7 +31,7 @@ namespace PhuThuongStickyRice.Application.Shop
     }
 
     /// <summary>Item 127: counter POS for Admin/Cashier.</summary>
-    [Authorize(Roles = "Admin,Cashier")]
+    [Authorize(Roles = RoleGroups.AdminCashier)]
     public class PosAppService : ApplicationService, IPosAppService
     {
         /// <summary>Thông báo lỗi khi POS chưa chọn món nào (dùng ở 2 điểm validate).</summary>

@@ -16,7 +16,7 @@ namespace PhuThuongStickyRice.Web.Components
         }
 
         /// <summary>Ghi giá trị ra console.table kèm timestamp.</summary>
-        public static async Task Table(this IJSRuntime jsRuntime, object value)
+        public static async Task LogTable(this IJSRuntime jsRuntime, object value)
         {
             await jsRuntime.InvokeVoidAsync("console.log", $"[{DateTimeOffset.Now}]");
             await jsRuntime.InvokeVoidAsync("console.table", value);

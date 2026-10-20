@@ -180,14 +180,9 @@ namespace PhuThuongStickyRice.Application.Orders
             var query = await _orders.GetQueryableAsync();
             var filtered = await ApplyFiltersAsync(query, input ?? new GetOrdersInput());
 
-            // Projection chung ProjectToExportRows: project OrderExportRow ngay trong
-            // SQL thay vì materialize full entity Order — WriteOrderRow chỉ
-            // dùng các scalar này; tổng giảm cộng 4 loại được tính ngay trong
-            // projection để SQL làm 1 lần, kết quả Excel không đổi.
-            var items = await _asyncExecuter.ToListAsync(
-                ProjectToExportRows(
-                    filtered.OrderByDescending(x => x.CreatedAt).Take(ExcelWorksheetStyling.MaxExportRows)));
-            var linesByOrder = await GetLinesByOrderAsync(items.Select(x => x.Id));
+            // Tải dòng đơn + dòng món để xuất Excel (projection ngay trong SQL,
+            // không materialize full entity Order).
+            var (items, linesByOrder) = await LoadExportRowsAsync(filtered);
 
             using var workbook = new XLWorkbook();
             WriteOrdersSheet(workbook.Worksheets.Add("Đơn hàng"), items, linesByOrder);
@@ -407,12 +402,8 @@ namespace PhuThuongStickyRice.Application.Orders
                         g.Sum(x => (decimal?)x.TotalAmount.Amount) ?? 0m))
                     .OrderBy(x => x.Date));
 
-            // perf-hunt 2026-10-19 (run 17:55): projection chung
-            // ProjectToExportRows (không materialize full entity Order tracked).
-            var details = await _asyncExecuter.ToListAsync(
-                ProjectToExportRows(
-                    ranged.OrderByDescending(x => x.CreatedAt).Take(ExcelWorksheetStyling.MaxExportRows)));
-            var linesByOrder = await GetLinesByOrderAsync(details.Select(x => x.Id));
+            // Chi tiết đơn của kỳ (không materialize full entity Order tracked).
+            var (details, linesByOrder) = await LoadExportRowsAsync(ranged);
 
             using var workbook = new XLWorkbook();
             WriteRevenueSummarySheet(workbook, daily);
@@ -511,6 +502,25 @@ namespace PhuThuongStickyRice.Application.Orders
             {
                 sheet.Cell(1, columnIndex + 1).Value = headers[columnIndex];
             }
+        }
+
+        /// <summary>
+        /// Tải dữ liệu xuất Excel: project <see cref="OrderExportRow"/> ngay
+        /// trong SQL (không materialize full entity Order — WriteOrderRow chỉ
+        /// dùng các scalar này; tổng giảm cộng 4 loại được tính ngay trong
+        /// projection để SQL làm 1 lần) rồi load dòng món gộp theo đơn trong
+        /// 1 query. Dùng chung cho xuất danh sách đơn và chi tiết doanh thu.
+        /// </summary>
+        /// <param name="source">Query Order đã lọc (chưa sắp xếp/giới hạn).</param>
+        /// <returns>Dòng đơn (mới nhất lên trước) + dòng món theo Id đơn.</returns>
+        private async Task<(List<OrderExportRow> Rows, Dictionary<Guid, List<OrderLine>> LinesByOrder)> LoadExportRowsAsync(
+            IQueryable<Order> source)
+        {
+            var rows = await _asyncExecuter.ToListAsync(
+                ProjectToExportRows(
+                    source.OrderByDescending(x => x.CreatedAt).Take(ExcelWorksheetStyling.MaxExportRows)));
+            var linesByOrder = await GetLinesByOrderAsync(rows.Select(x => x.Id));
+            return (rows, linesByOrder);
         }
 
         /// <summary>

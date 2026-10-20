@@ -289,7 +289,7 @@ namespace PhuThuongStickyRice.Application.Shop
             // Item 101: per-product Zalo chat button toggle.
             entity.ShowZaloChatButton = dto.ShowZaloChatButton;
             entity.AcceptingOrders = dto.AcceptingOrders;
-            entity.PausedReason = TrimOrNull(dto.PausedReason);
+            entity.PausedReason = StringNormalizer.TrimToNull(dto.PausedReason);
             // Wave 6d (item 39): 0 = unlimited, otherwise cap at 1000.
             entity.MaxOrdersPerPhonePerDay = Math.Min(MaxOrdersPerPhonePerDayLimit, Math.Max(0, dto.MaxOrdersPerPhonePerDay));
         }
@@ -301,13 +301,13 @@ namespace PhuThuongStickyRice.Application.Shop
                 ? null
                 : dto.OwnerReportEmail.Trim();
             // Wave 6b (items 27, 30): floating contact numbers + pause toggle.
-            entity.Hotline = TrimOrNull(dto.Hotline);
-            entity.ZaloPhone = TrimOrNull(dto.ZaloPhone);
-            entity.GoogleMapsUrl = TrimOrNull(dto.GoogleMapsUrl);
+            entity.Hotline = StringNormalizer.TrimToNull(dto.Hotline);
+            entity.ZaloPhone = StringNormalizer.TrimToNull(dto.ZaloPhone);
+            entity.GoogleMapsUrl = StringNormalizer.TrimToNull(dto.GoogleMapsUrl);
             // Item 138: weekly owner report via Zalo OA (token encrypted at rest).
-            entity.OwnerPhone = TrimOrNull(dto.OwnerPhone);
-            entity.OwnerZaloUserId = TrimOrNull(dto.OwnerZaloUserId);
-            entity.LastWeeklyReportSentWeek = TrimOrNull(dto.LastWeeklyReportSentWeek);
+            entity.OwnerPhone = StringNormalizer.TrimToNull(dto.OwnerPhone);
+            entity.OwnerZaloUserId = StringNormalizer.TrimToNull(dto.OwnerZaloUserId);
+            entity.LastWeeklyReportSentWeek = StringNormalizer.TrimToNull(dto.LastWeeklyReportSentWeek);
         }
 
         /// <summary>reCAPTCHA, Telegram, ngân hàng, MoMo, Facebook, Zalo OA, cảnh báo hệ thống.</summary>
@@ -326,9 +326,9 @@ namespace PhuThuongStickyRice.Application.Shop
         /// </summary>
         private void ApplySiteIntegrationSettings(ShopSetting entity, ShopSettingDto dto)
         {
-            entity.RecaptchaSiteKey = TrimOrNull(dto.RecaptchaSiteKey);
+            entity.RecaptchaSiteKey = StringNormalizer.TrimToNull(dto.RecaptchaSiteKey);
             entity.RecaptchaSecretKey = ProtectSecret(dto.RecaptchaSecretKey);
-            entity.WebBaseUrl = TrimOrNull(dto.WebBaseUrl)?.TrimEnd('/');
+            entity.WebBaseUrl = StringNormalizer.TrimToNull(dto.WebBaseUrl)?.TrimEnd('/');
             entity.MaintenanceMode = dto.MaintenanceMode;
             entity.MaintenanceMessage = string.IsNullOrWhiteSpace(dto.MaintenanceMessage)
                 ? DefaultMaintenanceMessage
@@ -352,13 +352,13 @@ namespace PhuThuongStickyRice.Application.Shop
         /// </summary>
         private static void ApplyBankTransferSettings(ShopSetting entity, ShopSettingDto dto)
         {
-            entity.BankName = TrimOrNull(dto.BankName);
-            entity.BankId = TrimOrNull(dto.BankId);
-            entity.BankAccountNumber = TrimOrNull(dto.BankAccountNumber);
-            entity.BankAccountName = TrimOrNull(dto.BankAccountName);
-            entity.BankQrTemplate = TrimOrNull(dto.BankQrTemplate);
-            entity.MoMoPartnerCode = TrimOrNull(dto.MoMoPartnerCode);
-            entity.MoMoEndpoint = TrimOrNull(dto.MoMoEndpoint);
+            entity.BankName = StringNormalizer.TrimToNull(dto.BankName);
+            entity.BankId = StringNormalizer.TrimToNull(dto.BankId);
+            entity.BankAccountNumber = StringNormalizer.TrimToNull(dto.BankAccountNumber);
+            entity.BankAccountName = StringNormalizer.TrimToNull(dto.BankAccountName);
+            entity.BankQrTemplate = StringNormalizer.TrimToNull(dto.BankQrTemplate);
+            entity.MoMoPartnerCode = StringNormalizer.TrimToNull(dto.MoMoPartnerCode);
+            entity.MoMoEndpoint = StringNormalizer.TrimToNull(dto.MoMoEndpoint);
         }
 
         /// <summary>
@@ -368,9 +368,9 @@ namespace PhuThuongStickyRice.Application.Shop
         private void ApplyMessagingIntegrationSettings(ShopSetting entity, ShopSettingDto dto)
         {
             entity.TelegramBotToken = ProtectSecret(dto.TelegramBotToken);
-            entity.TelegramChatId = TrimOrNull(dto.TelegramChatId);
+            entity.TelegramChatId = StringNormalizer.TrimToNull(dto.TelegramChatId);
             entity.FacebookPageAccessToken = ProtectSecret(dto.FacebookPageAccessToken);
-            entity.FacebookVerifyToken = TrimOrNull(dto.FacebookVerifyToken);
+            entity.FacebookVerifyToken = StringNormalizer.TrimToNull(dto.FacebookVerifyToken);
             entity.FacebookAppSecret = ProtectSecret(dto.FacebookAppSecret);
             entity.ZaloOaAccessToken = ProtectSecret(dto.ZaloOaAccessToken);
         }
@@ -381,16 +381,7 @@ namespace PhuThuongStickyRice.Application.Shop
             entity.ImageBackupProvider = string.IsNullOrWhiteSpace(dto.ImageBackupProvider)
                 ? DefaultImageBackupProvider
                 : dto.ImageBackupProvider.Trim();
-            entity.ImageBackupSettingsJson = TrimOrNull(dto.ImageBackupSettingsJson);
-        }
-
-        /// <summary>
-        /// Chuẩn hóa chuỗi setting: null/rỗng/toàn khoảng trắng → null,
-        /// ngược lại trim. Tránh lưu chuỗi rác vào DB rồi phải xử lý ở nơi đọc.
-        /// </summary>
-        private static string TrimOrNull(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            entity.ImageBackupSettingsJson = StringNormalizer.TrimToNull(dto.ImageBackupSettingsJson);
         }
 
         /// <summary>
@@ -399,7 +390,7 @@ namespace PhuThuongStickyRice.Application.Shop
         /// </summary>
         private static string NormalizeWebhookUrl(string value)
         {
-            var trimmed = TrimOrNull(value);
+            var trimmed = StringNormalizer.TrimToNull(value);
             if (trimmed == null)
             {
                 return null;

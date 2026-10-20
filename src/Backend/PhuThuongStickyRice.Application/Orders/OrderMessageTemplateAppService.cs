@@ -1,4 +1,5 @@
 using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.Application.Permissions;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -189,7 +190,7 @@ namespace PhuThuongStickyRice.Application.Orders
             return MapToDto(entity);
         }
 
-        [Authorize(Roles = "Admin,Cashier")]
+        [Authorize(Roles = RoleGroups.AdminCashier)]
         /// <summary>
         /// Admin/Thu ngân: render mẫu tin nhắn đang bật của một trạng thái với
         /// dữ liệu đơn cụ thể (cho nút "📋 Copy tin nhắn"). Nếu trạng thái truyền

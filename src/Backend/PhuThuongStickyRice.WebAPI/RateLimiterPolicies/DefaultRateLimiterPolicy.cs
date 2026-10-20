@@ -41,9 +41,22 @@ namespace PhuThuongStickyRice.WebAPI.RateLimiterPolicies
             // same policy name and same partition key => will use the same rate limiter instance
             string? partitionKey;
 
-            if (httpContext.User.Identity?.IsAuthenticated == true)
+            // Gán ra biến cục bộ để compiler suy được non-null sau pattern
+            // `?.IsAuthenticated == true` (truy cập member chain
+            // httpContext.User.Identity trực tiếp không được narrow).
+            var identity = httpContext.User.Identity;
+            if (identity?.IsAuthenticated == true)
             {
-                partitionKey = httpContext.User.Identity.Name!;
+                // [codequality-practices 2026-10-20] Identity.Name có thể null
+                // với scheme xác thực không gắn name claim — trước đây ém
+                // warning bằng null-forgiving (!) nhưng Name null thật sẽ làm
+                // GetFixedWindowLimiter ném ArgumentNullException (500 mọi
+                // request của user đó). Fallback về IP thật như nhánh ẩn danh;
+                // mọi token do JwtTokenService cấp đều có Name nên hành vi
+                // với user thật giữ nguyên.
+                partitionKey = identity.Name
+                    ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? httpContext.Request.Headers.Host.ToString();
                 return RateLimitPartition.GetFixedWindowLimiter(partitionKey,
                     partition => new FixedWindowRateLimiterOptions
                     {

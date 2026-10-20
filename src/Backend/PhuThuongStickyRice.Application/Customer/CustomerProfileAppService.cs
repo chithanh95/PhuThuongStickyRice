@@ -2,6 +2,7 @@ using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Discounts;
 using PhuThuongStickyRice.Application.Zalo;
 using PhuThuongStickyRice.Application.Staff;
+using PhuThuongStickyRice.Application.Permissions;
 using PhuThuongStickyRice.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -370,7 +371,7 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <param name="dto">SĐT, tên khách, nội dung tin nhắn.</param>
         /// <returns>Nhắc đã tạo.</returns>
         /// <exception cref="UserFriendlyException">Ném khi SĐT sai định dạng hoặc tin nhắn rỗng/quá dài.</exception>
-        [Authorize(Roles = "Admin,Cashier")]
+        [Authorize(Roles = RoleGroups.AdminCashier)]
         public virtual async Task<CustomerReminderDto> CreateReminderAsync(CreateReminderDto dto)
         {
             ArgumentNullException.ThrowIfNull(dto);
@@ -409,7 +410,7 @@ namespace PhuThuongStickyRice.Application.Customer
         /// </summary>
         /// <param name="phone">Số điện thoại cần xem lịch sử.</param>
         /// <returns>Danh sách nhắc đã tạo cho SĐT (tối đa 200, mới nhất trước).</returns>
-        [Authorize(Roles = "Admin,Cashier")]
+        [Authorize(Roles = RoleGroups.AdminCashier)]
         public virtual async Task<List<CustomerReminderDto>> GetRemindersAsync(string phone)
         {
             phone = (phone ?? string.Empty).Trim();

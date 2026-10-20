@@ -272,7 +272,7 @@ else
                                     @if (IsInactive(c))
                                     {
                                         <button class="btn btn-sm btn-outline-warning mr-1"
-                                                @onclick="() => ToggleRemind(c.CustomerPhone, c.CustomerName)">
+                                                @onclick="() => ToggleReminderPanel(c.CustomerPhone, c.CustomerName)">
                                             🔔 Nhắc
                                         </button>
                                         @* Item 131: tạo mã giảm giá nhanh cho khách lâu không mua. *@
@@ -408,19 +408,19 @@ else
                                         <button class="btn btn-warning" @onclick="SendReminder" disabled="@_remindBusy">
                                             @(_remindBusy ? "Đang lưu..." : "Gửi nhắc (Zalo OA)")
                                         </button>
-                                        @if (_remindHistory.TryGetValue(c.CustomerPhone, out var hist) && hist.Count > 0)
+                                        @if (_remindHistory.TryGetValue(c.CustomerPhone, out var remindHistory) && remindHistory.Count > 0)
                                         {
                                             <hr />
                                             <strong>Lịch sử nhắc:</strong>
                                             <ul class="list-unstyled mt-1 mb-0">
-                                                @foreach (var r in hist)
+                                                @foreach (var reminder in remindHistory)
                                                 {
                                                     <li class="border-bottom py-1">
-                                                        <div>@r.Message</div>
+                                                        <div>@reminder.Message</div>
                                                         <small class="text-muted">
-                                                            @r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                                                            @(!string.IsNullOrWhiteSpace(r.CreatedBy) ? $" • {r.CreatedBy}" : "")
-                                                            • @r.SentVia
+                                                            @reminder.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                            @(!string.IsNullOrWhiteSpace(reminder.CreatedBy) ? $" • {reminder.CreatedBy}" : "")
+                                                            • @reminder.SentVia
                                                         </small>
                                                     </li>
                                                 }
@@ -663,8 +663,8 @@ else
         }
     }
 
-    /// <summary>Item 91: toggles the remind panel for one customer.</summary>
-    private async Task ToggleRemind(string phone, string name)
+    /// <summary>Item 91: toggles the reminder panel for one customer.</summary>
+    private async Task ToggleReminderPanel(string phone, string name)
     {
         _remindMsg = null;
         if (_remindPhone == phone)
