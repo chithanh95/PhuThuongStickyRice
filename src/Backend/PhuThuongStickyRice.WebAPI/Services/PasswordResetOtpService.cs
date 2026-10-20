@@ -41,6 +41,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
         private readonly ISmsSender _smsSender;
         private readonly ILogger<PasswordResetOtpService> _logger;
 
+        /// <summary>Khởi tạo service quên mật khẩu qua SMS OTP.</summary>
         public PasswordResetOtpService(
             UserManager<User> userManager,
             IMemoryCache cache,
@@ -159,8 +160,14 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 return PasswordResetResult.Fail("Đặt lại mật khẩu thất bại. Vui lòng thử lại.");
             }
 
+            // Kẻ gian biết OTP đã đổi được mật khẩu — đổi security stamp để mọi
+            // phiên đăng nhập trước đó (của chính kẻ gian hay của chủ tài
+            // khoản) đều bị vô hiệu ngay lập tức.
             await _userManager.UpdateSecurityStampAsync(user);
+            // Mở lại tài khoản nếu trước đó bị khóa do nhập sai mật khẩu quá
+            // nhiều lần — đặt lại mật khẩu qua OTP là xác thực thành công.
             await _userManager.ResetAccessFailedCountAsync(user);
+            // OTP chỉ dùng 1 lần: xóa ngay sau khi dùng xong để chặn nhập lại.
             _cache.Remove(key);
 
             _logger.LogInformation("Đặt lại mật khẩu thành công cho SĐT {Phone}.", phone);
@@ -193,22 +200,30 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
         private sealed class OtpEntry
         {
+            /// <summary>Mã OTP 6 chữ số đã gửi qua SMS.</summary>
             public string Code { get; set; }
 
+            /// <summary>Số lần nhập sai OTP tính đến hiện tại; quá 3 lần thì OTP bị vô hiệu.</summary>
             public int FailedAttempts { get; set; }
 
+            /// <summary>Hạn dùng gốc của OTP — giữ nguyên qua các lần nhập sai.</summary>
             public DateTimeOffset ExpiresAt { get; set; }
         }
     }
 
+    /// <summary>Kết quả đặt lại mật khẩu: thành công hoặc thất bại kèm thông báo lỗi tiếng Việt.</summary>
     public sealed class PasswordResetResult
     {
+        /// <summary>true khi đặt lại mật khẩu thành công.</summary>
         public bool Succeeded { get; init; }
 
+        /// <summary>Thông báo lỗi hiển thị cho khách (tiếng Việt); null khi thành công.</summary>
         public string ErrorMessage { get; init; }
 
+        /// <summary>Tạo kết quả thành công.</summary>
         public static PasswordResetResult Ok() => new PasswordResetResult { Succeeded = true };
 
+        /// <summary>Tạo kết quả thất bại với thông báo lỗi cho khách.</summary>
         public static PasswordResetResult Fail(string message) =>
             new PasswordResetResult { Succeeded = false, ErrorMessage = message };
     }

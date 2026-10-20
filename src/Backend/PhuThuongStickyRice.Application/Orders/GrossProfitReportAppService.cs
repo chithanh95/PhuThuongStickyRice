@@ -372,6 +372,11 @@ namespace PhuThuongStickyRice.Application.Orders
             }
         }
 
+        /// <summary>
+        /// Tính trung vị (median) của danh sách số; danh sách rỗng trả 0.
+        /// Dùng làm mốc "bán ít": món có số suất bán ≤ trung vị được coi là bán
+        /// ít khi gợi ý đẩy bán món biên lãi cao.
+        /// </summary>
         private static double Median(List<double> values)
         {
             if (values.Count == 0)
