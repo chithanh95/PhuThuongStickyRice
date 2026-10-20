@@ -13,7 +13,7 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
     /// Gom các khối ComplexProperty giống hệt nhau ở Order/OrderLine/Product
     /// về 1 chỗ để không lặp code (trước đây mỗi file tự copy 1 bản).
     /// </summary>
-    internal static class MoneyMappingHelper
+    internal static class MoneyColumnMapper
     {
         /// <summary>
         /// Cấu hình 1 navigation <see cref="Money"/> thành 2 cột DB với tên

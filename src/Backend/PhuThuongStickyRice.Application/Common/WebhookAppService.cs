@@ -347,7 +347,7 @@ namespace PhuThuongStickyRice.Application.Common
             {
                 Name = dto.Name.Trim(),
                 Url = dto.Url.Trim(),
-                Secret = StringHelpers.TrimToNull(dto.Secret),
+                Secret = StringNormalizer.TrimToNull(dto.Secret),
                 Events = NormalizeEvents(dto.Events),
                 IsActive = dto.IsActive
             };

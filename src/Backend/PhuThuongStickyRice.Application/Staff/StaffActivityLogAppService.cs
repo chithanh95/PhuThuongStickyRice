@@ -42,6 +42,12 @@ namespace PhuThuongStickyRice.Application.Staff
 
         /// <summary>Cache key danh sách loại thao tác — số action hiếm khi đổi nên cache 5 phút.</summary>
         private const string DistinctActionsCacheKey = "staff-log:distinct-actions";
+
+        /// <summary>
+        /// Số dòng tối đa cho 1 trang danh sách log — chặn request tham số
+        /// MaxResultCount lớn/âm kéo sập DB, và SkipCount âm trả về trang rỗng.
+        /// </summary>
+        private const int MaxListPageSize = 200;
         /// <summary>TTL cache danh sách loại thao tác (phút).</summary>
         private const int DistinctActionsCacheMinutes = 5;
 
@@ -61,7 +67,7 @@ namespace PhuThuongStickyRice.Application.Staff
         /// <summary>
         /// Admin: tra cứu nhật ký hoạt động nhân viên, mới nhất trước, kèm
         /// tổng số dòng và danh sách loại thao tác để dựng bộ lọc. Phân trang
-        /// bị chặn 1..200 dòng/trang và SkipCount âm về 0 để request tham số
+        /// bị chặn 1..<see cref="MaxListPageSize"/> dòng/trang và SkipCount âm về 0 để request tham số
         /// lạ không kéo sập DB.
         /// </summary>
         /// <param name="input">Bộ lọc (nhân viên, loại thao tác, khoảng ngày) + phân trang.</param>
@@ -76,12 +82,12 @@ namespace PhuThuongStickyRice.Application.Staff
             var query = ApplyFilters(queryable.AsQueryable(), input);
 
             var total = await _asyncExecuter.LongCountAsync(query);
-            // Chặn số dòng/trang từ 1 đến 200: tránh request tham số MaxResultCount
-            // lớn/âm kéo sập DB hoặc trả về trang rỗng vì SkipCount âm.
+            // Chặn số dòng/trang từ 1 đến MaxListPageSize: tránh request tham số
+            // MaxResultCount lớn/âm kéo sập DB hoặc trả về trang rỗng vì SkipCount âm.
             var items = await _asyncExecuter.ToListAsync(
                 query.OrderByDescending(x => x.CreatedAt)
                     .Skip(Math.Max(0, input.SkipCount))
-                    .Take(Math.Clamp(input.MaxResultCount, 1, 200)));
+                    .Take(Math.Clamp(input.MaxResultCount, 1, MaxListPageSize)));
 
             var actions = await GetDistinctActionsAsync();
 

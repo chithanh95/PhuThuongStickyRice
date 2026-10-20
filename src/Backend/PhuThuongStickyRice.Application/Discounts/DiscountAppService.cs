@@ -1119,10 +1119,10 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <returns>Mã ứng viên dạng "PREFIX-XXXXXX".</returns>
         private static string BuildGeneratedCodeCandidate(string prefix)
             // [codequality-smell 2026-10-20] Dùng helper dùng chung
-            // Common.ReadableCode (bảng chữ cái + RNG mật mã) — trước đây
+            // Common.ReadableCodeGenerator (bảng chữ cái + RNG mật mã) — trước đây
             // dòng LINQ sinh chuỗi ngẫu nhiên bị viết lại ở cả đây và
             // LoyaltyAppService.GenerateReferralCodeAsync.
-            => prefix + "-" + ReadableCode.GenerateSuffix(GeneratedCodeRandomPartLength);
+            => prefix + "-" + ReadableCodeGenerator.GenerateSuffix(GeneratedCodeRandomPartLength);
 
         /// <summary>
         /// Fallback khi hết số lần thử sinh ngẫu nhiên (xác suất cực thấp):

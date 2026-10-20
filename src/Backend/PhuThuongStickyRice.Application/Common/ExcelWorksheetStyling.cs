@@ -10,7 +10,7 @@ namespace PhuThuongStickyRice.Application.Common
     /// riêng). Style của mọi sheet giờ nằm 1 chỗ nên đổi màu header là đổi
     /// đồng loạt cả hệ thống.
     /// </summary>
-    internal static class ExcelExportHelper
+    internal static class ExcelWorksheetStyling
     {
         /// <summary>
         /// Màu nền tím thương hiệu (#7a6fbe) của hàng tiêu đề file Excel.

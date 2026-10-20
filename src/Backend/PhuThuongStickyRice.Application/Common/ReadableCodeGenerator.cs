@@ -11,7 +11,7 @@ namespace PhuThuongStickyRice.Application.Common;
 /// LoyaltyAppService.GenerateReferralCodeAsync mỗi nơi viết lại nguyên dòng
 /// LINQ sinh chuỗi ngẫu nhiên — đổi thuật toán/RNG giờ chỉ sửa 1 file.
 /// </summary>
-public static class ReadableCode
+public static class ReadableCodeGenerator
 {
     /// <summary>
     /// Sinh chuỗi ngẫu nhiên độ dài <paramref name="length"/> từ bảng chữ

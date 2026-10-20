@@ -71,9 +71,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                     .IsRequired();
             });
 
-            // Gom cột tiền về MoneyMappingHelper (trước đây copy khối
+            // Gom cột tiền về MoneyColumnMapper (trước đây copy khối
             // ComplexProperty giống Order/OrderLine) — mapping giữ nguyên.
-            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.Price, "Price", "Currency");
+            MoneyColumnMapper.ConfigureMoneyColumn(builder, x => x.Price, "Price", "Currency");
         }
 
         /// <summary>Cấu hình quan hệ của Product (hiện chỉ có Branch).</summary>

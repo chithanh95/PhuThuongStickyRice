@@ -221,7 +221,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             // Header vàng (#f5c518) riêng của sheet xuất đơn hàng: chữ đen
             // (nền sáng) thay vì chữ trắng như header tím các sheet khác.
-            ExcelExportHelper.StyleHeader(sheet.Row(1), "#f5c518", whiteFont: false);
+            ExcelWorksheetStyling.StyleHeader(sheet.Row(1), "#f5c518", whiteFont: false);
 
             var rowIndex = 2;
             foreach (var order in items)
@@ -233,7 +233,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents()
             // (ClosedXML đo font từng cell — O(dòng × cột), export 5000 dòng
             // tốn vài giây chỉ để căn cột).
-            ExcelExportHelper.SetFixedColumnWidths(sheet, 14, 18, 24, 14, 30, 32, 14, 12, 12, 16, 16, 16, 40);
+            ExcelWorksheetStyling.SetFixedColumnWidths(sheet, 14, 18, 24, 14, 30, 32, 14, 12, 12, 16, 16, 16, 40);
         }
 
         /// <summary>
@@ -303,7 +303,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var summary = workbook.Worksheets.Add("Tổng hợp");
             var sumHeaders = new[] { "Ngày", "Số đơn", "Doanh thu (₫)", "Giá trị TB/đơn (₫)" };
             WriteHeaders(summary, sumHeaders);
-            ExcelExportHelper.StyleHeader(summary.Row(1));
+            ExcelWorksheetStyling.StyleHeader(summary.Row(1));
 
             var rowIndex = 2;
             foreach (var dailyStat in daily)
@@ -320,7 +320,7 @@ namespace PhuThuongStickyRice.Application.Orders
             WriteSummaryDataRow(summary, rowIndex, totalOrders, totalRevenue);
             summary.Row(rowIndex).Style.Font.Bold = true;
             // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents().
-            ExcelExportHelper.SetFixedColumnWidths(summary, 14, 10, 18, 20);
+            ExcelWorksheetStyling.SetFixedColumnWidths(summary, 14, 10, 18, 20);
         }
 
         /// <summary>
@@ -358,7 +358,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 "Món", "Tổng tiền", "Kênh thanh toán", "Trạng thái đơn"
             };
             WriteHeaders(sheet, headers);
-            ExcelExportHelper.StyleHeader(sheet.Row(1));
+            ExcelWorksheetStyling.StyleHeader(sheet.Row(1));
 
             var rowIndex = 2;
             foreach (var order in details)
@@ -381,7 +381,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 rowIndex++;
             }
             // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents().
-            ExcelExportHelper.SetFixedColumnWidths(sheet, 14, 18, 24, 14, 40, 14, 16, 16);
+            ExcelWorksheetStyling.SetFixedColumnWidths(sheet, 14, 18, 24, 14, 40, 14, 16, 16);
         }
 
         /// <summary>

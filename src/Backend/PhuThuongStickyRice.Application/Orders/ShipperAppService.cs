@@ -90,7 +90,7 @@ namespace PhuThuongStickyRice.Application.Orders
             var shipper = new Shipper
             {
                 Name = input.Name.Trim(),
-                Phone = StringHelpers.TrimToNull(input.Phone),
+                Phone = StringNormalizer.TrimToNull(input.Phone),
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -108,7 +108,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             var shipper = await _shippers.GetAsync(id);
             shipper.Name = input.Name.Trim();
-            shipper.Phone = StringHelpers.TrimToNull(input.Phone);
+            shipper.Phone = StringNormalizer.TrimToNull(input.Phone);
             shipper.IsActive = input.IsActive;
             await _shippers.UpdateAsync(shipper, autoSave: true);
             return Map(shipper);

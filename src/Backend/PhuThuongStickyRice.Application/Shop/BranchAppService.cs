@@ -114,8 +114,8 @@ namespace PhuThuongStickyRice.Application.Shop
             var entity = new Branch
             {
                 Name = dto.Name.Trim(),
-                Address = StringHelpers.TrimToNull(dto.Address),
-                Phone = StringHelpers.TrimToNull(dto.Phone),
+                Address = StringNormalizer.TrimToNull(dto.Address),
+                Phone = StringNormalizer.TrimToNull(dto.Phone),
                 IsActive = dto.IsActive
             };
             await _branches.InsertAsync(entity, autoSave: true);
@@ -135,8 +135,8 @@ namespace PhuThuongStickyRice.Application.Shop
         {
             var entity = await _branches.GetAsync(id);
             entity.Name = dto.Name.Trim();
-            entity.Address = StringHelpers.TrimToNull(dto.Address);
-            entity.Phone = StringHelpers.TrimToNull(dto.Phone);
+            entity.Address = StringNormalizer.TrimToNull(dto.Address);
+            entity.Phone = StringNormalizer.TrimToNull(dto.Phone);
             entity.IsActive = dto.IsActive;
             await _branches.UpdateAsync(entity, autoSave: true);
             _catalogCache.Invalidate();

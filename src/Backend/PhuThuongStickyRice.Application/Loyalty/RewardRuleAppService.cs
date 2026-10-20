@@ -317,7 +317,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             rule.Name = input.Name.Trim();
             rule.MinAmount = Math.Max(0, input.MinAmount);
             rule.RewardType = type;
-            rule.ToppingName = StringHelpers.TrimToNull(input.ToppingName);
+            rule.ToppingName = StringNormalizer.TrimToNull(input.ToppingName);
             rule.DiscountPercent = input.DiscountPercent;
             rule.IsActive = input.IsActive;
         }

@@ -7,7 +7,7 @@ namespace PhuThuongStickyRice.Application.Common
     /// field optional như ghi chú, địa chỉ, SĐT đều dùng pattern này để DB
     /// lưu null thay vì chuỗi trắng.
     /// </summary>
-    internal static class StringHelpers
+    internal static class StringNormalizer
     {
         /// <summary>
         /// Trim chuỗi; rỗng/trắng thì trả null — các field optional (ghi chú,

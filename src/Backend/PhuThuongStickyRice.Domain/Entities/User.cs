@@ -3,6 +3,12 @@ using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Domain.Entities
 {
+    /// <summary>
+    /// Entity người dùng hệ thống (tài khoản đăng nhập): giữ các trường
+    /// Identity chuẩn (UserName, Email, PasswordHash, khóa tài khoản, 2FA...)
+    /// và mở rộng thêm thông tin khách hàng (khẩu vị, ngày sinh, quà sinh
+    /// nhật). Dùng chung cho admin/staff lẫn khách hàng có tài khoản.
+    /// </summary>
     public class User : Entity<Guid>, IAggregateRoot
     {
         public string UserName { get; set; }

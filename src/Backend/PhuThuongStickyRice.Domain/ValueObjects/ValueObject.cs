@@ -19,6 +19,12 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
         /// </summary>
         protected abstract IEnumerable<object> GetEqualityComponents();
 
+        /// <summary>
+        /// So sánh theo giá trị: hai object cùng kiểu runtime bằng nhau khi
+        /// mọi thành phần từ <see cref="GetEqualityComponents"/> bằng nhau.
+        /// So khác kiểu ném <see cref="ArgumentException"/> để phát hiện lỗi
+        /// lập trình sớm thay vì trả về false một cách âm thầm.
+        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == null)
@@ -36,6 +42,11 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
             return GetEqualityComponents().SequenceEqual(valueObject.GetEqualityComponents());
         }
 
+        /// <summary>
+        /// Sinh hash từ các thành phần giá trị, tương thích với
+        /// <see cref="Equals(object)"/> (hai object bằng nhau phải có cùng hash)
+        /// để value object dùng được an toàn trong Dictionary/HashSet.
+        /// </summary>
         public override int GetHashCode()
         {
             return GetEqualityComponents()
@@ -48,6 +59,7 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
                 });
         }
 
+        /// <summary>Toán tử bằng theo giá trị, an toàn với null hai phía.</summary>
         public static bool operator ==(ValueObject a, ValueObject b)
         {
             if (ReferenceEquals(a, null) && ReferenceEquals(b, null))
@@ -63,6 +75,7 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
             return a.Equals(b);
         }
 
+        /// <summary>Toán tử khác theo giá trị — phủ định của toán tử ==.</summary>
         public static bool operator !=(ValueObject a, ValueObject b)
         {
             return !(a == b);

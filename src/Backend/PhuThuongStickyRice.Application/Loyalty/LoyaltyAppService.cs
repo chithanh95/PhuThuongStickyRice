@@ -846,14 +846,14 @@ namespace PhuThuongStickyRice.Application.Loyalty
         private async Task<string> GenerateReferralCodeAsync()
         {
             // [codequality-smell 2026-10-20] Dùng helper dùng chung
-            // Common.ReadableCode — trước đây dòng LINQ sinh chuỗi ngẫu
+            // Common.ReadableCodeGenerator — trước đây dòng LINQ sinh chuỗi ngẫu
             // nhiên bị viết lại ở cả đây và DiscountAppService.
             // Mã giới thiệu gắn với điểm thưởng nên dùng RNG an toàn mật mã
             // thay vì Random.Shared (có thể bị đoán mã tiếp theo từ mã đã lộ).
 
             for (var attempt = 0; attempt < MaxReferralCodeAttempts; attempt++)
             {
-                var code = ReferralCodes.Prefix + ReadableCode.GenerateSuffix(ReferralCodes.SuffixLength);
+                var code = ReferralCodes.Prefix + ReadableCodeGenerator.GenerateSuffix(ReferralCodes.SuffixLength);
 
                 var queryable = await _accounts.GetQueryableAsync();
                 // [codequality-practices 2026-10-19] Chỉ cần biết mã đã tồn tại

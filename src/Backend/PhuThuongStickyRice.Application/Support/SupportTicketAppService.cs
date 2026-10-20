@@ -65,7 +65,7 @@ namespace PhuThuongStickyRice.Application.Support
             {
                 Name = dto.Name.Trim(),
                 Phone = dto.Phone.Trim(),
-                OrderNumber = StringHelpers.TrimToNull(dto.OrderNumber),
+                OrderNumber = StringNormalizer.TrimToNull(dto.OrderNumber),
                 Message = dto.Message.Trim(),
                 Status = SupportTicketStatus.New,
                 CreatedAt = DateTime.UtcNow

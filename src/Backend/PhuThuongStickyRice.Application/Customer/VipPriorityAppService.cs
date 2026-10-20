@@ -49,11 +49,11 @@ namespace PhuThuongStickyRice.Application.Customer
         Task UnmarkVipAsync(string phone);
     }
 
-        /// <summary>
-        /// Quản lý khách VIP dựa trên tag "VIP" của hệ thống tag khách hàng.
-        /// SĐT luôn được chuẩn hóa trước khi so sánh để "090..." và "+84..."
-        /// được nhận diện là cùng một khách.
-        /// </summary>
+    /// <summary>
+    /// Quản lý khách VIP dựa trên tag "VIP" của hệ thống tag khách hàng.
+    /// SĐT luôn được chuẩn hóa trước khi so sánh để "090..." và "+84..."
+    /// được nhận diện là cùng một khách.
+    /// </summary>
     public class VipPriorityAppService : ApplicationService, IVipPriorityAppService
     {
         public const string VipTagName = "VIP";
@@ -194,11 +194,10 @@ namespace PhuThuongStickyRice.Application.Customer
                 throw new UserFriendlyException("Vui lòng nhập số điện thoại.");
             }
 
-            var existing = await _tags.GetTagsAsync(phone);
-            var vip = FindVipTag(existing);
+            var vip = await FindExistingVipTagAsync(phone);
             if (vip != null)
             {
-                // Idempotent: already VIP, just return the tag.
+                // Idempotent: khách đã là VIP thì trả về tag hiện có, không tạo trùng.
                 return vip;
             }
 
@@ -225,14 +224,23 @@ namespace PhuThuongStickyRice.Application.Customer
                 return;
             }
 
-            var existing = await _tags.GetTagsAsync(phone);
-            var vip = FindVipTag(existing);
+            var vip = await FindExistingVipTagAsync(phone);
             if (vip != null)
             {
                 await _tags.DeleteTagAsync(vip.Id);
                 _memoryCache.Remove(VipPhonesCacheKey);
             }
         }
+
+        /// <summary>
+        /// Lấy tag VIP hiện tại của khách (SĐT đã chuẩn hóa). Dùng chung cho
+        /// <see cref="MarkVipAsync"/>/<see cref="UnmarkVipAsync"/> để không lặp
+        /// lại chuỗi chuẩn hóa SĐT + lấy tag + tìm tag VIP ở 2 nơi.
+        /// </summary>
+        /// <param name="phone">SĐT đã chuẩn hóa qua <see cref="CustomerPhoneNormalizer"/>.</param>
+        /// <returns>Tag VIP, hoặc null nếu khách chưa gắn.</returns>
+        private async Task<CustomerTagDto> FindExistingVipTagAsync(string phone) =>
+            FindVipTag(await _tags.GetTagsAsync(phone));
 
         /// <summary>
         /// Tìm tag VIP trong danh sách tag của khách (so sánh tên tag không

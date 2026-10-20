@@ -16,6 +16,17 @@ namespace PhuThuongStickyRice.Application.Staff
 {
     public interface IShiftCloseAppService : IApplicationService
     {
+        /// <summary>
+        /// Số bản ghi lịch sử chốt ca mặc định khi không truyền <c>take</c> —
+        /// màn hình admin chỉ cần xem vài chục dòng gần nhất, không kéo hết lịch sử.
+        /// </summary>
+        const int DefaultHistoryRows = 30;
+
+        /// <summary>
+        /// Trần số bản ghi lịch sử chốt ca cho 1 request — chặn <c>take</c> quá
+        /// lớn để 1 request không materialize toàn bộ lịch sử chốt ca.
+        /// </summary>
+        const int MaxHistoryRows = 100;
         /// <summary>Expected COD for a business day (VN date).</summary>
         Task<decimal> GetExpectedCodAsync(DateTime date);
 
@@ -37,8 +48,8 @@ namespace PhuThuongStickyRice.Application.Staff
         /// <summary>
         /// Lấy lịch sử chốt ca, mới nhất trước.
         /// </summary>
-        /// <param name="take">Số bản ghi lấy, tối đa 100 (mặc định 30).</param>
-        Task<List<ShiftCloseDto>> GetListAsync(int take = 30);
+        /// <param name="take">Số bản ghi lấy, tối đa <see cref="MaxHistoryRows"/> (mặc định <see cref="DefaultHistoryRows"/>).</param>
+        Task<List<ShiftCloseDto>> GetListAsync(int take = DefaultHistoryRows);
     }
 
     /// <summary>Item 129: COD end-of-shift reconciliation.</summary>
@@ -149,12 +160,12 @@ namespace PhuThuongStickyRice.Application.Staff
         /// <summary>
         /// Lấy lịch sử chốt ca, mới nhất trước (xem doc ở interface).
         /// </summary>
-        public virtual async Task<List<ShiftCloseDto>> GetListAsync(int take = 30)
+        public virtual async Task<List<ShiftCloseDto>> GetListAsync(int take = IShiftCloseAppService.DefaultHistoryRows)
         {
             var queryable = await _closes.GetQueryableAsync();
             // Chặn take âm/quá lớn để 1 request không kéo hết lịch sử.
             var list = await _asyncExecuter.ToListAsync(
-                queryable.OrderByDescending(x => x.Date).Take(Math.Max(1, Math.Min(100, take))));
+                queryable.OrderByDescending(x => x.Date).Take(Math.Clamp(take, 1, IShiftCloseAppService.MaxHistoryRows)));
             return list.Select(MapToDto).ToList();
         }
 

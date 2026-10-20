@@ -62,6 +62,19 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>Cache cho gallery công khai (danh sách không giới hạn, bị query mỗi lượt xem trang).</summary>
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        /// <summary>
+        /// Số ảnh UGC đã duyệt tối đa nạp vào cache public — ảnh UGC tăng vô
+        /// hạn theo thời gian, phải có giới hạn để entry cache / payload trả về
+        /// không phình.
+        /// </summary>
+        private const int MaxApprovedPhotosCached = 200;
+
+        /// <summary>
+        /// Số ảnh chờ duyệt tối đa admin thấy mỗi lần mở trang — chặn để danh
+        /// sách admin không materialize toàn bộ bảng mỗi lần mở.
+        /// </summary>
+        private const int MaxPendingPhotosListed = 500;
+
         public CustomerPhotoAppService(
             IRepository<CustomerPhoto, Guid> photos,
             IAsyncQueryableExecuter asyncExecuter,
@@ -85,12 +98,12 @@ namespace PhuThuongStickyRice.Application.Customer
             return await _catalogCache.GetOrAddAsync("customerphotos:approved-list", async () =>
             {
                 var queryable = await _photos.GetQueryableAsync();
-                // Ảnh UGC tăng vô hạn theo thời gian; chỉ cache 200 ảnh mới nhất
+                // Ảnh UGC tăng vô hạn theo thời gian; chỉ cache N ảnh mới nhất
                 // để entry cache / payload trả về luôn có giới hạn.
                 var list = await _asyncExecuter.ToListAsync(
                     queryable.Where(x => x.IsApproved)
                         .OrderByDescending(x => x.CreatedAt)
-                        .Take(200));
+                        .Take(MaxApprovedPhotosCached));
                 return list.Select(MapToDto).ToList();
             });
         }
@@ -146,9 +159,9 @@ namespace PhuThuongStickyRice.Application.Customer
                 query = query.Where(x => !x.IsApproved);
             }
 
-            // Ảnh UGC tăng vô hạn; chặn ở 500 ảnh mới nhất để danh sách admin
+            // Ảnh UGC tăng vô hạn; chặn ở N ảnh mới nhất để danh sách admin
             // không materialize toàn bộ bảng mỗi lần mở trang.
-            var list = await _asyncExecuter.ToListAsync(query.Take(500));
+            var list = await _asyncExecuter.ToListAsync(query.Take(MaxPendingPhotosListed));
             return list.Select(MapToDto).ToList();
         }
 

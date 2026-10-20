@@ -82,12 +82,12 @@ namespace PhuThuongStickyRice.Application.Catalog
                 CustomerName = dto.CustomerName.Trim(),
                 CustomerPhone = dto.CustomerPhone.Trim(),
                 EventDate = dto.EventDate?.Date,
-                EventLocation = StringHelpers.TrimToNull(dto.EventLocation),
-                Budget = StringHelpers.TrimToNull(dto.Budget),
-                QuoteType = StringHelpers.TrimToNull(dto.QuoteType),
+                EventLocation = StringNormalizer.TrimToNull(dto.EventLocation),
+                Budget = StringNormalizer.TrimToNull(dto.Budget),
+                QuoteType = StringNormalizer.TrimToNull(dto.QuoteType),
                 // Số lượng tối thiểu 1 — không cho đơn báo giá 0 suất.
                 Quantity = Math.Max(1, dto.Quantity),
-                Notes = StringHelpers.TrimToNull(dto.Notes),
+                Notes = StringNormalizer.TrimToNull(dto.Notes),
                 Status = QuoteStatus.New,
                 CreatedAt = DateTime.UtcNow
             };
@@ -169,7 +169,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             // Truyền 0 nghĩa là "không yêu cầu cọc" → lưu null thay vì 0
             // để UI phân biệt được "chưa đặt cọc" và "cọc 0đ".
             entity.DepositAmount = dto.DepositAmount > 0 ? dto.DepositAmount : null;
-            entity.DepositInfo = StringHelpers.TrimToNull(dto.DepositInfo);
+            entity.DepositInfo = StringNormalizer.TrimToNull(dto.DepositInfo);
             await _quotes.UpdateAsync(entity, autoSave: true);
 
             return MapToDto(entity);

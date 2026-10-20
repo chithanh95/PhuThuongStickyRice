@@ -128,16 +128,16 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         /// <summary>
         /// 6 cột tiền trên đơn: tổng tiền, phí ship, giảm giá mã, giảm giá
         /// loyalty, giảm giá hạng, phí gói quà. Tên cột giữ nguyên như cũ.
-        /// Dùng <see cref="MoneyMappingHelper"/> chung với OrderLine/Product.
+        /// Dùng <see cref="MoneyColumnMapper"/> chung với OrderLine/Product.
         /// </summary>
         private static void ConfigureMoneyColumns(EntityTypeBuilder<Order> builder)
         {
-            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.TotalAmount, "TotalAmount", "Currency");
-            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.DeliveryFee, "DeliveryFee", "DeliveryFeeCurrency");
-            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.DiscountAmount, "DiscountAmount", "DiscountCurrency");
-            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.LoyaltyDiscount, "LoyaltyDiscount", "LoyaltyDiscountCurrency");
-            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.TierDiscount, "TierDiscount", "TierDiscountCurrency");
-            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.GiftFee, "GiftFee", "GiftFeeCurrency");
+            MoneyColumnMapper.ConfigureMoneyColumn(builder, x => x.TotalAmount, "TotalAmount", "Currency");
+            MoneyColumnMapper.ConfigureMoneyColumn(builder, x => x.DeliveryFee, "DeliveryFee", "DeliveryFeeCurrency");
+            MoneyColumnMapper.ConfigureMoneyColumn(builder, x => x.DiscountAmount, "DiscountAmount", "DiscountCurrency");
+            MoneyColumnMapper.ConfigureMoneyColumn(builder, x => x.LoyaltyDiscount, "LoyaltyDiscount", "LoyaltyDiscountCurrency");
+            MoneyColumnMapper.ConfigureMoneyColumn(builder, x => x.TierDiscount, "TierDiscount", "TierDiscountCurrency");
+            MoneyColumnMapper.ConfigureMoneyColumn(builder, x => x.GiftFee, "GiftFee", "GiftFeeCurrency");
         }
 
         /// <summary>

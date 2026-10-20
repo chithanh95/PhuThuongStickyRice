@@ -212,10 +212,10 @@ namespace PhuThuongStickyRice.Application.Customer
             }
 
             // Header tím thương hiệu (#7a6fbe), chữ trắng, chữ đậm — giống
-            // các sheet báo cáo (xem ExcelExportHelper.StyleHeader và hằng
+            // các sheet báo cáo (xem ExcelWorksheetStyling.StyleHeader và hằng
             // BrandHeaderBackground);
             // riêng sheet này KHÔNG căn giữa cột vì cột ghi chú dài (40 ký tự).
-            ExcelExportHelper.StyleHeader(worksheet.Row(1), center: false);
+            ExcelWorksheetStyling.StyleHeader(worksheet.Row(1), center: false);
 
             var rowIndex = 2;
             foreach (var row in rows)
@@ -235,7 +235,7 @@ namespace PhuThuongStickyRice.Application.Customer
             // perf-hunt 2026-10-20: độ rộng cột cố định thay AdjustToContents()
             // (ClosedXML đo font từng cell — O(dòng × cột), export 5000 dòng
             // tốn vài giây chỉ để căn cột). Dữ liệu không đổi.
-            ExcelExportHelper.SetFixedColumnWidths(worksheet, 24, 14, 10, 18, 18, 40);
+            ExcelWorksheetStyling.SetFixedColumnWidths(worksheet, 24, 14, 10, 18, 18, 40);
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);

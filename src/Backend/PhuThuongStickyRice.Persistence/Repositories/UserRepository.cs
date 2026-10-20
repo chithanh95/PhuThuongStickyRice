@@ -7,6 +7,10 @@ using System.Linq;
 
 namespace PhuThuongStickyRice.Persistence.Repositories
 {
+    /// <summary>
+    /// Repository truy vấn người dùng: dựng query User theo tùy chọn include
+    /// (password history, token, claim, role) phục vụ các màn admin quản trị.
+    /// </summary>
     public class UserRepository : Repository<User, Guid>, IUserRepository
     {
         public UserRepository(StickyRiceDbContext dbContext, IDateTimeProvider dateTimeProvider)
@@ -14,6 +18,12 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         {
         }
 
+        /// <summary>
+        /// Dựng query User theo tùy chọn include/no-tracking (chưa thực thi —
+        /// caller gọi ToListAsync/CountAsync để chạy query).
+        /// </summary>
+        /// <param name="queryOptions">Các navigation cần include và cờ AsNoTracking.</param>
+        /// <returns>Query User đã áp dụng các tùy chọn.</returns>
         public IQueryable<User> Get(UserQueryOptions queryOptions)
         {
             var query = GetAll();
@@ -45,7 +55,7 @@ namespace PhuThuongStickyRice.Persistence.Repositories
 
             if (queryOptions.AsNoTracking)
             {
-                query = query = query.AsNoTracking();
+                query = query.AsNoTracking();
             }
 
             return query;

@@ -50,6 +50,7 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
             yield return Value;
         }
 
+        /// <summary>Trả về mã sản phẩm đã chuẩn hóa — dùng khi hiển thị, ghi log hoặc so sánh chuỗi.</summary>
         public override string ToString()
         {
             return Value;

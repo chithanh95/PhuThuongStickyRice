@@ -7,6 +7,10 @@ using System.Linq;
 
 namespace PhuThuongStickyRice.Persistence.Repositories
 {
+    /// <summary>
+    /// Repository truy vấn vai trò (role): dựng query Role theo tùy chọn include
+    /// (claim, user) phục vụ các màn admin phân quyền.
+    /// </summary>
     public class RoleRepository : Repository<Role, Guid>, IRoleRepository
     {
         public RoleRepository(StickyRiceDbContext dbContext, IDateTimeProvider dateTimeProvider)
@@ -14,6 +18,12 @@ namespace PhuThuongStickyRice.Persistence.Repositories
         {
         }
 
+        /// <summary>
+        /// Dựng query Role theo tùy chọn include/no-tracking (chưa thực thi —
+        /// caller gọi ToListAsync/CountAsync để chạy query).
+        /// </summary>
+        /// <param name="queryOptions">Các navigation cần include và cờ AsNoTracking.</param>
+        /// <returns>Query Role đã áp dụng các tùy chọn.</returns>
         public IQueryable<Role> Get(RoleQueryOptions queryOptions)
         {
             var query = GetAll();
@@ -35,7 +45,7 @@ namespace PhuThuongStickyRice.Persistence.Repositories
 
             if (queryOptions.AsNoTracking)
             {
-                query = query = query.AsNoTracking();
+                query = query.AsNoTracking();
             }
 
             return query;
