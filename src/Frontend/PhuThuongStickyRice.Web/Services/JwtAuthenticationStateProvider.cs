@@ -31,7 +31,11 @@ namespace PhuThuongStickyRice.Web.Services
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
             var token = await _tokenStore.GetToken();
-            if (token == null || string.IsNullOrWhiteSpace(token.AccessToken))
+            // Token hết hạn cũng coi như chưa đăng nhập: trước đây provider
+            // vẫn báo "đã đăng nhập" với token hết hạn, giao diện tưởng còn
+            // phiên làm việc cho đến khi API trả 401 mới vỡ. Báo anonymous
+            // sớm để AuthorizeRouteView kích hoạt chuyển về trang đăng nhập.
+            if (token == null || string.IsNullOrWhiteSpace(token.AccessToken) || token.IsTokenExpired)
             {
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }

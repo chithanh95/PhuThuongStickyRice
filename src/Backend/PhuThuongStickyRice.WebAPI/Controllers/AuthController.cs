@@ -271,7 +271,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return BuildLoginResponse(user, roles, clientIp, newIpWarning);
         }
 
-        [Authorize(Roles = "Admin")]
         /// <summary>Lấy thông tin tài khoản đang đăng nhập.</summary>
         [HttpGet("profile")]
         [Authorize]

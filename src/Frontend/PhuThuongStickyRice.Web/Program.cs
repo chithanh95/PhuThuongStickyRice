@@ -39,7 +39,10 @@ namespace PhuThuongStickyRice.Web
                 client.BaseAddress = apiBaseUri;
                 client.Timeout = TimeSpan.FromSeconds(30);
                 client.DefaultRequestHeaders.Clear();
-            });
+            })
+            // Mọi API client đều qua handler này: API trả 401 (token hết
+            // hạn) là tự xóa token và chuyển về trang đăng nhập.
+            .AddHttpMessageHandler<RedirectOnUnauthorizedHandler>();
         }
 
         /// <summary>
@@ -83,6 +86,7 @@ namespace PhuThuongStickyRice.Web
                 sp.GetRequiredService<JwtAuthenticationStateProvider>());
             builder.Services.AddScoped<ITokenStore>(sp =>
                 sp.GetRequiredService<JwtTokenStore>());
+            builder.Services.AddTransient<RedirectOnUnauthorizedHandler>();
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
