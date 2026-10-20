@@ -112,14 +112,10 @@ namespace PhuThuongStickyRice.WebAPI.Services
             phone = (phone ?? string.Empty).Trim();
             otp = (otp ?? string.Empty).Trim();
 
-            if (!VnPhoneRegex().IsMatch(phone))
+            var inputFailure = ValidateResetInputs(phone, newPassword);
+            if (inputFailure != null)
             {
-                return PasswordResetResult.Fail("Số điện thoại không đúng định dạng (VD: 0901234567).");
-            }
-
-            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < MinPasswordLength)
-            {
-                return PasswordResetResult.Fail("Mật khẩu mới phải có ít nhất 6 ký tự.");
+                return inputFailure;
             }
 
             var key = OtpCacheKey(phone);
@@ -128,15 +124,10 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 return PasswordResetResult.Fail("Mã OTP không đúng hoặc đã hết hạn. Vui lòng yêu cầu mã mới.");
             }
 
-            if (entry.FailedAttempts >= MaxOtpAttempts)
+            var otpFailure = ValidateOtpEntry(key, otp, entry);
+            if (otpFailure != null)
             {
-                _cache.Remove(key);
-                return PasswordResetResult.Fail("Bạn đã nhập sai OTP quá 3 lần. Vui lòng yêu cầu mã OTP mới.");
-            }
-
-            if (!string.Equals(entry.Code, otp, StringComparison.Ordinal))
-            {
-                return RegisterFailedOtpAttempt(key, entry);
+                return otpFailure;
             }
 
             var user = await _userManager.FindByNameAsync(phone);
@@ -146,17 +137,10 @@ namespace PhuThuongStickyRice.WebAPI.Services
                 return PasswordResetResult.Fail("Không tìm thấy tài khoản.");
             }
 
-            var removeResult = await _userManager.RemovePasswordAsync(user);
-            if (!removeResult.Succeeded)
+            var setFailure = await SetNewPasswordAsync(user, newPassword, phone);
+            if (setFailure != null)
             {
-                return PasswordResetResult.Fail("Đặt lại mật khẩu thất bại. Vui lòng thử lại.");
-            }
-
-            var addResult = await _userManager.AddPasswordAsync(user, newPassword);
-            if (!addResult.Succeeded)
-            {
-                LogResetFailed(_logger, phone, string.Join("; ", addResult.Errors.Select(e => e.Description)));
-                return PasswordResetResult.Fail("Đặt lại mật khẩu thất bại. Vui lòng thử lại.");
+                return setFailure;
             }
 
             // Kẻ gian biết OTP đã đổi được mật khẩu — đổi security stamp để mọi
@@ -171,6 +155,71 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
             LogResetSucceeded(_logger, phone);
             return PasswordResetResult.Ok();
+        }
+
+        /// <summary>
+        /// Kiểm tra định dạng SĐT và độ dài mật khẩu mới của yêu cầu đặt lại
+        /// mật khẩu. Trả về kết quả thất bại kèm thông báo lỗi khi đầu vào
+        /// không hợp lệ, null khi hợp lệ.
+        /// </summary>
+        private static PasswordResetResult ValidateResetInputs(string phone, string newPassword)
+        {
+            if (!VnPhoneRegex().IsMatch(phone))
+            {
+                return PasswordResetResult.Fail("Số điện thoại không đúng định dạng (VD: 0901234567).");
+            }
+
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < MinPasswordLength)
+            {
+                return PasswordResetResult.Fail("Mật khẩu mới phải có ít nhất 6 ký tự.");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Kiểm tra trạng thái OTP trong cache: chưa quá số lần thử và mã OTP
+        /// nhập khớp. Trả về kết quả thất bại kèm thông báo lỗi khi kiểm tra
+        /// không đạt (lần nhập sai được ghi nhận qua
+        /// <see cref="RegisterFailedOtpAttempt"/>), null khi đạt.
+        /// </summary>
+        private PasswordResetResult ValidateOtpEntry(string key, string otp, OtpEntry entry)
+        {
+            if (entry.FailedAttempts >= MaxOtpAttempts)
+            {
+                _cache.Remove(key);
+                return PasswordResetResult.Fail("Bạn đã nhập sai OTP quá 3 lần. Vui lòng yêu cầu mã OTP mới.");
+            }
+
+            if (!string.Equals(entry.Code, otp, StringComparison.Ordinal))
+            {
+                return RegisterFailedOtpAttempt(key, entry);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Đặt mật khẩu mới cho tài khoản qua <see cref="UserManager{TUser}"/>.
+        /// Trả về kết quả thất bại kèm thông báo lỗi khi không đặt được,
+        /// null khi thành công.
+        /// </summary>
+        private async Task<PasswordResetResult> SetNewPasswordAsync(User user, string newPassword, string phone)
+        {
+            var removeResult = await _userManager.RemovePasswordAsync(user);
+            if (!removeResult.Succeeded)
+            {
+                return PasswordResetResult.Fail("Đặt lại mật khẩu thất bại. Vui lòng thử lại.");
+            }
+
+            var addResult = await _userManager.AddPasswordAsync(user, newPassword);
+            if (!addResult.Succeeded)
+            {
+                LogResetFailed(_logger, phone, string.Join("; ", addResult.Errors.Select(e => e.Description)));
+                return PasswordResetResult.Fail("Đặt lại mật khẩu thất bại. Vui lòng thử lại.");
+            }
+
+            return null;
         }
 
         /// <summary>

@@ -1414,11 +1414,11 @@ namespace PhuThuongStickyRice.Application.Orders
             var names = await _asyncExecuter.ToListAsync(
                 queryable.Where(x => ids.Contains(x.Id))
                     .Select(x => new { x.Id, x.Name }));
-            var map = names.ToDictionary(x => x.Id, x => x.Name);
+            var shipperNameById = names.ToDictionary(x => x.Id, x => x.Name);
 
             foreach (var dto in dtos)
             {
-                if (dto.ShipperId.HasValue && map.TryGetValue(dto.ShipperId.Value, out var name))
+                if (dto.ShipperId.HasValue && shipperNameById.TryGetValue(dto.ShipperId.Value, out var name))
                 {
                     dto.ShipperName = name;
                 }

@@ -139,11 +139,11 @@ namespace PhuThuongStickyRice.Application.Common
         /// <returns>true khi cờ tồn tại và đang bật, hoặc cờ chưa tồn tại.</returns>
         public virtual async Task<bool> IsEnabledAsync(string key)
         {
-            // Perf: serve from the cached map instead of a per-call DB query.
-            var map = await GetEnabledMapAsync();
+            // Perf: serve from the cached flag map instead of a per-call DB query.
+            var enabledFlagsByKey = await GetEnabledMapAsync();
             // Unknown flags default to enabled so a missing seed row can
             // never break an existing feature.
-            return !map.TryGetValue(key, out var enabled) || enabled;
+            return !enabledFlagsByKey.TryGetValue(key, out var enabled) || enabled;
         }
 
         /// <summary>

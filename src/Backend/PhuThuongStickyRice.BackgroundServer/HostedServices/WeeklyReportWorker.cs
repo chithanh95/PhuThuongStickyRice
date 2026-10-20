@@ -20,7 +20,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
     /// returns the report text for manual copy instead of pretending to
     /// send (see the send result note).
     /// </summary>
-    public class WeeklyReportWorker : BackgroundService
+    public partial class WeeklyReportWorker : BackgroundService
     {
         private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(10);
         private const int SendHour = 8;
@@ -39,7 +39,10 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("WeeklyReportWorker started (sends every Monday 08:00 VN).");
+            // CA1848: dùng LoggerMessage source-generated thay vì
+            // LoggerExtensions.LogInformation — template được parse 1 lần lúc
+            // compile, không boxing argument, nhanh hơn khi log bật.
+            Log.WorkerStarted(_logger);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -49,7 +52,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "WeeklyReportWorker failed; will retry on the next check.");
+                    Log.WorkerFailed(_logger, ex);
                 }
 
                 try
@@ -66,7 +69,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
                 }
             }
 
-            _logger.LogInformation("WeeklyReportWorker stopping.");
+            Log.WorkerStopping(_logger);
         }
 
         private async Task TrySendIfDueAsync()
@@ -86,11 +89,36 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
             var sender = scope.ServiceProvider.GetRequiredService<IWeeklyReportSender>();
             var result = await sender.SendAsync();
 
-            _logger.LogInformation(
-                "Weekly report Monday job finished: sent={Sent}, zaloConfigured={Configured}, note={Note}",
-                result.IsSent,
-                result.ZaloConfigured,
-                result.Note);
+            // CA1873: result.Note là property — không đánh giá argument khi
+            // log Information đang tắt (tránh format stack/exception vô ích).
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                Log.MondayJobFinished(_logger, result.IsSent, result.ZaloConfigured, result.Note);
+            }
+        }
+
+        /// <summary>
+        /// Log message source-generated (CA1848): template parse 1 lần lúc
+        /// compile, không boxing argument, và tự kiểm tra IsEnabled trước khi
+        /// format — nhanh hơn LoggerExtensions khi log level đang tắt.
+        /// </summary>
+        private static partial class Log
+        {
+            [LoggerMessage(EventId = 1, Level = LogLevel.Information,
+                Message = "WeeklyReportWorker started (sends every Monday 08:00 VN).")]
+            public static partial void WorkerStarted(ILogger logger);
+
+            [LoggerMessage(EventId = 2, Level = LogLevel.Error,
+                Message = "WeeklyReportWorker failed; will retry on the next check.")]
+            public static partial void WorkerFailed(ILogger logger, Exception exception);
+
+            [LoggerMessage(EventId = 3, Level = LogLevel.Information,
+                Message = "WeeklyReportWorker stopping.")]
+            public static partial void WorkerStopping(ILogger logger);
+
+            [LoggerMessage(EventId = 4, Level = LogLevel.Information,
+                Message = "Weekly report Monday job finished: sent={Sent}, zaloConfigured={Configured}, note={Note}")]
+            public static partial void MondayJobFinished(ILogger logger, bool sent, bool configured, string note);
         }
     }
 }

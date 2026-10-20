@@ -183,11 +183,11 @@ namespace PhuThuongStickyRice.Application.AuditLogs
                     queryable.OrderByDescending(x => x.At).Skip(MaxRows - 1).Take(1));
                 if (cutoff != null)
                 {
-                    var old = await _asyncExecuter.ToListAsync(
+                    var expiredLogs = await _asyncExecuter.ToListAsync(
                         queryable.Where(x => x.At < cutoff.At));
-                    if (old.Count > 0)
+                    if (expiredLogs.Count > 0)
                     {
-                        await _logs.DeleteManyAsync(old, autoSave: true);
+                        await _logs.DeleteManyAsync(expiredLogs, autoSave: true);
                     }
                 }
             }

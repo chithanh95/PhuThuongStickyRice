@@ -208,16 +208,7 @@ namespace PhuThuongStickyRice.Application.Discounts
         // Same logic as Promotion.IsActiveAt (entity is IsActive already).
         private static bool MatchesWindow(CachedActivePromotion p, DateTime vnNow)
         {
-            var dayFlag = vnNow.DayOfWeek switch
-            {
-                DayOfWeek.Monday => PromotionDay.Monday,
-                DayOfWeek.Tuesday => PromotionDay.Tuesday,
-                DayOfWeek.Wednesday => PromotionDay.Wednesday,
-                DayOfWeek.Thursday => PromotionDay.Thursday,
-                DayOfWeek.Friday => PromotionDay.Friday,
-                DayOfWeek.Saturday => PromotionDay.Saturday,
-                _ => PromotionDay.Sunday
-            };
+            var dayFlag = PromotionDayExtensions.FromDayOfWeek(vnNow.DayOfWeek);
 
             if ((p.DaysOfWeekFlags & (int)dayFlag) == 0)
             {

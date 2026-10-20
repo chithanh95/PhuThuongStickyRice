@@ -4,6 +4,11 @@ using Volo.Abp.Application.Services;
 
 namespace PhuThuongStickyRice.Application.Reports
 {
+    /// <summary>
+    /// Hợp đồng báo cáo tuần (Item 138): số liệu tổng hợp của tuần đầy đủ gần
+    /// nhất (Thứ Hai–Chủ Nhật), có thể gửi qua Zalo OA cho chủ quán nếu đã
+    /// cấu hình token.
+    /// </summary>
     public interface IWeeklyReportAppService : IApplicationService
     {
         /// <summary>

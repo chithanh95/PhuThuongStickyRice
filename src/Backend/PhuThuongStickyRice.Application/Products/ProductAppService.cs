@@ -680,7 +680,7 @@ namespace PhuThuongStickyRice.Application.Products
             Dictionary<string, string> before,
             Dictionary<string, string> after)
         {
-            var changedBy = CurrentUser?.UserName ?? "system";
+            var changedBy = CurrentUser?.UserName ?? SystemActor.Value;
             var now = DateTime.UtcNow;
 
             foreach (var kvp in after)

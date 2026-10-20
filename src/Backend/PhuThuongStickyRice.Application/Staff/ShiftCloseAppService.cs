@@ -18,6 +18,13 @@ using PhuThuongStickyRice.Application.Staff;
 
 namespace PhuThuongStickyRice.Application.Staff
 {
+    /// <summary>
+    /// Hợp đồng chốt ca (Item 129): đối soát tiền mặt COD cuối ca. Hệ thống tự
+    /// tính số tiền lẽ ra phải thu trong ngày (tổng đơn COD đã hoàn tất, xem
+    /// <c>GetExpectedCodAsync</c>); nhân viên nhập số tiền thực thu ở
+    /// <c>CloseAsync</c> để ghi chênh lệch. Gọi lại cùng ngày chỉ cập nhật bản
+    /// ghi cũ (không tạo trùng).
+    /// </summary>
     public interface IShiftCloseAppService : IApplicationService
     {
         /// <summary>
@@ -145,7 +152,7 @@ namespace PhuThuongStickyRice.Application.Staff
                     existing = new ShiftClose
                     {
                         Date = day,
-                        CreatedBy = CurrentUser?.Email ?? CurrentUser?.UserName ?? "system",
+                        CreatedBy = CurrentUser?.Email ?? CurrentUser?.UserName ?? SystemActor.Value,
                         CreatedAt = DateTime.UtcNow
                     };
                     await _closes.InsertAsync(existing);

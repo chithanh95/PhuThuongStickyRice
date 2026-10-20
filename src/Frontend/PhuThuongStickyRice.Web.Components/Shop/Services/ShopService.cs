@@ -1,8 +1,6 @@
 #nullable enable annotations
 using PhuThuongStickyRice.Web.Components.Shop.Models;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
-using PhuThuongStickyRice.Web.Components.Shop.Models;
-using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;

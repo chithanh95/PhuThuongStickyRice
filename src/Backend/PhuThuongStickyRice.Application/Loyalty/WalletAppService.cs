@@ -191,7 +191,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             // commit câu UPDATE ghi đè số dư mới nhất bằng giá trị cũ (đúng
             // lỗi race vừa fix). Chỉ dùng giá trị trả về cho log/DTO.
             await LogAsync(normalized, input.Amount, newBalance, input.Reason.Trim(),
-                CurrentUser?.Email ?? CurrentUser?.UserName ?? "system");
+                CurrentUser?.Email ?? CurrentUser?.UserName ?? SystemActor.Value);
 
             return new WalletAccountDto { Id = account.Id, Phone = account.Phone, Balance = newBalance };
         }
@@ -300,7 +300,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
             // (đọc lại sau UPDATE nguyên tử) thay vì account.Balance - amount —
             // 2 checkout ví đồng thời cùng SĐT trước đây ghi lịch sử sai.
             await LogAsync(normalized, -amount, decremented.Value,
-                $"Thanh toán đơn {orderNumber}", "system");
+                $"Thanh toán đơn {orderNumber}", SystemActor.Value);
         }
 
         /// <summary>
@@ -341,7 +341,7 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 Amount = amount,
                 Reason = reason,
                 BalanceAfter = 0, // tạm — set đúng sau khi cộng số dư nguyên tử
-                CreatedBy = "system",
+                CreatedBy = SystemActor.Value,
                 CreatedAt = DateTime.UtcNow,
                 IdempotencyKey = BuildRefundIdempotencyKey(normalized, reason)
             };

@@ -78,36 +78,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromForm] string name,
             CancellationToken cancellationToken = default)
         {
-            if (file == null || file.Length == 0)
+            var validationError = await ValidateUploadedImageAsync(file, cancellationToken);
+            if (validationError != null)
             {
-                return BadRequest(new { message = "Vui lòng chọn một file ảnh." });
+                return BadRequest(new { message = validationError });
             }
 
             var extension = Path.GetExtension(file.FileName);
-            if (string.IsNullOrWhiteSpace(extension) || !AllowedImageExtensions.Contains(extension))
-            {
-                return BadRequest(new
-                {
-                    message = "Định dạng ảnh không hợp lệ. Chỉ nhận: jpg, jpeg, png, webp, gif."
-                });
-            }
-
-            // bug-hunt 2026-10-19: kiểm tra chữ ký file (magic bytes) — đuôi
-            // ảnh có thể là file thực thi/script đổi tên; chỉ nhận nội dung
-            // ảnh thật (JPEG/PNG/GIF/WebP).
-            if (!await ImageUploadValidator.HasValidImageSignatureAsync(file, extension, cancellationToken))
-            {
-                return BadRequest(new
-                {
-                    message = "File không phải ảnh hợp lệ (nội dung không khớp định dạng ảnh)."
-                });
-            }
-
-            if (file.Length > MaxImageBytes)
-            {
-                return BadRequest(new { message = "File ảnh tối đa 5 MB." });
-            }
-
             var (fileName, filePath) = await SaveUploadedPhotoAsync(file, extension, cancellationToken);
 
             try
@@ -122,6 +99,40 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 System.IO.File.Delete(filePath);
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        /// <summary>
+        /// Kiểm tra file ảnh upload: có file, đúng đuôi ảnh cho phép, chữ ký
+        /// file (magic bytes) khớp định dạng ảnh thật, và không quá dung lượng
+        /// tối đa. Trả về thông báo lỗi tiếng Việt khi không đạt, null khi đạt.
+        /// </summary>
+        private async Task<string> ValidateUploadedImageAsync(IFormFile file, CancellationToken cancellationToken)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return "Vui lòng chọn một file ảnh.";
+            }
+
+            var extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrWhiteSpace(extension) || !AllowedImageExtensions.Contains(extension))
+            {
+                return "Định dạng ảnh không hợp lệ. Chỉ nhận: jpg, jpeg, png, webp, gif.";
+            }
+
+            // bug-hunt 2026-10-19: kiểm tra chữ ký file (magic bytes) — đuôi
+            // ảnh có thể là file thực thi/script đổi tên; chỉ nhận nội dung
+            // ảnh thật (JPEG/PNG/GIF/WebP).
+            if (!await ImageUploadValidator.HasValidImageSignatureAsync(file, extension, cancellationToken))
+            {
+                return "File không phải ảnh hợp lệ (nội dung không khớp định dạng ảnh).";
+            }
+
+            if (file.Length > MaxImageBytes)
+            {
+                return "File ảnh tối đa 5 MB.";
+            }
+
+            return null;
         }
 
         /// <summary>

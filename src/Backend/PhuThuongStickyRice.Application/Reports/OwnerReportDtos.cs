@@ -19,6 +19,11 @@ namespace PhuThuongStickyRice.Application.Reports
             public long ReturningCustomerOrders { get; set; }
         }
 
+        /// <summary>
+        /// Kết quả gửi báo cáo chủ quán (Zalo OA): khoảng thời gian báo cáo,
+        /// đã gửi thành công hay chưa, và lý do khi chưa gửi được (vd chưa
+        /// cấu hình token Zalo — lúc đó trả nội dung text để copy thủ công).
+        /// </summary>
         public class OwnerReportResultDto
         {
             public string Period { get; set; }

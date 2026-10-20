@@ -20,6 +20,28 @@ namespace PhuThuongStickyRice.Domain.Entities
         All = Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday
     }
 
+    // [codequality-smell 2026-10-20] Gom switch DayOfWeek → PromotionDay bị
+    // duplicate ở Promotion.IsActiveAt và PromotionAppService.MatchesWindow
+    // về 1 helper duy nhất — đổi mapping 1 nơi, cả 2 luồng giữ đồng nhất.
+    /// <summary>
+    /// Chuyển đổi <see cref="DayOfWeek"/> của .NET sang cờ
+    /// <see cref="PromotionDay"/> tương ứng cho kiểm tra khung giờ khuyến mãi.
+    /// </summary>
+    public static class PromotionDayExtensions
+    {
+        /// <summary>Đổi ngày trong tuần của .NET sang cờ ngày của khuyến mãi.</summary>
+        public static PromotionDay FromDayOfWeek(DayOfWeek day) => day switch
+        {
+            DayOfWeek.Monday => PromotionDay.Monday,
+            DayOfWeek.Tuesday => PromotionDay.Tuesday,
+            DayOfWeek.Wednesday => PromotionDay.Wednesday,
+            DayOfWeek.Thursday => PromotionDay.Thursday,
+            DayOfWeek.Friday => PromotionDay.Friday,
+            DayOfWeek.Saturday => PromotionDay.Saturday,
+            _ => PromotionDay.Sunday
+        };
+    }
+
     /// <summary>
     /// "Khuyến mãi giờ vàng": khuyến mãi theo khung giờ tự áp ở checkout.
     /// Giờ dùng là giờ địa phương Việt Nam (UTC+7), dạng TimeSpan trong ngày.
@@ -59,16 +81,7 @@ namespace PhuThuongStickyRice.Domain.Entities
                 return false;
             }
 
-            var dayFlag = vnNow.DayOfWeek switch
-            {
-                DayOfWeek.Monday => PromotionDay.Monday,
-                DayOfWeek.Tuesday => PromotionDay.Tuesday,
-                DayOfWeek.Wednesday => PromotionDay.Wednesday,
-                DayOfWeek.Thursday => PromotionDay.Thursday,
-                DayOfWeek.Friday => PromotionDay.Friday,
-                DayOfWeek.Saturday => PromotionDay.Saturday,
-                _ => PromotionDay.Sunday
-            };
+            var dayFlag = PromotionDayExtensions.FromDayOfWeek(vnNow.DayOfWeek);
 
             if ((DaysOfWeekFlags & (int)dayFlag) == 0)
             {

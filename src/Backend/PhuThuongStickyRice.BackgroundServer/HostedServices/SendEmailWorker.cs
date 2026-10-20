@@ -16,7 +16,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
     /// circuit breaker mở) chỉ bị log rồi thử lại vòng sau — worker không bao
     /// giờ tự tắt để 1 sự cố tạm thời không làm mất hàng đợi mail.
     /// </summary>
-    public class SendEmailWorker : BackgroundService
+    public partial class SendEmailWorker : BackgroundService
     {
         // Khoảng chờ giữa 2 vòng quét hàng đợi email khi không có mail nào
         // được gửi (tránh quay vòng CPU vô ích).
@@ -34,7 +34,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogDebug("SendEmailService is starting.");
+            Log.WorkerStarting(_logger);
             await SendPendingEmailsLoop(stoppingToken);
         }
 
@@ -42,7 +42,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogDebug("SendEmail task doing background work.");
+                Log.PollingQueue(_logger);
 
                 int sentCount = 0;
 
@@ -78,7 +78,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
                     // Lỗi thoáng qua (mất kết nối DB, SMTP chết...): log rồi thử
                     // lại ở vòng sau — không để 1 lần lỗi giết chết worker vĩnh
                     // viễn (cùng pattern với WeeklyReportWorker).
-                    _logger.LogError(ex, "SendEmailWorker failed; will retry on the next poll.");
+                    Log.WorkerFailed(_logger, ex);
                     if (await WaitBeforeNextPollAsync(stoppingToken))
                     {
                         break;
@@ -86,7 +86,7 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
                 }
             }
 
-            _logger.LogDebug("SendEmail background task is stopping.");
+            Log.WorkerStopping(_logger);
         }
 
         // [codequality-practices 2026-10-20] Nghỉ giữa 2 vòng quét an toàn khi
@@ -108,6 +108,30 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
             {
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Log message source-generated (CA1848): template parse 1 lần lúc
+        /// compile, không boxing argument, và tự kiểm tra IsEnabled trước khi
+        /// format — nhanh hơn LoggerExtensions khi log level đang tắt.
+        /// </summary>
+        private static partial class Log
+        {
+            [LoggerMessage(EventId = 1, Level = LogLevel.Debug,
+                Message = "SendEmailService is starting.")]
+            public static partial void WorkerStarting(ILogger logger);
+
+            [LoggerMessage(EventId = 2, Level = LogLevel.Debug,
+                Message = "SendEmail task doing background work.")]
+            public static partial void PollingQueue(ILogger logger);
+
+            [LoggerMessage(EventId = 3, Level = LogLevel.Error,
+                Message = "SendEmailWorker failed; will retry on the next poll.")]
+            public static partial void WorkerFailed(ILogger logger, Exception exception);
+
+            [LoggerMessage(EventId = 4, Level = LogLevel.Debug,
+                Message = "SendEmail background task is stopping.")]
+            public static partial void WorkerStopping(ILogger logger);
         }
     }
 }

@@ -18,8 +18,8 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
         public ProductsControllerTests()
             : base()
         {
-            _httpClient.Timeout = new TimeSpan(0, 0, 30);
-            _httpClient.DefaultRequestHeaders.Clear();
+            HttpClient.Timeout = new TimeSpan(0, 0, 30);
+            HttpClient.DefaultRequestHeaders.Clear();
         }
 
         private async Task<List<ProductApiModel>> GetProductsAsync()
@@ -59,14 +59,14 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
 
         private async Task ExportAsPdfAsync(string path, string fileName)
         {
-            using var response = await _httpClient.GetAsync($"api/products/ExportAsPdf");
+            using var response = await HttpClient.GetAsync($"api/products/ExportAsPdf");
             using var fileStream = new FileStream(Path.Combine(path, fileName), FileMode.CreateNew);
             await response.Content.CopyToAsync(fileStream);
         }
 
         private async Task ExportAsCsvAsync(string path, string fileName)
         {
-            using var response = await _httpClient.GetAsync($"api/products/ExportAsCsv");
+            using var response = await HttpClient.GetAsync($"api/products/ExportAsCsv");
             using var fileStream = new FileStream(Path.Combine(path, fileName), FileMode.CreateNew);
             await response.Content.CopyToAsync(fileStream);
         }
@@ -79,7 +79,7 @@ namespace PhuThuongStickyRice.IntegrationTests.WebAPI
             form.Add(fileContent, "formFile", "Products.csv");
             form.Add(new StringContent("Products.csv"), "name");
 
-            var response = await _httpClient.PostAsync($"api/products/ImportCsv", form);
+            var response = await HttpClient.PostAsync($"api/products/ImportCsv", form);
             response.EnsureSuccessStatusCode();
 
             var products = await response.Content.ReadAs<List<ProductApiModel>>();

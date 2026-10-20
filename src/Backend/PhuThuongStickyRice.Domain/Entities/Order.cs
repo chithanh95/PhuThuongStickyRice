@@ -812,18 +812,18 @@ namespace PhuThuongStickyRice.Domain.Entities
                 throw new DomainException("Chỉ đơn hàng đang chờ xác nhận mới được sửa.");
             }
 
-            var map = (updates ?? Enumerable.Empty<(Guid, int)>())
+            var quantityByLineId = (updates ?? Enumerable.Empty<(Guid, int)>())
                 .GroupBy(x => x.LineId)
                 .ToDictionary(g => g.Key, g => g.Last().Quantity);
 
-            if (map.Count == 0)
+            if (quantityByLineId.Count == 0)
             {
                 throw new DomainException("Không có thay đổi nào.");
             }
 
             foreach (var line in _lines)
             {
-                if (!map.TryGetValue(line.Id, out var quantity))
+                if (!quantityByLineId.TryGetValue(line.Id, out var quantity))
                 {
                     continue;
                 }

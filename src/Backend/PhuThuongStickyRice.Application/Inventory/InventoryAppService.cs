@@ -12,6 +12,12 @@ using PhuThuongStickyRice.Application.Common;
 
 namespace PhuThuongStickyRice.Application.Inventory
 {
+    /// <summary>
+    /// Hợp đồng kiểm kê cuối ngày (item 87): lưu số lượng tồn còn lại theo món
+    /// cho 1 ngày (lưu lại ngày đã có thì ghi đè toàn bộ dòng, không cần xóa
+    /// tay) và xem lịch sử kiểm kê — chênh lệch so với lần kiểm kê trước giúp
+    /// phát hiện hao hụt nguyên liệu.
+    /// </summary>
     public interface IInventoryAppService : IApplicationService
     {
         /// <summary>Admin: saves the end-of-day counts for a date (replaces existing lines).</summary>

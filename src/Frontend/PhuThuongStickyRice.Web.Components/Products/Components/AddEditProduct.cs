@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -249,8 +250,12 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 .Where(w => w.From.HasValue && w.To.HasValue && w.From.Value < w.To.Value)
                 .Select(w => new
                 {
-                    from = w.From.Value.ToString("HH:mm"),
-                    to = w.To.Value.ToString("HH:mm")
+                    // CA1305: serialize giờ để lưu DB/JSON phải dùng
+                    // InvariantCulture — ký tự ":" trong format "HH:mm" là time
+                    // separator phụ thuộc locale (máy user có thể render khác),
+                    // InvariantCulture cho ra "HH:mm" ổn định mọi môi trường.
+                    from = w.From.Value.ToString("HH:mm", CultureInfo.InvariantCulture),
+                    to = w.To.Value.ToString("HH:mm", CultureInfo.InvariantCulture)
                 })
                 .ToList();
             return valid.Count == 0 ? null : JsonSerializer.Serialize(valid);
@@ -367,7 +372,12 @@ namespace PhuThuongStickyRice.Web.Components.Products.Components
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogDebug(ex, "Không xóa được ảnh cũ {ImageUrl} trên server — bỏ qua.", url);
+                    // CA1873: format exception (stack trace) tốn kém — chỉ
+                    // đánh giá khi log Debug đang bật.
+                    if (Logger.IsEnabled(LogLevel.Debug))
+                    {
+                        Logger.LogDebug(ex, "Không xóa được ảnh cũ {ImageUrl} trên server — bỏ qua.", url);
+                    }
                 }
             }
 

@@ -10,11 +10,21 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.IntegrationTests
 {
-    public class TestBase
+    /// <summary>
+    /// Lớp cơ sở cho integration test: đọc cấu hình WebAPI từ appsettings và
+    /// cung cấp <see cref="HttpClient"/> dùng chung. CA1001: class sở hữu
+    /// field disposable phải implement <see cref="IDisposable"/> — xUnit tự
+    /// dispose mỗi instance test class sau khi chạy xong.
+    /// </summary>
+    public class TestBase : IDisposable
     {
         public AppSettings AppSettings { get; set; } = new AppSettings();
 
-        protected HttpClient _httpClient = new HttpClient();
+        // CA1051: field instance visible (protected) → property. Khởi tạo
+        // 1 lần duy nhất; Dispose ở cuối mỗi test để không rò rỉ socket.
+        protected HttpClient HttpClient { get; } = new HttpClient();
+
+        private bool _disposed;
 
         public TestBase()
         {
@@ -26,18 +36,42 @@ namespace PhuThuongStickyRice.IntegrationTests
 
             configuration.Bind(AppSettings);
 
-            _httpClient.BaseAddress = new Uri(AppSettings.WebAPI.Endpoint);
+            HttpClient.BaseAddress = new Uri(AppSettings.WebAPI.Endpoint);
+        }
+
+        /// <summary>Giải phóng <see cref="HttpClient"/> dùng chung của test.</summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>Pattern dispose chuẩn: cho phép lớp con override.</summary>
+        /// <param name="disposing">True khi dispose chủ động (không phải finalizer).</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                HttpClient.Dispose();
+            }
+
+            _disposed = true;
         }
 
         protected async Task GetTokenAsync()
         {
-            var metaDataResponse = await _httpClient.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
+            var metaDataResponse = await HttpClient.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
             {
                 Address = AppSettings.OpenIdConnect.Authority,
                 Policy = { RequireHttps = AppSettings.OpenIdConnect.RequireHttpsMetadata },
             });
 
-            var tokenResponse = await _httpClient.RequestPasswordTokenAsync(new PasswordTokenRequest
+            var tokenResponse = await HttpClient.RequestPasswordTokenAsync(new PasswordTokenRequest
             {
                 Address = metaDataResponse.TokenEndpoint,
                 ClientId = AppSettings.OpenIdConnect.ClientId,
@@ -48,12 +82,12 @@ namespace PhuThuongStickyRice.IntegrationTests
             });
 
             var token = tokenResponse.AccessToken;
-            _httpClient.UseBearerToken(token);
+            HttpClient.UseBearerToken(token);
         }
 
         protected async Task<T> GetAsync<T>(string url)
         {
-            var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
 
             var data = await response.Content.ReadAs<T>();
@@ -70,7 +104,7 @@ namespace PhuThuongStickyRice.IntegrationTests
                 request.Content = data.AsJsonContent();
             }
 
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
             var createdObject = await response.Content.ReadAs<T>();
             return createdObject;
@@ -83,7 +117,7 @@ namespace PhuThuongStickyRice.IntegrationTests
 
             request.Content = data.AsJsonContent();
 
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
             var updatedObject = await response.Content.ReadAs<T>();
             return updatedObject;
@@ -94,7 +128,7 @@ namespace PhuThuongStickyRice.IntegrationTests
             var request = new HttpRequestMessage(HttpMethod.Delete, url);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
         }
     }
