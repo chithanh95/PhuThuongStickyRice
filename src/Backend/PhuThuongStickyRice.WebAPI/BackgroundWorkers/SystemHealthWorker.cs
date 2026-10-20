@@ -67,23 +67,12 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
         {
             var provider = workerContext.ServiceProvider;
 
-            ShopSettingDtoSafe settings;
-            try
+            // [codequality-smell 2026-10-20] Đọc cài đặt tách ra method riêng
+            // để DoWorkAsync chỉ còn flow 3 bước kiểm tra (DB → ổ đĩa → tỉ lệ
+            // lỗi); giữ nguyên hành vi: đọc settings lỗi thì bỏ qua vòng này.
+            var settings = await LoadSettingsSafeAsync(provider);
+            if (settings == null)
             {
-                var shopSettings = provider.GetRequiredService<IShopSettingAppService>();
-                var dto = await shopSettings.GetAsync();
-                settings = new ShopSettingDtoSafe
-                {
-                    HealthAlertsEnabled = dto.HealthAlertsEnabled,
-                    ErrorRateThreshold = dto.ErrorRateThreshold,
-                    TelegramBotToken = dto.TelegramBotToken,
-                    TelegramChatId = dto.TelegramChatId,
-                    OwnerReportEmail = dto.OwnerReportEmail
-                };
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "SystemHealthWorker: could not read shop settings.");
                 return;
             }
 
@@ -114,6 +103,34 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             if (dbOk && recentErrors <= settings.ErrorRateThreshold)
             {
                 Logger.LogDebug("SystemHealthWorker: all checks passed.");
+            }
+        }
+
+        /// <summary>
+        /// Đọc cài đặt cảnh báo từ ShopSetting, rút gọn về DTO nội bộ.
+        /// Trả null khi đọc thất bại (DB chưa sẵn sàng...) — worker bỏ qua
+        /// vòng kiểm tra này thay vì ném exception, giữ nguyên hành vi cũ
+        /// (log lỗi rồi return).
+        /// </summary>
+        private async Task<ShopSettingDtoSafe> LoadSettingsSafeAsync(IServiceProvider provider)
+        {
+            try
+            {
+                var shopSettings = provider.GetRequiredService<IShopSettingAppService>();
+                var dto = await shopSettings.GetAsync();
+                return new ShopSettingDtoSafe
+                {
+                    HealthAlertsEnabled = dto.HealthAlertsEnabled,
+                    ErrorRateThreshold = dto.ErrorRateThreshold,
+                    TelegramBotToken = dto.TelegramBotToken,
+                    TelegramChatId = dto.TelegramChatId,
+                    OwnerReportEmail = dto.OwnerReportEmail
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "SystemHealthWorker: could not read shop settings.");
+                return null;
             }
         }
 

@@ -132,28 +132,28 @@ namespace PhuThuongStickyRice.Application.Reports
             System.Collections.Generic.List<Orders.DTOs.TopProductDto> topProducts)
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"BÁO CÁO DOANH THU {periodLabel.ToUpperInvariant()} — XÔI PHÚ THƯỢNG");
+            sb.AppendLine(VietnameseCulture.Value, $"BÁO CÁO DOANH THU {periodLabel.ToUpperInvariant()} — XÔI PHÚ THƯỢNG");
             sb.AppendLine(new string('=', 50));
-            sb.AppendLine($"Tổng đơn hàng: {stats.TotalOrders}");
-            sb.AppendLine($"Doanh thu: {stats.TotalRevenue:N0} ₫ (không tính đơn đã hủy)");
-            sb.AppendLine($"Món đã bán: {stats.TotalProductsSold}");
-            sb.AppendLine($"Đơn chờ xác nhận (hiện tại): {stats.PendingOrders}");
+            sb.AppendLine(VietnameseCulture.Value, $"Tổng đơn hàng: {stats.TotalOrders}");
+            sb.AppendLine(VietnameseCulture.Value, $"Doanh thu: {stats.TotalRevenue:N0} ₫ (không tính đơn đã hủy)");
+            sb.AppendLine(VietnameseCulture.Value, $"Món đã bán: {stats.TotalProductsSold}");
+            sb.AppendLine(VietnameseCulture.Value, $"Đơn chờ xác nhận (hiện tại): {stats.PendingOrders}");
             sb.AppendLine();
             sb.AppendLine("Đơn hàng theo trạng thái:");
             foreach (var statusRow in stats.OrdersByStatus ?? Enumerable.Empty<Orders.DTOs.OrdersByStatusDto>())
             {
-                sb.AppendLine($"  - {statusRow.Status}: {statusRow.Count}");
+                sb.AppendLine(VietnameseCulture.Value, $"  - {statusRow.Status}: {statusRow.Count}");
             }
 
             sb.AppendLine();
             // [codequality-smell] Không hardcode số 5 — dùng chung hằng
             // TopProductsCount với câu query ở SendAsync.
-            sb.AppendLine($"Top {TopProductsCount} món bán chạy:");
+            sb.AppendLine(VietnameseCulture.Value, $"Top {TopProductsCount} món bán chạy:");
             var rank = 0;
             foreach (var product in topProducts ?? Enumerable.Empty<Orders.DTOs.TopProductDto>())
             {
                 rank++;
-                sb.AppendLine($"  {rank}. {product.ProductName}: {product.QuantitySold} gói — {product.Revenue:N0} ₫");
+                sb.AppendLine(VietnameseCulture.Value, $"  {rank}. {product.ProductName}: {product.QuantitySold} gói — {product.Revenue:N0} ₫");
             }
 
             sb.AppendLine();

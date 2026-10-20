@@ -26,7 +26,7 @@ namespace PhuThuongStickyRice.Application
         public bool ThrowNotFoundIfNull { get; set; }
     }
 
-    internal class GetEntityByIdQueryHandler<TEntity> : IQueryHandler<GetEntityByIdQuery<TEntity>, TEntity>
+    internal sealed class GetEntityByIdQueryHandler<TEntity> : IQueryHandler<GetEntityByIdQuery<TEntity>, TEntity>
     where TEntity : Entity<Guid>, IAggregateRoot
     {
         private readonly IRepository<TEntity, Guid> _repository;

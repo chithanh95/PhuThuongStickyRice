@@ -16,6 +16,13 @@ namespace PhuThuongStickyRice.WebAPI.RateLimiterPolicies
     /// </summary>
     public class DefaultRateLimiterPolicy : IRateLimiterPolicy<string>
     {
+        // [codequality-smell 2026-10-20] Đặt tên cho 2 ngưỡng rate limit thay
+        // vì số trần 200/100 — đổi ngưỡng chỉ cần 1 chỗ, đúng ý nghĩa từng loại client.
+        /// <summary>Số request/phút cho user đã đăng nhập.</summary>
+        private const int AuthenticatedPermitLimit = 200;
+        /// <summary>Số request/phút cho khách ẩn danh (theo IP thật).</summary>
+        private const int AnonymousPermitLimit = 100;
+
         public Func<OnRejectedContext, CancellationToken, ValueTask>? OnRejected { get; } = (context, cancellationToken) =>
         {
             context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
@@ -41,7 +48,7 @@ namespace PhuThuongStickyRice.WebAPI.RateLimiterPolicies
                     partition => new FixedWindowRateLimiterOptions
                     {
                         AutoReplenishment = true,
-                        PermitLimit = 200,
+                        PermitLimit = AuthenticatedPermitLimit,
                         Window = TimeSpan.FromMinutes(1),
                     });
             }
@@ -58,7 +65,7 @@ namespace PhuThuongStickyRice.WebAPI.RateLimiterPolicies
                 partition => new FixedWindowRateLimiterOptions
                 {
                     AutoReplenishment = true,
-                    PermitLimit = 100,
+                    PermitLimit = AnonymousPermitLimit,
                     Window = TimeSpan.FromMinutes(1),
                 });
         }

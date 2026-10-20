@@ -152,7 +152,7 @@ namespace PhuThuongStickyRice.Application.Inventory
         /// Dựng DTO dự báo từ số suất trung bình: kg nếp = trung bình suất ×
         /// gram/suất, làm tròn lên bước 0.5kg.
         /// </summary>
-        private IngredientForecastDto BuildForecastDto(
+        private static IngredientForecastDto BuildForecastDto(
             DateTime tomorrow, int weekday, int gramsPerPortion,
             double averagePortions, int weeksWithData)
         {

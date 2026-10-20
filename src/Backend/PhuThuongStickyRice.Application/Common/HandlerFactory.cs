@@ -11,7 +11,7 @@ namespace PhuThuongStickyRice.Application
     /// tự inject các dependency từ provider, còn tham số handler lồng nhau
     /// (cho decorator chain) được truyền thẳng vào.
     /// </summary>
-    internal class HandlerFactory
+    internal sealed class HandlerFactory
     {
         private readonly List<Func<object, Type, IServiceProvider, object>> _handlerFactoriesPipeline = new List<Func<object, Type, IServiceProvider, object>>();
 

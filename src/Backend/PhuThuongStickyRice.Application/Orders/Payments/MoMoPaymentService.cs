@@ -5,6 +5,7 @@ using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.Repositories;
 using System;
+using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -211,7 +212,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
                 partnerCode = options.PartnerCode,
                 accessKey = options.AccessKey,
                 requestId = request.RequestId,
-                amount = request.Amount.ToString(),
+                amount = request.Amount.ToString(CultureInfo.InvariantCulture),
                 orderId = request.OrderId,
                 orderInfo = request.OrderInfo,
                 redirectUrl = request.RedirectUrl,

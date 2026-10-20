@@ -80,51 +80,66 @@ namespace PhuThuongStickyRice.Application.Landing
             var entity = await GetSingleAsync();
             var newsJson = JsonSerializer.Serialize(dto.NewsItems ?? new List<LandingNewsItemDto>());
 
+            // [codequality-smell 2026-10-20] Tách 2 nhánh upsert ra method
+            // riêng để UpdateContentAsync chỉ còn flow: lấy entity → tạo/sửa
+            // → xóa cache; giữ nguyên thứ tự tham số của Create/Update.
             if (entity == null)
             {
-                entity = LandingPageContent.Create(
-                    dto.HeroTitle, dto.HeroTagline, dto.HeroButtonText,
-                    dto.StoryTitle, dto.StoryBody,
-                    dto.MenuTitle, dto.MenuLabel1, dto.MenuLabel2, dto.MenuLabel3,
-                    dto.NewsTitle, newsJson,
-                    dto.FooterTitle, dto.FooterAboutText, dto.FooterCopyrightText, dto.ContactAddress, dto.ContactPhone, dto.ContactEmail,
-                    dto.FooterButtonText,
-                    dto.HeroImageUrl, dto.BannerImageUrl,
-                    dto.MenuImage1Url, dto.MenuImage2Url, dto.MenuImage3Url,
-                    dto.FooterBackgroundUrl,
-                    dto.VideoTitle, dto.VideoUrl,
-                    dto.MapEmbedUrl, dto.ReviewsEmbedHtml,
-                    dto.PopupTitle, dto.PopupBody, dto.PopupImageUrl, dto.PopupActive,
-                    dto.FlashBannerText, dto.FlashBannerActive,
-                    dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText,
-                    dto.ReviewVideoTitle, dto.ReviewVideoUrl);
-                await _contentRepository.InsertAsync(entity, autoSave: true);
+                await CreateContentAsync(dto, newsJson);
             }
             else
             {
-                entity.Update(
-                    dto.HeroTitle, dto.HeroTagline, dto.HeroButtonText,
-                    dto.StoryTitle, dto.StoryBody,
-                    dto.MenuTitle, dto.MenuLabel1, dto.MenuLabel2, dto.MenuLabel3,
-                    dto.NewsTitle, newsJson,
-                    dto.FooterTitle, dto.FooterAboutText, dto.FooterCopyrightText, dto.ContactAddress, dto.ContactPhone, dto.ContactEmail,
-                    dto.FooterButtonText,
-                    dto.HeroImageUrl, dto.BannerImageUrl,
-                    dto.MenuImage1Url, dto.MenuImage2Url, dto.MenuImage3Url,
-                    dto.FooterBackgroundUrl,
-                    dto.VideoTitle, dto.VideoUrl,
-                    dto.MapEmbedUrl, dto.ReviewsEmbedHtml,
-                    dto.PopupTitle, dto.PopupBody, dto.PopupImageUrl, dto.PopupActive,
-                    dto.FlashBannerText, dto.FlashBannerActive,
-                    dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText,
-                    dto.ReviewVideoTitle, dto.ReviewVideoUrl);
-                await _contentRepository.UpdateAsync(entity, autoSave: true);
+                await UpdateExistingContentAsync(entity, dto, newsJson);
             }
 
             // Perf: bust the public landing-content cache so the edit shows immediately.
             _catalogCache.Invalidate();
 
             return dto;
+        }
+
+        /// <summary>Nhánh tạo mới của upsert: dựng entity từ DTO rồi insert.</summary>
+        private async Task CreateContentAsync(LandingContentDto dto, string newsJson)
+        {
+            var entity = LandingPageContent.Create(
+                dto.HeroTitle, dto.HeroTagline, dto.HeroButtonText,
+                dto.StoryTitle, dto.StoryBody,
+                dto.MenuTitle, dto.MenuLabel1, dto.MenuLabel2, dto.MenuLabel3,
+                dto.NewsTitle, newsJson,
+                dto.FooterTitle, dto.FooterAboutText, dto.FooterCopyrightText, dto.ContactAddress, dto.ContactPhone, dto.ContactEmail,
+                dto.FooterButtonText,
+                dto.HeroImageUrl, dto.BannerImageUrl,
+                dto.MenuImage1Url, dto.MenuImage2Url, dto.MenuImage3Url,
+                dto.FooterBackgroundUrl,
+                dto.VideoTitle, dto.VideoUrl,
+                dto.MapEmbedUrl, dto.ReviewsEmbedHtml,
+                dto.PopupTitle, dto.PopupBody, dto.PopupImageUrl, dto.PopupActive,
+                dto.FlashBannerText, dto.FlashBannerActive,
+                dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText,
+                dto.ReviewVideoTitle, dto.ReviewVideoUrl);
+            await _contentRepository.InsertAsync(entity, autoSave: true);
+        }
+
+        /// <summary>Nhánh cập nhật của upsert: gán DTO vào entity có sẵn rồi update.</summary>
+        private async Task UpdateExistingContentAsync(LandingPageContent entity, LandingContentDto dto, string newsJson)
+        {
+            entity.Update(
+                dto.HeroTitle, dto.HeroTagline, dto.HeroButtonText,
+                dto.StoryTitle, dto.StoryBody,
+                dto.MenuTitle, dto.MenuLabel1, dto.MenuLabel2, dto.MenuLabel3,
+                dto.NewsTitle, newsJson,
+                dto.FooterTitle, dto.FooterAboutText, dto.FooterCopyrightText, dto.ContactAddress, dto.ContactPhone, dto.ContactEmail,
+                dto.FooterButtonText,
+                dto.HeroImageUrl, dto.BannerImageUrl,
+                dto.MenuImage1Url, dto.MenuImage2Url, dto.MenuImage3Url,
+                dto.FooterBackgroundUrl,
+                dto.VideoTitle, dto.VideoUrl,
+                dto.MapEmbedUrl, dto.ReviewsEmbedHtml,
+                dto.PopupTitle, dto.PopupBody, dto.PopupImageUrl, dto.PopupActive,
+                dto.FlashBannerText, dto.FlashBannerActive,
+                dto.PromoCountdownActive, dto.PromoCountdownEnd, dto.PromoCountdownText,
+                dto.ReviewVideoTitle, dto.ReviewVideoUrl);
+            await _contentRepository.UpdateAsync(entity, autoSave: true);
         }
 
         private async Task<LandingPageContent> GetSingleAsync()

@@ -16,7 +16,7 @@ namespace PhuThuongStickyRice.Application
         public TEntity Entity { get; set; }
     }
 
-    internal class DeleteEntityCommandHandler<TEntity> : ICommandHandler<DeleteEntityCommand<TEntity>>
+    internal sealed class DeleteEntityCommandHandler<TEntity> : ICommandHandler<DeleteEntityCommand<TEntity>>
     where TEntity : Entity<Guid>, IAggregateRoot
     {
         private readonly IEntityCrudService<TEntity> _crudService;

@@ -18,7 +18,7 @@ namespace PhuThuongStickyRice.Application
     {
     }
 
-    internal class GetEntitiesQueryHandler<TEntity> : IQueryHandler<GetEntitiesQuery<TEntity>, List<TEntity>>
+    internal sealed class GetEntitiesQueryHandler<TEntity> : IQueryHandler<GetEntitiesQuery<TEntity>, List<TEntity>>
     where TEntity : Entity<Guid>, IAggregateRoot
     {
         private readonly IRepository<TEntity, Guid> _repository;

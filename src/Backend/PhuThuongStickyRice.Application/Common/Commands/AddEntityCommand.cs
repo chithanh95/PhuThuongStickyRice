@@ -23,7 +23,7 @@ namespace PhuThuongStickyRice.Application
         public TEntity Entity { get; set; }
     }
 
-    internal class AddEntityCommandHandler<TEntity> : ICommandHandler<AddEntityCommand<TEntity>>
+    internal sealed class AddEntityCommandHandler<TEntity> : ICommandHandler<AddEntityCommand<TEntity>>
     where TEntity : Entity<Guid>, IAggregateRoot
     {
         private readonly IEntityCrudService<TEntity> _crudService;

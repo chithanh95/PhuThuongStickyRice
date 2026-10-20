@@ -11,6 +11,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+    /// <summary>
+    /// API báo giá tiệc/số lượng lớn: khách gửi yêu cầu báo giá công khai
+    /// (không thanh toán ở bước này), admin quản lý (duyệt trạng thái, đặt
+    /// cọc), kèm đăng ký nhắc xôi cúng Rằm/mùng 1.
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
     [Route("api/[controller]")]
@@ -44,6 +49,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin: danh sách yêu cầu báo giá phân trang (lọc theo từ khóa và
+        /// trạng thái). page/pageSize không hợp lệ được kẹp về 1/20 để không
+        /// gây SkipCount âm hay truy vấn quá lớn.
+        /// </summary>
+        /// <param name="page">Trang (bắt đầu từ 1).</param>
+        /// <param name="pageSize">Số dòng/trang.</param>
+        /// <param name="searchTerm">Tìm theo tên/SĐT khách.</param>
+        /// <param name="status">Lọc trạng thái xử lý.</param>
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult> GetList(
@@ -109,6 +123,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin: cập nhật trạng thái yêu cầu báo giá (ví dụ: duyệt/từ chối).
+        /// Lỗi nghiệp vụ (trạng thái không hợp lệ, không tìm thấy) trả 400.
+        /// </summary>
+        /// <param name="id">Id yêu cầu báo giá.</param>
+        /// <param name="dto">Trạng thái mới.</param>
         [Authorize(Roles = "Admin")]
         [HttpPut("{id:guid}/status")]
         public async Task<ActionResult> UpdateStatus(

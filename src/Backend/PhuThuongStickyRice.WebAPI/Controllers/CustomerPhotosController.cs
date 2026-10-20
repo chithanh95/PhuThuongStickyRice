@@ -24,6 +24,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     // these endpoints. Route fixed to kebab-case to match the frontend
     // (AdminCommerceService calls api/customer-photos/*).
 
+    /// <summary>
+    /// API ảnh khách hàng (item 123): khách chia sẻ ảnh món đã nhận từ màn
+    /// tra cứu đơn (ảnh vào hàng chờ kiểm duyệt trước), admin duyệt/từ chối
+    /// ở màn đánh giá, shop hiển thị ảnh đã duyệt ở gallery.
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
     [Route("api/customer-photos")]

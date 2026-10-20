@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -25,7 +26,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
             var builder = new StringBuilder(hash.Length * 2);
             foreach (var hashByte in hash)
             {
-                builder.Append(hashByte.ToString("x2"));
+                builder.Append(hashByte.ToString("x2", CultureInfo.InvariantCulture));
             }
 
             return builder.ToString();
