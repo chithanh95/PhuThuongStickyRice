@@ -191,9 +191,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// One-click sold-out toggle (Active &lt;-&gt; Inactive) for the
-        /// admin product list.
+        /// Bật/tắt trạng thái bán của món (Active &lt;-&gt; Inactive) bằng 1
+        /// click ở trang danh sách sản phẩm admin — dùng khi món hết hàng
+        /// cần ngưng bán tạm thời và mở lại khi có hàng.
         /// </summary>
+        /// <param name="id">Id sản phẩm cần đổi trạng thái.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(AuthorizationPolicyNames.UpdateProductPolicy)]
         [HttpPost("{id}/toggle-availability")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -217,9 +220,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Item 146: saves the manual display order (drag &amp; drop on
-        /// /products). Body: { "ids": [guid, ...] } in display order.
+        /// Item 146: lưu thứ tự hiển thị món do admin kéo-thả thủ công ở
+        /// trang /products. Body: { "ids": [guid, ...] } theo đúng thứ tự
+        /// hiển thị mong muốn.
         /// </summary>
+        /// <param name="model">Danh sách id sản phẩm theo thứ tự hiển thị.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(AuthorizationPolicyNames.UpdateProductPolicy)]
         [HttpPost("reorder")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -236,9 +242,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Item 148: change history of a product ("ai sửa gì, khi nào"),
-        /// newest first. Admin-only.
+        /// Item 148: lịch sử thay đổi của 1 sản phẩm ("ai sửa gì, khi nào"),
+        /// mới nhất lên trước. Chỉ Admin.
         /// </summary>
+        /// <param name="id">Id sản phẩm.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [HttpGet("{id}/change-log")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult> GetChangeLog(Guid id, CancellationToken cancellationToken = default)
@@ -266,9 +274,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Public: product ids ordered by quantity sold, for the shop's
-        /// "Bán chạy" sort. Returns ids only (no revenue data).
+        /// Public: danh sách id sản phẩm xếp theo số lượng đã bán — phục vụ
+        /// kiểu sắp xếp "Bán chạy" ở shop. Chỉ trả id (không lộ doanh thu).
         /// </summary>
+        /// <param name="top">Số món lấy, mặc định 100.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpGet("best-sellers")]
         public async Task<ActionResult> GetBestSellers(
@@ -279,9 +289,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Public: total quantity sold per product (all time, non-cancelled).
-        /// BA shop item 4 — "Đã bán N suất" social proof on product cards.
+        /// Public: tổng số lượng đã bán của từng món (mọi thời gian, trừ đơn
+        /// đã hủy). Dùng cho dòng "Đã bán N suất" (social proof) trên thẻ
+        /// món ở shop.
         /// </summary>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpGet("sold-quantities")]
         public async Task<ActionResult> GetSoldQuantities(
@@ -291,9 +303,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Public: daily-limit status of limited products ("Còn N suất").
-        /// Item 165. No auth — quantities sold are not sensitive.
+        /// Public: trạng thái suất bán còn lại trong ngày của các món giới
+        /// hạn số lượng ("Còn N suất" — item 165). Không cần đăng nhập — số
+        /// lượng đã bán không phải dữ liệu nhạy cảm.
         /// </summary>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpGet("daily-remaining")]
         public async Task<ActionResult> GetDailyRemaining(
@@ -303,9 +317,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Wave 6b (item 26): public per-product rating aggregates
-        /// {ProductId, AverageRating, ReviewCount} from non-hidden reviews.
+        /// Public: điểm đánh giá tổng hợp theo từng món {ProductId,
+        /// AverageRating, ReviewCount}, tính từ các đánh giá không bị ẩn.
         /// </summary>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpGet("ratings")]
         public async Task<ActionResult> GetRatings(
@@ -315,10 +330,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Item 166: uploads one product photo (admin). The client compresses
-        /// before sending; this endpoint stores the file and returns its URL.
-        /// The product form collects URLs and saves them via PUT.
+        /// Item 166: upload 1 ảnh sản phẩm (admin). Client tự nén ảnh trước
+        /// khi gửi; endpoint này lưu file xuống disk và trả URL. Form sản
+        /// phẩm thu thập các URL rồi lưu vào món qua endpoint PUT.
         /// </summary>
+        /// <param name="file">File ảnh từ form (jpg/jpeg/png/webp/gif, tối đa 5 MB).</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(AuthorizationPolicyNames.AddProductPolicy)]
         [HttpPost("images/upload")]
         [RequestSizeLimit(MaxProductImageBytes)]
@@ -477,6 +494,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 "uploads",
                 "products");
 
+        /// <summary>
+        /// Lấy toàn bộ (tối đa 1000 món) danh sách sản phẩm dạng ProductModel
+        /// để xuất PDF/CSV. Dùng chung cho ExportAsPdf và ExportAsCsv.
+        /// </summary>
+        /// <param name="cancellationToken">Token hủy request.</param>
         private async Task<List<ProductModel>> GetAllProductModels(CancellationToken cancellationToken)
         {
             var paged = await _productAppService.GetListAsync(new GetProductsInput

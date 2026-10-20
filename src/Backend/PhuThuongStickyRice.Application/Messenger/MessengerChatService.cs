@@ -207,12 +207,14 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// <summary>
         /// Verify chữ ký X-Hub-Signature-256 (HMAC-SHA256 bằng App Secret) của
         /// webhook POST — chỉ đơn tạo từ Facebook thật mới được chấp nhận.
-        /// Chưa cấu hình App Secret thì log cảnh báo và cho qua (true) để
-        /// webhook đang chạy theo hướng dẫn cũ không bị gãy.
+        /// Chưa cấu hình App Secret thì log cảnh báo và TỪ CHỐI (false,
+        /// fail-closed): cho qua sẽ cho phép POST payload giả điều khiển bot
+        /// tạo đơn thật qua skipRecaptchaCheck.
         /// </summary>
         /// <param name="body">Body thô của request.</param>
         /// <param name="signatureHeader">Giá trị header X-Hub-Signature-256.</param>
-        /// <returns>True khi chữ ký hợp lệ (hoặc chưa cấu hình secret).</returns>
+        /// <returns>True khi chữ ký hợp lệ; false khi chưa cấu hình secret
+        /// hoặc chữ ký sai.</returns>
         public virtual async Task<bool> VerifyWebhookSignatureAsync(byte[] body, string? signatureHeader)
         {
             var settings = await _shopSettings.GetAsync();
@@ -784,11 +786,14 @@ namespace PhuThuongStickyRice.Application.Messenger
             return $"{amount:N0}đ";
         }
 
+        // [codequality-practices 2026-10-20 run-1605] Range operator thay
+        // Substring(start, length) — tương đương hành vi, đồng nhất với các
+        // chỗ dùng range operator khác trong file này.
         private static IEnumerable<string> SplitMessage(string text, int maxLen)
         {
             for (var start = 0; start < text.Length; start += maxLen)
             {
-                yield return text.Substring(start, Math.Min(maxLen, text.Length - start));
+                yield return text[start..(start + Math.Min(maxLen, text.Length - start))];
             }
         }
 

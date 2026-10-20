@@ -39,7 +39,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             var body = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException(ExtractMessage(body));
+                throw new InvalidOperationException(ExtractServerErrorMessage(body));
             }
 
             return System.Text.Json.JsonSerializer.Deserialize<CustomerAuthResult>(
@@ -61,7 +61,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             var body = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException(ExtractMessage(body));
+                throw new InvalidOperationException(ExtractServerErrorMessage(body));
             }
 
             return System.Text.Json.JsonSerializer.Deserialize<CustomerAuthResult>(
@@ -87,7 +87,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
 
             var body = await response.Content.ReadAsStringAsync();
-            throw new InvalidOperationException(ExtractMessage(body));
+            throw new InvalidOperationException(ExtractServerErrorMessage(body));
         }
         /// <summary>
         /// GET api/auth/profile: hồ sơ tài khoản đang đăng nhập (tên, email,
@@ -112,7 +112,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
                 new { UserName = userName, Email = email, PhoneNumber = phoneNumber });
             if (response.IsSuccessStatusCode) return;
             var body = await response.Content.ReadAsStringAsync();
-            throw new InvalidOperationException(ExtractMessage(body));
+            throw new InvalidOperationException(ExtractServerErrorMessage(body));
         }
 
         /// <summary>Staff team chat: recent messages (oldest first).</summary>
@@ -130,7 +130,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             using var response = await _httpClient.PostAsJsonAsync("api/staff-chat", new { Message = message });
             if (response.IsSuccessStatusCode) return;
             var body = await response.Content.ReadAsStringAsync();
-            throw new InvalidOperationException(ExtractMessage(body));
+            throw new InvalidOperationException(ExtractServerErrorMessage(body));
         }
 
 
@@ -152,7 +152,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
 
             var body = await response.Content.ReadAsStringAsync();
-            throw new InvalidOperationException(ExtractMessage(body));
+            throw new InvalidOperationException(ExtractServerErrorMessage(body));
         }
 
         /// <summary>
@@ -172,10 +172,17 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             }
 
             var body = await response.Content.ReadAsStringAsync();
-            throw new InvalidOperationException(ExtractMessage(body));
+            throw new InvalidOperationException(ExtractServerErrorMessage(body));
         }
 
-        private static string ExtractMessage(string body)
+        /// <summary>
+        /// Trích thông điệp lỗi thân thiện từ body response lỗi của server:
+        /// ưu tiên field "message" trong JSON; body không phải JSON hoặc không
+        /// có message thì dùng nguyên văn body (khi ngắn), cuối cùng dùng
+        /// thông điệp dự phòng.
+        /// </summary>
+        /// <param name="body">Body text của response lỗi.</param>
+        private static string ExtractServerErrorMessage(string body)
         {
             // codequality-team 2026-10-20: dùng chung JsonDocument parser ở
             // HttpErrorMessageReader thay vì copy logic trích "message" từ JSON.

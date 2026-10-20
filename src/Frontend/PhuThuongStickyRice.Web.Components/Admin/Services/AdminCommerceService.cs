@@ -98,13 +98,13 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         /// moderation. Mirrors the LandingService upload pattern.
         /// </summary>
         public async Task<CustomerPhotoModel> UploadCustomerPhotoAsync(
-            System.IO.Stream content, string fileName, string contentType, string phone, string caption,
+            System.IO.Stream imageStream, string fileName, string contentType, string phone, string caption,
             string name = null)
         {
             await SetBearerToken();
 
             using var form = new MultipartFormDataContent();
-            var fileContent = new StreamContent(content);
+            var fileContent = new StreamContent(imageStream);
             fileContent.Headers.ContentType =
                 new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
             form.Add(fileContent, "file", fileName);
@@ -363,11 +363,11 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
 
         /// <summary>Tạo đơn POS tại quầy (thanh toán tiền mặt, nhận hàng ngay).</summary>
         /// <typeparam name="T">Kiểu DTO đơn hàng trả về.</typeparam>
-        /// <param name="input">Dữ liệu đơn POS.</param>
+        /// <param name="orderPayload">Dữ liệu đơn POS gửi lên server.</param>
         /// <returns>Đơn hàng đã tạo (kiểu <typeparamref name="T"/>).</returns>
-        public async Task<T> CreatePosOrderAsync<T>(object input)
+        public async Task<T> CreatePosOrderAsync<T>(object orderPayload)
         {
-            return await PostAsync<T>("api/pos/orders", input);
+            return await PostAsync<T>("api/pos/orders", orderPayload);
         }
 
         // ---- MoMo reconciliation (item 128) ----

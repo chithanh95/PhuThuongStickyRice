@@ -17,6 +17,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [Route("api/admin/permissions")]
     [ApiController]
     [Authorize(Roles = "Admin")]
+    /// <summary>
+    /// API ma trận phân quyền (Admin): xem và cập nhật quyền của từng vai trò
+    /// nhân viên. Mọi thay đổi được ghi log hoạt động staff để truy vết.
+    /// </summary>
     public class PermissionsController : ControllerBase
     {
         private readonly IPermissionService _permissions;
@@ -30,12 +34,20 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _activityLogger = activityLogger;
         }
 
+        /// <summary>Lấy ma trận quyền hiện tại của các vai trò nhân viên.</summary>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [HttpGet("matrix")]
         public async Task<ActionResult> GetMatrix(CancellationToken cancellationToken = default)
         {
             return Ok(await _permissions.GetMatrixAsync());
         }
 
+        /// <summary>
+        /// Cập nhật quyền của 1 vai trò. Yêu cầu có trường Role; sau khi lưu
+        /// ghi log hoạt động "Đổi phân quyền" để admin truy vết ai đổi quyền.
+        /// </summary>
+        /// <param name="input">Vai trò và danh sách mã quyền được cấp.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [HttpPut("matrix")]
         public async Task<ActionResult> UpdateMatrix([FromBody] UpdateRolePermissionsDto input,
             CancellationToken cancellationToken = default)

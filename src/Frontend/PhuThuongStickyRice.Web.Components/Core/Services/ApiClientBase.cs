@@ -144,8 +144,8 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             HandleNotFound(response);
             response.EnsureSuccessStatusCode();
 
-            var dto = await response.Content.ReadAs<T>();
-            return dto;
+            var result = await response.Content.ReadAs<T>();
+            return result;
         }
 
         /// <summary>
@@ -172,8 +172,8 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             HandleUnauthorized(response);
             HandleNotFound(response);
             response.EnsureSuccessStatusCode();
-            var createdObject = await response.Content.ReadAs<T>();
-            return createdObject;
+            var result = await response.Content.ReadAs<T>();
+            return result;
         }
 
         /// <summary>
@@ -196,8 +196,8 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             HandleUnauthorized(response);
             HandleNotFound(response);
             response.EnsureSuccessStatusCode();
-            var updatedObject = await response.Content.ReadAs<T>();
-            return updatedObject;
+            var result = await response.Content.ReadAs<T>();
+            return result;
         }
 
         /// <summary>

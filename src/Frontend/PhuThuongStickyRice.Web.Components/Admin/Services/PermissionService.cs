@@ -65,7 +65,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         // khoảng giữa lần check và lần set (async double-check race).
         // Fetch lỗi vẫn trả về tập rỗng nên cache không bao giờ bị poison.
         private Task<HashSet<string>> _permissionsTask;
-        private readonly object _lock = new object();
+        private readonly object _permissionsLock = new object();
 
         public PermissionService(HttpClient httpClient, ITokenStore tokenStore)
             : base(httpClient, tokenStore)
@@ -78,7 +78,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         /// </summary>
         public void ClearCache()
         {
-            lock (_lock)
+            lock (_permissionsLock)
             {
                 _permissionsTask = null;
             }
@@ -90,7 +90,7 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         /// </summary>
         public Task<HashSet<string>> GetMyPermissionsAsync()
         {
-            lock (_lock)
+            lock (_permissionsLock)
             {
                 if (_permissionsTask == null)
                 {

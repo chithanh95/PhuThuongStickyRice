@@ -18,6 +18,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [Produces("application/json")]
     [Route("api/[controller]")]
     [ApiController]
+    /// <summary>
+    /// API mã QR dán trên bàn quán (khách quét để mở shop/đặt món tại bàn).
+    /// Tạo/làm mới QR và tải file PNG để in; xóa nhãn QR khỏi hệ thống.
+    /// </summary>
     public class TableQrsController : ControllerBase
     {
         private readonly ITableQrAppService _tableQrs;
@@ -27,13 +31,17 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _tableQrs = tableQrs;
         }
 
+        /// <summary>Lấy toàn bộ danh sách nhãn QR bàn đã tạo (quản lý ở admin).</summary>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [HttpGet]
         public async Task<ActionResult> GetList(CancellationToken cancellationToken = default)
         {
             return Ok(await _tableQrs.GetListAsync());
         }
 
-        /// <summary>Generates (or refreshes) the QR for a table label.</summary>
+        /// <summary>Tạo mới (hoặc làm mới) mã QR cho 1 nhãn bàn.</summary>
+        /// <param name="dto">Thông tin nhãn bàn cần tạo QR.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [HttpPost]
         public async Task<ActionResult> Generate(
             [FromBody] CreateTableQrDto dto,
@@ -50,9 +58,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Downloads the saved QR as a PNG file. Anonymous: QR codes are
-        /// printed on tables — the PNG only encodes the public shop URL.
+        /// Tải file PNG của mã QR đã lưu để in dán bàn. Public (không cần
+        /// đăng nhập) vì QR in trên bàn chỉ mã hóa URL shop công khai.
         /// </summary>
+        /// <param name="id">Id nhãn QR bàn.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpGet("{id:guid}/png")]
         public async Task<ActionResult> DownloadPng(Guid id, CancellationToken cancellationToken = default)
@@ -61,6 +71,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return File(png, "image/png");
         }
 
+        /// <summary>Xóa 1 nhãn QR bàn khỏi hệ thống.</summary>
+        /// <param name="id">Id nhãn QR cần xóa.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
         {

@@ -25,6 +25,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _profitReport = profitReport;
         }
 
+        /// <summary>
+        /// Admin: báo cáo lãi gộp theo ngày và theo món trong khoảng ngày.
+        /// Lãi = doanh thu − giá vốn; giá vốn dùng giá HIỆN TẠI của từng món
+        /// (tính hồi tố — sửa giá vốn làm đổi số liệu các kỳ trước); đơn đã
+        /// hủy bị loại khỏi toàn bộ số liệu.
+        /// </summary>
+        /// <param name="from">Ngày bắt đầu (mặc định 7 ngày gần nhất).</param>
+        /// <param name="to">Ngày kết thúc (mặc định hôm nay).</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
+        /// <returns>Doanh thu/giá vốn/lãi theo ngày, theo món và tổng cộng.</returns>
         [HttpGet]
         public async Task<ActionResult> GetReport(
             [FromQuery] DateTime? from = null,

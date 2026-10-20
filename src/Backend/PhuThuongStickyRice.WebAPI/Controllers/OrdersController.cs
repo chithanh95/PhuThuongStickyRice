@@ -42,7 +42,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         private static readonly string[] AllowedReviewPhotoExtensions =
             { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
-        private const long MaxReviewPhotoBytes = 5 * 1024 * 1024;
+        private const long MaxReviewPhotoBytes = 5 * 1024 * 1024; // Dung lượng tối đa mỗi ảnh đánh giá: 5 MB.
         // Phân trang mặc định cho danh sách đơn: dùng chung ở tham số
         // mặc định của endpoint và ở fallback khi client gửi pageSize < 1.
         private const int DefaultPageSize = 20;
@@ -581,10 +581,14 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Public: uploads a photo to attach to a review. The photo is saved
-        /// immediately and its URL must be passed as PhotoUrl when submitting
-        /// the review. Validates the order belongs to the phone.
+        /// Public: upload ảnh để đính kèm vào đánh giá. Ảnh được lưu ngay
+        /// và trả về URL — frontend phải gửi URL này trong trường PhotoUrl
+        /// khi submit đánh giá. Kiểm tra đơn hàng thuộc về đúng số điện thoại.
         /// </summary>
+        /// <param name="file">File ảnh đánh giá (jpg/jpeg/png/webp/gif, tối đa 5 MB).</param>
+        /// <param name="orderNumber">Mã đơn hàng cần đánh giá.</param>
+        /// <param name="customerPhone">SĐT của khách đặt đơn (để xác thực).</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpPost("track/review/photo")]
         [RequestSizeLimit(MaxReviewPhotoBytes)]
@@ -600,7 +604,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return BadRequest(new { message = validationError });
             }
 
-            // The order must exist and belong to this phone.
+            // Đơn hàng phải tồn tại và thuộc về đúng số điện thoại gửi ảnh —
+            // tránh khách A đính ảnh vào đánh giá của đơn khách B.
             OrderDto order;
             try
             {
