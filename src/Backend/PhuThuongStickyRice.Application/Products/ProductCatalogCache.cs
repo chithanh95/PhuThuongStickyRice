@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
+using PhuThuongStickyRice.Application.Common;
 using System;
-using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 
@@ -38,8 +37,9 @@ namespace PhuThuongStickyRice.Application.Products
     /// Cache danh sách catalog public (sản phẩm, mã giảm giá công khai...) bằng
     /// IMemoryCache với TTL 5 phút. Dùng versioned-key: <see cref="Invalidate"/>
     /// chỉ tăng version thay vì xóa từng entry (IMemoryCache không hỗ trợ xóa
-    /// hàng loạt). Transient nhưng SemaphoreSlim chống stampede là static vì
-    /// IMemoryCache dùng chung toàn process. Nằm trên đường nóng của checkout
+    /// hàng loạt). Transient nhưng khóa per-key chống stampede dùng
+    /// <see cref="KeyedAsyncLock"/> (refcount + dispose đúng lúc, không race
+    /// như pattern TryRemove trực tiếp). Nằm trên đường nóng của checkout
     /// (EvaluateBestDiscountAsync chạy mỗi lần xem giỏ) nên mọi logic validate áp dụng
     /// mã vẫn kiểm tra lại server-side — cache hết hạn/chậm tối đa 5 phút là
     /// chấp nhận được vì validate sẽ từ chối mã đã hết hiệu lực.
@@ -48,15 +48,6 @@ namespace PhuThuongStickyRice.Application.Products
     {
         private const string VersionKey = "product-catalog:version";
         private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(5);
-
-        /// <summary>
-        /// Khóa per-key chống cache stampede (thundering herd): khi 1 key nóng
-        /// hết TTL, chỉ 1 request chạy factory (query DB), các request đồng thời
-        /// còn lại chờ rồi đọc kết quả từ cache. Static vì class này là transient
-        /// (mỗi lần resolve 1 instance mới), còn IMemoryCache thì dùng chung toàn
-        /// process. Semaphore được dọn sau khi dùng để không phình dictionary.
-        /// </summary>
-        private static readonly ConcurrentDictionary<string, SemaphoreSlim> Locks = new();
 
         private readonly IMemoryCache _cache;
 
@@ -85,9 +76,17 @@ namespace PhuThuongStickyRice.Application.Products
                 return cached;
             }
 
-            var semaphore = Locks.GetOrAdd(versionedKey, _ => new SemaphoreSlim(1, 1));
-            await semaphore.WaitAsync();
-            try
+            // [codequality-practices 2026-10-20] Dùng KeyedAsyncLock chung thay
+            // cho ConcurrentDictionary<string, SemaphoreSlim> + TryRemove trực
+            // tiếp: bản cũ có race giữa Release và TryRemove — request mới
+            // GetOrAdd sau TryRemove tạo semaphore mới trong khi request đang
+            // chờ vẫn giữ semaphore cũ → 2 bên cùng chạy factory (stampede tái
+            // diễn); semaphore cũ cũng không được Dispose (rò handle OS).
+            // KeyedAsyncLock đếm RefCount nên chỉ xóa entry khi không còn ai
+            // giữ/chờ và Dispose đúng lúc — mutual exclusion không bao giờ gãy.
+            // Ngữ nghĩa giữ nguyên: double-check sau khi lấy khóa, 1 factory
+            // duy nhất chạy cho mỗi versioned key.
+            return await KeyedAsyncLock.RunAsync(versionedKey, async () =>
             {
                 // Double-check: request khác có thể đã nạp cache trong lúc mình chờ khóa.
                 if (_cache.TryGetValue(versionedKey, out T cachedAfterLock))
@@ -98,12 +97,7 @@ namespace PhuThuongStickyRice.Application.Products
                 var value = await factory();
                 _cache.Set(versionedKey, value, Ttl);
                 return value;
-            }
-            finally
-            {
-                semaphore.Release();
-                Locks.TryRemove(versionedKey, out _);
-            }
+            });
         }
 
         /// <summary>
