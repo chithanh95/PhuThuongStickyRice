@@ -80,6 +80,17 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         public string DeleteProductError { get; private set; }
 
+        /// <summary>Lỗi tải danh sách lần đầu (API/DB lỗi) — hiện alert đỏ kèm message thật.</summary>
+        public string ProductsLoadError { get; private set; }
+
+        /// <summary>True khi đã tải xong nhưng không có dòng nào để hiện (danh sách rỗng hoặc lọc không khớp).</summary>
+        protected bool ShowEmptyRow => Products != null && !PagedProducts.Any();
+
+        /// <summary>Text cho dòng trạng thái rỗng trong bảng.</summary>
+        protected string EmptyRowText => Products.Count == 0
+            ? "Chưa có sản phẩm nào."
+            : "Không tìm thấy món nào khớp từ khóa tìm kiếm.";
+
         /// <summary>One-click sold-out toggle (Active &lt;-&gt; Inactive).</summary>
         protected async Task ToggleAvailability(ProductModel product)
         {
@@ -117,14 +128,33 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
 
         protected override async Task OnInitializedAsync()
         {
-            // perf-hunt 2026-10-19 (run 00:05): 2 loader độc lập (permissions +
-            // products ghi 2 field khác nhau) → chạy song song bằng Task.WhenAll
-            // thay vì tuần tự, cắt ~1 HTTP round-trip khi mở trang /products.
-            // Permissions giữ fail-soft như cũ (lỗi → tập rỗng).
-            var permissionsTask = LoadPermissionsAsync();
-            var productsTask = ProductService.GetProductsAsync();
-            await Task.WhenAll(permissionsTask, productsTask);
-            Products = await productsTask;
+            // Tải TUẦN TỰ và fail-soft cho CẢ 2 loader. Trước đây products
+            // load KHÔNG có try/catch: API lỗi 1 lần (vd DB thiếu cột vì
+            // migration chưa chạy kịp) là exception văng khỏi
+            // OnInitializedAsync, Products kẹt null, trang đứng im ở
+            // "Đang tải..." không hiện lỗi gì (user phản ánh 2026-10-20:
+            // vào màn sản phẩm thấy trống trơn). Nay lỗi thì hiện alert đỏ
+            // kèm message thật + danh sách rỗng, trang vẫn dùng được.
+            await LoadPermissionsAsync();
+            await LoadProductsAsync();
+        }
+
+        /// <summary>
+        /// Tải danh sách sản phẩm; lỗi thì ghi log, để danh sách rỗng và
+        /// set <see cref="ProductsLoadError"/> để razor hiện alert.
+        /// </summary>
+        private async Task LoadProductsAsync()
+        {
+            try
+            {
+                Products = await ProductService.GetProductsAsync();
+            }
+            catch (System.Exception ex)
+            {
+                Log.LoadProductsFailed(Logger, ex);
+                Products = new List<ProductModel>();
+                ProductsLoadError = $"Không tải được danh sách sản phẩm. ({ex.Message})";
+            }
         }
 
         /// <summary>
@@ -201,6 +231,9 @@ namespace PhuThuongStickyRice.Web.Components.Products.Pages
         {
             [LoggerMessage(Level = LogLevel.Error, Message = "Xóa sản phẩm thất bại.")]
             public static partial void DeleteProductFailed(ILogger logger, Exception ex);
+
+            [LoggerMessage(Level = LogLevel.Error, Message = "Tải danh sách sản phẩm thất bại.")]
+            public static partial void LoadProductsFailed(ILogger logger, Exception ex);
         }
     }
 }

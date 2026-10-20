@@ -45,9 +45,9 @@
                 </div>
             </div>
         </div>
-        @if (!string.IsNullOrEmpty(AvailabilityToggleError) || !string.IsNullOrEmpty(DeleteProductError))
+        @if (!string.IsNullOrEmpty(ProductsLoadError) || !string.IsNullOrEmpty(AvailabilityToggleError) || !string.IsNullOrEmpty(DeleteProductError))
         {
-            <div class="alert alert-danger">@(AvailabilityToggleError ?? DeleteProductError)</div>
+            <div class="alert alert-danger">@(ProductsLoadError ?? AvailabilityToggleError ?? DeleteProductError)</div>
         }
         <div class="table-responsive">
 
@@ -68,6 +68,12 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @if (ShowEmptyRow)
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">@EmptyRowText</td>
+                            </tr>
+                        }
                         @foreach (var product in PagedProducts)
                         {
                             <tr @key="product.Id">
