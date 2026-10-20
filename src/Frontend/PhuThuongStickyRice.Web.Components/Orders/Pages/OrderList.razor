@@ -1077,10 +1077,10 @@ else
         var primary = group.Orders.FirstOrDefault(o => o.Id == primaryId) ?? group.Orders[0];
         var others = group.Orders.Where(o => o.Id != primary.Id).ToList();
 
-        var ok = await JSRuntime.InvokeAsync<bool>("confirm",
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm",
             $"Gộp {others.Count} đơn vào đơn {primary.OrderNumber}?\n" +
             "Các món sẽ được cộng dồn, các đơn còn lại bị hủy (có ghi chú). Không thể hoàn tác.");
-        if (!ok)
+        if (!confirmed)
         {
             return;
         }

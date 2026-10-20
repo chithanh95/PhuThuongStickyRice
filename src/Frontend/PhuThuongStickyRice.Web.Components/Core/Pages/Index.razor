@@ -898,9 +898,6 @@ else
     private string _upsellAddedName;
     private List<ShopProductModel> _upsellProducts = new List<ShopProductModel>();
 
-    // Best-seller ids (fail-soft) for the "Bán chạy" badges.
-    private HashSet<Guid> _bestSellerIds = new HashSet<Guid>();
-
     private static bool IsXoi(ShopProductModel p) =>
         (p?.Code ?? "").StartsWith(XoiCodePrefix, StringComparison.OrdinalIgnoreCase);
 
@@ -1007,8 +1004,6 @@ else
     private const int MaxRecentlyViewed = 4;
     /// <summary>Số bài viết tối đa trong khối tin tức.</summary>
     private const int MaxArticles = 6;
-    /// <summary>Số món tối đa trong khối "Món nổi bật" (signature).</summary>
-    private const int MaxSignatureDishes = 6;
     /// <summary>Số gợi ý upsell tối đa sau khi thêm xôi vào giỏ.</summary>
     private const int MaxUpsellSuggestions = 4;
 
@@ -1034,16 +1029,6 @@ else
         var clampedRating = Math.Max(1, Math.Min(5, rating));
         return new string('★', clampedRating) + new string('☆', 5 - clampedRating);
     }
-
-    /// <summary>Món nổi bật: best sellers / signature trước, tối đa <see cref="MaxSignatureDishes"/> món.</summary>
-    private List<ShopProductModel> SignatureProducts =>
-        _allProducts
-            .Where(p => string.Equals(p.Status, ProductStatusActive, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(p => _bestSellerIds.Contains(p.Id) || p.IsSignature)
-            .ThenBy(p => p.SortOrder)
-            .ThenBy(p => p.Name)
-            .Take(MaxSignatureDishes)
-            .ToList();
 
     /// <summary>All active xôi products for the "Xôi truyền thống" tab.</summary>
     private List<ShopProductModel> XoiProducts =>
@@ -1084,11 +1069,6 @@ else
     // Pause-orders state (fail-soft).
     private ShopSettingModel _shopSettings;
     private bool OrdersPaused => _shopSettings != null && !_shopSettings.AcceptingOrders;
-
-    private string PauseReasonText =>
-        _shopSettings != null && !string.IsNullOrWhiteSpace(_shopSettings.PausedReason)
-            ? $": {_shopSettings.PausedReason}"
-            : ".";
 
     // Policy links for the footer (fail-soft).
     private List<PolicyPageSummaryModel> _policies = new List<PolicyPageSummaryModel>();
@@ -1142,15 +1122,8 @@ else
 
     private async Task ToggleTheme()
     {
-        // 2026-10-19: toggle NHỊ PHÂN Sáng↔Tối — 1 lần bấm = đổi giao diện ngay.
-        // Trước đây dùng ptToggleTheme xoay vòng 3 chế độ (sáng→tối→tự động→sáng):
-        // bấm từ "tối" sang "tự động" (ban đêm = tối) chỉ đổi icon mà màn vẫn đen.
-        try
-        {
-            _isDark = !_isDark;
-            await JSRuntime.InvokeVoidAsync("ptSetTheme", "pt-theme-shop", _isDark ? "dark" : "light");
-        }
-        catch { }
+        _isDark = !_isDark;
+        await ShopTheme.ApplyAsync(JSRuntime, _isDark);
     }
 
     private string HeroTitleText =>
@@ -1192,7 +1165,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        try { _isDark = await JSRuntime.InvokeAsync<bool>("ptIsDark", "pt-theme-shop"); } catch { }
+        _isDark = await ShopTheme.ReadIsDarkAsync(JSRuntime);
         AppLocalizationService.OnChange -= OnLangChanged;
         AppLocalizationService.OnChange += OnLangChanged;
         CartState.OnChange -= OnCartChanged;
@@ -1221,7 +1194,6 @@ else
             LoadCoursesAsync(),
             LoadMarketplaceLinksAsync(),
             LoadUpcomingHolidaysAsync(),
-            LoadBestSellerIdsAsync(),
             LoadCombosAsync());
 
         // Các xử lý phụ thuộc settings (sync/JS) chạy sau khi settings đã có —
@@ -1328,15 +1300,6 @@ else
                 .MinBy(h => h.HolidayDate);
         }
         catch { }
-    }
-    private async Task LoadBestSellerIdsAsync()
-    {
-        try
-        {
-            var ids = await ShopService.GetBestSellerIdsAsync();
-            if (ids != null) _bestSellerIds = new HashSet<Guid>(ids);
-        }
-        catch (Exception) { }
     }
     private async Task LoadCombosAsync()
     {

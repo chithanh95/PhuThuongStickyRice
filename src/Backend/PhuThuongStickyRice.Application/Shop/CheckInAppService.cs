@@ -16,14 +16,30 @@ namespace PhuThuongStickyRice.Application.Shop
 {
     public interface ICheckInAppService : IApplicationService
     {
-        /// <summary>Public: check in today for a phone; awards points once per day.</summary>
+        /// <summary>
+        /// Public: khách điểm danh hôm nay để nhận điểm loyalty
+        /// (mỗi SĐT tối đa 1 lần/ngày).
+        /// </summary>
+        /// <param name="phone">SĐT khách điểm danh.</param>
+        /// <returns>Kết quả: đã điểm danh chưa, điểm được tặng, streak, tổng điểm.</returns>
         Task<CheckInResultDto> CheckInAsync(string phone);
 
-        /// <summary>Public: current streak + whether the phone checked in today.</summary>
+        /// <summary>
+        /// Public: trạng thái điểm danh hiện tại của SĐT (đã điểm danh hôm nay
+        /// chưa, streak bao nhiêu ngày, tổng điểm loyalty). Chỉ đọc, không tạo
+        /// tài khoản mới.
+        /// </summary>
+        /// <param name="phone">SĐT cần tra cứu.</param>
+        /// <returns>Trạng thái điểm danh, streak và tổng điểm hiện tại.</returns>
         Task<CheckInResultDto> GetStatusAsync(string phone);
     }
 
-    /// <summary>Item 121: daily check-in awarding loyalty points.</summary>
+    /// <summary>
+    /// Điểm danh mỗi ngày nhận điểm loyalty (item 121). Mỗi SĐT tối đa 1 bản
+    /// ghi/ngày (unique Phone+Date): điểm danh trùng ngày không cộng điểm lần 2.
+    /// Insert điểm danh và cộng điểm đều nguyên tử tại DB để 2 request đồng
+    /// thời không cộng trùng; streak đếm theo từng đợt 370 ngày mới nhất.
+    /// </summary>
     public class CheckInAppService : ApplicationService, ICheckInAppService
     {
         // [codequality-smell 2026-10-20] Dùng hằng số dùng chung
@@ -182,6 +198,9 @@ namespace PhuThuongStickyRice.Application.Shop
             };
         }
 
+        /// <summary>
+        /// Tìm bản ghi điểm danh của SĐT trong 1 ngày (null nếu chưa điểm danh ngày đó).
+        /// </summary>
         private async Task<CheckIn> FindAsync(string phone, DateTime date)
         {
             var queryable = await _checkIns.GetQueryableAsync();
@@ -192,6 +211,9 @@ namespace PhuThuongStickyRice.Application.Shop
                 queryable, x => x.Phone == phone && x.Date == date);
         }
 
+        /// <summary>
+        /// Tìm tài khoản loyalty theo SĐT đã chuẩn hóa (null nếu chưa có).
+        /// </summary>
         private async Task<LoyaltyAccount> FindLoyaltyAsync(string phone)
         {
             var queryable = await _loyaltyAccounts.GetQueryableAsync();
@@ -201,6 +223,11 @@ namespace PhuThuongStickyRice.Application.Shop
             return await _asyncExecuter.FirstOrDefaultAsync(queryable, x => x.Phone == phone);
         }
 
+        /// <summary>
+        /// Lấy tài khoản loyalty của SĐT, tạo mới (0 điểm) nếu chưa có. Insert
+        /// nguyên tử: 2 request đồng thời cho SĐT mới thì bên thua đọc lại
+        /// tài khoản bên thắng vừa tạo thay vì lỗi trùng unique.
+        /// </summary>
         private async Task<LoyaltyAccount> GetOrCreateLoyaltyAsync(string phone)
         {
             var account = await FindLoyaltyAsync(phone);
@@ -215,6 +242,8 @@ namespace PhuThuongStickyRice.Application.Shop
                 Points = 0,
                 TotalEarned = 0,
                 TotalSpent = 0,
+                // Mã giới thiệu: tiền tố + hậu tố ngẫu nhiên in hoa (độ dài
+                // ReferralCodes.SuffixLength) để khách chia sẻ cho người mới.
                 ReferralCode = ReferralCodes.Prefix + Guid.NewGuid().ToString("N")[..ReferralCodes.SuffixLength].ToUpperInvariant(),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow

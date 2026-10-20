@@ -68,11 +68,14 @@ else
         _siblings = new List<PolicyPageSummaryModel>();
         try
         {
+            // codequality-team 2026-10-20 run-1625 Agent3-BestPractices:
+            // await trực tiếp thay vì Task.WhenAll + .Result (sync-over-async):
+            // 2 task vẫn chạy song song (khởi tạo trước khi await), await
+            // bung exception gốc thay vì AggregateException, không block thread.
             var pageTask = PolicyService.GetBySlugAsync(Slug);
             var listTask = PolicyService.GetPublicListAsync();
-            await Task.WhenAll(pageTask, listTask);
-            _page = pageTask.Result;
-            _siblings = (listTask.Result ?? new List<PolicyPageSummaryModel>())
+            _page = await pageTask;
+            _siblings = ((await listTask) ?? new List<PolicyPageSummaryModel>())
                 .Where(x => !string.Equals(x.Slug, Slug, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }

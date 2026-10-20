@@ -100,21 +100,16 @@
     {
         if (firstRender)
         {
-            try { _isDark = await JSRuntime.InvokeAsync<bool>("ptIsDark", "pt-theme-shop"); } catch { }
+            _isDark = await ShopTheme.ReadIsDarkAsync(JSRuntime);
             StateHasChanged();
         }
     }
 
     private async Task ToggleTheme()
     {
-        // 2026-10-19: toggle NHỊ PHÂN Sáng↔Tối — 1 lần bấm = đổi giao diện ngay
-        // (ptToggleTheme xoay vòng 3 chế độ khiến ban đêm bấm chỉ đổi icon mà màn vẫn đen).
-        try
-        {
-            _isDark = !_isDark;
-            await JSRuntime.InvokeVoidAsync("ptSetTheme", "pt-theme-shop", _isDark ? "dark" : "light");
-        }
-        catch { }
+        // _isDark chỉ dùng để vẽ icon nút bấm — nếu interop lỗi (JS chưa load) thì giữ nguyên, không báo user.
+        _isDark = !_isDark;
+        await ShopTheme.ApplyAsync(JSRuntime, _isDark);
     }
 
 

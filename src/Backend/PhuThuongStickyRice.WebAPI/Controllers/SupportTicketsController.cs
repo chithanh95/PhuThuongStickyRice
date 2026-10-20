@@ -12,8 +12,8 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
     /// <summary>
-    /// API phiếu hỗ trợ (/ho-tro): khách gửi yêu cầu hỗ trợ public (không cần
-    /// đăng nhập), admin xem danh sách theo trạng thái và trả lời từng phiếu.
+    /// API phiếu hỗ trợ (/ho-tro): khách tạo phiếu công khai không cần đăng
+    /// nhập; admin xem danh sách theo trạng thái và trả lời từng phiếu.
     /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
@@ -29,8 +29,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Public: khách mở phiếu hỗ trợ ở trang /ho-tro (không cần đăng nhập).
-        /// Lỗi nghiệp vụ (ví dụ SĐT sai định dạng) trả 400 kèm thông điệp.
+        /// Public: khách mở phiếu hỗ trợ mới trên trang /ho-tro.
+        /// Lỗi nghiệp vụ (dữ liệu không hợp lệ...) → 400 thay vì 500.
         /// </summary>
         [AllowAnonymous]
         [HttpPost]
@@ -49,11 +49,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Admin xem danh sách phiếu hỗ trợ, lọc theo trạng thái
-        /// (<paramref name="status"/> null = lấy tất cả).
+        /// Admin: liệt kê phiếu hỗ trợ, lọc theo trạng thái (mở/đang xử lý/đóng).
         /// </summary>
-        /// <param name="status">Trạng thái cần lọc; null để lấy tất cả.</param>
-        /// <param name="cancellationToken">Token hủy request.</param>
+        /// <param name="status">Trạng thái cần lọc; trống = tất cả.</param>
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult> GetList(
@@ -64,12 +62,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Admin trả lời một phiếu hỗ trợ. Trả lời xong phiếu chuyển sang
-        /// trạng thái đã xử lý (do service quyết định).
+        /// Admin: trả lời một phiếu hỗ trợ của khách.
         /// </summary>
-        /// <param name="id">Id phiếu hỗ trợ.</param>
+        /// <param name="id">Id phiếu hỗ trợ cần trả lời.</param>
         /// <param name="dto">Nội dung trả lời.</param>
-        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpPut("{id:guid}/reply")]
         public async Task<ActionResult> Reply(

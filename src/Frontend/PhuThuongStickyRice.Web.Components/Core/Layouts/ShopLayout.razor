@@ -165,7 +165,7 @@
     {
         try
         {
-            _theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop");
+            _theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme", ThemeStorageKeys.Shop);
             StateHasChanged();
         }
         catch { }
@@ -196,9 +196,9 @@
         {
             try
             {
-                await JSRuntime.InvokeVoidAsync("ptApplyTheme", "pt-theme-shop");
+                await JSRuntime.InvokeVoidAsync("ptApplyTheme", ThemeStorageKeys.Shop);
                 await JSRuntime.InvokeVoidAsync("ptApplyLargeText");
-                _theme = await JSRuntime.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") ?? "light";
+                _theme = await JSRuntime.InvokeAsync<string>("ptGetTheme", ThemeStorageKeys.Shop) ?? "light";
                 _isLargeText = await JSRuntime.InvokeAsync<bool>("ptGetLargeText");
                 StateHasChanged();
             }

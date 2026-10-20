@@ -56,7 +56,11 @@ namespace PhuThuongStickyRice.BackgroundServer.HostedServices
                 {
                     await Task.Delay(CheckInterval, stoppingToken);
                 }
-                catch (TaskCanceledException)
+                // codequality-team 2026-10-20 run-1625 Agent3-BestPractices:
+                // chỉ thoát vòng lặp khi host thật sự yêu cầu dừng (cùng pattern
+                // SendEmailWorker đã dùng): TaskCanceledException không gắn
+                // stoppingToken mà bị nuốt ở đây sẽ dừng worker trong im lặng.
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
                     break;
                 }

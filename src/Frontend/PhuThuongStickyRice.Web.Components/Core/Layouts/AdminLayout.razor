@@ -282,7 +282,7 @@
         try
         {
             _isDark = !_isDark;
-            await JSRuntime.InvokeVoidAsync("ptSetTheme", "pt-theme-admin", _isDark ? "dark" : "light");
+            await JSRuntime.InvokeVoidAsync("ptSetTheme", ThemeStorageKeys.Admin, _isDark ? "dark" : "light");
         }
         catch { }
     }
@@ -396,7 +396,7 @@
 
         // Dark mode: sync toggle icon with saved theme (JS already applied the class pre-paint).
         // Dùng ptIsDark để icon đúng cả khi giá trị cũ đang là 'auto' theo giờ.
-        try { _isDark = await JSRuntime.InvokeAsync<bool>("ptIsDark", "pt-theme-admin"); } catch { }
+        try { _isDark = await JSRuntime.InvokeAsync<bool>("ptIsDark", ThemeStorageKeys.Admin); } catch { }
         try
         {
             _user = (await AuthStateTask)?.User;

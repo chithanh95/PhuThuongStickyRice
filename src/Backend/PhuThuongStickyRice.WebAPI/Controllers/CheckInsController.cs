@@ -17,11 +17,11 @@ using PhuThuongStickyRice.Application.Shop;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
-    /// <summary>
-    /// API điểm danh hàng ngày: khách điểm danh bằng SĐT để cộng điểm
-    /// loyalty (mỗi SĐT chỉ được cộng 1 lần/ngày) và theo dõi chuỗi ngày
-    /// điểm danh liên tiếp để nhận thưởng.
-    /// </summary>
+        /// <summary>
+        /// API điểm danh nhận điểm loyalty (public): khách điểm danh mỗi ngày
+        /// 1 lần để nhận điểm thưởng, và tra cứu trạng thái điểm danh + số
+        /// ngày liên tiếp (streak) hiện tại theo SĐT.
+        /// </summary>
         [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
         [Produces("application/json")]
         [Route("api/[controller]")]
@@ -35,10 +35,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 _checkIns = checkIns;
             }
 
-            /// <summary>
-            /// Public: điểm danh hàng ngày bằng SĐT; mỗi SĐT chỉ được cộng
-            /// điểm loyalty 1 lần mỗi ngày.
-            /// </summary>
+            /// <summary>Public: daily check-in; awards loyalty points once per day.</summary>
             [AllowAnonymous]
             [HttpPost]
             public async Task<ActionResult<CheckInResultDto>> CheckIn(
@@ -51,14 +48,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 }
                 catch (DomainException ex)
                 {
+                    // Lỗi nghiệp vụ (SĐT sai, dữ liệu không hợp lệ...) → 400
+                    // thay vì để lọt thành 500.
                     return BadRequest(new { message = ex.Message });
                 }
             }
 
-            /// <summary>
-            /// Public: trạng thái điểm danh hôm nay + chuỗi ngày liên tiếp
-            /// của một SĐT (để hiện "đã điểm danh"/"chưa điểm danh").
-            /// </summary>
+            /// <summary>Public: today's check-in state + streak for a phone.</summary>
             [AllowAnonymous]
             [HttpGet("status")]
             public async Task<ActionResult<CheckInResultDto>> GetStatus(

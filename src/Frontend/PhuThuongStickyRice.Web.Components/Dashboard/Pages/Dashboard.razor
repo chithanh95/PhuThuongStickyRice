@@ -922,9 +922,9 @@ else
                    $"{_stats.PendingOrders} đơn đang chờ xử lý.";
         try
         {
-            var ok = await JSRuntime.InvokeAsync<bool>("interop.speak", text);
-            _speaking = ok;
-            if (!ok)
+            var speechStarted = await JSRuntime.InvokeAsync<bool>("interop.speak", text);
+            _speaking = speechStarted;
+            if (!speechStarted)
             {
                 // Trình duyệt không hỗ trợ đọc giọng nói.
                 _speaking = false;

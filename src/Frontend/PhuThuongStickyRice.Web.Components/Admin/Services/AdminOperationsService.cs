@@ -279,16 +279,16 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         public async Task<ProfitReportModel> GetProfitReportAsync(DateTime? from = null, DateTime? to = null)
         {
             var url = "api/profitreport";
-            var sep = "?";
+            var queryParamSeparator = "?";
             if (from.HasValue)
             {
-                url += $"{sep}from={from.Value:yyyy-MM-dd}";
-                sep = "&";
+                url += $"{queryParamSeparator}from={from.Value:yyyy-MM-dd}";
+                queryParamSeparator = "&";
             }
 
             if (to.HasValue)
             {
-                url += $"{sep}to={to.Value:yyyy-MM-dd}";
+                url += $"{queryParamSeparator}to={to.Value:yyyy-MM-dd}";
             }
 
             return await GetAsync<ProfitReportModel>(url);

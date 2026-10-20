@@ -79,18 +79,18 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
 
             var env = provider.GetService<IWebHostEnvironment>();
             var root = WebRootResolver.Resolve(env);
-            var uploads = Path.Combine(root, "uploads");
-            if (!Directory.Exists(uploads))
+            var uploadsDirectory = Path.Combine(root, "uploads");
+            if (!Directory.Exists(uploadsDirectory))
             {
                 return;
             }
 
-            var state = LoadState(uploads);
-            var backedUp = await BackupNewFilesAsync(backupProvider, uploads, state);
+            var state = LoadState(uploadsDirectory);
+            var backedUp = await BackupNewFilesAsync(backupProvider, uploadsDirectory, state);
 
             if (backedUp > 0)
             {
-                SaveState(uploads, state);
+                SaveState(uploadsDirectory, state);
                 Logger.LogInformation("ImageBackupWorker: backed up {Count} new files via '{Provider}'.", backedUp, backupProvider.Name);
             }
         }
@@ -133,7 +133,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
         /// </summary>
         private async Task<int> BackupNewFilesAsync(
             IImageBackupProvider backupProvider,
-            string uploads,
+            string uploadsDirectory,
             HashSet<string> state)
         {
             var backedUp = 0;
@@ -141,7 +141,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: EnumerateFiles
             // (lazy) thay GetFiles — chỉ dùng trong foreach nên tương đương,
             // không materialize toàn bộ mảng path khi folder lớn.
-            foreach (var file in Directory.EnumerateFiles(uploads, "*", SearchOption.AllDirectories))
+            foreach (var file in Directory.EnumerateFiles(uploadsDirectory, "*", SearchOption.AllDirectories))
             {
                 var name = Path.GetFileName(file);
                 if (string.Equals(name, StateFileName, StringComparison.OrdinalIgnoreCase))
@@ -149,7 +149,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                     continue;
                 }
 
-                var relative = Path.GetRelativePath(uploads, file).Replace('\\', '/');
+                var relative = Path.GetRelativePath(uploadsDirectory, file).Replace('\\', '/');
                 if (state.Contains(relative))
                 {
                     continue;
@@ -171,11 +171,11 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             return backedUp;
         }
 
-        private static HashSet<string> LoadState(string uploads)
+        private static HashSet<string> LoadState(string uploadsDirectory)
         {
             try
             {
-                var path = Path.Combine(uploads, StateFileName);
+                var path = Path.Combine(uploadsDirectory, StateFileName);
                 if (!File.Exists(path))
                 {
                     return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -190,12 +190,12 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             }
         }
 
-        private static void SaveState(string uploads, HashSet<string> state)
+        private static void SaveState(string uploadsDirectory, HashSet<string> state)
         {
             try
             {
                 File.WriteAllText(
-                    Path.Combine(uploads, StateFileName),
+                    Path.Combine(uploadsDirectory, StateFileName),
                     JsonSerializer.Serialize(state.ToList()));
             }
             catch (Exception)

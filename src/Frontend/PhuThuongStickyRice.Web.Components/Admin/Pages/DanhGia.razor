@@ -446,7 +446,7 @@ else
             return;
         }
 
-        await DoSaveReplyAsync(review);
+        await SaveReplyAsync(review);
     }
 
     /// <summary>
@@ -464,7 +464,7 @@ else
         }
 
         _replyText = string.Empty;
-        await DoSaveReplyAsync(review);
+        await SaveReplyAsync(review);
         _message = "Đã xóa phản hồi.";
     }
 
@@ -473,7 +473,7 @@ else
     /// (không reload cả bảng) để giữ nguyên vị trí cuộn của trang.
     /// </summary>
     /// <param name="review">Đánh giá cần lưu phản hồi.</param>
-    private async Task DoSaveReplyAsync(OrderReviewModel review)
+    private async Task SaveReplyAsync(OrderReviewModel review)
     {
         _error = null;
         _message = null;

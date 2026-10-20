@@ -158,10 +158,10 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
 
             options.LogLevel ??= new Dictionary<string, string>();
 
-            if (!options.LogLevel.ContainsKey("Default"))
-            {
-                options.LogLevel["Default"] = "Warning";
-            }
+            // codequality-team 2026-10-20 run-1625 Agent3-BestPractices:
+            // TryAdd 1 lần thay vì ContainsKey + indexer (CA1854): 1 lookup
+            // thay vì 2, nguyên tử, semantics giữ nguyên (chỉ thêm khi vắng).
+            options.LogLevel.TryAdd("Default", "Warning");
 
             options.File ??= new FileOptions
             {
