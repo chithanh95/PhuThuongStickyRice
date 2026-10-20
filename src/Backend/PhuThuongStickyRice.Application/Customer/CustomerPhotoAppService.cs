@@ -75,6 +75,13 @@ namespace PhuThuongStickyRice.Application.Customer
         /// </summary>
         private const int MaxPendingPhotosListed = 500;
 
+        /// <summary>
+        /// Khởi tạo service gallery ảnh khách gửi với repository ảnh, bộ thực
+        /// thi truy vấn bất đồng bộ và cache danh sách ảnh đã duyệt.
+        /// </summary>
+        /// <param name="photos">Repository bảng ảnh UGC.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
+        /// <param name="catalogCache">Cache gallery công khai (khóa customerphotos:approved-list).</param>
         public CustomerPhotoAppService(
             IRepository<CustomerPhoto, Guid> photos,
             IAsyncQueryableExecuter asyncExecuter,

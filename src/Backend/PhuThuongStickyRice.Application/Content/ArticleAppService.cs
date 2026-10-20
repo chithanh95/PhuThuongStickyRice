@@ -18,6 +18,12 @@ namespace PhuThuongStickyRice.Application.Content
     /// </summary>
     public interface IArticleAppService : IApplicationService
     {
+        /// <summary>
+        /// Admin: danh sách bài viết (mới nhất trước). Body chỉ trả excerpt
+        /// 220 ký tự để nhẹ payload; muốn full Body phải gọi
+        /// <see cref="GetByIdAsync"/>.
+        /// </summary>
+        /// <returns>Danh sách bài viết (Body rút gọn), tối đa 200.</returns>
         Task<List<ArticleDto>> GetListAsync();
 
         /// <summary>
@@ -26,10 +32,25 @@ namespace PhuThuongStickyRice.Application.Content
         /// </summary>
         Task<ArticleDto> GetByIdAsync(Guid id);
 
+        /// <summary>
+        /// Admin: tạo bài viết mới (xóa cache catalog để landing thấy bài mới ngay).
+        /// </summary>
+        /// <param name="input">Tiêu đề, nội dung, ảnh, ngày đăng, trạng thái xuất bản.</param>
+        /// <returns>Bài viết vừa tạo.</returns>
         Task<ArticleDto> CreateAsync(CreateArticleDto input);
 
+        /// <summary>
+        /// Admin: cập nhật bài viết (xóa cache catalog để landing thấy nội dung mới ngay).
+        /// </summary>
+        /// <param name="id">Id bài viết cần sửa.</param>
+        /// <param name="input">Dữ liệu mới (tiêu đề, nội dung, ảnh, ngày đăng, trạng thái).</param>
+        /// <returns>Bài viết sau khi cập nhật.</returns>
         Task<ArticleDto> UpdateAsync(Guid id, CreateArticleDto input);
 
+        /// <summary>
+        /// Admin: xóa bài viết (xóa cache catalog để landing không còn hiển thị).
+        /// </summary>
+        /// <param name="id">Id bài viết cần xóa.</param>
         Task DeleteAsync(Guid id);
 
         /// <summary>Public: published articles, newest first.</summary>

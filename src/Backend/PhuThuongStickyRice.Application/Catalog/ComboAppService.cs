@@ -144,18 +144,33 @@ namespace PhuThuongStickyRice.Application.Catalog
                 IsActive = dto.IsActive
             };
 
-            foreach (var comboItem in dto.Items ?? Enumerable.Empty<CreateUpdateComboItemDto>())
-            {
-                entity.Items.Add(new ComboItem
-                {
-                    ProductId = comboItem.ProductId,
-                    Quantity = comboItem.Quantity
-                });
-            }
+            AddComboItems(entity, dto);
 
             await _combos.InsertAsync(entity, autoSave: true);
             _catalogCache.Invalidate();
             return (await MapToDtosAsync(new[] { entity })).First();
+        }
+
+        /// <summary>
+        /// Thêm các món của combo vào entity — dùng chung cho CreateAsync và
+        /// UpdateAsync để 2 luồng không viết lặp lại vòng lặp gán item.
+        /// </summary>
+        /// <param name="entity">Combo nhận danh sách món.</param>
+        /// <param name="dto">Dữ liệu combo (danh sách món có thể null).</param>
+        private static void AddComboItems(Combo entity, CreateUpdateComboDto dto)
+        {
+            foreach (var comboItem in dto.Items ?? Enumerable.Empty<CreateUpdateComboItemDto>())
+            {
+                entity.Items.Add(new ComboItem
+                {
+                    // Combo đã lưu (Update): gán rõ ComboId; combo mới (Create):
+                    // ABP đã sinh entity.Id trong constructor và EF Core tự
+                    // fix-up FK qua navigation khi insert — giữ nguyên như cũ.
+                    ComboId = entity.Id,
+                    ProductId = comboItem.ProductId,
+                    Quantity = comboItem.Quantity
+                });
+            }
         }
 
         /// <summary>
@@ -178,15 +193,7 @@ namespace PhuThuongStickyRice.Application.Catalog
             entity.IsActive = dto.IsActive;
 
             entity.Items.Clear();
-            foreach (var comboItem in dto.Items ?? Enumerable.Empty<CreateUpdateComboItemDto>())
-            {
-                entity.Items.Add(new ComboItem
-                {
-                    ComboId = entity.Id,
-                    ProductId = comboItem.ProductId,
-                    Quantity = comboItem.Quantity
-                });
-            }
+            AddComboItems(entity, dto);
 
             await _combos.UpdateAsync(entity, autoSave: true);
             _catalogCache.Invalidate();

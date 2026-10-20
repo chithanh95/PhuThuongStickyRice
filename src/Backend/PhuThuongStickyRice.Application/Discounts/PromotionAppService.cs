@@ -68,6 +68,11 @@ namespace PhuThuongStickyRice.Application.Discounts
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
+        // Cap số dòng trang admin nạp 1 lần: bảng promotions chỉ do admin tạo
+        // thủ công (vài chục dòng), chặn materialize vô hạn theo thời gian
+        // (cùng pattern DiscountAppService.MaxAdminListRows Take(500)).
+        private const int MaxPromotionRows = 500;
+
         /// <summary>Khởi tạo service khuyến mãi giờ vàng.</summary>
         public PromotionAppService(
             IRepository<Promotion, Guid> promotions,
@@ -86,9 +91,6 @@ namespace PhuThuongStickyRice.Application.Discounts
         public virtual async Task<List<PromotionDto>> GetListAsync()
         {
             var queryable = await _promotions.GetQueryableAsync();
-            // Cap 500 dòng phía server: bảng promotions chỉ do admin tạo thủ công (vài chục dòng),
-            // chặn materialize vô hạn theo thời gian (cùng pattern DiscountAppService.GetListAsync Take(500)).
-            const int MaxPromotionRows = 500;
             var items = await _asyncExecuter.ToListAsync(
                 queryable.OrderByDescending(x => x.IsActive).ThenBy(x => x.Name).Take(MaxPromotionRows));
             return items.Select(Map).ToList();
@@ -272,9 +274,11 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// <exception cref="Domain.Exceptions.DomainException">Ném khi giờ không hợp lệ.</exception>
         private static TimeSpan ParseTime(string value)
         {
-            if (TimeSpan.TryParseExact(value?.Trim(), @"h\:mm", CultureInfo.InvariantCulture, out var t)
-                || TimeSpan.TryParseExact(value?.Trim(), @"hh\:mm", CultureInfo.InvariantCulture, out t)
-                || TimeSpan.TryParse(value?.Trim(), out t))
+            // Chuẩn hóa 1 lần rồi thử các định dạng — tránh Trim() lặp lại 3 lần.
+            var trimmed = value?.Trim();
+            if (TimeSpan.TryParseExact(trimmed, @"h\:mm", CultureInfo.InvariantCulture, out var t)
+                || TimeSpan.TryParseExact(trimmed, @"hh\:mm", CultureInfo.InvariantCulture, out t)
+                || TimeSpan.TryParse(trimmed, out t))
             {
                 return t;
             }

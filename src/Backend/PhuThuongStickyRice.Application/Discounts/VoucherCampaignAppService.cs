@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
@@ -223,8 +224,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             var loyaltyQuery = await _loyaltyAccounts.GetQueryableAsync();
             return await _asyncExecuter.ToListAsync(
                 loyaltyQuery
-                    .Where(x => !activeNorms.Contains(
-                        x.Phone.Length <= PhoneNumber.TailDigitCount ? x.Phone : x.Phone.Substring(x.Phone.Length - PhoneNumber.TailDigitCount)))
+                    .Where(InactivePhoneFilter(activeNorms))
                     .Select(x => x.Phone));
         }
 
@@ -244,6 +244,22 @@ namespace PhuThuongStickyRice.Application.Discounts
                 .Select(x => x.CustomerPhoneNorm)
                 .Distinct();
         }
+
+        /// <summary>
+        /// Điều kiện "SĐT chưa mua trong 30 ngày": 9 số cuối của SĐT không nằm
+        /// trong tập chuẩn hóa (CustomerPhoneNorm) của các đơn đã mua — cùng
+        /// chuẩn khớp khoan dung cho cả 2 dạng gõ "0912..." / "+84912...".
+        /// Dùng chung cho luồng liệt kê (<see cref="GetInactivePhonesAsync"/>)
+        /// và luồng đếm (<see cref="GetInactiveCountAsync"/>) để 2 luồng không
+        /// lệch điều kiện nhau khi sửa sau này.
+        /// </summary>
+        /// <param name="activeNorms">Query SĐT chuẩn hóa của khách đã mua trong 30 ngày.</param>
+        private static Expression<Func<LoyaltyAccount, bool>> InactivePhoneFilter(
+            IQueryable<string> activeNorms) =>
+            x => !activeNorms.Contains(
+                x.Phone.Length <= PhoneNumber.TailDigitCount
+                    ? x.Phone
+                    : x.Phone.Substring(x.Phone.Length - PhoneNumber.TailDigitCount));
 
         /// <summary>
         /// Lấy SĐT khách theo hạng, khớp chuẩn xếp hạng
@@ -305,9 +321,7 @@ namespace PhuThuongStickyRice.Application.Discounts
 
             var loyaltyQuery = await _loyaltyAccounts.GetQueryableAsync();
             return await _asyncExecuter.CountAsync(
-                loyaltyQuery
-                    .Where(x => !activeNorms.Contains(
-                        x.Phone.Length <= PhoneNumber.TailDigitCount ? x.Phone : x.Phone.Substring(x.Phone.Length - PhoneNumber.TailDigitCount))));
+                loyaltyQuery.Where(InactivePhoneFilter(activeNorms)));
         }
 
         /// <summary>

@@ -35,7 +35,7 @@ namespace PhuThuongStickyRice.Application.Permissions
     /// <summary>Nhãn tiếng Việt hiển thị tên vai trò ở màn hình phân quyền (Admin/Thu ngân/Bếp).</summary>
     public static class RoleLabels
     {
-        public static string Get(string role) => role switch
+        public static string GetLabel(string role) => role switch
         {
             "Admin" => "Quản trị (Admin)",
             "Cashier" => "Thu ngân (Cashier)",

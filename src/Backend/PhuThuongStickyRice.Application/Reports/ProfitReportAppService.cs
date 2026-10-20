@@ -191,13 +191,20 @@ namespace PhuThuongStickyRice.Application.Reports
         {
             return lineGroups
                 .GroupBy(x => new { x.ProductId, x.ProductName })
-                .Select(g => new ProfitProductDto
+                .Select(g =>
                 {
-                    ProductName = g.Key.ProductName,
-                    QuantitySold = g.Sum(x => x.Quantity),
-                    Revenue = g.Sum(x => x.Revenue),
-                    Cost = g.Sum(x => x.Cost),
-                    Profit = g.Sum(x => x.Revenue) - g.Sum(x => x.Cost)
+                    // Tính mỗi tổng một lần thay vì enumerate group 5 lần
+                    // (Revenue/Cost từng bị Sum 2 lần khi tính Profit).
+                    var revenue = g.Sum(x => x.Revenue);
+                    var cost = g.Sum(x => x.Cost);
+                    return new ProfitProductDto
+                    {
+                        ProductName = g.Key.ProductName,
+                        QuantitySold = g.Sum(x => x.Quantity),
+                        Revenue = revenue,
+                        Cost = cost,
+                        Profit = revenue - cost
+                    };
                 })
                 .OrderByDescending(x => x.Revenue)
                 .ToList();

@@ -148,7 +148,7 @@ namespace PhuThuongStickyRice.Application.Permissions
                 Roles = PermissionKeys.MatrixRoles.Select(role => new RolePermissionsDto
                 {
                     Role = role,
-                    RoleLabel = RoleLabels.Get(role),
+                    RoleLabel = RoleLabels.GetLabel(role),
                     GrantedKeys = all
                         .Where(rp => string.Equals(rp.Role, role, StringComparison.OrdinalIgnoreCase))
                         .Select(rp => rp.PermissionKey)

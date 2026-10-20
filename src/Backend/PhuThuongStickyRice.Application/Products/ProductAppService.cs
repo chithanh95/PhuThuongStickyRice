@@ -849,11 +849,6 @@ namespace PhuThuongStickyRice.Application.Products
             _catalogCache.Invalidate();
         }
 
-        /// <summary>
-        /// Wave 6b (item 26): public per-product rating aggregates. One
-        /// GROUP BY query over the review lines of non-hidden reviews;
-        /// cached for 5 minutes like the public catalog.
-        /// </summary>
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         /// <summary>
         /// Wave 6b (item 26): tổng hợp đánh giá từng món từ review đơn hàng

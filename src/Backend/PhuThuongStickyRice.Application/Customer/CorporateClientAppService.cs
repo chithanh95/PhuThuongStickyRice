@@ -75,6 +75,12 @@ namespace PhuThuongStickyRice.Application.Customer
         private readonly IRepository<CorporateClient, Guid> _clients;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
 
+        /// <summary>
+        /// Khởi tạo service quản lý khách hàng doanh nghiệp với repository
+        /// công ty và bộ thực thi truy vấn bất đồng bộ.
+        /// </summary>
+        /// <param name="clients">Repository bảng khách hàng doanh nghiệp.</param>
+        /// <param name="asyncExecuter">Thực thi truy vấn bất đồng bộ.</param>
         public CorporateClientAppService(
             IRepository<CorporateClient, Guid> clients,
             IAsyncQueryableExecuter asyncExecuter)

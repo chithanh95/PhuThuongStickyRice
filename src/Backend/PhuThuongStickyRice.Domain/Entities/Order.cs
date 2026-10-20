@@ -4,6 +4,7 @@ using PhuThuongStickyRice.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace PhuThuongStickyRice.Domain.Entities
 {
@@ -51,6 +52,14 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         /// <summary>Item 233: độ dài tối đa của lý do hủy đơn.</summary>
         public const int CancelReasonMaxLength = 100;
+
+        /// <summary>
+        /// Regex SĐT Việt Nam (0 + đầu số 3/5/7/8/9 + 8 số) biên dịch một lần
+        /// và tái sử dụng — tránh parse lại pattern mỗi lần validate
+        /// (bản cũ dùng Regex.IsMatch static, parse lại pattern mỗi cuộc gọi).
+        /// </summary>
+        private static readonly Regex VietnamesePhoneRegex =
+            new(@"^(0)(3|5|7|8|9)\d{8}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         /// <summary>Mã đơn hiển thị cho khách, vd "PX-20261019-4821" (duy nhất).</summary>
         public string OrderNumber { get; private set; }
@@ -918,7 +927,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             if (!string.IsNullOrEmpty(phone))
             {
                 // Validate SĐT VN: 0 + (3|5|7|8|9) + 8 số.
-                if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(0)(3|5|7|8|9)\d{8}$"))
+                if (!VietnamesePhoneRegex.IsMatch(phone))
                 {
                     throw new DomainException("SĐT không đúng định dạng (VD: 0901234567).");
                 }
