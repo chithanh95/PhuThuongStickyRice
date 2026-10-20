@@ -85,8 +85,8 @@ else if (_report != null)
                                 <td class="font-weight-bold align-middle">@row.Hour h</td>
                                 @for (var i = 0; i < _report.Products.Count; i++)
                                 {
-                                    var qty = row.Quantities[i];
-                                    <td style="@CellStyle(qty)">@(qty > 0 ? qty.ToString("N0") : "–")</td>
+                                    var quantity = row.Quantities[i];
+                                    <td style="@CellStyle(quantity)">@(quantity > 0 ? quantity.ToString("N0") : "–")</td>
                                 }
                                 <td class="font-weight-bold align-middle">@row.Total.ToString("N0")</td>
                             </tr>
@@ -132,20 +132,20 @@ else if (_report != null)
         }
     }
 
-    private long MaxQty => _report?.Hours
+    private long MaxQuantity => _report?.Hours
         .SelectMany(r => r.Quantities)
         .DefaultIfEmpty(0)
         .Max() ?? 0;
 
     /// <summary>Heatmap cell: purple intensity proportional to quantity.</summary>
-    private string CellStyle(long qty)
+    private string CellStyle(long quantity)
     {
-        if (qty <= 0 || MaxQty <= 0)
+        if (quantity <= 0 || MaxQuantity <= 0)
         {
             return "color:#ccc;";
         }
 
-        var alpha = 0.08 + 0.82 * qty / (double)MaxQty;
+        var alpha = 0.08 + 0.82 * quantity / (double)MaxQuantity;
         var strong = alpha > 0.5;
         return $"background-color:rgba(122,111,190,{alpha:0.00});" +
                $"font-weight:{(strong ? "700" : "400")};" +

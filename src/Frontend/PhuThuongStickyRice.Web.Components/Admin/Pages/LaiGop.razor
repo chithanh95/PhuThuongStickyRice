@@ -56,7 +56,7 @@ else if (_report != null)
         <div class="col-md-3 col-6 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Tổng doanh thu (@_report.From.ToString("dd/MM") – @_report.To.ToString("dd/MM"))</p>
-                <h2 class="lx-mini-value">@FmtVnd(_report.Total.Revenue)</h2>
+                <h2 class="lx-mini-value">@FormatVnd(_report.Total.Revenue)</h2>
                 <span class="lx-mini-foot">@_report.Total.QuantitySold.ToString("N0") suất đã bán</span>
                 <span class="lx-mini-icon"><span class="fa-solid fa-dollar-sign" aria-hidden="true"></span></span>
             </div>
@@ -64,7 +64,7 @@ else if (_report != null)
         <div class="col-md-3 col-6 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Tổng giá vốn</p>
-                <h2 class="lx-mini-value">@FmtVnd(_report.Total.Cost)</h2>
+                <h2 class="lx-mini-value">@FormatVnd(_report.Total.Cost)</h2>
                 <span class="lx-mini-foot">Theo giá vốn hiện tại</span>
                 <span class="lx-mini-icon"><span class="fa-solid fa-cart-shopping" aria-hidden="true"></span></span>
             </div>
@@ -72,7 +72,7 @@ else if (_report != null)
         <div class="col-md-3 col-6 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Lãi gộp</p>
-                <h2 class="lx-mini-value">@FmtVnd(_report.Total.Profit)</h2>
+                <h2 class="lx-mini-value">@FormatVnd(_report.Total.Profit)</h2>
                 <span class="lx-mini-foot">Doanh thu − giá vốn</span>
                 <span class="lx-mini-icon"><span class="fa-solid fa-chart-line" aria-hidden="true"></span></span>
             </div>
@@ -80,7 +80,7 @@ else if (_report != null)
         <div class="col-md-3 col-6 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Biên lãi trung bình</p>
-                <h2 class="lx-mini-value">@FmtPct(_report.Total.MarginPercent)</h2>
+                <h2 class="lx-mini-value">@FormatPercent(_report.Total.MarginPercent)</h2>
                 <span class="lx-mini-foot">Lãi gộp / doanh thu</span>
                 <span class="lx-mini-icon"><span class="fa-solid fa-chart-pie" aria-hidden="true"></span></span>
             </div>
@@ -113,7 +113,7 @@ else if (_report != null)
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-1">
                         <span>@r.ProductName</span>
-                        <strong class="@(r.Profit >= 0 ? "lx-profit-pos" : "lx-profit-neg")">@FmtVnd(r.Profit)</strong>
+                        <strong class="@(r.Profit >= 0 ? "lx-profit-pos" : "lx-profit-neg")">@FormatVnd(r.Profit)</strong>
                     </div>
                     <div class="progress" style="height:18px;">
                         <div class="progress-bar" role="progressbar" style="width:@(pct.ToString("0"))%;">@(pct.ToString("0"))%</div>
@@ -152,11 +152,11 @@ else if (_report != null)
                                     }
                                 </td>
                                 <td class="text-right">@r.QuantitySold.ToString("N0")</td>
-                                <td class="text-right">@FmtVnd(r.Revenue)</td>
-                                <td class="text-right">@FmtVnd(r.CostPrice)</td>
-                                <td class="text-right">@FmtVnd(r.Cost)</td>
-                                <td class="text-right font-weight-bold @(r.Profit >= 0 ? "lx-profit-pos" : "lx-profit-neg")">@FmtVnd(r.Profit)</td>
-                                <td class="text-right"><span class="badge" style="@MarginStyle(r.MarginPercent)">@FmtPct(r.MarginPercent)</span></td>
+                                <td class="text-right">@FormatVnd(r.Revenue)</td>
+                                <td class="text-right">@FormatVnd(r.CostPrice)</td>
+                                <td class="text-right">@FormatVnd(r.Cost)</td>
+                                <td class="text-right font-weight-bold @(r.Profit >= 0 ? "lx-profit-pos" : "lx-profit-neg")">@FormatVnd(r.Profit)</td>
+                                <td class="text-right"><span class="badge" style="@MarginStyle(r.MarginPercent)">@FormatPercent(r.MarginPercent)</span></td>
                             </tr>
                         }
                     </tbody>
@@ -164,11 +164,11 @@ else if (_report != null)
                         <tr class="font-weight-bold">
                             <td>Tổng (@_report.Rows.Count món)</td>
                             <td class="text-right">@_report.Total.QuantitySold.ToString("N0")</td>
-                            <td class="text-right">@FmtVnd(_report.Total.Revenue)</td>
+                            <td class="text-right">@FormatVnd(_report.Total.Revenue)</td>
                             <td class="text-right">–</td>
-                            <td class="text-right">@FmtVnd(_report.Total.Cost)</td>
-                            <td class="text-right text-success"><!-- UIUX-1019 A3: xanh lá success đúng chuẩn Lexa (#34c38f) -->@FmtVnd(_report.Total.Profit)</td>
-                            <td class="text-right">@FmtPct(_report.Total.MarginPercent)</td>
+                            <td class="text-right">@FormatVnd(_report.Total.Cost)</td>
+                            <td class="text-right text-success"><!-- UIUX-1019 A3: xanh lá success đúng chuẩn Lexa (#34c38f) -->@FormatVnd(_report.Total.Profit)</td>
+                            <td class="text-right">@FormatPercent(_report.Total.MarginPercent)</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -202,7 +202,7 @@ else if (_report != null)
                         {
                             <tr>
                                 <td>@p.Name <small class="text-muted">(@p.Unit)</small></td>
-                                <td class="text-right">@FmtVnd(p.Price)</td>
+                                <td class="text-right">@FormatVnd(p.Price)</td>
                                 <td>
                                     <input type="number" min="0" step="500" class="form-control form-control-sm"
                                            value="@_editedCosts[p.Id]"
@@ -314,12 +314,12 @@ else if (_report != null)
 
     private static decimal ParseDecimal(object value)
     {
-        return decimal.TryParse(value?.ToString(), out var d) && d >= 0 ? d : 0m;
+        return decimal.TryParse(value?.ToString(), out var parsed) && parsed >= 0 ? parsed : 0m;
     }
 
-    private static string FmtVnd(decimal d) => d.ToString("N0") + "₫";
+    private static string FormatVnd(decimal amount) => amount.ToString("N0") + "₫";
 
-    private static string FmtPct(decimal? p) => p.HasValue ? p.Value.ToString("N1") + "%" : "–";
+    private static string FormatPercent(decimal? percent) => percent.HasValue ? percent.Value.ToString("N1") + "%" : "–";
 
     /// <summary>
     /// Màu nền badge biên lợi nhuận theo 2 ngưỡng: xanh lá ≥ 50% (tốt),

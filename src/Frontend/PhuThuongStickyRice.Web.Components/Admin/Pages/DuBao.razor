@@ -36,7 +36,7 @@ else if (_forecast != null)
         <div class="col-md-4 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Dự báo 7 ngày tới</p>
-                <h2 class="lx-mini-value">@FmtMoney(_forecast.Next7DaysTotal.ForecastRevenue)</h2>
+                <h2 class="lx-mini-value">@FormatMoney(_forecast.Next7DaysTotal.ForecastRevenue)</h2>
                 <span class="lx-mini-foot">@_forecast.Next7DaysTotal.ForecastOrders.ToString("0.#") đơn · @_forecast.Next7DaysTotal.SuggestedPortions.ToString("N0") suất nên chuẩn bị</span>
                 <span class="lx-mini-icon"><span class="fa-solid fa-heart-pulse" aria-hidden="true"></span></span>
             </div>
@@ -44,7 +44,7 @@ else if (_forecast != null)
         <div class="col-md-4 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Dự báo 30 ngày tới</p>
-                <h2 class="lx-mini-value">@FmtMoney(_forecast.Next30DaysTotal.ForecastRevenue)</h2>
+                <h2 class="lx-mini-value">@FormatMoney(_forecast.Next30DaysTotal.ForecastRevenue)</h2>
                 <span class="lx-mini-foot">@_forecast.Next30DaysTotal.ForecastOrders.ToString("0.#") đơn · @_forecast.Next30DaysTotal.SuggestedPortions.ToString("N0") suất nên chuẩn bị</span>
                 <span class="lx-mini-icon"><span class="fa-solid fa-calendar" aria-hidden="true"></span></span>
             </div>
@@ -52,8 +52,8 @@ else if (_forecast != null)
         <div class="col-md-4 mb-3">
             <div class="lx-mini-stat">
                 <p class="lx-mini-label">Trung bình ngày (30 ngày qua)</p>
-                <h2 class="lx-mini-value">@FmtMoney(_forecast.AvgDailyRevenue30d)</h2>
-                <span class="lx-mini-foot">7 ngày gần nhất: @FmtMoney(_forecast.AvgDailyRevenue7d) · @_forecast.DaysWithOrders/@_forecast.HistoryDays ngày có đơn</span>
+                <h2 class="lx-mini-value">@FormatMoney(_forecast.AvgDailyRevenue30d)</h2>
+                <span class="lx-mini-foot">7 ngày gần nhất: @FormatMoney(_forecast.AvgDailyRevenue7d) · @_forecast.DaysWithOrders/@_forecast.HistoryDays ngày có đơn</span>
                 <span class="lx-mini-icon"><span class="fa-solid fa-chart-line" aria-hidden="true"></span></span>
             </div>
         </div>
@@ -91,7 +91,7 @@ else if (_forecast != null)
                         {
                             <tr>
                                 <td><strong>@w.WeekdayName</strong> <small class="text-muted">(@w.Occurrences lần)</small></td>
-                                <td class="text-right">@FmtMoney(w.AvgRevenue)</td>
+                                <td class="text-right">@FormatMoney(w.AvgRevenue)</td>
                                 <td class="text-right">@w.AvgOrders.ToString("0.#")</td>
                                 <td class="text-right">@w.AvgPortions.ToString("0.#")</td>
                                 <td class="text-right">
@@ -129,7 +129,7 @@ else if (_forecast != null)
                             <tr>
                                 <td>@d.Date.ToString("dd/MM/yyyy")</td>
                                 <td>@d.WeekdayName</td>
-                                <td class="text-right"><strong>@FmtMoney(d.ForecastRevenue)</strong></td>
+                                <td class="text-right"><strong>@FormatMoney(d.ForecastRevenue)</strong></td>
                                 <td class="text-right">@d.ForecastOrders.ToString("0.#")</td>
                                 <td class="text-right"><span class="lx-pill lx-pill-primary">@d.SuggestedPortions.ToString("N0") suất</span></td>
                                 <td><small class="text-muted">@(d.BasedOnWeekdayPattern ? "TB đúng thứ này" : "TB chung 30 ngày")</small></td>
@@ -171,7 +171,7 @@ else if (_forecast != null)
     }
 
     /// <summary>Định dạng số tiền triệu đồng, không thập phân, kèm ký hiệu ₫ (vd: 1.250.000₫).</summary>
-    private static string FmtMoney(decimal value) => value.ToString("N0") + "₫";
+    private static string FormatMoney(decimal value) => value.ToString("N0") + "₫";
 
     // Ngưỡng tô màu cột "So với TB chung": ≥1,5× là ngày đông bất thường
     // (xanh lá), 1,0–1,5× là trên TB (xanh dương), dưới TB (vàng cảnh báo).

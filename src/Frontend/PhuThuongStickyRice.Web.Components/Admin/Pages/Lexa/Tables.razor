@@ -96,7 +96,7 @@
                             <tr>
                                 <th style="cursor:pointer;" @onclick='() => SortBy("Name")'>Món ăn @SortIcon("Name")</th>
                                 <th style="cursor:pointer;" @onclick='() => SortBy("Category")'>Danh mục @SortIcon("Category")</th>
-                                <th style="cursor:pointer;" @onclick='() => SortBy("PriceNum")'>Giá @SortIcon("PriceNum")</th>
+                                <th style="cursor:pointer;" @onclick='() => SortBy("PriceValue")'>Giá @SortIcon("PriceValue")</th>
                                 <th>Trạng thái</th>
                             </tr>
                         </thead>
@@ -220,7 +220,7 @@
             filteredDishes = _sortCol switch
             {
                 "Category" => _sortAsc ? filteredDishes.OrderBy(d => d.Category) : filteredDishes.OrderByDescending(d => d.Category),
-                "PriceNum" => _sortAsc ? filteredDishes.OrderBy(d => d.PriceNum) : filteredDishes.OrderByDescending(d => d.PriceNum),
+                "PriceValue" => _sortAsc ? filteredDishes.OrderBy(d => d.PriceValue) : filteredDishes.OrderByDescending(d => d.PriceValue),
                 _ => _sortAsc ? filteredDishes.OrderBy(d => d.Name) : filteredDishes.OrderByDescending(d => d.Name),
             };
             return filteredDishes;
@@ -245,16 +245,16 @@
 
     protected override void OnInitialized()
     {
-        _editable = _dishes.Take(4).Select(d => new Dish(d.Id, d.Name, d.Category, d.Price, d.PriceNum, d.Status, d.Badge)).ToList();
+        _editable = _dishes.Take(4).Select(d => new Dish(d.Id, d.Name, d.Category, d.Price, d.PriceValue, d.Status, d.Badge)).ToList();
     }
-    private void StartEdit(Dish dish) { _editingId = dish.Id; _editPrice = dish.PriceNum.ToString(); }
+    private void StartEdit(Dish dish) { _editingId = dish.Id; _editPrice = dish.PriceValue.ToString(); }
     private void CancelEdit() => _editingId = null;
     private void SavePrice(Dish dish)
     {
-        if (int.TryParse(_editPrice, out var p) && p > 0)
+        if (int.TryParse(_editPrice, out var parsedPrice) && parsedPrice > 0)
         {
-            dish.PriceNum = p;
-            dish.Price = p.ToString("N0") + " ₫";
+            dish.PriceValue = parsedPrice;
+            dish.Price = parsedPrice.ToString("N0") + " ₫";
         }
         _editingId = null;
     }
@@ -266,11 +266,11 @@
         public string Name { get; set; }
         public string Category { get; set; }
         public string Price { get; set; }
-        public int PriceNum { get; set; }
+        public int PriceValue { get; set; }
         public string Status { get; set; }
         public string Badge { get; set; }
-        public Dish(Guid id, string name, string cat, string price, int priceNum, string status, string badge)
-        { Id = id; Name = name; Category = cat; Price = price; PriceNum = priceNum; Status = status; Badge = badge; }
+        public Dish(Guid id, string name, string cat, string price, int priceValue, string status, string badge)
+        { Id = id; Name = name; Category = cat; Price = price; PriceValue = priceValue; Status = status; Badge = badge; }
     }
     private record Order(string Code, string Customer, string Total);
     private record Staff(string Name, string Role, string Shift);
