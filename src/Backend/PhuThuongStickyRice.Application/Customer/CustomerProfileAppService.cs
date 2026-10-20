@@ -53,7 +53,7 @@ namespace PhuThuongStickyRice.Application.Customer
     /// hiệu lực 30 ngày (ghi log hoạt động nhân viên, item 156).</item>
     /// </list>
     /// </summary>
-    public partial class CustomerProfileAppService : ApplicationService, ICustomerProfileAppService
+    public class CustomerProfileAppService : ApplicationService, ICustomerProfileAppService
     {
         public const string CustomerRoleName = "Customer";
         private const string GiftCodePrefix = "SN";

@@ -111,13 +111,8 @@ namespace PhuThuongStickyRice.Application.Shop
         [Authorize(Roles = "Admin")]
         public virtual async Task<BranchDto> CreateAsync(CreateUpdateBranchDto dto)
         {
-            var entity = new Branch
-            {
-                Name = dto.Name.Trim(),
-                Address = StringNormalizer.TrimToNull(dto.Address),
-                Phone = StringNormalizer.TrimToNull(dto.Phone),
-                IsActive = dto.IsActive
-            };
+            var entity = new Branch();
+            ApplyFields(entity, dto);
             await _branches.InsertAsync(entity, autoSave: true);
             _catalogCache.Invalidate();
             return MapToDto(entity);
@@ -134,13 +129,25 @@ namespace PhuThuongStickyRice.Application.Shop
         public virtual async Task<BranchDto> UpdateAsync(Guid id, CreateUpdateBranchDto dto)
         {
             var entity = await _branches.GetAsync(id);
+            ApplyFields(entity, dto);
+            await _branches.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
+            return MapToDto(entity);
+        }
+
+        /// <summary>
+        /// Gán các trường chỉnh sửa của chi nhánh (tên, địa chỉ, SĐT, trạng
+        /// thái) — dùng chung cho CreateAsync và UpdateAsync để 2 luồng không
+        /// viết lặp lại cùng một khối gán field.
+        /// </summary>
+        /// <param name="entity">Chi nhánh nhận dữ liệu mới.</param>
+        /// <param name="dto">Dữ liệu chi nhánh từ DTO.</param>
+        private static void ApplyFields(Branch entity, CreateUpdateBranchDto dto)
+        {
             entity.Name = dto.Name.Trim();
             entity.Address = StringNormalizer.TrimToNull(dto.Address);
             entity.Phone = StringNormalizer.TrimToNull(dto.Phone);
             entity.IsActive = dto.IsActive;
-            await _branches.UpdateAsync(entity, autoSave: true);
-            _catalogCache.Invalidate();
-            return MapToDto(entity);
         }
 
         /// <summary>

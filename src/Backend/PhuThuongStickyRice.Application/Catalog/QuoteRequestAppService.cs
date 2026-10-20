@@ -48,7 +48,7 @@ namespace PhuThuongStickyRice.Application.Catalog
     /// "Đặt số lượng lớn". Không tạo đơn, không thanh toán — trạng thái ban
     /// đầu là <c>QuoteStatus.New</c> để admin xử lý thủ công.
     /// </summary>
-    public partial class QuoteRequestAppService : ApplicationService, IQuoteRequestAppService
+    public class QuoteRequestAppService : ApplicationService, IQuoteRequestAppService
     {
         private readonly IRepository<QuoteRequest, Guid> _quotes;
         private readonly IRepository<CungReminder, Guid> _reminders;

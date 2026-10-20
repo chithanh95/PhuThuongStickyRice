@@ -134,16 +134,10 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             var entity = new CorporateClient
             {
-                CompanyName = input.CompanyName.Trim(),
-                ContactName = string.IsNullOrWhiteSpace(input.ContactName) ? null : input.ContactName.Trim(),
-                Phone = VietnamTime.NormalizePhone(input.Phone) ?? input.Phone.Trim(),
-                Address = string.IsNullOrWhiteSpace(input.Address) ? null : input.Address.Trim(),
-                Weekday = input.Weekday,
-                ItemsJson = string.IsNullOrWhiteSpace(input.ItemsJson) ? null : input.ItemsJson,
-                IsActive = input.IsActive,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
+            ApplyEditableFields(entity, input);
             await _clients.InsertAsync(entity, autoSave: true);
             return MapToDto(entity);
         }
@@ -157,6 +151,21 @@ namespace PhuThuongStickyRice.Application.Customer
         public virtual async Task<CorporateClientDto> UpdateAsync(Guid id, CreateUpdateCorporateClientDto input)
         {
             var entity = await _clients.GetAsync(id);
+            ApplyEditableFields(entity, input);
+            entity.UpdatedAt = DateTime.UtcNow;
+            await _clients.UpdateAsync(entity, autoSave: true);
+            return MapToDto(entity);
+        }
+
+        /// <summary>
+        /// Gán các trường chỉnh sửa của công ty (tên, liên hệ, SĐT, thứ giao,
+        /// món đặt, trạng thái) — dùng chung cho CreateAsync và UpdateAsync để
+        /// 2 luồng không viết lặp lại cùng một khối gán field.
+        /// </summary>
+        /// <param name="entity">Công ty nhận dữ liệu mới.</param>
+        /// <param name="input">Dữ liệu công ty từ DTO.</param>
+        private static void ApplyEditableFields(CorporateClient entity, CreateUpdateCorporateClientDto input)
+        {
             entity.CompanyName = input.CompanyName.Trim();
             entity.ContactName = string.IsNullOrWhiteSpace(input.ContactName) ? null : input.ContactName.Trim();
             entity.Phone = VietnamTime.NormalizePhone(input.Phone) ?? input.Phone.Trim();
@@ -164,9 +173,6 @@ namespace PhuThuongStickyRice.Application.Customer
             entity.Weekday = input.Weekday;
             entity.ItemsJson = string.IsNullOrWhiteSpace(input.ItemsJson) ? null : input.ItemsJson;
             entity.IsActive = input.IsActive;
-            entity.UpdatedAt = DateTime.UtcNow;
-            await _clients.UpdateAsync(entity, autoSave: true);
-            return MapToDto(entity);
         }
 
         /// <summary>

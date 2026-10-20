@@ -111,13 +111,8 @@ namespace PhuThuongStickyRice.Application.Faq
         [Authorize(Roles = "Admin")]
         public virtual async Task<FaqItemDto> CreateAsync(CreateFaqItemDto dto)
         {
-            var entity = new FaqItem
-            {
-                Question = dto.Question.Trim(),
-                Answer = dto.Answer.Trim(),
-                SortOrder = dto.SortOrder,
-                IsActive = dto.IsActive
-            };
+            var entity = new FaqItem();
+            ApplyFields(entity, dto);
             await _faqs.InsertAsync(entity, autoSave: true);
             _catalogCache.Invalidate();
             return MapToDto(entity);
@@ -131,13 +126,25 @@ namespace PhuThuongStickyRice.Application.Faq
         public virtual async Task<FaqItemDto> UpdateAsync(Guid id, CreateFaqItemDto dto)
         {
             var entity = await _faqs.GetAsync(id);
+            ApplyFields(entity, dto);
+            await _faqs.UpdateAsync(entity, autoSave: true);
+            _catalogCache.Invalidate();
+            return MapToDto(entity);
+        }
+
+        /// <summary>
+        /// Gán các trường chỉnh sửa của FAQ (câu hỏi, trả lời, thứ tự, trạng
+        /// thái) — dùng chung cho CreateAsync và UpdateAsync để 2 luồng không
+        /// viết lặp lại cùng một khối gán field.
+        /// </summary>
+        /// <param name="entity">Mục FAQ nhận dữ liệu mới.</param>
+        /// <param name="dto">Dữ liệu FAQ từ DTO.</param>
+        private static void ApplyFields(FaqItem entity, CreateFaqItemDto dto)
+        {
             entity.Question = dto.Question.Trim();
             entity.Answer = dto.Answer.Trim();
             entity.SortOrder = dto.SortOrder;
             entity.IsActive = dto.IsActive;
-            await _faqs.UpdateAsync(entity, autoSave: true);
-            _catalogCache.Invalidate();
-            return MapToDto(entity);
         }
 
         /// <summary>Admin: xóa một mục FAQ (xóa cache public sau khi lưu).</summary>
