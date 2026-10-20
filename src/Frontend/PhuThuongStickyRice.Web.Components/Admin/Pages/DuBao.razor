@@ -185,44 +185,44 @@ else if (_forecast != null)
     private void BuildChart()
     {
         var sb = new System.Text.StringBuilder();
-        var hist = _forecast.History.Select(x => (x.Date, x.Revenue)).ToList();
-        var fc = _forecast.Next7Days.Select(x => (x.Date, x.ForecastRevenue)).ToList();
-        var pointCount = hist.Count + fc.Count;
+        var history = _forecast.History.Select(x => (x.Date, x.Revenue)).ToList();
+        var forecast = _forecast.Next7Days.Select(x => (x.Date, x.ForecastRevenue)).ToList();
+        var pointCount = history.Count + forecast.Count;
 
         sb.Append("<svg class=\"db-chart\" viewBox=\"0 0 720 270\" style=\"width:100%;height:auto\" role=\"img\" aria-label=\"Bieu do doanh thu\">");
         if (pointCount > 0)
         {
-            var maxV = hist.Concat(fc).Max(x => x.Item2);
-            // Chưa có dữ liệu (tất cả = 0): ép maxV = 1 để không chia 0 —
+            var maxValue = history.Concat(forecast).Max(x => x.Item2);
+            // Chưa có dữ liệu (tất cả = 0): ép maxValue = 1 để không chia 0 —
             // mọi điểm nằm sát trục X, biểu đồ vẫn vẽ được khung.
-            if (maxV <= 0) maxV = 1;
+            if (maxValue <= 0) maxValue = 1;
 
             // Ánh xạ chỉ số ngày → tọa độ px (trừ padding 2 biên); Math.Max
             // tránh chia 0 khi chỉ có 1 điểm dữ liệu.
             double X(int i) => PadL + i * (W - PadL - PadR) / Math.Max(pointCount - 1, 1);
             // Ánh xạ doanh thu → tọa độ px: trục Y của SVG đi xuống dưới nên
-            // phải đảo (1 − v/maxV) để giá trị lớn nằm trên cao.
-            double Y(decimal v) => PadT + (H - PadT - PadB) * (1 - (double)v / (double)maxV);
+            // phải đảo (1 − v/maxValue) để giá trị lớn nằm trên cao.
+            double Y(decimal v) => PadT + (H - PadT - PadB) * (1 - (double)v / (double)maxValue);
             // Định dạng số cho attribute SVG: bắt buộc InvariantCulture vì SVG
             // yêu cầu dấu chấm thập phân, bất kể locale vi-VN của trình duyệt.
             string F(double d) => d.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
-            AppendGridlines(sb, maxV, Y, F);
-            AppendHistoryArea(sb, hist, X, Y, F);
-            AppendForecastLine(sb, hist, fc, X, Y, F);
-            AppendXAxisLabels(sb, hist, fc, pointCount, X, F);
+            AppendGridlines(sb, maxValue, Y, F);
+            AppendHistoryArea(sb, history, X, Y, F);
+            AppendForecastLine(sb, history, forecast, X, Y, F);
+            AppendXAxisLabels(sb, history, forecast, pointCount, X, F);
         }
         sb.Append("</svg>");
         _svgMarkup = sb.ToString();
     }
 
     /// <summary>Vẽ 5 đường lưới ngang và nhãn tiền rút gọn bên trái.</summary>
-    private void AppendGridlines(System.Text.StringBuilder sb, decimal maxV,
+    private void AppendGridlines(System.Text.StringBuilder sb, decimal maxValue,
         Func<decimal, double> Y, Func<double, string> F)
     {
         for (var gridIndex = 0; gridIndex <= 4; gridIndex++)
         {
-            var gridValue = maxV * gridIndex / 4;
+            var gridValue = maxValue * gridIndex / 4;
             var y = Y((decimal)gridValue);
             sb.Append($"<line x1=\"{F(PadL)}\" y1=\"{F(y)}\" x2=\"{F(W - PadR)}\" y2=\"{F(y)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
             sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(y + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)gridValue)}</text>");
@@ -231,45 +231,45 @@ else if (_forecast != null)
 
     /// <summary>Vẽ vùng tô dưới đường doanh thu thực tế + đường kẻ liền.</summary>
     private void AppendHistoryArea(System.Text.StringBuilder sb,
-        List<(DateTime Date, decimal Revenue)> hist,
+        List<(DateTime Date, decimal Revenue)> history,
         Func<int, double> X, Func<decimal, double> Y, Func<double, string> F)
     {
-        var histPts = string.Join(" ", hist.Select((p, i) => $"{F(X(i))},{F(Y(p.Revenue))}"));
-        var lastHist = hist.Count - 1;
-        sb.Append($"<polygon points=\"{histPts} {F(X(lastHist))},{F(H - PadB)} {F(X(0))},{F(H - PadB)}\" fill=\"rgba(122,111,190,0.12)\"/>");
-        sb.Append($"<polyline points=\"{histPts}\" fill=\"none\" stroke=\"#7a6fbe\" stroke-width=\"2.5\"/>");
+        var historyPoints = string.Join(" ", history.Select((p, i) => $"{F(X(i))},{F(Y(p.Revenue))}"));
+        var lastHistoryIndex = history.Count - 1;
+        sb.Append($"<polygon points=\"{historyPoints} {F(X(lastHistoryIndex))},{F(H - PadB)} {F(X(0))},{F(H - PadB)}\" fill=\"rgba(122,111,190,0.12)\"/>");
+        sb.Append($"<polyline points=\"{historyPoints}\" fill=\"none\" stroke=\"#7a6fbe\" stroke-width=\"2.5\"/>");
     }
 
     /// <summary>Vẽ đường dự báo nét đứt nối tiếp điểm thực tế cuối + chấm tròn từng ngày.</summary>
     private void AppendForecastLine(System.Text.StringBuilder sb,
-        List<(DateTime Date, decimal Revenue)> hist,
-        List<(DateTime Date, decimal ForecastRevenue)> fc,
+        List<(DateTime Date, decimal Revenue)> history,
+        List<(DateTime Date, decimal ForecastRevenue)> forecast,
         Func<int, double> X, Func<decimal, double> Y, Func<double, string> F)
     {
-        var lastHist = hist.Count - 1;
+        var lastHistoryIndex = history.Count - 1;
         // Nối chuỗi trong vòng lặp nên dùng StringBuilder (tránh tạo string mới mỗi vòng).
         // Đường dự báo bắt đầu từ ĐIỂM THỰC TẾ CUỐI CÙNG để 2 đoạn nối liền
         // nhau, không bị khoảng trống giữa quá khứ và tương lai.
-        var fcPts = new System.Text.StringBuilder($"{F(X(lastHist))},{F(Y(hist[lastHist].Revenue))}");
+        var forecastPoints = new System.Text.StringBuilder($"{F(X(lastHistoryIndex))},{F(Y(history[lastHistoryIndex].Revenue))}");
         var dots = new System.Text.StringBuilder();
-        for (var i = 0; i < fc.Count; i++)
+        for (var i = 0; i < forecast.Count; i++)
         {
-            var x = X(hist.Count + i);
-            var y = Y(fc[i].ForecastRevenue);
-            fcPts.Append($" {F(x)},{F(y)}");
+            var x = X(history.Count + i);
+            var y = Y(forecast[i].ForecastRevenue);
+            forecastPoints.Append($" {F(x)},{F(y)}");
             dots.Append($"<circle cx=\"{F(x)}\" cy=\"{F(y)}\" r=\"4\" fill=\"#f1b44c\" stroke=\"#fff\" stroke-width=\"1.5\"/>");
         }
-        sb.Append($"<polyline points=\"{fcPts}\" fill=\"none\" stroke=\"#f1b44c\" stroke-width=\"2.5\" stroke-dasharray=\"7 4\"/>");
+        sb.Append($"<polyline points=\"{forecastPoints}\" fill=\"none\" stroke=\"#f1b44c\" stroke-width=\"2.5\" stroke-dasharray=\"7 4\"/>");
         sb.Append(dots);
     }
 
     /// <summary>Vẽ nhãn ngày (dd/MM) trên trục X, cách đều khoảng 7 nhãn.</summary>
     private void AppendXAxisLabels(System.Text.StringBuilder sb,
-        List<(DateTime Date, decimal Revenue)> hist,
-        List<(DateTime Date, decimal ForecastRevenue)> fc,
+        List<(DateTime Date, decimal Revenue)> history,
+        List<(DateTime Date, decimal ForecastRevenue)> forecast,
         int pointCount, Func<int, double> X, Func<double, string> F)
     {
-        var all = hist.Select(x => x.Date).Concat(fc.Select(x => x.Date)).ToList();
+        var all = history.Select(x => x.Date).Concat(forecast.Select(x => x.Date)).ToList();
         // Chỉ hiện khoảng 7 nhãn ngày (dd/MM) trên trục X để nhãn không đè
         // lên nhau khi có ~37 điểm dữ liệu.
         var step = Math.Max(1, pointCount / 7);

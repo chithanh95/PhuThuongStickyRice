@@ -461,8 +461,8 @@ namespace PhuThuongStickyRice.Application.Orders
             var rows = await _asyncExecuter.ToListAsync(
                 billable.SelectMany(x => x.Lines)
                     .GroupBy(x => x.ProductId)
-                    .Select(g => new { ProductId = g.Key, Qty = g.Sum(x => (long)x.Quantity) }));
-            return rows.ToDictionary(x => x.ProductId, x => x.Qty);
+                    .Select(g => new { ProductId = g.Key, Quantity = g.Sum(x => (long)x.Quantity) }));
+            return rows.ToDictionary(x => x.ProductId, x => x.Quantity);
         }
 
         /// <summary>
