@@ -233,7 +233,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents()
             // (ClosedXML đo font từng cell — O(dòng × cột), export 5000 dòng
             // tốn vài giây chỉ để căn cột).
-            SetFixedColumnWidths(sheet, 14, 18, 24, 14, 30, 32, 14, 12, 12, 16, 16, 16, 40);
+            ExcelExportHelper.SetFixedColumnWidths(sheet, 14, 18, 24, 14, 30, 32, 14, 12, 12, 16, 16, 16, 40);
         }
 
         /// <summary>
@@ -320,7 +320,7 @@ namespace PhuThuongStickyRice.Application.Orders
             WriteSummaryDataRow(summary, rowIndex, totalOrders, totalRevenue);
             summary.Row(rowIndex).Style.Font.Bold = true;
             // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents().
-            SetFixedColumnWidths(summary, 14, 10, 18, 20);
+            ExcelExportHelper.SetFixedColumnWidths(summary, 14, 10, 18, 20);
         }
 
         /// <summary>
@@ -381,7 +381,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 rowIndex++;
             }
             // perf-hunt 2026-10-20: độ rộng cố định thay AdjustToContents().
-            SetFixedColumnWidths(sheet, 14, 18, 24, 14, 40, 14, 16, 16);
+            ExcelExportHelper.SetFixedColumnWidths(sheet, 14, 18, 24, 14, 40, 14, 16, 16);
         }
 
         /// <summary>

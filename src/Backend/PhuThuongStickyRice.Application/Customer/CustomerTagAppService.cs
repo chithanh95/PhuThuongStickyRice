@@ -235,7 +235,7 @@ namespace PhuThuongStickyRice.Application.Customer
             // perf-hunt 2026-10-20: độ rộng cột cố định thay AdjustToContents()
             // (ClosedXML đo font từng cell — O(dòng × cột), export 5000 dòng
             // tốn vài giây chỉ để căn cột). Dữ liệu không đổi.
-            SetFixedColumnWidths(worksheet, 24, 14, 10, 18, 18, 40);
+            ExcelExportHelper.SetFixedColumnWidths(worksheet, 24, 14, 10, 18, 18, 40);
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
