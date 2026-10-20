@@ -547,12 +547,14 @@
                                             @for (var star = 1; star <= 5; star++)
                                             {
                                                 var starNumber = star;
+                                                @* A11y-1705: sao chưa chọn #ccc trên nền trắng chỉ ~1.6:1
+                                                   (< 3:1 WCAG 1.4.11 cho icon có ý nghĩa). Đổi #8f8f8f
+                                                   (~3.23:1), vẫn xám phân biệt với sao vàng đã chọn.
+                                                   Comment để NGOÀI thẻ button — để giữa các attribute
+                                                   sẽ làm sập render (InvalidCharacterError, đã dính ở /products). *@
                                                 <button type="button" class="btn btn-link p-0"
                                                         aria-label="Đánh giá món @orderLine.ProductName: @starNumber sao"
                                                         style="font-size: 20px; color: @(starNumber <= LineRating(orderLine.Id) ? "#f1b44c" : "#8f8f8f"); text-decoration: none;"
-                                                        @* A11y-1705: sao chưa chọn #ccc trên nền trắng chỉ ~1.6:1
-                                                           (< 3:1 WCAG 1.4.11 cho icon có ý nghĩa). Đổi #8f8f8f
-                                                           (~3.23:1), vẫn xám phân biệt với sao vàng đã chọn. *@
                                                         @onclick="() => SetLineRating(orderLine.Id, starNumber)">★</button>
                                             }
                                         </span>

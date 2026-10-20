@@ -37,9 +37,12 @@
                     <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fa-solid fa-search" aria-hidden="true"></i></span>
                     </div>
+                    @* A11y: ô tìm kiếm không có label hiển thị — dùng aria-label để
+                       trình đọc màn hình biết mục đích ô nhập; icon kính lúp chỉ trang trí.
+                       LƯU Ý: comment phải nằm NGOÀI thẻ — để giữa các attribute,
+                       Razor biên dịch thành attribute lạ, trình duyệt ném
+                       InvalidCharacterError làm sập render cả trang (đã dính 2026-10-20). *@
                     <input type="text" class="form-control" placeholder="Tìm tên, mã món..."
-                           @* A11y: ô tìm kiếm không có label hiển thị — dùng aria-label để
-                              trình đọc màn hình biết mục đích ô nhập; icon kính lúp chỉ trang trí. *@
                            aria-label="Tìm kiếm sản phẩm"
                            value="@SearchText" @oninput="OnSearchChanged" />
                 </div>
