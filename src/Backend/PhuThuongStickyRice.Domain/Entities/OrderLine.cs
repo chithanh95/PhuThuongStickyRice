@@ -82,7 +82,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             ToppingNames = toppingNames;
             ToppingsExtra = toppingsExtra;
             IsCombo = isCombo;
-            Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+            Note = TextValidation.TrimToNull(note);
         }
 
         /// <summary>
@@ -139,8 +139,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 productName.Trim(),
                 unitPrice,
                 quantity,
-                string.IsNullOrWhiteSpace(sizeName) ? null : sizeName.Trim(),
-                string.IsNullOrWhiteSpace(toppingNames) ? null : toppingNames.Trim(),
+                TextValidation.TrimToNull(sizeName),
+                TextValidation.TrimToNull(toppingNames),
                 toppingsExtra,
                 isCombo,
                 note);

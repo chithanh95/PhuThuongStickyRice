@@ -278,14 +278,14 @@ namespace PhuThuongStickyRice.Application.Reports
                         x.Lines.Select(l => new OrderWeekLine(l.ProductName, l.Quantity)).ToList())));
 
             var billable = rows.Where(x => x.Status != OrderStatus.Cancelled).ToList();
-            var productQty = AccumulateProductQuantities(billable);
+            var productQuantities = AccumulateProductQuantities(billable);
 
             return new WeekAggregate
             {
                 Revenue = billable.Sum(x => x.Total),
                 OrderCount = billable.Count,
                 CancelledCount = rows.Count(x => x.Status == OrderStatus.Cancelled),
-                TopProducts = productQty
+                TopProducts = productQuantities
                     .OrderByDescending(kv => kv.Value)
                     .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
                     .Take(TopProductsCount)
@@ -303,7 +303,7 @@ namespace PhuThuongStickyRice.Application.Reports
         /// </summary>
         private static Dictionary<string, long> AccumulateProductQuantities(List<OrderWeekRow> billable)
         {
-            var productQty = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            var productQuantities = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
             foreach (var orderRow in billable)
             {
                 foreach (var line in orderRow.Lines)
@@ -311,12 +311,12 @@ namespace PhuThuongStickyRice.Application.Reports
                     var name = string.IsNullOrWhiteSpace(line.ProductName)
                         ? UnnamedProductLabel
                         : line.ProductName.Trim();
-                    productQty.TryGetValue(name, out var qty);
-                    productQty[name] = qty + line.Quantity;
+                    productQuantities.TryGetValue(name, out var existingQuantity);
+                    productQuantities[name] = existingQuantity + line.Quantity;
                 }
             }
 
-            return productQty;
+            return productQuantities;
         }
 
         /// <summary>

@@ -560,8 +560,8 @@ namespace PhuThuongStickyRice.Domain.Entities
             }
 
             Tags = normalizedTags;
-            Category = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
-            AllergenInfo = string.IsNullOrWhiteSpace(allergenInfo) ? null : allergenInfo.Trim();
+            Category = TextValidation.TrimToNull(category);
+            AllergenInfo = TextValidation.TrimToNull(allergenInfo);
             IsNew = isNew;
             IsSignature = isSignature;
             AvailableFrom = availableFrom?.Date;

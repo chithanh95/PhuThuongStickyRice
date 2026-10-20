@@ -187,13 +187,13 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             // Only local uploads under /uploads/landing/ are candidates.
             var path = url.Trim();
             const string prefix = "/uploads/landing/";
-            var idx = path.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
-            if (idx < 0)
+            var prefixIndex = path.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+            if (prefixIndex < 0)
             {
                 return;
             }
 
-            var fileName = path.Substring(idx + prefix.Length).Split('?')[0];
+            var fileName = path.Substring(prefixIndex + prefix.Length).Split('?')[0];
             if (!string.IsNullOrWhiteSpace(fileName) && !fileName.Contains('/'))
             {
                 referenced.Add(fileName);

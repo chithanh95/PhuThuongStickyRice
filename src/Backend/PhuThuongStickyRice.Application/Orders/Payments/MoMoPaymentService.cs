@@ -138,12 +138,19 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
         /// <summary>Các tham số đã ký HMAC của một yêu cầu tạo thanh toán MoMo.</summary>
         private sealed class SignedCreateRequest
         {
+            /// <summary>Id duy nhất của yêu cầu tạo thanh toán — dùng Guid dạng "N" của đơn hàng để callback đối chiếu.</summary>
             public string RequestId { get; init; } = string.Empty;
+            /// <summary>Số tiền thanh toán (VND, nguyên — MoMo không nhận số lẻ).</summary>
             public long Amount { get; init; }
+            /// <summary>Mã đơn hàng hiển thị (OrderNumber) — MoMo dùng để đối chiếu và hiển thị cho khách.</summary>
             public string OrderId { get; init; } = string.Empty;
+            /// <summary>Mô tả đơn hiển thị trên trang thanh toán MoMo.</summary>
             public string OrderInfo { get; init; } = string.Empty;
+            /// <summary>URL trả khách về trang tra cứu đơn sau khi thanh toán xong.</summary>
             public string RedirectUrl { get; init; } = string.Empty;
+            /// <summary>URL MoMo gọi ngược (IPN) để báo kết quả thanh toán cho server.</summary>
             public string IpnUrl { get; init; } = string.Empty;
+            /// <summary>Chữ ký HMAC-SHA256 của toàn bộ tham số — MoMo dùng để xác thực yêu cầu đến từ đúng merchant.</summary>
             public string Signature { get; init; } = string.Empty;
         }
 

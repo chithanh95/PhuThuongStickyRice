@@ -223,9 +223,9 @@ else if (_forecast != null)
         for (var gridIndex = 0; gridIndex <= 4; gridIndex++)
         {
             var gridValue = maxValue * gridIndex / 4;
-            var y = Y((decimal)gridValue);
-            sb.Append($"<line x1=\"{F(PadL)}\" y1=\"{F(y)}\" x2=\"{F(W - PadR)}\" y2=\"{F(y)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
-            sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(y + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)gridValue)}</text>");
+            var pixelY = Y((decimal)gridValue);
+            sb.Append($"<line x1=\"{F(PadL)}\" y1=\"{F(pixelY)}\" x2=\"{F(W - PadR)}\" y2=\"{F(pixelY)}\" stroke=\"#e9ecef\" stroke-width=\"1\"/>");
+            sb.Append($"<text x=\"{F(PadL - 8)}\" y=\"{F(pixelY + 4)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#6c757d\">{CompactMoney((decimal)gridValue)}</text>");
         }
     }
 
@@ -254,10 +254,10 @@ else if (_forecast != null)
         var dots = new System.Text.StringBuilder();
         for (var i = 0; i < forecast.Count; i++)
         {
-            var x = X(history.Count + i);
-            var y = Y(forecast[i].ForecastRevenue);
-            forecastPoints.Append($" {F(x)},{F(y)}");
-            dots.Append($"<circle cx=\"{F(x)}\" cy=\"{F(y)}\" r=\"4\" fill=\"#f1b44c\" stroke=\"#fff\" stroke-width=\"1.5\"/>");
+            var pixelX = X(history.Count + i);
+            var pixelY = Y(forecast[i].ForecastRevenue);
+            forecastPoints.Append($" {F(pixelX)},{F(pixelY)}");
+            dots.Append($"<circle cx=\"{F(pixelX)}\" cy=\"{F(pixelY)}\" r=\"4\" fill=\"#f1b44c\" stroke=\"#fff\" stroke-width=\"1.5\"/>");
         }
         sb.Append($"<polyline points=\"{forecastPoints}\" fill=\"none\" stroke=\"#f1b44c\" stroke-width=\"2.5\" stroke-dasharray=\"7 4\"/>");
         sb.Append(dots);

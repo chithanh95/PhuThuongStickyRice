@@ -218,12 +218,12 @@ namespace PhuThuongStickyRice.Application.Orders
                 return false;
             }
 
-            var qty = ParseQuantity(match.Groups["qty"]);
+            var parsedQuantity = ParseQuantity(match.Groups["qty"]);
             item = new ParsedOrderItem
             {
                 ProductId = candidate.Product.Id,
                 ProductName = candidate.Product.Name,
-                Quantity = Math.Max(MinParsedQuantity, Math.Min(MaxParsedQuantity, qty)),
+                Quantity = Math.Max(MinParsedQuantity, Math.Min(MaxParsedQuantity, parsedQuantity)),
                 Price = candidate.Product.PriceAmount
             };
 
@@ -237,19 +237,19 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>Đọc số lượng từ nhóm regex: số ("3") hoặc chữ ("ba"); mặc định 1.</summary>
-        private static int ParseQuantity(Group qtyGroup)
+        private static int ParseQuantity(Group quantityGroup)
         {
-            if (!qtyGroup.Success)
+            if (!quantityGroup.Success)
             {
                 return MinParsedQuantity;
             }
 
-            if (int.TryParse(qtyGroup.Value, out var parsedQuantity))
+            if (int.TryParse(quantityGroup.Value, out var parsedQuantity))
             {
                 return parsedQuantity;
             }
 
-            return TextNumbers.TryGetValue(qtyGroup.Value, out var textQuantity) ? textQuantity : MinParsedQuantity;
+            return TextNumbers.TryGetValue(quantityGroup.Value, out var textQuantity) ? textQuantity : MinParsedQuantity;
         }
     }
 }

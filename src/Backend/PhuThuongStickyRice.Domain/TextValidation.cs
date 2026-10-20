@@ -36,6 +36,16 @@ public static class TextValidation
     }
 
     /// <summary>
+    /// Chuẩn hoá text tùy chọn: trim khoảng trắng hai đầu, rỗng/whitespace
+    /// thì trả về null. Dùng chung để thay mẫu lặp
+    /// <c>string.IsNullOrWhiteSpace(x) ? null : x.Trim()</c> rải khắp domain.
+    /// </summary>
+    /// <param name="value">Giá trị cần chuẩn hoá; null thì trả về null.</param>
+    /// <returns>Text đã trim, hoặc null khi rỗng/whitespace.</returns>
+    public static string? TrimToNull(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    /// <summary>
     /// Text tùy chọn: không vượt quá độ dài tối đa.
     /// </summary>
     /// <param name="value">Giá trị cần kiểm tra; null (và whitespace khi trim) thì bỏ qua.</param>

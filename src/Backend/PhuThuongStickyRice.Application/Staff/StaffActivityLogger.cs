@@ -34,6 +34,12 @@ namespace PhuThuongStickyRice.Application.Staff
         Task LogForUserAsync(Guid userId, string userName, string action, string detail = null);
     }
 
+    /// <summary>
+    /// Item 156: triển khai ghi log hoạt động của nhân viên — chỉ ghi hành
+    /// động của các role Admin/Cashier/Kitchen; lỗi khi ghi log không bao
+    /// giờ làm gãy luồng nghiệp vụ. Xem hợp đồng chi tiết ở
+    /// <see cref="IStaffActivityLogger"/>.
+    /// </summary>
     public partial class StaffActivityLogger : ApplicationService, IStaffActivityLogger
     {
         private static readonly string[] StaffRoles = { "Admin", "Cashier", "Kitchen" };

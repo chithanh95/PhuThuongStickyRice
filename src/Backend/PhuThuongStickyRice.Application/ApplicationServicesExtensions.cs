@@ -8,6 +8,12 @@ using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// Điểm đăng ký DI của tầng application: service domain, CQRS command/query
+    /// handler (cả handler cụ thể lẫn handler generic cho mọi aggregate root)
+    /// và EmailMessageService. WebAPI/BackgroundServer gọi
+    /// <c>AddApplicationServices</c> + <c>AddMessageHandlers</c> khi khởi động.
+    /// </summary>
     public static class ApplicationServicesExtensions
     {
         /// <summary>

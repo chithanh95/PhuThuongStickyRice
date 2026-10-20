@@ -22,6 +22,14 @@ namespace PhuThuongStickyRice.Application
             AddHandlerFactory(type);
         }
 
+        /// <summary>
+        /// Dựng handler cho interface được yêu cầu: chạy pipeline factory
+        /// (decorator chain) — mỗi factory bọc handler của bước trước qua
+        /// tham số handler lồng nhau, các tham số còn lại resolve từ DI provider.
+        /// </summary>
+        /// <param name="provider">DI container để resolve dependency của constructor.</param>
+        /// <param name="handlerInterfaceType">Interface handler cần dựng (generic đã đóng).</param>
+        /// <returns>Instance handler ngoài cùng của decorator chain.</returns>
         public object Create(IServiceProvider provider, Type handlerInterfaceType)
         {
             object currentHandler = null;

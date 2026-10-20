@@ -26,7 +26,7 @@ namespace PhuThuongStickyRice.Domain.Events
         public static void RegisterHandlers(Assembly assembly, IServiceCollection services)
         {
             var types = assembly.GetTypes()
-                                .Where(x => x.GetInterfaces().Any(y => y.IsGenericType && y.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>)))
+                                .Where(type => type.GetInterfaces().Any(iface => iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>)))
                                 .ToList();
 
             foreach (var type in types)
@@ -52,9 +52,9 @@ namespace PhuThuongStickyRice.Domain.Events
             foreach (Type handlerType in _handlers)
             {
                 bool canHandleEvent = handlerType.GetInterfaces()
-                    .Any(x => x.IsGenericType
-                        && x.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>)
-                        && x.GenericTypeArguments[0] == domainEvent.GetType());
+                    .Any(iface => iface.IsGenericType
+                        && iface.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>)
+                        && iface.GenericTypeArguments[0] == domainEvent.GetType());
 
                 if (canHandleEvent)
                 {

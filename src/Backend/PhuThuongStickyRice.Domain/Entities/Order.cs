@@ -188,7 +188,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public void ChangeBranch(Guid? branchId, string branchName)
         {
             BranchId = branchId;
-            BranchName = string.IsNullOrWhiteSpace(branchName) ? null : branchName.Trim();
+            BranchName = TextValidation.TrimToNull(branchName);
         }
 
         /// <summary>
@@ -262,7 +262,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public void SetAdminNote(string note)
         {
-            var trimmed = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+            var trimmed = TextValidation.TrimToNull(note);
             if (trimmed != null && trimmed.Length > AdminNoteMaxLength)
             {
                 throw new DomainException($"Ghi chú nội bộ không được vượt quá {AdminNoteMaxLength} ký tự.");
@@ -277,8 +277,8 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public void SetPickupShipperInfo(string name, string phone)
         {
-            var trimmedName = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
-            var trimmedPhone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+            var trimmedName = TextValidation.TrimToNull(name);
+            var trimmedPhone = TextValidation.TrimToNull(phone);
 
             if (trimmedName != null && trimmedName.Length > PickupShipperNameMaxLength)
             {
@@ -428,9 +428,63 @@ namespace PhuThuongStickyRice.Domain.Entities
             var fee = Math.Max(0, deliveryFee?.Amount ?? 0);
             var gift = Math.Max(0, giftFee?.Amount ?? 0);
 
-            // Discounts are applied in priority order and never exceed the
-            // remaining subtotal, so the total can never go negative.
-            // The auto-applied "giờ vàng" promotion comes first.
+            // Các khoản giảm giá được chốt theo thứ tự ưu tiên tại
+            // ApplyDiscountWaterfall (không vượt quá subtotal còn lại nên
+            // tổng đơn không bao giờ âm).
+            var (promo, discount, loyalty, tier) = ApplyDiscountWaterfall(
+                subtotal, promotionDiscountAmount, discountAmount, loyaltyDiscount, tierDiscount);
+
+            DeliveryFee = Money.Of(fee, currency);
+            GiftFee = Money.Of(gift, currency);
+            DiscountCode = TextValidation.TrimToNull(discountCode);
+            DiscountAmount = Money.Of(discount, currency);
+            LoyaltyDiscount = Money.Of(loyalty, currency);
+            LoyaltyPointsRedeemed = loyaltyPointsRedeemed;
+            TierDiscount = Money.Of(tier, currency);
+            ReferralCodeUsed = TextValidation.TrimToNull(referralCodeUsed)?.ToUpperInvariant();
+            TaxCode = TextValidation.TrimToNull(taxCode);
+            CompanyName = TextValidation.TrimToNull(companyName);
+            RequiresDeposit = requiresDeposit;
+            RecipientName = TextValidation.TrimToNull(recipientName);
+            RecipientPhone = TextValidation.TrimToNull(recipientPhone);
+            IsGift = isGift;
+            GiftMessage = TextValidation.TrimToNull(giftMessage);
+            IdempotencyKey = TextValidation.TrimToNull(idempotencyKey);
+            PromotionName = promo > 0
+                ? TextValidation.TrimToNull(promotionName)
+                : null;
+            PromotionDiscountAmount = promo;
+            BranchId = branchId;
+            BranchName = TextValidation.TrimToNull(branchName);
+            Source = TextValidation.TrimToNull(source) ?? "Web";
+            DeliverySlot = TextValidation.TrimToNull(deliverySlot);
+            SetPickupShipperInfo(pickupShipperName, pickupShipperPhone);
+            ScheduledFor = scheduledFor;
+            MoMoMatched = false;
+            RefundStatus = RefundStatus.None;
+            RefundAmount = 0;
+            TotalAmount = Money.Of(subtotal - promo - discount - loyalty - tier + fee + gift, currency);
+        }
+
+        /// <summary>
+        /// Chốt các khoản giảm giá theo thứ tự ưu tiên: khuyến mãi tự động
+        /// "giờ vàng" trước, rồi mã giảm giá, điểm loyalty, cuối cùng là giảm
+        /// theo hạng thành viên. Mỗi khoản không vượt quá subtotal còn lại nên
+        /// tổng đơn không bao giờ âm.
+        /// </summary>
+        /// <param name="subtotal">Tổng tiền hàng trước giảm giá.</param>
+        /// <param name="promotionDiscountAmount">Tiền giảm của khuyến mãi "giờ vàng".</param>
+        /// <param name="discountAmount">Tiền giảm của mã giảm giá.</param>
+        /// <param name="loyaltyDiscount">Tiền giảm quy đổi từ điểm loyalty.</param>
+        /// <param name="tierDiscount">Tiền giảm theo hạng thành viên.</param>
+        /// <returns>Tuple 4 khoản giảm đã chốt theo đúng thứ tự áp dụng.</returns>
+        private static (decimal Promo, decimal Discount, decimal Loyalty, decimal Tier) ApplyDiscountWaterfall(
+            decimal subtotal,
+            decimal promotionDiscountAmount,
+            Money? discountAmount,
+            Money? loyaltyDiscount,
+            Money? tierDiscount)
+        {
             var remaining = subtotal;
             var promo = Math.Min(Math.Max(0, promotionDiscountAmount), remaining);
             remaining -= promo;
@@ -439,37 +493,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             var loyalty = Math.Min(Math.Max(0, loyaltyDiscount?.Amount ?? 0), remaining);
             remaining -= loyalty;
             var tier = Math.Min(Math.Max(0, tierDiscount?.Amount ?? 0), remaining);
-
-            DeliveryFee = Money.Of(fee, currency);
-            GiftFee = Money.Of(gift, currency);
-            DiscountCode = string.IsNullOrWhiteSpace(discountCode) ? null : discountCode.Trim();
-            DiscountAmount = Money.Of(discount, currency);
-            LoyaltyDiscount = Money.Of(loyalty, currency);
-            LoyaltyPointsRedeemed = loyaltyPointsRedeemed;
-            TierDiscount = Money.Of(tier, currency);
-            ReferralCodeUsed = string.IsNullOrWhiteSpace(referralCodeUsed) ? null : referralCodeUsed.Trim().ToUpperInvariant();
-            TaxCode = string.IsNullOrWhiteSpace(taxCode) ? null : taxCode.Trim();
-            CompanyName = string.IsNullOrWhiteSpace(companyName) ? null : companyName.Trim();
-            RequiresDeposit = requiresDeposit;
-            RecipientName = string.IsNullOrWhiteSpace(recipientName) ? null : recipientName.Trim();
-            RecipientPhone = string.IsNullOrWhiteSpace(recipientPhone) ? null : recipientPhone.Trim();
-            IsGift = isGift;
-            GiftMessage = string.IsNullOrWhiteSpace(giftMessage) ? null : giftMessage.Trim();
-            IdempotencyKey = string.IsNullOrWhiteSpace(idempotencyKey) ? null : idempotencyKey.Trim();
-            PromotionName = promo > 0 && !string.IsNullOrWhiteSpace(promotionName)
-                ? promotionName.Trim()
-                : null;
-            PromotionDiscountAmount = promo;
-            BranchId = branchId;
-            BranchName = string.IsNullOrWhiteSpace(branchName) ? null : branchName.Trim();
-            Source = string.IsNullOrWhiteSpace(source) ? "Web" : source.Trim();
-            DeliverySlot = string.IsNullOrWhiteSpace(deliverySlot) ? null : deliverySlot.Trim();
-            SetPickupShipperInfo(pickupShipperName, pickupShipperPhone);
-            ScheduledFor = scheduledFor;
-            MoMoMatched = false;
-            RefundStatus = RefundStatus.None;
-            RefundAmount = 0;
-            TotalAmount = Money.Of(subtotal - promo - discount - loyalty - tier + fee + gift, currency);
+            return (promo, discount, loyalty, tier);
         }
 
         /// <summary>
@@ -528,8 +552,8 @@ namespace PhuThuongStickyRice.Domain.Entities
                 orderNumber.Trim(),
                 customerName.Trim(),
                 customerPhone.Trim(),
-                string.IsNullOrWhiteSpace(customerEmail) ? null : customerEmail.Trim(),
-                string.IsNullOrWhiteSpace(customerAddress) ? null : customerAddress.Trim(),
+                TextValidation.TrimToNull(customerEmail),
+                TextValidation.TrimToNull(customerAddress),
                 notes?.Trim(),
                 paymentMethod,
                 orderLines,
@@ -649,7 +673,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// </summary>
         public void SetSpinPrizeCode(string? code)
         {
-            SpinPrizeCode = string.IsNullOrWhiteSpace(code) ? null : code.Trim().ToUpperInvariant();
+            SpinPrizeCode = TextValidation.TrimToNull(code)?.ToUpperInvariant();
         }
 
         /// <summary>

@@ -183,9 +183,13 @@ namespace PhuThuongStickyRice.Application.Discounts
         /// </summary>
         private sealed class CachedActivePromotion
         {
+            /// <summary>Giờ bắt đầu khung giờ vàng (theo giờ trong ngày, copy từ Promotion.StartTime).</summary>
             public TimeSpan StartTime { get; init; }
+            /// <summary>Giờ kết thúc khung giờ vàng — biên độc quyền [StartTime, EndTime).</summary>
             public TimeSpan EndTime { get; init; }
+            /// <summary>Bit flags <c>PromotionDay</c> các ngày trong tuần được áp dụng khuyến mãi.</summary>
             public int DaysOfWeekFlags { get; init; }
+            /// <summary>DTO khuyến mãi đầy đủ, trả về cho checkout khi thời điểm hiện tại trúng khung giờ.</summary>
             // required: Map() luôn trả về PromotionDto non-null; snapshot chỉ
             // hợp lệ khi có Dto, compiler bắt buộc mọi nơi tạo đều phải gán.
             public required PromotionDto Dto { get; init; }
