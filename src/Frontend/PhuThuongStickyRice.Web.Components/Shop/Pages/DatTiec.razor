@@ -2,7 +2,6 @@
 <PageTitle>Đặt tiệc — Xôi Phú Thượng</PageTitle>
 @using System
 @using System.Linq
-@using System.Text.RegularExpressions
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
@@ -208,7 +207,7 @@ else
 
         _error = null;
         _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
-        _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
+        _phoneError = !PhoneValidation.IsValidVnPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
         _qtyError = _model.Quantity < 30 ? "Đơn đặt tiệc từ 30 gói/mâm trở lên. Đơn nhỏ hơn vui lòng đặt tại cửa hàng." : null;
 
         if (_nameError != null || _phoneError != null || _qtyError != null)
@@ -242,8 +241,4 @@ else
     }
 
     private static string FieldClass(string error) => string.IsNullOrEmpty(error) ? null : "is-invalid";
-
-    private static bool IsValidPhone(string phone) =>
-        !string.IsNullOrWhiteSpace(phone)
-        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 }

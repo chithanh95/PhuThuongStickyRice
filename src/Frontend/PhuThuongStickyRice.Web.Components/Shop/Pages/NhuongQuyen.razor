@@ -2,7 +2,6 @@
 <PageTitle>Nhượng quyền — Xôi Phú Thượng</PageTitle>
 @using System
 @using System.Collections.Generic
-@using System.Text.RegularExpressions
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
@@ -284,7 +283,7 @@
 
         _error = null;
         _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
-        _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
+        _phoneError = !PhoneValidation.IsValidVnPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
         _provinceError = string.IsNullOrWhiteSpace(_model.EventLocation) ? "Vui lòng nhập tỉnh/thành phố dự kiến." : null;
         _budgetError = string.IsNullOrWhiteSpace(_model.Budget) ? "Vui lòng chọn mức vốn dự kiến." : null;
         _premisesError = string.IsNullOrWhiteSpace(_premises) ? "Vui lòng chọn tình trạng mặt bằng." : null;
@@ -321,8 +320,4 @@
     }
 
     private static string FieldClass(string error) => string.IsNullOrEmpty(error) ? null : "is-invalid";
-
-    private static bool IsValidPhone(string phone) =>
-        !string.IsNullOrWhiteSpace(phone)
-        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 }

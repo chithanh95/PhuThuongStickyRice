@@ -1,5 +1,4 @@
 @page "/dang-nhap"
-@using System.Text.RegularExpressions
 @using System.Threading.Tasks
 @using Microsoft.AspNetCore.Components.Authorization
 @using PhuThuongStickyRice.Web.Components.Core.Services
@@ -165,9 +164,6 @@
         catch { }
     }
 
-    private static bool IsValidPhone(string phone) =>
-        !string.IsNullOrWhiteSpace(phone)
-        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 
     private async Task OnLoginKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
     {
@@ -184,7 +180,7 @@
         if (_busy) return;
         _error = null;
         _infoMessage = null;
-        if (!IsValidPhone(_phone))
+        if (!PhoneValidation.IsValidVnPhone(_phone))
         {
             _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
             return;
@@ -222,7 +218,7 @@
         if (_busy) return;
         _error = null;
         _infoMessage = null;
-        if (!IsValidPhone(_phone))
+        if (!PhoneValidation.IsValidVnPhone(_phone))
         {
             _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
             return;

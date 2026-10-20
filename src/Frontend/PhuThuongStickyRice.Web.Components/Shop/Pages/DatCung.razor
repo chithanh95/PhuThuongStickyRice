@@ -1,6 +1,5 @@
 @page "/dat-cung"
 @using System
-@using System.Text.RegularExpressions
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
@@ -58,12 +57,12 @@ else
                     <div role="radiogroup" aria-labelledby="dc-dipcung-label">
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" id="dip-ram" name="dipcung"
-                                   checked="@(_dipCung == "Ram")" @onchange="@(() => _dipCung = "Ram")" />
+                                   checked="@(_dipCung == DipCungRam)" @onchange="@(() => _dipCung = DipCungRam)" />
                             <label class="form-check-label" for="dip-ram">🌕 Rằm (15 âm lịch)</label>
                         </div>
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" id="dip-mung1" name="dipcung"
-                                   checked="@(_dipCung == "Mung1")" @onchange="@(() => _dipCung = "Mung1")" />
+                                   checked="@(_dipCung == DipCungMung1)" @onchange="@(() => _dipCung = DipCungMung1)" />
                             <label class="form-check-label" for="dip-mung1">🌑 Mùng 1 (âm lịch)</label>
                         </div>
                     </div>
@@ -122,8 +121,13 @@ else
 }
 
 @code {
+    /// <summary>Mã dịp cúng: rằm (15 âm lịch) — khớp giá trị backend lưu ở QuoteRequestAppService.</summary>
+    private const string DipCungRam = "Ram";
+    /// <summary>Mã dịp cúng: mùng 1 (âm lịch) — khớp giá trị backend lưu ở QuoteRequestAppService.</summary>
+    private const string DipCungMung1 = "Mung1";
+
     private readonly QuoteRequestModel _model = new QuoteRequestModel { Quantity = 5, QuoteType = "DatCung" };
-    private string _dipCung = "Ram";
+    private string _dipCung = DipCungRam;
     private string _loaiMam = "Chay";
     private string _thangCung;
     private bool _remindMonthly;
@@ -168,7 +172,7 @@ else
     {
         _error = null;
         _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
-        _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
+        _phoneError = !PhoneValidation.IsValidVnPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
         _qtyError = _model.Quantity < 1 ? "Số suất phải từ 1 trở lên." : null;
 
         if (_nameError != null || _phoneError != null || _qtyError != null)
@@ -180,17 +184,23 @@ else
     }
 
     /// <summary>
+    /// Marker đầu ghi chú cúng trong Notes — guard Contains để bấm "Gửi lại" không gắn
+    /// tiền tố 2 lần; phải khớp tiền tố tạo bởi AttachCungPrefix.
+    /// </summary>
+    private const string CungNotePrefixMarker = "[Cúng ";
+
+    /// <summary>
     /// Gắn tiền tố mô tả mâm cúng vào Notes (guard Contains để bấm "Gửi lại" không gắn 2 lần).
     /// </summary>
     private void AttachCungPrefix()
     {
-        var dipLabel = _dipCung == "Ram" ? "Rằm (15 âm lịch)" : "Mùng 1 (âm lịch)";
+        var dipLabel = _dipCung == DipCungRam ? "Rằm (15 âm lịch)" : "Mùng 1 (âm lịch)";
         var thangLabel = _thangOptions.Find(t => t.Value == _thangCung)?.Text ?? _thangCung;
         // Bug-hunt 2026-10-19: SubmitAsync gắn prefix vào _model.Notes TRƯỚC khi gọi API —
         // nếu request lỗi mạng và khách bấm "Gửi lại", prefix bị gắn 2 lần vào ghi chú.
         // Guard Contains (cùng pattern DatTiec.razor) để chỉ gắn 1 lần.
-        var cungPrefix = $"[Cúng {dipLabel} — {thangLabel} — Mâm {_loaiMam}]";
-        if (_model.Notes == null || !_model.Notes.Contains("[Cúng "))
+        var cungPrefix = $"{CungNotePrefixMarker}{dipLabel} — {thangLabel} — Mâm {_loaiMam}]";
+        if (_model.Notes == null || !_model.Notes.Contains(CungNotePrefixMarker))
         {
             _model.Notes = cungPrefix
                 + (string.IsNullOrWhiteSpace(_model.Notes) ? string.Empty : " " + _model.Notes.Trim());
@@ -245,8 +255,4 @@ else
     }
 
     private static string FieldClass(string error) => string.IsNullOrEmpty(error) ? null : "is-invalid";
-
-    private static bool IsValidPhone(string phone) =>
-        !string.IsNullOrWhiteSpace(phone)
-        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 }

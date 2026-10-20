@@ -1,5 +1,4 @@
 @page "/quen-mat-khau"
-@using System.Text.RegularExpressions
 @using System.Threading.Tasks
 @inject AuthService AuthService
 @inject NavigationManager Navigation
@@ -118,9 +117,6 @@
         catch { }
     }
 
-    private static bool IsValidPhone(string phone) =>
-        !string.IsNullOrWhiteSpace(phone)
-        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 
     private async Task RequestOtpAsync()
     {
@@ -129,7 +125,7 @@
         if (_busy) return;
         _error = null;
         _infoMessage = null;
-        if (!IsValidPhone(_phone))
+        if (!PhoneValidation.IsValidVnPhone(_phone))
         {
             _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
             return;

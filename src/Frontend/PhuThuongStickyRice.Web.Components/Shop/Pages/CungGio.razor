@@ -1,6 +1,5 @@
 @page "/cung-gio"
 @using System
-@using System.Text.RegularExpressions
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
@@ -121,7 +120,7 @@ else
 
         _error = null;
         _nameError = string.IsNullOrWhiteSpace(_model.CustomerName) ? "Vui lòng nhập họ tên." : null;
-        _phoneError = !IsValidPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
+        _phoneError = !PhoneValidation.IsValidVnPhone(_model.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
         _dateError = !_model.EventDate.HasValue ? "Vui lòng chọn ngày giỗ." : null;
         _qtyError = _model.Quantity < 1 ? "Số mâm phải từ 1 trở lên." : null;
 
@@ -159,8 +158,4 @@ else
     }
 
     private static string FieldClass(string error) => string.IsNullOrEmpty(error) ? null : "is-invalid";
-
-    private static bool IsValidPhone(string phone) =>
-        !string.IsNullOrWhiteSpace(phone)
-        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 }

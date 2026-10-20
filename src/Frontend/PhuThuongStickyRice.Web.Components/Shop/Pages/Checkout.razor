@@ -7,7 +7,6 @@
 @using System
 @using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormatter;
 @using System.Linq
-@using System.Text.RegularExpressions
 @using System.Threading.Tasks
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
@@ -936,6 +935,12 @@ else
 
     // GH2/TT2: debounced phone lookup (cancels when the user keeps typing).
     private System.Threading.CancellationTokenSource _phoneLookupCts;
+
+    /// <summary>
+    /// Debounce tra cứu SĐT khi khách đang gõ: chờ chừng này sau lần gõ cuối cùng
+    /// mới gọi API tra cứu, tránh gọi API theo từng ký tự.
+    /// </summary>
+    private const int PhoneLookupDebounceMs = 600;
     private bool _lookingUpPhone;
 
     // Discount state.
@@ -1129,7 +1134,7 @@ else
             {
                 _savedAddresses = await CustomerAddressService.GetMineAsync();
                 var phone = authState.User.Identity.Name;
-                if (IsValidPhone(phone) && string.IsNullOrWhiteSpace(_order.CustomerPhone))
+                if (PhoneValidation.IsValidVnPhone(phone) && string.IsNullOrWhiteSpace(_order.CustomerPhone))
                 {
                     _order.CustomerPhone = phone;
                 }
@@ -1141,7 +1146,7 @@ else
                     && !string.IsNullOrWhiteSpace(defaultAddr.ReceiverName))
                 {
                     _order.CustomerName = defaultAddr.ReceiverName;
-                    if (IsValidPhone(defaultAddr.ReceiverPhone))
+                    if (PhoneValidation.IsValidVnPhone(defaultAddr.ReceiverPhone))
                     {
                         _order.CustomerPhone = defaultAddr.ReceiverPhone.Trim();
                     }
@@ -1209,7 +1214,7 @@ else
             }
             if (string.IsNullOrWhiteSpace(_order.CustomerPhone)
                 && saved.TryGetValue("phone", out var phone)
-                && IsValidPhone(phone))
+                && PhoneValidation.IsValidVnPhone(phone))
             {
                 _order.CustomerPhone = phone.Trim();
             }
@@ -1232,7 +1237,7 @@ else
         {
             if (_rememberMe
                 && !string.IsNullOrWhiteSpace(_order.CustomerName)
-                && IsValidPhone(_order.CustomerPhone))
+                && PhoneValidation.IsValidVnPhone(_order.CustomerPhone))
             {
                 var json = System.Text.Json.JsonSerializer.Serialize(
                     new System.Collections.Generic.Dictionary<string, string>
@@ -1278,7 +1283,7 @@ else
             var query = ParseQuery(Navigation.Uri);
             if (string.IsNullOrWhiteSpace(_order.CustomerPhone)
                 && query.TryGetValue("phone", out var carriedPhone)
-                && IsValidPhone(carriedPhone))
+                && PhoneValidation.IsValidVnPhone(carriedPhone))
             {
                 _order.CustomerPhone = carriedPhone.Trim();
                 await LookupCustomerLoyaltyAsync();
@@ -1295,7 +1300,7 @@ else
                     "localStorage.getItem", "pt-checkout-phone");
                 await JSRuntime.InvokeVoidAsync(
                     "localStorage.removeItem", "pt-checkout-phone");
-                if (IsValidPhone(chatPhone))
+                if (PhoneValidation.IsValidVnPhone(chatPhone))
                 {
                     _order.CustomerPhone = chatPhone.Trim();
                     await LookupCustomerLoyaltyAsync();
@@ -1543,8 +1548,8 @@ else
     }
 
     /// <summary>
-    /// GH2/TT2: while the user types the phone, wait 600ms after the last
-    /// keystroke before looking up (debounce).
+    /// GH2/TT2: while the user types the phone, wait <see cref="PhoneLookupDebounceMs"/>
+    /// after the last keystroke before looking up (debounce).
     /// </summary>
     private async Task OnPhoneInputAsync(ChangeEventArgs e)
     {
@@ -1555,7 +1560,7 @@ else
         var token = _phoneLookupCts.Token;
         try
         {
-            await Task.Delay(600, token);
+            await Task.Delay(PhoneLookupDebounceMs, token);
         }
         catch (TaskCanceledException)
         {
@@ -1585,7 +1590,7 @@ else
     private async Task LookupCustomerLoyaltyAsync()
     {
         var phone = (_order.CustomerPhone ?? "").Trim();
-        if (phone == _suggestedPhone || !IsValidPhone(phone))
+        if (phone == _suggestedPhone || !PhoneValidation.IsValidVnPhone(phone))
         {
             return;
         }
@@ -1814,7 +1819,7 @@ else
     private bool ValidateFields()
     {
         _nameError = string.IsNullOrWhiteSpace(_order.CustomerName) ? "Vui lòng nhập họ tên." : null;
-        _phoneError = !IsValidPhone(_order.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
+        _phoneError = !PhoneValidation.IsValidVnPhone(_order.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
         _emailError = !string.IsNullOrWhiteSpace(_order.CustomerEmail) && !IsValidEmail(_order.CustomerEmail)
             ? "Email không đúng định dạng. Bạn có thể để trống nếu không có email."
             : null;
@@ -1822,7 +1827,7 @@ else
         _recipientNameError = _orderForSomeoneElse && string.IsNullOrWhiteSpace(_order.RecipientName)
             ? "Vui lòng nhập tên người nhận."
             : null;
-        _recipientPhoneError = _orderForSomeoneElse && !IsValidPhone(_order.RecipientPhone)
+        _recipientPhoneError = _orderForSomeoneElse && !PhoneValidation.IsValidVnPhone(_order.RecipientPhone)
             ? "SĐT người nhận không đúng định dạng."
             : null;
         _taxCodeError = _showVat && string.IsNullOrWhiteSpace(_order.TaxCode)
@@ -2090,9 +2095,6 @@ else
     /// <summary>SĐT VN di động hợp lệ: 10 số, đầu 03/05/07/08/09 (định dạng mạng VN).</summary>
     /// <param name="phone">Số điện thoại nhập vào.</param>
     /// <returns>true khi đúng định dạng di động VN.</returns>
-    private static bool IsValidPhone(string phone) =>
-        !string.IsNullOrWhiteSpace(phone)
-        && Regex.IsMatch(phone.Trim(), @"^(0)(3|5|7|8|9)\d{8}$");
 
     /// <summary>Item 90: composes the taste-preference note for the order.</summary>
     private static string BuildTasteNote(CustomerProfileModel profile)

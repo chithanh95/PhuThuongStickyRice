@@ -231,8 +231,14 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
+        /// Độ dài tối đa đoạn preview của response body khi trích thông báo lỗi API —
+        /// cắt ngắn để toast thông báo không quá dài.
+        /// </summary>
+        private const int MaxErrorPreviewLength = 500;
+
+        /// <summary>
         /// Trích message lỗi từ body response: ưu tiên <c>error.message</c>
-        /// theo format lỗi chuẩn của ABP, fallback là body thô (cắt 500 ký tự).
+        /// theo format lỗi chuẩn của ABP, fallback là body thô (cắt <see cref="MaxErrorPreviewLength"/> ký tự).
         /// </summary>
         private static async Task<string> ReadServerErrorMessageAsync(HttpResponseMessage response)
         {
@@ -266,7 +272,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                     // Body không phải JSON thì trả nguyên văn bên dưới.
                 }
 
-                return body.Length > 500 ? body.Substring(0, 500).Trim() : body.Trim();
+                return body.Length > MaxErrorPreviewLength
+                    ? body.Substring(0, MaxErrorPreviewLength).Trim()
+                    : body.Trim();
             }
 
             return $"Đặt hàng thất bại (mã lỗi {(int)response.StatusCode}).";
