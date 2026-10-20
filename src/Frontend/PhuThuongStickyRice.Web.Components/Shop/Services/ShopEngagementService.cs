@@ -185,10 +185,10 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// Item 44: uploads a review photo (compressed client-side before upload).
         /// Returns the public photo URL, or null when upload failed.
         /// </summary>
-        public async Task<string> UploadReviewPhotoAsync(Stream content, string fileName, string contentType)
+        public async Task<string> UploadReviewPhotoAsync(Stream imageStream, string fileName, string contentType)
         {
             using var form = new MultipartFormDataContent();
-            var fileContent = new StreamContent(content);
+            var fileContent = new StreamContent(imageStream);
             fileContent.Headers.ContentType =
                 new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
             form.Add(fileContent, "file", fileName);

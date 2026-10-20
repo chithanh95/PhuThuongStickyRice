@@ -5,7 +5,7 @@
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @inject StaffService StaffService
 @inject AuthService AuthService
-@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
 
 <div class="lx-page-head">
     <h4 class="lx-page-title">Chat nội bộ</h4>
@@ -188,7 +188,7 @@
     {
         try
         {
-            await JS.InvokeVoidAsync("eval", "(function(el){if(el)el.scrollTop=el.scrollHeight;})(document.querySelector('.chat-box'))");
+            await JSRuntime.InvokeVoidAsync("eval", "(function(el){if(el)el.scrollTop=el.scrollHeight;})(document.querySelector('.chat-box'))");
         }
         catch { }
     }

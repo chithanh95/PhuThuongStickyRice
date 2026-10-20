@@ -27,12 +27,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _blacklist = blacklist;
         }
 
+        /// <summary>Liệt kê danh sách SĐT bị chặn (Admin).</summary>
         [HttpGet]
         public async Task<ActionResult> GetList(CancellationToken cancellationToken = default)
         {
             return Ok(await _blacklist.GetListAsync());
         }
 
+        /// <summary>Thêm SĐT vào danh sách chặn (Admin); lỗi nghiệp vụ → 400.</summary>
+        /// <param name="dto">Thông tin SĐT bị chặn (số điện thoại + lý do).</param>
         [HttpPost]
         public async Task<ActionResult> Create(
             [FromBody] CreateBlacklistedPhoneDto dto,
@@ -48,6 +51,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>Gỡ SĐT khỏi danh sách chặn theo id (Admin), trả 204.</summary>
+        /// <param name="id">Id của bản ghi chặn cần xóa.</param>
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
         {

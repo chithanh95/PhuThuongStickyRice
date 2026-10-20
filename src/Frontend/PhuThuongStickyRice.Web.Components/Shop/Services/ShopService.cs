@@ -1,11 +1,12 @@
 #nullable enable annotations
 using PhuThuongStickyRice.Web.Components.Shop.Models;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
+using PhuThuongStickyRice.Web.Components.Shop.Models;
+using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
@@ -153,7 +154,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>Đăng ký SĐT nhận nhắc cúng hàng tháng (public).</summary>
-        public async Task<CungReminderModel> CreateCungReminderAsync(CungReminderModel model)
+        public async Task<XoiCungReminderModel> CreateXoiCungReminderAsync(XoiCungReminderModel model)
         {
             // HttpRequestMessage và HttpResponseMessage đều giữ tài nguyên —
             // dispose cả hai sau khi dùng xong (CA2000).
@@ -163,7 +164,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
             using var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAs<CungReminderModel>();
+            return await response.Content.ReadAs<XoiCungReminderModel>();
         }
 
         /// <summary>
@@ -256,20 +257,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
             if (!string.IsNullOrWhiteSpace(body))
             {
-                try
+                // codequality-team 2026-10-20: dùng chung JsonDocument parser ở
+                // HttpErrorMessageReader (hỗ trợ cả "message" cấp gốc lẫn
+                // "error.message" lồng nhau) thay vì parse thủ công.
+                var message = HttpErrorMessageReader.ExtractJsonMessage(body);
+                if (!string.IsNullOrWhiteSpace(message))
                 {
-                    using var doc = JsonDocument.Parse(body);
-                    if (doc.RootElement.TryGetProperty("error", out var error)
-                        && error.TryGetProperty("message", out var message)
-                        && message.ValueKind == JsonValueKind.String
-                        && !string.IsNullOrWhiteSpace(message.GetString()))
-                    {
-                        return message.GetString();
-                    }
-                }
-                catch
-                {
-                    // Body không phải JSON thì trả nguyên văn bên dưới.
+                    return message;
                 }
 
                 return body.Length > MaxErrorPreviewLength

@@ -137,10 +137,12 @@ namespace PhuThuongStickyRice.Application.Staff
         private async Task<bool> IsStaffAsync(Guid userId)
         {
             var queryable = await _userRoles.GetQueryableAsync();
+            // Gộp Where → Select → Where thành 1 predicate duy nhất: lọc
+            // theo role ngay trên entity thay vì chiếu tên role ra rồi mới
+            // lọc — cùng 1 EXISTS query, không projection trung gian.
             return await _asyncExecuter.AnyAsync(
-                queryable.Where(ur => ur.UserId == userId)
-                    .Select(ur => ur.Role.Name)
-                    .Where(n => StaffRoles.Contains(n)));
+                queryable.Where(ur => ur.UserId == userId
+                    && StaffRoles.Contains(ur.Role.Name)));
         }
 
         // CA1848: logging hiệu năng cao bằng LoggerMessage source-generated.

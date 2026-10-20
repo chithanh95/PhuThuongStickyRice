@@ -27,6 +27,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _notes = notes;
         }
 
+        /// <summary>Lấy danh sách ghi chú CRM của khách theo SĐT (Admin).</summary>
+        /// <param name="phone">Số điện thoại khách hàng.</param>
         [HttpGet]
         public async Task<ActionResult> GetByPhone(
             [FromQuery] string phone,
@@ -35,6 +37,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _notes.GetByPhoneAsync(phone));
         }
 
+        /// <summary>Thêm ghi chú CRM cho khách (Admin); lỗi nghiệp vụ → 400.</summary>
+        /// <param name="dto">Nội dung ghi chú (SĐT khách + nội dung ghi chú).</param>
         [HttpPost]
         public async Task<ActionResult> Create(
             [FromBody] CreateCustomerNoteDto dto,
@@ -50,6 +54,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>Xóa ghi chú CRM theo id (Admin), trả 204.</summary>
+        /// <param name="id">Id của ghi chú cần xóa.</param>
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
         {

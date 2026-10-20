@@ -150,22 +150,22 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
         /// <summary>
         /// Gửi POST với JSON body, gắn bearer token, xử lý 401/404 chung,
-        /// và giải mã response JSON. Bỏ qua body khi <paramref name="data"/> null.
+        /// và giải mã response JSON. Bỏ qua body khi <paramref name="body"/> null.
         /// </summary>
         /// <typeparam name="T">Kiểu DTO của response.</typeparam>
         /// <param name="url">API endpoint tương đối (vd "api/orders").</param>
-        /// <param name="data">Body gửi lên (serialize JSON); null thì không gửi body.</param>
+        /// <param name="body">Body gửi lên (serialize JSON); null thì không gửi body.</param>
         /// <returns>DTO đã giải mã từ response.</returns>
-        protected async Task<T> PostAsync<T>(string url, object data = null)
+        protected async Task<T> PostAsync<T>(string url, object body = null)
         {
             await SetBearerToken();
 
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            if (data != null)
+            if (body != null)
             {
-                request.Content = data.AsJsonContent();
+                request.Content = body.AsJsonContent();
             }
 
             using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -182,15 +182,15 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         /// </summary>
         /// <typeparam name="T">Kiểu DTO của response.</typeparam>
         /// <param name="url">API endpoint tương đối (vd "api/orders/{id}").</param>
-        /// <param name="data">Body gửi lên (serialize JSON).</param>
-        public async Task<T> PutAsync<T>(string url, object data)
+        /// <param name="body">Body gửi lên (serialize JSON).</param>
+        public async Task<T> PutAsync<T>(string url, object body)
         {
             await SetBearerToken();
 
             using var request = new HttpRequestMessage(HttpMethod.Put, url);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            request.Content = data.AsJsonContent();
+            request.Content = body.AsJsonContent();
 
             using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);

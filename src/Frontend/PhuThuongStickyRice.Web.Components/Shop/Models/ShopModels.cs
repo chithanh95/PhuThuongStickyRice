@@ -778,7 +778,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
     }
 
     /// <summary>Monthly xoi-cung reminder subscription (Rằm / mùng 1).</summary>
-    public class CungReminderModel
+    public class XoiCungReminderModel
     {
         public Guid Id { get; set; }
 

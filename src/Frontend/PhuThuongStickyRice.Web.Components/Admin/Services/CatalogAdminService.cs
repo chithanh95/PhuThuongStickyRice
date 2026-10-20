@@ -1,6 +1,6 @@
 using PhuThuongStickyRice.Web.Components.Admin.Models;
 using PhuThuongStickyRice.Web.Components.Core.Services;
-using CungReminderModel = PhuThuongStickyRice.Web.Components.Shop.Models.CungReminderModel;
+using XoiCungReminderModel = PhuThuongStickyRice.Web.Components.Shop.Models.XoiCungReminderModel;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -117,16 +117,16 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         }
 
         /// <summary>Lấy danh sách đăng ký nhắc cúng của khách.</summary>
-                public async Task<List<CungReminderModel>> GetCungRemindersAsync()
+                public async Task<List<XoiCungReminderModel>> GetXoiCungRemindersAsync()
         {
-            return await GetAsync<List<CungReminderModel>>("api/quotes/cung-reminders");
+            return await GetAsync<List<XoiCungReminderModel>>("api/quotes/cung-reminders");
         }
 
         /// <summary>Bật/tắt một đăng ký nhắc cúng.</summary>
         /// <param name="id">Id đăng ký nhắc cúng.</param>
-                public async Task<CungReminderModel> ToggleCungReminderAsync(Guid id)
+                public async Task<XoiCungReminderModel> ToggleXoiCungReminderAsync(Guid id)
         {
-            return await PutAsync<CungReminderModel>($"api/quotes/cung-reminders/{id}/toggle", new { });
+            return await PutAsync<XoiCungReminderModel>($"api/quotes/cung-reminders/{id}/toggle", new { });
         }
 
         // Product size options.

@@ -340,12 +340,12 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Services
         /// Uploads one image and returns its relative URL (e.g. /uploads/landing/xxx.jpg).
         /// Throws <see cref="InvalidOperationException"/> with the server message on validation failure.
         /// </summary>
-        public async Task<string> UploadImageAsync(Stream content, string fileName, string contentType)
+        public async Task<string> UploadImageAsync(Stream imageStream, string fileName, string contentType)
         {
             await SetBearerToken();
 
             using var form = new MultipartFormDataContent();
-            var fileContent = new StreamContent(content);
+            var fileContent = new StreamContent(imageStream);
             fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
             form.Add(fileContent, "file", fileName);
 

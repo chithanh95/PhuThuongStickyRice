@@ -219,7 +219,9 @@ namespace PhuThuongStickyRice.Application.Loyalty
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                var term = new string(searchTerm.Where(char.IsDigit).ToArray());
+                // codequality-team 2026-10-20: dùng PhoneNumber.DigitsOnly thay
+                // copy-paste new string(...Where(char.IsDigit)...) — ngữ nghĩa giữ nguyên.
+                var term = PhoneNumber.DigitsOnly(searchTerm);
                 query = query.Where(x => x.Phone.Contains(term));
             }
 

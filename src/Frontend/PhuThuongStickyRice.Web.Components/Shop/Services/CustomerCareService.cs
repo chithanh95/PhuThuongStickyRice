@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
@@ -189,11 +190,17 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
     /// <summary>
     /// Helper dùng chung để trích thông điệp lỗi thân thiện từ response HTTP:
-    /// ưu tiên field "message" trong JSON, nếu không có thì dùng nguyên body
-    /// (khi body ngắn), cuối cùng dùng thông điệp dự phòng truyền vào.
+    /// ưu tiên field "message" trong JSON (cấp gốc hoặc "error.message" lồng
+    /// nhau — parse bằng JsonDocument thay vì cắt chuỗi thủ công), nếu không
+    /// có thì dùng nguyên body (khi body ngắn), cuối cùng dùng thông điệp
+    /// dự phòng truyền vào.
     /// </summary>
     internal static class HttpErrorMessageReader
     {
+        // Độ dài tối đa của body hiển thị nguyên văn trong thông báo lỗi —
+        // body dài hơn thì dùng thông điệp dự phòng để không tràn toast/alert.
+        private const int MaxInlineBodyLength = 300;
+
         /// <summary>Đọc thông điệp lỗi thân thiện từ HTTP response.</summary>
         /// <param name="response">Response lỗi từ API.</param>
         /// <param name="fallbackMessage">Thông điệp dự phòng khi không trích được.</param>
@@ -203,19 +210,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             try
             {
                 var body = await response.Content.ReadAsStringAsync();
-                var start = body.IndexOf("\"message\"", StringComparison.OrdinalIgnoreCase);
-                if (start >= 0)
+                var message = ExtractJsonMessage(body);
+                if (!string.IsNullOrWhiteSpace(message))
                 {
-                    var colon = body.IndexOf(':', start);
-                    var openingQuoteIndex = body.IndexOf('"', colon);
-                    var closingQuoteIndex = body.IndexOf('"', openingQuoteIndex + 1);
-                    if (openingQuoteIndex >= 0 && closingQuoteIndex > openingQuoteIndex)
-                    {
-                        return body.Substring(openingQuoteIndex + 1, closingQuoteIndex - openingQuoteIndex - 1);
-                    }
+                    return message;
                 }
 
-                if (!string.IsNullOrWhiteSpace(body) && body.Length < 300)
+                if (!string.IsNullOrWhiteSpace(body) && body.Length < MaxInlineBodyLength)
                 {
                     return body;
                 }
@@ -226,6 +227,54 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
 
             return fallbackMessage;
+        }
+
+        /// <summary>
+        /// Trích field "message" từ body JSON: ưu tiên cấp gốc (định dạng ABP
+        /// đơn giản), sau đó "error.message" (định dạng lỗi chuẩn ABP lồng
+        /// nhau). So sánh tên field không phân biệt hoa thường.
+        /// </summary>
+        /// <param name="body">Body response thô.</param>
+        /// <returns>Thông điệp trích được, hoặc null.</returns>
+        internal static string ExtractJsonMessage(string body)
+        {
+            var trimmed = body?.Trim();
+            if (string.IsNullOrEmpty(trimmed) || !trimmed.StartsWith('{'))
+            {
+                return null;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(trimmed);
+                var root = doc.RootElement;
+                return FindMessageProperty(root)
+                    ?? (root.TryGetProperty("error", out var error)
+                        && error.ValueKind == JsonValueKind.Object
+                            ? FindMessageProperty(error)
+                            : null);
+            }
+            catch (JsonException)
+            {
+                // Body không phải JSON — caller dùng nguyên văn/fallback.
+                return null;
+            }
+        }
+
+        /// <summary>Tìm field "message" (string, không rỗng) trong 1 object JSON.</summary>
+        private static string FindMessageProperty(JsonElement element)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                if (string.Equals(property.Name, "message", StringComparison.OrdinalIgnoreCase)
+                    && property.Value.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(property.Value.GetString()))
+                {
+                    return property.Value.GetString();
+                }
+            }
+
+            return null;
         }
     }
 }

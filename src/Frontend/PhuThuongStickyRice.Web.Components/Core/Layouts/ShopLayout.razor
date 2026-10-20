@@ -8,7 +8,7 @@
 @inject LandingService LandingService
 @inject CartState CartState
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
 @inject AppLocalizationService AppLocalizationService
 @implements IDisposable
 
@@ -165,7 +165,7 @@
     {
         try
         {
-            _theme = await JS.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop");
+            _theme = await JSRuntime.InvokeAsync<string>("ptToggleTheme", "pt-theme-shop");
             StateHasChanged();
         }
         catch { }
@@ -175,7 +175,7 @@
     {
         try
         {
-            _isLargeText = await JS.InvokeAsync<bool>("ptToggleLargeText");
+            _isLargeText = await JSRuntime.InvokeAsync<bool>("ptToggleLargeText");
             StateHasChanged();
         }
         catch { }
@@ -183,7 +183,7 @@
 
     private async Task NavigateBack()
     {
-        try { await JS.InvokeVoidAsync("history.back"); }
+        try { await JSRuntime.InvokeVoidAsync("history.back"); }
         catch { Navigation.NavigateTo("/shop"); }
     }
 
@@ -196,10 +196,10 @@
         {
             try
             {
-                await JS.InvokeVoidAsync("ptApplyTheme", "pt-theme-shop");
-                await JS.InvokeVoidAsync("ptApplyLargeText");
-                _theme = await JS.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") ?? "light";
-                _isLargeText = await JS.InvokeAsync<bool>("ptGetLargeText");
+                await JSRuntime.InvokeVoidAsync("ptApplyTheme", "pt-theme-shop");
+                await JSRuntime.InvokeVoidAsync("ptApplyLargeText");
+                _theme = await JSRuntime.InvokeAsync<string>("ptGetTheme", "pt-theme-shop") ?? "light";
+                _isLargeText = await JSRuntime.InvokeAsync<bool>("ptGetLargeText");
                 StateHasChanged();
             }
             catch { }
@@ -272,8 +272,8 @@
     {
         try
         {
-            await JS.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token");
-            await JS.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token_expires");
+            await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token");
+            await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token_expires");
         }
         catch { }
         Navigation.NavigateTo("/", forceLoad: true);

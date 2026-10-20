@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PhuThuongStickyRice.Web.Components.Shop.Services;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -176,31 +177,18 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
 
         private static string ExtractMessage(string body)
         {
-            if (string.IsNullOrWhiteSpace(body))
+            // codequality-team 2026-10-20: dùng chung JsonDocument parser ở
+            // HttpErrorMessageReader thay vì copy logic trích "message" từ JSON.
+            var message = HttpErrorMessageReader.ExtractJsonMessage(body);
+            if (!string.IsNullOrWhiteSpace(message))
             {
-                return "Đổi mật khẩu thất bại. Vui lòng thử lại.";
+                return message;
             }
 
-            var trimmed = body.Trim();
-            // StartsWith(char) is ordinal by default — identical to Ordinal here.
-            if (trimmed.StartsWith('{'))
-            {
-                try
-                {
-                    using var doc = JsonDocument.Parse(trimmed);
-                    if (doc.RootElement.TryGetProperty("message", out var message)
-                        && !string.IsNullOrWhiteSpace(message.GetString()))
-                    {
-                        return message.GetString();
-                    }
-                }
-                catch (JsonException)
-                {
-                    // Fall through to raw body.
-                }
-            }
-
-            return trimmed;
+            var trimmed = body?.Trim();
+            return string.IsNullOrEmpty(trimmed)
+                ? "Đổi mật khẩu thất bại. Vui lòng thử lại."
+                : trimmed;
         }
     }
 

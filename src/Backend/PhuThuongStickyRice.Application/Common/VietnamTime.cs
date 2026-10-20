@@ -102,7 +102,9 @@ namespace PhuThuongStickyRice.Application.Common
                 return null;
             }
 
-            var digits = new string(phone.Where(char.IsDigit).ToArray());
+            // codequality-team 2026-10-20: dùng PhoneNumber.DigitsOnly thay
+            // copy-paste new string(...Where(char.IsDigit)...) — ngữ nghĩa giữ nguyên.
+            var digits = PhoneNumber.DigitsOnly(phone);
             return digits.Length >= PhoneNumber.TailDigitCount ? digits : null;
         }
     }

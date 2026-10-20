@@ -234,7 +234,7 @@ else
 
 @code {
     private List<QuoteRequestAdminModel> _quotes;
-    private List<CungReminderModel> _reminders;
+    private List<XoiCungReminderModel> _reminders;
     private string _statusFilter;
     private string _error;
     private string _success;
@@ -250,22 +250,22 @@ else
     {
         try
         {
-            _reminders = await CatalogAdminService.GetCungRemindersAsync()
-                ?? new List<CungReminderModel>();
+            _reminders = await CatalogAdminService.GetXoiCungRemindersAsync()
+                ?? new List<XoiCungReminderModel>();
         }
         catch (Exception)
         {
-            _reminders = new List<CungReminderModel>();
+            _reminders = new List<XoiCungReminderModel>();
         }
     }
 
-    private async Task ToggleReminderAsync(CungReminderModel reminder)
+    private async Task ToggleReminderAsync(XoiCungReminderModel reminder)
     {
         _error = null;
         _success = null;
         try
         {
-            var updated = await CatalogAdminService.ToggleCungReminderAsync(reminder.Id);
+            var updated = await CatalogAdminService.ToggleXoiCungReminderAsync(reminder.Id);
             reminder.IsActive = updated.IsActive;
             _success = $"Đã {(updated.IsActive ? "bật" : "tắt")} nhắc cúng cho {reminder.CustomerName}.";
         }

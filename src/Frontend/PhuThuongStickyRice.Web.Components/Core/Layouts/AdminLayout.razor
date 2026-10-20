@@ -1,6 +1,6 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
 @inject PhuThuongStickyRice.Web.Components.Admin.Services.AdminSearchNotificationService SearchNotificationService
 @inject PhuThuongStickyRice.Web.Components.Core.Services.ToastService Toasts
 @using PhuThuongStickyRice.Web.Components.Admin.Models
@@ -282,7 +282,7 @@
         try
         {
             _isDark = !_isDark;
-            await JS.InvokeVoidAsync("ptSetTheme", "pt-theme-admin", _isDark ? "dark" : "light");
+            await JSRuntime.InvokeVoidAsync("ptSetTheme", "pt-theme-admin", _isDark ? "dark" : "light");
         }
         catch { }
     }
@@ -396,7 +396,7 @@
 
         // Dark mode: sync toggle icon with saved theme (JS already applied the class pre-paint).
         // Dùng ptIsDark để icon đúng cả khi giá trị cũ đang là 'auto' theo giờ.
-        try { _isDark = await JS.InvokeAsync<bool>("ptIsDark", "pt-theme-admin"); } catch { }
+        try { _isDark = await JSRuntime.InvokeAsync<bool>("ptIsDark", "pt-theme-admin"); } catch { }
         try
         {
             _user = (await AuthStateTask)?.User;
@@ -449,7 +449,7 @@
     private async Task ToggleNav()
     {
         bool isMobile = false;
-        try { isMobile = await JS.InvokeAsync<bool>("eval", "window.innerWidth < 992"); } catch { }
+        try { isMobile = await JSRuntime.InvokeAsync<bool>("eval", "window.innerWidth < 992"); } catch { }
         if (isMobile) _mobileOpen = !_mobileOpen;
         else _collapsed = !_collapsed;
     }
@@ -521,7 +521,7 @@
     {
         try
         {
-            var json = await JS.InvokeAsync<string>("localStorage.getItem", NotifReadKey);
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", NotifReadKey);
             if (!string.IsNullOrEmpty(json))
             {
                 var ids = System.Text.Json.JsonSerializer.Deserialize<string[]>(json);
@@ -535,7 +535,7 @@
     {
         try
         {
-            await JS.InvokeVoidAsync("localStorage.setItem", NotifReadKey,
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", NotifReadKey,
                 System.Text.Json.JsonSerializer.Serialize(_readNotifIds.ToArray()));
         }
         catch { }
@@ -583,7 +583,7 @@
     {
         try
         {
-            await JS.InvokeVoidAsync("eval", @"(function(){if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}else{document.exitFullscreen&&document.exitFullscreen();}})()");
+            await JSRuntime.InvokeVoidAsync("eval", @"(function(){if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}else{document.exitFullscreen&&document.exitFullscreen();}})()");
         }
         catch { }
     }
@@ -593,8 +593,8 @@
         _userMenuOpen = false;
         try
         {
-            await JS.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token");
-            await JS.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token_expires");
+            await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token");
+            await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "phuthuong_access_token_expires");
         }
         catch { }
         Navigation.NavigateTo("/login", forceLoad: true);

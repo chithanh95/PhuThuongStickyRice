@@ -6,7 +6,7 @@
 @using System.Threading.Tasks
 @inject ShopSettingsService ShopSettingsService
 @inject LandingService LandingService
-@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
 
 <div class="sidebar">
     <NavMenu />
@@ -116,7 +116,7 @@
         try
         {
             _isDark = !_isDark;
-            await JS.InvokeVoidAsync("ptSetTheme", "pt-theme", _isDark ? "dark" : "light");
+            await JSRuntime.InvokeVoidAsync("ptSetTheme", "pt-theme", _isDark ? "dark" : "light");
         }
         // Bỏ qua lỗi JS interop có chủ ý: hàm JS đã tự đổi class CSS nên giao diện luôn đúng;
         // _isDark chỉ dùng để vẽ icon nút bấm — nếu JS chưa sẵn sàng (prerender) thì giữ nguyên, không báo user.
@@ -129,7 +129,7 @@
         // Đồng bộ icon theme với lựa chọn đã lưu trong localStorage: khi prerender hoặc JS lỗi,
         // giữ giá trị mặc định là an toàn nên bỏ qua lỗi, không chặn render trang.
         // Dùng ptIsDark để icon đúng cả khi giá trị cũ đang là 'auto' theo giờ.
-        try { _isDark = await JS.InvokeAsync<bool>("ptIsDark", "pt-theme"); } catch { }
+        try { _isDark = await JSRuntime.InvokeAsync<bool>("ptIsDark", "pt-theme"); } catch { }
 
         string hotline = null;
         string zalo = null;

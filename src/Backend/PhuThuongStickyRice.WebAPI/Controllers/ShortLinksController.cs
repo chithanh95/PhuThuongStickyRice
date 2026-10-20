@@ -27,6 +27,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 _links = links;
             }
 
+            /// <summary>Liệt kê toàn bộ link ngắn (Admin).</summary>
             [Authorize(Roles = "Admin")]
             [HttpGet]
             public async Task<ActionResult<List<ShortLinkDto>>> GetList(
@@ -35,6 +36,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Ok(await _links.GetListAsync());
             }
 
+            /// <summary>
+            /// Tạo link ngắn mới (public — dùng cho nút "🔗 Link ngắn" trên shop).
+            /// Chỉ cho rút gọn URL nội bộ/cùng host để chống phishing.
+            /// </summary>
+            /// <param name="dto">Thông tin link cần rút gọn (URL đích).</param>
             [AllowAnonymous]
             [HttpPost]
             public async Task<ActionResult<ShortLinkDto>> Create(
@@ -52,6 +58,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 return Ok(await _links.CreateAsync(dto));
             }
 
+            /// <summary>Xóa link ngắn theo id (Admin).</summary>
+            /// <param name="id">Id của link ngắn cần xóa.</param>
             [Authorize(Roles = "Admin")]
             [HttpDelete("{id}")]
             public async Task<ActionResult> Delete(Guid id,
