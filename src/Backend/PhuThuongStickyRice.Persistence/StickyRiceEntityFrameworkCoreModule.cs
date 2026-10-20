@@ -29,53 +29,72 @@ namespace PhuThuongStickyRice.Persistence
                 options.AddDefaultRepositories(includeAllEntities: true);
             });
 
-            // SQL Server is only configured when a connection string exists.
-            // Test hosts (InMemory) provide no connection string and configure
-            // their own provider via AbpDbContextOptions instead; configuring
-            // both providers would make EF Core fail with multiple providers.
-            var hasConnectionString = !string.IsNullOrWhiteSpace(connectionString);
-            if (hasConnectionString)
-            {
-                // IDbContextFactory is required by DataProtection's PersistKeysToDbContext
-                // (ABP's AddAbpDbContext does not register one).
-                context.Services.AddSingleton<IDbContextFactory<StickyRiceDbContext>>(sp =>
-                {
-                    var optionsBuilder = new DbContextOptionsBuilder<StickyRiceDbContext>();
-                    optionsBuilder.UseSqlServer(connectionString, sql => sql.MigrationsAssembly("PhuThuongStickyRice.Migrator"));
-                    return new StickyRiceDbContextFactory(optionsBuilder.Options);
-                });
+            RegisterSqlServer(context, connectionString);
+            RegisterRepositories(context.Services);
+            RegisterInfrastructurePrimitives(context.Services, connectionString);
+        }
 
-                Configure<AbpDbContextOptions>(options =>
-                {
-                    options.Configure(ctx =>
-                    {
-                        ctx.DbContextOptions.UseSqlServer(connectionString, sql => sql.MigrationsAssembly("PhuThuongStickyRice.Migrator"));
-                    });
-                });
+        /// <summary>
+        /// Cấu hình SQL Server chỉ khi có connection string. Test host (InMemory)
+        /// không có connection string và tự cấu hình provider riêng qua
+        /// AbpDbContextOptions; cấu hình cả 2 provider sẽ làm EF Core lỗi
+        /// multiple providers.
+        /// </summary>
+        private void RegisterSqlServer(ServiceConfigurationContext context, string connectionString)
+        {
+            var hasConnectionString = !string.IsNullOrWhiteSpace(connectionString);
+            if (!hasConnectionString)
+            {
+                return;
             }
 
+            // IDbContextFactory is required by DataProtection's PersistKeysToDbContext
+            // (ABP's AddAbpDbContext does not register one).
+            context.Services.AddSingleton<IDbContextFactory<StickyRiceDbContext>>(sp =>
+            {
+                var optionsBuilder = new DbContextOptionsBuilder<StickyRiceDbContext>();
+                optionsBuilder.UseSqlServer(connectionString, sql => sql.MigrationsAssembly("PhuThuongStickyRice.Migrator"));
+                return new StickyRiceDbContextFactory(optionsBuilder.Options);
+            });
+
+            Configure<AbpDbContextOptions>(options =>
+            {
+                options.Configure(ctx =>
+                {
+                    ctx.DbContextOptions.UseSqlServer(connectionString, sql => sql.MigrationsAssembly("PhuThuongStickyRice.Migrator"));
+                });
+            });
+        }
+
+        /// <summary>Đăng ký repository cho các aggregate đặt hàng và template.</summary>
+        private static void RegisterRepositories(IServiceCollection services)
+        {
             // ABP repositories for the ordering aggregates
-            context.Services.AddScoped<IProductRepository, ProductRepository>();
-            context.Services.AddScoped<IOrderRepository, OrderRepository>();
-            context.Services.AddScoped<IWalletAccountRepository, WalletAccountRepository>();
-            context.Services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
-            context.Services.AddScoped<ICheckInRepository, CheckInRepository>();
-            context.Services.AddScoped<IDiscountCodeRepository, DiscountCodeRepository>();
+            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<IWalletAccountRepository, WalletAccountRepository>();
+            services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
+            services.AddScoped<ICheckInRepository, CheckInRepository>();
+            services.AddScoped<IDiscountCodeRepository, DiscountCodeRepository>();
 
             // Template repositories + template IUnitOfWork for the legacy
             // CommandQueryDispatcher/EntityCrudService paths.
-            context.Services.AddScoped(typeof(IUnitOfWork), sp => sp.GetRequiredService<StickyRiceDbContext>());
-            context.Services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
+            services.AddScoped(typeof(IUnitOfWork), sp => sp.GetRequiredService<StickyRiceDbContext>());
+            services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
             // CA2263: overload generic an toàn kiểu lúc compile (xem chú thích ở
             // PersistenceExtensions.AddRepositories) — dòng open-generic giữ nguyên.
-            context.Services.AddScoped<IAuditLogEntryRepository, AuditLogEntryRepository>();
-            context.Services.AddScoped<IEmailMessageRepository, EmailMessageRepository>();
-            context.Services.AddScoped<IUserRepository, UserRepository>();
-            context.Services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IAuditLogEntryRepository, AuditLogEntryRepository>();
+            services.AddScoped<IEmailMessageRepository, EmailMessageRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
+        }
 
-            context.Services.AddScoped<IDistributedLockProvider, SqlServerDistributedLockProvider>();
-            context.Services.AddScoped<ICircuitBreakerStore, CircuitBreakerStore>();
-            context.Services.AddScoped(typeof(IDistributedLock), _ => new SqlDistributedLock(connectionString));
+        /// <summary>Đăng ký lock phân tán và circuit breaker dùng chung hạ tầng.</summary>
+        private static void RegisterInfrastructurePrimitives(IServiceCollection services, string connectionString)
+        {
+            services.AddScoped<IDistributedLockProvider, SqlServerDistributedLockProvider>();
+            services.AddScoped<ICircuitBreakerStore, CircuitBreakerStore>();
+            services.AddScoped(typeof(IDistributedLock), _ => new SqlDistributedLock(connectionString));
         }
 
         private sealed class StickyRiceDbContextFactory : IDbContextFactory<StickyRiceDbContext>

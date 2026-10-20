@@ -38,13 +38,9 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
 
         private static void UsePhuThuongStickyRiceLogger(this IWebHostEnvironment env, LoggingOptions options)
         {
-            var loggerConfiguration = CreateBaseLoggerConfiguration(
-                    env.ContentRootPath, env.ApplicationName, env.EnvironmentName)
-                .Enrich.WithProperty("WebRootPath", env.WebRootPath);
-
-            ApplyFileAndElasticsearchSinks(loggerConfiguration, env.ContentRootPath, options);
-
-            Log.Logger = loggerConfiguration.CreateLogger();
+            // Host web enrich thêm WebRootPath rồi dùng chung pipeline của host thường.
+            UsePhuThuongStickyRiceLogger((IHostEnvironment)env, options,
+                loggerConfiguration => loggerConfiguration.Enrich.WithProperty("WebRootPath", env.WebRootPath));
         }
 
         /// <summary>
@@ -80,6 +76,17 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
         {
             var logsPath = Path.Combine(contentRootPath, "logs");
 
+            ApplySharedLogFilter(loggerConfiguration, options);
+            ApplyFileSink(loggerConfiguration, logsPath, options);
+            ApplyElasticsearchSink(loggerConfiguration, logsPath, options);
+        }
+
+        /// <summary>
+        /// Filter chung cho mọi sink: chỉ giữ log event đạt mức tối thiểu của
+        /// file sink hoặc Elasticsearch sink, rồi áp mức chi tiết theo SourceContext.
+        /// </summary>
+        private static void ApplySharedLogFilter(LoggerConfiguration loggerConfiguration, LoggingOptions options)
+        {
             loggerConfiguration
                 .Enrich.WithExceptionDetails()
                 .Filter.ByIncludingOnly((logEvent) =>
@@ -99,7 +106,13 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
                     }
 
                     return false;
-                })
+                });
+        }
+
+        /// <summary>Gắn sink ghi log ra file log.txt (tự roll khi vượt dung lượng).</summary>
+        private static void ApplyFileSink(LoggerConfiguration loggerConfiguration, string logsPath, LoggingOptions options)
+        {
+            loggerConfiguration
                 .WriteTo.File(Path.Combine(logsPath, LogFileName),
                     fileSizeLimitBytes: LogFileSizeLimitBytes,
                     rollOnFileSizeLimit: true,
@@ -107,28 +120,34 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
                     flushToDiskInterval: LogFlushToDiskInterval,
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] [TraceId: {TraceId}] {Message:lj}{NewLine}{Exception}",
                     restrictedToMinimumLevel: options.File.MinimumLogEventLevel);
+        }
 
-            if (options.Elasticsearch != null && options.Elasticsearch.IsEnabled)
+        /// <summary>Gắn sink Elasticsearch khi được bật trong cấu hình.</summary>
+        private static void ApplyElasticsearchSink(LoggerConfiguration loggerConfiguration, string logsPath, LoggingOptions options)
+        {
+            if (options.Elasticsearch == null || !options.Elasticsearch.IsEnabled)
             {
-                loggerConfiguration
-                    .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(options.Elasticsearch.Host))
-                    {
-                        MinimumLogEventLevel = options.Elasticsearch.MinimumLogEventLevel,
-                        AutoRegisterTemplate = true,
-                        AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv6,
-                        IndexFormat = options.Elasticsearch.IndexFormat + ElasticsearchIndexDateSuffix,
-                        // BufferBaseFilename = Path.Combine(contentRootPath, "logs", "buffer"),
-                        InlineFields = true,
-                        EmitEventFailure = EmitEventFailureHandling.WriteToFailureSink,
-                        // FileSink ctor đã obsolete: dựng sink qua WriteTo.File()
-                        // (cùng JsonFormatter, cùng 1 file không giới hạn dung
-                        // lượng như trước) — Logger implements ILogEventSink.
-                        FailureSink = new LoggerConfiguration()
-                            .WriteTo.File(new JsonFormatter(),
-                                Path.Combine(logsPath, ElasticsearchFailureLogFileName))
-                            .CreateLogger(),
-                    });
+                return;
             }
+
+            loggerConfiguration
+                .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(options.Elasticsearch.Host))
+                {
+                    MinimumLogEventLevel = options.Elasticsearch.MinimumLogEventLevel,
+                    AutoRegisterTemplate = true,
+                    AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv6,
+                    IndexFormat = options.Elasticsearch.IndexFormat + ElasticsearchIndexDateSuffix,
+                    // BufferBaseFilename = Path.Combine(contentRootPath, "logs", "buffer"),
+                    InlineFields = true,
+                    EmitEventFailure = EmitEventFailureHandling.WriteToFailureSink,
+                    // FileSink ctor đã obsolete: dựng sink qua WriteTo.File()
+                    // (cùng JsonFormatter, cùng 1 file không giới hạn dung
+                    // lượng như trước) — Logger implements ILogEventSink.
+                    FailureSink = new LoggerConfiguration()
+                        .WriteTo.File(new JsonFormatter(),
+                            Path.Combine(logsPath, ElasticsearchFailureLogFileName))
+                        .CreateLogger(),
+                });
         }
 
         private static LoggingOptions SetDefault(LoggingOptions options)
@@ -256,10 +275,13 @@ namespace PhuThuongStickyRice.Infrastructure.Logging
             hostingEnvironment.UsePhuThuongStickyRiceLogger(options);
         }
 
-        private static void UsePhuThuongStickyRiceLogger(this IHostEnvironment env, LoggingOptions options)
+        private static void UsePhuThuongStickyRiceLogger(
+            this IHostEnvironment env, LoggingOptions options, Action<LoggerConfiguration> enrich = null)
         {
             var loggerConfiguration = CreateBaseLoggerConfiguration(
                 env.ContentRootPath, env.ApplicationName, env.EnvironmentName);
+
+            enrich?.Invoke(loggerConfiguration);
 
             ApplyFileAndElasticsearchSinks(loggerConfiguration, env.ContentRootPath, options);
 

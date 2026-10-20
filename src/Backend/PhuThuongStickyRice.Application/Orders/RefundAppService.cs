@@ -157,7 +157,8 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <param name="input">Số tiền và lý do hoàn tiền.</param>
         public virtual async Task RequestRefundAsync(Guid orderId, RequestRefundInput input)
         {
-            // Item 155: refunds need orders.refund.
+            // Item 155: hoàn tiền cần quyền "orders.refund" — kiểm tra trước
+            // khi đọc/sửa đơn để nhân viên không có quyền bị chặn ngay.
             await _permissions.RequirePermissionAsync(PermissionKeys.OrdersRefund);
 
             var order = await _orders.GetAsync(orderId);
@@ -176,7 +177,8 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <param name="orderId">Id đơn hàng đã hoàn tiền.</param>
         public virtual async Task ConfirmRefundAsync(Guid orderId)
         {
-            // Item 155: refunds need orders.refund.
+            // Item 155: xác nhận hoàn tiền cũng cần quyền "orders.refund"
+            // như khi yêu cầu — ngăn việc xác nhận chi tiền lách quyền.
             await _permissions.RequirePermissionAsync(PermissionKeys.OrdersRefund);
 
             var order = await _orders.GetAsync(orderId);

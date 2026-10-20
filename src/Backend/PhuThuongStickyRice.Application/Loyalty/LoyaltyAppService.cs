@@ -241,6 +241,10 @@ namespace PhuThuongStickyRice.Application.Loyalty
         public virtual async Task<LoyaltyAccountDto> AdjustAsync(string phone, AdjustPointsInput input)
         {
             var normalized = NormalizePhone(phone);
+            // Try*PointsAsync chỉ UPDATE được trên row đã tồn tại
+            // (WHERE Phone = ...): tạo tài khoản trước để tránh cộng/trừ bị
+            // silent no-op, và tránh trừ điểm trên tài khoản chưa có bị ném
+            // nhầm lỗi "Điểm không thể âm" dù số dư không hề âm.
             await GetOrCreateAsync(phone);
             if (input.PointsDelta < 0)
             {

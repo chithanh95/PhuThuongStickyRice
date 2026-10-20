@@ -350,6 +350,9 @@ namespace PhuThuongStickyRice.Application.Orders
                 .Where(r => r.MarginPercent.HasValue)
                 .MinBy(r => r.MarginPercent);
             if (lowestMargin != null && lowestMargin.MarginPercent < LowMarginPercentThreshold
+                // Tránh gợi ý trùng: món vừa được chọn "biên lãi cao nhưng bán ít"
+                // thì không thêm gợi ý "biên lãi thấp" — mỗi món chỉ nhận 1 gợi ý
+                // để admin không đọc 2 thông điệp trái ngược cho cùng 1 món.
                 && (highMarginLowVolume == null || lowestMargin.ProductId != highMarginLowVolume.ProductId))
             {
                 suggestions.Add(

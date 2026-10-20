@@ -9,6 +9,18 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         public void Configure(EntityTypeBuilder<Product> builder)
         {
             builder.ToTable("Products");
+
+            ConfigureProperties(builder);
+            ConfigureRelationships(builder);
+
+            // NOTE: EF Core does not support HasIndex() over complex-type members.
+            // Code uniqueness is enforced by CreateProductCommand via IProductRepository.ExistsWithCodeAsync.
+            builder.HasIndex(x => x.Status);
+        }
+
+        /// <summary>Cấu hình cột/cột phức hợp của Product (độ dài, precision, default).</summary>
+        private static void ConfigureProperties(EntityTypeBuilder<Product> builder)
+        {
             builder.Property(x => x.Id).HasDefaultValueSql("newsequentialid()");
 
             builder.Property(x => x.Name).HasMaxLength(Product.NameMaxLength).IsRequired();
@@ -47,13 +59,6 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.AvailableFrom);
             builder.Property(x => x.AvailableTo);
 
-            // Multi-branch foundation (item 109): null = all branches.
-            builder.Property(x => x.BranchId);
-            builder.HasOne<Branch>()
-                .WithMany()
-                .HasForeignKey(x => x.BranchId)
-                .OnDelete(DeleteBehavior.SetNull);
-
             builder.Property(x => x.Status)
                 .HasConversion<int>()
                 .IsRequired();
@@ -69,10 +74,17 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Gom cột tiền về MoneyMappingHelper (trước đây copy khối
             // ComplexProperty giống Order/OrderLine) — mapping giữ nguyên.
             MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.Price, "Price", "Currency");
+        }
 
-            // NOTE: EF Core does not support HasIndex() over complex-type members.
-            // Code uniqueness is enforced by CreateProductCommand via IProductRepository.ExistsWithCodeAsync.
-            builder.HasIndex(x => x.Status);
+        /// <summary>Cấu hình quan hệ của Product (hiện chỉ có Branch).</summary>
+        private static void ConfigureRelationships(EntityTypeBuilder<Product> builder)
+        {
+            // Multi-branch foundation (item 109): null = all branches.
+            builder.Property(x => x.BranchId);
+            builder.HasOne<Branch>()
+                .WithMany()
+                .HasForeignKey(x => x.BranchId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
