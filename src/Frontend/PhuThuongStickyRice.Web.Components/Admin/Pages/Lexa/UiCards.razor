@@ -100,7 +100,7 @@
                             <div class="card-body text-center">
                                 <div style="font-size:40px;">@p.Icon</div>
                                 <h5 class="card-title mt-2">@p.Name</h5>
-                                <p class="card-text text-muted small">@p.Desc</p>
+                                <p class="card-text text-muted small">@p.Description</p>
                                 <p class="font-weight-bold" style="color:#ec536c;">@p.Price</p>
                             </div>
                         </div>
@@ -123,5 +123,5 @@
         new("🫘", "Xôi đỗ", "Bùi bùi", "15.000 ₫"),
         new("🥥", "Xôi vò", "Thơm nước dừa", "20.000 ₫"),
     };
-    private record Product(string Icon, string Name, string Desc, string Price);
+    private record Product(string Icon, string Name, string Description, string Price);
 }

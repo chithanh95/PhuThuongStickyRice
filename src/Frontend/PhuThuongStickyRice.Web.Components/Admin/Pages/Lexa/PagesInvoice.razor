@@ -48,7 +48,7 @@
                                 <tr>
                                     <td>@(i + 1)</td>
                                     <td>@it.Name</td>
-                                    <td class="text-center">@it.Qty</td>
+                                    <td class="text-center">@it.Quantity</td>
                                     <td class="text-right">@it.Price</td>
                                     <td class="text-right">@it.Total</td>
                                 </tr>
@@ -87,5 +87,5 @@
         new("Xôi gấc đặc biệt", 5, "35.000 ₫", "175.000 ₫"),
         new("Chả cốm (topping)", 2, "5.000 ₫", "10.000 ₫"),
     };
-    private record InvItem(string Name, int Qty, string Price, string Total);
+    private record InvItem(string Name, int Quantity, string Price, string Total);
 }

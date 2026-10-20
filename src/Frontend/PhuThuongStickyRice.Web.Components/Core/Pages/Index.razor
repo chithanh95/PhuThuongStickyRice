@@ -211,7 +211,7 @@ else
                 <a href="/shop" class="sg-btn sg-btn-outline">Đặt xôi ngay →</a>
             </div>
             <div class="sg-intro-img sg-reveal">
-                <img loading="lazy" src="@Img(_content.HeroImageUrl, PlaceholderImage)" alt="Xôi Phú Thượng" />
+                <img loading="lazy" src="@ImageUrlOrFallback(_content.HeroImageUrl, PlaceholderImage)" alt="Xôi Phú Thượng" />
                 <div class="sg-intro-badge">
                     <strong>100+ năm</strong>
                     <span>Làng nghề Phú Thượng</span>
@@ -256,7 +256,7 @@ else
             <p class="sg-eyebrow">Xem tận mắt</p>
             <h2 class="sg-h2">@(string.IsNullOrWhiteSpace(_content.VideoTitle) ? "Xôi nóng hổi mỗi sáng" : _content.VideoTitle)</h2>
             <div class="sg-video-wrap sg-reveal">
-                <video controls preload="none" poster="@Img(_content.HeroImageUrl, null)">
+                <video controls preload="none" poster="@ImageUrlOrFallback(_content.HeroImageUrl, null)">
                     <source src="@_content.VideoUrl" type="video/mp4" />
                 </video>
             </div>
@@ -867,7 +867,7 @@ else
             <button type="button" class="sg-popup-close" aria-label="Đóng" @onclick="DismissPopup">×</button>
             @if (!string.IsNullOrWhiteSpace(_content.PopupImageUrl))
             {
-                <img loading="lazy" src="@Img(_content.PopupImageUrl, null)" alt="@_content.PopupTitle" class="sg-popup-img" />
+                <img loading="lazy" src="@ImageUrlOrFallback(_content.PopupImageUrl, null)" alt="@_content.PopupTitle" class="sg-popup-img" />
             }
             <h3 class="sg-popup-title">@_content.PopupTitle</h3>
             <p class="sg-popup-body">@_content.PopupBody</p>
@@ -1176,7 +1176,7 @@ else
     {
         get
         {
-            var url = Img(_content.HeroImageUrl, PlaceholderImage);
+            var url = ImageUrlOrFallback(_content.HeroImageUrl, PlaceholderImage);
             return $"background-image: url('{url}');";
         }
     }
@@ -1185,7 +1185,7 @@ else
     {
         get
         {
-            var url = Img(_content.HeroImageUrl, PlaceholderImage);
+            var url = ImageUrlOrFallback(_content.HeroImageUrl, PlaceholderImage);
             return $"background-image: url('{url}');";
         }
     }
@@ -1526,7 +1526,7 @@ else
     private const string PlaceholderImage =
         "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjIwMCIgeT0iMTUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjE2Ij5DaMawYSBjw7Mg4bqjbmg8L3RleHQ+PC9zdmc+";
 
-    private string Img(string uploadedUrl, string fallbackSvg) =>
+    private string ImageUrlOrFallback(string uploadedUrl, string fallbackSvg) =>
         !string.IsNullOrWhiteSpace(uploadedUrl)
             ? LandingService.ResolveImageUrl(uploadedUrl)
             : fallbackSvg;

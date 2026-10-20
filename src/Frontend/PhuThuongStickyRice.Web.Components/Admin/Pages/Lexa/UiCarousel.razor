@@ -19,7 +19,7 @@
                     <div class="lexa-carousel-slide" style="background:@_slides[_slideIdx].Color;">
                         <div style="font-size:80px;">@_slides[_slideIdx].Icon</div>
                         <h4 class="text-white mt-2">@_slides[_slideIdx].Title</h4>
-                        <p class="text-white-50">@_slides[_slideIdx].Desc</p>
+                        <p class="text-white-50">@_slides[_slideIdx].Description</p>
                     </div>
                     <button class="lexa-car-btn lexa-car-prev" @onclick="PrevSlide">‹</button>
                     <button class="lexa-car-btn lexa-car-next" @onclick="NextSlide">›</button>
@@ -116,6 +116,6 @@
     };
     private void PrevSlide() => _slideIdx = (_slideIdx - 1 + _slides.Count) % _slides.Count;
     private void NextSlide() => _slideIdx = (_slideIdx + 1) % _slides.Count;
-    private record Slide(string Icon, string Title, string Desc, string Color);
+    private record Slide(string Icon, string Title, string Description, string Color);
     private record GalleryImage(string Icon, string Title, string Color);
 }

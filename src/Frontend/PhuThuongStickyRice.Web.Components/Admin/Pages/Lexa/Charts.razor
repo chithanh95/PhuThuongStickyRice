@@ -77,7 +77,7 @@
                             <strong>@m.Sold suất</strong>
                         </div>
                         <div class="progress" style="height:18px;">
-                            <div class="progress-bar" style="width:@(m.Pct)%;background:@m.Color;">@(m.Pct)%</div>
+                            <div class="progress-bar" style="width:@(m.Percent)%;background:@m.Color;">@(m.Percent)%</div>
                         </div>
                     </div>
                 }
@@ -177,5 +177,5 @@
 
     private record DailyValue(string Day, int Value);
     private record ComparisonValue(string Day, int This, int Last);
-    private record TopDish(string Name, int Sold, int Pct, string Color);
+    private record TopDish(string Name, int Sold, int Percent, string Color);
 }

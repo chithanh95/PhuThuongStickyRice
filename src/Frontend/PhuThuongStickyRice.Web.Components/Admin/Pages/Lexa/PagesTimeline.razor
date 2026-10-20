@@ -25,7 +25,7 @@
                                     <strong>@e.Title</strong>
                                     <small class="text-muted">@e.Time</small>
                                 </div>
-                                <p class="text-muted mb-0 small">@e.Desc</p>
+                                <p class="text-muted mb-0 small">@e.Description</p>
                             </div>
                         </div>
                     }
@@ -55,5 +55,5 @@
         new("Đơn hàng #12344 bị hủy", "Khách hủy do đổi địa chỉ giao hàng.", "08:00", "#ec536c"),
         new("Báo cáo tuần đã gửi", "Báo cáo doanh thu tuần 42 đã gửi qua Zalo.", "Hôm qua", "#29bbe3"),
     };
-    private record TlEvent(string Title, string Desc, string Time, string Color);
+    private record TlEvent(string Title, string Description, string Time, string Color);
 }
