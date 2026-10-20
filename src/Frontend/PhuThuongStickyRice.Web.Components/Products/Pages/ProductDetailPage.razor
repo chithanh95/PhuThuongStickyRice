@@ -13,7 +13,14 @@
         <li class="current">Chi tiết sản phẩm</li>
     </ol>
 </div>
-@if (IsNotFound)
+@if (!string.IsNullOrEmpty(LoadError))
+{
+    <div class="alert alert-danger" role="alert">
+        Không tải được thông tin sản phẩm. (@LoadError)
+        <button class="btn btn-sm btn-outline-danger ms-2" @onclick="LoadProductAsync">Thử lại</button>
+    </div>
+}
+else if (IsNotFound)
 {
     <div class="text-center py-5">
         <div class="lx-empty-icon" aria-hidden="true">🍚</div>

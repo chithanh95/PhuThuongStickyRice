@@ -181,7 +181,7 @@ else
                         <label class="bulk-prod @(_bulkProductIds.Contains(product.Id) ? "selected" : "")">
                             <input type="checkbox" checked="@_bulkProductIds.Contains(product.Id)"
                                    @onchange="e => ToggleBulkProduct(product.Id, (bool)e.Value)" />
-                            <img loading="lazy" src="@ProductImage(product)" alt="" />
+                            <img loading="lazy" src="@ProductImage(product)" alt="@product.Name" />
                             <span>
                                 <span class="nm">@product.Name</span><br />
                                 <span class="pr">@FormatPrice(ShopProductModel.EffectivePrice(product, product.Price))/gói</span>

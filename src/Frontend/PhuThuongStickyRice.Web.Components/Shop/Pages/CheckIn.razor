@@ -7,10 +7,10 @@
 <div class="xo-checkin">
     <div class="xo-container">
         <div class="xo-sec-head">
-            <h2 class="xo-sec-title">Check-in tại quán 📸</h2>
+            <h2 class="xo-sec-title">Khách khoe xôi 📸</h2>
             <div class="xo-sec-div"><span></span><em>Ảnh của khách hàng</em><span></span></div>
         </div>
-        <p class="xo-checkin-sub">Chụp ảnh món xôi của bạn tại quán, đăng lên đây — ảnh được duyệt sẽ hiện trên tường ảnh của quán.</p>
+        <p class="xo-checkin-sub">Chụp ảnh suất xôi bạn vừa nhận, đăng lên đây — ảnh được duyệt sẽ hiện trên tường ảnh khách hàng.</p>
 
         <div class="xo-checkin-form card">
             <div class="card-body">
@@ -44,7 +44,7 @@
         }
         else if (_photos.Count == 0)
         {
-            <div class="alert alert-info">Chưa có ảnh nào. Hãy là người đầu tiên check-in nhé!</div>
+            <div class="alert alert-info">Chưa có ảnh nào. Hãy là người đầu tiên khoe xôi nhé!</div>
         }
         else
         {
@@ -52,7 +52,7 @@
                 @foreach (var p in _photos)
                 {
                     <div class="xo-checkin-card" @key="p.Id">
-                        <img src="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" alt="Ảnh check-in của khách hàng"
+                        <img src="@AdminCommerceService.ResolveImageUrl(p.ImageUrl)" alt="Ảnh xôi của khách hàng"
                              loading="lazy" />
                         <div class="xo-checkin-meta">
                             @if (!string.IsNullOrWhiteSpace(p.Name))

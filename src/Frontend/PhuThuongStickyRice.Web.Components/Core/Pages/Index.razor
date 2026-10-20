@@ -298,7 +298,7 @@ else
                 <div class="sg-tl-dot"></div>
                 <div class="sg-tl-card">
                     <strong>Hôm nay</strong>
-                    <p>Giữ nguyên cách làm của làng, phục vụ hàng nghìn suất xôi mỗi tháng — cả online lẫn tại quán.</p>
+                    <p>Giữ nguyên cách làm của làng, phục vụ hàng nghìn suất xôi mỗi tháng qua kênh online.</p>
                 </div>
             </div>
         </div>
@@ -351,7 +351,7 @@ else
 {
     <section class="sg-section sg-gallery-sec">
         <div class="sg-container">
-            <p class="sg-eyebrow">Check-in</p>
+            <p class="sg-eyebrow">Ảnh khách hàng</p>
             <h2 class="sg-h2">Khách hàng của quán</h2>
             <div class="sg-gallery-grid">
                 @foreach (var photo in _gallery.Take(MaxGalleryPhotos))
@@ -374,7 +374,7 @@ else
     <div class="sg-cta-bg" style="@CtaBgStyle"></div>
     <div class="sg-cta-overlay"></div>
     <div class="sg-cta-inner">
-        <p class="sg-cta-eyebrow">Giao nóng mỗi sáng</p>
+        <p class="sg-cta-eyebrow">Nóng hổi mỗi sáng</p>
         <h2 class="sg-cta-title">Đặt xôi ngay</h2>
         <p class="sg-cta-sub">Đặt online hoặc gọi hotline — quán chuẩn bị trong 15 phút.</p>
         <div class="sg-cta-btns">
@@ -668,37 +668,35 @@ else
 {
     <section class="sg-section">
         <div class="sg-container sg-center">
-            <p class="sg-eyebrow">Tìm quán</p>
+            <p class="sg-eyebrow">Điểm lấy xôi</p>
             <h2 class="sg-h2">Bếp online trên bản đồ</h2>
-            <p class="sg-lead">Dù bán online, quán vẫn có mặt trên Google Maps để bạn dễ tìm.</p>
+            <p class="sg-lead">Quán bán online, không phục vụ tại chỗ — xem vị trí bếp trên Google Maps để đến lấy xôi hoặc cho shipper dễ tìm đường.</p>
             <a class="sg-btn sg-btn-solid" href="@_mapsUrl" target="_blank" rel="noopener">📍 Xem trên Google Maps</a>
         </div>
     </section>
 }
 
-<!-- XÔI GỬI TỈNH (item 58) -->
+<!-- XÔI MANG ĐI XA (item 58) -->
 <section class="sg-section sg-export-sec">
     <div class="sg-container sg-export-grid">
         <div>
-            <p class="sg-eyebrow">Gửi xa</p>
-            <h2 class="sg-h2">Xôi hút chân không — gửi toàn quốc</h2>
-            <p class="sg-lead">Xôi được hút chân không, cấp đông — gửi đi tỉnh vẫn dẻo thơm như mới đồ. Hấp lại 10 phút là ăn ngon.</p>
+            <p class="sg-eyebrow">Mang đi xa</p>
+            <h2 class="sg-h2">Xôi hút chân không — tiện mang đi xa</h2>
+            <p class="sg-lead">Xôi được hút chân không, cấp đông — mang về quê hay biếu tặng vẫn dẻo thơm như mới đồ. Hấp lại 10 phút là ăn ngon.</p>
             <ul class="sg-check-list">
                 <li>✓ Bảo quản 7 ngày ngăn mát, 30 ngày ngăn đá</li>
                 <li>✓ Đóng gói cẩn thận, không lo bể nát</li>
-                <li>✓ Gửi nhanh 1-2 ngày toàn quốc</li>
+                <li>✓ Đặt online — bạn tự book shipper đến lấy hoặc tự đến bếp lấy</li>
             </ul>
-            <a href="/shop" class="sg-btn sg-btn-solid sg-ship-cta">Đặt xôi gửi tỉnh →</a>
+            <a href="/shop" class="sg-btn sg-btn-solid sg-ship-cta">Đặt xôi mang đi →</a>
         </div>
         <div class="sg-export-box">
-            <h3>📦 Bảng giá gửi tỉnh</h3>
-            <table class="sg-compare-table">
-                <tr><th scope="col">Khu vực</th><th scope="col">Phí ship</th><th scope="col">Thời gian</th></tr>
-                <tr><td>Miền Bắc</td><td>30k</td><td>1 ngày</td></tr>
-                <tr><td>Miền Trung</td><td>45k</td><td>2 ngày</td></tr>
-                <tr><td>Miền Nam</td><td>50k</td><td>2 ngày</td></tr>
-            </table>
-            <p class="sg-muted sg-ship-note">Miễn phí ship cho đơn từ 500k.</p>
+            <h3>📦 Cách nhận xôi mang đi</h3>
+            <ul class="sg-check-list">
+                <li>✓ Tự đến bếp lấy — quán gói sẵn, đọc mã đơn là nhận</li>
+                <li>✓ Tự book shipper (Grab, Ahamove...) đến lấy và mang đi giúp bạn</li>
+            </ul>
+            <p class="sg-muted sg-ship-note">Quán chỉ bán online và không trực tiếp giao hàng — phí ship (nếu có) bạn trả thẳng cho shipper.</p>
         </div>
     </div>
 </section>
