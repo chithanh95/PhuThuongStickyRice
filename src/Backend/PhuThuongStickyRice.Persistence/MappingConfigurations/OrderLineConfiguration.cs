@@ -21,29 +21,10 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.IsCombo).IsRequired();
             builder.Property(x => x.Note).HasMaxLength(OrderLine.NoteMaxLength);
 
-            builder.ComplexProperty(x => x.UnitPrice, priceBuilder =>
-            {
-                priceBuilder.Property(x => x.Amount)
-                    .HasColumnName("UnitPrice")
-                    .HasPrecision(18, 2)
-                    .IsRequired();
-                priceBuilder.Property(x => x.Currency)
-                    .HasColumnName("UnitPriceCurrency")
-                    .HasMaxLength(3)
-                    .IsRequired();
-            });
-
-            builder.ComplexProperty(x => x.LineTotal, totalBuilder =>
-            {
-                totalBuilder.Property(x => x.Amount)
-                    .HasColumnName("LineTotal")
-                    .HasPrecision(18, 2)
-                    .IsRequired();
-                totalBuilder.Property(x => x.Currency)
-                    .HasColumnName("LineTotalCurrency")
-                    .HasMaxLength(3)
-                    .IsRequired();
-            });
+            // Gom 2 cột tiền về MoneyMappingHelper (trước đây copy khối
+            // ComplexProperty giống hệt nhau) — mapping giữ nguyên.
+            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.UnitPrice, "UnitPrice", "UnitPriceCurrency");
+            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.LineTotal, "LineTotal", "LineTotalCurrency");
 
             builder.HasIndex(x => x.ProductId);
             // perf-hunt 2026-10-19 (run 17:25): EF Core KHONG tu tao index

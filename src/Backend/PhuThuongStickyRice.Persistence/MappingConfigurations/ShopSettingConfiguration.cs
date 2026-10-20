@@ -4,6 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 {
+    /// <summary>
+    /// Mapping EF Core cho <see cref="ShopSetting"/> (bảng ShopSettings).
+    /// Tách thành các helper theo nhóm chức năng để method Configure chính
+    /// chỉ còn dàn ý — logic mapping giữ nguyên.
+    /// </summary>
     public class ShopSettingConfiguration : IEntityTypeConfiguration<ShopSetting>
     {
         public void Configure(EntityTypeBuilder<ShopSetting> builder)
@@ -11,6 +16,16 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.ToTable("ShopSettings");
             builder.Property(x => x.Id).HasDefaultValueSql("newsequentialid()");
 
+            ConfigureMoneyAndLoyalty(builder);
+            ConfigureContactAndIntegrations(builder);
+            ConfigureOperations(builder);
+            ConfigureNotifications(builder);
+            ConfigureMarketing(builder);
+        }
+
+        /// <summary>Giá trị tiền tệ, điểm loyalty, hạng thành viên (precision tiền 18,2; % 5,2).</summary>
+        private static void ConfigureMoneyAndLoyalty(EntityTypeBuilder<ShopSetting> builder)
+        {
             builder.Property(x => x.DeliveryFee).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.FreeShipThreshold).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.MinOrderAmount).HasPrecision(18, 2).IsRequired();
@@ -27,23 +42,23 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.TierSilverDiscount).HasPrecision(5, 2).IsRequired();
             builder.Property(x => x.TierGoldMin).HasPrecision(18, 2).IsRequired();
             builder.Property(x => x.TierGoldDiscount).HasPrecision(5, 2).IsRequired();
+            builder.Property(x => x.CheckInPoints).IsRequired();
+            builder.Property(x => x.NepPerPortionGrams).IsRequired();
+            builder.Property(x => x.DailyTargetAmount).HasPrecision(18, 2).IsRequired();
+        }
+
+        /// <summary>Thông tin liên hệ hiển thị + tích hợp bên thứ ba
+        /// (reCAPTCHA, Telegram, ngân hàng/MoMo — secret lưu mã hóa nên cần headroom 1000 ký tự).</summary>
+        private static void ConfigureContactAndIntegrations(EntityTypeBuilder<ShopSetting> builder)
+        {
             builder.Property(x => x.OwnerReportEmail).HasMaxLength(254);
-            builder.Property(x => x.UnconfirmedAlertMinutes).IsRequired();
             builder.Property(x => x.RecaptchaSiteKey).HasMaxLength(100);
             // Item 136: encrypted at rest ("DPv1:" + DataProtection payload) — needs headroom.
             builder.Property(x => x.RecaptchaSecretKey).HasMaxLength(1000);
             builder.Property(x => x.WebBaseUrl).HasMaxLength(500);
-
-            // Wave 4: maintenance mode, health alerts, disk warning, payment
-            // display config (non-secret), image backup.
-            builder.Property(x => x.MaintenanceMode).IsRequired();
-            builder.Property(x => x.MaintenanceMessage).HasMaxLength(500);
             // Item 136: encrypted at rest ("DPv1:" + DataProtection payload) — needs headroom.
             builder.Property(x => x.TelegramBotToken).HasMaxLength(1000);
             builder.Property(x => x.TelegramChatId).HasMaxLength(50);
-            builder.Property(x => x.HealthAlertsEnabled).IsRequired();
-            builder.Property(x => x.ErrorRateThreshold).IsRequired();
-            builder.Property(x => x.UploadsSizeWarningMb).IsRequired();
             builder.Property(x => x.BankName).HasMaxLength(200);
             builder.Property(x => x.BankId).HasMaxLength(20);
             builder.Property(x => x.BankAccountNumber).HasMaxLength(50);
@@ -53,9 +68,22 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.MoMoEndpoint).HasMaxLength(500);
             builder.Property(x => x.ImageBackupProvider).HasMaxLength(50);
             builder.Property(x => x.ImageBackupSettingsJson).HasMaxLength(4000);
-            builder.Property(x => x.CheckInPoints).IsRequired();
-            builder.Property(x => x.NepPerPortionGrams).IsRequired();
-            builder.Property(x => x.DailyTargetAmount).HasPrecision(18, 2).IsRequired();
+            builder.Property(x => x.FacebookPageAccessToken).HasMaxLength(500);
+            builder.Property(x => x.FacebookVerifyToken).HasMaxLength(200);
+        }
+
+        /// <summary>Vận hành quán: maintenance mode, cảnh báo sức khỏe hệ thống,
+        /// giờ mở cửa ("HH:mm"), hotline/Zalo, tạm ngưng nhận đơn, chống spam.</summary>
+        private static void ConfigureOperations(EntityTypeBuilder<ShopSetting> builder)
+        {
+            // Wave 4: maintenance mode, health alerts, disk warning, payment
+            // display config (non-secret), image backup.
+            builder.Property(x => x.MaintenanceMode).IsRequired();
+            builder.Property(x => x.MaintenanceMessage).HasMaxLength(500);
+            builder.Property(x => x.HealthAlertsEnabled).IsRequired();
+            builder.Property(x => x.ErrorRateThreshold).IsRequired();
+            builder.Property(x => x.UploadsSizeWarningMb).IsRequired();
+            builder.Property(x => x.UnconfirmedAlertMinutes).IsRequired();
 
             // Wave 6a (item 22): open-hours display ("HH:mm").
             builder.Property(x => x.OpenTime).HasMaxLength(5);
@@ -67,13 +95,20 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             // Item 101: per-product "Hỏi qua Zalo" button toggle.
             builder.Property(x => x.ShowZaloChatButton).IsRequired();
             builder.Property(x => x.GoogleMapsUrl).HasMaxLength(500);
-            builder.Property(x => x.FacebookPageAccessToken).HasMaxLength(500);
-            builder.Property(x => x.FacebookVerifyToken).HasMaxLength(200);
             builder.Property(x => x.AcceptingOrders).IsRequired();
             builder.Property(x => x.PausedReason).HasMaxLength(500);
 
             // Wave 6d (item 39): anti-spam per-phone daily cap.
             builder.Property(x => x.MaxOrdersPerPhonePerDay).IsRequired();
+        }
+
+        /// <summary>Thông báo: webhook đơn mới + báo cáo tuần cho chủ qua Zalo OA
+        /// (token mã hóa at rest nên cần headroom 1000 ký tự).</summary>
+        private static void ConfigureNotifications(EntityTypeBuilder<ShopSetting> builder)
+        {
+            // Item 180: simple "new order" webhook (plain URL, not a secret).
+            builder.Property(x => x.NewOrderWebhookUrl).HasMaxLength(1000);
+            builder.Property(x => x.NewOrderWebhookEnabled).IsRequired();
 
             // Item 138: weekly owner report via Zalo OA (token is
             // data-protected at rest, hence the 1000 headroom).
@@ -81,11 +116,11 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
             builder.Property(x => x.OwnerPhone).HasMaxLength(30);
             builder.Property(x => x.OwnerZaloUserId).HasMaxLength(100);
             builder.Property(x => x.LastWeeklyReportSentWeek).HasMaxLength(20);
+        }
 
-            // Item 180: simple "new order" webhook (plain URL, not a secret).
-            builder.Property(x => x.NewOrderWebhookUrl).HasMaxLength(1000);
-            builder.Property(x => x.NewOrderWebhookEnabled).IsRequired();
-
+        /// <summary>Marketing: tracking ID (Pixel/GA4), link sàn TMĐT, VIP club, bán sỉ.</summary>
+        private static void ConfigureMarketing(EntityTypeBuilder<ShopSetting> builder)
+        {
             // Landing conversion tracking IDs (admin-entered, never hardcoded).
             builder.Property(x => x.FacebookPixelId).HasMaxLength(50);
             builder.Property(x => x.GoogleAnalyticsId).HasMaxLength(30);

@@ -66,17 +66,9 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
                     .IsRequired();
             });
 
-            builder.ComplexProperty(x => x.Price, priceBuilder =>
-            {
-                priceBuilder.Property(x => x.Amount)
-                    .HasColumnName("Price")
-                    .HasPrecision(18, 2)
-                    .IsRequired();
-                priceBuilder.Property(x => x.Currency)
-                    .HasColumnName("Currency")
-                    .HasMaxLength(3)
-                    .IsRequired();
-            });
+            // Gom cột tiền về MoneyMappingHelper (trước đây copy khối
+            // ComplexProperty giống Order/OrderLine) — mapping giữ nguyên.
+            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.Price, "Price", "Currency");
 
             // NOTE: EF Core does not support HasIndex() over complex-type members.
             // Code uniqueness is enforced by CreateProductCommand via IProductRepository.ExistsWithCodeAsync.

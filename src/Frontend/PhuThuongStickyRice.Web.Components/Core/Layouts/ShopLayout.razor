@@ -161,8 +161,6 @@
         _ => "Đang: Sáng — bấm để chuyển Tối",
     };
 
-    private bool _isDark => _theme == "dark" || _theme == "auto"; // for backwards compat checks
-
     private async Task ToggleTheme()
     {
         try

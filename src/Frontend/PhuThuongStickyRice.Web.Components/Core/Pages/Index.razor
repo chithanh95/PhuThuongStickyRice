@@ -1092,7 +1092,6 @@ else
     // 75, 77
     private MarketplaceLinksModel _marketLinks;
     private string _mapsUrl;
-    private List<BackInStockItem> _backInStock = new List<BackInStockItem>();
     // 41-60
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel> _articles = new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>();
     private bool _showReorderBanner;
@@ -1212,105 +1211,107 @@ else
         // _shopSettings — dùng lại, không gọi HTTP GET api/shop-settings/public lần 2.
         try { _mapsUrl = _shopSettings?.GoogleMapsUrl; } catch { }
 
-        // Local loader: mỗi request fail-soft riêng như code cũ (try/catch → fallback).
-        async Task LoadSettingsAsync()
+        // 17 loader fail-soft đã tách thành private method phía dưới để
+        // OnInitializedAsync chỉ còn luồng chính (~60 dòng), behavior giữ nguyên.
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        try { _shopSettings = await ShopSettingsService.GetPublicAsync(); } catch (Exception) { }
+    }
+    private async Task LoadPoliciesAsync()
+    {
+        try { _policies = await PolicyService.GetPublicListAsync() ?? new List<PolicyPageSummaryModel>(); }
+        catch (Exception) { _policies = new List<PolicyPageSummaryModel>(); }
+    }
+    private async Task LoadContentAsync()
+    {
+        try { _content = await LandingService.GetContentAsync() ?? new LandingContentModel(); }
+        catch (Exception) { _loadFailed = true; _content = new LandingContentModel(); }
+    }
+    private async Task LoadFeatureFlagsAsync()
+    {
+        try
         {
-            try { _shopSettings = await ShopSettingsService.GetPublicAsync(); } catch (Exception) { }
+            var flags = await AdminSystemService.GetFeatureFlagMapAsync();
+            _promoPopupEnabled = flags == null || !flags.TryGetValue("promo-popup", out var on) || on;
         }
-        async Task LoadPoliciesAsync()
+        catch (Exception) { }
+    }
+    private async Task LoadProductsAsync()
+    {
+        try
         {
-            try { _policies = await PolicyService.GetPublicListAsync() ?? new List<PolicyPageSummaryModel>(); }
-            catch (Exception) { _policies = new List<PolicyPageSummaryModel>(); }
+            var paged = await ShopService.GetProductsAsync();
+            _allProducts = paged?.Items ?? new List<ShopProductModel>();
         }
-        async Task LoadContentAsync()
+        catch (Exception) { }
+    }
+    private async Task LoadReviewsAsync()
+    {
+        try { _reviews = await LandingService.GetPublicReviewsAsync() ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel>(); } catch { }
+    }
+    private async Task LoadStatsAsync()
+    {
+        try { _stats = await LandingService.GetStatsAsync() ?? new LandingStatsModel(); } catch { }
+    }
+    private async Task LoadGalleryAsync()
+    {
+        try { _gallery = await LandingService.GetGalleryAsync() ?? new List<GalleryPhotoModel>(); } catch { }
+    }
+    private async Task LoadFaqsAsync()
+    {
+        try { _faqs = await LandingService.GetFaqsAsync() ?? new List<FaqPublicModel>(); } catch { }
+    }
+    private async Task LoadArticlesAsync()
+    {
+        try { _articles = await LandingService.GetArticlesAsync() ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>(); } catch { }
+    }
+    private async Task LoadOffPeakAsync()
+    {
+        try { _offpeak = await LandingService.GetOffPeakAsync(); } catch { }
+    }
+    private async Task LoadPollsAsync()
+    {
+        try { _polls = await LandingService.GetPollsAsync() ?? new List<DishPollModel>(); } catch { }
+    }
+    private async Task LoadCoursesAsync()
+    {
+        try { _courses = await LandingService.GetCoursesAsync() ?? new List<CourseModel>(); } catch { }
+    }
+    private async Task LoadMarketplaceLinksAsync()
+    {
+        try { _marketLinks = await LandingService.GetMarketplaceLinksAsync(); } catch { }
+    }
+    private async Task LoadUpcomingHolidaysAsync()
+    {
+        try
         {
-            try { _content = await LandingService.GetContentAsync() ?? new LandingContentModel(); }
-            catch (Exception) { _loadFailed = true; _content = new LandingContentModel(); }
+            var holidays = await LandingService.GetUpcomingHolidaysAsync();
+            // MinBy tương đương OrderBy(...).FirstOrDefault() nhưng chỉ duyệt 1 lần O(n),
+            // không tốn chi phí sắp xếp cả danh sách.
+            _nextHoliday = holidays?.Where(h => (h.HolidayDate.Date - DateTime.Now.Date).TotalDays is >= 0 and <= 14)
+                .MinBy(h => h.HolidayDate);
         }
-        async Task LoadFeatureFlagsAsync()
+        catch { }
+    }
+    private async Task LoadBestSellerIdsAsync()
+    {
+        try
         {
-            try
-            {
-                var flags = await AdminSystemService.GetFeatureFlagMapAsync();
-                _promoPopupEnabled = flags == null || !flags.TryGetValue("promo-popup", out var on) || on;
-            }
-            catch (Exception) { }
+            var ids = await ShopService.GetBestSellerIdsAsync();
+            if (ids != null) _bestSellerIds = new HashSet<Guid>(ids);
         }
-        async Task LoadProductsAsync()
+        catch (Exception) { }
+    }
+    private async Task LoadCombosAsync()
+    {
+        try
         {
-            try
-            {
-                var paged = await ShopService.GetProductsAsync();
-                _allProducts = paged?.Items ?? new List<ShopProductModel>();
-            }
-            catch (Exception) { }
+            _combos = (await ShopService.GetCombosAsync())
+                ?.Where(c => c.IsActive).ToList() ?? new List<ComboModel>();
         }
-        async Task LoadReviewsAsync()
-        {
-            try { _reviews = await LandingService.GetPublicReviewsAsync() ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.PublicReviewModel>(); } catch { }
-        }
-        async Task LoadStatsAsync()
-        {
-            try { _stats = await LandingService.GetStatsAsync() ?? new LandingStatsModel(); } catch { }
-        }
-        async Task LoadGalleryAsync()
-        {
-            try { _gallery = await LandingService.GetGalleryAsync() ?? new List<GalleryPhotoModel>(); } catch { }
-        }
-        async Task LoadFaqsAsync()
-        {
-            try { _faqs = await LandingService.GetFaqsAsync() ?? new List<FaqPublicModel>(); } catch { }
-        }
-        async Task LoadArticlesAsync()
-        {
-            try { _articles = await LandingService.GetArticlesAsync() ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.ArticleModel>(); } catch { }
-        }
-        async Task LoadOffPeakAsync()
-        {
-            try { _offpeak = await LandingService.GetOffPeakAsync(); } catch { }
-        }
-        async Task LoadPollsAsync()
-        {
-            try { _polls = await LandingService.GetPollsAsync() ?? new List<DishPollModel>(); } catch { }
-        }
-        async Task LoadCoursesAsync()
-        {
-            try { _courses = await LandingService.GetCoursesAsync() ?? new List<CourseModel>(); } catch { }
-        }
-        async Task LoadMarketplaceLinksAsync()
-        {
-            try { _marketLinks = await LandingService.GetMarketplaceLinksAsync(); } catch { }
-        }
-        async Task LoadUpcomingHolidaysAsync()
-        {
-            try
-            {
-                var holidays = await LandingService.GetUpcomingHolidaysAsync();
-                // MinBy tương đương OrderBy(...).FirstOrDefault() nhưng chỉ duyệt 1 lần O(n),
-                // không tốn chi phí sắp xếp cả danh sách.
-                _nextHoliday = holidays?.Where(h => (h.HolidayDate.Date - DateTime.Now.Date).TotalDays is >= 0 and <= 14)
-                    .MinBy(h => h.HolidayDate);
-            }
-            catch { }
-        }
-        async Task LoadBestSellerIdsAsync()
-        {
-            try
-            {
-                var ids = await ShopService.GetBestSellerIdsAsync();
-                if (ids != null) _bestSellerIds = new HashSet<Guid>(ids);
-            }
-            catch (Exception) { }
-        }
-        async Task LoadCombosAsync()
-        {
-            try
-            {
-                _combos = (await ShopService.GetCombosAsync())
-                    ?.Where(c => c.IsActive).ToList() ?? new List<ComboModel>();
-            }
-            catch (Exception) { _combos = new List<ComboModel>(); }
-        }
+        catch (Exception) { _combos = new List<ComboModel>(); }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -1479,25 +1480,9 @@ else
         return PlaceholderImage;
     }
 
-    private static List<string> AllImageUrls(string imageUrlsJson)
-    {
-        var list = new List<string>();
-        if (string.IsNullOrWhiteSpace(imageUrlsJson)) return list;
-        try
-        {
-            using var doc = System.Text.Json.JsonDocument.Parse(imageUrlsJson);
-            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array) return list;
-            foreach (var imageElement in doc.RootElement.EnumerateArray())
-            {
-                var imageUrl = imageElement.GetString();
-                if (!string.IsNullOrWhiteSpace(imageUrl)) list.Add(imageUrl);
-            }
-        }
-        // Parse JSON danh sách ảnh: dữ liệu hỏng hoặc không phải mảng thì trả list rỗng
-        // (hiển thị placeholder) thay vì làm vỡ cả trang — bỏ qua lỗi có chủ ý.
-        catch { }
-        return list;
-    }
+    // NOTE (codequality-team 2026-10-20): AllImageUrls (parse thủ công JSON danh sách ảnh)
+    // không còn ai gọi sau khi ProductImage chuyển sang CartState.FirstImageUrl — đã xóa bản copy tại
+    // đây để tránh code chết, behavior giữ nguyên.
 
     // NOTE (codequality-team 2026-10-20): FormatPrice trùng PriceFormatter.FormatPrice
     // và UnitSuffix trùng ShopProductModel.UnitSuffix nên đã xóa bản copy tại

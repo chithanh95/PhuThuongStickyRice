@@ -1,10 +1,7 @@
 // codequality-team 2026-10-20 run-0245 Agent2-CleanCode
 using PhuThuongStickyRice.Domain.Entities;
-using PhuThuongStickyRice.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Linq.Expressions;
 
 namespace PhuThuongStickyRice.Persistence.MappingConfigurations
 {
@@ -129,41 +126,18 @@ namespace PhuThuongStickyRice.Persistence.MappingConfigurations
         }
 
         /// <summary>
-        /// Cấu hình 1 cột tiền (<see cref="Money"/> complex type): cột Amount
-        /// precision 18,2 bắt buộc; cột Currency tối đa 3 ký tự bắt buộc.
-        /// Gom 6 cột tiền của Orders để không lặp khối ComplexProperty giống hệt nhau.
-        /// </summary>
-        private static void ConfigureMoneyColumn(
-            EntityTypeBuilder<Order> builder,
-            Expression<Func<Order, Money>> navigation,
-            string amountColumnName,
-            string currencyColumnName)
-        {
-            builder.ComplexProperty(navigation, moneyBuilder =>
-            {
-                moneyBuilder.Property(x => x.Amount)
-                    .HasColumnName(amountColumnName)
-                    .HasPrecision(18, 2)
-                    .IsRequired();
-                moneyBuilder.Property(x => x.Currency)
-                    .HasColumnName(currencyColumnName)
-                    .HasMaxLength(3)
-                    .IsRequired();
-            });
-        }
-
-        /// <summary>
         /// 6 cột tiền trên đơn: tổng tiền, phí ship, giảm giá mã, giảm giá
         /// loyalty, giảm giá hạng, phí gói quà. Tên cột giữ nguyên như cũ.
+        /// Dùng <see cref="MoneyMappingHelper"/> chung với OrderLine/Product.
         /// </summary>
         private static void ConfigureMoneyColumns(EntityTypeBuilder<Order> builder)
         {
-            ConfigureMoneyColumn(builder, x => x.TotalAmount, "TotalAmount", "Currency");
-            ConfigureMoneyColumn(builder, x => x.DeliveryFee, "DeliveryFee", "DeliveryFeeCurrency");
-            ConfigureMoneyColumn(builder, x => x.DiscountAmount, "DiscountAmount", "DiscountCurrency");
-            ConfigureMoneyColumn(builder, x => x.LoyaltyDiscount, "LoyaltyDiscount", "LoyaltyDiscountCurrency");
-            ConfigureMoneyColumn(builder, x => x.TierDiscount, "TierDiscount", "TierDiscountCurrency");
-            ConfigureMoneyColumn(builder, x => x.GiftFee, "GiftFee", "GiftFeeCurrency");
+            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.TotalAmount, "TotalAmount", "Currency");
+            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.DeliveryFee, "DeliveryFee", "DeliveryFeeCurrency");
+            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.DiscountAmount, "DiscountAmount", "DiscountCurrency");
+            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.LoyaltyDiscount, "LoyaltyDiscount", "LoyaltyDiscountCurrency");
+            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.TierDiscount, "TierDiscount", "TierDiscountCurrency");
+            MoneyMappingHelper.ConfigureMoneyColumn(builder, x => x.GiftFee, "GiftFee", "GiftFeeCurrency");
         }
 
         /// <summary>
