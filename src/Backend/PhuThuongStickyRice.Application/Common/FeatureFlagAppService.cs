@@ -161,12 +161,12 @@ namespace PhuThuongStickyRice.Application.Common
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             var missing = Defaults
-                .Where(d => !existing.Contains(d.Key))
-                .Select(d => new FeatureFlag
+                .Where(defaultFlag => !existing.Contains(defaultFlag.Key))
+                .Select(defaultFlag => new FeatureFlag
                 {
-                    Key = d.Key,
-                    Name = d.Name,
-                    Description = d.Description,
+                    Key = defaultFlag.Key,
+                    Name = defaultFlag.Name,
+                    Description = defaultFlag.Description,
                     IsEnabled = true
                 })
                 .ToList();

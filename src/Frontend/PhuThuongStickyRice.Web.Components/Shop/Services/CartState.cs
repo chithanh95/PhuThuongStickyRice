@@ -268,7 +268,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
             var trimmed = note.Trim();
             return trimmed.Length > MaxNoteLength
-                ? trimmed.Substring(0, MaxNoteLength)
+                ? trimmed[..MaxNoteLength]
                 : trimmed;
         }
 

@@ -193,7 +193,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 return;
             }
 
-            var fileName = path.Substring(prefixIndex + prefix.Length).Split('?')[0];
+            var fileName = path[(prefixIndex + prefix.Length)..].Split('?')[0];
             if (!string.IsNullOrWhiteSpace(fileName) && !fileName.Contains('/'))
             {
                 referenced.Add(fileName);

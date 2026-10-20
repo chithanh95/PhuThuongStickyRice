@@ -687,7 +687,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             // Path.GetFileName loại bỏ mọi thành phần thư mục — chặn path traversal
             // (vd /uploads/review-photos/../../appsettings.json).
-            var fileName = System.IO.Path.GetFileName(photoUrl.Substring(ReviewPhotoUrlPrefix.Length));
+            var fileName = System.IO.Path.GetFileName(photoUrl[ReviewPhotoUrlPrefix.Length..]);
             if (string.IsNullOrEmpty(fileName))
             {
                 return false;

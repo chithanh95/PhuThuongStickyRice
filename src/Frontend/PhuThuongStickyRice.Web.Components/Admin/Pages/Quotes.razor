@@ -35,7 +35,7 @@
         <button class="btn @StatusChipClass(null)" aria-pressed="@(_statusFilter == null)" @onclick="() => SetStatus(null)">Tất cả</button>
         <button class="btn @StatusChipClass("New")" aria-pressed='@(_statusFilter == "New")' @onclick='() => SetStatus("New")'>Mới</button>
         <button class="btn @StatusChipClass("Contacted")" aria-pressed='@(_statusFilter == "Contacted")' @onclick='() => SetStatus("Contacted")'>Đã liên hệ</button>
-        <button class="btn @StatusChipClass("Confirmed")" aria-pressed='@(_statusFilter == "Confirmed")' @onclick='() => SetStatus("Confirmed")'>Đã chốt</button>
+        <button class="btn @StatusChipClass(QuoteStatusConfirmed)" aria-pressed='@(_statusFilter == QuoteStatusConfirmed)' @onclick='() => SetStatus(QuoteStatusConfirmed)'>Đã chốt</button>
         <button class="btn @StatusChipClass("Cancelled")" aria-pressed='@(_statusFilter == "Cancelled")' @onclick='() => SetStatus("Cancelled")'>Hủy</button>
     </div>
 </div>
@@ -81,7 +81,7 @@ else
                                 <td class="text-right">@q.Quantity</td>
                                 <td><small>@(string.IsNullOrWhiteSpace(q.EventLocation) ? "—" : q.EventLocation)@(string.IsNullOrWhiteSpace(q.Budget) ? "" : $" · Vốn: {q.Budget}")</small></td>
                                 <td><small>@q.Notes</small></td>
-                                <td>@StatusBadge(q.Status)@if (q.Status == "Confirmed" && q.DepositAmount > 0)
+                                <td>@StatusBadge(q.Status)@if (q.Status == QuoteStatusConfirmed && q.DepositAmount > 0)
                                     {<br /><span class="badge badge-warning">Cọc @q.DepositAmount.Value.ToString("N0")đ</span>}</td>
                                 <td class="text-nowrap">
                                     <a class="btn btn-sm btn-outline-primary mr-1" href="tel:@q.CustomerPhone">📞 Gọi</a>
@@ -326,6 +326,20 @@ else
     private bool _depositSaved;
     private string _depositQrUrl;
 
+    /// <summary>
+    /// Template ảnh QR VietQR mặc định khi admin chưa đặt template riêng ở
+    /// cài đặt ngân hàng. (codequality-team 2026-10-20 run-1905 Agent2-CleanCode:
+    /// hằng số có tên thay magic string "compact2" rải trong code.)
+    /// </summary>
+    private const string DefaultQrTemplate = "compact2";
+
+    /// <summary>
+    /// Trạng thái báo giá đã chốt cọc — dùng 1 chỗ để sai chính tả không làm
+    /// hỏng luồng lọc/chuyển trạng thái. (codequality-team 2026-10-20 run-1905
+    /// Agent2-CleanCode: hằng số có tên thay magic string "Confirmed" dùng 5 nơi.)
+    /// </summary>
+    private const string QuoteStatusConfirmed = "Confirmed";
+
     private void OpenDepositModal(QuoteRequestAdminModel quote)
     {
         _depositQuote = quote;
@@ -381,26 +395,16 @@ else
                 ? $"Coc bao gia {_depositQuote.CustomerPhone}"
                 : _depositInfo.Trim();
 
-            // 1. Lưu cọc + 2. Chuyển trạng thái sang Confirmed.
+            // 1. Lưu cọc + 2. Chuyển trạng thái sang "Đã chốt".
             var updated = await CatalogAdminService.SetQuoteDepositAsync(_depositQuote.Id, _depositAmount, depositNote);
-            await CatalogAdminService.UpdateQuoteStatusAsync(_depositQuote.Id, "Confirmed");
-            _depositQuote.Status = "Confirmed";
+            await CatalogAdminService.UpdateQuoteStatusAsync(_depositQuote.Id, QuoteStatusConfirmed);
+            _depositQuote.Status = QuoteStatusConfirmed;
             _depositQuote.DepositAmount = updated.DepositAmount;
             _depositQuote.DepositInfo = updated.DepositInfo;
             _depositInfo = depositNote;
 
             // 3. Tạo QR VietQR để gửi khách.
-            try
-            {
-                var bank = await CatalogAdminService.GetBankTransferInfoAsync();
-                if (bank != null && bank.IsConfigured)
-                {
-                    var template = string.IsNullOrWhiteSpace(bank.QrTemplate) ? "compact2" : bank.QrTemplate;
-                    _depositQrUrl = $"https://img.vietqr.io/image/{bank.BankId}-{bank.AccountNumber}-{template}.png"
-                        + $"?amount={(long)_depositAmount}&addInfo={Uri.EscapeDataString(depositNote)}";
-                }
-            }
-            catch (Exception) { }
+            _depositQrUrl = await BuildDepositQrUrlAsync(depositNote);
 
             _depositSaved = true;
             _success = $"Đã duyệt báo giá của {_depositQuote.CustomerName} với cọc {_depositAmount:N0}đ.";
@@ -412,6 +416,35 @@ else
         finally
         {
             _savingDeposit = false;
+        }
+    }
+
+    /// <summary>
+    /// Item 161: dựng URL ảnh QR VietQR để gửi khách thanh toán tiền cọc.
+    /// Tách khỏi <see cref="SaveDepositAsync"/> để method lưu cọc chỉ còn 1
+    /// việc điều phối 3 bước (fail-soft: lỗi/không cấu hình → trả null, không
+    /// làm hỏng bước lưu cọc; logic giữ nguyên).
+    /// </summary>
+    /// <param name="depositNote">Nội dung chuyển khoản (ghi vào addInfo của QR).</param>
+    /// <returns>URL ảnh QR, hoặc null khi không lấy được thông tin ngân hàng.</returns>
+    private async Task<string> BuildDepositQrUrlAsync(string depositNote)
+    {
+        try
+        {
+            var bank = await CatalogAdminService.GetBankTransferInfoAsync();
+            if (bank == null || !bank.IsConfigured)
+            {
+                return null;
+            }
+
+            var template = string.IsNullOrWhiteSpace(bank.QrTemplate) ? DefaultQrTemplate : bank.QrTemplate;
+            return $"https://img.vietqr.io/image/{bank.BankId}-{bank.AccountNumber}-{template}.png"
+                + $"?amount={(long)_depositAmount}&addInfo={Uri.EscapeDataString(depositNote)}";
+        }
+        catch (Exception)
+        {
+            // Fail-soft: không có QR thì cọc vẫn lưu thành công, admin gửi tay.
+            return null;
         }
     }
 
@@ -442,7 +475,7 @@ else
         {
             "New" => ("badge badge-warning", "Mới"),
             "Contacted" => ("badge badge-info", "Đã liên hệ"),
-            "Confirmed" => ("badge badge-success", "Đã chốt"),
+            QuoteStatusConfirmed => ("badge badge-success", "Đã chốt"),
             "Cancelled" => ("badge badge-danger", "Hủy"),
             _ => ("badge badge-light", status)
         };

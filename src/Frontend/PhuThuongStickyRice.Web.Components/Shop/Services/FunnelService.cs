@@ -65,9 +65,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 var path = url ?? string.Empty;
                 // Path only — strip query/fragment (no PII).
                 var queryIndex = path.IndexOf('?');
-                if (queryIndex >= 0) path = path.Substring(0, queryIndex);
+                if (queryIndex >= 0) path = path[..queryIndex];
                 var hashIndex = path.IndexOf('#');
-                if (hashIndex >= 0) path = path.Substring(0, hashIndex);
+                if (hashIndex >= 0) path = path[..hashIndex];
 
                 await PostAsync<object>("api/funnel-events", new
                 {

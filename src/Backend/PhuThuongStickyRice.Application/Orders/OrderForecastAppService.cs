@@ -242,9 +242,9 @@ namespace PhuThuongStickyRice.Application.Orders
             decimal sum = 0m;
             for (var day = from; day < toExclusive; day = day.AddDays(1))
             {
-                if (perDay.TryGetValue(day, out var v))
+                if (perDay.TryGetValue(day, out var dayAggregate))
                 {
-                    sum += v.Revenue;
+                    sum += dayAggregate.Revenue;
                 }
             }
 
@@ -259,13 +259,13 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             for (var day = today.AddDays(-HistoryDays); day < today; day = day.AddDays(1))
             {
-                perDay.TryGetValue(day, out var v);
+                perDay.TryGetValue(day, out var dayAggregate);
                 result.History.Add(new ForecastHistoryPointDto
                 {
                     Date = day,
-                    Revenue = v?.Revenue ?? 0m,
-                    OrderCount = v?.Orders ?? 0L,
-                    Portions = v?.Portions ?? 0L
+                    Revenue = dayAggregate?.Revenue ?? 0m,
+                    OrderCount = dayAggregate?.Orders ?? 0L,
+                    Portions = dayAggregate?.Portions ?? 0L
                 });
             }
         }
@@ -291,9 +291,9 @@ namespace PhuThuongStickyRice.Application.Orders
             for (var day = patternStart; day < today; day = day.AddDays(1))
             {
                 var stats = weekdayStats[day.DayOfWeek];
-                if (perDay.TryGetValue(day, out var v))
+                if (perDay.TryGetValue(day, out var dayAggregate))
                 {
-                    stats = (stats.revenue + v.Revenue, stats.orders + v.Orders, stats.portions + v.Portions, stats.days + 1);
+                    stats = (stats.revenue + dayAggregate.Revenue, stats.orders + dayAggregate.Orders, stats.portions + dayAggregate.Portions, stats.days + 1);
                 }
                 else
                 {

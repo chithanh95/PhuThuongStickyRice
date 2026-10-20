@@ -153,7 +153,7 @@ namespace PhuThuongStickyRice.Application.AuditLogs
         {
             // Never log the writer itself — that would recurse forever.
             if (!string.IsNullOrEmpty(source)
-                && (source.Contains("AppLog") || source.Contains("Webhook")))
+                && (source.Contains("AppLog", StringComparison.Ordinal) || source.Contains("Webhook", StringComparison.Ordinal)))
             {
                 return;
             }

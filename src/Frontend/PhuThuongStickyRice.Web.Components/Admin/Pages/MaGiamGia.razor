@@ -270,6 +270,14 @@
     private int CurrentPage = 1;
     private int PageSize = 10;
 
+    /// <summary>
+    /// Biên hợp lệ của % giảm giá mã khuyến mãi. (codequality-team 2026-10-20
+    /// run-1905 Agent2-CleanCode: hằng số có tên thay magic number 1/100 rải
+    /// trong validation và message lỗi.)
+    /// </summary>
+    private const int MinDiscountPercent = 1;
+    private const int MaxDiscountPercent = 100;
+
     private bool _showForm;
     @* UIUX-1020 Agent4 (a11y): đưa focus vào modal khi mở — screen reader đọc ngay
        role="dialog" + tiêu đề, người dùng bàn phím tab từ trong modal đi ra thay vì
@@ -405,9 +413,11 @@
             if (_isPercent)
             {
                 _form.DiscountAmount = null;
-                if (!_form.DiscountPercent.HasValue || _form.DiscountPercent < 1 || _form.DiscountPercent > 100)
+                if (!_form.DiscountPercent.HasValue
+                    || _form.DiscountPercent < MinDiscountPercent
+                    || _form.DiscountPercent > MaxDiscountPercent)
                 {
-                    _formError = "Phần trăm giảm phải từ 1 đến 100.";
+                    _formError = $"Phần trăm giảm phải từ {MinDiscountPercent} đến {MaxDiscountPercent}.";
                     return false;
                 }
             }

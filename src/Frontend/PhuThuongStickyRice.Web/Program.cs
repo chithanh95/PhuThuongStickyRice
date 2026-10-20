@@ -49,7 +49,7 @@ namespace PhuThuongStickyRice.Web
             // - LAN/deploy (không phải localhost): API và Web chung origin -> dùng same-origin.
             var baseAddress = builder.HostEnvironment.BaseAddress;
             var isLocalhost = baseAddress.Contains("localhost", System.StringComparison.OrdinalIgnoreCase)
-                || baseAddress.Contains("127.0.0.1");
+                || baseAddress.Contains("127.0.0.1", System.StringComparison.OrdinalIgnoreCase);
             var apiEndpoint = isLocalhost
                 ? appSettings.ResourceServer?.Endpoint?.Trim()
                 : baseAddress.TrimEnd('/');

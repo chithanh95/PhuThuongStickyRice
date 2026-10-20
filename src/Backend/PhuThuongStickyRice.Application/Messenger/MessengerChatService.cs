@@ -741,21 +741,24 @@ namespace PhuThuongStickyRice.Application.Messenger
 
         private static bool IsGreetingOrMenu(string norm)
         {
-            return norm.Contains("menu") || norm.Contains("thuc don") || norm.Contains("thực đơn")
+            // [codequality-practices 2026-10-20] Chỉ rõ StringComparison.Ordinal:
+            // norm đã ToLowerInvariant khi chuẩn hoá, default Contains cũng là
+            // Ordinal nên hành vi giữ nguyên — chỉ làm ý định tường minh (CA1307).
+            return norm.Contains("menu", StringComparison.Ordinal) || norm.Contains("thuc don", StringComparison.Ordinal) || norm.Contains("thực đơn", StringComparison.Ordinal)
                 || norm is "hi" or "hello" or "chao" or "chào" || norm.StartsWith("chao ", StringComparison.Ordinal)
-                || norm.Contains("gia") && norm.Contains("ban");
+                || norm.Contains("gia", StringComparison.Ordinal) && norm.Contains("ban", StringComparison.Ordinal);
         }
 
         private static bool IsConfirm(string norm)
         {
-            return norm is "ok" or "okay" or "yes" || norm.Contains("dong y") || norm.Contains("đồng ý")
-                || norm.Contains("chot") || norm.Contains("chốt") || norm.Contains("xac nhan")
-                || norm.Contains("xác nhận");
+            return norm is "ok" or "okay" or "yes" || norm.Contains("dong y", StringComparison.Ordinal) || norm.Contains("đồng ý", StringComparison.Ordinal)
+                || norm.Contains("chot", StringComparison.Ordinal) || norm.Contains("chốt", StringComparison.Ordinal) || norm.Contains("xac nhan", StringComparison.Ordinal)
+                || norm.Contains("xác nhận", StringComparison.Ordinal);
         }
 
         private static bool IsCancel(string norm)
         {
-            return norm is "huy" or "huỷ" or "cancel" || norm.Contains("huy don") || norm.Contains("huỷ đơn");
+            return norm is "huy" or "huỷ" or "cancel" || norm.Contains("huy don", StringComparison.Ordinal) || norm.Contains("huỷ đơn", StringComparison.Ordinal);
         }
 
         /// <summary>

@@ -1,4 +1,8 @@
-﻿@page "/products/{ProductId:guid}"
+﻿@* Trang chi tiết sản phẩm (admin): hiển thị tên, mã, mô tả, giá và ảnh
+   của 1 sản phẩm theo route /products/{ProductId:guid}; trường hợp không
+   tồn tại hoặc đã xóa thì hiện trạng thái "Không tìm thấy" thay vì lỗi.
+   Nút Sửa điều hướng sang trang /products/edit/{ProductId}. *@
+@page "/products/{ProductId:guid}"
 @attribute [Authorize]
 
 <div class="lx-page-head">

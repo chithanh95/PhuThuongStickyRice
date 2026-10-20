@@ -267,11 +267,11 @@ namespace PhuThuongStickyRice.Application.Discounts
         {
             // Chuẩn hóa 1 lần rồi thử các định dạng — tránh Trim() lặp lại 3 lần.
             var trimmed = value?.Trim();
-            if (TimeSpan.TryParseExact(trimmed, @"h\:mm", CultureInfo.InvariantCulture, out var t)
-                || TimeSpan.TryParseExact(trimmed, @"hh\:mm", CultureInfo.InvariantCulture, out t)
-                || TimeSpan.TryParse(trimmed, out t))
+            if (TimeSpan.TryParseExact(trimmed, @"h\:mm", CultureInfo.InvariantCulture, out var parsedTime)
+                || TimeSpan.TryParseExact(trimmed, @"hh\:mm", CultureInfo.InvariantCulture, out parsedTime)
+                || TimeSpan.TryParse(trimmed, out parsedTime))
             {
-                return t;
+                return parsedTime;
             }
 
             throw new Domain.Exceptions.DomainException(

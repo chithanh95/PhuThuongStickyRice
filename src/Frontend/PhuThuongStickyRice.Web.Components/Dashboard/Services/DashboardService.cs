@@ -66,7 +66,7 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
         public async Task<TodayVsYesterdayModel> GetTodayVsYesterdayAsync()
         {
             return await GetAsync<TodayVsYesterdayModel>(
-                "api/dashboard/today-vs-yesterday?_=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                BuildUrl("api/dashboard/today-vs-yesterday", null, null));
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace PhuThuongStickyRice.Web.Components.Dashboard.Services
         public async Task<WeeklyReportModel> GetWeeklyReportAsync()
         {
             return await GetAsync<WeeklyReportModel>(
-                "api/admin/reports/weekly?_=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                BuildUrl("api/admin/reports/weekly", null, null));
         }
 
         /// <summary>

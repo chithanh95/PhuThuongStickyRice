@@ -265,7 +265,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 }
 
                 return body.Length > MaxErrorPreviewLength
-                    ? body.Substring(0, MaxErrorPreviewLength).Trim()
+                    ? body[..MaxErrorPreviewLength].Trim()
                     : body.Trim();
             }
 

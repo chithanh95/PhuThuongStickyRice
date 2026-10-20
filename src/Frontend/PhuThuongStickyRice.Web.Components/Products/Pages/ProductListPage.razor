@@ -1,3 +1,7 @@
+@* Trang quản lý sản phẩm (mọi role đã login): lưới sản phẩm có tìm kiếm,
+   bật/tắt "Ngưng bán" (xóa mềm — không xóa cứng vì còn tham chiếu lịch sử
+   đơn hàng), xuất CSV, thêm nhanh và điều hướng sang trang Sửa/Chi tiết.
+   Quyền products.edit ẩn/hiện nút tương ứng; mọi thao tác qua ProductService. *@
 @page "/products"
 @attribute [Authorize]
 @using System

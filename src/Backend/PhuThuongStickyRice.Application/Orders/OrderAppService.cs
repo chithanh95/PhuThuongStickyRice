@@ -2770,7 +2770,7 @@ namespace PhuThuongStickyRice.Application.Orders
             // 1 nhánh thay vì 1 case cho mỗi mức % (trước đây 3 case Percent5/10/15
             // lặp y hệt nhau, chỉ khác con số).
             if (segment.StartsWith(SpinPercentSegmentPrefix, StringComparison.Ordinal) &&
-                int.TryParse(segment.Substring(SpinPercentSegmentPrefix.Length), out var percent))
+                int.TryParse(segment[SpinPercentSegmentPrefix.Length..], out var percent))
             {
                 return ($"Giảm {percent}%", await CreateSpinPrizeCodeAsync(SpinCodePrefix, expiresAt, ownerPhone, discountPercent: percent));
             }
